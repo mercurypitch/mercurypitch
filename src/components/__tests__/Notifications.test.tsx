@@ -16,7 +16,7 @@ describe('Notifications', () => {
     render(() => <Notifications />)
 
     const notification = screen.getByRole('status')
-    expect(notification).toHaveTextContent('Complete')
+    expect(notification).toHaveTextContent('Done')
     expect(notification).toHaveTextContent('Playlist ZIP is ready.')
     expect(
       screen.getByRole('region', { name: 'Notifications' }),
@@ -30,11 +30,60 @@ describe('Notifications', () => {
 
     render(() => <Notifications />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Action needed')
+    expect(screen.getByRole('alert')).toHaveTextContent('Problem')
     fireEvent.click(
       screen.getByRole('button', { name: 'Dismiss notification' }),
     )
     expect(notifications()).toHaveLength(0)
+  })
+
+  // The fallback title can only describe severity. It read "Update" on every
+  // `info` toast, so a saved display name announced itself exactly like a
+  // pending app update — these three pin the way out of that.
+  it('prefers a title the caller gave over the one for its type', () => {
+    setNotifications([
+      {
+        id: 4,
+        message: 'A new version of MercuryPitch is ready.',
+        type: 'info',
+        title: 'Update',
+      },
+    ])
+
+    render(() => <Notifications />)
+
+    const notification = screen.getByRole('status')
+    expect(notification).toHaveTextContent('Update')
+    expect(notification).not.toHaveTextContent('Note')
+  })
+
+  it('shows no title at all when the caller passes null', () => {
+    setNotifications([
+      {
+        id: 5,
+        message: 'Recording saved to your takes.',
+        type: 'success',
+        title: null,
+      },
+    ])
+
+    render(() => <Notifications />)
+
+    const notification = screen.getByRole('status')
+    expect(notification).toHaveTextContent('Recording saved to your takes.')
+    expect(notification).not.toHaveTextContent('Done')
+    expect(notification.querySelector('strong')).toBeNull()
+  })
+
+  it('never calls an ordinary message an Update', () => {
+    setNotifications([{ id: 6, message: 'Display name updated', type: 'info' }])
+
+    render(() => <Notifications />)
+
+    const notification = screen.getByRole('status')
+    expect(notification).toHaveTextContent('Note')
+    // The regression itself: the word must not come from the type fallback.
+    expect(notification.querySelector('strong')?.textContent).not.toBe('Update')
   })
 
   it('runs an action once and dismisses its notification', () => {

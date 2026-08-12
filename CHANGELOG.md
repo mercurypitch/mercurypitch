@@ -23,6 +23,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **The first onboarding screen says three things instead of a paragraph.**
   What you do, what you get, and where it happens — one line each.
 
+- **Notifications stopped calling everything an "Update".** Every ordinary
+  message — a saved display name, a finished export — announced itself with
+  the same word as a pending app update. Messages now say "Note", "Done",
+  "Heads up" or "Problem" as appropriate, a notification can name its own
+  subject instead ("Microphone", "Offline"), and one that already reads as a
+  full sentence can skip the heading altogether. "Update" is now reserved for
+  the toast that really does offer you a new version.
+
 ### Fixed
 
 - **Every tab is reachable on a phone.** The More sheet's rows were unlabelled

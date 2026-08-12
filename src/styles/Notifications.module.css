@@ -112,12 +112,18 @@
 }
 
 .notificationText {
-  margin-top: 0.2rem;
   color: var(--text-primary, #f0f6fc);
   font-size: 0.86rem;
   font-weight: 590;
   line-height: 1.42;
   overflow-wrap: anywhere;
+}
+
+/* The gap belongs to the pair, not to the message: a toast that passes
+   `title: null` renders the message alone, and an unconditional margin-top
+   left it sitting low in the toast with nothing above it. */
+.notificationBody > strong + .notificationText {
+  margin-top: 0.2rem;
 }
 
 .actionBtn {
