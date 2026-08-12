@@ -12,6 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount, Show } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 import type { RunTrace } from './last-run-trace'
 import { traceBounds, worstMoment } from './run-trace-view'
 import styles from './RunTraceCanvas.module.css'
@@ -56,7 +57,7 @@ export const RunTraceCanvas: Component<RunTraceCanvasProps> = (props) => {
     const parent = canvasRef.parentElement
     if (!ctx || !parent) return
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = parent.clientWidth
     const h = parent.clientHeight
     if (w === 0 || h === 0) return

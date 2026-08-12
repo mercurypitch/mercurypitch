@@ -922,7 +922,7 @@ export const SettingsPanel: Component = () => {
           {/* Song preparation — what happens between "choose a song" and a
               playable stage. These used to sit behind the Karaoke tab's
               cogwheel next to four controls that were wired to nothing. */}
-          <div class={styles.settingsSection}>
+          <div class={styles.settingsSection} data-tour="settings.karaoke-prep">
             <h3 class={styles.settingsSectionTitle}>Song Preparation</h3>
             <div class={styles.settingsDivider} />
 
@@ -956,7 +956,10 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Shazam & Sing */}
-          <div class={styles.settingsSection}>
+          <div
+            class={styles.settingsSection}
+            data-tour="settings.karaoke-shazam"
+          >
             <h3 class={styles.settingsSectionTitle}>Shazam &amp; Sing</h3>
             <div class={styles.settingsDivider} />
 

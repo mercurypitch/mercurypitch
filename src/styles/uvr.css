@@ -687,15 +687,6 @@
   cursor: pointer;
 }
 
-.uvr-settings {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
 .guide-close:hover {
   background: var(--bg-hover);
 }
@@ -5235,4 +5226,26 @@ button.server-cost-hint:hover {
   .rv-parts-spinner {
     animation-duration: 2.4s;
   }
+}
+
+/* TV lead-in above the upload zone — the picker below cannot open there. */
+.uvr-tv-upload-note {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(227, 179, 65, 0.4);
+  border-radius: 12px;
+  background: rgba(227, 179, 65, 0.08);
+}
+
+.uvr-tv-upload-note strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.uvr-tv-upload-note p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
 }

@@ -13,6 +13,7 @@ import { getAllLrcLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { IS_DEV } from '@/lib/defaults'
+import { renderScale } from '@/lib/device-tier'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
 import type { LyricsCatalogEntry } from '@/lib/shazam/lyrics-matcher'
@@ -343,11 +344,12 @@ export function ShazamListen(props: ShazamListenProps) {
   function resizeCanvas() {
     if (!canvasRef) return
     const rect = canvasRef.getBoundingClientRect()
-    canvasRef.width = rect.width * window.devicePixelRatio
-    canvasRef.height = rect.height * window.devicePixelRatio
+    const dpr = renderScale()
+    canvasRef.width = rect.width * dpr
+    canvasRef.height = rect.height * dpr
     ctx = canvasRef.getContext('2d')
     if (ctx) {
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+      ctx.scale(dpr, dpr)
     }
   }
 

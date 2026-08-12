@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { onCleanup, onMount, untrack } from 'solid-js'
 import type { PitchTracePoint } from '@/components/MultiPaneView'
+import { renderScale } from '@/lib/device-tier'
 
 interface PitchTracePaneProps {
   pitchHistory: PitchTracePoint[]
@@ -47,7 +48,7 @@ export const PitchTracePane: Component<PitchTracePaneProps> = (props) => {
     const h = props.height
     if (w <= 0 || h <= 0) return
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     if (canvasRef.width !== w * dpr || canvasRef.height !== h * dpr) {
       canvasRef.width = w * dpr
       canvasRef.height = h * dpr

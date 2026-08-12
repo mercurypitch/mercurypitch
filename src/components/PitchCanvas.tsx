@@ -9,6 +9,7 @@ import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
+import { renderScale } from '@/lib/device-tier'
 import { drawChordShape, drawEffectBadge, drawSlideProgress, drawSlideShape, drawStaccatoShape, drawTremoloShape, drawTrillProgress, drawTrillShape, drawVibratoShape, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
@@ -632,7 +633,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
   const resizeCanvas = () => {
     if (!canvasRef) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

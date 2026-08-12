@@ -127,16 +127,22 @@ GPU to fill 8 megapixels of waveform per frame.
 
 ### 2.4 Still to do
 
-- **[next]** Extend `renderScale()` to the other ~40 `window.devicePixelRatio`
-  call sites — falling notes, guitar fretboard, guitar-tab-3d, the analysis
-  panes. Each is a two-line change but must swap the sizing _and_ the
-  `ctx.setTransform` together or it renders at the wrong scale.
-- **[next]** Guitar Night and Piano Night have their own rAF loops
-  (`useGuitarListeningController`, `usePianoNightController`) that are not yet
-  capped. Same treatment as the mixer.
+- **[shipped]** `renderScale()` now covers every hot per-frame canvas: falling
+  notes, the singing pitch canvas, history/over-time/cents canvases, the
+  analysis panes, both guitar fretboards, guitar-tab-3d's DPR cap, the zen
+  canvas, the jam canvases, Shazam Listen and the offline pitch canvas. Each
+  file was converted whole so its sizing and `ctx.setTransform` stay on the
+  same ratio.
+- **[shipped]** Guitar Night's listening tick and Piano Night's clock loop are
+  capped at the tier's presentation rate (uncapped on capable devices). The
+  guitar cap is deliberately the presentation rate, not the lower analysis
+  rate: its silence/uncertainty heuristics count frames, and 30 Hz keeps them
+  within 2x of their ~60 Hz design while halving the MPM cost.
 - **[next]** Move the overview waveform to an `OffscreenCanvas` keyed on
   (window, size, track set) so a scroll redraws a blit plus a playhead instead
-  of ~4000 segment-tree queries. This is the one canvas change with real upside.
+  of ~4000 segment-tree queries. This is the one canvas change with real
+  upside, and the one with real regression risk (the moiré/zoom-desync class
+  of bug this file's history warns about) — its own PR.
 - **[open]** Whether Piano Night's and Guitar Night's stage backgrounds should
   be swapped for a static image on `low` rather than merely de-blurred.
 
@@ -182,12 +188,14 @@ while signed in, then open it here from the library.
 
 ### 3.3 Still to do
 
-- **[next]** On a TV, lead with the library and the demo songs rather than the
-  upload box — the upload box should not be the primary call to action on a
-  device that cannot use it.
-- **[open]** A "send from your phone" pairing flow (QR code → phone uploads →
-  TV picks it up from the account) is the genuinely good answer. Needs the
-  cross-device session sync that `PREMIUM_FEATURES` gates.
+- **[shipped]** On a TV the upload view now leads with a notice that the
+  browser cannot open files, pointing at the library below and the demo songs
+  — before the user discovers the dead button by clicking it.
+- **[deferred]** A "send from your phone" pairing flow (QR code → phone
+  uploads → TV picks it up from the account) is the genuinely good answer.
+  Account/device song sharing is already being built as its own effort in a
+  separate work stream — the TV handoff should ride that, not duplicate it
+  here.
 - **[open]** On-device separation is not viable on TV hardware regardless; the
   Karaoke settings copy now says so.
 
@@ -266,10 +274,14 @@ prefixes are down-levelled instead of shipped as syntax those engines drop.
   the only remaining unresolved companion is `--bg-hover-rgb`, whose source
   token is itself a translucent `color-mix` and has no meaningful RGB base
   (the inert fallback there equals today's behaviour).
-- **[open]** `:has()` (Chrome 105) and `@container` (Chrome 105) are used in ~27
-  places and cannot be polyfilled by the same trick. Each needs a graceful
-  no-op check — most already degrade to "no enhancement", but this has not been
-  audited rule by rule.
+- **[shipped — audited, no code needed]** All six `:has()` rules and every
+  `@container` block degrade to base styles on Chrome 79–83 with cosmetic-only
+  impact: collapsed-sidebar header width, practice-panel bottom padding, the
+  error-actions grid, one focus outline (covered globally by the TV focus
+  ring), the tab-group collapse animation (degrades to all-tabs-visible, which
+  is BETTER for D-pad), and the Compose toolbar re-stack (admin/compose
+  surfaces, not TV paths). None shares a selector list with a valid selector,
+  so nothing else is dragged down.
 
 ---
 
@@ -310,13 +322,11 @@ The one real control in that panel was the "Stem Denoise for Matching" toggle.
 
 ### 6.3 Still to do
 
-- **[next]** `uvrVocalIntensity`, `uvrInstrumentalIntensity`, `uvrSmoothing` and
-  `applyUvrSettings` are now unreferenced by UI. Delete them, and the ~200 lines
-  of orphaned `.uvr-settings` / `.intensity-slider` / `.smoothing-slider` CSS in
-  `uvr.css` and `vocal-analysis.css`. Left in place here only to keep this
-  change reviewable.
-- **[next]** The Karaoke page tour (`PAGE_TOURS`) has not been re-checked
-  against the new Settings sub-tab.
+- **[shipped]** The dead `uvrMode`/intensity/smoothing signals, their
+  localStorage persistence, `applyUvrSettings`, and 42 orphaned CSS rules
+  (~5 KB) in `uvr.css` / `vocal-analysis.css` are deleted.
+- **[shipped]** Settings tour selectors re-verified (all resolve), and the new
+  Settings > Karaoke sub-tab has its own tour step.
 
 ---
 

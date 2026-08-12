@@ -18,6 +18,8 @@ import type { PianoPerformanceScoringSource, PianoPerformanceScoringState, Piano
 import { createPianoPerformanceScoringEngine } from '@/features/piano/runtime/piano-performance-scoring'
 import { pianoTempoBeatToSeconds } from '@/features/piano/runtime/piano-tempo-map'
 import { installAudioUnlock } from '@/lib/audio-unlock'
+import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
+import { createFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
 import { createPianoNightArrangement } from './piano-night-arrangement'
 import type { PianoNightSource } from './piano-night-source'
@@ -187,10 +189,28 @@ export function usePianoNightController() {
     setStatusMessage(`${stage().title} complete. Ready to play again.`)
   }
 
-  const sampleClock = (): void => {
+  // Presentation cap: every setPlayheadBeat write re-renders the falling
+  // notes and key glow, and on a low-tier device (a television) capping that
+  // hands the saved budget back to the audio thread. Capable devices keep an
+  // uncapped clock (presentationFps() is Infinity there, no limiter in the
+  // path). Scoring still samples EVERY frame — it is cheap next to a render,
+  // and capping it would coarsen hit timing.
+  const presentationLimiter = Number.isFinite(presentationFps())
+    ? createFrameRateLimiter(presentationFps())
+    : null
+
+  const sampleClock = (timestampMs: number): void => {
+    recordAnimationFrame(timestampMs)
     const beat = transport.timeline.playheadBeat()
     const phase = transport.phase()
-    setPlayheadBeat(beat)
+    if (
+      presentationLimiter === null ||
+      presentationLimiter.shouldRun(timestampMs / 1000) ||
+      // The final position must land exactly, cap or no cap.
+      phase !== 'playing'
+    ) {
+      setPlayheadBeat(beat)
+    }
     if (phase !== 'playing') {
       frame = null
       if (phase === 'complete') settleCompletion(beat)

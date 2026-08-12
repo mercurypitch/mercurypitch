@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { onCleanup, onMount, untrack } from 'solid-js'
 import type { ColourMapId } from '@/lib/colour-maps'
 import { getColourMap } from '@/lib/colour-maps'
+import { renderScale } from '@/lib/device-tier'
 
 interface SpectrumPaneProps {
   magnitudeSpectrum: Float32Array | null
@@ -26,7 +27,7 @@ export const SpectrumPane: Component<SpectrumPaneProps> = (props) => {
     const h = props.height
     if (w <= 0 || h <= 0) return
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     if (canvasRef.width !== w * dpr || canvasRef.height !== h * dpr) {
       canvasRef.width = w * dpr
       canvasRef.height = h * dpr

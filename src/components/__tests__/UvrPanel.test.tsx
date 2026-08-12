@@ -102,7 +102,6 @@ vi.mock('@/stores', () => ({
 
   // Audio engine
   initAudioEngine: vi.fn().mockResolvedValue(undefined),
-  applyUvrSettings: vi.fn().mockResolvedValue(undefined),
 
   // Utils
   buildSessionItemMelody: vi.fn(),

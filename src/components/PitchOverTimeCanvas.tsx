@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import { noteAxisSemitoneStep, timeAxisTicks, } from '@/components/pitch-time-axis'
+import { renderScale } from '@/lib/device-tier'
 import type { ScaleDegree } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -152,7 +153,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
   const resizeCanvas = () => {
     if (!canvasRef || !ctx) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

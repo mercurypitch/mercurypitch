@@ -24,51 +24,14 @@ import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcripti
 import { IS_DEV } from '@/lib/defaults'
 
 // ── UVR (Vocal Separation) ─────────────────────────────────────
-
-export type UvrMode = 'separate' | 'instrumental' | 'vocal' | 'duo'
+//
+// The separation-mode/intensity/smoothing settings block that used to live
+// here is gone: its only reader was app-store's applyUvrSettings, which
+// nothing ever called, and the panel that wrote it (UvrSettings.tsx) exposed
+// four controls that therefore did nothing. The real, honoured preferences
+// live in karaoke-settings-store.ts and the processing mode below.
 
 export type UvrProcessingMode = 'server' | 'local'
-
-export interface UvrSettings {
-  mode: UvrMode
-  vocalIntensity: number // 0-100%
-  instrumentalIntensity: number // 0-100%
-  smoothing: number // 0-1
-}
-
-const DEFAULT_UVR_SETTINGS: UvrSettings = {
-  mode: 'separate',
-  vocalIntensity: 70,
-  instrumentalIntensity: 70,
-  smoothing: 0.3,
-}
-
-export function getUvrSettings(): UvrSettings {
-  const saved = localStorage.getItem('pitchperfect_uvr-settings')
-  if (saved !== null) {
-    try {
-      return { ...DEFAULT_UVR_SETTINGS, ...JSON.parse(saved) }
-    } catch {
-      // Return defaults on parse error
-    }
-  }
-  return DEFAULT_UVR_SETTINGS
-}
-
-export function setUvrSettings(settings: Partial<UvrSettings>): void {
-  const current = getUvrSettings()
-  const newSettings: UvrSettings = {
-    ...current,
-    ...settings,
-  }
-  localStorage.setItem('pitchperfect_uvr-settings', JSON.stringify(newSettings))
-}
-
-export const [uvrMode, setUvrMode] = createSignal<UvrMode>('separate')
-export const [uvrVocalIntensity, _setUvrVocalIntensity] = createSignal(70)
-export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] =
-  createSignal(70)
-export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
 
 // Processing mode (server vs local/browser)
 const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'local'
@@ -131,29 +94,6 @@ export type UvrModelStatus = 'unloaded' | 'loading' | 'ready' | 'error'
 export const [uvrModelStatus, setUvrModelStatus] =
   createSignal<UvrModelStatus>('unloaded')
 export const [uvrModelError, setUvrModelError] = createSignal('')
-
-// Export for direct usage in components (internal setters that also persist)
-export const setUvrVocalIntensity = (intensity: number): void => {
-  _setUvrVocalIntensity(intensity)
-  setUvrSettings({ vocalIntensity: intensity })
-}
-
-export const setUvrInstrumentalIntensity = (intensity: number): void => {
-  _setUvrInstrumentalIntensity(intensity)
-  setUvrSettings({ instrumentalIntensity: intensity })
-}
-
-export const setUvrSmoothing = (value: number): void => {
-  _setUvrSmoothing(value)
-  setUvrSettings({ smoothing: value })
-}
-
-// Getters for UVR settings
-export const getUvrMode = (): UvrMode => uvrMode()
-export const getUvrVocalIntensity = (): number => uvrVocalIntensity()
-export const getUvrInstrumentalIntensity = (): number =>
-  uvrInstrumentalIntensity()
-export const getUvrSmoothing = (): number => uvrSmoothing()
 
 // ── UVR Session Management (Full Workflow) ─────────────────────────
 
@@ -1091,7 +1031,10 @@ export function startUvrSession(
   fileName: string,
   fileSize: number,
   mimeType: string,
-  _mode: UvrMode = 'separate',
+  // Historical positional slot from the removed settings block — unused, kept
+  // so the existing (fileName, size, mime, mode, processingMode) call shape
+  // does not ripple through every caller.
+  _mode: string = 'separate',
   processingMode?: UvrProcessingMode,
   fileHash?: string,
   focus = true,

@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 import type { FretNote } from '@/lib/guitar/caged-shapes'
 import { getChordToneRole } from '@/lib/guitar/chord-utils'
 import { DOUBLE_FRET_MARKER, FRET_MARKERS, MAX_FRET, OPEN_MIDI, STRING_LABELS, } from '@/lib/guitar/constants'
@@ -106,7 +107,7 @@ export const InteractiveGuitarFretboardCanvas: Component<
 
   const resizeCanvas = () => {
     if (!canvasRef) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

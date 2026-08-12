@@ -17,6 +17,7 @@ import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/ste
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
+import { isTvDevice } from '@/lib/device-tier'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -2228,6 +2229,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               <div class="section-header">
                 <h4>Upload Audio</h4>
               </div>
+
+              {/* A television has no file manager, so the upload box below is
+                  a dead end there. Say so before the user discovers it by
+                  clicking, and point at the two paths that work. */}
+              <Show when={isTvDevice()}>
+                <div class="uvr-tv-upload-note" data-testid="uvr-tv-lead">
+                  <strong>Adding songs on a TV</strong>
+                  <p>
+                    This TV's browser cannot open files. Prepare songs on a
+                    phone or computer while signed in, then play them from your
+                    library below — or try a demo song right away.
+                  </p>
+                </div>
+              </Show>
 
               <UvrUploadControl
                 onFilesSelect={enqueueAudioFiles}
