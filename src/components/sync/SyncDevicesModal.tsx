@@ -12,6 +12,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { SyncTransfer } from '@/stores/sync-store'
 import { sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncPeerLabel, syncRoomId, syncState, syncTransfers, } from '@/stores/sync-store'
@@ -83,7 +84,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   onCleanup(() => stopSync())
 
   onMount(() => {
-    if (mode() === 'receive') void startSyncReceive()
+    if (mode() === 'receive' && !jamSignalingIsMocked()) void startSyncReceive()
   })
 
   const enterReceive = (): void => {
@@ -153,7 +154,19 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
           </div>
 
           <div class={styles.body}>
-            <Show when={mode() === 'choose'}>
+            {/* A preview build has no room server, and the mock invents
+                peers that no song can actually reach. Saying so is the
+                only honest thing to show: a code that can never be
+                answered looks exactly like a broken feature. */}
+            <Show when={jamSignalingIsMocked()}>
+              <p class={styles.hint}>
+                This is a preview build without the room server, so devices
+                cannot find each other here. Device sync works on the real app,
+                where both devices are on the same Wi-Fi.
+              </p>
+            </Show>
+
+            <Show when={mode() === 'choose' && !jamSignalingIsMocked()}>
               <div class={styles.choices}>
                 <button
                   type="button"
@@ -192,7 +205,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
               </p>
             </Show>
 
-            <Show when={mode() === 'receive'}>
+            <Show when={mode() === 'receive' && !jamSignalingIsMocked()}>
               <Show
                 when={syncRoomId()}
                 fallback={<p class={styles.status}>{receiveStatus()}</p>}
@@ -216,7 +229,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
               </Show>
             </Show>
 
-            <Show when={mode() === 'send'}>
+            <Show when={mode() === 'send' && !jamSignalingIsMocked()}>
               <Show
                 when={connected()}
                 fallback={
