@@ -316,6 +316,44 @@ target, not a new product.
   rather than blocking on it: once the account list exists, the same pairing
   can also offer "your account's songs" on the TV.
 
+### Both QR halves, built 2026-08-13
+
+Two different problems, one component (`src/components/QrCode.tsx`) and two
+deep links. They are separate on purpose: sending a song to a TV needs no
+account at all, and signing a TV in is worth doing even for a device you never
+send a song to.
+
+|                  | Sending a song                          | Signing in                    |
+| ---------------- | --------------------------------------- | ----------------------------- |
+| Link             | `#/sync:CODE`                           | `#/link:CODE`                 |
+| Shown by         | the receiving device, in the Sync modal | the TV, in the sign-in dialog |
+| Scanner lands on | Karaoke, joined to that sync room       | a confirmation dialog         |
+| Account needed   | none                                    | one, on the phone             |
+| Transport        | the shipped P2P sync                    | the db-worker                 |
+
+The sign-in half is the standard device-authorization flow, in
+`workers/db-worker/src/auth.ts` and migration `0027_device_link_codes.sql`:
+`POST device/start` mints a code, `GET device/pending` describes the request to
+the phone, `POST device/approve` binds it to that account, `POST device/poll`
+hands the TV a session.
+
+Two security properties hold it up, and both are tested:
+
+- **The displayed code is not a credential.** It is on a television, so treat
+  it as public. Approval is recorded against the code; the session is only ever
+  handed to whoever presents the poll token, which never leaves the device that
+  asked and is stored only as a SHA-256. Reading a code off somebody's TV gets
+  an attacker nothing, and a wrong token is answered exactly as an unknown code
+  so polling cannot enumerate live codes either.
+- **Following the link is not the approval.** `#/link:CODE` opens a dialog that
+  names the device and does nothing until it is confirmed. A link that signs a
+  device in by being opened is a link somebody can be sent, and the TV it signs
+  in need not be in the same building.
+
+Single use on both halves (`approvedAt`, `claimedAt`, enforced in the UPDATE
+rather than checked and then written), five-minute expiry, and rate limits
+sized for a living room with two televisions behind one address.
+
 ### Why Google Drive before P2P
 
 - **Asynchronous.** P2P needs both devices awake, on the same Wi-Fi, at the
@@ -538,8 +576,13 @@ the jam room's fire-and-forget delivery lacks, built here first as planned),
 `src/stores/sync-store.ts` + `SyncDevicesModal` in the Karaoke tab (receive
 shows a code, send enters it; per-song Send button on session cards; relay
 routes refused). Every finished transfer reports real bytes, seconds and MB/s
-in the modal and the console — the Phase 0 numbers. Still open: QR pairing
-(issue #489 composes here) and whole-library one-tap sync.
+in the modal and the console — the Phase 0 numbers.
+
+**QR pairing built 2026-08-13** (issue #489): the receiving device shows its
+code as a QR of `#/sync:CODE`, scanning it lands the sender in the Karaoke tab
+already joined to that room. Codes are folded to upper case at every edge —
+they are Durable Object names, so a lowercased link is not a bad code, it is a
+different room. Still open: whole-library one-tap sync.
 
 **Measured on a real pair, 2026-08-12 (Android tablet → Philips TV).** The
 transfer itself worked. The receiver then failed on the second stem with "the

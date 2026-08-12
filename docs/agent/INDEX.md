@@ -166,6 +166,7 @@ These are the rules that break things when ignored.
 | [device-tier.ts](../../src/lib/device-tier.ts) | 450 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
+| [hash-router.ts](../../src/lib/hash-router.ts) | 400 | Hash Router — Client-side hash-based routing |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 400 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
 
@@ -181,8 +182,8 @@ These are the rules that break things when ignored.
 | [settings-store.ts](../../src/stores/settings-store.ts) | 700 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 550 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [session-store.ts](../../src/stores/session-store.ts) | 450 | Session Store — Unified session management with localStorage |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 450 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 250 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 250 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
@@ -229,7 +230,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 15.4k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 15.7k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -328,9 +329,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/App.tsx](../../src/App.tsx) | 4.2k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.3k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.6k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
-| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.3k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
@@ -342,9 +343,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
+| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
-| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.6k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.5k |
