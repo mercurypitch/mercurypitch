@@ -12,9 +12,12 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lyricLineProgress } from '@/lib/jam/jam-song'
+import { initAudioEngine } from '@/stores/app-store'
 import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -45,16 +48,29 @@ const BUFFERING = 'Buffering — the backing track is not arriving smoothly.'
 
 export const JamSongStage: Component = () => {
   let audioRef: HTMLAudioElement | undefined
-  let vocalRef: HTMLAudioElement | undefined
 
   /**
    * Guide-vocal level, per person and not room state -- see JamGuideVocal.
    *
    * Read here, set elsewhere: the control lives in JamPanel now, in the
    * transport row on a desktop and docked above the tab bar on a phone.
-   * This component only needs the number, to drive the vocal element.
+   * This component only needs the number, to drive the guide player.
    */
   const guideVolume = jamGuideVolume
+
+  /**
+   * The guide vocal plays through Web Audio, NOT a second <audio> element.
+   *
+   * TV browsers run one hardware media pipeline, so a second element's
+   * play() pauses the backing track — heard as the guide "soloing" the
+   * moment it is unmuted. A decoded buffer through a GainNode leaves the
+   * backing track's element alone. See jam-guide-player.ts.
+   */
+  let engineContext: AudioContext | null = null
+  const guidePlayer = createJamGuidePlayer({
+    context: () => engineContext,
+  })
+  onCleanup(() => guidePlayer.dispose())
 
   /**
    * Score each line as the playhead leaves it.
@@ -319,7 +335,9 @@ export const JamSongStage: Component = () => {
     if (req.token === 0) return
     const el = audioRef
     if (el !== undefined) el.currentTime = req.toSec
-    if (vocalRef !== undefined) vocalRef.currentTime = req.toSec
+    // A buffer source cannot be seeked; restarting at the offset IS the
+    // seek. Only when audible -- a muted guide has nothing to move.
+    if (guidePlayer.playing()) guidePlayer.start(req.toSec)
   })
 
   /**
@@ -350,29 +368,63 @@ export const JamSongStage: Component = () => {
   })
 
   /**
-   * The guide vocal is a second element on the same clock.
+   * The guide vocal runs on the backing track's clock.
    *
-   * Kept in step with the backing track rather than driven independently:
-   * two elements playing the same song a beat apart is worse than no
-   * guide at all. It follows a tighter threshold than the peer resync
-   * because these two are on ONE device with no network between them --
-   * any gap here is a bug, not latency.
+   * The effect captures the desired state synchronously (Solid signals
+   * must not be read after an await) and hands it to an async applier:
+   * the first unmute has to initialise the engine and decode the stem,
+   * and both are awaits. The epoch guard drops a decode that finishes
+   * after the user has already muted again or the song changed.
    */
-  createEffect(() => {
-    const guide = vocalRef
-    const main = audioRef
-    if (guide === undefined || main === undefined) return
-    guide.volume = guideVolume()
-    if (jamExercisePlaying() && !jamExercisePaused() && guideVolume() > 0) {
-      // Snap on the way in rather than trusting where it stopped. Muting
-      // pauses this element, so the playhead can travel a long way -- a
-      // whole scrub -- while it sits still, and resuming from there is
-      // exactly the "vocal is out of step" people hear.
-      guide.currentTime = main.currentTime
-      void guide.play().catch(() => {})
-    } else {
-      guide.pause()
+  let guideEpoch = 0
+
+  const applyGuideState = async (
+    desired: { url: string | null; volume: number; shouldPlay: boolean },
+    epoch: number,
+  ): Promise<void> => {
+    if (!desired.shouldPlay || desired.url === null) {
+      guidePlayer.stop()
+      return
     }
+    // Already sounding the right stem: only the level moved.
+    if (guidePlayer.playing() && guidePlayer.loadedUrl() === desired.url) {
+      guidePlayer.setVolume(desired.volume)
+      return
+    }
+    const engine = await initAudioEngine()
+    try {
+      await activateAudioPlayback(engine)
+    } catch {
+      // Not in a gesture yet -- the unmute tap that follows will unlock.
+    }
+    engineContext = engine.getAudioContext()
+    const ok = await guidePlayer.load(desired.url)
+    if (epoch !== guideEpoch) return
+    if (!ok) {
+      setJamError(
+        'The guide vocal could not be loaded on this device — the backing track keeps playing without it.',
+      )
+      return
+    }
+    // Snap to wherever the song is NOW, after the decode -- not where it
+    // was when the tap landed. A DOM read, not a signal, so it is safe
+    // on this side of the awaits.
+    guidePlayer.start(audioRef?.currentTime ?? 0, desired.volume)
+  }
+
+  createEffect(() => {
+    const url = jamSong()?.stems.vocal ?? null
+    const volume = guideVolume()
+    const desired = {
+      url,
+      volume,
+      shouldPlay:
+        jamExercisePlaying() &&
+        !jamExercisePaused() &&
+        volume > 0 &&
+        url !== null,
+    }
+    void applyGuideState(desired, ++guideEpoch)
   })
 
   /**
@@ -380,21 +432,21 @@ export const JamSongStage: Component = () => {
    *
    * Separate from the effect above, for the same reason the room's own
    * transport is split in two: this one has to re-run on every position
-   * change, and an effect that calls play() or pause() on every tick
-   * races itself.
+   * change, and an effect that restarts playback on every tick races
+   * itself.
    *
    * The dependency is the ROOM's position, not `main.currentTime`. A DOM
-   * property is not reactive, so the old single effect never re-ran on a
-   * seek at all -- the guide vocal simply carried on from wherever it was,
-   * permanently out of step until you happened to toggle the volume.
+   * property is not reactive, so an effect reading only the element would
+   * never re-run on a seek at all.
    */
   createEffect(() => {
     jamSongPositionSec()
-    const guide = vocalRef
     const main = audioRef
-    if (guide === undefined || main === undefined || guide.paused) return
-    if (Math.abs(guide.currentTime - main.currentTime) > GUIDE_DRIFT_SEC) {
-      guide.currentTime = main.currentTime
+    if (main === undefined || !guidePlayer.playing()) return
+    const pos = guidePlayer.positionSec()
+    if (pos === null) return
+    if (Math.abs(pos - main.currentTime) > GUIDE_DRIFT_SEC) {
+      guidePlayer.start(main.currentTime)
     }
   })
 
@@ -422,22 +474,15 @@ export const JamSongStage: Component = () => {
       {(song) => (
         <div class={styles.stage}>
           <JamTransferDialog />
+          {/* The ONLY media element on the stage, deliberately: the guide
+              vocal goes through Web Audio (jam-guide-player.ts) because a
+              second element's play() pauses this one on TV browsers. */}
           <audio
             ref={audioRef}
             src={song().stems.instrumental}
             preload="auto"
             crossorigin="anonymous"
           />
-          <Show when={song().stems.vocal}>
-            {(url) => (
-              <audio
-                ref={vocalRef}
-                src={url()}
-                preload="auto"
-                crossorigin="anonymous"
-              />
-            )}
-          </Show>
 
           <div class={styles.transport}>
             <span class={styles.title}>

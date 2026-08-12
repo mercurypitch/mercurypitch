@@ -114,6 +114,20 @@ zeroed at the boundary you are trying to detect, it cannot detect it.
 **See:** `src/features/zen/note-playback.ts`,
 `docs/specs/zen-exercise-playback.ears.md`
 
+### Never mix stems with a second media element — TVs run one media pipeline
+
+**Symptom:** on a TV, unmuting the jam guide vocal "soloed" it: the vocal
+came in and the backing track went silent. Desktop mixed both fine.
+**Cause:** the stage played instrumental and guide as two `<audio>`
+elements. TV browsers grant the hardware media pipeline to one element at
+a time, so the guide's `play()` paused the backing track. No error fires
+anywhere — the first element is just paused.
+**Rule:** one media element per surface. Any additional stem plays through
+Web Audio (decoded buffer + GainNode), the way the karaoke stage and
+`jam-guide-player.ts` do. Volume mixing between elements is a desktop-only
+illusion.
+**See:** `src/lib/jam/jam-guide-player.ts`, `src/components/jam/JamSongStage.tsx`
+
 ### Sample note playback by start crossing, not by "is it active now"
 
 **Symptom:** dense or fast phrases played partially and stopped, as if timing

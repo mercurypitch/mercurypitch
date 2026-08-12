@@ -119,7 +119,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
+| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.9k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guitar` | [guitar-phrase-review.ts](../../src/lib/guitar/guitar-phrase-review.ts) | 4.9k | Guitar phrase review — evidence-bounded comparison of one take with one pinned score range. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 3.0k | Guided Voice — local assessment science and safety foundation |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 2.1k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
