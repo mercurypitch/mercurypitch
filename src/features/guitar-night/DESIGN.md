@@ -54,10 +54,16 @@ status states that it is quiet.
 ## Current integrated slice
 
 The reference, score-room, shared-loop, transcription, and input-event work in
-this section is merged through
-[#458](https://github.com/mercurypitch/mercurypitch/pull/458). The dedicated
-Velvet tuner is implemented as the next additive parity slice on its focused
-follow-up branch.
+this section was merged through
+[#458](https://github.com/mercurypitch/mercurypitch/pull/458). Targeted parity
+then added the Velvet tuner in
+[#484](https://github.com/mercurypitch/mercurypitch/pull/484), unified local
+audio, MIDI, and Guitar Pro entry in
+[#487](https://github.com/mercurypitch/mercurypitch/pull/487), the Learn shelf
+and exact-position Note Hunt in
+[#492](https://github.com/mercurypitch/mercurypitch/pull/492), and the remaining
+core Learn set in
+[#494](https://github.com/mercurypitch/mercurypitch/pull/494).
 
 - `Tune guitar` opens the same full-room preflight from entry, the prepared-song
   room, and the authored-tab room. Entry owns a temporary listener; mounted
@@ -86,6 +92,22 @@ follow-up branch.
   interpolation. Overlay focus is contained, collapsed tuning presets restore
   their summary, mobile visual and keyboard order agree, and spoken pitch
   direction changes only after the reading remains stable.
+
+- Learn opens as one protected-focus setlist over the existing room rather than
+  reproducing the legacy practice-mode selector. Opening it pauses or suspends
+  the current musical surface without starting guide audio, input capture, a
+  count-in, or a timer; closing it restores the invoking control.
+- Every focused Learn activity receives one immutable snapshot of the active
+  room or first-win tuning. Note Hunt persists exact physical positions; Hear &
+  Find accepts physical unisons or optional pitch evidence; Echo a Phrase waits
+  for an explicit guide and repairs one missed note in place; Shape Walk labels
+  root, major third, and perfect fifth only when the active six-string tuning
+  truthfully supports CAGED geometry.
+- Focused activities reuse the full-room Neck stage and one bounded bottom
+  deck. Guide notes use the shared room bus only after an explicit action,
+  optional Listening retains the existing mic/interface/MIDI ownership model,
+  reduced motion preserves every state change, and desktop and phone actions
+  retain 44-pixel targets.
 
 - Selecting a supported local MP3, WAV, or FLAC file starts the existing
   durable on-device separation workflow from Guitar Night. The heavy

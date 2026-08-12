@@ -38,10 +38,12 @@ highway-performance validation, and the legacy runtime cutover remain target
 work.
 
 The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
-are implemented by
+were merged through
 [#492](https://github.com/mercurypitch/mercurypitch/pull/492). Hear & Find,
-Echo a Phrase, Shape Walk, and the remaining Learn/Jam parity work remain target
-requirements rather than shipped capability.
+Echo a Phrase, Shape Walk, and their shared active-tuning Learn host are
+implemented by
+[#494](https://github.com/mercurypitch/mercurypitch/pull/494). Broader
+professional Jam parity and the legacy cutover remain target work.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and

@@ -776,6 +776,9 @@ test('runs the rebuilt Learn set through real neck pointers @smoke', async ({
     ).toBeVisible()
     await expect(hearTarget).toHaveAttribute('data-state', 'found')
     await expectActivityFits('guitar-night-hear-find')
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await expectActivityFits('guitar-night-hear-find')
+    await page.setViewportSize({ width: 390, height: 844 })
 
     await hearFind
       .getByRole('button', { name: 'Back from Hear & Find' })
@@ -823,6 +826,9 @@ test('runs the rebuilt Learn set through real neck pointers @smoke', async ({
       echo.getByRole('heading', { name: 'The phrase is yours.' }),
     ).toBeVisible()
     await expectActivityFits('guitar-night-echo-phrase')
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await expectActivityFits('guitar-night-echo-phrase')
+    await page.setViewportSize({ width: 390, height: 844 })
 
     await echo.getByRole('button', { name: 'Back from Echo a Phrase' }).click()
     const returnedFromEcho = page.getByTestId('guitar-night-learn-shelf')
@@ -844,6 +850,8 @@ test('runs the rebuilt Learn set through real neck pointers @smoke', async ({
     await expect(
       shape.getByRole('heading', { name: 'G major · E shape.' }),
     ).toBeVisible()
+    await expectActivityFits('guitar-night-shape-walk')
+    await page.setViewportSize({ width: 1024, height: 768 })
     await expectActivityFits('guitar-night-shape-walk')
 
     expect(await microphoneRequestCount()).toBe(0)
