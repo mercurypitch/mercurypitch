@@ -1660,4 +1660,75 @@ describe('Google Drive connect and tokens', () => {
     expect(authUrl.searchParams.get('scope')).toBe('openid email profile')
     expect(authUrl.searchParams.get('access_type')).toBeNull()
   })
+
+  /**
+   * Deleting the row is not the same as withdrawing consent. Google keeps a
+   * grant until it is revoked, so an account that deleted itself would still
+   * appear under the user's Google permissions -- and with our row gone,
+   * nothing would be left to revoke it from. The token has to be spent on
+   * its own revocation on the way out, which means the revoke must happen
+   * BEFORE the erasure that USER_OWNED_TABLES performs.
+   */
+  it('hands the Drive grant back to Google when the account is deleted', async () => {
+    const { db, env, sessionToken, userId } = await connectDrive()
+    expect(db.driveTokens.get(userId)).toBeDefined()
+
+    const calls: { url: string; token: string | null }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL, init?: RequestInit) => {
+        const body = String(init?.body ?? '')
+        calls.push({
+          url: String(input),
+          token: new URLSearchParams(body).get('token'),
+        })
+        return new Response('{}', { status: 200 })
+      }),
+    )
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(sessionToken)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+    expect(response?.status).toBe(200)
+
+    const revoke = calls.find((call) =>
+      call.url.startsWith('https://oauth2.googleapis.com/revoke'),
+    )
+    expect(revoke).toBeDefined()
+    // The PLAINTEXT token, unsealed on the way out. Posting the sealed blob
+    // would be a revoke request Google cannot act on -- it would return 200
+    // and change nothing, which is the failure that looks like success.
+    expect(revoke?.token).toBe('google-refresh-token')
+
+    // And our copy is gone either way.
+    expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
+
+  it('still deletes the account when Google cannot be reached', async () => {
+    // Revoking is a courtesy that must never hold somebody's erasure
+    // hostage to a third party being up.
+    const { db, env, sessionToken, userId } = await connectDrive()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('network down'))),
+    )
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(sessionToken)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+    expect(response?.status).toBe(200)
+    expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
 })

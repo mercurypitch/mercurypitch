@@ -1707,6 +1707,43 @@ async function deleteDriveToken(env: Env, userId: string): Promise<void> {
     .run()
 }
 
+/**
+ * Hand the grant back to Google, then forget our copy.
+ *
+ * Dropping the row is not the same as withdrawing consent. Google keeps the
+ * grant until it is revoked, so a user who deletes their account would still
+ * find this app listed under their Google permissions -- and with our row
+ * gone there would be nothing left to revoke it from. The token has to be
+ * spent on its own revocation on the way out.
+ *
+ * Best effort, and deliberately so: a network failure at Google must not
+ * keep the row alive or fail the deletion. The user can also revoke from
+ * their own Google account page, which is why this can afford to be
+ * best-effort at all.
+ *
+ * Shared by "disconnect Drive" and "delete my account" so the two cannot
+ * drift -- they are the same withdrawal, reached from different doors.
+ */
+async function revokeAndForgetDriveToken(
+  env: Env,
+  userId: string,
+): Promise<void> {
+  const row = await findDriveToken(env, userId)
+  if (row === null) return
+  const refreshToken = await openDriveToken(
+    env.JWT_SECRET as string,
+    row.refreshToken,
+  )
+  if (refreshToken !== null) {
+    await fetch('https://oauth2.googleapis.com/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token: refreshToken }),
+    }).catch(() => {})
+  }
+  await deleteDriveToken(env, userId)
+}
+
 interface DriveTokenRow {
   userId: string
   refreshToken: string
@@ -1810,23 +1847,7 @@ async function handleDriveDisconnect(
 ): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-  const row = await findDriveToken(env, auth.userId)
-  if (row !== null) {
-    const refreshToken = await openDriveToken(
-      env.JWT_SECRET as string,
-      row.refreshToken,
-    )
-    if (refreshToken !== null) {
-      // Best effort: the user can also revoke from their Google account,
-      // and a failed revoke must not keep the row alive.
-      await fetch('https://oauth2.googleapis.com/revoke', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ token: refreshToken }),
-      }).catch(() => {})
-    }
-    await deleteDriveToken(env, auth.userId)
-  }
+  await revokeAndForgetDriveToken(env, auth.userId)
   return respond({ ok: true })
 }
 
@@ -2078,6 +2099,17 @@ async function handleDeleteMe(
       { error: 'Account deletion temporarily unavailable' },
       { status: 503 },
     )
+  }
+
+  // Before the batch below erases the row: revoking needs the token it is
+  // about to delete, so this is the only order that can withdraw the grant
+  // at all. Best effort inside, so Google being unreachable cannot block
+  // somebody's deletion -- and USER_OWNED_TABLES still lists the table, so
+  // the row goes even if this whole step fails.
+  try {
+    await revokeAndForgetDriveToken(env, userId)
+  } catch {
+    // The registry deletion below is the guarantee; this was the courtesy.
   }
 
   const statements = [
