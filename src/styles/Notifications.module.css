@@ -1,15 +1,22 @@
 /* Application-wide notifications. Desktop uses a top-right signal stack;
    phones use safe-area-aware native-style banners at the top edge. */
 
+/* Below the header, not over it.
+   The top-right corner belongs to the account button, the sign-in button and
+   whatever the page puts in its rail — a toast parked there covered exactly
+   the things people were reaching for. `--app-header-h` is published from
+   App.tsx (see publishHeaderHeight) because the header has no fixed height:
+   it wraps to two rows on a phone. The 0px fallback matters — the standalone
+   karaoke and mirror entries mount this host with no app header at all. */
 .notificationContainer {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 1rem);
-  right: 1rem;
+  top: calc(env(safe-area-inset-top) + var(--app-header-h, 0px) + 0.5rem);
+  right: 0.75rem;
   z-index: var(--z-toast, 11000);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  width: min(430px, calc(100vw - 2rem));
+  gap: 0.45rem;
+  width: min(358px, calc(100vw - 1.5rem));
   pointer-events: none;
 }
 
@@ -17,19 +24,21 @@
   display: none;
 }
 
+/* One row, not three.
+   It used to be a two-row grid — title over message, with the action button on
+   its own line below — which made every toast 72px tall and turned a tour
+   prompt into a slab across the corner of the screen. Icon, title, message,
+   action and close now share a single line; a long message wraps under the
+   title and nothing else moves. */
 .notification {
   --toast-accent: var(--accent, #58a6ff);
   position: relative;
   isolation: isolate;
-  display: grid;
-  grid-template-areas:
-    'icon body close'
-    'icon action close';
-  grid-template-columns: 2.4rem minmax(0, 1fr) 1.9rem;
+  display: flex;
   align-items: center;
-  column-gap: 0.75rem;
-  min-height: 72px;
-  padding: 0.78rem 0.72rem 0.78rem 0.82rem;
+  gap: 0.55rem;
+  min-height: 2.6rem;
+  padding: 0.42rem 0.42rem 0.42rem 0.55rem;
   overflow: hidden;
   color: var(--text-primary, #f0f6fc);
   background:
@@ -41,13 +50,13 @@
     rgba(17, 24, 35, 0.96);
   border: 1px solid
     color-mix(in srgb, var(--toast-accent) 30%, var(--border, #30363d));
-  border-radius: 0.95rem;
+  border-radius: 0.75rem;
   box-shadow:
-    0 20px 54px rgba(0, 0, 0, 0.42),
-    0 4px 14px rgba(0, 0, 0, 0.25),
+    0 14px 38px rgba(0, 0, 0, 0.4),
+    0 3px 10px rgba(0, 0, 0, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.055);
-  font-size: 0.88rem;
-  line-height: 1.4;
+  font-size: 0.84rem;
+  line-height: 1.35;
   pointer-events: auto;
   backdrop-filter: blur(18px) saturate(1.15);
   animation: notificationIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -79,58 +88,51 @@
 }
 
 .notificationIcon {
-  grid-area: icon;
   display: grid;
+  flex-shrink: 0;
   place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 1.6rem;
+  height: 1.6rem;
   color: var(--toast-accent);
   background: color-mix(in srgb, var(--toast-accent) 13%, transparent);
   border: 1px solid color-mix(in srgb, var(--toast-accent) 22%, transparent);
-  border-radius: 0.72rem;
+  border-radius: 0.5rem;
 }
 
 .notificationIcon svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
+/* Inline flow, not a column: the title leads the sentence instead of sitting
+   on a line of its own, so a short message costs one line total. */
 .notificationBody {
-  grid-area: body;
-  display: flex;
-  flex-direction: column;
+  flex: 1;
   min-width: 0;
 }
 
 .notificationBody > strong {
+  margin-right: 0.4rem;
   color: var(--toast-accent);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  line-height: 1.2;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
+  /* Never orphaned from the first word of its own message. */
+  white-space: nowrap;
 }
 
 .notificationText {
   color: var(--text-primary, #f0f6fc);
-  font-size: 0.86rem;
-  font-weight: 590;
-  line-height: 1.42;
+  font-size: 0.82rem;
+  font-weight: 560;
   overflow-wrap: anywhere;
 }
 
-/* The gap belongs to the pair, not to the message: a toast that passes
-   `title: null` renders the message alone, and an unconditional margin-top
-   left it sitting low in the toast with nothing above it. */
-.notificationBody > strong + .notificationText {
-  margin-top: 0.2rem;
-}
-
+/* Beside the message, not under it — the third row existed only for this. */
 .actionBtn {
-  grid-area: action;
-  justify-self: start;
-  margin-top: 0.48rem;
-  padding: 0.32rem 0.62rem;
+  flex-shrink: 0;
+  padding: 0.26rem 0.55rem;
   color: var(--text-primary, #f0f6fc);
   background: color-mix(in srgb, var(--toast-accent) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--toast-accent) 26%, transparent);
@@ -145,12 +147,11 @@
 }
 
 .closeBtn {
-  grid-area: close;
-  align-self: start;
   display: grid;
+  flex-shrink: 0;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   color: var(--text-muted, #8b949e);
   background: transparent;
@@ -165,8 +166,8 @@
 }
 
 .closeBtn svg {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.8rem;
+  height: 0.8rem;
 }
 
 .actionBtn:focus-visible,
@@ -199,11 +200,11 @@
 
 @media (max-width: 768px) {
   .notificationContainer {
-    top: calc(env(safe-area-inset-top) + 0.65rem);
-    right: 0.65rem;
-    left: 0.65rem;
+    top: calc(env(safe-area-inset-top) + var(--app-header-h, 0px) + 0.45rem);
+    right: 0.6rem;
+    left: 0.6rem;
     width: auto;
-    gap: 0.48rem;
+    gap: 0.4rem;
 
     /* Prevent stacked / multi-line toasts from pushing action buttons
        below the visible viewport: budget the tab bar + safe area out of
@@ -217,24 +218,17 @@
   }
 
   .notification {
-    grid-template-columns: 2.3rem minmax(0, 1fr) 1.85rem;
-    min-height: 68px;
-    padding: 0.7rem 0.65rem 0.7rem 0.75rem;
-    border-radius: 1rem;
+    min-height: 2.5rem;
+    padding: 0.4rem;
+    border-radius: 0.8rem;
     box-shadow:
-      0 16px 44px rgba(0, 0, 0, 0.42),
+      0 12px 32px rgba(0, 0, 0, 0.42),
       inset 0 1px rgba(255, 255, 255, 0.065);
     animation-name: mobileNotificationIn;
   }
 
-  .notificationIcon {
-    width: 2.3rem;
-    height: 2.3rem;
-    border-radius: 0.68rem;
-  }
-
   .notificationText {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
   }
 }
 
