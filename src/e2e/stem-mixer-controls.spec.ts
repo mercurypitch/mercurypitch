@@ -234,7 +234,10 @@ test('switches songs directly from the Songs drawer @smoke', async ({
   await expect(drawer).toHaveAttribute('data-mount-probe', 'hydrated')
   await expect(currentRole).toBeEnabled()
 
-  await page.getByRole('button', { name: /Drawer navigation target/ }).click()
+  // Scoped to the drawer on purpose: the sidebar's Song library rail lists
+  // the same songs, so a page-wide lookup by title now matches two real
+  // controls. This test is about the drawer's own list.
+  await drawer.getByRole('button', { name: /Drawer navigation target/ }).click()
 
   await expect(
     page.getByRole('heading', {

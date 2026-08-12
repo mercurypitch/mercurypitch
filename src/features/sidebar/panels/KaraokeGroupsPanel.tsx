@@ -69,7 +69,14 @@ const KaraokeGroupsPanel: Component = () => {
   }
 
   return (
-    <CollapsibleSection title="Songs" storageKey="sidebar-karaoke-groups-open">
+    // "Song library", not "Songs": the mixer's own drawer button is already
+    // called Songs, and two controls with one accessible name on the same
+    // page is a real ambiguity for anyone navigating by name, not just a
+    // strict-mode complaint from the e2e specs that caught it.
+    <CollapsibleSection
+      title="Song library"
+      storageKey="sidebar-karaoke-groups-open"
+    >
       <div class={styles.groupsWrap} data-tour="karaoke.rail-groups">
         <SessionGroupTabs
           activeGroupId={karaokeActiveGroupId()}
