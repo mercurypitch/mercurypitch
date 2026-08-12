@@ -30,9 +30,10 @@ describe('GuitarNightLearnShelf', () => {
     render(() => (
       <GuitarNightLearnShelf
         firstWinProgress={PROGRESS}
+        tuningLabel="6-string guitar"
         initialFocus="note-hunt"
         onFirstSteps={vi.fn()}
-        onNoteHunt={vi.fn()}
+        onActivity={vi.fn()}
         onClose={vi.fn()}
       />
     ))
@@ -48,17 +49,18 @@ describe('GuitarNightLearnShelf', () => {
     render(() => (
       <GuitarNightLearnShelf
         firstWinProgress={{ ...PROGRESS, status: 'in-progress' }}
+        tuningLabel="6-string guitar"
         onFirstSteps={vi.fn()}
-        onNoteHunt={vi.fn()}
+        onActivity={vi.fn()}
         onClose={onClose}
       />
     ))
 
     const close = screen.getByRole('button', { name: 'Close' })
-    const noteHunt = screen.getByRole('button', { name: /Note Hunt/ })
+    const shapeWalk = screen.getByRole('button', { name: /Shape Walk/ })
     close.focus()
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
-    expect(noteHunt).toHaveFocus()
+    expect(shapeWalk).toHaveFocus()
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledOnce()
   })
@@ -69,8 +71,9 @@ describe('GuitarNightLearnShelf', () => {
       <div data-testid="guitar-night-shell" style={{ overflow: 'auto' }}>
         <GuitarNightLearnShelf
           firstWinProgress={PROGRESS}
+          tuningLabel="6-string guitar"
           onFirstSteps={vi.fn()}
-          onNoteHunt={vi.fn()}
+          onActivity={vi.fn()}
           onClose={vi.fn()}
         />
       </div>
@@ -84,5 +87,23 @@ describe('GuitarNightLearnShelf', () => {
     expect(document.body.style.overflow).toBe('clip')
     expect(shell.style.overflow).toBe('auto')
     document.body.style.overflow = ''
+  })
+
+  it('offers every rebuilt activity without placeholder copy', () => {
+    const onActivity = vi.fn()
+    render(() => (
+      <GuitarNightLearnShelf
+        firstWinProgress={PROGRESS}
+        tuningLabel="Drop D"
+        onFirstSteps={vi.fn()}
+        onActivity={onActivity}
+        onClose={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: /Hear & Find/ }))
+    expect(onActivity).toHaveBeenCalledWith('hear-find')
+    expect(screen.getByText(/keeps Drop D/)).toBeInTheDocument()
+    expect(screen.queryByText(/will join/)).not.toBeInTheDocument()
   })
 })

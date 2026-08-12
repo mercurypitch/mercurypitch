@@ -495,8 +495,8 @@ listening`, the tuner shall use an explicitly selected microphone or direct
 
 - **REQ-GN-LEARN-001 — One calm setlist:** Guitar Night shall expose Learn as
   one restrained, stage-owned setlist rather than a grid, dropdown, or peer
-  selector of legacy practice modes. The first-steps lesson and Note Hunt shall
-  appear as focused rows, and later Learn activities shall join that same
+  selector of legacy practice modes. First Steps, Note Hunt, Hear & Find, Echo
+  a Phrase, and Shape Walk shall appear as focused rows in that same
   information architecture.
 - **REQ-GN-LEARN-002 — Silent disclosure:** WHEN the Learn setlist opens from
   entry, a backing room, a score room, or another Learn activity, Guitar Night
@@ -514,9 +514,9 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   bounded fret range. It shall identify positions by exact string index and
   fret, preserve unison positions separately even when they share one MIDI
   pitch, and its host-neutral activity shall derive every cell from the tuning
-  and capo supplied by its host. The first integrated lesson may use the
-  configured six-string first-win tuning; adopting an active room/reference
-  tuning remains required before broader 4–8-string parity is complete.
+  and capo supplied by its host. Guitar Night shall use the Learn session's
+  active 4–8-string room or first-win tuning rather than silently replace it
+  with a six-string default.
 - **REQ-GN-LEARN-005 — Bounded neck lesson:** The default Note Hunt round shall
   use frets zero through four and shall never span more than six frets at once.
   Its stage shall expose only the interactive Neck projection, keep the neck as
@@ -556,9 +556,44 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   trap focus while open, close on Escape or an explicit Close action, and
   lock and restore background scroll while remaining a bounded sheet/dialog
   that does not resize the mounted stage.
-  Learn-setlist and Note Hunt actions shall retain at least 44 by 44 CSS-pixel
-  targets on supported phone and desktop layouts, and reduced motion shall
-  remove their arrival animation without hiding state.
+  Learn-setlist and focused-activity actions shall retain at least 44 by 44
+  CSS-pixel targets on supported phone and desktop layouts, and reduced motion
+  shall remove their arrival animation without hiding state.
+- **REQ-GN-LEARN-011 — Stable activity tuning:** WHEN Learn opens from a room,
+  score, entry, or first-win lesson, Guitar Night shall snapshot the active
+  room/reference tuning or the active first-win tuning for that Learn session.
+  Every focused activity in that session shall receive the same instrument,
+  string count, open pitches, labels, and capo. A later room tuning change shall
+  apply only after the player returns from the focused activity, so a neck
+  shall never change underneath an unfinished prompt.
+- **REQ-GN-LEARN-012 — Hear & Find:** Opening Hear & Find shall create neither
+  audio nor input capture. The player shall explicitly request one clean guide
+  note before an answer is judged, then may answer by an exact neck position or
+  optional pitch evidence. A physical unison that sounds the same target MIDI
+  note shall be correct; pitch evidence shall not claim a physical position.
+  The player may choose the bounded fret windows `0–3`, `0–5`, or `0–7`, and a
+  correct answer shall offer an explicit next note rather than auto-advance.
+- **REQ-GN-LEARN-013 — Echo a Phrase:** Opening Echo a Phrase shall stay
+  silent and shall offer a three-, four-, or five-note major-key phrase derived
+  from playable positions in the Learn tuning. The player shall explicitly
+  request the phrase, then answer its pitches in order by neck or optional
+  listening evidence. Replay shall preserve the current answer position. A
+  wrong pitch shall pause at that one step and offer one explicit reference-note
+  repair before continuing; no timer shall repair or advance the phrase.
+- **REQ-GN-LEARN-014 — Shape Walk truth:** Shape Walk shall require an explicit
+  major chord root and CAGED shape, label root, major-third, and perfect-fifth
+  positions in text as well as colour, and sound a cell or the voicing only
+  after an explicit action. It may apply standard CAGED geometry to a
+  six-string guitar whose string intervals match standard tuning, including a
+  capo or equal detune. For bass or changed string intervals, it shall explain
+  the limitation and leave the active tuning untouched rather than draw false
+  chord positions.
+- **REQ-GN-LEARN-015 — Shared guide and lifecycle:** Hear & Find, Echo a
+  Phrase, and Shape Walk shall route requested reference notes through the
+  Guitar Night guide bus without a count-in or exercise pulse. Back, Learn
+  suspension, route deactivation, activity replacement, and disposal shall
+  stop scheduled guide audio and optional listening. Opening or returning to
+  any Learn surface shall not resume either one automatically.
 
 ## Initial Songs play-along — `GN-SONG-*`
 

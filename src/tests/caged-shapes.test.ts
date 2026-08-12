@@ -48,7 +48,7 @@ describe('CAGED_SHAPES', () => {
       const notes = computeShapeFrets(shape, rootMidi)
       expect(
         notes.every((note) =>
-          [0, 4, 7].includes(((note.midi - rootMidi) % 12 + 12) % 12),
+          [0, 4, 7].includes((((note.midi - rootMidi) % 12) + 12) % 12),
         ),
         `${name} shape contains a non-triad pitch`,
       ).toBe(true)

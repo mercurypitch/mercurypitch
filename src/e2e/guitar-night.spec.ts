@@ -532,7 +532,7 @@ test('opens Learn and marks exact Note Hunt positions with a real pointer @smoke
     const firstSteps = dialog.getByRole('button', {
       name: /Start with one string/,
     })
-    const noteHuntAction = dialog.getByRole('button', { name: /Note Hunt/ })
+    const shapeWalkAction = dialog.getByRole('button', { name: /Shape Walk/ })
     await expect(dialog).toBeVisible()
     await expect(firstSteps).toBeFocused()
     expect(
@@ -543,13 +543,13 @@ test('opens Learn and marks exact Note Hunt positions with a real pointer @smoke
     expect(await midiRequestCount()).toBe(0)
     expect(await audioContextCount()).toBe(0)
 
-    await noteHuntAction.focus()
+    await shapeWalkAction.focus()
     await page.keyboard.press('Tab')
     await expect(
       dialog.getByRole('button', { name: 'Close', exact: true }),
     ).toBeFocused()
     await page.keyboard.press('Shift+Tab')
-    await expect(noteHuntAction).toBeFocused()
+    await expect(shapeWalkAction).toBeFocused()
 
     await page.keyboard.press('Escape')
     await expect(shelf).toHaveCount(0)
@@ -644,6 +644,216 @@ test('opens Learn and marks exact Note Hunt positions with a real pointer @smoke
     await expect(returnedShelf.getByRole('dialog')).toBeVisible()
     await returnedShelf.getByRole('button', { name: 'Close' }).click()
     await expect(page.locator('[data-room-action="learn"]')).toBeFocused()
+  } finally {
+    await context.close()
+  }
+})
+
+test('runs the rebuilt Learn set through real neck pointers @smoke', async ({
+  browser,
+}) => {
+  test.setTimeout(60_000)
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    ...devices['iPhone 12'],
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+  await instrumentMicrophoneRequests(page)
+  await instrumentAudioContext(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+
+  const audioContextCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    )
+  const microphoneRequestCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMicCalls: number })
+          .__guitarNightMicCalls,
+    )
+  const midiRequestCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMidiCalls: number })
+          .__guitarNightMidiCalls,
+    )
+  const clickCenter = async (locator: Locator): Promise<void> => {
+    const bounds = await locator.boundingBox()
+    expect(bounds).not.toBeNull()
+    await page.mouse.click(
+      (bounds?.x ?? 0) + (bounds?.width ?? 0) / 2,
+      (bounds?.y ?? 0) + (bounds?.height ?? 0) / 2,
+    )
+  }
+  const openLearn = async (): Promise<void> => {
+    await page.getByRole('button', { name: 'Room', exact: true }).click()
+    await page
+      .locator('#guitar-night-venue-menu')
+      .getByRole('button', { name: 'Learn', exact: true })
+      .click()
+  }
+  const expectActivityFits = async (testId: string): Promise<void> => {
+    const metrics = await page.evaluate((activityTestId) => {
+      const root = document.querySelector<HTMLElement>(
+        `[data-testid="${activityTestId}"]`,
+      )
+      const rootBounds = root?.getBoundingClientRect()
+      const controls = root
+        ? [...root.querySelectorAll<HTMLElement>('button, summary, select')]
+            .filter((control) => {
+              const bounds = control.getBoundingClientRect()
+              return bounds.width > 0 && bounds.height > 0
+            })
+            .map((control) => {
+              const bounds = control.getBoundingClientRect()
+              return {
+                height: bounds.height,
+                label:
+                  control.getAttribute('aria-label') ?? control.textContent,
+                width: bounds.width,
+              }
+            })
+        : []
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        innerHeight: window.innerHeight,
+        rootBottom: rootBounds?.bottom ?? Infinity,
+        rootLeft: rootBounds?.left ?? -Infinity,
+        rootRight: rootBounds?.right ?? Infinity,
+        scrollWidth: document.documentElement.scrollWidth,
+        undersized: controls.filter(
+          (control) => control.width < 43.5 || control.height < 43.5,
+        ),
+      }
+    }, testId)
+
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
+    expect(metrics.rootLeft).toBeGreaterThanOrEqual(-1)
+    expect(metrics.rootRight).toBeLessThanOrEqual(metrics.clientWidth + 1)
+    expect(metrics.rootBottom).toBeLessThanOrEqual(metrics.innerHeight + 1)
+    expect(metrics.undersized).toEqual([])
+  }
+
+  try {
+    await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+    await openLearn()
+
+    const shelf = page.getByTestId('guitar-night-learn-shelf')
+    await shelf.getByRole('button', { name: /Hear & Find/ }).click()
+    const hearFind = page.getByTestId('guitar-night-hear-find')
+    await expect(
+      hearFind.getByRole('heading', {
+        name: 'Find that sound.',
+      }),
+    ).toBeFocused()
+    expect(await audioContextCount()).toBe(0)
+
+    const earlyCell = hearFind.locator(
+      'button[data-string-index="0"][data-fret="0"]',
+    )
+    await clickCenter(earlyCell)
+    await expect(hearFind.locator('p[role="status"]')).toContainText(
+      'Hear the reference first',
+    )
+
+    await hearFind.getByRole('button', { name: /Hear the note/ }).click()
+    await expect(hearFind.locator('p[role="status"]')).toContainText(
+      'Tap where that exact pitch lives',
+      { timeout: 5_000 },
+    )
+    expect(await audioContextCount()).toBe(1)
+    const hearTarget = hearFind.locator(
+      'button[data-string-index="5"][data-fret="3"]',
+    )
+    await clickCenter(hearTarget)
+    await expect(
+      hearFind.getByRole('heading', { name: 'That was G2.' }),
+    ).toBeVisible()
+    await expect(hearTarget).toHaveAttribute('data-state', 'found')
+    await expectActivityFits('guitar-night-hear-find')
+
+    await hearFind
+      .getByRole('button', { name: 'Back from Hear & Find' })
+      .click()
+    const returnedFromHear = page.getByTestId('guitar-night-learn-shelf')
+    await expect(
+      returnedFromHear.getByRole('button', { name: /Hear & Find/ }),
+    ).toBeFocused()
+    await returnedFromHear
+      .getByRole('button', { name: /Echo a Phrase/ })
+      .click()
+
+    const echo = page.getByTestId('guitar-night-echo-phrase')
+    await expect(
+      echo.getByRole('heading', { name: 'Echo 3 notes.' }),
+    ).toBeFocused()
+    expect(await audioContextCount()).toBe(1)
+    await echo.getByRole('button', { name: /Hear the phrase/ }).click()
+    await expect(
+      echo.getByRole('heading', { name: 'Your turn · note 1.' }),
+    ).toBeVisible({ timeout: 6_000 })
+    expect(await audioContextCount()).toBe(2)
+
+    const g = echo.locator('button[data-string-index="2"][data-fret="0"]')
+    const a = echo.locator('button[data-string-index="2"][data-fret="2"]')
+    const b = echo.locator('button[data-string-index="1"][data-fret="0"]')
+    await clickCenter(g)
+    await expect(
+      echo.getByRole('heading', { name: 'Your turn · note 2.' }),
+    ).toBeVisible()
+    await clickCenter(g)
+    await expect(
+      echo.getByRole('heading', { name: 'Repair one note.' }),
+    ).toBeVisible()
+    await echo.getByRole('button', { name: /Hear this note/ }).click()
+    await expect(
+      echo.getByRole('heading', { name: 'Your turn · note 2.' }),
+    ).toBeVisible({ timeout: 5_000 })
+    await clickCenter(a)
+    await expect(
+      echo.getByRole('heading', { name: 'Your turn · note 3.' }),
+    ).toBeVisible()
+    await clickCenter(b)
+    await expect(
+      echo.getByRole('heading', { name: 'The phrase is yours.' }),
+    ).toBeVisible()
+    await expectActivityFits('guitar-night-echo-phrase')
+
+    await echo.getByRole('button', { name: 'Back from Echo a Phrase' }).click()
+    const returnedFromEcho = page.getByTestId('guitar-night-learn-shelf')
+    await returnedFromEcho.getByRole('button', { name: /Shape Walk/ }).click()
+
+    const shape = page.getByTestId('guitar-night-shape-walk')
+    await expect(
+      shape.getByRole('heading', { name: 'C major · C shape.' }),
+    ).toBeFocused()
+    expect(await audioContextCount()).toBe(2)
+    const shapeRoot = shape.getByRole('button', { name: /chord root/ }).first()
+    await clickCenter(shapeRoot)
+    await expect.poll(audioContextCount).toBe(3)
+    await shape.getByLabel('Major chord').selectOption('7')
+    await shape
+      .getByRole('group', { name: 'CAGED shape', exact: true })
+      .getByRole('button', { name: 'E', exact: true })
+      .click()
+    await expect(
+      shape.getByRole('heading', { name: 'G major · E shape.' }),
+    ).toBeVisible()
+    await expectActivityFits('guitar-night-shape-walk')
+
+    expect(await microphoneRequestCount()).toBe(0)
+    expect(await midiRequestCount()).toBe(0)
+    await shape.getByRole('button', { name: 'Back from Shape Walk' }).click()
+    await expect(
+      page
+        .getByTestId('guitar-night-learn-shelf')
+        .getByRole('button', { name: /Shape Walk/ }),
+    ).toBeFocused()
   } finally {
     await context.close()
   }

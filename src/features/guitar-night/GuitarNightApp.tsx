@@ -8,14 +8,14 @@ FIRST VIEWPORT: One calm amp-faceplate entry surface leaves the approved room an
 FORM: A grounded rehearsal-room welcome with three deliberately unequal paths and no synthetic activity.
 */
 
-import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
-import type { NoteHuntState } from '@/features/guitar/activities/note-hunt'
+import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
+import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBackdropId, resolveBackdrop, } from './backdrops'
@@ -25,10 +25,11 @@ import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMP
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightFileDrop } from './GuitarNightFileDrop'
 import { GuitarNightFirstWin } from './GuitarNightFirstWin'
+import type { GuitarNightLearnActivityId } from './GuitarNightLearnActivity'
+import { guitarNightLearnTuningLabel } from './GuitarNightLearnActivity'
 import { GuitarNightLearnShelf } from './GuitarNightLearnShelf'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
-import { loadNoteHuntProgress, saveNoteHuntProgress, } from './note-hunt-progress'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking } from './reference-port'
@@ -55,10 +56,12 @@ const GuitarNightScoreRoom = lazy(async () => {
 })
 
 /** Learn input and activity state stay out of the silent entry bundle. */
-const GuitarNightNoteHunt = lazy(async () => {
-  const module = await import('./GuitarNightNoteHunt')
-  return { default: module.GuitarNightNoteHunt }
+const GuitarNightLearnRoom = lazy(async () => {
+  const module = await import('./GuitarNightLearnRoom')
+  return { default: module.GuitarNightLearnRoom }
 })
+
+type LearnActivityView = Exclude<GuitarNightLearnActivityId, 'first-steps'>
 
 type EntryView =
   | 'choices'
@@ -67,12 +70,15 @@ type EntryView =
   | 'room'
   | 'score-room'
   | 'note-hunt'
+  | 'hear-find'
+  | 'echo-phrase'
+  | 'shape-walk'
   | 'tuner'
 type TunerReturnView = Exclude<
   EntryView,
-  'room' | 'score-room' | 'note-hunt' | 'tuner'
+  'room' | 'score-room' | LearnActivityView | 'tuner'
 >
-type LearnReturnView = Exclude<EntryView, 'note-hunt' | 'tuner'>
+type LearnReturnView = Exclude<EntryView, LearnActivityView | 'tuner'>
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
@@ -92,6 +98,15 @@ const LIBRARY_PAGE_STEP = 10
  * room look stuck.
  */
 const LIBRARY_SLOW_OPEN_MS = 4000
+
+function isLearnActivityView(view: EntryView): view is LearnActivityView {
+  return (
+    view === 'note-hunt' ||
+    view === 'hear-find' ||
+    view === 'echo-phrase' ||
+    view === 'shape-walk'
+  )
+}
 
 function formatPreparedDate(timestamp: number): string {
   const date = new Date(timestamp)
@@ -180,9 +195,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     initialSessionId === null ? 'choices' : 'song',
   )
   const [learnOpen, setLearnOpen] = createSignal(false)
-  const [learnInitialFocus, setLearnInitialFocus] = createSignal<
-    'first-steps' | 'note-hunt'
-  >('first-steps')
+  const [learnInitialFocus, setLearnInitialFocus] =
+    createSignal<GuitarNightLearnActivityId>('first-steps')
   const [learnActivityReturnView, setLearnActivityReturnView] =
     createSignal<LearnReturnView>('choices')
   const [firstWinLearnReturnView, setFirstWinLearnReturnView] =
@@ -192,7 +206,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   // Every playable room takes the panel full-bleed and hides entry chrome.
   const isRoomView = createMemo(
     () =>
-      view() === 'room' || view() === 'score-room' || view() === 'note-hunt',
+      view() === 'room' ||
+      view() === 'score-room' ||
+      isLearnActivityView(view()),
   )
   const isStageView = createMemo(
     () => view() === 'first-win' || view() === 'tuner' || isRoomView(),
@@ -219,15 +235,25 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   let tunerReturnFocus: HTMLElement | undefined
   let learnReturnFocus: HTMLElement | undefined
 
-  // Progress hydration is intentionally a one-time mount decision. Live
-  // tuning changes are handled by the activity controller once it is open.
-  const restoredNoteHunt = loadNoteHuntProgress(untrack(firstWinTuning))
-  const [noteHuntState, setNoteHuntState] = createSignal<NoteHuntState | null>(
-    restoredNoteHunt?.state ?? null,
-  )
-  const [noteHuntCompletedRounds, setNoteHuntCompletedRounds] = createSignal(
-    restoredNoteHunt?.completedRoundCount ?? 0,
-  )
+  const referenceController = useGuitarNightReferenceController({
+    loadReferencePort: () => {
+      const configuredLoader = props.loadReferencePort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightReferencePort()
+        : configuredLoader()
+    },
+    loadTranscriptionPort: () => {
+      const configuredLoader = props.loadTranscriptionPort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightTranscriptionPort()
+        : configuredLoader()
+    },
+  })
+  // A focused Learn activity owns one immutable tuning snapshot. Returning to
+  // the room is the only point where a later tab, tuner, or instrument change
+  // can become the next activity's neck.
+  const [learnActivityTuning, setLearnActivityTuning] =
+    createSignal<InstrumentTuning>(referenceController.tuning())
 
   // Entry cards can scroll on the shortest phones. A stage is a fixed room,
   // so never carry that old scroll position into its topbar and fretboard.
@@ -237,7 +263,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       currentView !== 'first-win' &&
       currentView !== 'room' &&
       currentView !== 'score-room' &&
-      currentView !== 'note-hunt' &&
+      !isLearnActivityView(currentView) &&
       currentView !== 'tuner'
     ) {
       return
@@ -268,8 +294,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   const openLearnShelf = (trigger?: HTMLElement): void => {
     if (view() === 'tuner') return
+    const currentView = view()
     learnReturnFocus = trigger ?? venueMenuButton
-    setLearnInitialFocus(view() === 'note-hunt' ? 'note-hunt' : 'first-steps')
+    setLearnInitialFocus(
+      isLearnActivityView(currentView) ? currentView : 'first-steps',
+    )
+    if (!isLearnActivityView(currentView)) {
+      setLearnActivityTuning(
+        currentView === 'first-win'
+          ? firstWinTuning()
+          : referenceController.tuning(),
+      )
+    }
     setVenueMenuOpen(false)
     firstWinController.stopGroove()
     playbackController.pause()
@@ -304,20 +340,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     onBackingWillRelease: () => {
       playbackController.configure(null)
       setVisitedRoomSessionId(null)
-    },
-  })
-  const referenceController = useGuitarNightReferenceController({
-    loadReferencePort: () => {
-      const configuredLoader = props.loadReferencePort
-      return configuredLoader === undefined
-        ? loadDefaultGuitarNightReferencePort()
-        : configuredLoader()
-    },
-    loadTranscriptionPort: () => {
-      const configuredLoader = props.loadTranscriptionPort
-      return configuredLoader === undefined
-        ? loadDefaultGuitarNightTranscriptionPort()
-        : configuredLoader()
     },
   })
   // The song detail always renders the tab shelf beside the prepared-song
@@ -500,9 +522,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   const openFirstStepsFromLearn = (): void => {
     const currentView = view()
-    if (currentView === 'tuner' || currentView === 'note-hunt') return
-    setLearnActivityReturnView(currentView)
-    setFirstWinLearnReturnView(currentView)
+    if (currentView === 'tuner') return
+    const returnView = isLearnActivityView(currentView)
+      ? learnActivityReturnView()
+      : currentView
+    setLearnActivityReturnView(returnView)
+    setFirstWinLearnReturnView(returnView)
     if (firstWinController.progress().status === 'completed') {
       firstWinController.replayFlow()
     }
@@ -511,16 +536,16 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     focusDetail()
   }
 
-  const openNoteHuntFromLearn = (): void => {
+  const openLearnActivity = (activity: LearnActivityView): void => {
     const currentView = view()
     if (currentView === 'tuner') return
-    if (currentView !== 'note-hunt') {
+    if (!isLearnActivityView(currentView)) {
       setLearnActivityReturnView(currentView)
     }
     firstWinController.stopGroove()
     playbackController.pause()
     setLearnOpen(false)
-    setView('note-hunt')
+    setView(activity)
   }
 
   const returnFromLearnActivity = (returnView: LearnReturnView): void => {
@@ -540,18 +565,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     returnFromLearnActivity(returnView)
   }
 
-  const returnFromNoteHunt = (): void => {
-    setLearnInitialFocus('note-hunt')
+  const returnFromLearnExercise = (activity: LearnActivityView): void => {
+    setLearnInitialFocus(activity)
     returnFromLearnActivity(learnActivityReturnView())
-  }
-
-  const saveNoteHuntState = (
-    state: NoteHuntState,
-    completedRoundCount: number,
-  ): void => {
-    setNoteHuntState(state)
-    setNoteHuntCompletedRounds(completedRoundCount)
-    saveNoteHuntProgress(state, firstWinTuning(), completedRoundCount)
   }
 
   const openSongLibrary = () => {
@@ -570,7 +586,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     if (
       currentView === 'room' ||
       currentView === 'score-room' ||
-      currentView === 'note-hunt' ||
+      isLearnActivityView(currentView) ||
       currentView === 'tuner'
     ) {
       return
@@ -961,7 +977,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           classList={{
             [styles.entryPanelRoom]: isRoomView(),
             [styles.entryPanelLesson]:
-              view() === 'first-win' || view() === 'note-hunt',
+              view() === 'first-win' || isLearnActivityView(view()),
           }}
         >
           <Show when={!isStageView()}>
@@ -1699,27 +1715,33 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               )}
             </Match>
 
-            <Match when={view() === 'note-hunt'}>
-              <Suspense
-                fallback={
-                  <p
-                    class={styles.songMessage}
-                    role="status"
-                    aria-live="polite"
-                  >
-                    Setting the fretboard…
-                  </p>
-                }
-              >
-                <GuitarNightNoteHunt
-                  tuning={firstWinTuning}
-                  active={() => view() === 'note-hunt' && !learnOpen()}
-                  initialState={noteHuntState()}
-                  initialCompletedRoundCount={noteHuntCompletedRounds()}
-                  onState={saveNoteHuntState}
-                  onBack={returnFromNoteHunt}
-                />
-              </Suspense>
+            <Match
+              when={
+                isLearnActivityView(view())
+                  ? (view() as LearnActivityView)
+                  : null
+              }
+            >
+              {(activity) => (
+                <Suspense
+                  fallback={
+                    <p
+                      class={styles.songMessage}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Opening Learn…
+                    </p>
+                  }
+                >
+                  <GuitarNightLearnRoom
+                    activity={activity()}
+                    tuning={learnActivityTuning}
+                    active={() => view() === activity() && !learnOpen()}
+                    onBack={returnFromLearnExercise}
+                  />
+                </Suspense>
+              )}
             </Match>
           </Switch>
         </div>
@@ -1737,9 +1759,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       <Show when={learnOpen()}>
         <GuitarNightLearnShelf
           firstWinProgress={firstWinController.progress()}
+          tuningLabel={guitarNightLearnTuningLabel(learnActivityTuning())}
           initialFocus={learnInitialFocus()}
           onFirstSteps={openFirstStepsFromLearn}
-          onNoteHunt={openNoteHuntFromLearn}
+          onActivity={openLearnActivity}
           onClose={closeLearnShelf}
         />
       </Show>

@@ -3,10 +3,7 @@
 // ============================================================
 
 import type { InstrumentTuning } from './instrument-tuning'
-import {
-  DEFAULT_GUITAR_TUNING,
-  soundingOpenMidi,
-} from './instrument-tuning'
+import { DEFAULT_GUITAR_TUNING, soundingOpenMidi } from './instrument-tuning'
 
 export type CagedShapeName = 'C' | 'A' | 'G' | 'E' | 'D'
 

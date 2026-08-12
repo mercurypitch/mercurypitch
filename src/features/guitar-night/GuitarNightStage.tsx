@@ -32,12 +32,23 @@ export interface GuitarNightNeckPosition {
   midi: number
 }
 
-export type GuitarNightNeckCellState = 'idle' | 'found' | 'miss'
+export type GuitarNightNeckCellState =
+  | 'idle'
+  | 'found'
+  | 'miss'
+  | 'root'
+  | 'third'
+  | 'fifth'
 
 export interface GuitarNightNeckInteraction {
   /** The exact fret window this activity owns. */
   frets: Accessor<readonly number[]>
   cellState(position: GuitarNightNeckPosition): GuitarNightNeckCellState
+  /** Adds activity truth such as a chord-tone role to the button name. */
+  cellLabel?(
+    position: GuitarNightNeckPosition,
+    state: GuitarNightNeckCellState,
+  ): string
   onSelect(position: GuitarNightNeckPosition): void
 }
 
@@ -1399,9 +1410,26 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                       const positionLabel = () =>
                         `${accessibleStringLabel(label, stringIndex())}, ${fret === 0 ? 'open' : `fret ${fret}`}`
                       const stateLabel = () => {
+                        const activityLabel =
+                          props.neckInteraction?.cellLabel?.(
+                            position(),
+                            state(),
+                          )
+                        if (activityLabel !== undefined) {
+                          return `, ${activityLabel}`
+                        }
                         if (state() === 'found') return ', found'
                         if (state() === 'miss') return ', wrong selection'
+                        if (state() === 'root') return ', root note'
+                        if (state() === 'third') return ', major third'
+                        if (state() === 'fifth') return ', perfect fifth'
                         return ', not marked'
+                      }
+                      const roleGlyph = () => {
+                        if (state() === 'root') return 'R'
+                        if (state() === 'third') return '3'
+                        if (state() === 'fifth') return '5'
+                        return null
                       }
                       return (
                         <Show
@@ -1426,6 +1454,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                               classList={{
                                 [styles.neckPositionFound]: state() === 'found',
                                 [styles.neckPositionMiss]: state() === 'miss',
+                                [styles.neckPositionRoot]: state() === 'root',
+                                [styles.neckPositionThird]: state() === 'third',
+                                [styles.neckPositionFifth]: state() === 'fifth',
                               }}
                               aria-label={`${positionLabel()}${stateLabel()}`}
                               aria-pressed={state() === 'found'}
@@ -1452,6 +1483,16 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                               <span class={styles.visuallyHidden}>
                                 {positionLabel()}
                               </span>
+                              <Show when={roleGlyph()}>
+                                {(glyph) => (
+                                  <span
+                                    class={styles.neckPositionGlyph}
+                                    aria-hidden="true"
+                                  >
+                                    {glyph()}
+                                  </span>
+                                )}
+                              </Show>
                             </button>
                           )}
                         </Show>

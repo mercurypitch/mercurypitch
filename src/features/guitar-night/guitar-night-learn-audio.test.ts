@@ -14,9 +14,9 @@ describe('playGuitarNightLearnGuide', () => {
     }))
     const band = { start } as unknown as GuitarRoomBand
 
-    await expect(
-      playGuitarNightLearnGuide(band, [55, 57, 59]),
-    ).resolves.toBe(true)
+    await expect(playGuitarNightLearnGuide(band, [55, 57, 59])).resolves.toBe(
+      true,
+    )
     expect(start).toHaveBeenCalledWith(
       expect.objectContaining({
         countInBeats: 0,
