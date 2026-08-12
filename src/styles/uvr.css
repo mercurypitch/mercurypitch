@@ -5249,3 +5249,89 @@ button.server-cost-hint:hover {
   line-height: 1.5;
   color: var(--text-secondary);
 }
+
+/* ── The library that is not on this device ──────────────────────────
+   Sits under the session gallery: songs the account knows about and this
+   device cannot play. Quiet on purpose -- it is a list of absences, and
+   should not compete with the songs that are actually here. */
+.uvr-elsewhere {
+  margin-top: 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px dashed var(--border, #30363d);
+  border-radius: 0.6rem;
+  background: var(--bg-primary, #0d1117);
+}
+
+.uvr-elsewhere-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fg-secondary, #adbac7);
+}
+
+.uvr-elsewhere-head h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.uvr-elsewhere-sub {
+  margin: 0.35rem 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--fg-tertiary, #768390);
+}
+
+.uvr-elsewhere-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uvr-elsewhere-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--bg-secondary, #161b22);
+  /* Dimmed rather than disabled: these are real songs, just not here. */
+  color: var(--fg-tertiary, #768390);
+}
+
+.uvr-elsewhere-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.86rem;
+  color: var(--fg-secondary, #adbac7);
+}
+
+.uvr-elsewhere-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.uvr-elsewhere-quality {
+  color: var(--warning, #d29922);
+}
+
+@media (max-width: 640px) {
+  .uvr-elsewhere-item {
+    flex-wrap: wrap;
+    row-gap: 0.15rem;
+  }
+
+  .uvr-elsewhere-title {
+    flex: 1 1 100%;
+  }
+}

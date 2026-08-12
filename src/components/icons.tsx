@@ -178,6 +178,26 @@ export const Lock: Component<{ size?: number }> = (props) => (
 )
 
 // Download Icon
+// Cloud — a song the account knows about but this device does not hold.
+// Not Download: nothing is downloading, and offering that arrow would
+// promise a button the library cannot honour until a transport exists.
+export const Cloud: Component<{ size?: number }> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    aria-hidden="true"
+    data-icon="cloud"
+  >
+    <path d="M7 18.5a4 4 0 0 1-.6-7.95 5.5 5.5 0 0 1 10.7-1.6A4.25 4.25 0 0 1 17.5 18.5z" />
+  </svg>
+)
+
 export const Download: Component = () => (
   <svg
     viewBox="0 0 24 24"

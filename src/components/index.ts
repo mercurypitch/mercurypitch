@@ -46,6 +46,7 @@ export {
   ExportFile,
 } from './icons'
 export { UvrSessionResult } from './UvrSessionResult'
+export { UvrLibraryElsewhere } from './UvrLibraryElsewhere'
 export { SessionGroupTabs } from './SessionGroupTabs'
 export { UvrStemUploadControl } from './UvrStemUploadControl'
 export { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
