@@ -374,6 +374,14 @@ what the device testing actually shows back into this doc as it arrives.
 
 ### Phase 1 — Portable bundle: user-selectable quality (1–2 days, was 3–4)
 
+**Built (PR #496).** `src/lib/portable/portable-bundle.ts` (format: manifest +
+hashed parts) and `src/db/services/portable-bundle-service.ts` (build/import
+over the ZIP path's own Strict services, with rollback). Tiers exist
+(`portable-128`/`portable-192`, default 192); quality provenance is stamped on
+imported sessions and repeated to the cloud manifest. Still open from this
+phase: the user-facing tier choice in settings (today every bundle uses the
+default) and wiring the tiers into the ZIP export UI.
+
 Introduce a **portable bundle** distinct from the lossless archive, with the
 quality **chosen by the user** (decision locked) and a sensible default.
 
@@ -483,6 +491,17 @@ flow. Add the scope incrementally (request it when the user first turns Drive
 sync on, not at sign-in) so a pending review cannot break logging in.
 
 ### Phase 5 — P2P transport (2–3 days, was 4–6)
+
+**Built (PR #496).** `src/lib/sync/sync-peer.ts` (data-only WebRTC over the
+jam worker's rooms — no media, rooms kept out of the jam lobby),
+`src/lib/sync/sync-protocol.ts` (receiver-pulled parts, per-part SHA-256,
+bounded re-request on corruption, explicit `sync-kept` ACK — the robustness
+the jam room's fire-and-forget delivery lacks, built here first as planned),
+`src/stores/sync-store.ts` + `SyncDevicesModal` in the Karaoke tab (receive
+shows a code, send enters it; per-song Send button on session cards; relay
+routes refused). Every finished transfer reports real bytes, seconds and MB/s
+in the modal and the console — the Phase 0 numbers. Still open: QR pairing
+(issue #489 composes here) and whole-library one-tap sync.
 
 Now an optimization for bulk transfer, not the foundation — and most of it is
 already written for the jam room.

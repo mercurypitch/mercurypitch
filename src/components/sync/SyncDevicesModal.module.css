@@ -1,0 +1,311 @@
+/* SyncDevicesModal — moving songs between two of one person's devices. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+}
+
+.modal {
+  background: #161b22;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 92%;
+  max-width: 460px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8b949e);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.close:hover {
+  color: var(--text-primary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.error {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--warning, #d29922);
+}
+
+/* ── Mode chooser ──────────────────────────────────────────────── */
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 14px;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.choice:hover {
+  border-color: var(--accent);
+}
+
+.choice strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.choice span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.choiceIcon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* ── Receive: the code the other device types ──────────────────── */
+
+.code {
+  align-self: center;
+  padding: 10px 22px;
+  font-size: 1.7rem;
+  letter-spacing: 0.25em;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  user-select: all;
+}
+
+.status {
+  margin: 0;
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--text-secondary, #8b949e);
+}
+
+.statusConnected {
+  color: var(--success, #3fb950);
+}
+
+/* ── Send: entering the code ───────────────────────────────────── */
+
+.joinRow {
+  display: flex;
+  gap: 8px;
+}
+
+.joinInput {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--text-primary);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.joinInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.btn {
+  padding: 9px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ── Song list on the sending side ─────────────────────────────── */
+
+.songList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.songRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.songTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.songBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.songBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.songBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ── Transfers, both directions ────────────────────────────────── */
+
+.transfers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transfer {
+  padding: 9px 10px;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.transferHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.transferTitle {
+  min-width: 0;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transferState {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #8b949e);
+  font-variant-numeric: tabular-nums;
+}
+
+.transferDone {
+  color: var(--success, #3fb950);
+}
+
+.transferFailed {
+  color: var(--warning, #d29922);
+}
+
+.bar {
+  margin-top: 7px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-tertiary, #21262d);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.15s ease;
+}
+
+.transferNote {
+  margin: 6px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}

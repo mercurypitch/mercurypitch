@@ -120,7 +120,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.6k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
+| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guitar` | [guitar-phrase-review.ts](../../src/lib/guitar/guitar-phrase-review.ts) | 5.1k | Guitar phrase review — evidence-bounded comparison of one take with one pinned score range. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 3.0k | Guided Voice — local assessment science and safety foundation |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 2.1k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
@@ -130,6 +130,7 @@ These are the rules that break things when ignored.
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 1.5k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
+| `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 750 | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 450 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 400 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 250 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
@@ -178,6 +179,7 @@ These are the rules that break things when ignored.
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 450 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 450 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [sync-store.ts](../../src/stores/sync-store.ts) | 400 | ── Sync store One person, two devices, a room code between them. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 250 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 250 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |

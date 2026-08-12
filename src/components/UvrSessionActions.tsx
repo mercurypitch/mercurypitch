@@ -5,7 +5,7 @@ import { exportSession, listSessionExportStems, } from '@/db/services/session-ex
 import { getOriginalFileBlob } from '@/db/services/uvr-service'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession } from '@/stores/uvr-store'
-import { ChevronDown, Download, Zap } from './icons'
+import { ChevronDown, DeviceSync, Download, Zap } from './icons'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
 
@@ -15,6 +15,8 @@ interface UvrSessionActionsProps {
   originalFileName?: string
   disabled?: boolean
   onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
+  /** Push this song to another of the user's devices (device sync). */
+  onSendToDevice?: (sessionId: string) => void
 }
 
 interface SessionExportTarget {
@@ -88,6 +90,14 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
     props.onRerunHq !== undefined
 
   const canExportArchive = () => props.session?.status === 'completed'
+
+  // The bundle needs the content hash: it is the song's identity on the
+  // other device, and without it dedupe cannot answer "already have it".
+  const canSendToDevice = () =>
+    props.session?.status === 'completed' &&
+    props.session.fileHash !== undefined &&
+    props.session.fileHash !== '' &&
+    props.onSendToDevice !== undefined
   const archiveHasCoreStem = () =>
     archiveSelected().some((stem) => CORE_EXPORT_STEMS.includes(stem))
 
@@ -312,6 +322,20 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
                 ? `Packing ${archiveProgress()}%`
                 : 'Export ZIP'}
           </span>
+        </button>
+      </Show>
+      <Show when={canSendToDevice()}>
+        <button
+          type="button"
+          class="session-result-btn"
+          disabled={props.disabled === true}
+          onClick={(event) => {
+            event.stopPropagation()
+            props.onSendToDevice?.(props.sessionId)
+          }}
+          title="Send this song to another of your devices"
+        >
+          <DeviceSync /> Send
         </button>
       </Show>
       <Show when={canRerunHq()}>

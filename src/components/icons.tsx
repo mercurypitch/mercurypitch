@@ -1591,3 +1591,24 @@ export const Flask: Component<{ size?: number }> = (p) => (
     <path d="M7.3 14h9.4" />
   </svg>
 )
+
+// Two devices with an exchange between them — device sync. Marks the
+// send/receive surfaces of docs/plans/device-sync.md.
+export const DeviceSync: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="2" y="5" width="9" height="14" rx="1.5" />
+    <rect x="16" y="9" width="6" height="10" rx="1.5" />
+    <path d="M13 9.5h2.5" />
+    <path d="M14.2 8l1.5 1.5-1.5 1.5" />
+  </svg>
+)
