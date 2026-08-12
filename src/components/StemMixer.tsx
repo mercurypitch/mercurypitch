@@ -2395,7 +2395,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   phase={audio.loadPhase()}
                   loadedBytes={audio.loadedBytes()}
                   totalBytes={audio.totalBytes()}
-                  songTitle={props.songTitle}
+                  // `songTitle` is the uploaded filename; the loading card is
+                  // the first thing on screen, so it gets the cleaned-up title
+                  // rather than "01 - Song (Remastered) [128kbps].mp3".
+                  songTitle={extractTitle(props.songTitle ?? '')?.trim()}
                 />
               }
             >
