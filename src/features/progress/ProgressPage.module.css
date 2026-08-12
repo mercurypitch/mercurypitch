@@ -1464,8 +1464,32 @@
   gap: clamp(1.6rem, 4vw, 4rem);
   align-items: flex-end;
   margin: 0;
-  padding: 0 0 2.2rem;
+  padding: 0 max(2rem, 6vw) 2.2rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
   list-style: none;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 0.25rem;
+  scroll-snap-type: x proximity;
+  scrollbar-color: rgb(216 187 121 / 36%) transparent;
+  scrollbar-width: thin;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.milestoneShelf:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--progress-aqua);
+  outline-offset: 6px;
+}
+
+.milestoneShelf::-webkit-scrollbar {
+  height: 4px;
+}
+
+.milestoneShelf::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(216 187 121 / 36%);
 }
 
 .milestoneShelf::after {
@@ -1478,28 +1502,32 @@
   border-top: 1px solid rgb(216 187 121 / 42%);
   background: linear-gradient(180deg, rgb(216 187 121 / 12%), rgb(0 0 0 / 20%));
   box-shadow: 0 12px 24px rgb(0 0 0 / 30%);
+  pointer-events: none;
 }
 
 .milestoneShelf > li {
-  width: min(180px, 28%);
-  min-width: 130px;
+  width: clamp(145px, 18vw, 180px);
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 .milestoneObject {
-  display: flex;
+  display: grid;
+  width: 112px;
   height: 112px;
-  align-items: flex-end;
+  place-items: center;
   margin-bottom: 1rem;
+  filter: drop-shadow(0 14px 20px rgb(0 0 0 / 38%));
 }
 
 .milestoneObject img {
   display: block;
-  width: auto;
-  max-width: 104px;
-  height: auto;
-  max-height: 104px;
-  object-fit: contain;
-  filter: drop-shadow(0 14px 20px rgb(0 0 0 / 38%));
+  width: 132px;
+  max-width: none;
+  height: 132px;
+  max-height: none;
+  object-fit: cover;
+  clip-path: circle(39% at 50% 50%);
 }
 
 .milestoneObject > span {
@@ -2368,19 +2396,11 @@
   }
 
   .milestoneShelf {
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
     scrollbar-width: none;
   }
 
   .milestoneShelf::-webkit-scrollbar {
     display: none;
-  }
-
-  .milestoneShelf > li {
-    width: 145px;
-    flex: none;
-    scroll-snap-align: start;
   }
 
   .leagueObject {

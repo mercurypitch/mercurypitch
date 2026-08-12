@@ -210,6 +210,9 @@ describe('ProgressPage', () => {
       screen.getByRole('heading', { name: 'Practice Paths' }),
     ).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Milestones' })).toBeVisible()
+    expect(
+      screen.getByRole('list', { name: /Earned milestones/ }),
+    ).toHaveAttribute('tabindex', '0')
     expect(screen.getByRole('heading', { name: 'History' })).toBeVisible()
     expect(
       screen.getByText('Detailed timing available from August 1.'),
