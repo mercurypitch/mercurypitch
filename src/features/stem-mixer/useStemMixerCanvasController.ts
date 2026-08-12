@@ -5,6 +5,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, onCleanup } from 'solid-js'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
+import { renderScale } from '@/lib/device-tier'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
 import { foldCentsToOctave } from '@/lib/pitch-compare-engine'
@@ -180,8 +181,12 @@ export const useStemMixerCanvasController = (
   // CSS owns the layout size (.sm-canvas is width:100% + flex:1); this only
   // maintains the device-pixel backing stores. See canvas-size-sync.ts for
   // the rules (never pin style.width — it deadlocks the ResizeObserver).
+  // renderScale() — not window.devicePixelRatio — is the ratio here AND in
+  // every draw function below. They must agree: each draw derives its CSS size
+  // by dividing the backing store by this number, so a mismatch silently
+  // renders at the wrong scale.
   const syncCanvasSizes = () => {
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     for (const ref of Object.values(canvasRefs)) {
       if (ref) syncCanvasBacking(ref, dpr)
     }
@@ -239,7 +244,7 @@ export const useStemMixerCanvasController = (
     tracks: StemTrackView[],
   ) => {
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return
@@ -480,7 +485,7 @@ export const useStemMixerCanvasController = (
   const drawLiveWaveform = () => {
     const canvas = canvasRefs.live
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return
@@ -646,7 +651,7 @@ export const useStemMixerCanvasController = (
   const drawPitchCanvas = () => {
     const canvas = canvasRefs.pitch
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0 || w <= 0) return
@@ -1041,7 +1046,7 @@ export const useStemMixerCanvasController = (
   const drawMidiCanvas = () => {
     const canvas = canvasRefs.midi
     if (!canvas) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (h <= 0) return

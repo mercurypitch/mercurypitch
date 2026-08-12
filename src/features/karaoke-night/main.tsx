@@ -9,12 +9,18 @@
 import { render } from 'solid-js/web'
 import '@/styles/mixer-shared.css'
 import '@/styles/mobile-kit.css'
+import '@/styles/performance-mode.css'
 import './karaoke-night.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { consumeEmailVerifyRedirect, consumeGoogleRedirect, restoreAuth, } from '@/db/services/auth-service'
 import { installAudioUnlock } from '@/lib/audio-unlock'
+import { initDeviceTier } from '@/lib/device-tier'
 import { trackKaraoke } from './funnel'
 import { KaraokeNightApp } from './KaraokeNightApp'
+
+// Publish the device tier on <html> before the first paint: a television
+// must never render a frame of full-quality glass and then downgrade.
+initDeviceTier()
 
 // Catch a Google sign-in redirect (#gauth=…) before anything reads the token,
 // exactly as index.tsx does for the app.

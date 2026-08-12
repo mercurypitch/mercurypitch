@@ -3,8 +3,14 @@
 
 import { render } from 'solid-js/web'
 import '@/styles/mobile-kit.css'
+import '@/styles/performance-mode.css'
 import { restoreAuth } from '@/db/services/auth-service'
+import { initDeviceTier } from '@/lib/device-tier'
 import { GuitarNightApp } from './GuitarNightApp'
+
+// Publish the device tier on <html> before the first paint: a television
+// must never render a frame of full-quality glass and then downgrade.
+initDeviceTier()
 
 // Pick up a session signed in elsewhere so the account chip and its credit
 // balance are real. Restore only — never provision: entering a rehearsal room

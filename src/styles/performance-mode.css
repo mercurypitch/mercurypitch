@@ -1,0 +1,109 @@
+/* ============================================================
+   Performance mode — the render budget for low-tier devices
+
+   Keyed on the attributes src/lib/device-tier.ts writes onto <html>:
+
+     data-perf-tier    = high | balanced | low
+     data-device-class = desktop | mobile | tv
+
+   The expensive part of this UI is not the canvas work, it is the glass:
+   ~180 `backdrop-filter` layers and ~170 decorative `filter: blur()` layers.
+   Each backdrop-filter makes the compositor read back the region behind the
+   element and blur it EVERY frame. A laptop GPU absorbs that; the SoC in a
+   television does not, and because the same thread also feeds Web Audio, the
+   cost lands on playback as audible stutter — the "guitar night / piano night /
+   karaoke stem mixer sound is not smooth" report this file answers.
+
+   Written as overrides rather than by editing 300 component stylesheets on
+   purpose: full quality stays the default and stays readable, and one attribute
+   flip is reversible from Settings > Display & Controls.
+
+   Class-name matching is intentional. Vite's CSS-module hashing keeps the
+   authored `[local]` name in production output (`_glow_1a2b3`), so
+   `[class*='glow' i]` matches both plain and module-scoped class names.
+   ============================================================ */
+
+/* ── Decorative blur and looping animation ───────────────────
+   Killed on BOTH reduced tiers: these layers are full-bleed, permanently
+   animated, and carry no state. They are the single biggest saving available
+   and the least missed. */
+
+:root[data-perf-tier='low'] [class*='glow' i],
+:root[data-perf-tier='low'] [class*='halo' i],
+:root[data-perf-tier='low'] [class*='aura' i],
+:root[data-perf-tier='low'] [class*='bloom' i],
+:root[data-perf-tier='low'] [class*='blob' i],
+:root[data-perf-tier='low'] [class*='haze' i],
+:root[data-perf-tier='low'] [class*='mist' i],
+:root[data-perf-tier='low'] [class*='nebula' i],
+:root[data-perf-tier='low'] [class*='vignette' i],
+:root[data-perf-tier='low'] [class*='starfield' i],
+:root[data-perf-tier='balanced'] [class*='glow' i],
+:root[data-perf-tier='balanced'] [class*='halo' i],
+:root[data-perf-tier='balanced'] [class*='aura' i],
+:root[data-perf-tier='balanced'] [class*='bloom' i],
+:root[data-perf-tier='balanced'] [class*='blob' i],
+:root[data-perf-tier='balanced'] [class*='nebula' i],
+:root[data-perf-tier='balanced'] [class*='starfield' i] {
+  filter: none !important;
+  animation: none !important;
+}
+
+/* Ambient motion with no meaning. A spinner or progress bar is deliberately
+   NOT in this list: one that stops reads as a hang, and both are cheap
+   (transform-only, one small layer). */
+:root[data-perf-tier='low'] [class*='shimmer' i],
+:root[data-perf-tier='low'] [class*='twinkle' i],
+:root[data-perf-tier='low'] [class*='sparkle' i],
+:root[data-perf-tier='low'] [class*='drift' i],
+:root[data-perf-tier='low'] [class*='float' i],
+:root[data-perf-tier='low'] [class*='orbit' i],
+:root[data-perf-tier='low'] [class*='breathe' i],
+:root[data-perf-tier='low'] [class*='ripple' i],
+:root[data-perf-tier='balanced'] [class*='shimmer' i],
+:root[data-perf-tier='balanced'] [class*='twinkle' i],
+:root[data-perf-tier='balanced'] [class*='sparkle' i] {
+  animation: none !important;
+}
+
+/* ── Low tier: flat surfaces, no compositor readbacks ──────── */
+
+:root[data-perf-tier='low'] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  /* `will-change` pins one compositor layer per element. On a TV with ~1 GB of
+     shared video memory a few dozen of those is the entire budget, and once it
+     is exhausted the compositor falls back to software paint for everything. */
+  will-change: auto !important;
+}
+
+/* Glass panels lean on the blur for contrast against whatever is behind them.
+   With the blur gone they need their own ground, or text sits on top of the
+   stage art. Only surfaces that already declare a translucent background are
+   affected — anything opaque keeps its own colour. */
+:root[data-perf-tier='low'] [class*='glass' i],
+:root[data-perf-tier='low'] [class*='overlay' i],
+:root[data-perf-tier='low'] [class*='sheet' i],
+:root[data-perf-tier='low'] [class*='modal' i],
+:root[data-perf-tier='low'] [class*='popover' i],
+:root[data-perf-tier='low'] [class*='dropdown' i] {
+  background-color: var(--bg-card, #161b22);
+}
+
+/* ── Television: readable at three metres, driveable with a D-pad ── */
+
+/* Every TV browser draws SOME focus ring and most draw a nearly invisible one.
+   Without a strong ring, D-pad navigation is unusable: nothing on screen says
+   what pressing OK will activate. */
+:root[data-device-class='tv'] :focus-visible {
+  outline: 3px solid var(--accent, #58a6ff) !important;
+  outline-offset: 2px !important;
+}
+
+/* TV browsers report `hover: none` but still fire :hover from the focus proxy,
+   so hover lifts and scales fire on every D-pad move and read as jitter. */
+@media (hover: none) {
+  :root[data-device-class='tv'] *:hover {
+    transform: none !important;
+  }
+}

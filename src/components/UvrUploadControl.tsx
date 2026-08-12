@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { isZipFile } from '@/db/services/session-export-service'
 import { formatFileSize } from '@/lib/audio-accept'
 import { acceptsAudioUpload, AUDIO_UPLOAD_ALLOWED_TYPES, } from '@/lib/audio-upload-contract'
+import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, MusicNote } from './icons'
@@ -112,6 +113,26 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     handleFilesSelect(audioFiles)
   }
 
+  // A <label for> would open the picker natively, which leaves no way to notice
+  // that nothing opened. Driving the click from JS does, and TV browsers are
+  // exactly where the native path silently fails.
+  let fileInput: HTMLInputElement | undefined
+
+  const handleZoneClick = (event: MouseEvent) => {
+    if (props.disabled === true) return
+    // The input fills the zone, so a click can land on it directly. Let that
+    // one through untouched — intercepting it would open a second picker.
+    if (event.target === fileInput) return
+    event.preventDefault()
+    openFilePicker(fileInput, {
+      onUnavailable: () =>
+        showActionNotification(FILE_PICKER_UNAVAILABLE_MESSAGE, 'warning', {
+          label: 'OK',
+          onClick: () => {},
+        }),
+    })
+  }
+
   const handleFileInput = (e: Event) => {
     const input = e.currentTarget as HTMLInputElement
     if (input.files && input.files.length > 0) {
@@ -142,9 +163,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={handleZoneClick}
         for="uvr-file-input"
       >
         <input
+          ref={fileInput}
           id="uvr-file-input"
           type="file"
           accept={allowedTypes().join(',')}

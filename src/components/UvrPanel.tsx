@@ -40,11 +40,12 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
+import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
-import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
+import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
@@ -123,9 +124,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     null,
   )
   const [hummingNormalized, setHummingNormalized] = createSignal(false)
-  const [stemDenoise, setStemDenoise] = createSignal(
-    localStorage.getItem('pitchperfect_stem_denoise') !== 'false',
-  )
   const [_onError, setOnError] = createSignal('')
   const uploadQueue = uvrUploadQueue
 
@@ -140,6 +138,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     sessionId: string,
     originalFileName: string,
   ) => {
+    // Settings > Karaoke > Shazam & Sing. Off means a finished song is never
+    // fingerprinted, which is the second of work per song this costs.
+    if (!karaokeAutoIndexShazam()) return
     setFingerprintingSession(sessionId)
     try {
       const vocalUrl = await getStemBlobUrl(sessionId, 'vocal')
@@ -154,7 +155,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
       await audioCtx.close()
 
-      const denoise = stemDenoise()
+      const denoise = karaokeStemDenoise()
       const fp = await extractStemFingerprint(
         audioBuffer,
         { sessionId, originalFileName },
@@ -176,7 +177,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
   const [showGuide, setShowGuide] = createSignal(false)
-  const [showSettings, setShowSettings] = createSignal(false)
   /** The phone's options sheet, holding what the header cannot fit. */
   const [optionsOpen, setOptionsOpen] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
@@ -184,10 +184,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   // Close modals on Escape key
   createEffect(() => {
-    if (showSettings() || showGuide() || showClearStorageConfirm()) {
+    if (showGuide() || showClearStorageConfirm()) {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
-          if (showSettings()) setShowSettings(false)
           if (showGuide()) setShowGuide(false)
           if (showClearStorageConfirm()) setShowClearStorageConfirm(false)
         }
@@ -2077,11 +2076,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         </button>
         <button
           class="view-tab"
-          classList={{ active: showSettings() }}
           onClick={() => {
             setOptionsOpen(false)
-            setShowSettings(!showSettings())
+            // Karaoke preferences live with every other persisted preference.
+            // This used to open a modal of four controls wired to nothing.
+            openSettingsSection('karaoke')
           }}
+          data-testid="uvr-open-settings"
         >
           <Settings />
           <span>Settings</span>
@@ -2186,26 +2187,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   </button>
                 </div>
                 <UvrGuide onClose={() => setShowGuide(false)} />
-              </div>
-            </div>
-          )}
-
-          {showSettings() && (
-            <div class="guide-modal" onClick={() => setShowSettings(false)}>
-              <div class="guide-container" onClick={(e) => e.stopPropagation()}>
-                <div class="guide-header">
-                  <h3>Karaoke Settings</h3>
-                  <button
-                    class="guide-close"
-                    onClick={() => setShowSettings(false)}
-                  >
-                    <X />
-                  </button>
-                </div>
-                <UvrSettings
-                  stemDenoise={stemDenoise()}
-                  onStemDenoiseChange={(v) => setStemDenoise(v)}
-                />
               </div>
             </div>
           )}
