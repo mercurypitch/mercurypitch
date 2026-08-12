@@ -18,7 +18,9 @@ import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, pushHash, replaceHash } from '@/lib/hash-router'
+import { setSyncCodeToJoin } from '@/stores/sync-store'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
+import { setDeviceLinkCode } from '@/stores/ui-store'
 
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
@@ -160,6 +162,18 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.dismissWelcome()
       deps.setActiveTab(TAB_JAM)
       deps.setJamRoomToJoin(route.roomId)
+    } else if (route.type === 'sync-room') {
+      // Scanned off the receiving device's screen. The songs live in the
+      // Karaoke tab, so that is where the sender has to land.
+      deps.dismissWelcome()
+      deps.setActiveTab(TAB_KARAOKE)
+      setSyncCodeToJoin(route.code)
+    } else if (route.type === 'device-link') {
+      // Scanned off a TV asking to be signed in. This only raises the
+      // question; the dialog still has to be confirmed, and it will say
+      // so if nobody is signed in on this phone.
+      deps.dismissWelcome()
+      setDeviceLinkCode(route.code)
     } else if (route.type === 'guide-start') {
       const sectionIds =
         route.sectionId === 'all' ? undefined : [route.sectionId]

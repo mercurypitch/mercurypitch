@@ -11,6 +11,10 @@ import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
   | { type: 'jam-room'; roomId: string }
+  /** A sync room scanned off another device's screen. */
+  | { type: 'sync-room'; code: string }
+  /** A sign-in code scanned off a TV, to be confirmed on the phone. */
+  | { type: 'device-link'; code: string }
   | { type: 'uvr-upload' }
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
@@ -142,6 +146,23 @@ export function parseHash(rawHash: string): HashRoute {
     // something which lowercases URLs (chat apps do this, and people
     // retype links) would otherwise ask for a room nobody is in.
     return { type: 'jam-room', roomId: jamMatch[1].toUpperCase() }
+  }
+
+  // Match: /sync:CODE — the QR a receiving device puts on screen. Folded
+  // to upper case here because the code is a case-sensitive Durable
+  // Object name, and a link that passed through anything which lowercases
+  // URLs would otherwise ask for a room nobody is in.
+  const syncMatch = hash.match(/^\/sync:(.+)$/)
+  if (syncMatch) {
+    return { type: 'sync-room', code: syncMatch[1].toUpperCase() }
+  }
+
+  // Match: /link:CODE — the QR a TV shows to be signed in. Opening this
+  // only ASKS: the phone still has to confirm, because a link that signs
+  // a device in merely by being followed is a link somebody can be sent.
+  const linkMatch = hash.match(/^\/link:(.+)$/)
+  if (linkMatch) {
+    return { type: 'device-link', code: linkMatch[1].toUpperCase() }
   }
 
   // Match: /karaoke/session/:sessionId/mixer or /uvr/...
@@ -306,6 +327,10 @@ export function buildHash(route: HashRoute): string {
       return `/${route.tab}`
     case 'jam-room':
       return `/jam:${route.roomId}`
+    case 'sync-room':
+      return `/sync:${route.code}`
+    case 'device-link':
+      return `/link:${route.code}`
     case 'uvr-upload':
       return '/karaoke'
     case 'uvr-session':

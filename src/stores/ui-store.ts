@@ -349,6 +349,19 @@ export function closeAuthModal(): void {
   setAuthModalMode(null)
 }
 
+// ── Device-link confirmation (#/link:CODE) ──────────────────────
+// The phone's half of signing a TV in. Holds the code scanned off the
+// television; null = no request on screen. Opening the link only asks —
+// the dialog it raises still has to be confirmed, because a link that
+// signs a device in by being followed is a link somebody can be sent.
+export const [deviceLinkCode, setDeviceLinkCode] = createSignal<string | null>(
+  null,
+)
+
+export function closeDeviceLink(): void {
+  setDeviceLinkCode(null)
+}
+
 // ── Password-reset page (#/reset-password[?token=…]) ────────────
 // Full-screen overlay reached from the emailed reset link. token = the
 // link's token, null for the bare request-a-link form; the object is

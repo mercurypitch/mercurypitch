@@ -84,6 +84,7 @@
     "onnxruntime-web": "^1.25.1",
     "solid-js": "^1.9.12",
     "typegpu": "^0.11.9",
+    "uqr": "^0.1.3",
     "vexflow": "^5.0.0",
     "wgpu-matrix": "^3.4.2",
     "yaml": "^2.9.0",

@@ -625,3 +625,58 @@ describe('pushHash', () => {
     expect(onHashChange).not.toHaveBeenCalled()
   })
 })
+
+describe('sync pairing links', () => {
+  it('carries a scanned code to the send flow', () => {
+    expect(parseHash('#/sync:ABCD2345')).toEqual({
+      type: 'sync-room',
+      code: 'ABCD2345',
+    })
+  })
+
+  it('means the same room whatever case the link arrived in', () => {
+    // Chat apps lowercase URLs and people retype them. The code becomes a
+    // Durable Object name, so a lowercase one is not a bad code -- it is a
+    // DIFFERENT room, and the two devices wait in separate places.
+    expect(parseHash('#/sync:abcd2345')).toEqual({
+      type: 'sync-room',
+      code: 'ABCD2345',
+    })
+  })
+
+  it('round-trips through buildHash', () => {
+    expect(buildHash({ type: 'sync-room', code: 'ABCD2345' })).toBe(
+      '/sync:ABCD2345',
+    )
+  })
+})
+
+describe('device sign-in links', () => {
+  it('carries a scanned code to the confirmation dialog', () => {
+    expect(parseHash('#/link:ABCD2345')).toEqual({
+      type: 'device-link',
+      code: 'ABCD2345',
+    })
+  })
+
+  it('normalizes case, because the link travels through a QR and a chat', () => {
+    expect(parseHash('#/link:abcd2345')).toEqual({
+      type: 'device-link',
+      code: 'ABCD2345',
+    })
+  })
+
+  it('round-trips through buildHash', () => {
+    expect(buildHash({ type: 'device-link', code: 'ABCD2345' })).toBe(
+      '/link:ABCD2345',
+    )
+  })
+
+  it('does not collide with the sync-room link', () => {
+    // Two QR codes on two different screens, one character apart in their
+    // prefix. Confusing them would put a phone in a sync room instead of
+    // approving a sign-in.
+    expect(parseHash('#/sync:ABCD2345').type).toBe('sync-room')
+    expect(parseHash('#/link:ABCD2345').type).toBe('device-link')
+  })
+})
