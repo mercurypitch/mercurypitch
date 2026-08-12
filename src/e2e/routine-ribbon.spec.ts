@@ -14,7 +14,7 @@
 
 import { expect, test } from '@playwright/test'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 
 // Written at module load: Chromium needs the file before it launches.
 // Without a synthetic mic the drill never leaves idle ("Microphone access
@@ -47,7 +47,7 @@ const ROUTINE = {
 }
 
 async function openExercise(page: any, label: string): Promise<void> {
-  await page.locator('#tab-exercises').click()
+  await openNavTab(page, 'tab-exercises')
   await page.waitForTimeout(300)
   await page.locator('.exercise-card', { hasText: label }).first().click()
   await page.waitForTimeout(400)
@@ -69,7 +69,7 @@ test.describe('Routine ribbon', () => {
       )
     }, ROUTINE)
     await page.goto('/')
-    await page.waitForSelector('#tab-exercises', { timeout: 10000 })
+    await waitForNav(page)
     await dismissOverlays(page)
   })
 

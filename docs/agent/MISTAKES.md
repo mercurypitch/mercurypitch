@@ -251,6 +251,69 @@ another one. What it does, and what any replacement must also do:
 **See:** `src/components/InfoPopover.tsx`, and the badge hints in
 `VocalChallenges.tsx` for a call site.
 
+### `scrollWidth` cannot tell you there is room to spare
+
+**Symptom:** a responsive bar that adapts its content to the available width
+only ever shrinks. It degrades correctly on a narrow window and then stays
+degraded when the window is widened.
+
+**Cause:** `scrollWidth` is defined as _at least_ `clientWidth`. On an element
+with slack it reports the box, not the content, so `scrollWidth > clientWidth`
+is a one-way overflow test — never a "there are 400px going unused" test.
+
+**Rule:** to measure what the content actually wants, sum the children's
+`getBoundingClientRect().width` plus the flex `columnGap`. That reads correctly
+in both directions, which is what lets a fit pass grow back.
+
+Two traps travel with it:
+
+- **The element must claim its space.** A `flex-grow: 0` item is exactly as
+  wide as its content, so `clientWidth` moves with the content and there is no
+  fixed budget to compare against. `flex-grow: 1` + `min-width: 0` makes
+  `clientWidth` mean "what the container will give me".
+- **Never measure from `onMount` or inside a `createEffect` body.** Solid
+  batches signal writes made during an update cycle, so the DOM still holds
+  the previous state when you measure it. Every candidate reads as overflowing
+  and the pass collapses to its smallest state. Measured on the tab bar: it
+  settled on one tab per group where two fit with 11px spare.
+
+**See:** `fitToWidth` in `src/components/AppNavTabs.tsx`
+
+### `requestAnimationFrame` never fires when the page is not compositing
+
+**Symptom:** layout-measuring code works when you watch it and silently never
+runs in a headless run, an offscreen preview, or a background tab. In the tab
+bar's case the bar stayed at its widest state, overflowing, with no error
+anywhere.
+
+**Cause:** browsers suspend rAF for pages that are not painting. A one-shot
+`requestAnimationFrame(measure)` is therefore not a guarantee that `measure`
+will ever run.
+
+**Rule:** when the work must happen even unobserved, race a `setTimeout`
+against the frame and let whichever arrives first cancel the other. Keep rAF as
+the preferred path — it is the correct moment for reading layout.
+
+**See:** `scheduleFit` in `src/components/AppNavTabs.tsx`
+
+### A CSS-module `:global()` rule beats app.css at equal specificity
+
+**Symptom:** a plain-class rule in `src/styles/app.css` has no effect on an
+element whose other classes clearly apply. Measured, not guessed: the tab
+overflow button rendered 46px wide against a rule asking for 30px.
+
+**Cause:** Vite injects CSS-module stylesheets _after_ the global ones, so at
+equal specificity the module wins on load order. `.app-tab` is declared
+`:global(.app-tab)` in `AppNavTabs.module.css`, so it overrides any bare
+`.some-class` in app.css for every property the two share.
+
+**Rule:** when overriding a `:global()`-exported class from app.css, add the
+ancestor id (`#app-tabs .some-class`). And confirm the override took effect by
+reading the computed value — a silently dead rule looks exactly like a rule
+that is working.
+
+**See:** `.tab-overflow-trigger` in `src/styles/app.css`
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

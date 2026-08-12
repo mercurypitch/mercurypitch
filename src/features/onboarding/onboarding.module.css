@@ -251,6 +251,50 @@
   text-wrap: balance;
 }
 
+/* ── The three promises (beat 1) ──────────────────────────────────
+   What used to be a 60-word paragraph. Left-aligned inside a centred
+   column on purpose: three centred lines of different lengths have no
+   edge for the eye to come back to, and read as a poem rather than a
+   list of three things that are about to happen. */
+.promises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  /* Narrower than .sub's 42ch: each line should wrap at most once, so the
+     list stays scannable instead of becoming three small paragraphs. */
+  max-width: 34ch;
+}
+
+.promise {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  font-size: clamp(0.92rem, 1.5vw, 1.04rem);
+  line-height: 1.45;
+  color: var(--ob-ink-2);
+}
+
+.promiseMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  /* Optically centred on the first line rather than its box, which sits
+     high once the line wraps. */
+  margin-top: 2px;
+  color: var(--ob-blue);
+}
+
+.promiseMark svg {
+  display: block;
+}
+
 /* The terms line, carried over from the deleted welcome card. It has to
    appear before anything is measured, so it lives on beat 1. */
 .consent {

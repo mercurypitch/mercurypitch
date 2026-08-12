@@ -1,0 +1,102 @@
+/* AppNavOverflowMenu — see AppNavOverflowMenu.tsx for why this portals to
+   <body> (the tab strip is a horizontal scroller that clips and drags any
+   panel inside it, and the sidebar at z-index 200 draws over it).
+   Matched to InfoPopover's panel so the app has one popover look. */
+
+.panel {
+  position: fixed;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  min-width: 176px;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: overflowMenuIn 0.12s ease-out;
+}
+
+/* Names the group the rows belong to. The trigger is three dots, so without
+   this the menu arrives with no idea what it is a list of. */
+.groupHeading {
+  margin: 2px 8px 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.row:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.rowActive {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+.rowIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.rowIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.rowActive .rowIcon {
+  opacity: 1;
+}
+
+@keyframes overflowMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}

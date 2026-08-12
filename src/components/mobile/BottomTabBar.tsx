@@ -3,11 +3,15 @@
 // ============================================================
 //
 // The Apple-style floating glass bar (mobile-kit.md §2, decision D1):
-// the first 4 visible practice-group tabs plus a More tab that opens a
-// Sheet with every remaining visible tab. Visibility is delegated to
-// the existing scope/UI-mode gating (visibleTabOrder — the same source
-// the swipe gesture uses), so the bar can never drift from the app's
-// navigation model.
+// the first 4 visible tabs of the primary groups (You + Practice) plus a
+// More tab that opens a Sheet with every remaining visible tab.
+// Visibility is delegated to the existing scope/UI-mode gating
+// (visibleTabOrder — the same source the swipe gesture uses), so the bar
+// can never drift from the app's navigation model.
+//
+// This is the pattern the desktop bar now copies: AppNavTabs shows three
+// tabs per group and folds the rest behind a "..." per group. Same
+// bargain, one bar per viewport.
 //
 // Renders ONLY on isNarrow() viewports; AppNavTabs (the desktop top bar)
 // unmounts there, and this bar reuses its TAB_META ids/labels/icons —
@@ -22,7 +26,7 @@ import { TAB_META } from '@/components/AppNavTabs'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
-import { isTabVisible, TAB_GROUPS, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PRIMARY_TABS, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -41,15 +45,16 @@ const BAR_SLOTS = 4
 export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   const [moreOpen, setMoreOpen] = createSignal(false)
 
-  // Bar = the practice group under the current scope/mode, capped at
-  // BAR_SLOTS; everything else visible (social, advanced, Settings, and
-  // any practice overflow) lives in the More sheet.
-  const barTabs = createMemo(() => {
-    const practice = TAB_GROUPS.find((g) => g.id === 'practice')?.tabs ?? []
-    return practice
-      .filter((t) => isTabVisible(t, practiceScope(), uiMode()))
-      .slice(0, BAR_SLOTS)
-  })
+  // Bar = the primary groups (You + Practice) under the current scope/mode,
+  // capped at BAR_SLOTS; everything else visible (Play, Studio, Settings, and
+  // any primary overflow) lives in the More sheet. PRIMARY_TABS is asked for
+  // by name because Home and Path no longer live inside the practice group —
+  // reading `practice` alone would quietly drop the daily hub off the bar.
+  const barTabs = createMemo(() =>
+    PRIMARY_TABS.filter((t) =>
+      isTabVisible(t, practiceScope(), uiMode()),
+    ).slice(0, BAR_SLOTS),
+  )
 
   const moreTabs = createMemo(() => {
     const inBar = new Set(barTabs())
@@ -127,13 +132,21 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
           <For each={moreTabs()}>
             {(tab) => (
               <li>
+                {/* Same `#tab-*` id the bar buttons carry. A tab is either in
+                    the bar or in this sheet, never both, so the ids stay
+                    unique — and a tour or audit script that looks for
+                    `#tab-exercises` now resolves it once the sheet is open
+                    instead of finding nothing on a phone at all. */}
                 <button
+                  id={TAB_META[tab]?.id}
                   classList={{
                     [styles.moreRow]: true,
                     [styles.moreRowActive]: props.activeTab() === tab,
+                    active: props.activeTab() === tab,
                   }}
                   onClick={() => pick(tab)}
                   aria-current={props.activeTab() === tab ? 'page' : undefined}
+                  aria-label={TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)}
                 >
                   <span class={styles.moreIcon}>
                     {renderIcon(TAB_META[tab])}

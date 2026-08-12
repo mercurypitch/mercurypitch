@@ -3,6 +3,7 @@
 // Tests IndexedDB initialization, seed data, feature flags, and session persistence
 // ============================================================
 
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, switchTab } from './helpers/ui'
 
@@ -590,6 +591,18 @@ test.describe('Database Abstraction Layer', () => {
   // Hidden Feature Tab Visibility Tests
   // ==========================================
 
+  // The bar shows three tabs per group and folds the rest behind that
+  // group's "..." button, so "is this tab offered?" is no longer the same
+  // question as "is this button on screen?". Play holds five tabs, which
+  // puts Community and Leaderboard in its menu — open it before asserting.
+  const openPlayOverflow = async (page: Page) => {
+    const trigger = page.locator('[data-testid="tab-overflow-play"]')
+    if ((await trigger.count()) === 0) return
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click()
+    }
+  }
+
   test('Hidden feature tabs appear when advanced features enabled', async ({
     page,
   }) => {
@@ -599,9 +612,11 @@ test.describe('Database Abstraction Layer', () => {
     })
 
     await expect(page.locator('#tab-challenges')).toBeVisible()
+    await expect(page.locator('#tab-analysis')).toBeVisible()
+
+    await openPlayOverflow(page)
     await expect(page.locator('#tab-leaderboard')).toBeVisible()
     await expect(page.locator('#tab-community')).toBeVisible()
-    await expect(page.locator('#tab-analysis')).toBeVisible()
   })
 
   test('Social tabs stay visible even when advanced features are disabled', async ({
@@ -613,9 +628,11 @@ test.describe('Database Abstraction Layer', () => {
     })
 
     // Community / Leaderboard / Challenges are no longer gated by the flag.
+    await expect(page.locator('#tab-challenges')).toBeVisible()
+
+    await openPlayOverflow(page)
     await expect(page.locator('#tab-community')).toBeVisible()
     await expect(page.locator('#tab-leaderboard')).toBeVisible()
-    await expect(page.locator('#tab-challenges')).toBeVisible()
   })
 
   test('Can navigate to Challenges tab when enabled', async ({ page }) => {

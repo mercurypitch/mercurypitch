@@ -19,7 +19,7 @@
 // content taller than the card must be scrollable, never clipped.
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TONE_WAV = writeToneWav()
@@ -46,10 +46,10 @@ test.describe('a running exercise fits a short, wide screen', () => {
     test(`Stop stays reachable at ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
       await page.goto('/')
-      await page.waitForSelector('#tab-exercises', { timeout: 15000 })
+      await waitForNav(page)
       await dismissOverlays(page)
 
-      await page.locator('#tab-exercises').click()
+      await openNavTab(page, 'tab-exercises')
       await page
         .locator('.exercise-card', { hasText: 'Long Note' })
         .first()

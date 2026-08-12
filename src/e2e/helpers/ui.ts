@@ -56,6 +56,61 @@ export async function waitForTabs(page: Page) {
   })
 }
 
+/**
+ * Wait until the app's navigation exists, on either viewport.
+ *
+ * `#tab-singing` rather than `#app-tabs`: the desktop bar unmounts below
+ * the mobile breakpoint, and Singing is the one tab that sits in the row
+ * of BOTH bars. Specs used to wait on `#tab-exercises`, which now lives
+ * behind the Practice group's overflow button and so never appears on its
+ * own — a wait that would simply time out.
+ */
+export async function waitForNav(page: Page, timeout = 15000) {
+  await page.waitForSelector('#tab-singing', { timeout, state: 'visible' })
+}
+
+/**
+ * Click a nav tab wherever it currently lives.
+ *
+ * The bar shows three tabs per group (MAX_INLINE_GROUP_TABS) and folds the
+ * rest behind that group's "..." button; the phone bar shows four and
+ * folds the rest into its More sheet. Overflowed tabs keep their `#tab-*`
+ * id, so the only thing a spec cannot assume any more is that the button
+ * is already on screen.
+ *
+ * Takes the DOM id, not the tab id, because they are not always the same
+ * (the Piano tab's button is historically `#tab-falling-notes`), and finds
+ * the owning menu by opening triggers until the button turns up — so this
+ * helper never has to be kept in step with the group taxonomy.
+ */
+export async function openNavTab(page: Page, buttonId: string) {
+  const button = page.locator(`#${buttonId}`)
+  const visible = async () => await button.isVisible().catch(() => false)
+
+  if (!(await visible())) {
+    // Desktop: try each group's overflow menu in turn.
+    const triggers = page.locator('[data-testid^="tab-overflow-"]')
+    const count = await triggers.count()
+    for (let i = 0; i < count && !(await visible()); i++) {
+      await triggers.nth(i).click()
+      if (await visible()) break
+      await page.keyboard.press('Escape')
+    }
+  }
+
+  if (!(await visible())) {
+    // Phone: everything off the bar lives in the More sheet.
+    const more = page.locator('[data-tour="mobile-tabbar-more"]')
+    if ((await more.count()) > 0) await more.click()
+  }
+
+  await button.click()
+  // The menu that held it unmounts as the tab activates (the active tab is
+  // promoted into the bar). Wait for that so a following locator cannot
+  // catch a frame with both the row and the bar button on screen.
+  await expect(page.locator('[role="menu"]')).toHaveCount(0, { timeout: 5000 })
+}
+
 export async function switchTab(
   page: Page,
   tabName:
@@ -65,12 +120,15 @@ export async function switchTab(
     | 'challenges'
     | 'leaderboard'
     | 'community'
-    | 'analysis',
+    | 'analysis'
+    | 'exercises',
 ) {
-  // Click the tab button directly — no bridge dependency
-  const tabButton = page.locator(`#tab-${tabName}`)
-  await tabButton.click()
-  await expect(tabButton).toHaveClass(/active/, { timeout: 5000 })
+  // Routed through openNavTab so a tab that has overflowed into its group's
+  // menu is still one call away — no bridge dependency either way.
+  await openNavTab(page, `tab-${tabName}`)
+  await expect(page.locator(`#tab-${tabName}`)).toHaveClass(/active/, {
+    timeout: 5000,
+  })
 }
 
 /**

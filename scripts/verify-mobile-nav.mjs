@@ -31,9 +31,20 @@ async function newPage(viewport, isMobile) {
     window.E2E_TEST_MODE = true
     localStorage.setItem('pitchperfect_welcome_version', v)
     for (const t of [
-      'exercises', 'singing', 'piano', 'guitar', 'karaoke', 'community',
-      'leaderboard', 'challenges', 'jam', 'compose', 'analysis', 'settings',
-    ]) localStorage.setItem(`pitchperfect_page_tour_offered_${t}`, 'true')
+      'exercises',
+      'singing',
+      'piano',
+      'guitar',
+      'karaoke',
+      'community',
+      'leaderboard',
+      'challenges',
+      'jam',
+      'compose',
+      'analysis',
+      'settings',
+    ])
+      localStorage.setItem(`pitchperfect_page_tour_offered_${t}`, 'true')
   }, version)
   return page
 }
@@ -68,19 +79,36 @@ const barButtons = bar.locator('button')
 const count = await barButtons.count()
 const labels = []
 for (let i = 0; i < count; i++) labels.push(await barButtons.nth(i).innerText())
-check('bar has <=5 buttons incl. More', count <= 5 && labels[count - 1] === 'More', labels.join(','))
+check(
+  'bar has <=5 buttons incl. More',
+  count <= 5 && labels[count - 1] === 'More',
+  labels.join(','),
+)
 
-// Tab switch via the bar.
+// Tab switch to a tab that is NOT one of the bar's four slots. Exercises
+// has always lived in the More sheet on a phone, and this check used to
+// fail outright because the sheet's rows carried no ids — there was
+// nothing for `#tab-exercises` to resolve to. They carry the same ids as
+// the bar buttons now, so the real path is testable: open More, tap the
+// row, land on the panel.
 const exTab = page.locator('#tab-exercises')
+if (!(await exTab.count())) {
+  await page.locator('[data-tour="mobile-tabbar-more"]').tap()
+  await page.waitForTimeout(400)
+}
 if (await exTab.count()) {
   await exTab.tap()
   await page.waitForTimeout(800)
   check(
-    'bar switches to Exercises',
+    'More sheet switches to Exercises',
     await page.locator('#exercises-panel').isVisible(),
   )
 } else {
-  check('bar switches to Exercises', false, 'no #tab-exercises in bar')
+  check(
+    'More sheet switches to Exercises',
+    false,
+    'no #tab-exercises in bar or More sheet',
+  )
 }
 await page.screenshot({ path: `${OUT}/2-phone-exercises.png` })
 
@@ -113,7 +141,11 @@ check('sheet closes after pick', !(await moreSheet.isVisible()))
 await page.screenshot({ path: `${OUT}/4-phone-settings.png` })
 
 const realErrors = errors.filter((e) => !/net::|Failed to fetch|ERR_/i.test(e))
-check('no page errors (phone)', realErrors.length === 0, realErrors.join('|').slice(0, 200))
+check(
+  'no page errors (phone)',
+  realErrors.length === 0,
+  realErrors.join('|').slice(0, 200),
+)
 await page.context().close()
 
 // ── Desktop control ──
@@ -130,5 +162,7 @@ await desk.context().close()
 
 await browser.close()
 const failed = results.filter((r) => !r.ok)
-console.log(`\n${results.length - failed.length}/${results.length} checks passed`)
+console.log(
+  `\n${results.length - failed.length}/${results.length} checks passed`,
+)
 process.exit(failed.length > 0 ? 1 : 0)

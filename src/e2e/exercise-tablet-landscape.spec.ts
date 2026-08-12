@@ -27,7 +27,7 @@
 // direction is caught.
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 
 const VIEWPORTS = [
   // Samsung Tab S9+ landscape, minus browser chrome — the reported case.
@@ -52,10 +52,10 @@ async function assertIdleTextStacks(
 ) {
   await page.setViewportSize({ width, height })
   await page.goto('/')
-  await page.waitForSelector('#tab-exercises', { timeout: 15000 })
+  await waitForNav(page)
   await dismissOverlays(page)
 
-  await page.locator('#tab-exercises').click()
+  await openNavTab(page, 'tab-exercises')
   await page
     .locator('.exercise-card', { hasText: 'Guided Warmup' })
     .first()
@@ -120,10 +120,10 @@ test.describe('the exercise stage fits a short, wide screen', () => {
     test(`Start is reachable at ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
       await page.goto('/')
-      await page.waitForSelector('#tab-exercises', { timeout: 15000 })
+      await waitForNav(page)
       await dismissOverlays(page)
 
-      await page.locator('#tab-exercises').click()
+      await openNavTab(page, 'tab-exercises')
       // Long Note carries the note dial, which is the tallest idle setup.
       await page
         .locator('.exercise-card', { hasText: 'Long Note' })
@@ -158,10 +158,10 @@ test.describe('the exercise stage fits a short, wide screen', () => {
     test(`the dial leaves room to breathe at ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
       await page.goto('/')
-      await page.waitForSelector('#tab-exercises', { timeout: 15000 })
+      await waitForNav(page)
       await dismissOverlays(page)
 
-      await page.locator('#tab-exercises').click()
+      await openNavTab(page, 'tab-exercises')
       await page
         .locator('.exercise-card', { hasText: 'Long Note' })
         .first()

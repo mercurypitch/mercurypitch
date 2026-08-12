@@ -2278,67 +2278,38 @@ input[type='range'] {
 }
 
 @media (min-width: 769px) {
+  /* The strip claims the header's leftover width instead of hugging its own
+     content. Without this the box is exactly as wide as the tabs inside it,
+     so `scrollWidth > clientWidth` can only ever report "too wide" and never
+     "there is room to spare" — and AppNavTabs' fitToWidth, which grows the
+     bar back when the window allows, had no slack to detect. It converged on
+     one tab per group at 1440px while leaving 404px of the header unused. */
+  #app-tabs {
+    flex-grow: 1;
+    /* Permission to shrink past the tabs' own width; the overflow scroller
+       (and fitToWidth) takes it from there. */
+    min-width: 0;
+    /* `safe`: once the tabs outgrow the strip, plain flex-end pushes the
+       overflow past the START edge, where no scrollbar can reach it — the
+       first tabs end up rendered under .header-left and unclickable. Safe
+       falls back to flex-start so the strip scrolls instead. */
+    justify-content: safe flex-end;
+  }
+
   #app-tabs .tab-group-label {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-right: 4px;
-    /* the label doubles as the group collapse/expand toggle */
-    background: none;
-    border: none;
     padding: 2px;
-    cursor: pointer;
-    font-family: inherit;
+    margin-right: 4px;
+    user-select: none;
   }
 
-  #app-tabs .tab-group-label:hover {
-    color: var(--text-secondary);
-  }
-
-  .tab-group-caret {
-    flex-shrink: 0;
-    opacity: 0.6;
-    transition: transform 0.2s ease;
-  }
-
-  #app-tabs .tab-group-label.collapsed .tab-group-caret {
-    transform: rotate(-90deg);
-  }
-
-  /* Collapse a group down to its active tab; expand inline on hover/focus.
-     Spacing uses margins (not flex gap) so it can animate to zero cleanly. */
-  #app-tabs .tab-group.collapsible {
-    gap: 0;
-  }
-
-  #app-tabs .tab-group.collapsible .app-tab {
-    margin-left: 8px;
-    max-width: 240px;
-    overflow: hidden;
+  #app-tabs .tab-group .app-tab {
     white-space: nowrap;
-    transition:
-      max-width 0.25s ease,
-      opacity 0.2s ease,
-      padding 0.25s ease,
-      margin 0.25s ease;
-  }
-
-  /* Expand on hover, or when a tab inside (not the label toggle) is keyboard
-     focused — `:has(.app-tab:focus)` excludes the label so a click that
-     collapses the group doesn't immediately re-expand it via focus. */
-  #app-tabs
-    .tab-group.collapsible.collapsed:not(:hover):not(:has(.app-tab:focus))
-    .app-tab:not(.active) {
-    max-width: 0;
-    margin-left: 0;
-    padding-left: 0;
-    padding-right: 0;
-    opacity: 0;
-    pointer-events: none;
   }
 
   /* Drag-to-pan affordance (only when the bar actually overflows). */
@@ -2350,10 +2321,52 @@ input[type='range'] {
     cursor: grabbing;
   }
 
-  #app-tabs.dragging .app-tab,
-  #app-tabs.dragging .tab-group-label {
+  #app-tabs.dragging .app-tab {
     pointer-events: none;
   }
+}
+
+/* ── Group overflow "..." (AppNavOverflowMenu's trigger) ──────────────
+   The bar shows MAX_INLINE_GROUP_TABS per group and folds the rest behind
+   this. It reuses `.app-tab` for size and hover so it sits on the same
+   baseline as the buttons beside it, and only overrides the padding — the
+   dots are square, and a text button's side padding makes them look
+   marooned. The panel itself is a portal (AppNavOverflowMenu.module.css). */
+/* `#app-tabs` prefix is load-order insurance, not decoration: `.app-tab`
+   lives in AppNavTabs.module.css, which Vite injects AFTER app.css, so a
+   bare `.tab-overflow-trigger` loses every property they share at equal
+   specificity — the padding below was measured as dead (46px dots instead
+   of 30px) before the id was added. */
+#app-tabs .tab-overflow-trigger {
+  padding: 5px 7px;
+  /* The dots are the whole label, so the button must not reserve the gap a
+     text tab uses between its icon and its words. */
+  gap: 0;
+  color: var(--text-muted);
+}
+
+.tab-overflow-dots {
+  display: block;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+#app-tabs .tab-overflow-trigger:hover .tab-overflow-dots,
+#app-tabs .tab-overflow-trigger[aria-expanded='true'] .tab-overflow-dots {
+  opacity: 1;
+}
+
+#app-tabs .tab-overflow-trigger[aria-expanded='true'] {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* No "your tab is in here" marker: splitGroupTabs always promotes the
+   active tab into the row, so a group's menu can never hold it. A dot for
+   that state would be a rule that never fires. */
+.tab-overflow-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -2483,10 +2496,6 @@ input[type='range'] {
   border: none;
   background: transparent;
   padding: 3px 0;
-}
-
-#app-tabs.tabs-simple .tab-group.collapsible .app-tab {
-  margin-left: 0;
 }
 
 /* === Migrated from restored-legacy.css (live rules only) === */
