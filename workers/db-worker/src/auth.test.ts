@@ -127,6 +127,11 @@ class AuthStatement {
         null) as T | null
     }
 
+    if (this.sql === 'SELECT * FROM deviceLinkCodes WHERE code = ?') {
+      return (this.db.deviceLinks.get(String(this.values[0])) ??
+        null) as T | null
+    }
+
     throw new Error(`Unexpected first() SQL: ${this.sql}`)
   }
 
@@ -149,7 +154,66 @@ class AuthStatement {
     throw new Error(`Unexpected all() SQL: ${this.sql}`)
   }
 
-  async run(): Promise<{ success: true }> {
+  // `meta.changes` matters for the device-link statements: they enforce
+  // single use inside the UPDATE rather than checking and then writing, so
+  // the row count IS the access-control answer and the fake has to report
+  // it truthfully.
+  async run(): Promise<{ success: true; meta: { changes: number } }> {
+    if (this.sql === 'DELETE FROM deviceLinkCodes WHERE expiresAt <= ?') {
+      const cutoff = Date.parse(String(this.values[0]))
+      let changes = 0
+      for (const [code, row] of this.db.deviceLinks) {
+        if (Date.parse(row.expiresAt) <= cutoff) {
+          this.db.deviceLinks.delete(code)
+          changes += 1
+        }
+      }
+      return { success: true, meta: { changes } }
+    }
+
+    if (this.sql.startsWith('INSERT INTO deviceLinkCodes')) {
+      const [code, pollTokenHash, deviceLabel, createdAt, expiresAt] =
+        this.values
+      this.db.deviceLinks.set(String(code), {
+        code: String(code),
+        pollTokenHash: String(pollTokenHash),
+        deviceLabel: deviceLabel == null ? null : String(deviceLabel),
+        userId: null,
+        approvedAt: null,
+        claimedAt: null,
+        createdAt: String(createdAt),
+        expiresAt: String(expiresAt),
+      })
+      return { success: true, meta: { changes: 1 } }
+    }
+
+    if (
+      this.sql ===
+      'UPDATE deviceLinkCodes SET userId = ?, approvedAt = ? WHERE code = ? AND approvedAt IS NULL AND claimedAt IS NULL'
+    ) {
+      const [userId, approvedAt, code] = this.values
+      const row = this.db.deviceLinks.get(String(code))
+      if (!row || row.approvedAt !== null || row.claimedAt !== null) {
+        return { success: true, meta: { changes: 0 } }
+      }
+      row.userId = String(userId)
+      row.approvedAt = String(approvedAt)
+      return { success: true, meta: { changes: 1 } }
+    }
+
+    if (
+      this.sql ===
+      'UPDATE deviceLinkCodes SET claimedAt = ? WHERE code = ? AND claimedAt IS NULL'
+    ) {
+      const [claimedAt, code] = this.values
+      const row = this.db.deviceLinks.get(String(code))
+      if (!row || row.claimedAt !== null) {
+        return { success: true, meta: { changes: 0 } }
+      }
+      row.claimedAt = String(claimedAt)
+      return { success: true, meta: { changes: 1 } }
+    }
+
     if (this.sql.startsWith('INSERT INTO users ')) {
       const [
         id,
@@ -177,7 +241,7 @@ class AuthStatement {
         suspendedAt: null,
         suspensionReason: null,
       })
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith("UPDATE users SET authProvider = 'password'")) {
@@ -189,7 +253,7 @@ class AuthStatement {
         tokenVersion: this.db.user(String(id)).tokenVersion + 1,
         updatedAt: String(updatedAt),
       })
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith("UPDATE users SET authProvider = 'google'")) {
@@ -202,7 +266,7 @@ class AuthStatement {
         tokenVersion: this.db.user(String(id)).tokenVersion + 1,
         updatedAt: String(updatedAt),
       })
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith('UPDATE users SET lastLoginAt = ?')) {
@@ -211,11 +275,11 @@ class AuthStatement {
         lastLoginAt: String(lastLoginAt),
         updatedAt: String(updatedAt),
       })
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith('INSERT OR IGNORE INTO userProfiles')) {
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (
@@ -228,7 +292,7 @@ class AuthStatement {
           this.db.premiumGroupMembers.delete(key)
         }
       }
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (
@@ -242,7 +306,7 @@ class AuthStatement {
           this.db.premiumAudit.splice(index, 1)
         }
       }
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (
@@ -253,7 +317,7 @@ class AuthStatement {
       for (const audit of this.db.premiumAudit) {
         if (audit.actorId === userId) audit.actorId = null
       }
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith('UPDATE premiumPerkAudit SET actorId = CASE')) {
@@ -272,7 +336,7 @@ class AuthStatement {
           delete audit.details.email
         }
       }
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith('DELETE FROM ')) {
@@ -286,7 +350,7 @@ class AuthStatement {
       ) {
         this.db.driveTokens.delete(id)
       }
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
 
     if (this.sql.startsWith('INSERT INTO googleDriveTokens')) {
@@ -301,7 +365,7 @@ class AuthStatement {
         createdAt: existing?.createdAt ?? String(createdAt),
         updatedAt: String(updatedAt),
       })
-      return { success: true }
+      return { success: true, meta: { changes: 1 } }
     }
     throw new Error(`Unexpected run() SQL: ${this.sql}`)
   }
@@ -320,9 +384,21 @@ interface DriveTokenRecord {
   updatedAt: string
 }
 
+interface DeviceLinkRecord {
+  code: string
+  pollTokenHash: string
+  deviceLabel: string | null
+  userId: string | null
+  approvedAt: string | null
+  claimedAt: string | null
+  createdAt: string
+  expiresAt: string
+}
+
 class AuthDatabase {
   readonly users = new Map<string, UserRecord>()
   readonly driveTokens = new Map<string, DriveTokenRecord>()
+  readonly deviceLinks = new Map<string, DeviceLinkRecord>()
   // Raw rows, exactly as D1 returns them - booleans stay 0/1 on purpose so
   // the /me normalization regression below tests the real shape.
   readonly profiles = new Map<string, Record<string, unknown>>()
@@ -1730,5 +1806,318 @@ describe('Google Drive connect and tokens', () => {
     )
     expect(response?.status).toBe(200)
     expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
+})
+
+// ── Device linking ───────────────────────────────────────────────────
+//
+// The property under test throughout is the split between the two
+// secrets: the code is public the moment it is on a television screen,
+// the poll token is not. Everything else here follows from that.
+
+describe('signing a TV in by scanning it', () => {
+  async function startLink(
+    env: Env,
+    deviceLabel = 'Living room TV',
+  ): Promise<{ code: string; pollToken: string }> {
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/device/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceLabel }),
+      }),
+      env,
+      '/api/auth/device/start',
+      respond,
+    )
+    expect(response?.status).toBe(200)
+    return (await response!.json()) as { code: string; pollToken: string }
+  }
+
+  function poll(
+    env: Env,
+    body: Record<string, unknown>,
+  ): Promise<Response | null> {
+    return handleAuth(
+      new Request('https://api.test/api/auth/device/poll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+      env,
+      '/api/auth/device/poll',
+      respond,
+    )
+  }
+
+  function approve(
+    env: Env,
+    token: string,
+    code: string,
+  ): Promise<Response | null> {
+    return handleAuth(
+      new Request('https://api.test/api/auth/device/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code }),
+      }),
+      env,
+      '/api/auth/device/approve',
+      respond,
+    )
+  }
+
+  /** A signed-in phone, which is what does the approving. */
+  async function phone(
+    env: Env,
+    email = 'tv-owner@example.com',
+  ): Promise<{ token: string; userId: string }> {
+    const registered = await postAuth(
+      'register',
+      { email, password: 'secret123' },
+      env,
+    )
+    return {
+      token: registered.token as string,
+      userId: (registered.user as { id: string }).id,
+    }
+  }
+
+  it('walks the whole flow: start, approve, collect a session', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code, pollToken } = await startLink(env)
+    const owner = await phone(env)
+
+    // Before approval the TV is told nothing at all.
+    const pending = await poll(env, { code, pollToken })
+    expect(await pending!.json()).toEqual({ status: 'pending' })
+
+    expect((await approve(env, owner.token, code))?.status).toBe(200)
+
+    const linked = await poll(env, { code, pollToken })
+    const body = (await linked!.json()) as {
+      status: string
+      token: string
+      user: { id: string }
+    }
+    expect(body.status).toBe('linked')
+    expect(body.user.id).toBe(owner.userId)
+    // The session must be a real one, not a shape that merely looks right.
+    expect(await authMeStatus(body.token, env)).toBe(200)
+  })
+
+  it('will not hand a session to somebody who only read the code', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code, pollToken } = await startLink(env)
+    const owner = await phone(env)
+    await approve(env, owner.token, code)
+
+    // The whole threat model: a person across the room, or a page that
+    // scraped a screenshot. They have the code and nothing else.
+    const stolen = await poll(env, { code, pollToken: 'not-the-real-token' })
+    expect(await stolen!.json()).toEqual({ status: 'expired' })
+    expect(db.deviceLinks.get(code)?.claimedAt).toBeNull()
+
+    // And the device that actually asked still collects — a failed guess
+    // must not consume the approval, or guessing becomes a denial of
+    // service even though it is not a theft.
+    const real = await poll(env, { code, pollToken })
+    expect(((await real!.json()) as { status: string }).status).toBe('linked')
+  })
+
+  it('answers a wrong token exactly as it answers an unknown code', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code } = await startLink(env)
+    const wrongToken = await poll(env, { code, pollToken: 'wrong' })
+    const unknownCode = await poll(env, {
+      code: 'ZZZZZZZZ',
+      pollToken: 'wrong',
+    })
+    // Identical answers, so polling cannot be used to discover which codes
+    // are live.
+    expect(await wrongToken!.json()).toEqual(await unknownCode!.json())
+  })
+
+  it('requires somebody signed in to approve', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code } = await startLink(env)
+    const anonymous = await handleAuth(
+      new Request('https://api.test/api/auth/device/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      }),
+      env,
+      '/api/auth/device/approve',
+      respond,
+    )
+    expect(anonymous?.status).toBe(401)
+  })
+
+  it('is single use — a photographed code cannot be redeemed twice', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code, pollToken } = await startLink(env)
+    const owner = await phone(env)
+    await approve(env, owner.token, code)
+
+    const first = await poll(env, { code, pollToken })
+    expect(((await first!.json()) as { status: string }).status).toBe('linked')
+
+    const second = await poll(env, { code, pollToken })
+    expect(await second!.json()).toEqual({ status: 'expired' })
+  })
+
+  it('refuses a second approval of the same code', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code } = await startLink(env)
+    const first = await phone(env, 'first@example.com')
+    const second = await phone(env, 'second@example.com')
+
+    expect((await approve(env, first.token, code))?.status).toBe(200)
+    // Somebody else scanning the same still-displayed code must not be able
+    // to redirect the television to their account.
+    const again = await approve(env, second.token, code)
+    expect(again?.status).toBe(409)
+    expect(db.deviceLinks.get(code)?.userId).toBe(first.userId)
+  })
+
+  it('expires, and says so to both sides', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code, pollToken } = await startLink(env)
+    const owner = await phone(env)
+
+    const row = db.deviceLinks.get(code)!
+    row.expiresAt = new Date(Date.now() - 1000).toISOString()
+
+    expect(await (await poll(env, { code, pollToken }))!.json()).toEqual({
+      status: 'expired',
+    })
+    expect((await approve(env, owner.token, code))?.status).toBe(410)
+  })
+
+  it('sweeps expired rows when the next device asks', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const stale = await startLink(env)
+    db.deviceLinks.get(stale.code)!.expiresAt = new Date(
+      Date.now() - 1000,
+    ).toISOString()
+
+    await startLink(env)
+    expect(db.deviceLinks.has(stale.code)).toBe(false)
+  })
+
+  it('never stores the poll token in the clear', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code, pollToken } = await startLink(env)
+    const row = db.deviceLinks.get(code)!
+    expect(row.pollTokenHash).not.toBe(pollToken)
+    expect(JSON.stringify(row)).not.toContain(pollToken)
+  })
+
+  it('shows the phone what it is being asked to approve', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code } = await startLink(env, 'Philips 55PUS')
+    const owner = await phone(env)
+
+    const pending = await handleAuth(
+      new Request(
+        `https://api.test/api/auth/device/pending?code=${code.toLowerCase()}`,
+        { headers: { Authorization: `Bearer ${owner.token}` } },
+      ),
+      env,
+      '/api/auth/device/pending',
+      respond,
+    )
+    // Lowercased on the way in: the code travels in a URL and through a QR
+    // scanner, and neither is guaranteed to preserve case.
+    expect(await pending!.json()).toEqual({
+      status: 'pending',
+      deviceLabel: 'Philips 55PUS',
+    })
+  })
+
+  it('will not describe a pending link to a stranger', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { code } = await startLink(env)
+    const anonymous = await handleAuth(
+      new Request(`https://api.test/api/auth/device/pending?code=${code}`),
+      env,
+      '/api/auth/device/pending',
+      respond,
+    )
+    expect(anonymous?.status).toBe(401)
+  })
+
+  it('mints codes a person can read off a screen without ambiguity', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const codes: string[] = []
+    for (let i = 0; i < 6; i += 1) codes.push((await startLink(env)).code)
+    for (const code of codes) {
+      expect(code).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/)
+    }
+    // Distinct, which is the only useful thing a handful of samples can say
+    // about randomness.
+    expect(new Set(codes).size).toBe(codes.length)
+  })
+
+  it('refuses a poll with pieces missing', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    expect((await poll(env, {}))?.status).toBe(400)
+    expect((await poll(env, { code: 'ABCD2345' }))?.status).toBe(400)
+  })
+})
+
+describe('device linking and anonymous identities', () => {
+  it('refuses to link a TV to a device-scoped anonymous identity', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const start = await handleAuth(
+      new Request('https://api.test/api/auth/device/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceLabel: 'TV' }),
+      }),
+      env,
+      '/api/auth/device/start',
+      respond,
+    )
+    const { code } = (await start!.json()) as { code: string }
+
+    // A phone that has never made an account still holds a token — an
+    // anonymous identity minted for its own storage. Linking a TV to that
+    // forks a library rather than sharing one, and strands the TV in a
+    // session nobody can sign back into.
+    const anon = await postAnonymous(FRESH_DEVICE_ID, env)
+    const approve = await handleAuth(
+      new Request('https://api.test/api/auth/device/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${String(anon.token)}`,
+        },
+        body: JSON.stringify({ code }),
+      }),
+      env,
+      '/api/auth/device/approve',
+      respond,
+    )
+    expect(approve?.status).toBe(401)
+    expect(db.deviceLinks.get(code)?.userId).toBeNull()
   })
 })

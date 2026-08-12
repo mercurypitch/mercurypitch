@@ -646,6 +646,166 @@ export async function disconnectDrive(): Promise<boolean> {
   return res.ok
 }
 
+// ── Device linking (sign a TV in from a phone) ───────────────────────
+//
+// Typing an email on a TV remote is a chore and typing a password is an
+// ordeal, so the TV shows a code and a QR, and the phone — already signed
+// in, with a real keyboard — approves it.
+//
+// The one thing to keep straight: the CODE is on a television screen, so
+// treat it as public. The POLL TOKEN never leaves the device that asked,
+// and it is what buys the session. Nothing here sends the poll token
+// anywhere except back to our own worker.
+
+export interface DeviceLinkRequest {
+  /** The short code shown on screen and carried by the QR. */
+  code: string
+  /** The secret this device keeps; never displayed, never in a URL. */
+  pollToken: string
+  expiresInSeconds: number
+}
+
+/** Ask for a code to display. Null when the worker cannot be reached. */
+export async function startDeviceLink(
+  deviceLabel: string,
+): Promise<DeviceLinkRequest | null> {
+  let res: Response
+  try {
+    res = await fetch(`${requireBaseUrl()}/api/auth/device/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceLabel }),
+    })
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+  const data = (await res.json()) as Partial<DeviceLinkRequest>
+  if (
+    data.code == null ||
+    data.code === '' ||
+    data.pollToken == null ||
+    data.pollToken === ''
+  ) {
+    return null
+  }
+  return {
+    code: data.code,
+    pollToken: data.pollToken,
+    expiresInSeconds: data.expiresInSeconds ?? 300,
+  }
+}
+
+export type DeviceLinkPoll =
+  | { status: 'pending' }
+  | { status: 'expired' }
+  | { status: 'linked' }
+  /** Could not ask — keep waiting rather than declaring the code dead. */
+  | { status: 'offline' }
+
+/**
+ * Ask whether the phone has approved yet, and take the session if so.
+ *
+ * Adopting it here rather than returning it keeps the token out of the
+ * calling component: a session that a screen holds is a session that can
+ * end up in a log or a screenshot.
+ */
+export async function pollDeviceLink(
+  request: DeviceLinkRequest,
+): Promise<DeviceLinkPoll> {
+  let res: Response
+  try {
+    res = await fetch(`${requireBaseUrl()}/api/auth/device/poll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: request.code,
+        pollToken: request.pollToken,
+      }),
+    })
+  } catch {
+    return { status: 'offline' }
+  }
+  // A 429 is this device polling too eagerly, not a dead code. Backing
+  // off is the caller's job; declaring the sign-in failed is not.
+  if (res.status === 429) return { status: 'offline' }
+  if (!res.ok) return { status: 'expired' }
+  const data = (await res.json()) as { status?: string; token?: string }
+  if (data.status === 'linked' && data.token != null && data.token !== '') {
+    setAuthToken(data.token)
+    setRequiresLogin(false)
+    tokenServerVerified = true // freshly issued by the worker
+    authChanged()
+    return { status: 'linked' }
+  }
+  return data.status === 'pending'
+    ? { status: 'pending' }
+    : { status: 'expired' }
+}
+
+export type DeviceLinkPending =
+  | { status: 'pending'; deviceLabel?: string }
+  | { status: 'expired' }
+  | { status: 'used' }
+  | { status: 'signed-out' }
+  | { status: 'offline' }
+
+/** What the phone is being asked to approve, before it agrees to it. */
+export async function fetchDeviceLinkPending(
+  code: string,
+): Promise<DeviceLinkPending> {
+  const token = getAuthToken()
+  if (token == null || token === '') return { status: 'signed-out' }
+  let res: Response
+  try {
+    res = await fetch(
+      `${requireBaseUrl()}/api/auth/device/pending?code=${encodeURIComponent(code)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+  } catch {
+    return { status: 'offline' }
+  }
+  if (res.status === 401) return { status: 'signed-out' }
+  if (!res.ok) return { status: 'offline' }
+  const data = (await res.json()) as { status?: string; deviceLabel?: string }
+  if (data.status === 'used') return { status: 'used' }
+  if (data.status !== 'pending') return { status: 'expired' }
+  return {
+    status: 'pending',
+    ...(data.deviceLabel != null ? { deviceLabel: data.deviceLabel } : {}),
+  }
+}
+
+export type DeviceLinkApproval =
+  | { ok: true }
+  | { ok: false; reason: 'expired' | 'used' | 'signed-out' | 'failed' }
+
+/** Say yes. Only ever called from an explicit tap on the phone. */
+export async function approveDeviceLink(
+  code: string,
+): Promise<DeviceLinkApproval> {
+  const token = getAuthToken()
+  if (token == null || token === '') return { ok: false, reason: 'signed-out' }
+  let res: Response
+  try {
+    res = await fetch(`${requireBaseUrl()}/api/auth/device/approve`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    })
+  } catch {
+    return { ok: false, reason: 'failed' }
+  }
+  if (res.ok) return { ok: true }
+  if (res.status === 401) return { ok: false, reason: 'signed-out' }
+  if (res.status === 410) return { ok: false, reason: 'expired' }
+  if (res.status === 409) return { ok: false, reason: 'used' }
+  return { ok: false, reason: 'failed' }
+}
+
 // ── Email verification (confirm-link redirect + resend) ─────────────
 //
 // Password signups get a "confirm your email" link that routes through the

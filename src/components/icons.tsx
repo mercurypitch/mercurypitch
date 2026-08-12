@@ -1629,3 +1629,21 @@ export const DeviceSync: Component<{ size?: number }> = (p) => (
     <path d="M14.2 8l1.5 1.5-1.5 1.5" />
   </svg>
 )
+
+// Smartphone — "do this on the phone in your hand" (device linking)
+export const Smartphone: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="6" y="2" width="12" height="20" rx="2.5" />
+    <path d="M10.5 18.5h3" />
+  </svg>
+)

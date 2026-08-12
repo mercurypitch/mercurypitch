@@ -11,9 +11,10 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
-import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
+import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
 import { googleSignInUrl, loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
+import { isTvDevice } from '@/lib/device-tier'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -21,14 +22,16 @@ import { authModalMode, closeAuthModal } from '@/stores/ui-store'
 import styles from './AuthModal.module.css'
 import { GoogleMark } from './GoogleMark'
 import { PasswordRequirements } from './PasswordRequirements'
+import { PhoneSignIn } from './PhoneSignIn'
 
-type Pane = 'login' | 'register' | 'forgot' | 'forgot-sent'
+type Pane = 'login' | 'register' | 'forgot' | 'forgot-sent' | 'phone'
 
 const TITLES: Record<Pane, string> = {
   login: 'Sign in',
   register: 'Create your account',
   forgot: 'Reset your password',
   'forgot-sent': 'Check your inbox',
+  phone: 'Sign in with your phone',
 }
 
 export const AuthModal: Component = () => {
@@ -36,7 +39,10 @@ export const AuthModal: Component = () => {
   let passwordRef: HTMLInputElement | undefined
   const titleId = createUniqueId()
 
-  const [pane, setPane] = createSignal<Pane>('login')
+  // A television opens straight on the phone pane. Not a preference: the
+  // alternative is entering an email address with a d-pad, which is the
+  // reason this pane exists at all.
+  const [pane, setPane] = createSignal<Pane>(isTvDevice() ? 'phone' : 'login')
   const [email, setEmail] = createSignal('')
   const [password, setPassword] = createSignal('')
   const [showPassword, setShowPassword] = createSignal(false)
@@ -64,7 +70,10 @@ export const AuthModal: Component = () => {
   createEffect(() => {
     const mode = authModalMode()
     if (mode == null) return
-    setPane(mode)
+    // On a TV, "sign in" means the phone pane whichever entry point asked;
+    // "create account" still needs the form, since there is nothing to
+    // approve from yet.
+    setPane(isTvDevice() && mode === 'login' ? 'phone' : mode)
     setPassword('')
     setShowPassword(false)
     setError('')
@@ -213,6 +222,28 @@ export const AuthModal: Component = () => {
           </div>
 
           <Switch>
+            {/* Sign in from the phone — the TV's default way in */}
+            <Match when={pane() === 'phone'}>
+              <PhoneSignIn
+                onLinked={() => {
+                  // Signing in to an EXISTING account, so voiceprint
+                  // adoption stays prompt-gated (see the register path).
+                  showNotification('Signed in', 'info')
+                  close()
+                }}
+              />
+              <p class={styles.switchRow}>
+                <button
+                  type="button"
+                  class={styles.linkButton}
+                  onClick={() => switchPane('login')}
+                  data-testid="auth-switch-email"
+                >
+                  Use email and password instead
+                </button>
+              </p>
+            </Match>
+
             {/* Reset link sent — neutral confirmation, no account leak */}
             <Match when={pane() === 'forgot-sent'}>
               <div class={styles.sentState} data-testid="auth-forgot-sent">
@@ -251,6 +282,17 @@ export const AuthModal: Component = () => {
                   <GoogleMark />
                   Continue with Google
                 </button>
+                <Show when={pane() === 'login'}>
+                  <button
+                    type="button"
+                    class={styles.googleButton}
+                    onClick={() => switchPane('phone')}
+                    data-testid="auth-phone"
+                  >
+                    <Smartphone />
+                    Sign in with your phone
+                  </button>
+                </Show>
                 <div class={styles.divider} role="presentation">
                   <span>or use email</span>
                 </div>

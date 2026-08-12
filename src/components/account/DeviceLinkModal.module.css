@@ -1,0 +1,142 @@
+/* DeviceLinkModal — the phone's "approve this device?" dialog.
+   Same overlay family as AuthModal and ConfirmDialog, one step above the
+   auth dialog's z-index: signing in from here re-raises AuthModal on top,
+   and this must stay behind it while that happens. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Below AuthModal (3200) on purpose — see the file header. */
+  z-index: 3100;
+  padding: 16px;
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  padding: 20px 22px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #e6edf3);
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #8b949e);
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--text-primary, #e6edf3);
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+}
+
+.close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.body {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary, #8b949e);
+}
+
+.body strong {
+  color: var(--text-primary, #e6edf3);
+}
+
+/* The one line that has to survive being skimmed. */
+.warn {
+  margin: 0 0 14px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-primary, #e6edf3);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.primary,
+.secondary {
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  border: 1px solid var(--accent, #58a6ff);
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.secondary {
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  background: transparent;
+  color: var(--text-primary, #e6edf3);
+}
+
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.done {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.doneIcon {
+  color: var(--green, #3fb950);
+  flex-shrink: 0;
+}
+
+.doneIcon svg {
+  width: 20px;
+  height: 20px;
+}
