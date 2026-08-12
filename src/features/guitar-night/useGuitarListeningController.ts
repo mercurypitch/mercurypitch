@@ -21,7 +21,7 @@
 import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
-import { createFrameRateLimiter } from '@/lib/frame-rate-limiter'
+import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { GuitarInputTap } from '@/lib/guitar/guitar-input-node'
 import { connectGuitarInputWorklet } from '@/lib/guitar/guitar-input-node'
 import type { GuitarInputDeviceOption, GuitarInputProfileKind, GuitarInputProfileSnapshot, } from '@/lib/guitar/guitar-input-profile'
@@ -1045,19 +1045,16 @@ export function useGuitarListeningController(
       // analysis rate: the silence/uncertainty heuristics below count frames
       // (silentFrames >= 3 assumes a ~60 Hz cadence), so 30 Hz on a struggling
       // device keeps them within 2x of design while halving the detection
-      // cost. Capable devices stay uncapped, exactly as before.
-      const tickLimiter = Number.isFinite(presentationFps())
-        ? createFrameRateLimiter(presentationFps())
-        : null
+      // cost. Capable devices stay uncapped. Adaptive on purpose: the
+      // recordAnimationFrame call below is what demotes a struggling device,
+      // and the cap must land on THIS listening session, not the next one.
+      const tickLimiter = createAdaptiveFrameRateLimiter(presentationFps)
       const tick = (timestampMs: number): void => {
         if (currentGeneration !== generation || pitchAnalysers.length === 0) {
           return
         }
         recordAnimationFrame(timestampMs)
-        if (
-          tickLimiter !== null &&
-          !tickLimiter.shouldRun(timestampMs / 1000)
-        ) {
+        if (!tickLimiter.shouldRun(timestampMs / 1000)) {
           frame = requestAnimationFrame(tick)
           return
         }

@@ -12,7 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount, Show, untrack } from 'solid-js'
-import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { activateAudioPlayback, installAudioUnlock } from '@/lib/audio-unlock'
 import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
@@ -71,6 +71,22 @@ export const JamSongStage: Component = () => {
     context: () => engineContext,
   })
   onCleanup(() => guidePlayer.dispose())
+
+  /**
+   * Recovery for a context that went to sleep. The guide can be started
+   * by a NETWORK event (the host presses Play, this device only receives
+   * a message), which is not a gesture, so resume() can be refused and
+   * the context sit suspended. These document-level listeners resume it
+   * on the next tap anywhere and after a background/foreground cycle.
+   */
+  onCleanup(installAudioUnlock(() => engineContext))
+
+  /** The guide is wanted audible: stem present, level up, room playing. */
+  const guideWanted = (): boolean =>
+    guidePlayer.loadedUrl() !== null &&
+    untrack(guideVolume) > 0 &&
+    untrack(jamExercisePlaying) &&
+    !untrack(jamExercisePaused)
 
   /**
    * Score each line as the playhead leaves it.
@@ -336,8 +352,10 @@ export const JamSongStage: Component = () => {
     const el = audioRef
     if (el !== undefined) el.currentTime = req.toSec
     // A buffer source cannot be seeked; restarting at the offset IS the
-    // seek. Only when audible -- a muted guide has nothing to move.
-    if (guidePlayer.playing()) guidePlayer.start(req.toSec)
+    // seek. Gated on wanted, not on playing(): a guide that ran off the
+    // end of a short vocal stem is stopped, and a seek back into the song
+    // is exactly when the singer expects it to come back.
+    if (guideWanted()) guidePlayer.start(req.toSec)
   })
 
   /**
@@ -442,10 +460,16 @@ export const JamSongStage: Component = () => {
   createEffect(() => {
     jamSongPositionSec()
     const main = audioRef
-    if (main === undefined || !guidePlayer.playing()) return
+    if (main === undefined || !guideWanted()) return
+    // A suspended context freezes positionSec, so restarting into it
+    // would churn a fresh silent source on every tick. The unlock
+    // listeners resume the context; the next tick lands here again and
+    // the drift check below snaps the guide to wherever the song got to.
+    if (engineContext !== null && engineContext.state !== 'running') return
     const pos = guidePlayer.positionSec()
-    if (pos === null) return
-    if (Math.abs(pos - main.currentTime) > GUIDE_DRIFT_SEC) {
+    // null is "wanted but not sounding" -- the stem ran out and the
+    // playhead came back, or a start was refused -- so it restarts too.
+    if (pos === null || Math.abs(pos - main.currentTime) > GUIDE_DRIFT_SEC) {
       guidePlayer.start(main.currentTime)
     }
   })

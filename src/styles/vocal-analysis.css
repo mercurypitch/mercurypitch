@@ -3649,24 +3649,6 @@
   }
 }
 
-.uvr-header {
-  margin-bottom: 12px;
-}
-
-.uvr-header h3 {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-
-.uvr-info {
-  margin-top: 20px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-}
-
 .info-header {
   display: flex;
   align-items: center;
@@ -3755,23 +3737,6 @@
   font-weight: 600;
   color: var(--text-primary);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
-}
-
-/* Settings Panel UVR Integration */
-.settings-panel .uvr-settings-wrapper {
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  margin-top: 12px;
-}
-
-.settings-panel .uvr-info {
-  padding: 10px;
-}
-
-.settings-panel .info-list li {
-  padding-left: 14px;
 }
 
 /* ── League view (weekly promotion ladder) ─────────────────────────── */
