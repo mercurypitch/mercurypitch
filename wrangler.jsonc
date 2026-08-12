@@ -54,6 +54,9 @@
       "/break-glass-with-your-voice",
       "/high-note-test",
       "/shatter",
+      // Serves mirror.html at /free-sing with the URL intact. Without this
+      // line the asset layer answers first and hands back the SPA shell.
+      "/free-sing",
     ],
   },
   "compatibility_flags": ["nodejs_compat"],

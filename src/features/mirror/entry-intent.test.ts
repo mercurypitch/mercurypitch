@@ -16,4 +16,14 @@ describe('mirrorEntryIntent', () => {
       expect(mirrorEntryIntent(pathname)).toBe('voice-mirror')
     },
   )
+
+  // Free Sing is unlinked from the landing on purpose, so its URL is the only
+  // way in. If this stops resolving, the mode becomes unreachable rather than
+  // merely hidden — and nothing on screen would say so.
+  it.each(['/free-sing', '/free-sing/', '/free-sing.html'])(
+    'recognizes the unlinked free-sing entry at %s',
+    (pathname) => {
+      expect(mirrorEntryIntent(pathname)).toBe('free-sing')
+    },
+  )
 })

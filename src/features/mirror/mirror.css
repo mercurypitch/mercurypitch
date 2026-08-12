@@ -69,6 +69,94 @@ body {
   width: 100%;
   max-width: 640px;
   margin-inline: auto;
+  /* Anchors .mirror-info, which sits in the panel's top-right corner. */
+  position: relative;
+}
+
+/* ── Privacy "i" ──────────────────────────────────────────────
+   The promise ("audio never leaves this device") has to stay one gesture
+   away without spending two lines of body copy on every screen. Opens on
+   hover for fine pointers and on tap for touch — the button's aria-expanded
+   drives the same popover either way, so the two paths never disagree. */
+.mirror-info {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 5;
+  text-align: right;
+}
+.mirror-info-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--mirror-line, rgba(138, 151, 166, 0.35));
+  background: rgba(11, 16, 38, 0.55);
+  color: var(--mirror-dim);
+  cursor: pointer;
+}
+.mirror-info-btn:hover,
+.mirror-info-btn:focus-visible,
+.mirror-info-btn[aria-expanded='true'] {
+  color: var(--mirror-ink, #e6edf3);
+  border-color: rgba(138, 151, 166, 0.55);
+}
+.mirror-info-pop {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  width: min(280px, 78vw);
+  padding: 10px 12px;
+  border: 1px solid rgba(138, 151, 166, 0.3);
+  border-radius: 10px;
+  background: rgba(11, 16, 38, 0.92);
+  backdrop-filter: blur(8px);
+  color: var(--mirror-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  /* Hidden by default; `data-open` (tap) and hover both reveal it. Visibility
+     rather than display so it stays in the a11y tree for the aria-expanded
+     relationship. */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease;
+}
+.mirror-info-pop[data-open='true'] {
+  opacity: 1;
+  visibility: visible;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mirror-info:hover .mirror-info-pop,
+  .mirror-info-btn:focus-visible ~ .mirror-info-pop {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* ── Mid-run twin reveal ──────────────────────────────────────
+   Sits between the hold and the match notes. Deliberately quiet compared to
+   the results card: this is the answer arriving early, not the finale. */
+.mirror-peek-portrait {
+  width: clamp(96px, 26vw, 132px);
+  height: clamp(96px, 26vw, 132px);
+  object-fit: cover;
+  border-radius: 50%;
+  margin: 0.6em auto 0.2em;
+  display: block;
+  border: 1px solid rgba(138, 151, 166, 0.35);
+}
+.mirror-peek h2 {
+  margin: 0.1em 0 0;
+}
+.mirror-peek-epithet {
+  color: var(--mirror-dim);
+  font-size: 0.95rem;
+  margin: 0.15em auto 0.9em;
 }
 
 .mirror-panel.mirror-results {
