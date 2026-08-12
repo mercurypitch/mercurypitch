@@ -42,6 +42,11 @@ const FORBIDDEN_SOURCES = [
       /(?:^|\/)src\/.*(?:soundbank|bank-parser|mercury-bank|sfz-parser|sf2-parser)/i,
   },
   {
+    label: 'sampled piano engine or sample manifest',
+    pattern:
+      /(?:^|\/)src\/features\/piano\/instrument\/piano-(?:sampled-instrument|sample-manifest)\.[cm]?[jt]sx?$/i,
+  },
+  {
     label: 'arranger implementation',
     pattern: /(?:^|\/)src\/.*arranger/i,
   },
@@ -63,6 +68,10 @@ const FORBIDDEN_CHUNK_NAMES = [
   {
     label: 'soundbank parser or installer chunk',
     pattern: /(?:soundbank|bank-parser|mercury-bank|sfz-parser|sf2-parser)/i,
+  },
+  {
+    label: 'sampled piano engine or sample manifest chunk',
+    pattern: /piano-(?:sampled-instrument|sample-manifest)-[^/]+\.js$/i,
   },
   {
     label: 'arranger chunk',

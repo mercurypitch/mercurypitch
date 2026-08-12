@@ -19,6 +19,7 @@ import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
 import { createPianoNightPracticeSections } from './piano-night-practice-sections'
 import { PianoKeyHorizon } from './PianoKeyHorizon'
 import styles from './PianoNightApp.module.css'
+import { PianoNightSoundPanel } from './PianoNightSoundPanel'
 import type { PianoNightPerformanceView } from './PianoNightStageViews'
 import { PianoNightStageViews } from './PianoNightStageViews'
 import { LEGACY_PIANO_PATH } from './route'
@@ -49,7 +50,6 @@ const DRAWER_SECTIONS: readonly DrawerSection[] = [
   'sound',
   'room',
 ]
-
 interface PhraseCoachProps {
   phrase: () => PianoNightPhrase
   phraseIndex: () => number
@@ -303,7 +303,14 @@ export function PianoNightApp(): JSX.Element {
   const isPlaying = (): boolean => controller.transport.phase() === 'playing'
   const isLoading = (): boolean => controller.transport.phase() === 'loading'
   const blockingModal = (): boolean => drawerOpen() && !compactSheets()
-
+  const concertGrandSelected = (): boolean =>
+    controller.instrumentPreference() !== 'fallback'
+  const soundOutputLabel = (): string => {
+    if (controller.soundLoadStatus() === 'ready' && concertGrandSelected()) {
+      return 'Mercury Concert Grand'
+    }
+    return 'Mercury Felt Synth'
+  }
   const midiLabel = (): string => {
     const snapshot = controller.midiSnapshot()
     if (snapshot.connected) {
@@ -1026,7 +1033,7 @@ export function PianoNightApp(): JSX.Element {
               <div>
                 <dt>Sound</dt>
                 <dd>
-                  Fallback synth ·{' '}
+                  {soundOutputLabel()} ·{' '}
                   {audibleBackingTrackCount() > 0 ? 'Score + Hear' : 'Score'}
                 </dd>
               </div>
@@ -1132,36 +1139,7 @@ export function PianoNightApp(): JSX.Element {
         </Show>
 
         <Show when={drawerSection() === 'sound'}>
-          <section
-            id="piano-night-panel-sound"
-            class={styles.drawerPanel}
-            role="tabpanel"
-            aria-labelledby="piano-night-tab-sound"
-          >
-            <span class={styles.drawerKicker}>Free instrument</span>
-            <h2>Mercury Felt Synth</h2>
-            <p>
-              A lightweight 32-voice Web Audio fallback starts only after your
-              first Play, MIDI-connect, or touch-key gesture. The Score track
-              and selected pitched Hear tracks share this synth; imported
-              instrument names are metadata until richer sound engines arrive.
-            </p>
-            <div class={styles.soundStatus}>
-              <span>Current output</span>
-              <strong>
-                {!controller.audioActive()
-                  ? 'Silent until gesture'
-                  : 'Fallback synth active'}
-              </strong>
-            </div>
-            <button class={styles.previewRow} type="button" disabled>
-              <span>
-                <strong>Load your soundbank</strong>
-                <small>Local Mercury Bank support is a later phase.</small>
-              </span>
-              <i>Not yet</i>
-            </button>
-          </section>
+          <PianoNightSoundPanel controller={controller} />
         </Show>
 
         <Show when={drawerSection() === 'room'}>

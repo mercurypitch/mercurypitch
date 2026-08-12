@@ -1493,6 +1493,11 @@
   opacity: 0.65;
 }
 
+.soundLoadButton {
+  width: 100%;
+  padding-inline: 16px;
+}
+
 .textButton {
   border: 0;
   color: var(--muted);
@@ -1546,6 +1551,140 @@
 .soundStatus strong {
   color: var(--ivory);
   font-size: 12px;
+  text-align: right;
+}
+
+.soundChoiceList {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.soundChoice {
+  display: flex;
+  width: 100%;
+  min-height: 68px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgb(224 207 180 / 13%);
+  border-radius: 13px;
+  color: var(--ivory);
+  background: rgb(255 255 255 / 2.5%);
+  text-align: left;
+  cursor: pointer;
+}
+
+.soundChoice:hover {
+  border-color: rgb(181 138 80 / 46%);
+  background: rgb(181 138 80 / 7%);
+}
+
+.soundChoiceActive {
+  border-color: rgb(181 138 80 / 72%);
+  background: linear-gradient(110deg, rgb(181 138 80 / 16%), transparent);
+  box-shadow: inset 3px 0 var(--brass);
+}
+
+.soundChoice > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.soundChoice strong,
+.futureSoundbank strong {
+  font-size: 13px;
+}
+
+.soundChoice small,
+.futureSoundbank small {
+  margin-top: 4px;
+  color: var(--quiet);
+  font-size: 10px;
+}
+
+.soundChoice > i,
+.futureSoundbank > i {
+  flex: 0 0 auto;
+  color: var(--brass-soft);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.soundControlGroup {
+  padding: 0;
+  margin: 24px 0 0;
+  border: 0;
+}
+
+.soundControlGroup legend {
+  margin-bottom: 9px;
+  color: var(--quiet);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.soundControlGroup > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 3px;
+  border: 1px solid rgb(224 207 180 / 12%);
+  border-radius: 11px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.soundControlGroup button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--quiet);
+  background: transparent;
+  cursor: pointer;
+}
+
+.soundControlGroup button:hover {
+  color: var(--ivory);
+}
+
+.soundControlGroup .soundControlActive {
+  color: var(--ivory-strong);
+  background: rgb(181 138 80 / 16%);
+  box-shadow: inset 0 0 0 1px rgb(181 138 80 / 26%);
+}
+
+.soundReadyNote,
+.soundAttribution {
+  margin: 16px 0 0;
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.soundAttribution a {
+  color: var(--brass-soft);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.futureSoundbank {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(224 207 180 / 10%);
+  color: var(--muted);
+}
+
+.futureSoundbank > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .srOnly {
@@ -2048,7 +2187,7 @@
   }
 
   .drawerPanel h2 {
-    margin: 6px 0 10px;
+    margin: 5px 0 10px;
     font-size: 24px;
   }
 

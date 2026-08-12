@@ -30,6 +30,11 @@ class FakeAudioParam {
   cancelScheduledValues(): this {
     return this
   }
+
+  setTargetAtTime(value: number): this {
+    this.value = value
+    return this
+  }
 }
 
 class FakeAudioNode {
@@ -49,6 +54,16 @@ class FakeCompressorNode extends FakeAudioNode {
   readonly release = new FakeAudioParam()
 }
 
+class FakeBiquadFilterNode extends FakeAudioNode {
+  type: BiquadFilterType = 'lowpass'
+  readonly frequency = new FakeAudioParam()
+  readonly Q = new FakeAudioParam()
+}
+
+class FakeDelayNode extends FakeAudioNode {
+  readonly delayTime = new FakeAudioParam()
+}
+
 class FakeOscillatorNode extends FakeAudioNode {
   type: OscillatorType = 'sine'
   readonly frequency = new FakeAudioParam()
@@ -60,6 +75,7 @@ class FakeOscillatorNode extends FakeAudioNode {
 
 class FakeAudioContext {
   currentTime = 0
+  readonly sampleRate = 48_000
   state: AudioContextState = 'suspended'
   readonly destination = new FakeAudioNode()
   readonly gains: FakeGainNode[] = []
@@ -82,6 +98,14 @@ class FakeAudioContext {
 
   createDynamicsCompressor(): DynamicsCompressorNode {
     return new FakeCompressorNode() as unknown as DynamicsCompressorNode
+  }
+
+  createBiquadFilter(): BiquadFilterNode {
+    return new FakeBiquadFilterNode() as unknown as BiquadFilterNode
+  }
+
+  createDelay(): DelayNode {
+    return new FakeDelayNode() as unknown as DelayNode
   }
 
   createOscillator(): OscillatorNode {
@@ -236,7 +260,7 @@ describe('PianoNightApp', () => {
     expect(audioContext.gains.length).toBeGreaterThan(1)
     expect(audioContext.oscillators.length).toBeGreaterThan(0)
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Playing Afterglow Study in E-flat with the built-in fallback synth.',
+      'Playing Afterglow Study in E-flat with Mercury Felt Synth.',
     )
     expect(requestMidiAccess).not.toHaveBeenCalled()
     expect(getUserMedia).not.toHaveBeenCalled()
@@ -483,7 +507,7 @@ describe('PianoNightApp', () => {
     expect(input.onmidimessage).toEqual(expect.any(Function))
     await waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent(
-        'MIDI keyboard connected to the fallback synth.',
+        'MIDI keyboard connected to Mercury Felt Synth.',
       )
     })
 
@@ -726,6 +750,147 @@ describe('PianoNightApp', () => {
     expect(
       screen.queryByRole('tabpanel', { name: 'Music' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps Sound silent until an explicit load and exposes the complete piano setup', () => {
+    const fetchRequest = vi.spyOn(globalThis, 'fetch')
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Sound' }))
+
+    const soundPanel = screen.getByRole('tabpanel', { name: 'Sound' })
+    expect(
+      within(soundPanel).getByRole('heading', {
+        name: 'Mercury Concert Grand',
+      }),
+    ).toBeVisible()
+    expect(screen.getByTestId('piano-night-sound-status')).toHaveTextContent(
+      'Silent until gesture',
+    )
+
+    const concertGrand = within(soundPanel).getByRole('button', {
+      name: /Mercury Concert Grand/,
+    })
+    const feltSynth = within(soundPanel).getByRole('button', {
+      name: /Mercury Felt Synth/,
+    })
+    expect(concertGrand).toHaveAttribute('aria-pressed', 'true')
+    expect(feltSynth).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('piano-night-load-sampled')).toHaveTextContent(
+      'Load concert grand',
+    )
+
+    const character = within(soundPanel).getByRole('group', {
+      name: 'Character',
+    })
+    expect(
+      within(character).getByRole('button', { name: 'Balanced' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(character).getByRole('button', { name: 'Bright' }))
+    expect(
+      within(character).getByRole('button', { name: 'Bright' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    const space = within(soundPanel).getByRole('group', { name: 'Space' })
+    expect(
+      within(space).getByRole('button', { name: 'Studio' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(space).getByRole('button', { name: 'Hall' }))
+    expect(within(space).getByRole('button', { name: 'Hall' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    expect(
+      within(soundPanel).getByRole('link', {
+        name: 'Salamander Grand Piano V3 by Alexander Holm',
+      }),
+    ).toHaveAttribute(
+      'href',
+      'https://github.com/sfzinstruments/SalamanderGrandPiano',
+    )
+    expect(
+      within(soundPanel).getByRole('link', {
+        name: 'MP3 adaptation distributed by Jan Forst',
+      }),
+    ).toHaveAttribute('href', 'https://github.com/darosh/samples-piano-mp3')
+    expect(
+      within(soundPanel).getByRole('link', { name: 'CC BY 3.0' }),
+    ).toHaveAttribute('href', 'https://creativecommons.org/licenses/by/3.0/')
+    expect(within(soundPanel).getByText('Load your soundbank')).toBeVisible()
+    expect(
+      within(soundPanel).getByText(
+        'Local Mercury Bank import is planned for a later sound update.',
+      ),
+    ).toBeVisible()
+
+    expectSilentBrowserBoundary()
+    expect(
+      fetchRequest.mock.calls.filter(([request]) =>
+        String(request).includes('@audio-samples/piano-mp3'),
+      ),
+    ).toHaveLength(0)
+  })
+
+  it('keeps the fallback usable and offers retry when concert-grand loading fails', async () => {
+    const fetchSamples = vi.fn(async (_request: RequestInfo | URL) => {
+      throw new TypeError('offline')
+    })
+    vi.stubGlobal('fetch', fetchSamples)
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Sound' }))
+    fireEvent.click(screen.getByTestId('piano-night-load-sampled'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('piano-night-sound-status')).toHaveTextContent(
+        'Fallback active · concert grand unavailable',
+      )
+      expect(screen.getByTestId('piano-night-load-sampled')).toHaveTextContent(
+        'Retry concert grand',
+      )
+    })
+    const loadError = screen.getByRole('alert')
+    expect(loadError).toHaveTextContent(
+      'The sampled piano could not finish loading.',
+    )
+    expect(loadError).toHaveTextContent('The fallback piano remains available.')
+    expect(loadError).not.toHaveTextContent(
+      /fallback piano remains available\.\s+The fallback remains available/i,
+    )
+    expect(createAudioContext).toHaveBeenCalledOnce()
+    expect(fetchSamples).toHaveBeenCalled()
+    expect(
+      fetchSamples.mock.calls.every(([request]) =>
+        String(request).startsWith(
+          'https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3',
+        ),
+      ),
+    ).toBe(true)
+
+    const firstAttemptCount = fetchSamples.mock.calls.length
+    fireEvent.click(screen.getByTestId('piano-night-load-sampled'))
+    await waitFor(() => {
+      expect(fetchSamples.mock.calls.length).toBeGreaterThan(firstAttemptCount)
+      expect(screen.getByTestId('piano-night-load-sampled')).toHaveTextContent(
+        'Retry concert grand',
+      )
+    })
+
+    const feltSynth = screen.getByRole('button', {
+      name: /Mercury Felt Synth/,
+    })
+    fireEvent.click(feltSynth)
+    expect(feltSynth).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Mercury Felt Synth selected.',
+    )
   })
 
   it('persists a Piano room choice without changing sound', () => {

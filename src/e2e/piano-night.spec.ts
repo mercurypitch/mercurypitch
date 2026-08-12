@@ -12,6 +12,24 @@ const TWO_TRACK_MIDI = Buffer.from([
   0x00, 0xff, 0x2f, 0x00,
 ])
 
+function isPinnedPianoSampleUrl(url: string): boolean {
+  try {
+    return decodeURIComponent(url).includes('@audio-samples/piano-mp3-')
+  } catch {
+    return url.includes('@audio-samples/piano-mp3-')
+  }
+}
+
+function trackPianoSampleRequests(
+  page: import('@playwright/test').Page,
+): string[] {
+  const requests: string[] = []
+  page.on('request', (request) => {
+    if (isPinnedPianoSampleUrl(request.url())) requests.push(request.url())
+  })
+  return requests
+}
+
 async function instrumentFirstPaint(
   page: import('@playwright/test').Page,
 ): Promise<void> {
@@ -110,6 +128,7 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
   page,
 }) => {
   const pageErrors: Error[] = []
+  const sampleRequests = trackPianoSampleRequests(page)
   page.on('pageerror', (error) => pageErrors.push(error))
   await instrumentFirstPaint(page)
 
@@ -177,6 +196,7 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
     mic: 0,
     workers: 0,
   })
+  expect(sampleRequests).toEqual([])
 
   const loadedResources = await page.evaluate(() =>
     performance
@@ -192,6 +212,51 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
     ),
   ).toEqual([])
 
+  expect(pageErrors).toEqual([])
+})
+
+test('loads the concert grand only after explicit Sound intent @smoke', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = []
+  const sampleRequests = trackPianoSampleRequests(page)
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await instrumentFirstPaint(page)
+  await page.route(
+    (url) => isPinnedPianoSampleUrl(url.toString()),
+    (route) => route.abort('failed'),
+  )
+
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+  await page
+    .getByRole('button', { name: 'Open Piano Night settings' })
+    .filter({ visible: true })
+    .click()
+  const drawer = page.getByRole('dialog', { name: 'Piano Night controls' })
+  await drawer.getByRole('tab', { name: 'Sound' }).click()
+
+  await expect(
+    drawer.getByRole('heading', { name: 'Mercury Concert Grand' }),
+  ).toBeVisible()
+  await expect(drawer.getByTestId('piano-night-sound-status')).toContainText(
+    'Silent until gesture',
+  )
+  expect(sampleRequests).toEqual([])
+  expect(await browserBoundaryCounts(page)).toEqual({
+    audio: 0,
+    database: 0,
+    midi: 0,
+    mic: 0,
+    workers: 0,
+  })
+
+  await drawer.getByTestId('piano-night-load-sampled').click()
+
+  await expect.poll(() => sampleRequests.length).toBeGreaterThan(0)
+  await expect(drawer.getByTestId('piano-night-sound-status')).toContainText(
+    'Fallback active · concert grand unavailable',
+  )
+  expect(await browserBoundaryCounts(page)).toMatchObject({ audio: 1 })
   expect(pageErrors).toEqual([])
 })
 
@@ -923,7 +988,7 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
         })
         await drawer.getByRole('tab', { name: 'Sound' }).click()
         const heading = drawer.getByRole('heading', {
-          name: 'Mercury Felt Synth',
+          name: 'Mercury Concert Grand',
         })
         await expect(heading).toBeVisible()
         const drawerBox = await drawer.boundingBox()

@@ -11,6 +11,8 @@ import { createPianoInputState } from '@/features/piano/input/piano-input-state'
 import { createTouchPianoInputPort } from '@/features/piano/input/touch-piano-input-port'
 import type { WebMidiInputPortSnapshot } from '@/features/piano/input/web-midi-input-port'
 import { createWebMidiInputPort } from '@/features/piano/input/web-midi-input-port'
+import type { PianoInstrumentPreference } from '@/features/piano/instrument/piano-instrument-router'
+import { createPianoInstrumentRouter } from '@/features/piano/instrument/piano-instrument-router'
 import { createPianoAudioClockTransport } from '@/features/piano/runtime/piano-audio-clock-transport'
 import { createPianoFallbackSynth } from '@/features/piano/runtime/piano-fallback-synth'
 import { createPianoPerformanceScheduler } from '@/features/piano/runtime/piano-performance-scheduler'
@@ -27,6 +29,36 @@ import { PIANO_NIGHT_INCLUDED_SOURCE } from './piano-night-source'
 
 const MINIMUM_TEMPO_BPM = 40
 const MAXIMUM_TEMPO_BPM = 280
+const SAMPLE_WINDOW_BEATS = 4
+
+export type PianoNightSoundLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
+export type PianoNightSoundCharacter = 'soft' | 'balanced' | 'bright'
+export type PianoNightSoundAmbience = 'close' | 'studio' | 'hall'
+
+interface PianoNightSampledInstrument {
+  setCharacter(character: PianoNightSoundCharacter): void
+  setAmbience(ambience: PianoNightSoundAmbience): void
+  getLoadSnapshot(): {
+    readonly status: PianoNightSoundLoadStatus
+    readonly loadedSamples: number
+    readonly preparedSamples: number
+    readonly plannedSamples: number
+    readonly totalSamples: number
+    readonly decodedBytes: number
+    readonly error: string | null
+  }
+  subscribe(listener: () => void): () => void
+}
+
+interface PianoNightSampleWindow {
+  readonly key: string
+  readonly midis: readonly number[]
+  readonly sourceId: string
+  readonly startBeat: number
+  readonly coveredThroughBeat: number
+}
+
+type PianoNightSamplePreparationMode = 'initial' | 'current' | 'rolling'
 
 function boundedTempoBpm(tempoBpm: number): number {
   if (!Number.isFinite(tempoBpm)) return 120
@@ -56,6 +88,34 @@ function scoringSourceFor(
   })
 }
 
+function samplePrewarmMidis(
+  notes: readonly { midi: number; startBeat: number; duration: number }[],
+  windowStartBeat: number,
+): number[] {
+  const horizonBeat = windowStartBeat + SAMPLE_WINDOW_BEATS
+  const midis = new Set<number>()
+  for (const note of notes) {
+    if (
+      note.startBeat < horizonBeat &&
+      note.startBeat + note.duration > windowStartBeat
+    ) {
+      midis.add(note.midi)
+    }
+  }
+  return Array.from(midis)
+}
+
+function sampleWindowStartBeat(playheadBeat: number): number {
+  const normalizedBeat = Number.isFinite(playheadBeat)
+    ? Math.max(0, playheadBeat)
+    : 0
+  return Math.floor(normalizedBeat / SAMPLE_WINDOW_BEATS) * SAMPLE_WINDOW_BEATS
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
 export function usePianoNightController() {
   const [source, setSource] = createSignal<PianoNightSource>(
     PIANO_NIGHT_INCLUDED_SOURCE,
@@ -70,13 +130,17 @@ export function usePianoNightController() {
     tempoMap: () => stage().tempoMap,
     initialTempoBpm: stage().initialTempoBpm,
   })
-  const synth = createPianoFallbackSynth({
+  const fallbackSynth = createPianoFallbackSynth({
     getAudioContext: () => transport.getAudioContext(),
+  })
+  const instrument = createPianoInstrumentRouter({
+    fallback: fallbackSynth,
+    preference: 'fallback',
   })
   const scheduler = createPianoPerformanceScheduler({
     transport,
     notes: () => arrangement().audibleNotes,
-    synth,
+    synth: instrument,
   })
   const input = createPianoInputState()
   const scoring = createPianoPerformanceScoringEngine(
@@ -105,6 +169,17 @@ export function usePianoNightController() {
   >(new Set())
   const [audioError, setAudioError] = createSignal<string | null>(null)
   const [audioActive, setAudioActive] = createSignal(false)
+  const [instrumentPreference, setInstrumentPreferenceState] =
+    createSignal<PianoInstrumentPreference>('auto')
+  const [soundLoadStatus, setSoundLoadStatus] =
+    createSignal<PianoNightSoundLoadStatus>('idle')
+  const [soundLoadError, setSoundLoadError] = createSignal<string | null>(null)
+  const [soundLoadedSamples, setSoundLoadedSamples] = createSignal(0)
+  const [soundTotalSamples, setSoundTotalSamples] = createSignal(0)
+  const [soundCharacter, setSoundCharacterState] =
+    createSignal<PianoNightSoundCharacter>('balanced')
+  const [soundAmbience, setSoundAmbienceState] =
+    createSignal<PianoNightSoundAmbience>('studio')
   const [reducedMotion, setReducedMotion] = createSignal(false)
   const [scoringState, setScoringState] =
     createSignal<PianoPerformanceScoringState>(scoring.snapshot())
@@ -119,6 +194,19 @@ export function usePianoNightController() {
   let commandGeneration = 0
   let completionSettled = false
   let disposed = false
+  let sampledInstrument:
+    | (PianoNightSampledInstrument &
+        Parameters<typeof instrument.setSampled>[0])
+    | null = null
+  let unsubscribeSampled: (() => void) | null = null
+  let sampledUsable = false
+  let samplePreparationPending = false
+  let samplePreparationGeneration = 0
+  let samplePreparationAbort: AbortController | null = null
+  let samplePreparationMode: PianoNightSamplePreparationMode | null = null
+  let samplePreparationWindow: PianoNightSampleWindow | null = null
+  let samplePreparationTail: Promise<void> = Promise.resolve()
+  let lastRollingCurrentWindowKey: string | null = null
 
   const releaseLiveVoices = (): void => {
     pendingPointers.clear()
@@ -128,7 +216,7 @@ export function usePianoNightController() {
     keyboardReleaseTimers.clear()
     touch.releaseAll()
     input.apply({ type: 'panic', timestampMs: performance.now() })
-    synth.panic()
+    instrument.panic()
   }
 
   const activeMidis = createMemo<ReadonlySet<number>>(
@@ -217,6 +305,7 @@ export function usePianoNightController() {
       return
     }
     sampleScoring(input.snapshot(), beat, phase)
+    maybePrepareNextSampleWindow(beat)
     frame = requestAnimationFrame(sampleClock)
   }
 
@@ -259,6 +348,302 @@ export function usePianoNightController() {
     return false
   }
 
+  const syncSampledState = (): void => {
+    if (sampledInstrument === null) return
+    const snapshot = sampledInstrument.getLoadSnapshot()
+    if (sampledUsable) {
+      // A rolling decode never changes the selected output. Missing zones
+      // continue through the router's per-note fallback while it is pending.
+      setSoundLoadStatus('ready')
+    } else if (samplePreparationPending) {
+      setSoundLoadStatus(snapshot.status === 'error' ? 'error' : 'loading')
+    } else {
+      setSoundLoadStatus(snapshot.status === 'ready' ? 'idle' : snapshot.status)
+    }
+    setSoundLoadError(
+      sampledUsable && snapshot.status === 'error' ? null : snapshot.error,
+    )
+    setSoundLoadedSamples(snapshot.preparedSamples)
+    setSoundTotalSamples(snapshot.plannedSamples)
+  }
+
+  const sampleWindowStartingAt = (
+    requestedStartBeat: number,
+  ): PianoNightSampleWindow => {
+    // Read every reactive source before the asynchronous preparation begins.
+    const currentSource = source()
+    const notes = arrangement().audibleNotes
+    const startBeat = sampleWindowStartBeat(requestedStartBeat)
+    return Object.freeze({
+      key: `${currentSource.id}:${startBeat}`,
+      midis: Object.freeze(samplePrewarmMidis(notes, startBeat)),
+      sourceId: currentSource.id,
+      startBeat,
+      coveredThroughBeat: startBeat + SAMPLE_WINDOW_BEATS,
+    })
+  }
+
+  const combinedSampleWindow = (
+    current: PianoNightSampleWindow,
+    next: PianoNightSampleWindow,
+  ): PianoNightSampleWindow =>
+    Object.freeze({
+      key: `${current.key}+${next.key}`,
+      midis: Object.freeze([...current.midis, ...next.midis]),
+      sourceId: current.sourceId,
+      startBeat: current.startBeat,
+      coveredThroughBeat: next.coveredThroughBeat,
+    })
+
+  const applyRequestedInstrument = (): void => {
+    const preference = instrumentPreference()
+    instrument.setPreference(
+      preference === 'fallback' ? 'fallback' : preference,
+    )
+  }
+
+  const failInitialSamplePreparation = (message: string): void => {
+    instrument.setPreference('fallback')
+    setSoundLoadStatus('error')
+    setSoundLoadError(message)
+    setStatusMessage(
+      'Concert grand unavailable. Mercury Felt Synth remains active.',
+    )
+  }
+
+  const cancelSamplePreparation = (resetUnusableState = false): void => {
+    samplePreparationGeneration += 1
+    samplePreparationAbort?.abort()
+    samplePreparationAbort = null
+    samplePreparationMode = null
+    samplePreparationWindow = null
+    samplePreparationPending = false
+    if (resetUnusableState && !sampledUsable) {
+      instrument.setPreference('fallback')
+      setSoundLoadStatus('idle')
+      setSoundLoadError(null)
+    }
+  }
+
+  const prepareSampleWindow = (
+    window: PianoNightSampleWindow,
+    mode: PianoNightSamplePreparationMode,
+    activation?: Promise<boolean>,
+  ): Promise<boolean> => {
+    if (disposed) return Promise.resolve(false)
+
+    const previousPreparation = samplePreparationTail
+    samplePreparationAbort?.abort()
+    const controller = new AbortController()
+    const generation = ++samplePreparationGeneration
+    samplePreparationAbort = controller
+    samplePreparationMode = mode
+    samplePreparationWindow = window
+    samplePreparationPending = true
+    if (!sampledUsable) {
+      instrument.setPreference('fallback')
+      setSoundLoadStatus('loading')
+      setSoundLoadError(null)
+    }
+
+    const isCurrent = (): boolean =>
+      !disposed &&
+      !controller.signal.aborted &&
+      generation === samplePreparationGeneration
+    const finishCurrentPreparation = (): void => {
+      if (generation !== samplePreparationGeneration) return
+      samplePreparationAbort = null
+      samplePreparationMode = null
+      samplePreparationWindow = null
+      samplePreparationPending = false
+    }
+
+    const request = (async (): Promise<boolean> => {
+      await previousPreparation
+      if (!isCurrent()) return false
+
+      if (activation !== undefined) {
+        const activated = await activation
+        if (!isCurrent()) return false
+        if (!activated) {
+          failInitialSamplePreparation(
+            audioError() ??
+              "Audio could not start. Check this browser's audio permission and try again.",
+          )
+          finishCurrentPreparation()
+          return false
+        }
+      }
+
+      try {
+        let activeSampledInstrument = sampledInstrument
+        if (activeSampledInstrument === null) {
+          if (mode !== 'initial') return false
+          const module =
+            await import('@/features/piano/instrument/piano-sampled-instrument')
+          if (!isCurrent()) return false
+          activeSampledInstrument = module.createPianoSampledInstrument({
+            getAudioContext: () => transport.getAudioContext(),
+          })
+          activeSampledInstrument.setCharacter(soundCharacter())
+          activeSampledInstrument.setAmbience(soundAmbience())
+          sampledInstrument = activeSampledInstrument
+          unsubscribeSampled =
+            activeSampledInstrument.subscribe(syncSampledState)
+          // setSampled follows the router's explicit fallback selection so an
+          // attached but unprepared engine can never become audible.
+          instrument.setPreference('fallback')
+          instrument.setSampled(activeSampledInstrument)
+        }
+
+        await activeSampledInstrument.load(controller.signal)
+        if (!isCurrent()) return false
+        if (window.midis.length > 0) {
+          await activeSampledInstrument.prewarm(window.midis, controller.signal)
+        }
+        if (!isCurrent()) return false
+
+        const becameUsable = !sampledUsable
+        sampledUsable = true
+        syncSampledState()
+        applyRequestedInstrument()
+        if (mode === 'initial' || becameUsable) {
+          setStatusMessage('Mercury Concert Grand is ready.')
+        }
+        return true
+      } catch (error) {
+        if (!isCurrent() || isAbortError(error)) return false
+        if (!sampledUsable) {
+          failInitialSamplePreparation(
+            error instanceof Error
+              ? error.message
+              : 'The sample bank did not load.',
+          )
+        } else {
+          // Existing decoded zones remain usable. The router handles any
+          // missing note in this window with the lightweight synth.
+          setSoundLoadStatus('ready')
+          setSoundLoadError(null)
+        }
+        return false
+      } finally {
+        finishCurrentPreparation()
+      }
+    })()
+
+    samplePreparationTail = request.then(
+      () => undefined,
+      () => undefined,
+    )
+    return request
+  }
+
+  const prepareCurrentSampleWindow = (beat: number): void => {
+    lastRollingCurrentWindowKey = null
+    if (sampledInstrument === null) return
+    void prepareSampleWindow(sampleWindowStartingAt(beat), 'current')
+  }
+
+  const maybePrepareNextSampleWindow = (beat: number): void => {
+    if (
+      !sampledUsable ||
+      sampledInstrument === null ||
+      instrumentPreference() === 'fallback'
+    ) {
+      return
+    }
+    if (
+      samplePreparationAbort !== null &&
+      samplePreparationMode !== 'rolling'
+    ) {
+      return
+    }
+
+    const currentWindowStart = sampleWindowStartBeat(beat)
+    const currentWindow = sampleWindowStartingAt(currentWindowStart)
+    if (lastRollingCurrentWindowKey === currentWindow.key) return
+
+    // If the previous lookahead became current before decoding finished, let
+    // it finish. The next animation frame starts this bar's own rolling batch.
+    if (
+      samplePreparationWindow !== null &&
+      samplePreparationWindow.sourceId === currentWindow.sourceId &&
+      samplePreparationWindow.coveredThroughBeat > currentWindow.startBeat
+    ) {
+      return
+    }
+
+    const nextWindowStart = currentWindowStart + SAMPLE_WINDOW_BEATS
+    lastRollingCurrentWindowKey = currentWindow.key
+    if (nextWindowStart >= stage().totalBeats) {
+      void prepareSampleWindow(currentWindow, 'rolling')
+      return
+    }
+    void prepareSampleWindow(
+      combinedSampleWindow(
+        currentWindow,
+        sampleWindowStartingAt(nextWindowStart),
+      ),
+      'rolling',
+    )
+  }
+
+  const loadSampledInstrument = (): Promise<boolean> => {
+    if (disposed) return Promise.resolve(false)
+    const window = sampleWindowStartingAt(transport.timeline.playheadBeat())
+    // Start activation synchronously inside the user's gesture. Preparation
+    // itself remains serialized behind any aborted decode.
+    const activation = activateAudio()
+    return prepareSampleWindow(window, 'initial', activation)
+  }
+
+  const setInstrumentPreference = (
+    preference: PianoInstrumentPreference,
+  ): void => {
+    setInstrumentPreferenceState(preference)
+    if (preference === 'fallback') {
+      instrument.setPreference('fallback')
+      setStatusMessage('Mercury Felt Synth selected.')
+      return
+    }
+    if (sampledUsable && sampledInstrument !== null) {
+      instrument.setPreference(preference)
+      prepareCurrentSampleWindow(transport.timeline.playheadBeat())
+      setStatusMessage('Mercury Concert Grand selected.')
+      return
+    }
+    instrument.setPreference('fallback')
+  }
+
+  const setSoundCharacter = (character: PianoNightSoundCharacter): void => {
+    setSoundCharacterState(character)
+    sampledInstrument?.setCharacter(character)
+  }
+
+  const setSoundAmbience = (ambience: PianoNightSoundAmbience): void => {
+    setSoundAmbienceState(ambience)
+    sampledInstrument?.setAmbience(ambience)
+  }
+
+  const syncInstrumentPedal = (
+    snapshot: PianoInputSnapshot,
+    pedal: PianoPedalKind,
+  ): void => {
+    instrument.pedal({
+      pedal,
+      value: snapshot.pedals.reduce(
+        (maximum, state) => Math.max(maximum, state[pedal]),
+        0,
+      ),
+    })
+  }
+
+  const syncInstrumentPedals = (snapshot: PianoInputSnapshot): void => {
+    for (const pedal of ['sustain', 'sostenuto', 'soft'] as const) {
+      syncInstrumentPedal(snapshot, pedal)
+    }
+  }
+
   // These route-owned imperative ports invoke callbacks outside Solid's graph.
   // eslint-disable-next-line solid/reactivity -- external transport callback
   const unsubscribeTransport = transport.subscribe(syncTransport)
@@ -267,19 +652,30 @@ export function usePianoNightController() {
   const unsubscribeInput = input.subscribe((update) => {
     if (update.event.type === 'pedal') {
       const pedal = update.event.pedal
+      syncInstrumentPedal(update.snapshot, pedal)
       setObservedPedals((current) => {
         const next = new Set<PianoPedalKind>(current)
         next.add(pedal)
         return next
       })
     } else if (
+      update.event.type === 'reset-controllers' ||
       update.event.type === 'source-disconnected' ||
       update.event.type === 'panic'
     ) {
-      setObservedPedals(new Set<PianoPedalKind>())
+      // The normalized input state has already removed the affected pedal
+      // values. Mirror its remaining aggregate into the sound engines without
+      // panicking scheduled score voices.
+      syncInstrumentPedals(update.snapshot)
+      if (
+        update.event.type === 'source-disconnected' ||
+        update.event.type === 'panic'
+      ) {
+        setObservedPedals(new Set<PianoPedalKind>())
+      }
     }
     for (const voice of update.soundingStarted) {
-      synth.noteOn({
+      instrument.noteOn({
         id: `live:${voice.id}`,
         midi: voice.midi,
         velocity: voice.velocity,
@@ -287,7 +683,10 @@ export function usePianoNightController() {
       })
     }
     for (const voice of update.soundingStopped) {
-      synth.noteOff(`live:${voice.id}`)
+      instrument.noteOff({
+        id: `live:${voice.id}`,
+        releaseVelocity: voice.releaseVelocity,
+      })
     }
     setInputSnapshot(update.snapshot)
     sampleScoring(
@@ -300,6 +699,11 @@ export function usePianoNightController() {
   const play = async (): Promise<boolean> => {
     const generation = commandGeneration
     const previousPhase = transport.phase()
+    if (previousPhase === 'complete') {
+      // Playback restarts at beat zero, whose samples may have been evicted by
+      // later rolling batches.
+      prepareCurrentSampleWindow(0)
+    }
     const started = await transport.play()
     if (disposed || generation !== commandGeneration) return false
     syncTransport()
@@ -324,8 +728,9 @@ export function usePianoNightController() {
     )
     scheduler.start()
     startFrame()
+    const effectiveInstrument = instrument.descriptor()
     setStatusMessage(
-      `Playing ${stage().title} with the built-in fallback synth.`,
+      `Playing ${stage().title} with ${effectiveInstrument.name}.`,
     )
     return true
   }
@@ -355,6 +760,7 @@ export function usePianoNightController() {
     const targetBeat = Number.isFinite(beat)
       ? Math.min(stage().totalBeats, Math.max(0, beat))
       : 0
+    cancelSamplePreparation(true)
     applyScoringUpdate(
       scoring.discontinue({
         reason: 'seek',
@@ -367,6 +773,7 @@ export function usePianoNightController() {
     if (transport.phase() === 'playing') scheduler.refresh()
     else scheduler.stop()
     syncTransport()
+    prepareCurrentSampleWindow(targetBeat)
   }
 
   const setTempoBpm = (tempoBpm: number): void => {
@@ -395,6 +802,7 @@ export function usePianoNightController() {
     }
 
     commandGeneration += 1
+    cancelSamplePreparation(true)
     scheduler.stop()
     cancelFrame()
     transport.stop()
@@ -413,6 +821,7 @@ export function usePianoNightController() {
       setAudioError(null)
       setStatusMessage(`${nextSource.stage.title} is ready.`)
     })
+    prepareCurrentSampleWindow(0)
     return true
   }
 
@@ -430,7 +839,9 @@ export function usePianoNightController() {
     setMidiSnapshot(snapshot)
     if (!audioReady) return false
     if (midiReady) {
-      setStatusMessage('MIDI keyboard connected to the fallback synth.')
+      setStatusMessage(
+        `MIDI keyboard connected to ${instrument.descriptor().name}.`,
+      )
       return true
     }
     const message =
@@ -565,6 +976,7 @@ export function usePianoNightController() {
   onCleanup(() => {
     disposed = true
     commandGeneration += 1
+    cancelSamplePreparation()
     pendingPointers.clear()
     for (const timer of keyboardReleaseTimers.values()) {
       window.clearTimeout(timer)
@@ -579,7 +991,9 @@ export function usePianoNightController() {
     unsubscribeMidi()
     unsubscribeInput()
     unsubscribeTransport()
-    synth.dispose()
+    unsubscribeSampled?.()
+    unsubscribeSampled = null
+    instrument.dispose()
     uninstallAudioUnlock?.()
     uninstallAudioUnlock = null
     void transport.dispose()
@@ -597,6 +1011,13 @@ export function usePianoNightController() {
     observedPedals,
     audioError,
     audioActive,
+    instrumentPreference,
+    soundLoadStatus,
+    soundLoadError,
+    soundLoadedSamples,
+    soundTotalSamples,
+    soundCharacter,
+    soundAmbience,
     reducedMotion,
     statusMessage,
     scoringState,
@@ -605,6 +1026,10 @@ export function usePianoNightController() {
     togglePlayback,
     seekToBeat,
     setTempoBpm,
+    loadSampledInstrument,
+    setInstrumentPreference,
+    setSoundCharacter,
+    setSoundAmbience,
     replaceSource,
     connectMidi,
     disconnectMidi,
