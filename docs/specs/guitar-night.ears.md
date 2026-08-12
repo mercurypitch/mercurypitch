@@ -38,11 +38,11 @@ highway-performance validation, and the legacy runtime cutover remain target
 work.
 
 The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
-are implemented on the current stacked `feat/guitar-night-note-hunt-parity`
-branch. Its focused local gates are clean; preview deployment, cloud checks,
-and owner verification remain. Hear & Find, Echo a Phrase, Shape Walk, and the
-remaining Learn/Jam parity work remain target requirements rather than shipped
-capability.
+are implemented in stacked draft
+[#492](https://github.com/mercurypitch/mercurypitch/pull/492). Its focused
+local gates are clean; preview deployment, cloud checks, and owner verification
+remain. Hear & Find, Echo a Phrase, Shape Walk, and the remaining Learn/Jam
+parity work remain target requirements rather than shipped capability.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
