@@ -50,7 +50,9 @@ export const SongListIcon: Component<IconProps> = (props) => (
   </svg>
 )
 
-/** Guide-vocal mic with sparkles (the karaoke "sing" pill). */
+/** The singer's own mic, with sparkles: the "start the mic and sing" toggle
+    on the piano and singing stages. Not the guide-vocal control — that is a
+    recorded performance, and it uses `GuideVocalMic`. */
 export const MicSparkleIcon: Component<IconProps> = (props) => (
   <svg
     viewBox="0 0 24 24"

@@ -57,11 +57,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   parking on a number. This covers the karaoke stage and every in-app mix,
   which share the same loader.
 
-- **The microphone button looks like a microphone.** On the karaoke stage's
-  mute control and loudness slider, and on the jam room's room-mute button,
-  the thin outline glyph is replaced by a solid, dimensional one that reads at
-  a glance from across a room. It still takes the button's colour, so live,
-  muted and error states are as clear as before.
+- **The guide vocal gets its own microphone.** The control that sets how loud
+  the original singer is — the karaoke stage's pill and the jam room's guide
+  slider — used to wear the same thin call-mic glyph as your own input, so two
+  controls a row apart meant opposite things by the same picture. It is a
+  stage microphone now: bulbous grille, long body, trailing cable, sparkles.
+  Violet when the guide is audible, red when it is muted, and no slash through
+  it. Your own microphone keeps the outline glyph it always had.
 
 - **The tabs are grouped by what you came to do.** Four groups now: You (Home
   and The Ascent), Practice (your instrument, plus Exercises), Play (Karaoke,

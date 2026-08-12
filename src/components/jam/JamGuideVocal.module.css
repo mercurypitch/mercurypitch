@@ -17,12 +17,13 @@
   --pill-border: var(--border);
   --pill-base-bg: transparent;
 
-  /* On: the room's blue, the same colour every other live control uses. */
+  /* On: the room's blue, the same colour every other live control uses.
+     The level track and the border are what these tint — the mic itself is
+     an image that carries its own state in its hue, so --pill-base-color no
+     longer has a glyph to colour. */
   --pill-fill: var(--accent);
-  --pill-base-color: var(--accent);
 
-  /* Off: red, and the icon is struck through. Two signals, because on a
-     phone at arm's length one of them is doing all the work. */
+  /* Off: red on the level track, matching the red mic. */
   --pill-off-color: var(--red, #f85149);
 
   flex-shrink: 0;
