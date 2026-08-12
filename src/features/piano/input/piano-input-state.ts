@@ -93,6 +93,8 @@ export interface PianoInputVoice {
   readonly heldBySostenuto: boolean
   /** Soft-pedal value when this voice began. */
   readonly softPedalValue: number
+  /** Key-up velocity, retained while pedals extend the audible lifetime. */
+  readonly releaseVelocity: number
 }
 
 export interface PianoInputPedalState {
@@ -146,6 +148,7 @@ interface MutableVoice {
   heldBySustain: boolean
   heldBySostenuto: boolean
   softPedalValue: number
+  releaseVelocity: number
 }
 
 interface MutablePedalState {
@@ -205,6 +208,7 @@ function publicVoice(voice: MutableVoice): PianoInputVoice {
     heldBySustain: voice.heldBySustain,
     heldBySostenuto: voice.heldBySostenuto,
     softPedalValue: voice.softPedalValue,
+    releaseVelocity: voice.releaseVelocity,
   })
 }
 
@@ -407,6 +411,7 @@ export function createPianoInputState(
       heldBySustain: false,
       heldBySostenuto: false,
       softPedalValue: pedal.soft,
+      releaseVelocity: 0,
     }
     voices.set(voice.id, voice)
     pressedVoiceByKey.set(key, voice.id)
@@ -427,6 +432,7 @@ export function createPianoInputState(
     if (voice === undefined) return
 
     const pedal = getPedals(event.source, event.channel)
+    voice.releaseVelocity = event.velocity
     voice.pressed = false
     voice.heldBySustain = pedal.sustain >= PEDAL_DOWN_THRESHOLD
     voice.heldBySostenuto =

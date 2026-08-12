@@ -92,6 +92,7 @@ describe('createPianoInputState', () => {
     const update = input.apply(noteOff(keyboard, 60, 40))
     expect(update.soundingStopped).toHaveLength(1)
     expect(update.soundingStopped[0].source.kind).toBe('midi')
+    expect(update.soundingStopped[0].releaseVelocity).toBe(0.25)
     expect(input.snapshot().soundingNotes.map((note) => note.midi)).toEqual([
       60, 64,
     ])
@@ -108,10 +109,12 @@ describe('createPianoInputState', () => {
     expect(release.snapshot.soundingNotes[0]).toMatchObject({
       midi: 60,
       heldBySustain: true,
+      releaseVelocity: 0.25,
     })
 
     const pedalUp = input.apply(pedal('sustain', 0, 4))
     expect(pedalUp.soundingStopped.map((note) => note.midi)).toEqual([60])
+    expect(pedalUp.soundingStopped[0].releaseVelocity).toBe(0.25)
     expect(pedalUp.snapshot.soundingNotes).toEqual([])
   })
 

@@ -141,6 +141,19 @@ never back-fill across a discontinuity — a lap seam, pause, resume or re-arm
 resets the floor. The mirror-image bug is replaying a whole lap at once.
 **See:** `src/features/zen/note-playback.ts`, `src/lib/playback-runtime.ts:76`
 
+### Pin the current sampled window while warming the next one
+
+**Symptom:** the sampled piano silently fell back mid-phrase after look-ahead
+preparation completed.
+**Cause:** current coverage anchors were old, unpinned LRU entries, so warming
+the next phrase could evict them; a historical prepared flag did not prove
+that a sample was still cached.
+**Rule:** prepare current and next roots together in current-first order, pin
+the bounded plan for the whole pass, and deduplicate by current window rather
+than remembered cache history.
+**See:** `src/features/piano-night/usePianoNightController.ts`,
+`src/features/piano/instrument/piano-sampled-instrument.ts`
+
 ## Framework
 
 ### Do not destructure props

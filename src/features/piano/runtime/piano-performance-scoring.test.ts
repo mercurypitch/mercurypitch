@@ -40,6 +40,7 @@ function voice(id: string, midi: number, startedAtMs: number): PianoInputVoice {
     heldBySustain: false,
     heldBySostenuto: false,
     softPedalValue: 0,
+    releaseVelocity: 0,
   }
 }
 
