@@ -13,6 +13,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
+import { colorTokenVars } from '@/lib/css-color-token'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { JamSongNote, TimeStampedPitchSample } from '@/lib/jam/types'
@@ -283,7 +284,7 @@ const Lane: Component<{
     <div
       class={styles.lane}
       classList={{ [styles.laneCued]: props.cued?.() === true }}
-      style={{ '--lane-color': props.color }}
+      style={colorTokenVars('--lane-color', props.color)}
     >
       <span class={styles.laneName} style={{ color: props.color }}>
         {props.name}

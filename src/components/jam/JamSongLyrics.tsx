@@ -9,6 +9,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { colorTokenVars } from '@/lib/css-color-token'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
@@ -208,21 +209,21 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
         <div
           class={styles.scroll}
           ref={scrollRef}
-          style={{
-            '--brush-color':
-              colors()[jamAssignBrush() ?? ''] ?? 'rgba(255,255,255,0.6)',
-          }}
+          style={colorTokenVars(
+            '--brush-color',
+            colors()[jamAssignBrush() ?? ''] ?? 'rgba(255,255,255,0.6)',
+          )}
         >
           <For each={props.lines}>
             {(line, i) => (
               <div
                 data-line={i()}
                 class={styles.line}
-                style={{
-                  '--singer-color':
-                    colors()[singerOfLine(jamSongParts(), i()) ?? ''] ??
+                style={colorTokenVars(
+                  '--singer-color',
+                  colors()[singerOfLine(jamSongParts(), i()) ?? ''] ??
                     'transparent',
-                }}
+                )}
                 classList={{
                   [styles.lineCurrent]: i() === currentIndex(),
                   // Everything already sung dims rather than disappearing,

@@ -13,6 +13,7 @@ import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
 import { stashPendingPurchase } from '@/lib/consent'
+import { colorTokenVars } from '@/lib/css-color-token'
 import { PAYMENTS_TERMS_URL } from '@/lib/legal-links'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
@@ -34,7 +35,10 @@ const CARD_ACCENTS = [
 ]
 
 const cardVars = (index: number, offset = 0): Record<string, string> => ({
-  '--card-accent': CARD_ACCENTS[(index + offset) % CARD_ACCENTS.length],
+  ...colorTokenVars(
+    '--card-accent',
+    CARD_ACCENTS[(index + offset) % CARD_ACCENTS.length],
+  ),
   // Negative stagger so the row's sheen ripples left → right from the start.
   '--sheen-delay': `${-index * 0.9}s`,
 })

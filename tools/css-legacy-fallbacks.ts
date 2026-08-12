@@ -74,7 +74,10 @@ export function parseLiteralColor(input: string): Rgb | null {
     return null
   }
 
-  const rgb = /^rgba?\(([^)]*)\)$/.exec(value)
+  // Greedy to the final paren: `rgba(13, 17, 23, var(--alpha))` is a literal
+  // colour with a variable alpha — the channels are still real, and the alpha
+  // is ignored here just as it is for plain numbers.
+  const rgb = /^rgba?\((.*)\)$/.exec(value)
   if (rgb) {
     const parts = rgb[1]
       .split(/[\s,/]+/)
@@ -374,7 +377,11 @@ const indentationBefore = (css: string, index: number): string => {
  * legacy fallback before every declaration that uses `color-mix()`.
  */
 export function addLegacyColorFallbacks(css: string): string {
-  if (!css.includes('color-mix(')) return css
+  // No early return on "no color-mix here": companions must be generated in
+  // EVERY file that declares a colour token, because the color-mix that needs
+  // the companion can live in a different file (`--jam-glass` is declared in
+  // JamPage.module.css and tinted in the jam components' stylesheets).
+  if (!css.includes('color-mix(') && !css.includes('--')) return css
 
   const spans = scanDeclarations(css)
   const insertions: Array<{ at: number; text: string }> = []
@@ -391,11 +398,18 @@ export function addLegacyColorFallbacks(css: string): string {
         const literal = parseLiteralColor(span.value)
         // `--danger: var(--red)` aliases one token to another; the companion
         // must alias too, or the fallback chain stops at the first indirection.
+        // An alias carrying its own literal fallback (`var(--accent, #58a6ff)`)
+        // keeps it, converted, so the companion resolves even where the target
+        // token was never declared.
         const alias = literal ? null : VAR_REFERENCE.exec(span.value.trim())
+        const aliasFallback =
+          alias?.[2] === undefined ? null : parseLiteralColor(alias[2])
         const companionValue = literal
           ? `${literal.r}, ${literal.g}, ${literal.b}`
           : alias && !alias[1].endsWith('-rgb')
-            ? `var(${alias[1]}-rgb)`
+            ? aliasFallback === null
+              ? `var(${alias[1]}-rgb)`
+              : `var(${alias[1]}-rgb, ${aliasFallback.r}, ${aliasFallback.g}, ${aliasFallback.b})`
             : null
         if (companionValue !== null) {
           insertions.push({

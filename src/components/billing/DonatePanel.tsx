@@ -18,6 +18,7 @@ import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatSupportDuration, startCheckout, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
 import { GITHUB_SPONSORS_URL, KOFI_URL, SPONSORS_LIVE, } from '@/lib/contact-links'
+import { colorTokenVars } from '@/lib/css-color-token'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -27,9 +28,8 @@ import styles from './DonatePanel.module.css'
 // not read as another row of products.
 const DONATE_ACCENTS = ['#ef6f9b', '#f2a64d', '#b57bf0', '#28c2a8']
 
-const cardVars = (index: number): Record<string, string> => ({
-  '--card-accent': DONATE_ACCENTS[index % DONATE_ACCENTS.length],
-})
+const cardVars = (index: number): Record<string, string> =>
+  colorTokenVars('--card-accent', DONATE_ACCENTS[index % DONATE_ACCENTS.length])
 
 function HeartIcon() {
   return (
