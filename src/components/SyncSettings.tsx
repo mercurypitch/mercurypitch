@@ -24,7 +24,9 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { storageEstimate } from '@/db/durable-write'
 import { isStoragePersisted, requestPersistentStorage, } from '@/db/persistent-storage'
 import { readLibraryManifests, syncLibraryList, } from '@/db/services/song-manifest-service'
+import { isStandalone, needsIosInstallHint } from '@/lib/pwa-install'
 import { getAllUvrSessions } from '@/stores/uvr-store'
+import { InstallAppButton } from './InstallAppButton'
 import panel from './SettingsPanel.module.css'
 import styles from './SyncSettings.module.css'
 
@@ -88,6 +90,9 @@ export const SyncSettings: Component = () => {
       setAsking(false)
     }
   }
+
+  /** Whether this device is an iPhone or iPad that can only self-install. */
+  const iosHint = (): boolean => needsIosInstallHint()
 
   const percentUsed = (): number | null => {
     const s = storage()
@@ -161,6 +166,29 @@ export const SyncSettings: Component = () => {
               is worth asking again later.
             </Show>
           </p>
+        </Show>
+
+        {/* The iPhone answer, and it is not a workaround: adding to the
+            Home Screen is what makes Safari grant persistence, measured on a
+            real device. Safari also purges script-writable storage after
+            about a week without a visit, and a home-screen app is the
+            documented exemption — so on iOS this is the difference between
+            a library that survives and one that quietly does not. */}
+        <Show when={!isStandalone() && (persisted() !== true || iosHint())}>
+          <div class={styles.install}>
+            <p class={styles.note}>
+              <Show
+                when={iosHint()}
+                fallback="Installing the app makes browsers far more willing to keep your library, and it opens without browser chrome, so there is more room for the words."
+              >
+                On an iPhone or iPad, adding MercuryPitch to the Home Screen is
+                what lets Safari keep your library — and it opens without the
+                browser chrome, so there is more room for the words. Until there
+                is a native app, this is the way to do it.
+              </Show>
+            </p>
+            <InstallAppButton variant="panel" />
+          </div>
         </Show>
       </div>
 
