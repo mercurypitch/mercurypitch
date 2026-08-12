@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** Phase 1A and Slices 2–6 implemented.
+**Status:** Phase 1A and Slices 2–7 implemented.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -663,3 +663,87 @@ rendering, General MIDI timbres, and installed soundbanks remain later slices.
 | `PN-PRACTICE-005`–`010` | Canonical assignment component/service tests, import staging tests, accompaniment scheduling tests, and percussion/sound-truth assertions |
 | `PN-PRACTICE-011`–`013` | Input-event scoring fixtures plus miss, seek, pause, replacement, completion, and pending/result UI tests                                 |
 | `PN-PRACTICE-014`–`015` | Dense scheduler/scorer bounded-work assertions, single-Score control assertion, responsive browser smoke, and first-paint boundary audit  |
+
+## Slice 7 — expressive bundled piano
+
+Slice 7 adds an opt-in, licensed sampled grand without replacing the one
+route-owned audio clock or weakening Piano Night's silent-first-paint boundary.
+It supersedes the fallback-only product-truth limits in
+`REQ-PN-PLAYBACK-006` and `REQ-PN-PRACTICE-009` when the sampled instrument is
+ready. Custom bank import, General MIDI timbres, percussion rendering, and
+multi-hand targets remain later slices.
+
+### Instrument routing and lifecycle — `PN-INSTRUMENT-*`
+
+- **REQ-PN-INSTRUMENT-001 — One audio owner:** The fallback and sampled
+  instruments shall use the existing route-owned `AudioContext` and transport
+  clock; loading a sampled instrument shall not create a second clock or
+  context.
+- **REQ-PN-INSTRUMENT-002 — Silent first paint:** Mounting Piano Night shall
+  not import the sampled engine into the static entry graph, fetch sample
+  bytes, decode audio, or create an audio graph. Only Play, Connect MIDI, an
+  on-screen key gesture, or an explicit Sound action may cross that boundary.
+- **REQ-PN-INSTRUMENT-003 — Synchronous note path:** Instrument note-on and
+  note-off delivery shall remain synchronous after preparation. Network and
+  decode work shall run outside the live-input and scheduler hot paths.
+- **REQ-PN-INSTRUMENT-004 — Stable fallback:** The bounded fallback synth
+  shall remain available before, during, and after sampled-instrument loading
+  or failure. A note that cannot start on the sampled instrument shall start
+  on the fallback without waiting for network recovery.
+- **REQ-PN-INSTRUMENT-005 — Voice ownership:** Once a note starts, its release
+  shall be delivered to the same instrument even if readiness or preference
+  changes before key-up. Pause, seek, replacement, visibility loss, panic,
+  and disposal shall release voices owned by both instruments.
+- **REQ-PN-INSTRUMENT-006 — Pedal authority:** Normalized Piano input shall
+  remain the sole owner of sustain and sostenuto audible lifetimes. Instrument
+  pedal events may color the sound or trigger mechanical detail but shall not
+  latch a released voice a second time.
+- **REQ-PN-INSTRUMENT-007 — Release expression:** Normalized key-up velocity
+  shall survive pedal-extended lifetimes and reach the instrument release
+  event; score notes shall preserve their authored release velocity.
+- **REQ-PN-INSTRUMENT-008 — Bounded resources:** The sampled instrument shall
+  cap simultaneous voices and decoded-buffer memory, evict inactive samples
+  deterministically, and share one dry/room/limiter graph per active context.
+- **REQ-PN-INSTRUMENT-009 — Discontinuity safety:** A stale or aborted load
+  shall not become selected, revive disposed resources, overwrite a newer
+  preference, or leave a voice sounding.
+
+### Licensed piano and Sound controls — `PN-SAMPLED-*`
+
+- **REQ-PN-SAMPLED-001 — Identified source:** The sampled instrument shall use
+  a declared subset of Salamander Grand Piano V3 by Alexander Holm, adapted
+  from its sixteen-layer source and licensed under CC BY 3.0.
+- **REQ-PN-SAMPLED-002 — Immutable manifest:** Every permitted sample request
+  shall be derived from a checked-in allow-list manifest with pinned package
+  versions and a fixed HTTPS CDN origin; project, MIDI, and user strings shall
+  never become sample URLs.
+- **REQ-PN-SAMPLED-003 — Progressive preparation:** Loading may prepare only
+  the zones needed for the staged pitch range and selected velocity layers.
+  Missing zones shall degrade to the fallback and may prepare for later notes
+  without blocking the current strike.
+- **REQ-PN-SAMPLED-004 — Truthful state:** Sound shall distinguish silent,
+  loading, sampled-ready, fallback-selected, and failed-with-fallback states.
+  It shall not claim that the concert grand is audible until its renderer can
+  accept notes.
+- **REQ-PN-SAMPLED-005 — Real controls:** Sound shall expose an instrument
+  choice plus bounded Character and Space choices that update the sampled
+  engine. The visual Room picker shall remain independent of sonic Space.
+- **REQ-PN-SAMPLED-006 — Attribution:** Sound shall name Alexander Holm,
+  identify MercuryPitch's compact adaptation, link to the source work and CC
+  BY 3.0 license, and shall not imply endorsement or apply access controls to
+  the licensed sample bytes.
+- **REQ-PN-SAMPLED-007 — No custom-bank claim:** Slice 7 shall not claim to
+  import, install, persist, or render a user-provided soundbank. That action
+  shall remain absent or explicitly identified as a later feature.
+- **REQ-PN-SAMPLED-008 — Network recovery:** IF the CDN, fetch, or decoder is
+  unavailable, THEN the current project, input, transport, and fallback synth
+  shall remain usable and Sound shall offer a bounded retry.
+
+### Slice 7 verification map
+
+| Requirement area          | Minimum evidence                                                                                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-INSTRUMENT-001`–`005` | Port/router/fallback/scheduler tests for one context, synchronous fallback, exact voice ownership, preference switching, panic, and disposal          |
+| `PN-INSTRUMENT-006`–`009` | Input release-velocity and pedal-lifetime fixtures plus sampler cache, voice-cap, abort, stale-load, and shared-graph tests                           |
+| `PN-SAMPLED-001`–`003`    | Manifest source/license/version assertions, constant-URL tests, intent-lazy bundle audit, and no-sample-request first-paint browser smoke             |
+| `PN-SAMPLED-004`–`008`    | Sound component/controller tests for load, selection, Character, Space, attribution, failure, fallback, retry, and visual-room/sonic-space separation |
