@@ -17,7 +17,10 @@ import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-cont
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
+import { accountReady, credits, refreshAccount, signedIn, } from '@/lib/standalone-account'
 import { createPersistedSignal } from '@/lib/storage'
+import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
+import { cloudSplitBlocker, cloudSplitBlockerHeading, } from '@/lib/uvr-cloud-preflight'
 import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBackdropId, resolveBackdrop, } from './backdrops'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } from './first-win-config'
@@ -86,8 +89,21 @@ type GuitarNightAppProps = {
   loadSongPort?: () => Promise<GuitarNightSongPort>
   loadPreparationPort?: () => Promise<GuitarNightPreparationPort>
   loadBandPreparationPort?: () => Promise<GuitarNightBandPreparationPort>
+  /** Overrides the account/credits preflight. For tests, and for an embed
+   *  whose account state does not come from the standalone module. */
+  checkBandPreflight?: () => CloudSplitBlocker | null
   createBackingTransport?: () => GuitarBackingTransport
 }
+
+/**
+ * What "Separate guitar" costs, said before it is pressed.
+ *
+ * It is a cloud GPU job billed in credits, which is not guessable from a
+ * button in a rehearsal room. Same convention as the studio's own
+ * separation control.
+ */
+const SEPARATE_GUITAR_HINT =
+  'Splits the backing into drums, bass, and guitar on a cloud GPU. Needs an account and uses credits.'
 
 /** The library opens on the newest few songs; the rest arrive on request. */
 const INITIAL_LIBRARY_PAGE = 5
@@ -399,6 +415,23 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         ? loadDefaultGuitarNightBandPreparationPort()
         : configuredLoader()
     },
+    // The facts belong here, not in the controller: this page already has a
+    // source of truth for who is signed in and what credits remain
+    // (standalone-account, the same one the account chip reads), so the
+    // answer cannot disagree with the chip in the corner.
+    checkPreflight: async () => {
+      const configured = props.checkBandPreflight
+      if (configured !== undefined) return configured()
+      // The account chip is lazy, so on a cold room this state may not have
+      // loaded yet — and refusing from data we do not have would turn away
+      // a signed-in singer. Ask, then decide.
+      if (!accountReady()) await refreshAccount()
+      const balance = credits()
+      return cloudSplitBlocker({
+        signedIn: signedIn(),
+        ...(balance === null ? {} : { balance }),
+      })
+    },
     onPrepared: async (sessionId, signal) => {
       const refreshed = await songController.refreshLibrary()
       if (signal.aborted) return
@@ -508,6 +541,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const bandPreparationError = createMemo(() => {
     const state = bandPreparationController.state()
     return state.kind === 'error' ? state : null
+  })
+  const bandPreparationBlocked = createMemo(() => {
+    const state = bandPreparationController.state()
+    return state.kind === 'blocked' ? state : null
   })
 
   const openFirstWin = () => {
@@ -1117,6 +1154,30 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       </div>
                     )}
                   </Match>
+                  <Match when={bandPreparationBlocked()}>
+                    {(blocked) => (
+                      <div class={styles.songState}>
+                        <strong>
+                          {cloudSplitBlockerHeading(blocked().blocker)}
+                        </strong>
+                        <span>{blocked().blocker.message}</span>
+                        <Show when={blocked().blocker.cta}>
+                          {(cta) => (
+                            <a
+                              class={styles.bandPreparationAction}
+                              href={`/#/settings/${cta().section}`}
+                            >
+                              {cta().label}
+                            </a>
+                          )}
+                        </Show>
+                        <small>
+                          Your existing vocals and accompaniment are unchanged,
+                          and nothing was charged.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
                   <Match when={bandPreparationError()}>
                     {(error) => (
                       <div class={styles.songState} role="alert">
@@ -1575,6 +1636,33 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       Keep current mix
                     </button>
                   </Match>
+                  <Match when={bandPreparationBlocked()}>
+                    {(blocked) => (
+                      <Show
+                        when={blocked().blocker.cta}
+                        fallback={
+                          <button
+                            class={styles.completionAction}
+                            type="button"
+                            onClick={bandPreparationController.clear}
+                          >
+                            Keep current mix
+                          </button>
+                        }
+                      >
+                        {(cta) => (
+                          // A link, not a retry: retrying cannot help until
+                          // the thing it is missing exists.
+                          <a
+                            class={styles.completionAction}
+                            href={`/#/settings/${cta().section}`}
+                          >
+                            {cta().label}
+                          </a>
+                        )}
+                      </Show>
+                    )}
+                  </Match>
                   <Match when={bandPreparationError()}>
                     {(error) => (
                       <button
@@ -1651,6 +1739,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           <button
                             class={styles.bandPreparationAction}
                             type="button"
+                            title={SEPARATE_GUITAR_HINT}
                             onClick={prepareGuitarFreeBand}
                           >
                             Separate guitar

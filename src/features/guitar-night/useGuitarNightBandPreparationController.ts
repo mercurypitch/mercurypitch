@@ -2,6 +2,7 @@
 // ============================================================
 
 import { createSignal, onCleanup } from 'solid-js'
+import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { GuitarNightBandPreparationPhase, GuitarNightBandPreparationPort, } from './band-preparation-port'
 
 export type GuitarNightBandPreparationState =
@@ -18,10 +19,38 @@ export type GuitarNightBandPreparationState =
       sessionId: string
       message: string
     }
+  /**
+   * The split cannot run at all, and no job was started.
+   *
+   * Distinct from `error` because it is not a failure: nothing went wrong,
+   * the prerequisites are simply not met, and the answer is a thing the
+   * singer can go and do rather than a message to dismiss. Before this
+   * existed the button started a split with nothing behind it and sat on
+   * "Sending the instrumental" for ever.
+   */
+  | {
+      kind: 'blocked'
+      sessionId: string
+      blocker: CloudSplitBlocker
+    }
 
 interface GuitarNightBandPreparationControllerOptions {
   loadPort?: () => Promise<GuitarNightBandPreparationPort>
   onPrepared?: (sessionId: string, signal: AbortSignal) => void | Promise<void>
+  /**
+   * Whether a cloud split can run right now. Returning a blocker stops the
+   * pass before any billable work — the caller supplies it because the
+   * facts (who is signed in, what credits remain) belong to the surface,
+   * not to this controller.
+   *
+   * May be async: on a standalone page the account state is lazy, and
+   * answering from data that has not loaded yet would refuse a signed-in
+   * singer. Awaiting it costs a fraction of a second before an upload that
+   * costs minutes.
+   */
+  checkPreflight?: (
+    sessionId: string,
+  ) => CloudSplitBlocker | null | Promise<CloudSplitBlocker | null>
 }
 
 export async function loadDefaultGuitarNightBandPreparationPort(): Promise<GuitarNightBandPreparationPort> {
@@ -77,6 +106,23 @@ export function useGuitarNightBandPreparationController(
     abort: AbortController,
   ): Promise<void> => {
     try {
+      // Before the port, before any billable work: a split spends credits
+      // and uploads a ~60-190 MB instrumental, and `fetch` cannot report
+      // upload progress — so a pass with no account behind it used to sit
+      // on "Sending the instrumental · 0%" with nothing coming.
+      const blocker = (await options.checkPreflight?.(sessionId)) ?? null
+      if (
+        disposed ||
+        abort.signal.aborted ||
+        currentGeneration !== generation
+      ) {
+        return
+      }
+      if (blocker !== null) {
+        activeAbort = null
+        setState({ kind: 'blocked', sessionId, blocker })
+        return
+      }
       const port = await ensurePort()
       if (
         disposed ||

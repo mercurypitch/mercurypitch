@@ -99,4 +99,146 @@ describe('useGuitarNightBandPreparationController', () => {
       }),
     )
   })
+
+  /**
+   * The bug: "Separate guitar" checked nothing. Pressed with no account it
+   * started a split, uploaded a ~60-190 MB instrumental into a 401, and --
+   * because `fetch` cannot report upload progress -- sat on "Sending the
+   * instrumental · 0%" for ever. The phase only advances when the request
+   * resolves, so there was no error and no way back.
+   *
+   * So the property is not "a nicer message". It is that no billable work
+   * starts at all: the port must never be loaded, let alone called.
+   */
+  describe('prerequisites', () => {
+    const blocker = {
+      reason: 'signed-out' as const,
+      message: 'Separating the band needs an account.',
+      cta: { label: 'Open Account', section: 'account' as const },
+    }
+
+    it('starts no work at all when the prerequisites are not met', async () => {
+      const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+      const loadPort = vi.fn(async () => ({ prepareBand }))
+      let controller!: ReturnType<
+        typeof useGuitarNightBandPreparationController
+      >
+      const Harness: Component = () => {
+        controller = useGuitarNightBandPreparationController({
+          loadPort,
+          checkPreflight: () => blocker,
+        })
+        return null
+      }
+      render(() => <Harness />)
+
+      controller.start('session-room')
+      await waitFor(() =>
+        expect(controller.state()).toEqual({
+          kind: 'blocked',
+          sessionId: 'session-room',
+          blocker,
+        }),
+      )
+      expect(prepareBand).not.toHaveBeenCalled()
+      // Not even the port: loading it is what pulls in the upload path.
+      expect(loadPort).not.toHaveBeenCalled()
+    })
+
+    it('waits for an async answer before deciding', async () => {
+      // On a standalone page the account state is lazy. Answering from data
+      // that has not loaded would refuse a signed-in singer, so the check
+      // may be async -- and a slow answer must not start the job meanwhile.
+      const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+      prepareBand.mockResolvedValue({ saved: ['drums'] })
+      const gate = deferred<typeof blocker | null>()
+      let controller!: ReturnType<
+        typeof useGuitarNightBandPreparationController
+      >
+      const Harness: Component = () => {
+        controller = useGuitarNightBandPreparationController({
+          loadPort: async () => ({ prepareBand }),
+          checkPreflight: () => gate.promise,
+        })
+        return null
+      }
+      render(() => <Harness />)
+
+      controller.start('session-room')
+      expect(prepareBand).not.toHaveBeenCalled()
+      gate.resolve(blocker)
+      await waitFor(() =>
+        expect(controller.state()).toMatchObject({ kind: 'blocked' }),
+      )
+      expect(prepareBand).not.toHaveBeenCalled()
+    })
+
+    it('proceeds normally once the prerequisites are met', async () => {
+      const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+      prepareBand.mockResolvedValue({ saved: ['drums', 'bass', 'guitar'] })
+      let controller!: ReturnType<
+        typeof useGuitarNightBandPreparationController
+      >
+      const Harness: Component = () => {
+        controller = useGuitarNightBandPreparationController({
+          loadPort: async () => ({ prepareBand }),
+          checkPreflight: () => null,
+        })
+        return null
+      }
+      render(() => <Harness />)
+
+      controller.start('session-room')
+      await waitFor(() => expect(prepareBand).toHaveBeenCalledOnce())
+      expect(controller.state()).toEqual({ kind: 'idle' })
+    })
+
+    it('runs unchanged with no preflight configured', async () => {
+      // The option is optional: every existing caller and fake must keep
+      // working without one.
+      const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+      prepareBand.mockResolvedValue({ saved: ['drums'] })
+      let controller!: ReturnType<
+        typeof useGuitarNightBandPreparationController
+      >
+      const Harness: Component = () => {
+        controller = useGuitarNightBandPreparationController({
+          loadPort: async () => ({ prepareBand }),
+        })
+        return null
+      }
+      render(() => <Harness />)
+
+      controller.start('session-room')
+      await waitFor(() => expect(prepareBand).toHaveBeenCalledOnce())
+    })
+
+    it('lets a retry through after the singer fixes it', async () => {
+      // Blocked is not terminal: they open Account, sign in, come back.
+      const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+      prepareBand.mockResolvedValue({ saved: ['drums'] })
+      let blocked = true
+      let controller!: ReturnType<
+        typeof useGuitarNightBandPreparationController
+      >
+      const Harness: Component = () => {
+        controller = useGuitarNightBandPreparationController({
+          loadPort: async () => ({ prepareBand }),
+          checkPreflight: () => (blocked ? blocker : null),
+        })
+        return null
+      }
+      render(() => <Harness />)
+
+      controller.start('session-room')
+      await waitFor(() =>
+        expect(controller.state()).toMatchObject({ kind: 'blocked' }),
+      )
+
+      blocked = false
+      controller.start('session-room')
+      await waitFor(() => expect(prepareBand).toHaveBeenCalledOnce())
+      expect(controller.state()).toEqual({ kind: 'idle' })
+    })
+  })
 })

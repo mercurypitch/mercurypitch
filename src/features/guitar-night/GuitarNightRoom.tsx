@@ -416,7 +416,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     onClick={() => props.onSeparateGuitar?.()}
                   >
                     <strong>Separate guitar</strong>
-                    <small>Prepare independent band controls.</small>
+                    {/* Says what it costs before it is pressed: this is a
+                        cloud GPU job billed in credits, which nothing about
+                        a button in a rehearsal room would suggest. */}
+                    <small>
+                      Independent band controls. Runs on a cloud GPU and uses
+                      credits.
+                    </small>
                   </button>
                 </Show>
                 <div class={styles.scoreSessionLoop}>
