@@ -49,7 +49,7 @@ const DEFAULT_TUNING: GuitarFirstWinConfigV1['tuningMidiHighToLow'] = [
 export const DEFAULT_GUITAR_FIRST_WIN_CONFIG: GuitarFirstWinConfigV1 = {
   schemaVersion: 1,
   flowVersion: 'first-win-v1',
-  configVersion: '2026.08.1',
+  configVersion: '2026.08.2',
   enabled: true,
   tempoBpm: 78,
   countInBeats: 4,
@@ -86,7 +86,7 @@ export const DEFAULT_GUITAR_FIRST_WIN_CONFIG: GuitarFirstWinConfigV1 = {
     },
   ],
   inputFallbacks: ['microphone', 'midi', 'keyboard', 'touch'],
-  completionActions: ['keep-jamming', 'another-riff', 'load-song'],
+  completionActions: ['load-song', 'keep-jamming', 'another-riff'],
   skipDestination: 'quick-jam',
   returnEntry: 'learn:first-win',
 }
@@ -188,24 +188,43 @@ function safeEnumArray<T extends string>(
 function resolvePhraseChunks(
   value: unknown,
   fallback: GuitarFirstWinExerciseStepV1['phraseChunks'],
+  frets: readonly number[],
 ): GuitarFirstWinExerciseStepV1['phraseChunks'] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 16) {
-    return fallback.map((chunk) => ({ ...chunk, frets: [...chunk.frets] }))
+  const fallbackChunks = fallback.map((chunk) => ({
+    ...chunk,
+    frets: [...chunk.frets],
+  }))
+  const resolved =
+    !Array.isArray(value) || value.length === 0 || value.length > 16
+      ? fallbackChunks
+      : value.map((candidate, index) => {
+          const safeFallback = fallback[index] ?? fallback[0]
+          if (!isRecord(candidate) || safeFallback === undefined) {
+            return {
+              id: `phrase-${index + 1}`,
+              frets: [0],
+            }
+          }
+          return {
+            id: safeIdentifier(candidate.id, safeFallback.id),
+            frets: safeFrets(candidate.frets, safeFallback.frets),
+          }
+        })
+
+  const flattened = resolved.flatMap((chunk) => chunk.frets)
+  if (
+    flattened.length === frets.length &&
+    flattened.every((fret, index) => fret === frets[index])
+  ) {
+    return resolved
   }
 
-  return value.map((candidate, index) => {
-    const safeFallback = fallback[index] ?? fallback[0]
-    if (!isRecord(candidate) || safeFallback === undefined) {
-      return {
-        id: `phrase-${index + 1}`,
-        frets: [0],
-      }
-    }
-    return {
-      id: safeIdentifier(candidate.id, safeFallback.id),
-      frets: safeFrets(candidate.frets, safeFallback.frets),
-    }
-  })
+  return [
+    {
+      id: 'phrase-1',
+      frets: [...frets],
+    },
+  ]
 }
 
 function resolveExerciseStep(
@@ -248,11 +267,16 @@ function resolveExerciseStep(
     phraseChunks: resolvePhraseChunks(
       value.phraseChunks,
       fallback.phraseChunks,
+      frets,
     ),
     expectedMidi:
       value.expectedMidi === 'from-tuning-and-frets'
         ? value.expectedMidi
-        : (explicitMidi ?? fallback.expectedMidi),
+        : (explicitMidi ??
+          (Array.isArray(fallback.expectedMidi) &&
+          fallback.expectedMidi.length === frets.length
+            ? [...fallback.expectedMidi]
+            : 'from-tuning-and-frets')),
     guide:
       value.guide === 'count-in-only' || value.guide === 'percussion-only'
         ? value.guide
@@ -270,6 +294,13 @@ function cloneDefaults(): GuitarFirstWinConfigV1 {
     inputFallbacks: [...DEFAULT_GUITAR_FIRST_WIN_CONFIG.inputFallbacks],
     completionActions: [...DEFAULT_GUITAR_FIRST_WIN_CONFIG.completionActions],
   }
+}
+
+/** Resolve the first configured small-win handoff as the primary room action. */
+export function primaryGuitarFirstWinCompletionAction(
+  config: GuitarFirstWinConfigV1,
+): GuitarFirstWinCompletionAction {
+  return config.completionActions[0] ?? 'keep-jamming'
 }
 
 /** Resolve untrusted persisted or remote values against the bundled safe V1. */

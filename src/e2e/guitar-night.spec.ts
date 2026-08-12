@@ -598,6 +598,16 @@ test('keeps the first-win stage dominant across phone orientations @smoke', asyn
       expect(bounds?.height).toBeGreaterThanOrEqual(44)
     }
 
+    const markOpenString = page.getByRole('button', {
+      name: 'Mark open low E',
+    })
+    for (let hit = 0; hit < 3; hit += 1) await markOpenString.click()
+    await page.getByRole('button', { name: 'Read tab' }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Read a one-string phrase.' }),
+    ).toBeVisible()
+    await expectStageFirstLayout(0.55, '32.0000')
+
     await page.setViewportSize({ width: 844, height: 390 })
     await expectStageFirstLayout(0.55, '21.0000')
 
@@ -624,12 +634,14 @@ test('keeps the song actions reachable in a short desktop viewport @smoke', asyn
   await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
 
-  const chooseAudio = page.getByRole('button', {
-    name: 'Choose audio',
-    exact: true,
-  })
-  await chooseAudio.scrollIntoViewIfNeeded()
-  const buttonBox = await chooseAudio.boundingBox()
+  const chooseFile = page
+    .getByRole('button', {
+      name: 'Choose a file',
+      exact: true,
+    })
+    .last()
+  await chooseFile.scrollIntoViewIfNeeded()
+  const buttonBox = await chooseFile.boundingBox()
   expect(buttonBox).not.toBeNull()
   expect((buttonBox?.y ?? 0) + (buttonBox?.height ?? 0)).toBeLessThanOrEqual(
     720,
@@ -646,7 +658,7 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
 
   await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(
-    page.getByRole('heading', { name: 'Start with one string.' }),
+    page.getByRole('heading', { name: 'Make one string groove.' }),
   ).toBeVisible()
   expect(
     await page.evaluate(
@@ -672,19 +684,37 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
     .toBe(1)
   await page.getByRole('button', { name: 'Stop groove', exact: true }).click()
   const rhythmButton = page.getByRole('button', {
-    name: 'Tap each low E note',
+    name: 'Mark open low E',
   })
-  for (let hit = 0; hit < 4; hit += 1) await rhythmButton.click()
+  await rhythmButton.click()
+  const introOptions = page.locator('details').filter({
+    has: page.getByText('Adjust intro', { exact: true }),
+  })
+  await introOptions.locator('summary').focus()
+  await page.keyboard.press('Space')
+  await expect(introOptions).toHaveAttribute('open', '')
+  await expect(page.getByLabel('1 of 4 targets marked')).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(introOptions).not.toHaveAttribute('open', '')
+  for (let hit = 0; hit < 3; hit += 1) await rhythmButton.click()
+  await expect(page.getByText('4 open-string targets marked.')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Read tab', exact: true }).click()
   await expect(
-    page.getByText('You just read your first bar of tab.'),
+    page.getByRole('heading', { name: 'Read a one-string phrase.' }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(
+      'Each line is a string. A number is the fret; 0 means open.',
+    ),
+  ).toBeVisible()
+  for (let hit = 0; hit < 15; hit += 1) await page.keyboard.press('Space')
+  await expect(
+    page.getByText(
+      'Full phrase marked. You followed your first one-string tab.',
+    ),
   ).toBeVisible()
 
-  await page
-    .getByRole('button', { name: 'Open Guitar workspace', exact: true })
-    .click()
-  await expect(page).toHaveURL(/\/#\/guitar$/)
-
-  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: 'Bring a song into the room.' }),
@@ -694,7 +724,10 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
   ).toBeVisible()
 
   const fileChooserPromise = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'Choose audio', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Choose a file', exact: true })
+    .first()
+    .click()
   const fileChooser = await fileChooserPromise
   await fileChooser.setFiles({
     name: 'practice-room.wav',
