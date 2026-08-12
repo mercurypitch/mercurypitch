@@ -16,7 +16,10 @@
 // See docs/plans/device-sync.md (Phase 5).
 
 import { createSignal } from 'solid-js'
+import { storageEstimate } from '@/db/durable-write'
+import { requestPersistentStorage } from '@/db/persistent-storage'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
+import { formatBytes } from '@/lib/fetch-progress'
 import { isRelayedConnection } from '@/lib/jam/jam-song-transfer'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
 import { isReadableManifest } from '@/lib/portable/portable-bundle'
@@ -27,6 +30,7 @@ import { createSyncPeer } from '@/lib/sync/sync-peer'
 import type { BundleReceiver, BundleSender, SyncWireMessage, } from '@/lib/sync/sync-protocol'
 import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, } from '@/lib/sync/sync-protocol'
 import { showNotification } from '@/stores/notifications-store'
+import type { UvrSession } from '@/stores/uvr-store'
 import { getUvrSession } from '@/stores/uvr-store'
 
 /**
@@ -59,6 +63,16 @@ const [syncRoomId, setSyncRoomId] = createSignal<string | null>(null)
 const [syncError, setSyncError] = createSignal<string | null>(null)
 /** The far device's self-given name, once its channel is open. */
 const [syncPeerLabel, setSyncPeerLabel] = createSignal<string | null>(null)
+/** What the far device says it can still hold, once it has said. */
+const [syncPeerRoom, setSyncPeerRoom] = createSignal<{
+  freeBytes: number
+  quota: number
+} | null>(null)
+/** What THIS device can still hold, for the modal to show plainly. */
+const [syncOwnRoom, setSyncOwnRoom] = createSignal<{
+  freeBytes: number
+  quota: number
+} | null>(null)
 const [syncTransfers, setSyncTransfers] = createSignal<SyncTransfer[]>([])
 /** True while a song is packing or moving in either direction. */
 const [syncBusy, setSyncBusy] = createSignal(false)
@@ -66,10 +80,97 @@ const [syncBusy, setSyncBusy] = createSignal(false)
 export {
   syncBusy,
   syncError,
+  syncOwnRoom,
   syncPeerLabel,
+  syncPeerRoom,
   syncRoomId,
   syncState,
   syncTransfers,
+}
+
+/**
+ * How much of a device's allowance sync refuses to spend.
+ *
+ * Proportional, not the flat 50 MB `hasRoomFor` keeps: a TV measured in
+ * testing allows 16 MB in TOTAL, and a fixed margin larger than the whole
+ * quota turns every answer into "no" without ever explaining why. 10%
+ * leaves an equivalent cushion on a device that has room to spare and
+ * still lets a small device accept something.
+ */
+const ROOM_MARGIN_RATIO = 0.1
+const ROOM_MARGIN_CAP = 50 * 1024 * 1024
+
+/** What this device can still take, or null when the browser will not say. */
+export async function ownRoom(): Promise<{
+  freeBytes: number
+  quota: number
+} | null> {
+  const estimate = await storageEstimate()
+  if (estimate === null || estimate.quota <= 0) return null
+  const margin = Math.min(ROOM_MARGIN_CAP, estimate.quota * ROOM_MARGIN_RATIO)
+  return {
+    freeBytes: Math.max(0, estimate.quota - estimate.usage - margin),
+    quota: estimate.quota,
+  }
+}
+
+/**
+ * Whether `bytes` will fit, and what to say when it will not.
+ *
+ * An unknown quota is NOT a refusal: plenty of browsers will not answer,
+ * and blocking every transfer on a missing number would break sync on
+ * them entirely. Only a known shortage says no.
+ */
+export async function roomFor(
+  bytes: number,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const room = await ownRoom()
+  if (room === null || room.freeBytes >= bytes) return { ok: true }
+  return {
+    ok: false,
+    message: `This device has about ${formatBytes(room.freeBytes)} free for the app (out of ${formatBytes(room.quota)}), and the song needs ${formatBytes(bytes)}.`,
+  }
+}
+
+/**
+ * Roughly how big this song will be once packed, before packing it.
+ *
+ * Only an estimate, and it is used only to refuse early -- the exact
+ * figure arrives with the manifest. Duration times the portable bitrate
+ * is close enough to catch the case that matters: a 100 MB song offered
+ * to a device with 8 MB free, where the alternative is finding out after
+ * minutes of encoding.
+ */
+export function estimatePackedBytes(session: UvrSession): number {
+  const meta = session.stemMeta ?? {}
+  const stems = (['vocal', 'instrumental'] as const).filter(
+    (stem) => session.outputs?.[stem] !== undefined,
+  )
+  if (stems.length === 0) return 0
+  const seconds = Math.max(0, ...stems.map((stem) => meta[stem]?.duration ?? 0))
+  // A stem already stored as AAC travels as-is, so its stored size IS the
+  // answer and beats any estimate.
+  const known = stems
+    .map((stem) => meta[stem]?.size ?? 0)
+    .filter((size) => size > 0)
+  if (seconds <= 0) {
+    return known.reduce((n, size) => n + size, 0)
+  }
+  return Math.round(stems.length * seconds * (PORTABLE_BITRATE / 8))
+}
+
+/** The default portable tier's bitrate, for the estimate above. */
+const PORTABLE_BITRATE = 192_000
+
+/** Tell the far device who we are and how much we can still hold. */
+async function announceSelf(peerId: string): Promise<void> {
+  const room = await ownRoom()
+  setSyncOwnRoom(room)
+  peer?.sendControl(peerId, {
+    type: 'sync-hello',
+    label: syncDeviceLabel(),
+    ...(room === null ? {} : { freeBytes: room.freeBytes, quota: room.quota }),
+  })
 }
 
 let peer: SyncPeer | null = null
@@ -121,12 +222,14 @@ function ensurePeer(): SyncPeer {
         activePeerId = peerId
         setSyncPeerLabel(displayName)
         setSyncState('connected')
+        void announceSelf(peerId)
       }
     },
     onPeerLeft: (peerId) => {
       if (peerId !== activePeerId) return
       activePeerId = null
       setSyncPeerLabel(null)
+      setSyncPeerRoom(null)
       const gone = 'The other device left.'
       activeSender?.abort(gone)
       activeReceiver?.abort(gone)
@@ -136,6 +239,15 @@ function ensurePeer(): SyncPeer {
     onControl: (peerId, raw) => {
       if (peerId !== activePeerId || !isSyncWireMessage(raw)) return
       const msg = raw as SyncWireMessage
+      if (msg.type === 'sync-hello') {
+        setSyncPeerLabel(msg.label)
+        setSyncPeerRoom(
+          msg.freeBytes === undefined
+            ? null
+            : { freeBytes: msg.freeBytes, quota: msg.quota ?? 0 },
+        )
+        return
+      }
       if (msg.type === 'sync-offer') {
         handleIncomingOffer(msg.manifest)
         return
@@ -206,6 +318,13 @@ export async function startSyncReceive(): Promise<string | null> {
   const p = ensurePeer()
   setSyncError(null)
   setSyncState('starting')
+  // Ask before anything arrives, not after. Persistence is what stops the
+  // browser reclaiming a library it just accepted, and on some platforms
+  // it is also what lifts the origin out of the small best-effort bucket
+  // -- which is the difference between a device that can receive a song
+  // and one that cannot.
+  void requestPersistentStorage().then(() => refreshOwnRoom())
+  void refreshOwnRoom()
   await p.createRoom(syncDeviceLabel())
   const roomId = await waitFor(() => p.getRoomId())
   if (roomId === null) {
@@ -222,6 +341,11 @@ export async function startSyncReceive(): Promise<string | null> {
   setSyncState('waiting')
   armPeerArrivalDeadline()
   return roomId
+}
+
+/** Re-read this device's own allowance, for the modal to show. */
+export async function refreshOwnRoom(): Promise<void> {
+  setSyncOwnRoom(await ownRoom())
 }
 
 /** Join the other device's code, ready to send. */
@@ -301,6 +425,20 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       return
     }
 
+    // And so is the far device's room, for the same reason: a TV that
+    // allows 16 MB in total cannot take a song however long we spend
+    // preparing one for it. The estimate is rough on purpose -- the exact
+    // check happens below once the manifest exists -- but it is what
+    // stops minutes of encoding that could never have landed.
+    const far = syncPeerRoom()
+    const estimate = estimatePackedBytes(session)
+    if (far !== null && estimate > 0 && far.freeBytes < estimate) {
+      const message = `${syncPeerLabel() ?? 'That device'} has about ${formatBytes(far.freeBytes)} free and this song needs roughly ${formatBytes(estimate)}. Free some space over there and try again.`
+      upsertTransfer(fileHash, { status: 'failed', message })
+      showNotification(message, 'warning')
+      return
+    }
+
     // Per-stem encode progress folded into one bar: two stems, half each.
     const packRatio: Record<string, number> = {}
     const bundle = await buildPortableBundle(sessionId, {
@@ -317,6 +455,17 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
     if (mine !== generation) return
     const bytes = bundle.manifest.parts.reduce((n, part) => n + part.bytes, 0)
     upsertTransfer(fileHash, { bytes })
+
+    // Now the real number is known, check it against the real number over
+    // there. The receiver checks too -- it is the one that knows for
+    // certain -- but refusing here means nothing moves at all.
+    const room = syncPeerRoom()
+    if (room !== null && room.freeBytes < bytes) {
+      const message = `${syncPeerLabel() ?? 'That device'} has about ${formatBytes(room.freeBytes)} free and this song needs ${formatBytes(bytes)}.`
+      upsertTransfer(fileHash, { status: 'failed', message })
+      showNotification(message, 'warning')
+      return
+    }
 
     const channel = p.channelTo(target)
     // A channel that exists but is not open is a pair that died while we
@@ -439,6 +588,10 @@ function handleIncomingOffer(manifest: unknown): void {
     importPortableBundle,
     {
       onProgress: (prog) => upsertTransfer(fileHash, { ratio: prog.overall }),
+      // Asked before a byte moves. The alternative is what a real TV did:
+      // took the whole vocal stem, then refused the instrumental because
+      // the origin allows 16 MB in total, and rolled the lot back.
+      checkRoom: roomFor,
     },
   )
   activeReceiver = receiver

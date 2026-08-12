@@ -14,12 +14,14 @@
 //
 // See docs/plans/device-sync.md (Phase 1).
 
+import { storageEstimate } from '@/db/durable-write'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDbStrict, saveLyricsToDbStrict, } from '@/db/services/lyrics-db-service'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { loadPitchAnalysisFromDbStrict, savePitchAnalysisToDbStrict, } from '@/db/services/session-pitch-analysis-service'
 import { deleteImportedUvrSessionDataStrict, getStemBlobStrict, getStemFingerprintDataStrict, saveStemBlobDurable, saveStemFingerprintDataStrict, } from '@/db/services/uvr-service'
 import { loadTranscriptionFromDbStrict, saveTranscriptionToDbStrict, } from '@/db/services/whisper-transcription-db-service'
+import { formatBytes } from '@/lib/fetch-progress'
 import { sha256Hex } from '@/lib/portable/hash'
 import type { EncodeAbort, PortableTier } from '@/lib/portable/portable-audio'
 import { DEFAULT_PORTABLE_TIER, encodeStemToAac, } from '@/lib/portable/portable-audio'
@@ -178,6 +180,51 @@ export async function buildPortableBundle(
   }
 }
 
+/** A stem that would not go in, and the reason it would not. */
+export class StemStoreError extends Error {
+  /** True when the device is out of room, as opposed to anything else. */
+  readonly outOfRoom: boolean
+  constructor(message: string, outOfRoom: boolean) {
+    super(message)
+    this.name = 'StemStoreError'
+    this.outOfRoom = outOfRoom
+  }
+}
+
+/**
+ * Why a stem would not store, in words with numbers in them.
+ *
+ * "The instrumental stem could not be stored" is a message that arrives
+ * after a long transfer and tells the person nothing they can act on --
+ * measured on a TV that turned out to allow 16 MB in total. A full device
+ * is by far the likeliest cause and the only one the user can do anything
+ * about, so it is named, with what the browser actually allows.
+ */
+async function describeStemStoreFailure(
+  stem: string,
+  saved: { quotaExceeded: boolean; error?: unknown },
+): Promise<StemStoreError> {
+  if (saved.quotaExceeded) {
+    const room = await storageEstimate()
+    const detail =
+      room === null
+        ? ''
+        : ` This device allows ${formatBytes(room.quota)} for the app and ${formatBytes(room.usage)} is already used.`
+    return new StemStoreError(
+      `There is no room on this device for the ${stem} part.${detail} Free some space, or remove a song you no longer need, and try again.`,
+      true,
+    )
+  }
+  const because =
+    saved.error instanceof Error && saved.error.message !== ''
+      ? ` (${saved.error.message})`
+      : ''
+  return new StemStoreError(
+    `The ${stem} part could not be saved on this device${because}.`,
+    false,
+  )
+}
+
 export type ImportOutcome =
   | { outcome: 'imported'; sessionId: string }
   | { outcome: 'already-here'; sessionId: string }
@@ -227,7 +274,7 @@ export async function importPortableBundle(
           `${stem}.m4a`,
         )
         if (!saved.ok || saved.value === undefined) {
-          throw new Error(`The ${stem} stem could not be stored.`)
+          throw await describeStemStoreFailure(stem, saved)
         }
         stemMeta[stem] = {
           duration: manifest.song.durationSec,

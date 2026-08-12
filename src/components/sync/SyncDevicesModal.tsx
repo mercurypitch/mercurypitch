@@ -12,11 +12,12 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { formatBytes } from '@/lib/fetch-progress'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/sync/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { SyncTransfer } from '@/stores/sync-store'
-import { sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncPeerLabel, syncRoomId, syncState, syncTransfers, } from '@/stores/sync-store'
+import { estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncRoomId, syncState, syncTransfers, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { DeviceSync, Share } from '../icons'
@@ -123,6 +124,24 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   )
 
   const connected = () => syncState() === 'connected'
+
+  /**
+   * Whether a song of this size would be refused over there.
+   *
+   * Only ever true on a KNOWN shortage: a device that will not report its
+   * quota must not have every song greyed out. Passing 0 asks the same
+   * question about the device rather than about a song.
+   */
+  const tooBigForPeer = (bytes: number): boolean => {
+    const room = syncPeerRoom()
+    return room !== null && bytes > 0 && room.freeBytes < bytes
+  }
+
+  /** True when the far device has less room than a typical song needs. */
+  const lowOnRoom = (): boolean => {
+    const room = syncPeerRoom()
+    return room !== null && room.freeBytes < 20 * 1024 * 1024
+  }
 
   const receiveStatus = (): string => {
     if (connected()) return `Connected: ${syncPeerLabel() ?? 'another device'}`
@@ -244,6 +263,34 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                         sync button, choose “Send songs”, and enter this code.
                       </p>
                     </Show>
+                    {/* This device's own allowance, said plainly on the
+                        screen that is about to receive songs. A TV in
+                        testing allowed 16 MB in total, and the only sign
+                        was a stem that would not save at the very end. */}
+                    <Show when={syncOwnRoom()}>
+                      {(room) => (
+                        <p
+                          class={
+                            room().freeBytes < 20 * 1024 * 1024
+                              ? styles.warn
+                              : styles.hint
+                          }
+                        >
+                          This device has {formatBytes(room().freeBytes)} free
+                          for songs
+                          <Show when={room().quota > 0}>
+                            {' '}
+                            (of {formatBytes(room().quota)} the browser allows)
+                          </Show>
+                          .
+                          <Show when={room().freeBytes < 20 * 1024 * 1024}>
+                            {' '}
+                            That is not much — most songs need 5-15 MB, and a
+                            long one more.
+                          </Show>
+                        </p>
+                      )}
+                    </Show>
                   </>
                 )}
               </Show>
@@ -305,7 +352,19 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
               >
                 <p class={`${styles.status} ${styles.statusConnected}`}>
                   Connected: {syncPeerLabel() ?? 'another device'}
+                  <Show when={syncPeerRoom()}>
+                    {(room) => <> — {formatBytes(room().freeBytes)} free</>}
+                  </Show>
                 </p>
+                {/* Said before anything is chosen, because the failure this
+                    answers is a song that packs for minutes and then cannot
+                    land: a TV in testing allowed 16 MB in total. */}
+                <Show when={tooBigForPeer(0) === false && lowOnRoom()}>
+                  <p class={styles.warn}>
+                    That device is nearly full. Songs it cannot hold are marked
+                    below.
+                  </p>
+                </Show>
                 <div class={styles.songList}>
                   <For each={sendable()}>
                     {(session) => (
@@ -315,11 +374,24 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                           title={session.originalFile?.name}
                         >
                           {session.originalFile?.name ?? 'Untitled song'}
+                          <Show
+                            when={tooBigForPeer(estimatePackedBytes(session))}
+                          >
+                            <span class={styles.songNote}>
+                              {' '}
+                              — about{' '}
+                              {formatBytes(estimatePackedBytes(session))}, too
+                              big for that device
+                            </span>
+                          </Show>
                         </span>
                         <button
                           type="button"
                           class={styles.songBtn}
-                          disabled={syncBusy()}
+                          disabled={
+                            syncBusy() ||
+                            tooBigForPeer(estimatePackedBytes(session))
+                          }
                           onClick={() => void sendSongToPeer(session.sessionId)}
                         >
                           <Share /> Send

@@ -541,6 +541,30 @@ routes refused). Every finished transfer reports real bytes, seconds and MB/s
 in the modal and the console — the Phase 0 numbers. Still open: QR pairing
 (issue #489 composes here) and whole-library one-tap sync.
 
+**Measured on a real pair, 2026-08-12 (Android tablet → Philips TV).** The
+transfer itself worked. The receiver then failed on the second stem with "the
+instrumental stem could not be stored", and the TV's Sync settings read **8 MB
+used of a 16 MB quota** — an origin allowance two orders of magnitude below any
+phone measured for this plan. Three things came out of it, all fixed:
+
+- **A device's storage allowance is a first-class fact of the transfer, not
+  something to discover on the last write.** Both sides now advertise free
+  bytes in a `sync-hello` the moment the channel opens; the sender refuses (and
+  greys out) a song the far device cannot hold, and the receiver checks the
+  manifest total before accepting. The manifest names every part's size up
+  front, so this is knowable before a byte moves.
+- **A refusal for want of space is not "already there".** Every
+  `sync-declined` was mapped to `already-there`, so a full receiver would have
+  told the sender its song had arrived.
+- **The margin has to scale.** `hasRoomFor`'s flat 50 MB headroom is larger
+  than that TV's entire quota, which turns every answer into a silent no; sync
+  keeps `min(10% of quota, 50 MB)` instead.
+
+Whether 16 MB is the TV's real ceiling or a browser that has not been granted
+persistence is still open — `startSyncReceive` now requests persistent storage
+before showing the code, and the modal shows the number, so the next test
+answers it.
+
 Now an optimization for bulk transfer, not the foundation — and most of it is
 already written for the jam room.
 
