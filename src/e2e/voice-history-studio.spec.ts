@@ -26,7 +26,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.locator('#tab-voice-history').click()
   await expect(page.getByTestId('voice-history-page')).toBeVisible()
 
-  await page.getByRole('button', { name: 'New practice thread' }).click()
+  await page.getByRole('button', { name: 'Record freely' }).click()
   await page
     .getByLabel(/what do you want to repeat/i)
     .fill('Room and waveform check')
@@ -450,10 +450,10 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('button', { name: 'Clear history', exact: true }).click()
   await expect(
     page.getByRole('heading', {
-      name: 'Your first thread starts with one kept take.',
+      name: 'Start with one moment you can hear.',
     }),
   ).toBeVisible({ timeout: 10000 })
   await expect(
-    page.getByRole('button', { name: 'New practice thread' }),
+    page.getByRole('button', { name: 'Record freely' }),
   ).toBeFocused()
 })
