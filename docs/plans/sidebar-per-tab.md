@@ -1,7 +1,12 @@
 # Sidebar per tab — audit and plan
 
-Status: **proposal for discussion** — nothing here is implemented. The point is
-to agree on the per-tab content matrix (§4) before touching code.
+Status: **agreed 2026-08-12, in progress** on `feat/sidebar-per-tab`.
+Decisions taken: full panel registry (§3, not cheap gating) · Karaoke session
+groups + setlists move into the rail (§4) · the rail is THE jam roster
+(JamPanel's duplicate goes) · Settings shows universal panels only. For the
+§7 questions not decided explicitly: queue-status card renders only while a
+batch runs; the Analysis take-picker stays in the dashboard for now; Guitar
+adopts the rail per the matrix; Daily Routine stays per-tab as in the matrix.
 
 ## 1. The problem
 

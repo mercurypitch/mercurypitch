@@ -3039,9 +3039,6 @@ const AppShell: Component<AppProps> = (props) => {
             {/* Shared sidebar — with mobile open class */}
             <AppSidebar
               class={sidebarOpen() === true ? 'open' : ''}
-              onPresetLoad={(_name) => {
-                // Presets now handled by melodyStore/LibraryModal
-              }}
               onOctaveShift={handleOctaveShift}
               onOpenScaleBuilder={() => setShowScaleBuilder(true)}
               onOpenLearn={openLearningWalkthrough}
@@ -3050,8 +3047,6 @@ const AppShell: Component<AppProps> = (props) => {
               currentNoteIndex={currentNoteIndex}
               noteResults={noteResults}
               isPlaying={isPlaying}
-              pitch={currentPitch}
-              targetNoteName={targetNoteName}
               onClose={closeSidebar}
               // Collapse is a desktop-rail concept. On a phone the sidebar is
               // the full-width off-canvas drawer; never apply the collapsed
