@@ -1,6 +1,8 @@
 # Cross-Device Library Sync
 
-**Date**: 2026-07-26 · **Status**: proposed (research complete, decisions partly locked)
+**Date**: 2026-07-26 · **Revised**: 2026-08-12 · **Status**: proposed, re-sequenced
+against what the jam room shipped in the meantime (research complete, decisions
+partly locked)
 
 ## Context
 
@@ -37,6 +39,43 @@ The starting position is stronger than it looks:
 
 **We do not need to design a sync payload. It exists and is tested.**
 
+## What shipped since this plan was written (verified 2026-08-12)
+
+Sharing a song with a jam room needed the same primitives as sync, so most of
+the transport half of this plan is already in production and tested on real
+phones. Verified against `origin/main` today, not assumed:
+
+| Plan called for | Where it now lives | State |
+| --- | --- | --- |
+| Phase 1's portable-audio encoder | `src/lib/jam/stem-encoder.ts` | **Done.** AAC-in-MP4 at `STEM_BITRATE = 128_000` — the exact default tier this plan chose. WebCodecs with a `@mediabunny/aac-encoder` wasm fallback (Firefox on every platform, older Safari), decoded at the source's own sample rate, fed in slices that respect encoder backpressure, with progress and cancellation |
+| A packed bundle with per-part hashes | `src/lib/jam/jam-song-share.ts` | **Done.** `EncodedStem { stem, bytes, sha256, mime }`, `encodeStemsForShare` packs once and caches by key, `getPackedStems` / `forgetPackedStems` |
+| Phase 5's chunking and backpressure | `src/lib/jam/jam-song-transfer.ts` | **Done.** `TransferHeader` (transferId, stem, bytes, sha256, mime), `sendInChunks`, `chunkCount` / `chunkRange`, `sha256Hex` |
+| Phase 5's "detect a relay and refuse" | `isRelayedConnection()` in the same file | **Done**, and enforced before a byte moves |
+| Phase 5's blocker: sync must never ask for the mic | `openLocalStream()` / `startLocalAudio()` in `src/lib/jam/service.ts` | **Gone.** Entering a room now creates an empty `MediaStream`; the microphone is captured only when somebody unmutes. A data-only WebRTC path is an extraction, not a refactor |
+| A transport seam | `ShareTransport` + `shareStemsWithPeers` in `jam-song-share.ts` | **In miniature.** Two methods (`sendMessage`, `nextTransferId`) and a driver that walks targets one at a time |
+| "`fflate.zip()` builds the whole archive in RAM" | `StreamingZipArchive` in `session-export-service.ts` | **Half fixed.** The writer compresses one stream chunk at a time; compressed output still accumulates until the final Blob, and the reader is still a one-shot `unzipSync` |
+| The offline shell (listed as a dependency, not a phase) | `src/sw.ts`, `src/lib/pwa-service-worker.ts` | **Done.** Shell precache + install prompt shipped |
+
+Consequences for the phasing below: Phase 1 shrinks to promoting code that
+already exists out of `lib/jam/`, and Phase 5 shrinks to extracting a data-only
+path from a service that no longer demands a microphone. **The remaining work is
+mostly Phases 2, 3 and 4 — the seams, the manifest, and Drive.**
+
+What has *not* moved, also verified today:
+
+- `uvrSessions`, `uvrStemBlobs`, `karaokePlaylists` and `sessionGroups` are still
+  **local-only Dexie stores** — absent from `CLOUD_ENTITIES`
+  (`src/db/adapters/hybrid-adapter.ts`) and from the worker's `TABLES`
+  (`workers/db-worker/src/tables.ts`). `sessionRecords` (practice results) does
+  sync; the song library does not. Phase 3 is untouched.
+- No Drive scope anywhere in the repo. Google auth is still the redirect flow
+  (`loginWithGoogle` / `googleSignInUrl`).
+- No blob-store seam: audio is read straight out of Dexie
+  (`src/db/services/uvr-read-service.ts`). Phase 2 is untouched.
+- No Library or Sync tab. `TAB_SCOPES` in `src/features/tabs/constants.ts` has no
+  home for this; the library lives inside the Karaoke tab today, and where the
+  sync surface goes is an open question (see D7).
+
 ## Correcting a misconception: P2P bandwidth is not the blocker
 
 Measured WebRTC data-channel throughput on a LAN averages **~18 MB/s**
@@ -54,10 +93,12 @@ constraints are all tractable:
    window, so throughput collapses as RTT rises. Same-Wi-Fi (1–5 ms) is fine;
    cross-internet (30–100 ms) is not. *"Both devices on the same Wi-Fi"* is
    therefore a genuine product requirement — which matches the use case anyway.
-2. **Current code would OOM a phone.** `fflate.zip()` builds the whole archive
-   in RAM and `unzipSync()` inflates it in one shot
-   (`session-export-service.ts:706`). That is a desktop-download implementation
-   choice, not a platform limit. Streaming per-file fixes it.
+2. **Current code would OOM a phone.** Partly addressed since: the export writer
+   is now `StreamingZipArchive`, which compresses one chunk at a time. What
+   remains is that compressed output accumulates until the final Blob, and
+   import still inflates the whole archive in one `unzipSync()`. That is a
+   desktop-download implementation choice, not a platform limit. Streaming
+   per-file on the read side fixes it.
 3. **TURN relay fallback.** If a direct connection fails, WebRTC silently
    relays through the free `openrelay.metered.ca` servers
    (`jam/service.ts:10`) — pushing a GB through a public relay. Sync must
@@ -121,6 +162,89 @@ never import a transport or storage backend directly:
 
 Each transport is a small adapter over one pipeline. Native reuses all of it.
 
+## What "the library" means, and where it lives (decided 2026-08-12)
+
+**The library is the karaoke UVR sessions.** Not practice results, not jam
+rooms: the separated songs a user has built up, with their stems, lyrics, word
+timings, pitch analysis, and the playlists and singer names over the top. That
+is what has to appear on a second device.
+
+**Two surfaces, deliberately split:**
+
+| Surface | What it holds | Why there |
+| --- | --- | --- |
+| **Karaoke tab**, beside the library | The actions: *sync library*, *send this song*, per-song state (on this device / in the cloud / syncing) | It is where the library already is. A sync control that lives anywhere else is a control nobody finds |
+| **Settings → a new Sync subtab** | The configuration: connect Google Drive, quality tier, what to keep on this device, storage used against quota | Configuration is not a per-song action, and Drive account linking belongs with the other account settings |
+
+Sending one song to one person already exists — that is the jam room, over P2P,
+and it stays where it is. **This plan is the library, not the song.**
+
+## Quality provenance: a synced song is not the original (decided 2026-08-12)
+
+A portable bundle is lossy by design, and the second device must never pretend
+otherwise. Someone who separated a song at home and finds it degraded on their
+phone with no explanation will conclude the separation is broken.
+
+- The song manifest carries the tier it was synced at — `lossless`,
+  `portable-192`, `portable-128` — alongside the original's `fileHash`.
+- A song whose local stems came from a portable bundle is **visibly marked** in
+  the library: not an error state, a provenance one ("synced copy, standard
+  quality").
+- Offer the way back, and be honest about what each costs: **fetch the
+  full-quality bundle** from Drive or from the device that has it, or
+  **re-separate** on this device or on the server.
+- **Re-separating needs the original audio, which a portable bundle omits.** So
+  on a phone holding only a portable copy, "upgrade" means *fetch*, not
+  *re-run* — unless the user hands over the source file again. This is a real
+  constraint of the format, not an oversight, and the UI has to say which of
+  the two it is offering.
+- Drive therefore supports a **full-quality tier per song** (original + lossless
+  stems), opt-in and off by default: the user's own 15 GB, their call. That is
+  what makes "get the real thing on this device" a download rather than a
+  re-separation.
+- Server-side re-separation still uploads the source to RunPod, exactly as the
+  existing separation flow does. That is a transient processing path the user
+  invokes, not our servers holding a library — the copyright posture in
+  **Context** is about storage and sync, and stays intact.
+
+## Reachability: what actually needs the same Wi-Fi
+
+Worth stating plainly, because "P2P" and "same network" get conflated:
+
+- **Connectivity is not the problem.** WebRTC with STUN punches through most
+  NATs, and where it cannot, `workers/jam-worker/src/turn.ts` mints short-lived
+  Cloudflare Realtime TURN credentials and the connection relays. Two devices on
+  different networks, different countries, connect today — the jam room does it.
+- **Throughput is the problem.** SCTP's default 128 KiB receive window means
+  throughput collapses as RTT rises: fine at 1–5 ms on one Wi-Fi, poor at
+  30–100 ms across the internet. A single song is seconds either way; a whole
+  library is not.
+- **Relaying a library is the expensive problem.** TURN is our metered
+  Cloudflare path now, not a free public one. Pushing an entire library through
+  it is a bill, so bulk sync must require a direct candidate pair and say so —
+  `isRelayedConnection()` already implements the check.
+
+So: **cross-network P2P for a song, yes — it ships. Same Wi-Fi for a library.
+Drive for everything else**, which is precisely why Drive is Phase 4 and P2P is
+Phase 5.
+
+## A TV is a third device class (added 2026-08-12)
+
+Televisions are already first-class in the code: `classifyDevice()` returns
+`'tv'`, `isTvDevice()` exists, and rendering, CSS and upload flows were adapted
+for them in `07bbf838`. That makes "put my library on the TV" a transport
+target, not a new product.
+
+- A TV is the worst case for typing and the best case for a **room code plus
+  QR** — which the jam worker already mints, in an alphabet with no `0`/`O`/
+  `1`/`I`.
+- A TV is also unlikely to sign into Google comfortably, so **the TV target is
+  P2P-first**: push from the phone or the desktop that already has the library.
+  This is a genuine argument for Phase 5 that Drive does not cover.
+- TV storage is not a library's worth. Expect *stream one song now* to matter
+  more than *hold everything*, so the transport must support "send this one,
+  play it, keep nothing".
+
 ### Why Google Drive before P2P
 
 - **Asynchronous.** P2P needs both devices awake, on the same Wi-Fi, at the
@@ -158,24 +282,41 @@ default. Do not build two cloud backends.
 
 Each phase is one or more `feat/*` PRs; every PR runs `pnpm check`.
 
-### Phase 0 — Measure before building (1 day)
+### Phase 0 — Measure while building, not before (folded in)
 
-Replaces secondary-source figures with real numbers. **Do not skip.**
+**Decided 2026-08-12: this is no longer a separate phase.** There is no spare
+afternoon to spend on a lab exercise, and the jam room has already carried
+packed songs onto real iPhones and Android phones and played them, which
+answers the "does the format work on a phone" half.
 
-- Export a 10-song playlist; record real byte size.
-- Move it to an iPhone and an Android phone; import in-browser; note failures.
-- Log `navigator.storage.estimate()` on both.
-- Confirm whether the mobile karaoke loop is good enough to justify the rest.
+Instead, every phase ships the instrumentation it needs and the numbers come
+back from the PR test:
+
+- A dev-visible readout of `navigator.storage.estimate()` (usage and quota) on
+  whatever device is running — this is the number D5 turns on.
+- Real byte sizes logged per bundle at each quality tier, not estimates.
+- The library-sync PR reports elapsed time and throughput per song.
 
 The iOS quota figures above come from secondary sources — WebKit's storage-policy
-post and Google's scope docs both refused direct fetch during research. One
-afternoon on real hardware settles it, and everything downstream depends on the
-answer. Record findings back into this doc.
+post and Google's scope docs both refused direct fetch during research. Record
+what the device testing actually shows back into this doc as it arrives.
 
-### Phase 1 — Portable bundle: user-selectable quality (3–4 days)
+### Phase 1 — Portable bundle: user-selectable quality (1–2 days, was 3–4)
 
 Introduce a **portable bundle** distinct from the lossless archive, with the
 quality **chosen by the user** (decision locked) and a sensible default.
+
+**Most of this is written.** `encodeStemToAac` already produces the default tier;
+the work is promotion and tiering, not encoding:
+
+- Move `stem-encoder.ts` out of `src/lib/jam/` into a shared home (it is a codec,
+  not a room feature) and leave the jam imports pointing at the new path.
+- Make `STEM_BITRATE` a parameter: Standard 128k (default), High 192k, and
+  Lossless meaning "use today's archive path unchanged".
+- Wire the tier into the export UI and `userSettings` (already a cloud entity, so
+  the choice follows the user across devices).
+- Keep the `ensureAacEncoder()` probe as the gate: where AAC cannot be encoded,
+  the portable tiers are unavailable and lossless export still works.
 
 Per 4-minute song:
 
@@ -188,14 +329,13 @@ Per 4-minute song:
 ~7× reduction at the default. 152 MB fits inside every quota on every platform
 and uploads to Drive in seconds.
 
-- Encode with WebCodecs `AudioEncoder` on the **desktop** side so the phone only
-  ever decodes.
+- Encode on the **desktop** side so the phone only ever decodes. (Not a hard
+  rule any more: the jam encoder runs on phones too. It is a battery and
+  wall-clock choice, not a capability one.)
 - AAC-in-MP4 for universal playback (Opus is smaller but Safari support is
-  patchier).
+  patchier) — already the shipped choice.
 - The original file is omitted from portable bundles — the phone needs the
   instrumental plus an optional vocal guide, not the source.
-- Quality setting lives in `userSettings` (already a cloud entity, so the choice
-  follows the user across devices).
 - Lossless export is unchanged. This is an additional path, not a replacement.
 
 **This unlocks every later phase.** Without it, iOS storage and Drive quota both
@@ -203,17 +343,24 @@ bite.
 
 ### Phase 2 — Transport-agnostic bundle pipeline (3–4 days)
 
-The load-bearing refactor. No user-visible change.
+The load-bearing refactor, and **the phase that decides how much of the native
+port is packaging versus rewriting**. No user-visible change.
 
 - Refactor `prepareSessionFilesForZip` into an **async producer** yielding
   `{path, blob}` instead of a monolithic `fflate.Zippable`.
 - Refactor import into a **consumer of streamed blobs** instead of an
-  `Unzipped` map.
+  `Unzipped` map. (The writer already streams; the reader does not.)
 - Define `SyncTransport` (`put(path, blob)` / `get(path)` / `list()`) and a
   `BlobStore` adapter (web: Dexie · native: Filesystem), both following the
   `src/lib/platform/` seam convention.
+- Generalise `ShareTransport` rather than inventing a second interface — the P2P
+  transport should end up as one implementation of `SyncTransport`, not a
+  parallel stack.
 - **Rewire the existing ZIP export/import onto the new pipeline.** Proves the
   abstraction and keeps one code path so formats cannot drift.
+- Route every audio read through `BlobStore` — today `uvr-read-service.ts` and
+  its callers reach into Dexie directly, and each of those is a call site that
+  will not compile against a filesystem backend later.
 
 ### Phase 3 — Metadata sync over the existing cloud (2–3 days)
 
@@ -224,8 +371,18 @@ copyright exposure**. Only stems are big and encumbered.
 
 - Add to `CLOUD_ENTITIES`: `karaokePlaylists`, `sessionGroups`, and a
   lightweight song manifest (`fileHash` + title + duration + stem sizes — **no
-  audio**). Mirror the allowlist in `workers/db-worker/src/tables.ts`.
-- Mark them user-scoped (`USER_SCOPED_ENTITIES`).
+  audio**). Mirror the allowlist in `workers/db-worker/src/tables.ts` — an
+  entity in one and not the other silently 404s on every access, which is
+  exactly how `voiceprints` wrote nothing to D1 for weeks. The drift test in
+  `hybrid-adapter` exists to catch this; extend it.
+- A numbered D1 migration per the repo convention (next free number in
+  `workers/db-worker/migrations/`; never edit an applied file).
+- Mark them user-scoped (`USER_SCOPED_ENTITIES`) and `access: 'user'` in the
+  worker's `TABLES`.
+- Sync the manifest, not `uvrSessions` itself: that record carries RunPod job
+  ids, progress and error state, which are this device's business.
+- The manifest carries the **quality tier** and the original's `fileHash`, so
+  provenance is known before any audio arrives (see *Quality provenance*).
 - Mobile library UI renders each song as "on this device" or "not downloaded".
 
 Payoff: **sign in on a phone and the entire library and every playlist is
@@ -240,25 +397,41 @@ The WhatsApp model. **After this phase the original problem is solved.**
 
 - Add `drive.file` to the existing Google OAuth redirect flow.
 - Visible `MercuryPitch/` folder; one portable bundle per song, named by
-  `fileHash`.
+  `fileHash`, plus an opt-in full-quality bundle per song (D10) for people who
+  want the original back on a new device without re-separating.
 - Resumable upload via XHR (10 MB chunks; 256 KB minimum).
 - New device: *"Found 23 songs in your Drive — restore?"* → per-song,
   resumable, one at a time.
 - Sync state driven entirely by the Phase 3 manifest.
 
-### Phase 5 — P2P transport (4–6 days)
+**Start the paperwork on day one, not at the end.** Adding a scope changes the
+OAuth consent screen, and `drive.file` being non-sensitive means basic app
+verification rather than a CASA audit — but basic verification is still a
+Google-side review with its own lead time, and sign-in is a live production
+flow. Add the scope incrementally (request it when the user first turns Drive
+sync on, not at sign-in) so a pending review cannot break logging in.
 
-Now an optimization for bulk transfer, not the foundation.
+### Phase 5 — P2P transport (2–3 days, was 4–6)
 
-- Extract a **data-only** WebRTC path from `jam/service.ts`. Today
-  `createRoom()`/`joinRoom()` both call `startLocalStream()`
-  (`service.ts:111`, `:139`), which demands microphone permission and hard-fails
-  on denial. A file sync must never ask for the mic.
+Now an optimization for bulk transfer, not the foundation — and most of it is
+already written for the jam room.
+
+- Extract a **data-only** WebRTC path from `jam/service.ts`. The old blocker is
+  gone: `createRoom()` / `joinRoom()` now call `openLocalStream()`, which makes
+  an empty `MediaStream` and asks for nothing. What remains is separating room
+  membership and the data channel from the media plumbing around them.
+- Reuse `sendInChunks` / `TransferHeader` / `sha256Hex` from
+  `jam-song-transfer.ts` rather than writing a second chunker.
 - Reuse the jam worker's room codes as-is; add QR.
 - 16 KB chunks with `bufferedAmountLowThreshold` backpressure — the
   cross-browser-safe size; larger chunks stutter or fail on some browser pairs.
-- **Detect a relay candidate and refuse**, prompting "put both devices on the
-  same Wi-Fi", rather than silently pushing a GB through free public TURN.
+- **Detect a relay candidate and refuse** — `isRelayedConnection()` already
+  does this in the share path; carry the rule over.
+- Inherit the jam room's known weakness rather than repeating it: song delivery
+  there is fire-and-forget, with no acknowledgement and no retry, and a
+  late-joining peer sometimes never receives (dev testing, 2026-08-03). Sync
+  needs the hashed ACK and bounded retry that jam is also going to need; build
+  it once, here, and let the room adopt it.
 
 ### Offline shell — already covered
 
@@ -279,18 +452,40 @@ Because of Phase 2 this is small:
 4. P2P could later upgrade to native LAN sockets (Bonjour/TCP, as LocalSend
    does) — but WebRTC will already be fast enough.
 
+**What the web phases must do to earn that.** Everything below is web work that
+exists only so the native port is packaging. Doing it later costs several times
+more, because by then there are more call sites:
+
+| Web-phase decision | What it buys the native shell |
+| --- | --- |
+| `BlobStore` behind an interface (Phase 2) | The one swap that turns a WKWebView quota problem into a filesystem write |
+| Every audio read routed through it (Phase 2) | No call site reaches into Dexie for bytes, so nothing needs rewriting |
+| Streamed import (Phase 2) | Chunked filesystem access, since base64 round-tripping a large file through the WebView OOMs |
+| Portable tiers (Phase 1) | A library that fits inside a ~15% -of-disk origin quota |
+| Manifest in the cloud (Phase 3) | First launch of the native app shows the library before any audio moves |
+| Drive over HTTPS, not a browser API (Phase 4) | Works identically inside the shell |
+| Encoder out of `lib/jam/` (Phase 1) | Nothing in the sync path depends on a room feature |
+
 ---
 
 ## Recommended sequence
 
-**0 → 1 → 2 → 3 → 4**, then reassess. Roughly **3 weeks** to a genuinely
+Revised 2026-08-12, given that the encoder and the chunked transport already
+shipped inside the jam room.
+
+**3 → 1 → 2 → 4**, with Phase 0's measurements taken during Phase 3 (they gate
+D5, which Phase 2 needs, not Phase 3). Roughly **2 weeks** to a genuinely
 low-friction cross-device experience, all of it reusable under Capacitor.
 
-Phase 5 (P2P) is the natural next block.
+Why 3 first, ahead of the bundle work: it is the only phase that changes what
+the user sees without touching a byte of audio, it is independently shippable,
+and every later phase diffs against the manifest it creates. Signing in on a
+phone and finding your whole library listed — greyed out until downloaded — is
+most of the perceived friction gone for 2–3 days of work.
 
-Fastest standalone win: **Phase 3 alone is 2–3 days** and makes the library
-appear on any signed-in device instantly. Worth shipping on its own before
-committing to the rest.
+Phase 5 (P2P) is the natural next block and is now small, but it is genuinely
+optional: Drive solves the stated problem, asynchronously, and P2P only makes
+bulk transfer faster on the same Wi-Fi.
 
 ## Open decisions
 
@@ -300,8 +495,14 @@ committing to the rest.
 | D2 | Portable quality is user-selectable | **Locked** — default AAC 128k, High 192k, Lossless opt-in |
 | D3 | Drive before P2P | Proposed |
 | D4 | `drive.file` (visible folder) over `drive.appdata` (hidden) | Proposed |
-| D5 | Audio to filesystem, metadata to IndexedDB/SQLite — refines §B6 | Proposed, needs Phase 0 data |
-| D6 | Whether Phase 3 ships standalone first | Open |
+| D5 | Audio to filesystem, metadata to IndexedDB/SQLite — refines §B6 | Proposed; measured in the PR rather than up front |
+| D6 | Whether Phase 3 ships standalone first | **Locked** 2026-08-12 — it is the sequence above |
+| D7 | Where the sync surface lives | **Locked** 2026-08-12 — per-song and library actions in the **Karaoke tab**; Drive account, quality tier and storage in a new **Settings → Sync** subtab |
+| D8 | Whether the portable encoder moves out of `src/lib/jam/` | **Locked** 2026-08-12 — it moves, in Phase 1 |
+| D9 | A synced song is marked as a reduced-quality copy, with an offer to get the original back | **Locked** 2026-08-12 — see *Quality provenance* |
+| D10 | Drive holds an opt-in full-quality tier per song | **Locked** 2026-08-12 — it is what makes "upgrade" a download |
+| D11 | TV as a P2P target (push from phone/desktop, code + QR, stream-one-song) | Proposed — natural once Phase 5 lands |
+| D12 | Whether "re-separate at full quality" is offered on a device that lacks the original file | Open — it cannot be honoured there without the source; likely offer *fetch* only, and *re-separate* solely where the original is present |
 
 ## Sources
 
