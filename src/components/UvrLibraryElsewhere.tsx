@@ -29,7 +29,9 @@ function sizeLabel(manifest: SongManifest): string | null {
 
 /** "3:47", or nothing when the manifest did not say. */
 function durationLabel(manifest: SongManifest): string | null {
-  const total = manifest.durationSec
+  // `?? undefined` collapses D1's NULL onto the absent case: the column is
+  // nullable, so "the manifest did not say" arrives both ways.
+  const total = manifest.durationSec ?? undefined
   if (total === undefined || !Number.isFinite(total) || total <= 0) return null
   const minutes = Math.floor(total / 60)
   const seconds = Math.round(total % 60)
