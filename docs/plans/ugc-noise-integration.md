@@ -363,6 +363,40 @@ only.
 This is a practical marketing rule, not legal advice — worth a real check
 before any campaign with music in it.
 
+### Zen exercises has no URL, and what it would take
+
+The "zen exercises" pitch monitor is a genuinely good middle-slide surface —
+it is the app visualising live pitch, which is the thing worth filming. It is
+not reachable by URL today.
+
+It is launched imperatively, not routed: `openSingingZen({ mode: 'monitor',
+source })` in `src/stores/ui-store.ts` sets a `singingZenLaunch` signal, and
+the Singing page's starred toolbar widget calls it. Nothing writes a hash, so
+there is nothing to link to.
+
+Three ways to give it an address, in ascending cost:
+
+1. **Hash route** — add a `HashRoute` variant, a parse branch, and the
+   open/close wiring (`src/lib/hash-router.ts` +
+   `src/features/routing/useHashRouter.ts`, per INDEX §5). Yields
+   `mercurypitch.com/#/singing/zen`. Two files, contained.
+2. **Clean path over the hash route** — the above, plus a redirect mapping
+   `/zen` → `/#/singing/zen`, so the typed and printed URL has no `#`.
+3. **Standalone entry** like `/mirror` and `/glass` — its own HTML input and
+   bundle. Best landing experience, much the largest change.
+
+**For UGC, 1 alone is not enough.** A hash route lands the visitor in the full
+app: heavier bundle, tab chrome, and the first-run overlays that the
+browser-preview notes in INDEX §7 already call out as blocking. `/mirror` and
+`/glass` work as UGC destinations precisely because they are standalone and
+land on the thing itself. Option 2 is the pragmatic middle: a clean URL to
+type, without building a third entry point.
+
+Until one of those exists, the playbook uses two destinations — Glass for the
+hook, Mirror for the visualisation and the card. The Mirror's glide tasks draw
+the trail in real time, so the "watch your voice move" beat is already covered
+without a third page.
+
 ### Glass — the natural second playbook
 
 The "hear yourself back" hook is genuinely strong and it belongs to Glass,
@@ -398,6 +432,7 @@ Same rules: destination in the playbook prompt, no music, a cappella.
 | 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
 | 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | open |
 | 13 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
+| 14 | Give zen exercises a URL, if it should be a UGC destination (§8) | decision | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
 inactive and attached to no campaign, so they are harmless — and there is no
