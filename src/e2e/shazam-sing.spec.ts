@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { openNavTab } from './helpers/ui'
 
 // Skip: Karaoke tab ONNX model init crashes in test env — revisit later
 test.describe.skip('Shazam Sing', () => {
@@ -22,7 +23,7 @@ test.describe.skip('Shazam Sing', () => {
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     // Click the karaoke tab button
-    await page.locator('#tab-karaoke').click()
+    await openNavTab(page, 'tab-karaoke')
     // Wait for the default upload view to be visible
     await page.waitForSelector('[data-testid="uvr-upload"]', {
       timeout: 15000,

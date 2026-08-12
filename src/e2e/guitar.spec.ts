@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab } from './helpers/ui'
 
 // Fake mic/camera so the modes that acquire the microphone (singToFretboard,
 // hero gameplay) don't prompt or hang in headless Chromium.
@@ -58,7 +58,7 @@ test.describe('Guitar tab', () => {
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
 
-    await page.locator('#tab-guitar').click()
+    await openNavTab(page, 'tab-guitar')
     await expect(page.locator('#tab-guitar')).toHaveClass(/active/)
     await expect(page.locator(panel)).toBeVisible()
   })
@@ -125,9 +125,9 @@ test.describe('Guitar tab', () => {
     await expect(page.locator('.gp-caged-hud')).toBeVisible()
 
     // Leave to Singing, then return to Guitar.
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await expect(page.locator('#tab-singing')).toHaveClass(/active/)
-    await page.locator('#tab-guitar').click()
+    await openNavTab(page, 'tab-guitar')
     await expect(page.locator(panel)).toBeVisible()
 
     // State survived: still Fretboard view, still CAGED mode.
@@ -147,8 +147,8 @@ test.describe('Guitar tab', () => {
     await page.keyboard.press('m')
     await expect(micButton).toHaveAttribute('aria-pressed', 'true')
 
-    await page.locator('#tab-singing').click()
-    await page.locator('#tab-guitar').click()
+    await openNavTab(page, 'tab-singing')
+    await openNavTab(page, 'tab-guitar')
     await expect(page.locator('#btn-mic')).toHaveAttribute(
       'aria-pressed',
       'false',
@@ -175,8 +175,8 @@ test.describe('Guitar tab', () => {
 
     await drumPlay.click()
     await expect(drumPlay).toHaveText('Stop')
-    await page.locator('#tab-singing').click()
-    await page.locator('#tab-guitar').click()
+    await openNavTab(page, 'tab-singing')
+    await openNavTab(page, 'tab-guitar')
 
     await expect(page.locator('.dm-btn-play')).toHaveText('Play')
     await expect(page.locator('.dm-status')).toHaveText('Stopped')

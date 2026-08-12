@@ -1,6 +1,6 @@
 import type { CDPSession, Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, openNavTab } from '@/e2e/helpers/ui'
 
 const readSliderValue = async (slider: Locator): Promise<number> =>
   Number(await slider.getAttribute('aria-valuenow'))
@@ -162,21 +162,29 @@ test.describe('shared drag gesture verification', () => {
   }) => {
     await openSinging(page)
     const nav = page.locator('#app-tabs')
-    await page.locator('#tab-settings').click()
+    await openNavTab(page, 'tab-settings')
     await expect(page.locator('#tab-settings')).toHaveAttribute(
       'aria-current',
       'page',
     )
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await expect(page.locator('#tab-singing')).toHaveAttribute(
       'aria-current',
       'page',
     )
+    // Manufacture the overflow this test pans through. The bar now measures
+    // itself and folds tabs away until it FITS (AppNavTabs' fitToWidth), so it
+    // no longer overflows on its own at a desktop width — and once it has
+    // bottomed out at one icon per group its content is only ~408px, so the
+    // old `360px` box plus `scrollLeft = 60` left the strip already scrolled
+    // to its maximum with nothing left to pan. Squeeze it harder and start at
+    // zero, so the assertion below has real headroom either way.
     await nav.evaluate((element) => {
-      element.style.flex = '0 0 360px'
-      element.style.width = '360px'
-      element.scrollLeft = 60
+      element.style.flex = '0 0 160px'
+      element.style.width = '160px'
+      element.scrollLeft = 0
     })
+    await expect(nav).toHaveClass(/tabs-scrollable/)
     await rememberCapturedPointer(nav)
 
     const box = await nav.boundingBox()
@@ -193,12 +201,17 @@ test.describe('shared drag gesture verification', () => {
       start,
     )
     await page.waitForTimeout(0)
-    await page.locator('#tab-settings').click()
-    await expect(page.locator('#tab-settings')).toHaveAttribute(
+    // Compose rather than Settings: the strip is still pinned narrow for the
+    // second pan below, so the bar has bottomed out at one tab per group and
+    // Settings is inside Studio's overflow menu. Compose is that group's first
+    // tab, so it is inline at every cap — this step is about navigation
+    // surviving the drag, not about reaching a menu.
+    await openNavTab(page, 'tab-compose')
+    await expect(page.locator('#tab-compose')).toHaveAttribute(
       'aria-current',
       'page',
     )
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
 
     const recoveredStart = await nav.evaluate((element) => element.scrollLeft)
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)

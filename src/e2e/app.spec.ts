@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, openPlaybackSetup, openSingingControls, switchSettingsTab, } from '@/e2e/helpers/ui'
+import { dismissOverlays, openNavTab, openPlaybackSetup, openSingingControls, switchSettingsTab, } from '@/e2e/helpers/ui'
 
 test.describe('MercuryPitch App', () => {
   test.beforeEach(async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe('MercuryPitch App', () => {
       }
     })
     // Then click Practice tab
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await page.waitForTimeout(300)
   })
 
@@ -59,7 +59,7 @@ test.describe('MercuryPitch App', () => {
   test('tab navigation switches content @smoke', async ({ page }) => {
     await dismissOverlays(page)
     // Click Editor tab and verify its content
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await page.waitForTimeout(500)
     await expect(page.locator('#roll-instrument-select')).toBeVisible({
       timeout: 5000,
@@ -68,14 +68,14 @@ test.describe('MercuryPitch App', () => {
     // Click Settings tab and verify its content. Assert the always-present
     // panel title rather than a specific section heading — sections now live
     // behind sub-tabs, so the title is the stable, tab-independent marker.
-    await page.locator('#tab-settings').click()
+    await openNavTab(page, 'tab-settings')
     await page.waitForTimeout(500)
     await expect(page.locator('[data-testid="settings-title"]')).toBeVisible({
       timeout: 5000,
     })
 
     // Click Practice tab and verify its content
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await page.waitForTimeout(500)
     await expect(page.locator('[data-testid="tempo-group"]')).toBeVisible({
       timeout: 5000,
@@ -161,7 +161,7 @@ test.describe('MercuryPitch App', () => {
     await page.waitForTimeout(500)
 
     // Switch to editor tab
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await page.waitForTimeout(2000)
 
     // Name the preset using the sidebar input
@@ -222,7 +222,7 @@ test.describe('MercuryPitch App', () => {
     page,
   }) => {
     // only on editor now (perhaps we will have it on both Practice and Editor!
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     const recordBtn = page.locator('#record-btn')
     await expect(recordBtn).toBeVisible()
     await expect(recordBtn).toHaveAttribute('title', /Record/i)
@@ -238,7 +238,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('editor tab shows piano roll toolbar', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await expect(page.locator('.roll-toolbar')).toBeVisible()
     // Place, select, delete buttons may or may not exist depending on implementation
     if ((await page.locator('#roll-place-btn').count()) > 0) {
@@ -253,7 +253,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('editor tab shows MIDI export/import buttons', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     // These may or may not exist depending on implementation
     if ((await page.locator('#roll-export-midi').count()) > 0) {
       await expect(page.locator('#roll-export-midi')).toBeVisible()
@@ -264,7 +264,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('can place a note on the piano roll @smoke', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await page.waitForTimeout(2000)
 
     // Select place tool if it exists
@@ -289,7 +289,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('piano roll zoom controls exist', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     if ((await page.locator('#roll-zoom-in').count()) > 0) {
       await expect(page.locator('#roll-zoom-in')).toBeVisible()
     }
@@ -299,14 +299,14 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('snap-to-grid toggle exists', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     if ((await page.locator('#roll-snap-btn').count()) > 0) {
       await expect(page.locator('#roll-snap-btn')).toBeVisible()
     }
   })
 
   test('effect buttons exist in editor', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     if ((await page.locator('#roll-action-slide-up').count()) > 0) {
       await expect(page.locator('#roll-action-slide-up')).toBeVisible()
     }
@@ -354,7 +354,7 @@ test.describe('MercuryPitch App', () => {
 
   test('Settings panel shows About section', async ({ page }) => {
     // Click Settings tab button with force
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000) // Wait longer for SolidJS to re-render
     await switchSettingsTab(page, 'account')
     await expect(page.locator('[data-testid="about-name"]')).toContainText(
@@ -365,7 +365,7 @@ test.describe('MercuryPitch App', () => {
   test('Settings panel shows GitHub link in About section', async ({
     page,
   }) => {
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000)
     await switchSettingsTab(page, 'account')
     const githubLink = page.locator('[data-testid="about-link"]')
@@ -375,7 +375,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Settings panel shows ADSR envelope controls', async ({ page }) => {
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000)
     await switchSettingsTab(page, 'singing')
     await expect(page.locator('#adsr-attack')).toBeVisible({ timeout: 10000 })
@@ -385,7 +385,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Settings panel shows Reverb controls', async ({ page }) => {
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000)
     await switchSettingsTab(page, 'singing')
     await expect(page.locator('#reverb-type')).toBeVisible({ timeout: 10000 })
@@ -403,7 +403,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Reverb type can be changed', async ({ page }) => {
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000)
     await switchSettingsTab(page, 'singing')
     const reverbType = page.locator('#reverb-type')
@@ -413,7 +413,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('ADSR controls can be adjusted', async ({ page }) => {
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000)
     await switchSettingsTab(page, 'singing')
     const attackSlider = page.locator('#adsr-attack')
@@ -423,7 +423,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Accuracy bands settings exist', async ({ page }) => {
-    await page.locator('#tab-settings').click({ force: true })
+    await openNavTab(page, 'tab-settings', { force: true })
     await page.waitForTimeout(3000)
     await switchSettingsTab(page, 'singing')
     await expect(page.locator('#band-perfect')).toBeVisible({ timeout: 10000 })
@@ -433,7 +433,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Practice tab shows transport controls', async ({ page }) => {
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await page.waitForTimeout(500)
     // Transport controls
     await expect(page.locator('[data-testid="play-btn"]')).toBeVisible({
@@ -442,7 +442,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Practice mode buttons exist', async ({ page }) => {
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await page.waitForTimeout(500)
     // Mode buttons (Once / Repeat / Practice)
     await expect(page.getByTestId('btn-once')).toBeVisible()
@@ -450,7 +450,7 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Editor shows instrument selector', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await expect(page.locator('#roll-instrument-select')).toBeVisible()
     await expect(
       page.locator('#roll-instrument-select option[value="piano"]'),
@@ -461,17 +461,17 @@ test.describe('MercuryPitch App', () => {
   })
 
   test('Editor shows WAV export button', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await expect(page.locator('#roll-export-wav')).toBeVisible()
   })
 
   test('Editor shows MIDI export button', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     await expect(page.locator('#roll-export-midi')).toBeVisible()
   })
 
   test('Editor shows pitch track toggle button', async ({ page }) => {
-    await page.locator('#tab-compose').click()
+    await openNavTab(page, 'tab-compose')
     if ((await page.locator('#roll-pitch-track-btn').count()) > 0) {
       await expect(page.locator('#roll-pitch-track-btn')).toBeVisible()
     }

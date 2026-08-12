@@ -385,9 +385,14 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
         onClick={() => void props.handleTabChange(tab)}
         aria-current={ariaCurrent(tab)}
         aria-label={meta.ariaLabel}
+        // Only while the name is hidden. A native tooltip repeating a label
+        // that is already on screen is noise on every hover.
+        title={iconOnly() ? props.tabLabel(tab) : undefined}
       >
         {meta.icon()}
-        {props.tabLabel(tab)}
+        {/* Wrapped so icon-only mode can hide the name without touching the
+            icon. A bare text node has nothing for CSS to select. */}
+        <span class="tab-text">{props.tabLabel(tab)}</span>
       </button>
     )
   }
@@ -413,6 +418,17 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
    * still separate the groups without them.
    */
   const [showLabels, setShowLabels] = createSignal(true)
+
+  /**
+   * Tabs as their icons alone, names in the tooltip.
+   *
+   * Dropped after the group names and BEFORE any tab count, because a tab you
+   * can see and click beats a tab behind a menu: a text tab costs ~89px and an
+   * icon one ~30px, so this is what keeps all eleven destinations on a 1280px
+   * laptop instead of four tabs and four menus. The ≤768px bar has always done
+   * this — same idea, measured rather than hard-coded to a breakpoint.
+   */
+  const [iconOnly, setIconOnly] = createSignal(false)
 
   const [scrollable, setScrollable] = createSignal(false)
 
@@ -452,9 +468,13 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     const overflows = (): boolean => contentWidth() > navRef.clientWidth + 1
 
     setShowLabels(true)
+    setIconOnly(false)
     setInlineCap(MAX_INLINE_GROUP_TABS)
 
+    // Cheapest thing first, destinations last: group names, then the tab
+    // names, and only then a tab per group.
     if (overflows()) setShowLabels(false)
+    if (overflows()) setIconOnly(true)
     for (let cap = MAX_INLINE_GROUP_TABS; cap > 1 && overflows(); cap--) {
       setInlineCap(cap - 1)
     }
@@ -675,6 +695,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
       classList={{
         'tabs-scrollable': scrollable(),
         'tabs-simple': uiMode() === 'simple',
+        'tabs-icon-only': iconOnly(),
       }}
     >
       <For each={TAB_GROUPS}>

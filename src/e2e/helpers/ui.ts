@@ -83,7 +83,14 @@ export async function waitForNav(page: Page, timeout = 15000) {
  * the owning menu by opening triggers until the button turns up — so this
  * helper never has to be kept in step with the group taxonomy.
  */
-export async function openNavTab(page: Page, buttonId: string) {
+/** The tab bar's own overflow panel — see AppNavOverflowMenu's aria-label. */
+const NAV_OVERFLOW_MENU = '[role="menu"][aria-label^="More "]'
+
+export async function openNavTab(
+  page: Page,
+  buttonId: string,
+  options: { force?: boolean } = {},
+) {
   const button = page.locator(`#${buttonId}`)
   const visible = async () => await button.isVisible().catch(() => false)
 
@@ -104,11 +111,18 @@ export async function openNavTab(page: Page, buttonId: string) {
     if ((await more.count()) > 0) await more.click()
   }
 
-  await button.click()
+  // `force` is for the specs that deliberately skip dismissOverlays: the
+  // onboarding flow covers the page, so the button is visible but the pointer
+  // is intercepted. It was `click({ force: true })` before this helper existed.
+  await button.click({ force: options.force })
   // The menu that held it unmounts as the tab activates (the active tab is
   // promoted into the bar). Wait for that so a following locator cannot
-  // catch a frame with both the row and the bar button on screen.
-  await expect(page.locator('[role="menu"]')).toHaveCount(0, { timeout: 5000 })
+  // catch a frame with both the row and the bar button on screen. Scoped by
+  // aria-label, not a bare `[role="menu"]` — the UVR session actions and the
+  // stem-mixer transport have menus of their own that this must not wait on.
+  await expect(page.locator(NAV_OVERFLOW_MENU)).toHaveCount(0, {
+    timeout: 5000,
+  })
 }
 
 export async function switchTab(
