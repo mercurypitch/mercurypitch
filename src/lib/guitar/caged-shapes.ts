@@ -2,7 +2,11 @@
 // CAGED chord shape definitions
 // ============================================================
 
-import { OPEN_MIDI } from './constants'
+import type { InstrumentTuning } from './instrument-tuning'
+import {
+  DEFAULT_GUITAR_TUNING,
+  soundingOpenMidi,
+} from './instrument-tuning'
 
 export type CagedShapeName = 'C' | 'A' | 'G' | 'E' | 'D'
 
@@ -45,7 +49,7 @@ export const CAGED_SHAPES: Record<CagedShapeName, CagedShape> = {
   G: {
     name: 'G',
     rootString: 5, // low E string
-    offsets: [0, -3, -3, -3, -3, 0],
+    offsets: [0, -3, -3, -3, -1, 0],
   },
   E: {
     name: 'E',
@@ -55,7 +59,7 @@ export const CAGED_SHAPES: Record<CagedShapeName, CagedShape> = {
   D: {
     name: 'D',
     rootString: 3, // D string
-    offsets: [2, 3, 2, 0, -2, null],
+    offsets: [2, 3, 2, 0, null, null],
   },
 }
 
@@ -68,6 +72,25 @@ export interface FretNote {
   role: 'root' | '3rd' | '5th'
 }
 
+const STANDARD_GUITAR_INTERVALS = DEFAULT_GUITAR_TUNING.openMidi
+  .slice(0, -1)
+  .map((midi, index) => midi - (DEFAULT_GUITAR_TUNING.openMidi[index + 1] ?? 0))
+
+/**
+ * CAGED geometry survives a capo or an equal detune, but not a changed string
+ * interval such as Drop D. Refuse incompatible necks instead of drawing a
+ * familiar shape over pitches that do not make that chord.
+ */
+export function isCagedCompatibleTuning(tuning: InstrumentTuning): boolean {
+  if (tuning.instrument !== 'guitar' || tuning.stringCount !== 6) return false
+  const intervals = tuning.openMidi
+    .slice(0, -1)
+    .map((midi, index) => midi - (tuning.openMidi[index + 1] ?? 0))
+  return intervals.every(
+    (interval, index) => interval === STANDARD_GUITAR_INTERVALS[index],
+  )
+}
+
 /**
  * Compute the actual frets for a CAGED shape given a root MIDI note.
  * The root is placed on the shape's root string at the appropriate fret.
@@ -76,9 +99,12 @@ export interface FretNote {
 export function computeShapeFrets(
   shape: CagedShape,
   rootMidi: number,
+  tuning: InstrumentTuning = DEFAULT_GUITAR_TUNING,
 ): FretNote[] {
+  if (!isCagedCompatibleTuning(tuning)) return []
+  const openMidi = soundingOpenMidi(tuning)
   // fret on rootString where rootMidi sits
-  const rootFret = rootMidi - OPEN_MIDI[shape.rootString]
+  const rootFret = rootMidi - (openMidi[shape.rootString] ?? rootMidi)
 
   const notes: FretNote[] = []
 
@@ -87,13 +113,14 @@ export function computeShapeFrets(
     if (offset === null) continue
     const fret = rootFret + offset
     if (fret < 0 || fret > 15) continue
-    const midi = OPEN_MIDI[s] + fret
+    const midi = (openMidi[s] ?? 0) + fret
     // Determine role by measuring interval from root (mod 12)
     const interval = (((midi - rootMidi) % 12) + 12) % 12
-    let role: 'root' | '3rd' | '5th' = '5th'
+    let role: 'root' | '3rd' | '5th'
     if (interval === 0) role = 'root'
-    else if (interval === 4 || interval === 8) role = '3rd'
+    else if (interval === 4) role = '3rd'
     else if (interval === 7) role = '5th'
+    else continue
     notes.push({ stringIndex: s, fret, midi, role })
   }
 
@@ -104,10 +131,16 @@ export function computeShapeFrets(
  * Find the best root MIDI for a shape in a given key, keeping the shape
  * within a reasonable fret range (0–15).
  */
-export function findRootForShape(shape: CagedShape, keyMidi: number): number {
+export function findRootForShape(
+  shape: CagedShape,
+  keyMidi: number,
+  tuning: InstrumentTuning = DEFAULT_GUITAR_TUNING,
+): number {
+  if (!isCagedCompatibleTuning(tuning)) return keyMidi
+  const openMidi = soundingOpenMidi(tuning)
   // Try to put the root on the root string at a playable fret
   // The root note itself must be keyMidi (mod 12) in the right octave
-  const open = OPEN_MIDI[shape.rootString]
+  const open = openMidi[shape.rootString] ?? keyMidi
   // Closest fret for keyMidi (mod 12) starting from open string
   const base = keyMidi % 12
   for (let octave = 0; octave <= 3; octave++) {
@@ -115,7 +148,7 @@ export function findRootForShape(shape: CagedShape, keyMidi: number): number {
     // Check all offsets produce playable frets
     const ok = shape.offsets.every((off, _s) => {
       if (off === null) return true
-      const rootFret = candidate - OPEN_MIDI[shape.rootString]
+      const rootFret = candidate - (openMidi[shape.rootString] ?? candidate)
       const fret = rootFret + off
       return fret >= 0 && fret <= 15
     })
