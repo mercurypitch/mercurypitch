@@ -23,15 +23,21 @@ vi.mock('@/lib/drive/drive-client', async (importOriginal) => {
   return { ...actual, createDriveClient: () => driveMock }
 })
 
-vi.mock('@/db/services/auth-service', () => ({
+const auth = vi.hoisted(() => ({
+  account: 'user-1' as string | null,
   fetchDriveAccessToken: vi.fn(() =>
     Promise.resolve({ ok: true, accessToken: 'tok', expiresIn: 3600 }),
   ),
-  fetchDriveStatus: vi.fn(() =>
-    Promise.resolve({ connected: true, email: 'a@b.c' }),
+  fetchDriveStatus: vi.fn(
+    (): Promise<{ known: boolean; connected?: boolean; email?: string }> =>
+      Promise.resolve({ known: true, connected: true, email: 'a@b.c' }),
   ),
   disconnectDrive: vi.fn(() => Promise.resolve(true)),
-  driveConnectUrl: vi.fn(() => 'https://worker/start'),
+  startDriveConnect: vi.fn(() => Promise.resolve({ ok: true })),
+}))
+vi.mock('@/db/services/auth-service', () => ({
+  ...auth,
+  currentAccountId: () => auth.account,
 }))
 
 const sessions = vi.hoisted(() => ({ list: [] as unknown[] }))
@@ -50,7 +56,7 @@ const notify = vi.hoisted(() => ({ showNotification: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => notify)
 
 import { encodeContainerHeader } from '@/lib/portable/portable-container'
-import { backUpToDrive, driveJob, driveScan, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
+import { backUpToDrive, disconnectDriveSync, driveError, driveJob, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
 
 function localSession(hash: string, name: string) {
   return {
@@ -91,6 +97,18 @@ function manifestFor(hash: string, parts: number[]): PortableBundleManifest {
 beforeEach(() => {
   vi.clearAllMocks()
   sessions.list = []
+  auth.account = 'user-1'
+  auth.fetchDriveAccessToken.mockResolvedValue({
+    ok: true,
+    accessToken: 'tok',
+    expiresIn: 3600,
+  })
+  auth.fetchDriveStatus.mockResolvedValue({
+    known: true,
+    connected: true,
+    email: 'a@b.c',
+  })
+  auth.disconnectDrive.mockResolvedValue(true)
   driveMock.ensureFolder.mockResolvedValue('folder-1')
   driveMock.listSongs.mockResolvedValue([])
 })
@@ -279,5 +297,58 @@ describe('restore', () => {
     // Nothing was imported, and the store is idle rather than stuck.
     expect(driveJob()).toBeNull()
     expect(driveScan()).not.toBeNull()
+  })
+})
+
+describe('whose Drive it is', () => {
+  it('forgets everything when a different account signs in', async () => {
+    sessions.list = [localSession('h-1', 'Mine.mp3')]
+    driveMock.listSongs.mockResolvedValue([driveFile('h-9', 'In My Drive')])
+    await refreshDriveStatus()
+    await scanDrive()
+    expect(driveScan()?.toRestore).toHaveLength(1)
+
+    // Signing out does not reload the page, so without an account check
+    // the next person in this tab inherits the previous user's access
+    // token and Drive file ids -- and the first button they press uploads
+    // their songs into somebody else's Drive.
+    auth.account = 'user-2'
+    sessions.list = []
+    driveMock.listSongs.mockResolvedValue([])
+
+    await restoreFromDrive()
+    expect(bundleMock.importPortableBundle).not.toHaveBeenCalled()
+    expect(driveMock.downloadRange).not.toHaveBeenCalled()
+
+    await backUpToDrive()
+    expect(driveMock.uploadSong).not.toHaveBeenCalled()
+  })
+
+  it('does not claim a Drive is missing when it could not ask', async () => {
+    await refreshDriveStatus()
+    expect(driveState()).toBe('connected')
+
+    auth.fetchDriveStatus.mockResolvedValue({ known: false })
+    await refreshDriveStatus()
+
+    // Offline, or a 500, or a lapsed session. Answering "not connected"
+    // here is what puts a Connect button in front of somebody whose Drive
+    // is already attached, and tapping it leaves the app for consent.
+    expect(driveState()).toBe('connected')
+    expect(driveError()).toContain('Could not check')
+  })
+})
+
+describe('disconnect', () => {
+  it('does not say it disconnected when it did not', async () => {
+    await refreshDriveStatus()
+    auth.disconnectDrive.mockResolvedValue(false)
+
+    await disconnectDriveSync()
+
+    // Telling somebody their access is revoked when the sealed refresh
+    // token is still in the database is the one wrong answer here.
+    expect(driveState()).toBe('connected')
+    expect(driveError()).toContain('still connected')
   })
 })

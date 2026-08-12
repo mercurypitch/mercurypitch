@@ -27,6 +27,13 @@ export const SONG_FILE_SUFFIX = '.mpsong'
  */
 export const UPLOAD_CHUNK_BYTES = 4 * 1024 * 1024
 
+/**
+ * How many times a slice may be acknowledged without the offset moving
+ * before the song is given up on. Re-sending a slice the server did not
+ * keep is correct; doing it forever is a hung job with a frozen bar.
+ */
+export const UPLOAD_STALL_LIMIT = 3
+
 const API = 'https://www.googleapis.com/drive/v3'
 const UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3'
 
@@ -267,6 +274,11 @@ export function createDriveClient(deps: DriveClientDeps) {
     const total = container.size
     let at = 0
     let fileId = meta.existingFileId ?? ''
+    // Drive can acknowledge a 308 without having advanced -- a proxy that
+    // dropped the body, a slice it refused to store. Re-sending is right,
+    // re-sending forever is not: without this the loop spins on the same
+    // 4 MiB with the progress bar frozen, and only the Stop button ends it.
+    let stalledSlices = 0
     while (at < total) {
       if (opts.signal?.aborted === true) {
         // Tell Drive the session is dead so it does not linger for a week.
@@ -286,9 +298,26 @@ export function createDriveClient(deps: DriveClientDeps) {
         // Trust Drive's Range over our own counter: a proxy can deliver
         // a partial slice, and resuming from the wrong offset corrupts
         // the file silently.
+        //
+        // No Range header at all is Drive saying it has stored NOTHING --
+        // that is the documented meaning, and reading it as "the slice
+        // landed" is the version of this bug that produces a truncated
+        // song or a 400 on the next, non-contiguous slice.
         const range = res.headers.get('Range')
         const match = range === null ? null : /bytes=0-(\d+)/.exec(range)
-        at = match === null ? end : Number(match[1]) + 1
+        const acknowledged = match === null ? 0 : Number(match[1]) + 1
+        if (acknowledged <= at) {
+          stalledSlices += 1
+          if (stalledSlices > UPLOAD_STALL_LIMIT) {
+            throw new DriveApiError(
+              0,
+              'Drive stopped accepting this song — the upload made no progress.',
+            )
+          }
+        } else {
+          stalledSlices = 0
+          at = acknowledged
+        }
       } else if (res.ok) {
         const body = (await res.json().catch(() => ({}))) as DriveFileResource
         fileId = body.id ?? fileId

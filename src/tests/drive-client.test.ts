@@ -6,7 +6,7 @@
 // none of them are reproducible by hand.
 
 import { describe, expect, it, vi } from 'vitest'
-import { createDriveClient, DRIVE_FOLDER_NAME, DriveApiError, DriveAuthError, SONG_FILE_SUFFIX, UPLOAD_CHUNK_BYTES, } from '@/lib/drive/drive-client'
+import { createDriveClient, DRIVE_FOLDER_NAME, DriveApiError, DriveAuthError, SONG_FILE_SUFFIX, UPLOAD_CHUNK_BYTES, UPLOAD_STALL_LIMIT, } from '@/lib/drive/drive-client'
 
 interface Call {
   url: string
@@ -283,6 +283,74 @@ describe('drive client — upload', () => {
     expect(JSON.parse(String(calls[0]!.init.body))).not.toHaveProperty(
       'parents',
     )
+  })
+
+  it('re-sends a slice Drive did not keep, rather than skipping it', async () => {
+    const size = UPLOAD_CHUNK_BYTES + 100
+    const ranges: string[] = []
+    const { client } = clientWith([
+      (c) =>
+        c.url.includes('uploadType=resumable')
+          ? new Response(null, {
+              status: 200,
+              headers: { Location: 'https://upload.example/session-5' },
+            })
+          : null,
+      (c) => {
+        if (!c.url.startsWith('https://upload.example/')) return null
+        ranges.push(
+          String((c.init.headers as Record<string, string>)['Content-Range']),
+        )
+        // 308 with NO Range header is Drive saying it stored NOTHING.
+        // Reading that as "the slice landed" is what silently produces a
+        // truncated song, or a 400 on the next, non-contiguous slice.
+        if (ranges.length === 1) return new Response(null, { status: 308 })
+        return ranges.length === 2
+          ? new Response(null, {
+              status: 308,
+              headers: { Range: `bytes=0-${UPLOAD_CHUNK_BYTES - 1}` },
+            })
+          : jsonResponse({ id: 'file-5' })
+      },
+    ])
+
+    expect(
+      await client.uploadSong('f', container(size), {
+        title: 'T',
+        properties: { fileHash: 'h', quality: 'portable-128' },
+      }),
+    ).toBe('file-5')
+    expect(ranges[0]).toBe(`bytes 0-${UPLOAD_CHUNK_BYTES - 1}/${size}`)
+    expect(ranges[1]).toBe(ranges[0])
+    expect(ranges[2]).toBe(`bytes ${UPLOAD_CHUNK_BYTES}-${size - 1}/${size}`)
+  })
+
+  it('gives up on a song Drive keeps acknowledging without storing', async () => {
+    let slices = 0
+    const { client } = clientWith([
+      (c) =>
+        c.url.includes('uploadType=resumable')
+          ? new Response(null, {
+              status: 200,
+              headers: { Location: 'https://upload.example/session-6' },
+            })
+          : null,
+      (c) => {
+        if (!c.url.startsWith('https://upload.example/')) return null
+        slices += 1
+        // Never advances. Without a stall limit this is an infinite loop
+        // with a frozen progress bar that only Stop can end.
+        return new Response(null, { status: 308 })
+      },
+    ])
+
+    await expect(
+      client.uploadSong('f', container(UPLOAD_CHUNK_BYTES * 4), {
+        title: 'T',
+        properties: { fileHash: 'h', quality: 'portable-128' },
+      }),
+    ).rejects.toThrow(/made no progress/)
+    expect(slices).toBe(UPLOAD_STALL_LIMIT + 1)
   })
 
   it('cancels the session when the upload is abandoned', async () => {

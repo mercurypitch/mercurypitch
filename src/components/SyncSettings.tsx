@@ -25,7 +25,7 @@ import type { Component } from 'solid-js'
 import { createSignal, onMount, Show } from 'solid-js'
 import { storageEstimate } from '@/db/durable-write'
 import { isStoragePersisted, requestPersistentStorage, } from '@/db/persistent-storage'
-import { hasUpgradedAccount, takeDriveConnectResult, } from '@/db/services/auth-service'
+import { accountHeld, takeDriveConnectResult } from '@/db/services/auth-service'
 import { readLibraryManifests, syncLibraryList, } from '@/db/services/song-manifest-service'
 import { isStandalone, needsIosInstallHint } from '@/lib/pwa-install'
 import { backUpToDrive, connectDrive, disconnectDriveSync, driveBusy, driveEmail, driveError, driveJob, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
@@ -81,7 +81,7 @@ export const SyncSettings: Component = () => {
 
   onMount(() => {
     void refresh()
-    if (!hasUpgradedAccount()) return
+    if (!accountHeld()) return
     // A connect attempt that came back refused left its reason in the
     // redirect; without this the page would simply still say
     // "not connected" and the button would look broken.
@@ -92,14 +92,18 @@ export const SyncSettings: Component = () => {
           'Google Drive could not be connected.',
       )
     }
-    void refreshDriveStatus().then(() => {
-      // Straight into the comparison on the way back from a successful
-      // connect: the person pressed a button expecting to see their
-      // songs, not another button.
-      if (connectResult?.ok === true && driveState() === 'connected') {
-        void scanDrive()
-      }
-    })
+    // Caught, not merely voided: an unhandled rejection here would leave
+    // driveState at 'unknown' forever with nothing on screen saying why.
+    void refreshDriveStatus()
+      .then(() => {
+        // Straight into the comparison on the way back from a successful
+        // connect: the person pressed a button expecting to see their
+        // songs, not another button.
+        if (connectResult?.ok === true && driveState() === 'connected') {
+          void scanDrive()
+        }
+      })
+      .catch(() => setConnectRefusal('Could not check your Google Drive.'))
   })
 
   /**
@@ -263,7 +267,7 @@ export const SyncSettings: Component = () => {
         <div class={panel.settingsDivider} />
 
         <Show
-          when={hasUpgradedAccount()}
+          when={accountHeld()}
           fallback={
             <p class={styles.note}>
               Sign in to back your library up to your own Google Drive. The
@@ -272,20 +276,32 @@ export const SyncSettings: Component = () => {
             </p>
           }
         >
-          <Show when={driveState() !== 'connected'}>
+          {/* 'unknown' is not 'disconnected'. Painting the unresolved
+              state as a refusal flashes a Connect button on every open,
+              and on a slow link it stays live long enough to tap --
+              sending somebody out to Google consent for a Drive they
+              already connected. */}
+          <Show when={driveState() === 'unknown'}>
+            <p class={styles.stat}>Checking your Google Drive…</p>
+          </Show>
+
+          <Show when={driveState() === 'disconnected'}>
             <p class={styles.note}>
               Back your songs up to a folder in your own Google Drive, and get
               them back on any device you sign in on. The audio goes from this
               browser straight to Google — it never passes through our servers,
-              and we only ever see the folder we created.
+              and we only ever see the folder we created. You can pick any
+              Google account here; it does not have to be the one you signed in
+              with, and choosing one will not change who you are signed in as.
             </p>
             <div class={styles.actions}>
               <button
                 type="button"
                 class={panel.settingsActionBtn}
-                onClick={() => connectDrive()}
+                disabled={driveBusy()}
+                onClick={() => void connectDrive()}
               >
-                Connect Google Drive
+                {driveBusy() ? 'Starting…' : 'Connect Google Drive'}
               </button>
             </div>
             <Show when={connectRefusal()}>
@@ -416,16 +432,16 @@ export const SyncSettings: Component = () => {
               </Show>
             </div>
 
-            <Show when={driveError()}>
-              {(message) => <p class={styles.warn}>{message()}</p>}
-            </Show>
-
             <p class={styles.note}>
               Songs are stored in a MercuryPitch folder you can open in Drive —
               one file each, at the portable quality, with the lyrics and
               analysis alongside. Backing up and restoring both work a piece at
               a time, so a lost connection costs the piece rather than the song.
             </p>
+          </Show>
+
+          <Show when={driveError()}>
+            {(message) => <p class={styles.warn}>{message()}</p>}
           </Show>
         </Show>
       </div>
