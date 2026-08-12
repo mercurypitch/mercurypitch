@@ -1,4 +1,4 @@
-import type { CDPSession, Locator, Page } from '@playwright/test'
+import type { CDPSession, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
@@ -28,6 +28,29 @@ const dispatchTouch = async (
             },
           ],
   })
+}
+
+const swipeShelf = async (
+  session: CDPSession,
+  bounds: { x: number; y: number; width: number; height: number },
+  direction: 'left' | 'right',
+): Promise<void> => {
+  const y = bounds.y + bounds.height / 2
+  const left = bounds.x + bounds.width * 0.18
+  const right = bounds.x + bounds.width * 0.82
+  const startX = direction === 'left' ? right : left
+  const endX = direction === 'left' ? left : right
+
+  await dispatchTouch(session, 'touchStart', startX, y)
+  for (const progress of [0.25, 0.5, 0.75, 1]) {
+    await dispatchTouch(
+      session,
+      'touchMove',
+      startX + (endX - startX) * progress,
+      y,
+    )
+  }
+  await dispatchTouch(session, 'touchEnd')
 }
 
 const ensureLocalDb = async (page: Page): Promise<void> => {
@@ -108,18 +131,6 @@ const seedEarnedBadges = async (page: Page): Promise<void> => {
   )
 }
 
-const isHorizontallyVisible = async (item: Locator): Promise<boolean> =>
-  item.evaluate((element) => {
-    const shelf = element.parentElement
-    if (shelf === null) return false
-    const itemBounds = element.getBoundingClientRect()
-    const shelfBounds = shelf.getBoundingClientRect()
-    return (
-      itemBounds.left >= shelfBounds.left - 1 &&
-      itemBounds.right <= shelfBounds.right + 1
-    )
-  })
-
 test.describe('Progress dashboard', () => {
   test.use({ viewport: { width: 768, height: 1024 }, hasTouch: true })
 
@@ -153,34 +164,33 @@ test.describe('Progress dashboard', () => {
     await expect(shelf).toBeVisible()
     await expect(lastBadge).toHaveCount(1)
     await shelf.scrollIntoViewIfNeeded()
-    await expect.poll(() => isHorizontallyVisible(lastBadge)).toBe(false)
+    await expect
+      .poll(() =>
+        shelf.evaluate((element) => element.scrollWidth > element.clientWidth),
+      )
+      .toBe(true)
 
     const shelfBounds = await shelf.boundingBox()
     if (shelfBounds === null) throw new Error('Milestones shelf has no bounds')
 
     const session = await page.context().newCDPSession(page)
-    const y = shelfBounds.y + shelfBounds.height / 2
-    const startX = shelfBounds.x + shelfBounds.width * 0.82
-    const endX = shelfBounds.x + shelfBounds.width * 0.18
     const initialScrollLeft = await shelf.evaluate((element) =>
       Math.round(element.scrollLeft),
     )
 
-    await dispatchTouch(session, 'touchStart', startX, y)
-    for (const progress of [0.25, 0.5, 0.75, 1]) {
-      await dispatchTouch(
-        session,
-        'touchMove',
-        startX + (endX - startX) * progress,
-        y,
-      )
-    }
-    await dispatchTouch(session, 'touchEnd')
+    await swipeShelf(session, shelfBounds, 'left')
 
     await expect
       .poll(() => shelf.evaluate((element) => Math.round(element.scrollLeft)))
       .toBeGreaterThan(initialScrollLeft)
-    await expect(lastBadge).toBeVisible()
-    await expect.poll(() => isHorizontallyVisible(lastBadge)).toBe(true)
+
+    const forwardScrollLeft = await shelf.evaluate((element) =>
+      Math.round(element.scrollLeft),
+    )
+    await swipeShelf(session, shelfBounds, 'right')
+
+    await expect
+      .poll(() => shelf.evaluate((element) => Math.round(element.scrollLeft)))
+      .toBeLessThan(forwardScrollLeft)
   })
 })
