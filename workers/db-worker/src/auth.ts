@@ -1931,33 +1931,51 @@ async function handleDeviceLinkStart(
     .bind(nowIso())
     .run()
 
-  const code = randomFromAlphabet(DEVICE_CODE_LENGTH, DEVICE_CODE_ALPHABET)
   // 32 bytes of the same alphabet: this one is never read by a human, it
   // is the secret that separates "saw the code" from "asked for it".
   const pollToken = randomFromAlphabet(43, DEVICE_CODE_ALPHABET)
+  const pollTokenHash = await sha256b64url(pollToken)
   const now = Date.now()
+  const label = (body.deviceLabel ?? '').slice(0, 60) || null
 
-  await env.DB.prepare(
-    `INSERT INTO deviceLinkCodes
-       (code, pollTokenHash, deviceLabel, createdAt, expiresAt)
-     VALUES (?, ?, ?, ?, ?)`,
-  )
-    .bind(
-      code,
-      await sha256b64url(pollToken),
-      // Shown to the person approving, so it is truncated rather than
-      // rejected: a long label is a cosmetic problem, not a refusal.
-      (body.deviceLabel ?? '').slice(0, 60) || null,
-      new Date(now).toISOString(),
-      new Date(now + DEVICE_LINK_TTL_MS).toISOString(),
+  // Codes are claimed, not merely hoped to be distinct. 32^8 makes a
+  // clash astronomically unlikely among the handful live in any
+  // five-minute window -- but `code` is the primary key, so the one time
+  // it happened the INSERT would throw and a television would say it
+  // could not reach us. Insert-or-retry costs nothing and removes the
+  // case entirely, and the WHERE NOT EXISTS is what makes the claim
+  // atomic rather than a check somebody else can win a race against.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const code = randomFromAlphabet(DEVICE_CODE_LENGTH, DEVICE_CODE_ALPHABET)
+    const claimed = await env.DB.prepare(
+      `INSERT INTO deviceLinkCodes
+         (code, pollTokenHash, deviceLabel, createdAt, expiresAt)
+       SELECT ?, ?, ?, ?, ?
+        WHERE NOT EXISTS (SELECT 1 FROM deviceLinkCodes WHERE code = ?)`,
     )
-    .run()
-
-  return respond({
-    code,
-    pollToken,
-    expiresInSeconds: Math.floor(DEVICE_LINK_TTL_MS / 1000),
-  })
+      .bind(
+        code,
+        pollTokenHash,
+        // Shown to the person approving, so it is truncated rather than
+        // rejected: a long label is a cosmetic problem, not a refusal.
+        label,
+        new Date(now).toISOString(),
+        new Date(now + DEVICE_LINK_TTL_MS).toISOString(),
+        code,
+      )
+      .run()
+    if ((claimed.meta.changes ?? 0) === 1) {
+      return respond({
+        code,
+        pollToken,
+        expiresInSeconds: Math.floor(DEVICE_LINK_TTL_MS / 1000),
+      })
+    }
+  }
+  // Five collisions in a row is not luck; something is wrong with the
+  // table or the random source, and inventing a sixth code will not fix
+  // either. Fail loudly rather than looping.
+  return respond({ error: 'code_unavailable' }, { status: 503 })
 }
 
 async function findDeviceLink(
