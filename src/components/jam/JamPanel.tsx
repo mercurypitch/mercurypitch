@@ -28,6 +28,7 @@ import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
+import { setSidebarCollapsed as setAppSidebarCollapsed, setSidebarOpen as setAppSidebarOpen, } from '@/stores/ui-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import jamStyles from './Jam.module.css'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
@@ -38,8 +39,6 @@ import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamInviteModal } from './JamInviteModal'
 import panelStyles from './JamPanel.module.css'
-import { JamPeerList } from './JamPeerList'
-import { JamPitchDisplay } from './JamPitchDisplay'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongShare } from './JamSongShare'
@@ -128,7 +127,6 @@ export const JamPanel: Component = () => {
     })
   })
   const [linkCopied, setLinkCopied] = createSignal(false)
-  const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const [showLivePitch, setShowLivePitch] = createSignal(true)
   // Read once, not tracked: this is the starting position of a switch the
   // user then owns. Reacting to it would snatch the tray back the moment a
@@ -713,62 +711,9 @@ export const JamPanel: Component = () => {
       {/* ── Active session ───────────────────────────────────────── */}
       <Show when={jamState() === 'active'}>
         <div class={panelStyles.sessionLayout}>
-          {/* Dismisses the drawer on a phone; inert on a desktop, where the
-              sidebar takes a column of its own rather than overlaying. */}
-          <Show when={sidebarOpen()}>
-            <div
-              class={panelStyles.sidebarScrim}
-              onClick={() => setSidebarOpen(false)}
-              aria-hidden="true"
-            />
-          </Show>
-          {/* ── Collapsible sidebar ────────────────────────────── */}
-          <div
-            class={`${panelStyles.sidebar} ${sidebarOpen() ? panelStyles.sidebarOpen : ''}`}
-          >
-            <div class={panelStyles.sidebarInner}>
-              {/* On a phone the sidebar covers the room and the header
-                  toggle goes with it, so it needs its own way out. */}
-              <button
-                class={panelStyles.sidebarClose}
-                onClick={() => setSidebarOpen(false)}
-                aria-label="Close peers panel"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-                <span>Peers</span>
-              </button>
-              <div class={jamStyles.status}>
-                <span
-                  class={`${jamStyles.statusDot} ${jamStyles.statusDotActive}`}
-                />
-                <span>
-                  {jamConnectedPeers().length} peer
-                  {jamConnectedPeers().length !== 1 ? 's' : ''} connected
-                </span>
-                <Show when={jamIsMuted()}>
-                  <span class={jamStyles.mutedIndicator}>(muted)</span>
-                </Show>
-              </div>
-              <JamPeerList peers={jamPeers()} />
-              <JamPitchDisplay />
-              <MicInsightHint
-                message={micInsights.message}
-                insight={micInsights.insight}
-                style={{ margin: '6px auto 0', width: 'fit-content' }}
-              />
-            </div>
-          </div>
+          {/* The peers roster, pitch display and room card live in the
+              APP sidebar now (JamRoomPanel) — the rail is THE roster, not
+              a mirror, and the room keeps the whole width for the stage. */}
           {/* ── Main content ───────────────────────────────────── */}
           <div class={panelStyles.mainArea}>
             {/* Top bar: room info + controls */}
@@ -1013,13 +958,15 @@ export const JamPanel: Component = () => {
                     </svg>
                   </button>
 
-                  {/* Sidebar toggle */}
+                  {/* Peers now live in the APP sidebar (JamRoomPanel);
+                      this reveals it for anyone who collapsed the rail. */}
                   <button
-                    class={`${jamStyles.iconBtn} ${sidebarOpen() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral}`}
-                    onClick={() => setSidebarOpen((v) => !v)}
-                    title={
-                      sidebarOpen() ? 'Hide peers panel' : 'Show peers panel'
-                    }
+                    class={`${jamStyles.iconBtn} ${jamStyles.iconBtnNeutral}`}
+                    onClick={() => {
+                      setAppSidebarCollapsed(false)
+                      setAppSidebarOpen(true)
+                    }}
+                    title="Show the room roster in the sidebar"
                   >
                     <svg
                       width="18"
@@ -1134,6 +1081,14 @@ export const JamPanel: Component = () => {
                 </button>
               </div>
             </div>
+
+            {/* Mic guidance used to live in the removed peers sidebar;
+                the hint is about YOUR input, so it sits with the stage. */}
+            <MicInsightHint
+              message={micInsights.message}
+              insight={micInsights.insight}
+              style={{ margin: '0 auto', width: 'fit-content' }}
+            />
 
             {/* ── Exercise controls + live pitch toggle ─────────── */}
             {/* Positioned wrapper so the picker below can overlay the

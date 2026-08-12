@@ -38,7 +38,7 @@ import { PART_STEM_DISPLAY, StemSplitError } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, karaokeActiveGroupId, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setKaraokeActiveGroupId, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
@@ -228,7 +228,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [libraryExportSkippedCount, setLibraryExportSkippedCount] =
     createSignal(0)
   const [isImporting, setIsImporting] = createSignal(false)
-  const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
+  // Shared with the sidebar's Song-groups rail panel (uvr-store): on a
+  // desktop the rail owns this filter, on a phone the inline tabs below do.
+  const activeGroupId = karaokeActiveGroupId
+  const setActiveGroupId = setKaraokeActiveGroupId
   const [sessionSearch, setSessionSearch] = createSignal('')
   // null = closed; sessionId undefined = opened from the header (chooser).
   const [syncModalTarget, setSyncModalTarget] = createSignal<{
@@ -2458,10 +2461,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   (allSessions().length > 0 || getGroupsReactive().length > 0)
                 }
               >
-                <SessionGroupTabs
-                  activeGroupId={activeGroupId()}
-                  onSelectGroup={setActiveGroupId}
-                />
+                {/* Inline group tabs are the PHONE's affordance: on a
+                    desktop the sidebar's Song-groups panel owns this filter
+                    (uvr-groups-inline hides >=769px, the drawer breakpoint),
+                    so the freed row goes back to the session list. */}
+                <div class="uvr-groups-inline">
+                  <SessionGroupTabs
+                    activeGroupId={activeGroupId()}
+                    onSelectGroup={setActiveGroupId}
+                  />
+                </div>
                 <div class="history-list history-list-inline">
                   <For
                     each={filteredSessions().sort(
