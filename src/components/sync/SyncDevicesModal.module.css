@@ -324,3 +324,35 @@
   color: var(--warning, #d29922);
   font-size: 0.78rem;
 }
+
+/* The code and its QR are one unit: two ways to carry the same eight
+   characters to the other device, and the pair should not drift apart on
+   a narrow screen. */
+.pairing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* White padding around the code itself, not just inside the SVG: on a
+   dark panel a scanner needs the quiet zone to read as background, and
+   the module border alone can be lost against the surrounding colour. */
+.qr svg {
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.qrHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}

@@ -79,6 +79,15 @@ const [syncPeerRoom, setSyncPeerRoom] = createSignal<{
   freeBytes: number
   quota: number
 } | null>(null)
+/**
+ * A code that arrived by deep link, waiting for the modal to consume it.
+ *
+ * Set by the router when somebody scans the QR a receiving device is
+ * showing. One-shot: read and cleared, so a later reload of the same URL
+ * does not silently reopen a session that has been closed.
+ */
+const [syncCodeToJoin, setSyncCodeToJoin] = createSignal<string | null>(null)
+
 /** What THIS device can still hold, for the modal to show plainly. */
 const [syncOwnRoom, setSyncOwnRoom] = createSignal<{
   freeBytes: number
@@ -87,6 +96,14 @@ const [syncOwnRoom, setSyncOwnRoom] = createSignal<{
 const [syncTransfers, setSyncTransfers] = createSignal<SyncTransfer[]>([])
 /** True while a song is packing or moving in either direction. */
 const [syncBusy, setSyncBusy] = createSignal(false)
+
+export function takeSyncCodeToJoin(): string | null {
+  const code = syncCodeToJoin()
+  if (code !== null) setSyncCodeToJoin(null)
+  return code
+}
+
+export { setSyncCodeToJoin, syncCodeToJoin }
 
 export {
   syncBusy,

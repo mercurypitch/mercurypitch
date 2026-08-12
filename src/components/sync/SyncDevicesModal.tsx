@@ -12,12 +12,13 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { QrCode } from '@/components/QrCode'
 import { formatBytes } from '@/lib/fetch-progress'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { SyncTransfer } from '@/stores/sync-store'
-import { estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncRoomId, syncState, syncTransfers, } from '@/stores/sync-store'
+import { estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { DeviceSync, Share } from '../icons'
@@ -34,6 +35,18 @@ interface SyncDevicesModalProps {
 function mb(bytes: number): string {
   const value = bytes / (1024 * 1024)
   return value >= 10 ? `${Math.round(value)} MB` : `${value.toFixed(1)} MB`
+}
+
+/**
+ * The URL a phone lands on when it scans the receiving device's screen.
+ *
+ * Built from the running origin rather than a constant, so a code shown
+ * on dev pairs with dev and one shown on a preview pairs with that
+ * preview -- scanning a TV and being sent to production would look like
+ * the feature simply not working.
+ */
+function syncLinkFor(code: string): string {
+  return `${window.location.origin}${window.location.pathname}#/sync:${code}`
 }
 
 function transferStateLabel(t: SyncTransfer): string {
@@ -62,10 +75,19 @@ function transferNumbers(t: SyncTransfer): string | null {
 }
 
 export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
+  // A code that arrived by QR skips the chooser entirely: somebody who
+  // has just pointed a camera at a screen has already said what they want
+  // to do, and asking them to pick "Send songs" and retype the code is
+  // undoing the thing the QR was for.
+  const scanned = takeSyncCodeToJoin()
   const [mode, setMode] = createSignal<SyncMode>(
-    props.initialSessionId === undefined ? 'choose' : 'send',
+    scanned !== null
+      ? 'send'
+      : props.initialSessionId === undefined
+        ? 'choose'
+        : 'send',
   )
-  const [joinCode, setJoinCode] = createSignal('')
+  const [joinCode, setJoinCode] = createSignal(scanned ?? '')
   const [joining, setJoining] = createSignal(false)
   let dialogRef: HTMLDivElement | undefined
   // The song this modal was opened for is sent exactly once, on the first
@@ -87,6 +109,8 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
   onMount(() => {
     if (mode() === 'receive' && !jamSignalingIsMocked()) void startSyncReceive()
+    // A scanned code is a complete one, so there is nothing left to ask.
+    if (scanned !== null && !jamSignalingIsMocked()) join()
   })
 
   const enterReceive = (): void => {
@@ -251,7 +275,23 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
               >
                 {(code) => (
                   <>
-                    <code class={styles.code}>{code()}</code>
+                    <div class={styles.pairing}>
+                      <code class={styles.code}>{code()}</code>
+                      {/* The device showing this is the one that cannot
+                          type; the phone pointing at it can. Scanning
+                          carries the code across without anyone reading
+                          eight characters off a screen from the sofa. */}
+                      <div class={styles.qr}>
+                        <QrCode
+                          value={syncLinkFor(code())}
+                          size={168}
+                          label="Scan to send songs to this device"
+                        />
+                        <span class={styles.qrHint}>
+                          or scan this with your phone
+                        </span>
+                      </div>
+                    </div>
                     <p
                       class={`${styles.status} ${connected() ? styles.statusConnected : ''}`}
                     >
