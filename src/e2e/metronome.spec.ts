@@ -5,7 +5,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, openSingingControls } from './helpers/ui'
+import { dismissOverlays, openNavTab, openSingingControls } from './helpers/ui'
 
 test.describe('Metronome', () => {
   test.beforeEach(async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe('Metronome', () => {
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
-    await page.locator('#tab-singing').click()
+    await openNavTab(page, 'tab-singing')
     await page.waitForTimeout(500)
     // BPM / tempo live in the control bar's collapsible "more" group.
     await openSingingControls(page)

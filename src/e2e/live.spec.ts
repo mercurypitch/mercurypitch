@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, openNavTab } from '@/e2e/helpers/ui'
 
 test.skip('live site settings', async ({ page }) => {
   // Skip live site test - external URL not accessible from test environment
@@ -19,7 +19,7 @@ test.skip('live site settings', async ({ page }) => {
     ),
   )
 
-  await page.locator('#tab-settings').click()
+  await openNavTab(page, 'tab-settings')
   await page.waitForTimeout(3000)
 
   console.info(

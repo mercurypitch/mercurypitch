@@ -2312,6 +2312,20 @@ input[type='range'] {
     white-space: nowrap;
   }
 
+  /* Icon-only tabs — the fit pass's third step (see AppNavTabs' fitToWidth).
+     A text tab measures ~89px and an icon one ~30px, which is what keeps all
+     eleven destinations on screen at 1280px instead of folding seven of them
+     into menus. The name moves to the button's `title`; `aria-label` was
+     always there, so the accessible name never depended on this text. */
+  #app-tabs.tabs-icon-only .tab-text {
+    display: none;
+  }
+
+  #app-tabs.tabs-icon-only .app-tab {
+    padding: 5px 8px;
+    gap: 0;
+  }
+
   /* Drag-to-pan affordance (only when the bar actually overflows). */
   #app-tabs.tabs-scrollable {
     cursor: grab;

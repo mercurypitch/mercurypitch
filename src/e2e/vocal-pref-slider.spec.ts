@@ -10,7 +10,7 @@
 // real app in Chromium, not a re-implementation of the handlers.
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, openNavTab } from '@/e2e/helpers/ui'
 
 interface KaraokePlaylistsBridge {
   createPlaylistWithItems: (
@@ -38,7 +38,7 @@ test.describe('Vocal preference slider', () => {
     await dismissOverlays(page)
 
     // Karaoke tab hosts the playlist gallery (and with it the editor).
-    await page.locator('#tab-karaoke').click()
+    await openNavTab(page, 'tab-karaoke')
     await page.waitForTimeout(300)
 
     // Seed one playlist with one (unknown-session) item via the e2e bridge —

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, openNavTab } from '@/e2e/helpers/ui'
 
 test('debug settings tab - comprehensive', async ({ page }) => {
   await page.goto('/')
@@ -48,7 +48,7 @@ test('debug settings tab - comprehensive', async ({ page }) => {
   console.info('Store structure:', JSON.stringify(nestedCheck))
 
   // Click the Settings tab to switch to the settings view
-  await page.locator('#tab-settings').click()
+  await openNavTab(page, 'tab-settings')
   await page.waitForTimeout(500)
 
   await expect(page.locator('#settings-panel')).toBeVisible({ timeout: 5000 })
