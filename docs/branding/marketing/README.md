@@ -4,8 +4,8 @@ Backdrops for campaign end cards. **Plates carry no text** — type is
 composited by [`scripts/compose-poster.py`](../../../scripts/compose-poster.py)
 so that position, size and copy are parameters rather than a re-generation.
 
-| Plate | Used by |
-|---|---|
+| Plate                       | Used by                           |
+| --------------------------- | --------------------------------- |
 | `cta-plate-pitch-curve.png` | Noise UGC playbook 19290, slide 4 |
 
 ## Why the split
