@@ -27,7 +27,7 @@
 // Tests: src/lib/device-tier.test.ts
 // ============================================================
 
-import { createPersistedSignal } from '@/lib/storage'
+import { createSignal } from 'solid-js'
 
 export type DeviceClass = 'desktop' | 'mobile' | 'tv'
 export type DeviceTier = 'high' | 'balanced' | 'low'
@@ -244,11 +244,37 @@ const PERFORMANCE_MODE_KEY = 'pitchperfect_performance_mode'
 const isPerformanceMode = (value: unknown): value is PerformanceMode =>
   typeof value === 'string' && (PERFORMANCE_MODES as string[]).includes(value)
 
-/** User override for the detected tier. Persisted; 'auto' by default. */
-export const [performanceMode, setPerformanceMode] =
-  createPersistedSignal<PerformanceMode>(PERFORMANCE_MODE_KEY, 'auto', {
-    validator: isPerformanceMode,
-  })
+// Plain localStorage, NOT createPersistedSignal, for two independent reasons:
+// the graphics tier is a property of THIS device — a TV and a laptop on the
+// same account must not sync it through the cloud write-through that
+// @/lib/storage funnels every persisted signal into — and that import would
+// chain the pitch-core chunk into the standalone entries' first paint, which
+// the piano-night e2e smoke test correctly rejects.
+const readStoredPerformanceMode = (): PerformanceMode => {
+  try {
+    const raw = localStorage.getItem(PERFORMANCE_MODE_KEY)
+    return isPerformanceMode(raw) ? raw : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+
+const [performanceModeSignal, setPerformanceModeSignal] =
+  createSignal<PerformanceMode>(
+    typeof localStorage === 'undefined' ? 'auto' : readStoredPerformanceMode(),
+  )
+
+/** User override for the detected tier. Persisted per device; 'auto' default. */
+export const performanceMode = performanceModeSignal
+
+export function setPerformanceMode(mode: PerformanceMode): void {
+  setPerformanceModeSignal(mode)
+  try {
+    localStorage.setItem(PERFORMANCE_MODE_KEY, mode)
+  } catch {
+    // Storage may be unavailable (private mode); the session value still holds.
+  }
+}
 
 const matches = (query: string): boolean => {
   if (
