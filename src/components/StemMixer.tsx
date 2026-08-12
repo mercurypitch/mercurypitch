@@ -3482,20 +3482,6 @@ export const StemMixerStyles: string = `
   gap: 0.5rem;
 }
 
-.sm-mic-monitor-glyph {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  color: var(--accent, #58a6ff);
-}
-
-/* Dim with the slider it labels — a lit mic next to a dead control reads as
-   "you are live" when self-monitoring is off. */
-.sm-mic-monitor-row:has(.sm-mic-monitor-slider:disabled) .sm-mic-monitor-glyph {
-  color: var(--fg-secondary, #8b949e);
-  opacity: 0.55;
-}
-
 .sm-mic-monitor-slider {
   flex: 1;
   min-width: 0;
