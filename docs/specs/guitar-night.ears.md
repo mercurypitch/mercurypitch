@@ -374,6 +374,7 @@ listening`, the tuner shall use an explicitly selected microphone or direct
     }>
     inputFallbacks: Array<'microphone' | 'midi' | 'keyboard' | 'touch'>
     completionActions: Array<'keep-jamming' | 'another-riff' | 'load-song'>
+    // ordered primary-action preferences; default starts with 'load-song'
     skipDestination: 'quick-jam'
     returnEntry: 'learn:first-win'
   }
@@ -383,7 +384,7 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   alternate tuning shall provide another six-value high-to-low MIDI array.
   The open-string step shall target string index `5` (`low E`) with frets
   `[0, 0, 0, 0]`. The tab step shall target string index `0` (`high e`) and
-  shall first offer `[4, 4, 5, 7, 7, 5, 4, 2]`, then the full phrase
+  shall offer the full phrase in readable chunks:
   `4 4 5 7 | 7 5 4 2 | 0 0 2 4 | 4 2 2`. Both defaults shall derive expected
   MIDI from the selected tuning plus each fret; an explicit MIDI array shall
   be permitted for a custom step.
@@ -430,12 +431,14 @@ listening`, the tuner shall use an explicitly selected microphone or direct
 - **REQ-GN-FIRST-012 — Small-win handoff:** WHEN a player completes a
   configured step, Guitar Night shall acknowledge the concrete accomplishment
   and offer a small next action such as Keep jamming, Try another riff, or Load
-  a song without changing transport ownership.
+  a song without changing transport ownership. The first configured completion
+  action shall be the primary handoff; Keep jamming and Try another riff shall
+  open the full Guitar workspace until an in-room riff catalog exists.
 - **REQ-GN-FIRST-013 — Versioned progress:** First-win progress shall persist
   `schemaVersion`, `flowVersion`, `configVersion`, status (`not-started`,
   `in-progress`, `completed`, or `skipped`), current step ID, attempts per
-  step, best absolute timing per step, last input kind, tuning, handedness,
-  and self-reported tab familiarity.
+  step, completed step IDs, best absolute timing per step, last input kind,
+  tuning, handedness, and self-reported tab familiarity.
 - **REQ-GN-FIRST-013A — Version-one progress shape:** The version-one progress
   record shall use this normative shape; unknown optional profile values shall
   remain `null` rather than being inferred from detected audio.
@@ -447,6 +450,7 @@ listening`, the tuner shall use an explicitly selected microphone or direct
     configVersion: string
     status: 'not-started' | 'in-progress' | 'completed' | 'skipped'
     currentStepId: string | null
+    completedStepIds: string[]
     attemptsByStep: Record<string, number>
     bestAbsoluteTimingMsByStep: Record<string, number>
     lastInputKind: 'microphone' | 'midi' | 'keyboard' | 'touch' | null
@@ -473,6 +477,13 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   shall not resize the instrument or introduce a nested document scroller.
   Flow shall show fret numbers for this tab lesson, and each accepted untimed
   fallback hit shall visibly advance to the next configured target.
+- **REQ-GN-FIRST-016 — Default lesson progression:** WHEN the default
+  open-string step passes, Guitar Night shall offer the configured one-string
+  tab as the next lesson inside Guitar Night rather than route to the legacy
+  workspace. The tab step shall present every configured fret in phrase order,
+  retain the stage and quiet guide controls, and mark the flow complete only
+  after the full phrase. A completed legacy one-step record shall migrate to
+  this newly incomplete tab step without starting audio or capture.
 
 ## Initial Songs play-along — `GN-SONG-*`
 
@@ -540,6 +551,14 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   any pending start or pause every active stem before hiding the room. WHEN
   the player re-enters the same staged session, its decoded buffers, mix, and
   parked playhead shall be retained rather than reconfigured from zero.
+- **REQ-GN-SONG-017 — Unified local import:** The Songs surface shall expose
+  one visible picker and one drag-and-drop well for supported audio, MIDI, and
+  Guitar Pro files. Audio shall enter the durable preparation pipeline; MIDI
+  and Guitar Pro shall enter the saved-score library. Importing on either axis
+  shall preserve the other staged axis, accept one file at a time, explain
+  unsupported input, and prevent an older score parse from attaching over a
+  newer selection. Choosing or dropping a file shall not start playback,
+  listening, capture, count-in, or an audio context.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

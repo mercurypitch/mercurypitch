@@ -22,7 +22,7 @@ function deferred<T>(): {
 
 function chooseAudio(file: File): void {
   const input = screen.getByTestId(
-    'guitar-night-song-input',
+    'guitar-night-file-input',
   ) as HTMLInputElement
   Object.defineProperty(input, 'files', {
     configurable: true,
@@ -493,7 +493,7 @@ describe('GuitarNightApp prepared songs', () => {
     )
     expect(
       screen.getByText(
-        'No tabs on this device yet. Open a Guitar Pro or MIDI file to follow real notes — without one the stage stays in honest free play.',
+        'No scores on this device yet. Use Choose a file above to open Guitar Pro or MIDI — without one the stage stays in honest free play.',
       ),
     ).toBeInTheDocument()
   })
@@ -567,6 +567,84 @@ describe('GuitarNightApp prepared songs', () => {
     expect(songPort.initialize).toHaveBeenCalledTimes(2)
     expect(window.location.search).toBe('?session=session-upload')
     expect(play).not.toHaveBeenCalled()
+  })
+
+  it('routes MIDI through the score library without starting audio preparation', async () => {
+    const prepare = vi.fn<GuitarNightPreparationPort['prepare']>()
+    const importReference = vi.fn<GuitarNightReferencePort['importReference']>(
+      async () => ({
+        songId: 'score-import',
+        title: 'One String Study',
+        trackCount: 1,
+        importedAt: Date.UTC(2026, 7, 12),
+      }),
+    )
+    const referencePort: GuitarNightReferencePort = {
+      listReferences: () => [],
+      openReference: () => ({ ok: false, code: 'not-found' }),
+      suggestInstrument: () => null,
+      rememberTrack: vi.fn(),
+      importReference,
+    }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(libraryPort(0))}
+        loadPreparationPort={() => Promise.resolve({ prepare })}
+        loadReferencePort={() => Promise.resolve(referencePort)}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+
+    chooseAudio(new File(['MThd'], 'one-string.mid', { type: 'audio/midi' }))
+
+    await waitFor(() => expect(importReference).toHaveBeenCalledTimes(1))
+    expect(importReference.mock.calls[0][0].name).toBe('one-string.mid')
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
+  it('keeps score import available while audio preparation is running', async () => {
+    const preparation = deferred<GuitarNightPreparationResult>()
+    const prepare = vi.fn<GuitarNightPreparationPort['prepare']>(
+      () => preparation.promise,
+    )
+    const importReference = vi.fn<GuitarNightReferencePort['importReference']>(
+      async () => ({
+        songId: 'score-import',
+        title: 'One String Study',
+        trackCount: 1,
+        importedAt: Date.UTC(2026, 7, 12),
+      }),
+    )
+    const referencePort: GuitarNightReferencePort = {
+      listReferences: () => [],
+      openReference: () => ({ ok: false, code: 'not-found' }),
+      suggestInstrument: () => null,
+      rememberTrack: vi.fn(),
+      importReference,
+    }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(libraryPort(0))}
+        loadPreparationPort={() => Promise.resolve({ prepare })}
+        loadReferencePort={() => Promise.resolve(referencePort)}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    chooseAudio(new File(['RIFFdata'], 'slow-room.wav', { type: 'audio/wav' }))
+    await waitFor(() => expect(prepare).toHaveBeenCalledTimes(1))
+
+    const picker = screen.getByTestId(
+      'guitar-night-file-input',
+    ) as HTMLInputElement
+    expect(picker).not.toBeDisabled()
+    chooseAudio(new File(['MThd'], 'while-waiting.mid', { type: 'audio/midi' }))
+
+    await waitFor(() => expect(importReference).toHaveBeenCalledTimes(1))
+    expect(prepare).toHaveBeenCalledTimes(1)
+
+    preparation.resolve({ status: 'cancelled' })
   })
 
   it('cancels preparation and ignores a late completion', async () => {
@@ -726,9 +804,7 @@ describe('GuitarNightApp prepared songs', () => {
     chooseAudio(new File(['notes'], 'chords.txt', { type: 'text/plain' }))
 
     expect(
-      await screen.findByText(
-        'That format is not supported. Choose MP3, WAV, or FLAC audio.',
-      ),
+      await screen.findByText('Choose MP3, WAV, FLAC, MIDI, or Guitar Pro.'),
     ).toBeInTheDocument()
     expect(prepare).not.toHaveBeenCalled()
     expect(release).not.toHaveBeenCalled()
@@ -810,7 +886,7 @@ describe('GuitarNightApp prepared songs', () => {
     ).toBeInTheDocument()
     expect(loadReferencePort).toHaveBeenCalledTimes(1)
     expect(
-      screen.queryByText('Opening your tab library…'),
+      screen.queryByText('Opening your score library…'),
     ).not.toBeInTheDocument()
   })
 

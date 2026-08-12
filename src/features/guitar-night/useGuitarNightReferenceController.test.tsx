@@ -211,6 +211,114 @@ describe('useGuitarNightReferenceController', () => {
     expect(controller.reference()?.songId).toBe('gsong-velvet')
   })
 
+  it('keeps the newest file import in charge when an older parser finishes late', async () => {
+    const first = Promise.withResolvers<{
+      songId: string
+      title: string
+      trackCount: number
+      importedAt: number
+    }>()
+    const second = Promise.withResolvers<{
+      songId: string
+      title: string
+      trackCount: number
+      importedAt: number
+    }>()
+    const openReference = vi.fn((_songId, trackId, tuning) =>
+      openGuitarNightReference(VELVET_RIFF, trackId, tuning),
+    )
+    const importReference = vi
+      .fn<GuitarNightReferencePort['importReference']>()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    const { port } = fakePort({
+      openReference,
+      importReference,
+    })
+    const controller = mount(port)
+
+    const olderImport = controller.importFile(new File(['x'], 'older.gp5'))
+    await waitFor(() =>
+      expect(controller.importPendingFileName()).toBe('older.gp5'),
+    )
+    await waitFor(() => expect(importReference).toHaveBeenCalledTimes(1))
+    const newerImport = controller.importFile(new File(['x'], 'newer.mid'))
+    expect(controller.importPendingFileName()).toBe('newer.mid')
+    await waitFor(() => expect(importReference).toHaveBeenCalledTimes(2))
+
+    second.resolve({
+      songId: VELVET_RIFF.id,
+      title: VELVET_RIFF.name,
+      trackCount: 2,
+      importedAt: VELVET_RIFF.importedAt,
+    })
+    await newerImport
+    expect(controller.reference()?.songId).toBe(VELVET_RIFF.id)
+    expect(controller.importPendingFileName()).toBeNull()
+
+    first.resolve({
+      songId: VELVET_RIFF.id,
+      title: VELVET_RIFF.name,
+      trackCount: 2,
+      importedAt: VELVET_RIFF.importedAt,
+    })
+    await olderImport
+    expect(openReference).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a newer stem transcription in charge when an older import finishes late', async () => {
+    const importResult = Promise.withResolvers<{
+      songId: string
+      title: string
+      trackCount: number
+      importedAt: number
+    }>()
+    const openReference = vi.fn((_songId, trackId, tuning) =>
+      openGuitarNightReference(VELVET_RIFF, trackId, tuning),
+    )
+    const { port } = fakePort({
+      openReference,
+      importReference: vi.fn(() => importResult.promise),
+    })
+    const controller = mountWithTranscription(port, async () => ({
+      coverage: 0.82,
+      analysedSeconds: 4,
+      notes: [
+        {
+          midi: 28,
+          noteName: 'E1',
+          startSeconds: 0,
+          durationSeconds: 0.5,
+          confidence: 0.9,
+        },
+      ],
+    }))
+
+    const olderImport = controller.importFile(new File(['x'], 'older.gp5'))
+    await waitFor(() =>
+      expect(controller.importPendingFileName()).toBe('older.gp5'),
+    )
+    await controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    })
+    expect(controller.reference()?.kind).toBe('measured')
+
+    importResult.resolve({
+      songId: VELVET_RIFF.id,
+      title: VELVET_RIFF.name,
+      trackCount: 2,
+      importedAt: VELVET_RIFF.importedAt,
+    })
+    await olderImport
+
+    expect(controller.reference()?.kind).toBe('measured')
+    expect(openReference).not.toHaveBeenCalled()
+    expect(controller.importPendingFileName()).toBeNull()
+  })
+
   it('follows a measured stem without claiming the score axis', async () => {
     window.history.replaceState(null, '', '/guitar-night?session=session-room')
     const { port } = fakePort()

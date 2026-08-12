@@ -14,19 +14,21 @@ import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-b
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
-import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
+import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBackdropId, resolveBackdrop, } from './backdrops'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
-import { resolveGuitarFirstWinConfig } from './first-win-config'
+import { primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } from './first-win-config'
+import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR, GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR, guitarNightImportValidationError, } from './guitar-night-import'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightFileDrop } from './GuitarNightFileDrop'
 import { GuitarNightFirstWin } from './GuitarNightFirstWin'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
-import { measuredReferenceForBacking, REFERENCE_FILE_ACCEPT, } from './reference-port'
+import { measuredReferenceForBacking } from './reference-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort } from './song-port'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
@@ -120,8 +122,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const firstWinController = useGuitarFirstWinController({
     config: firstWinConfig,
   })
+  const firstWinTuning = createMemo(
+    () =>
+      instrumentTuningFromSource(
+        'guitar',
+        firstWinConfig().tuningMidiHighToLow,
+      ) ?? DEFAULT_GUITAR_TUNING,
+  )
   const firstWinStage: GuitarPerformanceStageSource = {
-    title: () => 'Your first low E bar',
+    title: () =>
+      firstWinController.currentStep()?.kind === 'one-string-tab'
+        ? 'Your first one-string phrase'
+        : 'Your first low E groove',
     notes: firstWinController.notes,
     timeline: {
       positionSeconds: () =>
@@ -166,13 +178,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     string | null
   >(null)
   let detailHeading: HTMLHeadingElement | undefined
-  let songInput: HTMLInputElement | undefined
-  let referenceInput: HTMLInputElement | undefined
+  const [fileImportError, setFileImportError] = createSignal<string | null>(
+    null,
+  )
+  let importInput: HTMLInputElement | undefined
   // Android TV / Google TV resolve no file-picker intent, so `.click()` on a
   // file input returns silently and the button reads as broken. Say so instead.
   const [filePickerBlocked, setFilePickerBlocked] = createSignal(false)
-  const pickFile = (input: HTMLInputElement | undefined): void => {
-    openFilePicker(input, {
+  const pickImportFile = (): void => {
+    openFilePicker(importInput, {
       onUnavailable: () => setFilePickerBlocked(true),
     })
   }
@@ -413,14 +427,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     focusDetail()
   }
 
-  const chooseReferenceFile = (event: Event): void => {
-    const input = event.currentTarget as HTMLInputElement
-    const file = input.files?.[0]
-    input.value = ''
-    if (file === undefined) return
-    void referenceController.importFile(file)
-  }
-
   const openCurrentGuitar = () => {
     window.location.assign('/#/guitar')
   }
@@ -515,19 +521,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const addPreviewHit = (input: 'touch' | 'keyboard' = 'touch') =>
     firstWinController.registerHit(input)
 
-  const completionAction = () =>
-    firstWinConfig().completionActions.includes('keep-jamming')
-      ? 'keep-jamming'
-      : firstWinConfig().completionActions.includes('load-song')
-        ? 'load-song'
-        : 'keep-jamming'
+  const firstWinCompletionAction = createMemo(() =>
+    primaryGuitarFirstWinCompletionAction(firstWinConfig()),
+  )
 
-  const handleCompletion = () => {
-    firstWinController.stopGroove()
-    if (completionAction() === 'load-song') {
-      setView('song')
-      songController.initialize()
+  const advanceFirstWin = () => {
+    if (firstWinController.advanceStep()) {
       focusDetail()
+    }
+  }
+
+  const completeFirstWin = () => {
+    firstWinController.stopGroove()
+    if (firstWinCompletionAction() === 'load-song') {
+      openSongLibrary()
       return
     }
     openCurrentGuitar()
@@ -538,16 +545,46 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     openCurrentGuitar()
   }
 
-  const handleSongChange = (event: Event) => {
+  const openImportPicker = (): void => {
+    setFileImportError(null)
+    pickImportFile()
+  }
+
+  const handleImportFile = (file: File): void => {
+    const validationError = guitarNightImportValidationError(file)
+    if (validationError !== null) {
+      setFileImportError(validationError)
+      return
+    }
+
+    setFileImportError(null)
+    const kind = classifyGuitarNightImport(file)
+    if (kind === 'audio') {
+      if (
+        preparationController.isPreparing() ||
+        bandPreparationController.isPreparing() ||
+        songController.selectionState().kind === 'loading'
+      ) {
+        setFileImportError(GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR)
+        return
+      }
+      bandPreparationController.clear()
+      const accepted = preparationController.start(file)
+      if (accepted) songController.clearSession('push')
+      setView('song')
+      focusDetail()
+      return
+    }
+    if (kind === 'midi' || kind === 'guitar-pro') {
+      void referenceController.importFile(file)
+    }
+  }
+
+  const handleImportChange = (event: Event): void => {
     const input = event.currentTarget as HTMLInputElement
     const file = input.files?.[0]
     input.value = ''
-    if (file === undefined) return
-    bandPreparationController.clear()
-    const accepted = preparationController.start(file)
-    if (accepted) songController.clearSession('push')
-    setView('song')
-    focusDetail()
+    if (file !== undefined) handleImportFile(file)
   }
 
   const stagePreparedSong = (sessionId: string) => {
@@ -612,10 +649,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       }
       const target = event.target
       if (
-        target instanceof HTMLButtonElement ||
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLSelectElement ||
-        target instanceof HTMLTextAreaElement
+        target instanceof Element &&
+        target.closest(
+          'a,button,input,select,textarea,summary,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="link"],[role="slider"],[role="textbox"],[role="checkbox"],[role="radio"],[role="switch"],[role="menuitem"]',
+        ) !== null
       ) {
         return
       }
@@ -848,18 +885,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
             <Match when={view() === 'first-win'}>
               <GuitarNightFirstWin
-                config={firstWinConfig}
                 controller={firstWinController}
                 stage={firstWinStage}
+                tuning={firstWinTuning}
                 active={() => view() === 'first-win'}
-                completionAction={completionAction}
+                completionAction={firstWinCompletionAction}
                 headingRef={(element) => {
                   detailHeading = element
                 }}
                 onHit={() => addPreviewHit('touch')}
                 onBack={returnToChoices}
                 onSkip={skipFirstWin}
-                onComplete={handleCompletion}
+                onAdvance={advanceFirstWin}
+                onComplete={completeFirstWin}
               />
             </Match>
 
@@ -869,16 +907,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 Bring a song into the room.
               </h1>
               <p class={styles.detailCopy}>
-                Open a song you already prepared here, or choose one audio file
-                from this device. Nothing starts playing on its own.
+                Open something already prepared here, or choose audio, MIDI, or
+                Guitar Pro from this device. Nothing starts playing on its own.
               </p>
 
-              <div
+              <GuitarNightFileDrop
                 class={styles.songWell}
-                aria-busy={
-                  preparingSong() !== null || bandPreparation() !== null
-                    ? 'true'
-                    : 'false'
+                busy={preparingSong() !== null || bandPreparation() !== null}
+                openingFileName={referenceController.importPendingFileName()}
+                message={fileImportError()}
+                onChoose={openImportPicker}
+                onFile={handleImportFile}
+                onRejected={() =>
+                  setFileImportError(GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR)
                 }
               >
                 <Switch>
@@ -1021,15 +1062,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     )}
                   </Match>
                   <Match when={true}>
-                    <strong>No song selected</strong>
-                    <span>MP3, WAV, or FLAC</span>
+                    <strong>No song or score selected</strong>
+                    <span>Audio, MIDI, or Guitar Pro</span>
                     <small>
-                      Prepared songs stay on this device and open without an
-                      upload.
+                      Your files stay on this device and open without an upload
+                      or automatic playback.
                     </small>
                   </Match>
                 </Switch>
-              </div>
+              </GuitarNightFileDrop>
 
               <section
                 class={styles.songLibrary}
@@ -1160,7 +1201,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 }
               >
                 <div class={styles.songLibraryHeader}>
-                  <h2 id="guitar-night-reference-title">Tab to follow</h2>
+                  <h2 id="guitar-night-reference-title">Score to follow</h2>
                   <Show when={attachedReference() !== null}>
                     <button
                       type="button"
@@ -1267,7 +1308,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       role="status"
                       aria-live="polite"
                     >
-                      Opening your tab library…
+                      Opening your score library…
                     </p>
                   </Match>
                   <Match when={referenceController.references().length > 0}>
@@ -1298,8 +1339,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </Match>
                   <Match when={true}>
                     <p class={styles.songMessage}>
-                      No tabs on this device yet. Open a Guitar Pro or MIDI file
-                      to follow real notes — without one the stage stays in
+                      No scores on this device yet. Use Choose a file above to
+                      open Guitar Pro or MIDI — without one the stage stays in
                       honest free play.
                     </p>
                   </Match>
@@ -1313,27 +1354,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   )}
                 </Show>
 
-                <Show
-                  when={transcribableStem()}
-                  fallback={
-                    <button
-                      type="button"
-                      class={styles.songListMore}
-                      onClick={() => pickFile(referenceInput)}
-                    >
-                      Open a tab file
-                    </button>
-                  }
-                >
+                <Show when={transcribableStem()}>
                   {(stem) => (
                     <div class={styles.referenceActions}>
-                      <button
-                        type="button"
-                        class={styles.songListMore}
-                        onClick={() => pickFile(referenceInput)}
-                      >
-                        Open a tab file
-                      </button>
                       <Switch>
                         <Match
                           when={
@@ -1413,23 +1436,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </Match>
                   <Match when={preparationError()}>
                     {(error) => (
-                      <>
-                        <Show when={error().retryable}>
-                          <button
-                            class={styles.completionAction}
-                            type="button"
-                            onClick={preparationController.retry}
-                          >
-                            Try again
-                          </button>
-                        </Show>
+                      <Show when={error().retryable}>
                         <button
+                          class={styles.completionAction}
                           type="button"
-                          onClick={() => pickFile(songInput)}
+                          onClick={preparationController.retry}
                         >
-                          Choose another
+                          Try again
                         </button>
-                      </>
+                      </Show>
                     )}
                   </Match>
                   <Match when={cancelledPreparation() !== null}>
@@ -1439,9 +1454,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       onClick={preparationController.retry}
                     >
                       Try again
-                    </button>
-                    <button type="button" onClick={() => pickFile(songInput)}>
-                      Choose another
                     </button>
                   </Match>
                   <Match when={activeBacking()}>
@@ -1481,12 +1493,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                             Separate guitar
                           </button>
                         </Show>
-                        <button
-                          type="button"
-                          onClick={() => pickFile(songInput)}
-                        >
-                          Choose another
-                        </button>
                       </>
                     )}
                   </Match>
@@ -1499,21 +1505,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       onClick={enterScoreRoom}
                     >
                       Rehearse the tab
-                    </button>
-                    <button type="button" onClick={() => pickFile(songInput)}>
-                      Choose audio
-                    </button>
-                  </Match>
-                  <Match when={true}>
-                    <button
-                      class={styles.completionAction}
-                      type="button"
-                      disabled={
-                        songController.selectionState().kind === 'loading'
-                      }
-                      onClick={() => pickFile(songInput)}
-                    >
-                      {activeBacking() ? 'Choose another' : 'Choose audio'}
                     </button>
                   </Match>
                 </Switch>
@@ -1597,26 +1588,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       </Show>
 
       <input
-        ref={referenceInput}
+        ref={importInput}
         class={styles.fileInput}
-        data-testid="guitar-night-reference-input"
+        data-testid="guitar-night-file-input"
         type="file"
-        accept={REFERENCE_FILE_ACCEPT}
-        onChange={chooseReferenceFile}
-        tabindex="-1"
-      />
-
-      <input
-        ref={songInput}
-        class={styles.fileInput}
-        data-testid="guitar-night-song-input"
-        type="file"
-        accept={AUDIO_UPLOAD_ACCEPT}
-        disabled={
-          preparationController.isPreparing() ||
-          bandPreparationController.isPreparing()
-        }
-        onChange={handleSongChange}
+        accept={GUITAR_NIGHT_IMPORT_ACCEPT}
+        disabled={referenceController.importPendingFileName() !== null}
+        onChange={handleImportChange}
         tabindex="-1"
       />
     </div>

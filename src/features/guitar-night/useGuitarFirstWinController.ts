@@ -6,8 +6,9 @@ import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import type { GuitarFirstWinConfigV1, GuitarFirstWinInputKind, } from './first-win-config'
-import { completeGuitarFirstWinProgress, readGuitarFirstWinProgress, recordGuitarFirstWinAttempt, skipGuitarFirstWinProgress, writeGuitarFirstWinProgress, } from './first-win-progress'
+import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { GuitarFirstWinConfigV1, GuitarFirstWinExerciseStepV1, GuitarFirstWinInputKind, } from './first-win-config'
+import { completeGuitarFirstWinStep, readGuitarFirstWinProgress, recordGuitarFirstWinAttempt, skipGuitarFirstWinProgress, writeGuitarFirstWinProgress, } from './first-win-progress'
 
 export type GuitarFirstWinGrooveStatus =
   | 'quiet'
@@ -23,16 +24,36 @@ interface GuitarFirstWinControllerOptions {
   now?: () => number
 }
 
-function exerciseNotes(config: GuitarFirstWinConfigV1): GuitarNote[] {
-  const step = config.exerciseSteps[0]
-  if (step === undefined) return []
+function stepTargetCount(
+  config: GuitarFirstWinConfigV1,
+  step: GuitarFirstWinExerciseStepV1,
+): number {
+  return step.kind === 'open-string-groove'
+    ? config.freshHitsRequested
+    : step.frets.length
+}
+
+function stepFretAt(step: GuitarFirstWinExerciseStepV1, index: number): number {
+  return step.frets[index % step.frets.length] ?? 0
+}
+
+/** Build the exact visible score for one configured beginner step. */
+export function buildGuitarFirstWinNotes(
+  config: GuitarFirstWinConfigV1,
+  step: GuitarFirstWinExerciseStepV1,
+): GuitarNote[] {
   const openMidi = config.tuningMidiHighToLow[step.stringIndex] ?? 40
-  return step.frets.map((fret, index) => {
-    const midi = openMidi + fret
+  return Array.from({ length: stepTargetCount(config, step) }, (_, index) => {
+    const fret = stepFretAt(step, index)
+    const explicitMidi =
+      step.expectedMidi === 'from-tuning-and-frets'
+        ? undefined
+        : step.expectedMidi[index % step.expectedMidi.length]
+    const midi = explicitMidi ?? openMidi + fret
     return {
       id: `${step.id}-${index}`,
       midi,
-      noteName: step.stringLabel,
+      noteName: midiToNoteNameOctave(midi),
       stringIndex: step.stringIndex,
       fret,
       startBeat: index,
@@ -42,27 +63,124 @@ function exerciseNotes(config: GuitarFirstWinConfigV1): GuitarNote[] {
   })
 }
 
+function introFeedback(step: GuitarFirstWinExerciseStepV1): string {
+  return step.kind === 'one-string-tab'
+    ? 'Read left to right. Mark each fret with Space or the button.'
+    : 'Mark the notes freely, or start the count-in for timing.'
+}
+
+function targetLabel(
+  note: GuitarNote | undefined,
+  stringLabel: string,
+): string {
+  if (note === undefined) return stringLabel
+  return note.fret === 0
+    ? `open ${stringLabel}`
+    : `${stringLabel}, fret ${note.fret}`
+}
+
 export function useGuitarFirstWinController(
   options: GuitarFirstWinControllerOptions,
 ) {
   const initialConfig = options.config()
+  const initialProgress = readGuitarFirstWinProgress(initialConfig)
+  const [activeStepId, setActiveStepId] = createSignal(
+    initialProgress.currentStepId ?? initialConfig.exerciseSteps[0]?.id ?? null,
+  )
   const [hits, setHits] = createSignal(0)
   const [status, setStatus] = createSignal<GuitarFirstWinGrooveStatus>('quiet')
   const [playheadBeat, setPlayheadBeat] = createSignal(0)
   const [countInRemaining, setCountInRemaining] = createSignal(0)
+  const initialStep =
+    initialConfig.exerciseSteps.find(
+      (step) => step.id === initialProgress.currentStepId,
+    ) ?? initialConfig.exerciseSteps[0]
   const [lastFeedback, setLastFeedback] = createSignal(
-    'Tap the notes freely, or start the count-in for timing.',
+    initialStep === undefined
+      ? 'Choose a lesson to begin.'
+      : introFeedback(initialStep),
   )
   const [tempoBpm, setTempoBpmSignal] = createSignal(initialConfig.tempoBpm)
   const [countInBeats, setCountInBeatsSignal] = createSignal(
     initialConfig.countInBeats,
   )
-  const [progress, setProgress] = createSignal(
-    readGuitarFirstWinProgress(initialConfig),
-  )
+  const [progress, setProgress] = createSignal(initialProgress)
   const now = options.now ?? (() => performance.now())
   const band = options.createBand?.() ?? createGuitarRoomBand()
-  const notes = createMemo(() => exerciseNotes(options.config()))
+  const currentStep = createMemo(() => {
+    const config = options.config()
+    return (
+      config.exerciseSteps.find((step) => step.id === activeStepId()) ??
+      config.exerciseSteps[0]
+    )
+  })
+  const currentStepIndex = createMemo(() => {
+    const step = currentStep()
+    if (step === undefined) return 0
+    return Math.max(
+      0,
+      options
+        .config()
+        .exerciseSteps.findIndex((candidate) => candidate.id === step.id),
+    )
+  })
+  const stepCount = createMemo(() => options.config().exerciseSteps.length)
+  const notes = createMemo(() => {
+    const step = currentStep()
+    return step === undefined
+      ? []
+      : buildGuitarFirstWinNotes(options.config(), step)
+  })
+  const targetHits = createMemo(() => notes().length)
+  const passHits = createMemo(() => {
+    const step = currentStep()
+    if (step === undefined) return 0
+    return step.kind === 'open-string-groove'
+      ? Math.min(options.config().passHits, targetHits())
+      : targetHits()
+  })
+  const stepPassed = createMemo(() => passHits() > 0 && hits() >= passHits())
+  const stepFinished = createMemo(
+    () => targetHits() > 0 && hits() >= targetHits(),
+  )
+  const isFinalStep = createMemo(
+    () => currentStepIndex() >= Math.max(0, stepCount() - 1),
+  )
+  const nextStep = createMemo(
+    () => options.config().exerciseSteps[currentStepIndex() + 1],
+  )
+  const flowComplete = createMemo(
+    () => progress().status === 'completed' && isFinalStep(),
+  )
+  const currentTarget = createMemo(() => {
+    const exerciseNotes = notes()
+    if (exerciseNotes.length === 0) return undefined
+    return exerciseNotes[Math.min(hits(), exerciseNotes.length - 1)]
+  })
+  const currentChunkIndex = createMemo(() => {
+    const step = currentStep()
+    if (step === undefined || step.phraseChunks.length === 0) return 0
+    if (step.kind === 'open-string-groove') {
+      return Math.min(hits(), Math.max(0, targetHits() - 1))
+    }
+    const targetIndex = Math.min(hits(), Math.max(0, targetHits() - 1))
+    let end = 0
+    const index = step.phraseChunks.findIndex((chunk) => {
+      end += chunk.frets.length
+      return targetIndex < end
+    })
+    return index < 0 ? step.phraseChunks.length - 1 : index
+  })
+  const completedPhraseCount = createMemo(() => {
+    const step = currentStep()
+    if (step === undefined) return 0
+    const currentHits = hits()
+    let end = 0
+    return step.phraseChunks.reduce((count, chunk) => {
+      end += chunk.frets.length
+      return currentHits >= end ? count + 1 : count
+    }, 0)
+  })
   let expectedHitTimesMs: readonly number[] = []
   const consumedTargets = new Set<number>()
   let startGeneration = 0
@@ -72,24 +190,48 @@ export function useGuitarFirstWinController(
     writeGuitarFirstWinProgress(next)
   }
 
+  const completeActiveStep = () => {
+    const step = currentStep()
+    if (step === undefined) return progress()
+    const currentProgress = progress()
+    if (currentProgress.completedStepIds.includes(step.id)) {
+      return currentProgress
+    }
+    const next = completeGuitarFirstWinStep(
+      currentProgress,
+      options.config(),
+      step.id,
+    )
+    persist(next)
+    return next
+  }
+
   const finish = (): void => {
+    const step = currentStep()
+    if (step === undefined) return
     band.stop()
     setStatus('complete')
     setCountInRemaining(0)
     setLastFeedback(
-      `${options.config().freshHitsRequested} open notes. You read your first bar of tab.`,
+      step.kind === 'one-string-tab'
+        ? 'You followed the full one-string phrase.'
+        : `${targetHits()} open-string targets marked. The pulse is yours.`,
     )
-    persist(completeGuitarFirstWinProgress(progress()))
+    completeActiveStep()
   }
 
   const registerHit = (inputKind: GuitarFirstWinInputKind): boolean => {
     const config = options.config()
-    const step = config.exerciseSteps[0]
-    if (step === undefined || hits() >= config.freshHitsRequested) return false
+    const step = currentStep()
+    const hitTarget = targetHits()
+    if (step === undefined || hitTarget === 0 || hits() >= hitTarget) {
+      return false
+    }
 
     let absoluteTimingMs: number | null = null
+    let timingFeedback: string | null = null
     if (status() === 'starting' || status() === 'count-in') {
-      setLastFeedback('Hold the note until the count-in finishes.')
+      setLastFeedback('Wait for the count-in to finish, then mark the note.')
       return false
     }
     if (status() === 'playing' && expectedHitTimesMs.length > 0) {
@@ -105,40 +247,51 @@ export function useGuitarFirstWinController(
         }
       })
       if (targetIndex < 0 || targetDistance > config.timingToleranceMs) {
-        setLastFeedback('Listen for the next pulse, then play once.')
+        setLastFeedback('Listen for the next pulse, then mark once.')
         return false
       }
       consumedTargets.add(targetIndex)
       absoluteTimingMs = targetDistance
-      setLastFeedback(
+      timingFeedback =
         targetDistance <= config.timingToleranceMs * 0.45
-          ? 'Right on the pulse.'
-          : 'That note landed. Keep the same motion.',
-      )
-    } else {
-      setLastFeedback('Note marked. Press Space or tap again for the next one.')
+          ? 'Marked on the pulse.'
+          : 'Target marked. Keep the same motion.'
     }
 
-    const nextProgress = recordGuitarFirstWinAttempt(
-      progress(),
-      step.id,
-      inputKind,
-      absoluteTimingMs,
+    persist(
+      recordGuitarFirstWinAttempt(
+        progress(),
+        step.id,
+        inputKind,
+        absoluteTimingMs,
+      ),
     )
-    persist(nextProgress)
-    const nextHits = Math.min(hits() + 1, config.freshHitsRequested)
+    const nextHits = Math.min(hits() + 1, hitTarget)
     setHits(nextHits)
     if (status() !== 'playing') {
       setPlayheadBeat(Math.min(nextHits, Math.max(0, notes().length - 1)))
     }
-    if (nextHits >= config.freshHitsRequested) finish()
+    if (nextHits >= hitTarget) {
+      finish()
+      return true
+    }
+
+    const nextTarget = notes()[nextHits]
+    setLastFeedback(
+      timingFeedback ??
+        `Target marked. Next: ${targetLabel(nextTarget, step.stringLabel)}.`,
+    )
     return true
   }
 
   const startGroove = async (): Promise<boolean> => {
-    const config = options.config()
+    const step = currentStep()
+    const exerciseNotes = notes()
+    if (step === undefined || exerciseNotes.length === 0) return false
+
     startGeneration += 1
     const generation = startGeneration
+    const activeStepAtStart = step.id
     band.stop()
     consumedTargets.clear()
     expectedHitTimesMs = []
@@ -151,9 +304,16 @@ export function useGuitarFirstWinController(
       const result = await band.start({
         tempoBpm: tempoBpm(),
         countInBeats: countInBeats(),
-        exerciseBeats: config.freshHitsRequested,
+        exerciseBeats: exerciseNotes.length,
+        feel: step.guide === 'percussion-only' ? 'groove' : 'click',
+        exercisePulse: step.guide === 'percussion-only',
         onBeat: (beatIndex, phase) => {
-          if (generation !== startGeneration) return
+          if (
+            generation !== startGeneration ||
+            currentStep()?.id !== activeStepAtStart
+          ) {
+            return
+          }
           if (phase === 'count-in') {
             setStatus('count-in')
             setCountInRemaining(Math.max(1, countInBeats() - beatIndex))
@@ -165,16 +325,29 @@ export function useGuitarFirstWinController(
           setStatus('playing')
           setCountInRemaining(0)
           setPlayheadBeat(beatIndex)
-          setLastFeedback('Play the open low E with this pulse.')
+          setLastFeedback(
+            `Mark ${targetLabel(exerciseNotes[beatIndex], step.stringLabel)} with this pulse.`,
+          )
         },
         onComplete: () => {
-          if (generation !== startGeneration || status() === 'complete') return
+          if (
+            generation !== startGeneration ||
+            currentStep()?.id !== activeStepAtStart ||
+            status() === 'complete'
+          ) {
+            return
+          }
           setStatus('quiet')
           setCountInRemaining(0)
           setLastFeedback('Groove finished. Start it again when you are ready.')
         },
       })
-      if (generation !== startGeneration) return false
+      if (
+        generation !== startGeneration ||
+        currentStep()?.id !== activeStepAtStart
+      ) {
+        return false
+      }
       expectedHitTimesMs = result.expectedHitTimesMs
       return true
     } catch {
@@ -195,7 +368,39 @@ export function useGuitarFirstWinController(
     setStatus('quiet')
     setCountInRemaining(0)
     setPlayheadBeat(0)
-    setLastFeedback('Groove stopped. Your marked notes are still here.')
+    setLastFeedback('Groove stopped. Your marked targets are still here.')
+  }
+
+  const resetStepSignals = (step: GuitarFirstWinExerciseStepV1): void => {
+    setHits(0)
+    setPlayheadBeat(0)
+    setCountInRemaining(0)
+    setStatus('quiet')
+    setLastFeedback(introFeedback(step))
+  }
+
+  const advanceStep = (): boolean => {
+    const step = currentStep()
+    if (step === undefined || !stepPassed()) return false
+    const nextProgress = completeActiveStep()
+    const nextStep = options
+      .config()
+      .exerciseSteps.find(
+        (candidate) => candidate.id === nextProgress.currentStepId,
+      )
+    if (nextStep === undefined || nextStep.id === step.id) return false
+
+    stopGroove()
+    setActiveStepId(nextStep.id)
+    resetStepSignals(nextStep)
+    return true
+  }
+
+  const restartStep = (): void => {
+    const step = currentStep()
+    if (step === undefined) return
+    stopGroove()
+    resetStepSignals(step)
   }
 
   const setTempoBpm = (value: number): void => {
@@ -219,7 +424,20 @@ export function useGuitarFirstWinController(
   return {
     hits,
     status,
+    currentStep,
+    currentStepIndex,
+    stepCount,
     notes,
+    currentTarget,
+    currentChunkIndex,
+    completedPhraseCount,
+    targetHits,
+    passHits,
+    stepPassed,
+    stepFinished,
+    isFinalStep,
+    nextStep,
+    flowComplete,
     playheadBeat,
     countInRemaining,
     lastFeedback,
@@ -229,6 +447,8 @@ export function useGuitarFirstWinController(
     registerHit,
     startGroove,
     stopGroove,
+    advanceStep,
+    restartStep,
     setTempoBpm,
     setCountInBeats,
     skip,

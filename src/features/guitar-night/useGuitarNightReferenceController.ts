@@ -65,6 +65,9 @@ export function useGuitarNightReferenceController(
     kind: 'idle',
   })
   const [importStatus, setImportStatus] = createSignal<string | null>(null)
+  const [importPendingFileName, setImportPendingFileName] = createSignal<
+    string | null
+  >(null)
   const [libraryVersion, setLibraryVersion] = createSignal(0)
   const [instrument, setInstrumentSignal] =
     createSignal<StringedInstrument>('guitar')
@@ -80,6 +83,7 @@ export function useGuitarNightReferenceController(
 
   let disposed = false
   let attachGeneration = 0
+  let importGeneration = 0
   let portPromise: Promise<GuitarNightReferencePort> | null = null
   /**
    * The track the instrument was last chosen for. A manual choice sticks until
@@ -147,13 +151,18 @@ export function useGuitarNightReferenceController(
     return next
   }
 
-  const attach = async (
+  const attachReference = async (
     songId: string,
     trackId?: string,
     historyMode: HistoryMode = 'push',
+    cancelPendingImport = true,
   ): Promise<void> => {
     const normalizedSongId = songId.trim()
     if (normalizedSongId === '') return
+    if (cancelPendingImport) {
+      importGeneration += 1
+      setImportPendingFileName(null)
+    }
     const generation = ++attachGeneration
     // An authored score replaces whatever was being measured: stop that work
     // rather than letting a late transcription overwrite this attachment.
@@ -213,6 +222,12 @@ export function useGuitarNightReferenceController(
     }
   }
 
+  const attach = (
+    songId: string,
+    trackId?: string,
+    historyMode: HistoryMode = 'push',
+  ): Promise<void> => attachReference(songId, trackId, historyMode)
+
   const selectTrack = async (trackId: string): Promise<void> => {
     const current = reference()
     if (current === null || current.trackId === trackId) return
@@ -222,6 +237,9 @@ export function useGuitarNightReferenceController(
 
   const detach = (historyMode: HistoryMode = 'push'): void => {
     attachGeneration += 1
+    importGeneration += 1
+    setImportPendingFileName(null)
+    setImportStatus(null)
     cancelFollowStem()
     lastMeasured = null
     tunedForTrack = null
@@ -279,27 +297,36 @@ export function useGuitarNightReferenceController(
   }
 
   const importFile = async (file: File): Promise<void> => {
+    const generation = ++importGeneration
+    attachGeneration += 1
+    cancelFollowStem()
+    setImportPendingFileName(file.name)
     setImportStatus(null)
     const loadedPort = await ensurePort()
-    if (disposed) return
+    if (disposed || generation !== importGeneration) return
     if (loadedPort === null) {
       setImportStatus('Your tab library could not be opened.')
+      setImportPendingFileName(null)
       return
     }
 
     try {
       const summary = await loadedPort.importReference(file)
-      if (disposed) return
+      if (disposed || generation !== importGeneration) return
       setLibraryVersion((version) => version + 1)
       setImportStatus(null)
-      await attach(summary.songId, undefined, 'replace')
+      await attachReference(summary.songId, undefined, 'replace', false)
     } catch (caught) {
-      if (disposed) return
+      if (disposed || generation !== importGeneration) return
       setImportStatus(
         caught instanceof Error
           ? caught.message
           : 'That file could not be read as a tab.',
       )
+    } finally {
+      if (!disposed && generation === importGeneration) {
+        setImportPendingFileName(null)
+      }
     }
   }
 
@@ -317,6 +344,9 @@ export function useGuitarNightReferenceController(
     input: Omit<MeasuredReferenceInput, 'transcription'> & { stemUrl: string },
   ): Promise<void> => {
     if (transcribeProgress() !== null) return
+    importGeneration += 1
+    setImportPendingFileName(null)
+    setImportStatus(null)
     const generation = ++attachGeneration
 
     let loaded: GuitarNightTranscriptionPort
@@ -415,6 +445,7 @@ export function useGuitarNightReferenceController(
   onCleanup(() => {
     disposed = true
     attachGeneration += 1
+    importGeneration += 1
     transcribeAbort?.abort()
     transcribeAbort = null
   })
@@ -425,6 +456,7 @@ export function useGuitarNightReferenceController(
     reference,
     references,
     importStatus,
+    importPendingFileName,
     transcribeProgress,
     instrument,
     stringCount,

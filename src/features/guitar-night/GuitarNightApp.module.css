@@ -685,6 +685,11 @@
   box-shadow: 0 0 0.8rem rgba(106, 202, 189, 0.45);
 }
 
+.beatRow .beatActive {
+  background: rgba(224, 164, 93, 0.54);
+  box-shadow: 0 0 0.65rem rgba(224, 164, 93, 0.24);
+}
+
 .tapAction {
   width: 100%;
   padding: 0.55rem 0.85rem;
@@ -930,6 +935,106 @@
 .songWell small {
   margin-top: 0.55rem;
   color: rgba(244, 234, 219, 0.56);
+}
+
+.guitarNightFileDrop {
+  position: relative;
+  isolation: isolate;
+}
+
+.guitarNightFileDropStatus {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+  margin-top: 0.45rem;
+  color: rgba(244, 234, 219, 0.66);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.guitarNightFileDropStatus span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guitarNightFileDropPrompt {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.09);
+}
+
+.guitarNightFileDropChoose {
+  min-height: var(--touch-target);
+  padding: 0.55rem 0.9rem;
+  border: 1px solid rgba(224, 164, 93, 0.42);
+  border-radius: 0.5rem;
+  color: #20150c;
+  background: var(--amber-bright);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 740;
+  letter-spacing: 0.01em;
+}
+
+.guitarNightFileDropChoose:hover:not(:disabled) {
+  background: #f7c98a;
+}
+
+.guitarNightFileDropChoose:disabled {
+  cursor: wait;
+  opacity: 0.54;
+}
+
+.guitarNightFileDropOr {
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.72rem;
+}
+
+.guitarNightFileDropFormats {
+  grid-column: 1 / -1;
+  color: rgba(244, 234, 219, 0.46);
+  font-size: 0.66rem;
+  letter-spacing: 0.035em;
+}
+
+.guitarNightFileDropOverlay {
+  position: absolute;
+  z-index: 3;
+  inset: -1px;
+  display: grid;
+  place-content: center;
+  gap: 0.3rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(106, 202, 189, 0.64);
+  border-radius: inherit;
+  background:
+    linear-gradient(145deg, rgba(16, 26, 25, 0.94), rgba(27, 18, 12, 0.96)),
+    rgba(17, 15, 13, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(106, 202, 189, 0.1);
+  pointer-events: none;
+  text-align: center;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.guitarNightFileDropOverlay strong {
+  color: var(--ivory);
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-weight: 560;
+  letter-spacing: -0.015em;
+}
+
+.guitarNightFileDropOverlay span {
+  color: var(--teal);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .songState {

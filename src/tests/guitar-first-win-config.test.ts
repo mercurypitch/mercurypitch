@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_GUITAR_FIRST_WIN_CONFIG, resolveGuitarFirstWinConfig, } from '@/features/guitar-night/first-win-config'
+import { DEFAULT_GUITAR_FIRST_WIN_CONFIG, primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } from '@/features/guitar-night/first-win-config'
 
 describe('resolveGuitarFirstWinConfig', () => {
   it('returns an independent copy of the bundled defaults for unknown input', () => {
@@ -41,6 +41,30 @@ describe('resolveGuitarFirstWinConfig', () => {
     expect(resolved.tuningMidiHighToLow).toEqual([62, 57, 53, 48, 43, 38])
     expect(resolved.inputFallbacks).toEqual(['keyboard', 'touch'])
     expect(resolved.exerciseSteps[0].expectedMidi).toEqual([38, 40, 42])
+    expect(resolved.exerciseSteps[0].phraseChunks).toEqual([
+      { id: 'phrase-1', frets: [0, 2, 4] },
+    ])
+  })
+
+  it('keeps phrase chunks and explicit pitches aligned with the visible frets', () => {
+    const resolved = resolveGuitarFirstWinConfig({
+      exerciseSteps: [
+        {
+          ...DEFAULT_GUITAR_FIRST_WIN_CONFIG.exerciseSteps[0],
+          frets: [0, 2, 4],
+          phraseChunks: [
+            { id: 'wrong-a', frets: [0] },
+            { id: 'wrong-b', frets: [7] },
+          ],
+          expectedMidi: [40, 42],
+        },
+      ],
+    })
+
+    expect(resolved.exerciseSteps[0].phraseChunks).toEqual([
+      { id: 'phrase-1', frets: [0, 2, 4] },
+    ])
+    expect(resolved.exerciseSteps[0].expectedMidi).toBe('from-tuning-and-frets')
   })
 
   it('falls back field-by-field when values are unsafe or out of bounds', () => {
@@ -105,5 +129,20 @@ describe('resolveGuitarFirstWinConfig', () => {
 
     expect(resolved.freshHitsRequested).toBe(2)
     expect(resolved.passHits).toBe(2)
+  })
+
+  it('uses the first configured completion action as the primary handoff', () => {
+    expect(
+      primaryGuitarFirstWinCompletionAction(
+        resolveGuitarFirstWinConfig({
+          completionActions: ['another-riff', 'load-song'],
+        }),
+      ),
+    ).toBe('another-riff')
+    expect(
+      primaryGuitarFirstWinCompletionAction(
+        resolveGuitarFirstWinConfig({ completionActions: ['keep-jamming'] }),
+      ),
+    ).toBe('keep-jamming')
   })
 })
