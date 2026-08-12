@@ -156,6 +156,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       onBack={() => props.onBack?.()}
       icon={<IconLock size={20} />}
       guidedPractice={guidedPractice}
+      guidedCompletionReady={controller.hasSufficientVoicedEvidence}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
