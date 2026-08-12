@@ -193,7 +193,13 @@ export const AppNavOverflowMenu: Component<AppNavOverflowMenuProps> = (
             aria-label={`More ${props.groupLabel} tabs`}
             style={{ left: `${pos().x}px`, top: `${pos().y}px` }}
           >
-            <p class={styles.groupHeading}>{props.groupLabel}</p>
+            {/* Visual only. A `role="menu"` should contain menu items, not
+                prose, and the panel's own aria-label already names the group
+                for assistive tech — so this is hidden from it rather than
+                announced as a stray line inside the list. */}
+            <p class={styles.groupHeading} aria-hidden="true">
+              {props.groupLabel}
+            </p>
             <For each={props.tabs}>
               {(tab) => {
                 const meta = props.meta(tab)
