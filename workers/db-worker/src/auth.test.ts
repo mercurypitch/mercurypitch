@@ -2183,3 +2183,61 @@ describe('device link codes are claimed, not merely random', () => {
     expect(db.deviceLinks.size).toBe(2)
   })
 })
+
+describe('device links and account erasure', () => {
+  it('erases a pending link when the account it names is deleted', async () => {
+    const db = new AuthDatabase()
+    const perks = new PerksDatabase()
+    const env = makeEnv(db, perks)
+    const auth = await postAuth(
+      'register',
+      { email: 'linker@example.com', password: 'Sing1ngPass' },
+      env,
+    )
+
+    const start = await handleAuth(
+      new Request('https://api.test/api/auth/device/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceLabel: 'TV' }),
+      }),
+      env,
+      '/api/auth/device/start',
+      respond,
+    )
+    const { code } = (await start!.json()) as { code: string }
+    await handleAuth(
+      new Request('https://api.test/api/auth/device/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${String(auth.token)}`,
+        },
+        body: JSON.stringify({ code }),
+      }),
+      env,
+      '/api/auth/device/approve',
+      respond,
+    )
+    expect(db.deviceLinks.get(code)?.userId).toBeTruthy()
+
+    await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+
+    // The row is swept only when the NEXT device asks for a code, so with
+    // nobody linking anything an erased account's id would otherwise sit
+    // here indefinitely. Unusable is not the same as erased.
+    expect(
+      db.preparedSql.some((sql) =>
+        sql.includes('DELETE FROM "deviceLinkCodes"'),
+      ),
+    ).toBe(true)
+  })
+})

@@ -2315,6 +2315,13 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // erases our copy without destroying the accounting trail.
   { table: 'creditLedger', column: 'userId' },
   { table: 'entitlements', column: 'userId' },
+  // An approved-but-uncollected device link names the account it would sign
+  // a television into. Rows are short-lived, but the sweep only runs when
+  // the NEXT device asks for a code — so with nobody linking anything, an
+  // erased account's id can sit here indefinitely. Polling such a row
+  // already yields nothing (the user lookup fails), but "cannot be used" is
+  // not the same as "erased".
+  { table: 'deviceLinkCodes', column: 'userId' },
 ]
 
 /**
