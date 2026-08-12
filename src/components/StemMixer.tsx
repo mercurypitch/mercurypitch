@@ -13,6 +13,7 @@ import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -22,6 +23,7 @@ import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useSt
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
+import { formatBytes } from '@/lib/fetch-progress'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
@@ -185,6 +187,85 @@ const CircularProgress = (props: { pct: number; size?: number }) => {
         transform={`rotate(-90 ${m().s / 2} ${m().s / 2})`}
       />
     </svg>
+  )
+}
+
+// ── Stem Load Progress ─────────────────────────────────────────
+
+const STEM_LOAD_PHASE_LABEL: Record<StemLoadPhase, string> = {
+  connecting: 'Connecting',
+  downloading: 'Downloading',
+  decoding: 'Decoding audio',
+}
+
+/**
+ * The stem download, shown honestly.
+ *
+ * Three things it deliberately does, all of them lessons from the version that
+ * said "Loading stems... 0%" for two minutes on a television:
+ *
+ *  - The bar is **byte-based**, so it moves continuously instead of stepping
+ *    0 / 50 / 100 as whole stems land.
+ *  - When the server gave no size, the bar goes **indeterminate** rather than
+ *    sitting at a number. A sliding stripe plus a climbing byte count says
+ *    "working" without inventing a percentage.
+ *  - `decodeAudioData` has no progress at all, so it gets its own phase label.
+ *    A bar that parks at 100% while the device chews reads as a hang.
+ */
+const StemLoadProgress = (props: {
+  pct: number
+  phase: StemLoadPhase
+  loadedBytes: number
+  totalBytes: number | null
+  songTitle?: string
+}) => {
+  // Only the download has a measurable share. Connecting has no bytes yet and
+  // decoding has no progress, so both run the indeterminate stripe.
+  const determinate = (): boolean =>
+    props.phase === 'downloading' && props.totalBytes !== null
+  const detail = (): string => {
+    if (props.phase === 'connecting') return 'Reaching the song library'
+    if (props.phase === 'decoding') return 'Almost ready'
+    if (props.totalBytes !== null) {
+      return `${formatBytes(props.loadedBytes)} of ${formatBytes(props.totalBytes)}`
+    }
+    return formatBytes(props.loadedBytes)
+  }
+
+  return (
+    <div class="sm-load">
+      <div class="sm-load-head">
+        <span class="sm-load-title">
+          {props.songTitle !== undefined && props.songTitle !== ''
+            ? props.songTitle
+            : 'Loading stems'}
+        </span>
+        <Show when={determinate()}>
+          <span class="sm-load-pct">{props.pct}%</span>
+        </Show>
+      </div>
+      <div
+        class="sm-load-track"
+        classList={{ 'is-indeterminate': !determinate() }}
+        role="progressbar"
+        aria-label={`${STEM_LOAD_PHASE_LABEL[props.phase]} stems`}
+        // An indeterminate progressbar is one with no aria-valuenow, which is
+        // exactly the state we are in when the server sent no Content-Length.
+        aria-valuemin={determinate() ? 0 : undefined}
+        aria-valuemax={determinate() ? 100 : undefined}
+        aria-valuenow={determinate() ? props.pct : undefined}
+        aria-valuetext={detail()}
+      >
+        <div
+          class="sm-load-fill"
+          style={determinate() ? { width: `${props.pct}%` } : undefined}
+        />
+      </div>
+      <div class="sm-load-meta">
+        <span class="sm-load-phase">{STEM_LOAD_PHASE_LABEL[props.phase]}</span>
+        <span class="sm-load-bytes">{detail()}</span>
+      </div>
+    </div>
   )
 }
 
@@ -2308,19 +2389,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           <div class="sm-loading">
             <Show
               when={audio.midiGenerating()}
-              fallback={<div class="sm-loading-spinner" />}
+              fallback={
+                <StemLoadProgress
+                  pct={audio.loadProgress()}
+                  phase={audio.loadPhase()}
+                  loadedBytes={audio.loadedBytes()}
+                  totalBytes={audio.totalBytes()}
+                  songTitle={props.songTitle}
+                />
+              }
             >
               <CircularProgress pct={audio.midiProgress()} size={40} />
-            </Show>
-            <span>
-              {audio.midiGenerating()
-                ? audio.midiPhase() === 'rendering'
+              <span>
+                {audio.midiPhase() === 'rendering'
                   ? 'Rendering MIDI audio...'
                   : audio.midiPhase() === 'synthesizing'
                     ? `Building MIDI graph... ${audio.midiProgress()}%`
-                    : `Detecting pitches... ${audio.midiProgress()}%`
-                : `Loading stems... ${audio.loadProgress()}%`}
-            </span>
+                    : `Detecting pitches... ${audio.midiProgress()}%`}
+              </span>
+            </Show>
           </div>
         </Show>
 
@@ -3123,17 +3210,107 @@ export const StemMixerStyles: string = `
   font-size: 0.9rem;
 }
 
-.sm-loading-spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid var(--border, #30363d);
-  border-top-color: var(--accent, #58a6ff);
-  border-radius: 50%;
-  animation: sm-spin 0.8s linear infinite;
-}
-
 @keyframes sm-spin {
   to { transform: rotate(360deg); }
+}
+
+/* Stem download progress. Sized for the far end of a living room: this is the
+   screen a television sits on for minutes at a time. */
+.sm-load {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(30rem, 78vw);
+}
+
+.sm-load-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sm-load-title {
+  overflow: hidden;
+  color: var(--fg-primary, #f0f6fc);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sm-load-pct {
+  color: var(--accent, #58a6ff);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-load-track {
+  position: relative;
+  height: 0.5rem;
+  overflow: hidden;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 999px;
+}
+
+.sm-load-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent, #58a6ff),
+    var(--purple, #bc8cff)
+  );
+  border-radius: 999px;
+  /* Bytes arrive in bursts; easing the width turns a stuttering bar into a
+     steady crawl without pretending to know more than we do. */
+  transition: width 0.28s ease-out;
+}
+
+/* No Content-Length, or a phase with nothing to measure: a stripe that keeps
+   moving. The point is only to say "still working" — parking a bar at a number
+   is what made the old version look hung. */
+.sm-load-track.is-indeterminate .sm-load-fill {
+  width: 38%;
+  transition: none;
+  animation: sm-load-slide 1.35s ease-in-out infinite;
+}
+
+@keyframes sm-load-slide {
+  from { transform: translateX(-105%); }
+  to { transform: translateX(275%); }
+}
+
+.sm-load-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.78rem;
+}
+
+.sm-load-bytes {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-load-fill {
+    transition: none;
+  }
+
+  /* Still needs to read as active, so pulse opacity in place rather than
+     sliding anything across the screen. */
+  .sm-load-track.is-indeterminate .sm-load-fill {
+    width: 100%;
+    animation: sm-load-pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes sm-load-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.85; }
+  }
 }
 
 /* Error */
@@ -3301,6 +3478,21 @@ export const StemMixerStyles: string = `
   align-items: center;
   gap: 0.5rem;
 }
+
+.sm-mic-monitor-glyph {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  color: var(--accent, #58a6ff);
+}
+
+/* Dim with the slider it labels — a lit mic next to a dead control reads as
+   "you are live" when self-monitoring is off. */
+.sm-mic-monitor-row:has(.sm-mic-monitor-slider:disabled) .sm-mic-monitor-glyph {
+  color: var(--fg-secondary, #8b949e);
+  opacity: 0.55;
+}
+
 .sm-mic-monitor-slider {
   flex: 1;
   min-width: 0;

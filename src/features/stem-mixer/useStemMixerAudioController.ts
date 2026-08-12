@@ -6,6 +6,8 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { analysisFps, presentationFps, recordAnimationFrame, } from '@/lib/device-tier'
+import type { DownloadProgress } from '@/lib/fetch-progress'
+import { aggregateProgress, fetchArrayBufferWithProgress, } from '@/lib/fetch-progress'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
@@ -25,6 +27,13 @@ import { stemTrackIsAudible } from './stem-mix-state'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
+
+/**
+ * Stages of a stem load, in order. Split out because they fail differently
+ * for the user: `connecting` and `downloading` are the network's fault and can
+ * be waited out, `decoding` is the device's and cannot.
+ */
+export type StemLoadPhase = 'connecting' | 'downloading' | 'decoding'
 
 interface StemTrack {
   label: string
@@ -130,6 +139,16 @@ export interface StemMixerAudioController {
   loading: Accessor<boolean>
   loadError: Accessor<string>
   loadProgress: Accessor<number>
+  /**
+   * What the load is doing right now. `connecting` is the wait for the first
+   * response header, which on a slow link used to be several silent minutes of
+   * "0%"; `decoding` is `decodeAudioData`, which has no progress of its own.
+   */
+  loadPhase: Accessor<StemLoadPhase>
+  /** Bytes downloaded so far across every stem in this load. */
+  loadedBytes: Accessor<number>
+  /** Expected total, or `null` when no stem declared a `Content-Length`. */
+  totalBytes: Accessor<number | null>
   midiGenerating: Accessor<boolean>
   midiProgress: Accessor<number>
   midiPhase: Accessor<'detecting' | 'synthesizing' | 'rendering'>
@@ -230,6 +249,10 @@ export const useStemMixerAudioController = (
   const [loading, setLoading] = createSignal(true)
   const [loadError, setLoadErrorLocal] = createSignal('')
   const [loadProgress, setLoadProgressLocal] = createSignal(0)
+  const [loadPhase, setLoadPhaseLocal] =
+    createSignal<StemLoadPhase>('connecting')
+  const [loadedBytes, setLoadedBytesLocal] = createSignal(0)
+  const [totalBytes, setTotalBytesLocal] = createSignal<number | null>(null)
   const [midiGenerating, setMidiGeneratingLocal] = createSignal(false)
   const [midiProgress, setMidiProgressLocal] = createSignal(0)
   const [midiPhase, setMidiPhaseLocal] = createSignal<
@@ -453,10 +476,23 @@ export const useStemMixerAudioController = (
   onCleanup(installAudioUnlock(() => audioCtx))
 
   // ── Load Stems ───────────────────────────────────────────────
+  //
+  // The download is the whole wait on a slow link — a demo song's stems come
+  // from R2, and on a television that is minutes. Progress is therefore
+  // measured in *bytes*, streamed as they arrive, not in stems finished: the
+  // old count-based version could only ever read 0 / 50 / 100 for a two-stem
+  // song, so the entire download looked like a hang at 0%.
+  //
+  // The bar is the download only. `decodeAudioData` cannot report progress, so
+  // it gets its own phase and label instead of a share of the percentage —
+  // better an honest "Decoding audio" than a bar that stalls near the end.
   const loadStems = async () => {
     setLoading(true)
     setLoadErrorLocal('')
     setLoadProgressLocal(0)
+    setLoadPhaseLocal('connecting')
+    setLoadedBytesLocal(0)
+    setTotalBytesLocal(null)
 
     const ctx = ensureAudioCtx()
     const extraTracks = deps.extras().filter((t) => t.url !== '')
@@ -468,14 +504,47 @@ export const useStemMixerAudioController = (
     const total = urls.length
     let loadedCount = 0
 
+    // Parallel downloads share one bar, so each keeps its own byte tally and
+    // the aggregate is recomputed on every chunk. Every url is seeded up front
+    // — including the extras, which are fetched in a later batch — so the bar
+    // is weighted across the whole load from the first chunk and can never
+    // jump backwards when a new stem joins.
+    const byUrl = new Map<string, DownloadProgress>(
+      urls.map((u) => [u, { received: 0, total: null, fraction: null }]),
+    )
+    let inFlight = 0
+    const publish = (): void => {
+      const agg = aggregateProgress([...byUrl.values()])
+      setLoadProgressLocal(Math.round(agg.fraction * 100))
+      setLoadedBytesLocal(agg.received)
+      setTotalBytesLocal(agg.total)
+      // Nothing left on the wire and bytes already in hand: the only wait left
+      // is decodeAudioData, which is one opaque call per stem.
+      setLoadPhaseLocal(
+        inFlight === 0 && agg.received > 0
+          ? 'decoding'
+          : agg.received > 0
+            ? 'downloading'
+            : 'connecting',
+      )
+    }
+
     const loadOne = async (url: string): Promise<AudioBuffer> => {
-      const resp = await fetch(url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`)
-      const arrayBuf = await resp.arrayBuffer()
-      const buf = await ctx.decodeAudioData(arrayBuf)
+      inFlight++
+      let arrayBuf: ArrayBuffer
+      try {
+        arrayBuf = await fetchArrayBufferWithProgress(url, {
+          onProgress: (p) => {
+            byUrl.set(url, p)
+            publish()
+          },
+        })
+      } finally {
+        inFlight--
+      }
       loadedCount++
-      setLoadProgressLocal(Math.round((loadedCount / total) * 100))
-      return buf
+      publish()
+      return await ctx.decodeAudioData(arrayBuf)
     }
 
     try {
@@ -1241,6 +1310,9 @@ export const useStemMixerAudioController = (
     loading,
     loadError,
     loadProgress,
+    loadPhase,
+    loadedBytes,
+    totalBytes,
     midiGenerating,
     midiProgress,
     midiPhase,

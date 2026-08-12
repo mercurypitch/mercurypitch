@@ -91,7 +91,7 @@ const PROMISES: readonly { icon: () => JSX.Element; text: string }[] = [
         />
       </svg>
     ),
-    text: 'It all happens on your device. Nothing is uploaded, nothing is kept.',
+    text: 'It all happens on your device. Nothing is uploaded.',
   },
 ]
 

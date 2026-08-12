@@ -5,7 +5,63 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Added
+
+- **Piano Night.** A room for the keyboard, the way Guitar Night is one for the
+  guitar. It plays the music already on your device, and a connected MIDI
+  keyboard can be mapped and practised against. Rendering was tuned for tablets
+  so the falling notes stay smooth on the screen most people prop up on a piano.
+
+- **Guitar Night has a rehearsal stage.** The score room is now stage-first: it
+  sounds the written part instead of playing a drum kit over silence, on a bass
+  voice when the stage is showing a bass. There is a selectable string highway,
+  a Jam Doctor that belongs to the stage, phrase review tied to what you
+  actually played, and local takes that are kept honestly enough to trust.
+
+- **Your library follows you between devices.** Sign in on a phone and the
+  songs you separated on the desktop are listed there. Only the list travels —
+  title, length, which stems exist — never the audio, which is your own
+  material and stays on the device that made it. Songs the phone cannot play
+  yet are marked as such rather than silently missing.
+
+- **A Sync page in Settings** (Settings > Sync) that reports instead of
+  promising: how much storage this browser has granted and how much the library
+  uses, how many songs are on this device, how many the account knows about,
+  and how many of those this device cannot play. It also says whether the
+  library is protected from being evicted, and offers to ask for protection.
+
+- **Guided Voice analysis,** the foundation for coach-led vocal work inside
+  Vocal Analysis.
+
+- **A bench for turning a stem into notes,** in the Lab. It scores a
+  transcription against a written tab and lets you _hear_ both — play the
+  heard notes, play the tab, click to seek, Space to start and stop — so a
+  disagreement between them can be listened to rather than only read.
+
 ### Changed
+
+- **The app adapts to televisions and slower devices.** A session on a Google
+  TV turned up stuttering playback in Guitar Night, Piano Night and the karaoke
+  mixer, file pickers that did nothing, loop buttons rendered grey instead of
+  blue and red, and a Karaoke Guide describing controls that were not there.
+  The app now recognises what it is running on — and demotes itself if frames
+  are actually being missed — then scales rendering to match. Settings can
+  override it if the guess is wrong.
+
+- **Loading stems shows real progress.** The bar used to count whole stems, so
+  a two-stem song could only ever read 0%, 50% or 100% — and on a slow
+  connection the whole download was several silent minutes at 0%. It now
+  measures bytes as they arrive, names what it is doing (connecting,
+  downloading, decoding) and shows how much of the song has landed. Where the
+  server will not say how big the file is, the bar keeps moving rather than
+  parking on a number. This covers the karaoke stage and every in-app mix,
+  which share the same loader.
+
+- **The microphone button looks like a microphone.** On the karaoke stage's
+  mute control and loudness slider, and on the jam room's room-mute button,
+  the thin outline glyph is replaced by a solid, dimensional one that reads at
+  a glance from across a room. It still takes the button's colour, so live,
+  muted and error states are as clear as before.
 
 - **The tabs are grouped by what you came to do.** Four groups now: You (Home
   and The Ascent), Practice (your instrument, plus Exercises), Play (Karaoke,
@@ -31,7 +87,33 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   full sentence can skip the heading altogether. "Update" is now reserved for
   the toast that really does offer you a new version.
 
+- **Adding songs in Karaoke shows you where they went.** On a laptop-height
+  screen the upload zone filled the tab, so a new song landed in a queue below
+  the fold and the upload read as having done nothing. The queue scrolls into
+  view now, with its Process button focused so Enter starts the batch. The
+  inline mixer also stopped drawing two header rows above itself — it brings
+  its own toolbar, and the duplicates pushed the stage off-screen.
+
+- **The microphone is offered once, at your first practice,** instead of being
+  raised again on every playback surface.
+
 ### Fixed
+
+- **The Settings > Sync page overlapped its own text.** Its explanatory lines
+  borrowed a style meant to tuck a subtitle under a heading, so used after a
+  paragraph they climbed into the line above.
+
+- **Televisions render the right colours.** Six colours the app sets from code
+  had no working fallback for a TV browser, so anything tinted from them —
+  including the A/B loop buttons — came out grey.
+
+- **A jam room's guide vocal no longer pauses the backing track on a TV.**
+
+- **Written tabs follow every tempo change,** not just the first one in the
+  file, and the score room's clocks and reference lines now agree with what you
+  hear. The score room's tempo controls are also no longer buried.
+
+- **Piano Night's navigation icons say what they do.**
 
 - **Every tab is reachable on a phone.** The More sheet's rows were unlabelled
   to anything looking for them, so tours and checks aimed at a tab that lived
