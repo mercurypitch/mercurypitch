@@ -130,7 +130,7 @@ These are the rules that break things when ignored.
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.9k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 1.5k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
-| `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 950 | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
+| `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 900 | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 650 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 400 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |

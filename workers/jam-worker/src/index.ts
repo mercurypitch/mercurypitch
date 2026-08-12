@@ -10,7 +10,7 @@
 import type { JamRoom } from './jam-room'
 import type { TurnEnv } from './turn'
 import { mintIceServers } from './turn'
-import { isJamRoomId, withJamConnectionContext } from './signaling-intent'
+import { isJamRoomId, normalizeJamRoomId, withJamConnectionContext, } from './signaling-intent'
 export { JamHostVerifier } from './host-verification'
 export { JamRoom } from './jam-room'
 
@@ -132,7 +132,11 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return respond({ error: 'WebSocket upgrade required' }, { status: 426 })
       }
-      const roomId = sigMatch[1]
+      // Folded before anything else looks at it: the id becomes a
+      // Durable Object name, so a lowercase code is not a bad code -- it
+      // is a DIFFERENT room, and the two devices wait for each other in
+      // separate places.
+      const roomId = normalizeJamRoomId(sigMatch[1] ?? '')
       if (!isJamRoomId(roomId)) {
         return respond({ error: 'Invalid room id' }, { status: 400 })
       }
@@ -162,10 +166,11 @@ export default {
     // ── REST: Room info ───────────────────────────────────────────
     const infoMatch = url.pathname.match(/^\/api\/jam\/rooms\/([^/]+)$/)
     if (infoMatch && request.method === 'GET') {
-      if (!isJamRoomId(infoMatch[1])) {
+      const roomId = normalizeJamRoomId(infoMatch[1] ?? '')
+      if (!isJamRoomId(roomId)) {
         return respond({ error: 'Invalid room id' }, { status: 400 })
       }
-      return respond({ roomId: infoMatch[1], exists: true })
+      return respond({ roomId, exists: true })
     }
 
     return respond({ error: 'Not found' }, { status: 404 })

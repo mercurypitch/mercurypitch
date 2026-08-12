@@ -14,7 +14,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { Portal } from 'solid-js/web'
 import { formatBytes } from '@/lib/fetch-progress'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
-import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/sync/room-code'
+import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { SyncTransfer } from '@/stores/sync-store'
 import { estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncRoomId, syncState, syncTransfers, } from '@/stores/sync-store'

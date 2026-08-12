@@ -24,6 +24,7 @@ import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
+import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
@@ -172,7 +173,7 @@ export const JamPanel: Component = () => {
     // 2. URL-based room join (fallback for shared invite links)
     const roomId = jamRoomToJoin()
     if (roomId !== null) {
-      setJoinRoomId(roomId.toUpperCase())
+      setJoinRoomId(normalizeRoomCode(roomId))
       setJamRoomToJoin(null)
       handleJoin()
     }
@@ -430,7 +431,7 @@ export const JamPanel: Component = () => {
   }
 
   const handleJoin = () => {
-    const roomId = joinRoomId().trim().toUpperCase()
+    const roomId = normalizeRoomCode(joinRoomId())
     if (!roomId) return
     setJoining(true)
     const name = displayName().trim() || getRandomName()
@@ -672,25 +673,35 @@ export const JamPanel: Component = () => {
               class={`${jamStyles.input} ${jamStyles.inputMono}`}
               type="text"
               value={joinRoomId()}
-              onInput={(e) => setJoinRoomId(e.currentTarget.value)}
+              onInput={(e) => {
+                // Rewritten in place so the field always shows the code
+                // that will be sent, rather than accepting a spelling
+                // that gets silently changed on the way out.
+                const code = normalizeRoomCode(e.currentTarget.value)
+                e.currentTarget.value = code
+                setJoinRoomId(code)
+              }}
               onKeyDown={(e) => {
                 if (
                   e.key === 'Enter' &&
-                  joinRoomId().trim() !== '' &&
+                  isCompleteRoomCode(joinRoomId()) &&
                   !joining()
                 ) {
                   handleJoin()
                 }
               }}
-              placeholder="e.g. ABCD"
-              maxLength={32}
+              autocapitalize="characters"
+              autocomplete="off"
+              spellcheck={false}
+              placeholder="8-character code"
+              maxLength={ROOM_CODE_LENGTH}
             />
           </div>
 
           <button
             class={`${jamStyles.btn} ${jamStyles.btnSecondary}`}
             onClick={handleJoin}
-            disabled={joining() || joinRoomId().trim() === ''}
+            disabled={joining() || !isCompleteRoomCode(joinRoomId())}
           >
             {joining() ? 'Joining...' : 'Join Room'}
           </button>
