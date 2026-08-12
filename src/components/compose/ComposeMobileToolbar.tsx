@@ -114,7 +114,11 @@ export const ComposeMobileToolbar: Component<ComposeMobileToolbarProps> = (
             data-testid="compose-mobile-more"
             aria-haspopup="dialog"
             aria-expanded={sheetOpen()}
-            onClick={() => setSheetOpen(true)}
+            // A toggle, not an opener. Tapping the trigger again is the
+            // instinct when the drawer is already up, and the walkthrough's
+            // cleanup pass relies on it too: it re-clicks any `reveal` toggle
+            // still reading aria-expanded="true" to put the UI back.
+            onClick={() => setSheetOpen((open) => !open)}
             aria-label="More compose controls"
             title="More compose controls"
           >

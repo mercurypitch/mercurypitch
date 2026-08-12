@@ -542,9 +542,16 @@ export const useStemMixerAudioController = (
       } finally {
         inFlight--
       }
-      loadedCount++
       publish()
-      return await ctx.decodeAudioData(arrayBuf)
+      const buf = await ctx.decodeAudioData(arrayBuf)
+      // Counted after the decode, not after the download. The guard below
+      // treats `loadedCount === 0` as "nothing usable arrived", and a stem that
+      // downloads but will not decode — a truncated blob from a stale session
+      // is the case that message was written for — has produced no audio at
+      // all. Counting it at download time silenced that warning and left a
+      // mixer with no sound and no explanation.
+      loadedCount++
+      return buf
     }
 
     try {

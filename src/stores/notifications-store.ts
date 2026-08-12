@@ -14,16 +14,15 @@ export interface Notification {
   message: string
   type: 'info' | 'success' | 'warning' | 'error'
   /**
-   * The small caps line above the message.
+   * An optional subject for the toast, rendered as a coloured prefix ON the
+   * message — same size, same line — not as a heading above it.
    *
-   * Omit it and the toast falls back to a word for its `type` (see
-   * NOTIFICATION_LABELS in Notifications.tsx). Pass `null` to show no title at
-   * all, for a message that already reads as a whole sentence.
-   *
-   * Set it when the toast belongs to something the reader would recognise —
-   * "Update", "Offline", "Microphone". The type-based fallback can only ever
-   * describe severity, and a severity word repeated above every message is
-   * what made every toast in the app look like an app update.
+   * There is no fallback: omit it (or pass `null`) and the toast shows the
+   * message alone, which is the right answer for nearly everything. Set it only
+   * when the toast belongs to something the reader would recognise on sight —
+   * "Update", "Offline", "Microphone". A word derived from the `type` says
+   * nothing the icon and the colour do not, and an earlier version that put one
+   * above every message made a saved display name look like an app update.
    */
   title?: string | null
   /** Optional action button (e.g. "Undo") rendered in the toast. */
@@ -63,7 +62,7 @@ let _notifId = 0
 export interface NotificationOptions {
   /** Replace any existing notification on this channel (see `Notification.channel`). */
   channel?: string
-  /** The caps line above the message — see `Notification.title`. */
+  /** Subject prefix on the message — see `Notification.title`. */
   title?: string | null
   /** Override how long the toast stays visible. Defaults are intentionally
    *  longer for warnings and errors so important feedback is not missed. */
