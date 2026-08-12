@@ -6,8 +6,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { encodeStemsForShare, forgetPackedStems, getPackedStems, } from '@/lib/jam/jam-song-share'
-import type * as StemEncoder from '@/lib/jam/stem-encoder'
-import { StemEncodeAbortedError } from '@/lib/jam/stem-encoder'
+import type * as StemEncoder from '@/lib/portable/portable-audio'
+import { StemEncodeAbortedError } from '@/lib/portable/portable-audio'
 
 // Typed with its real parameters so a call's third argument -- the stop
 // signal -- can be asserted on.
@@ -15,13 +15,13 @@ const encode = vi.fn(
   async (
     _wav: ArrayBuffer,
     _onProgress?: unknown,
-    _signal?: unknown,
+    _opts?: unknown,
   ): Promise<Uint8Array> => new Uint8Array(8),
 )
 
-vi.mock('@/lib/jam/stem-encoder', async () => {
+vi.mock('@/lib/portable/portable-audio', async () => {
   const actual = await vi.importActual<typeof StemEncoder>(
-    '@/lib/jam/stem-encoder',
+    '@/lib/portable/portable-audio',
   )
   return {
     ...actual,
@@ -94,9 +94,17 @@ describe('packed stem cache', () => {
   it('hands the stop signal to the encoder', async () => {
     const signal = { aborted: false }
     await encodeStemsForShare(both(), { key: 'session-1', signal })
-    // Third argument, so a Stop lands inside the slice loop rather than
+    // In the options, so a Stop lands inside the slice loop rather than
     // after the whole stem.
-    expect(encode.mock.calls[0]?.[2]).toBe(signal)
+    const opts = encode.mock.calls[0]?.[1] as { signal?: unknown } | undefined
+    expect(opts?.signal).toBe(signal)
+  })
+
+  it('packs stems for a room at the smaller tier', async () => {
+    // A room hears the stem once over a live link; the library keeps it.
+    await encodeStemsForShare(both(), { key: 'session-1' })
+    const opts = encode.mock.calls[0]?.[1] as { tier?: unknown } | undefined
+    expect(opts?.tier).toBe('portable-128')
   })
 
   it('packs without a key rather than refusing, and caches nothing', async () => {

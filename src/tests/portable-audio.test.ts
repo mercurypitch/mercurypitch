@@ -1,10 +1,11 @@
 // The encoder's job is to turn a 100-400 MB WAV into something a peer can
-// actually receive. These pin the decisions around it -- the sample-rate
-// choice and the wasm fallback -- rather than the codec itself, which is
-// mediabunny's problem and not ours.
+// actually receive, or a phone can keep twenty of. These pin the decisions
+// around it -- the quality tiers, the sample-rate choice and the wasm
+// fallback -- rather than the codec itself, which is mediabunny's problem
+// and not ours.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { encodeRateFor, ensureAacEncoder, resetStemEncoderProbe, STEM_BITRATE, } from '@/lib/jam/stem-encoder'
+import { DEFAULT_PORTABLE_TIER, encodeRateFor, ensureAacEncoder, PORTABLE_TIERS, resetStemEncoderProbe, STEM_BITRATE, } from '@/lib/portable/portable-audio'
 
 const canEncodeAudio = vi.hoisted(() => vi.fn())
 const registerAacEncoder = vi.hoisted(() => vi.fn())
@@ -87,5 +88,29 @@ describe('STEM_BITRATE', () => {
     // 128 kbps x 240 s = 3.8 MB a stem, 7.6 MB for both -- the numbers in
     // docs/plans/jam-song-p2p-transfer.md depend on this constant.
     expect(STEM_BITRATE).toBe(128_000)
+  })
+})
+
+describe('quality tiers', () => {
+  it('defaults to the one a kept library wants', () => {
+    // 192 rather than 128: this copy is played on a TV and sung along to
+    // for months, and the difference is about 3.5 MB a song.
+    expect(DEFAULT_PORTABLE_TIER).toBe('portable-192')
+    expect(PORTABLE_TIERS[DEFAULT_PORTABLE_TIER]).toBe(192_000)
+  })
+
+  it('keeps the smaller tier available for a live transfer', () => {
+    // A jam room asks for this one by name -- see jam-song-share.
+    expect(PORTABLE_TIERS['portable-128']).toBe(128_000)
+    expect(STEM_BITRATE).toBe(128_000)
+  })
+
+  it('names its tiers the way a manifest records them', () => {
+    // SongManifest.quality is written from these keys, so a rename here
+    // without one there would silently mislabel every synced song.
+    expect(Object.keys(PORTABLE_TIERS).sort()).toEqual([
+      'portable-128',
+      'portable-192',
+    ])
   })
 })
