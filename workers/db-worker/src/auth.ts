@@ -23,7 +23,8 @@ import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './
 import { shouldTouchLastActive } from './last-active'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { purgePerksByEmail } from './perks'
-import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, type ManagedTestAccountState, } from './testing-account-state'
+import type { ManagedTestAccountState } from './testing-account-state'
+import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 
 export interface Env {
   /** Where emailed links land when the request Origin is not a first-party
@@ -1309,8 +1310,19 @@ interface OAuthState {
   deviceId?: string
   returnTo: string
   ts: number
-  /** True when this pass through Google is also asking for Drive access. */
+  /** True when this pass through Google is asking for Drive access. */
   drive?: boolean
+  /**
+   * The account that asked for Drive, on a Drive pass.
+   *
+   * Present ONLY when the start was authenticated, and it is what the
+   * grant is stored against — never the Google identity the consent
+   * screen happened to return. Connecting a Drive must not be able to
+   * change who you are signed in as, and people routinely keep their
+   * songs in a different Google account from the one they signed up
+   * with, which is a thing to support rather than a mistake to correct.
+   */
+  uid?: string
 }
 
 async function signState(state: OAuthState, secret: string): Promise<string> {
@@ -1376,29 +1388,30 @@ async function handleGoogleStart(
   const deviceIdRaw = url.searchParams.get('deviceId') ?? undefined
   const deviceId =
     deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
-  // Incremental authorization (device-sync.md, Phase 4): the Drive scope
-  // is asked for only when the user turns Drive sync on, never at plain
-  // sign-in — a pending Google verification of the scope must not be able
-  // to break logging in.
-  const wantsDrive = url.searchParams.get('scope') === 'drive'
 
   const state = await signState(
-    { deviceId, returnTo, ts: Date.now(), ...(wantsDrive && { drive: true }) },
+    { deviceId, returnTo, ts: Date.now() },
     env.JWT_SECRET as string,
   )
+  return redirect(googleAuthUrl(env, url, state, false))
+}
 
+/** The Google consent URL for a sign-in or a Drive pass. */
+function googleAuthUrl(
+  env: Env,
+  url: URL,
+  state: string,
+  wantsDrive: boolean,
+): string {
   const auth = new URL('https://accounts.google.com/o/oauth2/v2/auth')
-  auth.searchParams.set('client_id', env.GOOGLE_CLIENT_ID)
+  auth.searchParams.set('client_id', env.GOOGLE_CLIENT_ID as string)
   auth.searchParams.set(
     'redirect_uri',
     `${url.origin}/api/auth/google/callback`,
   )
   auth.searchParams.set('response_type', 'code')
   if (wantsDrive) {
-    auth.searchParams.set(
-      'scope',
-      `openid email profile ${DRIVE_SCOPE}`,
-    )
+    auth.searchParams.set('scope', `openid email profile ${DRIVE_SCOPE}`)
     // offline + consent is the only combination that reliably returns a
     // refresh token; include_granted_scopes keeps this additive rather
     // than replacing what sign-in already granted.
@@ -1410,7 +1423,46 @@ async function handleGoogleStart(
     auth.searchParams.set('prompt', 'select_account')
   }
   auth.searchParams.set('state', state)
-  return redirect(auth.toString())
+  return auth.toString()
+}
+
+/**
+ * POST /api/auth/drive/start — begin a connect-Drive pass.
+ *
+ * Authenticated, and returns a URL rather than redirecting, because the
+ * account has to be known BEFORE the browser leaves for Google: a
+ * top-level navigation carries no Authorization header, so an
+ * unauthenticated GET could only find out who the user is by trusting
+ * whichever Google identity came back — which is how connecting a Drive
+ * would end up silently signing somebody into a different account.
+ *
+ * Incremental authorization (device-sync.md, Phase 4): the Drive scope
+ * is asked for only here, never at plain sign-in, so a pending Google
+ * verification of the scope cannot break logging in.
+ */
+async function handleDriveStart(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return respond({ error: 'Google login not configured' }, { status: 501 })
+  }
+  const url = new URL(request.url)
+  const body = (await request.json().catch(() => ({}))) as {
+    returnTo?: string
+  }
+  const returnTo = body.returnTo ?? ''
+  if (!isAllowedReturnTo(returnTo, env)) {
+    return respond({ error: 'returnTo origin not allowed' }, { status: 400 })
+  }
+  const state = await signState(
+    { returnTo, ts: Date.now(), drive: true, uid: auth.userId },
+    env.JWT_SECRET as string,
+  )
+  return respond({ url: googleAuthUrl(env, url, state, true) })
 }
 
 async function handleGoogleCallback(
@@ -1487,6 +1539,18 @@ async function handleGoogleCallback(
     return redirectWithError(state.returnTo, 'Invalid Google token')
   }
 
+  // A connect-Drive pass is NOT a sign-in, and returns before anything
+  // can resolve an account from the Google identity. The person picking
+  // a Drive is frequently picking a different Google account from the one
+  // they signed up with -- that is the point -- so resolving a user here
+  // would create an empty account, mint its session, and quietly move
+  // them into it, taking their library and credits out from under them.
+  if (state.drive === true && typeof state.uid === 'string') {
+    return redirect(
+      `${state.returnTo}#${await keepDriveGrant(env, state.uid, tokenData, claims.email ?? null)}`,
+    )
+  }
+
   let resolved: { row: UserRow; isNew: boolean }
   let token: string
   try {
@@ -1500,42 +1564,48 @@ async function handleGoogleCallback(
   }
   const { isNew } = resolved
 
-  // The Drive half of a connect-Drive pass: keep the refresh token, or
-  // say exactly why there is nothing to keep. Never fails the SIGN-IN —
-  // the session token above is already minted, and a person who unchecked
-  // the Drive box still deliberately signed in.
-  let driveFragment = ''
-  if (state.drive === true) {
-    const grantedDrive = (tokenData.scope ?? '').includes(DRIVE_SCOPE)
-    if (!grantedDrive) {
-      // The consent screen lets the user untick individual scopes.
-      driveFragment = '&gdrive_error=declined'
-    } else if (tokenData.refresh_token) {
-      try {
-        await storeDriveToken(
-          env,
-          resolved.row.id,
-          tokenData.refresh_token,
-          tokenData.scope ?? DRIVE_SCOPE,
-          claims.email ?? null,
-        )
-        driveFragment = '&gdrive=1'
-      } catch (error) {
-        console.error('[google-callback] drive token store failed:', error)
-        driveFragment = '&gdrive_error=store_failed'
-      }
-    } else {
-      // prompt=consent makes Google reissue one; not getting one is worth
-      // naming rather than silently ending up "connected" with no key.
-      driveFragment = '&gdrive_error=no_refresh_token'
-    }
-  }
-
   // gauth_new lets the client count first-time signups (funnel) — the token
   // alone can't distinguish a signup from a returning login.
   return redirect(
-    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}${driveFragment}`,
+    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}`,
   )
+}
+
+/**
+ * Keep the refresh token from a Drive pass, or say why there is none.
+ *
+ * Returns the fragment the app reads on the way back. Every outcome is
+ * named: silently landing on "connected" with no usable key is the one
+ * result that would look fine and then fail on the first backup.
+ */
+async function keepDriveGrant(
+  env: Env,
+  userId: string,
+  tokenData: { refresh_token?: string; scope?: string },
+  email: string | null,
+): Promise<string> {
+  // The consent screen lets the user untick individual scopes.
+  if (!(tokenData.scope ?? '').includes(DRIVE_SCOPE)) {
+    return 'gdrive_error=declined'
+  }
+  if (!tokenData.refresh_token) {
+    // prompt=consent makes Google reissue one; not getting one is worth
+    // naming rather than silently ending up "connected" with no key.
+    return 'gdrive_error=no_refresh_token'
+  }
+  try {
+    await storeDriveToken(
+      env,
+      userId,
+      tokenData.refresh_token,
+      tokenData.scope ?? DRIVE_SCOPE,
+      email,
+    )
+    return 'gdrive=1'
+  } catch (error) {
+    console.error('[google-callback] drive token store failed:', error)
+    return 'gdrive_error=store_failed'
+  }
 }
 
 // ── Google Drive tokens ──────────────────────────────────────────────
@@ -2175,6 +2245,9 @@ export async function handleAuth(
   }
   if (route === 'resend-verification') {
     return handleResendVerification(request, env, respond)
+  }
+  if (route === 'drive/start') {
+    return handleDriveStart(request, env, respond)
   }
   if (route === 'drive/token') {
     return handleDriveToken(request, env, respond)

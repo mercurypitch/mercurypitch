@@ -119,6 +119,21 @@ export function accountHeld(): boolean {
   return hasUpgradedAccount()
 }
 
+/**
+ * Which account this browser is currently signed into, or null.
+ *
+ * For module-scope state that belongs to an ACCOUNT rather than to the
+ * tab. Signing out does not reload the page, so anything cached against
+ * "the user" outlives the user unless something compares this — and the
+ * cost of getting that wrong ranges from showing one person another's
+ * figures to uploading their files into somebody else's storage.
+ */
+export function currentAccountId(): string | null {
+  const token = getAuthToken()
+  if (token == null || token === '') return null
+  return decodeToken(token)?.sub ?? null
+}
+
 // ── HTTP helpers ────────────────────────────────────────────────
 
 function requireBaseUrl(): string {
@@ -513,33 +528,79 @@ export function takeDriveConnectResult(): DriveConnectResult | null {
   return result
 }
 
-/** URL that starts the connect-Google-Drive redirect. Same shape as
- *  googleSignInUrl(), plus the Drive scope. */
-export function driveConnectUrl(): string {
-  sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
+/**
+ * Begin the connect-Google-Drive redirect, and go.
+ *
+ * Authenticated POST rather than a plain link: the worker has to know
+ * WHICH account is asking before the browser leaves, because a top-level
+ * navigation carries no Authorization header. Working it out afterwards
+ * from whichever Google identity came back is how connecting a Drive
+ * would sign somebody into a different account — and choosing a Google
+ * account other than the one you signed up with is the normal case, not
+ * a mistake.
+ */
+export async function startDriveConnect(): Promise<{
+  ok: boolean
+  error?: string
+}> {
+  const token = getAuthToken()
+  if (token == null || token === '') return { ok: false, error: 'signed_out' }
   const returnTo =
     window.location.origin + window.location.pathname + window.location.search
-  const params = new URLSearchParams({
-    deviceId: getUserId(),
-    returnTo,
-    scope: 'drive',
-  })
-  return `${requireBaseUrl()}/api/auth/google/start?${params.toString()}`
+  let res: Response
+  try {
+    res = await fetch(`${requireBaseUrl()}/api/auth/drive/start`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ returnTo }),
+    })
+  } catch {
+    return { ok: false, error: 'offline' }
+  }
+  if (!res.ok) return { ok: false, error: 'start_failed' }
+  const data = (await res.json()) as { url?: string }
+  if (data.url == null || data.url === '') {
+    return { ok: false, error: 'start_failed' }
+  }
+  // Only now, once there is somewhere to go: stashing the hash and then
+  // failing would restore a route on the next unrelated redirect.
+  sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
+  window.location.href = data.url
+  return { ok: true }
 }
 
-export interface DriveStatus {
-  connected: boolean
-  email?: string
-}
+/**
+ * Whether Drive is connected — with "could not ask" kept separate.
+ *
+ * An expired session, a 500 or an offline device are not "you have no
+ * Drive": answering `connected: false` to those is what makes a settings
+ * page offer to connect a Drive that is already connected.
+ */
+export type DriveStatus =
+  | { known: true; connected: boolean; email?: string }
+  | { known: false }
 
 export async function fetchDriveStatus(): Promise<DriveStatus> {
   const token = getAuthToken()
-  if (token == null || token === '') return { connected: false }
-  const res = await fetch(`${requireBaseUrl()}/api/auth/drive/status`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok) return { connected: false }
-  return (await res.json()) as DriveStatus
+  if (token == null || token === '') return { known: true, connected: false }
+  let res: Response
+  try {
+    res = await fetch(`${requireBaseUrl()}/api/auth/drive/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch {
+    return { known: false }
+  }
+  if (!res.ok) return { known: false }
+  const data = (await res.json()) as { connected?: boolean; email?: string }
+  return {
+    known: true,
+    connected: data.connected === true,
+    ...(data.email != null ? { email: data.email } : {}),
+  }
 }
 
 export type DriveAccessToken =

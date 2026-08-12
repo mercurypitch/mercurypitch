@@ -23,7 +23,7 @@
 // See docs/plans/device-sync.md (Phase 4).
 
 import { createSignal } from 'solid-js'
-import { disconnectDrive, driveConnectUrl, fetchDriveAccessToken, fetchDriveStatus, } from '@/db/services/auth-service'
+import { currentAccountId, disconnectDrive, fetchDriveAccessToken, fetchDriveStatus, startDriveConnect, } from '@/db/services/auth-service'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
 import type { DriveClient, DriveSongFile } from '@/lib/drive/drive-client'
 import { createDriveClient, DriveAuthError, SONG_FILE_SUFFIX, } from '@/lib/drive/drive-client'
@@ -95,12 +95,56 @@ let jobAbort: EncodeAbort = { aborted: false }
 
 const TOKEN_SAFETY_MS = 60_000
 
+/**
+ * Which account everything above belongs to.
+ *
+ * Signing out does not reload the page, so without this every signal
+ * here, the cached access token and the scan's Drive file ids would all
+ * survive into the NEXT person's session in the same tab — and the first
+ * thing they pressed would upload their songs into the previous user's
+ * Drive, or import that user's files into their library. `refreshDriveStatus`
+ * would not save them either: it only clears on "not connected", and the
+ * second user having their own Drive answers "connected".
+ */
+let ownerAccountId: string | null = null
+
+/**
+ * Drop everything if the signed-in account is not the one this state was
+ * built for. Called before every read of Drive state that matters.
+ */
+function forgetIfAccountChanged(): void {
+  const account = currentAccountId()
+  if (account === ownerAccountId) return
+  ownerAccountId = account
+  token = null
+  client = null
+  setDriveState('unknown')
+  setDriveEmail(null)
+  setDriveScan(null)
+  setDriveError(null)
+  setDriveJob(null)
+  jobAbort.aborted = true
+}
+
+/**
+ * A usable access token, or null with the reason recorded.
+ *
+ * The worker separates a dead grant (410 — the refresh token is gone or
+ * revoked, and the row has been dropped) from a transient failure (502 —
+ * Google's token endpoint blipped, the session lapsed). Collapsing those
+ * into one "reconnect Drive" would push somebody through a full consent
+ * round trip because of a five-second outage, so only the first one is
+ * allowed to say the Drive is disconnected.
+ */
+let lastTokenFailure: 'disconnected' | 'failed' | null = null
+
 async function accessToken(forceFresh = false): Promise<string | null> {
   const now = Date.now()
   if (!forceFresh && token !== null && token.expiresAt > now) return token.value
   const minted = await fetchDriveAccessToken()
   if (!minted.ok) {
     token = null
+    lastTokenFailure = minted.reason
     if (minted.reason === 'disconnected') {
       // The grant is gone on Google's side. Saying "connected" after this
       // would offer buttons that cannot work.
@@ -109,6 +153,7 @@ async function accessToken(forceFresh = false): Promise<string | null> {
     }
     return null
   }
+  lastTokenFailure = null
   token = {
     value: minted.accessToken,
     expiresAt: now + Math.max(0, minted.expiresIn * 1000 - TOKEN_SAFETY_MS),
@@ -153,16 +198,40 @@ function describe(error: unknown): string {
  */
 function noteError(error: unknown): void {
   if (error instanceof DriveAuthError) {
-    setDriveState('disconnected')
-    setDriveEmail(null)
     token = null
+    // Only a grant the worker has actually declared dead marks the Drive
+    // disconnected; a blip leaves the section standing so the message
+    // below is somewhere the user can read it, and "try again" is the
+    // truthful next step rather than a fresh trip through consent.
+    if (lastTokenFailure === 'disconnected') {
+      setDriveState('disconnected')
+      setDriveEmail(null)
+      setDriveError('Google Drive access has expired — reconnect to continue.')
+      return
+    }
+    setDriveError(
+      'Could not reach Google Drive just now. Your connection is still set up — try again.',
+    )
+    return
   }
   setDriveError(describe(error))
 }
 
 /** Ask the worker whether this account has Drive connected. */
 export async function refreshDriveStatus(): Promise<void> {
+  forgetIfAccountChanged()
   const status = await fetchDriveStatus()
+  // "Could not ask" is not "not connected": answering an offline device
+  // with a Connect button offers a redirect that cannot complete, for a
+  // Drive that may well already be attached. Leave the state unresolved,
+  // but say why, or the section sits on "Checking…" with no explanation.
+  if (!status.known) {
+    setDriveError(
+      'Could not check your Google Drive connection. Check your connection, or sign in again.',
+    )
+    return
+  }
+  setDriveError(null)
   setDriveState(status.connected ? 'connected' : 'disconnected')
   setDriveEmail(status.email ?? null)
   if (!status.connected) {
@@ -171,23 +240,52 @@ export async function refreshDriveStatus(): Promise<void> {
   }
 }
 
-/** Start the connect-Drive redirect. Leaves the app. */
-export function connectDrive(): void {
-  window.location.href = driveConnectUrl()
+/** Start the connect-Drive redirect. Leaves the app when it succeeds. */
+export async function connectDrive(): Promise<void> {
+  forgetIfAccountChanged()
+  setDriveBusy(true)
+  setDriveError(null)
+  try {
+    const started = await startDriveConnect()
+    if (!started.ok) {
+      setDriveError(
+        started.error === 'offline'
+          ? 'Could not reach the server to start connecting Drive.'
+          : 'Could not start connecting Google Drive. Please try again.',
+      )
+    }
+  } finally {
+    setDriveBusy(false)
+  }
 }
 
-/** Forget the grant here and on the worker. */
+/**
+ * Forget the grant here and on the worker.
+ *
+ * A refusal has to stay refused: saying "disconnected" while the sealed
+ * refresh token is still in the database and Google still lists the grant
+ * tells somebody they revoked access when they did not.
+ */
 export async function disconnectDriveSync(): Promise<void> {
+  forgetIfAccountChanged()
   setDriveBusy(true)
+  setDriveError(null)
   try {
-    await disconnectDrive()
-  } finally {
+    const gone = await disconnectDrive().catch(() => false)
+    if (!gone) {
+      setDriveError(
+        'Google Drive could not be disconnected just now — it is still connected. Please try again.',
+      )
+      return
+    }
     token = null
     client = null
+    lastTokenFailure = null
     setDriveScan(null)
     setDriveJob(null)
     setDriveState('disconnected')
     setDriveEmail(null)
+  } finally {
     setDriveBusy(false)
   }
 }
@@ -201,6 +299,7 @@ export async function disconnectDriveSync(): Promise<void> {
  * byte of it.
  */
 export async function scanDrive(): Promise<DriveScan | null> {
+  forgetIfAccountChanged()
   setDriveBusy(true)
   setDriveError(null)
   try {
@@ -267,6 +366,7 @@ function advanceJob(patch: Partial<DriveJob>): void {
  * unreadable stem must not strand the other twenty.
  */
 export async function backUpToDrive(): Promise<void> {
+  forgetIfAccountChanged()
   const scan = driveScan() ?? (await scanDrive())
   if (scan === null) return
   const queue = scan.toBackUp
@@ -324,7 +424,10 @@ export async function backUpToDrive(): Promise<void> {
           },
         )
         done += 1
-        advanceJob({ done, ratio: 1 })
+        // ratio back to 0, not 1: the bar reads (done + ratio) / total,
+        // so leaving it at 1 counts the finished song twice and the next
+        // song's reset then slides the bar visibly backwards.
+        advanceJob({ done, ratio: 0 })
       } catch (error) {
         if (error instanceof DriveAuthError) throw error
         // Stopping throws from inside the encoder and the uploader both.
@@ -387,6 +490,7 @@ async function readContainerHeader(
  * memory than its largest single part.
  */
 export async function restoreFromDrive(): Promise<void> {
+  forgetIfAccountChanged()
   const scan = driveScan() ?? (await scanDrive())
   if (scan === null) return
   const queue = scan.toRestore
@@ -436,7 +540,10 @@ export async function restoreFromDrive(): Promise<void> {
         // guarantees the peer transport gets, from the same code.
         await importPortableBundle(header.manifest, getPart)
         done += 1
-        advanceJob({ done, ratio: 1 })
+        // ratio back to 0, not 1: the bar reads (done + ratio) / total,
+        // so leaving it at 1 counts the finished song twice and the next
+        // song's reset then slides the bar visibly backwards.
+        advanceJob({ done, ratio: 0 })
       } catch (error) {
         if (error instanceof DriveAuthError) throw error
         // The stop signal reaches this as a thrown error from getPart; it

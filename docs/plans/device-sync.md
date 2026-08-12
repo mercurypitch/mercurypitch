@@ -474,9 +474,10 @@ friction disappears, and this is the manifest every transport diffs against.
 
 The WhatsApp model. **After this phase the original problem is solved.**
 
-**Built.** `workers/db-worker/src/auth.ts` (incremental `drive.file` consent on
-the existing redirect, refresh token sealed with an HKDF key derived from
-`JWT_SECRET`, `POST /api/auth/drive/token` minting short-lived access tokens),
+**Built.** `workers/db-worker/src/auth.ts` (incremental `drive.file` consent
+behind an authenticated `POST /api/auth/drive/start`, refresh token sealed with
+an HKDF key derived from `JWT_SECRET`, `POST /api/auth/drive/token` minting
+short-lived access tokens),
 `src/lib/portable/portable-container.ts` (a bundle as one file: magic, version,
 manifest, then parts at offsets computable from the manifest alone),
 `src/lib/drive/drive-client.ts` (the handful of REST calls, resumable upload in
@@ -499,6 +500,23 @@ performance choice.
 - Sync state driven entirely by the Phase 3 manifest. _Built against the
   library's `fileHash` directly — the same identity the manifest carries, so a
   song is recognised whichever way it arrived._
+- **Connecting a Drive is not a sign-in, and the two must not be the same
+  request.** A top-level navigation carries no Authorization header, so an
+  unauthenticated start can only learn who the user is from whichever Google
+  identity comes back — and picking a personal Gmail at the consent screen
+  would then resolve to a different (or brand-new, empty) account and mint its
+  session, moving the user out of their own library, credits and perks. The
+  start is therefore an authenticated POST that bakes the asking account into
+  the signed OAuth state, and the callback stores the grant against **that**
+  account and returns no session token. Keeping songs in a Google account other
+  than the sign-in one is the normal case, not a mistake to correct.
+- **Drive state in the browser belongs to an account, not to the tab.**
+  `logout()` deliberately does not reload the page, so a cached access token, a
+  scan full of Drive file ids and a `connected` flag all outlive the user who
+  produced them; the next person to sign in on the same device would otherwise
+  upload their songs into the previous user's Drive. Everything in
+  `drive-sync-store` is keyed to `currentAccountId()` and dropped when it
+  changes.
 - Still open: the opt-in full-quality bundle (D10), a Drive copy that is
   upgraded in place when the local song improves, and one-tap whole-library
   sync without a scan first.

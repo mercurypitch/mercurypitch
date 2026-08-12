@@ -1305,9 +1305,12 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
 })
 
 describe('Google Drive connect and tokens', () => {
-  // The whole connect pass, exactly as the browser drives it: start with
-  // scope=drive, Google bounces back with a code, the callback exchanges
-  // it and keeps the refresh token — sealed, never as Google issued it.
+  // The whole connect pass, exactly as the browser drives it: an
+  // AUTHENTICATED start (the account has to be known before the browser
+  // leaves, or the callback could only guess it from whichever Google
+  // identity came back), Google bounces back with a code, the callback
+  // exchanges it and keeps the refresh token — sealed, never as Google
+  // issued it.
   async function connectDrive(overrides?: {
     scope?: string
     refreshToken?: string | null
@@ -1323,17 +1326,43 @@ describe('Google Drive connect and tokens', () => {
     env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
     env.APP_ORIGINS = 'https://app.test'
 
-    const start = await handleAuth(
-      new Request(
-        'https://api.test/api/auth/google/start' +
-          '?scope=drive&returnTo=https%3A%2F%2Fapp.test%2Fsettings',
-      ),
+    // The account that wants a Drive: a plain password signup, not a
+    // Google one, because that is the case the binding has to survive.
+    const registered = await handleAuth(
+      new Request('https://api.test/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'drive-owner@example.com',
+          password: 'secret123',
+        }),
+      }),
       env,
-      '/api/auth/google/start',
+      '/api/auth/register',
       respond,
     )
-    expect(start?.status).toBe(302)
-    const authUrl = new URL(start!.headers.get('Location') as string)
+    const registeredBody = (await registered?.json()) as {
+      token: string
+      user: { id: string }
+    }
+    const sessionToken = registeredBody.token
+    const userId = registeredBody.user.id
+
+    const start = await handleAuth(
+      new Request('https://api.test/api/auth/drive/start', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ returnTo: 'https://app.test/settings' }),
+      }),
+      env,
+      '/api/auth/drive/start',
+      respond,
+    )
+    expect(start?.status).toBe(200)
+    const authUrl = new URL(((await start?.json()) as { url: string }).url)
     // The consent Google shows must actually ask for Drive, offline.
     expect(authUrl.searchParams.get('scope')).toContain(
       'https://www.googleapis.com/auth/drive.file',
@@ -1359,9 +1388,7 @@ describe('Google Drive connect and tokens', () => {
               id_token: 'drive-id-token',
               access_token: 'short-lived',
               scope: grantedScope,
-              ...(refreshToken === null
-                ? {}
-                : { refresh_token: refreshToken }),
+              ...(refreshToken === null ? {} : { refresh_token: refreshToken }),
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } },
           ),
@@ -1389,18 +1416,12 @@ describe('Google Drive connect and tokens', () => {
     )
     expect(callback?.status).toBe(302)
     const location = callback!.headers.get('Location') as string
-    const sessionToken = decodeURIComponent(
-      /#gauth=([^&]+)/.exec(location)?.[1] ?? '',
-    )
-    const userId = [...db.users.values()].find(
-      (u) => u.providerId === 'drive-user',
-    )!.id
     return { db, env, sessionToken, location, userId }
   }
 
   it('keeps the refresh token from a drive-scoped redirect, sealed', async () => {
     const { db, location, userId } = await connectDrive()
-    expect(location).toContain('&gdrive=1')
+    expect(location).toContain('#gdrive=1')
     const row = db.driveTokens.get(userId)
     expect(row).toBeDefined()
     // Sealed at rest: what the database holds must not be what Google
@@ -1414,8 +1435,48 @@ describe('Google Drive connect and tokens', () => {
       scope: 'openid email profile',
     })
     expect(location).toContain('gdrive_error=declined')
-    expect(location).toContain('#gauth=')
     expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
+
+  it('connecting a Drive never changes who you are signed in as', async () => {
+    const { db, location, userId } = await connectDrive()
+
+    // No session in the fragment: a connect pass is not a sign-in. Handing
+    // one back is how picking a personal Gmail at the consent screen would
+    // move somebody into a brand-new empty account and take their library,
+    // credits and perks with it.
+    expect(location).not.toContain('gauth=')
+    expect(location).not.toContain('gauth_new=1')
+
+    // And no account was minted for the Google identity that was picked.
+    expect(
+      [...db.users.values()].find((u) => u.providerId === 'drive-user'),
+    ).toBeUndefined()
+
+    // The grant belongs to the account that ASKED, whichever Google
+    // account holds the Drive -- keeping songs in a different Google
+    // account is the normal case, not a mistake to correct.
+    expect(db.driveTokens.get(userId)).toBeDefined()
+    expect(db.driveTokens.get(userId)!.email).toBe('drive-user@example.com')
+  })
+
+  it('refuses to start a Drive connect for nobody', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+
+    const start = await handleAuth(
+      new Request('https://api.test/api/auth/drive/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnTo: 'https://app.test/settings' }),
+      }),
+      env,
+      '/api/auth/drive/start',
+      respond,
+    )
+    expect(start?.status).toBe(401)
   })
 
   it('names a missing refresh token instead of pretending', async () => {

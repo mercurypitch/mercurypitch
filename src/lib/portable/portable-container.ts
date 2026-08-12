@@ -162,7 +162,11 @@ export function buildContainerBlob(bundle: {
       // container whose computed offsets point at the wrong bytes.
       throw new Error(`The ${part.id} part does not match its manifest size.`)
     }
-    pieces.push(new Uint8Array(bytes).slice() as unknown as BlobPart)
+    // One copy, not two: `new Uint8Array(view)` already copies, and the
+    // extra .slice() that used to follow doubled the transient memory of
+    // building a container -- on top of the parts the caller is still
+    // holding, on the phones this whole format exists for.
+    pieces.push(new Uint8Array(bytes) as unknown as BlobPart)
   }
   return new Blob(pieces, { type: 'application/octet-stream' })
 }
