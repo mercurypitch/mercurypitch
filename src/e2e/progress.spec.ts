@@ -158,6 +158,70 @@ const seedProgressEvidence = async (page: Page): Promise<void> => {
 test.describe('Progress dashboard', () => {
   test.use({ viewport: { width: 912, height: 1368 }, hasTouch: true })
 
+  test('Atlas stays fixed while its reason disclosure opens @smoke', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await page.addInitScript((userId) => {
+      ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('mp:userId', userId)
+    }, USER_ID)
+
+    await page.goto('/')
+    await page.waitForSelector('#app-tabs, [data-tour="mobile-tabbar"]', {
+      timeout: 10_000,
+    })
+    await dismissOverlays(page)
+    await ensureLocalDb(page)
+    await seedProgressEvidence(page)
+
+    await page.goto('/#/progress')
+    await dismissOverlays(page)
+    await expect(page.getByRole('heading', { name: 'Progress' })).toBeVisible()
+
+    const weekField = page.getByRole('group', { name: /Practice by week/ })
+    const atlas = weekField.locator('..')
+    const whyMoment = page.getByRole('button', {
+      name: 'Why this moment was selected',
+    })
+    await whyMoment.scrollIntoViewIfNeeded()
+    await page.evaluate(() => document.fonts.ready)
+
+    const geometry = () =>
+      atlas.evaluate((element) => {
+        const plate = element.getBoundingClientRect()
+        const field = element
+          .querySelector('[role="group"]')
+          ?.getBoundingClientRect()
+        if (field === undefined) throw new Error('Atlas week field is missing')
+        return {
+          plateHeight: plate.height,
+          fieldTop: field.top - plate.top,
+          fieldHeight: field.height,
+        }
+      })
+
+    const before = await geometry()
+    await whyMoment.click()
+    await expect(whyMoment).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('tooltip')).toBeVisible()
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        }),
+    )
+    const after = await geometry()
+
+    expect(
+      Math.abs(after.plateHeight - before.plateHeight),
+    ).toBeLessThanOrEqual(1)
+    expect(Math.abs(after.fieldTop - before.fieldTop)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(after.fieldHeight - before.fieldHeight),
+    ).toBeLessThanOrEqual(1)
+  })
+
   test('Tablet milestones use their row and swipe in both directions @smoke', async ({
     page,
   }) => {

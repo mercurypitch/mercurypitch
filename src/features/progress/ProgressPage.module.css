@@ -725,41 +725,59 @@
 }
 
 .whyMoment {
-  padding: 0.55rem 0;
   border-top: 1px solid var(--progress-line);
 }
 
-.whyMoment summary {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 0.45rem;
+.whyMoment .whyMomentTrigger {
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
   color: var(--progress-muted);
+  background: transparent;
   font-size: 0.69rem;
   font-weight: 650;
-  cursor: pointer;
-  list-style: none;
 }
 
-.whyMoment summary::-webkit-details-marker {
-  display: none;
+.whyMoment .whyMomentTrigger:hover,
+.whyMoment .whyMomentTrigger[aria-expanded='true'] {
+  border-color: transparent;
+  color: var(--progress-aqua);
 }
 
-.whyMoment summary svg {
-  width: 15px;
-  height: 15px;
+.whyMomentPanel {
+  /* The panel is portalled to <body>, outside the page's token scope. */
+  --progress-ink: #f4f5fb;
+  --progress-muted: #a7adbd;
+  --progress-quiet: #747b8d;
+
+  width: min(300px, calc(100vw - 16px));
+  border-color: rgb(225 232 255 / 24%);
+  color: var(--progress-ink);
+  background: #0c0f19;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 48%);
 }
 
-.whyMoment p,
+.whyMomentPanel p,
 .coverageNote p,
 .inlineError p {
   margin: 0;
-  color: var(--progress-muted);
   font-size: 0.68rem;
   line-height: 1.5;
 }
 
-.whyMoment > span {
+.whyMomentPanel p {
+  color: var(--progress-muted);
+}
+
+.coverageNote p,
+.inlineError p {
+  color: var(--progress-muted);
+}
+
+.whyMomentPanel > span {
   display: block;
   margin-top: 0.45rem;
   color: var(--progress-quiet);

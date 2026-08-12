@@ -274,6 +274,28 @@ describe('ProgressPage', () => {
     expect(onShareMoment).toHaveBeenCalledWith('moment-returned')
   })
 
+  it('explains why the leading moment was selected without expanding the inspector', () => {
+    render(() => <ProgressPage status="ready" snapshot={snapshot()} />)
+
+    const trigger = screen.getByRole('button', {
+      name: 'Why this moment was selected',
+    })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(trigger)
+
+    const explanation = screen.getByRole('tooltip')
+    expect(explanation).toHaveTextContent(
+      'A fourth active week made this the clearest recent pattern.',
+    )
+    expect(explanation).toHaveTextContent('Derived from completed sessions.')
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('teaches the empty state without presenting zero-valued performance', () => {
     const onAction = vi.fn()
     render(() => (

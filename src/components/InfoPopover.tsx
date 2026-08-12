@@ -31,8 +31,12 @@ interface InfoPopoverProps {
   children: JSX.Element
   /** Describes the thing being explained, for screen readers. */
   label: string
+  /** Optional visible copy that makes the whole labelled trigger clickable. */
+  triggerLabel?: string
   /** Extra class for the trigger, for per-surface placement. */
   class?: string
+  /** Extra class for the portalled panel, for surface-specific treatment. */
+  panelClass?: string
   /**
    * An element whose hover opens the panel, on pointer devices only.
    *
@@ -142,7 +146,9 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
       <button
         ref={trigger}
         type="button"
-        class={`${styles.trigger} ${props.class ?? ''}`}
+        class={`${styles.trigger} ${
+          props.triggerLabel === undefined ? '' : styles.labelledTrigger
+        } ${props.class ?? ''}`}
         aria-label={props.label}
         aria-expanded={open()}
         onClick={(e) => {
@@ -151,12 +157,15 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
         }}
       >
         <Info />
+        <Show when={props.triggerLabel}>
+          {(label) => <span class={styles.triggerLabel}>{label()}</span>}
+        </Show>
       </button>
       <Show when={open()}>
         <Portal>
           <div
             ref={panel}
-            class={styles.panel}
+            class={`${styles.panel} ${props.panelClass ?? ''}`}
             role="tooltip"
             style={{ left: `${pos().x}px`, top: `${pos().y}px` }}
           >
