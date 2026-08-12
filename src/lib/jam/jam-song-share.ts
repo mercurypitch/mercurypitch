@@ -14,7 +14,7 @@
 
 import type { SendChannel, StatsSource } from '@/lib/jam/jam-song-transfer'
 import { isRelayedConnection, sendInChunks, sha256Hex, } from '@/lib/jam/jam-song-transfer'
-import { encodeStemToAac } from '@/lib/jam/stem-encoder'
+import { encodeStemToAac } from '@/lib/portable/portable-audio'
 
 export type ShareStem = 'instrumental' | 'vocal'
 
@@ -123,11 +123,13 @@ export async function encodeStemsForShare(
     // within a slice rather than at the end of the stem -- and the next
     // stem never starts, because the encoder checks on entry too.
     const bytes = (
-      await encodeStemToAac(
-        wav,
-        (p) => onProgress?.({ stem, ratio: p.ratio }),
+      await encodeStemToAac(wav, {
+        // 128 rather than the library default: a room hears this stem once,
+        // over a live connection, and arriving sooner beats arriving better.
+        tier: 'portable-128',
+        onProgress: (p) => onProgress?.({ stem, ratio: p.ratio }),
         signal,
-      )
+      })
     ).buffer as ArrayBuffer
     out.push({
       stem,

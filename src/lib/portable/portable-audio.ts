@@ -1,10 +1,12 @@
-// ── Stem encoding ────────────────────────────────────────────────────
-// Turns a stored WAV stem into something small enough to send.
+// ── Portable audio ───────────────────────────────────────────────────
+// Turns a stored WAV stem into something small enough to send or to keep
+// on a phone.
 //
 // Separation output lands as PCM WAV, which is 100-400 MB for a song --
-// fine sitting in IndexedDB, impossible to hand to a peer. AAC at 128 kbps
-// is roughly 3.8 MB for a four-minute stem, and the difference between a
-// feature that feels instant and one that looks broken.
+// fine sitting in IndexedDB on a desktop, impossible to hand to a peer and
+// wasteful to hold twenty of on a phone. AAC is roughly a megabyte a
+// minute per stem whatever the source was, which is the difference between
+// a library that fits and one that does not.
 //
 // Compression costs nothing musically here, which is worth being explicit
 // about because it looks like a tradeoff: pitch detection runs on each
@@ -12,16 +14,41 @@
 // reference, and where the vocal line is already extracted to notes the
 // audio does not enter scoring at all.
 //
-// See docs/plans/jam-song-p2p-transfer.md.
+// Lives here rather than in lib/jam because a jam room was simply the
+// first thing that needed it. Sending one song to a peer and syncing a
+// library to your own phone want the same encoder.
+//
+// See docs/plans/device-sync.md and docs/plans/jam-song-p2p-transfer.md.
 
 import { AudioBufferSource, BufferTarget, canEncodeAudio, Mp4OutputFormat, Output, } from 'mediabunny'
 import { wavSampleRate } from '@/lib/wav-meta'
 
 /**
- * The bitrate everything is sized around. Past transparent for a backing
- * track, and the number the transfer estimates in the plan assume.
+ * How good a portable copy is, and what it costs.
+ *
+ * Both are past transparent for a backing track; the difference between
+ * them is about 3.5 MB a song, which matters when there are twenty of
+ * them and not at all when there is one.
  */
-export const STEM_BITRATE = 128_000
+export const PORTABLE_TIERS = {
+  'portable-128': 128_000,
+  'portable-192': 192_000,
+} as const
+
+export type PortableTier = keyof typeof PORTABLE_TIERS
+
+/**
+ * What a copy is made at unless somebody says otherwise.
+ *
+ * 192 for a library: it is kept, sung along to, and played on a TV where
+ * the speakers are better than a phone's. A jam room asks for 128
+ * explicitly -- there the stem is a reference heard once, and arriving
+ * sooner beats arriving better.
+ */
+export const DEFAULT_PORTABLE_TIER: PortableTier = 'portable-192'
+
+/** The bitrate everything is sized around, kept for callers that ask. */
+export const STEM_BITRATE = PORTABLE_TIERS['portable-128']
 
 /** AAC is happiest at these; anything else gets resampled on decode. */
 const AAC_RATES = [48000, 44100, 32000, 24000, 22050, 16000]
@@ -161,11 +188,18 @@ export interface EncodeAbort {
  * four-minute stem is a bail within a fraction of a second instead of at
  * the end of the whole job.
  */
+export interface EncodeStemOptions {
+  /** Quality to encode at. Defaults to DEFAULT_PORTABLE_TIER. */
+  tier?: PortableTier
+  onProgress?: (p: EncodeProgress) => void
+  signal?: EncodeAbort
+}
+
 export async function encodeStemToAac(
   wav: ArrayBuffer,
-  onProgress?: (p: EncodeProgress) => void,
-  signal?: EncodeAbort,
+  opts: EncodeStemOptions = {},
 ): Promise<Uint8Array> {
+  const { tier = DEFAULT_PORTABLE_TIER, onProgress, signal } = opts
   if (!(await ensureAacEncoder())) throw new StemEncodeUnsupportedError()
   // Read through a call rather than touching the field directly. The flag
   // is flipped from outside while this function is awaiting, which is
@@ -201,7 +235,7 @@ export async function encodeStemToAac(
   })
   const source = new AudioBufferSource({
     codec: 'aac',
-    bitrate: STEM_BITRATE,
+    bitrate: PORTABLE_TIERS[tier],
   })
   output.addAudioTrack(source)
   await output.start()

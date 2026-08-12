@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { EncodedStem, ShareTarget } from '@/lib/jam/jam-song-share'
 import { shareStemsWithPeers } from '@/lib/jam/jam-song-share'
 
-vi.mock('@/lib/jam/stem-encoder', () => ({
+vi.mock('@/lib/portable/portable-audio', () => ({
   encodeStemToAac: vi.fn(async () => new Uint8Array(8)),
 }))
 
