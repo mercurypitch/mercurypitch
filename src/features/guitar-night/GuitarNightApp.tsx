@@ -930,20 +930,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             >
               Learn
             </button>
-            <Show when={view() !== 'choices'}>
-              <Show when={!isRoomView()}>
-                <button
-                  type="button"
-                  class={styles.studioLink}
-                  onClick={(event) => openTuner(event.currentTarget)}
-                >
-                  Tune guitar
-                </button>
-              </Show>
-              <a class={styles.studioLink} href="/#/guitar">
-                Full studio
-              </a>
+            <Show when={!isRoomView()}>
+              <button
+                type="button"
+                class={styles.studioLink}
+                onClick={(event) => openTuner(event.currentTarget)}
+              >
+                Tune guitar
+              </button>
             </Show>
+            <a class={styles.studioLink} href="/#/guitar">
+              Full studio
+            </a>
             <Suspense>
               <GuitarNightAccount />
             </Suspense>
