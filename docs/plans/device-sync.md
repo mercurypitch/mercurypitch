@@ -13,8 +13,8 @@ hand (AirDrop/USB/Drive), and re-import it in mobile Chrome.
 
 Uploaded audio is user-supplied copyrighted material, so **the audio must never
 transit or rest on our servers**. That constraint is already encoded in
-`src/db/adapters/hybrid-adapter.ts`: *"Audio data is huge and never syncs to the
-cloud by design."*
+`src/db/adapters/hybrid-adapter.ts`: _"Audio data is huge and never syncs to the
+cloud by design."_
 
 This plan covers making the phone copy of a library appear with as little
 friction as possible, under that constraint, in a way that survives the
@@ -24,18 +24,18 @@ Capacitor wrap planned in [mobile-native/](mobile-native/README.md).
 
 The starting position is stronger than it looks:
 
-| Asset | Where | Notes |
-| --- | --- | --- |
-| Versioned bundle format | `src/db/services/session-export-service.ts` | `session.json` + original + stems + lyrics + Whisper transcription + pitch analysis, plus `karaoke.json` (playlists, groups, singers, play modes). Import remaps IDs. Round-trip tested in `src/tests/karaoke-playlist-import.test.ts` |
-| WebRTC P2P transport | `src/lib/jam/service.ts`, `signaling.ts` | RTCPeerConnection lifecycle, DataChannels, glare resolution, ICE buffering |
-| Signaling relay + room codes | `workers/jam-worker/` | `newRoomId()` already emits typeable codes with no `0`/`O`/`1`/`I` |
-| Invite UX (code + link + copy) | `src/components/jam/JamInviteModal.tsx` | |
-| Google Sign-In | `src/db/services/auth-service.ts:234` | Full redirect flow through db-worker (COOP breaks popups) |
-| Cloud/local entity split | `src/db/adapters/hybrid-adapter.ts` | `CLOUD_ENTITIES` allowlist against D1 via db-worker |
-| Per-song content hash | `UvrSessionRecord.fileHash` (`entities.ts:270`) | SHA-256 — free dedupe and resume |
-| Storage quota pre-flight | `hasRoomFor()` (`src/db/durable-write.ts`) | |
-| Platform seam | `src/lib/platform/index.ts` | The established pattern for anything that differs web vs native |
-| Mobile karaoke stage | `src/components/KaraokeMobileStage.tsx` | |
+| Asset                          | Where                                           | Notes                                                                                                                                                                                                                                  |
+| ------------------------------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Versioned bundle format        | `src/db/services/session-export-service.ts`     | `session.json` + original + stems + lyrics + Whisper transcription + pitch analysis, plus `karaoke.json` (playlists, groups, singers, play modes). Import remaps IDs. Round-trip tested in `src/tests/karaoke-playlist-import.test.ts` |
+| WebRTC P2P transport           | `src/lib/jam/service.ts`, `signaling.ts`        | RTCPeerConnection lifecycle, DataChannels, glare resolution, ICE buffering                                                                                                                                                             |
+| Signaling relay + room codes   | `workers/jam-worker/`                           | `newRoomId()` already emits typeable codes with no `0`/`O`/`1`/`I`                                                                                                                                                                     |
+| Invite UX (code + link + copy) | `src/components/jam/JamInviteModal.tsx`         |                                                                                                                                                                                                                                        |
+| Google Sign-In                 | `src/db/services/auth-service.ts:234`           | Full redirect flow through db-worker (COOP breaks popups)                                                                                                                                                                              |
+| Cloud/local entity split       | `src/db/adapters/hybrid-adapter.ts`             | `CLOUD_ENTITIES` allowlist against D1 via db-worker                                                                                                                                                                                    |
+| Per-song content hash          | `UvrSessionRecord.fileHash` (`entities.ts:270`) | SHA-256 — free dedupe and resume                                                                                                                                                                                                       |
+| Storage quota pre-flight       | `hasRoomFor()` (`src/db/durable-write.ts`)      |                                                                                                                                                                                                                                        |
+| Platform seam                  | `src/lib/platform/index.ts`                     | The established pattern for anything that differs web vs native                                                                                                                                                                        |
+| Mobile karaoke stage           | `src/components/KaraokeMobileStage.tsx`         |                                                                                                                                                                                                                                        |
 
 **We do not need to design a sync payload. It exists and is tested.**
 
@@ -45,23 +45,23 @@ Sharing a song with a jam room needed the same primitives as sync, so most of
 the transport half of this plan is already in production and tested on real
 phones. Verified against `origin/main` today, not assumed:
 
-| Plan called for | Where it now lives | State |
-| --- | --- | --- |
-| Phase 1's portable-audio encoder | `src/lib/jam/stem-encoder.ts` | **Done.** AAC-in-MP4 at `STEM_BITRATE = 128_000` — the exact default tier this plan chose. WebCodecs with a `@mediabunny/aac-encoder` wasm fallback (Firefox on every platform, older Safari), decoded at the source's own sample rate, fed in slices that respect encoder backpressure, with progress and cancellation |
-| A packed bundle with per-part hashes | `src/lib/jam/jam-song-share.ts` | **Done.** `EncodedStem { stem, bytes, sha256, mime }`, `encodeStemsForShare` packs once and caches by key, `getPackedStems` / `forgetPackedStems` |
-| Phase 5's chunking and backpressure | `src/lib/jam/jam-song-transfer.ts` | **Done.** `TransferHeader` (transferId, stem, bytes, sha256, mime), `sendInChunks`, `chunkCount` / `chunkRange`, `sha256Hex` |
-| Phase 5's "detect a relay and refuse" | `isRelayedConnection()` in the same file | **Done**, and enforced before a byte moves |
-| Phase 5's blocker: sync must never ask for the mic | `openLocalStream()` / `startLocalAudio()` in `src/lib/jam/service.ts` | **Gone.** Entering a room now creates an empty `MediaStream`; the microphone is captured only when somebody unmutes. A data-only WebRTC path is an extraction, not a refactor |
-| A transport seam | `ShareTransport` + `shareStemsWithPeers` in `jam-song-share.ts` | **In miniature.** Two methods (`sendMessage`, `nextTransferId`) and a driver that walks targets one at a time |
-| "`fflate.zip()` builds the whole archive in RAM" | `StreamingZipArchive` in `session-export-service.ts` | **Half fixed.** The writer compresses one stream chunk at a time; compressed output still accumulates until the final Blob, and the reader is still a one-shot `unzipSync` |
-| The offline shell (listed as a dependency, not a phase) | `src/sw.ts`, `src/lib/pwa-service-worker.ts` | **Done.** Shell precache + install prompt shipped |
+| Plan called for                                         | Where it now lives                                                    | State                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1's portable-audio encoder                        | `src/lib/jam/stem-encoder.ts`                                         | **Done.** AAC-in-MP4 at `STEM_BITRATE = 128_000` — the exact default tier this plan chose. WebCodecs with a `@mediabunny/aac-encoder` wasm fallback (Firefox on every platform, older Safari), decoded at the source's own sample rate, fed in slices that respect encoder backpressure, with progress and cancellation |
+| A packed bundle with per-part hashes                    | `src/lib/jam/jam-song-share.ts`                                       | **Done.** `EncodedStem { stem, bytes, sha256, mime }`, `encodeStemsForShare` packs once and caches by key, `getPackedStems` / `forgetPackedStems`                                                                                                                                                                       |
+| Phase 5's chunking and backpressure                     | `src/lib/jam/jam-song-transfer.ts`                                    | **Done.** `TransferHeader` (transferId, stem, bytes, sha256, mime), `sendInChunks`, `chunkCount` / `chunkRange`, `sha256Hex`                                                                                                                                                                                            |
+| Phase 5's "detect a relay and refuse"                   | `isRelayedConnection()` in the same file                              | **Done**, and enforced before a byte moves                                                                                                                                                                                                                                                                              |
+| Phase 5's blocker: sync must never ask for the mic      | `openLocalStream()` / `startLocalAudio()` in `src/lib/jam/service.ts` | **Gone.** Entering a room now creates an empty `MediaStream`; the microphone is captured only when somebody unmutes. A data-only WebRTC path is an extraction, not a refactor                                                                                                                                           |
+| A transport seam                                        | `ShareTransport` + `shareStemsWithPeers` in `jam-song-share.ts`       | **In miniature.** Two methods (`sendMessage`, `nextTransferId`) and a driver that walks targets one at a time                                                                                                                                                                                                           |
+| "`fflate.zip()` builds the whole archive in RAM"        | `StreamingZipArchive` in `session-export-service.ts`                  | **Half fixed.** The writer compresses one stream chunk at a time; compressed output still accumulates until the final Blob, and the reader is still a one-shot `unzipSync`                                                                                                                                              |
+| The offline shell (listed as a dependency, not a phase) | `src/sw.ts`, `src/lib/pwa-service-worker.ts`                          | **Done.** Shell precache + install prompt shipped                                                                                                                                                                                                                                                                       |
 
 Consequences for the phasing below: Phase 1 shrinks to promoting code that
 already exists out of `lib/jam/`, and Phase 5 shrinks to extracting a data-only
 path from a service that no longer demands a microphone. **The remaining work is
 mostly Phases 2, 3 and 4 — the seams, the manifest, and Drive.**
 
-What has *not* moved, also verified today:
+What has _not_ moved, also verified today:
 
 - `uvrSessions`, `uvrStemBlobs`, `karaokePlaylists` and `sessionGroups` are still
   **local-only Dexie stores** — absent from `CLOUD_ENTITIES`
@@ -81,17 +81,17 @@ What has *not* moved, also verified today:
 Measured WebRTC data-channel throughput on a LAN averages **~18 MB/s**
 (Eskola, below); tuned implementations reach 176–422 Mbps. At 18 MB/s:
 
-| Payload | Transfer time |
-| --- | --- |
-| One song (~53 MB, lossless) | ~3 s |
-| 20 songs (~1 GB, lossless) | **~60 s** |
+| Payload                     | Transfer time |
+| --------------------------- | ------------- |
+| One song (~53 MB, lossless) | ~3 s          |
+| 20 songs (~1 GB, lossless)  | **~60 s**     |
 
 Moving gigabytes phone↔desktop over Wi-Fi is routine. The three real
 constraints are all tractable:
 
 1. **RTT sensitivity.** WebRTC's SCTP layer uses a default 128 KiB receive
    window, so throughput collapses as RTT rises. Same-Wi-Fi (1–5 ms) is fine;
-   cross-internet (30–100 ms) is not. *"Both devices on the same Wi-Fi"* is
+   cross-internet (30–100 ms) is not. _"Both devices on the same Wi-Fi"_ is
    therefore a genuine product requirement — which matches the use case anyway.
 2. **Current code would OOM a phone.** Partly addressed since: the export writer
    is now `StreamingZipArchive`, which compresses one chunk at a time. What
@@ -108,21 +108,21 @@ constraints are all tractable:
 
 Reported per-origin storage quotas (iOS 17+):
 
-| Host | Quota |
-| --- | --- |
-| Safari (browser) | large share of disk |
-| **WKWebView inside a native app** | **~15% of total disk** |
-| Chrome Android | up to ~60% of disk per origin |
+| Host                              | Quota                         |
+| --------------------------------- | ----------------------------- |
+| Safari (browser)                  | large share of disk           |
+| **WKWebView inside a native app** | **~15% of total disk**        |
+| Chrome Android                    | up to ~60% of disk per origin |
 
 Two consequences:
 
 - **Capacitor does not fix the storage problem — it can make it worse.** An
-  embedded WKWebView reportedly gets a *tighter* origin quota than Safari does.
+  embedded WKWebView reportedly gets a _tighter_ origin quota than Safari does.
   Lift-and-shifting IndexedDB blob storage into the shell inherits that cap plus
   the same eviction rules.
 - This refines `capacitor-readiness.md` **§B6**, whose stated mitigation is a
-  Dexie→`@capacitor-community/sqlite` adapter. SQLite solves *metadata*
-  durability but not *blob* volume — a 1 GB audio library in a SQLite blob
+  Dexie→`@capacitor-community/sqlite` adapter. SQLite solves _metadata_
+  durability but not _blob_ volume — a 1 GB audio library in a SQLite blob
   column inside the WebView container hits the same wall.
 
 > **Architecture rule: audio bytes belong on the filesystem. IndexedDB/SQLite
@@ -171,10 +171,10 @@ is what has to appear on a second device.
 
 **Two surfaces, deliberately split:**
 
-| Surface | What it holds | Why there |
-| --- | --- | --- |
-| **Karaoke tab**, beside the library | The actions: *sync library*, *send this song*, per-song state (on this device / in the cloud / syncing) | It is where the library already is. A sync control that lives anywhere else is a control nobody finds |
-| **Settings → a new Sync subtab** | The configuration: connect Google Drive, quality tier, what to keep on this device, storage used against quota | Configuration is not a per-song action, and Drive account linking belongs with the other account settings |
+| Surface                             | What it holds                                                                                                  | Why there                                                                                                 |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Karaoke tab**, beside the library | The actions: _sync library_, _send this song_, per-song state (on this device / in the cloud / syncing)        | It is where the library already is. A sync control that lives anywhere else is a control nobody finds     |
+| **Settings → a new Sync subtab**    | The configuration: connect Google Drive, quality tier, what to keep on this device, storage used against quota | Configuration is not a per-song action, and Drive account linking belongs with the other account settings |
 
 Sending one song to one person already exists — that is the jam room, over P2P,
 and it stays where it is. **This plan is the library, not the song.**
@@ -194,8 +194,8 @@ phone with no explanation will conclude the separation is broken.
   full-quality bundle** from Drive or from the device that has it, or
   **re-separate** on this device or on the server.
 - **Re-separating needs the original audio, which a portable bundle omits.** So
-  on a phone holding only a portable copy, "upgrade" means *fetch*, not
-  *re-run* — unless the user hands over the source file again. This is a real
+  on a phone holding only a portable copy, "upgrade" means _fetch_, not
+  _re-run_ — unless the user hands over the source file again. This is a real
   constraint of the format, not an oversight, and the UI has to say which of
   the two it is offering.
 - Drive therefore supports a **full-quality tier per song** (original + lossless
@@ -241,8 +241,8 @@ target, not a new product.
 - A TV is also unlikely to sign into Google comfortably, so **the TV target is
   P2P-first**: push from the phone or the desktop that already has the library.
   This is a genuine argument for Phase 5 that Drive does not cover.
-- TV storage is not a library's worth. Expect *stream one song now* to matter
-  more than *hold everything*, so the transport must support "send this one,
+- TV storage is not a library's worth. Expect _stream one song now_ to matter
+  more than _hold everything_, so the transport must support "send this one,
   play it, keep nothing".
 
 ### Why Google Drive before P2P
@@ -320,11 +320,11 @@ the work is promotion and tiering, not encoding:
 
 Per 4-minute song:
 
-| Tier | Vocal | Instrumental | Original | Total | 20 songs |
-| --- | --- | --- | --- | --- | --- |
-| Lossless (today) | ~24 MB FLAC | ~24 MB FLAC | ~5 MB | ~53 MB | ~1.06 GB |
-| High (AAC 192k) | ~5.5 MB | ~5.5 MB | omitted | ~11 MB | ~220 MB |
-| **Standard (AAC 128k) — default** | ~3.8 MB | ~3.8 MB | omitted | **~7.6 MB** | **~152 MB** |
+| Tier                              | Vocal       | Instrumental | Original | Total       | 20 songs    |
+| --------------------------------- | ----------- | ------------ | -------- | ----------- | ----------- |
+| Lossless (today)                  | ~24 MB FLAC | ~24 MB FLAC  | ~5 MB    | ~53 MB      | ~1.06 GB    |
+| High (AAC 192k)                   | ~5.5 MB     | ~5.5 MB      | omitted  | ~11 MB      | ~220 MB     |
+| **Standard (AAC 128k) — default** | ~3.8 MB     | ~3.8 MB      | omitted  | **~7.6 MB** | **~152 MB** |
 
 ~7× reduction at the default. 152 MB fits inside every quota on every platform
 and uploads to Drive in seconds.
@@ -382,11 +382,11 @@ copyright exposure**. Only stems are big and encumbered.
 - Sync the manifest, not `uvrSessions` itself: that record carries RunPod job
   ids, progress and error state, which are this device's business.
 - The manifest carries the **quality tier** and the original's `fileHash`, so
-  provenance is known before any audio arrives (see *Quality provenance*).
+  provenance is known before any audio arrives (see _Quality provenance_).
 - Mobile library UI renders each song as "on this device" or "not downloaded".
 
 Payoff: **sign in on a phone and the entire library and every playlist is
-already there**, before a single byte of audio moves. Most of the *perceived*
+already there**, before a single byte of audio moves. Most of the _perceived_
 friction disappears, and this is the manifest every transport diffs against.
 
 `fileHash` already exists, so dedupe and resume come free.
@@ -400,7 +400,7 @@ The WhatsApp model. **After this phase the original problem is solved.**
   `fileHash`, plus an opt-in full-quality bundle per song (D10) for people who
   want the original back on a new device without re-separating.
 - Resumable upload via XHR (10 MB chunks; 256 KB minimum).
-- New device: *"Found 23 songs in your Drive — restore?"* → per-song,
+- New device: _"Found 23 songs in your Drive — restore?"_ → per-song,
   resumable, one at a time.
 - Sync state driven entirely by the Phase 3 manifest.
 
@@ -456,15 +456,15 @@ Because of Phase 2 this is small:
 exists only so the native port is packaging. Doing it later costs several times
 more, because by then there are more call sites:
 
-| Web-phase decision | What it buys the native shell |
-| --- | --- |
-| `BlobStore` behind an interface (Phase 2) | The one swap that turns a WKWebView quota problem into a filesystem write |
-| Every audio read routed through it (Phase 2) | No call site reaches into Dexie for bytes, so nothing needs rewriting |
-| Streamed import (Phase 2) | Chunked filesystem access, since base64 round-tripping a large file through the WebView OOMs |
-| Portable tiers (Phase 1) | A library that fits inside a ~15% -of-disk origin quota |
-| Manifest in the cloud (Phase 3) | First launch of the native app shows the library before any audio moves |
-| Drive over HTTPS, not a browser API (Phase 4) | Works identically inside the shell |
-| Encoder out of `lib/jam/` (Phase 1) | Nothing in the sync path depends on a room feature |
+| Web-phase decision                            | What it buys the native shell                                                                |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `BlobStore` behind an interface (Phase 2)     | The one swap that turns a WKWebView quota problem into a filesystem write                    |
+| Every audio read routed through it (Phase 2)  | No call site reaches into Dexie for bytes, so nothing needs rewriting                        |
+| Streamed import (Phase 2)                     | Chunked filesystem access, since base64 round-tripping a large file through the WebView OOMs |
+| Portable tiers (Phase 1)                      | A library that fits inside a ~15% -of-disk origin quota                                      |
+| Manifest in the cloud (Phase 3)               | First launch of the native app shows the library before any audio moves                      |
+| Drive over HTTPS, not a browser API (Phase 4) | Works identically inside the shell                                                           |
+| Encoder out of `lib/jam/` (Phase 1)           | Nothing in the sync path depends on a room feature                                           |
 
 ---
 
@@ -489,20 +489,20 @@ bulk transfer faster on the same Wi-Fi.
 
 ## Open decisions
 
-| # | Decision | Status |
-| --- | --- | --- |
-| D1 | Native via Capacitor reusing this codebase | **Locked** — per `mobile-native/README.md` §3 |
-| D2 | Portable quality is user-selectable | **Locked** — default AAC 128k, High 192k, Lossless opt-in |
-| D3 | Drive before P2P | Proposed |
-| D4 | `drive.file` (visible folder) over `drive.appdata` (hidden) | Proposed |
-| D5 | Audio to filesystem, metadata to IndexedDB/SQLite — refines §B6 | Proposed; measured in the PR rather than up front |
-| D6 | Whether Phase 3 ships standalone first | **Locked** 2026-08-12 — it is the sequence above |
-| D7 | Where the sync surface lives | **Locked** 2026-08-12 — per-song and library actions in the **Karaoke tab**; Drive account, quality tier and storage in a new **Settings → Sync** subtab |
-| D8 | Whether the portable encoder moves out of `src/lib/jam/` | **Locked** 2026-08-12 — it moves, in Phase 1 |
-| D9 | A synced song is marked as a reduced-quality copy, with an offer to get the original back | **Locked** 2026-08-12 — see *Quality provenance* |
-| D10 | Drive holds an opt-in full-quality tier per song | **Locked** 2026-08-12 — it is what makes "upgrade" a download |
-| D11 | TV as a P2P target (push from phone/desktop, code + QR, stream-one-song) | Proposed — natural once Phase 5 lands |
-| D12 | Whether "re-separate at full quality" is offered on a device that lacks the original file | Open — it cannot be honoured there without the source; likely offer *fetch* only, and *re-separate* solely where the original is present |
+| #   | Decision                                                                                  | Status                                                                                                                                                   |
+| --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Native via Capacitor reusing this codebase                                                | **Locked** — per `mobile-native/README.md` §3                                                                                                            |
+| D2  | Portable quality is user-selectable                                                       | **Locked** — default AAC 128k, High 192k, Lossless opt-in                                                                                                |
+| D3  | Drive before P2P                                                                          | Proposed                                                                                                                                                 |
+| D4  | `drive.file` (visible folder) over `drive.appdata` (hidden)                               | Proposed                                                                                                                                                 |
+| D5  | Audio to filesystem, metadata to IndexedDB/SQLite — refines §B6                           | Proposed; measured in the PR rather than up front                                                                                                        |
+| D6  | Whether Phase 3 ships standalone first                                                    | **Locked** 2026-08-12 — it is the sequence above                                                                                                         |
+| D7  | Where the sync surface lives                                                              | **Locked** 2026-08-12 — per-song and library actions in the **Karaoke tab**; Drive account, quality tier and storage in a new **Settings → Sync** subtab |
+| D8  | Whether the portable encoder moves out of `src/lib/jam/`                                  | **Locked** 2026-08-12 — it moves, in Phase 1                                                                                                             |
+| D9  | A synced song is marked as a reduced-quality copy, with an offer to get the original back | **Locked** 2026-08-12 — see _Quality provenance_                                                                                                         |
+| D10 | Drive holds an opt-in full-quality tier per song                                          | **Locked** 2026-08-12 — it is what makes "upgrade" a download                                                                                            |
+| D11 | TV as a P2P target (push from phone/desktop, code + QR, stream-one-song)                  | Proposed — natural once Phase 5 lands                                                                                                                    |
+| D12 | Whether "re-separate at full quality" is offered on a device that lacks the original file | Open — it cannot be honoured there without the source; likely offer _fetch_ only, and _re-separate_ solely where the original is present                 |
 
 ## Sources
 
@@ -510,7 +510,7 @@ Storage and quota figures marked as reported could not be verified at the
 primary source during research (WebKit and Google developer docs both returned
 403 to automated fetch) — Phase 0 exists to replace them with measurements.
 
-- Eskola, *Performance Evaluation of WebRTC Data Channels* — <https://tuhat.helsinki.fi/ws/portalfiles/portal/167373638/Eskola_webrtc.pdf>
+- Eskola, _Performance Evaluation of WebRTC Data Channels_ — <https://tuhat.helsinki.fi/ws/portalfiles/portal/167373638/Eskola_webrtc.pdf>
 - TensorWorks, WebRTC stream limits — <https://tensorworks.com.au/blog/webrtc-stream-limits-investigation/>
 - Mozilla, large data channel messages — <https://blog.mozilla.org/webrtc/large-data-channel-messages/>
 - MDN, `bufferedAmountLowThreshold` — <https://developer.mozilla.org/en-US/docs/Web/API/RTCDataChannel/bufferedAmountLowThreshold>
