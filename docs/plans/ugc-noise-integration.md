@@ -17,14 +17,14 @@ rewriting the rest.
 
 ## 1. Connection
 
-| Item | Value |
-|---|---|
-| MCP endpoint | `https://reporting.getnoise.com/mcp` |
-| Transport | Streamable HTTP, OAuth 2.1 with dynamic client registration |
-| REST base (read-only) | `https://reporting.getnoise.com` |
-| REST auth | `x-noise-org` + `x-noise-token` headers |
-| OpenAPI spec | `https://reporting.getnoise.com/openapi.yaml` |
-| Org id | 13592 |
+| Item                  | Value                                                       |
+| --------------------- | ----------------------------------------------------------- |
+| MCP endpoint          | `https://reporting.getnoise.com/mcp`                        |
+| Transport             | Streamable HTTP, OAuth 2.1 with dynamic client registration |
+| REST base (read-only) | `https://reporting.getnoise.com`                            |
+| REST auth             | `x-noise-org` + `x-noise-token` headers                     |
+| OpenAPI spec          | `https://reporting.getnoise.com/openapi.yaml`               |
+| Org id                | 13592                                                       |
 
 Setup, once per assistant/client:
 
@@ -61,7 +61,7 @@ Three properties worth internalising:
 - **`save_playbook` claims to be declarative but does not delete.** Its
   description says omitted slides are removed, and its preview reports
   `1 removed`. Neither is true: the slide survives, and a replacement sent in
-  the same call is *added alongside* it. Verified three times on playbook 19290
+  the same call is _added alongside_ it. Verified three times on playbook 19290
   on 2026-08-12 — calls omitting slide 151213, all returning
   `success: true`, and the slide still present in `get_playbook_details`
   afterwards, with no deletion in the audit log. Still read-modify-write, but
@@ -80,7 +80,7 @@ Three properties worth internalising:
 
 Together those three make **slide images effectively write-once over MCP**.
 Attach an image only when the slide is final: a wrong one cannot be replaced
-or removed without opening the portal. Preview the *content* freely, but treat
+or removed without opening the portal. Preview the _content_ freely, but treat
 every `generate_slide_image` call as permanent.
 
 Worth reporting to Noise: a declarative endpoint whose preview reports
@@ -96,14 +96,14 @@ plus a per-day cap on AI image generation.
 
 Current campaign **15773 "My Niche Campaign"** — paused, has never spent.
 
-| Field | Value | Changed by |
-|---|---|---|
-| Budget | $1,500 | `update_campaign_budget` |
-| Window | rolled forward 2026-08-11 | rolls on `set_daily_target` |
-| Daily target | **$20/day** | `set_daily_target` |
-| Rate | $0.002/view = **$2 CPM** | `update_campaign_rates` |
-| Status | paused | `set_campaign_status` |
-| Spent | $0 (0% utilisation) | — |
+| Field        | Value                     | Changed by                  |
+| ------------ | ------------------------- | --------------------------- |
+| Budget       | $1,500                    | `update_campaign_budget`    |
+| Window       | rolled forward 2026-08-11 | rolls on `set_daily_target` |
+| Daily target | **$20/day**               | `set_daily_target`          |
+| Rate         | $0.002/view = **$2 CPM**  | `update_campaign_rates`     |
+| Status       | paused                    | `set_campaign_status`       |
+| Spent        | $0 (0% utilisation)       | —                           |
 
 **The $1,500 is a ceiling, not a commitment.** Noise bills per view delivered.
 Pausing after three days at target spend costs $150, not $1,500. Both the
@@ -131,12 +131,12 @@ mechanism — for hand-picking individuals up front.
 
 The levers that actually shape who shows up:
 
-| Lever | Field | Effect |
-|---|---|---|
-| Campaign type | `type: "niche"` | Scopes the offer to a content niche rather than open-market |
-| Creator cap | `max_creators` (currently `null`) | Bounds how many can participate |
-| CPM | `update_campaign_rates` | Higher rates attract more and better creators |
-| The brief itself | playbook slide prompts | The strongest filter — a specific brief self-selects |
+| Lever            | Field                             | Effect                                                      |
+| ---------------- | --------------------------------- | ----------------------------------------------------------- |
+| Campaign type    | `type: "niche"`                   | Scopes the offer to a content niche rather than open-market |
+| Creator cap      | `max_creators` (currently `null`) | Bounds how many can participate                             |
+| CPM              | `update_campaign_rates`           | Higher rates attract more and better creators               |
+| The brief itself | playbook slide prompts            | The strongest filter — a specific brief self-selects        |
 
 In practice the playbook is the casting call. A brief that names the format,
 the energy, and the payoff filters harder than any targeting parameter.
@@ -163,11 +163,11 @@ and `/#/karaoke?utm_source=…` hides params from `location.search`.
 view → mic granted → tasks → results → **shared** — and maps three milestones
 to Google Ads conversion actions:
 
-| Funnel event | Ads conversion |
-|---|---|
-| `results_view` | `mirror_complete` |
-| `cta_app_click` | `app_open` |
-| `card_shared` | `card_shared` |
+| Funnel event    | Ads conversion    |
+| --------------- | ----------------- |
+| `results_view`  | `mirror_complete` |
+| `cta_app_click` | `app_open`        |
+| `card_shared`   | `card_shared`     |
 
 So the loop is already measurable end to end. The only thing missing is a
 tagged link.
@@ -187,18 +187,18 @@ There are **three** places a URL reaches a viewer, and they must not share a
 tag. Conflating them is the easiest way to make this channel look better than
 it is.
 
-| Surface | Where it lives | Carries | State |
-|---|---|---|---|
-| UGC post description | the creator's caption / bio | short link with Noise UTMs | pending short link |
-| Printed on the card | `CARD_URL` in `card-renderer.ts` | bare `mercurypitch.com/mirror` | shipped |
-| Share text | `DEFAULT_SHARE_TEXT` / `twinShareText()` | `utm_source=voiceprint&utm_medium=share` | shipped |
+| Surface              | Where it lives                           | Carries                                  | State              |
+| -------------------- | ---------------------------------------- | ---------------------------------------- | ------------------ |
+| UGC post description | the creator's caption / bio              | short link with Noise UTMs               | pending short link |
+| Printed on the card  | `CARD_URL` in `card-renderer.ts`         | bare `mercurypitch.com/mirror`           | shipped            |
+| Share text           | `DEFAULT_SHARE_TEXT` / `twinShareText()` | `utm_source=voiceprint&utm_medium=share` | shipped            |
 
 **The printed URL stays clean.** It is pixels, not a link — people read it and
 then type or search it. A short code (`/m/n1`) is harder to type, easier to
 mistype, and looks like spam on an otherwise premium card.
 
 **Never put the Noise tag on the card.** A viewer who receives a card from a
-friend who found us through Noise is *not* Noise traffic. Tagging the card
+friend who found us through Noise is _not_ Noise traffic. Tagging the card
 would attribute the entire downstream organic loop to the paid channel,
 permanently and invisibly, which is precisely the wrong signal when deciding
 whether to keep spending.
@@ -211,10 +211,10 @@ separates card-driven virality from both paid and direct.
 another human, on any surface. `utm_source` then says which card did it, so
 the two card surfaces stay tellable apart inside that one bucket:
 
-| Card | Printed | Share link |
-|---|---|---|
+| Card       | Printed                   | Share link                               |
+| ---------- | ------------------------- | ---------------------------------------- |
 | Voiceprint | `mercurypitch.com/mirror` | `utm_source=voiceprint&utm_medium=share` |
-| Glass | `mercurypitch.com/glass` | `utm_source=glasscard&utm_medium=share` |
+| Glass      | `mercurypitch.com/glass`  | `utm_source=glasscard&utm_medium=share`  |
 
 Each card's two constants live in its own `card-renderer.ts`, and
 `src/tests/share-link-tagging.test.ts` pins the rule across both — including
@@ -300,12 +300,12 @@ it entirely.
 **Status:** built and **inactive**. Activation is a human action, never
 automated.
 
-| Slide | id | Type |
-|---|---|---|
-| 1 hook | 151210 | `ugc` |
-| 2 action | 151211 | `ugc` |
-| 3 payoff | 151212 | `ugc` |
-| 4 CTA | 151213 | `image` — poster attached |
+| Slide    | id     | Type                      |
+| -------- | ------ | ------------------------- |
+| 1 hook   | 151210 | `ugc`                     |
+| 2 action | 151211 | `ugc`                     |
+| 3 payoff | 151212 | `ugc`                     |
+| 4 CTA    | 151213 | `image` — poster attached |
 
 The arc is hook → action → payoff → CTA. Slides 1-3 are the creator's own
 footage (`type: "ugc"`); slide 4 is our poster (`type: "image"`).
@@ -324,11 +324,11 @@ content, which is why they are `order`ed and why the playbook has one
 
 That gives two levels, and putting the right thing at each level matters:
 
-| Level | Field | Carries |
-|---|---|---|
-| Playbook | `prompt` | Where to go, what the app does, hard rules. Read once. |
-| Slide | `prompt` | Direction for that shot only. |
-| Slide | `<hook_captions>` | On-screen text options for that shot. |
+| Level    | Field             | Carries                                                |
+| -------- | ----------------- | ------------------------------------------------------ |
+| Playbook | `prompt`          | Where to go, what the app does, hard rules. Read once. |
+| Slide    | `prompt`          | Direction for that shot only.                          |
+| Slide    | `<hook_captions>` | On-screen text options for that shot.                  |
 
 **The destination URL belongs in the playbook prompt**, not buried in a slide.
 A creator reads the brief once before filming; a slide that says "open the
@@ -358,15 +358,15 @@ choice. The repo rule governs this artifact, not the ad copy.
 ## 8. Product facts a brief must not get wrong
 
 The first version of this playbook invented a feature. Writing a brief means
-describing what the app *does*, and getting it wrong wastes creator time and
+describing what the app _does_, and getting it wrong wastes creator time and
 buys views of a video that misrepresents the product. What is actually true:
 
-| Claim | Reality |
-|---|---|
+| Claim                       | Reality                                                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | "Hear yourself played back" | **Glass only.** `glass/take-recorder.ts` records the real voice for rep replay and says outright that nothing else in the app did this before. The Mirror does not play your voice back. |
-| "Sing a song you know" | Not how the Mirror works, and not needed. |
-| Needs an account | No. `/mirror` is a standalone entry, no auth gate. |
-| Needs a download | No. Phone browser, mic permission. |
+| "Sing a song you know"      | Not how the Mirror works, and not needed.                                                                                                                                                |
+| Needs an account            | No. `/mirror` is a standalone entry, no auth gate.                                                                                                                                       |
+| Needs a download            | No. Phone browser, mic permission.                                                                                                                                                       |
 
 **The Voice Mirror asks for eight vocal actions, and none of them is a song.**
 The sequence is fixed in `src/lib/mirror/session.ts`:
@@ -396,7 +396,7 @@ twenty seconds in; the five match notes contribute accuracy, not the twin. See
 any.** That removes the exposure rather than managing it.
 
 Worth stating in every brief regardless: platform music libraries generally
-license tracks for *personal* posts, and **branded or commercial content is
+license tracks for _personal_ posts, and **branded or commercial content is
 typically excluded** from that grant. A creator adding a popular track to what
 is functionally an ad is a different risk from adding one to their own post,
 and it is the brand that carries it. The rule for every MercuryPitch playbook
@@ -451,7 +451,7 @@ Sketch, for when a Glass campaign exists:
 1. **Hook** — the moment after hearing your own take replayed. This is the
    hook that was wrong for the Mirror and is exactly right here.
 2. **The attempt** — lock the note, the pane stresses and cracks.
-3. **The break** — it shatters. The spectacle *is* the payoff.
+3. **The break** — it shatters. The spectacle _is_ the payoff.
 4. **CTA** — a Glass end card at `/glass`.
 
 Same rules: destination in the playbook prompt, no music, a cappella.
@@ -460,26 +460,26 @@ Same rules: destination in the playbook prompt, no music, a cappella.
 
 ## 9. Next actions
 
-| # | Action | Owner | State |
-|---|---|---|---|
-| 1 | Connect the Noise MCP connector | you | done |
-| 2 | Create the playbook, inactive, slides 1-4 | agent | done — 19290 |
-| 3 | Attach the poster to slide 4 via URL | agent | done |
-| 4 | Review the playbook in the portal, then activate | you | **next** |
-| 5 | Check the portal for creator-review / blocklist controls (§4) | you | open |
-| 6 | Verify per-slide captions survived the write (§7) | you | open |
-| 7 | Set the daily target to $20 (§3) | agent | done — period rolled |
-| 8 | Tag the share text as card-viral (§5) | agent | done |
-| 9 | Tag the Glass share text (§5) | agent | done |
-| 10 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
-| 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
-| 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | resolved — it self-populated |
-| 13 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
-| 15 | Delete orphan slide 151213 in the portal (§2) | you | **next** |
-| 16 | Report the save_playbook / generate_slide_image behaviour to Noise (§2) | you | open |
-| 14 | Give zen exercises a URL, if it should be a UGC destination (§8) | decision | open |
-| 17 | Correct the brief + slides 2/3 for the reveal-first flow (§7) | agent | done |
-| 18 | Export the playbook text to the campaigns repo | agent | done |
+| #   | Action                                                                  | Owner    | State                        |
+| --- | ----------------------------------------------------------------------- | -------- | ---------------------------- |
+| 1   | Connect the Noise MCP connector                                         | you      | done                         |
+| 2   | Create the playbook, inactive, slides 1-4                               | agent    | done — 19290                 |
+| 3   | Attach the poster to slide 4 via URL                                    | agent    | done                         |
+| 4   | Review the playbook in the portal, then activate                        | you      | **next**                     |
+| 5   | Check the portal for creator-review / blocklist controls (§4)           | you      | open                         |
+| 6   | Verify per-slide captions survived the write (§7)                       | you      | open                         |
+| 7   | Set the daily target to $20 (§3)                                        | agent    | done — period rolled         |
+| 8   | Tag the share text as card-viral (§5)                                   | agent    | done                         |
+| 9   | Tag the Glass share text (§5)                                           | agent    | done                         |
+| 10  | Build the short-link redirect, then swap `SHARE_URL` (§5)               | agent    | open                         |
+| 11  | Add Mirror capture profiles beyond `freddie` (§6)                       | agent    | open                         |
+| 12  | Ask Noise whether `preview_image` affects creator pickup (§10)          | you      | resolved — it self-populated |
+| 13  | Build the Glass playbook when a Glass campaign exists (§8)              | agent    | open                         |
+| 15  | Delete orphan slide 151213 in the portal (§2)                           | you      | **next**                     |
+| 16  | Report the save_playbook / generate_slide_image behaviour to Noise (§2) | you      | open                         |
+| 14  | Give zen exercises a URL, if it should be a UGC destination (§8)        | decision | open                         |
+| 17  | Correct the brief + slides 2/3 for the reveal-first flow (§7)           | agent    | done                         |
+| 18  | Export the playbook text to the campaigns repo                          | agent    | done                         |
 
 The playbook text is mirrored into the campaigns monorepo at
 `packages/campaigns/mercury/ugc-noise/` (disjoint-colliders) — README with the
@@ -509,7 +509,7 @@ worked.
 ## 10. Playbook has two views in the portal — and a preview-media question
 
 **Not a bug.** A playbook opened from its link in the dashboard shows the
-*posts creators made from it*, which is empty before a campaign runs. The
+_posts creators made from it_, which is empty before a campaign runs. The
 content lives under **Edit playbook**. Worth knowing before concluding an
 MCP-created playbook failed to save — the first read of an empty posts list
 looks exactly like a broken write.
@@ -523,11 +523,11 @@ slides with prompts and captions, and the audit log records `Playbook created`
 Three fields were `null` on 19290 and populated on 18979, which was made in the
 portal:
 
-| Field | 18979 (portal) | 19290 (MCP), 2026-08-11 | 19290, 2026-08-12 |
-|---|---|---|---|
-| `preview_image` | a hosted `.jpg` | `null` | **a hosted `.jpg`** |
-| `example_url` | a hosted `.mp4` | `null` | `null` |
-| `created_by` | a user uuid | `null` | `null` |
+| Field           | 18979 (portal)  | 19290 (MCP), 2026-08-11 | 19290, 2026-08-12   |
+| --------------- | --------------- | ----------------------- | ------------------- |
+| `preview_image` | a hosted `.jpg` | `null`                  | **a hosted `.jpg`** |
+| `example_url`   | a hosted `.mp4` | `null`                  | `null`              |
+| `created_by`    | a user uuid     | `null`                  | `null`              |
 
 `preview_image` is now populated on 19290 —
 `…/template_previews/previews/19290.jpg` — without any MCP call setting it, and
@@ -547,7 +547,6 @@ be set for a playbook the portal did not create. If it cannot, the workaround
 is to create playbooks in the portal and author their content over MCP, which
 keeps nearly all of the benefit.
 
-
 ---
 
 ## 11. Improving the landing experience
@@ -564,7 +563,7 @@ people work for two to three minutes before showing it.
 
 `singerForRange()` keys only off detected low and high MIDI. Range is computed
 at the `hold-done` transition, before a single match note is sung. Everything
-after that point sharpens *accuracy*, not the twin.
+after that point sharpens _accuracy_, not the twin.
 
 The flow is now: two sirens, one held note, **twin revealed** — then "add my
 accuracy score: five more notes." A short guaranteed win first, depth as an
@@ -573,7 +572,7 @@ gated behind `twinPeek(gen)` and emitting a `twin_revealed` funnel event, so
 the new step is measurable on its own.
 
 This shipped ahead of the measurement it was originally gated on, because the
-brief had to describe *some* flow and the reveal-first one is both better for
+brief had to describe _some_ flow and the reveal-first one is both better for
 cold traffic and simpler to film. `task_hold_done`, `task_match_done` and
 `results_view` still answer whether the match notes retain people — now as a
 question about the opt-in rather than about a toll.
@@ -630,8 +629,8 @@ rather than engineering.
 
 ### Glass: spectacular, but not personal
 
-Glass has the better *spectacle* — a pane shattering is more watchable than a
-line being drawn. The voiceprint has the better *artifact*: "this is my voice
+Glass has the better _spectacle_ — a pane shattering is more watchable than a
+line being drawn. The voiceprint has the better _artifact_: "this is my voice
 twin" is about the person holding it, which is why it gets posted.
 
 The shatter card already carries real data (target note, reps, best lock,
