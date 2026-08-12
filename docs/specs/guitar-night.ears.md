@@ -40,11 +40,10 @@ work.
 The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
 are implemented in stacked draft
 [#492](https://github.com/mercurypitch/mercurypitch/pull/492). Its focused
-local gates and cloud deployment are clean, with a
-[testable preview](https://1a731d8f-mercurypitch-preview.komediruzecki-2015.workers.dev);
-owner verification remains. Hear & Find, Echo a Phrase, Shape Walk, and the
-remaining Learn/Jam parity work remain target requirements rather than shipped
-capability.
+local gates and cloud deployment are clean; the PR links its latest testable
+preview, and owner verification remains. Hear & Find, Echo a Phrase, Shape
+Walk, and the remaining Learn/Jam parity work remain target requirements rather
+than shipped capability.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
