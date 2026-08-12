@@ -5,7 +5,29 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **The tabs are grouped by what you came to do.** Four groups now: You (Home
+  and The Ascent), Practice (your instrument, plus Exercises), Play (Karaoke,
+  Jam, Challenges, Community, Leaderboard) and Studio (Compose, Analysis,
+  Settings). Each group shows up to three tabs and keeps the rest behind a
+  three-dot menu, the same way the phone's More button already works, so the
+  bar stays the same size as new rooms arrive.
+
+  It also fits the window now. The bar used to run off the right-hand edge on
+  a laptop — Settings sat 400px past it, reachable only by dragging the strip
+  sideways. It measures the space it has and hands the surplus to the menus:
+  full group names and three tabs each on a wide screen, fewer on a narrow
+  one, nothing off-screen either way.
+
+- **The first onboarding screen says three things instead of a paragraph.**
+  What you do, what you get, and where it happens — one line each.
+
 ### Fixed
+
+- **Every tab is reachable on a phone.** The More sheet's rows were unlabelled
+  to anything looking for them, so tours and checks aimed at a tab that lived
+  in the sheet found nothing at all.
 
 - **Credits and supporter tiers now offer the account they need.** Buying
   credits requires an account, so the button on a credit pack says "Create

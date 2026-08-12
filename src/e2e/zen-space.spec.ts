@@ -11,7 +11,7 @@
 
 import { expect, test } from '@playwright/test'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 
 const TONE_WAV = writeToneWav()
 
@@ -91,10 +91,10 @@ test.describe('Exercise spacebar transport', () => {
       localStorage.setItem('pitchperfect_advanced_features', 'true')
     })
     await page.goto('/')
-    await page.waitForSelector('#tab-exercises', { timeout: 10000 })
+    await waitForNav(page)
     await dismissOverlays(page)
 
-    await page.locator('#tab-exercises').click()
+    await openNavTab(page, 'tab-exercises')
     await page
       .locator('.exercise-card', { hasText: 'Long Note' })
       .first()

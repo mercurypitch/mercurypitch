@@ -4,7 +4,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 
 const EXERCISES = [
   { name: 'long-note', label: 'Long Note' },
@@ -16,8 +16,7 @@ const EXERCISES = [
 ]
 
 async function goToExercisesTab(page: any) {
-  const tabBtn = page.locator('#tab-exercises')
-  await tabBtn.click()
+  await openNavTab(page, 'tab-exercises')
   await page.waitForTimeout(300)
 }
 
@@ -35,7 +34,7 @@ test.describe('Exercise Stop & Score Flow', () => {
       localStorage.setItem('pitchperfect_advanced_features', 'true')
     })
     await page.goto('/')
-    await page.waitForSelector('#tab-exercises', { timeout: 10000 })
+    await waitForNav(page)
     await dismissOverlays(page)
   })
 

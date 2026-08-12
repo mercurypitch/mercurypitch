@@ -1,8 +1,9 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { AppNavOverflowMenu } from '@/components/AppNavOverflowMenu'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
-import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -18,9 +19,11 @@ export interface AppNavTabsProps {
 // Order and grouping live in TAB_GROUPS (the single source of truth shared
 // with the swipe navigation). This map only carries the bits that are unique
 // to each button: its DOM id, accessible label, optional test id, and icon.
-// Exported: BottomTabBar (mobile) renders the same ids/labels/icons — only
-// one of the two bars is mounted at a time (isNarrow swaps them), so the
-// shared DOM ids never collide and tour selectors resolve on both viewports.
+// Exported: BottomTabBar (mobile) and AppNavOverflowMenu render the same
+// ids/labels/icons — only one of the two bars is mounted at a time (isNarrow
+// swaps them) and a tab is either inline or in its group's overflow menu,
+// never both, so the shared DOM ids never collide and tour selectors resolve
+// on both viewports and on either side of the overflow split.
 export interface TabMeta {
   id: string
   ariaLabel: string
@@ -371,46 +374,6 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     })
   })
 
-  // ── Group collapse (desktop): click a group label to collapse it down to
-  // just its active tab; hovering the collapsed group expands it inline.
-  // Persisted so the layout the user prefers survives reloads.
-  const [collapsed, setCollapsed] = createPersistedSignal<
-    Record<string, boolean>
-  >('mp.navCollapsedGroups', {})
-  const isCollapsed = (id: string): boolean => collapsed()[id] === true
-  const toggleGroup = (id: string): void => {
-    setCollapsed((c) => ({ ...c, [id]: c[id] !== true }))
-  }
-
-  const groupLabel = (id: string, label: string) => (
-    <button
-      type="button"
-      class="tab-group-label"
-      classList={{ collapsed: isCollapsed(id) }}
-      onClick={() => toggleGroup(id)}
-      aria-expanded={!isCollapsed(id)}
-      title={isCollapsed(id) ? `Expand ${label}` : `Collapse ${label}`}
-    >
-      {label}
-      <svg
-        class="tab-group-caret"
-        viewBox="0 0 24 24"
-        width="10"
-        height="10"
-        aria-hidden="true"
-      >
-        <path
-          d="M6 9l6 6 6-6"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-  )
-
   const renderTab = (tab: ActiveTab) => {
     const meta = TAB_META[tab]
     if (meta === undefined) return null
@@ -429,13 +392,125 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     )
   }
 
-  // ── Horizontal navigation: the mouse wheel pans the bar left/right, and
-  // click-drag pans it too (mouse only — touch keeps native momentum scroll).
-  // `tabs-scrollable` drives the grab cursor only when there is overflow.
+  // ── Fitting the bar ────────────────────────────────────────────────
+  // MAX_INLINE_GROUP_TABS is the ceiling, not a promise. Measured on a
+  // 1440px window: eleven labelled tabs want 1439px and the strip only gets
+  // 923 of them, because .header-left and .header-support are served first.
+  // A fixed cap of three therefore still left Settings 400px off the right
+  // edge, reachable only by panning — and Settings is the way back out of
+  // simple mode.
+  //
+  // So the cap shrinks until the bar fits: three per group on a wide window,
+  // two on a laptop, one when it has to, with the surplus falling into the
+  // group menus that already exist. Every step is a group's own overflow
+  // button, so nothing becomes unreachable — it just moves one click away.
+  const [inlineCap, setInlineCap] = createSignal(MAX_INLINE_GROUP_TABS)
+
+  /**
+   * The uppercase group names. First thing dropped when the bar is squeezed:
+   * they teach the taxonomy but cost ~193px measured, and a destination the
+   * user can reach beats a caption over one they cannot. The pill borders
+   * still separate the groups without them.
+   */
+  const [showLabels, setShowLabels] = createSignal(true)
+
   const [scrollable, setScrollable] = createSignal(false)
-  const updateScrollable = (): void => {
-    setScrollable(navRef.scrollWidth > navRef.clientWidth + 1)
+
+  /**
+   * Re-render at the ceiling, then degrade until the strip fits: group
+   * labels first, then a tab per group at a time. Chrome before content.
+   *
+   * Runs inside one animation frame: Solid applies each setter
+   * synchronously, so the browser never paints an intermediate width and
+   * the pass cannot flicker. Starting from the ceiling every time is what
+   * lets the bar grow BACK when the window widens — state that only ever
+   * decreased would stay narrow forever.
+   */
+  /**
+   * The width the groups actually want, which is NOT `scrollWidth`.
+   *
+   * `scrollWidth` is defined as at least `clientWidth`, so on a strip with
+   * room to spare it reports the box, not the content — it can say "too
+   * wide" but never "there is slack", and a fit pass built on it can only
+   * ever shrink. Summing the group pills gives the real number in both
+   * directions, so the bar grows back when the window does.
+   */
+  const contentWidth = (): number => {
+    const groups = Array.from(navRef.children) as HTMLElement[]
+    if (groups.length === 0) return 0
+    const gap =
+      Number.parseFloat(window.getComputedStyle(navRef).columnGap) || 0
+    const total = groups.reduce(
+      (sum, el) => sum + el.getBoundingClientRect().width,
+      0,
+    )
+    return total + gap * (groups.length - 1)
   }
+
+  const fitToWidth = (): void => {
+    if (navRef === undefined || navRef === null) return
+    const overflows = (): boolean => contentWidth() > navRef.clientWidth + 1
+
+    setShowLabels(true)
+    setInlineCap(MAX_INLINE_GROUP_TABS)
+
+    if (overflows()) setShowLabels(false)
+    for (let cap = MAX_INLINE_GROUP_TABS; cap > 1 && overflows(); cap--) {
+      setInlineCap(cap - 1)
+    }
+
+    // At one tab per group there is nothing left to fold, so the narrowest
+    // desktops keep the pan-to-scroll strip; the grab cursor says so.
+    setScrollable(overflows())
+  }
+
+  /**
+   * Run the fit pass on the next frame, at most once per frame.
+   *
+   * It MUST NOT run synchronously from `onMount` or from inside a
+   * `createEffect` body. Solid batches signal writes that happen during an
+   * update cycle, so the DOM still holds the previous cap when `fitToWidth`
+   * measures it — every candidate reads as overflowing and the bar
+   * collapses to one tab per group. Measured: at 1440px it settled on 1
+   * when 2 fits with 11px to spare. A frame later the writes have flushed
+   * and layout is real, so the same code converges correctly.
+   *
+   * `fitting` keeps the ResizeObserver from re-entering: the pass resizes
+   * the strip by design, which would otherwise call it straight back.
+   */
+  let fitFrame = 0
+  let fitTimer: ReturnType<typeof setTimeout> | undefined
+  let fitting = false
+
+  const cancelFit = (): void => {
+    if (fitFrame !== 0) {
+      cancelAnimationFrame(fitFrame)
+      fitFrame = 0
+    }
+    if (fitTimer !== undefined) {
+      clearTimeout(fitTimer)
+      fitTimer = undefined
+    }
+  }
+
+  const runFit = (): void => {
+    cancelFit()
+    fitting = true
+    fitToWidth()
+    fitting = false
+  }
+
+  const scheduleFit = (): void => {
+    if (fitFrame !== 0 || fitTimer !== undefined) return
+    fitFrame = requestAnimationFrame(runFit)
+    // A frame is the right moment, but rAF is SUSPENDED whenever the page is
+    // not compositing — a background tab, or an offscreen preview — and the
+    // bar would then sit at its widest state indefinitely, overflowing.
+    // Timers still fire there, so whichever arrives first runs the pass and
+    // cancels the other.
+    fitTimer = setTimeout(runFit, 50)
+  }
+
   let dragged = false
   let dragResetTimer: ReturnType<typeof setTimeout> | undefined
   let startX = 0
@@ -472,15 +547,15 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     },
   }
   createEffect(() => {
-    collapsed() // re-measure overflow when a group collapses/expands
-    practiceScope() // ...and when scope/UI mode change the visible tabs
+    practiceScope() // re-measure when scope/UI mode change the visible tabs
     uiMode() // (content shrinks without a resize, so the RO won't fire)
-    requestAnimationFrame(updateScrollable)
+    props.activeTab() // ...and when a promoted tab changes a group's width
+    scheduleFit()
   })
 
   onMount(() => {
     const el = navRef
-    updateScrollable()
+    scheduleFit()
 
     const onWheel = (e: WheelEvent): void => {
       if (e.deltaY === 0) return
@@ -505,15 +580,23 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     el.addEventListener('wheel', onWheel, { passive: false })
     el.addEventListener('click', onClickCapture, true)
 
-    const ro = new ResizeObserver(updateScrollable)
+    // Observing the strip covers the header's other children too: it is a
+    // flex-grow item, so anything that changes .header-left or
+    // .header-support changes its box and lands here — including the
+    // account and install widgets, which arrive after first paint.
+    const ro = new ResizeObserver(() => {
+      if (fitting) return
+      scheduleFit()
+    })
     ro.observe(el)
-    window.addEventListener('resize', updateScrollable)
+    window.addEventListener('resize', scheduleFit)
 
     onCleanup(() => {
       el.removeEventListener('wheel', onWheel)
       el.removeEventListener('click', onClickCapture, true)
       ro.disconnect()
-      window.removeEventListener('resize', updateScrollable)
+      window.removeEventListener('resize', scheduleFit)
+      cancelFit()
       if (dragResetTimer !== undefined) clearTimeout(dragResetTimer)
     })
   })
@@ -521,6 +604,66 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   // Scope + UI mode filter the visible tabs; groups with nothing left vanish.
   const groupTabs = (group: (typeof TAB_GROUPS)[number]) =>
     group.tabs.filter((t) => isTabVisible(t, practiceScope(), uiMode()))
+
+  // Up to three inline tabs per group, the rest behind the group's "..." —
+  // the same bargain the phone's bottom bar makes, so a new surface costs a
+  // menu row rather than bar width. Filtering happens BEFORE the split, so a
+  // single-instrument scope spends its slots on tabs that actually exist, and
+  // the measured cap can never exceed a group's own declared ceiling.
+  const split = (group: (typeof TAB_GROUPS)[number]) =>
+    splitGroupTabs(
+      groupTabs(group),
+      props.activeTab(),
+      Math.min(group.maxInline ?? MAX_INLINE_GROUP_TABS, inlineCap()),
+    )
+
+  // ── Group collapse (desktop): click a group label to collapse it down to
+  // just its active tab; hovering the collapsed group expands it inline.
+  // Persisted so the layout the user prefers survives reloads.
+  const [collapsed, setCollapsed] = createPersistedSignal<
+    Record<string, boolean>
+  >('mp.navCollapsedGroups', {})
+  const isCollapsed = (id: string): boolean => collapsed()[id] === true
+  const toggleGroup = (id: string): void => {
+    setCollapsed((c) => ({ ...c, [id]: c[id] !== true }))
+  }
+
+  /**
+   * Collapse is only offered while the group labels are showing, because the
+   * label IS the toggle. When the strip is squeezed enough to drop the labels
+   * (see fitToWidth) the collapse state is ignored rather than applied — a
+   * group left collapsed would otherwise have no affordance left to reopen it.
+   */
+  const collapsible = (): boolean => uiMode() === 'advanced' && showLabels()
+
+  const groupLabel = (id: string, label: string) => (
+    <button
+      type="button"
+      class="tab-group-label"
+      classList={{ collapsed: isCollapsed(id) }}
+      onClick={() => toggleGroup(id)}
+      aria-expanded={!isCollapsed(id)}
+      title={isCollapsed(id) ? `Expand ${label}` : `Collapse ${label}`}
+    >
+      {label}
+      <svg
+        class="tab-group-caret"
+        viewBox="0 0 24 24"
+        width="10"
+        height="10"
+        aria-hidden="true"
+      >
+        <path
+          d="M6 9l6 6 6-6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  )
 
   return (
     <nav
@@ -538,16 +681,31 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
         {(group) => (
           <Show when={groupTabs(group).length > 0}>
             <div
-              class="tab-group collapsible"
+              class="tab-group"
+              data-tab-group={group.id}
               classList={{
-                // Simple mode is a flat, focused bar: no group chrome.
-                collapsed: uiMode() === 'advanced' && isCollapsed(group.id),
+                collapsible: collapsible(),
+                collapsed: collapsible() && isCollapsed(group.id),
               }}
             >
-              <Show when={uiMode() === 'advanced'}>
+              {/* Simple mode is a flat, focused bar: no group chrome. Wide
+                  windows get the group names; squeezed ones spend the pixels
+                  on tabs instead (see fitToWidth). The name doubles as the
+                  collapse toggle. */}
+              <Show when={collapsible()}>
                 {groupLabel(group.id, group.label)}
               </Show>
-              <For each={groupTabs(group)}>{(tab) => renderTab(tab)}</For>
+              <For each={split(group).inline}>{(tab) => renderTab(tab)}</For>
+              <Show when={split(group).overflow.length > 0}>
+                <AppNavOverflowMenu
+                  groupLabel={group.label}
+                  tabs={split(group).overflow}
+                  meta={(tab) => TAB_META[tab]}
+                  tabLabel={props.tabLabel}
+                  activeTab={props.activeTab}
+                  onPick={(tab) => void props.handleTabChange(tab)}
+                />
+              </Show>
             </div>
           </Show>
         )}
