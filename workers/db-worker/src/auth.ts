@@ -1309,6 +1309,8 @@ interface OAuthState {
   deviceId?: string
   returnTo: string
   ts: number
+  /** True when this pass through Google is also asking for Drive access. */
+  drive?: boolean
 }
 
 async function signState(state: OAuthState, secret: string): Promise<string> {
@@ -1374,9 +1376,14 @@ async function handleGoogleStart(
   const deviceIdRaw = url.searchParams.get('deviceId') ?? undefined
   const deviceId =
     deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
+  // Incremental authorization (device-sync.md, Phase 4): the Drive scope
+  // is asked for only when the user turns Drive sync on, never at plain
+  // sign-in — a pending Google verification of the scope must not be able
+  // to break logging in.
+  const wantsDrive = url.searchParams.get('scope') === 'drive'
 
   const state = await signState(
-    { deviceId, returnTo, ts: Date.now() },
+    { deviceId, returnTo, ts: Date.now(), ...(wantsDrive && { drive: true }) },
     env.JWT_SECRET as string,
   )
 
@@ -1387,9 +1394,22 @@ async function handleGoogleStart(
     `${url.origin}/api/auth/google/callback`,
   )
   auth.searchParams.set('response_type', 'code')
-  auth.searchParams.set('scope', 'openid email profile')
+  if (wantsDrive) {
+    auth.searchParams.set(
+      'scope',
+      `openid email profile ${DRIVE_SCOPE}`,
+    )
+    // offline + consent is the only combination that reliably returns a
+    // refresh token; include_granted_scopes keeps this additive rather
+    // than replacing what sign-in already granted.
+    auth.searchParams.set('access_type', 'offline')
+    auth.searchParams.set('prompt', 'consent select_account')
+    auth.searchParams.set('include_granted_scopes', 'true')
+  } else {
+    auth.searchParams.set('scope', 'openid email profile')
+    auth.searchParams.set('prompt', 'select_account')
+  }
   auth.searchParams.set('state', state)
-  auth.searchParams.set('prompt', 'select_account')
   return redirect(auth.toString())
 }
 
@@ -1449,7 +1469,12 @@ async function handleGoogleCallback(
       `Google code exchange failed${code !== '' ? ` (${code})` : ` (${tokenRes.status})`}`,
     )
   }
-  const tokenData = await tokenRes.json<{ id_token?: string }>()
+  const tokenData = await tokenRes.json<{
+    id_token?: string
+    access_token?: string
+    refresh_token?: string
+    scope?: string
+  }>()
   if (!tokenData.id_token) {
     return redirectWithError(state.returnTo, 'No id_token from Google')
   }
@@ -1474,11 +1499,265 @@ async function handleGoogleCallback(
     throw error
   }
   const { isNew } = resolved
+
+  // The Drive half of a connect-Drive pass: keep the refresh token, or
+  // say exactly why there is nothing to keep. Never fails the SIGN-IN —
+  // the session token above is already minted, and a person who unchecked
+  // the Drive box still deliberately signed in.
+  let driveFragment = ''
+  if (state.drive === true) {
+    const grantedDrive = (tokenData.scope ?? '').includes(DRIVE_SCOPE)
+    if (!grantedDrive) {
+      // The consent screen lets the user untick individual scopes.
+      driveFragment = '&gdrive_error=declined'
+    } else if (tokenData.refresh_token) {
+      try {
+        await storeDriveToken(
+          env,
+          resolved.row.id,
+          tokenData.refresh_token,
+          tokenData.scope ?? DRIVE_SCOPE,
+          claims.email ?? null,
+        )
+        driveFragment = '&gdrive=1'
+      } catch (error) {
+        console.error('[google-callback] drive token store failed:', error)
+        driveFragment = '&gdrive_error=store_failed'
+      }
+    } else {
+      // prompt=consent makes Google reissue one; not getting one is worth
+      // naming rather than silently ending up "connected" with no key.
+      driveFragment = '&gdrive_error=no_refresh_token'
+    }
+  }
+
   // gauth_new lets the client count first-time signups (funnel) — the token
   // alone can't distinguish a signup from a returning login.
   return redirect(
-    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}`,
+    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}${driveFragment}`,
   )
+}
+
+// ── Google Drive tokens ──────────────────────────────────────────────
+//
+// Drive is a sync transport (docs/plans/device-sync.md, Phase 4): song
+// bundles move browser <-> Drive directly and the audio never touches
+// this worker. What lives here is only the OAuth refresh token — the key
+// to the user's own app-created files (`drive.file` reaches nothing
+// else) — sealed with AES-GCM before it is written, so a database copy
+// alone is not a key. The browser asks POST /drive/token for short-lived
+// access tokens and talks to googleapis.com itself.
+
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
+
+/**
+ * The sealing key, derived rather than provisioned: HKDF from JWT_SECRET
+ * with a fixed info string. No new secret to manage, and the derived key
+ * is useless for anything but this column.
+ */
+async function driveTokenKey(secret: string): Promise<CryptoKey> {
+  const raw = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    'HKDF',
+    false,
+    ['deriveKey'],
+  )
+  return crypto.subtle.deriveKey(
+    {
+      name: 'HKDF',
+      hash: 'SHA-256',
+      salt: new Uint8Array(16),
+      info: encoder.encode('mp-drive-refresh-token'),
+    },
+    raw,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt'],
+  )
+}
+
+async function sealDriveToken(secret: string, plain: string): Promise<string> {
+  const key = await driveTokenKey(secret)
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    encoder.encode(plain),
+  )
+  const joined = new Uint8Array(iv.byteLength + ct.byteLength)
+  joined.set(iv, 0)
+  joined.set(new Uint8Array(ct), iv.byteLength)
+  return b64urlEncode(joined)
+}
+
+async function openDriveToken(
+  secret: string,
+  sealed: string,
+): Promise<string | null> {
+  try {
+    const joined = b64urlDecode(sealed)
+    const iv = joined.slice(0, 12)
+    const ct = joined.slice(12)
+    const key = await driveTokenKey(secret)
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct)
+    return new TextDecoder().decode(plain)
+  } catch {
+    // A row sealed under a different JWT_SECRET (rotated) cannot be
+    // opened; treated as disconnected rather than as a server error.
+    return null
+  }
+}
+
+async function storeDriveToken(
+  env: Env,
+  userId: string,
+  refreshToken: string,
+  scope: string,
+  email: string | null,
+): Promise<void> {
+  const sealed = await sealDriveToken(env.JWT_SECRET as string, refreshToken)
+  const now = nowIso()
+  await env.DB.prepare(
+    `INSERT INTO googleDriveTokens (userId, refreshToken, scope, email, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(userId) DO UPDATE SET
+       refreshToken = excluded.refreshToken,
+       scope = excluded.scope,
+       email = excluded.email,
+       updatedAt = excluded.updatedAt`,
+  )
+    .bind(userId, sealed, scope, email, now, now)
+    .run()
+}
+
+async function deleteDriveToken(env: Env, userId: string): Promise<void> {
+  await env.DB.prepare('DELETE FROM googleDriveTokens WHERE userId = ?')
+    .bind(userId)
+    .run()
+}
+
+interface DriveTokenRow {
+  userId: string
+  refreshToken: string
+  scope: string
+  email: string | null
+}
+
+async function findDriveToken(
+  env: Env,
+  userId: string,
+): Promise<DriveTokenRow | null> {
+  return env.DB.prepare('SELECT * FROM googleDriveTokens WHERE userId = ?')
+    .bind(userId)
+    .first<DriveTokenRow>()
+}
+
+/** GET /api/auth/drive/status — is a Drive connected, and whose. */
+async function handleDriveStatus(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const row = await findDriveToken(env, auth.userId)
+  if (!row) return respond({ connected: false })
+  return respond({ connected: true, email: row.email ?? undefined })
+}
+
+/**
+ * POST /api/auth/drive/token — mint a short-lived Drive access token.
+ *
+ * The refresh token never leaves this worker; the browser gets only the
+ * ~1h access token it needs to talk to googleapis.com. `invalid_grant`
+ * means the user revoked access on Google's side — the stored key is
+ * dead, so the row is dropped and the caller told to reconnect (410).
+ */
+async function handleDriveToken(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return respond({ error: 'Google not configured' }, { status: 501 })
+  }
+  const row = await findDriveToken(env, auth.userId)
+  const refreshToken =
+    row === null
+      ? null
+      : await openDriveToken(env.JWT_SECRET as string, row.refreshToken)
+  if (refreshToken === null) {
+    if (row !== null) await deleteDriveToken(env, auth.userId)
+    return respond({ error: 'drive_disconnected' }, { status: 410 })
+  }
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  })
+  if (!tokenRes.ok) {
+    const detail = await tokenRes.text().catch(() => '')
+    let code = ''
+    try {
+      code = (JSON.parse(detail) as { error?: string }).error ?? ''
+    } catch {
+      /* not JSON */
+    }
+    if (code === 'invalid_grant') {
+      await deleteDriveToken(env, auth.userId)
+      return respond({ error: 'drive_disconnected' }, { status: 410 })
+    }
+    console.error('[drive-token] refresh failed:', tokenRes.status, detail)
+    return respond({ error: 'drive_token_failed' }, { status: 502 })
+  }
+  const data = await tokenRes.json<{
+    access_token?: string
+    expires_in?: number
+  }>()
+  if (!data.access_token) {
+    return respond({ error: 'drive_token_failed' }, { status: 502 })
+  }
+  return respond({
+    accessToken: data.access_token,
+    expiresIn: data.expires_in ?? 3600,
+  })
+}
+
+/** DELETE /api/auth/drive — disconnect. Revokes best-effort, then forgets. */
+async function handleDriveDisconnect(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const row = await findDriveToken(env, auth.userId)
+  if (row !== null) {
+    const refreshToken = await openDriveToken(
+      env.JWT_SECRET as string,
+      row.refreshToken,
+    )
+    if (refreshToken !== null) {
+      // Best effort: the user can also revoke from their Google account,
+      // and a failed revoke must not keep the row alive.
+      await fetch('https://oauth2.googleapis.com/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ token: refreshToken }),
+      }).catch(() => {})
+    }
+    await deleteDriveToken(env, auth.userId)
+  }
+  return respond({ ok: true })
 }
 
 /** GET /api/auth/verify-email?token=&returnTo= — the emailed confirm link.
@@ -1834,6 +2113,12 @@ export async function handleAuth(
     if (!rl.allowed) return tooMany(respond, rl)
     return handleGoogleCallback(request, env, respond)
   }
+  if (route === 'drive/status' && request.method === 'GET') {
+    return handleDriveStatus(request, env, respond)
+  }
+  if (route === 'drive' && request.method === 'DELETE') {
+    return handleDriveDisconnect(request, env, respond)
+  }
   if (route === 'verify-email' && request.method === 'GET') {
     const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
     const rl = await checkRateLimit(env.DB, ip, 'verify-email')
@@ -1890,6 +2175,9 @@ export async function handleAuth(
   }
   if (route === 'resend-verification') {
     return handleResendVerification(request, env, respond)
+  }
+  if (route === 'drive/token') {
+    return handleDriveToken(request, env, respond)
   }
 
   const body = await parseBody(request)

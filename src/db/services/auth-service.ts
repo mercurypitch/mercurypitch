@@ -451,6 +451,17 @@ export function consumeGoogleRedirect(): void {
     authChanged()
     // gauth_new marks a first-time Google account (set by the worker).
     if (params.get('gauth_new') === '1') trackEvent('signup')
+    // A connect-Drive pass rides the same redirect; its outcome is a
+    // separate marker because the sign-in half can succeed while the
+    // Drive half was declined or lost its refresh token.
+    if (params.get('gdrive') === '1') {
+      driveConnectResult = { ok: true }
+    } else {
+      const driveError = params.get('gdrive_error')
+      if (driveError != null && driveError !== '') {
+        driveConnectResult = { ok: false, error: driveError }
+      }
+    }
   } else if (error != null && error !== '') {
     if (error === ACCOUNT_SUSPENDED_CODE) {
       handleAuthErrorResponse(
@@ -480,6 +491,98 @@ export function takeGoogleRedirectResult(): GoogleRedirectResult | null {
   const result = googleRedirectResult
   googleRedirectResult = null
   return result
+}
+
+// ── Google Drive (sync transport) ────────────────────────────────────
+//
+// Drive access rides the same redirect flow as sign-in, with scope=drive
+// asked for only when the user turns Drive sync on (incremental
+// authorization — a pending Google review of the scope must never break
+// plain sign-in). The worker keeps the refresh token; the browser asks
+// it for short-lived access tokens and talks to googleapis.com itself,
+// so song audio still never touches our servers.
+
+export type DriveConnectResult = { ok: true } | { ok: false; error: string }
+
+let driveConnectResult: DriveConnectResult | null = null
+
+/** One-shot outcome of a connect-Drive redirect, for the settings UI. */
+export function takeDriveConnectResult(): DriveConnectResult | null {
+  const result = driveConnectResult
+  driveConnectResult = null
+  return result
+}
+
+/** URL that starts the connect-Google-Drive redirect. Same shape as
+ *  googleSignInUrl(), plus the Drive scope. */
+export function driveConnectUrl(): string {
+  sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
+  const returnTo =
+    window.location.origin + window.location.pathname + window.location.search
+  const params = new URLSearchParams({
+    deviceId: getUserId(),
+    returnTo,
+    scope: 'drive',
+  })
+  return `${requireBaseUrl()}/api/auth/google/start?${params.toString()}`
+}
+
+export interface DriveStatus {
+  connected: boolean
+  email?: string
+}
+
+export async function fetchDriveStatus(): Promise<DriveStatus> {
+  const token = getAuthToken()
+  if (token == null || token === '') return { connected: false }
+  const res = await fetch(`${requireBaseUrl()}/api/auth/drive/status`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return { connected: false }
+  return (await res.json()) as DriveStatus
+}
+
+export type DriveAccessToken =
+  | { ok: true; accessToken: string; expiresIn: number }
+  | { ok: false; reason: 'disconnected' | 'failed' }
+
+/**
+ * A short-lived Drive access token, minted by the worker from the stored
+ * refresh token. 410 means the grant is gone (revoked on Google's side or
+ * never stored) — the caller should surface "reconnect", not retry.
+ */
+export async function fetchDriveAccessToken(): Promise<DriveAccessToken> {
+  const token = getAuthToken()
+  if (token == null || token === '') return { ok: false, reason: 'failed' }
+  const res = await fetch(`${requireBaseUrl()}/api/auth/drive/token`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 410) return { ok: false, reason: 'disconnected' }
+  if (!res.ok) return { ok: false, reason: 'failed' }
+  const data = (await res.json()) as {
+    accessToken?: string
+    expiresIn?: number
+  }
+  if (data.accessToken == null || data.accessToken === '') {
+    return { ok: false, reason: 'failed' }
+  }
+  return {
+    ok: true,
+    accessToken: data.accessToken,
+    expiresIn: data.expiresIn ?? 3600,
+  }
+}
+
+/** Disconnect Drive: the worker revokes what it can and forgets the key. */
+export async function disconnectDrive(): Promise<boolean> {
+  const token = getAuthToken()
+  if (token == null || token === '') return false
+  const res = await fetch(`${requireBaseUrl()}/api/auth/drive`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.ok
 }
 
 // ── Email verification (confirm-link redirect + resend) ─────────────
