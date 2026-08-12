@@ -2000,6 +2000,19 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // so nothing cascades it away. Without this line a deleted account's whole
   // library stayed in D1 forever under an id no longer belonging to anyone.
   { table: 'songManifests', column: 'userId' },
+  // The sealed key to somebody's Drive folder. `googleDriveTokens` is
+  // deliberately worker-internal (absent from tables.ts, like sessions and
+  // passwordResets), which is correct for an OAuth secret but also means it
+  // is invisible to every registry-driven check — so the only thing that
+  // erases it is this line. Without it, deleting an account left a Google
+  // refresh token in D1 keyed to a user id that no longer exists. Sealed
+  // with AES-GCM, so a stolen database alone cannot use it, but an account
+  // that asked to be forgotten must not keep a credential at all.
+  //
+  // Note this drops OUR copy; it does not revoke the grant on Google's
+  // side. Until it does, a deleted account still lists the app under
+  // myaccount.google.com permissions. See the audit ledger (B4).
+  { table: 'googleDriveTokens', column: 'userId' },
   { table: 'emailVerifications', column: 'userId' },
   // League rows are per-user too: leaving them would keep a ghost entry in
   // this week's standings (rendered as Singer-<id>) and a point history for
