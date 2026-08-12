@@ -61,7 +61,12 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* `safe` matters on short viewports — a phone in landscape, a short laptop
+     window. Plain `center` on an overflowing column pushes the panel's top
+     past the scroll origin, where it cannot be reached by scrolling at all;
+     `safe` falls back to start-alignment exactly then. Identical whenever the
+     content fits, so it costs nothing on a normal screen. */
+  justify-content: safe center;
 }
 
 .mirror-panel {
@@ -141,22 +146,44 @@ body {
 /* ── Mid-run twin reveal ──────────────────────────────────────
    Sits between the hold and the match notes. Deliberately quiet compared to
    the results card: this is the answer arriving early, not the finale. */
-.mirror-peek-portrait {
-  width: clamp(96px, 26vw, 132px);
-  height: clamp(96px, 26vw, 132px);
-  object-fit: cover;
-  border-radius: 50%;
-  margin: 0.6em auto 0.2em;
-  display: block;
-  border: 1px solid rgba(138, 151, 166, 0.35);
+/* The twin gets the same frame as the results card's back face — full-bleed
+   portrait, scrim, caption over it — because this is where the payoff now
+   lands. It was a 132px circle, which cropped the face to a thumbnail at the
+   one moment the image is the point.
+
+   Held at the portraits' native 4:5 so cover crops nothing; the square share
+   card does its own 1:1 crop.
+
+   The height budget is spent as a WIDTH cap (44vh x 4/5 ≈ 35vh, rounded to
+   35vh) rather than a max-height. A max-height would win against
+   aspect-ratio, leaving a landscape box with a 4:5 portrait cover-cropped
+   through the face — worst on exactly the phone-in-landscape case. Capping
+   width instead shrinks the whole card and keeps the crop at zero.
+
+   KEEP `sizes` ON THE <img> IN SYNC WITH THIS WIDTH. The browser picks the
+   asset tier from it, and a stale `sizes` is how a portrait goes mushy. */
+.mirror-peek-card {
+  position: relative;
+  width: min(400px, 82vw, 35vh);
+  aspect-ratio: 4 / 5;
+  margin: 16px auto 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0b1026 0%, #141033 55%, #090714 100%);
+  box-shadow: 0 14px 46px rgba(0, 0, 0, 0.5);
 }
-.mirror-peek h2 {
-  margin: 0.1em 0 0;
+/* No raster art: the vector constellation is the subject, so centre it
+   instead of bottom-anchoring a caption that has nothing behind it. */
+.mirror-peek-card:not(.has-image) {
+  justify-content: center;
 }
-.mirror-peek-epithet {
-  color: var(--mirror-dim);
-  font-size: 0.95rem;
-  margin: 0.15em auto 0.9em;
+.mirror-peek-card .mirror-legend-portrait {
+  width: 72%;
+  max-width: 240px;
 }
 
 .mirror-panel.mirror-results {
@@ -647,7 +674,9 @@ body {
   text-align: center;
   margin-top: 2%;
 }
-.mirror-card-back.has-image .mirror-legend-caption {
+/* Shared with the mid-run peek so the two twin presentations cannot drift. */
+.mirror-card-back.has-image .mirror-legend-caption,
+.mirror-peek-card.has-image .mirror-legend-caption {
   position: relative; /* above the scrim */
   margin: 0 0 5%;
   text-shadow: 0 1px 10px rgba(9, 7, 20, 0.9);

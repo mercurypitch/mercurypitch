@@ -676,6 +676,54 @@ adds modules, which is exactly when the index matters.
 
 **See:** `scripts/pr-prepare.mjs`, `scripts/gen-agent-index.mjs`
 
+### A legend portrait in a small box turns to mush at zoom
+
+**Symptom:** faces look fine at 100% and go smeared at 125%/200%, or on one
+phone and not another. Nothing in the code looks wrong, because nothing is —
+the browser silently abandoned its high-quality downscale path.
+
+**Cause:** the scale ratio, not the image. Masters are 928x1152. Past roughly
+4x in either direction the browser stops resampling well, so a 30x37 chip
+pointed at the master (31x) smears, and so does a 120px thumb stretched into a
+180px box. `image-rendering` does not fix this; only shipping the right pixels
+does.
+
+**Rule:** never point a box at `legendArt(name).imageSrc` without checking the
+ratio. Use `legendTierSrc(name, tier)` — `thumb` 120px for ~30-120px boxes,
+`mid` 360px for ~130-360px, `full` 928px for the reveal card. When the box is
+fluid (`vw`/`vh` units, so its size depends on the viewport, DPR and zoom),
+do not pick a tier by hand at all: give the `<img>` a `srcset` with `w`
+descriptors and a `sizes` that mirrors the CSS width, and let the browser
+choose from real device pixels. That is the only form that stays correct
+across zoom, DPR and orientation together.
+
+**The trap inside the fix:** `sizes` is a copy of a width that lives in CSS,
+and nothing links them. Change the CSS and `sizes` still describes the old
+box, so the browser picks against a width that no longer exists and you are
+back to mush — with a `srcset` in place that makes it look handled. Guard the
+pair with a test. `src/tests/legend-thumbs.test.ts` does this for
+`.mirror-peek-card`, and asserts tier DIMENSIONS rather than mere presence,
+because a present-but-wrong-size file is the exact shape of the original bug.
+
+**See:** `src/features/mirror/LegendCaricature.tsx` (`legendTierSrc`),
+`src/tests/legend-thumbs.test.ts`, `scripts/gen-legend-tiers.mjs`
+
+### `max-height` on an `aspect-ratio` box crops the subject instead of shrinking it
+
+**Symptom:** a portrait that looks right on a tall phone is cropped through
+the face in landscape, or on a short laptop window.
+
+**Cause:** `max-height` wins against `aspect-ratio`. The box keeps its width,
+loses its height, and `object-fit: cover` eats the difference out of the
+image — worst exactly where the viewport is shortest.
+
+**Rule:** to bound such a box by height, spend the height budget as a **width**
+cap (`width: min(400px, 82vw, 35vh)` for a 4:5 box wanting ≤ 44vh) and let
+`aspect-ratio` derive the height. The card then shrinks whole and the crop
+stays at zero.
+
+**See:** `.mirror-peek-card` in `src/features/mirror/mirror.css`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked

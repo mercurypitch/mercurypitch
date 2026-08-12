@@ -37,7 +37,7 @@ import type { MirrorEntryIntent } from './entry-intent'
 import { trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
 import { IconCopy, IconMore, IconRocket, IconShare, IconSpark } from './icons'
-import { legendArt } from './LegendCaricature'
+import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
@@ -1196,18 +1196,61 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       <Show when={subPhase() === 'twin-peek' && peekLegend() !== null}>
         <section class="mirror-panel mirror-peek">
           <TrustInfo />
-          <p class="mirror-progress">Your voice twin</p>
-          <Show when={legendArt(peekLegend() as string).imageSrc}>
-            <img
-              class="mirror-peek-portrait"
-              src={legendArt(peekLegend() as string).imageSrc}
-              alt=""
-            />
-          </Show>
-          <h2>{peekLegend()}</h2>
-          <p class="mirror-peek-epithet">
-            {legendArt(peekLegend() as string).epithet}
-          </p>
+          {/* The same treatment as the results card's back face — full-bleed
+              portrait under a scrim with the caption over it — rather than a
+              thumbnail. This is the payoff landing, so the twin gets the
+              frame. Held at the portraits' native 4:5 so nothing is cropped
+              away; the square share card does its own 1:1 crop later. */}
+          <div
+            class="mirror-peek-card"
+            classList={{
+              'has-image':
+                legendArt(peekLegend() as string).imageSrc !== undefined,
+            }}
+          >
+            <Show
+              when={legendArt(peekLegend() as string).imageSrc}
+              fallback={
+                <div class="mirror-legend-portrait">
+                  <LegendCaricature legend={peekLegend() as string} />
+                </div>
+              }
+            >
+              {(src) => (
+                <>
+                  {/* Tier picked by the browser from real device pixels
+                      rather than by arithmetic here: box width x DPR, so
+                      zoom, DPR and orientation are all handled at once and
+                      the mushy-caricature failure cannot come back. `sizes`
+                      mirrors .mirror-peek-card's width — keep them in sync.
+                      If a browser rejects the min() expression it falls back
+                      to 100vw and over-picks `full`, which errs sharp. */}
+                  <img
+                    class="mirror-back-img"
+                    src={src()}
+                    srcset={`${legendTierSrc(peekLegend() as string, 'mid') ?? src()} 360w, ${src()} 928w`}
+                    sizes="min(400px, 82vw, 35vh)"
+                    alt=""
+                  />
+                  <div class="mirror-back-scrim" />
+                </>
+              )}
+            </Show>
+            <div class="mirror-legend-caption">
+              <span class="mirror-legend-kicker">
+                <IconSpark size={10} /> your voice twin <IconSpark size={10} />
+              </span>
+              <strong class="mirror-legend-name">{peekLegend()}</strong>
+              <span class="mirror-legend-epithet">
+                {legendArt(peekLegend() as string).epithet}
+              </span>
+              <Show when={session().range?.voiceHint}>
+                <span class="mirror-legend-type">
+                  {session().range?.voiceHint} range
+                </span>
+              </Show>
+            </div>
+          </div>
           <p>
             Your range lines up with {peekLegend()}. That is yours now — it is
             on your voiceprint whatever happens next.
