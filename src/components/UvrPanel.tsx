@@ -47,7 +47,7 @@ import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrLibraryElsewhere, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
+import { CheckCircle, ChevronDown, ChevronUp, Cpu, DeviceSync, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
 import type { ExtraStemInput } from './StemMixer'
@@ -61,6 +61,12 @@ const ShazamResults = lazy(async () =>
   import('@/components/ShazamResults').then((m) => ({
     default: m.ShazamResults,
   })),
+)
+
+// Lazy so the karaoke first paint never pays for WebRTC signaling and the
+// bundle machinery — they load when somebody actually opens the sync door.
+const SyncDevicesModal = lazy(
+  async () => import('@/components/sync/SyncDevicesModal'),
 )
 
 export type UvrView =
@@ -224,6 +230,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [isImporting, setIsImporting] = createSignal(false)
   const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
   const [sessionSearch, setSessionSearch] = createSignal('')
+  // null = closed; sessionId undefined = opened from the header (chooser).
+  const [syncModalTarget, setSyncModalTarget] = createSignal<{
+    sessionId?: string
+  } | null>(null)
   const [sessionGalleryOpen, setSessionGalleryOpen] = createPersistedSignal(
     'uvr-session-gallery-open',
     true,
@@ -2367,6 +2377,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       <ExportFile />
                     </button>
                   </Show>
+                  {/* Outside the sessions-exist gate on purpose: the empty
+                      device is exactly the one that needs to receive. */}
+                  <button
+                    class="section-action-btn icon-only"
+                    onClick={() => setSyncModalTarget({})}
+                    title="Sync songs with another of your devices"
+                  >
+                    <DeviceSync />
+                  </button>
                   <label
                     class="section-action-btn icon-only"
                     title="Import sessions from ZIP files (multi-select supported)"
@@ -2495,6 +2514,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                             hasActiveSeparation(),
                           )
                         }}
+                        onSendToDevice={(sessionId) =>
+                          setSyncModalTarget({ sessionId })
+                        }
                       />
                     )}
                   </For>
@@ -2859,6 +2881,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </div>
             )
           }}
+        </Show>
+
+        {/* Own Suspense boundary: the component is lazy, and letting it
+            suspend an ancestor would blank the tab while the chunk loads. */}
+        <Show when={syncModalTarget()}>
+          {(target) => (
+            <Suspense fallback={null}>
+              <SyncDevicesModal
+                initialSessionId={target().sessionId}
+                onClose={() => setSyncModalTarget(null)}
+              />
+            </Suspense>
+          )}
         </Show>
 
         <SessionExportDialog

@@ -34,6 +34,8 @@ interface SessionResultProps {
    *  in place, 'new' spawns a separate session so both results can be
    *  compared. Offered only for completed browser-processed sessions. */
   onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
+  /** Push this song to another of the user's devices (device sync). */
+  onSendToDevice?: (sessionId: string) => void
 }
 
 export const UvrSessionResult: Component<SessionResultProps> = (props) => {
@@ -804,6 +806,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               session={session()}
               disabled={props.disabled}
               onRerunHq={props.onRerunHq}
+              onSendToDevice={props.onSendToDevice}
             />
           </Show>
           <Show when={canProcessAgain()}>

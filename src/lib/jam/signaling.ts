@@ -37,14 +37,32 @@ export function jamSignalingIsMocked(): boolean {
   return import.meta.env.VITE_JAM_MOCK_SIGNALING === '1'
 }
 
-export function createSignalingClient(callbacks: JamCallbacks) {
+export interface SignalingClientOptions {
+  /**
+   * Whether rooms this client creates or is adopted into are remembered in
+   * the jam lobby's hosted-rooms list. Defaults to true — that list is how
+   * a host walks back into their own room. Device sync turns it off: a
+   * sync room lives for one transfer, and listing it in the lobby offers a
+   * "rejoin" to a room that exists to be thrown away.
+   */
+  rememberRooms?: boolean
+}
+
+export function createSignalingClient(
+  callbacks: JamCallbacks,
+  options: SignalingClientOptions = {},
+) {
   if (jamSignalingIsMocked()) {
     return createMockSignalingClient(callbacks)
   }
-  return createRealSignalingClient(callbacks)
+  return createRealSignalingClient(callbacks, options)
 }
 
-function createRealSignalingClient(callbacks: JamCallbacks) {
+function createRealSignalingClient(
+  callbacks: JamCallbacks,
+  options: SignalingClientOptions = {},
+) {
+  const rememberRooms = options.rememberRooms !== false
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let currentRoomId: string | null = null
@@ -191,7 +209,11 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
         currentRoomId = msg.roomId
         currentPeerId = msg.peerId
         currentOwnerToken = msg.ownerToken ?? null
-        if (msg.ownerToken !== undefined && msg.ownerToken !== '') {
+        if (
+          rememberRooms &&
+          msg.ownerToken !== undefined &&
+          msg.ownerToken !== ''
+        ) {
           rememberHostedRoom(
             msg.roomId,
             currentDisplayName ?? '',
@@ -220,13 +242,15 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
         // has since been cleaned up returns the controls.
         if (msg.ownerToken !== undefined && msg.ownerToken !== '') {
           currentOwnerToken = msg.ownerToken
-          rememberHostedRoom(
-            msg.roomId,
-            currentDisplayName ?? '',
-            msg.ownerToken,
-          )
+          if (rememberRooms) {
+            rememberHostedRoom(
+              msg.roomId,
+              currentDisplayName ?? '',
+              msg.ownerToken,
+            )
+          }
         } else if (msg.isHost) {
-          touchHostedRoom(msg.roomId)
+          if (rememberRooms) touchHostedRoom(msg.roomId)
         } else if (presentedToken !== null) {
           // We walked in on "rejoin as host", presented the secret, and came
           // back an ordinary peer. The token is dead: either the room was
