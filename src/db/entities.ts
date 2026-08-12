@@ -152,6 +152,7 @@ export type VoiceTakeSource =
   | 'legend'
   | 'karaoke'
   | 'freeform'
+  | 'guided'
 
 /**
  * Lightweight, list-safe metadata. The audio payload deliberately lives in

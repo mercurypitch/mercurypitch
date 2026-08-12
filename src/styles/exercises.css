@@ -392,6 +392,66 @@
   font-variant-numeric: tabular-nums;
 }
 
+.exercise-guided-dose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 18px;
+  margin: -2px 0 14px;
+  padding: 11px 14px;
+  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 56%
+    ),
+    var(--bg-card);
+}
+
+.exercise-guided-dose-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.exercise-guided-dose-heading span {
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.exercise-guided-dose-heading strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exercise-guided-dose p,
+.exercise-guided-dose small {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.exercise-guided-dose p {
+  grid-row: 1;
+  grid-column: 2;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.exercise-guided-dose small {
+  grid-column: 1 / -1;
+}
+
 .exercise-canvas-area {
   flex: 1;
   display: flex;
@@ -1964,6 +2024,78 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   animation: tier-pop 0.5s ease-out;
+}
+
+.exercise-result-card.is-guided {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-color));
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 62%
+    ),
+    var(--bg-secondary);
+  animation: none;
+}
+
+.exercise-result-card.is-guided:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.exercise-guided-result-title {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.exercise-guided-stop-copy {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.exercise-guided-stop-question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.exercise-guided-stop-question > span {
+  flex-basis: 100%;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.exercise-guided-pause,
+.exercise-guided-discomfort {
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.exercise-guided-pause:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border-color));
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-secondary));
+}
+
+.exercise-guided-discomfort {
+  border-color: rgba(248, 81, 73, 0.44);
+  color: #ffaaa3;
+}
+
+.exercise-guided-discomfort:hover {
+  border-color: rgba(248, 81, 73, 0.72);
+  background: rgba(248, 81, 73, 0.12);
 }
 
 .exercise-result-grade {

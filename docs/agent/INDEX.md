@@ -75,11 +75,11 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-learn-audio.ts](../../src/features/guitar-night/guitar-night-learn-audio.ts) | 16.3k | Guitar Night Learn audio schedules only references the player explicitly requests. |
-| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.7k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.6k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.8k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 6.3k | Voice History — local listening desk for kept voice takes |
-| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 6.1k | Voice Mirror — the guided 3-task flow (spec §2). |
+| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 9.5k | Voice History — local listening desk for kept voice takes |
+| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 6.0k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 5.8k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.6k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 5.4k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -124,7 +124,7 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guitar` | [guitar-phrase-review.ts](../../src/lib/guitar/guitar-phrase-review.ts) | 5.1k | Guitar phrase review — evidence-bounded comparison of one take with one pinned score range. |
-| `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 3.0k | Guided Voice — local assessment science and safety foundation |
+| `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.5k | Guided Voice — local assessment science and safety foundation |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.2k | Voice Mirror — pure metrics over F0 frame streams. |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 2.1k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
@@ -332,6 +332,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.6k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
+| [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.5k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |
@@ -340,7 +341,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.1k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 2.1k |
-| [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.0k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.0k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
@@ -352,6 +352,7 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.5k |
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.5k |
+| [src/lib/guided-voice/pitch-centre-assessment.ts](../../src/lib/guided-voice/pitch-centre-assessment.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
@@ -361,6 +362,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts](../../src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts) | 1.4k |
 | [src/features/progress/ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 1.4k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.4k |
+| [src/features/voice-history/GuidedVoiceCheck.tsx](../../src/features/voice-history/GuidedVoiceCheck.tsx) | 1.4k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |

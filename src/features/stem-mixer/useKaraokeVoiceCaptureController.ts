@@ -85,6 +85,9 @@ export function useKaraokeVoiceCaptureController(
   let activeDurationMs = 0
   let activeSegmentStartedAt: number | null = null
   let generation = 0
+  let playbackRequested = false
+  let transportTransitioning = false
+  let transportTransitionId = 0
   let disposed = false
 
   const beginClock = (): void => {
@@ -118,13 +121,48 @@ export function useKaraokeVoiceCaptureController(
     recorder = null
   }
 
+  const invalidateTransportTransition = (): void => {
+    transportTransitionId += 1
+    transportTransitioning = false
+  }
+
+  /** Follow the latest playback intent only after MediaRecorder is ready. */
+  const reconcileRecorderTransport = (): void => {
+    const current = recorder
+    if (disposed || current === null || transportTransitioning) return
+    const shouldResume = playbackRequested && state() === 'paused'
+    const shouldPause = !playbackRequested && state() === 'recording'
+    if (!shouldResume && !shouldPause) return
+
+    const run = generation
+    const transitionId = ++transportTransitionId
+    transportTransitioning = true
+    const transition = shouldResume ? current.resume() : current.pause()
+    void transition
+      .catch(() => false)
+      .then((ready) => {
+        if (transitionId !== transportTransitionId) return
+        transportTransitioning = false
+        if (disposed || run !== generation || recorder !== current || !ready)
+          return
+
+        if (shouldResume) {
+          beginClock()
+          setState('recording')
+        } else {
+          pauseClock()
+          setState('paused')
+        }
+        // Playback may have changed again while MediaRecorder queued its event.
+        reconcileRecorderTransport()
+      })
+  }
+
   const startPlayback = (): void => {
     if (disposed || state() === 'processing' || state() === 'saving') return
+    playbackRequested = true
     if (recorder !== null) {
-      if (state() === 'paused' && recorder.resume()) {
-        beginClock()
-        setState('recording')
-      }
+      reconcileRecorderTransport()
       return
     }
 
@@ -148,6 +186,7 @@ export function useKaraokeVoiceCaptureController(
       )
       return
     }
+    invalidateTransportTransition()
     recorder = next
     capturedAt = nowIso()
     beginClock()
@@ -155,10 +194,8 @@ export function useKaraokeVoiceCaptureController(
   }
 
   const pausePlayback = (): void => {
-    if (recorder === null || state() !== 'recording') return
-    if (!recorder.pause()) return
-    pauseClock()
-    setState('paused')
+    playbackRequested = false
+    reconcileRecorderTransport()
   }
 
   const pushMicFrame = (frame: Omit<VoiceAtlasRawFrame, 't'>): void => {
@@ -174,6 +211,8 @@ export function useKaraokeVoiceCaptureController(
   const finishScoredPlayback = (score: MicScore | null): void => {
     const current = recorder
     if (current === null) return
+    playbackRequested = false
+    invalidateTransportTransition()
     if (score === null) {
       generation += 1
       discardRecorder()
@@ -261,6 +300,8 @@ export function useKaraokeVoiceCaptureController(
 
   const dismiss = (): void => {
     generation += 1
+    playbackRequested = false
+    invalidateTransportTransition()
     discardRecorder()
     resetPreparedTake()
     setState('idle')
@@ -269,6 +310,8 @@ export function useKaraokeVoiceCaptureController(
   onCleanup(() => {
     disposed = true
     generation += 1
+    playbackRequested = false
+    invalidateTransportTransition()
     discardRecorder()
     capture = null
     frames = []
