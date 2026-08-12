@@ -1190,16 +1190,33 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
       .filter(([, def]) => def.access === 'user')
       .map(([table]) => table)
 
+    const erased = (table: string): boolean =>
+      deletions.some(
+        (sql) =>
+          sql.includes(`DELETE FROM "${table}"`) ||
+          sql.includes(`DELETE FROM ${table} `),
+      )
+
     expect(userScoped).toContain('songManifests')
-    const missing = userScoped.filter(
-      (table) =>
-        !deletions.some(
-          (sql) =>
-            sql.includes(`DELETE FROM "${table}"`) ||
-            sql.includes(`DELETE FROM ${table} `),
-        ),
+    expect(userScoped.filter((table) => !erased(table))).toEqual([])
+
+    // The registry above only sees SYNCED entities. Tables that are
+    // deliberately worker-internal — an OAuth secret, a reset token — are
+    // absent from tables.ts on purpose, which means no registry-driven check
+    // can see them either, and the ONLY thing erasing them is a line in
+    // USER_OWNED_TABLES. `googleDriveTokens` shipped without that line: a
+    // deleted account kept a Google refresh token keyed to a user id that no
+    // longer existed. Listing them here by hand is the point — a new
+    // worker-internal user-keyed table has to be added to this list, and it
+    // fails until it is also erased.
+    const workerInternalUserKeyed = [
+      'googleDriveTokens',
+      'passwordResets',
+      'emailVerifications',
+    ]
+    expect(workerInternalUserKeyed.filter((table) => !erased(table))).toEqual(
+      [],
     )
-    expect(missing).toEqual([])
   })
 
   it('does not purge an email-keyed grant for an unverified account', async () => {
