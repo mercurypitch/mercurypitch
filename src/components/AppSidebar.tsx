@@ -1,34 +1,23 @@
 // ============================================================
-// AppSidebar — Shared sidebar component
-// Contains: Key/Scale controls, Grid toggle, NoteList, PitchDisplay, Stats
-// Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
+// AppSidebar — the one rail, shell only
 // ============================================================
+//
+// The shell owns the mechanics (collapse, mobile close, the universal
+// Learn/Guide/Tour header) and nothing else. WHAT the rail shows is the
+// per-tab decision of src/features/sidebar/sidebar-registry.ts — this
+// component just renders that tab's panel list in order. On phones the
+// same component is the off-canvas drawer, so the registry decides
+// drawer content too.
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { CharacterIcons } from '@/components/CharacterIcons'
-import { CollapsibleSection } from '@/components/CollapsibleSection'
-import { IconDiamond } from '@/components/exercise-icons'
-import { LibraryTab } from '@/components/LibraryTab'
-import { NoteList } from '@/components/NoteList'
-import { SafeSelect } from '@/components/shared/SafeSelect'
-import { StreakCalendar } from '@/components/StreakCalendar'
-import { CalendarHeatmap } from '@/features/practice-intelligence/components/CalendarHeatmap'
-import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
-import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
-import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, hasPageTour, showNotification, startPageTour, } from '@/stores'
-import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
-import { melodyStore } from '@/stores/melody-store'
-import { setShowSidebarNoteList, showSidebarNoteList, uiMode, } from '@/stores/settings-store'
-import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
-import type { MelodyItem, NoteResult, PitchResult } from '@/types'
+import { SidebarHostProvider } from '@/features/sidebar/sidebar-host'
+import { SIDEBAR_PANELS, sidebarPanelIdsFor, } from '@/features/sidebar/sidebar-registry'
+import { activeTab as appActiveTab, hasPageTour, startPageTour, } from '@/stores'
+import type { MelodyItem, NoteResult } from '@/types'
 import styles from './AppSidebar.module.css'
-import { MicSensitivityControls } from './MicSensitivityControls'
 
 interface AppSidebarProps {
-  /** Called when a preset is loaded */
-  onPresetLoad?: (name: string) => void
   /** For octave shift handler from parent */
   onOctaveShift?: (delta: number) => void
   /** Open scale builder modal */
@@ -37,14 +26,11 @@ interface AppSidebarProps {
   onOpenLearn?: () => void
   /** Open Guide tours */
   onOpenGuide?: () => void
-  /** Note list props (Practice tab) */
+  /** Note list feed (Singing tab) */
   melody: () => MelodyItem[]
   currentNoteIndex: () => number
   noteResults: () => NoteResult[]
   isPlaying: () => boolean
-  /** Pitch display props (Practice tab) */
-  pitch: () => PitchResult | null
-  targetNoteName: () => string | null
   /** Additional CSS class (e.g. 'open' for mobile toggle) */
   class?: string
   /** Called when the mobile close button is clicked */
@@ -60,40 +46,6 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
-  // The octave shown between the up/down buttons is the reference grid's
-  // root octave, read off the scale itself (built high→low, so the root is
-  // the last row). Derived rather than kept as local state so it stays
-  // right when a loaded melody re-anchors the grid underneath the sidebar.
-  const viewOctave = (): number => {
-    const scale = melodyStore.currentScale()
-    return scale.length > 0
-      ? scale[scale.length - 1].octave
-      : melodyStore.getCurrentOctave()
-  }
-
-  // Octave up/down transposes the melody and moves the grid with it on every
-  // surface, matching Compose and the mobile options sheet. The old
-  // practice-tab behavior moved only the reference grid — invisible since
-  // the singing stage started fitting its view to the melody, which read as
-  // the button doing nothing.
-  const handleViewOctaveShift = (delta: number): void => {
-    props.onOctaveShift?.(delta)
-  }
-  const isPracticeOrSettingsTab = () =>
-    ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())
-
-  // Mic device + sensitivity are available on EVERY tab.
-  //
-  // They used to be gated to a list of tabs that drive the shared practice
-  // engine, which left Home, the Path and Jam without them — so wanting to
-  // change a room preset meant navigating to a tab that happened to expose
-  // it. The sensitivity preset is one global setting
-  // (pitchperfect_sensitivity_preset) applied wherever pitch is next
-  // detected, so there is no tab where changing it is meaningless.
-  //
-  // The old comment claimed Karaoke was excluded while TAB_KARAOKE was in
-  // the list — the kind of drift that outlives whatever it described.
-  const isMicTab = (): boolean => true
 
   return (
     <aside
@@ -137,7 +89,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </svg>
       </button>
 
-      {/* Learn + Guide buttons */}
+      {/* Learn + Guide buttons — universal, above every panel */}
       <div class={styles.walkthroughControlGroup} data-tour="singing.guides">
         <button
           class={styles.walkthroughControlBtn}
@@ -185,331 +137,27 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </Show>
       </div>
 
-      <CollapsibleSection title="Character" storageKey="sidebar-character-open">
-        <CharacterIcons
-          onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
-        />
-      </CollapsibleSection>
-
-      {/* Library — right after the character icons. */}
-      <div class={styles.sidebarSection}>
-        <LibraryTab />
-      </div>
-
-      {/* Playback Setup section */}
-      <Show when={showPlaybackSetupInfo()}>
-        <CollapsibleSection
-          title="Playback Setup"
-          storageKey="sidebar-playback-open"
-          defaultOpen={false}
-        >
-          <div class={styles.scaleInfo} data-tour="singing.key-scale">
-            <SafeSelect
-              class={['dropdown-select-style', styles.keySelect].join(' ')}
-              id="key-select"
-              value={keyName()}
-              onChange={(e) => {
-                const newKey = e.currentTarget.value
-                const currentKey = keyName()
-
-                // In Editor tab, the key dropdown is an editing operation and
-                // may transpose the actual melody. In Practice/sidebar usage it
-                // must be view-only: update key/scale display, but never write
-                // transposed notes back into the user's melody.
-                const melody = melodyStore.getCurrentItems()
-                if (activeTab() === TAB_COMPOSE && melody.length > 0) {
-                  const currentOffset = KEY_OFFSETS[currentKey] ?? 0
-                  const newOffset = KEY_OFFSETS[newKey] ?? 0
-                  const delta = newOffset - currentOffset
-
-                  if (delta !== 0) {
-                    const transposed = melody.map((item) => {
-                      const newMidi = item.note.midi + delta
-                      const { name, octave } = midiToNote(newMidi)
-                      return {
-                        ...item,
-                        note: {
-                          ...item.note,
-                          midi: newMidi,
-                          name,
-                          octave,
-                          freq: midiToFreq(newMidi),
-                        },
-                      }
-                    })
-                    melodyStore.setMelody(transposed)
-                  }
-                }
-
-                setKeyName(newKey)
-                melodyStore.refreshScale(
-                  newKey,
-                  melodyStore.getCurrentOctave(),
-                  scaleType(),
-                )
-              }}
-            >
-              <option value="C">C</option>
-              <option value="G">G</option>
-              <option value="D">D</option>
-              <option value="A">A</option>
-              <option value="E">E</option>
-              <option value="B">B</option>
-              <option value="F">F</option>
-              <option value="Bb">Bb</option>
-            </SafeSelect>
-
-            <div class={styles.octaveCtrl} data-testid="octave-ctrl">
-              <button
-                class={styles.octaveBtn}
-                data-testid="octave-btn-down"
-                title="Lower octave"
-                aria-label="Lower octave"
-                onClick={() => handleViewOctaveShift(-1)}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
-                  />
-                </svg>
-              </button>
-              <span class={styles.octaveValue} data-testid="octave-value">
-                {viewOctave()}
-              </span>
-              <button
-                class={styles.octaveBtn}
-                data-testid="octave-btn-up"
-                title="Higher octave"
-                aria-label="Higher octave"
-                onClick={() => handleViewOctaveShift(1)}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <SafeSelect
-              id="scale-select"
-              class={['dropdown-select-style', styles.scaleSelect].join(' ')}
-              value={scaleType()}
-              onChange={(e) => {
-                const st = e.currentTarget.value
-                setScaleType(st)
-                melodyStore.refreshScale(
-                  keyName(),
-                  melodyStore.getCurrentOctave(),
-                  st,
-                )
-              }}
-            >
-              <option value="major">Major</option>
-              <option value="natural-minor">Minor (Natural)</option>
-              <option value="harmonic-minor">Harmonic Minor</option>
-              <option value="melodic-minor">Melodic Minor</option>
-              <option value="dorian">Dorian</option>
-              <option value="mixolydian">Mixolydian</option>
-              <option value="phrygian">Phrygian</option>
-              <option value="lydian">Lydian</option>
-              <option value="pentatonic-major">Pentatonic Major</option>
-              <option value="pentatonic-minor">Pentatonic Minor</option>
-              <option value="blues">Blues</option>
-              <option value="chromatic">Chromatic</option>
-              {/* Custom scales saved by the user */}
-              <Show when={Object.keys(customScalesMap()).length > 0}>
-                <option disabled class={styles.customScaleSeparator}>
-                  {'─── Custom Scales ───'}
-                </option>
-                <For each={Object.keys(customScalesMap()).sort()}>
-                  {(name) => (
-                    <option
-                      class={styles.customScaleOption}
-                      value={customScaleTypeId(name, customScalesMap()[name])}
-                    >
-                      <IconDiamond size={12} /> {name}
-                    </option>
-                  )}
-                </For>
-              </Show>
-            </SafeSelect>
-            <button
-              id="open-scale-builder"
-              class={[
-                'ctrl-btn',
-                'roll-ctrl-btn',
-                styles.openScaleBuilder,
-              ].join(' ')}
-              title="Build custom scale"
-              onClick={() => props.onOpenScaleBuilder?.()}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                style={{ 'margin-right': '4px' }}
-              >
-                <path
-                  fill="currentColor"
-                  d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"
-                />
-              </svg>
-              Custom
-            </button>
-          </div>
-        </CollapsibleSection>
-      </Show>
-
-      {/* Mic & sensitivity controls — on every pitch-detection tab. */}
-      <Show when={isMicTab()}>
-        <CollapsibleSection
-          title="Mic & Sensitivity"
-          storageKey="sidebar-mic-open"
-        >
-          <div data-tour="singing.mic-sensitivity">
-            <MicSensitivityControls onAutoCalibrate={props.onAutoCalibrate} />
-          </div>
-        </CollapsibleSection>
-      </Show>
-
-      {/* Daily Routine */}
-      <div class={styles.sidebarSection} data-tour="singing.daily-routine">
-        <DailyRoutinePanel />
-      </div>
-
-      {/* Activity — streak calendar + practice heatmap. Recent-session scores
-          moved to the top-right canvas scoreboard (SingingCanvasHud).
-          Simple mode keeps the sidebar to practice essentials. */}
-      <Show when={uiMode() === 'advanced'}>
-        <CollapsibleSection title="Activity" storageKey="sidebar-activity-open">
-          <div data-tour="singing.activity">
-            <StreakCalendar />
-            <div class={styles.heatmapWrapper}>
-              <CalendarHeatmap weeks={8} />
-            </div>
-          </div>
-        </CollapsibleSection>
-      </Show>
-
-      {/* Note list (bottom-anchored) */}
-      <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
-        <div
-          class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}
-        >
-          <NoteList
-            melody={props.melody}
-            currentNoteIndex={props.currentNoteIndex}
-            noteResults={props.noteResults}
-            isPlaying={props.isPlaying}
-          />
-        </div>
-      </Show>
-
-      {/* Display & visibility toggles — last; collapsible. Hidden in simple
-          mode: the practice-first UI keeps canvas defaults. */}
-      <Show when={uiMode() === 'advanced'}>
-        <CollapsibleSection title="Display" storageKey="sidebar-display-open">
-          <div class={styles.visGrid} data-tour="singing.display">
-            <div class={styles.visGridCell}>
-              <span class={styles.visGridLabel}>Ball</span>
-              <label
-                class={['settings-toggle', styles.visGridToggle].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={showPlaybackBall()}
-                  onChange={(e) => {
-                    const v = e.currentTarget.checked
-                    setShowPlaybackBall(v)
-                    if (!v && !showPlayhead()) setShowPlayhead(true)
-                  }}
-                />
-                <span class="settings-slider" />
-              </label>
-            </div>
-            <div class={styles.visGridCell}>
-              <span class={styles.visGridLabel}>Playhead</span>
-              <label
-                class={['settings-toggle', styles.visGridToggle].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={showPlayhead()}
-                  onChange={(e) => {
-                    const v = e.currentTarget.checked
-                    setShowPlayhead(v)
-                    if (!v && !showPlaybackBall()) setShowPlaybackBall(true)
-                  }}
-                />
-                <span class="settings-slider" />
-              </label>
-            </div>
-            <div class={styles.visGridCell}>
-              <span class={styles.visGridLabel}>Grid</span>
-              <label
-                class={['settings-toggle', styles.visGridToggle].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={gridLinesVisible()}
-                  onChange={(e) => {
-                    setGridLinesVisible(e.currentTarget.checked)
-                  }}
-                />
-                <span class="settings-slider" />
-              </label>
-            </div>
-            <div class={styles.visGridCell}>
-              <span class={styles.visGridLabel}>Notes</span>
-              <label
-                class={['settings-toggle', styles.visGridToggle].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={showSidebarNoteList()}
-                  onChange={(e) => {
-                    setShowSidebarNoteList(e.currentTarget.checked)
-                  }}
-                />
-                <span class="settings-slider" />
-              </label>
-            </div>
-            <div class={styles.visGridCell}>
-              <span class={styles.visGridLabel}>Stats</span>
-              <label
-                class={['settings-toggle', styles.visGridToggle].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={showStats()}
-                  onChange={(e) => {
-                    setShowStats(e.currentTarget.checked)
-                  }}
-                />
-                <span class="settings-slider" />
-              </label>
-            </div>
-            <div class={styles.visGridCell}>
-              <span class={styles.visGridLabel}>Pitch</span>
-              <label
-                class={['settings-toggle', styles.visGridToggle].join(' ')}
-              >
-                <input
-                  type="checkbox"
-                  checked={showPitchDisplay()}
-                  onChange={(e) => {
-                    setShowPitchDisplay(e.currentTarget.checked)
-                  }}
-                />
-                <span class="settings-slider" />
-              </label>
-            </div>
-          </div>
-        </CollapsibleSection>
-      </Show>
+      {/* The tab's panels, in registry order. */}
+      <SidebarHostProvider
+        host={{
+          onOctaveShift: (delta) => props.onOctaveShift?.(delta),
+          onOpenScaleBuilder: () => props.onOpenScaleBuilder?.(),
+          onAutoCalibrate: props.onAutoCalibrate,
+          noteList: {
+            melody: props.melody,
+            currentNoteIndex: props.currentNoteIndex,
+            noteResults: props.noteResults,
+            isPlaying: props.isPlaying,
+          },
+        }}
+      >
+        <For each={[...sidebarPanelIdsFor(activeTab())]}>
+          {(id) => {
+            const Panel = SIDEBAR_PANELS[id]
+            return <Panel />
+          }}
+        </For>
+      </SidebarHostProvider>
     </aside>
   )
 }
