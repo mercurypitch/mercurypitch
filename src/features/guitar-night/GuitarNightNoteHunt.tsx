@@ -5,15 +5,15 @@
 // never marks a physical location on the player's behalf.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Mic } from '@/components/icons'
+import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
 import type { NoteHuntState } from '@/features/guitar/activities/note-hunt'
 import { createGuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputError } from './GuitarNightInputError'
-import { GuitarNightInputPicker } from './GuitarNightInputPicker'
+import { GuitarNightLearnActivityShell } from './GuitarNightLearnActivity'
+import { GuitarNightLearnListeningControls } from './GuitarNightLearnListeningControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightNoteHuntController } from './useGuitarNightNoteHuntController'
@@ -41,9 +41,7 @@ const NOTE_HUNT_STAGE: GuitarPerformanceStageSource = {
 
 export function GuitarNightNoteHunt(props: GuitarNightNoteHuntProps) {
   let room!: HTMLElement
-  let heading!: HTMLHeadingElement
   let listeningAction: HTMLButtonElement | undefined
-  const [adjustOpen, setAdjustOpen] = createSignal(false)
   const band = createGuitarRoomBand()
   const listening = useGuitarListeningController({
     activateAudio: async () => (await band.activate()) !== null,
@@ -62,18 +60,6 @@ export function GuitarNightNoteHunt(props: GuitarNightNoteHuntProps) {
     () =>
       listening.status() === 'requesting' || listening.status() === 'listening',
   )
-  const listeningLabel = createMemo(() =>
-    isListening() ? 'Stop listening' : 'Start listening',
-  )
-
-  const toggleListening = (): void => {
-    if (isListening()) {
-      listening.stop()
-      return
-    }
-    void listening.start()
-  }
-
   const leave = (): void => {
     listening.stop()
     props.onBack()
@@ -94,44 +80,23 @@ export function GuitarNightNoteHunt(props: GuitarNightNoteHuntProps) {
     listening.stop()
   })
 
-  onMount(() => {
-    props.headingRef?.(heading)
-    heading.focus({ preventScroll: true })
-  })
   onCleanup(() => {
     listening.stop()
     void band.dispose()
   })
 
   return (
-    <section
-      ref={room}
-      class={styles.noteHuntRoom}
-      data-testid="guitar-night-note-hunt"
-      data-stage-scope="true"
+    <GuitarNightLearnActivityShell
+      testId="guitar-night-note-hunt"
+      name="Note Hunt"
+      title={`Find every ${hunt.round().targetNoteName}.`}
+      progress={`${hunt.foundCount()} of ${hunt.round().targetPositions.length} marked`}
+      roomRef={(element) => {
+        room = element
+      }}
+      headingRef={props.headingRef}
+      onBack={leave}
     >
-      <div class={styles.roomHeadingRow}>
-        <div class={styles.roomIdentity}>
-          <button
-            class={styles.roomBack}
-            type="button"
-            aria-label="Back from Note Hunt"
-            onClick={leave}
-          >
-            <ChevronLeft />
-          </button>
-          <div>
-            <p class={styles.eyebrow}>Learn · Note Hunt</p>
-            <h1 ref={heading} tabindex="-1">
-              Find every {hunt.round().targetNoteName}.
-            </h1>
-          </div>
-        </div>
-        <span class={styles.noteHuntHeadingProgress}>
-          {hunt.foundCount()} of {hunt.round().targetPositions.length} marked
-        </span>
-      </div>
-
       <GuitarNightStage
         source={NOTE_HUNT_STAGE}
         active={props.active}
@@ -180,22 +145,13 @@ export function GuitarNightNoteHunt(props: GuitarNightNoteHuntProps) {
           <Show
             when={hunt.complete()}
             fallback={
-              <button
-                ref={listeningAction}
-                type="button"
-                class={styles.noteHuntListen}
-                aria-pressed={isListening()}
-                disabled={listening.status() === 'requesting'}
-                onClick={toggleListening}
-              >
-                <span aria-hidden="true">
-                  <Mic />
-                </span>
-                <span>
-                  <strong>{listeningLabel()}</strong>
-                  <small>Pitch only · tap marks the position</small>
-                </span>
-              </button>
+              <GuitarNightLearnListeningControls
+                controller={listening}
+                hint="Pitch only · tap marks the position"
+                actionRef={(element) => {
+                  listeningAction = element
+                }}
+              />
             }
           >
             <button
@@ -207,43 +163,6 @@ export function GuitarNightNoteHunt(props: GuitarNightNoteHuntProps) {
               <small>New target, same small fret window</small>
             </button>
           </Show>
-
-          <details
-            class={styles.noteHuntAdjust}
-            onToggle={(event) => setAdjustOpen(event.currentTarget.open)}
-          >
-            <summary>Adjust input</summary>
-            <Show when={adjustOpen()}>
-              <div>
-                <GuitarNightInputPicker
-                  profile={listening.inputProfile}
-                  profileLabel={listening.inputProfileLabel}
-                  audioInputs={listening.audioInputs}
-                  selectedAudioInputId={listening.selectedAudioInputId}
-                  midiInputs={listening.midiInputs}
-                  selectedMidiInputId={listening.selectedMidiInputId}
-                  midiStatus={listening.midiConnectionStatus}
-                  evidenceExportEnabled={listening.evidenceExportEnabled}
-                  canExportEvidence={listening.canExportEvidence}
-                  switching={() =>
-                    listening.status() === 'requesting' ||
-                    listening.inputTakeoverPending() ||
-                    listening.midiConnectionStatus() === 'requesting'
-                  }
-                  onProfile={(kind) => void listening.selectInputProfile(kind)}
-                  onAudioInput={(deviceId) =>
-                    void listening.selectAudioInput(deviceId)
-                  }
-                  onMidiInput={(deviceId) =>
-                    void listening.selectMidiInput(deviceId)
-                  }
-                  onRefreshAudio={() => void listening.refreshAudioInputs()}
-                  onRefreshMidi={() => void listening.refreshMidiInputs()}
-                  onExportEvidence={listening.exportEvidenceReport}
-                />
-              </div>
-            </Show>
-          </details>
         </div>
       </div>
 
@@ -253,6 +172,6 @@ export function GuitarNightNoteHunt(props: GuitarNightNoteHuntProps) {
         takeoverPending={listening.inputTakeoverPending}
         onTakeOver={() => void listening.useInputHere()}
       />
-    </section>
+    </GuitarNightLearnActivityShell>
   )
 }

@@ -5,15 +5,18 @@
 // stage remains mounted beneath it. Choosing an activity never starts sound,
 // capture, a count-in, or a timer.
 
-import { onCleanup, onMount } from 'solid-js'
+import { For, onCleanup, onMount } from 'solid-js'
 import type { GuitarFirstWinProgressV1 } from './first-win-progress'
 import styles from './GuitarNightApp.module.css'
+import type { GuitarNightLearnActivityId } from './GuitarNightLearnActivity'
+import { GUITAR_NIGHT_LEARN_ACTIVITIES } from './GuitarNightLearnActivity'
 
 interface GuitarNightLearnShelfProps {
   firstWinProgress: GuitarFirstWinProgressV1
-  initialFocus?: 'first-steps' | 'note-hunt'
+  tuningLabel: string
+  initialFocus?: GuitarNightLearnActivityId
   onFirstSteps(): void
-  onNoteHunt(): void
+  onActivity(activity: Exclude<GuitarNightLearnActivityId, 'first-steps'>): void
   onClose(): void
 }
 
@@ -53,7 +56,10 @@ function firstStepsCopy(progress: GuitarFirstWinProgressV1): {
 export function GuitarNightLearnShelf(props: GuitarNightLearnShelfProps) {
   let dialog!: HTMLDivElement
   let firstAction!: HTMLButtonElement
-  let noteHuntAction!: HTMLButtonElement
+  const activityActions = new Map<
+    GuitarNightLearnActivityId,
+    HTMLButtonElement
+  >()
 
   onMount(() => {
     const shell = dialog.closest<HTMLElement>(
@@ -66,7 +72,9 @@ export function GuitarNightLearnShelf(props: GuitarNightLearnShelfProps) {
     document.body.style.overflow = 'hidden'
 
     const focusTarget =
-      props.initialFocus === 'note-hunt' ? noteHuntAction : firstAction
+      props.initialFocus === undefined || props.initialFocus === 'first-steps'
+        ? firstAction
+        : (activityActions.get(props.initialFocus) ?? firstAction)
     focusTarget.focus({ preventScroll: true })
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
@@ -154,24 +162,27 @@ export function GuitarNightLearnShelf(props: GuitarNightLearnShelfProps) {
             </b>
           </button>
 
-          <button
-            ref={noteHuntAction}
-            type="button"
-            class={styles.learnSetlistRow}
-            onClick={() => props.onNoteHunt()}
-          >
-            <span>02</span>
-            <span>
-              <strong>Note Hunt</strong>
-              <small>Find one note in every place it lives near the nut.</small>
-            </span>
-            <b aria-hidden="true">Open</b>
-          </button>
+          <For each={GUITAR_NIGHT_LEARN_ACTIVITIES}>
+            {(activity, index) => (
+              <button
+                ref={(element) => activityActions.set(activity.id, element)}
+                type="button"
+                class={styles.learnSetlistRow}
+                onClick={() => props.onActivity(activity.id)}
+              >
+                <span>{String(index() + 2).padStart(2, '0')}</span>
+                <span>
+                  <strong>{activity.label}</strong>
+                  <small>{activity.detail}</small>
+                </span>
+                <b aria-hidden="true">Open</b>
+              </button>
+            )}
+          </For>
         </div>
 
         <p class={styles.learnShelfFootnote}>
-          Hear &amp; Find, Echo a Phrase, and Shape Walk will join this same
-          setlist as they are rebuilt for the room.
+          This set keeps {props.tuningLabel} until you return to the room.
         </p>
       </div>
     </div>

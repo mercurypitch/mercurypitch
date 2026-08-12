@@ -273,6 +273,46 @@ describe('GuitarNightStage views', () => {
     })
   })
 
+  it('names chord-tone roles independently of their visual marker', () => {
+    render(() => (
+      <GuitarNightStage
+        source={SOURCE}
+        active={() => true}
+        initialMode="neck"
+        availableViews={() => ['neck']}
+        showHeader={() => false}
+        neckInteraction={{
+          frets: () => [0],
+          cellState: (position) => {
+            if (position.stringIndex === 0) return 'root'
+            if (position.stringIndex === 1) return 'third'
+            if (position.stringIndex === 2) return 'fifth'
+            return 'idle'
+          },
+          cellLabel: (position, state) =>
+            `${position.midi}, ${state === 'third' ? 'major third' : state}`,
+          onSelect: vi.fn(),
+        }}
+      />
+    ))
+
+    expect(
+      screen.getByRole('button', {
+        name: 'string 1, high E, open, 64, root',
+      }),
+    ).toHaveAttribute('data-state', 'root')
+    expect(
+      screen.getByRole('button', {
+        name: 'string 2, B, open, 59, major third',
+      }),
+    ).toHaveAttribute('data-state', 'third')
+    expect(
+      screen.getByRole('button', {
+        name: 'string 3, G, open, 55, fifth',
+      }),
+    ).toHaveAttribute('data-state', 'fifth')
+  })
+
   it('names authored tuning and capo without changing the setup control contract', () => {
     const tuning: InstrumentTuning = {
       instrument: 'guitar',

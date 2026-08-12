@@ -1244,9 +1244,145 @@
   box-shadow: 0 1rem 3.4rem rgba(0, 0, 0, 0.42);
 }
 
+.learnRangeControl,
+.learnPhraseSettings label,
+.shapeWalkSettings label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.72rem;
+}
+
+.learnRangeControl select,
+.learnPhraseSettings select,
+.shapeWalkSettings select {
+  min-height: 2rem;
+  padding: 0.28rem 1.7rem 0.28rem 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 0.4rem;
+  color: var(--ivory);
+  background: #17120e;
+  font: inherit;
+  cursor: pointer;
+}
+
+.learnPhraseSettings,
+.shapeWalkSettings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.8rem;
+}
+
+.echoPhraseRail {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.echoPhraseRail > span {
+  display: grid;
+  place-items: center;
+  min-width: 1.7rem;
+  min-height: 1.7rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 50%;
+  color: rgba(244, 234, 219, 0.56);
+  font-size: 0.68rem;
+  font-weight: 740;
+  font-variant-numeric: tabular-nums;
+}
+
+.echoPhraseRail > span[data-current='true'] {
+  border-color: var(--amber-bright);
+  color: var(--amber-bright);
+  background: rgba(224, 164, 93, 0.1);
+}
+
+.echoPhraseRail > span[data-complete='true'] {
+  border-color: rgba(106, 202, 189, 0.72);
+  color: #10211e;
+  background: var(--teal);
+}
+
+.learnQuietAction {
+  min-height: var(--touch-target);
+  padding: 0.55rem 0.72rem;
+  border: 0;
+  border-radius: 0.48rem;
+  color: rgba(244, 234, 219, 0.76);
+  background: transparent;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.learnQuietAction:hover {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.06);
+}
+
+.shapeWalkPicker {
+  display: inline-flex;
+  gap: 0.14rem;
+  padding: 0.15rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.46rem;
+  background: rgba(4, 3, 3, 0.3);
+}
+
+.shapeWalkPicker button {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.2rem;
+  border: 0;
+  border-radius: 0.34rem;
+  color: rgba(244, 234, 219, 0.6);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.shapeWalkPicker button[aria-pressed='true'] {
+  color: #1a1109;
+  background: var(--amber-bright);
+}
+
+.shapeWalkLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  color: rgba(244, 234, 219, 0.68);
+  font-size: 0.7rem;
+}
+
+.shapeWalkLegend span::before {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.28rem;
+  border-radius: 50%;
+  background: rgba(244, 234, 219, 0.28);
+  content: '';
+}
+
+.shapeWalkLegend span[data-role='root']::before {
+  background: var(--amber-bright);
+}
+
+.shapeWalkLegend span[data-role='fifth']::before {
+  background: var(--teal);
+}
+
 .noteHuntListen:focus-visible,
 .noteHuntNext:focus-visible,
-.noteHuntAdjust > summary:focus-visible {
+.noteHuntAdjust > summary:focus-visible,
+.learnQuietAction:focus-visible,
+.learnRangeControl select:focus-visible,
+.learnPhraseSettings select:focus-visible,
+.shapeWalkSettings select:focus-visible,
+.shapeWalkPicker button:focus-visible {
   outline: 2px solid #f4eadb;
   outline-offset: 2px;
 }
@@ -3642,6 +3778,43 @@
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
+.neckPositionRoot::before,
+.neckPositionThird::before,
+.neckPositionFifth::before {
+  border-width: 1px;
+  border-style: solid;
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.28);
+}
+
+.neckPositionRoot::before {
+  border-color: #f8d8a9;
+  background: var(--amber-bright);
+}
+
+.neckPositionThird::before {
+  border-color: rgba(244, 234, 219, 0.82);
+  background: rgba(244, 234, 219, 0.18);
+}
+
+.neckPositionFifth::before {
+  border-color: #dff7f2;
+  background: rgba(106, 202, 189, 0.35);
+}
+
+.neckPositionGlyph {
+  position: relative;
+  z-index: 1;
+  color: var(--ivory);
+  font-size: 0.66rem;
+  font-weight: 780;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.neckPositionRoot .neckPositionGlyph {
+  color: #1a1109;
+}
+
 .neckString .neckTarget::after {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -4518,6 +4691,7 @@
 
   .noteHuntControls {
     align-items: stretch;
+    flex-wrap: wrap;
   }
 
   .noteHuntListen,
@@ -4530,6 +4704,28 @@
   .noteHuntAdjust > div {
     right: 0;
     width: min(24rem, calc(100vw - 1.1rem));
+  }
+
+  .learnRangeControl,
+  .learnPhraseSettings,
+  .shapeWalkSettings {
+    max-width: 100%;
+  }
+
+  .learnRangeControl select,
+  .learnPhraseSettings select,
+  .shapeWalkSettings select {
+    min-height: var(--touch-target);
+  }
+
+  .echoPhraseRail > span {
+    min-width: 1.55rem;
+    min-height: 1.55rem;
+  }
+
+  .shapeWalkPicker button {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
   }
 
   .main {

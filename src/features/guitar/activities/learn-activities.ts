@@ -2,13 +2,7 @@
 // ============================================================
 
 import type { CagedShapeName, FretNote } from '@/lib/guitar/caged-shapes'
-import {
-  CAGED_SHAPES,
-  computeShapeFrets,
-  findRootForShape,
-  isCagedCompatibleTuning,
-  viewRangeForFrets,
-} from '@/lib/guitar/caged-shapes'
+import { CAGED_SHAPES, computeShapeFrets, findRootForShape, isCagedCompatibleTuning, viewRangeForFrets, } from '@/lib/guitar/caged-shapes'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { soundingOpenMidi } from '@/lib/guitar/instrument-tuning'
 import { midiToNoteName, midiToNoteNameOctave } from '@/lib/note-utils'
@@ -42,7 +36,9 @@ export function learnNeckPositions(
     range.lastFret < range.firstFret ||
     range.lastFret > 24
   ) {
-    throw new RangeError('A Learn fret window must stay between frets 0 and 24.')
+    throw new RangeError(
+      'A Learn fret window must stay between frets 0 and 24.',
+    )
   }
 
   return soundingOpenMidi(tuning).flatMap((openMidi, stringIndex) =>
@@ -114,14 +110,15 @@ export function createHearFindRound(
     HEAR_FIND_LEVELS.find((candidate) => candidate.id === level) ??
     HEAR_FIND_LEVELS[0]
   const positions = learnNeckPositions(tuning, levelConfig.range)
-  const playableMidi = [...new Set(positions.map((position) => position.midi))].sort(
-    (left, right) => left - right,
-  )
+  const playableMidi = [
+    ...new Set(positions.map((position) => position.midi)),
+  ].sort((left, right) => left - right)
   if (playableMidi.length === 0) {
     throw new Error('Hear & Find needs at least one playable neck position.')
   }
   const targetIndex =
-    ((Math.round(roundIndex) * 7 + 3) % playableMidi.length + playableMidi.length) %
+    (((Math.round(roundIndex) * 7 + 3) % playableMidi.length) +
+      playableMidi.length) %
     playableMidi.length
   const targetMidi = playableMidi[targetIndex] ?? playableMidi[0]!
 
@@ -223,13 +220,16 @@ function closestMidi(
   const candidates = positions.filter(
     (position) => position.pitchClass === pitchClass,
   )
-  const best = candidates.reduce<LearnNeckPosition | null>((closest, candidate) => {
-    if (closest === null) return candidate
-    return Math.abs(candidate.midi - preferredMidi) <
-      Math.abs(closest.midi - preferredMidi)
-      ? candidate
-      : closest
-  }, null)
+  const best = candidates.reduce<LearnNeckPosition | null>(
+    (closest, candidate) => {
+      if (closest === null) return candidate
+      return Math.abs(candidate.midi - preferredMidi) <
+        Math.abs(closest.midi - preferredMidi)
+        ? candidate
+        : closest
+    },
+    null,
+  )
   if (best === null) {
     throw new Error('Echo a Phrase could not place a scale note on this neck.')
   }
@@ -249,7 +249,8 @@ export function createEchoPhrase(
   const phraseIndex = Math.max(0, Math.round(options.phraseIndex ?? 0))
   const range = { firstFret: 0, lastFret: 5 }
   const positions = learnNeckPositions(tuning, range)
-  const pattern = ECHO_PATTERNS[phraseIndex % ECHO_PATTERNS.length] ?? ECHO_PATTERNS[0]
+  const pattern =
+    ECHO_PATTERNS[phraseIndex % ECHO_PATTERNS.length] ?? ECHO_PATTERNS[0]
   const rootCandidates = positions.filter(
     (position) => position.pitchClass === rootPitchClass,
   )
@@ -263,7 +264,11 @@ export function createEchoPhrase(
     const degree = pattern[index] ?? 0
     const interval = MAJOR_SCALE[degree] ?? 0
     const pitchClass = (rootPitchClass + interval) % 12
-    const midi = closestMidi(positions, pitchClass, preferredMidi + (index === 0 ? 0 : 2))
+    const midi = closestMidi(
+      positions,
+      pitchClass,
+      preferredMidi + (index === 0 ? 0 : 2),
+    )
     preferredMidi = midi
     return { midi, pitchClass, noteName: midiToNoteName(midi) }
   })
