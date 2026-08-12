@@ -39,6 +39,8 @@ interface GuitarNightScoreRoomProps {
   onInstrument?(instrument: StringedInstrument): void
   onStringCount?(count: number): void
   onTuning?(tuning: InstrumentTuning): void
+  /** A room-level sheet parks every side effect while preserving room state. */
+  suspended?: Accessor<boolean>
   onSongs(): void
 }
 
@@ -535,6 +537,16 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     props.onSongs()
   }
 
+  createEffect(() => {
+    if (props.suspended?.() !== true) return
+    setDoctorOpen(false)
+    setDoctorRecoveryActive(false)
+    setTunerOpen(false)
+    tuner.close()
+    listening.stop()
+    room.pause()
+  })
+
   onCleanup(() => {
     disposed = true
   })
@@ -544,7 +556,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
-        ownsSpace: () => !doctorOpen() && !tunerOpen(),
+        ownsSpace: () =>
+          props.suspended?.() !== true && !doctorOpen() && !tunerOpen(),
         enabled: () => room.status() !== 'starting' && !isCalibrating(),
       }),
     )
@@ -554,6 +567,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     <section
       class={styles.roomPanel}
       data-testid="guitar-night-score-room"
+      data-stage-scope="true"
       data-room-kind="score"
     >
       <div class={styles.panelEdge} aria-hidden="true" />

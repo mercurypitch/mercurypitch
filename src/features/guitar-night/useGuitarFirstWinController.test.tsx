@@ -105,6 +105,48 @@ describe('useGuitarFirstWinController', () => {
     })
   })
 
+  it('replays from step one without erasing earned completion', () => {
+    const completed = DEFAULT_GUITAR_FIRST_WIN_CONFIG.exerciseSteps.reduce(
+      (progress, step) =>
+        completeGuitarFirstWinStep(
+          progress,
+          DEFAULT_GUITAR_FIRST_WIN_CONFIG,
+          step.id,
+        ),
+      readGuitarFirstWinProgress(DEFAULT_GUITAR_FIRST_WIN_CONFIG),
+    )
+    writeGuitarFirstWinProgress(completed)
+
+    createRoot((dispose) => {
+      const controller = useGuitarFirstWinController({
+        config: () => DEFAULT_GUITAR_FIRST_WIN_CONFIG,
+        createBand: () => createBandHarness().band,
+      })
+
+      expect(controller.progress().status).toBe('completed')
+      expect(controller.currentStep()?.id).toBe('first-one-string-tab')
+
+      controller.replayFlow()
+
+      expect(controller.currentStep()?.id).toBe('open-low-e')
+      expect(controller.hits()).toBe(0)
+      expect(controller.status()).toBe('quiet')
+      expect(controller.progress()).toEqual(completed)
+
+      for (let hit = 0; hit < 3; hit += 1) {
+        expect(controller.registerHit('touch')).toBe(true)
+      }
+      expect(controller.advanceStep()).toBe(true)
+      expect(controller.currentStep()?.id).toBe('first-one-string-tab')
+      expect(controller.progress().status).toBe('completed')
+      expect(controller.progress().completedStepIds).toEqual(
+        completed.completedStepIds,
+      )
+      expect(controller.progress().completedAt).toBe(completed.completedAt)
+      dispose()
+    })
+  })
+
   it('honors explicit configured pitches and names the sounding notes', () => {
     const config = {
       ...DEFAULT_GUITAR_FIRST_WIN_CONFIG,
