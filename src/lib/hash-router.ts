@@ -87,6 +87,7 @@ const SETTINGS_SLUG_TO_SECTION: Record<string, SettingsSection | undefined> = {
   practice: 'singing',
   karaoke: 'karaoke',
   display: 'display',
+  sync: 'sync',
   credits: 'credits',
 }
 
@@ -95,6 +96,7 @@ const SETTINGS_SECTION_TO_SLUG: Record<SettingsSection, string> = {
   singing: 'practice',
   karaoke: 'karaoke',
   display: 'display',
+  sync: 'sync',
   credits: 'credits',
 }
 

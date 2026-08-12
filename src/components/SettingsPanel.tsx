@@ -11,6 +11,7 @@ import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { SyncSettings } from '@/components/SyncSettings'
 import { ThemePicker } from '@/components/ThemePicker'
 import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
@@ -211,6 +212,19 @@ export const SettingsPanel: Component = () => {
             role="tab"
             class={styles.settingsTab}
             classList={{
+              [styles.settingsTabActive]: activeTab() === 'sync',
+            }}
+            aria-selected={activeTab() === 'sync'}
+            onClick={() => setActiveTab('sync')}
+            data-testid="settings-tab-sync"
+          >
+            Sync
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class={styles.settingsTab}
+            classList={{
               [styles.settingsTabActive]: activeTab() === 'credits',
             }}
             aria-selected={activeTab() === 'credits'}
@@ -327,6 +341,13 @@ export const SettingsPanel: Component = () => {
               <small>Unlock the whole path instead of week-by-week</small>
             </div>
           </div>
+        </Show>
+
+        <Show when={activeTab() === 'sync'}>
+          {/* Sync — what this device holds and what the account knows.
+              Deliberately not a switch: the transports that move audio are
+              still to come, and this reports rather than promises. */}
+          <SyncSettings />
         </Show>
 
         <Show when={activeTab() === 'credits'}>
