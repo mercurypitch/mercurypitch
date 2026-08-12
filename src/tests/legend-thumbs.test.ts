@@ -15,7 +15,7 @@
 // at 7.1x and nothing failed. A present-but-wrong-size file is the exact
 // shape of that bug.
 
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { LegendTier } from '@/features/mirror/LegendCaricature'
@@ -112,5 +112,44 @@ describe('legend portrait tiers', () => {
   it('returns undefined for a legend with no portrait', () => {
     expect(legendThumbSrc('nobody-by-this-name')).toBeUndefined()
     expect(legendTierSrc('nobody-by-this-name', 'mid')).toBeUndefined()
+  })
+})
+
+// ------------------------------------------------------------------
+// The mid-run twin peek hands tier selection to the browser via srcset,
+// which only works while `sizes` describes the box the CSS actually draws.
+// Nothing else couples those two files, so a width tweak in mirror.css
+// would silently leave `sizes` describing a box that no longer exists —
+// the browser would then pick against a stale width and land back on the
+// mushy portrait this whole tier system was built to prevent.
+// ------------------------------------------------------------------
+describe('twin peek portrait sizing', () => {
+  const read = (p: string): string =>
+    readFileSync(resolve(__dirname, '..', p), 'utf8')
+
+  it('keeps the img sizes attribute equal to the card width in CSS', () => {
+    const css = read('features/mirror/mirror.css')
+    const tsx = read('features/mirror/MirrorApp.tsx')
+
+    const cssWidth = css
+      .match(/\.mirror-peek-card\s*\{[^}]*?\bwidth:\s*([^;]+);/)?.[1]
+      .trim()
+    const sizes = tsx.match(/sizes="([^"]+)"/)?.[1].trim()
+
+    expect(cssWidth).toBeDefined()
+    expect(sizes).toBeDefined()
+    expect(sizes).toBe(cssWidth)
+  })
+
+  // A max-height would beat aspect-ratio and cover-crop the portrait through
+  // the face on a phone in landscape. The height budget is spent as a width
+  // cap instead, so the card shrinks whole rather than cropping.
+  it('caps the card by width, never by height', () => {
+    const css = read('features/mirror/mirror.css')
+    const block = css.match(/\.mirror-peek-card\s*\{[^}]*\}/)?.[0] ?? ''
+
+    expect(block).toContain('aspect-ratio: 4 / 5')
+    expect(block).not.toContain('max-height')
+    expect(block).toMatch(/width:\s*min\(.*vh\)/)
   })
 })
