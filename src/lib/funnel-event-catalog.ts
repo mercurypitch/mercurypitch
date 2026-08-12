@@ -55,6 +55,17 @@ export const APP_FUNNEL_EVENTS = [
   'donate_start',
   'weekly_join',
   'weekly_attempt',
+  'progress_viewed',
+  'progress_period_changed',
+  'progress_moment_opened',
+  'progress_moment_changed',
+  'progress_next_action_clicked',
+  'progress_history_filtered',
+  'progress_share_opened',
+  'progress_share_completed',
+  'progress_share_cancelled',
+  'progress_share_downloaded',
+  'progress_account_continuity_clicked',
 ] as const
 
 /** Karaoke Night (src/features/karaoke-night/funnel.ts). */

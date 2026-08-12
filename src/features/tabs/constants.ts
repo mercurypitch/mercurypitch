@@ -4,6 +4,7 @@
 
 export const TAB_HOME = 'home' as const
 export const TAB_PATH = 'path' as const
+export const TAB_PROGRESS = 'progress' as const
 export const TAB_SINGING = 'singing' as const
 export const TAB_PIANO = 'piano' as const
 export const TAB_COMPOSE = 'compose' as const
@@ -24,6 +25,7 @@ export const TAB_GUITAR = 'guitar' as const
 export type ActiveTab =
   | typeof TAB_HOME
   | typeof TAB_PATH
+  | typeof TAB_PROGRESS
   | typeof TAB_SINGING
   | typeof TAB_PIANO
   | typeof TAB_COMPOSE
@@ -62,6 +64,7 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     tabs: [
       TAB_HOME,
       TAB_PATH,
+      TAB_PROGRESS,
       TAB_SINGING,
       TAB_PIANO,
       TAB_GUITAR,
@@ -106,6 +109,9 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_HOME]: ['singing', 'guitar', 'piano'],
   // The Ascent guided path — every instrument's daily practice feeds it.
   [TAB_PATH]: ['singing', 'guitar', 'piano'],
+  // Progress is a cross-practice destination. Voice data leads today; the
+  // contract remains instrument-neutral as measured piano/guitar records land.
+  [TAB_PROGRESS]: ['singing', 'guitar', 'piano'],
   [TAB_SINGING]: ['singing'],
   [TAB_PIANO]: ['piano'],
   [TAB_GUITAR]: ['guitar'],
@@ -183,6 +189,7 @@ export type WalkthroughTab = ActiveTab | typeof WALKTHROUGH_TAB_STUDY
 const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_HOME]: 'home',
   [TAB_PATH]: 'path',
+  [TAB_PROGRESS]: 'progress',
   [TAB_SINGING]: 'singing',
   [TAB_PIANO]: 'piano',
   [TAB_COMPOSE]: 'compose',
@@ -215,6 +222,7 @@ export function tabLabel(tab: ActiveTab): string {
   const labels: Record<ActiveTab, string> = {
     [TAB_HOME]: 'Home',
     [TAB_PATH]: 'Path',
+    [TAB_PROGRESS]: 'Progress',
     [TAB_SINGING]: 'Singing',
     [TAB_PIANO]: 'Piano',
     [TAB_COMPOSE]: 'Compose',
