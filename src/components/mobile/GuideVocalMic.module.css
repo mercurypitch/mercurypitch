@@ -1,0 +1,16 @@
+/* GuideVocalMic — the 3D stage mic used by the guide-vocal pills. */
+
+.mic {
+  display: block;
+  /* The asset is a fixed 128px square, so it is always downscaled. Both
+     consumers sit inside a flex-centred capsule; the explicit box stops the
+     image from being stretched by the capsule's own sizing. */
+  flex: none;
+  object-fit: contain;
+  /* It is a picture, not a glyph: it must not inherit the pill's `color`
+     transitions or pick up a text drag ghost. */
+  user-select: none;
+  -webkit-user-drag: none;
+  /* A lit object needs a little separation from the glass behind it. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}

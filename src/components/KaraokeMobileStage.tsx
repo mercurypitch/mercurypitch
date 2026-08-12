@@ -23,7 +23,8 @@ import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
 import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
-import { AutoplayIcon, ChevronLeftIcon, MicIcon, MicSparkleIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import { GuideVocalMic } from '@/components/mobile/GuideVocalMic'
+import { AutoplayIcon, ChevronLeftIcon, MicIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -799,7 +800,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         }
         ariaLabel="Toggle guide vocals (drag to set their level)"
       >
-        <MicSparkleIcon />
+        <GuideVocalMic muted={vocalsOff()} />
       </PillControl>
 
       {/* ── Bottom bar ─────────────────────────────────────── */}
