@@ -33,6 +33,19 @@
   flex: none;
 }
 
+.labelledTrigger {
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  gap: 0.45rem;
+  padding: 0 0.65rem;
+  border-radius: 8px;
+}
+
+.triggerLabel {
+  white-space: nowrap;
+}
+
 .trigger:hover,
 .trigger[aria-expanded='true'] {
   color: var(--accent);

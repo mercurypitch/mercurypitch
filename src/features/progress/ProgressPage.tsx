@@ -16,7 +16,8 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
-import { AlertTriangle, History, Info, Repeat, RotateCcw, Share, Trophy, Voice, } from '@/components/icons'
+import { AlertTriangle, History, Repeat, RotateCcw, Share, Trophy, Voice, } from '@/components/icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import styles from './ProgressPage.module.css'
 
 export type ProgressSurfaceStatus = 'loading' | 'ready' | 'empty' | 'error'
@@ -779,13 +780,17 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                       </Show>
                     </div>
 
-                    <details class={styles.whyMoment}>
-                      <summary>
-                        <Info /> Why this?
-                      </summary>
-                      <p>{snapshot().moment.reason}</p>
-                      <span>{snapshot().moment.confidenceLabel}</span>
-                    </details>
+                    <div class={styles.whyMoment}>
+                      <InfoPopover
+                        class={styles.whyMomentTrigger}
+                        panelClass={styles.whyMomentPanel}
+                        label="Why this moment was selected"
+                        triggerLabel="Why this?"
+                      >
+                        <p>{snapshot().moment.reason}</p>
+                        <span>{snapshot().moment.confidenceLabel}</span>
+                      </InfoPopover>
+                    </div>
 
                     <Show when={(snapshot().alternateMoments?.length ?? 0) > 0}>
                       <div class={styles.momentAlternates}>
