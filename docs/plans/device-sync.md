@@ -283,6 +283,12 @@ This does not change the case for portable bundles; it strengthens it. AAC
   story on iOS**, not a separate PWA nicety, and the Sync page should report
   whether persistent storage was actually granted rather than leaving
   `ensurePersistentStorage()`'s outcome invisible.
+- **Confirmed on the device, 2026-08-12:** in Safari the persistence request
+  was refused; after adding MercuryPitch to the Home Screen it was granted.
+  So on iOS installing is not a nicety, it is the mechanism -- and it is
+  reachable today via Share -> Add to Home Screen, with the side benefit of
+  dropping the browser chrome. The Sync page says so on exactly the devices
+  where it applies.
 - **Still worth running:** leave an iOS install alone for a week or two with a
   song in it, and see whether it survives. That is the measurement that decides
   whether a phone can be trusted to hold a library at all.
