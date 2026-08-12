@@ -3,6 +3,7 @@ import type { Env } from './auth'
 import { getAuth, handleAuth } from './auth'
 import { AccountSuspendedError } from './moderation'
 import { resolvePremiumBackgroundAccess } from './premium-background-access'
+import { TABLES } from './tables'
 
 interface UserRecord {
   id: string
@@ -328,10 +329,13 @@ class AuthDatabase {
   readonly premiumAudit: PremiumAuditRecord[] = []
   readonly premiumGroupMembers = new Map<string, PremiumGroupMemberRecord>()
   readonly premiumGroupPerks = new Map<string, string[]>()
+  /** Every statement this database was asked to build, normalized. */
+  readonly preparedSql: string[] = []
   failProviderLookup = false
 
   prepare(sql: string): AuthStatement {
     const normalized = sql.replace(/\s+/g, ' ').trim()
+    this.preparedSql.push(normalized)
     if (
       this.failProviderLookup &&
       normalized === 'SELECT * FROM users WHERE providerId = ?'
@@ -1144,6 +1148,59 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
     expect(db.users.has(userId)).toBe(false)
     return perks.deletedEmails
   }
+
+  /**
+   * The regression this pins: `songManifests` shipped in
+   * `0025_song_manifests.sql` without being added to `USER_OWNED_TABLES`, and
+   * it declares no foreign key, so nothing cascaded it either. A deleted
+   * account's entire song library — titles, durations, stem sizes — stayed in
+   * D1 forever under an id that belonged to nobody.
+   *
+   * Asserting against the table registry rather than a hand-written list is
+   * the point: the next `access: 'user'` table cannot be forgotten, because
+   * adding it to `tables.ts` without wiring erasure fails here.
+   */
+  it('erases every user-scoped table in the registry', async () => {
+    const db = new AuthDatabase()
+    const perks = new PerksDatabase()
+    const env = makeEnv(db, perks)
+    const auth = await postAuth(
+      'register',
+      {
+        email: 'erasure@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      env,
+    )
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+    expect(response?.status).toBe(200)
+
+    const deletions = db.preparedSql.filter((sql) => sql.startsWith('DELETE '))
+    const userScoped = Object.entries(TABLES)
+      .filter(([, def]) => def.access === 'user')
+      .map(([table]) => table)
+
+    expect(userScoped).toContain('songManifests')
+    const missing = userScoped.filter(
+      (table) =>
+        !deletions.some(
+          (sql) =>
+            sql.includes(`DELETE FROM "${table}"`) ||
+            sql.includes(`DELETE FROM ${table} `),
+        ),
+    )
+    expect(missing).toEqual([])
+  })
 
   it('does not purge an email-keyed grant for an unverified account', async () => {
     expect(await registerAndDelete(0)).toEqual([])
