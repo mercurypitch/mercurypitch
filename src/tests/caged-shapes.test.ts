@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { CAGED_ORDER, CAGED_SHAPES, computeShapeFrets, findRootForShape, } from '@/lib/guitar/caged-shapes'
+import { CAGED_ORDER, CAGED_SHAPES, computeShapeFrets, findRootForShape, isCagedCompatibleTuning, } from '@/lib/guitar/caged-shapes'
 import { OPEN_MIDI } from '@/lib/guitar/constants'
+import { instrumentTuningFromSource, standardTuning, } from '@/lib/guitar/instrument-tuning'
 
 describe('CAGED_SHAPES', () => {
   it('every shape places its own root on a playable fret at its rootString', () => {
@@ -40,6 +41,20 @@ describe('CAGED_SHAPES', () => {
     }
   })
 
+  it('labels only real major-triad chord tones in every shape', () => {
+    for (const name of CAGED_ORDER) {
+      const shape = CAGED_SHAPES[name]
+      const rootMidi = findRootForShape(shape, 48)
+      const notes = computeShapeFrets(shape, rootMidi)
+      expect(
+        notes.every((note) =>
+          [0, 4, 7].includes(((note.midi - rootMidi) % 12 + 12) % 12),
+        ),
+        `${name} shape contains a non-triad pitch`,
+      ).toBe(true)
+    }
+  })
+
   it('E-shape barre voicing matches the real open-E-chord shape moved up to the root fret', () => {
     // Concrete, independently-verifiable anchor: an E-shape barre chord is
     // just the open E chord (0-2-2-1-0-0) shifted up by the barre fret.
@@ -67,5 +82,36 @@ describe('CAGED_SHAPES', () => {
 
   it('OPEN_MIDI is high-e-first (sanity check the assumption this fix depends on)', () => {
     expect(OPEN_MIDI[0]).toBeGreaterThan(OPEN_MIDI[5])
+  })
+
+  it('adopts capo and equal-detune pitch while preserving CAGED geometry', () => {
+    const standard = standardTuning('guitar')
+    const capoTwo = instrumentTuningFromSource('guitar', standard.openMidi, {
+      capo: 2,
+    })!
+    const halfStepDown = instrumentTuningFromSource(
+      'guitar',
+      standard.openMidi.map((midi) => midi - 1),
+    )!
+
+    expect(isCagedCompatibleTuning(capoTwo)).toBe(true)
+    expect(isCagedCompatibleTuning(halfStepDown)).toBe(true)
+    const root = findRootForShape(CAGED_SHAPES.E, 48, capoTwo)
+    const notes = computeShapeFrets(CAGED_SHAPES.E, root, capoTwo)
+    expect(notes.find((note) => note.stringIndex === 5)).toMatchObject({
+      midi: root,
+      role: 'root',
+    })
+  })
+
+  it('refuses to draw standard CAGED geometry over an incompatible tuning', () => {
+    const dropD = instrumentTuningFromSource(
+      'guitar',
+      [64, 59, 55, 50, 45, 38],
+      { name: 'Drop D' },
+    )!
+
+    expect(isCagedCompatibleTuning(dropD)).toBe(false)
+    expect(computeShapeFrets(CAGED_SHAPES.E, 50, dropD)).toEqual([])
   })
 })
