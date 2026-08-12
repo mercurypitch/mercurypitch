@@ -16,6 +16,7 @@ const SCORE_UPDATE_HZ = 10
 const SCORE_ZONE_WEIGHT = 0.6
 const SCORE_DURATION_WEIGHT = 0.4
 const TARGET_DURATION_SEC = 60
+const MIN_VOICED_EVIDENCE_FRAMES = 10
 // No fresh voiced sample for this long ⇒ the singer has gone silent.
 const VOICE_GAP_SEC = 0.2
 
@@ -35,6 +36,7 @@ export function usePitchHoldController(
   let lastShrinkTime = 0
   let inZoneFrames = 0
   let totalFrames = 0
+  let voicedFrames = 0
   // Set once the singer first makes sound, so leading reaction-time silence
   // isn't counted against them (silence after they start still is).
   let hasPhonated = false
@@ -58,6 +60,7 @@ export function usePitchHoldController(
         difficultyFactor(launchDifficulty(EXERCISE_PITCH_HOLD))
     inZoneFrames = 0
     totalFrames = 0
+    voicedFrames = 0
     hasPhonated = false
     lastShrinkTime = performance.now()
 
@@ -83,7 +86,10 @@ export function usePitchHoldController(
       const latest = history[history.length - 1]
       const voiced =
         latest !== undefined && elapsed / 1000 - latest.time <= VOICE_GAP_SEC
-      if (voiced) hasPhonated = true
+      if (voiced) {
+        hasPhonated = true
+        voicedFrames++
+      }
 
       // Once singing has started, every frame counts — silence in the middle or
       // at the end now dilutes the in-zone percentage instead of being ignored.
@@ -101,6 +107,7 @@ export function usePitchHoldController(
         base._updateMetrics({
           zoneRadius,
           zonePct: Math.round(zonePct),
+          voicedFrames,
           elapsedMs: Math.round(elapsed),
         })
       })
@@ -112,7 +119,7 @@ export function usePitchHoldController(
     const durationSec = elapsed / 1000
     const zonePct = totalFrames > 0 ? (inZoneFrames / totalFrames) * 100 : 0
 
-    if (totalFrames < 10) {
+    if (!hasSufficientVoicedEvidence()) {
       return {
         type: EXERCISE_PITCH_HOLD,
         score: 0,
@@ -121,6 +128,7 @@ export function usePitchHoldController(
           zonePct: 0,
           minZoneCents: options.fixedZoneCents ?? INITIAL_ZONE_CENTS,
           survivedSec: 0,
+          voicedFrames,
         },
         completedAt: Date.now(),
       }
@@ -151,6 +159,7 @@ export function usePitchHoldController(
         zonePct: Math.round(zonePct),
         minZoneCents: zoneRadius,
         survivedSec: Math.round(durationSec),
+        voicedFrames,
       },
       completedAt: Date.now(),
     }
@@ -164,10 +173,15 @@ export function usePitchHoldController(
     return result
   }
 
+  function hasSufficientVoicedEvidence(): boolean {
+    return voicedFrames >= MIN_VOICED_EVIDENCE_FRAMES
+  }
+
   return {
     setTarget,
     startLoop,
     computeResult,
     stopAndCompute,
+    hasSufficientVoicedEvidence,
   }
 }

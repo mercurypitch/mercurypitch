@@ -57,6 +57,8 @@ describe('usePitchHoldController', () => {
     expect(result.score).toBe(0)
     expect(result.metrics.zonePct).toBe(0)
     expect(result.metrics.survivedSec).toBe(0)
+    expect(result.metrics.voicedFrames).toBe(0)
+    expect(ctrl.hasSufficientVoicedEvidence()).toBe(false)
   })
 
   it('startLoop begins tracking frames', () => {
@@ -100,6 +102,7 @@ describe('usePitchHoldController', () => {
 
     // Pitch is exactly on target, all frames should be in zone
     expect(result.metrics.zonePct).toBe(100)
+    expect(ctrl.hasSufficientVoicedEvidence()).toBe(true)
     expect(committed.length).toBe(1)
   })
 
@@ -303,5 +306,49 @@ describe('guided Pitch Hold launch', () => {
 
     expect(metricsCalls.at(-1)?.zoneRadius).toBe(35)
     expect(result.score).toBe(100)
+  })
+
+  it('accepts enough off-target voice but rejects a silent timed hold', () => {
+    const guidedOptions = {
+      fixedZoneCents: reviewed.toleranceCents,
+      fixedTargetDurationSeconds: reviewed.dose.durationMilliseconds! / 1000,
+    }
+    const silentController = usePitchHoldController(
+      createMockBase({ _getElapsed: () => 5000 }),
+      guidedOptions,
+    )
+    silentController.setTarget(69)
+    silentController.startLoop()
+    vi.advanceTimersByTime(5000)
+    const silentResult = silentController.stopAndCompute()
+
+    expect(silentResult.score).toBe(0)
+    expect(silentController.hasSufficientVoicedEvidence()).toBe(false)
+
+    const offTargetController = usePitchHoldController(
+      createMockBase({
+        // Model a continuing off-target voice: the engine appends fresh pitch
+        // evidence as its elapsed clock advances, rather than replaying one
+        // frozen sample for every scoring poll.
+        pitchHistory: () => [
+          {
+            freq: 415,
+            time: performance.now() / 1000,
+            cents: 0,
+            clarity: 0.8,
+          },
+        ],
+        _getElapsed: () => performance.now(),
+      }),
+      guidedOptions,
+    )
+    offTargetController.setTarget(69)
+    offTargetController.startLoop()
+    vi.advanceTimersByTime(1200)
+    const offTargetResult = offTargetController.stopAndCompute()
+
+    expect(offTargetResult.score).toBe(0)
+    expect(offTargetResult.metrics.voicedFrames).toBeGreaterThanOrEqual(10)
+    expect(offTargetController.hasSufficientVoicedEvidence()).toBe(true)
   })
 })
