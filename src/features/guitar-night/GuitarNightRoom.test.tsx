@@ -2,6 +2,7 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
@@ -261,6 +262,38 @@ describe('GuitarNightRoom', () => {
     await Promise.resolve()
     expect(screen.queryByTestId('guitar-night-tuner')).toBeNull()
     expect(document.activeElement).toBe(tune)
+  })
+
+  it('parks the embedded tuner and releases Space while a room sheet is open', async () => {
+    const transport = createTransport()
+    const [suspended, setSuspended] = createSignal(false)
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        suspended={suspended}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tune guitar' }))
+    expect(screen.getByTestId('guitar-night-tuner')).toBeInTheDocument()
+
+    setSuspended(true)
+    await Promise.resolve()
+    expect(screen.queryByTestId('guitar-night-tuner')).toBeNull()
+    expect(listening.stop).toHaveBeenCalled()
+    expect(transport.pause).toHaveBeenCalled()
+
+    const space = new KeyboardEvent('keydown', {
+      code: 'Space',
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    document.dispatchEvent(space)
+    expect(space.defaultPrevented).toBe(false)
+    expect(transport.play).not.toHaveBeenCalled()
   })
 
   it('leaves Doctor recovery Space untouched and recovers once on click', () => {

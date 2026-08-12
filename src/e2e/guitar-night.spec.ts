@@ -2,6 +2,7 @@
 // ============================================================
 
 import { devices, expect, test } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 const TEST_SONG_DURATION_SECONDS = 4
 
@@ -316,8 +317,18 @@ async function instrumentMicrophoneRequests(
   await page.addInitScript(() => {
     const trackedWindow = window as unknown as {
       __guitarNightMicCalls: number
+      __guitarNightMidiCalls: number
     }
     trackedWindow.__guitarNightMicCalls = 0
+    trackedWindow.__guitarNightMidiCalls = 0
+
+    Object.defineProperty(navigator, 'requestMIDIAccess', {
+      configurable: true,
+      value: () => {
+        trackedWindow.__guitarNightMidiCalls += 1
+        return Promise.reject(new Error('Unexpected MIDI request'))
+      },
+    })
 
     if (navigator.mediaDevices === undefined) return
     Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
@@ -417,6 +428,225 @@ test('opens the Velvet tuner silently and returns focus on Escape @smoke', async
           .__guitarNightMicCalls,
     ),
   ).toBe(0)
+})
+
+test('opens Learn and marks exact Note Hunt positions with a real pointer @smoke', async ({
+  browser,
+}) => {
+  test.setTimeout(45_000)
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    ...devices['iPhone 12'],
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+  await instrumentMicrophoneRequests(page)
+  await instrumentAudioContext(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+
+  const microphoneRequestCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMicCalls: number })
+          .__guitarNightMicCalls,
+    )
+  const midiRequestCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMidiCalls: number })
+          .__guitarNightMidiCalls,
+    )
+  const audioContextCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    )
+  const clickCenter = async (locator: Locator): Promise<void> => {
+    const bounds = await locator.boundingBox()
+    expect(bounds).not.toBeNull()
+    await page.mouse.click(
+      (bounds?.x ?? 0) + (bounds?.width ?? 0) / 2,
+      (bounds?.y ?? 0) + (bounds?.height ?? 0) / 2,
+    )
+  }
+  const expectTouchableLayout = async (): Promise<void> => {
+    const metrics = await page.evaluate(() => {
+      const root = document.querySelector<HTMLElement>(
+        '[data-testid="guitar-night-note-hunt"]',
+      )
+      const rootBounds = root?.getBoundingClientRect()
+      const visibleControls = root
+        ? [...root.querySelectorAll<HTMLElement>('button, summary')].filter(
+            (control) => {
+              const bounds = control.getBoundingClientRect()
+              return bounds.width > 0 && bounds.height > 0
+            },
+          )
+        : []
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        innerHeight: window.innerHeight,
+        rootBottom: rootBounds?.bottom ?? Infinity,
+        rootLeft: rootBounds?.left ?? -Infinity,
+        rootRight: rootBounds?.right ?? Infinity,
+        scrollWidth: document.documentElement.scrollWidth,
+        undersizedControls: visibleControls
+          .filter((control) => {
+            const bounds = control.getBoundingClientRect()
+            return bounds.width < 43.5 || bounds.height < 43.5
+          })
+          .map(
+            (control) =>
+              control.getAttribute('aria-label') ?? control.textContent,
+          ),
+      }
+    })
+
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
+    expect(metrics.rootLeft).toBeGreaterThanOrEqual(-1)
+    expect(metrics.rootRight).toBeLessThanOrEqual(metrics.clientWidth + 1)
+    expect(metrics.rootBottom).toBeLessThanOrEqual(metrics.innerHeight + 1)
+    expect(metrics.undersizedControls).toEqual([])
+  }
+
+  try {
+    await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+
+    const main = page.locator('#guitar-night-main')
+    const roomMenu = page.getByRole('button', { name: 'Room', exact: true })
+    const openLearn = async (): Promise<void> => {
+      await roomMenu.click()
+      await page
+        .locator('#guitar-night-venue-menu')
+        .getByRole('button', { name: 'Learn', exact: true })
+        .click()
+    }
+
+    await openLearn()
+    const shelf = page.getByTestId('guitar-night-learn-shelf')
+    const dialog = shelf.getByRole('dialog', {
+      name: 'One small win at a time.',
+    })
+    const firstSteps = dialog.getByRole('button', {
+      name: /Start with one string/,
+    })
+    const noteHuntAction = dialog.getByRole('button', { name: /Note Hunt/ })
+    await expect(dialog).toBeVisible()
+    await expect(firstSteps).toBeFocused()
+    expect(
+      await main.evaluate((element) => (element as HTMLElement).inert),
+    ).toBe(true)
+    await expect(main).toHaveAttribute('aria-hidden', 'true')
+    expect(await microphoneRequestCount()).toBe(0)
+    expect(await midiRequestCount()).toBe(0)
+    expect(await audioContextCount()).toBe(0)
+
+    await noteHuntAction.focus()
+    await page.keyboard.press('Tab')
+    await expect(
+      dialog.getByRole('button', { name: 'Close', exact: true }),
+    ).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(noteHuntAction).toBeFocused()
+
+    await page.keyboard.press('Escape')
+    await expect(shelf).toHaveCount(0)
+    await expect(roomMenu).toBeFocused()
+    expect(
+      await main.evaluate((element) => (element as HTMLElement).inert),
+    ).toBe(false)
+
+    await openLearn()
+    await page
+      .getByTestId('guitar-night-learn-shelf')
+      .getByRole('button', { name: /Note Hunt/ })
+      .click()
+
+    const hunt = page.getByTestId('guitar-night-note-hunt')
+    await expect(hunt).toBeVisible()
+    await expect(
+      hunt.getByRole('heading', { level: 1, name: 'Find every E.' }),
+    ).toBeFocused()
+    expect(await microphoneRequestCount()).toBe(0)
+    expect(await midiRequestCount()).toBe(0)
+    expect(await audioContextCount()).toBe(0)
+    const markedProgress = hunt.getByTestId('guitar-night-note-hunt-progress')
+    await expect(markedProgress).toContainText('0 of 3 marked')
+
+    const wrongCell = hunt.locator(
+      'button[data-string-index="0"][data-fret="1"]',
+    )
+    const exactCell = hunt.locator(
+      'button[data-string-index="0"][data-fret="0"]',
+    )
+    await expect(wrongCell).toHaveAttribute('data-state', 'idle')
+    await clickCenter(wrongCell)
+    await expect(wrongCell).toHaveAttribute('data-state', 'miss')
+    await expect(markedProgress).toContainText('0 of 3 marked')
+    const huntFeedback = hunt.locator('p[role="status"]')
+    await expect(huntFeedback).toContainText('That position is not E.')
+
+    await clickCenter(exactCell)
+    await expect(exactCell).toHaveAttribute('data-state', 'found')
+    await expect(markedProgress).toContainText('1 of 3 marked')
+    await expect(huntFeedback).toContainText('string 1, open marked')
+    expect(await microphoneRequestCount()).toBe(0)
+
+    await expectTouchableLayout()
+    await page.setViewportSize({ width: 320, height: 568 })
+    await expectTouchableLayout()
+    expect(
+      await page
+        .getByTestId('guitar-night-shell')
+        .evaluate((element) => element.scrollTop),
+    ).toBe(0)
+    await page.setViewportSize({ width: 844, height: 390 })
+    await expectTouchableLayout()
+    expect(await microphoneRequestCount()).toBe(0)
+
+    const neck = hunt.locator('[data-interactive="true"]')
+    for (const target of [
+      hunt.locator('button[data-string-index="3"][data-fret="2"]'),
+      hunt.locator('button[data-string-index="5"][data-fret="0"]'),
+    ]) {
+      await target.scrollIntoViewIfNeeded()
+      await clickCenter(target)
+      await expect(target).toHaveAttribute('data-state', 'found')
+    }
+    await expect(markedProgress).toContainText('3 of 3 marked')
+
+    await neck.evaluate((element) => {
+      element.scrollTop = element.scrollHeight
+    })
+    expect(await neck.evaluate((element) => element.scrollTop)).toBeGreaterThan(
+      0,
+    )
+    await hunt.getByRole('button', { name: /Find another note/ }).click()
+    const startListening = hunt.getByRole('button', {
+      name: /Start listening/,
+    })
+    await expect(startListening).toBeFocused()
+    await expect(
+      hunt.getByRole('heading', { name: 'Find every G.' }),
+    ).toBeVisible()
+    expect(await neck.evaluate((element) => element.scrollTop)).toBe(0)
+
+    await startListening.click()
+    await expect.poll(microphoneRequestCount).toBe(1)
+    await expect(hunt.getByRole('alert')).toContainText(
+      'Unexpected microphone request',
+    )
+
+    await hunt.getByRole('button', { name: 'Back from Note Hunt' }).click()
+    const returnedShelf = page.getByTestId('guitar-night-learn-shelf')
+    await expect(returnedShelf.getByRole('dialog')).toBeVisible()
+    await returnedShelf.getByRole('button', { name: 'Close' }).click()
+    await expect(page.locator('[data-room-action="learn"]')).toBeFocused()
+  } finally {
+    await context.close()
+  }
 })
 
 test('fits a phone and keeps every entry path touchable @smoke', async ({

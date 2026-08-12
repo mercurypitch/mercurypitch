@@ -38,6 +38,8 @@ interface GuitarNightRoomProps {
   onInstrument?(instrument: StringedInstrument): void
   onStringCount?(count: number): void
   onTuning?(tuning: InstrumentTuning): void
+  /** A room-level sheet parks every side effect while preserving room state. */
+  suspended?: Accessor<boolean>
   onSongs(): void
   onSeparateGuitar?(): void
 }
@@ -245,6 +247,15 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     props.onSongs()
   }
 
+  createEffect(() => {
+    if (props.suspended?.() !== true) return
+    setDoctorOpen(false)
+    setTunerOpen(false)
+    tuner.close()
+    listening.stop()
+    props.transport.pause()
+  })
+
   const seek = (event: InputEvent): void => {
     const input = event.currentTarget as HTMLInputElement
     performance.transport.seekSeconds(Number(input.value))
@@ -262,7 +273,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
-        ownsSpace: () => !doctorOpen() && !tunerOpen(),
+        ownsSpace: () =>
+          props.suspended?.() !== true && !doctorOpen() && !tunerOpen(),
         enabled: () =>
           props.transport.status() !== 'loading' && !isCalibrating(),
       }),
@@ -273,6 +285,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     <section
       class={styles.roomPanel}
       data-testid="guitar-night-room"
+      data-stage-scope="true"
       data-room-kind="backing"
       data-playback-mode={props.transport.loadMode() ?? 'unloaded'}
     >

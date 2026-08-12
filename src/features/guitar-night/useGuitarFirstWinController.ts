@@ -382,12 +382,19 @@ export function useGuitarFirstWinController(
   const advanceStep = (): boolean => {
     const step = currentStep()
     if (step === undefined || !stepPassed()) return false
-    const nextProgress = completeActiveStep()
-    const nextStep = options
-      .config()
-      .exerciseSteps.find(
-        (candidate) => candidate.id === nextProgress.currentStepId,
-      )
+    const config = options.config()
+    const currentProgress = progress()
+    const stepAlreadyComplete = currentProgress.completedStepIds.includes(
+      step.id,
+    )
+    const nextProgress = stepAlreadyComplete
+      ? currentProgress
+      : completeActiveStep()
+    const nextStep = stepAlreadyComplete
+      ? config.exerciseSteps[currentStepIndex() + 1]
+      : config.exerciseSteps.find(
+          (candidate) => candidate.id === nextProgress.currentStepId,
+        )
     if (nextStep === undefined || nextStep.id === step.id) return false
 
     stopGroove()
@@ -401,6 +408,15 @@ export function useGuitarFirstWinController(
     if (step === undefined) return
     stopGroove()
     resetStepSignals(step)
+  }
+
+  /** Replay keeps earned completion while returning the lesson to step one. */
+  const replayFlow = (): void => {
+    const firstStep = options.config().exerciseSteps[0]
+    if (firstStep === undefined) return
+    stopGroove()
+    setActiveStepId(firstStep.id)
+    resetStepSignals(firstStep)
   }
 
   const setTempoBpm = (value: number): void => {
@@ -449,6 +465,7 @@ export function useGuitarFirstWinController(
     stopGroove,
     advanceStep,
     restartStep,
+    replayFlow,
     setTempoBpm,
     setCountInBeats,
     skip,

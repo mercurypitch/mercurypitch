@@ -35,6 +35,7 @@ info.md
 # Playwright
 playwright-report/
 test-results/
+mobile-audit/
 coverage/
 .nyc_output/
 .vite/

@@ -37,6 +37,13 @@ evidence, dependable polyphonic analysis, real-device latency and
 highway-performance validation, and the legacy runtime cutover remain target
 work.
 
+The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
+are implemented on the current stacked `feat/guitar-night-note-hunt-parity`
+branch. Its focused local gates are clean; preview deployment, cloud checks,
+and owner verification remain. Hear & Find, Echo a Phrase, Shape Walk, and the
+remaining Learn/Jam parity work remain target requirements rather than shipped
+capability.
+
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
 Karaoke Night infrastructure.
@@ -484,6 +491,75 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   retain the stage and quiet guide controls, and mark the flow complete only
   after the full phrase. A completed legacy one-step record shall migrate to
   this newly incomplete tab step without starting audio or capture.
+
+## Learn setlist and Note Hunt — `GN-LEARN-*`
+
+- **REQ-GN-LEARN-001 — One calm setlist:** Guitar Night shall expose Learn as
+  one restrained, stage-owned setlist rather than a grid, dropdown, or peer
+  selector of legacy practice modes. The first-steps lesson and Note Hunt shall
+  appear as focused rows, and later Learn activities shall join that same
+  information architecture.
+- **REQ-GN-LEARN-002 — Silent disclosure:** WHEN the Learn setlist opens from
+  entry, a backing room, a score room, or another Learn activity, Guitar Night
+  shall pause active playback or first-win percussion, preserve the parked room
+  state, and shall not start or resume playback, capture, MIDI, count-in,
+  analysis, audio contexts, or timers. Closing the setlist shall not resume
+  them automatically.
+- **REQ-GN-LEARN-003 — Continuation truth:** The first-steps row shall name
+  whether it will Start, Resume, or Replay from versioned local progress.
+  Returning from a Learn activity shall reopen the setlist at that activity,
+  and closing the setlist shall restore focus to its invoking control when that
+  control remains available.
+- **REQ-GN-LEARN-004 — Physical-position identity:** Note Hunt shall ask the
+  player to find every occurrence of one target pitch class inside an inclusive
+  bounded fret range. It shall identify positions by exact string index and
+  fret, preserve unison positions separately even when they share one MIDI
+  pitch, and its host-neutral activity shall derive every cell from the tuning
+  and capo supplied by its host. The first integrated lesson may use the
+  configured six-string first-win tuning; adopting an active room/reference
+  tuning remains required before broader 4–8-string parity is complete.
+- **REQ-GN-LEARN-005 — Bounded neck lesson:** The default Note Hunt round shall
+  use frets zero through four and shall never span more than six frets at once.
+  Its stage shall expose only the interactive Neck projection, keep the neck as
+  the dominant object, and present each declared 4–8-string position as a
+  keyboard- and touch-operable control with string, fret, and mark state in its
+  accessible name. The neck shall use one Tab stop with arrow-key navigation,
+  and shall scroll every declared string into reach in short layouts.
+- **REQ-GN-LEARN-006 — Honest pitch-only Listening:** WHERE the player
+  explicitly starts Listening, room microphone, direct-interface, or MIDI
+  evidence may say which pitch was heard but shall never mark or claim a
+  physical string/fret position. WHEN the target pitch is heard, Note Hunt
+  shall ask the player to select where it was played. A provisional event may
+  become eligible after late pitch enrichment under its stable identity, but
+  one input event shall contribute evidence at most once.
+- **REQ-GN-LEARN-007 — Explicit input ownership:** Opening Note Hunt shall not
+  request input access or create audio. Start Listening shall be the only audio
+  capture action; an explicit MIDI profile or device action may request MIDI
+  access under the established Guitar Night input contract. Stop, Back,
+  Learn-setlist suspension, route deactivation, and disposal shall release the
+  active listener, and recoverable cross-tab handoff shall reuse that shared
+  input contract.
+- **REQ-GN-LEARN-008 — Calm round feedback:** Correct selections shall retain
+  their exact marks, while a wrong selection shall be identified without colour
+  alone and shall not increase progress. Completion shall require every exact
+  target position in the round and shall offer one primary `Find another note`
+  action rather than starting the next round or a timer automatically. Starting
+  another round shall reset the neck scroll and preserve keyboard focus on the
+  new primary action.
+- **REQ-GN-LEARN-009 — Versioned local resume:** Note Hunt may persist one
+  compact local round containing `schemaVersion`, target pitch class, exact
+  found position IDs, completed-round count, fret range, and a playable-tuning
+  signature. A compatible round shall restore without starting audio, capture,
+  MIDI, analysis, or a timer. Malformed, unsupported, different-range, or
+  different-tuning progress shall reset safely rather than bind old marks to a
+  new neck.
+- **REQ-GN-LEARN-010 — Modal and responsive behavior:** The Learn setlist shall
+  trap focus while open, close on Escape or an explicit Close action, and
+  lock and restore background scroll while remaining a bounded sheet/dialog
+  that does not resize the mounted stage.
+  Learn-setlist and Note Hunt actions shall retain at least 44 by 44 CSS-pixel
+  targets on supported phone and desktop layouts, and reduced motion shall
+  remove their arrival animation without hiding state.
 
 ## Initial Songs play-along — `GN-SONG-*`
 
