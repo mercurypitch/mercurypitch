@@ -1,11 +1,24 @@
 // ============================================================
-// UVR Guide — Tutorial for Vocal Separation Feature
+// UVR Guide — how the Karaoke tab actually works, start to finish
+// ============================================================
+//
+// This replaces a seven-step tour of controls that no longer exist: the old
+// guide walked through a "Separation Mode" picker, two intensity sliders and a
+// "Transition Smoothness" slider, all of which fed signals nothing ever read
+// (`applyUvrSettings` had no caller). It told users to open a settings panel
+// and tune four things before they could sing.
+//
+// The real flow is: bring a song in, wait for separation, open the mixer, sing.
+// That is what this describes, in that order, naming the buttons on screen.
+//
+// Keep it honest: if a step here cannot be followed by looking at the UI, the
+// guide is wrong and should be fixed rather than worked around.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createSignal, For } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
-import { Headphones, Music, MusicBoard, Voice } from './icons'
+import { Headphones, ImportFile, Music, MusicBoard, Playlist, SingMic, StageCurtains, Voice, } from './icons'
 import styles from './UvrGuide.module.css'
 
 interface UvrGuideProps {
@@ -17,46 +30,98 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
 
   const steps = [
     {
-      title: 'What is Vocal Separation?',
+      title: 'What the Karaoke tab does',
       icon: <Music />,
       content: (
         <div class={styles.guideSection}>
           <p class={styles.guideText}>
-            <strong>Vocal Separation (UVR)</strong> is a powerful feature that
-            separates vocals from instrumental music in real-time. This lets you
-            practice singing along to your favorite songs with different audio
-            focus options.
+            It turns <strong>a song file you own</strong> into a karaoke track:
+            the vocals and the backing are split into separate stems, so you can
+            mute the original singer, keep the band, and have the app score your
+            pitch against the real melody.
           </p>
           <div class={styles.guideFeatures}>
             <div class={styles.featureCard}>
               <span class={styles.featureIcon}>
+                <ImportFile />
+              </span>
+              <span>Bring your own MP3, WAV or FLAC</span>
+            </div>
+            <div class={styles.featureCard}>
+              <span class={styles.featureIcon}>
                 <Voice />
               </span>
-              <span>Practice with clean vocals</span>
+              <span>Vocals and backing split apart</span>
             </div>
             <div class={styles.featureCard}>
               <span class={styles.featureIcon}>
                 <Headphones />
               </span>
-              <span>Improve pitch accuracy</span>
-            </div>
-            <div class={styles.featureCard}>
-              <span class={styles.featureIcon}>
-                <MusicBoard />
-              </span>
-              <span>Learn melodies independently</span>
+              <span>Lyrics, pitch trail and a score</span>
             </div>
           </div>
+          <p class={styles.guideTip}>
+            <strong>Nothing is streamed or downloaded for you.</strong> You
+            supply the audio; separation happens on your own device unless you
+            choose the studio GPU.
+          </p>
         </div>
       ),
     },
     {
-      title: 'Separation Modes',
+      title: 'Add a song',
+      icon: <ImportFile />,
+      content: (
+        <div class={styles.guideSection}>
+          <h4 class={styles.useCaseTitle}>Upload tab</h4>
+          <div class={styles.quickSteps}>
+            <div class={styles.step}>
+              <div class={styles.stepNumber}>1</div>
+              <div class={styles.stepContent}>
+                <strong>Open Upload</strong>
+                <p>
+                  The second tab in this panel's header, beside <em>Sing</em>.
+                </p>
+              </div>
+            </div>
+            <div class={styles.step}>
+              <div class={styles.stepNumber}>2</div>
+              <div class={styles.stepContent}>
+                <strong>Drop files, or click the upload box</strong>
+                <p>
+                  MP3, WAV or FLAC, up to 15 at a time. Everything you drop is
+                  queued and prepared in order.
+                </p>
+              </div>
+            </div>
+            <div class={styles.step}>
+              <div class={styles.stepNumber}>3</div>
+              <div class={styles.stepContent}>
+                <strong>Wait for separation</strong>
+                <p>
+                  A progress row appears per song. A four to five minute track
+                  takes a couple of minutes on a typical laptop.
+                </p>
+              </div>
+            </div>
+          </div>
+          <p class={styles.guideTip}>
+            <strong>On a TV or a tablet with no file manager,</strong> the file
+            picker may not open at all — the browser has nothing to open. Add
+            the song on a phone or computer while signed in, then open it here
+            from your library.
+          </p>
+        </div>
+      ),
+    },
+    {
+      title: 'On-device or studio',
       icon: <MusicBoard />,
       content: (
         <div class={styles.guideSection}>
           <p class={styles.guideText}>
-            Choose a mode that fits your practice goals:
+            One choice decides where the work happens. It lives in the panel
+            header, and in <strong>Settings &rarr; Karaoke</strong>.
           </p>
           <div class={styles.guideModeCards}>
             <div class={`${styles.modeCard} ${styles.guideMode}`}>
@@ -64,8 +129,12 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
                 <MusicBoard />
               </div>
               <div class={styles.modeInfo}>
-                <strong>Separate</strong>
-                <span>Default — hear both vocals & instrumental</span>
+                <strong>On this device</strong>
+                <span>
+                  Free and private. Runs the separation model in your browser,
+                  on the GPU when one is available. Needs a reasonably capable
+                  machine — not a television.
+                </span>
               </div>
             </div>
             <div class={`${styles.modeCard} ${styles.guideMode}`}>
@@ -73,126 +142,39 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
                 <Headphones />
               </div>
               <div class={styles.modeInfo}>
-                <strong>Instrumental</strong>
-                <span>Remove vocals, focus on melody</span>
-              </div>
-            </div>
-            <div class={`${styles.modeCard} ${styles.guideMode}`}>
-              <div class={styles.modeIcon}>
-                <Voice />
-              </div>
-              <div class={styles.modeInfo}>
-                <strong>Vocal Only</strong>
-                <span>Isolate vocals, practice singing</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Intensity Controls',
-      icon: <Headphones />,
-      content: (
-        <div class={styles.guideSection}>
-          <p class={styles.guideText}>
-            Adjust the balance between vocals and instrumental:
-          </p>
-          <div class={styles.intensityExplanation}>
-            <div class={styles.intensityItem}>
-              <span class={styles.intensityName}>Vocal Intensity</span>
-              <span class={styles.intensityDesc}>
-                Controls how prominent vocals are. Higher = more vocal presence
-              </span>
-              <div class={styles.intensityRange}>
-                <span>Soft</span>
-                <span>Focus</span>
-                <span>Loud</span>
-              </div>
-            </div>
-            <div class={styles.intensityItem}>
-              <span class={styles.intensityName}>Instrumental Intensity</span>
-              <span class={styles.intensityDesc}>
-                Controls music volume. Higher = more musical accompaniment
-              </span>
-              <div class={styles.intensityRange}>
-                <span>Muted</span>
-                <span>Background</span>
-                <span>Full</span>
+                <strong>Studio GPU</strong>
+                <span>
+                  One credit per song. Faster, cleaner, and the only option on
+                  hardware that cannot run the model locally. Requires an
+                  account.
+                </span>
               </div>
             </div>
           </div>
           <p class={styles.guideTip}>
-            <strong>Pro Tip:</strong> In "Separate" mode, the two sliders work
-            together to create your preferred mix. Experiment to find your ideal
-            balance!
+            <strong>Prepared once, playable anywhere.</strong> A separated song
+            is stored on the device that made it; sign in to reach it from
+            another one.
           </p>
         </div>
       ),
     },
     {
-      title: 'Smoothing & Transitions',
-      icon: <IconArrowRight />,
-      content: (
-        <div class={styles.guideSection}>
-          <p class={styles.guideText}>
-            The <strong>Transition Smoothness</strong> slider controls how
-            smoothly the vocal/instrumental balance changes:
-          </p>
-          <div class={styles.smoothExamples}>
-            <div class={styles.smoothItem}>
-              <div class={styles.smoothToggle}>
-                <span class={styles.toggleLabel}>Low</span>
-                <span class={styles.toggleValue}>0%</span>
-              </div>
-              <span class={styles.smoothResult}>
-                Abrupt changes — noticeable splits
-              </span>
-            </div>
-            <div class={styles.smoothItem}>
-              <div
-                class={`${styles.smoothToggle} ${styles.smoothToggleActive}`}
-              >
-                <span class={styles.toggleLabel}>Medium</span>
-                <span class={styles.toggleValue}>30%</span>
-              </div>
-              <span class={styles.smoothResult}>
-                Balanced — smooth but distinct
-              </span>
-            </div>
-            <div class={styles.smoothItem}>
-              <div class={styles.smoothToggle}>
-                <span class={styles.toggleLabel}>High</span>
-                <span class={styles.toggleValue}>100%</span>
-              </div>
-              <span class={styles.smoothResult}>
-                Very smooth — blended transitions
-              </span>
-            </div>
-          </div>
-          <p class={styles.guideTip}>
-            <strong>Pro Tip:</strong> Use medium smoothing for most practice
-            sessions. Increase for seamless playback between different parts.
-          </p>
-        </div>
-      ),
-    },
-    {
-      title: 'When to Use Each Mode',
+      title: 'Sing it',
       icon: <Voice />,
       content: (
         <div class={styles.guideSection}>
-          <h4 class={styles.useCaseTitle}>Practice Scenarios</h4>
+          <h4 class={styles.useCaseTitle}>Inside the mixer</h4>
           <div class={styles.useCases}>
             <div class={styles.useCase}>
               <div class={styles.useCaseIcon}>
                 <Headphones />
               </div>
               <div class={styles.useCaseContent}>
-                <strong>Learning Melodies</strong>
+                <strong>Balance the stems</strong>
                 <p>
-                  Use <em>Instrumental Mode</em> to focus on the melody line
-                  without vocals.
+                  Each stem has its own fader and mute. Mute the vocal to sing
+                  it yourself; keep it low as a guide while you learn it.
                 </p>
               </div>
             </div>
@@ -201,10 +183,10 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
                 <Voice />
               </div>
               <div class={styles.useCaseContent}>
-                <strong>Vocal Training</strong>
+                <strong>Turn the mic on</strong>
                 <p>
-                  Use <em>Vocal Only</em> to practice hitting exact pitch
-                  targets.
+                  Your pitch is drawn against the extracted melody as you sing,
+                  and scored per note when the take ends.
                 </p>
               </div>
             </div>
@@ -213,22 +195,61 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
                 <MusicBoard />
               </div>
               <div class={styles.useCaseContent}>
-                <strong>Full Practice</strong>
+                <strong>Loop the hard bar</strong>
                 <p>
-                  Use <em>Separate Mode</em> to hear the full arrangement.
+                  Set <strong>A</strong> and <strong>B</strong> on the transport
+                  to repeat one phrase until it is yours.
                 </p>
               </div>
             </div>
             <div class={styles.useCase}>
               <div class={styles.useCaseIcon}>
-                <Headphones />
+                <Music />
               </div>
               <div class={styles.useCaseContent}>
-                <strong>Background Practice</strong>
+                <strong>Add lyrics</strong>
                 <p>
-                  Lower both intensities and set smoothing to high for subtle
-                  accompaniment.
+                  The lyrics panel fetches synced words where they exist, or
+                  generates timings from the vocal stem itself.
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Set lists and the stage',
+      icon: <Playlist />,
+      content: (
+        <div class={styles.guideSection}>
+          <p class={styles.guideText}>
+            Once a few songs are prepared, they stop being files and start being
+            a night out.
+          </p>
+          <div class={styles.guideModeCards}>
+            <div class={`${styles.modeCard} ${styles.guideMode}`}>
+              <div class={styles.modeIcon}>
+                <Playlist />
+              </div>
+              <div class={styles.modeInfo}>
+                <strong>Playlists</strong>
+                <span>
+                  Build a set list from your prepared songs; it plays straight
+                  through, one song into the next.
+                </span>
+              </div>
+            </div>
+            <div class={`${styles.modeCard} ${styles.guideMode}`}>
+              <div class={styles.modeIcon}>
+                <StageCurtains />
+              </div>
+              <div class={styles.modeInfo}>
+                <strong>Karaoke Night</strong>
+                <span>
+                  The full-screen theatre stage. Same songs, no app chrome — the
+                  link is in this panel's header.
+                </span>
               </div>
             </div>
           </div>
@@ -237,101 +258,43 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
     },
     {
       title: 'Shazam & Sing',
-      icon: <Voice />,
+      icon: <SingMic />,
       content: (
         <div class={styles.guideSection}>
-          <h4 class={styles.useCaseTitle}>Sing Any Song Instantly</h4>
           <p class={styles.guideText}>
-            Use the <strong>Shazam tab</strong> to identify music playing around
-            you, and instantly turn it into a karaoke track!
+            The <strong>Sing</strong> tab finds a song in{' '}
+            <em>your own library</em> from your voice. Every song you separate
+            is fingerprinted from its vocal stem, so humming the chorus is
+            enough to pull it back up.
           </p>
           <div class={styles.quickSteps}>
             <div class={styles.step}>
               <div class={styles.stepNumber}>1</div>
               <div class={styles.stepContent}>
-                <strong>Listen</strong>
-                <p>
-                  Click "Listen" so the app can hear the song playing in the
-                  background.
-                </p>
+                <strong>Press Listen</strong>
+                <p>Sing or hum a few seconds of the melody.</p>
               </div>
             </div>
             <div class={styles.step}>
               <div class={styles.stepNumber}>2</div>
               <div class={styles.stepContent}>
-                <strong>Identify</strong>
-                <p>
-                  We'll match it using the Shazam library and fetch the song
-                  data.
-                </p>
+                <strong>Pick the match</strong>
+                <p>Candidates are ranked by how closely the melody lines up.</p>
               </div>
             </div>
             <div class={styles.step}>
               <div class={styles.stepNumber}>3</div>
               <div class={styles.stepContent}>
-                <strong>Sing!</strong>
-                <p>
-                  Click "Sing" to find a streaming source (YouTube), separate
-                  the vocals in real-time, and fetch synced lyrics.
-                </p>
+                <strong>Straight to the mixer</strong>
+                <p>The match opens its prepared session, ready to sing.</p>
               </div>
             </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Quick Start Guide',
-      icon: <Music />,
-      content: (
-        <div class={styles.guideSection}>
-          <h4 class={styles.useCaseTitle}>First Steps</h4>
-          <div class={styles.quickSteps}>
-            <div class={styles.step}>
-              <div class={styles.stepNumber}>1</div>
-              <div class={styles.stepContent}>
-                <strong>Open UVR Settings</strong>
-                <p>Click the gear icon in the Vocal Separation panel header.</p>
-              </div>
-            </div>
-            <div class={styles.step}>
-              <div class={styles.stepNumber}>2</div>
-              <div class={styles.stepContent}>
-                <strong>Choose Your Mode</strong>
-                <p>
-                  Select Separate, Instrumental, or Vocal Only based on your
-                  goal.
-                </p>
-              </div>
-            </div>
-            <div class={styles.step}>
-              <div class={styles.stepNumber}>3</div>
-              <div class={styles.stepContent}>
-                <strong>Adjust Intensities</strong>
-                <p>
-                  Tune the sliders to your preferred vocal/instrumental balance.
-                </p>
-              </div>
-            </div>
-            <div class={styles.step}>
-              <div class={styles.stepNumber}>4</div>
-              <div class={styles.stepContent}>
-                <strong>Set Smoothing</strong>
-                <p>Choose a transition smoothness that feels natural.</p>
-              </div>
-            </div>
-            <div class={styles.step}>
-              <div class={styles.stepNumber}>5</div>
-              <div class={styles.stepContent}>
-                <strong>Start Practicing!</strong>
-                <p>Open a song and watch the UVR process in real-time.</p>
-              </div>
-            </div>
-          </div>
-          <div class={styles.guideSuccess}>
-            <Music />
-            <span>Your settings are saved automatically!</span>
-          </div>
+          <p class={styles.guideTip}>
+            <strong>Indexing is a setting.</strong> Settings &rarr; Karaoke
+            &rarr; Shazam &amp; Sing controls whether new songs are
+            fingerprinted, and whether their stems are denoised first.
+          </p>
         </div>
       ),
     },

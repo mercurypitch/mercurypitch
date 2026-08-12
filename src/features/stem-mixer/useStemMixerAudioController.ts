@@ -5,6 +5,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import { analysisFps, presentationFps, recordAnimationFrame, } from '@/lib/device-tier'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
@@ -199,6 +200,7 @@ export interface StemMixerAudioController {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
 const FADE_OUT_MS = 50
+/** Ceiling for pitch detection and scoring. The device tier lowers it. */
 const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
 const PERFORMANCE_LOG_INTERVAL_MS = 2000
 
@@ -267,8 +269,13 @@ export const useStemMixerAudioController = (
   let pitchHistory: PitchNote[] = []
   let mappingWasActive = false
   let validMicPitchReported = false
+  // Read once per controller, not per frame: the tier is stable for a session
+  // apart from a one-way demotion, and the mixer is remounted on every song.
+  // A capable device keeps the historical behaviour exactly — an uncapped
+  // presentation rate and 30 Hz analysis.
   const frameScheduler = createStemMixerFrameScheduler(
-    MAX_ANALYSIS_FRAMES_PER_SECOND,
+    Math.min(MAX_ANALYSIS_FRAMES_PER_SECOND, analysisFps()),
+    presentationFps(),
   )
   const performanceDiagnostics = createStemMixerPerformanceDiagnostics()
   let performanceLogTimer: ReturnType<typeof setInterval> | null = null
@@ -958,6 +965,9 @@ export const useStemMixerAudioController = (
       if (!audioCtx || !playing()) return
 
       performanceDiagnostics.recordFrame(rafTimestampMs)
+      // The mixer is the heaviest surface in the app, so it is also the most
+      // honest place to notice a device that cannot keep up and demote it.
+      recordAnimationFrame(rafTimestampMs)
       const now = audioCtx.currentTime
       const elapsedTime =
         bufferPlayStart + (now - wallPlayStart) * playbackSpeed

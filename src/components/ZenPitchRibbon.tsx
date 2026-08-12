@@ -18,6 +18,8 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup } from 'solid-js'
 import type { RibbonNote, SingerState, } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { judgeSinger, midiToRibbonY, notesInWindow, RIBBON_AHEAD_SEC, RIBBON_BEHIND_SEC, RIBBON_NOW_RATIO, ribbonBand, targetNoteAt, timeToX, } from '@/features/stem-mixer/zen-pitch-ribbon'
+import { presentationFps, recordAnimationFrame, renderScale, } from '@/lib/device-tier'
+import { createFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import styles from './ZenPitchRibbon.module.css'
 
@@ -63,10 +65,12 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
   const reducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // Read once: the tier is stable for a session apart from a one-way demotion.
+  const frameRate = presentationFps()
 
   const syncCanvasSize = (): void => {
     if (!wrapRef || !canvasRef) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const { clientWidth, clientHeight } = wrapRef
     const w = Math.round(clientWidth * dpr)
     const h = Math.round(clientHeight * dpr)
@@ -81,7 +85,7 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvas.width / dpr
     const h = canvas.height / dpr
     if (w <= 0 || h <= 0) return
@@ -95,8 +99,10 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
 
     const band = ribbonBand(visible)
     if (band) {
-      // Ease ~10%/frame toward the target band (snap under reduced motion).
-      const ease = reducedMotion ? 1 : 0.1
+      // Ease toward the target band (snap under reduced motion). The rate is
+      // per-frame, so it has to grow when the frame rate is capped — otherwise
+      // the ribbon glides half as fast on a television as on a laptop.
+      const ease = reducedMotion ? 1 : Math.min(1, 0.1 * (60 / frameRate))
       bandMin += (band.minMidi - bandMin) * ease
       bandMax += (band.maxMidi - bandMax) * ease
     }
@@ -200,8 +206,17 @@ export const ZenPitchRibbon: Component<ZenPitchRibbonProps> = (props) => {
     // Rebuild the loop when the note set identity changes is unnecessary —
     // the loop reads signals each frame. The effect exists only to own the
     // rAF lifecycle alongside the component.
-    const tick = (): void => {
-      draw()
+    //
+    // Zen mode is the one surface that is running while the user is singing,
+    // so on a low-tier device its frames compete directly with pitch detection.
+    // The limiter is a no-op on a capable device (`presentationFps()` is
+    // Infinity there) and holds the ribbon to 30 Hz on a television.
+    const limiter = Number.isFinite(frameRate)
+      ? createFrameRateLimiter(frameRate)
+      : null
+    const tick = (timestampMs: number): void => {
+      recordAnimationFrame(timestampMs)
+      if (!limiter || limiter.shouldRun(timestampMs / 1000)) draw()
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)

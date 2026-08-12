@@ -65,7 +65,12 @@ export const setActiveTab = (tab: ActiveTab): ActiveTab => {
 // Store-backed (not SettingsPanel-local) so deep links (#/settings/account)
 // and in-app actions ("Get credits" toasts) can open a specific section.
 
-export type SettingsSection = 'account' | 'singing' | 'display' | 'credits'
+export type SettingsSection =
+  | 'account'
+  | 'singing'
+  | 'karaoke'
+  | 'display'
+  | 'credits'
 
 export const [settingsSection, setSettingsSection] =
   createSignal<SettingsSection>('account')

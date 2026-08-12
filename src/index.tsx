@@ -13,17 +13,24 @@ import '@/styles/mobile-polish.css'
 // After mobile-polish: the short-viewport rules are the same fixes keyed on
 // height, and where both apply they should win the tie.
 import '@/styles/short-viewport.css'
+// Last of the global sheets: its rules are deliberate overrides of everything
+// above, gated on the device tier written onto <html> by initDeviceTier().
+import '@/styles/performance-mode.css'
 import { App } from './App'
 
 import { setupConsent } from '@/components/ConsentBanner'
 import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/services/auth-service'
 import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
+import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { installPwaInstallListeners } from '@/lib/pwa-install'
 import { registerServiceWorker } from '@/lib/pwa-service-worker'
 import { showActionNotification } from '@/stores/notifications-store'
 
+// Publish the device tier on <html> before the first paint, so nothing ever
+// renders a frame of full-quality glass on a television and then downgrades.
+initDeviceTier()
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
 // `beforeinstallprompt` can fire before the first render and is never

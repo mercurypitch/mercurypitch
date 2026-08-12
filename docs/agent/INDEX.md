@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.2k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
+| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.3k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `guitar-night` | [useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 11.2k | The score room rehearses an authored tab on its own clock, with no separated song. |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
@@ -85,7 +85,7 @@ These are the rules that break things when ignored.
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.4k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.2k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
-| `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.6k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
+| `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.7k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 2.5k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `piano` | [piano-input-state.ts](../../src/features/piano/input/piano-input-state.ts) | 2.4k | Piano input state — polyphonic note and pedal authority MIDI keyboards and touch surfaces feed the same normalized event stream. |
 | `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 2.2k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
@@ -158,6 +158,7 @@ These are the rules that break things when ignored.
 | [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
+| [device-tier.ts](../../src/lib/device-tier.ts) | 400 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 400 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
 
@@ -189,6 +190,7 @@ These are the rules that break things when ignored.
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 100 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [background-store.ts](../../src/stores/background-store.ts) | 50 | Premium background store compatibility facade The account-safe catalog store is route-neutral so standalone surfaces can use it without i... |
 | [billing-store.ts](../../src/stores/billing-store.ts) | 50 | Billing store — credit-balance refresh signal The balance is displayed by PricingPanel (Settings → Account) via /api/billing/me. |
+| [karaoke-settings-store.ts](../../src/stores/karaoke-settings-store.ts) | 50 | Karaoke Settings Store — the preferences the Karaoke tab actually honours These used to live behind the cogwheel in the Karaoke tab heade... |
 | [mic-store.ts](../../src/stores/mic-store.ts) | 50 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
@@ -323,9 +325,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
+| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.1k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.0k |
-| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |

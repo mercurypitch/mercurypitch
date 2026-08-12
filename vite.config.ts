@@ -8,6 +8,7 @@ import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
+import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -167,6 +168,10 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [
+      // Ahead of Vite's CSS pipeline: emits legacy fallbacks for color-mix()
+      // so TV browsers (Chrome 79-83) render accents instead of dropping the
+      // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
+      legacyCssFallbacksPlugin(),
       isDev ? ssl() : [],
       qrcode(),
       solidPlugin(),
@@ -522,6 +527,19 @@ export default defineConfig(({ command, mode }) => {
       transformer: 'lightningcss',
       lightningcss: {
         drafts: { nesting: true } as Record<string, unknown>,
+        // Television browsers are the floor here, not old desktops: the Android
+        // TV WebView on a 2020 Philips set is Chrome 83 and LG's webOS shell is
+        // Chrome 79. Declaring them makes Lightning CSS down-level nesting,
+        // `:is()`, logical properties and vendor prefixes instead of emitting
+        // syntax those engines drop on the floor. (`color-mix()` with a var()
+        // argument is beyond what any compiler can resolve — that one is
+        // handled by legacyCssFallbacksPlugin above.)
+        targets: {
+          chrome: 79 << 16,
+          edge: 79 << 16,
+          firefox: 78 << 16,
+          safari: (13 << 16) | (1 << 8),
+        },
       },
       modules: {
         localsConvention: 'camelCaseOnly',

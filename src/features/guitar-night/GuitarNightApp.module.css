@@ -4634,3 +4634,45 @@
     transition: none;
   }
 }
+
+/* Shown only when a click on a hidden file input produced no picker at all —
+   the Android TV / Google TV case, where no app answers the intent. Fixed
+   rather than inline because the buttons that trigger it live in four
+   different panels. */
+.filePickerBlocked {
+  position: fixed;
+  z-index: 60;
+  inset-inline: 50%;
+  bottom: 4vh;
+  translate: -50% 0;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  width: min(560px, 92vw);
+  padding: 16px 18px;
+  border: 1px solid var(--gn-warn-border, rgba(227, 179, 65, 0.45));
+  border-radius: 14px;
+  background: var(--gn-warn-bg, #241d0c);
+  color: var(--gn-text, #f0e9d8);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.filePickerBlocked strong {
+  font-size: 15px;
+}
+
+.filePickerBlocked small {
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.filePickerBlocked button {
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}

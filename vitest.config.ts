@@ -26,6 +26,7 @@ export default defineConfig({
     env: { VITE_API_BASE_URL: '' },
     setupFiles: ['./src/tests/setup.ts'],
     include: [
+      'tools/**/*.test.ts',
       'src/tests/**/*.test.ts',
       'src/tests/**/*.test.tsx',
       'src/features/**/*.test.ts',

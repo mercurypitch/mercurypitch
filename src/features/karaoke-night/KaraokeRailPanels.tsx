@@ -8,6 +8,7 @@ import { Trash2 } from '@/components/icons'
 import { listStemTypes } from '@/db/services/uvr-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
+import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -419,7 +420,16 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         />
         <button
           class="kn-btn"
-          onClick={() => fileInputRef?.click()}
+          onClick={() =>
+            openFilePicker(fileInputRef, {
+              // Android TV resolves no file-picker intent, so the click returns
+              // silently and the button reads as broken. Say what happened.
+              onUnavailable: () =>
+                showNotification(FILE_PICKER_UNAVAILABLE_MESSAGE, 'warning', {
+                  durationMs: 12_000,
+                }),
+            })
+          }
           disabled={uploadBusy()}
         >
           {uploadBusy() ? 'Separating…' : 'Choose a song'}

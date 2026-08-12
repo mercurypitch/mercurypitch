@@ -22,12 +22,15 @@ import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { hasAnyTag, openConsentSettings } from '@/lib/consent'
 import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
+import type { PerformanceMode } from '@/lib/device-tier'
+import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
+import { karaokeAutoIndexShazam, karaokeStemDenoise, setKaraokeAutoIndexShazam, setKaraokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import { BREAK_MIN_RANGE, breakIntervalMin, PRACTICE_MIN_RANGE, practiceIntervalMin, practiceTimerEnabled, setBreakIntervalMin, setPracticeIntervalMin, setPracticeTimerEnabled, } from '@/stores/practice-timer-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
@@ -37,6 +40,7 @@ import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setSwipeNavEnabled, setUiMode, swipeNavEnabled, uiMode, } from '@/stores/settings-store'
 import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
+import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
@@ -175,6 +179,19 @@ export const SettingsPanel: Component = () => {
             data-testid="settings-tab-singing"
           >
             Practice
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class={styles.settingsTab}
+            classList={{
+              [styles.settingsTabActive]: activeTab() === 'karaoke',
+            }}
+            aria-selected={activeTab() === 'karaoke'}
+            onClick={() => setActiveTab('karaoke')}
+            data-testid="settings-tab-karaoke"
+          >
+            Karaoke
           </button>
           <button
             type="button"
@@ -901,7 +918,137 @@ export const SettingsPanel: Component = () => {
           </div>
         </Show>
 
+        <Show when={activeTab() === 'karaoke'}>
+          {/* Song preparation — what happens between "choose a song" and a
+              playable stage. These used to sit behind the Karaoke tab's
+              cogwheel next to four controls that were wired to nothing. */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Song Preparation</h3>
+            <div class={styles.settingsDivider} />
+
+            <p class={styles.settingsDesc}>
+              How a song is turned into karaoke stems. On-device separation is
+              free and private but needs a capable machine; studio separation
+              runs on a GPU and costs one credit per song.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="karaoke-processing-mode">Separation</label>
+              <SafeSelect
+                value={uvrProcessingMode()}
+                onChange={(e) => {
+                  setUvrProcessingMode(
+                    e.target.value as ReturnType<typeof uvrProcessingMode>,
+                  )
+                }}
+                id="karaoke-processing-mode"
+                data-testid="karaoke-processing-mode"
+              >
+                <option value="local">On this device (free)</option>
+                <option value="server">Studio GPU (1 credit per song)</option>
+              </SafeSelect>
+              <small>
+                On-device separation is unavailable on low-power hardware such
+                as televisions — prepare songs on a phone or computer and open
+                them here.
+              </small>
+            </div>
+          </div>
+
+          {/* Shazam & Sing */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Shazam &amp; Sing</h3>
+            <div class={styles.settingsDivider} />
+
+            <p class={styles.settingsDesc}>
+              Every separated song can be fingerprinted so humming or singing it
+              later finds the track in your library.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="karaoke-auto-index">Index new songs</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="karaoke-auto-index"
+                  checked={karaokeAutoIndexShazam()}
+                  onChange={(e) => {
+                    setKaraokeAutoIndexShazam(e.currentTarget.checked)
+                  }}
+                  data-testid="karaoke-auto-index-toggle"
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                Fingerprint each song's vocal stem after separation. Off skips
+                about a second of work per song and leaves new songs
+                unsearchable by voice.
+              </small>
+            </div>
+
+            <div class={styles.settingsRow}>
+              <label for="karaoke-stem-denoise">Auto-denoise stems</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="karaoke-stem-denoise"
+                  checked={karaokeStemDenoise()}
+                  onChange={(e) => {
+                    setKaraokeStemDenoise(e.currentTarget.checked)
+                  }}
+                  data-testid="stem-denoise-toggle"
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                Clean the vocal stem before fingerprinting it. Helps on noisy
+                separations; turn it off if clean stems are matching poorly.
+              </small>
+            </div>
+          </div>
+        </Show>
+
         <Show when={activeTab() === 'display'}>
+          {/* Graphics quality — the escape hatch for a device the automatic
+              detection reads wrong in either direction. */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Graphics Quality</h3>
+            <div class={styles.settingsDivider} />
+
+            <p class={styles.settingsDesc}>
+              Blur, glow and animated backgrounds are the most expensive things
+              this app draws. On a television or a low-power machine they also
+              compete with audio playback, which is what makes a song stutter.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="performance-mode">Quality</label>
+              <SafeSelect
+                value={performanceMode()}
+                onChange={(e) => {
+                  setPerformanceMode(e.target.value as PerformanceMode)
+                  refreshDeviceTierAttributes()
+                }}
+                id="performance-mode"
+                data-testid="performance-mode-select"
+              >
+                <For each={PERFORMANCE_MODES}>
+                  {(mode) => (
+                    <option value={mode}>
+                      {PERFORMANCE_MODE_LABELS[mode]}
+                    </option>
+                  )}
+                </For>
+              </SafeSelect>
+              <small>
+                {PERFORMANCE_MODE_DESCRIPTIONS[performanceMode()]}
+                {performanceMode() === 'auto'
+                  ? ` Detected: ${deviceClass()}, running at ${deviceTier()} quality.`
+                  : ''}
+              </small>
+            </div>
+          </div>
+
           {/* Appearance */}
           <div class={styles.settingsSection} data-tour="settings.appearance">
             <h3 class={styles.settingsSectionTitle}>Appearance</h3>

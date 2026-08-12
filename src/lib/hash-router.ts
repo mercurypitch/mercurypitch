@@ -85,6 +85,7 @@ const VALID_GUIDE_SECTIONS: Set<string> = new Set([
 const SETTINGS_SLUG_TO_SECTION: Record<string, SettingsSection | undefined> = {
   account: 'account',
   practice: 'singing',
+  karaoke: 'karaoke',
   display: 'display',
   credits: 'credits',
 }
@@ -92,6 +93,7 @@ const SETTINGS_SLUG_TO_SECTION: Record<string, SettingsSection | undefined> = {
 const SETTINGS_SECTION_TO_SLUG: Record<SettingsSection, string> = {
   account: 'account',
   singing: 'practice',
+  karaoke: 'karaoke',
   display: 'display',
   credits: 'credits',
 }

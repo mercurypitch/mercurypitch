@@ -15,6 +15,7 @@ import { useGuitarBackingTransportController } from '@/features/guitar/backing/u
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
+import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import { createPersistedSignal } from '@/lib/storage'
 import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBackdropId, resolveBackdrop, } from './backdrops'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
@@ -155,6 +156,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   let detailHeading: HTMLHeadingElement | undefined
   let songInput: HTMLInputElement | undefined
   let referenceInput: HTMLInputElement | undefined
+  // Android TV / Google TV resolve no file-picker intent, so `.click()` on a
+  // file input returns silently and the button reads as broken. Say so instead.
+  const [filePickerBlocked, setFilePickerBlocked] = createSignal(false)
+  const pickFile = (input: HTMLInputElement | undefined): void => {
+    openFilePicker(input, {
+      onUnavailable: () => setFilePickerBlocked(true),
+    })
+  }
   let venueMenuContainer: HTMLDivElement | undefined
   let venueMenuButton: HTMLButtonElement | undefined
 
@@ -1230,7 +1239,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     <button
                       type="button"
                       class={styles.songListMore}
-                      onClick={() => referenceInput?.click()}
+                      onClick={() => pickFile(referenceInput)}
                     >
                       Open a tab file
                     </button>
@@ -1241,7 +1250,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       <button
                         type="button"
                         class={styles.songListMore}
-                        onClick={() => referenceInput?.click()}
+                        onClick={() => pickFile(referenceInput)}
                       >
                         Open a tab file
                       </button>
@@ -1336,7 +1345,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         </Show>
                         <button
                           type="button"
-                          onClick={() => songInput?.click()}
+                          onClick={() => pickFile(songInput)}
                         >
                           Choose another
                         </button>
@@ -1351,7 +1360,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     >
                       Try again
                     </button>
-                    <button type="button" onClick={() => songInput?.click()}>
+                    <button type="button" onClick={() => pickFile(songInput)}>
                       Choose another
                     </button>
                   </Match>
@@ -1394,7 +1403,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         </Show>
                         <button
                           type="button"
-                          onClick={() => songInput?.click()}
+                          onClick={() => pickFile(songInput)}
                         >
                           Choose another
                         </button>
@@ -1411,7 +1420,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     >
                       Rehearse the tab
                     </button>
-                    <button type="button" onClick={() => songInput?.click()}>
+                    <button type="button" onClick={() => pickFile(songInput)}>
                       Choose audio
                     </button>
                   </Match>
@@ -1422,7 +1431,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       disabled={
                         songController.selectionState().kind === 'loading'
                       }
-                      onClick={() => songInput?.click()}
+                      onClick={() => pickFile(songInput)}
                     >
                       {activeBacking() ? 'Choose another' : 'Choose audio'}
                     </button>
@@ -1479,6 +1488,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           <span aria-hidden="true" />
           <strong>{roomStatus().title}</strong>
           <small>{roomStatus().detail}</small>
+        </div>
+      </Show>
+
+      <Show when={filePickerBlocked()}>
+        <div
+          class={styles.filePickerBlocked}
+          role="alert"
+          data-testid="guitar-night-file-picker-blocked"
+        >
+          <strong>This device has no file picker</strong>
+          <small>{FILE_PICKER_UNAVAILABLE_MESSAGE}</small>
+          <button type="button" onClick={() => setFilePickerBlocked(false)}>
+            Dismiss
+          </button>
         </div>
       </Show>
 
