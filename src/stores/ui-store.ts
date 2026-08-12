@@ -70,6 +70,7 @@ export type SettingsSection =
   | 'singing'
   | 'karaoke'
   | 'display'
+  | 'sync'
   | 'credits'
 
 export const [settingsSection, setSettingsSection] =

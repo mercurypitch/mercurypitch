@@ -67,6 +67,31 @@ export async function durableWrite<T>(
  * reports nothing) — we never block a write on an unknown, only on a known
  * shortage, so callers use this as a pre-flight WARNING, not a hard gate.
  */
+/**
+ * What the browser says about this origin's storage, or null if it will
+ * not say.
+ *
+ * The same call `hasRoomFor` makes, exposed for the Sync settings to show
+ * a real number. Quotas are the thing device sync turns on -- a phone's
+ * per-origin allowance decides whether a library fits at all -- and every
+ * figure we have for them came from secondary sources. This is how the
+ * measurement comes back from a real device (docs/plans/device-sync.md).
+ */
+export async function storageEstimate(): Promise<{
+  usage: number
+  quota: number
+} | null> {
+  try {
+    if (typeof navigator === 'undefined' || navigator.storage?.estimate == null)
+      return null
+    const { quota, usage } = await navigator.storage.estimate()
+    if (quota == null || usage == null) return null
+    return { usage, quota }
+  } catch {
+    return null
+  }
+}
+
 export async function hasRoomFor(bytes: number): Promise<boolean> {
   try {
     if (
