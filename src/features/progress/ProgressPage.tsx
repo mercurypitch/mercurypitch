@@ -1179,7 +1179,11 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                   </div>
 
                   <div class={styles.shelfScroll}>
-                    <ul class={styles.milestoneShelf}>
+                    <ul
+                      class={styles.milestoneShelf}
+                      tabindex="0"
+                      aria-label="Earned milestones. Swipe or scroll horizontally to browse."
+                    >
                       <Show when={snapshot().milestonesAvailable !== false}>
                         <For each={snapshot().milestones}>
                           {(milestone) => (
