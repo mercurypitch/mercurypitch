@@ -27,7 +27,7 @@ import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { SendChannel } from '@/lib/jam/jam-song-transfer'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { SyncWireMessage } from '@/lib/sync/sync-protocol'
-import { receiveBundleOverWire, sendBundleOverWire, } from '@/lib/sync/sync-protocol'
+import { receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
 import type { UvrSession } from '@/stores/uvr-store'
 import { deleteAllUvrSessions, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
 
@@ -272,5 +272,55 @@ describe('sync protocol over a wire', () => {
     expect(sent.outcome).toBe('failed')
     expect(kept.outcome).toBe('failed')
     expect(getUvrSessionByHash(HASH)).toBeUndefined()
+  })
+})
+
+describe('sync protocol when the connection dies', () => {
+  it('fails the send instead of waiting for ever when a frame cannot go out', async () => {
+    // The channel died while the song was packing, so the offer never
+    // leaves. Before this was handled the promise never settled: the UI
+    // sat on "Sending 0%" with every control disabled and no way back.
+    await seedSourceSong()
+    const bundle = await buildPortableBundle(SOURCE_ID)
+    const dead = makeWire()
+    const sender = sendBundleOverWire(bundle, {
+      sendControl: () => false,
+      channel: dead.channel,
+    })
+    const outcome = await sender.result
+    expect(outcome.outcome).toBe('failed')
+    if (outcome.outcome === 'failed') {
+      expect(outcome.message).toContain('closed')
+    }
+  })
+
+  it('gives up on a receiver that goes silent, and says why', async () => {
+    // Seeded on real timers: fake-indexeddb drives itself with timers,
+    // and faking them before the database work simply hangs it.
+    await seedSourceSong()
+    const bundle = await buildPortableBundle(SOURCE_ID)
+    vi.useFakeTimers()
+    try {
+      // Frames "send" fine; nothing ever answers — a phone that slept.
+      const silent = makeWire()
+      const sender = sendBundleOverWire(bundle, {
+        sendControl: () => true,
+        channel: silent.channel,
+      })
+      const settled = vi.fn()
+      void sender.result.then(settled)
+
+      await vi.advanceTimersByTimeAsync(SENDER_SILENCE_MS - 1000)
+      expect(settled).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(2000)
+      const outcome = await sender.result
+      expect(outcome.outcome).toBe('failed')
+      if (outcome.outcome === 'failed') {
+        expect(outcome.message).toContain('stopped answering')
+      }
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

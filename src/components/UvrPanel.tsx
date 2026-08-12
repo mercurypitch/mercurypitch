@@ -2380,9 +2380,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   {/* Outside the sessions-exist gate on purpose: the empty
                       device is exactly the one that needs to receive. */}
                   <button
-                    class="section-action-btn icon-only"
+                    class="section-action-btn section-action-btn-accent icon-only"
                     onClick={() => setSyncModalTarget({})}
                     title="Sync songs with another of your devices"
+                    aria-label="Sync songs with another of your devices"
                   >
                     <DeviceSync />
                   </button>

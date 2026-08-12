@@ -13,6 +13,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
+import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/sync/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { SyncTransfer } from '@/stores/sync-store'
 import { sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncPeerLabel, syncRoomId, syncState, syncTransfers, } from '@/stores/sync-store'
@@ -93,7 +94,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   }
 
   const join = (): void => {
-    const code = joinCode().trim()
+    const code = normalizeRoomCode(joinCode())
     if (code === '' || joining()) return
     setJoining(true)
     void startSyncSend(code).finally(() => setJoining(false))
@@ -127,6 +128,9 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     if (connected()) return `Connected: ${syncPeerLabel() ?? 'another device'}`
     if (syncState() === 'waiting')
       return 'Waiting for your other device to enter the code…'
+    // Idle with no code means the session ended before it started; the
+    // reason is already in syncError, so do not claim to be opening one.
+    if (syncState() === 'idle') return 'The sync session is not open.'
     return 'Opening a sync session…'
   }
 
@@ -208,7 +212,23 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
             <Show when={mode() === 'receive' && !jamSignalingIsMocked()}>
               <Show
                 when={syncRoomId()}
-                fallback={<p class={styles.status}>{receiveStatus()}</p>}
+                fallback={
+                  <>
+                    <p class={styles.status}>{receiveStatus()}</p>
+                    {/* A session that never opened leaves nothing on
+                        screen to act on. Without this the only way out is
+                        closing the modal, which is not obviously a retry. */}
+                    <Show when={syncState() === 'idle'}>
+                      <button
+                        type="button"
+                        class={styles.btn}
+                        onClick={enterReceive}
+                      >
+                        Try again
+                      </button>
+                    </Show>
+                  </>
+                }
               >
                 {(code) => (
                   <>
@@ -240,10 +260,21 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                         type="text"
                         placeholder="Code from the other device"
                         value={joinCode()}
+                        maxLength={ROOM_CODE_LENGTH}
                         autocapitalize="characters"
                         autocomplete="off"
                         spellcheck={false}
-                        onInput={(e) => setJoinCode(e.currentTarget.value)}
+                        onInput={(e) => {
+                          // Normalized as it is typed, not at submit: a
+                          // room id is a case-sensitive Durable Object
+                          // name, so a lowercase code opens a different,
+                          // empty room instead of failing. Rewriting the
+                          // field also shows the person what will be
+                          // sent.
+                          const code = normalizeRoomCode(e.currentTarget.value)
+                          e.currentTarget.value = code
+                          setJoinCode(code)
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') join()
                         }}
@@ -251,7 +282,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                       <button
                         type="button"
                         class={styles.btn}
-                        disabled={joinCode().trim() === '' || joining()}
+                        disabled={!isCompleteRoomCode(joinCode()) || joining()}
                         onClick={join}
                       >
                         {joining() || syncState() === 'starting'

@@ -799,16 +799,49 @@
   border-color: rgba(239, 68, 68, 0.5);
 }
 
+/* The library header's icon-only row is where export, import, sync and
+   clear all live, and at 1.8rem with a 0.95rem glyph they read as
+   decoration rather than as the controls they are -- a capability nobody
+   finds is a capability nobody has. Big enough to see, and on a touch
+   screen big enough to hit. */
 .section-action-btn.icon-only {
   padding: 0;
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 2.4rem;
+  height: 2.4rem;
   justify-content: center;
 }
 
 .section-action-btn svg {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* A finger is not a mouse pointer: phones, tablets and the TV remote all
+   report coarse, and 44px is the smallest target that is reliably hit. */
+@media (pointer: coarse) {
+  .section-action-btn.icon-only {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .section-action-btn svg {
+    width: 1.3rem;
+    height: 1.3rem;
+  }
+}
+
+/* One accented control per header, for the action that is new enough that
+   people do not know to look for it. Same size and shape as its
+   neighbours -- only the colour says "this one is different". */
+.section-action-btn-accent {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+.section-action-btn-accent:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ============================================================

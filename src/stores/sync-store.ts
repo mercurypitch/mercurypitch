@@ -21,6 +21,7 @@ import { isRelayedConnection } from '@/lib/jam/jam-song-transfer'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
 import { isReadableManifest } from '@/lib/portable/portable-bundle'
 import { syncDeviceLabel } from '@/lib/sync/device-label'
+import { normalizeRoomCode } from '@/lib/sync/room-code'
 import type { SyncPeer } from '@/lib/sync/sync-peer'
 import { createSyncPeer } from '@/lib/sync/sync-peer'
 import type { BundleReceiver, BundleSender, SyncWireMessage, } from '@/lib/sync/sync-protocol'
@@ -75,6 +76,21 @@ let peer: SyncPeer | null = null
 let activePeerId: string | null = null
 let activeSender: BundleSender | null = null
 let activeReceiver: BundleReceiver | null = null
+/**
+ * Bumped every time the session is torn down.
+ *
+ * Packing a song takes tens of seconds, and the person can close the
+ * modal and start a whole new session inside that window. Without a
+ * generation stamp the FIRST job's cleanup then runs against the SECOND
+ * session -- clearing `activeSender` and `syncBusy` out from under a
+ * live transfer, which orphans it: its control frames go nowhere and it
+ * hangs at 0% while the UI cheerfully offers to start another.
+ */
+let generation = 0
+/** Flipped by a teardown so a long pack stops instead of finishing. */
+let packAbort: { aborted: boolean } = { aborted: false }
+/** True while tearing down, so the user's own Close is not "an error". */
+let closing = false
 
 function upsertTransfer(
   fileHash: string,
@@ -143,10 +159,22 @@ function ensurePeer(): SyncPeer {
   return peer
 }
 
+/**
+ * How long a joiner waits for the far device before saying the code is
+ * probably wrong.
+ *
+ * A wrong code does NOT fail: the room server adopts any well-formed
+ * name, so a mistyped code quietly opens a new, empty room and the two
+ * devices wait for each other in different places. Nothing but a
+ * deadline can tell that apart from a slow connection, so this is the
+ * only thing standing between the user and "Connecting…" for ever.
+ */
+const PEER_ARRIVAL_MS = 20_000
+
 /** Poll until signaling has answered with an id, or give up. */
 async function waitFor(
   read: () => string | null,
-  timeoutMs = 7000,
+  timeoutMs = 12_000,
 ): Promise<string | null> {
   const end = Date.now() + timeoutMs
   for (;;) {
@@ -155,6 +183,19 @@ async function waitFor(
     if (Date.now() >= end) return null
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
+}
+
+/** Watch for the far device, and say something if it never arrives. */
+function armPeerArrivalDeadline(): void {
+  const mine = generation
+  setTimeout(() => {
+    if (mine !== generation) return
+    if (activePeerId !== null) return
+    if (syncState() !== 'waiting') return
+    setSyncError(
+      'No device joined with that code. Check the code on the other device — and that both are on the same Wi-Fi — then try again.',
+    )
+  }, PEER_ARRIVAL_MS)
 }
 
 /**
@@ -168,23 +209,36 @@ export async function startSyncReceive(): Promise<string | null> {
   await p.createRoom(syncDeviceLabel())
   const roomId = await waitFor(() => p.getRoomId())
   if (roomId === null) {
-    if (syncError() === null) {
-      setSyncError('Could not open a sync session — check your connection.')
-    }
-    setSyncState('idle')
+    // Torn down rather than left half-open: the room may yet arrive on a
+    // slow link, and a code the UI never showed is a room nobody can
+    // join. Ending it cleanly is what makes "Try again" work.
+    const message =
+      syncError() ??
+      'Could not open a sync session — check your connection and try again.'
+    resetSync(message)
     return null
   }
   setSyncRoomId(roomId)
   setSyncState('waiting')
+  armPeerArrivalDeadline()
   return roomId
 }
 
 /** Join the other device's code, ready to send. */
 export async function startSyncSend(roomId: string): Promise<boolean> {
   const p = ensurePeer()
+  // Normalized here too, not only in the input: the room id is a
+  // case-sensitive Durable Object name, and a lowercase code opens a
+  // different empty room rather than failing.
+  const code = normalizeRoomCode(roomId)
+  if (code === '') {
+    setSyncError('That does not look like a sync code.')
+    setSyncState('idle')
+    return false
+  }
   setSyncError(null)
   setSyncState('starting')
-  await p.joinRoom(roomId.trim(), syncDeviceLabel())
+  await p.joinRoom(code, syncDeviceLabel())
   const peerId = await waitFor(() => p.getPeerId())
   if (peerId === null) {
     if (syncError() === null) {
@@ -195,9 +249,10 @@ export async function startSyncSend(roomId: string): Promise<boolean> {
     setSyncState('idle')
     return false
   }
-  setSyncRoomId(roomId.trim())
+  setSyncRoomId(code)
   // 'waiting' until the DataChannel to the receiver actually opens.
   if (syncState() === 'starting') setSyncState('waiting')
+  armPeerArrivalDeadline()
   return true
 }
 
@@ -213,9 +268,16 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
   const target = activePeerId
   if (p === null || target === null || syncBusy()) return
   const session = getUvrSession(sessionId)
-  if (session === undefined) return
+  if (session === undefined) {
+    // Deleted between opening the modal and pressing Send. Saying so
+    // beats a Send button that does nothing and explains nothing.
+    setSyncError('That song is no longer on this device.')
+    return
+  }
   const fileHash = session.fileHash ?? sessionId
   const title = session.originalFile?.name ?? 'Untitled song'
+  const mine = generation
+  const signal = packAbort
 
   setSyncBusy(true)
   addTransfer({
@@ -228,9 +290,21 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
   })
 
   try {
+    // The route is checked BEFORE packing, not after. Packing a song is
+    // tens of seconds of decode and encode on a phone; discovering only
+    // then that the route is relayed -- and refusing -- spends all of it
+    // to say no.
+    const connection = p.connectionTo(target)
+    if (connection === null || (await isRelayedConnection(connection))) {
+      upsertTransfer(fileHash, { status: 'failed', message: RELAY_REFUSAL })
+      showNotification(RELAY_REFUSAL, 'warning')
+      return
+    }
+
     // Per-stem encode progress folded into one bar: two stems, half each.
     const packRatio: Record<string, number> = {}
     const bundle = await buildPortableBundle(sessionId, {
+      signal,
       onProgress: (prog) => {
         packRatio[prog.part] = prog.ratio
         const vocal = packRatio['stem:vocal'] ?? 0
@@ -238,16 +312,23 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
         upsertTransfer(fileHash, { ratio: (vocal + inst) / 2 })
       },
     })
+    // The session this job belongs to may have been closed and replaced
+    // while it packed; its bytes are not wanted by anybody now.
+    if (mine !== generation) return
     const bytes = bundle.manifest.parts.reduce((n, part) => n + part.bytes, 0)
     upsertTransfer(fileHash, { bytes })
 
-    const connection = p.connectionTo(target)
-    if (connection === null || (await isRelayedConnection(connection))) {
-      upsertTransfer(fileHash, { status: 'failed', message: RELAY_REFUSAL })
-      showNotification(RELAY_REFUSAL, 'warning')
+    const channel = p.channelTo(target)
+    // A channel that exists but is not open is a pair that died while we
+    // packed -- writing to it silently drops every frame.
+    if (channel !== null && channel.readyState !== 'open') {
+      upsertTransfer(fileHash, {
+        status: 'failed',
+        message:
+          'The connection to the other device dropped while the song was being packed.',
+      })
       return
     }
-    const channel = p.channelTo(target)
     if (channel === null) {
       upsertTransfer(fileHash, {
         status: 'failed',
@@ -291,19 +372,24 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       upsertTransfer(fileHash, { status: 'already', ratio: 1 })
     } else {
       upsertTransfer(fileHash, { status: 'failed', message: outcome.message })
-      showNotification(
-        `“${title}” did not make it across: ${outcome.message}`,
-        'error',
-      )
+      if (!closing) {
+        showNotification(
+          `“${title}” did not make it across: ${outcome.message}`,
+          'error',
+        )
+      }
     }
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'The song could not be packed.'
     upsertTransfer(fileHash, { status: 'failed', message })
-    showNotification(message, 'error')
+    if (!closing) showNotification(message, 'error')
   } finally {
-    activeSender = null
-    setSyncBusy(false)
+    // Only if this job still owns the session — see `generation`.
+    if (mine === generation) {
+      activeSender = null
+      setSyncBusy(false)
+    }
   }
 }
 
@@ -335,6 +421,7 @@ function handleIncomingOffer(manifest: unknown): void {
 
   const { fileHash, title } = manifest.song
   const bytes = manifest.parts.reduce((n, part) => n + part.bytes, 0)
+  const mine = generation
   setSyncBusy(true)
   addTransfer({
     fileHash,
@@ -374,20 +461,30 @@ function handleIncomingOffer(manifest: unknown): void {
         upsertTransfer(fileHash, { status: 'already', ratio: 1 })
       } else {
         upsertTransfer(fileHash, { status: 'failed', message: outcome.message })
-        showNotification(
-          `“${title}” did not arrive intact: ${outcome.message}`,
-          'error',
-        )
+        if (!closing) {
+          showNotification(
+            `“${title}” did not arrive intact: ${outcome.message}`,
+            'error',
+          )
+        }
       }
     })
     .finally(() => {
-      activeReceiver = null
-      setSyncBusy(false)
+      if (mine === generation) {
+        activeReceiver = null
+        setSyncBusy(false)
+      }
     })
 }
 
 function resetSync(notice: string | null): void {
   const stopped = 'The sync session was closed.'
+  generation += 1
+  closing = true
+  // Stops a pack mid-slice. Without it a phone keeps decoding and
+  // encoding a whole song for a screen that is already gone.
+  packAbort.aborted = true
+  packAbort = { aborted: false }
   activeSender?.abort(stopped)
   activeReceiver?.abort(stopped)
   activeSender = null
@@ -404,6 +501,11 @@ function resetSync(notice: string | null): void {
   if (notice !== null) {
     setSyncError(notice)
   }
+  // The aborted transfers resolve a microtask later; by then their
+  // "it failed" notifications would be about a thing the user chose.
+  queueMicrotask(() => {
+    closing = false
+  })
 }
 
 /** Close the session and forget everything about it. */
