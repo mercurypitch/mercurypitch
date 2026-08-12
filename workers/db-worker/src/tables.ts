@@ -197,6 +197,10 @@ export const TABLES: Record<string, TableDef> = {
   voiceprints: { access: 'user', jsonCols: ['summary'] },
   // Private per-user history: reads and writes always scoped to the token.
   userActivity: { access: 'user' },
+  // The library WITHOUT the audio — see migrations/0025_song_manifests.sql.
+  // Titles and sizes so a second device can list what its owner has; the
+  // stems themselves never come near this worker.
+  songManifests: { access: 'user', boolCols: ['hasLyrics'] },
   // Pricing config: public reads (the pricing page), writes require the
   // X-Admin-Key — so prices/tiers are editable without a deploy. The credit
   // ledger, entitlements, and billing events are deliberately NOT here: only

@@ -46,7 +46,7 @@ import { showActionNotification, showNotification, } from '@/stores/notification
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
-import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
+import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrLibraryElsewhere, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
@@ -2499,6 +2499,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     )}
                   </For>
                 </div>
+              </Show>
+
+              {/* The other half of the library: songs the account has and
+                  this device does not. Inside the gallery Show, because it
+                  is the same question -- what do I have -- answered for
+                  the devices that are not this one. */}
+              <Show when={sessionGalleryOpen()}>
+                <UvrLibraryElsewhere />
               </Show>
             </div>
           </Show>

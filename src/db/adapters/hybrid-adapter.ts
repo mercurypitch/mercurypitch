@@ -41,6 +41,10 @@ export const CLOUD_ENTITIES: ReadonlySet<string> = new Set([
   // rendered happily from localStorage. See the drift test below.
   'voiceprints',
   'userActivity',
+  // The library list, without any audio -- see docs/plans/device-sync.md
+  // and migrations/0025_song_manifests.sql. Titles and sizes so a second
+  // device can show what its owner has; the stems stay device-local.
+  'songManifests',
 ])
 
 /**
@@ -62,6 +66,10 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
   // gallery shows when nobody is signed in.
   'voiceprints',
   'userActivity',
+  // Signed out there is no account whose library this would be, so reads
+  // resolve empty rather than 401 -- the device's own sessions are what
+  // the library shows until somebody signs in.
+  'songManifests',
 ])
 
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {

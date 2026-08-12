@@ -429,6 +429,40 @@ export interface PianoProjectMigrationRecord extends DbEntity {
   completedAt: string
 }
 
+// ── Song manifests: the library without the audio ────────────────
+
+/** The quality the audio behind a manifest was last shared at. */
+export type SongAudioQuality = 'lossless' | 'portable-192' | 'portable-128'
+
+/**
+ * One song a person has, small enough to sync.
+ *
+ * The stems stay on the device that made them -- this is the LIST, so a
+ * phone signing in can show the whole library with everything greyed out
+ * until its audio arrives. See docs/plans/device-sync.md.
+ *
+ * Identified by `fileHash` rather than by session id: the hash is the same
+ * song everywhere, while a session id is one device's record of having
+ * separated it.
+ */
+export interface SongManifest extends DbEntity {
+  userId: string
+  /** SHA-256 of the original file. Unique per user (see migration 0025). */
+  fileHash: string
+  /** What the library shows -- today, the uploaded file's name. */
+  title: string
+  durationSec?: number
+  /**
+   * A song separated on a device is lossless there. Anything that arrived
+   * as a portable bundle says so, so the library can mark it a reduced
+   * copy instead of letting a singer conclude the separation is broken.
+   */
+  quality: SongAudioQuality
+  /** JSON `Record<string, { bytes?: number }>` -- which stems, how big. */
+  stemsJson?: string
+  hasLyrics?: boolean
+}
+
 // ── UVR Sessions & Stem Blobs ────────────────────────────────────
 
 export interface UvrSessionRecord extends DbEntity {

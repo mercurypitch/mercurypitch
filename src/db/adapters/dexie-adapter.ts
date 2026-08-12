@@ -66,6 +66,12 @@ class DexieDatabase extends DexieDB {
       pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
       pianoProjectMigrations: 'id, &migrationKey, completedAt',
     })
+    // v8: song manifests — the library list, without any audio. A cloud
+    // entity, mirrored locally so the library still renders offline and
+    // signed out; see docs/plans/device-sync.md.
+    this.version(8).stores({
+      songManifests: 'id, userId, fileHash, [userId+fileHash], updatedAt',
+    })
   }
 }
 
