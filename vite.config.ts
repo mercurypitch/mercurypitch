@@ -363,10 +363,17 @@ export default defineConfig(({ command, mode }) => {
             if (id.includes('/src/lib/note-utils.')) return 'note-utils'
             if (id.includes('/src/lib/audio-unlock.')) return 'audio-unlock'
             // Imported by every entry (standalone rooms included) AND by the
-            // stem mixer inside 'advanced'. Its only dependency is solid-js;
-            // pinning it keeps Rollup from co-locating it with a heavy chunk
-            // and re-taxing the standalone first paints it exists to protect.
-            if (id.includes('/src/lib/device-tier.')) return 'device-tier'
+            // stem mixer inside 'advanced'. device-tier depends only on
+            // solid-js and frame-rate-limiter on nothing; without a pin,
+            // Rollup co-locates the limiter with its 'advanced' importers and
+            // the standalone entries statically inherit that whole graph —
+            // the exact first-paint tax the piano-night smoke test rejects.
+            if (
+              id.includes('/src/lib/device-tier.') ||
+              id.includes('/src/lib/frame-rate-limiter.')
+            ) {
+              return 'device-tier'
+            }
             // Piano Night consumes the shared background controller and picker
             // without booting the App-owned library/store graph. Keep every
             // route-neutral background leaf together, while deliberately
