@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DeviceProbe } from './device-tier'
 import { analysisFpsFor, classifyDevice, createFrameHealthSampler, presentationFpsFor, renderScaleFor, scoreDeviceTier, } from './device-tier'
 
@@ -236,5 +236,39 @@ describe('createFrameHealthSampler', () => {
     feed(sampler, [50, 50, 50, 50])
     sampler.reset()
     expect(sampler.isStruggling()).toBe(false)
+  })
+})
+
+describe('performanceMode persistence', () => {
+  const PERFORMANCE_MODE_KEY = 'pitchperfect_performance_mode'
+
+  /** The signal reads localStorage at import time, so each case reloads. */
+  const loadModule = async () => {
+    vi.resetModules()
+    return await import('./device-tier')
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('defaults to auto', async () => {
+    const mod = await loadModule()
+    expect(mod.performanceMode()).toBe('auto')
+  })
+
+  it('persists an override and reads it back on the next session', async () => {
+    const mod = await loadModule()
+    mod.setPerformanceMode('low')
+    expect(localStorage.getItem(PERFORMANCE_MODE_KEY)).toBe('low')
+
+    const reloaded = await loadModule()
+    expect(reloaded.performanceMode()).toBe('low')
+  })
+
+  it('ignores a corrupted stored value', async () => {
+    localStorage.setItem(PERFORMANCE_MODE_KEY, 'turbo')
+    const mod = await loadModule()
+    expect(mod.performanceMode()).toBe('auto')
   })
 })

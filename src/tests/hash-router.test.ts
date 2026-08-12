@@ -238,6 +238,10 @@ describe('parseHash', () => {
       type: 'settings-section',
       section: 'display',
     })
+    expect(parseHash('#/settings/karaoke')).toEqual({
+      type: 'settings-section',
+      section: 'karaoke',
+    })
   })
 
   it('unknown settings section falls through to unknown', () => {
