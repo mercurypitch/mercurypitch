@@ -216,6 +216,20 @@ function lastTarget(parameter: FakeAudioParam): number | undefined {
   return parameter.events.findLast((event) => event.kind === 'target')?.value
 }
 
+function deferred<T>(): {
+  promise: Promise<T>
+  resolve(value: T): void
+  reject(reason: unknown): void
+} {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
 describe('createPianoSampledInstrument', () => {
   it('does no audio or network work at module construction or while controls are staged', () => {
     const { context, fetchArrayBuffer, getAudioContext, instrument } = harness()
@@ -327,6 +341,169 @@ describe('createPianoSampledInstrument', () => {
       status: 'ready',
       loadedSamples: 10,
     })
+  })
+
+  it('publishes playable coverage while optional detail remains cancellable and pinned', async () => {
+    const detail = deferred<ArrayBuffer>()
+    let detailStarted = false
+    const { instrument } = harness({
+      loadConcurrency: 1,
+      fetchArrayBuffer: async (url, signal) => {
+        if (url.endsWith('v12.mp3')) return new Uint8Array([1]).buffer
+        detailStarted = true
+        signal.addEventListener(
+          'abort',
+          () => detail.reject(new DOMException('Cancelled', 'AbortError')),
+          { once: true },
+        )
+        return detail.promise
+      },
+    })
+    let settled = false
+    const preparation = instrument.prewarm([60, 63])
+    void preparation.then(
+      () => {
+        settled = true
+      },
+      () => {
+        settled = true
+      },
+    )
+
+    await vi.waitFor(() => {
+      expect(instrument.getLoadSnapshot().playable).toBe(true)
+      expect(detailStarted).toBe(true)
+    })
+
+    expect(settled).toBe(false)
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'loading',
+      playable: true,
+      preparedSamples: 2,
+    })
+    expect(instrument.getLoadSnapshot().plannedSamples).toBeGreaterThan(2)
+    expect(
+      instrument.noteOn({ id: 'coverage:C4', midi: 60, velocity: 0.6 }),
+    ).toBe(true)
+    expect(
+      instrument.noteOn({ id: 'coverage:D#4', midi: 63, velocity: 0.6 }),
+    ).toBe(true)
+
+    detail.resolve(new Uint8Array([1]).buffer)
+    await preparation
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'ready',
+      playable: true,
+      error: null,
+    })
+    expect(instrument.getLoadSnapshot().preparedSamples).toBe(
+      instrument.getLoadSnapshot().plannedSamples,
+    )
+  })
+
+  it('keeps completed coverage playable when optional refinement is aborted', async () => {
+    const abort = new AbortController()
+    const { instrument } = harness({
+      loadConcurrency: 1,
+      fetchArrayBuffer: async (url, signal) => {
+        if (url.endsWith('v12.mp3')) return new Uint8Array([1]).buffer
+        return new Promise<ArrayBuffer>((_resolve, reject) => {
+          const rejectAbort = () =>
+            reject(new DOMException('Cancelled', 'AbortError'))
+          signal.addEventListener('abort', rejectAbort, { once: true })
+          if (signal.aborted) rejectAbort()
+        })
+      },
+    })
+    const preparation = instrument.prewarm([60, 63], abort.signal)
+    await vi.waitFor(() =>
+      expect(instrument.getLoadSnapshot()).toMatchObject({
+        status: 'loading',
+        playable: true,
+        preparedSamples: 2,
+      }),
+    )
+
+    abort.abort()
+    await expect(preparation).rejects.toMatchObject({ name: 'AbortError' })
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'ready',
+      playable: true,
+      preparedSamples: 2,
+      plannedSamples: 2,
+      error: null,
+    })
+    expect(
+      instrument.noteOn({ id: 'after-abort:C4', midi: 60, velocity: 0.6 }),
+    ).toBe(true)
+    expect(
+      instrument.noteOn({ id: 'after-abort:D#4', midi: 63, velocity: 0.6 }),
+    ).toBe(true)
+  })
+
+  it('clears an earlier fatal error when retry coverage succeeds before refinement is aborted', async () => {
+    let coverageFails = true
+    const abort = new AbortController()
+    const { instrument } = harness({
+      loadConcurrency: 1,
+      fetchArrayBuffer: async (url, signal) => {
+        if (url.endsWith('v12.mp3')) {
+          if (coverageFails) throw new TypeError('offline')
+          return new Uint8Array([1]).buffer
+        }
+        return new Promise<ArrayBuffer>((_resolve, reject) => {
+          const rejectAbort = () =>
+            reject(new DOMException('Cancelled', 'AbortError'))
+          signal.addEventListener('abort', rejectAbort, { once: true })
+          if (signal.aborted) rejectAbort()
+        })
+      },
+    })
+
+    await expect(instrument.prewarm([60])).rejects.toThrow()
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'error',
+      playable: false,
+    })
+
+    coverageFails = false
+    const retry = instrument.prewarm([60], abort.signal)
+    await vi.waitFor(() =>
+      expect(instrument.getLoadSnapshot()).toMatchObject({
+        status: 'loading',
+        playable: true,
+        preparedSamples: 1,
+      }),
+    )
+
+    abort.abort()
+    await expect(retry).rejects.toMatchObject({ name: 'AbortError' })
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'ready',
+      playable: true,
+      preparedSamples: 1,
+      plannedSamples: 1,
+      error: null,
+    })
+  })
+
+  it('contains optional-detail failures without withdrawing playable coverage', async () => {
+    const { instrument } = harness({
+      fetchArrayBuffer: async (url) => {
+        if (url.endsWith('v12.mp3')) return new Uint8Array([1]).buffer
+        throw new TypeError('optional detail unavailable')
+      },
+    })
+
+    await expect(instrument.prewarm([60, 63])).resolves.toBeUndefined()
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'ready',
+      playable: true,
+      preparedSamples: 2,
+      error:
+        'Some optional piano details could not be loaded; playable samples remain available.',
+    })
+    expect(instrument.getLoadSnapshot().plannedSamples).toBeGreaterThan(2)
   })
 
   it('omits out-of-range pitches from prewarm instead of clamping them to edge samples', async () => {
@@ -689,6 +866,47 @@ describe('createPianoSampledInstrument', () => {
     expect(listener).toHaveBeenCalledTimes(callsAfterDispose)
   })
 
+  it('disposes cleanly after coverage while optional refinement is pending', async () => {
+    const { instrument } = harness({
+      loadConcurrency: 1,
+      fetchArrayBuffer: async (url, signal) => {
+        if (url.endsWith('v12.mp3')) return new Uint8Array([1]).buffer
+        return new Promise<ArrayBuffer>((_resolve, reject) => {
+          const rejectAbort = () =>
+            reject(new DOMException('Disposed', 'AbortError'))
+          signal.addEventListener('abort', rejectAbort, { once: true })
+          if (signal.aborted) rejectAbort()
+        })
+      },
+    })
+    const listener = vi.fn()
+    instrument.subscribe(listener)
+    const preparation = instrument.prewarm([60])
+    await vi.waitFor(() =>
+      expect(instrument.getLoadSnapshot()).toMatchObject({
+        status: 'loading',
+        playable: true,
+        preparedSamples: 1,
+      }),
+    )
+
+    instrument.dispose()
+
+    await expect(preparation).rejects.toMatchObject({ name: 'AbortError' })
+    expect(instrument.getLoadSnapshot()).toMatchObject({
+      status: 'idle',
+      playable: false,
+      loadedSamples: 0,
+      preparedSamples: 0,
+      plannedSamples: 0,
+      decodedBytes: 0,
+      error: null,
+    })
+    const callsAfterDispose = listener.mock.calls.length
+    await Promise.resolve()
+    expect(listener).toHaveBeenCalledTimes(callsAfterDispose)
+  })
+
   it('applies character and ambience to the existing graph without rebuilding it', async () => {
     const { context, instrument } = harness()
     await instrument.load()
@@ -701,6 +919,29 @@ describe('createPianoSampledInstrument', () => {
     expect(lastTarget(filter!.frequency)).toBe(5_800)
     expect(lastTarget(dry!.gain)).toBe(0.72)
     expect(context?.filters).toHaveLength(1)
+  })
+
+  it('retains pedal state replayed before the lazy audio graph exists', async () => {
+    const { context, instrument } = harness()
+    instrument.pedal({ pedal: 'soft', value: 1 })
+    instrument.pedal({ pedal: 'sustain', value: 1 })
+
+    await instrument.prewarm([60])
+    expect(
+      instrument.noteOn({ id: 'pedal-replay', midi: 60, velocity: 0.8 }),
+    ).toBe(true)
+
+    const noteGain = context!.gains.at(-1)!.gain
+    const peak = noteGain.events.find(
+      (event) => event.kind === 'exponential',
+    )?.value
+    expect(peak).toBeCloseTo((0.16 + Math.pow(0.8 * 0.65, 0.78) * 0.7) * 0.88)
+
+    const sourcesBeforeRepeatedDown = context!.sources.length
+    instrument.pedal({ pedal: 'sustain', value: 1 })
+    expect(context!.sources).toHaveLength(sourcesBeforeRepeatedDown)
+    instrument.pedal({ pedal: 'sustain', value: 0 })
+    expect(context!.sources).toHaveLength(sourcesBeforeRepeatedDown + 1)
   })
 
   it('resets soft-pedal expression on panic', async () => {
