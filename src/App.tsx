@@ -248,6 +248,7 @@ import { useVoiceControlController } from '@/features/voice-control/useVoiceCont
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
+import { currentGuidedPracticeLaunch, returnFromGuidedPractice, } from '@/features/voice-history/guided-practice-handoff'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
 import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
 import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
@@ -520,13 +521,13 @@ const AppShell: Component<AppProps> = (props) => {
   const [selectedExercise, setSelectedExercise] =
     createSignal<ExerciseType | null>(null)
   const [autoStartExercise, setAutoStartExercise] = createSignal(false)
-  const clearExercise = () => {
+  const resetExerciseLaunchState = () => {
     setSelectedExercise(null)
     setPendingDrill(null)
     setAutoStartExercise(false)
     clearLaunchOverride()
-    // Backing out of the exercise abandons any armed challenge attempt —
-    // a later unrelated run must not count toward the challenge.
+    // A later unrelated run must not inherit a challenge attempt from the
+    // exercise that just left the screen.
     clearChallengeAttempt()
   }
   // Exercises read their launch override at mount. If the same type is
@@ -541,6 +542,11 @@ const AppShell: Component<AppProps> = (props) => {
     } else {
       setSelectedExercise(type)
     }
+  }
+  const clearExercise = () => {
+    const guidedReturn = returnFromGuidedPractice()
+    resetExerciseLaunchState()
+    if (guidedReturn !== null) setActiveTab(TAB_VOICE_HISTORY)
   }
   const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
     // A targeted drill carries a one-shot difficulty / target note; a normal
@@ -611,7 +617,18 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
-      if (drill.notes.length > 0 || drill.pattern != null) {
+      const armedGuidedPractice = currentGuidedPracticeLaunch()
+      const guidedPractice =
+        drill.guidedPractice ??
+        (armedGuidedPractice?.exercise.exerciseId === drill.exercise
+          ? armedGuidedPractice
+          : undefined)
+      if (
+        drill.notes.length > 0 ||
+        drill.difficulty !== undefined ||
+        drill.pattern != null ||
+        guidedPractice !== undefined
+      ) {
         // Routine phrases and challenge notes are authored in a middle
         // register; fitted here — the one choke point every drill launch
         // passes — so a baritone is never handed G4 to start from.
@@ -622,6 +639,7 @@ const AppShell: Component<AppProps> = (props) => {
           targetNotes: notes.length > 0 ? notes : undefined,
           difficulty: drill.difficulty,
           pattern: drill.pattern,
+          guidedPractice,
         })
       }
       mountExercise(drill.exercise)
@@ -1638,6 +1656,16 @@ const AppShell: Component<AppProps> = (props) => {
   onTabTransition((prevTab, newTab) => {
     closeSingingZen()
     closeChallengeStage()
+
+    // A guided dose is launch-scoped. Leaving Exercises through the sidebar
+    // must end that launch just as reliably as its Back button; otherwise the
+    // old prescription and target remount when Exercises is visited again.
+    // Mark the handoff returned without redirecting away from the tab the
+    // singer deliberately chose. Hear Yourself consumes it on their return.
+    if (prevTab === TAB_EXERCISES && currentGuidedPracticeLaunch() !== null) {
+      returnFromGuidedPractice()
+      resetExerciseLaunchState()
+    }
 
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic

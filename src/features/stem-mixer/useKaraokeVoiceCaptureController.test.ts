@@ -49,8 +49,8 @@ describe('karaoke voice capture controller', () => {
   it('pauses with transport and explicitly keeps the scored replay', async () => {
     let clockMs = 1_000
     const start = vi.fn(() => true)
-    const pause = vi.fn(() => true)
-    const resume = vi.fn(() => true)
+    const pause = vi.fn(async () => true)
+    const resume = vi.fn(async () => true)
     const stop = vi.fn(async () =>
       Promise.resolve(new Blob(['voice'], { type: 'audio/webm' })),
     )
@@ -93,9 +93,11 @@ describe('karaoke voice capture controller', () => {
 
       clockMs = 2_000
       capture.pausePlayback()
-      expect(capture.state()).toBe('paused')
+      expect(capture.state()).toBe('recording')
+      await vi.waitFor(() => expect(capture.state()).toBe('paused'))
       clockMs = 3_000
       capture.startPlayback()
+      await vi.waitFor(() => expect(capture.state()).toBe('recording'))
       clockMs = 3_500
       capture.pushMicFrame({ f0: 230, conf: 0.75, rms: 0.4 })
       clockMs = 4_000
@@ -135,12 +137,56 @@ describe('karaoke voice capture controller', () => {
     })
   })
 
+  it('reconciles a quick transport resume after a queued pause is ready', async () => {
+    let clockMs = 1_000
+    let resolvePause!: (ready: boolean) => void
+    const pause = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolvePause = resolve
+        }),
+    )
+    const resume = vi.fn(async () => true)
+    const recorder: TakeRecorder = {
+      start: () => true,
+      pause,
+      resume,
+      stop: vi.fn(async () => null),
+      discard: vi.fn(),
+      dispose: vi.fn(),
+    }
+
+    await createRoot(async (dispose) => {
+      const capture = useKaraokeVoiceCaptureController({
+        sessionId: 'song-session-42',
+        songTitle: 'Heaven Can Wait',
+        getStream: () => ({}) as MediaStream,
+        getAudioContext: () => null,
+        createRecorder: () => recorder,
+        nowMs: () => clockMs,
+      })
+
+      capture.startPlayback()
+      clockMs = 1_500
+      capture.pausePlayback()
+      clockMs = 1_600
+      capture.startPlayback()
+      resolvePause(true)
+
+      await vi.waitFor(() => expect(resume).toHaveBeenCalledOnce())
+      expect(capture.state()).toBe('recording')
+      expect(pause).toHaveBeenCalledOnce()
+      expect(resume).toHaveBeenCalledOnce()
+      dispose()
+    })
+  })
+
   it('discards an unscored run instead of exposing a keep action', () => {
     createRoot((dispose) => {
       const recorder: TakeRecorder = {
         start: () => true,
-        pause: () => true,
-        resume: () => true,
+        pause: async () => true,
+        resume: async () => true,
         stop: vi.fn(async () => null),
         discard: vi.fn(),
         dispose: vi.fn(),

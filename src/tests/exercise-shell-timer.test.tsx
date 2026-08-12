@@ -2,13 +2,17 @@ import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseShell } from '@/features/exercises/ExerciseShell'
-import type { ExerciseStatus } from '@/features/exercises/types'
-import { EXERCISE_LONG_NOTE } from '@/features/exercises/types'
+import { resetTimerPreference, setTimerMode, timerMode, } from '@/features/exercises/timer-preference'
+import type { ExerciseStatus, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
+import { EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, } from '@/features/exercises/types'
 
 const tick = () => new Promise((r) => setTimeout(r, 0))
 
 describe('ExerciseShell auto-timer', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    resetTimerPreference()
+  })
 
   // Regression: the base exercise replaces its state object every animation
   // frame (elapsedMs), so an `on(() => props.status(), ...)` effect that reads
@@ -66,6 +70,176 @@ describe('ExerciseShell auto-timer', () => {
     // Still armed only once — the memo prevented spurious re-arms.
     expect(setIntervalSpy).toHaveBeenCalledTimes(1)
     expect(onElapse).not.toHaveBeenCalled()
+  })
+
+  it('runs the reviewed guided dose without changing the global timer preference', async () => {
+    const guidedPractice: GuidedPracticeLaunchConfig = {
+      assessmentRunId: 'run-guided',
+      exercise: {
+        exerciseId: EXERCISE_PITCH_HOLD,
+        exerciseVersion: '1.0.0',
+        configuration: {
+          configurationId: 'pitch-hold.guided-pitch-centre',
+          configurationVersion: '1.0.0',
+        },
+      },
+      dose: {
+        durationMilliseconds: 5_000,
+        repetitions: 3,
+        sets: 1,
+        comfortableRangeMidiCents: null,
+        demand: 'same',
+      },
+      stopRuleId: 'guided.stop-on-discomfort-v1',
+      targetMidiCents: 6_000,
+      toleranceCents: 35,
+    }
+    const [status, setStatus] = createSignal<ExerciseStatus>('idle')
+    const onBack = vi.fn()
+    let now = 0
+    let intervalCallback: (() => void) | undefined
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    vi.spyOn(globalThis, 'setInterval').mockImplementation((callback) => {
+      intervalCallback = callback as () => void
+      return 1 as unknown as ReturnType<typeof setInterval>
+    })
+    vi.spyOn(globalThis, 'clearInterval').mockImplementation(() => {})
+    setTimerMode(30)
+
+    render(() => (
+      <ExerciseShell
+        type={EXERCISE_PITCH_HOLD}
+        title="Pitch Hold"
+        status={status}
+        currentScore={() => 0}
+        resultScore={() => (status() === 'complete' ? 80 : null)}
+        onBack={onBack}
+        guidedPractice={guidedPractice}
+        onStart={() => setStatus('active')}
+        activeContent={<div>active</div>}
+        onStop={() => setStatus('complete')}
+        resultSummary={<>summary</>}
+        onTryAgain={() => setStatus('active')}
+        onChangeTarget={() => {}}
+        autoTimer={{ onElapse: () => setStatus('complete') }}
+      />
+    ))
+
+    expect(screen.getByText('1 set · 3 holds · 5s each')).toBeVisible()
+    expect(
+      screen.getByText('Stop immediately if anything feels uncomfortable.'),
+    ).toBeVisible()
+    expect(screen.queryByRole('group', { name: 'Auto-score timer' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await tick()
+    expect(screen.getByText('Hold 1 of 3')).toBeVisible()
+    expect(timerMode()).toBe(30)
+
+    for (let completed = 1; completed <= 3; completed += 1) {
+      now += 5_000
+      intervalCallback?.()
+      await tick()
+      const resultStatus = screen.getByRole('status')
+      expect(resultStatus).toHaveTextContent('Hold complete')
+      expect(resultStatus).toHaveFocus()
+      expect(screen.queryByText('80%')).toBeNull()
+      expect(document.querySelector('.exercise-score-display')).toBeNull()
+      if (completed < 3) {
+        fireEvent.click(
+          screen.getByRole('button', {
+            name: `Next hold · ${completed + 1} of 3`,
+          }),
+        )
+        await tick()
+      }
+    }
+
+    expect(
+      screen.getByRole('button', { name: 'Return to Focus reading' }),
+    ).toBeVisible()
+    expect(timerMode()).toBe(30)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Return to Focus reading' }),
+    )
+    expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  it('asks why an early guided stop happened and never escalates after discomfort', async () => {
+    const guidedPractice: GuidedPracticeLaunchConfig = {
+      assessmentRunId: 'run-discomfort',
+      exercise: {
+        exerciseId: EXERCISE_PITCH_HOLD,
+        exerciseVersion: '1.0.0',
+        configuration: {
+          configurationId: 'pitch-hold.guided-pitch-centre',
+          configurationVersion: '1.0.0',
+        },
+      },
+      dose: {
+        durationMilliseconds: 5_000,
+        repetitions: 3,
+        sets: 1,
+        comfortableRangeMidiCents: null,
+        demand: 'same',
+      },
+      stopRuleId: 'guided.stop-on-discomfort-v1',
+      targetMidiCents: 6_000,
+      toleranceCents: 35,
+    }
+    const [status, setStatus] = createSignal<ExerciseStatus>('idle')
+    const onBack = vi.fn()
+    const onTryAgain = vi.fn(() => setStatus('active'))
+
+    render(() => (
+      <ExerciseShell
+        type={EXERCISE_PITCH_HOLD}
+        title="Pitch Hold"
+        status={status}
+        currentScore={() => 0}
+        resultScore={() => (status() === 'complete' ? 42 : null)}
+        onBack={onBack}
+        guidedPractice={guidedPractice}
+        onStart={() => setStatus('active')}
+        activeContent={<div>active</div>}
+        stopLabel="Stop now"
+        onStop={() => setStatus('complete')}
+        resultSummary={<>pitch result that must be suppressed</>}
+        onTryAgain={onTryAgain}
+        onChangeTarget={() => {}}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop now' }))
+    await tick()
+
+    expect(
+      screen.getByRole('group', { name: 'How did stopping feel?' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Retry hold/ })).toBeNull()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'It felt uncomfortable' }),
+    )
+    await tick()
+
+    expect(screen.getByText('Stopped for comfort')).toBeVisible()
+    expect(screen.getByText('Dose ended')).toBeVisible()
+    expect(
+      screen.getByText(
+        'End this dose for today. No further hold is suggested.',
+      ),
+    ).toBeVisible()
+    expect(
+      screen.queryByText('pitch result that must be suppressed'),
+    ).toBeNull()
+    expect(onTryAgain).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Return to Focus reading' }),
+    )
+    expect(onBack).toHaveBeenCalledOnce()
   })
 })
 

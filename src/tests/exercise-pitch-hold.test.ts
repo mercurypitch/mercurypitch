@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { isSupportedGuidedPitchHoldLaunch, shouldRecordOrdinaryPitchHoldProgress, } from '@/features/exercises/pitch-hold/PitchHoldExercise'
 import { usePitchHoldController } from '@/features/exercises/pitch-hold/use-pitch-hold-controller'
 import { resetTimerPreference, setTimerMode, } from '@/features/exercises/timer-preference'
+import type { GuidedPracticeLaunchConfig } from '@/features/exercises/types'
 import { EXERCISE_PITCH_HOLD } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
@@ -206,5 +208,100 @@ describe('pitch hold grades the run it asked for', () => {
     expect(result.metrics.zonePct).toBe(100)
     expect(result.score).toBe(100)
     resetTimerPreference()
+  })
+})
+
+describe('guided Pitch Hold launch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const reviewed: GuidedPracticeLaunchConfig = {
+    assessmentRunId: 'run-1',
+    exercise: {
+      exerciseId: EXERCISE_PITCH_HOLD,
+      exerciseVersion: '1.0.0',
+      configuration: {
+        configurationId: 'pitch-hold.guided-pitch-centre',
+        configurationVersion: '1.0.0',
+      },
+    },
+    dose: {
+      durationMilliseconds: 5_000,
+      repetitions: 3,
+      sets: 1,
+      comfortableRangeMidiCents: null,
+      demand: 'same',
+    },
+    stopRuleId: 'guided.stop-on-discomfort-v1',
+    targetMidiCents: 6_900,
+    toleranceCents: 35,
+  }
+
+  it('accepts only the reviewed bounded configuration', () => {
+    expect(isSupportedGuidedPitchHoldLaunch(reviewed)).toBe(true)
+    expect(
+      isSupportedGuidedPitchHoldLaunch({
+        ...reviewed,
+        dose: { ...reviewed.dose, durationMilliseconds: 30_000 },
+      }),
+    ).toBe(false)
+    expect(
+      isSupportedGuidedPitchHoldLaunch({
+        ...reviewed,
+        targetMidiCents: 6_925,
+      }),
+    ).toBe(false)
+    expect(
+      isSupportedGuidedPitchHoldLaunch({
+        ...reviewed,
+        toleranceCents: 50,
+      }),
+    ).toBe(false)
+    expect(
+      isSupportedGuidedPitchHoldLaunch({
+        ...reviewed,
+        stopRuleId: 'guided.unknown-stop-rule',
+      }),
+    ).toBe(false)
+    expect(
+      isSupportedGuidedPitchHoldLaunch({
+        ...reviewed,
+        dose: {
+          ...reviewed.dose,
+          comfortableRangeMidiCents: [4_800, 6_000],
+        },
+      }),
+    ).toBe(false)
+  })
+
+  it('keeps guided results out of ordinary exercise progression', () => {
+    expect(shouldRecordOrdinaryPitchHoldProgress(reviewed)).toBe(false)
+    expect(shouldRecordOrdinaryPitchHoldProgress(undefined)).toBe(true)
+  })
+
+  it('uses the reviewed tolerance and duration for every prescribed hold', () => {
+    const metricsCalls: Array<Record<string, number>> = []
+    const base = createMockBase({
+      pitchHistory: () => [{ freq: 440, time: 5, cents: 0, clarity: 0.8 }],
+      _getElapsed: () => 5000,
+      _updateMetrics: (metrics) => metricsCalls.push(metrics),
+    })
+    const controller = usePitchHoldController(base, {
+      fixedZoneCents: reviewed.toleranceCents,
+      fixedTargetDurationSeconds: reviewed.dose.durationMilliseconds! / 1000,
+    })
+    controller.setTarget(69)
+
+    controller.startLoop()
+    vi.advanceTimersByTime(1200)
+    const result = controller.stopAndCompute()
+
+    expect(metricsCalls.at(-1)?.zoneRadius).toBe(35)
+    expect(result.score).toBe(100)
   })
 })
