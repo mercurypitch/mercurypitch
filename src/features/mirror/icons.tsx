@@ -107,6 +107,31 @@ export const IconChevron: Component<IconProps> = (p) => (
   </svg>
 )
 
+/** Three dots — the overflow affordance that opens the card-options sheet. */
+export const IconMore: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+/** Close: an X with a sparkle, for the sheet's dismiss control. */
+export const IconClose: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M6.4 6.4 17.6 17.6" />
+    <path d="M17.6 6.4 6.4 17.6" />
+  </svg>
+)
+
+/** Frame with a tall inner crop — the story/square format option. */
+export const IconFormat: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2.4" />
+    <rect x="8.8" y="6.6" width="6.4" height="10.8" rx="1.4" />
+  </svg>
+)
+
 /** Share: arrow rising from a tray, with a sparkle. */
 export const IconShare: Component<IconProps> = (p) => (
   <svg {...svgProps(p)}>

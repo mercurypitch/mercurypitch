@@ -31,11 +31,12 @@ import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { CardFormat } from './card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, } from './card-renderer'
+import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
 import { trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
-import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconStats, IconTrace, } from './icons'
+import { IconCopy, IconMore, IconRocket, IconShare, IconSpark } from './icons'
 import { legendArt } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
@@ -303,6 +304,11 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (legend === null) return Promise.resolve()
     setPeekLegend(legend)
     setSubPhase('twin-peek')
+    // Meeting the twin here is the meeting — metTwin is sticky and gates both
+    // the medallion on the front card and twinReady ("Share with twin"). Left
+    // false, the results screen would pretend this never happened and make
+    // someone flip the card to unlock a share of a twin they already saw.
+    setMetTwin(true)
     trackFunnel('twin_revealed')
     return new Promise<void>((resolve) => {
       readyResolve = resolve
@@ -1338,8 +1344,12 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             const next = !revealed()
             setRevealed(next)
             if (next) {
+              // First meeting only. The mid-run peek already fires this and
+              // already set metTwin, so a flip afterwards must not count a
+              // second reveal — twin_revealed is how we measure whether the
+              // early reveal works, and it cannot be double-counted.
+              if (!metTwin()) trackFunnel('twin_revealed')
               setMetTwin(true) // the front card keeps the medallion from now on
-              trackFunnel('twin_revealed')
             }
           }}
           onShare={() => void onShare()}
@@ -1634,6 +1644,9 @@ const Results: Component<{
   appUrl: string
   voiceprintRef: (el: HTMLDivElement) => void
 }> = (props) => {
+  // Local to the results screen: the sheet is a view state, not part of the
+  // run, so it must not survive a Start over or leak into the session.
+  const [sheetOpen, setSheetOpen] = createSignal(false)
   const range = (): MirrorResult['range'] => props.result.range
   const accuracy = (): MirrorResult['accuracy'] => props.result.accuracy
   const steadiness = (): MirrorResult['steadiness'] => props.result.steadiness
@@ -1742,10 +1755,12 @@ const Results: Component<{
         </Show>
       </div>
 
+      {/* The reward moment shows one decision: share the card. Everything that
+          tunes the export, plus the lesser actions, moves into the sheet behind
+          the overflow control — reachable in one tap, absent until wanted.
+          `Open MercuryPitch` stays on screen deliberately: it is the funnel's
+          conversion CTA and must not need a disclosure to be found. */}
       <div class="mirror-actions mirror-actions-hero">
-        {/* Two main shares once the twin is revealed: the clean data card
-            (legend as a name pill) and the twin card with the portrait
-            blended behind the data. */}
         <div class="mirror-share-row">
           <button
             class="mirror-cta mirror-cta-hero"
@@ -1766,71 +1781,7 @@ const Results: Component<{
             </button>
           </Show>
         </div>
-        <div class="mirror-cardopts">
-          <button
-            type="button"
-            class="mirror-optchip"
-            classList={{ on: props.includeTrace }}
-            aria-pressed={props.includeTrace}
-            onClick={() => props.onToggleTrace()}
-            title="Include the pitch glide trace on the voiceprint card"
-          >
-            <IconTrace size={15} />
-            Pitch trace {props.includeTrace ? 'on' : 'off'}
-          </button>
-          <button
-            type="button"
-            class="mirror-optchip"
-            classList={{ on: props.cardFormat === 'story' }}
-            aria-pressed={props.cardFormat === 'story'}
-            onClick={() => props.onToggleFormat()}
-            title="Export a tall 9:16 story card (for Instagram/TikTok stories) instead of the square card"
-          >
-            Story format {props.cardFormat === 'story' ? 'on' : 'off'}
-          </button>
-          <Show when={props.twinReady}>
-            <button
-              type="button"
-              class="mirror-optchip"
-              classList={{ on: props.twinTrace }}
-              aria-pressed={props.twinTrace}
-              onClick={() => props.onToggleTwinTrace()}
-              title="Draw the pitch trace over the twin card too (off keeps the twin's face clean)"
-            >
-              <IconTrace size={15} />
-              Trace on twin {props.twinTrace ? 'on' : 'off'}
-            </button>
-            <button
-              type="button"
-              class="mirror-optchip"
-              classList={{ on: props.twinData }}
-              aria-pressed={props.twinData}
-              onClick={() => props.onToggleTwinData()}
-              title="Show your range, accuracy and steadiness on the twin card instead of the caption"
-            >
-              <IconStats size={15} />
-              Data on twin {props.twinData ? 'on' : 'off'}
-            </button>
-          </Show>
-        </div>
         <div class="mirror-actions-sub">
-          <Show when={supportsImageClipboard()}>
-            <button
-              class="mirror-cta mirror-cta-secondary mirror-cta-sm"
-              onClick={() => props.onCopy()}
-              title="Copy the voiceprint image to the clipboard"
-            >
-              <IconCopy />
-              Copy
-            </button>
-          </Show>
-          <button
-            class="mirror-cta mirror-cta-secondary mirror-cta-sm"
-            onClick={() => props.onCosmic()}
-          >
-            <IconGalaxy />
-            Sing the Universe
-          </button>
           <a
             class="mirror-cta mirror-cta-secondary mirror-cta-sm"
             href={props.appUrl}
@@ -1841,11 +1792,38 @@ const Results: Component<{
             <IconRocket />
             Open MercuryPitch
           </a>
+          <button
+            type="button"
+            class="mirror-cta mirror-cta-secondary mirror-cta-sm mirror-cta-more"
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen()}
+            onClick={() => setSheetOpen(true)}
+          >
+            <IconMore size={18} />
+            Options
+          </button>
         </div>
         <button class="mirror-textbtn" onClick={() => props.onStartOver()}>
           Start over
         </button>
       </div>
+
+      <CardOptionsSheet
+        isOpen={sheetOpen()}
+        onClose={() => setSheetOpen(false)}
+        twinReady={props.twinReady}
+        includeTrace={props.includeTrace}
+        onToggleTrace={() => props.onToggleTrace()}
+        cardFormat={props.cardFormat}
+        onToggleFormat={() => props.onToggleFormat()}
+        twinTrace={props.twinTrace}
+        onToggleTwinTrace={() => props.onToggleTwinTrace()}
+        twinData={props.twinData}
+        onToggleTwinData={() => props.onToggleTwinData()}
+        canCopy={supportsImageClipboard()}
+        onCopy={() => props.onCopy()}
+        onCosmic={() => props.onCosmic()}
+      />
       <Show when={props.shareStatus}>
         <p class="mirror-dim mirror-sharestatus">{props.shareStatus}</p>
       </Show>
