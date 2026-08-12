@@ -1,5 +1,7 @@
 // ── Exercise type constants ─────────────────────────────────────
 
+import type { GuidedExerciseLaunch, GuidedPracticeDose, } from '@/lib/guided-voice'
+
 export const EXERCISE_VIBRATO = 'vibrato' as const
 export const EXERCISE_SLIDE = 'slide' as const
 export const EXERCISE_LONG_NOTE = 'long-note' as const
@@ -41,6 +43,25 @@ export type ExerciseType =
 
 // ── Config ──────────────────────────────────────────────────────
 
+/**
+ * Launch-scoped, reviewed practice prescription from a guided Focus reading.
+ *
+ * This deliberately carries the immutable exercise configuration, bounded
+ * dose, and stop-rule identity together. It is transient navigation context,
+ * not a second preference store, and must never mutate the singer's normal
+ * exercise timer choice.
+ */
+export interface GuidedPracticeLaunchConfig {
+  assessmentRunId: string
+  exercise: GuidedExerciseLaunch
+  dose: GuidedPracticeDose
+  stopRuleId: string
+  /** Exact assessment-selected note; never re-fit from today's settings. */
+  targetMidiCents: number
+  /** Reviewed task tolerance, kept separate from adaptive exercise difficulty. */
+  toleranceCents: number
+}
+
 export interface ExerciseConfig {
   type: ExerciseType
   /** Target note for single-note exercises (e.g., long-note, vibrato) */
@@ -53,6 +74,8 @@ export interface ExerciseConfig {
   difficulty?: number
   /** Step-pattern for pattern-driven exercises (e.g. warmup blocks) */
   pattern?: string
+  /** Reviewed guided-practice prescription for this one launch. */
+  guidedPractice?: GuidedPracticeLaunchConfig
 }
 
 // ── State ───────────────────────────────────────────────────────

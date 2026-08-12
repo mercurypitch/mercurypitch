@@ -3,33 +3,21 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { createSignal, onMount, Show, untrack } from 'solid-js'
 import { IconCross, IconMic } from '@/components/exercise-icons'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { trackEvent } from '@/lib/analytics'
-import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
-import { micManager } from '@/lib/mic-manager'
-import { registerMicIndicator } from '@/lib/mic-sentinel'
-import type { F0Stream } from '@/lib/pitch-f0-stream'
-import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { createF0Stream } from '@/lib/pitch-f0-stream'
-import type { TakeRecorder } from '@/lib/voice-capture'
-import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FreeformThreadTarget, FreeformVoiceTakeCapture, } from './freeform-voice-take'
 import { keepFreeformVoiceTake } from './freeform-voice-take'
 import styles from './FreeformVoiceRecorder.module.css'
 import { LiveVoiceCapture } from './LiveVoiceCapture'
+import type { DryVoiceCaptureState } from './useDryVoiceCapture'
+import { useDryVoiceCapture } from './useDryVoiceCapture'
 
-type RecorderState =
-  | 'idle'
-  | 'starting'
-  | 'recording'
-  | 'processing'
-  | 'ready'
-  | 'saving'
-  | 'saved'
-  | 'unsupported'
+export { drainPitchStream } from './useDryVoiceCapture'
+
+type RecorderState = DryVoiceCaptureState | 'saving' | 'saved'
 
 interface FreeformVoiceRecorderProps {
   target: FreeformThreadTarget
@@ -48,150 +36,52 @@ function formatElapsed(durationMs: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-function createCaptureAudioContext(): AudioContext | null {
-  const WindowAudioContext =
-    window.AudioContext ??
-    (
-      window as typeof window & {
-        webkitAudioContext?: typeof AudioContext
-      }
-    ).webkitAudioContext
-  if (WindowAudioContext === undefined) return null
-  try {
-    return new WindowAudioContext()
-  } catch {
-    return null
-  }
-}
-
-/** Stop one contour stream, preserving its raw frames before graph teardown. */
-export function drainPitchStream(stream: F0Stream | null): PitchFrame[] {
-  if (stream === null) return []
-  const frames = stream.takeFrames()
-  stream.dispose()
-  return frames
-}
-
 export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   props,
 ) => {
   const micConsumerId = `${MIC_CONSUMER_PREFIX}:${++recorderInstance}`
   const [title, setTitle] = createSignal(untrack(() => props.target.title))
-  const [state, setState] = createSignal<RecorderState>('idle')
-  const [capture, setCapture] = createSignal<FreeformVoiceTakeCapture | null>(
-    null,
-  )
-  const [elapsedMs, setElapsedMs] = createSignal(0)
-  const [previewUrl, setPreviewUrl] = createSignal<string | null>(null)
-  const [previewPlaying, setPreviewPlaying] = createSignal(false)
-  const [previewProgress, setPreviewProgress] = createSignal(0)
-  const [message, setMessage] = createSignal<string | null>(null)
   const [titleError, setTitleError] = createSignal<string | null>(null)
-  const previewProgressLoop = createMediaProgressLoop(setPreviewProgress)
+  const [persistenceState, setPersistenceState] = createSignal<
+    'idle' | 'saving' | 'saved'
+  >('idle')
+  const [persistenceMessage, setPersistenceMessage] = createSignal<
+    string | null
+  >(null)
+  const voiceCapture = useDryVoiceCapture({
+    consumerId: micConsumerId,
+    maxDurationMs: MAX_CAPTURE_MS,
+  })
 
-  let recorder: TakeRecorder | null = null
-  let pitchStream: F0Stream | null = null
-  let captureContext: AudioContext | null = null
-  let previewAudio: HTMLAudioElement | null = null
-  let timer: ReturnType<typeof setInterval> | null = null
-  let capTimer: ReturnType<typeof setTimeout> | null = null
-  let startedAt = 0
-  let capturedAt = ''
-  let activeRun = 0
+  const state = (): RecorderState => {
+    const persistence = persistenceState()
+    return persistence === 'idle' ? voiceCapture.state() : persistence
+  }
+  const capture = voiceCapture.capture
+  const elapsedMs = voiceCapture.elapsedMs
+  const previewPlaying = voiceCapture.previewPlaying
+  const previewProgress = voiceCapture.previewProgress
+  const message = (): string | null =>
+    persistenceMessage() ?? voiceCapture.message()
+
   let titleInput: HTMLInputElement | undefined
   let startButton: HTMLButtonElement | undefined
 
   const persistenceLocked = (): boolean =>
     state() === 'saving' || state() === 'saved'
 
-  function clearTimers(): void {
-    if (timer !== null) clearInterval(timer)
-    if (capTimer !== null) clearTimeout(capTimer)
-    timer = null
-    capTimer = null
-  }
-
-  function releaseMic(): void {
-    micManager.release(micConsumerId)
-  }
-
-  function closeCaptureContext(): void {
-    const current = captureContext
-    captureContext = null
-    if (current !== null && current.state !== 'closed') {
-      void current.close().catch(() => undefined)
-    }
-  }
-
-  function disposePitchStream(): PitchFrame[] {
-    const current = pitchStream
-    pitchStream = null
-    return drainPitchStream(current)
-  }
-
-  function clearPreview(): void {
-    previewProgressLoop.stop()
-    previewAudio?.pause()
-    previewAudio = null
-    const url = previewUrl()
-    if (url !== null) URL.revokeObjectURL(url)
-    setPreviewUrl(null)
-    setPreviewPlaying(false)
-    setPreviewProgress(0)
-  }
-
   function resetTemporary(): void {
-    activeRun += 1
-    clearTimers()
-    recorder?.discard()
-    recorder?.dispose()
-    recorder = null
-    disposePitchStream()
-    releaseMic()
-    closeCaptureContext()
-    clearPreview()
-    setCapture(null)
-    setElapsedMs(0)
-    setMessage(null)
-    setState('idle')
+    voiceCapture.discard()
+    setPersistenceState('idle')
+    setPersistenceMessage(null)
   }
-
-  function handleMicLoss(): void {
-    resetTemporary()
-    setMessage(
-      'The microphone stopped before the take was ready. Check the input and record again.',
-    )
-  }
-
-  let unregisterMicIndicator = (): void => undefined
 
   onMount(() => {
     const shouldFocusTitle = untrack(() => props.target.title === '')
-    unregisterMicIndicator = registerMicIndicator(
-      micConsumerId,
-      // Deliberately non-reactive: the sentinel polls this accessor on its
-      // own watchdog interval instead of subscribing inside Solid's graph.
-      // eslint-disable-next-line solid/reactivity
-      () => state() === 'recording',
-      handleMicLoss,
-    )
     queueMicrotask(() => {
       if (shouldFocusTitle) titleInput?.focus()
       else startButton?.focus()
     })
-  })
-
-  onCleanup(() => {
-    activeRun += 1
-    clearTimers()
-    recorder?.discard()
-    recorder?.dispose()
-    recorder = null
-    disposePitchStream()
-    releaseMic()
-    closeCaptureContext()
-    clearPreview()
-    unregisterMicIndicator()
   })
 
   function beginRecording(): void {
@@ -204,207 +94,11 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     resetTemporary()
     setTitle(threadTitle)
     setTitleError(null)
-    setMessage(null)
-    setState('starting')
-    const run = ++activeRun
-    const context = createCaptureAudioContext()
-    captureContext = context
-    void beginRecordingAsync(context, run)
-  }
-
-  async function beginRecordingAsync(
-    context: AudioContext | null,
-    run: number,
-  ): Promise<void> {
-    try {
-      if (context?.state === 'suspended') await context.resume()
-      const stream = await micManager.acquire(micConsumerId)
-      if (run !== activeRun) {
-        releaseMic()
-        return
-      }
-
-      const nextRecorder = createTakeRecorder(stream)
-      if (nextRecorder === null) {
-        releaseMic()
-        closeCaptureContext()
-        setState('unsupported')
-        return
-      }
-
-      recorder = nextRecorder
-      if (context !== null) {
-        try {
-          pitchStream = createF0Stream(context, stream)
-          pitchStream.startTask()
-        } catch {
-          pitchStream = null
-        }
-      }
-      startedAt = Date.now()
-      capturedAt = new Date(startedAt).toISOString()
-      nextRecorder.start()
-      setElapsedMs(0)
-      setState('recording')
-      timer = setInterval(() => setElapsedMs(Date.now() - startedAt), 250)
-      capTimer = setTimeout(() => stopRecording(), MAX_CAPTURE_MS)
-    } catch (error) {
-      if (run !== activeRun) return
-      recorder?.discard()
-      recorder?.dispose()
-      recorder = null
-      disposePitchStream()
-      releaseMic()
-      closeCaptureContext()
-      setState('idle')
-      setMessage(
-        typeof (error as { message?: unknown }).message === 'string'
-          ? (error as { message: string }).message
-          : 'The microphone could not open. Check browser permission and try again.',
-      )
-    }
+    void voiceCapture.start()
   }
 
   function stopRecording(): void {
-    if (state() !== 'recording' || recorder === null) return
-    const currentRecorder = recorder
-    const context = captureContext
-    const run = activeRun
-    const fallbackDurationMs = Math.max(0, Date.now() - startedAt)
-    recorder = null
-    const contourFrames = disposePitchStream()
-    clearTimers()
-    setElapsedMs(fallbackDurationMs)
-    setState('processing')
-    releaseMic()
-    void finishRecording(
-      currentRecorder,
-      context,
-      run,
-      fallbackDurationMs,
-      contourFrames,
-    )
-  }
-
-  async function finishRecording(
-    currentRecorder: TakeRecorder,
-    context: AudioContext | null,
-    run: number,
-    fallbackDurationMs: number,
-    contourFrames: readonly PitchFrame[],
-  ): Promise<void> {
-    const blob = await currentRecorder.stop()
-    currentRecorder.dispose()
-    if (blob === null) {
-      if (run !== activeRun) return
-      closeCaptureContext()
-      setState('idle')
-      setMessage(
-        'No audio was captured. Check the selected input and record again.',
-      )
-      return
-    }
-
-    const inspection = await inspectVoiceTake(blob, context, fallbackDurationMs)
-    if (run !== activeRun) return
-    closeCaptureContext()
-    if (blob.size === 0 || inspection.durationMs <= 0) {
-      setElapsedMs(0)
-      setState('idle')
-      setMessage(
-        'No audio was captured. Check the selected input and record again.',
-      )
-      return
-    }
-    const nextCapture: FreeformVoiceTakeCapture = {
-      blob,
-      durationMs: inspection.durationMs,
-      peaks: inspection.peaks,
-      capturedAt,
-      contour: encodeVoiceAtlasContour(contourFrames, {
-        source: 'f0-stream-yin-v1',
-      }),
-    }
-    setCapture(nextCapture)
-    setPreviewUrl(URL.createObjectURL(blob))
-    setElapsedMs(inspection.durationMs)
-    setState('ready')
-  }
-
-  function togglePreview(): void {
-    const url = previewUrl()
-    if (url === null) return
-    if (previewAudio !== null) {
-      const currentAudio = previewAudio
-      if (currentAudio.paused) {
-        void currentAudio
-          .play()
-          .then(() => {
-            if (
-              previewAudio !== currentAudio ||
-              !isMediaPlaybackActive(currentAudio)
-            )
-              return
-            setPreviewPlaying(true)
-            previewProgressLoop.start(currentAudio)
-          })
-          .catch(() => {
-            if (previewAudio !== currentAudio) return
-            setMessage('Playback was blocked. Tap play again to hear the take.')
-          })
-      } else {
-        previewProgressLoop.sample(currentAudio)
-        previewProgressLoop.stop()
-        currentAudio.pause()
-        setPreviewPlaying(false)
-      }
-      return
-    }
-
-    const nextAudio = new Audio(url)
-    nextAudio.setAttribute('playsinline', '')
-    previewAudio = nextAudio
-    nextAudio.addEventListener('timeupdate', () => {
-      if (previewAudio !== nextAudio) return
-      previewProgressLoop.sample(nextAudio)
-    })
-    nextAudio.addEventListener('play', () => {
-      if (previewAudio !== nextAudio) return
-      setPreviewPlaying(true)
-      previewProgressLoop.start(nextAudio)
-    })
-    nextAudio.addEventListener('pause', () => {
-      if (previewAudio !== nextAudio) return
-      previewProgressLoop.sample(nextAudio)
-      previewProgressLoop.stop()
-      setPreviewPlaying(false)
-    })
-    nextAudio.addEventListener('ended', () => {
-      if (previewAudio !== nextAudio) return
-      previewProgressLoop.stop()
-      setPreviewPlaying(false)
-      setPreviewProgress(1)
-    })
-    nextAudio.addEventListener('error', () => {
-      if (previewAudio !== nextAudio) return
-      previewProgressLoop.stop()
-      setPreviewPlaying(false)
-      setMessage(
-        'This browser could not replay the temporary take, but you can still keep the original audio.',
-      )
-    })
-    void nextAudio
-      .play()
-      .then(() => {
-        if (previewAudio !== nextAudio || !isMediaPlaybackActive(nextAudio))
-          return
-        setPreviewPlaying(true)
-        previewProgressLoop.start(nextAudio)
-      })
-      .catch(() => {
-        if (previewAudio !== nextAudio) return
-        setMessage('Playback was blocked. Tap play again to hear the take.')
-      })
+    void voiceCapture.stop()
   }
 
   function keepTake(): void {
@@ -412,8 +106,17 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     const threadTitle = title().trim()
     const target = props.target
     if (take === null || threadTitle === '') return
-    setState('saving')
-    setMessage(null)
+    const freeformTake: FreeformVoiceTakeCapture = {
+      blob: take.blob,
+      durationMs: take.durationMs,
+      peaks: take.peaks,
+      capturedAt: take.capturedAt,
+      contour: encodeVoiceAtlasContour(take.frames, {
+        source: 'f0-stream-yin-v1',
+      }),
+    }
+    setPersistenceState('saving')
+    setPersistenceMessage(null)
     trackEvent('voice_keep_attempt')
 
     void (async () => {
@@ -421,37 +124,37 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
         const result = await keepFreeformVoiceTake({
           target,
           threadTitle,
-          take,
+          take: freeformTake,
         })
         if (result.ok) {
-          setState('saved')
+          setPersistenceState('saved')
           trackEvent('voice_keep_success')
           try {
             await props.onKept(target.comparisonKey)
           } catch {
-            setMessage(
+            setPersistenceMessage(
               'The take was kept, but this thread could not refresh. Reload Hear Yourself to see it.',
             )
           }
           return
         }
 
-        setState('ready')
+        setPersistenceState('idle')
         trackEvent('voice_keep_failure')
         if (result.quotaExceeded || !result.roomAvailable) {
           trackEvent('voice_storage_warning')
-          setMessage(
+          setPersistenceMessage(
             'This device is too low on browser storage to keep the take. Clear space, then retry.',
           )
         } else {
-          setMessage(
+          setPersistenceMessage(
             'The take could not be kept. Its temporary copy is still here so you can retry.',
           )
         }
       } catch {
-        setState('ready')
+        setPersistenceState('idle')
         trackEvent('voice_keep_failure')
-        setMessage(
+        setPersistenceMessage(
           'The take could not be kept. Its temporary copy is still here so you can retry.',
         )
       }
@@ -614,7 +317,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
             <div class={styles.liveVisual}>
               <LiveVoiceCapture
                 active={true}
-                frame={() => pitchStream?.latestSmoothed() ?? null}
+                frame={voiceCapture.latestSmoothedFrame}
               />
             </div>
           </Show>
@@ -698,7 +401,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
               <button
                 type="button"
                 class={styles.previewButton}
-                onClick={togglePreview}
+                onClick={voiceCapture.togglePreview}
                 aria-pressed={previewPlaying()}
                 disabled={persistenceLocked()}
               >

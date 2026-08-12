@@ -3,13 +3,16 @@ import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-
 import { IconLock } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
+import { launchGuidedPractice, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { noteToMidi } from '@/lib/frequency-to-note'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
+import { PITCH_CENTRE_PILOT_THRESHOLDS_V1 } from '@/lib/guided-voice'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import type { GuidedPracticeLaunchConfig } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchHoldController } from './use-pitch-hold-controller'
@@ -21,9 +24,53 @@ interface PitchHoldExerciseProps {
   autoStart?: boolean
 }
 
+export function isSupportedGuidedPitchHoldLaunch(
+  launch: GuidedPracticeLaunchConfig | undefined,
+): launch is GuidedPracticeLaunchConfig {
+  return (
+    launch?.exercise.exerciseId === EXERCISE_PITCH_HOLD &&
+    launch.exercise.exerciseVersion === '1.0.0' &&
+    launch.exercise.configuration.configurationId ===
+      'pitch-hold.guided-pitch-centre' &&
+    launch.exercise.configuration.configurationVersion === '1.0.0' &&
+    launch.dose.durationMilliseconds === 5_000 &&
+    launch.dose.repetitions === 3 &&
+    launch.dose.sets === 1 &&
+    launch.dose.comfortableRangeMidiCents === null &&
+    launch.dose.demand === 'same' &&
+    launch.stopRuleId === 'guided.stop-on-discomfort-v1' &&
+    launch.assessmentRunId.trim().length > 0 &&
+    Number.isSafeInteger(launch.targetMidiCents) &&
+    launch.targetMidiCents % 100 === 0 &&
+    launch.toleranceCents ===
+      PITCH_CENTRE_PILOT_THRESHOLDS_V1.measurement.settleToleranceCents
+  )
+}
+
+export function shouldRecordOrdinaryPitchHoldProgress(
+  launch: GuidedPracticeLaunchConfig | undefined,
+): boolean {
+  return launch === undefined
+}
+
 const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
+  const noteOptions = getNoteOptions(vocalRangePreset())
+  const requestedGuidedPractice = launchGuidedPractice(EXERCISE_PITCH_HOLD)
+  const guidedPractice = isSupportedGuidedPitchHoldLaunch(
+    requestedGuidedPractice,
+  )
+    ? requestedGuidedPractice
+    : undefined
+  const requestedTarget = launchTargetNote(EXERCISE_PITCH_HOLD)
+  const guidedTarget =
+    guidedPractice === undefined
+      ? undefined
+      : midiToNoteName(guidedPractice.targetMidiCents / 100)
   const [targetNote, setTargetNote] = createSignal(
-    getDefaultNote(vocalRangePreset()),
+    guidedTarget ??
+      (requestedTarget !== undefined && noteOptions.includes(requestedTarget)
+        ? requestedTarget
+        : getDefaultNote(vocalRangePreset())),
   )
   const audioEngine = untrack(() => props.audioEngine)
 
@@ -34,7 +81,14 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
     config: () => ({ type: 'pitch-hold', targetNote: targetNote() }),
   })
 
-  const controller = usePitchHoldController(base)
+  const controller = usePitchHoldController(base, {
+    fixedZoneCents: guidedPractice?.toleranceCents,
+    fixedTargetDurationSeconds:
+      guidedPractice?.dose.durationMilliseconds === null ||
+      guidedPractice?.dose.durationMilliseconds === undefined
+        ? undefined
+        : guidedPractice.dose.durationMilliseconds / 1000,
+  })
 
   const handleStart = async () => {
     controller.setTarget(noteToMidi(untrack(() => targetNote())))
@@ -56,7 +110,11 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
   createEffect(() => {
     const r = base.result()
-    if (r && r.type === 'pitch-hold') {
+    if (
+      r &&
+      r.type === 'pitch-hold' &&
+      shouldRecordOrdinaryPitchHoldProgress(guidedPractice)
+    ) {
       untrack(() => {
         recordExerciseResult({
           type: r.type,
@@ -97,24 +155,29 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconLock size={20} />}
+      guidedPractice={guidedPractice}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
-            Keep your pitch locked inside the target zone as it shrinks over
-            time.
+            {guidedPractice === undefined
+              ? 'Keep your pitch locked inside the target zone as it shrinks over time.'
+              : `Meet ${targetNote()} gently, then keep it centred for each short hold.`}
           </p>
         </div>
       }
       idleSettings={
-        <NoteDial
-          label="Target"
-          notes={getNoteOptions(vocalRangePreset())}
-          selected={targetNote()}
-          onChange={setTargetNote}
-        />
+        guidedPractice === undefined ? (
+          <NoteDial
+            label="Target"
+            notes={noteOptions}
+            selected={targetNote()}
+            onChange={setTargetNote}
+          />
+        ) : undefined
       }
+      startLabel={guidedPractice === undefined ? undefined : 'Begin first hold'}
       onStart={() => void handleStart()}
-      stopLabel="Stop & Score"
+      stopLabel={guidedPractice === undefined ? 'Stop & Score' : 'Stop now'}
       onStop={handleStop}
       autoTimer={{ onElapse: handleStop }}
       tracker={{

@@ -43,6 +43,17 @@ vi.mock('@/lib/voice-capture', () => ({
   createTakeRecorder: createRecorderMock,
   inspectVoiceTake: inspectMock,
 }))
+vi.mock('@/lib/pitch-f0-stream', () => ({
+  createF0Stream: vi.fn(() => ({
+    startTask: vi.fn(),
+    takeFrames: vi.fn(() => []),
+    latest: vi.fn(() => null),
+    latestSmoothed: vi.fn(() => null),
+    latestLevel: vi.fn(() => 0),
+    maxLevel: vi.fn(() => 0),
+    dispose: vi.fn(),
+  })),
+}))
 vi.mock('@/features/voice-history/freeform-voice-take', () => ({
   keepFreeformVoiceTake: keepMock,
 }))
@@ -51,6 +62,27 @@ vi.mock('@/lib/analytics', () => ({ trackEvent: trackMock }))
 const target = {
   comparisonKey: 'freeform:test-thread:v1',
   title: '',
+}
+
+class TestAudioTrack extends EventTarget {
+  readyState: MediaStreamTrackState = 'live'
+  muted = false
+}
+
+class TestAudioStream extends EventTarget {
+  private readonly track = new TestAudioTrack()
+
+  getAudioTracks(): MediaStreamTrack[] {
+    return [this.track as unknown as MediaStreamTrack]
+  }
+
+  getTracks(): MediaStreamTrack[] {
+    return this.getAudioTracks()
+  }
+}
+
+function testAudioStream(): MediaStream {
+  return new TestAudioStream() as unknown as MediaStream
 }
 
 function renderRecorder() {
@@ -72,10 +104,12 @@ describe('FreeformVoiceRecorder', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     registerIndicatorMock.mockReturnValue(unregisterMock)
-    acquireMock.mockResolvedValue({ getTracks: () => [] })
+    acquireMock.mockResolvedValue(testAudioStream())
     stopMock.mockResolvedValue(new Blob(['voice'], { type: 'audio/webm' }))
     createRecorderMock.mockReturnValue({
       start: startMock,
+      pause: vi.fn().mockReturnValue(true),
+      resume: vi.fn().mockReturnValue(true),
       stop: stopMock,
       discard: discardMock,
       dispose: disposeMock,
@@ -205,16 +239,14 @@ describe('FreeformVoiceRecorder', () => {
   })
 
   it('uses a distinct microphone lease after the recorder is reopened', async () => {
-    let resolveFirstAcquire:
-      | ((stream: { getTracks: () => never[] }) => void)
-      | undefined
+    let resolveFirstAcquire: ((stream: MediaStream) => void) | undefined
     acquireMock
       .mockReturnValueOnce(
         new Promise((resolve) => {
           resolveFirstAcquire = resolve
         }),
       )
-      .mockResolvedValueOnce({ getTracks: () => [] })
+      .mockResolvedValueOnce(testAudioStream())
 
     const first = renderRecorder()
     fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
@@ -242,7 +274,7 @@ describe('FreeformVoiceRecorder', () => {
       ([lease]) => lease === secondLease,
     ).length
 
-    resolveFirstAcquire?.({ getTracks: () => [] })
+    resolveFirstAcquire?.(testAudioStream())
     await waitFor(() =>
       expect(
         releaseMock.mock.calls.filter(([lease]) => lease === firstLease).length,
