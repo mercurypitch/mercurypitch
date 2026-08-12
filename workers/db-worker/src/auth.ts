@@ -611,6 +611,17 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // changes their mind and comes back needs a handful; ten in five minutes is
   // past any real hesitation.
   'billing-checkout': { max: 10, windowMs: 300_000 },
+  // Device linking. The caps here bound load, not guessing: a poll must
+  // present the poll token as well as the code, and 32^8 codes paired with a
+  // 43-character secret is not a space anybody walks. Start mints a row, so
+  // it is the tight one. Poll is the loose one by necessity — a five-minute
+  // code polled every two seconds is 150 requests from one television, and a
+  // living room with two of them behind one address must not 429 halfway
+  // through somebody signing in.
+  'device/start': { max: 10, windowMs: 300_000 }, // 10/5min
+  'device/poll': { max: 400, windowMs: 300_000 }, // 400/5min
+  'device/approve': { max: 20, windowMs: 300_000 }, // 20/5min
+  'device-pending': { max: 60, windowMs: 300_000 }, // 60/5min
 }
 
 /**
@@ -725,6 +736,12 @@ interface AuthBody {
   idToken?: string
   /** Password-reset token from the emailed link (reset-password). */
   token?: string
+  /** The short code shown on a TV (device/poll, device/approve). */
+  code?: string
+  /** The secret only the device that asked for that code holds (device/poll). */
+  pollToken?: string
+  /** What the TV calls itself, shown to whoever approves (device/start). */
+  deviceLabel?: string
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -1851,6 +1868,238 @@ async function handleDriveDisconnect(
   return respond({ ok: true })
 }
 
+// ── Device linking (sign a TV in by scanning it) ─────────────────────
+//
+// The standard device-authorization shape, and it is standard because a
+// television has no keyboard: the TV asks for a code, shows it as text
+// and as a QR, and polls; the phone -- already signed in, with a real
+// keyboard -- confirms; the TV collects a session.
+//
+// The security of this rests on one distinction. The CODE is public the
+// moment it is on screen: anyone in the room, or anyone who can see the
+// television through a window, can read it. The POLL TOKEN is known only
+// to the device that asked. Approval is granted against the code, but the
+// session is only ever handed to whoever holds the poll token -- so
+// reading a code off somebody's TV gets an attacker nothing, and a
+// malicious page cannot mint itself a session from a code it saw.
+//
+// The other half is that the phone must be shown what it is approving and
+// must say yes explicitly. A link that signs a device in merely by being
+// opened is a link that can be sent to somebody.
+
+/** How long a shown code is good for. Long enough to find your phone. */
+const DEVICE_LINK_TTL_MS = 5 * 60_000
+
+/** Codes avoid 0/O/1/I so nobody mistypes one read off a screen. */
+const DEVICE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const DEVICE_CODE_LENGTH = 8
+
+interface DeviceLinkRow {
+  code: string
+  pollTokenHash: string
+  deviceLabel: string | null
+  userId: string | null
+  approvedAt: string | null
+  claimedAt: string | null
+  createdAt: string
+  expiresAt: string
+}
+
+function randomFromAlphabet(length: number, alphabet: string): string {
+  const bytes = new Uint8Array(length)
+  crypto.getRandomValues(bytes)
+  let out = ''
+  for (const byte of bytes) out += alphabet[byte % alphabet.length]
+  return out
+}
+
+/**
+ * POST /api/auth/device/start — a TV asks to be signed in.
+ *
+ * Unauthenticated by necessity: the whole point is that this device has
+ * no session yet. Rate limited per IP, because it is the one endpoint
+ * here that anybody can reach.
+ */
+async function handleDeviceLinkStart(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  // Cheap sweep on the way past, so expired rows do not accumulate for the
+  // life of the table. Indexed on expiresAt; there is no cron here.
+  await env.DB.prepare('DELETE FROM deviceLinkCodes WHERE expiresAt <= ?')
+    .bind(nowIso())
+    .run()
+
+  const code = randomFromAlphabet(DEVICE_CODE_LENGTH, DEVICE_CODE_ALPHABET)
+  // 32 bytes of the same alphabet: this one is never read by a human, it
+  // is the secret that separates "saw the code" from "asked for it".
+  const pollToken = randomFromAlphabet(43, DEVICE_CODE_ALPHABET)
+  const now = Date.now()
+
+  await env.DB.prepare(
+    `INSERT INTO deviceLinkCodes
+       (code, pollTokenHash, deviceLabel, createdAt, expiresAt)
+     VALUES (?, ?, ?, ?, ?)`,
+  )
+    .bind(
+      code,
+      await sha256b64url(pollToken),
+      // Shown to the person approving, so it is truncated rather than
+      // rejected: a long label is a cosmetic problem, not a refusal.
+      (body.deviceLabel ?? '').slice(0, 60) || null,
+      new Date(now).toISOString(),
+      new Date(now + DEVICE_LINK_TTL_MS).toISOString(),
+    )
+    .run()
+
+  return respond({
+    code,
+    pollToken,
+    expiresInSeconds: Math.floor(DEVICE_LINK_TTL_MS / 1000),
+  })
+}
+
+async function findDeviceLink(
+  env: Env,
+  code: string,
+): Promise<DeviceLinkRow | null> {
+  return env.DB.prepare('SELECT * FROM deviceLinkCodes WHERE code = ?')
+    .bind(code)
+    .first<DeviceLinkRow>()
+}
+
+/** Whether a row is still within its window. */
+function deviceLinkExpired(row: DeviceLinkRow): boolean {
+  return Date.parse(row.expiresAt) <= Date.now()
+}
+
+/**
+ * GET /api/auth/device/pending?code= — what the phone is being asked.
+ *
+ * Authenticated: only somebody signed in can be shown a confirmation, and
+ * this returns nothing but the device's own label and whether the code is
+ * still live. Nothing here approves anything.
+ */
+async function handleDeviceLinkPending(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth || auth.provider === 'anonymous') {
+    return respond({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const code = new URL(request.url).searchParams.get('code') ?? ''
+  const row = await findDeviceLink(env, code.toUpperCase())
+  if (!row || deviceLinkExpired(row)) {
+    return respond({ status: 'expired' })
+  }
+  if (row.claimedAt !== null || row.approvedAt !== null) {
+    return respond({ status: 'used' })
+  }
+  return respond({
+    status: 'pending',
+    deviceLabel: row.deviceLabel ?? undefined,
+  })
+}
+
+/**
+ * POST /api/auth/device/approve — the phone says yes.
+ *
+ * Records WHICH account approved; it does not return a session. The
+ * session goes to whoever holds the poll token, which is only ever the
+ * device that asked.
+ */
+async function handleDeviceLinkApprove(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  // An anonymous identity belongs to one device by construction — it was
+  // minted for this browser's storage and cannot be recovered anywhere
+  // else. Linking a TV to one would not share a library so much as fork
+  // it, and would leave the TV in a session nobody can ever sign back
+  // into. The phone is told to sign in first, which is the honest answer.
+  if (!auth || auth.provider === 'anonymous') {
+    return respond({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const code = (body.code ?? '').toUpperCase()
+  const row = await findDeviceLink(env, code)
+  if (!row || deviceLinkExpired(row)) {
+    return respond({ error: 'link_expired' }, { status: 410 })
+  }
+  if (row.approvedAt !== null || row.claimedAt !== null) {
+    // Single use. A code somebody photographed must not be approvable a
+    // second time from a screenshot.
+    return respond({ error: 'link_used' }, { status: 409 })
+  }
+  const changed = await env.DB.prepare(
+    `UPDATE deviceLinkCodes
+        SET userId = ?, approvedAt = ?
+      WHERE code = ? AND approvedAt IS NULL AND claimedAt IS NULL`,
+  )
+    .bind(auth.userId, new Date().toISOString(), code)
+    .run()
+  if ((changed.meta.changes ?? 0) === 0) {
+    return respond({ error: 'link_used' }, { status: 409 })
+  }
+  return respond({ ok: true })
+}
+
+/**
+ * POST /api/auth/device/poll — the TV asks whether it may come in yet.
+ *
+ * The poll token is the whole access-control story: it is compared as a
+ * hash against the row, so the code alone -- which is on a television --
+ * never yields a session. Claiming is a one-way transition, enforced in
+ * the UPDATE rather than checked and then written, so two polls racing
+ * cannot both collect one.
+ */
+async function handleDeviceLinkPoll(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const code = (body.code ?? '').toUpperCase()
+  const pollToken = body.pollToken ?? ''
+  if (code === '' || pollToken === '') {
+    return respond({ error: 'bad_request' }, { status: 400 })
+  }
+  const row = await findDeviceLink(env, code)
+  if (!row || deviceLinkExpired(row)) {
+    return respond({ status: 'expired' })
+  }
+  if ((await sha256b64url(pollToken)) !== row.pollTokenHash) {
+    // Someone polling with a code they read off a screen. Answered the
+    // same way an expired code is, so the response cannot be used to
+    // discover that a code is real.
+    return respond({ status: 'expired' })
+  }
+  if (row.userId === null || row.approvedAt === null) {
+    return respond({ status: 'pending' })
+  }
+  const claimed = await env.DB.prepare(
+    `UPDATE deviceLinkCodes SET claimedAt = ?
+      WHERE code = ? AND claimedAt IS NULL`,
+  )
+    .bind(new Date().toISOString(), code)
+    .run()
+  if ((claimed.meta.changes ?? 0) === 0) {
+    return respond({ status: 'expired' })
+  }
+  const user = await findUserById(env.DB, row.userId)
+  if (!user) return respond({ status: 'expired' })
+  const token = await createSession(env, user)
+  return respond({
+    status: 'linked',
+    token,
+    user: publicUser(user),
+  })
+}
+
 /** GET /api/auth/verify-email?token=&returnTo= — the emailed confirm link.
  *  A top-level navigation, so success/failure land back in the app as a
  *  fragment (#everified=1 / #everified_error=…), mirroring the Google flow. */
@@ -2241,6 +2490,12 @@ export async function handleAuth(
   if (route === 'drive' && request.method === 'DELETE') {
     return handleDriveDisconnect(request, env, respond)
   }
+  if (route === 'device/pending' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'device-pending')
+    if (!rl.allowed) return tooMany(respond, rl)
+    return handleDeviceLinkPending(request, env, respond)
+  }
   if (route === 'verify-email' && request.method === 'GET') {
     const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
     const rl = await checkRateLimit(env.DB, ip, 'verify-email')
@@ -2321,6 +2576,12 @@ export async function handleAuth(
       return handleForgotPassword(request, body, env, respond, ctx)
     case 'reset-password':
       return handleResetPassword(body, env, respond)
+    case 'device/start':
+      return handleDeviceLinkStart(body, env, respond)
+    case 'device/poll':
+      return handleDeviceLinkPoll(body, env, respond)
+    case 'device/approve':
+      return handleDeviceLinkApprove(request, body, env, respond)
     default:
       return respond({ error: 'Not found' }, { status: 404 })
   }

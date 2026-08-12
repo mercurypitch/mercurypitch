@@ -188,6 +188,7 @@ const VoiceConstellationRouteError: Component<{ onClose: () => void }> = (
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import { AuthModal } from '@/components/account/AuthModal'
+import { DeviceLinkModal } from '@/components/account/DeviceLinkModal'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { LocalProgressNotice } from '@/components/account/LocalProgressNotice'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
@@ -4091,6 +4092,10 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
 
         <AuthModal />
+        {/* The phone's half of signing a TV in. Beside AuthModal because
+            a signed-out phone that scanned the code has to sign in first,
+            and then come back to the same request. */}
+        <DeviceLinkModal />
         {/* Follows a sign-in, so it lives beside the dialog that starts
             one — and outside it, because Google's is a full-page redirect
             and the dialog is gone by the time the account is held. */}
