@@ -46,7 +46,7 @@ try {
 // equivalent clean-path rewrites. The tone-deaf legacy entry is a redirect
 // because this product measures pitch matching and cannot diagnose amusia
 // (public/_redirects handles prod).
-const MIRROR_PATHS = new Set(['/mirror'])
+const MIRROR_PATHS = new Set(['/mirror', '/free-sing'])
 const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])

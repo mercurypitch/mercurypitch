@@ -60,7 +60,13 @@ export interface Env {
 // answer both paths before the Worker; keep this routing correct for requests
 // that do reach it. /tone-deaf-test redirects via public/_redirects because
 // MercuryPitch measures pitch matching but does not diagnose amusia.
-const MIRROR_PATHS = new Set(['/mirror'])
+// /free-sing serves mirror.html with the URL preserved, so the client's
+// mirrorEntryIntent() still reads 'free-sing' and shows the open-take copy.
+// It follows the Glass alias mechanism rather than karaoke's byte-copied
+// file: it MUST stay listed in wrangler.jsonc `assets.run_worker_first`, or
+// the asset layer answers it with the SPA shell and never invokes this
+// worker. Keep in sync with vite.config.ts (MIRROR_PATHS) and wrangler.jsonc.
+const MIRROR_PATHS = new Set(['/mirror', '/free-sing'])
 const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 
 // Paths that serve the Karaoke Night entry (karaoke.html). Keep in sync with

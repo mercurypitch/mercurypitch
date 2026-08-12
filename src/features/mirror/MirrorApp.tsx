@@ -73,7 +73,14 @@ const isCosmicHash = (): boolean =>
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
-type SubPhase = 'intro' | 'brief' | 'recording' | 'listening' | 'prepare'
+type SubPhase =
+  | 'intro'
+  | 'brief'
+  | 'recording'
+  | 'listening'
+  | 'prepare'
+  /** The twin reveal between the hold and the match notes. */
+  | 'twin-peek'
 
 interface TaskCopy {
   title: string
@@ -110,6 +117,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     initialSessionState(),
   )
   const [subPhase, setSubPhase] = createSignal<SubPhase>('brief')
+  // The legend shown by the mid-run twin peek, held separately from the
+  // results-card reveal so the two cannot fight over one signal.
+  const [peekLegend, setPeekLegend] = createSignal<string | null>(null)
   const [remaining, setRemaining] = createSignal(0)
   const [taskKey, setTaskKey] = createSignal(0)
   const [micError, setMicError] = createSignal<string | null>(null)
@@ -272,6 +282,33 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     })
   }
 
+  /** Reveal the twin between the hold and the match notes.
+   *
+   *  The twin is the payoff the whole flow is built around, and it is fully
+   *  determined by the range — singerForRange() reads only the detected low
+   *  and high MIDI, both known the moment 'hold-done' lands. It used to stay
+   *  hidden behind five more sung notes that sharpen accuracy and cannot
+   *  change who the twin is, which asked a visitor who had arrived thirty
+   *  seconds ago to spend another two minutes on trust alone.
+   *
+   *  So the answer lands here, and the match notes become an offer to go
+   *  deeper rather than a toll. Resolves immediately when the range yields no
+   *  legend, so an unmapped voice type never stalls the run.
+   *
+   *  Uses the same resolver as the intro gate: only one gate is ever open, and
+   *  resetAll()/cancel already release it. */
+  function twinPeek(gen: number): Promise<void> {
+    if (cancelled || gen !== flowGen) return Promise.resolve()
+    const legend = singerForRange(session().range)
+    if (legend === null) return Promise.resolve()
+    setPeekLegend(legend)
+    setSubPhase('twin-peek')
+    trackFunnel('twin_revealed')
+    return new Promise<void>((resolve) => {
+      readyResolve = resolve
+    })
+  }
+
   function teardownAudio(): void {
     f0?.dispose()
     f0 = null
@@ -287,6 +324,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     flowGen++
     releaseIntroGate()
     setSubPhase('brief')
+    setPeekLegend(null)
     setHowtoOpen(false)
     starting = false
     cardCanvas = null
@@ -624,6 +662,11 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (!alive()) return
     dispatch({ type: 'hold-done', frames: holdTake })
     trackFunnel('task_hold_done')
+
+    // The range is known now, so the twin is too — show it before asking for
+    // five more notes rather than after.
+    await twinPeek(gen)
+    if (!alive()) return
 
     // Task C — match 5, reference-then-record (never simultaneous).
     // One gate before round 1; rounds 2-5 keep the automatic rhythm.
@@ -1000,11 +1043,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         }
       >
         <section class="mirror-panel">
+          <TrustInfo />
           <h2>One thing first</h2>
-          <p class="mirror-trust">
-            Your audio never leaves this device — we analyze it right here in
-            your browser. No recording is uploaded, ever.
-          </p>
           <Show when={micError()}>
             <p class="mirror-error">{micError()}</p>
             <div class="mirror-actions">
@@ -1144,7 +1184,43 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         />
       </Show>
 
-      <Show when={isTaskPhase()}>
+      {/* The twin, revealed the moment the range makes it knowable. The five
+          match notes below become an offer rather than a toll: they sharpen
+          accuracy and cannot change the answer already on screen. */}
+      <Show when={subPhase() === 'twin-peek' && peekLegend() !== null}>
+        <section class="mirror-panel mirror-peek">
+          <TrustInfo />
+          <p class="mirror-progress">Your voice twin</p>
+          <Show when={legendArt(peekLegend() as string).imageSrc}>
+            <img
+              class="mirror-peek-portrait"
+              src={legendArt(peekLegend() as string).imageSrc}
+              alt=""
+            />
+          </Show>
+          <h2>{peekLegend()}</h2>
+          <p class="mirror-peek-epithet">
+            {legendArt(peekLegend() as string).epithet}
+          </p>
+          <p>
+            Your range lines up with {peekLegend()}. That is yours now — it is
+            on your voiceprint whatever happens next.
+          </p>
+          <div class="mirror-actions">
+            <button
+              class="mirror-cta mirror-cta-ready"
+              onClick={() => releaseIntroGate()}
+            >
+              Add my accuracy score
+            </button>
+          </div>
+          <p class="mirror-dim">
+            Five short notes to sing back — about a minute.
+          </p>
+        </section>
+      </Show>
+
+      <Show when={isTaskPhase() && subPhase() !== 'twin-peek'}>
         <section class="mirror-panel">
           <div class="mirror-progress">Task {taskNumber()} of 3</div>
           <h2>{currentTask()?.title}</h2>
@@ -1282,6 +1358,65 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   )
 }
 
+/** Copy for the /free-sing entry — the open-take path, kept off the main
+ *  landing so it cannot be picked by accident, but addressable for anyone
+ *  (a creator brief, a link) pointed at it on purpose. */
+function FreeSingIntro() {
+  return (
+    <>
+      <h1>Just sing.</h1>
+      <p>
+        Forty seconds of anything you like — your shower song counts. No targets
+        and no score: we measure the range you actually use, the note you keep
+        coming back to, and how long your phrases run.
+      </p>
+    </>
+  )
+}
+
+/** The privacy story as an "i" affordance rather than a paragraph.
+ *
+ *  It used to be two sentences of body copy on both the landing and the mic
+ *  screen, competing with the thing the visitor came to do. The promise still
+ *  has to be one gesture away — it is the reason someone grants a microphone —
+ *  so this mirrors Glass's TrustInfo, with one addition: Glass opens on click
+ *  only, which leaves desktop users clicking a thing that looks hoverable.
+ *  Hover is handled in CSS for fine pointers; the click toggle stays for touch,
+ *  where hover does not exist. */
+function TrustInfo() {
+  const [open, setOpen] = createSignal(false)
+  return (
+    <div class="mirror-info">
+      <button
+        type="button"
+        class="mirror-info-btn"
+        aria-expanded={open()}
+        aria-label="Privacy: how your audio is handled"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9.5" />
+          <path d="M12 10.8v5.4" />
+          <circle cx="12" cy="7.6" r="0.6" fill="currentColor" />
+        </svg>
+      </button>
+      <div class="mirror-info-pop" role="note" data-open={open()}>
+        Private by design: your audio never leaves this device — analysis runs
+        right here in your browser. No recording is uploaded, ever.
+      </div>
+    </div>
+  )
+}
+
 export interface MirrorLandingProps {
   entryIntent: MirrorEntryIntent
   onStart: (mode: 'guided' | 'free') => void
@@ -1290,49 +1425,54 @@ export interface MirrorLandingProps {
 
 export function MirrorLanding(props: MirrorLandingProps) {
   const isVocalRange = (): boolean => props.entryIntent === 'vocal-range'
+  const isFreeSing = (): boolean => props.entryIntent === 'free-sing'
 
   return (
     <section class="mirror-panel mirror-landing">
+      <TrustInfo />
       <p class="mirror-wordmark">MercuryPitch</p>
-      <Show
-        when={isVocalRange()}
-        fallback={
-          <>
-            <h1>See your voice. 60 seconds.</h1>
-            <p>
-              Sing three short tasks and get your vocal range, pitch accuracy
-              and steadiness — rendered as a voiceprint you can share.
-            </p>
-          </>
-        }
-      >
-        <h1>Find your vocal range.</h1>
-        <p>
-          Glide from your lowest comfortable note to your highest. Your result
-          leads with both notes, your span in semitones and a broad voice-type
-          guide; two short follow-ups add accuracy and steadiness.
-        </p>
+      <Show when={!isFreeSing()} fallback={<FreeSingIntro />}>
+        <Show
+          when={isVocalRange()}
+          fallback={
+            <>
+              <h1>Meet your voice twin.</h1>
+              <p>
+                Sing a couple of short tasks and we name the legend your range
+                lines up with — then map your voice as a voiceprint you can
+                share.
+              </p>
+            </>
+          }
+        >
+          <h1>Find your vocal range.</h1>
+          <p>
+            Glide from your lowest comfortable note to your highest. Your result
+            leads with both notes, your span in semitones and a broad voice-type
+            guide; two short follow-ups add accuracy and steadiness.
+          </p>
+        </Show>
       </Show>
       <div class="mirror-actions">
-        <button class="mirror-cta" onClick={() => props.onStart('guided')}>
-          {isVocalRange() ? 'Test my vocal range' : 'Start singing'}
+        {/* One door. The secondary "Just sing" button used to sit here and
+            split the visitor's decision at the exact moment they had committed
+            to singing — two paths, no basis to choose between them. Free Sing
+            now has its own entry at /free-sing for anyone sent there
+            deliberately. */}
+        <button
+          class="mirror-cta"
+          onClick={() => props.onStart(isFreeSing() ? 'free' : 'guided')}
+        >
+          {isFreeSing()
+            ? 'Just sing · 40 s'
+            : isVocalRange()
+              ? 'Test my vocal range'
+              : 'Find my voice twin'}
         </button>
-        <Show when={!isVocalRange()}>
-          <button
-            class="mirror-cta mirror-cta-secondary"
-            onClick={() => props.onStart('free')}
-          >
-            Just sing · 40 s
-          </button>
-        </Show>
       </div>
       <button class="mirror-textbtn" onClick={() => props.onHowItWorks()}>
         {isVocalRange() ? 'How the test works' : 'How it works'}
       </button>
-      <p class="mirror-trust">
-        Your audio never leaves this device — we analyze it right here in your
-        browser.
-      </p>
       <p class="mirror-crosslink">
         Or{' '}
         <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
