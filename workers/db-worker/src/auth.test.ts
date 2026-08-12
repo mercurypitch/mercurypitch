@@ -121,6 +121,11 @@ class AuthStatement {
       return null
     }
 
+    if (this.sql === 'SELECT * FROM googleDriveTokens WHERE userId = ?') {
+      return (this.db.driveTokens.get(String(this.values[0])) ??
+        null) as T | null
+    }
+
     throw new Error(`Unexpected first() SQL: ${this.sql}`)
   }
 
@@ -275,10 +280,28 @@ class AuthStatement {
         this.db.profiles.delete(id)
       } else if (this.sql === 'DELETE FROM users WHERE id = ?') {
         this.db.users.delete(id)
+      } else if (
+        this.sql === 'DELETE FROM googleDriveTokens WHERE userId = ?'
+      ) {
+        this.db.driveTokens.delete(id)
       }
       return { success: true }
     }
 
+    if (this.sql.startsWith('INSERT INTO googleDriveTokens')) {
+      const [userId, refreshToken, scope, email, createdAt, updatedAt] =
+        this.values
+      const existing = this.db.driveTokens.get(String(userId))
+      this.db.driveTokens.set(String(userId), {
+        userId: String(userId),
+        refreshToken: String(refreshToken),
+        scope: String(scope),
+        email: email == null ? null : String(email),
+        createdAt: existing?.createdAt ?? String(createdAt),
+        updatedAt: String(updatedAt),
+      })
+      return { success: true }
+    }
     throw new Error(`Unexpected run() SQL: ${this.sql}`)
   }
 
@@ -287,8 +310,18 @@ class AuthStatement {
   }
 }
 
+interface DriveTokenRecord {
+  userId: string
+  refreshToken: string
+  scope: string
+  email: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 class AuthDatabase {
   readonly users = new Map<string, UserRecord>()
+  readonly driveTokens = new Map<string, DriveTokenRecord>()
   // Raw rows, exactly as D1 returns them - booleans stay 0/1 on purpose so
   // the /me normalization regression below tests the real shape.
   readonly profiles = new Map<string, Record<string, unknown>>()
@@ -1268,5 +1301,228 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
 
     expect(response?.status).toBe(503)
     expect(db.users.has(userId)).toBe(true)
+  })
+})
+
+describe('Google Drive connect and tokens', () => {
+  // The whole connect pass, exactly as the browser drives it: start with
+  // scope=drive, Google bounces back with a code, the callback exchanges
+  // it and keeps the refresh token — sealed, never as Google issued it.
+  async function connectDrive(overrides?: {
+    scope?: string
+    refreshToken?: string | null
+  }): Promise<{
+    db: AuthDatabase
+    env: Env
+    sessionToken: string
+    location: string
+    userId: string
+  }> {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+
+    const start = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/start' +
+          '?scope=drive&returnTo=https%3A%2F%2Fapp.test%2Fsettings',
+      ),
+      env,
+      '/api/auth/google/start',
+      respond,
+    )
+    expect(start?.status).toBe(302)
+    const authUrl = new URL(start!.headers.get('Location') as string)
+    // The consent Google shows must actually ask for Drive, offline.
+    expect(authUrl.searchParams.get('scope')).toContain(
+      'https://www.googleapis.com/auth/drive.file',
+    )
+    expect(authUrl.searchParams.get('access_type')).toBe('offline')
+    expect(authUrl.searchParams.get('prompt')).toContain('consent')
+    const state = authUrl.searchParams.get('state') as string
+
+    const grantedScope =
+      overrides?.scope ??
+      'openid email profile https://www.googleapis.com/auth/drive.file'
+    const refreshToken =
+      overrides?.refreshToken === undefined
+        ? 'google-refresh-token'
+        : overrides.refreshToken
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              id_token: 'drive-id-token',
+              access_token: 'short-lived',
+              scope: grantedScope,
+              ...(refreshToken === null
+                ? {}
+                : { refresh_token: refreshToken }),
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              aud: 'test-google-client',
+              sub: 'drive-user',
+              email: 'drive-user@example.com',
+              email_verified: 'true',
+              name: 'Drive Singer',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        ),
+    )
+    const callback = await handleAuth(
+      new Request(
+        `https://api.test/api/auth/google/callback?code=valid&state=${encodeURIComponent(state)}`,
+      ),
+      env,
+      '/api/auth/google/callback',
+      respond,
+    )
+    expect(callback?.status).toBe(302)
+    const location = callback!.headers.get('Location') as string
+    const sessionToken = decodeURIComponent(
+      /#gauth=([^&]+)/.exec(location)?.[1] ?? '',
+    )
+    const userId = [...db.users.values()].find(
+      (u) => u.providerId === 'drive-user',
+    )!.id
+    return { db, env, sessionToken, location, userId }
+  }
+
+  it('keeps the refresh token from a drive-scoped redirect, sealed', async () => {
+    const { db, location, userId } = await connectDrive()
+    expect(location).toContain('&gdrive=1')
+    const row = db.driveTokens.get(userId)
+    expect(row).toBeDefined()
+    // Sealed at rest: what the database holds must not be what Google
+    // issued, or a leaked copy of the database IS Drive access.
+    expect(row!.refreshToken).not.toBe('google-refresh-token')
+    expect(row!.email).toBe('drive-user@example.com')
+  })
+
+  it('reports declined when the user unticks the Drive box', async () => {
+    const { db, location, userId } = await connectDrive({
+      scope: 'openid email profile',
+    })
+    expect(location).toContain('gdrive_error=declined')
+    expect(location).toContain('#gauth=')
+    expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
+
+  it('names a missing refresh token instead of pretending', async () => {
+    const { location } = await connectDrive({ refreshToken: null })
+    expect(location).toContain('gdrive_error=no_refresh_token')
+  })
+
+  it('answers status, mints access tokens, and disconnects', async () => {
+    const { env, sessionToken, userId, db } = await connectDrive()
+
+    const status = await handleAuth(
+      new Request('https://api.test/api/auth/drive/status', {
+        headers: { Authorization: `Bearer ${sessionToken}` },
+      }),
+      env,
+      '/api/auth/drive/status',
+      respond,
+    )
+    expect(status?.status).toBe(200)
+    expect(await status?.json()).toEqual({
+      connected: true,
+      email: 'drive-user@example.com',
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ access_token: 'fresh-token', expires_in: 3599 }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    )
+    const mint = await handleAuth(
+      new Request('https://api.test/api/auth/drive/token', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
+      }),
+      env,
+      '/api/auth/drive/token',
+      respond,
+    )
+    expect(mint?.status).toBe(200)
+    expect(await mint?.json()).toEqual({
+      accessToken: 'fresh-token',
+      expiresIn: 3599,
+    })
+    // The refresh grant used the UNSEALED token.
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>
+    const body = fetchMock.mock.calls[0]?.[1]?.body as URLSearchParams
+    expect(body.get('refresh_token')).toBe('google-refresh-token')
+
+    const disconnect = await handleAuth(
+      new Request('https://api.test/api/auth/drive', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${sessionToken}` },
+      }),
+      env,
+      '/api/auth/drive',
+      respond,
+    )
+    expect(disconnect?.status).toBe(200)
+    expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
+
+  it('drops the row and says reconnect when Google revokes the grant', async () => {
+    const { env, sessionToken, userId, db } = await connectDrive()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: 'invalid_grant' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      ),
+    )
+    const mint = await handleAuth(
+      new Request('https://api.test/api/auth/drive/token', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
+      }),
+      env,
+      '/api/auth/drive/token',
+      respond,
+    )
+    expect(mint?.status).toBe(410)
+    expect(db.driveTokens.get(userId)).toBeUndefined()
+  })
+
+  it('a plain sign-in never asks Google for Drive', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+    const start = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/start' +
+          '?returnTo=https%3A%2F%2Fapp.test%2F',
+      ),
+      env,
+      '/api/auth/google/start',
+      respond,
+    )
+    const authUrl = new URL(start!.headers.get('Location') as string)
+    expect(authUrl.searchParams.get('scope')).toBe('openid email profile')
+    expect(authUrl.searchParams.get('access_type')).toBeNull()
   })
 })
