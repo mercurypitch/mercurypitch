@@ -66,9 +66,13 @@ class DexieDatabase extends DexieDB {
       pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
       pianoProjectMigrations: 'id, &migrationKey, completedAt',
     })
-    // v8: song manifests — the library list, without any audio. A cloud
-    // entity, mirrored locally so the library still renders offline and
-    // signed out; see docs/plans/device-sync.md.
+    // v8: song manifests — the library list, without any audio.
+    //
+    // A CLOUD entity, so the hybrid adapter never routes it here. The
+    // store exists for the local-only configuration (no VITE_API_BASE_URL,
+    // i.e. `pnpm dev` on its own), where this adapter answers every
+    // entity and the absence of a table is a thrown query rather than an
+    // empty list. See docs/plans/device-sync.md.
     this.version(8).stores({
       songManifests: 'id, userId, fileHash, [userId+fileHash], updatedAt',
     })
