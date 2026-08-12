@@ -8,6 +8,90 @@
   overflow-x: visible;
 }
 
+/* ── The selected group's songs ─────────────────────────────────── */
+
+.songList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  /* A library can be long and the rail is not the place to scroll the
+     whole thing: cap it and let the panel behind stay the full list. */
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.songRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.songRow:hover:not(:disabled),
+.songRow:focus-visible {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.songRow:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.songName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.songPlay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.songPlay svg {
+  width: 11px;
+  height: 11px;
+}
+
+.songRow:hover:not(:disabled) .songPlay,
+.songRow:focus-visible .songPlay {
+  color: var(--accent);
+}
+
+.songState {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.songsEmpty {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .setlistList {
   display: flex;
   flex-direction: column;
