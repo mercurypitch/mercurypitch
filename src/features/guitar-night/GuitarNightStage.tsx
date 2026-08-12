@@ -13,7 +13,7 @@ import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarBendType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
-import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, } from '@/lib/guitar/instrument-tuning'
+import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, soundingOpenMidi, } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
 
@@ -23,7 +23,23 @@ const Guitar3DStage = lazy(async () => {
 })
 
 export type GuitarNightStageMode = 'flow' | 'tab' | 'neck'
-type GuitarNightStageView = 'highway' | 'grid' | 'tab' | 'neck'
+export type GuitarNightStageView = 'highway' | 'grid' | 'tab' | 'neck'
+
+export interface GuitarNightNeckPosition {
+  stringIndex: number
+  stringLabel: string
+  fret: number
+  midi: number
+}
+
+export type GuitarNightNeckCellState = 'idle' | 'found' | 'miss'
+
+export interface GuitarNightNeckInteraction {
+  /** The exact fret window this activity owns. */
+  frets: Accessor<readonly number[]>
+  cellState(position: GuitarNightNeckPosition): GuitarNightNeckCellState
+  onSelect(position: GuitarNightNeckPosition): void
+}
 
 export const GUITAR_NIGHT_FLOW_PRESENTATION_KEY =
   'guitar-night-flow-presentation-v1'
@@ -49,6 +65,16 @@ interface GuitarNightStageProps {
   initialMode?: GuitarNightStageMode
   /** Flow labels default to note names; beginner tab can ask for fret numbers. */
   flowLabelMode?: 'note' | 'fret'
+  /** A focused activity may expose only the projections that help its task. */
+  availableViews?: Accessor<readonly GuitarNightStageView[]>
+  /** Activities can turn the lightweight neck into an accessible touch surface. */
+  neckInteraction?: GuitarNightNeckInteraction
+  /** Activity-owned instruction for the interactive neck group. */
+  neckLabel?: Accessor<string>
+  /** Free-play hosts may replace the generic ready copy without inventing a guide. */
+  idleStatus?: Accessor<{ label: string; detail: string }>
+  /** Focused beginner activities may remove expert display chrome entirely. */
+  showHeader?: Accessor<boolean>
   /** Host-owned cues and sheets sit over the instrument without entering layout. */
   overlay?: JSX.Element
 }
@@ -717,6 +743,19 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     if (currentMode !== 'flow') return currentMode
     return flowPresentation() === 'string-highway' ? 'highway' : 'grid'
   })
+  const availableViews = createMemo(() => {
+    const configured = props.availableViews?.()
+    if (configured === undefined || configured.length === 0) {
+      return STAGE_VIEW_CHOICES
+    }
+    const allowed = new Set(configured)
+    return STAGE_VIEW_CHOICES.filter((choice) => allowed.has(choice.id))
+  })
+  const hasFlowView = createMemo(() =>
+    availableViews().some(
+      (choice) => choice.id === 'highway' || choice.id === 'grid',
+    ),
+  )
   const selectView = (view: GuitarNightStageView) => {
     if (view === 'highway' || view === 'grid') {
       setFlowPresentation(view === 'highway' ? 'string-highway' : 'fret-axis')
@@ -777,9 +816,65 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const neck = createMemo(() =>
     neckWindowFromContext(actualEventContext(), maxAuthoredFret()),
   )
-  const displayedNeckFrets = createMemo(() =>
-    handedness() === 'left' ? [...neck().frets].reverse() : neck().frets,
+  const neckFrets = createMemo(
+    () => props.neckInteraction?.frets() ?? neck().frets,
   )
+  const displayedNeckFrets = createMemo(() =>
+    handedness() === 'left' ? [...neckFrets()].reverse() : neckFrets(),
+  )
+  const neckCellId = (stringIndex: number, fret: number) =>
+    `${stringIndex}:${fret}`
+  const [rovingNeckCell, setRovingNeckCell] = createSignal('')
+  createEffect(() => {
+    if (props.neckInteraction === undefined) return
+    const stringCount = tuning().stringCount
+    const frets = displayedNeckFrets()
+    const validCells = new Set(
+      Array.from({ length: stringCount }, (_, stringIndex) =>
+        frets.map((fret) => neckCellId(stringIndex, fret)),
+      ).flat(),
+    )
+    if (validCells.has(rovingNeckCell())) return
+    setRovingNeckCell(neckCellId(0, frets[0] ?? 0))
+  })
+  const focusNeckCell = (stringIndex: number, fret: number): void => {
+    const id = neckCellId(stringIndex, fret)
+    setRovingNeckCell(id)
+    queueMicrotask(() => {
+      stageRoot
+        ?.querySelector<HTMLButtonElement>(
+          `[data-string-index="${stringIndex}"][data-fret="${fret}"]`,
+        )
+        ?.focus()
+    })
+  }
+  const navigateNeck = (
+    event: KeyboardEvent,
+    position: GuitarNightNeckPosition,
+  ): void => {
+    if (props.neckInteraction === undefined) return
+    const frets = displayedNeckFrets()
+    const fretIndex = Math.max(0, frets.indexOf(position.fret))
+    let nextStringIndex = position.stringIndex
+    let nextFretIndex = fretIndex
+
+    if (event.key === 'ArrowLeft') nextFretIndex -= 1
+    else if (event.key === 'ArrowRight') nextFretIndex += 1
+    else if (event.key === 'ArrowUp') nextStringIndex -= 1
+    else if (event.key === 'ArrowDown') nextStringIndex += 1
+    else if (event.key === 'Home') nextFretIndex = 0
+    else if (event.key === 'End') nextFretIndex = frets.length - 1
+    else return
+
+    event.preventDefault()
+    nextStringIndex = Math.min(
+      tuning().stringCount - 1,
+      Math.max(0, nextStringIndex),
+    )
+    nextFretIndex = Math.min(frets.length - 1, Math.max(0, nextFretIndex))
+    const nextFret = frets[nextFretIndex]
+    if (nextFret !== undefined) focusNeckCell(nextStringIndex, nextFret)
+  }
   const activeNeckCells = createMemo(
     () =>
       new Set(
@@ -905,6 +1000,12 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       instrumentDetails.open = false
     }
   })
+  createEffect(() => {
+    const choices = availableViews()
+    if (choices.some((choice) => choice.id === activeView())) return
+    const first = choices[0]?.id
+    if (first !== undefined) selectView(first)
+  })
   const openStageDisclosure = (opened: HTMLDetailsElement) => {
     if (!opened.open) return
     if (opened !== instrumentDetails && instrumentDetails !== undefined) {
@@ -913,9 +1014,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     if (opened !== viewDetails && viewDetails !== undefined) {
       viewDetails.open = false
     }
-    const room = stageRoot?.closest(
-      '[data-testid="guitar-night-room"], [data-testid="guitar-night-score-room"]',
-    )
+    const room = stageRoot?.closest('[data-stage-scope]')
     room
       ?.querySelectorAll<HTMLDetailsElement>('details[open]')
       .forEach((details) => {
@@ -931,6 +1030,23 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     const confidence = Math.round((props.heardClarity?.() ?? 0) * 100)
     return `${note} · ${confidence}% clear`
   })
+  const idleStatus = createMemo(
+    () =>
+      props.idleStatus?.() ?? {
+        label: 'Free play',
+        detail: 'Your fretboard is ready',
+      },
+  )
+  const accessibleStringLabel = (
+    label: string,
+    stringIndex: number,
+  ): string => {
+    const ordinal = `string ${stringIndex + 1}`
+    if (label.toLowerCase() !== 'e') return `${ordinal}, ${label}`
+    if (stringIndex === 0) return `${ordinal}, high E`
+    if (stringIndex === tuning().stringCount - 1) return `${ordinal}, low E`
+    return `${ordinal}, ${label}`
+  }
   const targetSummary = createMemo(() => {
     const { activeNotes: active, nextNotes: upcoming } = actualEventContext()
     if (active.length > 0) {
@@ -981,187 +1097,200 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         isListening() ? 'listening' : hasGuide() ? 'guided' : 'free-play'
       }
     >
-      <header class={styles.stageHeader}>
-        <div>
-          <span>
+      <Show when={props.showHeader?.() ?? true}>
+        <header class={styles.stageHeader}>
+          <div>
+            <span>
+              {isListening()
+                ? heardNote() === null
+                  ? 'Listening'
+                  : 'Heard now'
+                : hasGuide()
+                  ? 'Guide ready'
+                  : idleStatus().label}
+            </span>
+            <strong>
+              {heardCopy() ??
+                (hasGuide()
+                  ? actualPlayheadBeat() === null
+                    ? readyGuideCopy()
+                    : (props.guideLabel?.() ??
+                      'Follow the next note into the neck')
+                  : idleStatus().detail)}
+            </strong>
+          </div>
+          <span
+            class={styles.visuallyHidden}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {isListening()
               ? heardNote() === null
-                ? 'Listening'
-                : 'Heard now'
-              : hasGuide()
-                ? 'Guide ready'
-                : 'Free play'}
+                ? 'Listening for a clean note'
+                : `Heard ${heardNote()}`
+              : ''}
           </span>
-          <strong>
-            {heardCopy() ??
-              (hasGuide()
-                ? actualPlayheadBeat() === null
-                  ? readyGuideCopy()
-                  : (props.guideLabel?.() ??
-                    'Follow the next note into the neck')
-                : 'Your fretboard is ready')}
-          </strong>
-        </div>
-        <span
-          class={styles.visuallyHidden}
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {isListening()
-            ? heardNote() === null
-              ? 'Listening for a clean note'
-              : `Heard ${heardNote()}`
-            : ''}
-        </span>
-        <div class={styles.stageHeaderTools}>
-          {/* The instrument names the rows in every view, so it belongs beside
+          <div class={styles.stageHeaderTools}>
+            {/* The instrument names the rows in every view, so it belongs beside
               the view switch rather than inside one of them. */}
-          <Show when={canRetune()}>
+            <Show when={canRetune()}>
+              <details
+                ref={instrumentDetails}
+                class={styles.stageSetup}
+                classList={{
+                  [styles.stageSetupDisabled]: instrumentSetupDisabled(),
+                }}
+                onToggle={(event) => openStageDisclosure(event.currentTarget)}
+              >
+                <summary
+                  ref={instrumentSummary}
+                  aria-label={`${tuning().stringCount}-string ${tuning().instrument} setup`}
+                  aria-disabled={instrumentSetupDisabled()}
+                  onClick={(event) => {
+                    if (instrumentSetupDisabled()) {
+                      event.preventDefault()
+                      return
+                    }
+                    if (
+                      instrumentDetails?.open !== true &&
+                      viewDetails !== undefined
+                    ) {
+                      viewDetails.open = false
+                    }
+                  }}
+                >
+                  {tuning().stringCount}-string {tuning().instrument}
+                </summary>
+                <InstrumentPicker
+                  tuning={tuning()}
+                  disabled={instrumentSetupDisabled()}
+                  onInstrument={(next) => props.onInstrument?.(next)}
+                  onStringCount={(count) => props.onStringCount?.(count)}
+                />
+              </details>
+            </Show>
             <details
-              ref={instrumentDetails}
-              class={styles.stageSetup}
-              classList={{
-                [styles.stageSetupDisabled]: instrumentSetupDisabled(),
-              }}
+              ref={viewDetails}
+              class={`${styles.stageSetup} ${styles.stageViewMenu}`}
               onToggle={(event) => openStageDisclosure(event.currentTarget)}
             >
               <summary
-                ref={instrumentSummary}
-                aria-label={`${tuning().stringCount}-string ${tuning().instrument} setup`}
-                aria-disabled={instrumentSetupDisabled()}
-                onClick={(event) => {
-                  if (instrumentSetupDisabled()) {
-                    event.preventDefault()
-                    return
-                  }
+                ref={viewSummary}
+                aria-label={
+                  mode() === 'flow'
+                    ? `Camera, ${cameraLabel()}`
+                    : 'Display settings'
+                }
+                onClick={() => {
                   if (
-                    instrumentDetails?.open !== true &&
-                    viewDetails !== undefined
+                    viewDetails?.open !== true &&
+                    instrumentDetails !== undefined
                   ) {
-                    viewDetails.open = false
+                    instrumentDetails.open = false
                   }
                 }}
               >
-                {tuning().stringCount}-string {tuning().instrument}
+                {mode() === 'flow' ? 'Camera' : 'Display'}
+                <Show when={mode() === 'flow'}>
+                  <span class={styles.stageSetupContext}>
+                    {' '}
+                    · {cameraLabel()}
+                  </span>
+                </Show>
               </summary>
-              <InstrumentPicker
-                tuning={tuning()}
-                disabled={instrumentSetupDisabled()}
-                onInstrument={(next) => props.onInstrument?.(next)}
-                onStringCount={(count) => props.onStringCount?.(count)}
+              <StageViewPicker
+                showCameraChoices={mode() === 'flow'}
+                cameraPreset={cameraPresetId()}
+                handedness={handedness()}
+                effects={effects()}
+                onCameraPreset={(preset) => {
+                  setCameraPresetId(preset)
+                  if (viewDetails !== undefined) viewDetails.open = false
+                  queueMicrotask(() => viewSummary?.focus())
+                }}
+                onHandedness={setHandedness}
+                onEffects={setEffects}
               />
             </details>
-          </Show>
-          <details
-            ref={viewDetails}
-            class={`${styles.stageSetup} ${styles.stageViewMenu}`}
-            onToggle={(event) => openStageDisclosure(event.currentTarget)}
-          >
-            <summary
-              ref={viewSummary}
-              aria-label={
-                mode() === 'flow'
-                  ? `Camera, ${cameraLabel()}`
-                  : 'Display settings'
-              }
-              onClick={() => {
-                if (
-                  viewDetails?.open !== true &&
-                  instrumentDetails !== undefined
-                ) {
-                  instrumentDetails.open = false
-                }
-              }}
-            >
-              {mode() === 'flow' ? 'Camera' : 'Display'}
-              <Show when={mode() === 'flow'}>
-                <span class={styles.stageSetupContext}> · {cameraLabel()}</span>
-              </Show>
-            </summary>
-            <StageViewPicker
-              showCameraChoices={mode() === 'flow'}
-              cameraPreset={cameraPresetId()}
-              handedness={handedness()}
-              effects={effects()}
-              onCameraPreset={(preset) => {
-                setCameraPresetId(preset)
-                if (viewDetails !== undefined) viewDetails.open = false
-                queueMicrotask(() => viewSummary?.focus())
-              }}
-              onHandedness={setHandedness}
-              onEffects={setEffects}
-            />
-          </details>
-          <div class={styles.stageModes} role="group" aria-label="Stage view">
-            <For each={STAGE_VIEW_CHOICES}>
-              {(choice) => (
-                <button
-                  type="button"
-                  classList={{
-                    [styles.stageModeActive]: activeView() === choice.id,
-                  }}
-                  aria-pressed={activeView() === choice.id}
-                  onClick={() => selectView(choice.id)}
-                >
-                  {choice.label}
-                </button>
-              )}
-            </For>
+            <Show when={availableViews().length > 1}>
+              <div
+                class={styles.stageModes}
+                role="group"
+                aria-label="Stage view"
+              >
+                <For each={availableViews()}>
+                  {(choice) => (
+                    <button
+                      type="button"
+                      classList={{
+                        [styles.stageModeActive]: activeView() === choice.id,
+                      }}
+                      aria-pressed={activeView() === choice.id}
+                      onClick={() => selectView(choice.id)}
+                    >
+                      {choice.label}
+                    </button>
+                  )}
+                </For>
+              </div>
+            </Show>
           </div>
-        </div>
-      </header>
+        </header>
+      </Show>
 
       <div
         class={styles.stageViewport}
         data-stage-mode={mode()}
         data-flow-presentation={flowPresentation()}
       >
-        <div
-          class={styles.stageFlow}
-          classList={{ [styles.stageFlowHidden]: mode() !== 'flow' }}
-          aria-hidden={mode() !== 'flow'}
-        >
-          <Suspense
-            fallback={
-              <div class={styles.stageLoading} role="status">
-                <span aria-hidden="true" />
-                Setting the fretboard…
-              </div>
-            }
+        <Show when={hasFlowView()}>
+          <div
+            class={styles.stageFlow}
+            classList={{ [styles.stageFlowHidden]: mode() !== 'flow' }}
+            aria-hidden={mode() !== 'flow'}
           >
-            <Guitar3DStage
-              source={visualSource}
-              tuning={tuning}
-              visibleBeatWindow={() => 8}
-              showNoteLabels={() => props.flowLabelMode !== 'fret'}
-              showFretboard={() => true}
-              isActive={() => props.active() && mode() === 'flow'}
-              display={display}
-              presentation={flowPresentation}
-              showGizmo={() => false}
-              ariaLabel={flowSummary}
-              fallbackText={flowSummary}
-              borderRadius={() => '0'}
-              cameraPreset={cameraPreset}
-              cameraAutoFollow={() => cameraPresetId() === 'phrase-focus'}
-              reducedMotion={systemReducedMotion}
-              reducedEffects={() => display().effects === 'reduced'}
-            />
-          </Suspense>
-          <p class={styles.stageGestureHint}>
-            Drag / arrows to orbit · scroll / + − to zoom · R resets
-          </p>
-          <Show when={!hasGuide() && !isListening()}>
-            <div class={styles.stageInvitation}>
-              <span>Free play</span>
-              <strong>The room is yours.</strong>
-              <small>
-                Attach a tab or turn on Listening whenever you want a target.
-              </small>
-            </div>
-          </Show>
-        </div>
+            <Suspense
+              fallback={
+                <div class={styles.stageLoading} role="status">
+                  <span aria-hidden="true" />
+                  Setting the fretboard…
+                </div>
+              }
+            >
+              <Guitar3DStage
+                source={visualSource}
+                tuning={tuning}
+                visibleBeatWindow={() => 8}
+                showNoteLabels={() => props.flowLabelMode !== 'fret'}
+                showFretboard={() => true}
+                isActive={() => props.active() && mode() === 'flow'}
+                display={display}
+                presentation={flowPresentation}
+                showGizmo={() => false}
+                ariaLabel={flowSummary}
+                fallbackText={flowSummary}
+                borderRadius={() => '0'}
+                cameraPreset={cameraPreset}
+                cameraAutoFollow={() => cameraPresetId() === 'phrase-focus'}
+                reducedMotion={systemReducedMotion}
+                reducedEffects={() => display().effects === 'reduced'}
+              />
+            </Suspense>
+            <p class={styles.stageGestureHint}>
+              Drag / arrows to orbit · scroll / + − to zoom · R resets
+            </p>
+            <Show when={!hasGuide() && !isListening()}>
+              <div class={styles.stageInvitation}>
+                <span>Free play</span>
+                <strong>The room is yours.</strong>
+                <small>
+                  Attach a tab or turn on Listening whenever you want a target.
+                </small>
+              </div>
+            </Show>
+          </div>
+        </Show>
 
         <Show when={mode() === 'tab'}>
           <div class={styles.stageTab}>
@@ -1215,36 +1344,124 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         <Show when={mode() === 'neck'}>
           <div
             class={styles.stageNeck}
-            aria-label={`${NECK_WINDOW_FRETS}-fret ${instrumentLabel()} neck. ${targetSummary()}`}
-            role="img"
+            aria-label={
+              props.neckLabel?.() ??
+              `${displayedNeckFrets().length}-fret ${instrumentLabel()} neck. ${targetSummary()}`
+            }
+            role={props.neckInteraction === undefined ? 'img' : 'group'}
             data-handedness={handedness()}
+            data-interactive={
+              props.neckInteraction === undefined ? undefined : 'true'
+            }
           >
-            <div class={styles.fretNumbers} aria-hidden="true">
+            <div
+              class={styles.fretNumbers}
+              aria-hidden="true"
+              style={{
+                'grid-template-columns': `repeat(${displayedNeckFrets().length}, minmax(1.15rem, 1fr))`,
+              }}
+            >
               <For each={displayedNeckFrets()}>
                 {(fret) => <span>{fret}</span>}
               </For>
             </div>
             <For each={tuning().labels}>
-              {(_label, stringIndex) => (
-                <div class={styles.neckString} aria-hidden="true">
+              {(label, stringIndex) => (
+                <div
+                  class={styles.neckString}
+                  role={
+                    props.neckInteraction === undefined ? undefined : 'group'
+                  }
+                  aria-hidden={
+                    props.neckInteraction === undefined ? 'true' : undefined
+                  }
+                  aria-label={
+                    props.neckInteraction === undefined
+                      ? undefined
+                      : accessibleStringLabel(label, stringIndex())
+                  }
+                  style={{
+                    'grid-template-columns': `repeat(${displayedNeckFrets().length}, minmax(1.15rem, 1fr))`,
+                  }}
+                >
                   <For each={displayedNeckFrets()}>
-                    {(fret) => (
-                      <span
-                        classList={{
-                          [styles.neckTarget]: activeNeckCells().has(
-                            `${stringIndex()}:${fret}`,
-                          ),
-                          [styles.neckNextTarget]: nextNeckCells().has(
-                            `${stringIndex()}:${fret}`,
-                          ),
-                        }}
-                      />
-                    )}
+                    {(fret) => {
+                      const position = (): GuitarNightNeckPosition => ({
+                        stringIndex: stringIndex(),
+                        stringLabel: label,
+                        fret,
+                        midi:
+                          (soundingOpenMidi(tuning())[stringIndex()] ?? 0) +
+                          fret,
+                      })
+                      const state = () =>
+                        props.neckInteraction?.cellState(position()) ?? 'idle'
+                      const positionLabel = () =>
+                        `${accessibleStringLabel(label, stringIndex())}, ${fret === 0 ? 'open' : `fret ${fret}`}`
+                      const stateLabel = () => {
+                        if (state() === 'found') return ', found'
+                        if (state() === 'miss') return ', wrong selection'
+                        return ', not marked'
+                      }
+                      return (
+                        <Show
+                          when={props.neckInteraction}
+                          fallback={
+                            <span
+                              classList={{
+                                [styles.neckTarget]: activeNeckCells().has(
+                                  `${stringIndex()}:${fret}`,
+                                ),
+                                [styles.neckNextTarget]: nextNeckCells().has(
+                                  `${stringIndex()}:${fret}`,
+                                ),
+                              }}
+                            />
+                          }
+                        >
+                          {(interaction) => (
+                            <button
+                              type="button"
+                              class={styles.neckPosition}
+                              classList={{
+                                [styles.neckPositionFound]: state() === 'found',
+                                [styles.neckPositionMiss]: state() === 'miss',
+                              }}
+                              aria-label={`${positionLabel()}${stateLabel()}`}
+                              aria-pressed={state() === 'found'}
+                              tabindex={
+                                rovingNeckCell() ===
+                                neckCellId(stringIndex(), fret)
+                                  ? 0
+                                  : -1
+                              }
+                              data-string-index={stringIndex()}
+                              data-fret={fret}
+                              data-midi={position().midi}
+                              data-state={state()}
+                              onFocus={() =>
+                                setRovingNeckCell(
+                                  neckCellId(stringIndex(), fret),
+                                )
+                              }
+                              onKeyDown={(event) =>
+                                navigateNeck(event, position())
+                              }
+                              onClick={() => interaction().onSelect(position())}
+                            >
+                              <span class={styles.visuallyHidden}>
+                                {positionLabel()}
+                              </span>
+                            </button>
+                          )}
+                        </Show>
+                      )
+                    }}
                   </For>
                 </div>
               )}
             </For>
-            <Show when={!hasGuide()}>
+            <Show when={!hasGuide() && props.neckInteraction === undefined}>
               <p>Free play · {tuning().labels.join(' ')}</p>
             </Show>
           </div>
