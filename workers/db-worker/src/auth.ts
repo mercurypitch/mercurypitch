@@ -1993,6 +1993,13 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'voiceprints', column: 'userId' },
   // What someone did is as personal as what they sang.
   { table: 'userActivity', column: 'userId' },
+  // The library listing that lets a second device show what its owner has:
+  // song titles, durations, which stems exist and how big they are. No audio
+  // (that never reaches this worker), but a list of someone's music is
+  // personal data all the same, and `songManifests` declares no foreign key,
+  // so nothing cascades it away. Without this line a deleted account's whole
+  // library stayed in D1 forever under an id no longer belonging to anyone.
+  { table: 'songManifests', column: 'userId' },
   { table: 'emailVerifications', column: 'userId' },
   // League rows are per-user too: leaving them would keep a ghost entry in
   // this week's standings (rendered as Singer-<id>) and a point history for
