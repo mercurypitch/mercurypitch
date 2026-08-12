@@ -2298,6 +2298,7 @@ input[type='range'] {
   #app-tabs .tab-group-label {
     display: inline-flex;
     align-items: center;
+    gap: 3px;
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-muted);
@@ -2305,10 +2306,65 @@ input[type='range'] {
     padding: 2px;
     margin-right: 4px;
     user-select: none;
+    /* The label doubles as the group collapse/expand toggle, so it is a
+       <button> and needs the button chrome reset away. */
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  #app-tabs .tab-group-label:hover {
+    color: var(--text-secondary);
+  }
+
+  .tab-group-caret {
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: transform 0.2s ease;
+  }
+
+  #app-tabs .tab-group-label.collapsed .tab-group-caret {
+    transform: rotate(-90deg);
   }
 
   #app-tabs .tab-group .app-tab {
     white-space: nowrap;
+  }
+
+  /* Collapse a group down to its active tab; expand inline on hover/focus.
+     Spacing uses margins (not flex gap) so it can animate to zero cleanly.
+     Only groups showing their label carry `.collapsible` — the label IS the
+     toggle, so a squeezed bar that has dropped its labels must not leave a
+     group collapsed with nothing left to reopen it (see AppNavTabs). */
+  #app-tabs .tab-group.collapsible {
+    gap: 0;
+  }
+
+  #app-tabs .tab-group.collapsible .app-tab {
+    margin-left: 8px;
+    max-width: 240px;
+    overflow: hidden;
+    white-space: nowrap;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.2s ease,
+      padding 0.25s ease,
+      margin 0.25s ease;
+  }
+
+  /* Expand on hover, or when a tab inside (not the label toggle) is keyboard
+     focused — `:has(.app-tab:focus)` excludes the label so a click that
+     collapses the group doesn't immediately re-expand it via focus. */
+  #app-tabs
+    .tab-group.collapsible.collapsed:not(:hover):not(:has(.app-tab:focus))
+    .app-tab:not(.active) {
+    max-width: 0;
+    margin-left: 0;
+    padding-left: 0;
+    padding-right: 0;
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* Icon-only tabs — the fit pass's third step (see AppNavTabs' fitToWidth).
@@ -2334,7 +2390,8 @@ input[type='range'] {
     cursor: grabbing;
   }
 
-  #app-tabs.dragging .app-tab {
+  #app-tabs.dragging .app-tab,
+  #app-tabs.dragging .tab-group-label {
     pointer-events: none;
   }
 }
