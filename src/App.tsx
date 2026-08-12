@@ -243,6 +243,7 @@ import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash } from '@/lib/hash-router'
+import { publishHeaderHeight } from '@/lib/header-height'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -1985,6 +1986,20 @@ const AppShell: Component<AppProps> = (props) => {
     }
   })
 
+  // The toast stack is pinned to the top-right corner, which is where the
+  // account and sign-in buttons live. It needs the header's height to sit
+  // below them, and the header has none to hard-code: it wraps on a phone.
+  //
+  // Callback ref, not a plain `let`: the header renders inside a <Show>, so it
+  // is destroyed and rebuilt whenever that condition flips, and an observer
+  // left on the detached original would freeze the variable.
+  const [headerEl, setHeaderEl] = createSignal<HTMLElement | undefined>()
+  createEffect(() => {
+    const el = headerEl()
+    if (el === undefined) return
+    onCleanup(publishHeaderHeight(el))
+  })
+
   // ── Mic handler ────────────────────────────────────────────
   const handleMicToggle = async () => {
     if (activeTab() === TAB_GUITAR) {
@@ -2800,7 +2815,7 @@ const AppShell: Component<AppProps> = (props) => {
             challengeStageLaunch() === null
           }
         >
-          <header>
+          <header ref={(el) => setHeaderEl(el)}>
             <div class="header-left">
               <button
                 class="sidebar-toggle-btn"

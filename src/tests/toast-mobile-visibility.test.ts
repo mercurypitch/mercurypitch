@@ -90,3 +90,38 @@ describe('REQ-TMV-003 — Banner sits above the tab bar on mobile', () => {
     expect(block).toMatch(/overflow-y\s*:\s*auto/)
   })
 })
+
+/*
+ * The toast used to be a two-row grid pinned to the very top-right corner —
+ * over the account button, the sign-in button and the page's rail. These pin
+ * the way out: one row, and below the header.
+ */
+describe('Toast compactness and header clearance', () => {
+  it('clears the app header instead of overlapping it', () => {
+    expect(NOTIFICATIONS_CSS).toMatch(/top:[\s\S]*?--app-header-h/)
+  })
+
+  it('supplies a 0px fallback for entries that have no app header', () => {
+    // The standalone karaoke and mirror entries mount the toast host without
+    // one; without the fallback every toast would render at top: 0 minus a
+    // broken calc, i.e. not at all.
+    expect(NOTIFICATIONS_CSS).toMatch(/--app-header-h,\s*0px/)
+  })
+
+  it('lays the toast out in a single row, not a stacked grid', () => {
+    const notif = NOTIFICATIONS_CSS.slice(
+      NOTIFICATIONS_CSS.indexOf('.notification {'),
+    ).slice(0, 900)
+    expect(notif).toMatch(/display:\s*flex/)
+    expect(notif).not.toMatch(/grid-template-areas/)
+  })
+
+  it('keeps the action button on the message row', () => {
+    const action = NOTIFICATIONS_CSS.slice(
+      NOTIFICATIONS_CSS.indexOf('.actionBtn {'),
+    ).slice(0, 400)
+    // `grid-area: action` was the second row; a margin-top was the gap to it.
+    expect(action).not.toMatch(/grid-area/)
+    expect(action).not.toMatch(/margin-top/)
+  })
+})

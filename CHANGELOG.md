@@ -87,6 +87,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   full sentence can skip the heading altogether. "Update" is now reserved for
   the toast that really does offer you a new version.
 
+- **Notifications are half the size and no longer sit on the buttons.** They
+  were pinned to the very top-right corner — over the account and sign-in
+  buttons and the page's own rail — and each one was three stacked rows: a
+  heading, the message, then an action button on its own line. A toast is one
+  row now (42px instead of 72px, and narrower), with the heading leading the
+  message and any button beside it, and the stack starts below the header
+  instead of on top of it. Three of them together take 150px where they used
+  to take 237px.
+
 - **Adding songs in Karaoke shows you where they went.** On a laptop-height
   screen the upload zone filled the tab, so a new song landed in a queue below
   the fold and the upload read as having done nothing. The queue scrolls into
