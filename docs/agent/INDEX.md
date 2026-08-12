@@ -132,8 +132,9 @@ These are the rules that break things when ignored.
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 900 | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
-| `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 450 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
+| `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 600 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 400 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
+| `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 350 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 250 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
 | `pitch-measurements` | [index.ts](../../src/lib/pitch-measurements/index.ts) | 150 | Pitch measurements — shared neutral F0 primitives |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 150 | Platform services — web implementations. |
@@ -179,6 +180,7 @@ These are the rules that break things when ignored.
 | [settings-store.ts](../../src/stores/settings-store.ts) | 700 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [sync-store.ts](../../src/stores/sync-store.ts) | 500 | ── Sync store One person, two devices, a room code between them. |
+| [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 450 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [session-store.ts](../../src/stores/session-store.ts) | 450 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 450 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 250 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
@@ -227,7 +229,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 15.0k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 15.3k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -330,6 +332,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.1k |
@@ -338,7 +341,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.0k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
-| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 1.8k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |

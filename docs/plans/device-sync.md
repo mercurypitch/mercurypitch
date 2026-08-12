@@ -474,14 +474,34 @@ friction disappears, and this is the manifest every transport diffs against.
 
 The WhatsApp model. **After this phase the original problem is solved.**
 
+**Built.** `workers/db-worker/src/auth.ts` (incremental `drive.file` consent on
+the existing redirect, refresh token sealed with an HKDF key derived from
+`JWT_SECRET`, `POST /api/auth/drive/token` minting short-lived access tokens),
+`src/lib/portable/portable-container.ts` (a bundle as one file: magic, version,
+manifest, then parts at offsets computable from the manifest alone),
+`src/lib/drive/drive-client.ts` (the handful of REST calls, resumable upload in
+4 MB slices, Range reads), `src/stores/drive-sync-store.ts` and the Google Drive
+section of Settings → Sync (connect, check, back up, restore, stop, disconnect,
+with per-song progress). The browser talks to googleapis.com directly — audio
+never transits our infrastructure, which is a rule about copyright, not a
+performance choice.
+
 - Add `drive.file` to the existing Google OAuth redirect flow.
 - Visible `MercuryPitch/` folder; one portable bundle per song, named by
   `fileHash`, plus an opt-in full-quality bundle per song (D10) for people who
   want the original back on a new device without re-separating.
-- Resumable upload via XHR (10 MB chunks; 256 KB minimum).
+- Resumable upload via XHR (10 MB chunks; 256 KB minimum). _Built with `fetch`
+  and 4 MB slices: `fetch` gives upload progress per slice, which is all the
+  progress bar needs, and XHR's finer-grained events are not worth a second
+  HTTP path. Drive's own acknowledged `Range` is trusted over the local offset._
 - New device: _"Found 23 songs in your Drive — restore?"_ → per-song,
   resumable, one at a time.
-- Sync state driven entirely by the Phase 3 manifest.
+- Sync state driven entirely by the Phase 3 manifest. _Built against the
+  library's `fileHash` directly — the same identity the manifest carries, so a
+  song is recognised whichever way it arrived._
+- Still open: the opt-in full-quality bundle (D10), a Drive copy that is
+  upgraded in place when the local song improves, and one-tap whole-library
+  sync without a scan first.
 
 **Start the paperwork on day one, not at the end.** Adding a scope changes the
 OAuth consent screen, and `drive.file` being non-sensitive means basic app

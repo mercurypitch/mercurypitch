@@ -22,7 +22,7 @@
 //
 // See docs/plans/device-sync.md (Phase 4).
 
-import type { PortableBundleManifest, PortablePartId, } from './portable-bundle'
+import type { PortableBundleManifest, PortablePartId } from './portable-bundle'
 import { isReadableManifest } from './portable-bundle'
 
 export const CONTAINER_MAGIC = 'MPSB'
