@@ -1807,17 +1807,20 @@ const AppShell: Component<AppProps> = (props) => {
    * surface with the least of it, repeating something you cannot act on twice.
    * A dismissible toast says it and leaves. The persisted flag is what makes it
    * "once" rather than "every time you open the tab".
+   *
+   * An effect rather than something called from the JSX: this writes a signal
+   * and pushes a notification, and doing either during render is how Solid ends
+   * up re-running a computation it is in the middle of.
    */
-  const noteComposeIsDesktopFirst = () => {
-    if (composeHintShown()) return null
+  createEffect(() => {
+    if (activeTab() !== TAB_COMPOSE || !isNarrow() || composeHintShown()) return
     setComposeHintShown(true)
     showNotification(
       'Compose is built for a bigger screen. Rotate your phone, or open MercuryPitch on a desktop, for the full piano roll.',
       'info',
       { channel: 'compose-desktop-first', durationMs: 9000 },
     )
-    return null
-  }
+  })
 
   const composeControls = () => (
     <ComposeControlBar
@@ -3331,11 +3334,10 @@ const AppShell: Component<AppProps> = (props) => {
                 <TabErrorBoundary tabName={tabLabel(TAB_COMPOSE)}>
                   {/* Compose is the precision piano-roll editor — a desktop-
                       first surface (decision D4). Keep it usable on a phone,
-                      and say so once, as a toast that can be dismissed. It was
-                      a banner in the flow, which spent permanent vertical space
-                      on the screen with the least of it to repeat something you
-                      cannot act on twice. */}
-                  <Show when={isNarrow()}>{noteComposeIsDesktopFirst()}</Show>
+                      and say so once, as a dismissible toast (see the effect by
+                      composeHintShown). It was a banner in the flow, which spent
+                      permanent vertical space on the screen with the least of it
+                      to repeat something you cannot act on twice. */}
                   <Show
                     when={isNarrow()}
                     fallback={

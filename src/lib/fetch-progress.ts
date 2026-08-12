@@ -13,6 +13,9 @@
 // so the UI can show a byte count instead of a fake percentage), and a
 // response with no readable body falls back to `arrayBuffer()`.
 
+/** Placeholder that lets a copied chunk be collected before the loop ends. */
+const EMPTY_CHUNK = new Uint8Array(0)
+
 /** Bytes so far, and the expected total when the server declared one. */
 export interface DownloadProgress {
   received: number
@@ -105,11 +108,17 @@ export async function fetchArrayBufferWithProgress(
 
   // One allocation rather than repeated concatenation — a 12 MB stem would
   // otherwise copy itself ~200 times.
+  //
+  // Each chunk is dropped as it is copied. Holding the list and the merged
+  // buffer at once doubles peak memory for the length of the copy, and four
+  // stems downloading in parallel on a television — the device this whole
+  // change is for — is the worst place to ask for twice the room.
   const merged = new Uint8Array(received)
   let offset = 0
-  for (const chunk of chunks) {
-    merged.set(chunk, offset)
-    offset += chunk.byteLength
+  for (let i = 0; i < chunks.length; i++) {
+    merged.set(chunks[i], offset)
+    offset += chunks[i].byteLength
+    chunks[i] = EMPTY_CHUNK
   }
   onProgress?.(progressOf(received, received))
   return merged.buffer

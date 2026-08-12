@@ -552,6 +552,11 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Melody or Drums',
     targetSelector: '[data-tour="compose.kind"]',
+    // On a phone the preset toggle lives in Compose's "more" drawer, so the
+    // step has to open it before there is anything to point at. Harmless on
+    // desktop, where the trigger does not exist and the toggle is already in
+    // the toolbar.
+    reveal: '[data-testid="compose-mobile-more"]',
     description:
       'Switch the editor preset: Melody gives you pitched note rows, while Drums swaps in a 12-lane General MIDI kit — kick, snare, hats, toms and cymbals — with synthesized drum sounds.',
     placement: 'bottom',
