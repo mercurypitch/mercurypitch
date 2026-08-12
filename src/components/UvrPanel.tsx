@@ -1199,6 +1199,25 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return outcome ?? { status: 'completed' }
   }
 
+  let uploadQueueAnchor: HTMLDivElement | undefined
+
+  /** The upload zone above the queue is tall, so on a laptop-height screen a
+   *  freshly added song lands below the fold — the queue never scrolls into
+   *  sight and the upload looks like it did nothing. Bring the queue into view
+   *  and put focus on its primary action, so Enter starts the batch. */
+  const revealUploadQueue = (): void => {
+    // Next frame: the queue's <Show> has to mount before it can be measured.
+    requestAnimationFrame(() => {
+      const anchor = uploadQueueAnchor
+      if (!anchor) return
+      // Optional call: jsdom has no scrollIntoView.
+      anchor.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+      anchor
+        .querySelector<HTMLButtonElement>('.uvr-queue-button--primary')
+        ?.focus({ preventScroll: true })
+    })
+  }
+
   const enqueueAudioFiles = (files: File[]) => {
     if (
       uploadQueue.items().length > 0 &&
@@ -1220,6 +1239,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         'success',
       )
     }
+    if (added > 0) revealUploadQueue()
   }
 
   const processQueuedFile = async (
@@ -2096,8 +2116,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       <div
         class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}
       >
-        {/* Header */}
-        <Show when={!karaokeFocus()}>
+        {/* Header — hidden while the inline mixer is up: the mixer brings its
+            own full toolbar and back button, and on a laptop-height screen
+            these two rows (title + view tabs, then the separation pills) push
+            the stage below the fold. The separation controls still exist in
+            the Upload view and under Settings > Karaoke. */}
+        <Show when={!karaokeFocus() && currentView() !== 'mixer'}>
           <div class="panel-header">
             <div class="header-left">
               <div
@@ -2230,25 +2254,27 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               />
 
               <Show when={uploadQueue.items().length > 0}>
-                <UvrUploadQueue
-                  items={uploadQueue.items}
-                  running={uploadQueue.isRunning}
-                  mode={() =>
-                    uploadQueue.isRunning()
-                      ? activeUvrUploadQueueMode()
-                      : uvrProcessingMode()
-                  }
-                  costPerSong={() =>
-                    bandSplitChoice() ? bandCost() : songCost()
-                  }
-                  onStart={() => void startUploadQueue()}
-                  onRemove={uploadQueue.remove}
-                  onSkip={uploadQueue.skipQueued}
-                  onSkipRemaining={uploadQueue.skipRemaining}
-                  onCancel={uploadQueue.cancelActive}
-                  onRetryFailed={uploadQueue.requeueFailed}
-                  onClear={uploadQueue.clear}
-                />
+                <div ref={uploadQueueAnchor} data-testid="uvr-upload-queue">
+                  <UvrUploadQueue
+                    items={uploadQueue.items}
+                    running={uploadQueue.isRunning}
+                    mode={() =>
+                      uploadQueue.isRunning()
+                        ? activeUvrUploadQueueMode()
+                        : uvrProcessingMode()
+                    }
+                    costPerSong={() =>
+                      bandSplitChoice() ? bandCost() : songCost()
+                    }
+                    onStart={() => void startUploadQueue()}
+                    onRemove={uploadQueue.remove}
+                    onSkip={uploadQueue.skipQueued}
+                    onSkipRemaining={uploadQueue.skipRemaining}
+                    onCancel={uploadQueue.cancelActive}
+                    onRetryFailed={uploadQueue.requeueFailed}
+                    onClear={uploadQueue.clear}
+                  />
+                </div>
               </Show>
 
               <UvrStemUploadControl
