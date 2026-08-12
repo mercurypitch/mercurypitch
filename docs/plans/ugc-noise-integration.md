@@ -248,12 +248,18 @@ architecture.
 
 ### Generated brand assets
 
-Higgsfield, using the palette and shape language from BRAND.md §3 and §6
-verbatim: obsidian `#0d1117`, Signal Blue `#58a6ff`, Aqua `#2dd4bf`, Violet
-`#bc8cff`, chrome family, Outfit-style geometric display type.
+Higgsfield generates a **text-free plate**; type is composited locally by
+`scripts/compose-poster.py`. See
+[docs/branding/marketing/README.md](../branding/marketing/README.md) for why
+and how.
 
-Model `nano_banana_pro` at 9:16 / 2K renders baked headline text reliably,
-which most image models do not. Generate 2 variants and check the text.
+The short version: letting the model render the headline means every tweak to
+its position re-rolls the whole image, and the type comes back subtly wrong —
+one variant dropped the full stop from the headline, another appended one to
+the URL. Compositing makes position a flag and the copy exact.
+
+Plates are scaled to width and centre-cropped to exactly 1080x1920.
+Generators emit ~9:16.1, which letterboxes on a phone.
 
 ### Attaching images to slides
 
@@ -432,6 +438,7 @@ Same rules: destination in the playbook prompt, no music, a cappella.
 | 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
 | 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | open |
 | 13 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
+| 15 | Confirm slide 4 shows one image, not a stack (§10) | you | open |
 | 14 | Give zen exercises a URL, if it should be a UGC destination (§8) | decision | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
