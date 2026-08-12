@@ -7,8 +7,8 @@
 // voices before a new generation is allowed to schedule.
 
 import type { Accessor } from 'solid-js'
+import type { PianoInstrumentVoicePort } from '../instrument/piano-instrument-port'
 import type { PianoAudioClockTransport } from './piano-audio-clock-transport'
-import type { PianoFallbackSynth } from './piano-fallback-synth'
 import type { PianoProjectStageNote } from './piano-project-stage'
 
 export interface PianoPerformanceScheduler {
@@ -21,7 +21,7 @@ export interface PianoPerformanceScheduler {
 export interface PianoPerformanceSchedulerOptions {
   transport: PianoAudioClockTransport
   notes: Accessor<readonly PianoProjectStageNote[]>
-  synth: Pick<PianoFallbackSynth, 'noteOn' | 'noteOff'>
+  synth: PianoInstrumentVoicePort
   scheduleAheadSeconds?: number
   schedulerIntervalMs?: number
   setInterval?: (callback: () => void, delayMs: number) => number
@@ -202,7 +202,9 @@ export function createPianoPerformanceScheduler(
     const context = options.transport.getAudioContext()
     const at = context?.currentTime
     if (at !== undefined) pruneReleased(at)
-    for (const id of scheduledReleases.keys()) options.synth.noteOff(id, at)
+    for (const id of scheduledReleases.keys()) {
+      options.synth.noteOff({ id, atContextTime: at })
+    }
     scheduledReleases.clear()
     releaseQueue.length = 0
     generationHasScheduledNotes = false
@@ -256,7 +258,11 @@ export function createPianoPerformanceScheduler(
       atContextTime: startsAt,
     })
     if (!started) return
-    options.synth.noteOff(id, endsAt)
+    options.synth.noteOff({
+      id,
+      releaseVelocity: note.releaseVelocity,
+      atContextTime: endsAt,
+    })
     scheduledReleases.set(id, endsAt)
     enqueueRelease(releaseQueue, { id, atContextTime: endsAt })
     generationHasScheduledNotes = true

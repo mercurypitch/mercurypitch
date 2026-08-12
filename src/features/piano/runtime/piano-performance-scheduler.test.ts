@@ -3,8 +3,8 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
+import type { PianoInstrumentVoicePort } from '../instrument/piano-instrument-port'
 import type { PianoAudioClockTransport } from './piano-audio-clock-transport'
-import type { PianoFallbackSynth } from './piano-fallback-synth'
 import { createPianoPerformanceScheduler } from './piano-performance-scheduler'
 import type { PianoProjectStageNote } from './piano-project-stage'
 
@@ -57,10 +57,7 @@ function harness(options: HarnessOptions = {}) {
   } as unknown as PianoAudioClockTransport
   const noteOn = vi.fn(() => true)
   const noteOff = vi.fn(() => true)
-  const synth = { noteOn, noteOff } as Pick<
-    PianoFallbackSynth,
-    'noteOn' | 'noteOff'
-  >
+  const synth = { noteOn, noteOff } as PianoInstrumentVoicePort
   let tick: (() => void) | null = null
   const clearInterval = vi.fn()
   const scheduler = createPianoPerformanceScheduler({
@@ -108,7 +105,11 @@ describe('createPianoPerformanceScheduler', () => {
         atContextTime: 10.1,
       }),
     )
-    expect(instance.noteOff).toHaveBeenCalledWith('score:0:n1', 10.6)
+    expect(instance.noteOff).toHaveBeenCalledWith({
+      id: 'score:0:n1',
+      releaseVelocity: 0.3,
+      atContextTime: 10.6,
+    })
   })
 
   it('uses piecewise transport time for a note spanning a tempo boundary', () => {
@@ -140,7 +141,11 @@ describe('createPianoPerformanceScheduler', () => {
     expect(instance.noteOn).toHaveBeenCalledWith(
       expect.objectContaining({ atContextTime: 10.1 }),
     )
-    expect(instance.noteOff).toHaveBeenCalledWith('score:0:n1', 10.7)
+    expect(instance.noteOff).toHaveBeenCalledWith({
+      id: 'score:0:n1',
+      releaseVelocity: 0.3,
+      atContextTime: 10.7,
+    })
   })
 
   it('does not create a clock until transport is playing', () => {
@@ -158,7 +163,10 @@ describe('createPianoPerformanceScheduler', () => {
 
     instance.setBeat(0.1)
     expect(instance.scheduler.refresh()).toBe(true)
-    expect(instance.noteOff).toHaveBeenCalledWith('score:0:n1', 10)
+    expect(instance.noteOff).toHaveBeenCalledWith({
+      id: 'score:0:n1',
+      atContextTime: 10,
+    })
     expect(instance.noteOn).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: 'score:1:n1' }),
     )
@@ -187,7 +195,10 @@ describe('createPianoPerformanceScheduler', () => {
 
     expect(instance.scheduler.start()).toBe(true)
     expect(instance.clearInterval).toHaveBeenCalledWith(7)
-    expect(instance.noteOff).toHaveBeenCalledWith('score:0:n1', 10)
+    expect(instance.noteOff).toHaveBeenCalledWith({
+      id: 'score:0:n1',
+      atContextTime: 10,
+    })
     expect(instance.noteOn).toHaveBeenCalledOnce()
     expect(instance.noteOn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -301,6 +312,9 @@ describe('createPianoPerformanceScheduler', () => {
     instance.scheduler.stop()
 
     expect(instance.noteOff).toHaveBeenCalledOnce()
-    expect(instance.noteOff).toHaveBeenCalledWith('score:0:current', 11)
+    expect(instance.noteOff).toHaveBeenCalledWith({
+      id: 'score:0:current',
+      atContextTime: 11,
+    })
   })
 })

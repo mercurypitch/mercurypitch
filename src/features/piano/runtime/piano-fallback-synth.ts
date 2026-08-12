@@ -6,27 +6,13 @@
 // its graph after that context exists, so construction is silent and live or
 // scheduled notes can share one route lifetime without importing AudioEngine.
 
+import type { PianoInstrumentNoteOn, PianoInstrumentPedalEvent, PianoInstrumentPort, } from '../instrument/piano-instrument-port'
+
 export const PIANO_FALLBACK_MAX_VOICES = 32
 
-export interface PianoFallbackSynthNote {
-  /** Stable live or score voice identity. */
-  id: string
-  midi: number
-  /** Normalized strike velocity in the inclusive range 0..1. */
-  velocity: number
-  /** Normalized soft-pedal value captured when the note began. */
-  softPedalValue?: number
-  /** AudioContext time. Omit for an immediate live note. */
-  atContextTime?: number
-}
+export type PianoFallbackSynthNote = PianoInstrumentNoteOn
 
-export interface PianoFallbackSynth {
-  noteOn(note: PianoFallbackSynthNote): boolean
-  noteOff(id: string, atContextTime?: number): boolean
-  panic(atContextTime?: number): void
-  activeVoiceIds(): readonly string[]
-  dispose(): void
-}
+export type PianoFallbackSynth = PianoInstrumentPort
 
 export interface PianoFallbackSynthOptions {
   /** The route-owned transport context; this synth never creates one. */
@@ -88,6 +74,12 @@ export function createPianoFallbackSynth(
     ),
   )
   const voices = new Map<string, SynthVoice>()
+  const descriptor = Object.freeze({
+    id: 'mercury-felt-synth',
+    name: 'Mercury Felt Synth',
+    kind: 'fallback' as const,
+    maximumVoices: maxVoices,
+  })
   let graph: SynthGraph | null = null
   let disposed = false
 
@@ -167,14 +159,29 @@ export function createPianoFallbackSynth(
     return graph
   }
 
-  const noteOff = (id: string, atContextTime?: number): boolean => {
+  const noteOff: PianoInstrumentPort['noteOff'] = (note): boolean => {
     if (disposed) return false
-    const voice = voices.get(id)
+    const voice = voices.get(note.id)
     if (voice === undefined) return false
-    return releaseVoice(voice, atContextTime ?? voice.graph.context.currentTime)
+    return releaseVoice(
+      voice,
+      note.atContextTime ?? voice.graph.context.currentTime,
+    )
   }
 
   return {
+    descriptor() {
+      return descriptor
+    },
+
+    load() {
+      return Promise.resolve()
+    },
+
+    prewarm() {
+      return Promise.resolve()
+    },
+
     noteOn(note) {
       if (disposed || note.id.trim() === '') return false
       const context = options.getAudioContext()
@@ -182,7 +189,7 @@ export function createPianoFallbackSynth(
 
       const velocity = clamp(note.velocity, 0, 1)
       if (velocity <= 0) {
-        noteOff(note.id, note.atContextTime)
+        noteOff({ id: note.id, atContextTime: note.atContextTime })
         return false
       }
 
@@ -251,6 +258,11 @@ export function createPianoFallbackSynth(
     },
 
     noteOff,
+
+    pedal(_event: PianoInstrumentPedalEvent) {
+      // Pedal-resolved audible lifetimes and soft-pedal strike color are
+      // already supplied by the shared input state for this fallback engine.
+    },
 
     panic,
 

@@ -202,7 +202,13 @@ describe('createPianoFallbackSynth', () => {
       atContextTime: 10,
     })
 
-    expect(synth.noteOff('score:future', 12)).toBe(true)
+    expect(
+      synth.noteOff({
+        id: 'score:future',
+        releaseVelocity: 0.7,
+        atContextTime: 12,
+      }),
+    ).toBe(true)
     expect(context.oscillators[0].stops.at(-1)).toBeCloseTo(12.1)
     synth.panic(6)
 
@@ -213,7 +219,7 @@ describe('createPianoFallbackSynth', () => {
   it('cleans ended voices and disposes the graph idempotently', () => {
     const { context, synth } = harness()
     synth.noteOn({ id: 'live:cleanup', midi: 60, velocity: 0.8 })
-    expect(synth.noteOff('live:cleanup')).toBe(true)
+    expect(synth.noteOff({ id: 'live:cleanup' })).toBe(true)
 
     context.oscillators[0].onended?.()
     expect(synth.activeVoiceIds()).toEqual([])
