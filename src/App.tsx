@@ -1999,12 +1999,26 @@ const AppShell: Component<AppProps> = (props) => {
   // startMic() swallows getUserMedia errors and returns false, so a caller
   // that ignores the result reports success on a refused permission.)
 
-  // Nudge once if singing playback starts while the mic is off.
+  // First-time mic offer (persisted): when practice starts with the mic off —
+  // singing playback, or the piano game in its sing-the-notes input mode —
+  // offer to enable it so the user does not have to find the mic button.
+  // Piano reads the falling-notes controller's own mic state and enable path,
+  // which also flips the game's input mode; the shared engine toggle would
+  // turn the device on without telling the game.
   usePlaybackMicNudge({
-    isPlaying,
-    micActive,
-    isRelevantTab: () => activeTab() === TAB_SINGING,
-    onEnableMic: () => void handleMicToggle(),
+    isPlaying: () =>
+      activeTab() === TAB_PIANO
+        ? fallingNotes.gameState() === 'playing' &&
+          fallingNotes.inputMode() === 'mic'
+        : isPlaying(),
+    micActive: () =>
+      activeTab() === TAB_PIANO ? fallingNotes.isMicActive() : micActive(),
+    isRelevantTab: () =>
+      activeTab() === TAB_SINGING || activeTab() === TAB_PIANO,
+    onEnableMic: () => {
+      if (activeTab() === TAB_PIANO) void fallingNotes.startMic()
+      else void handleMicToggle()
+    },
   })
 
   // Each singing playback start counts as real app usage (gates the survey).

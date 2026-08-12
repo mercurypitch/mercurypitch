@@ -27,6 +27,14 @@ describe('parseLiteralColor', () => {
     })
   })
 
+  it('reads channels past a variable alpha', () => {
+    expect(parseLiteralColor('rgba(13, 17, 23, var(--jam-alpha))')).toEqual({
+      r: 13,
+      g: 17,
+      b: 23,
+    })
+  })
+
   it('refuses anything containing a variable', () => {
     expect(parseLiteralColor('var(--accent)')).toBeNull()
     expect(parseLiteralColor('oklch(0.7 0.1 200)')).toBeNull()
@@ -129,6 +137,13 @@ describe('addLegacyColorFallbacks', () => {
     )
   })
 
+  it('generates companions even where no color-mix exists — the consumer can live in another file', () => {
+    const out = addLegacyColorFallbacks(
+      '.page {\n  --jam-glass: rgba(13, 17, 23, var(--jam-alpha));\n}\n',
+    )
+    expect(out).toContain('--jam-glass-rgb: 13, 17, 23')
+  })
+
   it('generates rgb companions beside literal colour tokens', () => {
     const out = addLegacyColorFallbacks(
       ':root {\n  --accent: #58a6ff;\n}\n.a {\n  color: color-mix(in srgb, var(--accent) 50%, transparent);\n}\n',
@@ -142,6 +157,13 @@ describe('addLegacyColorFallbacks', () => {
     )
     expect(out).toContain('--accent-rgb: 88, 166, 255')
     expect(out).toContain('--accent-rgb: 224, 112, 112')
+  })
+
+  it('carries an alias’s own literal fallback into the companion', () => {
+    const out = addLegacyColorFallbacks(
+      '.toast {\n  --toast-accent: var(--accent, #58a6ff);\n  border-color: color-mix(in srgb, var(--toast-accent) 40%, transparent);\n}\n',
+    )
+    expect(out).toContain('--toast-accent-rgb: var(--accent-rgb, 88, 166, 255)')
   })
 
   it('aliases the companion when one token points at another', () => {

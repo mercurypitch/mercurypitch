@@ -11,6 +11,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import { colorTokenVars } from '@/lib/css-color-token'
 import { EVERYONE } from '@/lib/jam/jam-song-parts'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamAssignBrush, jamIsHost, jamPeerId, jamPeers, jamSong, setJamAssignBrush, toggleJamAssignBrush, } from '@/stores/jam-store'
@@ -40,9 +41,10 @@ export const JamAssignBar: Component = () => {
                 type="button"
                 class={styles.person}
                 classList={{ [styles.personArmed]: armed() === person.id }}
-                style={{
-                  '--person-color': colors()[person.id] ?? '#58a6ff',
-                }}
+                style={colorTokenVars(
+                  '--person-color',
+                  colors()[person.id] ?? '#58a6ff',
+                )}
                 onClick={() => toggleJamAssignBrush(person.id)}
               >
                 <span class={styles.dot} />
@@ -55,7 +57,7 @@ export const JamAssignBar: Component = () => {
             type="button"
             class={styles.person}
             classList={{ [styles.personArmed]: armed() === EVERYONE }}
-            style={{ '--person-color': 'rgba(255,255,255,0.5)' }}
+            style={colorTokenVars('--person-color', 'rgba(255,255,255,0.5)')}
             onClick={() => toggleJamAssignBrush(EVERYONE)}
           >
             <span class={styles.dotHollow} />

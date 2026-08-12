@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import { colorTokenVars } from '@/lib/css-color-token'
 import { getNoteAccuracyMap } from '@/stores/practice-session-store'
 import type { ScaleDegree } from '@/types'
 import styles from './PitchAccuracyHeatmap.module.css'
@@ -49,7 +50,7 @@ const PitchAccuracyHeatmap: Component<Props> = (props) => {
                 <button
                   class={styles.key}
                   classList={{ [styles.hasData]: acc() != null }}
-                  style={color() != null ? { '--key-color': color() } : {}}
+                  style={colorTokenVars('--key-color', color())}
                   onClick={() =>
                     acc() != null &&
                     props.onSeekNote?.(note.midi, note.name + note.octave)

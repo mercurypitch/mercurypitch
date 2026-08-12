@@ -256,10 +256,16 @@ prefixes are down-levelled instead of shipped as syntax those engines drop.
 
 ### 5.3 Still to do
 
-- **[next]** Fourteen tokens are set from JavaScript (`--singer-color`,
-  `--lane-color`, `--card-accent`, `--tier`, `--seg`, `--toast-accent`, …). Their
-  fallbacks are inert because no companion exists. Fix by having the code that
-  writes the style property also write `-rgb`.
+- **[shipped]** JS-set colour tokens (`--singer-color`, `--lane-color`,
+  `--person-color`, `--brush-color`, `--key-color`, `--card-accent`) now write
+  their `-rgb` companion too, via `src/lib/css-color-token.ts`. CSS-side alias
+  chains (`--danger: var(--red)` and friends) and cross-file declarations
+  (`--jam-glass`) are covered by the build transform, which now generates
+  companions in every stylesheet, not only those containing a `color-mix`.
+  Verified in the production bundle: every static legacy fallback resolves —
+  the only remaining unresolved companion is `--bg-hover-rgb`, whose source
+  token is itself a translucent `color-mix` and has no meaningful RGB base
+  (the inert fallback there equals today's behaviour).
 - **[open]** `:has()` (Chrome 105) and `@container` (Chrome 105) are used in ~27
   places and cannot be polyfilled by the same trick. Each needs a graceful
   no-op check — most already degrade to "no enhancement", but this has not been
