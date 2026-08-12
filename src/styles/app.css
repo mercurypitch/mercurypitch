@@ -2245,11 +2245,8 @@ input[type='range'] {
     order: unset !important;
     margin-top: 0 !important;
     flex-grow: 1;
-    /* `safe`: once the tabs outgrow the strip, plain flex-end pushes the
-       overflow past the START edge, where no scrollbar can reach it — the
-       first tabs end up rendered under .header-left and unclickable. Safe
-       falls back to flex-start so the strip scrolls instead. */
-    justify-content: safe flex-end;
+    /* Left, against the title — same as the desktop strip. */
+    justify-content: flex-start;
   }
 }
 
@@ -2289,11 +2286,13 @@ input[type='range'] {
     /* Permission to shrink past the tabs' own width; the overflow scroller
        (and fitToWidth) takes it from there. */
     min-width: 0;
-    /* `safe`: once the tabs outgrow the strip, plain flex-end pushes the
-       overflow past the START edge, where no scrollbar can reach it — the
-       first tabs end up rendered under .header-left and unclickable. Safe
-       falls back to flex-start so the strip scrolls instead. */
-    justify-content: safe flex-end;
+    /* Left, against the title. The strip grows to fill the header, so the
+       alignment decides which end the groups sit at, and flex-end parked them
+       beside the account and sign-in buttons with the gap opening up next to
+       the app name — backwards, and it read as accidental. flex-start also
+       makes the overflow direction the reachable one: any excess runs off the
+       END edge, where the scroller can get at it. */
+    justify-content: flex-start;
   }
 
   #app-tabs .tab-group-label {

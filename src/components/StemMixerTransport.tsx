@@ -16,7 +16,7 @@ const DOCK_OPTIONS: readonly (readonly [DockPos, string, string])[] = [
   ['left', 'M4 12l6-6v4h8v4h-8v4z', 'Dock left'],
   ['right', 'M20 12l-6 6v-4H6v-4h8V6z', 'Dock right'],
 ]
-import { GripVertical, Headphones, Loop, MicStudio, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
+import { GripVertical, Headphones, Loop, Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
 
 export interface StemMixerTransportProps {
   // Audio / transport
@@ -532,7 +532,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             }
             aria-pressed={props.micActive()}
           >
-            <MicStudio />
+            <Mic />
           </button>
 
           {/* ── Mic monitor (hear yourself) ──────────────── */}
