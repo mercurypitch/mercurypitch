@@ -16,6 +16,7 @@ import { createSignal, untrack } from 'solid-js'
 import type { SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'
 import { durableWrite } from '@/db/durable-write'
+import type { SongAudioQuality } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
 import { recordActivity } from '@/db/services/user-activity-service'
@@ -133,6 +134,8 @@ export interface UvrSession {
   splitApiSessionId?: string
   error?: string
   fileHash?: string
+  /** Provenance of the stored audio -- see UvrSessionRecord.audioQuality. */
+  audioQuality?: SongAudioQuality
   originalFile?: {
     name: string
     size: number
@@ -596,6 +599,7 @@ function sessionToDbRecord(
     progress: session.progress,
     indeterminate: session.indeterminate,
     fileHash: session.fileHash,
+    audioQuality: session.audioQuality,
     originalFileName: session.originalFile?.name ?? '',
     originalFileSize: session.originalFile?.size ?? 0,
     originalFileType: session.originalFile?.mimeType ?? '',
@@ -632,6 +636,7 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
     progress: rec.progress,
     indeterminate: rec.indeterminate,
     fileHash: rec.fileHash,
+    audioQuality: rec.audioQuality,
     originalFile: {
       name: rec.originalFileName,
       size: rec.originalFileSize,

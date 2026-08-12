@@ -24,10 +24,18 @@ Every controller in both families independently declares and manages:
 
 ```ts
 let phaseTimer: ReturnType<typeof setTimeout> | undefined
-base._registerDispose(() => { clearTimeout(phaseTimer); phaseTimer = undefined })
+base._registerDispose(() => {
+  clearTimeout(phaseTimer)
+  phaseTimer = undefined
+})
 let _cancelled = false
 // ...
-function stopX() { _cancelled = true; clearTimeout(phaseTimer); base._setRunning(false); finish() }
+function stopX() {
+  _cancelled = true
+  clearTimeout(phaseTimer)
+  base._setRunning(false)
+  finish()
+}
 ```
 
 ### This duplication is the root cause of real bugs
@@ -93,10 +101,10 @@ interface SequenceRunnerOptions {
   matchWindowMs: number
   interNoteRestMs?: number // the trailing setTimeout(..., 400) before next note
   // Per-note hooks — the only parts that actually differ between exercises.
-  onNoteStart?(midi: number, index: number): void      // metrics/target pitch
-  scoreNote(midi: number, index: number): number       // usually scoreNoteAccuracy(...)
-  onNoteScored?(score: number, index: number): void    // metrics
-  onFinish(): void                                      // build + commit result
+  onNoteStart?(midi: number, index: number): void // metrics/target pitch
+  scoreNote(midi: number, index: number): number // usually scoreNoteAccuracy(...)
+  onNoteScored?(score: number, index: number): void // metrics
+  onFinish(): void // build + commit result
 }
 
 function useSequenceRunner(base, audioEngine, opts) {
@@ -138,8 +146,8 @@ interface RoundRunnerOptions {
   rounds: number
   matchWindowMs: number
   interRoundRestMs?: number
-  playRound(roundIndex: number): Promise<void> | void  // start tone(s), set target/metrics
-  evaluateRound(roundIndex: number): number            // score the just-finished window
+  playRound(roundIndex: number): Promise<void> | void // start tone(s), set target/metrics
+  evaluateRound(roundIndex: number): number // score the just-finished window
   onRoundScored?(score: number, index: number): void
   onFinish(): void
 }
@@ -202,4 +210,4 @@ without needing the sequence/round runner.
   untracked delays) become impossible to express per-exercise.
 - New exercises in either family become a `scoreNote`/`evaluateRound` +
   `computeResult`, not a full state-machine copy-paste.
-</content>
+  </content>

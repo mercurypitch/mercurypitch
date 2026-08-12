@@ -309,6 +309,12 @@ target, not a new product.
 - TV storage is not a library's worth. Expect _stream one song now_ to matter
   more than _hold everything_, so the transport must support "send this one,
   play it, keep nothing".
+- **The pairing half is specified and tracked**: issue #489, deferred from
+  PR #488, written up in [tv-qr-handoff.md](tv-qr-handoff.md). TV shows a QR of
+  the existing jam deep link, phone scans and joins, the shipped jam transfer
+  moves the song — no accounts, no new transport. It composes with this plan
+  rather than blocking on it: once the account list exists, the same pairing
+  can also offer "your account's songs" on the TV.
 
 ### Why Google Drive before P2P
 

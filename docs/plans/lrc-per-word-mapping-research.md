@@ -27,7 +27,7 @@ line-boundary work and inner-word work in the same continuous stream, at
 whatever density the song happens to have.
 
 That is the root of the difficulty. Line starts are the timings we usually
-*already have* (LRCLib ships line-level LRC), and they are also the ones the
+_already have_ (LRCLib ships line-level LRC), and they are also the ones the
 listener can hear most clearly — a line start is preceded by a breath and
 usually a gap. Inner words are the hard, dense, unforgiving part. Fusing them
 means a flubbed line boundary corrupts the words after it, and a flubbed word
@@ -37,7 +37,7 @@ run pushes you into the next line late.
 
 **Pass 1 — line starts.** Only `handleNextLine` is live. One tap per line.
 Skippable in one click when LRCLib line times are already loaded and look
-sane, which is the common case. Its real value is *correction*: play through,
+sane, which is the common case. Its real value is _correction_: play through,
 tap only the lines that drift, leave the rest. This is close to already
 working — `handleNextLine` (`:1782`) exists and does the right thing, and
 there's a `LrcGenInputMode = 'marker' | 'tap'` axis in `types.ts` to hang a
@@ -105,7 +105,7 @@ verifying "does this actually look right at runtime?" means leaving the mapper
 and loading the song in the normal player. That round trip is why timing bugs
 survive the mapping session.
 
-The fix is to render the *real* karaoke highlighter inside the mapper as a
+The fix is to render the _real_ karaoke highlighter inside the mapper as a
 preview strip, driven by the in-progress timings rather than the saved ones.
 The renderer is already isolated in the pieces that matter — `lyric-sweep.ts`,
 `lyric-sung-end.ts`, and `computeActiveWord` in `lyrics-service.ts` are pure
@@ -131,7 +131,7 @@ selection, same pre-roll, same loop.
 
 What we want is **automatic lyrics alignment** (ALA) — text is known, find the
 timings. The field's standard benchmark is **JamendoLyrics**: 80 Creative
-Commons songs across several languages with human word-level start *and end*
+Commons songs across several languages with human word-level start _and end_
 times, which is exactly the shape of data your hand-mapped song will be. It
 was extended to **Multi-Lang JamendoLyrics** for the multilingual work. The
 metrics everyone reports are:
@@ -161,26 +161,26 @@ one particular separation front-end and don't generalise across separators.
 Two consequences:
 
 - Our planned **BS-RoFormer upgrade (12.9 SDR, replacing MDX HQ_3)** is not
-  just a stem-quality win, it is directly an *alignment accuracy* win. The two
+  just a stem-quality win, it is directly an _alignment accuracy_ win. The two
   roadmap items reinforce each other and should be sequenced together.
 - Any published accuracy number is an upper bound for us. We must measure on
   **our own separator's output**, which is precisely what the gold map is for.
 
 ### The candidate algorithms, cheapest first
 
-| # | Approach | Where it runs | Expected onset error | Cost |
-|---|---|---|---|---|
-| C | Spectral-flux onset grid + syllable-weighted distribution | Browser, pure DSP | ~150–300 ms | ~0, no download |
-| B | Whisper word timestamps (DTW over cross-attention), snapped to onsets | Browser, WASM | ~200–400 ms, worse near pauses | model download |
-| A | wav2vec2 phoneme CTC forced alignment (WhisperX-style) or MFA | RunPod GPU, in the UVR job | **<100 ms** | seconds of GPU |
-| A+ | Contrastive cross-modal / joint pitch+alignment (research-grade) | RunPod GPU | best published | research effort |
+| #   | Approach                                                              | Where it runs              | Expected onset error           | Cost            |
+| --- | --------------------------------------------------------------------- | -------------------------- | ------------------------------ | --------------- |
+| C   | Spectral-flux onset grid + syllable-weighted distribution             | Browser, pure DSP          | ~150–300 ms                    | ~0, no download |
+| B   | Whisper word timestamps (DTW over cross-attention), snapped to onsets | Browser, WASM              | ~200–400 ms, worse near pauses | model download  |
+| A   | wav2vec2 phoneme CTC forced alignment (WhisperX-style) or MFA         | RunPod GPU, in the UVR job | **<100 ms**                    | seconds of GPU  |
+| A+  | Contrastive cross-modal / joint pitch+alignment (research-grade)      | RunPod GPU                 | best published                 | research effort |
 
 The important asymmetry: **forced alignment is a much easier problem than
 transcription**, because the text is already known. That is why option A jumps
 a whole accuracy tier over option B for a comparable amount of compute, and
 why it's the one worth building properly. The half of `word-sync.ts` that
 already exists (`countSyllables`, `layoutLineWords`, onset snapping) is the
-scaffolding for C and is reusable as the *post-processor* for A and B — snap
+scaffolding for C and is reusable as the _post-processor_ for A and B — snap
 whatever the model says to real vocal onsets, clamp monotonic, clamp inside
 the line.
 
@@ -189,14 +189,14 @@ the line.
 This is the concrete reason to finish the gold map, and it should be built as
 a checked-in script rather than a one-off:
 
-1. **Gold set** — the hand-mapped demo song, exported with word starts *and*
+1. **Gold set** — the hand-mapped demo song, exported with word starts _and_
    ends. One song is enough to catch gross failures but not to rank close
    candidates; budget 3–5 hand-mapped songs across tempo/density before
    trusting a ranking. Fast rap and slow ballad fail differently.
 2. **Fixture** — freeze the separated vocal stem alongside the gold JSON so
    runs are reproducible and separator changes are a deliberate variable.
 3. **Metrics** — MAE, median AE, PCO@{0.3, 0.15, 0.08}, plus a **latency-bias**
-   number (mean *signed* error). Signed bias is the one that predicts "feels
+   number (mean _signed_ error). Signed bias is the one that predicts "feels
    late" and it's the one a global offset can fix for free.
 4. **Perf** — wall-clock and peak memory per algorithm, measured on a
    throttled profile, since "runs fast on slow devices" is a stated
@@ -240,17 +240,17 @@ the source we already fetch from.
 
 ### How it compares to our model
 
-| Concept | Ours | lyricsfile | Verdict |
-|---|---|---|---|
-| Word starts | `WordTimingsMap` = `Record<lineIdx, number[]>`, seconds | `words[].start_ms`, integer ms | equivalent |
-| Word ends | `wordEndTimings` (same shape) | `words[].end_ms` | equivalent |
-| Line start/end | `CanonicalLrcEntry.time` | `start_ms` / `end_ms` | equivalent |
-| Global offset | — | `metadata.offset_ms` | **they have, we don't** |
-| Language / duration | — | `language`, `duration_ms` | **they have, we don't** |
-| Non-linear sweep | `wordSweepTimings` (time→progress curve) | — | **we have, they don't** |
-| Rests / countdown | `~Rest~` + `gapStart`/`gapEnd`/`dotCount` | — | **ours, derivable** |
-| Blocks / repeats | `LyricsBlock`, `BlockInstancesMap` | — | **ours, authoring-only** |
-| Extensions | — | **none defined** | friction |
+| Concept             | Ours                                                    | lyricsfile                     | Verdict                  |
+| ------------------- | ------------------------------------------------------- | ------------------------------ | ------------------------ |
+| Word starts         | `WordTimingsMap` = `Record<lineIdx, number[]>`, seconds | `words[].start_ms`, integer ms | equivalent               |
+| Word ends           | `wordEndTimings` (same shape)                           | `words[].end_ms`               | equivalent               |
+| Line start/end      | `CanonicalLrcEntry.time`                                | `start_ms` / `end_ms`          | equivalent               |
+| Global offset       | —                                                       | `metadata.offset_ms`           | **they have, we don't**  |
+| Language / duration | —                                                       | `language`, `duration_ms`      | **they have, we don't**  |
+| Non-linear sweep    | `wordSweepTimings` (time→progress curve)                | —                              | **we have, they don't**  |
+| Rests / countdown   | `~Rest~` + `gapStart`/`gapEnd`/`dotCount`               | —                              | **ours, derivable**      |
+| Blocks / repeats    | `LyricsBlock`, `BlockInstancesMap`                      | —                              | **ours, authoring-only** |
+| Extensions          | —                                                       | **none defined**               | friction                 |
 
 We are a near-superset. Three of our concepts have no home in the spec:
 
@@ -312,7 +312,7 @@ own guidance for exceeding it is to shard across databases.
 There is also a **local disk problem**: 118 GB free on `/home`. The 30 GB
 download fits, but decompressing it very likely does not, and `sqlite3` needs a
 seekable file so you cannot stream-decompress into it. Archiving the `.gz`
-untouched is fine; *processing* it needs a machine with ~150 GB of scratch.
+untouched is fine; _processing_ it needs a machine with ~150 GB of scratch.
 
 ### Why the dump is so large — and how much of it we'd actually want
 
@@ -343,7 +343,7 @@ place for a database that only grows. Measure before designing around it.
 normalised artist/title/duration. Solves the actual stated problem — "smoother
 when the LRCLib API misbehaves" — at a tiny fraction of the effort, gives us
 per-song cache hits that get faster over time, and removes the client's direct
-dependency on a third-party host. It also gives us a place to *merge in* our
+dependency on a third-party host. It also gives us a place to _merge in_ our
 own word-synced maps, so our hand-mapped songs win over LRCLib's line-only
 ones transparently. Note the current client calls `lrclib.net` directly from
 the browser (`lyrics-service.ts:158`), so this is also a small privacy and
@@ -353,7 +353,7 @@ reliability improvement.
 and query it with range requests, `sql.js-httpvfs`-style. R2 objects go to 5 TB
 and egress is free, so size stops being the constraint. But it's read-only,
 page-cache behaviour is awkward, and query latency is multiple round trips.
-Reasonable as a *fallback* tier behind the cache; poor as the primary.
+Reasonable as a _fallback_ tier behind the cache; poor as the primary.
 
 **Option 3 — subset into D1.** Only viable after measuring the subset, and it
 imports through the 5 GB bulk-import cap so it'd need chunking. It buys real
@@ -368,7 +368,7 @@ Revisit 2 or 3 only if a concrete need for corpus-wide querying appears.**
 
 LRCLib is adding `lyricsfile` right now, and the `lyricsfile` column will be
 empty in the 2026-07-20 dump for essentially every row. A snapshot taken today
-captures the *old* world. If the plan is word-synced lyrics, the valuable data
+captures the _old_ world. If the plan is word-synced lyrics, the valuable data
 doesn't exist in this dump yet — it will accumulate over the coming months in
 the live API. That's another vote for proxy-and-cache (always current) over
 snapshot-and-host (frozen, and frozen on the wrong side of the format change).

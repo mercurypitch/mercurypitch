@@ -9,19 +9,19 @@ it needs a Cloudflare TURN key first.
 The room stays **peer-to-peer**. Worth being precise, because "add a TURN
 server" sounds like moving audio onto infrastructure and it is not:
 
-| Piece | Role | Does audio pass through it? |
-|---|---|---|
-| `jam-worker` Durable Object | Signaling: SDP offers/answers, ICE candidates, who is in the room | **No** |
-| STUN | Tells a peer its own public address | **No** |
-| **TURN** | Relays media *only when a direct path cannot be built* | Yes, as a dumb relay |
-| SFU (not planned) | Receives every stream, forwards to everyone | Yes, and it is no longer P2P |
+| Piece                       | Role                                                              | Does audio pass through it?  |
+| --------------------------- | ----------------------------------------------------------------- | ---------------------------- |
+| `jam-worker` Durable Object | Signaling: SDP offers/answers, ICE candidates, who is in the room | **No**                       |
+| STUN                        | Tells a peer its own public address                               | **No**                       |
+| **TURN**                    | Relays media _only when a direct path cannot be built_            | Yes, as a dumb relay         |
+| SFU (not planned)           | Receives every stream, forwards to everyone                       | Yes, and it is no longer P2P |
 
 TURN is the fallback inside WebRTC's normal ICE negotiation. Peers still talk
 to each other; the packets take one extra hop. Nothing is decoded, mixed or
 stored.
 
 **TURN is not a scale feature.** This is the part worth internalising: it is
-needed for a *two-person* room where either side sits behind symmetric NAT —
+needed for a _two-person_ room where either side sits behind symmetric NAT —
 most corporate networks, a lot of mobile carriers, some consumer routers.
 Industry figures put the share of peer pairs that cannot connect directly at
 roughly 10–20%. Small rooms do not avoid it. "It works for everyone except
@@ -38,7 +38,7 @@ and it only pays off with large rooms.
 ## 2. Cost, and the caps
 
 Cloudflare Realtime TURN is **$0.05/GB egress, with 1,000 GB free**. Only
-*relayed* traffic counts; a direct P2P pair costs nothing.
+_relayed_ traffic counts; a direct P2P pair costs nothing.
 
 Sizing: Opus voice is ~40 kbps, so ~18 MB per hour per direction. A relayed
 two-person room burns roughly 36 MB/hour. The free tier is therefore on the
@@ -71,7 +71,7 @@ mint TURN credentials.
 
 ## 3. What you need to do in Cloudflare
 
-1. Dash → **Realtime** → **TURN** → *Create TURN key*. Name it
+1. Dash → **Realtime** → **TURN** → _Create TURN key_. Name it
    `mercurypitch-jam`.
 2. Copy the **Turn Key ID** and the **API token**. The token is shown once.
 3. Set them as secrets on the jam worker (not in `wrangler.jsonc`, not in the
@@ -136,7 +136,7 @@ same report carries the **candidate pair type**, which says whether a pair is
 TURN). Surfacing it turns the most common support question into a self-answer:
 
 - Per peer in the sidebar: RTT, and a quiet "relayed" marker when it applies.
-- One line in the room when *your own* connection is relayed — "your network
+- One line in the room when _your own_ connection is relayed — "your network
   is routing through a relay, so there may be extra delay".
 
 Cheap, entirely client-side, and it is the diagnostic that would have made the

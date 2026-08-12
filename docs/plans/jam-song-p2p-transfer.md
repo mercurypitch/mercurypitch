@@ -5,7 +5,7 @@ the words, the target notes and the pitch lanes — but silence where the
 backing track should be. This is the plan that closes that, and it is
 deliberately **not** a second mechanism: it is Phase 5 of
 [device-sync.md](device-sync.md), scoped to the case where both devices are
-already awake and connected, because that is what a jam room *is*.
+already awake and connected, because that is what a jam room _is_.
 
 ## What the room already does
 
@@ -25,14 +25,14 @@ travel fine; only the audio does not.
 WAV header, and the blobs are the separator's raw output. A four-minute
 song, both stems, is 100–400 MB.
 
-That is not a transfer problem, it is a *format* problem. Sending it as-is
+That is not a transfer problem, it is a _format_ problem. Sending it as-is
 would take minutes on a good link and fail outright on a phone. So the first
 piece of work is not the transport at all:
 
-| 4-minute song, both stems | To one peer |
-|---|---|
-| WAV, as stored | 100–400 MB — minutes, or never |
-| **AAC 128k** | **~7.6 MB — around 5 s** |
+| 4-minute song, both stems | To one peer                    |
+| ------------------------- | ------------------------------ |
+| WAV, as stored            | 100–400 MB — minutes, or never |
+| **AAC 128k**              | **~7.6 MB — around 5 s**       |
 
 (128 kbps over 240 seconds is 3.8 MB a stem, so both stems together are
 7.6 MB. Sending the guide vocal as well as the instrumental therefore costs
@@ -46,20 +46,20 @@ bulk of the work here.
 
 ### The encode/playback bind
 
-Checking WebCodecs *encode* support rather than playback support turns up
+Checking WebCodecs _encode_ support rather than playback support turns up
 the awkward part, and it points the opposite way to the decision that was
 already locked:
 
-| | Chrome | Firefox | Safari | Linux desktop |
-|---|---|---|---|---|
-| Encode Opus | yes | yes | yes | **yes** |
-| Encode AAC (`mp4a.40.2`) | yes | **no** | 26+ only | **no, in any browser** |
-| Play AAC | yes | yes | yes | yes |
-| Play Opus | yes | yes | patchy — CAF only before 18.4 | yes |
+|                          | Chrome | Firefox | Safari                        | Linux desktop          |
+| ------------------------ | ------ | ------- | ----------------------------- | ---------------------- |
+| Encode Opus              | yes    | yes     | yes                           | **yes**                |
+| Encode AAC (`mp4a.40.2`) | yes    | **no**  | 26+ only                      | **no, in any browser** |
+| Play AAC                 | yes    | yes     | yes                           | yes                    |
+| Play Opus                | yes    | yes     | patchy — CAF only before 18.4 | yes                    |
 
 The codec that encodes everywhere plays worst on Safari; the codec that
 plays everywhere cannot be encoded on Firefox or Linux. AAC encoding is
-missing on desktop Linux in *every* browser, which is an OS-level codec
+missing on desktop Linux in _every_ browser, which is an OS-level codec
 licensing matter and not something a library can argue with — so the
 development machine is one of the platforms that cannot encode natively.
 
@@ -72,12 +72,12 @@ same rule device-sync sets, for the same reason.
 
 ## Decided
 
-| # | Decision | Why |
-|---|---|---|
-| Codec | **AAC-in-MP4, 128 kbps** | Locked in device-sync D2. AAC over Opus because Safari's Opus support is patchier, and a room that only plays on Chrome is a bad trade for a smaller file. |
-| Payload | **Instrumental + guide vocal** | Both stems are the 7.6 MB above, so this is free. The guide-vocal slider is how somebody learns a song they do not know, and the remote peer needs it most. |
-| Relay peers | **Refuse, and say why** | Song audio never goes over TURN — it would eat the free 1,000 GB. A relay-only peer keeps lyrics, notes and lanes; they just cannot hear the backing track. |
-| Fan-out | **Host to each peer, sequentially** | Predictable, and kind to a phone uplink. Five peers is five uploads; doing them one at a time with visible progress beats saturating the link and making everyone wait. |
+| #           | Decision                            | Why                                                                                                                                                                     |
+| ----------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Codec       | **AAC-in-MP4, 128 kbps**            | Locked in device-sync D2. AAC over Opus because Safari's Opus support is patchier, and a room that only plays on Chrome is a bad trade for a smaller file.              |
+| Payload     | **Instrumental + guide vocal**      | Both stems are the 7.6 MB above, so this is free. The guide-vocal slider is how somebody learns a song they do not know, and the remote peer needs it most.             |
+| Relay peers | **Refuse, and say why**             | Song audio never goes over TURN — it would eat the free 1,000 GB. A relay-only peer keeps lyrics, notes and lanes; they just cannot hear the backing track.             |
+| Fan-out     | **Host to each peer, sequentially** | Predictable, and kind to a phone uplink. Five peers is five uploads; doing them one at a time with visible progress beats saturating the link and making everyone wait. |
 
 Compression costs nothing musically, which is worth being explicit about
 because it looks like a tradeoff and is not: pitch detection runs on each

@@ -9,8 +9,8 @@ of transport signals with nothing on the wire to tell them apart.
 A drill's beat timer, on finishing, did this:
 
 ```js
-setJamExercisePlaying(false)                     // the song reads this too
-jamService?.sendPlaybackCommand('stop', 0, bpm)  // no positionSec
+setJamExercisePlaying(false) // the song reads this too
+jamService?.sendPlaybackCommand('stop', 0, bpm) // no positionSec
 ```
 
 Every peer applied that `stop` to whatever it happened to be running. So a
@@ -37,7 +37,7 @@ Stated so they can be tested. Each has a test in
 - **R3b.** A melody announcement is transport too. It carries "the room is
   now doing this drill", and adopting one resets the playing state — so a
   guest broadcasting its own melody stopped the host's song, with `recv
-  melody` the only trace in the log. Only the host announces one, and a
+melody` the only trace in the log. Only the host announces one, and a
   room already running a song ignores them.
 
 ### What a command refers to
@@ -62,7 +62,7 @@ Stated so they can be tested. Each has a test in
   transport functions refuse while a song is loaded, and the beat timer
   refuses to start.
 - **R7b.** A device that has just been given the audio does not decide for
-  itself whether to play. `playing` is a guest's *record of the host*, and
+  itself whether to play. `playing` is a guest's _record of the host_, and
   a stale record started the song on a peer while the host sat stopped —
   so a stem arriving stops locally and asks (R13's `song-have`), and the
   host answers with where the room actually is.
@@ -100,9 +100,9 @@ Stated so they can be tested. Each has a test in
 These are judgement calls rather than mechanics, and are worth agreeing
 before more is built on them.
 
-| # | Question | Current behaviour |
-|---|---|---|
-| Q1 | Should the host be able to press play before every peer has the audio? | Yes — the others follow the words and notes. The alternative is one slow device holding up the room. |
-| Q2 | Should swapping the song be blocked during a send, or should it cancel the send? | Blocked (R10). Cancelling silently loses work somebody waited for. |
-| Q3 | When the host leaves and returns, should the room's song survive? | It does not today: the manifest is re-sent on rejoin, but a peer that never had the audio still needs a re-send. |
-| Q4 | Should a guest be able to request the song rather than wait to be sent it? | Not today. The host sees who is missing it and can re-send. |
+| #   | Question                                                                         | Current behaviour                                                                                                |
+| --- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Q1  | Should the host be able to press play before every peer has the audio?           | Yes — the others follow the words and notes. The alternative is one slow device holding up the room.             |
+| Q2  | Should swapping the song be blocked during a send, or should it cancel the send? | Blocked (R10). Cancelling silently loses work somebody waited for.                                               |
+| Q3  | When the host leaves and returns, should the room's song survive?                | It does not today: the manifest is re-sent on rejoin, but a peer that never had the audio still needs a re-send. |
+| Q4  | Should a guest be able to request the song rather than wait to be sent it?       | Not today. The host sees who is missing it and can re-send.                                                      |

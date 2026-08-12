@@ -22,6 +22,7 @@ have every decision, prompt, cost, link and open item.
 ## 1. What shipped (both commits pushed)
 
 ### Results-page redesign (`MirrorApp.tsx`, `mirror.css`)
+
 - Voiceprint card centered; **Accuracy / Steadiness moved into "note" cards
   flanking it** (left/right ≥900px, stacked beneath on mobile,
   `.mirror-results-grid`).
@@ -33,6 +34,7 @@ have every decision, prompt, cost, link and open item.
   (`.mirror-foot`).
 
 ### Card declutter + reveal gating
+
 - `card-renderer.ts`: `CardInput.legend` is now **opt-in** — the front/default
   card renders only the voice-type pill (e.g. `Baritone`). The
   `like <legend>` pill is drawn **only** when `legend` is passed.
@@ -41,6 +43,7 @@ have every decision, prompt, cost, link and open item.
   post-reveal (`buildStoryCard()` in `MirrorApp.tsx`).
 
 ### Tap-to-reveal "voice twin" (`RevealCard.tsx`, CSS in `mirror.css`)
+
 - Voiceprint = card **front**; legend = hidden until tap. Pre-reveal: breathing
   gold glow + animated chevrons + "✦ tap to meet your voice twin".
 - **Two reveal styles, both implemented,** switchable via an on-screen
@@ -54,11 +57,12 @@ have every decision, prompt, cost, link and open item.
 - Fixes after review: flip start softened
   (`transition: transform 1.45s cubic-bezier(0.62, 0.02, 0.25, 1)`), lenticular
   specular clipped to the card (`.mode-lenticular.is-revealed .mirror-reveal-card
-  { overflow: hidden }`) so light no longer spills past the edge (flip stays
+{ overflow: hidden }`) so light no longer spills past the edge (flip stays
   unclipped so the 3D spin isn't sliced).
 - `prefers-reduced-motion` respected. New funnel event: `twin_revealed`.
 
 ### Constellation caricatures (`LegendCaricature.tsx`)
+
 - All 12 legends as SVG "constellation portraits": shared nebula bust +
   per-legend signature silhouettes/accents + gold constellation stars/lines
   over an ambient starfield. This is the shipping fallback art.
@@ -67,6 +71,7 @@ have every decision, prompt, cost, link and open item.
   viewBox `220×280` ≈ 4:5). **This is the hook for AI-generated portraits.**
 
 ### Dev/test infrastructure
+
 - `demo-data.ts` + `?demo=` hook in `MirrorApp.tsx` (DEV-only, tree-shaken):
   `https://localhost:3000/mirror?demo=<bass|baritone|tenor|alto|mezzo|soprano>`
   renders the results screen with synthetic data through the REAL metrics.
@@ -135,9 +140,9 @@ have every decision, prompt, cost, link and open item.
 
 ### The two Freddie test generations (2026-07-09)
 
-| Model | Job ID | Cost |
-|---|---|---|
-| Nano Banana Pro (928×1152, 4:5) | `32c482d0-91d5-482a-b578-30465ad42dd3` | 2.00 |
+| Model                                      | Job ID                                 | Cost |
+| ------------------------------------------ | -------------------------------------- | ---- |
+| Nano Banana Pro (928×1152, 4:5)            | `32c482d0-91d5-482a-b578-30465ad42dd3` | 2.00 |
 | Soul 2.0 (1536×2048, 3:4, style "General") | `e4ac2c9e-cc6b-4e65-bb36-d32253301df7` | 0.12 |
 
 Raw URLs (note: CDN links may expire — download/save promptly, e.g. into
@@ -200,8 +205,8 @@ Bruce Dickinson, lead singer of Iron Maiden in his 2001 Rock in Rio era, shoulde
 
 1. Save winners as `public/legends/<slug>.webp` (4:5-ish portrait, ≤~120 KB;
    dark cosmic bg blends best). Slugs: `elvis, sinatra, freddie,
-   bruce-dickinson, johnny-cash, barry-white, amy-winehouse, cher, adele,
-   whitney-houston, mariah-carey, celine-dion`.
+bruce-dickinson, johnny-cash, barry-white, amy-winehouse, cher, adele,
+whitney-houston, mariah-carey, celine-dion`.
 2. In `src/features/mirror/LegendCaricature.tsx`, add per legend:
    `imageSrc: '/legends/<slug>.webp'` (constellation stays as fallback).
 3. **Pending follow-up (agreed, not yet built):** draw the revealed legend
@@ -238,8 +243,8 @@ pnpm install
 pnpm dev   # https://localhost:3000/mirror?demo=baritone&mode=flip
 ```
 
-Then tell the assistant: *"Read docs/plans/voice-mirror-handoff-2026-07-09.md
-and continue from the open items."* If the Higgsfield MCP connector is
+Then tell the assistant: _"Read docs/plans/voice-mirror-handoff-2026-07-09.md
+and continue from the open items."_ If the Higgsfield MCP connector is
 attached to the new session, generation can continue there (always
 `get_cost: true` preflight + user approval first). If portrait image files are
 available locally, the assistant can view them directly with Read.
@@ -274,7 +279,7 @@ state and the canonical recipe for adding legends:
 - **Demo profiles** (`/mirror?demo=…`, dev-only): voice-type keys (`bass`,
   `baritone`, `tenor`, `alto`, `mezzo`, `soprano`) plus one key per legend
   (`cash barry elvis sinatra kurt bowie freddie bruce amy cher adele whitney
-  mariah celine`) whose range seed picks exactly that legend
+mariah celine`) whose range seed picks exactly that legend
   (+ `&mode=flip|lenticular&revealed=1&delta=1`). Fast lane:
   **`/mirror#<legend-key>`** (e.g. `#freddie`, `#cher`) jumps straight to the
   already-revealed result for that legend.
