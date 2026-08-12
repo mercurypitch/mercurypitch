@@ -228,6 +228,63 @@ So: **cross-network P2P for a song, yes — it ships. Same Wi-Fi for a library.
 Drive for everything else**, which is precisely why Drive is Phase 4 and P2P is
 Phase 5.
 
+## Measured on real devices (2026-08-12)
+
+The first readings, from the Settings → Sync page shipped with the Phase 3 PR.
+These replace the secondary-source quota figures this plan was built on, and
+they change the conclusion.
+
+| Device         | Reported quota | In use at the time          |
+| -------------- | -------------- | --------------------------- |
+| iPhone, Safari | **38 GB**      | 4 MB (demo songs only)      |
+| Android        | **10 GB**      | 4.2 MB (demo songs only)    |
+| Desktop        | **10 GB**      | 344 MB (two imported songs) |
+
+**Capacity is not the constraint anywhere.** The headline worry — that an iOS
+origin quota would be too small for a library — is false on the hardware we
+have. 38 GB is more than the whole lossless library would need, let alone a
+portable one. Note the shape of the number: ~15% of a 256 GB disk, which is
+exactly the ratio the secondary sources reported. The figure was right; the
+alarm drawn from it was not.
+
+**A phone and a desktop reporting the identical 10 GB is a policy ceiling, not
+a measurement.** Two machines with very different disks do not have the same
+real limit; a browser reporting one figure for both is handing out a cap.
+(Firefox caps per-group storage at 10 GiB. Chrome reports a fraction of free
+disk, which would differ.) So treat 10 GB as "at least 10 GB", not as a budget.
+
+**Stored costs more than exported.** Two imported songs occupy 344 MB, about
+172 MB each, while the owner's 10–20 song library exports to 1.3 GB — 65–130 MB
+a song. Stored footprint therefore runs roughly 1.5–2.5× the ZIP, because a
+session keeps the original plus every stem plus analysis. A real library on
+disk is 2–3 GB, not 1.3.
+
+This does not change the case for portable bundles; it strengthens it. AAC
+128 kbps is ~1 MB per minute whatever the source was, so a 4-minute song is
+~7.6 MB for both stems regardless. That library goes from 2–3 GB to roughly
+115–150 MB.
+
+### What this does and does not settle
+
+- **D5 is de-risked for the web.** Audio can stay in IndexedDB on every browser
+  measured. The `BlobStore` seam is still worth building in Phase 2 — for the
+  native shell, and for chunked access — but not as an emergency.
+- **The native case is still unmeasured**, and it is the one D5 was really
+  about. These readings come from Safari the browser. An embedded WKWebView
+  reportedly gets a tighter allowance, and that number can only be taken once a
+  Capacitor build exists.
+- **The real iOS risk is eviction, not capacity.** Safari's long-standing rule
+  purges script-writable storage after roughly seven days without a visit, and
+  home-screen web apps are the documented exemption. For a library that matters
+  far more than a ceiling nobody will reach — losing it is precisely what sync
+  exists to prevent. So **installing to the Home Screen is part of the sync
+  story on iOS**, not a separate PWA nicety, and the Sync page should report
+  whether persistent storage was actually granted rather than leaving
+  `ensurePersistentStorage()`'s outcome invisible.
+- **Still worth running:** leave an iOS install alone for a week or two with a
+  song in it, and see whether it survives. That is the measurement that decides
+  whether a phone can be trusted to hold a library at all.
+
 ## A TV is a third device class (added 2026-08-12)
 
 Televisions are already first-class in the code: `classifyDevice()` returns
