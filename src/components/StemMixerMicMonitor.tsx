@@ -8,7 +8,7 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { Show } from 'solid-js'
-import { Headphones } from './icons'
+import { Headphones, MicStudio } from './icons'
 
 export interface StemMixerMicMonitorProps {
   micActive: Accessor<boolean>
@@ -40,6 +40,11 @@ export const StemMixerMicMonitor: Component<StemMixerMicMonitorProps> = (
           <span>Hear myself</span>
         </button>
         <div class="sm-mic-monitor-row">
+          {/* Headphones on the toggle answers "where does it go"; the mic here
+              answers "how loud is *me*", which is what the slider sets. */}
+          <span class="sm-mic-monitor-glyph" aria-hidden="true">
+            <MicStudio size={14} />
+          </span>
           <input
             class="sm-mic-monitor-slider"
             type="range"
