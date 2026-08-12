@@ -31,6 +31,17 @@ export const PART_RETRY_LIMIT = 2
 /** A pull with no bytes arriving for this long is a dead sender. */
 export const PART_STALL_MS = 20_000
 
+/**
+ * How long the sender waits for the receiver to say anything at all.
+ *
+ * Re-armed on every frame from the far side, so it only fires when the
+ * conversation has genuinely stopped -- the receiver's tab was closed,
+ * its phone slept, the pair died without the channel noticing. Without
+ * it the send promise waits for a frame that is never coming, and the
+ * UI stays "Sending 0%" with every control disabled for ever.
+ */
+export const SENDER_SILENCE_MS = 45_000
+
 export type SyncWireMessage =
   | { type: 'sync-offer'; manifest: PortableBundleManifest }
   | { type: 'sync-accept'; fileHash: string }
@@ -125,10 +136,41 @@ export function sendBundleOverWire(
   // interleave their chunks.
   let sendQueue: Promise<void> = Promise.resolve()
 
+  let silenceTimer: ReturnType<typeof setTimeout> | null = null
+
   function settle(outcome: SendOutcome): void {
     if (settled) return
     settled = true
+    if (silenceTimer !== null) clearTimeout(silenceTimer)
+    silenceTimer = null
     resolveResult(outcome)
+  }
+
+  /** Restart the deadline; the far side is still talking. */
+  function heardFromReceiver(): void {
+    if (settled) return
+    if (silenceTimer !== null) clearTimeout(silenceTimer)
+    silenceTimer = setTimeout(() => {
+      settle({
+        outcome: 'failed',
+        message:
+          'The other device stopped answering. Check it is awake and still on the same Wi-Fi, then try again.',
+      })
+    }, SENDER_SILENCE_MS)
+  }
+
+  /**
+   * Send a control frame, or end the transfer.
+   *
+   * A frame that cannot be sent is the channel being gone, and there is
+   * no answer coming to a question that was never asked -- without this
+   * the promise waits for ever and the UI keeps a "Sending" row and a
+   * disabled Send button with no way back.
+   */
+  function sendOrFail(msg: SyncWireMessage, why: string): boolean {
+    if (port.sendControl(msg)) return true
+    settle({ outcome: 'failed', message: why })
+    return false
   }
 
   function servePart(part: PortablePartId): void {
@@ -155,12 +197,18 @@ export function sendBundleOverWire(
         const exact = new Uint8Array(bytes).slice()
         await sendInChunks(port.channel, exact.buffer as ArrayBuffer, {
           ...(opts.signal === undefined ? {} : { signal: opts.signal }),
-          onProgress: (p) =>
+          onProgress: (p) => {
+            // Bytes leaving the send buffer means the far side is
+            // accepting them (SCTP will not drain otherwise), so this is
+            // as good a liveness signal as a control frame -- and a big
+            // part on a slow link takes longer than the silence window.
+            heardFromReceiver()
             opts.onProgress?.({
               part,
               ratio: p.ratio,
               overall: total <= 0 ? 1 : (before + p.received) / total,
-            }),
+            })
+          },
         })
       } catch (err) {
         const message =
@@ -178,6 +226,7 @@ export function sendBundleOverWire(
   function handleControl(msg: SyncWireMessage): void {
     if (settled) return
     if (!('fileHash' in msg) || msg.fileHash !== manifest.song.fileHash) return
+    heardFromReceiver()
     switch (msg.type) {
       case 'sync-accept':
         // Nothing to do — the receiver will start requesting parts.
@@ -208,7 +257,14 @@ export function sendBundleOverWire(
     settle({ outcome: 'failed', message })
   }
 
-  port.sendControl({ type: 'sync-offer', manifest })
+  if (
+    sendOrFail(
+      { type: 'sync-offer', manifest },
+      'The connection to the other device closed before the song could be offered.',
+    )
+  ) {
+    heardFromReceiver()
+  }
 
   return { handleControl, abort, result }
 }

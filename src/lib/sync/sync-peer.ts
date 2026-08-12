@@ -25,6 +25,11 @@ import type { JamPeer } from '@/lib/jam/types'
 export interface SyncPeerCallbacks {
   /** The channel to this peer is open — the protocol can start. */
   onChannelReady: (peerId: string, displayName: string) => void
+  /**
+   * This peer is gone: it left the room, its connection failed, or its
+   * channel closed. Called at most once per peer, and the connection is
+   * torn down first so a later re-announcement can build a fresh one.
+   */
   onPeerLeft: (peerId: string) => void
   /** A parsed JSON control frame from this peer. */
   onControl: (peerId: string, msg: Record<string, unknown>) => void
@@ -58,8 +63,7 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
         }
       },
       onPeerLeft: (peerId: string) => {
-        dropPeer(peerId)
-        cb.onPeerLeft(peerId)
+        losePeer(peerId)
       },
       onOffer: (from, sdp) => {
         handleOffer(from, sdp).catch((err) =>
@@ -113,6 +117,23 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     peerConnections.delete(peerId)
     pendingCandidates.delete(peerId)
     displayNames.delete(peerId)
+  }
+
+  /**
+   * Tear a peer down and say so, exactly once.
+   *
+   * Every way a pair can die -- leaving the room, ICE failing, the
+   * channel closing -- comes through here, because the alternative is a
+   * connection that is dead while the map still holds it: the UI keeps
+   * claiming "connected", `initiateNewPeer` refuses to rebuild
+   * (`peerConnections.has`), and the session cannot recover without a
+   * page reload. Removing it first is what lets a re-announced peer
+   * build a fresh connection.
+   */
+  function losePeer(peerId: string): void {
+    if (!peerConnections.has(peerId) && !dataChannels.has(peerId)) return
+    dropPeer(peerId)
+    cb.onPeerLeft(peerId)
   }
 
   async function initiateNewPeer(peerId: string): Promise<void> {
@@ -220,10 +241,13 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     }
     // No ICE-restart machinery on purpose: a sync session lives minutes,
     // not hours, and the honest answer to a dropped pair mid-transfer is
-    // the retry the protocol already has — not a renegotiation dance.
+    // to say so and let the person try again -- not a renegotiation
+    // dance. What matters is that the dead pair is REMOVED, so the next
+    // attempt builds a new one instead of reusing a corpse.
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === 'failed') {
         cb.onError('The connection between the devices was lost.')
+        losePeer(peerId)
       }
     }
   }
@@ -235,6 +259,13 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     dc.binaryType = 'arraybuffer'
     dc.onopen = () => {
       cb.onChannelReady(peerId, displayNames.get(peerId) ?? 'Another device')
+    }
+    // A closed channel is the death every transfer actually notices: the
+    // signaling socket can stay up (so no peer-left arrives) while the
+    // pair is gone, and without this the store keeps a channel it can
+    // write to and never hears back from.
+    dc.onclose = () => {
+      losePeer(peerId)
     }
     dc.onmessage = (event) => {
       if (event.data instanceof ArrayBuffer) {
