@@ -23,7 +23,7 @@
 import type { Component } from 'solid-js'
 import { lazy } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ActivityPanel } from './panels/ActivityPanel'
 import { CharacterPanel } from './panels/CharacterPanel'
 import { DisplayPanel } from './panels/DisplayPanel'
@@ -86,6 +86,10 @@ const DEV_SURFACE_LAYOUT: readonly SidebarPanelId[] = [
 export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
   [TAB_HOME]: ['character', 'mic', 'routine', 'activity'],
   [TAB_PATH]: ['mic', 'routine', 'activity'],
+  // Progress renders its own evidence in depth (the Resonance Atlas, weekly
+  // traces, the share studio). A sidebar heatmap beside it would be a worse
+  // second opinion on the same question, so the rail stays universal-only.
+  [TAB_PROGRESS]: ['mic'],
   [TAB_SINGING]: [
     'character',
     'library',
