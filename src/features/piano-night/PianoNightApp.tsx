@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
-import { ChevronLeft, Metronome, MusicBoard, Pause, PianoKeys, Play, Settings, SkipBack, SkipForward, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, Metronome, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, ScoreDocument, Settings, SkipBack, SkipForward, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -536,7 +536,7 @@ export function PianoNightApp(): JSX.Element {
           href={LEGACY_PIANO_PATH}
           aria-label="Open the current Piano workspace"
         >
-          <MusicBoard />
+          <PianoWorkspace />
           <span>Current Piano</span>
         </a>
 
@@ -559,7 +559,7 @@ export function PianoNightApp(): JSX.Element {
             aria-expanded={drawerOpen() && drawerSection() === 'music'}
             aria-controls="piano-night-settings"
           >
-            <MusicBoard />
+            <MusicLibrary />
             <span>Music</span>
           </button>
           <button class={styles.railButton} type="button" onClick={openCoach}>
@@ -601,7 +601,7 @@ export function PianoNightApp(): JSX.Element {
 
         <div class={styles.sessionHud} aria-label="Piano Night session status">
           <span class={styles.sessionDocument} aria-hidden="true">
-            <MusicBoard />
+            <ScoreDocument />
           </span>
           <div class={styles.sessionPiece}>
             <strong>{controller.stage().title}</strong>
@@ -850,7 +850,7 @@ export function PianoNightApp(): JSX.Element {
           aria-expanded={drawerOpen() && drawerSection() === 'music'}
           aria-controls="piano-night-settings"
         >
-          <MusicBoard />
+          <MusicLibrary />
           <span>Music</span>
         </button>
         <button type="button" onClick={openCoach} aria-expanded={coachOpen()}>

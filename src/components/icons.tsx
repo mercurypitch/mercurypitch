@@ -460,6 +460,71 @@ export const MusicBoard: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// Score document — one staged piece or track, never a library container.
+export const ScoreDocument: Component<{ size?: number }> = (props) => (
+  <svg
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    data-icon="score-document"
+  >
+    <path d="M6 2.75h7.6L18 7.15V21.25H6z" />
+    <path d="M13.5 2.9v4.5H18" />
+    <path d="M8.6 11.1h6.8M8.6 14.15h6.8M8.6 17.2h6.8" />
+    <path d="M11.1 10.2v5.15" />
+    <ellipse cx="9.7" cy="15.85" rx="1.4" ry="1.05" />
+  </svg>
+)
+
+// Music library — the device-local collection used to choose a staged piece.
+export const MusicLibrary: Component<{ size?: number }> = (props) => (
+  <svg
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    data-icon="music-library"
+  >
+    <path d="M3.25 7.25h6l1.8 2H20.75v9.5a2 2 0 0 1-2 2H5.25a2 2 0 0 1-2-2z" />
+    <path d="M3.25 7.25V5.2a2 2 0 0 1 2-2h4.1l1.8 2H18a2 2 0 0 1 2 2v2.05" />
+    <path d="M14.25 17v-4.1l3.25-.65v3.85" />
+    <ellipse cx="12.85" cy="17.2" rx="1.4" ry="1.05" />
+    <ellipse cx="16.1" cy="16.3" rx="1.4" ry="1.05" />
+  </svg>
+)
+
+// Piano workspace — the full editor reached from a standalone Piano room.
+export const PianoWorkspace: Component<{ size?: number }> = (props) => (
+  <svg
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    data-icon="piano-workspace"
+  >
+    <rect x="2.75" y="3.25" width="18.5" height="17.5" rx="2.5" />
+    <path d="M2.9 8h18.2M6.5 4.9h.01M9 4.9h.01" />
+    <path d="M6 11.25v6.5M9 11.25v6.5M12 11.25v6.5M15 11.25v6.5M18 11.25v6.5" />
+    <path d="M7.5 11.25v3.35M10.5 11.25v3.35M13.5 11.25v3.35M16.5 11.25v3.35" />
+  </svg>
+)
+
 /** Playlist — a list with a music note (for the Playlists tab). */
 export const Playlist: Component<{ size?: number }> = (p) => (
   <svg

@@ -8,7 +8,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { CheckSmall, FileUpload, MusicBoard, Search } from '@/components/icons'
+import { CheckSmall, FileUpload, MusicLibrary, ScoreDocument, Search, } from '@/components/icons'
 import type { PianoComposition } from '@/features/piano-project/piano-composition-stage'
 import { pianoCompositionToStage } from '@/features/piano-project/piano-composition-stage'
 import type { PianoProject } from '@/features/piano-project/piano-project'
@@ -423,7 +423,7 @@ export function PianoNightMusicPanel(
           }
         >
           <div class={styles.emptyLibrary} role="status">
-            <MusicBoard />
+            <MusicLibrary />
             <span>
               <strong>No saved music on this device yet</strong>
               <small>
@@ -473,7 +473,7 @@ export function PianoNightMusicPanel(
             when={displayedRows().length > 0}
             fallback={
               <div class={styles.emptyState}>
-                <MusicBoard />
+                <MusicLibrary />
                 <strong>No music matches this search</strong>
                 <span>Try a shorter title or clear the search.</span>
               </div>
@@ -507,7 +507,7 @@ export function PianoNightMusicPanel(
                         onClick={() => chooseRow(row)}
                       >
                         <span class={styles.rowIcon} aria-hidden="true">
-                          <Show when={isCurrent()} fallback={<MusicBoard />}>
+                          <Show when={isCurrent()} fallback={<ScoreDocument />}>
                             <CheckSmall />
                           </Show>
                         </span>

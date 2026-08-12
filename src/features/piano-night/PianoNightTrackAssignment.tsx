@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show, untrack } from 'solid-js'
-import { ChevronLeft, MusicBoard } from '@/components/icons'
+import { ChevronLeft, ScoreDocument } from '@/components/icons'
 import type { PianoProject } from '@/features/piano-project/piano-project'
 import { pianoProjectToTrackAssignment } from './piano-night-track-assignment'
 import styles from './PianoNightTrackAssignment.module.css'
@@ -170,7 +170,7 @@ export function PianoNightTrackAssignmentEditor(
                 </label>
                 <div class={styles.trackCopy}>
                   <span class={styles.trackIcon} aria-hidden="true">
-                    <MusicBoard />
+                    <ScoreDocument />
                   </span>
                   <span>
                     <strong>{track.name}</strong>
