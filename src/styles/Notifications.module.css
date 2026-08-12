@@ -1,22 +1,26 @@
-/* Application-wide notifications. Desktop uses a top-right signal stack;
-   phones use safe-area-aware native-style banners at the top edge. */
+/* Application-wide notifications: a plain rounded rectangle, one row.
+   Desktop stacks them in the top-right corner; phones get safe-area-aware
+   banners at the top edge.
 
-/* Below the header, not over it.
-   The top-right corner belongs to the account button, the sign-in button and
-   whatever the page puts in its rail — a toast parked there covered exactly
-   the things people were reaching for. `--app-header-h` is published from
-   App.tsx (see publishHeaderHeight) because the header has no fixed height:
-   it wraps to two rows on a phone. The 0px fallback matters — the standalone
-   karaoke and mirror entries mount this host with no app header at all. */
+   Deliberately plain. Earlier versions layered a gradient wash, a glowing left
+   accent bar, a heavy double shadow and an uppercase caps-line heading on top
+   of a two-row grid — five decorations competing with a one-sentence message.
+   What is left is what carries information: the icon, the message, and a border
+   tinted by severity. */
+
+/* The very top-right corner, over the account and sign-in buttons.
+   It sat below the header for a while so as not to cover them, but that pushed
+   it onto page content instead, which is worse: those buttons are the least
+   urgent thing on screen, and a toast is transient. */
 .notificationContainer {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + var(--app-header-h, 0px) + 0.5rem);
-  right: 0.75rem;
+  top: calc(env(safe-area-inset-top) + 0.6rem);
+  right: 0.6rem;
   z-index: var(--z-toast, 11000);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  width: min(358px, calc(100vw - 1.5rem));
+  gap: 0.4rem;
+  width: min(340px, calc(100vw - 1.2rem));
   pointer-events: none;
 }
 
@@ -24,51 +28,22 @@
   display: none;
 }
 
-/* One row, not three.
-   It used to be a two-row grid — title over message, with the action button on
-   its own line below — which made every toast 72px tall and turned a tour
-   prompt into a slab across the corner of the screen. Icon, title, message,
-   action and close now share a single line; a long message wraps under the
-   title and nothing else moves. */
 .notification {
   --toast-accent: var(--accent, #58a6ff);
-  position: relative;
-  isolation: isolate;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  min-height: 2.6rem;
-  padding: 0.42rem 0.42rem 0.42rem 0.55rem;
-  overflow: hidden;
+  gap: 0.5rem;
+  min-height: 2.4rem;
+  padding: 0.4rem 0.4rem 0.4rem 0.5rem;
   color: var(--text-primary, #f0f6fc);
-  background:
-    linear-gradient(
-      115deg,
-      color-mix(in srgb, var(--toast-accent) 9%, transparent),
-      transparent 42%
-    ),
-    rgba(17, 24, 35, 0.96);
+  background: var(--bg-secondary, #161b22);
   border: 1px solid
-    color-mix(in srgb, var(--toast-accent) 30%, var(--border, #30363d));
-  border-radius: 0.75rem;
-  box-shadow:
-    0 14px 38px rgba(0, 0, 0, 0.4),
-    0 3px 10px rgba(0, 0, 0, 0.24),
-    inset 0 1px rgba(255, 255, 255, 0.055);
-  font-size: 0.84rem;
+    color-mix(in srgb, var(--toast-accent) 32%, var(--border, #30363d));
+  border-radius: 0.6rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.34);
   line-height: 1.35;
   pointer-events: auto;
-  backdrop-filter: blur(18px) saturate(1.15);
-  animation: notificationIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.notification::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--toast-accent);
-  box-shadow: 0 0 18px var(--toast-accent);
-  content: '';
+  animation: notificationIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .notification.info {
@@ -87,87 +62,83 @@
   --toast-accent: var(--red, #f85149);
 }
 
+/* Severity reads from the icon and the border alone. The tinted plate behind
+   the icon was one more box per toast for no extra meaning. */
 .notificationIcon {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.05rem;
+  height: 1.05rem;
   color: var(--toast-accent);
-  background: color-mix(in srgb, var(--toast-accent) 13%, transparent);
-  border: 1px solid color-mix(in srgb, var(--toast-accent) 22%, transparent);
-  border-radius: 0.5rem;
 }
 
 .notificationIcon svg {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
-/* Inline flow, not a column: the title leads the sentence instead of sitting
-   on a line of its own, so a short message costs one line total. */
 .notificationBody {
   flex: 1;
   min-width: 0;
 }
 
+/* A title is a *prefix*, not a heading: same size as the message, set apart by
+   colour only. The uppercase caps-line above the text cost a whole row and
+   shouted a word ("NOTE") that carried nothing. Callers with something worth
+   naming pass `title`; everything else has none at all. */
 .notificationBody > strong {
-  margin-right: 0.4rem;
+  margin-right: 0.35rem;
   color: var(--toast-accent);
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  /* Never orphaned from the first word of its own message. */
-  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .notificationText {
   color: var(--text-primary, #f0f6fc);
-  font-size: 0.82rem;
-  font-weight: 560;
+  font-size: 0.78rem;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
-/* Beside the message, not under it — the third row existed only for this. */
 .actionBtn {
   flex-shrink: 0;
-  padding: 0.26rem 0.55rem;
-  color: var(--text-primary, #f0f6fc);
-  background: color-mix(in srgb, var(--toast-accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--toast-accent) 26%, transparent);
-  border-radius: 0.48rem;
+  padding: 0.24rem 0.5rem;
+  color: var(--toast-accent);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--toast-accent) 40%, transparent);
+  border-radius: 0.4rem;
   font-size: 0.72rem;
-  font-weight: 750;
+  font-weight: 650;
   cursor: pointer;
 }
 
 .actionBtn:hover {
-  background: color-mix(in srgb, var(--toast-accent) 20%, transparent);
+  background: color-mix(in srgb, var(--toast-accent) 14%, transparent);
 }
 
 .closeBtn {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.4rem;
+  height: 1.4rem;
   padding: 0;
   color: var(--text-muted, #8b949e);
   background: transparent;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.35rem;
   cursor: pointer;
 }
 
 .closeBtn:hover {
   color: var(--text-primary, #f0f6fc);
-  background: rgba(255, 255, 255, 0.065);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .closeBtn svg {
-  width: 0.8rem;
-  height: 0.8rem;
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .actionBtn:focus-visible,
@@ -179,45 +150,36 @@
 @keyframes notificationIn {
   from {
     opacity: 0;
-    transform: translateX(24px) scale(0.985);
+    transform: translateX(16px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
   }
 }
 
 @keyframes mobileNotificationIn {
   from {
     opacity: 0;
-    transform: translateY(-14px) scale(0.985);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 @media (max-width: 768px) {
-  /* No header offset on a phone. The offset exists to clear the desktop
-     header's account, sign-in and tab controls; here the header is ~50px and
-     page content starts immediately beneath it, so pushing a full-width toast
-     down lands it on that content instead. Measured: the Piano tour prompt
-     covered y 57-109 over a playback scrubber at y 94-113, and
-     elementFromPoint at the scrub target returned the toast — which is the
-     same class of occlusion this whole change set out to remove. Staying at
-     the top is the lesser evil, and the toast is 40% shorter than it was. */
   .notificationContainer {
-    top: calc(env(safe-area-inset-top) + 0.55rem);
-    right: 0.6rem;
-    left: 0.6rem;
+    top: calc(env(safe-area-inset-top) + 0.5rem);
+    right: 0.5rem;
+    left: 0.5rem;
     width: auto;
-    gap: 0.4rem;
+    gap: 0.35rem;
 
-    /* Prevent stacked / multi-line toasts from pushing action buttons
-       below the visible viewport: budget the tab bar + safe area out of
-       the height, and scroll so every toast and its buttons remain
-       reachable. */
+    /* Prevent stacked / multi-line toasts from pushing action buttons below
+       the visible viewport: budget the tab bar + safe area out of the height,
+       and scroll so every toast and its buttons remain reachable. */
     max-height: calc(
       100dvh - env(safe-area-inset-top) - var(--tabbar-total, 54px) - 1.3rem
     );
@@ -226,17 +188,7 @@
   }
 
   .notification {
-    min-height: 2.5rem;
-    padding: 0.4rem;
-    border-radius: 0.8rem;
-    box-shadow:
-      0 12px 32px rgba(0, 0, 0, 0.42),
-      inset 0 1px rgba(255, 255, 255, 0.065);
     animation-name: mobileNotificationIn;
-  }
-
-  .notificationText {
-    font-size: 0.8rem;
   }
 }
 

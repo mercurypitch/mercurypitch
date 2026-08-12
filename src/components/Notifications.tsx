@@ -12,29 +12,15 @@ import { notifications, removeNotification } from '@/stores/notifications-store'
 import styles from '@/styles/Notifications.module.css'
 import { AlertTriangle, CheckCircle, XCircle } from './icons'
 
-// Fallback titles, used only when a caller gives no `title` of its own.
+// There is no title unless a caller asks for one.
 //
-// These can describe severity and nothing else, so they are deliberately
-// plain. `info` used to read "Update", which made every ordinary message in
-// the app — a saved name, a loaded song — announce itself like a pending app
-// update; "Update" now belongs to the one toast that means it (the service
-// worker's, in src/index.tsx). Anything that can name its own subject should
-// pass `title` instead of leaning on these.
-const NOTIFICATION_LABELS: Record<Notification['type'], string> = {
-  info: 'Note',
-  success: 'Done',
-  warning: 'Heads up',
-  error: 'Problem',
-}
-
-/**
- * The caps line for a toast: the caller's title, else a word for its type.
- * `null` is a caller saying "no title" — the message stands on its own.
- */
-function notificationTitle(notif: Notification): string | null {
-  if (notif.title !== undefined) return notif.title
-  return NOTIFICATION_LABELS[notif.type]
-}
+// Severity used to supply a fallback heading — "Note", "Done", "Problem", and
+// before that "Update" on every single `info` message, which made a saved
+// display name announce itself like a pending app upgrade. But a word derived
+// from the type says nothing the icon and the colour do not already say, and it
+// cost a whole row to shout it. A title now only appears when the caller has a
+// subject worth naming ("Update", "Microphone"), and it renders as a coloured
+// prefix on the message rather than a heading above it.
 
 const NotificationIcon: Component<{ type: Notification['type'] }> = (props) => (
   <Switch>
@@ -82,8 +68,8 @@ export const Notifications: Component = () => {
               <NotificationIcon type={notif.type} />
             </span>
             <span class={styles.notificationBody}>
-              <Show when={notificationTitle(notif)}>
-                {(title) => <strong>{title()}</strong>}
+              <Show when={notif.title !== undefined && notif.title !== null}>
+                <strong>{notif.title}</strong>
               </Show>
               <span class={styles.notificationText}>{notif.message}</span>
             </span>

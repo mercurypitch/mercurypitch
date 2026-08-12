@@ -1163,6 +1163,23 @@ export const CheckSmall: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// MoreHorizontal Icon — the "more" trigger on a row of controls, where the
+// dots read as "the row continues" rather than as a stacked menu.
+export const MoreHorizontal: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 16}
+    height={p.size ?? 16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <circle cx="5" cy="12" r="1.9" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1.9" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 // MoreVertical Icon (kebab menu trigger)
 export const MoreVertical: Component<{ size?: number }> = (p) => (
   <svg

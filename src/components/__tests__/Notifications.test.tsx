@@ -16,8 +16,9 @@ describe('Notifications', () => {
     render(() => <Notifications />)
 
     const notification = screen.getByRole('status')
-    expect(notification).toHaveTextContent('Done')
     expect(notification).toHaveTextContent('Playlist ZIP is ready.')
+    // No severity-derived heading: the icon and the border carry the type.
+    expect(notification.querySelector('strong')).toBeNull()
     expect(
       screen.getByRole('region', { name: 'Notifications' }),
     ).toContainElement(notification)
@@ -30,17 +31,19 @@ describe('Notifications', () => {
 
     render(() => <Notifications />)
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Problem')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The archive could not be saved.',
+    )
     fireEvent.click(
       screen.getByRole('button', { name: 'Dismiss notification' }),
     )
     expect(notifications()).toHaveLength(0)
   })
 
-  // The fallback title can only describe severity. It read "Update" on every
-  // `info` toast, so a saved display name announced itself exactly like a
-  // pending app update — these three pin the way out of that.
-  it('prefers a title the caller gave over the one for its type', () => {
+  // A title is opt-in and renders as a coloured prefix on the message, not as
+  // a heading above it. It used to be derived from the type, which put the word
+  // "Update" on every ordinary `info` toast.
+  it('renders a caller title as a prefix on the message', () => {
     setNotifications([
       {
         id: 4,
@@ -53,37 +56,32 @@ describe('Notifications', () => {
     render(() => <Notifications />)
 
     const notification = screen.getByRole('status')
-    expect(notification).toHaveTextContent('Update')
-    expect(notification).not.toHaveTextContent('Note')
+    expect(notification.querySelector('strong')?.textContent).toBe('Update')
+    expect(notification).toHaveTextContent(
+      'A new version of MercuryPitch is ready.',
+    )
   })
 
-  it('shows no title at all when the caller passes null', () => {
+  it('shows no title at all when the caller gives none', () => {
+    setNotifications([{ id: 5, message: 'Display name updated', type: 'info' }])
+
+    render(() => <Notifications />)
+
+    const notification = screen.getByRole('status')
+    expect(notification).toHaveTextContent('Display name updated')
+    expect(notification.querySelector('strong')).toBeNull()
+    // The regression that started this: no toast invents the word "Update".
+    expect(notification).not.toHaveTextContent('Update')
+  })
+
+  it('treats an explicit null title the same as none', () => {
     setNotifications([
-      {
-        id: 5,
-        message: 'Recording saved to your takes.',
-        type: 'success',
-        title: null,
-      },
+      { id: 6, message: 'Recording saved.', type: 'success', title: null },
     ])
 
     render(() => <Notifications />)
 
-    const notification = screen.getByRole('status')
-    expect(notification).toHaveTextContent('Recording saved to your takes.')
-    expect(notification).not.toHaveTextContent('Done')
-    expect(notification.querySelector('strong')).toBeNull()
-  })
-
-  it('never calls an ordinary message an Update', () => {
-    setNotifications([{ id: 6, message: 'Display name updated', type: 'info' }])
-
-    render(() => <Notifications />)
-
-    const notification = screen.getByRole('status')
-    expect(notification).toHaveTextContent('Note')
-    // The regression itself: the word must not come from the type fallback.
-    expect(notification.querySelector('strong')?.textContent).not.toBe('Update')
+    expect(screen.getByRole('status').querySelector('strong')).toBeNull()
   })
 
   it('runs an action once and dismisses its notification', () => {
