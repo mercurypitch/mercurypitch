@@ -61,11 +61,14 @@ Three properties worth internalising:
 - **`save_playbook` claims to be declarative but does not delete.** Its
   description says omitted slides are removed, and its preview reports
   `1 removed`. Neither is true: the slide survives, and a replacement sent in
-  the same call is *added alongside* it. Verified twice on playbook 19290 on
-  2026-08-12 — two calls omitting slide 151213, both returning success, and
-  the slide still present in `get_playbook_details` afterwards, with no
-  deletion in the audit log. Still read-modify-write, but for the opposite
-  reason: not to avoid losing slides, but to avoid duplicating them.
+  the same call is *added alongside* it. Verified three times on playbook 19290
+  on 2026-08-12 — calls omitting slide 151213, all returning
+  `success: true`, and the slide still present in `get_playbook_details`
+  afterwards, with no deletion in the audit log. Still read-modify-write, but
+  for the opposite reason: not to avoid losing slides, but to avoid
+  duplicating them. **Because the response lies, always re-read
+  `get_playbook_details` after a save meant to drop a slide** — the call
+  reports the outcome you asked for, not the one you got.
 - **`generate_slide_image` appends, it does not replace.** Each call adds
   another image to the slide, and the slide then shows them in sequence. It
   returns `imageCount: 1` every time regardless, so the response cannot be
@@ -470,11 +473,19 @@ Same rules: destination in the playbook prompt, no music, a cappella.
 | 9 | Tag the Glass share text (§5) | agent | done |
 | 10 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
 | 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
-| 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | open |
+| 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | resolved — it self-populated |
 | 13 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
 | 15 | Delete orphan slide 151213 in the portal (§2) | you | **next** |
 | 16 | Report the save_playbook / generate_slide_image behaviour to Noise (§2) | you | open |
 | 14 | Give zen exercises a URL, if it should be a UGC destination (§8) | decision | open |
+| 17 | Correct the brief + slides 2/3 for the reveal-first flow (§7) | agent | done |
+| 18 | Export the playbook text to the campaigns repo | agent | done |
+
+The playbook text is mirrored into the campaigns monorepo at
+`packages/campaigns/mercury/ugc-noise/` (disjoint-colliders) — README with the
+account state and MCP quirks, the paste-ready playbook content, and the
+attribution scheme. That copy is the one to edit for a new channel or product;
+this document stays the operating manual for the integration itself.
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
 inactive and attached to no campaign, so they are harmless — and there is no
@@ -507,30 +518,32 @@ Playbook 19290 is verified complete: `get_playbook_details` returns all four
 slides with prompts and captions, and the audit log records `Playbook created`
 (slides: 4) plus `Slide image added (url)` against slide 151213.
 
-### The open question: `preview_image`
+### `preview_image` — resolved, and it fills itself in
 
-Two fields are `null` on 19290 and populated on 18979, which was made in the
+Three fields were `null` on 19290 and populated on 18979, which was made in the
 portal:
 
-| Field | 18979 (portal) | 19290 (MCP) |
-|---|---|---|
-| `preview_image` | a hosted `.jpg` | `null` |
-| `example_url` | a hosted `.mp4` | `null` |
-| `created_by` | a user uuid | `null` |
+| Field | 18979 (portal) | 19290 (MCP), 2026-08-11 | 19290, 2026-08-12 |
+|---|---|---|---|
+| `preview_image` | a hosted `.jpg` | `null` | **a hosted `.jpg`** |
+| `example_url` | a hosted `.mp4` | `null` | `null` |
+| `created_by` | a user uuid | `null` | `null` |
 
-Neither is settable through any MCP tool, and on 18979 the portal set
-`example_url` in a **separate** update two minutes after creation (audit,
-2026-08-09 12:43) — a portal-side step the MCP create path does not trigger.
+`preview_image` is now populated on 19290 —
+`…/template_previews/previews/19290.jpg` — without any MCP call setting it, and
+none can. So the portal does generate preview media for a playbook it did not
+create; it just does not do it at creation time the way it does for its own.
+The worry that an MCP-created playbook would present to creators as a blank
+card was real but is now moot for this playbook.
 
-This no longer explains anything about the dashboard, but it may still matter
-in the place that counts: **what a creator sees when browsing open offers.** A
-playbook with no preview image and no example video plausibly presents as a
-blank card next to brands that have both, and §4 established that creators
-choose which offers to take. If so this is a pickup problem, not a display
-one — the same missing field, a very different cost.
+`example_url` (the example video) is still null and still unsettable. On 18979
+the portal set it in a **separate** update two minutes after creation (audit,
+2026-08-09 12:43). Whether its absence costs pickup is untested — but it is one
+missing field now rather than three, and an example video is something a brand
+would normally supply once the first creator posts land.
 
-Worth confirming with Noise support, alongside whether the portal can generate
-preview media for a playbook it did not create. If it cannot, the workaround
+The residual question for Noise support is narrower: whether `example_url` can
+be set for a playbook the portal did not create. If it cannot, the workaround
 is to create playbooks in the portal and author their content over MCP, which
 keeps nearly all of the benefit.
 
@@ -543,33 +556,68 @@ UGC buys a click from someone who has never heard of us and is holding a
 phone. These are ranked by expected effect on that visitor, and each one is
 tied to something in the code rather than to general advice.
 
-### Mirror: the payoff arrives far later than it needs to
+### Mirror: the payoff arrives far later than it needs to — SHIPPED (PR #481)
 
 The twin is the hook — it is what the creator holds up in slide 3 and what a
-viewer clicks for. It is also computable about twenty seconds in, and we make
+viewer clicks for. It was also computable about twenty seconds in, and we made
 people work for two to three minutes before showing it.
 
 `singerForRange()` keys only off detected low and high MIDI. Range is computed
 at the `hold-done` transition, before a single match note is sung. Everything
 after that point sharpens *accuracy*, not the twin.
 
-So the flow could be: two sirens, one held note, **twin revealed** — then
-"want your accuracy score too? five more notes." A short guaranteed win first,
-depth as an opt-in second. For cold paid traffic that is the difference
-between a card to share and an abandoned tab.
+The flow is now: two sirens, one held note, **twin revealed** — then "add my
+accuracy score: five more notes." A short guaranteed win first, depth as an
+opt-in second. The reveal is the `'twin-peek'` sub-phase in `MirrorApp.tsx`,
+gated behind `twinPeek(gen)` and emitting a `twin_revealed` funnel event, so
+the new step is measurable on its own.
 
-Worth measuring before building: the funnel already emits `task_hold_done`,
-`task_match_done` and `results_view`, so the drop-off between the hold and the
-results is answerable from data we are already collecting. If it is small,
-leave the flow alone.
+This shipped ahead of the measurement it was originally gated on, because the
+brief had to describe *some* flow and the reveal-first one is both better for
+cold traffic and simpler to film. `task_hold_done`, `task_match_done` and
+`results_view` still answer whether the match notes retain people — now as a
+question about the opt-in rather than about a toll.
 
-### Mirror: Free Sing is the fast path, and nobody finds it
+Slides 2 and 3 split on exactly this seam, so the brief and the app agree.
+
+### Mirror: Free Sing is the fast path, and nobody finds it — SHIPPED (PR #481)
 
 "Sing anything you like for 40 seconds — your shower song counts" is a
 gentler, shorter, more obviously fun entry than eight guided vocal actions,
-and it produces a shareable card of its own. It is currently a mode inside a
-flow rather than a door into one. For UGC arrivals it may simply be the better
-landing.
+and it produces a shareable card of its own. It was a mode inside a flow
+rather than a door into one.
+
+It now has its own entry at `/free-sing`, resolved through
+`MirrorEntryIntent` and served by the same worker route as `/mirror` — which
+means `/free-sing` must stay listed in `run_worker_first` in `wrangler.jsonc`
+or the asset layer swallows it. A config guard test asserts that.
+
+The landing itself narrowed to a single door: one CTA (`Find my voice twin`,
+or the range/free-sing variants by entry intent) instead of competing
+buttons, with Free Sing reachable by URL rather than by a second button
+fighting the first for the same tap.
+
+### Mirror: the results screen asked ten questions at the payoff — SHIPPED (PR #481)
+
+The moment the card appears is the moment to share it, and the screen answered
+that with ten controls: two share buttons, four card-option chips, Copy, Sing
+the Universe, Open MercuryPitch, Start over. The chips are export settings —
+they belong to a decision the visitor has not made yet.
+
+Now: the two share buttons, `Open MercuryPitch`, and an `Options` overflow.
+Everything else moved into `CardOptionsSheet` — a bottom sheet on a phone, a
+right-hand drawer from tablet up, reusing `useFocusTrap` so Escape, the
+backdrop, Tab cycling and focus restoration all come for free.
+
+Two deliberate exceptions to "hide the extras":
+
+- **`Open MercuryPitch` stays visible.** It fires `cta_app_click`, which feeds
+  a live Google Ads conversion. Putting the conversion CTA behind a disclosure
+  would quietly cost the thing the campaign is buying.
+- **`Start over` stays visible** as the quiet text button it already was.
+
+`Sing the Universe` did move into the sheet. It is a mode, not an option, so
+that is the one placement worth revisiting if the sheet turns out to bury it.
 
 ### Mirror: check when the mic is asked, and why
 
@@ -604,5 +652,5 @@ detail, and it is the reason Mirror and Glass were the right places to start.
 
 - **Short link** (§5) — cleans up both the creator caption and the share text.
 - **A URL for zen exercises** (§8) — would unlock the middle slide.
-- **`preview_image` on the playbook** (§10) — may affect whether creators pick
-  the offer up at all.
+- **`example_url` on the playbook** (§10) — the example video is still unset
+  and unsettable over MCP. `preview_image` resolved itself.
