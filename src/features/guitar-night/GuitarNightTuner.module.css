@@ -911,7 +911,7 @@
   -webkit-text-fill-color: #1a1109;
 }
 
-.listeningControl:hover:not(:disabled) {
+.listeningControl:hover:not(:disabled):not([data-active='true']) {
   background: #f7c98a;
 }
 
@@ -976,6 +976,12 @@
       color 0.16s ease,
       background-color 0.16s ease,
       border-color 0.16s ease,
+      box-shadow 0.16s ease,
+      transform 0.16s ease;
+  }
+
+  .listeningControl {
+    transition:
       box-shadow 0.16s ease,
       transform 0.16s ease;
   }
@@ -1187,6 +1193,35 @@
   .targetModes > div,
   .targetModes button {
     background: Canvas;
+  }
+
+  .listeningControl {
+    border: 1px solid ButtonText;
+    color: ButtonText;
+    -webkit-text-fill-color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .listeningControl span,
+  .listeningControl svg {
+    color: ButtonText;
+    -webkit-text-fill-color: ButtonText;
+  }
+
+  .listeningControl[data-active='true'] {
+    color: HighlightText;
+    -webkit-text-fill-color: HighlightText;
+    background: Highlight;
+  }
+
+  .listeningControl[data-active='true'] span,
+  .listeningControl[data-active='true'] svg {
+    color: HighlightText;
+    -webkit-text-fill-color: HighlightText;
+  }
+
+  .targetModes button[aria-pressed='true'] {
+    border: 2px solid Highlight;
   }
 
   .needle,

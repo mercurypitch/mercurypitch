@@ -263,6 +263,9 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   reference tone, active capture shall stop first and the tone shall sound
   through the room's guide bus. WHEN capture starts, every reference tone
   shall stop first; reference tone and capture shall never be active together.
+  IF that reference interrupted an explicitly active tuner, capture shall
+  resume after the reference ends unless the player stops listening, closes
+  the tuner, or supersedes the request.
   WHEN either action supersedes a pending cross-tab input handoff, a late
   handoff result shall be released without starting hidden capture.
 - **REQ-GN-TUNER-007 — Non-destructive room pause:** WHEN the tuner opens from
@@ -280,8 +283,10 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   Target, cents direction, listening state, and in-tune judgment shall be
   available without colour alone; live announcements shall be throttled; and
   readings outside the visible cents rail shall retain an edge cue naming the
-  corrective direction. Reduced motion shall remove continuous needle or lock
-  animation without hiding the current reading.
+  corrective direction. Idle and active listening controls shall each retain
+  WCAG AA text contrast, including while a pointer hover remains latched after
+  touch. Reduced motion shall remove continuous needle or lock animation
+  without hiding the current reading.
 - **REQ-GN-TUNER-010 — Preset synchronization:** WHEN the player chooses a
   built-in tuning preset, Guitar Night shall update the current
   `InstrumentTuning`, tuner targets, reference tones, and every stage
@@ -289,6 +294,12 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   a label-only tuner change. WHILE the preset choices are open, they shall
   overlay rather than reflow the tuner, close on an outside pointer, and yield
   the first Escape press before Escape closes the tuner.
+- **REQ-GN-TUNER-011 — Listening-intent continuity:** WHILE tuner capture is
+  explicitly active, changing between Auto and Manual or selecting a target
+  string shall not release it. WHEN the player selects another physical audio
+  route, the tuner shall re-acquire capture on that route without requiring a
+  second Start action. IF the player invokes Stop, Back, or Escape while that
+  transfer is pending, a late result shall not restart hidden capture.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 

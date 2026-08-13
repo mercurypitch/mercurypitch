@@ -107,7 +107,7 @@ describe('GuitarNightScoreRoom', () => {
       screen.getByRole('dialog', { name: 'Tune before the room.' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Allow microphone' }),
+      screen.getByRole('button', { name: 'Start listening' }),
     ).toBeEnabled()
 
     fireEvent.keyDown(document, {

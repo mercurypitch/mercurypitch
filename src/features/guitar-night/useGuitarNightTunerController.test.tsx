@@ -1,4 +1,4 @@
-// Guitar Night tuner controller tests keep capture, reference sound, and room state exclusive.
+// Guitar Night tuner controller tests keep capture, reference sound, and room state coordinated.
 // ============================================================
 
 import { createRoot, createSignal } from 'solid-js'
@@ -161,7 +161,8 @@ describe('useGuitarNightTunerController', () => {
     })
   })
 
-  it('cancels capture before sounding a target through the guide bus', async () => {
+  it('parks capture for a reference and resumes the listening session afterward', async () => {
+    vi.useFakeTimers()
     await withController(async (controller, listening, pause, activate) => {
       listening.setStatus('listening')
 
@@ -172,6 +173,88 @@ describe('useGuitarNightTunerController', () => {
       expect(voices.createGuitar).toHaveBeenCalledOnce()
       expect(voices.connect).toHaveBeenCalledOnce()
       expect(controller.referenceStringIndex()).toBe(5)
+      expect(controller.listeningWillResume()).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(2_200)
+
+      expect(controller.referenceStringIndex()).toBeNull()
+      expect(controller.listeningWillResume()).toBe(false)
+      expect(listening.port.start).toHaveBeenCalledWith({ purpose: 'tuner' })
+      expect(controller.isListening()).toBe(true)
+    })
+  })
+
+  it('keeps capture active while changing target mode or manual string', async () => {
+    await withController((controller, listening) => {
+      listening.setStatus('listening')
+
+      controller.selectTarget(5)
+      controller.selectTarget(null)
+
+      expect(listening.port.cancel).not.toHaveBeenCalled()
+      expect(controller.isListening()).toBe(true)
+    })
+  })
+
+  it('restores an enabled tuner after changing its physical input route', async () => {
+    await withController(async (controller, listening) => {
+      listening.setStatus('listening')
+
+      await controller.selectInputProfile('interface')
+
+      expect(listening.port.selectInputProfile).toHaveBeenCalledWith(
+        'interface',
+      )
+      expect(listening.port.start).toHaveBeenCalledWith({ purpose: 'tuner' })
+      expect(controller.isListening()).toBe(true)
+    })
+  })
+
+  it('leaves an enabled tuner alone when its selected route is tapped again', async () => {
+    await withController(async (controller, listening) => {
+      listening.setStatus('listening')
+
+      await controller.selectInputProfile('microphone')
+
+      expect(listening.port.selectInputProfile).not.toHaveBeenCalled()
+      expect(listening.port.cancel).not.toHaveBeenCalled()
+      expect(listening.port.start).not.toHaveBeenCalled()
+      expect(controller.isListening()).toBe(true)
+    })
+  })
+
+  it('does not restart a route change after the player stops listening', async () => {
+    await withController(async (controller, listening) => {
+      let finishRouteChange!: () => void
+      const routeChange = new Promise<void>((resolve) => {
+        finishRouteChange = resolve
+      })
+      listening.port.selectInputProfile.mockReturnValueOnce(routeChange)
+      listening.setStatus('listening')
+
+      const pendingRouteChange = controller.selectInputProfile('interface')
+      expect(controller.listeningWillResume()).toBe(true)
+
+      controller.stopListening()
+      finishRouteChange()
+      await pendingRouteChange
+
+      expect(controller.listeningWillResume()).toBe(false)
+      expect(listening.port.start).not.toHaveBeenCalled()
+    })
+  })
+
+  it('does not restart capture when the player stops during a reference', async () => {
+    vi.useFakeTimers()
+    await withController(async (controller, listening) => {
+      listening.setStatus('listening')
+      await controller.playReference(5)
+
+      controller.stopListening()
+      await vi.advanceTimersByTimeAsync(2_200)
+
+      expect(controller.listeningWillResume()).toBe(false)
+      expect(listening.port.start).not.toHaveBeenCalled()
     })
   })
 

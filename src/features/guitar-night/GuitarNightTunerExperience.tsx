@@ -140,7 +140,12 @@ export function GuitarNightTunerExperience(
     ReturnType<GuitarNightTunerProps['listeningState']>
   >(() => {
     if (props.controller.isOpeningInput()) return 'starting'
-    if (props.controller.isListening()) return 'listening'
+    if (
+      props.controller.isListening() ||
+      props.controller.listeningWillResume()
+    ) {
+      return 'listening'
+    }
     return 'idle'
   })
   const pitchState = createMemo<GuitarNightTunerPitchState>(() => {
@@ -193,7 +198,9 @@ export function GuitarNightTunerExperience(
     if (props.controller.manualTargetIndex() !== null) return
     const fallback = displayStrings()[0]?.stringIndex ?? null
     props.controller.selectTarget(
-      props.controller.reading()?.stringIndex ?? fallback,
+      props.controller.reading()?.stringIndex ??
+        props.controller.evidenceReading()?.stringIndex ??
+        fallback,
     )
   }
 

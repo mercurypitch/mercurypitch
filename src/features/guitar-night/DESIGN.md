@@ -85,9 +85,12 @@ core Learn set in
   on a physical string tile chooses it and auditions its reference; the whole
   tile remains one dependable touch target.
 - Opening Tune parks playback without resetting the backing mix, score position,
-  or A/B loop. Reference sound and capture are mutually exclusive. Back or
-  Escape closes the overlay without resuming playback and restores the Tune
-  trigger; the hidden transport does not own Space while the tuner is open.
+  or A/B loop. Reference sound and capture are mutually exclusive. A reference
+  requested while the tuner is listening parks capture and restores it after
+  the tone; changing Room mic / Plugged in transfers that same explicit
+  listening intent to the new route. An explicit Stop, Back, or Escape cancels
+  any pending restart. Back or Escape restores the Tune trigger, and the hidden
+  transport does not own Space while the tuner is open.
 - Backing playback gates only its stems bus while parked, leaving the shared
   guide and monitor paths audible at the player's master level. Closing Tune or
   starting a reference also invalidates a pending cross-tab input handoff, so a
@@ -95,9 +98,11 @@ core Learn set in
   keeps Tune unavailable until its evidence has completed rather than silently
   discarding the take.
 - The phone composition keeps the gauge, all open strings, and the primary
-  listening action immediately available with dark text on amber. Secondary
-  input and preset setup can
-  scroll beneath sticky navigation and controls without horizontal overflow;
+  listening action immediately available. Its idle dark-on-amber and active
+  pale-on-signal states switch as complete contrast-safe pairs, including a
+  pointer hover that remains latched after a touch. Secondary input and preset
+  setup can scroll beneath sticky navigation and controls without horizontal
+  overflow;
   every visible action remains at least 44px and reduced motion removes needle
   interpolation. Tuning choices float above the room without moving strings or
   controls; outside pointer and Escape close them first and restore their
@@ -108,6 +113,11 @@ core Learn set in
   drum bus. Straight, Pocket, and Lift are tempo-free patterns today; future
   approved soundbank assets can replace their renderer without changing lesson
   configuration, loop state, progress, or the audio clock.
+- First-win progress is deliberately self-marked today: touch and Space advance
+  the target, and a running groove accepts a mark only inside the configured
+  timing window and saves the closest absolute offset. It does not hear or
+  validate the played pitch and does not present a performance score. Real
+  microphone, interface, and MIDI assessment remains a later evidence slice.
 
 - Learn opens as one protected-focus setlist over the existing room rather than
   reproducing the legacy practice-mode selector. Opening it pauses or suspends
@@ -309,14 +319,14 @@ subordinate to the crop until the source receives a final retouch.
 
 1. Finish the fast-input evidence gate with real-device browser checks,
    measured latency distributions, audio note-release/continuous-pitch
-   evidence, and a separately validated polyphonic path before publishing speed
-   or quality claims.
+   evidence, a persisted high-resolution MIDI review contract, and a separately
+   validated polyphonic path before publishing speed or quality claims.
 2. Measure the upgraded string highway on representative mobile hardware, add
    stable screenshot baselines, and complete the final material/lighting pass.
-3. Extend the shipped first-win loop into a paced beginner progression and an
-   approved soundbank catalog, then add professional band scenes, drummer
-   controls, and take history without promoting them into first-viewport mode
-   selectors.
+3. Extend the shipped first-win loop into an input-assessed paced beginner
+   progression and an approved soundbank catalog, then add professional band
+   scenes, drummer controls, and take history without promoting them into
+   first-viewport mode selectors.
 4. Complete authored-score-to-recording alignment plus release and
    continuous-pitch evidence before adding sustain or intonation observations.
 5. Move the proved runtime lifecycle beneath the remaining legacy Guitar

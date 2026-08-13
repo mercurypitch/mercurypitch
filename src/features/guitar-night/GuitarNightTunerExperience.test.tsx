@@ -45,6 +45,7 @@ interface ControllerHarness {
   setEvidenceReading(reading: TunerReading | null): void
   setListening(listening: boolean): void
   setOpening(opening: boolean): void
+  setListeningWillResume(resume: boolean): void
   setError(error: string | null): void
   setInputProfile(profile: GuitarInputProfileKind): void
 }
@@ -107,6 +108,7 @@ function createControllerHarness(
     createSignal<TunerReading | null>(null)
   const [isListening, setListening] = createSignal(false)
   const [isOpeningInput, setOpening] = createSignal(false)
+  const [listeningWillResume, setListeningWillResume] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
   const [inputProfile, setInputProfile] =
     createSignal<GuitarInputProfileKind>('microphone')
@@ -122,6 +124,7 @@ function createControllerHarness(
     manualTargetIndex,
     readyStringIndices: () => [5],
     referenceStringIndex: () => 4,
+    listeningWillResume,
     isListening,
     isOpeningInput,
     error,
@@ -146,6 +149,7 @@ function createControllerHarness(
     setEvidenceReading,
     setListening,
     setOpening,
+    setListeningWillResume,
     setError,
     setInputProfile,
   }
@@ -276,6 +280,38 @@ describe('GuitarNightTunerExperience', () => {
     expect(harness.controller.selectTarget).toHaveBeenLastCalledWith(4)
   })
 
+  it('uses ungated tuner evidence when Manual takes over a far-off string', () => {
+    const harness = createControllerHarness()
+    const tuning = standardTuning('guitar')
+    harness.setEvidenceReading({
+      frequency: 86.71,
+      stringIndex: 5,
+      stringName: 'E2',
+      stringLabel: 'E',
+      targetMidi: 40,
+      targetHz: 82.41,
+      centsDeviation: 88,
+      inTune: false,
+      close: false,
+      midi: 40,
+      clarity: 0.9,
+    })
+
+    render(() => (
+      <GuitarNightTunerExperience
+        controller={harness.controller}
+        tuning={() => tuning}
+        detectedFrequencyHz={() => 86.71}
+        detectedNoteLabel={() => 'F2'}
+        onBack={() => undefined}
+      />
+    ))
+
+    currentSurface().onTargetModeChange('manual')
+
+    expect(harness.controller.selectTarget).toHaveBeenLastCalledWith(5)
+  })
+
   it('derives live states and forwards every action through the controller', async () => {
     const harness = createControllerHarness()
     const tuning = standardTuning('guitar')
@@ -323,6 +359,12 @@ describe('GuitarNightTunerExperience', () => {
     expect(surface.inputLabel?.()).toBe('Room mic')
     expect(surface.tuningPresets?.()).toHaveLength(5)
     expect(surface.recoveryActionLabel?.()).toBe('Use it here')
+
+    harness.setListening(false)
+    harness.setListeningWillResume(true)
+    expect(surface.listeningState()).toBe('listening')
+    harness.setListeningWillResume(false)
+    harness.setListening(true)
 
     harness.setOpening(true)
     expect(surface.listeningState()).toBe('starting')
