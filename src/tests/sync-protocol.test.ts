@@ -27,7 +27,7 @@ import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { SendChannel } from '@/lib/jam/jam-song-transfer'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { SyncWireMessage } from '@/lib/sync/sync-protocol'
-import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
+import { isSyncWireMessage, PART_STALL_MS, receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
 import type { UvrSession } from '@/stores/uvr-store'
 import { deleteAllUvrSessions, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
 
@@ -384,6 +384,39 @@ describe('sync protocol when the connection dies', () => {
     }
   })
 
+  it('gives up on a sender that stops sending bytes, and says why', async () => {
+    // The mirror of the test below, and the one that had no cover: the
+    // receiver asked for a part and nothing ever came back, because the
+    // sending tab was closed mid-transfer. Without the stall timer the
+    // pull waits for bytes that are never coming and the modal sits on
+    // "Receiving 0%" for ever.
+    await seedSourceSong()
+    const bundle = await buildPortableBundle(SOURCE_ID)
+    deleteAllUvrSessions()
+    vi.useFakeTimers()
+    try {
+      const receiver = receiveBundleOverWire(
+        bundle.manifest,
+        { sendControl: () => true },
+        importPortableBundle,
+      )
+      const settled = vi.fn()
+      void receiver.result.then(settled)
+
+      await vi.advanceTimersByTimeAsync(PART_STALL_MS - 1000)
+      expect(settled).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(2000)
+      const outcome = await receiver.result
+      expect(outcome.outcome).toBe('failed')
+      if (outcome.outcome === 'failed') {
+        expect(outcome.message).not.toBe('')
+      }
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('gives up on a receiver that goes silent, and says why', async () => {
     // Seeded on real timers: fake-indexeddb drives itself with timers,
     // and faking them before the database work simply hangs it.
@@ -446,5 +479,75 @@ describe('the wire can grow without breaking older builds', () => {
     const [sent, kept] = await Promise.all([sender.result, receiver.result])
     expect(sent.outcome).toBe('sent')
     expect(kept.outcome).toBe('imported')
+  })
+})
+
+describe('the protocol always ends, and both ends agree', () => {
+  /**
+   * What the seeds below actually exercised.
+   *
+   * A property test that quietly stops reaching its failure paths is
+   * worse than no property test: it still passes, and it is now only
+   * checking the happy path eight times. This is asserted at the end.
+   */
+  const outcomesSeen = new Set<string>()
+
+  /**
+   * A tiny deterministic PRNG.
+   *
+   * `Math.random()` would make this a property test whose failures cannot
+   * be reproduced, which is the one thing a property test must not be.
+   * A failing seed below is a failing seed for ever.
+   */
+  function rng(seed: number): () => number {
+    let s = seed >>> 0
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0
+      return s / 0x100000000
+    }
+  }
+
+  // Both bugs found by hand in the first week of real use were
+  // state-machine bugs, not transport bugs. This is the cheapest net that
+  // catches that whole family: whatever the damage, neither end may be
+  // left waiting, and the two must never disagree about whether a song
+  // made it.
+  for (const seed of [1, 7, 13, 42, 99, 256, 1013, 7919]) {
+    it(`settles both ends under damage (seed ${seed})`, async () => {
+      const next = rng(seed)
+      const damageEvery = 1 + Math.floor(next() * 4)
+      const damageBudget = Math.floor(next() * 5)
+      let delivered = 0
+      let damaged = 0
+
+      const wire = makeWire()
+      wire.corruptChunk = (bytes) => {
+        delivered += 1
+        if (damaged < damageBudget && delivered % damageEvery === 0) {
+          damaged += 1
+          bytes[0] = bytes[0]! ^ 0xff
+        }
+      }
+      const { sender, receiver } = await crossTheWire(wire)
+
+      // A hang shows up here as the test timing out, which is the right
+      // failure: "never settled" is exactly what this is guarding.
+      const [sent, kept] = await Promise.all([sender.result, receiver.result])
+
+      expect(['sent', 'already-there', 'failed']).toContain(sent.outcome)
+      expect(['imported', 'already-here', 'failed']).toContain(kept.outcome)
+      // The invariant that matters to a person: the sender saying "sent"
+      // and the receiver having nothing is the failure this protocol was
+      // built to make impossible.
+      expect(sent.outcome === 'sent').toBe(kept.outcome === 'imported')
+      outcomesSeen.add(sent.outcome)
+    })
+  }
+
+  it('covered both a clean crossing and an unrecoverable one', () => {
+    // Damage under the retry limit must still land the song; damage over
+    // it must fail both ends together. If the fixture ever changes so
+    // that every seed sails through, this is what says so.
+    expect([...outcomesSeen].sort()).toEqual(['failed', 'sent'])
   })
 })
