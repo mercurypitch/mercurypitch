@@ -24,7 +24,8 @@
     "src/**/*.d.ts",
     "vitest.config.ts",
     "vite.config.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "playwright.devices.config.ts"
   ],
   "plugins": [
     {

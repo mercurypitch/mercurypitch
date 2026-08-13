@@ -4,9 +4,9 @@ Everything in `src/e2e` runs one browser against a mocked signaling layer
 and no API. The two specs in **`src/e2e-devices`** do not, and that is the
 whole point of them: they cross the seams that mocking hides.
 
-| Spec | Proves | Needs |
-| --- | --- | --- |
-| `qr-sign-in.spec.ts` | A television is signed in only after a phone confirms it, and a spent code cannot be replayed | db-worker |
+| Spec                  | Proves                                                                                          | Needs      |
+| --------------------- | ----------------------------------------------------------------------------------------------- | ---------- |
+| `qr-sign-in.spec.ts`  | A television is signed in only after a phone confirms it, and a spent code cannot be replayed   | db-worker  |
 | `device-sync.spec.ts` | A song crosses two real `RTCPeerConnection`s, arrives playable, and is declined the second time | jam worker |
 
 Both bugs found by hand on the first two-device run lived exactly here: a
