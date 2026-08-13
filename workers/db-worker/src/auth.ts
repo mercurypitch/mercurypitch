@@ -2297,9 +2297,10 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // with AES-GCM, so a stolen database alone cannot use it, but an account
   // that asked to be forgotten must not keep a credential at all.
   //
-  // Note this drops OUR copy; it does not revoke the grant on Google's
-  // side. Until it does, a deleted account still lists the app under
-  // myaccount.google.com permissions. See the audit ledger (B4).
+  // This line drops OUR copy and nothing more. Withdrawing the grant at
+  // Google is a separate act that needs the token this delete destroys,
+  // so `handleDeleteMe` revokes first and this remains the guarantee that
+  // the row goes even when Google cannot be reached.
   { table: 'googleDriveTokens', column: 'userId' },
   { table: 'emailVerifications', column: 'userId' },
   // League rows are per-user too: leaving them would keep a ghost entry in
