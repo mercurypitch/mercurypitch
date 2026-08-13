@@ -3,7 +3,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab } from './helpers/ui'
 import { fakeMicArgs, TONE_HZ, writeToneWav } from './helpers/tone-wav'
 
 // The guided route includes a rehearsal before its three measured landings.
@@ -26,7 +26,7 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
   await page.goto('/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
   await dismissOverlays(page)
-  await page.locator('#tab-voice-history').click()
+  await openNavTab(page, 'tab-voice-history')
   await expect(page.getByTestId('voice-history-page')).toBeVisible()
 
   await expect(
@@ -148,12 +148,12 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
 
   await page.getByRole('button', { name: 'Practise Pitch Hold' }).click()
   await expect(page.getByRole('heading', { name: 'Pitch Hold' })).toBeVisible()
-  await page.locator('#tab-home').click()
+  await openNavTab(page, 'tab-home')
   await expect(page.locator('#tab-home')).toHaveAttribute(
     'aria-current',
     'page',
   )
-  await page.locator('#tab-voice-history').click()
+  await openNavTab(page, 'tab-voice-history')
   await expect(page.getByTestId('saved-guided-focus')).toBeVisible()
   await expect(checkAgain).toBeVisible()
 })
