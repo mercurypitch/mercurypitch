@@ -1555,7 +1555,12 @@
 
 .guitarNightFileDropOverlay strong {
   color: var(--ivory);
-  font-family: var(--font-display);
+  /* The serif the rest of the room uses for display text — same as
+     `.stageInvitation strong`, which is this line's structural twin. It read
+     `var(--font-display)`, a token not defined in Guitar Night's cascade; an
+     undefined var() with no fallback invalidates the whole declaration rather
+     than falling back, so the family silently did not apply at all. */
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(1.05rem, 2vw, 1.35rem);
   font-weight: 560;
   letter-spacing: -0.015em;
