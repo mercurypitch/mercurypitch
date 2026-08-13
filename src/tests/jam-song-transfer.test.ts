@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { SendChannel, TransferHeader } from '@/lib/jam/jam-song-transfer'
-import { chunkCount, chunkRange, isRelayedConnection, sendInChunks, sha256Hex, TransferIntegrityError, TransferOverflowError, TransferReceiver, } from '@/lib/jam/jam-song-transfer'
+import { awaitDirectRoute, chunkCount, chunkRange, describeConnectionRoute, isRelayedConnection, sendInChunks, sha256Hex, TransferIntegrityError, TransferOverflowError, TransferReceiver, } from '@/lib/jam/jam-song-transfer'
 
 const bytesOf = (n: number, fill = 7): ArrayBuffer =>
   new Uint8Array(n).fill(fill).buffer
@@ -230,5 +230,136 @@ describe('isRelayedConnection', () => {
       }),
     }
     expect(await isRelayedConnection(pc)).toBe(true)
+  })
+})
+
+describe('awaitDirectRoute', () => {
+  const pairEntry = (
+    candidateType: string,
+  ): Array<[string, Record<string, unknown>]> => [
+    [
+      'p',
+      {
+        type: 'candidate-pair',
+        state: 'succeeded',
+        nominated: true,
+        localCandidateId: 'l',
+        remoteCandidateId: 'r',
+      },
+    ],
+    ['l', { type: 'local-candidate', candidateType: 'host' }],
+    ['r', { type: 'remote-candidate', candidateType }],
+  ]
+
+  /** A fake clock, so waiting four seconds does not take four seconds. */
+  function fakeTime(): {
+    now: () => number
+    sleep: (ms: number) => Promise<void>
+  } {
+    let t = 0
+    return {
+      now: () => t,
+      sleep: (ms: number) => {
+        t += ms
+        return Promise.resolve()
+      },
+    }
+  }
+
+  it('waits for ICE to choose instead of calling it a relay', async () => {
+    // The regression: pressing Send the instant the channel opened landed
+    // in the window before any pair is nominated, and that was reported
+    // as "put both devices on the same Wi-Fi" — to somebody whose devices
+    // were already on it, and for whom a retry then worked.
+    let calls = 0
+    const pc = {
+      getStats: vi.fn(async () => {
+        calls += 1
+        return new Map(calls < 3 ? [] : pairEntry('host'))
+      }),
+    }
+    expect(await awaitDirectRoute(pc, fakeTime())).toBe('direct')
+    expect(calls).toBe(3)
+  })
+
+  it('answers relayed at once, without waiting out the deadline', async () => {
+    // ICE does not un-choose a relay in favour of a host pair, so there
+    // is nothing to wait for and no reason to make the user wait for it.
+    const pc = { getStats: vi.fn(async () => new Map(pairEntry('relay'))) }
+    expect(await awaitDirectRoute(pc, fakeTime())).toBe('relayed')
+    expect(pc.getStats).toHaveBeenCalledTimes(1)
+  })
+
+  it('still fails closed when nothing ever settles', async () => {
+    // Fails closed, but as 'unknown' — the caller says something true
+    // about not being able to tell, rather than blaming the network.
+    const pc = { getStats: vi.fn(async () => new Map()) }
+    expect(await awaitDirectRoute(pc, fakeTime())).toBe('unknown')
+    expect(pc.getStats.mock.calls.length).toBeGreaterThan(1)
+  })
+
+  it('does not wait on a connection that cannot be asked', async () => {
+    const pc = {
+      getStats: vi.fn(async () => {
+        throw new Error('gone')
+      }),
+    }
+    expect(await awaitDirectRoute(pc, { ...fakeTime(), timeoutMs: 0 })).toBe(
+      'unknown',
+    )
+  })
+
+  it('reports a succeeded-but-unnominated pair rather than stalling', async () => {
+    // Firefox reports state without nomination for a while; treating that
+    // as "nothing chosen" would burn the whole settle window.
+    const pc = {
+      getStats: vi.fn(
+        async () =>
+          new Map([
+            [
+              'p',
+              {
+                type: 'candidate-pair',
+                state: 'succeeded',
+                localCandidateId: 'l',
+                remoteCandidateId: 'r',
+              },
+            ],
+            ['l', { type: 'local-candidate', candidateType: 'host' }],
+            ['r', { type: 'remote-candidate', candidateType: 'host' }],
+          ] as Array<[string, Record<string, unknown>]>),
+      ),
+    }
+    expect(await awaitDirectRoute(pc, fakeTime())).toBe('direct')
+    expect(pc.getStats).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('describeConnectionRoute', () => {
+  it('separates "not yet" from "no"', async () => {
+    // The distinction this whole type exists for. Both mean "do not send",
+    // but only one of them means "and it will never work".
+    expect(
+      await describeConnectionRoute({ getStats: async () => new Map() }),
+    ).toBe('unknown')
+    expect(
+      await describeConnectionRoute({
+        getStats: async () =>
+          new Map([
+            [
+              'p',
+              {
+                type: 'candidate-pair',
+                state: 'succeeded',
+                nominated: true,
+                localCandidateId: 'l',
+                remoteCandidateId: 'r',
+              },
+            ],
+            ['l', { type: 'local-candidate', candidateType: 'relay' }],
+            ['r', { type: 'remote-candidate', candidateType: 'host' }],
+          ] as Array<[string, Record<string, unknown>]>),
+      }),
+    ).toBe('relayed')
   })
 })
