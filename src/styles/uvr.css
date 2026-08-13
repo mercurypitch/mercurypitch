@@ -53,7 +53,15 @@
   flex-shrink: 0;
 }
 
-.header-left {
+/* `uvr-` prefixed, like `.rv-header-left` and `.sm-header-left` elsewhere,
+   because `.header-left` already belongs to the app header (AppHeader.css) —
+   which is plain CSS, not a module. Sharing the name meant inheriting that
+   header's `flex-direction: column` (stacking this title above the view tabs
+   that carry a `margin-left` to sit beside it) and its `flex-shrink: 0` above
+   769px, which left this header unable to shrink: 663px of content in 544px on
+   a phone held sideways, so the studio scrolled sideways and the Options
+   button sat off-screen. */
+.uvr-header-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -75,7 +83,7 @@
   height: 0.9rem;
 }
 
-.header-left h3 {
+.uvr-header-left h3 {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
@@ -4949,7 +4957,7 @@
     padding: 0.75rem;
   }
 
-  .header-left {
+  .uvr-header-left {
     justify-content: space-between;
     width: 100%;
   }
@@ -5138,6 +5146,36 @@ button.server-cost-hint:hover {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-secondary);
+}
+
+/* The phone's "you are in the studio, the stage is over there" note. Borrows
+   the TV note's shape — same job, different device — but in the accent rather
+   than the warning amber: this one is a signpost, not a dead end. */
+.uvr-stage-note {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.uvr-stage-note-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-primary);
+  text-decoration: none;
+  /* This note renders on touch screens only, so 44px is the floor, not a
+     nicety. */
+  min-height: 44px;
+}
+
+.uvr-stage-note-link svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ── The library that is not on this device ──────────────────────────

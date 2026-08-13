@@ -2137,7 +2137,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             the Upload view and under Settings > Karaoke. */}
         <Show when={!karaokeFocus() && currentView() !== 'mixer'}>
           <div class="panel-header">
-            <div class="header-left">
+            <div class="uvr-header-left">
               <div
                 class="header-title-group"
                 style="display: flex; align-items: center; gap: 0.5rem;"
@@ -2254,6 +2254,30 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     phone or computer while signed in, then play them from your
                     library below — or try a demo song right away.
                   </p>
+                </div>
+              </Show>
+
+              {/* Karaoke Night links here, but nothing here said Karaoke Night
+                  existed unless you first found the Options sheet — so a phone
+                  arriving in the studio met the widest surface in the app with
+                  no hint that a stage built for it was one tap away. Named for
+                  the difference between them rather than "also try...", so the
+                  choice is answerable without opening both. */}
+              <Show when={isNarrow() && !isTvDevice()}>
+                <div
+                  class="uvr-tv-upload-note uvr-stage-note"
+                  data-testid="uvr-stage-lead"
+                >
+                  <strong>You're in the studio</strong>
+                  <p>
+                    This is where songs are separated into stems and analysed.
+                    To actually sing one, Karaoke Night is the full-screen stage
+                    — and it is the surface built for a phone.
+                  </p>
+                  <a class="uvr-stage-note-link" href={KARAOKE_NIGHT_PATH}>
+                    <StageCurtains />
+                    Open Karaoke Night
+                  </a>
                 </div>
               </Show>
 
