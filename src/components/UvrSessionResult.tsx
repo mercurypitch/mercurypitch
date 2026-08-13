@@ -7,6 +7,7 @@ import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
+import { sessionSize, sessionSizeLabel } from '@/lib/session-size'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
 import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
@@ -140,6 +141,33 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     const sizes = ['Bytes', 'KB', 'MB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
+  }
+
+  /**
+   * The stems plus the source, not the source alone.
+   *
+   * The old chip showed `originalFile.size`, which understates a prepared
+   * song by roughly five times and disappears entirely on a song that
+   * arrived by device sync — the one case where a person is most likely
+   * to be counting megabytes.
+   */
+  const sizeLabel = (): string | null => {
+    const s = session()
+    return s === undefined ? null : sessionSizeLabel(s, formatFileSize)
+  }
+
+  /** The breakdown, on hover, so the headline number is explainable. */
+  const sizeDetail = (): string | null => {
+    const s = session()
+    if (s === undefined) return null
+    const size = sessionSize(s)
+    if (size.bytes <= 0) return null
+    const parts = [`Stems ${formatFileSize(size.stemBytes)}`]
+    if (size.originalBytes > 0) {
+      parts.push(`original ${formatFileSize(size.originalBytes)}`)
+    }
+    if (!size.complete) parts.push('some parts unmeasured')
+    return parts.join(' · ')
   }
 
   const formatDuration = (secs?: number): string => {
@@ -446,15 +474,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </span>
           </div>
         </div>
-        <Show when={session()?.originalFile}>
+        <Show when={sizeLabel()}>
           <div class="info-item">
             <span class="info-icon">
               <Box />
             </span>
             <div class="info-content">
-              <span class="info-label">Size</span>
-              <span class="info-value">
-                {formatFileSize(session()!.originalFile!.size)}
+              <span class="info-label">On this device</span>
+              <span class="info-value" title={sizeDetail() ?? undefined}>
+                {sizeLabel()}
               </span>
             </div>
           </div>
