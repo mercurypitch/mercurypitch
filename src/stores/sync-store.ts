@@ -742,6 +742,15 @@ function resetSync(notice: string | null): void {
   setSyncState('idle')
   setSyncRoomId(null)
   setSyncPeerLabel(null)
+  // Both readings describe a pairing that no longer exists. `onPeerLeft`
+  // already clears them; ending the whole session did not, so the numbers
+  // from the LAST device survived into the next one and were believed
+  // until its `sync-hello` arrived. That window is not cosmetic: a TV
+  // measured at 14 MB free would mark every song "too big for that
+  // device" after the TV was gone and a laptop had taken its place, and
+  // `sendSongToPeer` would refuse against the same stale figure.
+  setSyncPeerRoom(null)
+  setSyncOwnRoom(null)
   setSyncTransfers([])
   setSyncBusy(false)
   if (notice !== null) {

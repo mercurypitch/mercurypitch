@@ -68,7 +68,7 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { sendSongToPeer, startSyncReceive, stopSync, syncError, syncState, syncTransfers, } from '@/stores/sync-store'
+import { sendSongToPeer, startSyncReceive, stopSync, syncError, syncPeerRoom, syncState, syncTransfers, } from '@/stores/sync-store'
 
 /** Drive the store to a live room with a connected peer. */
 async function connect(): Promise<void> {
@@ -160,6 +160,61 @@ describe('waiting for the other device', () => {
     peerMock.handlers?.onChannelReady('peer-2', 'Tablet')
     expect(syncError()).toBeNull()
     vi.useRealTimers()
+  })
+})
+
+describe('what the far device said about itself', () => {
+  /** A session big enough that the pre-pack room check has something to bite on. */
+  const bigSong = {
+    id: 's1',
+    fileHash: 'hash-1',
+    outputs: { vocal: {}, instrumental: {} },
+    stemMeta: {
+      vocal: { duration: 200, size: 5e6 },
+      instrumental: { duration: 200, size: 5e6 },
+    },
+  }
+
+  it('forgets it when the session ends', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'Living room TV',
+      freeBytes: 1e6,
+      quota: 16e6,
+    })
+    expect(syncPeerRoom()?.freeBytes).toBe(1e6)
+
+    stopSync()
+    // A reading about a device that is no longer on the other end.
+    // `onPeerLeft` already cleared this; ending the whole session did not.
+    expect(syncPeerRoom()).toBeNull()
+  })
+
+  it('does not judge the next device by the last one', async () => {
+    uvr.session = bigSong
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'Living room TV',
+      freeBytes: 1e6,
+      quota: 16e6,
+    })
+
+    // Close, then pair with something roomier. Its own hello has not
+    // landed yet — which is exactly the window the stale figure survived
+    // into, marking every song "too big for that device" and refusing the
+    // send against a TV that had already gone.
+    stopSync()
+    await connect()
+    await sendSongToPeer('s1')
+
+    // It got as far as packing, which is the claim: the pre-pack room
+    // check no longer had a dead device's figure to refuse against. (The
+    // transfer still ends unhappily here — the fake channel cannot carry
+    // the real wire protocol — but not for the reason under test.)
+    expect(bundle.buildPortableBundle).toHaveBeenCalled()
+    expect(syncTransfers()[0]?.message).not.toContain('free')
   })
 })
 
