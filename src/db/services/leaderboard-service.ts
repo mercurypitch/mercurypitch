@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, SessionRecord, UserProfile, } from '@/db/entities'
+import type { LeaderboardCategory, LeaderboardPeriod, SessionRecord, UserProfile, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { getAuthHeaders } from '@/db/services/user-service'
@@ -24,6 +24,32 @@ function weekStartIso(): string {
   )
   monday.setUTCDate(monday.getUTCDate() - ((now.getUTCDay() + 6) % 7))
   return monday.toISOString()
+}
+
+/**
+ * One entry as `/api/leaderboard` actually returns it.
+ *
+ * Written out rather than borrowed from `LeaderboardEntry`, because the two
+ * are not the same shape. The handler derives this from sessionRecords and
+ * profiles (workers/db-worker/src/index.ts, handleLeaderboard); it never
+ * selects the `leaderboardEntries` table, which is not client-readable at all.
+ * The response carries none of `id`, `createdAt`, `updatedAt`, `category` or
+ * `period`, and it does carry `longestStreak`, which has no column anywhere.
+ * Asserting the row type onto it was therefore unsound in both directions.
+ */
+interface LeaderboardApiEntry {
+  userId: string
+  displayName: string
+  /** Nullable in the profiles table; sent through as-is. */
+  avatarUrl?: string | null
+  score: number
+  rank: number
+  streak: number
+  /** Absent from workers deployed before this field existed. */
+  longestStreak?: number
+  totalSessions: number
+  bestScore: number
+  accuracy: number
 }
 
 export interface LeaderboardUserView {
@@ -174,7 +200,7 @@ export async function loadLeaderboardPage(opts: {
       if (!res.ok) throw new Error(`leaderboard failed: ${res.status}`)
       const data = (await res.json()) as {
         total: number
-        entries: Array<LeaderboardEntry & { rank: number }>
+        entries: LeaderboardApiEntry[]
       }
       return {
         total: data.total,

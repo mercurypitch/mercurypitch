@@ -21,7 +21,15 @@
 //   NOT NULL column                     ->  field: T
 //   nullable column                     ->  field?: T | null
 //   NOT NULL but outside publicCols     ->  field?: T
+//   NOT NULL with a DEFAULT             ->  field?: T
 //   in privateCols                      ->  not declared at all
+//
+// The DEFAULT row is the one exception that is about writes rather than
+// reads. D1 fills the column in, so a read always has it — but the write
+// may omit it, and in local (Dexie) mode there is no database to supply a
+// default at all, so a row written before the field existed genuinely has
+// no value. `?: T` is honest for both; `| null` would not be, because the
+// column can never hold null.
 //
 // The `?` on a nullable column is not hedging: `Repository.create` takes
 // `Omit<T, 'id'|'createdAt'|'updatedAt'>`, so a required field would force
@@ -68,6 +76,14 @@ export interface UserProfile extends DbEntity {
   leaderboardOptInAt?: string | null
   /** Shareable friend code (registered accounts only; server-minted). */
   friendCode?: string | null
+  /**
+   * Which league the singer is currently placed in. `NOT NULL DEFAULT 'l1'`,
+   * so it is always set — optional here only because it sits outside
+   * publicCols and is therefore stripped from a stranger's profile read.
+   * Server-owned like friendCode: the worker lists it in serverCols, so a
+   * client write of it is dropped rather than honoured.
+   */
+  currentLeagueId?: string
 }
 
 // ── Sessions & Practice Results ─────────────────────────────────
@@ -300,17 +316,27 @@ export type LeaderboardCategory =
   | 'sessions'
 export type LeaderboardPeriod = 'all-time' | 'weekly' | 'monthly'
 
+/**
+ * A row of the `leaderboardEntries` table — seed data only.
+ *
+ * The live board is derived server-side from sessionRecords, and the table is
+ * deliberately not in the worker's allowlist, so nothing reads this shape over
+ * the network. What the API returns is `LeaderboardApiEntry`
+ * (src/db/services/leaderboard-service.ts), which is a different shape: no
+ * DbEntity bookkeeping, no category/period, and a `longestStreak` that exists
+ * only in the derived payload. This type used to describe both, and the cast
+ * that pretended the API returned it claimed five fields the response has
+ * never carried.
+ */
 export interface LeaderboardEntry extends DbEntity {
   userId: string
   displayName: string
-  avatarUrl?: string
+  avatarUrl?: string | null
   category: LeaderboardCategory
   period: LeaderboardPeriod
   rank: number
   score: number
   streak: number
-  /** Best streak ever reached — what the "Longest Streak" board ranks on. */
-  longestStreak?: number
   totalSessions: number
   bestScore: number
   accuracy: number
@@ -377,6 +403,13 @@ export interface LeaguePointsConfig extends DbEntity {
   goalMetBonus: number
   streakMilestoneBonus: number
   milestoneEvery: number
+  /**
+   * How many scored sessions in a day still earn points. `NOT NULL DEFAULT 30`
+   * since 0005_leagues, and the worker's own copy of this config has always
+   * carried it — only the client type was missing it, so the admin editor
+   * could not see or change the cap it was writing around.
+   */
+  dailyScoredSessionCap: number
 }
 
 // ── Shared Content ──────────────────────────────────────────────
