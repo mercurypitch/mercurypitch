@@ -19,7 +19,7 @@ import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDbStrict, saveLyricsToDbStrict, } from '@/db/services/lyrics-db-service'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { loadPitchAnalysisFromDbStrict, savePitchAnalysisToDbStrict, } from '@/db/services/session-pitch-analysis-service'
-import { deleteImportedUvrSessionDataStrict, getStemBlobStrict, getStemFingerprintDataStrict, saveStemBlobDurable, saveStemFingerprintDataStrict, } from '@/db/services/uvr-service'
+import { deleteImportedUvrSessionDataStrict, getStemBlobStrict, getStemFingerprintDataStrict, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintDataStrict, } from '@/db/services/uvr-service'
 import { loadTranscriptionFromDbStrict, saveTranscriptionToDbStrict, } from '@/db/services/whisper-transcription-db-service'
 import { formatBytes } from '@/lib/fetch-progress'
 import { sha256Hex } from '@/lib/portable/hash'
@@ -257,22 +257,39 @@ export async function importPortableBundle(
   let prep: PortablePrep | null = null
   let sawAudio = false
 
+  // Split timings, because "the song took a moment to become playable"
+  // was reported after the first real two-device run and there are four
+  // candidates behind it -- pulling bytes, hashing them, writing blobs to
+  // IndexedDB, and the prep writes. Guessing which would be a guess. The
+  // numbers cost nothing and localise it on the next real run.
+  const startedAt = Date.now()
+  let pullMs = 0
+  let verifyMs = 0
+  let writeMs = 0
+  let prepMs = 0
+
   try {
     for (const info of manifest.parts) {
+      const pullAt = Date.now()
       const bytes = await getPart(info)
+      const verifyAt = Date.now()
+      pullMs += verifyAt - pullAt
       await verifyPart(info, bytes)
+      verifyMs += Date.now() - verifyAt
 
       const stem = stemOfPart(info.id)
       if (stem !== null) {
         const blob = new Blob([new Uint8Array(bytes).slice()], {
           type: info.mime,
         })
+        const writeAt = Date.now()
         const saved = await saveStemBlobDurable(
           sessionId,
           stem,
           blob,
           `${stem}.m4a`,
         )
+        writeMs += Date.now() - writeAt
         if (!saved.ok || saved.value === undefined) {
           throw await describeStemStoreFailure(stem, saved)
         }
@@ -280,7 +297,9 @@ export async function importPortableBundle(
           duration: manifest.song.durationSec,
           size: info.bytes,
         }
-        outputs[stem] = saved.value
+        // NOT `outputs[stem] = saved.value`. That is the blob table's row
+        // id, and `outputs` holds playable URLs everywhere else in the
+        // app. See the hydration step below for what the id bought us.
         sawAudio = true
         continue
       }
@@ -291,6 +310,35 @@ export async function importPortableBundle(
       throw new Error('The bundle carried no audio this device could keep.')
     }
 
+    // Point `outputs` at object URLs the player can actually load.
+    //
+    // This used to hold the blob rows' ids, and the ids are neither a
+    // `blob:` URL nor an http one -- which walked straight into
+    // `ensureSessionHydrated`'s "remote stems don't die with the page"
+    // branch. It returned the session untouched, the mixer was handed a
+    // database id as an audio source, and a song that had arrived
+    // perfectly would not play. Reloading fixed it, because the panel
+    // re-hydrates every completed session on load, which is exactly the
+    // shape the report took: "they need time to hydrate", and "all could
+    // be loaded normally after refreshing the view".
+    //
+    // The ZIP import never had this: it drops `outputs` entirely and
+    // lets hydration fill them. Same authority here -- IndexedDB is the
+    // truth, these URLs are the view of it for this page's lifetime.
+    const hydrateAt = Date.now()
+    const urls = await hydrateStemUrls(sessionId)
+    const hydrateMs = Date.now() - hydrateAt
+    if (urls === null) {
+      // The blobs went in and will not come back out. Better to roll the
+      // whole import back than to leave a session that looks complete in
+      // the library and cannot be opened.
+      throw new Error(
+        'The song was saved but could not be read back on this device.',
+      )
+    }
+    Object.assign(outputs, urls)
+
+    const prepAt = Date.now()
     if (prep !== null) {
       if (prep.lyrics !== null) {
         await saveLyricsToDbStrict(sessionId, prep.lyrics as LyricsData)
@@ -314,6 +362,7 @@ export async function importPortableBundle(
         })
       }
     }
+    prepMs = Date.now() - prepAt
 
     const session: UvrSession = {
       sessionId,
@@ -335,9 +384,16 @@ export async function importPortableBundle(
       audioQuality: manifest.song.quality,
       createdAt: Date.now(),
     }
+    const recordAt = Date.now()
     if (!(await importUvrSessionDurable(session))) {
       throw new Error('The received session record could not be saved.')
     }
+    const recordMs = Date.now() - recordAt
+    console.info(
+      `[portable] imported "${manifest.song.title}" in ${Date.now() - startedAt} ms ` +
+        `(pull ${pullMs}, verify ${verifyMs}, write ${writeMs}, hydrate ${hydrateMs}, ` +
+        `prep ${prepMs}, record ${recordMs})`,
+    )
     return { outcome: 'imported', sessionId }
   } catch (error) {
     // A torn import must leave nothing: a song with one stem and no

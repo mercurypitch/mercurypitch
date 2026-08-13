@@ -189,6 +189,34 @@ describe('sync protocol over a wire', () => {
     expect(arrived?.audioQuality).toBe('portable-192')
   })
 
+  it('leaves the arrived song with URLs a player can load', async () => {
+    // The global setup redirects object URLs to hash URLs for jsdom, so
+    // this test mints its own recognisable ones: the claim is that
+    // `outputs` holds what `createObjectURL` gave for the STORED blob,
+    // not that it starts with any particular scheme.
+    const realCreate = URL.createObjectURL
+    let minted = 0
+    URL.createObjectURL = () => `blob:minted-${(minted += 1)}`
+    try {
+      const wire = makeWire()
+      const { receiver } = await crossTheWire(wire)
+      await receiver.result
+
+      const arrived = getUvrSessionByHash(HASH)
+      // These used to be the blob table's row ids. A value that is
+      // neither `blob:` nor http walks into `ensureSessionHydrated`'s
+      // "remote stems don't die with the page" branch, so the session
+      // came back untouched, the mixer was handed a database id as an
+      // audio source, and a song that had arrived perfectly would not
+      // play until the page was reloaded — which is when the panel
+      // re-hydrates every completed session.
+      expect(arrived?.outputs?.vocal).toMatch(/^blob:minted-/)
+      expect(arrived?.outputs?.instrumental).toMatch(/^blob:minted-/)
+    } finally {
+      URL.createObjectURL = realCreate
+    }
+  })
+
   it('declines a song the receiving device already has, moving no audio', async () => {
     const wire = makeWire()
     await seedSourceSong()
