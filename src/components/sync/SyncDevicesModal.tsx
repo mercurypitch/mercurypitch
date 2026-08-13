@@ -17,11 +17,12 @@ import { formatBytes } from '@/lib/fetch-progress'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import { getGroupsReactive } from '@/stores/app-store'
 import type { SyncTransfer } from '@/stores/sync-store'
-import { estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
+import { enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncQueue, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
-import { DeviceSync, Share } from '../icons'
+import { DeviceSync } from '../icons'
 import styles from './SyncDevicesModal.module.css'
 
 type SyncMode = 'choose' | 'receive' | 'send'
@@ -94,6 +95,17 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   )
   const [joinCode, setJoinCode] = createSignal(scanned ?? '')
   const [joining, setJoining] = createSignal(false)
+  /** Songs ticked for sending. Empty means "nothing chosen yet". */
+  const [picked, setPicked] = createSignal<Set<string>>(new Set())
+  /**
+   * Which group the list is showing, or null for everything.
+   *
+   * This is what "send a playlist" is. Groups already exist and every
+   * song already carries one, so filtering the list to a group and
+   * pressing Select all sends that group — no new concept, no new
+   * storage, and it reads the same as picking songs by hand.
+   */
+  const [groupFilter, setGroupFilter] = createSignal<string | null>(null)
   let dialogRef: HTMLDivElement | undefined
   // The song this modal was opened for is sent exactly once, on the first
   // connect — not again after every reconnect wobble.
@@ -141,16 +153,86 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     }
   })
 
-  const sendable = createMemo<UvrSession[]>(() =>
-    getAllUvrSessionsReactive()
+  const sendable = createMemo<UvrSession[]>(() => {
+    const group = groupFilter()
+    return getAllUvrSessionsReactive()
       .filter(
         (s) =>
           s.status === 'completed' &&
           s.fileHash !== undefined &&
           s.fileHash !== '',
       )
-      .sort((a, b) => b.createdAt - a.createdAt),
+      .filter((s) => group === null || s.groupId === group)
+      .sort((a, b) => {
+        // Songs that cannot land over there sink to the bottom, so the
+        // list reads as "these will fit" rather than as a minefield.
+        const aFits = tooBigForPeer(estimatePackedBytes(a)) ? 1 : 0
+        const bFits = tooBigForPeer(estimatePackedBytes(b)) ? 1 : 0
+        if (aFits !== bFits) return aFits - bFits
+        return b.createdAt - a.createdAt
+      })
+  })
+
+  /** Only the groups that actually contain something sendable. */
+  const groupsWithSongs = createMemo(() => {
+    const all = getAllUvrSessionsReactive().filter(
+      (s) =>
+        s.status === 'completed' &&
+        s.fileHash !== undefined &&
+        s.fileHash !== '',
+    )
+    return getGroupsReactive().filter((g) =>
+      all.some((s) => s.groupId === g.id),
+    )
+  })
+
+  const fits = (session: UvrSession): boolean =>
+    !tooBigForPeer(estimatePackedBytes(session))
+
+  const pickable = createMemo(() => sendable().filter(fits))
+
+  const togglePick = (sessionId: string): void => {
+    setPicked((current) => {
+      const next = new Set(current)
+      if (next.has(sessionId)) next.delete(sessionId)
+      else next.add(sessionId)
+      return next
+    })
+  }
+
+  const pickedSessions = createMemo(() =>
+    pickable().filter((s) => picked().has(s.sessionId)),
   )
+
+  const pickedBytes = createMemo(() =>
+    pickedSessions().reduce((n, s) => n + estimatePackedBytes(s), 0),
+  )
+
+  const allPicked = (): boolean =>
+    pickable().length > 0 && pickedSessions().length === pickable().length
+
+  const toggleAll = (): void => {
+    setPicked(
+      allPicked()
+        ? new Set<string>()
+        : new Set(pickable().map((s) => s.sessionId)),
+    )
+  }
+
+  /**
+   * Whether the whole selection would fit over there, checked once.
+   *
+   * Per song is not enough: a device with room for two of six accepts two
+   * and then refuses four, one at a time, each with its own error.
+   */
+  const selectionTooBig = (): boolean => tooBigForPeer(pickedBytes())
+
+  const sendPicked = (): void => {
+    const ids = pickedSessions().map((s) => s.sessionId)
+    if (ids.length === 0) return
+    enqueueSongs(ids)
+    setPicked(new Set<string>())
+  }
 
   const connected = () => syncState() === 'connected'
 
@@ -241,7 +323,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   onClick={() => setMode('send')}
                 >
                   <span class={styles.choiceIcon}>
-                    <Share />
+                    <DeviceSync />
                   </span>
                   <span>
                     <strong>Send songs from this device</strong>
@@ -410,18 +492,79 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                     below.
                   </p>
                 </Show>
+                {/* A group IS the playlist. Filtering to one and pressing
+                    Select all is "send this playlist", with no new
+                    concept and nothing new to store. */}
+                <Show when={groupsWithSongs().length > 0}>
+                  <div class={styles.groupFilter}>
+                    <button
+                      type="button"
+                      class={styles.groupChip}
+                      classList={{
+                        [styles.groupChipOn!]: groupFilter() === null,
+                      }}
+                      onClick={() => setGroupFilter(null)}
+                    >
+                      All songs
+                    </button>
+                    <For each={groupsWithSongs()}>
+                      {(group) => (
+                        <button
+                          type="button"
+                          class={styles.groupChip}
+                          classList={{
+                            [styles.groupChipOn!]: groupFilter() === group.id,
+                          }}
+                          onClick={() =>
+                            setGroupFilter(
+                              groupFilter() === group.id ? null : group.id,
+                            )
+                          }
+                        >
+                          {group.name}
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+
+                <Show when={pickable().length > 1}>
+                  <label class={styles.selectAll}>
+                    <input
+                      type="checkbox"
+                      checked={allPicked()}
+                      onChange={toggleAll}
+                    />
+                    Select all
+                    {groupFilter() === null ? '' : ' in this group'}
+                  </label>
+                </Show>
+
                 <div class={styles.songList}>
                   <For each={sendable()}>
                     {(session) => (
-                      <div class={styles.songRow}>
+                      <div
+                        class={styles.songRow}
+                        classList={{ [styles.songRowOut!]: !fits(session) }}
+                      >
+                        <Show
+                          when={fits(session)}
+                          fallback={<span class={styles.songCheckSpacer} />}
+                        >
+                          <input
+                            type="checkbox"
+                            class={styles.songCheck}
+                            checked={picked().has(session.sessionId)}
+                            aria-label={`Send ${session.originalFile?.name ?? 'this song'}`}
+                            onChange={() => togglePick(session.sessionId)}
+                          />
+                        </Show>
                         <span
                           class={styles.songTitle}
                           title={session.originalFile?.name}
                         >
                           {session.originalFile?.name ?? 'Untitled song'}
-                          <Show
-                            when={tooBigForPeer(estimatePackedBytes(session))}
-                          >
+                          <Show when={!fits(session)}>
                             <span class={styles.songNote}>
                               {' '}
                               — about{' '}
@@ -430,21 +573,55 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                             </span>
                           </Show>
                         </span>
+                        {/* The one-song fast path stays. Ticking a box and
+                            pressing a footer button to send a single song
+                            would be slower than what this replaced. */}
                         <button
                           type="button"
                           class={styles.songBtn}
-                          disabled={
-                            syncBusy() ||
-                            tooBigForPeer(estimatePackedBytes(session))
-                          }
+                          disabled={syncBusy() || !fits(session)}
                           onClick={() => void sendSongToPeer(session.sessionId)}
                         >
-                          <Share /> Send
+                          <DeviceSync /> Send
                         </button>
                       </div>
                     )}
                   </For>
                 </div>
+
+                <Show when={pickedSessions().length > 0}>
+                  <div class={styles.selectionBar}>
+                    <button
+                      type="button"
+                      class={styles.btn}
+                      disabled={selectionTooBig()}
+                      onClick={sendPicked}
+                    >
+                      <DeviceSync /> Send {pickedSessions().length} song
+                      {pickedSessions().length === 1 ? '' : 's'} —{' '}
+                      {formatBytes(pickedBytes())}
+                    </button>
+                    <Show when={selectionTooBig()}>
+                      <p class={styles.warn}>
+                        That is more than {syncPeerLabel() ?? 'that device'} has
+                        room for. Untick a few and try again.
+                      </p>
+                    </Show>
+                  </div>
+                </Show>
+
+                <Show when={syncQueue().length > 0}>
+                  <div class={styles.queueBar}>
+                    <span>{syncQueue().length} more waiting to be sent</span>
+                    <button
+                      type="button"
+                      class={styles.queueStop}
+                      onClick={stopQueue}
+                    >
+                      Stop after this one
+                    </button>
+                  </div>
+                </Show>
               </Show>
             </Show>
 

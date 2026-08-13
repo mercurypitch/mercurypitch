@@ -9,8 +9,8 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { OverflowMenu } from '../OverflowMenu'
 import type { OverflowMenuItem } from '../OverflowMenu'
+import { OverflowMenu } from '../OverflowMenu'
 
 afterEach(cleanup)
 

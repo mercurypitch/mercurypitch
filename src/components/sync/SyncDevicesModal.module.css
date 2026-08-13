@@ -384,3 +384,97 @@
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* ── Choosing several songs ──────────────────────────────────────── */
+
+/* A group is the playlist: filter to one, Select all, send it. */
+.groupFilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.groupChip {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.groupChip:hover {
+  color: var(--text-primary);
+}
+
+.groupChipOn {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.selectAll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.songCheck {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Keeps the titles aligned when a row has no box because it cannot fit. */
+.songCheckSpacer {
+  flex-shrink: 0;
+  width: 16px;
+}
+
+/* Sunk to the bottom AND dimmed, so the list reads as "these will fit". */
+.songRowOut {
+  opacity: 0.55;
+}
+
+.selectionBar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color, var(--border));
+}
+
+.queueBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.queueStop {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.queueStop:hover {
+  color: var(--text-primary);
+}
