@@ -1,11 +1,25 @@
+// ── UvrSessionActions ────────────────────────────────────────────────
+// Everything a finished song can have done to it, behind one "...".
+//
+// These were seven buttons in a row on the session card, next to four
+// more the card drew itself: up to eight controls before the page showed
+// the SECOND card. Every feature since has been added to the same row,
+// which is how a row becomes a wall.
+//
+// The card keeps ONE primary action and hands the rest here. The parent
+// passes its own rows in through `extraItems` so there is a single menu
+// per card rather than two competing ones.
+
 import type { Component } from 'solid-js'
-import { createSignal, createUniqueId, onCleanup, Show } from 'solid-js'
+import { createMemo, createSignal } from 'solid-js'
 import type { SessionExportStemType } from '@/db/services/session-export-service'
 import { exportSession, listSessionExportStems, } from '@/db/services/session-export-service'
 import { getOriginalFileBlob } from '@/db/services/uvr-service'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession } from '@/stores/uvr-store'
-import { ChevronDown, DeviceSync, Download, Zap } from './icons'
+import { DeviceSync, Download, Zap } from './icons'
+import type { OverflowMenuItem } from './OverflowMenu'
+import { OverflowMenu } from './OverflowMenu'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
 
@@ -17,6 +31,8 @@ interface UvrSessionActionsProps {
   onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
   /** Push this song to another of the user's devices (device sync). */
   onSendToDevice?: (sessionId: string) => void
+  /** The card's own rows — group, share, delete — so there is one menu. */
+  extraItems?: OverflowMenuItem[]
 }
 
 interface SessionExportTarget {
@@ -69,12 +85,6 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
   const [archivePreset, setArchivePreset] =
     createSignal<SessionExportPreset>('all')
   const [archiveError, setArchiveError] = createSignal('')
-  const menuId = `uvr-hq-menu-${createUniqueId()}`
-  let menuRoot: HTMLDivElement | undefined
-  let menuTrigger: HTMLButtonElement | undefined
-  let menu: HTMLDivElement | undefined
-  let menuChevron: HTMLSpanElement | undefined
-  let menuListenersAttached = false
 
   const canDownloadOriginal = () =>
     props.session?.status === 'completed' &&
@@ -157,8 +167,7 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
     }
   }
 
-  const handleArchiveExport = async (event: MouseEvent): Promise<void> => {
-    event.stopPropagation()
+  const handleArchiveExport = async (): Promise<void> => {
     if (archiveInspecting() || archiveExporting()) return
 
     // Capture every reactive prop before the async stem lookup. The action
@@ -216,8 +225,7 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
     void runArchiveExport(target, selected)
   }
 
-  const handleDownloadOriginal = (event: MouseEvent): void => {
-    event.stopPropagation()
+  const handleDownloadOriginal = (): void => {
     if (downloadingOriginal()) return
 
     // Capture reactive props before entering the async continuation.
@@ -244,161 +252,93 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
       .finally(() => setDownloadingOriginal(false))
   }
 
-  const removeMenuListeners = (): void => {
-    if (!menuListenersAttached) return
-    menuListenersAttached = false
-    document.removeEventListener('pointerdown', closeOnOutsidePointer)
-    document.removeEventListener('keydown', closeOnEscape)
-  }
-
-  const setMenuOpen = (open: boolean): void => {
-    if (!menu || !menuTrigger || !menuChevron) return
-
-    menu.hidden = !open
-    menuTrigger.setAttribute('aria-expanded', String(open))
-    menuChevron.classList.toggle('open', open)
-
-    if (open && !menuListenersAttached) {
-      menuListenersAttached = true
-      document.addEventListener('pointerdown', closeOnOutsidePointer)
-      document.addEventListener('keydown', closeOnEscape)
-    } else if (!open) {
-      removeMenuListeners()
-    }
-  }
-
-  function closeOnOutsidePointer(event: PointerEvent): void {
-    if (menuRoot?.contains(event.target as Node) !== true) {
-      setMenuOpen(false)
-    }
-  }
-
-  function closeOnEscape(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || menu?.hidden !== false) return
-    event.preventDefault()
-    setMenuOpen(false)
-    menuTrigger?.focus()
-  }
-
   const runHq = (target: 'same' | 'new'): void => {
-    const sessionId = props.sessionId
-    const onRerunHq = props.onRerunHq
-    setMenuOpen(false)
-    onRerunHq?.(sessionId, target)
+    props.onRerunHq?.(props.sessionId, target)
   }
 
-  onCleanup(removeMenuListeners)
+  /**
+   * The rows this component owns, followed by the card's own.
+   *
+   * Order is deliberate: what somebody does often first, what leaves the
+   * device next, and the two that replace stems last — those carry
+   * `destructive`, so the menu fences them off below a divider whatever
+   * order they are listed in here.
+   */
+  const items = createMemo((): OverflowMenuItem[] => {
+    const rows: OverflowMenuItem[] = []
+    if (canSendToDevice()) {
+      rows.push({
+        key: 'send',
+        label: 'Send to another device',
+        icon: () => <DeviceSync />,
+        disabled: props.disabled === true,
+        onSelect: () => props.onSendToDevice?.(props.sessionId),
+      })
+    }
+    if (canDownloadOriginal()) {
+      rows.push({
+        key: 'original',
+        label: downloadingOriginal()
+          ? 'Preparing the original…'
+          : 'Download the original file',
+        note: 'The full mix you uploaded',
+        icon: () => <Download />,
+        disabled: props.disabled === true || downloadingOriginal(),
+        onSelect: handleDownloadOriginal,
+      })
+    }
+    if (canExportArchive()) {
+      rows.push({
+        key: 'export-zip',
+        label: archiveInspecting()
+          ? 'Checking…'
+          : archiveExporting() && !archiveDialogOpen()
+            ? `Packing ${archiveProgress()}%`
+            : 'Export session ZIP',
+        note: 'A restorable copy, for a backup or another browser',
+        icon: () => <Download />,
+        disabled:
+          props.disabled === true || archiveInspecting() || archiveExporting(),
+        onSelect: () => void handleArchiveExport(),
+      })
+    }
+    rows.push(...(props.extraItems ?? []))
+    if (canRerunHq()) {
+      rows.push(
+        {
+          key: 'hq-same',
+          label: 'Upgrade to HQ stems',
+          note: 'Replaces these stems — runs on the cloud GPU, uses credits',
+          icon: () => <Zap />,
+          disabled: props.disabled === true,
+          destructive: true,
+          onSelect: () => runHq('same'),
+        },
+        {
+          key: 'hq-new',
+          label: 'New HQ session to compare',
+          note: 'Keeps this one — the HQ result arrives separately',
+          icon: () => <Zap />,
+          disabled: props.disabled === true,
+          onSelect: () => runHq('new'),
+        },
+      )
+    }
+    return rows
+  })
 
   return (
     <>
-      <Show when={canDownloadOriginal()}>
-        <button
-          type="button"
-          class="session-result-btn"
-          disabled={props.disabled === true || downloadingOriginal()}
-          onClick={handleDownloadOriginal}
-          title="Download the original uploaded file (full mix)"
-        >
-          <Download /> {downloadingOriginal() ? 'Preparing…' : 'Original'}
-        </button>
-      </Show>
-      <Show when={canExportArchive()}>
-        <button
-          type="button"
-          class="session-result-btn session-result-btn-export"
-          disabled={props.disabled === true || archiveExporting()}
-          aria-disabled={archiveInspecting() ? true : undefined}
-          aria-busy={
-            archiveInspecting() || archiveExporting() ? true : undefined
-          }
-          onClick={(event) => void handleArchiveExport(event)}
-          title="Export a restorable session ZIP"
-        >
-          <Download />
-          <span aria-live="polite">
-            {archiveInspecting()
-              ? 'Checking…'
-              : archiveExporting() && !archiveDialogOpen()
-                ? `Packing ${archiveProgress()}%`
-                : 'Export ZIP'}
-          </span>
-        </button>
-      </Show>
-      <Show when={canSendToDevice()}>
-        <button
-          type="button"
-          class="session-result-btn"
-          disabled={props.disabled === true}
-          onClick={(event) => {
-            event.stopPropagation()
-            props.onSendToDevice?.(props.sessionId)
-          }}
-          title="Send this song to another of your devices"
-        >
-          <DeviceSync /> Send
-        </button>
-      </Show>
-      <Show when={canRerunHq()}>
-        <div class="session-hq-rerun" ref={menuRoot}>
-          <button
-            ref={menuTrigger}
-            type="button"
-            class="session-result-btn session-result-btn-hq"
-            disabled={props.disabled === true}
-            aria-controls={menuId}
-            aria-expanded="false"
-            aria-haspopup="menu"
-            onClick={(event) => {
-              event.stopPropagation()
-              setMenuOpen(menu?.hidden !== false)
-            }}
-            title="Re-run this song on the cloud GPU for higher-quality stems"
-          >
-            <Zap /> HQ
-            <span
-              ref={menuChevron}
-              class="session-hq-rerun-chevron"
-              aria-hidden="true"
-            >
-              <ChevronDown size={12} />
-            </span>
-          </button>
-          <div
-            ref={menu}
-            id={menuId}
-            class="session-hq-rerun-menu"
-            role="menu"
-            aria-label="HQ processing options"
-            hidden
-          >
-            <button
-              type="button"
-              class="session-hq-rerun-item"
-              role="menuitem"
-              onClick={() => runHq('same')}
-            >
-              Upgrade this session
-              <span class="session-hq-rerun-item-note">
-                Replaces these stems with cloud HQ stems
-              </span>
-            </button>
-            <button
-              type="button"
-              class="session-hq-rerun-item"
-              role="menuitem"
-              onClick={() => runHq('new')}
-            >
-              New session to compare
-              <span class="session-hq-rerun-item-note">
-                Keeps this one — the HQ result arrives separately
-              </span>
-            </button>
-            <div class="session-hq-rerun-hint">
-              Runs on the cloud GPU — uses credits
-            </div>
-          </div>
-        </div>
-      </Show>
+      {/* One trigger for the whole card. Rendered even when the only rows
+          are the parent's, because a card with no menu and a card with a
+          menu in a different place is a list that does not scan. */}
+      <OverflowMenu
+        label="More actions for this song"
+        testId="session-more"
+        triggerClass="session-result-more"
+        items={items()}
+        disabled={props.disabled}
+      />
       <SessionExportDialog
         open={archiveDialogOpen()}
         available={archiveAvailable()}

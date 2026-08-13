@@ -42,6 +42,13 @@ function seedSession(session: Record<string, unknown>) {
   saveAllUvrSessions([session as unknown as UvrSession])
 }
 
+/** Every secondary action lives behind one "..." now. */
+function openCardMenu(): void {
+  fireEvent.click(
+    screen.getByRole('button', { name: 'More actions for this song' }),
+  )
+}
+
 describe('UvrSessionResult Component', () => {
   const defaultProps = {
     sessionId: 'session-123',
@@ -167,7 +174,8 @@ describe('UvrSessionResult Component', () => {
       expect(
         screen.queryByRole('button', { name: /Process again/ }),
       ).not.toBeInTheDocument()
-      expect(screen.getByLabelText('Delete session')).toBeEnabled()
+      openCardMenu()
+      expect(screen.getByTestId('overflow-delete')).toBeEnabled()
     })
 
     it('shows processing time in status bar', () => {
@@ -454,7 +462,7 @@ describe('UvrSessionResult Component', () => {
   })
 
   describe('Delete Buttons', () => {
-    it('renders top-right trash delete button', () => {
+    it('offers Delete from the card menu, at the bottom', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -464,7 +472,14 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByLabelText('Delete session')).toBeInTheDocument()
+      openCardMenu()
+      const rows = screen.getAllByRole('menuitem')
+      expect(screen.getByTestId('overflow-delete')).toBeInTheDocument()
+      // Last, under a divider, away from everything reversible.
+      expect(rows[rows.length - 1]).toHaveAttribute(
+        'data-testid',
+        'overflow-delete',
+      )
     })
   })
 
@@ -536,28 +551,32 @@ describe('UvrSessionResult Component', () => {
       createdAt: Date.now() - 3600000,
     }
 
-    it('shows the HQ button for a completed browser session', () => {
+    it('offers HQ for a completed browser session', () => {
       seedSession(localCompleted)
       render(() => <UvrSessionResult {...defaultProps} onRerunHq={vi.fn()} />)
-      expect(document.querySelector('.session-result-btn-hq')).toBeTruthy()
+      openCardMenu()
+      expect(screen.getByTestId('overflow-hq-same')).toBeInTheDocument()
     })
 
-    it('hides the HQ button for server-processed sessions', () => {
+    it('hides HQ for server-processed sessions', () => {
       seedSession({ ...localCompleted, processingMode: 'server' })
       render(() => <UvrSessionResult {...defaultProps} onRerunHq={vi.fn()} />)
-      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+      openCardMenu()
+      expect(screen.queryByTestId('overflow-hq-same')).not.toBeInTheDocument()
     })
 
-    it('hides the HQ button for manual-stem sessions', () => {
+    it('hides HQ for manual-stem sessions', () => {
       seedSession({ ...localCompleted, provider: 'manual' })
       render(() => <UvrSessionResult {...defaultProps} onRerunHq={vi.fn()} />)
-      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+      openCardMenu()
+      expect(screen.queryByTestId('overflow-hq-same')).not.toBeInTheDocument()
     })
 
-    it('hides the HQ button when no handler is wired', () => {
+    it('hides HQ when no handler is wired', () => {
       seedSession(localCompleted)
       render(() => <UvrSessionResult {...defaultProps} />)
-      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+      openCardMenu()
+      expect(screen.queryByTestId('overflow-hq-same')).not.toBeInTheDocument()
     })
 
     it('fires onRerunHq with same/new from the menu options', () => {
@@ -565,15 +584,12 @@ describe('UvrSessionResult Component', () => {
       seedSession(localCompleted)
       render(() => <UvrSessionResult {...defaultProps} onRerunHq={onRerunHq} />)
 
-      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
-      const items = document.querySelectorAll('.session-hq-rerun-item')
-      expect(items.length).toBe(2)
-
-      fireEvent.click(items[0])
+      openCardMenu()
+      fireEvent.click(screen.getByTestId('overflow-hq-same'))
       expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'same')
 
-      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
-      fireEvent.click(document.querySelectorAll('.session-hq-rerun-item')[1])
+      openCardMenu()
+      fireEvent.click(screen.getByTestId('overflow-hq-new'))
       expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'new')
       expect(onRerunHq).toHaveBeenCalledTimes(2)
     })
