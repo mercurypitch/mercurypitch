@@ -103,7 +103,11 @@ export function countActivity(
   const counts: ActivityCounts = {}
   const seen = new Set<string>()
   for (const row of rows) {
-    if (COUNTED_ONCE_PER_REF.has(row.kind) && row.refId !== undefined) {
+    // `!= null` covers both spellings of "no ref". The column is nullable, so
+    // a row written without one reads back as null — and `!== undefined` let
+    // that through into the key below, collapsing every ref-less row of a kind
+    // onto the single key `kind:null`. Twenty melodies then counted as one.
+    if (COUNTED_ONCE_PER_REF.has(row.kind) && row.refId != null) {
       const key = `${row.kind}:${row.refId}`
       if (seen.has(key)) continue
       seen.add(key)

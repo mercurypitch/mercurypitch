@@ -244,11 +244,8 @@ export const VocalChallenges: Component = () => {
           attempts: dbProg?.attempts ?? 0,
           progress: dbProg?.progress ?? 0,
           status: dbProg ? mapDbStatus(dbProg.status) : 'not-started',
-          completedDate:
-            dbProg?.completedAt !== undefined
-              ? new Date(dbProg.completedAt).getTime()
-              : undefined,
-          rewardBadgeId: d.rewardBadgeId,
+          completedDate: earnedTimestamp(dbProg?.completedAt),
+          rewardBadgeId: d.rewardBadgeId ?? undefined,
           difficulty: d.difficulty,
         }
       })
@@ -290,10 +287,7 @@ export const VocalChallenges: Component = () => {
         icon: iconForName(def.icon),
         points: def.points,
         unlocked: userAch?.unlocked ?? false,
-        unlockedDate:
-          userAch?.unlockedAt !== undefined
-            ? new Date(userAch.unlockedAt).getTime()
-            : undefined,
+        unlockedDate: earnedTimestamp(userAch?.unlockedAt),
         progress: userAch?.progress ?? 0,
         required: def.required,
         category: def.category ?? 'beginnings',
@@ -827,6 +821,27 @@ export function achievementCount(progress: number, required: number): number {
   if (!Number.isFinite(required) || required <= 0) return 0
   const pct = Math.max(0, Math.min(100, progress))
   return Math.min(required, Math.round((pct / 100) * required))
+}
+
+/**
+ * "When did this land", for a column that is allowed to say "it hasn't".
+ *
+ * `challengeProgress.completedAt` and `userAchievements.unlockedAt` are both
+ * nullable in D1, so an unfinished row reads back as a literal `null`. Both
+ * call sites used to test `!== undefined`, which `null` passes — and
+ * `new Date(null).getTime()` is `0`, not `NaN`. Every challenge nobody had
+ * finished therefore claimed a completion date of 1 Jan 1970.
+ *
+ * One `!= null` covers both spellings of absent. Anything that is present but
+ * unparseable returns undefined rather than a NaN that would render as
+ * "Invalid Date" further down.
+ */
+export function earnedTimestamp(
+  iso: string | null | undefined,
+): number | undefined {
+  if (iso == null) return undefined
+  const ms = new Date(iso).getTime()
+  return Number.isNaN(ms) ? undefined : ms
 }
 
 // ============================================================
