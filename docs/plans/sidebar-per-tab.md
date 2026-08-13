@@ -119,6 +119,7 @@ Universal (every tab): **Learn/Guide/Tour** (top) · **Mic & Sensitivity**
 | **Leaderboard** | **Your rank card** · **League/week picker**                                                                                                                                                                                | new, small                                 |
 | **Challenges**  | **Weekly challenge card** (target, your best, attempts left) · Activity°                                                                                                                                                   | new, small                                 |
 | **Analysis**    | **Take list / compare picker** (dashboard already has one — decide which side owns it) · Display toggles°                                                                                                                  | move, not build                            |
+| **Hear Yourself** | _none_ (the listening desk owns its room, reflection, and take tools; sidebar shows universal panels only)                                                                                                               | keep the desk focused                      |
 | **Settings**    | _none_ (settings is already a full-width form; sidebar shows universal panels only)                                                                                                                                        | shrink                                     |
 
 ° = advanced mode only, as today.

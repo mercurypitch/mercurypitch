@@ -3,7 +3,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from './helpers/ui'
+import { dismissOverlays, openNavTab } from './helpers/ui'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TONE_WAV = writeToneWav()
@@ -23,7 +23,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.goto('/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
   await dismissOverlays(page)
-  await page.locator('#tab-voice-history').click()
+  await openNavTab(page, 'tab-voice-history')
   await expect(page.getByTestId('voice-history-page')).toBeVisible()
 
   await page.getByRole('button', { name: 'Record freely' }).click()

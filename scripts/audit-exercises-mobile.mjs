@@ -174,7 +174,7 @@ if (!(await exTab.count())) {
   const moreTab = page.getByRole('button', { name: /^More(?: tabs)?$/ })
   if (await moreTab.count()) {
     await moreTab.first().click()
-    exTab = page.getByRole('button', { name: 'Exercises', exact: true })
+    exTab = page.locator('#tab-exercises')
   }
 }
 if (!(await exTab.count())) {
