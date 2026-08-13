@@ -1,0 +1,184 @@
+/* OverflowMenu — see OverflowMenu.tsx for why the panel portals to <body>
+   and why a narrow screen gets a sheet instead of a popover. Matched to
+   AppNavOverflowMenu and InfoPopover so the app has one popover look. */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px is the smallest thing a thumb hits reliably. The card list is
+     the phone's primary surface, so this is a floor, not a target. */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.trigger:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-color: var(--border-color, var(--border));
+}
+
+.trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.trigger[aria-expanded='true'] {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-color: var(--border-color, var(--border));
+}
+
+.panel {
+  position: fixed;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  min-width: 200px;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: overflowIn 0.12s ease-out;
+}
+
+@keyframes overflowIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* The sheet. Anchored to the bottom edge rather than to the card, because
+   on a phone the card is most of the screen and a popover over it hides
+   the thing being acted on. */
+.panelSheet {
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: none;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-width: 1px 0 0 0;
+  border-radius: 14px 14px 0 0;
+  animation: overflowSheetIn 0.16s ease-out;
+}
+
+@keyframes overflowSheetIn {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 8999;
+  background: rgba(0, 0, 0, 0.45);
+  animation: overflowFadeIn 0.16s ease-out;
+}
+
+@keyframes overflowFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.panelSheet .row {
+  min-height: 48px;
+  font-size: 0.95rem;
+}
+
+.row:hover:not(:disabled),
+.row:focus-visible {
+  background: var(--bg-tertiary);
+  outline: none;
+}
+
+.row:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rowIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowNote {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.rowDestructive {
+  color: var(--error, #f85149);
+}
+
+.rowDestructive .rowIcon {
+  color: inherit;
+}
+
+.rowDestructive:hover:not(:disabled),
+.rowDestructive:focus-visible {
+  background: rgba(248, 81, 73, 0.12);
+}
+
+.divider {
+  height: 1px;
+  margin: 5px 6px;
+  background: var(--border-color, var(--border));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .panelSheet,
+  .backdrop {
+    animation: none;
+  }
+}
