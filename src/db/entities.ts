@@ -4,6 +4,30 @@
 //
 // Each entity extends DbEntity (id, createdAt, updatedAt).
 // Entity names match the repository keys used with getRepository().
+//
+// ── How nullability is spelled here ─────────────────────────────
+//
+// These types describe rows as they COME BACK, and nothing on the read path
+// converts them. `fromSql` (workers/db-worker/src/tables.ts) touches only
+// boolCols and jsonCols, and the server adapter hands `res.json()` straight
+// through. So a nullable D1 column arrives as a literal `null`, and a type
+// that says `?: string` is not being conservative — it is lying, in the one
+// way the compiler cannot catch: `x !== undefined` type-checks, passes at
+// runtime on `null`, and blows up one line later.
+//
+// The spelling follows the schema mechanically, and
+// `src/tests/entity-nullability.test.ts` fails if it stops matching:
+//
+//   NOT NULL column                     ->  field: T
+//   nullable column                     ->  field?: T | null
+//   NOT NULL but outside publicCols     ->  field?: T
+//   in privateCols                      ->  not declared at all
+//
+// The `?` on a nullable column is not hedging: `Repository.create` takes
+// `Omit<T, 'id'|'createdAt'|'updatedAt'>`, so a required field would force
+// every write site to pass an explicit null. `?: T | null` is the honest
+// shape for "omittable on write, nullable on read", and readers need exactly
+// one check — `!= null` — which covers both spellings at once.
 
 import type { DbEntity } from './types'
 
@@ -11,8 +35,10 @@ import type { DbEntity } from './types'
 
 export interface UserProfile extends DbEntity {
   displayName: string
-  avatarUrl?: string
-  bio?: string
+  // Both are inside publicCols, so a stranger's read still returns them —
+  // they arrive as null when unset, never absent.
+  avatarUrl?: string | null
+  bio?: string | null
   joinDate: string // ISO 8601
   lastPracticeDate: string | null // ISO 8601 date-only (YYYY-MM-DD)
   currentStreak: number
@@ -78,7 +104,7 @@ export type SessionSource = 'practice' | 'challenge' | 'weekly' | 'exercise'
 
 export interface SessionRecord extends DbEntity {
   userId: string
-  melodyId?: string
+  melodyId?: string | null
   melodyName: string
   startedAt: string
   endedAt: string
@@ -87,8 +113,8 @@ export interface SessionRecord extends DbEntity {
   notesHit: number
   notesTotal: number
   streak: number
-  avgCents?: number
-  rating?: string
+  avgCents?: number | null
+  rating?: string | null
   /** Set when this attempt was a weekly "Sing the Legend" challenge take.
       Nullable in D1 since `0001_baseline` — see the note on the evidence
       fields below for why that `| null` has to be in the type. */
@@ -166,8 +192,8 @@ export interface Voiceprint extends DbEntity {
     accuracy: number | null
     steadiness: number | null
   }
-  /** e.g. 'Freddie Mercury'; absent when no range was measured. */
-  twin?: string
+  /** e.g. 'Freddie Mercury'; null when no range was measured. */
+  twin?: string | null
   source: VoiceprintSource
   takenAt: string
 }
@@ -195,7 +221,7 @@ export interface ChallengeDefinition extends DbEntity {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   icon: string // emoji
   targetScore: number
-  rewardBadgeId?: string
+  rewardBadgeId?: string | null
   isActive: boolean
   sortOrder: number
 }
@@ -208,7 +234,7 @@ export interface ChallengeProgress extends DbEntity {
   bestScore: number
   status: 'locked' | 'active' | 'completed'
   completed: boolean
-  completedAt?: string
+  completedAt?: string | null
   attempts: number
 }
 
@@ -261,7 +287,7 @@ export interface UserAchievement extends DbEntity {
   achievementId: string
   progress: number // 0-100
   unlocked: boolean
-  unlockedAt?: string
+  unlockedAt?: string | null
 }
 
 // ── Leaderboard ─────────────────────────────────────────────────
@@ -674,9 +700,9 @@ export interface UserActivity extends DbEntity {
   kind: UserActivityKind
   /** What was acted on. Not a foreign key — deleting a playlist does not
    *  un-make the act of having made it. */
-  refId?: string
+  refId?: string | null
   /** Per-kind detail (song count, duration). Never queried structurally. */
-  metaJson?: string
+  metaJson?: string | null
   /** When it happened, which is not always when it synced. */
   at: string
 }

@@ -14,7 +14,7 @@
 //     `achievementCount` converts back, and is checked at the edges.
 
 import { describe, expect, it } from 'vitest'
-import { achievementCount } from '@/components/VocalChallenges'
+import { achievementCount, earnedTimestamp } from '@/components/VocalChallenges'
 import seedData from '@/db/seed-data.json'
 import { measurableAchievements } from '@/db/services/badge-grant-engine'
 import { countActivity } from '@/db/services/user-activity-service'
@@ -87,6 +87,36 @@ describe('achievementCount', () => {
   })
 })
 
+describe('earnedTimestamp', () => {
+  // The bug: `completedAt`/`unlockedAt` are nullable columns, the call sites
+  // tested `!== undefined`, and `null` walks straight through that. Because
+  // `new Date(null).getTime()` is 0 rather than NaN, every challenge nobody
+  // had finished rendered a completion date of 1 Jan 1970.
+  it('treats a null date as "has not happened"', () => {
+    expect(earnedTimestamp(null)).toBeUndefined()
+  })
+
+  it('does not date an unfinished row to 1970', () => {
+    // The exact failure, pinned: null must not become the epoch.
+    expect(earnedTimestamp(null)).not.toBe(0)
+  })
+
+  it('treats a missing date the same as a null one', () => {
+    expect(earnedTimestamp(undefined)).toBeUndefined()
+  })
+
+  it('converts a real date', () => {
+    expect(earnedTimestamp('2026-08-13T10:00:00.000Z')).toBe(
+      Date.parse('2026-08-13T10:00:00.000Z'),
+    )
+  })
+
+  it('refuses an unparseable date rather than returning NaN', () => {
+    // NaN would render as "Invalid Date" instead of simply not showing.
+    expect(earnedTimestamp('not a date')).toBeUndefined()
+  })
+})
+
 describe('activity counting', () => {
   it('counts a melody once however often it is refilled', () => {
     // The 0 -> non-zero note transition is the only "this became a real
@@ -121,5 +151,30 @@ describe('activity counting', () => {
         { kind: 'melody_created', refId: undefined },
       ]).melody_created,
     ).toBe(2)
+  })
+
+  it('counts null-refId rows individually too', () => {
+    // `refId` is a nullable column, so a row written without one reads back
+    // as null, not undefined. The dedup guard tested `!== undefined`, which
+    // null passes — every ref-less row then shared the key `kind:null` and
+    // twenty melodies counted as one.
+    expect(
+      countActivity([
+        { kind: 'melody_created', refId: null },
+        { kind: 'melody_created', refId: null },
+        { kind: 'melody_created', refId: null },
+      ]).melody_created,
+    ).toBe(3)
+  })
+
+  it('still dedups by ref when a real ref is present alongside null ones', () => {
+    expect(
+      countActivity([
+        { kind: 'melody_created', refId: null },
+        { kind: 'melody_created', refId: 'm1' },
+        { kind: 'melody_created', refId: 'm1' },
+        { kind: 'melody_created', refId: null },
+      ]).melody_created,
+    ).toBe(3)
   })
 })

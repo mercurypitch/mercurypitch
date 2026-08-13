@@ -50,7 +50,9 @@ export async function loadUserProfile(): Promise<UserProfileView | null> {
     return {
       userId: p.id,
       displayName: p.displayName,
-      bio: p.bio,
+      // The column is nullable; the view says `bio?: string`. Collapse the
+      // two spellings of "no bio" here, once, so readers need no check.
+      bio: p.bio ?? undefined,
       joinDate: new Date(p.joinDate).getTime(),
     }
   } catch {
