@@ -20,15 +20,16 @@ import { Loop, Pause, Play, Trophy, Volume2, VolumeX, X, } from '@/components/ic
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { MicTroubleshooting } from '@/components/MicTroubleshooting'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
+import type { ExerciseResult } from '@/features/exercises/types'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
-import { midiToFrequency } from '@/lib/frequency-to-note'
+import { useDryVoiceCapture } from '@/features/voice-history/useDryVoiceCapture'
+import { midiToFrequency, midiToNoteName } from '@/lib/frequency-to-note'
 import { micManager } from '@/lib/mic-manager'
 import { midiToNote } from '@/lib/scale-data'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
-import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { ChallengeStageLaunch } from '@/stores/ui-store'
 import type { ZenPitchRun } from '../zen/types'
@@ -36,6 +37,7 @@ import { useZenPitchSession } from '../zen/useZenPitchSession'
 import type { ZenCanvasRenderModel } from '../zen/zen-canvas-renderer'
 import { ZenPitchCanvas } from '../zen/ZenPitchCanvas'
 import { CHALLENGE_LEAD_IN_BEATS, challengeTargetHighlights, challengeToZenExercise, summarizeChallengeRun, } from './challenge-stage-model'
+import { recordChallengeStageResult } from './challenge-stage-voice-take'
 import styles from './ChallengeStage.module.css'
 import { clearWeeklyAttempt } from './weekly-attempt'
 
@@ -95,6 +97,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
   const [previewPlaying, setPreviewPlaying] = createSignal(false)
   const [melodyGuideOn, setMelodyGuideOn] = createSignal(false)
   const [practiceLoopOn, setPracticeLoopOn] = createSignal(false)
+  const [captureFinalizing, setCaptureFinalizing] = createSignal(false)
   // First full (or ended-early) pass of this attempt. Plain var: written from
   // the frame callback, read once on completion.
   let finishedRun: ZenPitchRun | null = null
@@ -104,6 +107,11 @@ export function ChallengeStage(props: ChallengeStageProps) {
   let liveRunKind: ChallengeRunKind = launchRunKind
   let loopPracticePlain = false
   let playedGuideTargets = new Set<string>()
+  let voiceCaptureStart: Promise<boolean> | null = null
+
+  const voiceCapture = useDryVoiceCapture({
+    consumerId: `weekly-legend:${launch.challengeId}`,
+  })
 
   const session = useZenPitchSession({
     ...(definition === null ? {} : { initialExerciseDefinition: definition }),
@@ -260,7 +268,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
     }
   })
 
-  const completeRun = (): void => {
+  const completeRun = async (): Promise<void> => {
     if (completing) return
     completing = true
     if (melodyGuideOn()) props.stopTone()
@@ -277,11 +285,13 @@ export function ChallengeStage(props: ChallengeStageProps) {
     )
 
     const kind = untrack(runKind)
+    if (kind === 'attempt') setCaptureFinalizing(true)
+    setOutcome({ points: run?.points ?? [], kind })
     if (kind === 'attempt') {
       // The single funnel every scored exercise uses — the armed weekly
       // attempt consumes this entry, writes the board row, and presents the
       // app-level result card. Practice replays deliberately skip the funnel.
-      recordExerciseResult({
+      const result: ExerciseResult = {
         type: EXERCISE_SIGHT_SINGING,
         score: summary.score,
         metrics: {
@@ -292,10 +302,24 @@ export function ChallengeStage(props: ChallengeStageProps) {
           bestNote: summary.bestNote,
         },
         completedAt: Date.now(),
-      })
+      }
+      try {
+        const pendingCaptureStart = voiceCaptureStart
+        if (pendingCaptureStart !== null) await pendingCaptureStart
+        await recordChallengeStageResult({
+          voiceCapture,
+          challengeId: launch.challengeId,
+          // Persist the exact resolved order that was rendered and scored,
+          // rather than the untrusted order of the source content payload.
+          targetNotes: targets.map((target) =>
+            midiToNoteName(target.startMidi),
+          ),
+          result,
+        })
+      } finally {
+        setCaptureFinalizing(false)
+      }
     }
-
-    setOutcome({ points: run?.points ?? [], kind })
   }
 
   // A pass ends when the session's loop wraps: elapsed snaps from the loop's
@@ -308,7 +332,9 @@ export function ChallengeStage(props: ChallengeStageProps) {
       if (previous > loop - 1.5 && elapsed < 1.5 && previous - elapsed > 1) {
         playedGuideTargets = new Set()
         if (runKind() === 'practice' && practiceLoopOn()) return
-        queueMicrotask(completeRun)
+        queueMicrotask(() => {
+          untrack(() => void completeRun())
+        })
       }
     }),
   )
@@ -316,7 +342,12 @@ export function ChallengeStage(props: ChallengeStageProps) {
   const begin = async (
     kind: ChallengeRunKind = launchRunKind,
   ): Promise<void> => {
-    if (definition === null || session.status() === 'running') return
+    if (
+      definition === null ||
+      session.status() === 'running' ||
+      captureFinalizing()
+    )
+      return
     const previousOutcome = outcome()
     stopPreview()
     setStartError(null)
@@ -325,6 +356,8 @@ export function ChallengeStage(props: ChallengeStageProps) {
     liveRunKind = kind
     setRunKind(kind)
     completing = false
+    voiceCaptureStart = null
+    voiceCapture.discard()
     const started = await session.start()
     if (!started) {
       completing = previousOutcome !== null
@@ -336,11 +369,17 @@ export function ChallengeStage(props: ChallengeStageProps) {
       return
     }
     setOutcome(null)
+    if (kind === 'attempt') {
+      const pendingCaptureStart = voiceCapture.start()
+      voiceCaptureStart = pendingCaptureStart
+      await pendingCaptureStart
+      if (voiceCaptureStart === pendingCaptureStart) voiceCaptureStart = null
+    }
   }
 
   const endAndScore = (): void => {
     if (phase() !== 'live') return
-    completeRun()
+    void completeRun()
   }
 
   const highlights = createMemo(() => {
@@ -393,6 +432,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
   })
 
   const statusLabel = (): string => {
+    if (captureFinalizing()) return 'Preparing replay'
     switch (phase()) {
       case 'live':
         return runKind() === 'practice' && practiceLoopOn()
@@ -463,7 +503,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
   }
 
   return (
-    <div class={styles.root}>
+    <div class={styles.root} aria-busy={captureFinalizing()}>
       <PitchStageShell
         mode="challenge"
         testId="challenge-stage"
@@ -549,6 +589,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
               <button
                 type="button"
                 class={styles.closeButton}
+                disabled={captureFinalizing()}
                 onClick={() => props.onClose()}
               >
                 <X />
@@ -583,6 +624,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
                         type="button"
                         class={styles.practiceButton}
                         data-testid="challenge-practice"
+                        disabled={captureFinalizing()}
                         onClick={() => void begin('practice')}
                       >
                         <Play />
@@ -591,9 +633,11 @@ export function ChallengeStage(props: ChallengeStageProps) {
                           : 'Practise the line'}
                       </button>
                       <span class={styles.footerHint}>
-                        {outcome()?.kind === 'practice'
-                          ? 'Practice run — not added to the board'
-                          : 'Take recorded — review or practise the line'}
+                        {captureFinalizing()
+                          ? 'Preparing your score and replay'
+                          : outcome()?.kind === 'practice'
+                            ? 'Practice run — not added to the board'
+                            : 'Take recorded — review or practise the line'}
                       </span>
                     </div>
                   </Show>

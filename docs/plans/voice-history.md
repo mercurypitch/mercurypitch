@@ -550,9 +550,9 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   never enter the same comparison thread accidentally.
 - Exercise result states for preparing, keeping, retrying, unsupported capture,
   and explicit discard without changing the saved score.
-- Weekly Legend handoff from the scored exercise into its result card, where
-  the temporary replay is kept or discarded explicitly without changing the
-  recorded score.
+- Weekly Legend handoff from the scored challenge stage into its result card,
+  where the temporary replay is kept or discarded explicitly without changing
+  the recorded score.
 - Challenge-scoped Legend comparison threads with the weekly challenge ID,
   title snapshot, target score, result score, and tier attached locally.
 - Authored Weekly Legend note sequences used exactly as launched so the saved
