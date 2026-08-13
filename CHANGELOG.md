@@ -143,6 +143,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Challenges and badges you have not earned no longer claim a date.**
+  Anything unfinished was being stamped 1 January 1970 instead of showing
+  nothing at all.
+
+- **Melodies you write are counted one by one again.** Activity written
+  without a reference to what it was about had been collapsing together, so a
+  whole set of new melodies could register as a single one and hold back the
+  achievements that count them.
+
 - **The Settings > Sync page overlapped its own text.** Its explanatory lines
   borrowed a style meant to tuck a subtitle under a heading, so used after a
   paragraph they climbed into the line above.
