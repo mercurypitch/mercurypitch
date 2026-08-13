@@ -944,6 +944,9 @@ export function App(props: AppProps) {
           pullText={cue()?.pullText ?? ''}
           bSideText={cue()?.bSideText ?? ''}
           phrase={cuePhrase()}
+          {...(cue()?.pullCategoryId === undefined
+            ? {}
+            : { pullId: cue()?.pullCategoryId })}
           onChooseBSide={() => resolveCue('b_side')}
           onNotNow={() => resolveCue('not_now')}
           onClose={() => resolveCue('not_now')}
