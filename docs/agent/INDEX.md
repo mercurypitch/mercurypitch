@@ -411,6 +411,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm build` | `vite build` |
 | `pnpm build:tours` | `cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build` |
 | `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build && node scripts/assert-piano-night-bundle.mjs dist` |
+| `pnpm build:e2e:devices` | `cross-env VITE_API_BASE_URL=http://localhost:8788 VITE_JAM_SIGNALING_URL=http://localhost:8787/api/jam VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build` |
 | `pnpm build:dev` | `vite build --mode development` |
 | `pnpm preview` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview` |
 | `pnpm prod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite build && vite preview` |
@@ -419,6 +420,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test:run` | `vitest run` |
 | `pnpm test:coverage` | `vitest run --coverage` |
 | `pnpm test:e2e` | `playwright test` |
+| `pnpm test:e2e:devices` | `playwright test -c playwright.devices.config.ts` |
 | `pnpm lyrics:compare` | `node scripts/compare-lrc-timing.mjs` |
 | `pnpm marketing:capture` | `node scripts/capture-marketing.mjs` |
 | `pnpm test:tours` | `node scripts/walk-tours.mjs` |
