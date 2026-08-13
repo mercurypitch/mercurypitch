@@ -54,6 +54,12 @@ export interface CueEntity {
   readonly noticeOverlay: AssetSlot
   /** Direction for the voice actor. Never shown in the interface. */
   readonly voiceNote: string
+  /**
+   * True once this creature has been modelled and approved, false while it is
+   * still the recoloured stand-in. Records production state where the art
+   * actually is, rather than in a document that drifts.
+   */
+  readonly modelled: boolean
 }
 
 export interface ContentPack {
@@ -87,13 +93,22 @@ function cueOverlay(id: string): AssetSlot {
   }
 }
 
-function entity(id: string, name: string, voiceNote: string): CueEntity {
+function entity(
+  id: string,
+  name: string,
+  voiceNote: string,
+  modelled?: { alt: string },
+): CueEntity {
   return {
     id,
     name,
-    token: cueToken(id, name),
+    token:
+      modelled === undefined
+        ? cueToken(id, name)
+        : { still: `${ART}/cues/cue-${id}-256.webp`, alt: modelled.alt },
     noticeOverlay: cueOverlay(id),
     voiceNote,
+    modelled: modelled !== undefined,
   }
 }
 
@@ -128,7 +143,14 @@ const cueEntities: readonly CueEntity[] = [
     'The Scroll',
     'Endless, pleasant, never finishes a sentence.',
   ),
-  entity('snacking', 'Sugarlump', 'Sweet and insistent. Offers, never argues.'),
+  entity(
+    'snacking',
+    'Sugarlump',
+    'Sweet and insistent. Offers, never argues.',
+    {
+      alt: 'Sugarlump, a round coral creature made of rounded sugar crystals, with wide friendly eyes and a small smile.',
+    },
+  ),
   entity(
     'alcohol-ritual',
     'The Usual',
