@@ -59,7 +59,18 @@ export interface SyncTransfer {
   fileHash: string
   title: string
   direction: 'out' | 'in'
-  status: 'packing' | 'transferring' | 'done' | 'already' | 'failed'
+  /**
+   * `preparing` is the receiver's view of the sender's `packing`: it knows
+   * a song is being made ready for it, and nothing more. There is no
+   * ratio behind it on purpose — see `sync-preparing`.
+   */
+  status:
+    | 'packing'
+    | 'preparing'
+    | 'transferring'
+    | 'done'
+    | 'already'
+    | 'failed'
   /** 0-1 of the current activity. */
   ratio: number
   /** Total part bytes, once known. */
@@ -234,6 +245,23 @@ function upsertTransfer(
   })
 }
 
+/**
+ * End every "the other device is packing this" row with a reason.
+ *
+ * These rows are the one kind with nothing behind them — no sender, no
+ * receiver, no promise to reject — so whatever kills the conversation has
+ * to close them by hand or they wait for ever.
+ */
+function failPreparingRows(message: string): void {
+  setSyncTransfers((list) =>
+    list.map((t) =>
+      t.status === 'preparing'
+        ? { ...t, status: 'failed' as const, message }
+        : t,
+    ),
+  )
+}
+
 function addTransfer(entry: SyncTransfer): void {
   setSyncTransfers((list) => [
     ...list.filter((t) => t.fileHash !== entry.fileHash),
@@ -267,6 +295,10 @@ function ensurePeer(): SyncPeer {
       const gone = 'The other device left.'
       activeSender?.abort(gone)
       activeReceiver?.abort(gone)
+      // A song announced but never offered has no transfer object to
+      // abort — only a row saying it is being packed. The device doing
+      // the packing has gone, so that row would sit there for ever.
+      failPreparingRows(gone)
       console.info('[sync] the other device left')
       // The room is still open; the same code still works for a retry.
       if (syncState() === 'connected') {
@@ -287,6 +319,38 @@ function ensurePeer(): SyncPeer {
             ? null
             : { freeBytes: msg.freeBytes, quota: msg.quota ?? 0 },
         )
+        return
+      }
+      if (msg.type === 'sync-preparing') {
+        // No `syncBusy` here, deliberately: this device is not busy, it is
+        // waiting. Setting it would make `handleIncomingOffer` refuse the
+        // very offer this frame is announcing, as "still busy with the
+        // previous song".
+        addTransfer({
+          fileHash: msg.fileHash,
+          title: msg.title,
+          direction: 'in',
+          status: 'preparing',
+          ratio: 0,
+          bytes: msg.estimatedBytes ?? 0,
+        })
+        console.info(`[sync] the other device is packing "${msg.title}"`)
+        return
+      }
+      if (msg.type === 'sync-cancelled') {
+        // Only ever retracts a promise that has not been kept. Once the
+        // offer has landed the transfer owns its own ending, and a late
+        // cancellation must not overwrite "in your library".
+        const pending = syncTransfers().find(
+          (t) => t.fileHash === msg.fileHash && t.status === 'preparing',
+        )
+        if (pending !== undefined) {
+          upsertTransfer(msg.fileHash, {
+            status: 'failed',
+            message:
+              msg.message ?? 'The other device stopped preparing that song.',
+          })
+        }
         return
       }
       if (msg.type === 'sync-offer') {
@@ -479,6 +543,16 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
   const title = session.originalFile?.name ?? 'Untitled song'
   const mine = generation
   const signal = packAbort
+  /**
+   * Retract a `sync-preparing` that will not become an offer.
+   *
+   * Safe to call on a path that never sent one: the far side only acts on
+   * a cancellation for a row it is still showing as preparing, so a stray
+   * one is a no-op rather than a way to kill a live transfer.
+   */
+  const cancel = (message: string): void => {
+    p.sendControl(target, { type: 'sync-cancelled', fileHash, message })
+  }
 
   setSyncBusy(true)
   addTransfer({
@@ -532,6 +606,18 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       return
     }
 
+    // Everything that could refuse before a promise is made has now had
+    // its say, so this is the earliest honest moment to tell the far
+    // device something is coming. Before this point a refusal costs it
+    // nothing; after it, the receiver is showing "preparing" and every
+    // remaining exit has to retract that with `sync-cancelled`.
+    p.sendControl(target, {
+      type: 'sync-preparing',
+      fileHash,
+      title,
+      ...(estimate > 0 ? { estimatedBytes: estimate } : {}),
+    })
+
     // Per-stem encode progress folded into one bar: two stems, half each.
     const packRatio: Record<string, number> = {}
     const bundle = await buildPortableBundle(sessionId, {
@@ -545,7 +631,13 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
     })
     // The session this job belongs to may have been closed and replaced
     // while it packed; its bytes are not wanted by anybody now.
-    if (mine !== generation) return
+    if (mine !== generation) {
+      // The peer is usually gone with the session, in which case this
+      // goes nowhere and the far side's own peer-left handler closes the
+      // row. It costs one frame to also cover the case where it is not.
+      cancel('The other device stopped before the song was ready.')
+      return
+    }
     const bytes = bundle.manifest.parts.reduce((n, part) => n + part.bytes, 0)
     upsertTransfer(fileHash, { bytes })
 
@@ -556,6 +648,10 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
     if (room !== null && room.freeBytes < bytes) {
       const message = `${syncPeerLabel() ?? 'That device'} has about ${formatBytes(room.freeBytes)} free and this song needs ${formatBytes(bytes)}.`
       upsertTransfer(fileHash, { status: 'failed', message })
+      // The one refusal after the promise that the far side can still
+      // hear: its channel is fine, we simply packed something too big for
+      // it. Telling it why beats leaving "preparing" on screen for ever.
+      cancel(message)
       showNotification(message, 'warning')
       return
     }
@@ -625,6 +721,9 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
     const message =
       err instanceof Error ? err.message : 'The song could not be packed.'
     upsertTransfer(fileHash, { status: 'failed', message })
+    // Packing threw. Whatever the far side is showing, it is no longer
+    // true — and it is the one thing it cannot work out for itself.
+    cancel(message)
     if (!closing) showNotification(message, 'error')
   } finally {
     // Only if this job still owns the session — see `generation`.

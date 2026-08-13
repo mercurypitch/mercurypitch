@@ -27,7 +27,7 @@ import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { SendChannel } from '@/lib/jam/jam-song-transfer'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { SyncWireMessage } from '@/lib/sync/sync-protocol'
-import { receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
+import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, SENDER_SILENCE_MS, } from '@/lib/sync/sync-protocol'
 import type { UvrSession } from '@/stores/uvr-store'
 import { deleteAllUvrSessions, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
 
@@ -384,5 +384,39 @@ describe('sync protocol when the connection dies', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('the wire can grow without breaking older builds', () => {
+  it('lets a build recognise the frames it knows and drop the rest', () => {
+    // This is the property that makes adding frames safe. A device on an
+    // older build receives `sync-preparing` from a newer one, does not
+    // recognise it, and drops it -- so it shows no "being prepared"
+    // state, and the offer that follows still lands exactly as before.
+    // Without an allowlist here, growing the protocol would mean a
+    // flag-day upgrade across every device somebody owns.
+    expect(isSyncWireMessage({ type: 'sync-preparing' })).toBe(true)
+    expect(isSyncWireMessage({ type: 'sync-cancelled' })).toBe(true)
+    expect(isSyncWireMessage({ type: 'sync-offer' })).toBe(true)
+
+    expect(isSyncWireMessage({ type: 'sync-something-new' })).toBe(false)
+    expect(isSyncWireMessage({ type: 42 })).toBe(false)
+    expect(isSyncWireMessage({})).toBe(false)
+  })
+
+  it('does not let an unknown frame disturb a transfer in flight', async () => {
+    const wire = makeWire()
+    const { sender, receiver } = await crossTheWire(wire)
+
+    // Something a future build sends that this one has never heard of,
+    // arriving mid-transfer at both ends. Neither may treat it as an
+    // abort, and neither may settle on it.
+    const strange = { type: 'sync-whatever', fileHash: HASH } as unknown
+    sender.handleControl(strange as SyncWireMessage)
+    receiver.handleControl(strange as SyncWireMessage)
+
+    const [sent, kept] = await Promise.all([sender.result, receiver.result])
+    expect(sent.outcome).toBe('sent')
+    expect(kept.outcome).toBe('imported')
   })
 })

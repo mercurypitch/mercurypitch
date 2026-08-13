@@ -163,18 +163,25 @@ describe('waiting for the other device', () => {
   })
 })
 
-describe('what the far device said about itself', () => {
-  /** A session big enough that the pre-pack room check has something to bite on. */
-  const bigSong = {
-    id: 's1',
-    fileHash: 'hash-1',
-    outputs: { vocal: {}, instrumental: {} },
-    stemMeta: {
-      vocal: { duration: 200, size: 5e6 },
-      instrumental: { duration: 200, size: 5e6 },
-    },
-  }
+/** A session big enough that the pre-pack room check has something to bite on. */
+const bigSong = {
+  id: 's1',
+  fileHash: 'hash-1',
+  outputs: { vocal: {}, instrumental: {} },
+  stemMeta: {
+    vocal: { duration: 200, size: 5e6 },
+    instrumental: { duration: 200, size: 5e6 },
+  },
+}
 
+/** The control frames this device put on the wire, in order. */
+function framesSent(): { type: string; message?: string }[] {
+  return peerMock.sendControl.mock.calls.map(
+    (call) => call[1] as { type: string; message?: string },
+  )
+}
+
+describe('what the far device said about itself', () => {
   it('forgets it when the session ends', async () => {
     await connect()
     peerMock.handlers?.onControl('peer-1', {
@@ -215,6 +222,126 @@ describe('what the far device said about itself', () => {
     // the real wire protocol — but not for the reason under test.)
     expect(bundle.buildPortableBundle).toHaveBeenCalled()
     expect(syncTransfers()[0]?.message).not.toContain('free')
+  })
+})
+
+describe('telling the receiver a song is being packed', () => {
+  /** The smallest manifest `isReadableManifest` will accept. */
+  const manifest = {
+    format: 'mercurypitch-song',
+    version: 1,
+    song: { fileHash: 'hash-2', title: 'Far Song', quality: 'portable' },
+    parts: [{ id: 'stem:vocal', bytes: 100, sha256: 'abc', mime: 'audio/mp4' }],
+  }
+
+  const preparing = {
+    type: 'sync-preparing',
+    fileHash: 'hash-2',
+    title: 'Far Song',
+  }
+
+  it('announces before it starts packing, not after', async () => {
+    uvr.session = bigSong
+    let announcedFirst = false
+    bundle.buildPortableBundle.mockImplementationOnce(() => {
+      announcedFirst = framesSent().some((m) => m.type === 'sync-preparing')
+      return Promise.resolve({
+        manifest: { song: { quality: 'portable' }, parts: [{ bytes: 10 }] },
+      })
+    })
+
+    await connect()
+    await sendSongToPeer('s1')
+
+    // The whole point: the far device hears about the song at the start of
+    // the minute of encoding, not at the end of it.
+    expect(announcedFirst).toBe(true)
+  })
+
+  it('promises nothing when it refuses before packing', async () => {
+    route.awaitDirectRoute.mockResolvedValue('relayed')
+    await connect()
+    await sendSongToPeer('s1')
+
+    // A refusal that costs the far device nothing should not first tell it
+    // to expect something.
+    expect(framesSent().some((m) => m.type === 'sync-preparing')).toBe(false)
+  })
+
+  it('retracts the promise when packing throws', async () => {
+    uvr.session = bigSong
+    bundle.buildPortableBundle.mockRejectedValueOnce(new Error('Out of memory'))
+
+    await connect()
+    await sendSongToPeer('s1')
+
+    const cancelled = framesSent().find((m) => m.type === 'sync-cancelled')
+    expect(cancelled?.message).toBe('Out of memory')
+  })
+
+  it('shows the far device working, without inventing a percentage', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      ...preparing,
+      estimatedBytes: 9_000_000,
+    })
+
+    const row = syncTransfers()[0]
+    expect(syncTransfers()).toHaveLength(1)
+    expect(row?.status).toBe('preparing')
+    expect(row?.direction).toBe('in')
+    expect(row?.title).toBe('Far Song')
+  })
+
+  it('replaces that row with the transfer rather than adding a second', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', preparing)
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-offer', manifest })
+
+    // One song, one row, further along — not "being prepared" sitting
+    // above "receiving" for the same thing.
+    expect(syncTransfers()).toHaveLength(1)
+    expect(syncTransfers()[0]?.status).toBe('transferring')
+  })
+
+  it('ends the row when the far device gives up', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', preparing)
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-cancelled',
+      fileHash: 'hash-2',
+      message: 'The song could not be packed.',
+    })
+
+    expect(syncTransfers()[0]?.status).toBe('failed')
+    expect(syncTransfers()[0]?.message).toBe('The song could not be packed.')
+  })
+
+  it('does not let a late cancellation undo a song already moving', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', preparing)
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-offer', manifest })
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-cancelled',
+      fileHash: 'hash-2',
+      message: 'too late',
+    })
+
+    // Past the offer the transfer owns its own ending; a stray
+    // cancellation must not be able to kill one.
+    expect(syncTransfers()[0]?.status).toBe('transferring')
+  })
+
+  it('closes the row when the packing device leaves', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', preparing)
+    peerMock.handlers?.onPeerLeft('peer-1')
+
+    // There is no sender and no receiver to abort here — only a row
+    // saying a song is on its way from a device that has gone. Without
+    // closing it by hand it waits for ever.
+    expect(syncTransfers()[0]?.status).toBe('failed')
+    expect(syncTransfers()[0]?.message).toContain('left')
   })
 })
 
