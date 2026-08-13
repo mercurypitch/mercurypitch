@@ -11,9 +11,11 @@
 // landing surface, not just another tab.
 
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { eventBus } from '@/lib/event-bus'
 import { studioSessionUrl } from '@/lib/karaoke-night-link'
 import { isNarrow } from '@/lib/use-viewport'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
@@ -70,9 +72,14 @@ export function KaraokeNightApp() {
   const [activeSong, setActiveSong] = createSignal<KaraokeSong | null>(null)
   const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
+  const [creditsOpen, setCreditsOpen] = createSignal(false)
 
   const updateAlpha = (v: number) => {
     setStageAlpha(persistKaraokeStageAlpha(v))
+    // The mixer's lane names are painted onto a canvas, so the variable below
+    // does not reach them on its own. While playback runs the frame loop
+    // repaints anyway; paused, this is what keeps them in step with the glass.
+    eventBus.dispatch('karaoke:stage-glass', { alpha: stageAlpha() })
   }
 
   const updateRail = (collapsed: boolean) => {
@@ -241,22 +248,34 @@ export function KaraokeNightApp() {
     activeSong()?.sessionId === demoSessionId(demo.slug)
 
   /**
-   * Who the footer credits.
+   * Every credit on offer, deduped by source so two songs from the same
+   * artist page get one entry.
    *
-   * Whichever demo is on stage, when one is — otherwise every song on
-   * offer, because CC BY is not satisfied by crediting the first of two.
-   * Deduped by source, so two songs from the same artist page get one
-   * line.
+   * All of them, always — CC BY is not satisfied by crediting the first of
+   * two. What changes is how many are *expanded*: the footer shows one and
+   * opens the rest, because two full notices laid side by side turned the
+   * footer into a wall of small print.
    */
   const credits = createMemo(() => {
-    const staged = demos().find(onStage)
     const seen = new Set<string>()
-    return (staged !== undefined ? [staged] : demos()).filter((d) => {
+    return demos().filter((d) => {
       const key = `${d.attribution.text}|${d.attribution.url}`
       if (d.attribution.text.trim() === '' || seen.has(key)) return false
       seen.add(key)
       return true
     })
+  })
+
+  /**
+   * The one credit that stays visible without asking.
+   *
+   * Whichever song is on stage, when one is — that is the work actually
+   * being performed, so its author is the one who must be named. Otherwise
+   * the first, with the rest a tap away.
+   */
+  const leadCredit = createMemo(() => {
+    const staged = credits().find(onStage)
+    return staged ?? credits()[0] ?? null
   })
 
   return (
@@ -639,31 +658,75 @@ export function KaraokeNightApp() {
       </div>
 
       <footer class="kn-footer">
-        <For each={credits()}>
-          {(d) => (
-            <p class="kn-attribution">
-              {/* Named only when there is more than one credit — two bare
-                  lines side by side would not say which song is whose. */}
+        {/* Credits as a disclosure rather than a row of notices.
+
+            The collapsed chip is not a placeholder: it carries a complete
+            credit — author, link, licence — for the song on stage, so the
+            work being performed is always attributed on screen. The panel
+            adds the others, which CC BY lets us surface a click away (it
+            accepts a link to the required information; this is that, minus
+            the trip). Hover or focus on a desk, tap on a phone. */}
+        <Show when={leadCredit() !== null}>
+          <div
+            class="kn-credits"
+            classList={{ 'kn-credits--open': creditsOpen() }}
+          >
+            <button
+              type="button"
+              class="kn-credits-toggle"
+              aria-expanded={creditsOpen()}
+              aria-controls="kn-credits-panel"
+              onClick={() => setCreditsOpen(!creditsOpen())}
+            >
+              <Info size={13} />
+              <span class="kn-credits-lead">
+                <a
+                  href={leadCredit()!.attribution.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {leadCredit()!.attribution.text}
+                </a>{' '}
+                <span class="kn-credits-licence">
+                  ({leadCredit()!.attribution.license})
+                </span>
+              </span>
               <Show when={credits().length > 1}>
-                <span class="kn-attribution-song">{d.title} — </span>
+                <span class="kn-credits-more">+{credits().length - 1}</span>
               </Show>
-              <a
-                href={d.attribution.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {d.attribution.text}
-              </a>{' '}
-              <a
-                href={d.attribution.licenseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                ({d.attribution.license})
-              </a>
-            </p>
-          )}
-        </For>
+              <ChevronDown size={12} />
+            </button>
+            <div
+              class="kn-credits-panel"
+              id="kn-credits-panel"
+              role="group"
+              aria-label="Music credits"
+            >
+              <For each={credits()}>
+                {(d) => (
+                  <p class="kn-attribution">
+                    <span class="kn-attribution-song">{d.title} — </span>
+                    <a
+                      href={d.attribution.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {d.attribution.text}
+                    </a>{' '}
+                    <a
+                      href={d.attribution.licenseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      ({d.attribution.license})
+                    </a>
+                  </p>
+                )}
+              </For>
+            </div>
+          </div>
+        </Show>
         <nav class="kn-footer-links">
           <a href="/" onClick={() => trackKaraoke('karaoke_cta_studio')}>
             MercuryPitch — the full studio

@@ -33,12 +33,14 @@ import { RestCountdownDots } from '@/components/RestCountdownDots'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
+import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, vocalDragUnmutes, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { getRestDotCount, leadInProgress } from '@/lib/canonical-lrc'
+import { formatBytes } from '@/lib/fetch-progress'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
@@ -167,6 +169,14 @@ export interface KaraokeMobileStageProps {
   onSongPickerQuery?: (v: string) => void
   onSongPickerRefine?: () => void
   onSongPick?: (match: LyricsSearchMatch) => void
+
+  /** Stem download progress, mirrored from the mixer's audio controller.
+      Optional: a host that cannot measure the load still gets the overlay,
+      just without the numbers. */
+  loadProgress?: () => number
+  loadPhase?: () => StemLoadPhase
+  loadedBytes?: () => number
+  totalBytes?: () => number | null
 }
 
 const DEFAULT_VOCAL_VOLUME = 0.8
@@ -182,6 +192,32 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   props,
 ) => {
   const background = useBackgroundSurfaceController('karaoke')
+
+  // ── Load progress ─────────────────────────────────────────────
+  //
+  // Mirrors the mixer's contract rather than inventing a second one: only the
+  // download has a measurable share, so connecting and decoding run the
+  // indeterminate stripe instead of parking a number that isn't moving. A host
+  // that passes no progress at all lands on the same indeterminate path.
+  const loadPct = (): number => props.loadProgress?.() ?? 0
+  const loadPhase = (): StemLoadPhase => props.loadPhase?.() ?? 'connecting'
+  const determinate = (): boolean =>
+    loadPhase() === 'downloading' && (props.totalBytes?.() ?? null) !== null
+
+  const loadHeadline = (): string => {
+    if (loadPhase() === 'decoding') return 'Almost ready…'
+    return 'Raising the curtain…'
+  }
+
+  const loadDetail = (): string => {
+    if (loadPhase() === 'connecting') return 'Reaching the song library'
+    if (loadPhase() === 'decoding') return 'Decoding audio'
+    const total = props.totalBytes?.() ?? null
+    const loaded = props.loadedBytes?.() ?? 0
+    if (total !== null) return `${formatBytes(loaded)} of ${formatBytes(total)}`
+    // No Content-Length: a climbing byte count still says "working".
+    return loaded > 0 ? formatBytes(loaded) : 'Downloading'
+  }
 
   // ── Lyrics ────────────────────────────────────────────────────
   const lines = createMemo(() =>
@@ -874,9 +910,33 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       </div>
 
       {/* ── Load / error states ────────────────────────────── */}
+      {/* On a phone this stage is the whole product — there is no mixer
+          behind it showing the download. "Raising the curtain…" on its own
+          was a spinner without a clock: on a slow link a demo song's stems
+          are minutes, and a screen that says nothing for two of them reads
+          as broken. Same byte-based numbers the mixer shows, same honesty
+          about what cannot be measured. */}
       <Show when={props.loading()}>
         <div class={styles.stateOverlay}>
-          <p>Raising the curtain…</p>
+          <div class={styles.loadCard}>
+            <p>{loadHeadline()}</p>
+            <div
+              class={styles.loadTrack}
+              classList={{ [styles.loadTrackIndeterminate]: !determinate() }}
+              role="progressbar"
+              aria-label="Loading the song"
+              aria-valuemin={determinate() ? 0 : undefined}
+              aria-valuemax={determinate() ? 100 : undefined}
+              aria-valuenow={determinate() ? loadPct() : undefined}
+              aria-valuetext={loadDetail()}
+            >
+              <div
+                class={styles.loadFill}
+                style={determinate() ? { width: `${loadPct()}%` } : undefined}
+              />
+            </div>
+            <p class={styles.loadDetail}>{loadDetail()}</p>
+          </div>
         </div>
       </Show>
       <Show when={props.loadError() !== ''}>

@@ -696,6 +696,74 @@
   color: rgba(244, 236, 255, 0.85);
 }
 
+/* ── Load progress ───────────────────────────────────────────
+   On a phone this stage is the only surface, so the download has to be
+   visible here or it is invisible entirely. Hairline track, no chrome: the
+   numbers do the talking and the bar just carries them. */
+
+.loadCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: min(20rem, 100%);
+}
+
+.loadTrack {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(244, 236, 255, 0.16);
+  overflow: hidden;
+}
+
+.loadFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffd9a0, #ff9ad5);
+  /* Only the width animates; transform would blur the 4px edge. */
+  transition: width 0.25s ease;
+}
+
+/* No Content-Length means no honest percentage, so the fill becomes a
+   travelling stripe instead of parking on an invented number. */
+.loadTrackIndeterminate .loadFill {
+  width: 40%;
+  transition: none;
+  animation: zenLoadSlide 1.25s ease-in-out infinite;
+}
+
+@keyframes zenLoadSlide {
+  0% {
+    transform: translateX(-105%);
+  }
+  100% {
+    transform: translateX(255%);
+  }
+}
+
+.loadDetail {
+  /* Overrides .stateOverlay p — this is the quiet line under the headline. */
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  color: rgba(244, 236, 255, 0.62) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadFill {
+    transition: none;
+  }
+
+  .loadTrackIndeterminate .loadFill {
+    /* Still says "working", without the travel. */
+    width: 100%;
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
 /* ── Song sheet content (shell/handle/backdrop in kit Sheet) ── */
 
 .sheetKicker {

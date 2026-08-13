@@ -2044,6 +2044,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           playing={audio.playing}
           loading={audio.loading}
           loadError={audio.loadError}
+          // The same byte-based progress the desktop card shows. On a phone
+          // this stage replaces that card entirely, so without these the whole
+          // download is one static line of text.
+          loadProgress={audio.loadProgress}
+          loadPhase={audio.loadPhase}
+          loadedBytes={audio.loadedBytes}
+          totalBytes={audio.totalBytes}
           elapsed={audio.elapsed}
           lyricsElapsed={audio.audibleElapsed}
           duration={audio.duration}
