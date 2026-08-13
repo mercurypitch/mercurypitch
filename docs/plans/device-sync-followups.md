@@ -377,10 +377,15 @@ measuring told them apart. They stay for the next surprise.
 5. ~~**B** — multi-select, the queue, and group send.~~ Done. The queue
    lives in `sync-store`; a group filter plus Select all is what "send a
    playlist" turned out to be.
-6. **E's two-peer specs** — QR sign-in first, then song transfer. The only
-   part still open, and the one that matters most: every sync test so far
-   fakes either the peer or the channel, and both bugs found by hand lived
-   exactly where nothing automated has ever looked.
+6. ~~**E's two-peer specs** — QR sign-in first, then song transfer.~~ Done.
+   `src/e2e-devices/`, run with `pnpm test:e2e:devices` against a local
+   pair of workers; the runbook is
+   [TWO-DEVICE-E2E.md](../agent/TWO-DEVICE-E2E.md). They earned their keep
+   on the first run by finding a third bug of the same family: the
+   multi-select work put `tooBigForPeer` below the memos that call it, and
+   `createMemo` runs its body immediately — so the sync modal threw on
+   every device that had a song to send, and on none that did not. Not in
+   CI, per S5.
 
 ## Decisions
 
