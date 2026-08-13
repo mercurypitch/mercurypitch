@@ -29,7 +29,10 @@ vi.mock('@/db/services/uvr-service', () => ({ listStemTypes }))
 vi.mock('@/components/GroupDeleteConfirmDialog', () => ({
   GroupDeleteConfirmDialog: () => null,
 }))
-vi.mock('@/components/icons', () => ({ Trash2: () => null }))
+vi.mock('@/components/icons', () => ({
+  DeviceSync: () => null,
+  Trash2: () => null,
+}))
 vi.mock('@/features/stem-mixer/karaoke-playlist-runner', () => ({
   ensureSessionHydrated: vi.fn(),
 }))
@@ -157,5 +160,37 @@ describe('the library survives a song change', () => {
     expect(
       container.querySelectorAll('.kn-library-song').length,
     ).toBeGreaterThanOrEqual(before)
+  })
+})
+
+describe('the door to another device', () => {
+  // The point of putting sync in Karaoke Night at all is the phone that has
+  // nothing on it yet: it is the device that needs to RECEIVE. Gating the
+  // door on already owning songs would hide it from exactly that case, so
+  // this pins the placement, not just the presence.
+  it('offers to send or receive even with an empty library', async () => {
+    store.readSessions = () => []
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    await waitFor(() =>
+      expect(
+        [...container.querySelectorAll('.kn-btn')].some((b) =>
+          /Send or receive/.test(b.textContent ?? ''),
+        ),
+      ).toBe(true),
+    )
+    expect(container.querySelectorAll('.kn-library-song').length).toBe(0)
+  })
+
+  it('does not load the sync chunk until the door is opened', async () => {
+    store.readSessions = () => [session('uvr-a', 3)]
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+    await waitFor(() => expect(listStemTypes).toHaveBeenCalled())
+
+    // The modal is lazy() precisely so the rail's first paint never pays for
+    // WebRTC signaling and the bundle machinery.
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
   })
 })
