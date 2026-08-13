@@ -58,6 +58,7 @@ describe('content pack', () => {
           token: { still: '/x.webp', alt: '' },
           noticeOverlay: { still: '/y.webp', alt: '' },
           voiceNote: '',
+          modelled: false,
         },
       ],
       lines: [
@@ -102,6 +103,21 @@ describe('content pack', () => {
 
     expect(missing).toEqual([])
     expect(slots.length).toBeGreaterThan(0)
+  })
+
+  it('records which cue entities are modelled and which are stand-ins', () => {
+    // Production state belongs where the art is, not in a document that drifts
+    // away from it.
+    const modelled = DEFAULT_CONTENT_PACK.cueEntities.filter(
+      (cueEntity) => cueEntity.modelled,
+    )
+
+    expect(modelled.map((cueEntity) => cueEntity.id)).toEqual(['snacking'])
+    for (const cueEntity of modelled) {
+      // A modelled creature earns a real description; a stand-in gets the
+      // generic one and must not claim to be a character.
+      expect(cueEntity.token.alt).not.toMatch(/standing in/u)
+    }
   })
 
   it('keeps a spoken line free of the pull it belongs to', () => {
