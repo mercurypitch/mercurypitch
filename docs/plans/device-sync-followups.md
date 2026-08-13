@@ -345,33 +345,45 @@ integration never has.
 - **The timeouts.** `SENDER_SILENCE_MS` and `PART_STALL_MS` have no test.
   They are the difference between a failure and a hang.
 
-## F. Measure the hydration delay
+## F. The hydration delay — DONE, and it was not a delay
 
-Before designing anything for it: instrument the path from "the import
-resolved" to "the song is playable", log the split, and send one song
-between two real devices. It may be stem decode, it may be the session
-list not re-reading, it may be the first `AudioContext` on that device.
-Each has a different fix and only one of them is worth building.
+Measuring first was the right call, and it closed itself.
+
+`importPortableBundle` wrote the blob table's ROW ID into
+`session.outputs`, where every other path in the app holds a playable
+URL. A row id is neither `blob:` nor http, so `ensureSessionHydrated`
+took its "remote stems don't die with the page" branch, returned the
+session untouched, and the mixer was handed a database id as an audio
+source. Reloading fixed it because the panel re-hydrates every completed
+session on load — which is why it read as "needs time to hydrate" and
+"all could be loaded normally after refreshing the view".
+
+The import now points `outputs` at the object URLs `hydrateStemUrls`
+builds from the stored blobs, and rolls back if they cannot be read
+back. The split timings went in anyway — pull, verify, write, hydrate,
+prep, record — because four candidates were plausible here and only
+measuring told them apart. They stay for the next surprise.
 
 ## Order
 
-1. **A** — the receiver's packing state. Small, self-contained, and the
-   thing that was actually reported.
-2. **F** — measure hydration. One session, and it might close itself.
-3. **E's cheap tests** — property test and the `syncBusy` table. They pay
-   for themselves the moment B starts adding states.
-4. **C** — the card redesign, in stages. It has to land before B, because
-   B adds selection to a surface that cannot take another control.
+1. ~~**A** — the receiver's packing state.~~ Done.
+2. ~~**F** — measure hydration.~~ Done; it was a bug, see above.
+3. ~~**E's cheap tests** — property test, the `syncBusy` table, the
+   missing timeout.~~ Done.
+4. **C** — the card redesign, in stages. Has to land before B, because B
+   adds selection to a surface that cannot take another control. _In
+   progress: the shared overflow menu and the compact card are in; §D's
+   send-surface polish follows._
 5. **B** — multi-select, the queue, and group send.
 6. **E's two-peer specs** — QR sign-in first, then song transfer.
 
 ## Decisions
 
-| #   | Question                                      | Recommendation                                                               |
-| --- | --------------------------------------------- | ---------------------------------------------------------------------------- |
-| S1  | Zip several songs, or queue several bundles?  | **Queue.** Partial success, per-song decline, flat memory — see §B           |
-| S2  | Does one failed song stop the queue?          | Skip and continue, with the reason kept on screen                            |
-| S3  | What does a peer drop do to the queue?        | Stops it. A device that left will not take song five                         |
-| S4  | Do stem pills stay the mix-selection control? | No — informational in the compact tier; selection moves into the Mix flow    |
-| S5  | Is the two-peer e2e in CI?                    | Not at first. It needs `wrangler dev`; run it as a script until it is boring |
-| S6  | Stream pack progress to the receiver?         | No. One `sync-preparing`, one `sync-offer`                                   |
+| #   | Question                                      | Recommendation                                                                                                                                                                                                                                                                                                     |
+| --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1  | Zip several songs, or queue several bundles?  | **Queue.** Partial success, per-song decline, flat memory — see §B                                                                                                                                                                                                                                                 |
+| S2  | Does one failed song stop the queue?          | Skip and continue, with the reason kept on screen                                                                                                                                                                                                                                                                  |
+| S3  | What does a peer drop do to the queue?        | Stops it. A device that left will not take song five                                                                                                                                                                                                                                                               |
+| S4  | Do stem pills stay the mix-selection control? | **Revised — yes, they stay.** The user named "stems" as compact metadata, and the pills already are it; making them read-only would have cost the Mix flow its only selection UI and bought nothing. What actually moved out of the compact tier: the group picker, add/replace stem, re-index, and the session id |
+| S5  | Is the two-peer e2e in CI?                    | Not at first. It needs `wrangler dev`; run it as a script until it is boring                                                                                                                                                                                                                                       |
+| S6  | Stream pack progress to the receiver?         | No. One `sync-preparing`, one `sync-offer`                                                                                                                                                                                                                                                                         |

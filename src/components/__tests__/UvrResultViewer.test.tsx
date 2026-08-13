@@ -8,6 +8,13 @@ import { saveAllUvrSessions } from '@/stores/app-store'
 import type { UvrSession } from '@/types/uvr'
 import { UvrResultViewer } from '../UvrResultViewer'
 
+/** The viewer's header actions live behind one "..." now. */
+function openViewerMenu(): void {
+  fireEvent.click(
+    screen.getByRole('button', { name: 'More actions for this song' }),
+  )
+}
+
 describe('UvrResultViewer Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -69,8 +76,9 @@ describe('UvrResultViewer Component', () => {
       render(() => (
         <UvrResultViewer {...defaultProps} sessionId="session-123" />
       ))
-      expect(screen.getByText('Original')).toBeInTheDocument()
-      expect(screen.getByText('Export ZIP')).toBeInTheDocument()
+      openViewerMenu()
+      expect(screen.getByTestId('overflow-original')).toBeInTheDocument()
+      expect(screen.getByTestId('overflow-export-zip')).toBeInTheDocument()
     })
 
     it('hides Original button when session has no originalFile', () => {
@@ -83,7 +91,8 @@ describe('UvrResultViewer Component', () => {
       render(() => (
         <UvrResultViewer {...defaultProps} sessionId="session-123" />
       ))
-      expect(screen.queryByText('Original')).not.toBeInTheDocument()
+      openViewerMenu()
+      expect(screen.queryByTestId('overflow-original')).not.toBeInTheDocument()
     })
   })
 
@@ -105,7 +114,8 @@ describe('UvrResultViewer Component', () => {
           onRerunHq={vi.fn()}
         />
       ))
-      expect(document.querySelector('.session-result-btn-hq')).toBeTruthy()
+      openViewerMenu()
+      expect(screen.getByTestId('overflow-hq-same')).toBeInTheDocument()
     })
 
     it('hides HQ button when processingMode is server', () => {
@@ -117,10 +127,11 @@ describe('UvrResultViewer Component', () => {
           onRerunHq={vi.fn()}
         />
       ))
-      expect(document.querySelector('.session-result-btn-hq')).toBeNull()
+      openViewerMenu()
+      expect(screen.queryByTestId('overflow-hq-same')).not.toBeInTheDocument()
     })
 
-    it('fires onRerunHq with same/new when dropdown options are clicked', () => {
+    it('fires onRerunHq with same/new from the menu rows', () => {
       const onRerunHq = vi.fn()
       saveAllUvrSessions([localCompleted])
       render(() => (
@@ -131,15 +142,12 @@ describe('UvrResultViewer Component', () => {
         />
       ))
 
-      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
-      const items = document.querySelectorAll('.session-hq-rerun-item')
-      expect(items.length).toBe(2)
-
-      fireEvent.click(items[0])
+      openViewerMenu()
+      fireEvent.click(screen.getByTestId('overflow-hq-same'))
       expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'same')
 
-      fireEvent.click(document.querySelector('.session-result-btn-hq')!)
-      fireEvent.click(document.querySelectorAll('.session-hq-rerun-item')[1])
+      openViewerMenu()
+      fireEvent.click(screen.getByTestId('overflow-hq-new'))
       expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'new')
       expect(onRerunHq).toHaveBeenCalledTimes(2)
     })

@@ -22,11 +22,20 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: mocks.showNotification,
 }))
 vi.mock('../icons', () => ({
-  ChevronDown: () => <span>ChevronDown</span>,
+  DeviceSync: () => <span>DeviceSync</span>,
   Download: () => <span>Download</span>,
   X: () => <span>Close</span>,
   Zap: () => <span>Zap</span>,
 }))
+
+/** The actions all live behind one "..." now; open it before reaching in. */
+function openMenu(): HTMLElement {
+  const trigger = screen.getByRole('button', {
+    name: 'More actions for this song',
+  })
+  fireEvent.click(trigger)
+  return trigger
+}
 
 function completedSession(overrides: Partial<UvrSession> = {}): UvrSession {
   return {
@@ -74,11 +83,10 @@ describe('UvrSessionActions', () => {
       />
     ))
 
-    expect(screen.getByRole('button', { name: /Original/ })).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /Export ZIP/ }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /HQ/ })).toBeInTheDocument()
+    openMenu()
+    expect(screen.getByTestId('overflow-original')).toBeInTheDocument()
+    expect(screen.getByTestId('overflow-export-zip')).toBeInTheDocument()
+    expect(screen.getByTestId('overflow-hq-same')).toBeInTheDocument()
 
     unmount()
     render(() => (
@@ -92,10 +100,12 @@ describe('UvrSessionActions', () => {
       />
     ))
 
-    expect(
-      screen.queryByRole('button', { name: /Original/ }),
-    ).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /HQ/ })).not.toBeInTheDocument()
+    openMenu()
+    // A server-processed session with no stored original can be neither
+    // downloaded nor re-run, so neither row is offered at all.
+    expect(screen.queryByTestId('overflow-original')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('overflow-hq-same')).not.toBeInTheDocument()
+    expect(screen.getByTestId('overflow-export-zip')).toBeInTheDocument()
   })
 
   it('exports a core-only session immediately', async () => {
@@ -103,7 +113,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Export ZIP/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-export-zip'))
 
     await waitFor(() =>
       expect(mocks.exportSession).toHaveBeenCalledWith(
@@ -126,7 +137,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Export ZIP/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-export-zip'))
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     expect(
@@ -170,7 +182,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Export ZIP/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-export-zip'))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('session-export-submit'))
 
@@ -194,7 +207,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Export ZIP/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-export-zip'))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     fireEvent.click(
       screen.getByRole('radio', { name: /Vocal \+ instrumental/ }),
@@ -222,7 +236,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Export ZIP/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-export-zip'))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('session-export-submit'))
 
@@ -245,10 +260,8 @@ describe('UvrSessionActions', () => {
     render(() => (
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
-    const trigger = screen.getByRole('button', { name: /Export ZIP/ })
-
-    trigger.focus()
-    fireEvent.click(trigger)
+    const trigger = openMenu()
+    fireEvent.click(screen.getByTestId('overflow-export-zip'))
     const dialog = await screen.findByRole('dialog')
     fireEvent.keyDown(dialog, { key: 'Escape' })
 
@@ -276,7 +289,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={session()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Original/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-original'))
     setSession(
       completedSession({
         originalFile: {
@@ -298,7 +312,8 @@ describe('UvrSessionActions', () => {
       <UvrSessionActions sessionId="session-123" session={completedSession()} />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: /Original/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-original'))
 
     await waitFor(() =>
       expect(mocks.showNotification).toHaveBeenCalledWith(
@@ -307,29 +322,6 @@ describe('UvrSessionActions', () => {
       ),
     )
     expect(click).not.toHaveBeenCalled()
-  })
-
-  it('exposes an accessible HQ menu and closes it with Escape', () => {
-    render(() => (
-      <UvrSessionActions
-        sessionId="session-123"
-        session={completedSession()}
-        onRerunHq={vi.fn()}
-      />
-    ))
-    const trigger = screen.getByRole('button', { name: /HQ/ })
-
-    fireEvent.click(trigger)
-    expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    expect(
-      screen.getByRole('menu', { name: 'HQ processing options' }),
-    ).toBeInTheDocument()
-
-    fireEvent.keyDown(document, { key: 'Escape' })
-
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
   })
 
   it('runs each HQ target and closes the menu', () => {
@@ -341,15 +333,56 @@ describe('UvrSessionActions', () => {
         onRerunHq={onRerunHq}
       />
     ))
-    const trigger = screen.getByRole('button', { name: /HQ/ })
 
-    fireEvent.click(trigger)
-    fireEvent.click(screen.getByRole('menuitem', { name: /Upgrade/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-hq-same'))
     expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'same')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 
-    fireEvent.click(trigger)
-    fireEvent.click(screen.getByRole('menuitem', { name: /New session/ }))
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-hq-new'))
     expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'new')
+  })
+
+  it('fences off the row that replaces the stems', () => {
+    render(() => (
+      <UvrSessionActions
+        sessionId="session-123"
+        session={completedSession()}
+        onRerunHq={vi.fn()}
+      />
+    ))
+
+    openMenu()
+    const rows = screen.getAllByRole('menuitem')
+    // "Upgrade this session" throws away the stems that are there. It sits
+    // at the bottom, under a divider, away from Export ZIP.
+    expect(rows[rows.length - 1]).toHaveAttribute(
+      'data-testid',
+      'overflow-hq-same',
+    )
+    expect(screen.getByRole('separator')).toBeInTheDocument()
+  })
+
+  it('shows the card own rows in the same menu', () => {
+    const onDelete = vi.fn()
+    render(() => (
+      <UvrSessionActions
+        sessionId="session-123"
+        session={completedSession()}
+        extraItems={[
+          {
+            key: 'delete',
+            label: 'Delete',
+            destructive: true,
+            onSelect: onDelete,
+          },
+        ]}
+      />
+    ))
+
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-delete'))
+    expect(onDelete).toHaveBeenCalledTimes(1)
   })
 })

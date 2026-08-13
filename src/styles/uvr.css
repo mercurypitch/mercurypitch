@@ -2897,6 +2897,53 @@
   flex-shrink: 0;
 }
 
+/* The card's one menu trigger, top right in the header. Sized to the
+   other header furniture rather than to the menu's own default, which is
+   a 44px thumb target and too tall for this row on a desktop. */
+.session-header-actions .session-result-more {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+}
+
+/* The second tier's switch. Full width and quiet: it is a disclosure, not
+   an action, and it must not compete with View Results. */
+.session-more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.session-more-toggle:hover {
+  color: var(--text-primary);
+}
+
+.session-more-chevron {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+
+.session-more-chevron.open {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-more-chevron {
+    transition: none;
+  }
+}
+
 .session-icon-wrapper {
   display: flex;
   align-items: center;
@@ -2985,62 +3032,6 @@
   letter-spacing: 0.02em;
   cursor: default;
   max-width: fit-content;
-}
-
-.session-delete-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.375rem;
-  color: var(--fg-tertiary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-
-.session-delete-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--error);
-}
-
-.session-delete-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.session-share-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.375rem;
-  color: var(--fg-tertiary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-
-.uvr-session-result:hover .session-share-btn {
-  opacity: 1;
-}
-
-.session-share-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--accent);
-}
-
-.session-share-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
 }
 
 .status-bar {
@@ -3424,108 +3415,8 @@
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-.session-result-btn-export {
-  color: color-mix(in srgb, var(--accent) 72%, var(--fg-primary));
-  background: var(--accent-dim);
-  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
-}
-
-.session-result-btn-export:hover:not(:disabled) {
-  color: color-mix(in srgb, var(--accent-hover) 72%, var(--fg-primary));
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
-}
-
 /* HQ re-run (cloud GPU) button + its two-option dropdown */
-.session-hq-rerun {
-  position: relative;
-  flex: 1;
-  display: flex;
-}
-
-.session-hq-rerun .session-result-btn-hq {
-  width: 100%;
-  background: var(--bg-tertiary);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.session-hq-rerun .session-result-btn-hq:hover:not(:disabled) {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.5);
-}
-
-.session-hq-rerun-chevron {
-  display: inline-flex;
-  transition: transform 0.15s ease;
-}
-
-.session-hq-rerun-chevron.open {
-  transform: rotate(180deg);
-}
-
-.session-hq-rerun-menu {
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 4px;
-  display: flex;
-  flex-direction: column;
-  min-width: 240px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  z-index: 50;
-  animation: assign-menu-in 0.12s ease;
-}
-
-.session-hq-rerun-menu[hidden] {
-  display: none;
-}
-
-.session-hq-rerun-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  padding: 0.5rem 0.6rem;
-  background: transparent;
-  border: none;
-  border-radius: 0.35rem;
-  color: var(--fg-primary);
-  font-size: 0.82rem;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.session-hq-rerun-item:hover {
-  background: rgba(245, 158, 11, 0.1);
-}
-
 .session-result-btn:focus-visible,
-.session-hq-rerun-item:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.session-hq-rerun-item-note {
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: var(--fg-secondary);
-}
-
-.session-hq-rerun-hint {
-  padding: 0.4rem 0.6rem 0.3rem;
-  border-top: 1px solid var(--border);
-  margin-top: 0.2rem;
-  font-size: 0.7rem;
-  color: var(--fg-secondary);
-}
-
 /* Delete Confirmation Modal */
 .delete-confirm-overlay {
   position: fixed;
@@ -3764,35 +3655,6 @@
   color: var(--accent);
 }
 
-.rv-header-right .session-hq-rerun {
-  flex: none;
-}
-
-.rv-header-right .session-hq-rerun .session-result-btn-hq {
-  padding: 0.4rem 0.85rem;
-  font-size: 0.8rem;
-  height: 2rem;
-  box-sizing: border-box;
-  background: var(--bg-tertiary);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.rv-header-right .session-hq-rerun-menu {
-  top: 100%;
-  bottom: auto;
-  margin-top: 4px;
-  margin-bottom: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .session-hq-rerun-chevron,
-  .session-hq-rerun-menu {
-    animation: none;
-    transition: none;
-  }
-}
-
 .rv-share-btn {
   display: inline-flex;
   align-items: center;
@@ -3860,7 +3722,6 @@
     padding-inline: 0.65rem;
   }
 
-  .rv-header-right .session-hq-rerun .session-result-btn-hq,
   .rv-close-btn {
     min-height: 2.75rem;
   }
@@ -5081,10 +4942,6 @@
   }
 
   .session-result-actions .session-result-btn,
-  .session-result-actions .session-hq-rerun .session-result-btn-hq {
-    min-height: 2.75rem;
-  }
-
   .panel-header {
     flex-direction: column;
     align-items: stretch;

@@ -16,6 +16,7 @@ import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
 import { ExampleCredit } from './ExampleCredit'
 import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import type { OverflowMenuItem } from './OverflowMenu'
 import { PlayAlongSelect } from './PlayAlongSelect'
 import { UvrSessionActions } from './UvrSessionActions'
 
@@ -52,6 +53,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
   const [reindexing, setReindexing] = createSignal(false)
   const [showGroupSelect, setShowGroupSelect] = createSignal(false)
+  /**
+   * The second tier.
+   *
+   * Everything somebody goes LOOKING for rather than arrives wanting:
+   * changing the group, adding or replacing a stem by hand, re-indexing
+   * for Shazam, the session id, which machine did the work. None of them
+   * is ever the reason a card is on screen, and together they were half
+   * its height.
+   */
+  const [showMore, setShowMore] = createSignal(false)
   const [newGroupName, setNewGroupName] = createSignal('')
 
   const groups = () => getGroupsReactive()
@@ -237,6 +248,33 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     setTimeout(() => setReindexing(false), 3000)
   }
 
+  /**
+   * What the card contributes to the one menu in its header.
+   *
+   * Passed down to UvrSessionActions rather than rendered here, so a card
+   * has a single "..." instead of two that behave differently.
+   */
+  const cardMenuItems = createMemo((): OverflowMenuItem[] => [
+    {
+      key: 'share',
+      label: 'Copy share link',
+      icon: () => <Share />,
+      disabled: props.disabled === true,
+      onSelect: () => {
+        void handleCopyLink(new Event('copy-link'))
+      },
+    },
+    {
+      key: 'delete',
+      label: 'Delete this song',
+      note: 'Removes its stems from this device',
+      icon: () => <Trash2 />,
+      destructive: true,
+      disabled: props.disabled === true,
+      onSelect: () => handleDelete(new Event('delete')),
+    },
+  ])
+
   const hasSelection = () => selectedStems().size > 0
   const needsRecovery = () => {
     const status = session()?.status
@@ -349,24 +387,17 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </p>
           </Show>
           <div class="session-header-actions">
-            <button
-              class="session-delete-btn"
-              onClick={handleDelete}
-              aria-label="Delete session"
+            {/* Delete and Copy link used to sit here as their own buttons,
+                and everything else sat in a row of eight at the bottom.
+                One trigger, top right, where a card's menu belongs. */}
+            <UvrSessionActions
+              sessionId={props.sessionId}
+              session={session()}
               disabled={props.disabled}
-            >
-              <Trash2 />
-            </button>
-            <button
-              class="session-share-btn"
-              onClick={(e) => {
-                void handleCopyLink(e)
-              }}
-              title="Copy share link"
-              disabled={props.disabled}
-            >
-              <Share />
-            </button>
+              onRerunHq={props.onRerunHq}
+              onSendToDevice={props.onSendToDevice}
+              extraItems={cardMenuItems()}
+            />
           </div>
         </div>
 
@@ -378,21 +409,27 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           {session()?.originalFile?.name ?? 'Unknown'}
         </p>
         <ExampleCredit sessionId={props.sessionId} />
-        <p
-          class="session-id-pill"
-          title={
-            (session()?.apiSessionId as string | undefined) ??
-            session()?.sessionId ??
-            ''
-          }
-        >
-          {(() => {
-            const id =
+        <Show when={showMore()}>
+          <p
+            class="session-id-pill"
+            title={
               (session()?.apiSessionId as string | undefined) ??
-              session()?.sessionId
-            return id !== undefined ? (id.length > 16 ? id.slice(-8) : id) : ''
-          })()}
-        </p>
+              session()?.sessionId ??
+              ''
+            }
+          >
+            {(() => {
+              const id =
+                (session()?.apiSessionId as string | undefined) ??
+                session()?.sessionId
+              return id !== undefined
+                ? id.length > 16
+                  ? id.slice(-8)
+                  : id
+                : ''
+            })()}
+          </p>
+        </Show>
       </div>
 
       {/* Status */}
@@ -489,81 +526,84 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </Show>
       </div>
 
-      {/* Group Assignment */}
-      <div class="session-group-assign">
-        <span class="session-group-assign-label">Group</span>
-        <div class="session-group-assign-dropdown">
-          <button
-            class="session-group-assign-btn"
-            onClick={() => setShowGroupSelect(!showGroupSelect())}
-            title="Assign to group"
-          >
-            <span class="session-group-assign-current">
-              {currentGroup()?.name ?? 'No group'}
-            </span>
-            <span
-              class="session-group-assign-chevron"
-              classList={{ open: showGroupSelect() }}
+      {/* Group Assignment — second tier: a song's group is set once and
+          then read off the chip in the header. */}
+      <Show when={showMore()}>
+        <div class="session-group-assign">
+          <span class="session-group-assign-label">Group</span>
+          <div class="session-group-assign-dropdown">
+            <button
+              class="session-group-assign-btn"
+              onClick={() => setShowGroupSelect(!showGroupSelect())}
+              title="Assign to group"
             >
-              <ChevronDown size={12} />
-            </span>
-          </button>
-          <Show when={showGroupSelect()}>
-            <div class="session-group-assign-menu">
-              <For each={groups()}>
-                {(group) => (
+              <span class="session-group-assign-current">
+                {currentGroup()?.name ?? 'No group'}
+              </span>
+              <span
+                class="session-group-assign-chevron"
+                classList={{ open: showGroupSelect() }}
+              >
+                <ChevronDown size={12} />
+              </span>
+            </button>
+            <Show when={showGroupSelect()}>
+              <div class="session-group-assign-menu">
+                <For each={groups()}>
+                  {(group) => (
+                    <button
+                      class="session-group-assign-item"
+                      classList={{
+                        'session-group-assign-item--active':
+                          session()?.groupId === group.id,
+                      }}
+                      onClick={() => void handleGroupChange(group.id)}
+                    >
+                      {group.name}
+                      <span class="session-group-assign-item-count">
+                        {group.sessionIds.length}
+                      </span>
+                    </button>
+                  )}
+                </For>
+                <Show when={session()?.groupId}>
                   <button
-                    class="session-group-assign-item"
-                    classList={{
-                      'session-group-assign-item--active':
-                        session()?.groupId === group.id,
-                    }}
-                    onClick={() => void handleGroupChange(group.id)}
+                    class="session-group-assign-item session-group-assign-item--remove"
+                    onClick={() => void handleRemoveFromGroup()}
                   >
-                    {group.name}
-                    <span class="session-group-assign-item-count">
-                      {group.sessionIds.length}
-                    </span>
+                    Remove from group
                   </button>
-                )}
-              </For>
-              <Show when={session()?.groupId}>
-                <button
-                  class="session-group-assign-item session-group-assign-item--remove"
-                  onClick={() => void handleRemoveFromGroup()}
-                >
-                  Remove from group
-                </button>
-              </Show>
-              <div class="session-group-assign-divider" />
-              <div class="session-group-assign-new">
-                <input
-                  type="text"
-                  class="session-group-assign-new-input"
-                  placeholder="New group name"
-                  value={newGroupName()}
-                  onInput={(e) => setNewGroupName(e.currentTarget.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') void handleCreateAndAssign()
-                    if (e.key === 'Escape') setShowGroupSelect(false)
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <button
-                  class="session-group-assign-new-btn"
-                  onClick={() => void handleCreateAndAssign()}
-                >
-                  Create & assign
-                </button>
+                </Show>
+                <div class="session-group-assign-divider" />
+                <div class="session-group-assign-new">
+                  <input
+                    type="text"
+                    class="session-group-assign-new-input"
+                    placeholder="New group name"
+                    value={newGroupName()}
+                    onInput={(e) => setNewGroupName(e.currentTarget.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void handleCreateAndAssign()
+                      if (e.key === 'Escape') setShowGroupSelect(false)
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <button
+                    class="session-group-assign-new-btn"
+                    onClick={() => void handleCreateAndAssign()}
+                  >
+                    Create & assign
+                  </button>
+                </div>
               </div>
-            </div>
-            <div
-              class="session-group-assign-backdrop"
-              onClick={() => setShowGroupSelect(false)}
-            />
-          </Show>
+              <div
+                class="session-group-assign-backdrop"
+                onClick={() => setShowGroupSelect(false)}
+              />
+            </Show>
+          </div>
         </div>
-      </div>
+      </Show>
 
       {/* Outputs — compact multi-select stem pills */}
       <Show when={session()?.outputs || session()?.stemMeta}>
@@ -607,23 +647,25 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                     Shazam
                   </span>
                 </Show>
-                <span
-                  class="stem-pill-reindex"
-                  classList={{ 'stem-pill-reindexing': reindexing() }}
-                  onClick={handleReindex}
-                  role="button"
-                  tabindex={
-                    reindexing() || props.disabled === true ? undefined : '0'
-                  }
-                  aria-disabled={reindexing() || props.disabled === true}
-                  title={
-                    vocalFingerprinted()
-                      ? 'Re-index vocal stem for Shazam matching'
-                      : 'Index vocal stem for Shazam matching'
-                  }
-                >
-                  <RotateCcw />
-                </span>
+                <Show when={showMore()}>
+                  <span
+                    class="stem-pill-reindex"
+                    classList={{ 'stem-pill-reindexing': reindexing() }}
+                    onClick={handleReindex}
+                    role="button"
+                    tabindex={
+                      reindexing() || props.disabled === true ? undefined : '0'
+                    }
+                    aria-disabled={reindexing() || props.disabled === true}
+                    title={
+                      vocalFingerprinted()
+                        ? 'Re-index vocal stem for Shazam matching'
+                        : 'Index vocal stem for Shazam matching'
+                    }
+                  >
+                    <RotateCcw />
+                  </span>
+                </Show>
                 <Show
                   when={formatDuration(session()?.stemMeta?.vocal?.duration)}
                 >
@@ -684,8 +726,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
           </div>
 
-          {/* Add / replace uploaded stems — icon-only, single row */}
-          <Show when={session()?.status === 'completed'}>
+          {/* Add / replace uploaded stems — second tier. Reaching for
+              this means going looking; it is never why a card is open. */}
+          <Show when={session()?.status === 'completed' && showMore()}>
             <div class="stem-manage">
               <label
                 class="stem-manage-btn"
@@ -829,13 +872,6 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 <SlidersHorizontal /> Mix
               </button>
             </Show>
-            <UvrSessionActions
-              sessionId={props.sessionId}
-              session={session()}
-              disabled={props.disabled}
-              onRerunHq={props.onRerunHq}
-              onSendToDevice={props.onSendToDevice}
-            />
           </Show>
           <Show when={canProcessAgain()}>
             <button
@@ -853,6 +889,24 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           </Show>
         </div>
       </Show>
+
+      {/* The second tier's own switch. A card should be scannable in a
+          second and stackable ten to a screen; this is where the rest
+          went, and it says so rather than hiding it. */}
+      <button
+        type="button"
+        class="session-more-toggle"
+        aria-expanded={showMore()}
+        onClick={(e) => {
+          e.stopPropagation()
+          setShowMore((v) => !v)
+        }}
+      >
+        {showMore() ? 'Show less' : 'Show more'}
+        <span class="session-more-chevron" classList={{ open: showMore() }}>
+          <ChevronDown size={12} />
+        </span>
+      </button>
 
       {/* Delete Confirmation Modal */}
       <Show when={showDeleteConfirm()}>
