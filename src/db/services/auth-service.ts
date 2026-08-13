@@ -446,18 +446,43 @@ export function googleSignInUrl(): string {
 }
 
 /**
- * Pick up the #gauth / #gauth_error fragment after returning from the
- * Google redirect: store the JWT, then swap the fragment for the hash
- * route stashed by googleSignInUrl() so the user lands back on the page
- * they started from. Runs at app startup, before the router boots and
- * before any other auth call.
+ * Pick up the #gauth / #gauth_error / #gdrive fragment after returning
+ * from the Google redirect: store the JWT, record the Drive outcome, then
+ * swap the fragment for the hash route stashed by googleSignInUrl() or
+ * startDriveConnect() so the user lands back on the page they started
+ * from. Runs at app startup, before the router boots and before any other
+ * auth call.
  */
 export function consumeGoogleRedirect(): void {
   const hash = window.location.hash
-  if (!hash.startsWith('#gauth')) return
+  // `#gdrive` as well as `#gauth`: a connect-Drive pass is NOT a sign-in.
+  // The worker returns from it early — before any account is resolved, on
+  // purpose, so that picking a different Google account for your Drive
+  // cannot change who you are signed in as — so it comes back carrying
+  // `#gdrive=1` or `#gdrive_error=…` and no `gauth` token at all. Matching
+  // only `#gauth` meant this function returned immediately on every Drive
+  // return, which left `driveConnectResult` unset: the settings page showed
+  // no reason for a refusal and never auto-scanned after a success, and the
+  // stashed route was never consumed — so it stayed in sessionStorage and
+  // was restored by the next unrelated sign-in instead.
+  if (!hash.startsWith('#gauth') && !hash.startsWith('#gdrive')) return
   const params = new URLSearchParams(hash.slice(1))
   const token = params.get('gauth')
   const error = params.get('gauth_error')
+
+  // Read outside the sign-in branch: the Drive outcome has to survive both
+  // shapes of return — the standalone connect pass, which is the only one
+  // the worker actually produces today, and a combined pass whose sign-in
+  // half succeeded while its Drive half was declined.
+  if (params.get('gdrive') === '1') {
+    driveConnectResult = { ok: true }
+  } else {
+    const driveError = params.get('gdrive_error')
+    if (driveError != null && driveError !== '') {
+      driveConnectResult = { ok: false, error: driveError }
+    }
+  }
+
   if (token != null && token !== '') {
     setAuthToken(token)
     setRequiresLogin(false)
@@ -466,17 +491,6 @@ export function consumeGoogleRedirect(): void {
     authChanged()
     // gauth_new marks a first-time Google account (set by the worker).
     if (params.get('gauth_new') === '1') trackEvent('signup')
-    // A connect-Drive pass rides the same redirect; its outcome is a
-    // separate marker because the sign-in half can succeed while the
-    // Drive half was declined or lost its refresh token.
-    if (params.get('gdrive') === '1') {
-      driveConnectResult = { ok: true }
-    } else {
-      const driveError = params.get('gdrive_error')
-      if (driveError != null && driveError !== '') {
-        driveConnectResult = { ok: false, error: driveError }
-      }
-    }
   } else if (error != null && error !== '') {
     if (error === ACCOUNT_SUSPENDED_CODE) {
       handleAuthErrorResponse(
