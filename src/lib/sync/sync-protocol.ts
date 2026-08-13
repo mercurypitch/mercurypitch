@@ -53,6 +53,29 @@ export type SyncWireMessage =
    * the browser will not say, which means "unknown", never "unlimited".
    */
   | { type: 'sync-hello'; label: string; freeBytes?: number; quota?: number }
+  /**
+   * "I have started packing a song for you."
+   *
+   * `sync-offer` cannot be sent until the bundle exists, because it
+   * carries the manifest and the manifest is the parts list with a
+   * SHA-256 per part. Packing is a full decode and re-encode of every
+   * stem — tens of seconds on a desktop, longer on a phone — and for all
+   * of it the receiving device had nothing to show. Its screen was
+   * correct at every instant and a lie over the whole minute: there is no
+   * way to tell "working" from "nothing happened".
+   *
+   * `estimatedBytes` is the sender's rough guess, good only for saying
+   * roughly how big this will be; the exact figure arrives with the
+   * offer that replaces this state.
+   */
+  | {
+      type: 'sync-preparing'
+      fileHash: string
+      title: string
+      estimatedBytes?: number
+    }
+  /** The promise above, retracted — packing failed, or was called off. */
+  | { type: 'sync-cancelled'; fileHash: string; message?: string }
   | { type: 'sync-offer'; manifest: PortableBundleManifest }
   | { type: 'sync-accept'; fileHash: string }
   | { type: 'part-request'; fileHash: string; part: PortablePartId }
@@ -548,6 +571,8 @@ export function isSyncWireMessage(
     typeof value['type'] === 'string' &&
     [
       'sync-hello',
+      'sync-preparing',
+      'sync-cancelled',
       'sync-offer',
       'sync-accept',
       'part-request',

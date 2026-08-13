@@ -303,6 +303,34 @@
   transition: width 0.15s ease;
 }
 
+/*
+ * While the far device is packing, this side knows only that work is
+ * happening — not how far along it is. A bar parked at 0% would be a
+ * number pretending to be information, so this one sweeps instead.
+ */
+.barIndeterminate {
+  width: 35%;
+  animation: sync-bar-sweep 1.4s ease-in-out infinite;
+  transition: none;
+}
+
+@keyframes sync-bar-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(285%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barIndeterminate {
+    width: 100%;
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
 .transferNote {
   margin: 6px 0 0;
   font-size: 0.76rem;

@@ -53,6 +53,11 @@ function transferStateLabel(t: SyncTransfer): string {
   switch (t.status) {
     case 'packing':
       return `Packing ${Math.round(t.ratio * 100)}%`
+    case 'preparing':
+      // No percentage: this side is told a song is being packed, not how
+      // far along it is. "This can take a minute" is the part somebody
+      // watching a still screen actually needs.
+      return 'Being prepared — this can take a minute'
     case 'transferring':
       return `${t.direction === 'out' ? 'Sending' : 'Receiving'} ${Math.round(t.ratio * 100)}%`
     case 'done':
@@ -466,13 +471,23 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                       </div>
                       <Show
                         when={
-                          t.status === 'packing' || t.status === 'transferring'
+                          t.status === 'packing' ||
+                          t.status === 'preparing' ||
+                          t.status === 'transferring'
                         }
                       >
                         <div class={styles.bar}>
                           <div
                             class={styles.barFill}
-                            style={{ width: `${Math.round(t.ratio * 100)}%` }}
+                            classList={{
+                              [styles.barIndeterminate!]:
+                                t.status === 'preparing',
+                            }}
+                            style={
+                              t.status === 'preparing'
+                                ? undefined
+                                : { width: `${Math.round(t.ratio * 100)}%` }
+                            }
                           />
                         </div>
                       </Show>
