@@ -16,7 +16,11 @@ const peerMock = vi.hoisted(() => ({
   leaveRoom: vi.fn(() => Promise.resolve()),
   dispose: vi.fn(),
   sendControl: vi.fn(),
-  channelTo: vi.fn(() => ({ readyState: 'open' })),
+  // Nullable at the declaration because one refusal path is "there is no
+  // channel at all", and a mock narrowed to the happy shape cannot say so.
+  channelTo: vi.fn((): { readyState: string } | null => ({
+    readyState: 'open',
+  })),
 }))
 
 vi.mock('@/lib/sync/sync-peer', () => ({
@@ -68,7 +72,7 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { sendSongToPeer, startSyncReceive, stopSync, syncError, syncPeerRoom, syncState, syncTransfers, } from '@/stores/sync-store'
+import { sendSongToPeer, startSyncReceive, stopSync, syncBusy, syncError, syncPeerRoom, syncState, syncTransfers, } from '@/stores/sync-store'
 
 /** Drive the store to a live room with a connected peer. */
 async function connect(): Promise<void> {
@@ -84,6 +88,10 @@ beforeEach(async () => {
   peerMock.peerId = 'peer-1'
   uvr.session = { id: 's1', fileHash: 'hash-1' }
   route.awaitDirectRoute.mockResolvedValue('direct')
+  // `clearAllMocks` forgets calls but keeps implementations, so anything
+  // a test points at a different answer has to be pointed back by hand.
+  peerMock.connection = { getStats: async () => new Map() }
+  peerMock.channelTo.mockReturnValue({ readyState: 'open' })
 })
 
 describe('waiting for the other device', () => {
@@ -342,6 +350,102 @@ describe('telling the receiver a song is being packed', () => {
     // closing it by hand it waits for ever.
     expect(syncTransfers()[0]?.status).toBe('failed')
     expect(syncTransfers()[0]?.message).toContain('left')
+  })
+})
+
+describe('every way a send can be refused', () => {
+  /**
+   * One row per exit from `sendSongToPeer`. The point is not the message —
+   * each of those has its own test — but that whatever happens, the
+   * interlock comes back off. Six of these returns sit inside the `try`
+   * and depend on the `finally` to release it; a seventh added outside
+   * would wedge the modal with every control disabled and no way back,
+   * and nothing else in the suite would notice.
+   */
+  const refusals: { name: string; arrange: () => void; saying: string }[] = [
+    {
+      name: 'the peer connection is gone',
+      saying: 'no longer open',
+      arrange: () => {
+        peerMock.connection = null
+      },
+    },
+    {
+      name: 'the route is a relay',
+      saying: 'same Wi-Fi',
+      arrange: () => route.awaitDirectRoute.mockResolvedValue('relayed'),
+    },
+    {
+      name: 'the route cannot be worked out',
+      saying: 'Could not confirm a direct connection',
+      arrange: () => route.awaitDirectRoute.mockResolvedValue('unknown'),
+    },
+    {
+      name: 'the far device is known to be too full, before packing',
+      saying: 'roughly',
+      arrange: () => {
+        uvr.session = bigSong
+        peerMock.handlers?.onControl('peer-1', {
+          type: 'sync-hello',
+          label: 'Full TV',
+          freeBytes: 1e3,
+          quota: 16e6,
+        })
+      },
+    },
+    {
+      name: 'the packed song turns out too big for the far device',
+      saying: 'free and this song needs',
+      arrange: () => {
+        peerMock.handlers?.onControl('peer-1', {
+          type: 'sync-hello',
+          label: 'Full TV',
+          freeBytes: 5,
+          quota: 16e6,
+        })
+      },
+    },
+    {
+      name: 'the channel died while the song was packing',
+      saying: 'dropped while the song was being packed',
+      arrange: () =>
+        peerMock.channelTo.mockReturnValue({ readyState: 'closed' }),
+    },
+    {
+      name: 'the channel is gone entirely',
+      saying: 'closed before the song could be sent',
+      arrange: () => peerMock.channelTo.mockReturnValue(null),
+    },
+    {
+      name: 'packing itself throws',
+      saying: 'No memory',
+      arrange: () =>
+        bundle.buildPortableBundle.mockRejectedValueOnce(
+          new Error('No memory'),
+        ),
+    },
+  ]
+
+  for (const refusal of refusals) {
+    it(`releases the interlock when ${refusal.name}`, async () => {
+      await connect()
+      refusal.arrange()
+
+      await sendSongToPeer('s1')
+
+      expect(syncBusy()).toBe(false)
+      const row = syncTransfers()[0]
+      expect(row?.status).toBe('failed')
+      // The fragment is what proves these are eight DIFFERENT exits
+      // rather than one path reached eight ways.
+      expect(row?.message).toContain(refusal.saying)
+    })
+  }
+
+  it('releases it after a send that goes all the way through', async () => {
+    await connect()
+    await sendSongToPeer('s1')
+    expect(syncBusy()).toBe(false)
   })
 })
 
