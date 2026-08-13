@@ -14,7 +14,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeDriveConnectResult, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -358,6 +358,69 @@ describe('Google redirect signup tracking', () => {
     })
     expect(showNotificationMock).not.toHaveBeenCalled()
     expect(window.location.hash).toBe('#/mirror')
+  })
+})
+
+// A connect-Drive pass is not a sign-in: the worker returns from it before
+// resolving any account (so choosing a different Google account for your
+// Drive cannot change who you are signed in as), which means it comes back
+// carrying #gdrive and NO gauth token. Matching only '#gauth' therefore
+// dropped every Drive return on the floor.
+describe('Drive connect redirect', () => {
+  it('records a refusal reason from a #gdrive-only return', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#gdrive_error=declined')
+
+    consumeGoogleRedirect()
+
+    expect(takeDriveConnectResult()).toEqual({ ok: false, error: 'declined' })
+  })
+
+  it('records success from a #gdrive-only return', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#gdrive=1')
+
+    consumeGoogleRedirect()
+
+    expect(takeDriveConnectResult()).toEqual({ ok: true })
+  })
+
+  // The stash is one-shot. Left unconsumed it does not merely lose this
+  // route -- it waits in sessionStorage and hijacks the NEXT unrelated
+  // Google sign-in, which is the hazard startDriveConnect's late stash
+  // exists to avoid.
+  it('restores the stashed route and clears the stash', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#gdrive=1')
+
+    consumeGoogleRedirect()
+
+    expect(window.location.hash).toBe('#/settings/sync')
+    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBeNull()
+  })
+
+  // A Drive return must not be mistaken for a sign-in.
+  it('does not produce a sign-in result or touch the token', () => {
+    setAuthToken(makeToken(3600, 'password'))
+    const before = getAuthToken()
+    history.replaceState(null, '', '/#gdrive=1')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleRedirectResult()).toBeNull()
+    expect(getAuthToken()).toBe(before)
+    takeDriveConnectResult() // one-shot: drain it so it cannot leak forward
+  })
+
+  it('leaves an unrelated fragment alone', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#/karaoke')
+
+    consumeGoogleRedirect()
+
+    expect(takeDriveConnectResult()).toBeNull()
+    expect(window.location.hash).toBe('#/karaoke')
+    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBe('#/settings/sync')
   })
 })
 
