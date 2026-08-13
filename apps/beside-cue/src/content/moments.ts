@@ -1,0 +1,244 @@
+// ============================================================
+// Moment engine — what the app shows and says at a named beat
+// ============================================================
+//
+// Screens ask for a moment, not for a picture and a sentence. That keeps the
+// cue flow out of the art pipeline: when Corky gains a real `turn` clip, or a
+// line gains a recording, the moment definition is the only thing that changes.
+//
+// Selection is deterministic. The app already rotates its phrases by a stored
+// index rather than at random, so a person sees the set in order instead of
+// hearing the same line twice running, and a test can assert an exact string.
+
+import type { AssetSlot } from './assets'
+import type { Character, CharacterStateId, ContentPack, CueEntity, Line, } from './pack'
+import { findCharacter, findCueEntity, GENERIC_CUE_ENTITY } from './pack'
+
+export type MomentId =
+  | 'onboarding.welcome'
+  | 'onboarding.cue-arrives'
+  | 'onboarding.sort-sides'
+  | 'onboarding.stop-the-spin'
+  | 'onboarding.reaction'
+  | 'onboarding.time-dial'
+  | 'onboarding.close'
+  | 'cue.open'
+  | 'turn.b-side'
+  | 'turn.a-side'
+  | 'return'
+  | 'pressing.earned'
+  | 'reminder.set'
+
+export interface MomentDefinition {
+  readonly id: MomentId
+  readonly characterState: CharacterStateId
+  /** Whether this beat is about a cue arriving, and so shows its token. */
+  readonly showsEntity: boolean
+  /** Always visible, whether or not the line is ever recorded. */
+  readonly caption: string
+  /** Rotated through in order. Never empty. */
+  readonly lineIds: readonly string[]
+}
+
+export const MOMENTS: Readonly<Record<MomentId, MomentDefinition>> = {
+  'onboarding.welcome': {
+    id: 'onboarding.welcome',
+    characterState: 'rest',
+    showsEntity: false,
+    caption: 'Two sides to every record',
+    lineIds: ['onboarding.welcome'],
+  },
+  'onboarding.cue-arrives': {
+    id: 'onboarding.cue-arrives',
+    characterState: 'notice',
+    showsEntity: true,
+    caption: 'A cue arrives on its own',
+    lineIds: ['onboarding.cue-arrives'],
+  },
+  'onboarding.sort-sides': {
+    id: 'onboarding.sort-sides',
+    characterState: 'rest',
+    showsEntity: true,
+    caption: 'Side A is the pull. Side B is the turn.',
+    lineIds: ['onboarding.sort-sides'],
+  },
+  'onboarding.stop-the-spin': {
+    id: 'onboarding.stop-the-spin',
+    characterState: 'turn',
+    showsEntity: false,
+    caption: 'Nothing to stop, only a side to choose',
+    lineIds: ['onboarding.stop-the-spin'],
+  },
+  'onboarding.reaction': {
+    id: 'onboarding.reaction',
+    characterState: 'rest',
+    showsEntity: false,
+    caption: 'Both answers are real answers',
+    lineIds: ['onboarding.reaction'],
+  },
+  'onboarding.time-dial': {
+    id: 'onboarding.time-dial',
+    characterState: 'rest',
+    showsEntity: false,
+    caption: 'Pick your time on the label',
+    lineIds: ['onboarding.time-dial'],
+  },
+  'onboarding.close': {
+    id: 'onboarding.close',
+    characterState: 'quiet',
+    showsEntity: false,
+    caption: 'See you at the next spin',
+    lineIds: ['onboarding.close'],
+  },
+  'cue.open': {
+    id: 'cue.open',
+    characterState: 'notice',
+    showsEntity: true,
+    caption: 'One cue, no argument',
+    lineIds: [
+      'cue.hovering',
+      'cue.on-the-label',
+      'cue.hold-the-sleeve',
+      'cue.quick-spin',
+      'cue.your-move',
+    ],
+  },
+  'turn.b-side': {
+    id: 'turn.b-side',
+    characterState: 'turn',
+    showsEntity: false,
+    caption: 'Turn toward your B-side',
+    lineIds: [
+      'bside.clean-groove',
+      'bside.pressed',
+      'bside.the-craft',
+      'bside.run-out',
+      'bside.good-side',
+    ],
+  },
+  'turn.a-side': {
+    id: 'turn.a-side',
+    characterState: 'quiet',
+    showsEntity: false,
+    caption: 'The screen can go quiet now',
+    lineIds: [
+      'aside.records-do-that',
+      'aside.noted',
+      'aside.flip-when-ready',
+      'aside.beside-you',
+      'aside.tomorrow',
+    ],
+  },
+  return: {
+    id: 'return',
+    characterState: 'rest',
+    showsEntity: false,
+    caption: 'The turntable kept your place',
+    lineIds: [
+      'return.kept-your-place',
+      'return.surface-noise',
+      'return.no-groove-wore-out',
+      'return.records-wait',
+      'return.left-the-sleeve',
+    ],
+  },
+  'pressing.earned': {
+    id: 'pressing.earned',
+    characterState: 'turn',
+    showsEntity: false,
+    caption: 'A pressing, run of one',
+    lineIds: [
+      'pressing.hold-to-light',
+      'pressing.every-groove',
+      'pressing.run-of-one',
+      'pressing.needed-yours',
+      'pressing.listen-back',
+    ],
+  },
+  'reminder.set': {
+    id: 'reminder.set',
+    characterState: 'rest',
+    showsEntity: false,
+    caption: 'Your slot on the turntable',
+    lineIds: [
+      'reminder.at-seven',
+      'reminder.same-time',
+      'reminder.slot-is-safe',
+    ],
+  },
+}
+
+export interface MomentContext {
+  /** Which pull this beat is about, when it is about one. */
+  readonly pullId?: string
+  /**
+   * Rotation counter. The same value always yields the same line, so a screen
+   * that re-renders does not reshuffle what it is saying mid-sentence.
+   */
+  readonly rotation?: number
+}
+
+export interface MomentPresentation {
+  readonly moment: MomentId
+  readonly caption: string
+  readonly character: Character
+  readonly characterState: CharacterStateId
+  readonly art: AssetSlot
+  readonly line: Line
+  /** Present only when the beat shows one and the pull has one. */
+  readonly entity?: CueEntity
+}
+
+function itemAt<T>(items: readonly T[], index: number): T {
+  // Negative and oversized counters both wrap, so a stored rotation that
+  // outlives a content change cannot crash a screen.
+  const size = items.length
+  const wrapped = ((index % size) + size) % size
+  return items[wrapped] as T
+}
+
+/**
+ * Resolves one beat into everything a screen needs to draw it.
+ *
+ * Throws only for a genuinely broken pack — a missing lead character or a line
+ * id a moment references but the pack does not define. Both are caught by the
+ * pack validation test, so they cannot reach a build.
+ */
+export function resolveMoment(
+  pack: ContentPack,
+  moment: MomentId,
+  context: MomentContext = {},
+): MomentPresentation {
+  const definition = MOMENTS[moment]
+  const character = findCharacter(pack, pack.leadCharacterId)
+  if (character === undefined) {
+    throw new Error(
+      `Content pack "${pack.id}" has no lead character "${pack.leadCharacterId}".`,
+    )
+  }
+
+  const lineId = itemAt(definition.lineIds, context.rotation ?? 0)
+  const line = pack.lines.find((candidate) => candidate.id === lineId)
+  if (line === undefined) {
+    throw new Error(
+      `Moment "${moment}" references line "${lineId}", which the pack does not define.`,
+    )
+  }
+
+  // A beat about a cue always shows one. Someone who named their own moment
+  // has no creature, and a blank space where Corky is plainly looking would
+  // read as a missing image rather than a design choice.
+  const entity = definition.showsEntity
+    ? (findCueEntity(pack, context.pullId) ?? GENERIC_CUE_ENTITY)
+    : undefined
+
+  return {
+    moment,
+    caption: definition.caption,
+    character,
+    characterState: definition.characterState,
+    art: character.states[definition.characterState],
+    line,
+    ...(entity === undefined ? {} : { entity }),
+  }
+}
