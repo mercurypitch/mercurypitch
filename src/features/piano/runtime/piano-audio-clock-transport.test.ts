@@ -305,6 +305,24 @@ describe('createPianoAudioClockTransport', () => {
     expect(instance.transport.phase()).toBe('playing')
   })
 
+  it('rebases a final-beat completion onto the same running audio clock', async () => {
+    const instance = harness({ totalBeats: () => 8, tempoBpm: 120 })
+    await instance.transport.play()
+    instance.context.currentTime = 14.5
+
+    expect(instance.transport.timeline.playheadBeat()).toBe(8)
+    expect(instance.transport.phase()).toBe('complete')
+    expect(instance.transport.rebasePlayingBeat(8)).toBe(false)
+    expect(instance.transport.rebasePlayingBeat(2)).toBe(true)
+    expect(instance.transport.phase()).toBe('playing')
+    expect(instance.transport.timeline.playheadBeat()).toBe(2)
+
+    instance.context.currentTime = 15.5
+    expect(instance.transport.timeline.playheadBeat()).toBe(4)
+    expect(instance.contextFactory).toHaveBeenCalledOnce()
+    expect(instance.activateContext).toHaveBeenCalledOnce()
+  })
+
   it('stops at zero and leaves the already-created context reusable', async () => {
     const instance = harness()
     await instance.transport.play()

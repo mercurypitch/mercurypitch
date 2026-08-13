@@ -10,6 +10,7 @@ import type { PianoProjectStageNote } from './piano-project-stage'
 
 interface HarnessOptions {
   notes?: PianoProjectStageNote[]
+  playbackEndBeat?: number | null
   contextTimeAtBeat?: (
     targetBeat: number,
     playheadBeat: number,
@@ -24,6 +25,7 @@ interface HarnessOptions {
 
 function harness(options: HarnessOptions = {}) {
   let beat = 0
+  let playbackEndBeat = options.playbackEndBeat ?? null
   let phase: 'playing' | 'paused' = 'playing'
   let notes: PianoProjectStageNote[] = options.notes ?? [
     {
@@ -64,6 +66,7 @@ function harness(options: HarnessOptions = {}) {
     transport,
     synth,
     notes: () => notes,
+    playbackEndBeat: () => playbackEndBeat,
     scheduleAheadSeconds: 0.2,
     schedulerIntervalMs: 20,
     setInterval: (callback) => {
@@ -80,6 +83,9 @@ function harness(options: HarnessOptions = {}) {
     scheduler,
     setBeat(value: number) {
       beat = value
+    },
+    setPlaybackEndBeat(value: number | null) {
+      playbackEndBeat = value
     },
     setPhase(value: 'playing' | 'paused') {
       phase = value
@@ -146,6 +152,68 @@ describe('createPianoPerformanceScheduler', () => {
       releaseVelocity: 0.3,
       atContextTime: 10.7,
     })
+  })
+
+  it('keeps the playback boundary half-open and clamps crossing releases', () => {
+    const instance = harness({
+      playbackEndBeat: 0.4,
+      notes: [
+        {
+          id: 'crossing',
+          midi: 60,
+          name: 'C',
+          startBeat: 0.2,
+          duration: 1,
+          targetFreq: 261.63,
+          velocity: 0.8,
+          releaseVelocity: 0.3,
+          channel: 0,
+        },
+        {
+          id: 'at-boundary',
+          midi: 64,
+          name: 'E',
+          startBeat: 0.4,
+          duration: 0.5,
+          targetFreq: 329.63,
+          velocity: 0.8,
+          releaseVelocity: 0.3,
+          channel: 0,
+        },
+        {
+          id: 'after-boundary',
+          midi: 67,
+          name: 'G',
+          startBeat: 0.5,
+          duration: 0.5,
+          targetFreq: 392,
+          velocity: 0.8,
+          releaseVelocity: 0.3,
+          channel: 0,
+        },
+      ],
+    })
+
+    instance.scheduler.start()
+
+    expect(instance.noteOn).toHaveBeenCalledOnce()
+    expect(instance.noteOn).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'score:0:crossing' }),
+    )
+    expect(instance.noteOff).toHaveBeenCalledWith({
+      id: 'score:0:crossing',
+      releaseVelocity: 0.3,
+      atContextTime: 10.2,
+    })
+  })
+
+  it('does not restart an active note after the playback boundary', () => {
+    const instance = harness({ playbackEndBeat: 0.4 })
+    instance.setBeat(0.4)
+
+    instance.scheduler.start()
+
+    expect(instance.noteOn).not.toHaveBeenCalled()
   })
 
   it('does not create a clock until transport is playing', () => {

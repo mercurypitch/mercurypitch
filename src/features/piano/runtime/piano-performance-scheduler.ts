@@ -22,6 +22,8 @@ export interface PianoPerformanceSchedulerOptions {
   transport: PianoAudioClockTransport
   notes: Accessor<readonly PianoProjectStageNote[]>
   synth: PianoInstrumentVoicePort
+  /** Half-open route playback boundary. Changes take effect on refresh. */
+  playbackEndBeat?: Accessor<number | null>
   scheduleAheadSeconds?: number
   schedulerIntervalMs?: number
   setInterval?: (callback: () => void, delayMs: number) => number
@@ -233,16 +235,28 @@ export function createPianoPerformanceScheduler(
     cursorNeedsReset = true
   }
 
+  const playbackEndBeat = (): number | null => {
+    const configured = options.playbackEndBeat?.() ?? null
+    if (configured === null || !Number.isFinite(configured)) return null
+    return Math.max(0, configured)
+  }
+
   const scheduleNote = (
     noteIndex: number,
     beat: number,
     context: AudioContext,
+    boundaryBeat: number | null,
   ): void => {
     const note = orderedNotes[noteIndex]
+    if (boundaryBeat !== null && note.startBeat >= boundaryBeat) return
     const id = voiceId(note)
     if (scheduledReleases.has(id)) return
-    const noteEndBeat =
+    const authoredEndBeat =
       activeNoteIndex.maxEndBeats[activeNoteIndex.leafCount + noteIndex]
+    const noteEndBeat =
+      boundaryBeat === null
+        ? authoredEndBeat
+        : Math.min(authoredEndBeat, boundaryBeat)
     if (noteEndBeat <= beat) return
 
     const startBeat = Math.max(beat, orderedStartBeats[noteIndex])
@@ -250,7 +264,12 @@ export function createPianoPerformanceScheduler(
     const mappedEnd = options.transport.contextTimeAtBeat(noteEndBeat)
     if (mappedStart === null || mappedEnd === null) return
     const startsAt = Math.max(context.currentTime, mappedStart)
-    const endsAt = Math.max(startsAt + 0.02, mappedEnd)
+    const reachesBoundary =
+      boundaryBeat !== null && authoredEndBeat >= boundaryBeat
+    if (reachesBoundary && startsAt >= mappedEnd) return
+    const endsAt = reachesBoundary
+      ? mappedEnd
+      : Math.max(startsAt + 0.02, mappedEnd)
     const started = options.synth.noteOn({
       id,
       midi: note.midi,
@@ -268,10 +287,14 @@ export function createPianoPerformanceScheduler(
     generationHasScheduledNotes = true
   }
 
-  const resetCursor = (beat: number, context: AudioContext): void => {
+  const resetCursor = (
+    beat: number,
+    context: AudioContext,
+    boundaryBeat: number | null,
+  ): void => {
     const firstFutureNote = firstNoteAfter(orderedStartBeats, beat)
     visitActiveNotes(activeNoteIndex, firstFutureNote, beat, (noteIndex) => {
-      scheduleNote(noteIndex, beat, context)
+      scheduleNote(noteIndex, beat, context, boundaryBeat)
     })
     noteCursor = firstFutureNote
     cursorNeedsReset = false
@@ -289,18 +312,30 @@ export function createPianoPerformanceScheduler(
     }
 
     const beat = options.transport.timeline.playheadBeat()
+    const boundaryBeat = playbackEndBeat()
+    if (boundaryBeat !== null && beat >= boundaryBeat) return
     pruneReleased(context.currentTime)
     ensureNoteIndex()
-    if (cursorNeedsReset) resetCursor(beat, context)
+    if (cursorNeedsReset) resetCursor(beat, context, boundaryBeat)
 
-    const horizonBeat = options.transport.beatAtContextTime(
+    const mappedHorizonBeat = options.transport.beatAtContextTime(
       context.currentTime + scheduleAheadSeconds,
     )
+    const horizonBeat =
+      boundaryBeat === null
+        ? mappedHorizonBeat
+        : Math.min(mappedHorizonBeat, boundaryBeat)
     while (noteCursor < orderedNotes.length) {
+      if (
+        boundaryBeat !== null &&
+        orderedStartBeats[noteCursor] >= boundaryBeat
+      ) {
+        break
+      }
       if (orderedStartBeats[noteCursor] > horizonBeat) break
       const noteIndex = noteCursor
       noteCursor += 1
-      scheduleNote(noteIndex, beat, context)
+      scheduleNote(noteIndex, beat, context, boundaryBeat)
     }
   }
 

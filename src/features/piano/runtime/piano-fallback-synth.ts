@@ -36,6 +36,7 @@ interface SynthVoice {
 }
 
 const MINIMUM_GAIN = 0.0001
+const MASTER_GAIN = 0.72
 const RELEASE_SECONDS = 0.085
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -61,6 +62,23 @@ function safeDisconnect(node: AudioNode): void {
   }
 }
 
+function setAudioParameter(
+  parameter: AudioParam,
+  value: number,
+  at: number,
+): void {
+  try {
+    parameter.cancelScheduledValues(at)
+    parameter.setTargetAtTime(value, at, 0.012)
+  } catch {
+    try {
+      parameter.value = value
+    } catch {
+      // A closed route no longer needs its pending output change.
+    }
+  }
+}
+
 /** Create a polyphonic fallback that remains inert until its first note. */
 export function createPianoFallbackSynth(
   options: PianoFallbackSynthOptions,
@@ -81,6 +99,7 @@ export function createPianoFallbackSynth(
     maximumVoices: maxVoices,
   })
   let graph: SynthGraph | null = null
+  let volume = 1
   let disposed = false
 
   const disconnectGraph = (ownedGraph: SynthGraph | null): void => {
@@ -147,7 +166,7 @@ export function createPianoFallbackSynth(
 
     const master = context.createGain()
     const limiter = context.createDynamicsCompressor()
-    master.gain.value = 0.72
+    master.gain.value = MASTER_GAIN * volume
     limiter.threshold.value = -8
     limiter.knee.value = 5
     limiter.ratio.value = 12
@@ -180,6 +199,18 @@ export function createPianoFallbackSynth(
 
     prewarm() {
       return Promise.resolve()
+    },
+
+    setVolume(nextVolume) {
+      if (disposed) return
+      volume = clamp(nextVolume, 0, 1)
+      if (graph !== null) {
+        setAudioParameter(
+          graph.master.gain,
+          MASTER_GAIN * volume,
+          graph.context.currentTime,
+        )
+      }
     },
 
     noteOn(note) {

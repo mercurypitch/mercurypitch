@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
-import { ChevronLeft, Metronome, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, ScoreDocument, Settings, SkipBack, SkipForward, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -16,6 +16,8 @@ import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
+import type { PianoNightPracticeRange } from './piano-night-practice-loop'
+import { PIANO_NIGHT_PRACTICE_SPEEDS } from './piano-night-practice-loop'
 import { createPianoNightPracticeSections } from './piano-night-practice-sections'
 import { PianoKeyHorizon } from './PianoKeyHorizon'
 import styles from './PianoNightApp.module.css'
@@ -61,6 +63,7 @@ interface PhraseCoachProps {
   tempoBpm: () => number
   onPrevious: () => void
   onNext: () => void
+  onPractice: () => void
   onClose: () => void
   closeButtonRef: (element: HTMLButtonElement) => void
 }
@@ -223,8 +226,83 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
             </div>
           </section>
         </Show>
+        <button
+          class={styles.coachPracticeButton}
+          type="button"
+          onClick={() => props.onPractice()}
+        >
+          <Repeat />
+          Practise this {props.hasAuthoredCoach() ? 'phrase' : 'section'}
+        </button>
       </div>
     </>
+  )
+}
+
+interface SessionTraceProps {
+  playheadBeat: () => number
+  totalBeats: () => number
+  progress: () => number
+  loopRange: () => PianoNightPracticeRange | null
+  onSeek: (beat: number) => void
+}
+
+function SessionTrace(props: SessionTraceProps): JSX.Element {
+  const loopStyle = (): JSX.CSSProperties | undefined => {
+    const range = props.loopRange()
+    const totalBeats = props.totalBeats()
+    if (range === null || !(totalBeats > 0)) return undefined
+    return {
+      left: `${(range.startBeat / totalBeats) * 100}%`,
+      width: `${((range.endBeat - range.startBeat) / totalBeats) * 100}%`,
+    }
+  }
+
+  return (
+    <div class={styles.sessionTrace}>
+      <div aria-hidden="true" data-testid="piano-night-trace-rail">
+        <For each={[8, 14, 6, 18, 10, 7, 15, 5, 12, 8]}>
+          {(height, index) => (
+            <i
+              classList={{
+                [styles.traceCoral]: index() === 7 || index() === 9,
+              }}
+              style={{ height: `${height}px` }}
+            />
+          )}
+        </For>
+        <Show when={loopStyle()}>
+          {(style) => (
+            <span
+              class={styles.traceLoop}
+              style={style()}
+              data-testid="piano-night-loop-range"
+            />
+          )}
+        </Show>
+        <span
+          class={styles.traceProgress}
+          style={{ transform: `scaleX(${props.progress()})` }}
+        />
+        <b
+          style={{
+            left: `${props.progress() * 100}%`,
+          }}
+          data-testid="piano-night-trace-playhead"
+        />
+      </div>
+      <input
+        type="range"
+        min="0"
+        max={props.totalBeats()}
+        step="0.25"
+        value={props.playheadBeat()}
+        aria-label="Seek piano project"
+        aria-valuetext={`Beat ${props.playheadBeat().toFixed(1)} of ${props.totalBeats()}`}
+        onInput={(event) => props.onSeek(Number(event.currentTarget.value))}
+        data-testid="piano-night-seek"
+      />
+    </div>
   )
 }
 
@@ -285,6 +363,21 @@ export function PianoNightApp(): JSX.Element {
   const currentTempoBpm = createMemo(() =>
     controller.transport.effectiveTempoBpmAtBeat(controller.playheadBeat()),
   )
+  const practiceLoopRange = createMemo(() => controller.practiceLoop().range)
+  const practiceAccuracyLabel = createMemo(() => {
+    const loop = controller.practiceLoop()
+    if (!loop.enabled) return 'accuracy'
+    return controller.practiceRunComplete()
+      ? 'final pass'
+      : `pass ${loop.currentPass} accuracy`
+  })
+  const practiceResultLabel = createMemo(() => {
+    const loop = controller.practiceLoop()
+    if (!loop.enabled) return 'Result'
+    return controller.practiceRunComplete()
+      ? 'Final pass result'
+      : `Pass ${loop.currentPass} result`
+  })
   const audibleBackingTrackCount = createMemo(
     () => controller.arrangement().backingTrackIds.length,
   )
@@ -401,13 +494,40 @@ export function PianoNightApp(): JSX.Element {
     )
   }
 
-  const cycleView = (): void => {
-    setView((current) => {
-      const index = VIEW_ORDER.indexOf(current)
-      const next = VIEW_ORDER[(index + 1) % VIEW_ORDER.length]
-      announce(`${VIEW_LABELS[next]} view selected.`)
-      return next
-    })
+  const selectView = (next: PianoNightPerformanceView): void => {
+    setView(next)
+    announce(`${VIEW_LABELS[next]} view selected.`)
+  }
+
+  const practiceCurrentSection = (): void => {
+    const current = phrase()
+    if (
+      !controller.configurePracticeLoop({
+        startBeat: current.startBeat,
+        endBeat: current.endBeat,
+      })
+    ) {
+      return
+    }
+    announce(
+      `${controller.source().hasAuthoredCoach ? 'Phrase' : 'Section'} ${phraseIndex() + 1} ready for ${controller.practiceLoop().repeatCount} passes.`,
+    )
+    if (compactSheets()) closeCoach()
+  }
+
+  const togglePracticeLoop = (): void => {
+    const loop = controller.practiceLoop()
+    if (loop.enabled) {
+      controller.setPracticeLoopEnabled(false)
+      announce('Repeat off. A/B markers saved.')
+      return
+    }
+    if (loop.range !== null) {
+      controller.setPracticeLoopEnabled(true)
+      announce(`Repeat on for ${loop.repeatCount} passes.`)
+      return
+    }
+    practiceCurrentSection()
   }
 
   const rememberCompactSurfaceOpener = (): void => {
@@ -606,7 +726,11 @@ export function PianoNightApp(): JSX.Element {
         />
         <div class={styles.roomGrade} aria-hidden="true" />
 
-        <div class={styles.sessionHud} aria-label="Piano Night session status">
+        <div
+          class={styles.sessionHud}
+          classList={{ [styles.sessionHudCompact]: compactSheets() }}
+          aria-label="Piano Night session status"
+        >
           <span class={styles.sessionDocument} aria-hidden="true">
             <ScoreDocument />
           </span>
@@ -620,52 +744,22 @@ export function PianoNightApp(): JSX.Element {
             <strong>{sessionClock()}</strong>
             <span>{controller.transport.phase()}</span>
           </div>
-          <div class={styles.sessionTrace}>
-            <div aria-hidden="true">
-              <For each={[8, 14, 6, 18, 10, 7, 15, 5, 12, 8]}>
-                {(height, index) => (
-                  <i
-                    classList={{
-                      [styles.traceCoral]: index() === 7 || index() === 9,
-                    }}
-                    style={{ height: `${height}px` }}
-                  />
-                )}
-              </For>
-              <span
-                class={styles.traceProgress}
-                style={{ transform: `scaleX(${sessionProgress()})` }}
-              />
-              <b
-                style={{
-                  left: `clamp(15px, ${sessionProgress() * 100}%, calc(100% - 15px))`,
-                }}
-                data-testid="piano-night-trace-playhead"
-              />
-            </div>
-            <input
-              type="range"
-              min="0"
-              max={controller.stage().totalBeats}
-              step="0.25"
-              value={controller.playheadBeat()}
-              aria-label="Seek piano project"
-              aria-valuetext={`Beat ${controller
-                .playheadBeat()
-                .toFixed(1)} of ${controller.stage().totalBeats}`}
-              onInput={(event) =>
-                controller.seekToBeat(Number(event.currentTarget.value))
-              }
-              data-testid="piano-night-seek"
+          <Show when={!compactSheets()}>
+            <SessionTrace
+              playheadBeat={controller.playheadBeat}
+              totalBeats={() => controller.stage().totalBeats}
+              progress={sessionProgress}
+              loopRange={practiceLoopRange}
+              onSeek={controller.seekToBeat}
             />
-          </div>
+          </Show>
           <div class={styles.sessionMetric}>
             <strong>
               {controller.scoringState().judgedNotes > 0
                 ? `${controller.scoringState().accuracyPercent}%`
                 : '—'}
             </strong>
-            <span>accuracy</span>
+            <span>{practiceAccuracyLabel()}</span>
           </div>
           <div class={`${styles.sessionMetric} ${styles.streakMetric}`}>
             <strong>
@@ -675,16 +769,61 @@ export function PianoNightApp(): JSX.Element {
             </strong>
             <span>streak</span>
           </div>
-          <button
-            class={styles.viewButton}
-            type="button"
-            onClick={cycleView}
-            aria-label={`Change performance view. Current view: ${VIEW_LABELS[view()]}`}
+          <div
+            class={styles.viewSelector}
+            role="group"
+            aria-label="Performance view"
           >
-            <span>{VIEW_LABELS[view()]}</span>
-            <PianoKeys />
-          </button>
+            <For each={VIEW_ORDER}>
+              {(candidate) => (
+                <button
+                  type="button"
+                  classList={{
+                    [styles.viewChoiceActive]: view() === candidate,
+                  }}
+                  onClick={() => selectView(candidate)}
+                  aria-label={`${VIEW_LABELS[candidate]} performance view`}
+                  aria-pressed={view() === candidate}
+                >
+                  <Show when={candidate === 'fall'}>
+                    <WaveformBars />
+                  </Show>
+                  <Show when={candidate === 'score'}>
+                    <ScoreDocument />
+                  </Show>
+                  <Show when={candidate === 'keys'}>
+                    <PianoKeys />
+                  </Show>
+                  <span>{VIEW_LABELS[candidate]}</span>
+                </button>
+              )}
+            </For>
+          </div>
         </div>
+
+        <Show when={compactSheets()}>
+          <div class={styles.practiceStrip} aria-label="Practice timeline">
+            <SessionTrace
+              playheadBeat={controller.playheadBeat}
+              totalBeats={() => controller.stage().totalBeats}
+              progress={sessionProgress}
+              loopRange={practiceLoopRange}
+              onSeek={controller.seekToBeat}
+            />
+            <div class={styles.practiceStripMetric}>
+              <strong>{sessionClock()}</strong>
+              <span>POSITION</span>
+            </div>
+            <div class={styles.practiceStripMetric}>
+              <strong>{Math.round(currentTempoBpm())}</strong>
+              <span>LIVE BPM</span>
+            </div>
+            <div class={styles.practiceStripMetric}>
+              <strong>{controller.practiceSpeed()}×</strong>
+              <span>SPEED</span>
+            </div>
+          </div>
+        </Show>
 
         <PianoNightStageViews
           view={view}
@@ -700,19 +839,6 @@ export function PianoNightApp(): JSX.Element {
           reducedMotion={controller.reducedMotion}
         />
 
-        <button
-          class={styles.coachPeek}
-          type="button"
-          onClick={openCoach}
-          aria-expanded={coachOpen()}
-        >
-          <WaveformBars />
-          <span>
-            {controller.source().hasAuthoredCoach ? 'Phrase' : 'Section'}{' '}
-            {phraseIndex() + 1}
-          </span>
-        </button>
-
         <PianoKeyHorizon
           activeMidis={controller.activeMidis}
           onPointerDown={controller.pressTouchKey}
@@ -725,14 +851,44 @@ export function PianoNightApp(): JSX.Element {
           <div class={styles.transport} aria-label="Piano Night transport">
             <button
               type="button"
-              disabled
-              aria-label="Metronome is not available in this free runtime yet"
-              title="Metronome arrives with the full practice transport"
+              onClick={controller.stop}
+              aria-label="Stop and reset practice"
+              title="Stop and return to the practice start"
+              data-testid="piano-night-stop"
             >
-              <Metronome />
+              <RotateCcw />
             </button>
             <i class={styles.transportDivider} aria-hidden="true" />
             <button
+              classList={{
+                [styles.controlActive]: controller.practiceLoop().enabled,
+              }}
+              type="button"
+              onClick={togglePracticeLoop}
+              aria-label={
+                controller.practiceLoop().enabled
+                  ? 'Turn practice repeat off'
+                  : controller.practiceLoop().range === null
+                    ? `Practise the current ${
+                        controller.source().hasAuthoredCoach
+                          ? 'phrase'
+                          : 'section'
+                      }`
+                    : 'Turn practice repeat on'
+              }
+              aria-pressed={controller.practiceLoop().enabled}
+              data-testid="piano-night-repeat"
+            >
+              <Repeat />
+              <Show when={controller.practiceLoop().enabled}>
+                <span class={styles.repeatBadge}>
+                  {controller.practiceLoop().currentPass}/
+                  {controller.practiceLoop().repeatCount}
+                </span>
+              </Show>
+            </button>
+            <button
+              class={styles.phraseStep}
               type="button"
               onClick={() => stepPhrase(-1)}
               aria-label={
@@ -760,6 +916,7 @@ export function PianoNightApp(): JSX.Element {
               </Show>
             </button>
             <button
+              class={styles.phraseStep}
               type="button"
               onClick={() => stepPhrase(1)}
               aria-label={
@@ -779,6 +936,7 @@ export function PianoNightApp(): JSX.Element {
               <span>BASE BPM</span>
             </div>
             <button
+              class={styles.tempoStep}
               type="button"
               onClick={() =>
                 controller.setTempoBpm(
@@ -790,6 +948,7 @@ export function PianoNightApp(): JSX.Element {
               −
             </button>
             <button
+              class={styles.tempoStep}
               type="button"
               onClick={() =>
                 controller.setTempoBpm(
@@ -800,6 +959,20 @@ export function PianoNightApp(): JSX.Element {
             >
               +
             </button>
+            <label class={styles.transportSpeed}>
+              <span class={styles.srOnly}>Practice speed</span>
+              <select
+                value={controller.practiceSpeed()}
+                aria-label="Practice speed"
+                onChange={(event) =>
+                  controller.setPracticeSpeed(Number(event.currentTarget.value))
+                }
+              >
+                <For each={PIANO_NIGHT_PRACTICE_SPEEDS}>
+                  {(speed) => <option value={speed}>{speed}×</option>}
+                </For>
+              </select>
+            </label>
           </div>
         </div>
       </main>
@@ -829,6 +1002,7 @@ export function PianoNightApp(): JSX.Element {
           tempoBpm={controller.transport.timeline.tempoBpm}
           onPrevious={() => stepPhrase(-1)}
           onNext={() => stepPhrase(1)}
+          onPractice={practiceCurrentSection}
           onClose={closeCoach}
           closeButtonRef={(element) => {
             coachCloseButton = element
@@ -961,6 +1135,144 @@ export function PianoNightApp(): JSX.Element {
               source. Selected pitched Hear tracks play as accompaniment; the
               Score track remains the one measured practice lane.
             </p>
+
+            <section
+              class={styles.practicePanel}
+              aria-labelledby="piano-night-practice-heading"
+            >
+              <div class={styles.practicePanelHeading}>
+                <div>
+                  <span>Focused rehearsal</span>
+                  <h3 id="piano-night-practice-heading">Practice</h3>
+                </div>
+                <Show
+                  when={controller.practiceLoop().range}
+                  fallback={<strong>Full piece</strong>}
+                >
+                  {(range) => (
+                    <strong>
+                      A {range().startBeat.toFixed(1)} · B{' '}
+                      {range().endBeat.toFixed(1)}
+                    </strong>
+                  )}
+                </Show>
+              </div>
+
+              <div class={styles.practicePrimaryActions}>
+                <button
+                  class={styles.actionButton}
+                  type="button"
+                  onClick={practiceCurrentSection}
+                >
+                  <Repeat />
+                  Practise this{' '}
+                  {controller.source().hasAuthoredCoach ? 'phrase' : 'section'}
+                </button>
+                <button
+                  class={styles.textButton}
+                  type="button"
+                  disabled={controller.practiceLoop().range === null}
+                  aria-pressed={controller.practiceLoop().enabled}
+                  onClick={togglePracticeLoop}
+                >
+                  {controller.practiceLoop().enabled
+                    ? 'Repeat on'
+                    : 'Repeat off'}
+                </button>
+              </div>
+
+              <div class={styles.loopBoundaryActions}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    controller.setPracticeLoopStart(controller.playheadBeat())
+                  }
+                >
+                  Set A here
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    controller.setPracticeLoopEnd(controller.playheadBeat())
+                  }
+                >
+                  Set B here
+                </button>
+                <button
+                  type="button"
+                  disabled={controller.practiceLoop().range === null}
+                  onClick={controller.clearPracticeLoop}
+                >
+                  Clear A/B
+                </button>
+              </div>
+
+              <label class={styles.practiceNumberField}>
+                <span>
+                  Passes
+                  <small>Repeat count includes the first pass.</small>
+                </span>
+                <input
+                  type="number"
+                  min="2"
+                  max="100"
+                  inputmode="numeric"
+                  value={controller.practiceLoop().repeatCount}
+                  onChange={(event) =>
+                    controller.setPracticeRepeatCount(
+                      Number(event.currentTarget.value),
+                    )
+                  }
+                />
+              </label>
+
+              <fieldset class={styles.practiceSpeedGroup}>
+                <legend>Practice speed</legend>
+                <div>
+                  <For each={PIANO_NIGHT_PRACTICE_SPEEDS}>
+                    {(speed) => (
+                      <button
+                        type="button"
+                        aria-pressed={controller.practiceSpeed() === speed}
+                        classList={{
+                          [styles.practiceChoiceActive]:
+                            controller.practiceSpeed() === speed,
+                        }}
+                        onClick={() => controller.setPracticeSpeed(speed)}
+                      >
+                        {speed}×
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </fieldset>
+
+              <label class={styles.practiceVolume}>
+                <span>
+                  <Volume2 />
+                  Piano volume
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={controller.masterVolume()}
+                  aria-label="Piano volume"
+                  aria-valuetext={`${Math.round(controller.masterVolume() * 100)}%`}
+                  onInput={(event) =>
+                    controller.setMasterVolume(
+                      Number(event.currentTarget.value),
+                    )
+                  }
+                />
+                <strong aria-hidden="true">
+                  {Math.round(controller.masterVolume() * 100)}%
+                </strong>
+              </label>
+            </section>
+
+            <h3 class={styles.drawerSubheading}>Results and project</h3>
             <dl class={styles.sessionFacts}>
               <div>
                 <dt>Position</dt>
@@ -1006,7 +1318,7 @@ export function PianoNightApp(): JSX.Element {
                 </div>
               </Show>
               <div>
-                <dt>Result</dt>
+                <dt>{practiceResultLabel()}</dt>
                 <dd>
                   {controller.scoringState().judgedNotes > 0
                     ? `${controller.scoringState().accuracyPercent}% accuracy`
@@ -1047,6 +1359,7 @@ export function PianoNightApp(): JSX.Element {
               </Show>
             </dl>
 
+            <h3 class={styles.drawerSubheading}>Input</h3>
             <div class={styles.midiActions}>
               <Show
                 when={controller.midiSnapshot().permission === 'granted'}

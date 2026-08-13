@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** Phase 1A and Slices 2–7 implemented.
+**Status:** Phase 1A, Slices 2–7, and Slice 7.5 implemented.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -755,3 +755,97 @@ multi-hand targets remain later slices.
 | `PN-INSTRUMENT-006`–`009` | Input release-velocity and pedal-lifetime fixtures plus sampler cache, voice-cap, coverage/detail abort, stale-settlement, disposal, and shared-graph tests               |
 | `PN-SAMPLED-001`–`003`    | Manifest source/license/version assertions, constant-URL tests, intent-lazy bundle audit, and no-sample-request first-paint browser smoke                                 |
 | `PN-SAMPLED-004`–`008`    | Sound component/controller tests for two-phase readiness, background-refinement progress, selection, controls, attribution, contained detail failure, fallback, and retry |
+
+## Slice 7.5 — focused practice and control clarity
+
+Slice 7.5 makes the existing single-lane runtime practical for deliberate
+rehearsal. It adds beat-native section looping, explicit stop/speed/volume
+controls, direct performance-view selection, and a compact responsive
+timeline. It does not add multi-hand assignment, metronome/count-in,
+aggregate multi-pass analytics, custom soundbanks, or a second transport.
+
+### Bounded practice runtime — `PN-LOOP-*`
+
+- **REQ-PN-LOOP-001 — Zero-safe half-open range:** A Piano Night practice
+  loop shall represent its boundary as `[startBeat, endBeat)`, shall treat beat
+  zero as a valid A point, and shall reject a span shorter than one quarter
+  beat.
+- **REQ-PN-LOOP-002 — Section authoring:** WHEN the player chooses Practise
+  this phrase or section, Piano Night shall set that authored or factual
+  section as A/B, enable repeat, park at A, and reset measured results to notes
+  whose onsets fall inside that range.
+- **REQ-PN-LOOP-003 — Manual A/B:** WHERE the player uses Set A here or Set B
+  here, Piano Night shall validate the resulting beat-native span and shall
+  not replace a valid range with an invalid one.
+- **REQ-PN-LOOP-004 — Exclusive wrap:** WHILE repeat is active, the shared
+  scheduler shall exclude note onsets at or after B, clamp releases that cross
+  B, and the route controller shall rebase the already-running audio clock to
+  A before any next-pass note is scheduled.
+- **REQ-PN-LOOP-005 — Repeat count:** Practice repeat shall mean a bounded
+  total pass count from 2 through 100, shall show the current one-based pass,
+  and shall stop exactly at B after the final pass without beginning another.
+- **REQ-PN-LOOP-006 — Per-pass evidence:** Each new pass shall reset scoring
+  to the A/B target range. Piano Night shall describe results as the current or
+  final pass and shall not imply that it computed aggregate multi-pass
+  analytics.
+- **REQ-PN-LOOP-007 — Pause and seek:** Pause and resume shall retain A/B and
+  the current pass. WHEN a manual seek leaves the active half-open range,
+  repeat shall turn off while retaining its markers and full-project scoring
+  shall resume from the target.
+- **REQ-PN-LOOP-008 — Stop/reset:** WHEN Stop is requested, scheduled and live
+  voices shall release, the current score shall reset, the pass shall return
+  to one, and the playhead shall park at A when repeat is active or beat zero
+  otherwise.
+- **REQ-PN-LOOP-009 — Source replacement:** WHEN staged music changes, A/B and
+  pass state shall clear because their beats belong to the prior source;
+  explicit speed and master-volume preferences may remain.
+- **REQ-PN-LOOP-010 — One timing owner:** Practice looping, speed, and stop
+  shall use the existing route-owned transport, scheduler, scorer, input, and
+  instrument router. They shall not create another animation clock, timer
+  transport, audio context, or sound engine.
+
+### Practice controls and responsive clarity — `PN-CONTROLS-*`
+
+- **REQ-PN-CONTROLS-001 — Direct lens choice:** Fall, Score, and Keys shall be
+  three visible, individually named controls with selected state; changing a
+  lens shall no longer require blind cycling.
+- **REQ-PN-CONTROLS-002 — One timeline per composition:** Each responsive
+  composition shall expose one seek timeline. WHERE the session capsule is
+  compact, a dedicated strip shall show seek position, elapsed score time,
+  effective live BPM, and practice speed.
+- **REQ-PN-CONTROLS-003 — Visible loop span:** WHERE A/B exists, the timeline
+  shall show its span independently of the playhead and shall retain the span
+  when repeat is temporarily off.
+- **REQ-PN-CONTROLS-004 — Speed presets:** Piano Night shall expose explicit
+  0.5×, 0.75×, 1×, and 1.25× practice speeds. A speed change shall rebase the
+  audio-clock transport without a beat jump and shall preserve authored tempo
+  changes.
+- **REQ-PN-CONTROLS-005 — Master volume:** Piano Night shall expose a bounded
+  0–100% piano master volume that applies to fallback and sampled instruments,
+  including an instrument attached later, without creating an audio graph
+  during configuration.
+- **REQ-PN-CONTROLS-006 — One coach entry:** Each responsive composition shall
+  have one navigation path to Coach; it shall not add a second floating Coach
+  pill over the performance field.
+- **REQ-PN-CONTROLS-007 — Touch tablet navigation:** WHERE a tablet-sized
+  viewport reports a coarse primary pointer with no hover, Piano Night shall
+  use its touch bottom navigation and full-width stage rather than a narrow
+  icon-only desktop rail.
+- **REQ-PN-CONTROLS-008 — Target and state clarity:** Practice, A/B, Stop,
+  repeat, view, speed, and volume controls shall expose outcome-aligned names,
+  keyboard focus, selected or pressed state where applicable, and at least a
+  44 CSS-pixel primary target.
+- **REQ-PN-CONTROLS-009 — Local preference continuity:** Piano Night shall
+  restore explicit practice speed, master volume, instrument, Character, and
+  Space choices on this device without loading samples, constructing an audio
+  graph, or requesting browser capabilities during first paint.
+
+### Slice 7.5 verification map
+
+| Requirement area        | Minimum evidence                                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-LOOP-001`–`003`     | Pure zero-safe range fixtures plus controller section/manual-boundary tests                                                                 |
+| `PN-LOOP-004`–`006`     | Injected-clock rebase, scheduler boundary/release, range-scoring, controller wrap/final-pass, and current-pass UI tests                     |
+| `PN-LOOP-007`–`010`     | Pause/seek/stop/source-replacement tests, silent-configuration assertion, and one-owner review                                              |
+| `PN-CONTROLS-001`–`005` | Component selected-state/compact-strip tests, real-pointer seek smoke, transport speed continuity, and fallback/router/sampled volume tests |
+| `PN-CONTROLS-006`–`009` | Coach-entry regression, desktop/phone/coarse-tablet overflow and reachability smoke, keyboard names/focus, persistence, and target checks   |

@@ -236,6 +236,7 @@ describe('createPianoSampledInstrument', () => {
 
     instrument.setCharacter('soft')
     instrument.setAmbience('hall')
+    instrument.setVolume(0.4)
 
     expect(getAudioContext).not.toHaveBeenCalled()
     expect(fetchArrayBuffer).not.toHaveBeenCalled()
@@ -919,6 +920,27 @@ describe('createPianoSampledInstrument', () => {
     expect(lastTarget(filter!.frequency)).toBe(5_800)
     expect(lastTarget(dry!.gain)).toBe(0.72)
     expect(context?.filters).toHaveLength(1)
+  })
+
+  it('combines normalized master volume with character gain without rebuilding', async () => {
+    const { context, getAudioContext, instrument } = harness()
+    instrument.setCharacter('soft')
+    instrument.setVolume(0.5)
+
+    expect(getAudioContext).not.toHaveBeenCalled()
+    expect(context?.gains).toHaveLength(0)
+    await instrument.load()
+    const input = context!.gains[0]
+    expect(lastTarget(input.gain)).toBeCloseTo(0.76 * 0.9 * 0.5)
+
+    instrument.setVolume(3)
+    expect(lastTarget(input.gain)).toBeCloseTo(0.76 * 0.9)
+    instrument.setCharacter('bright')
+    expect(lastTarget(input.gain)).toBeCloseTo(0.76 * 1.04)
+    instrument.setVolume(-1)
+    expect(lastTarget(input.gain)).toBe(0)
+    expect(context?.filters).toHaveLength(1)
+    expect(context?.gains).toHaveLength(4)
   })
 
   it('retains pedal state replayed before the lazy audio graph exists', async () => {

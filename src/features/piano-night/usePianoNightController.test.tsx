@@ -78,6 +78,7 @@ function mountController(): ReturnType<typeof usePianoNightController> {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
 })
 
@@ -196,7 +197,9 @@ describe('usePianoNightController source replacement', () => {
       })
     }
     const context = new DeferredAudioContext()
-    const createAudioContext = vi.fn(() => context)
+    const createAudioContext = vi.fn(function AudioContextConstructor() {
+      return context
+    })
     vi.stubGlobal('AudioContext', createAudioContext)
     const controller = mountController()
 
@@ -212,5 +215,246 @@ describe('usePianoNightController source replacement', () => {
     expect(controller.transport.phase()).toBe('ready')
     expect(controller.statusMessage()).toBe('Late Night Sketch is ready.')
     expect(createAudioContext).toHaveBeenCalledOnce()
+  })
+})
+
+describe('usePianoNightController practice controls', () => {
+  it('configures a zero-safe section loop without activating audio', () => {
+    const createAudioContext = vi.fn()
+    vi.stubGlobal('AudioContext', createAudioContext)
+    const controller = mountController()
+
+    expect(controller.configurePracticeLoop({ startBeat: 0, endBeat: 4 })).toBe(
+      true,
+    )
+    expect(controller.practiceLoop()).toEqual({
+      range: { startBeat: 0, endBeat: 4 },
+      enabled: true,
+      repeatCount: 5,
+      currentPass: 1,
+    })
+    expect(controller.playheadBeat()).toBe(0)
+    expect(controller.scoringState().pendingNotes).toBeGreaterThan(0)
+    expect(createAudioContext).not.toHaveBeenCalled()
+  })
+
+  it('keeps markers but exits repeat when seeking outside the range', () => {
+    const controller = mountController()
+    controller.configurePracticeLoop({ startBeat: 2, endBeat: 4 })
+
+    controller.seekToBeat(6)
+
+    expect(controller.practiceLoop()).toMatchObject({
+      range: { startBeat: 2, endBeat: 4 },
+      enabled: false,
+      currentPass: 1,
+    })
+    expect(controller.playheadBeat()).toBe(6)
+    expect(controller.statusMessage()).toContain('outside A/B')
+  })
+
+  it('settles final-beat passes from transport notifications with one RAF owner', async () => {
+    const activation = deferred<undefined>()
+    class DeferredAudioContext {
+      currentTime = 0
+      state: AudioContextState = 'suspended'
+      readonly resume = vi.fn(async () => {
+        await activation.promise
+        this.state = 'running'
+      })
+      readonly close = vi.fn(async () => {
+        this.state = 'closed'
+      })
+    }
+    const context = new DeferredAudioContext()
+    const createAudioContext = vi.fn(function AudioContextConstructor() {
+      return context
+    })
+    const scheduledFrames: FrameRequestCallback[] = []
+    vi.stubGlobal('AudioContext', createAudioContext)
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrames.push(callback)
+      return scheduledFrames.length
+    })
+    const controller = mountController()
+    controller.configurePracticeLoop({
+      startBeat: 0,
+      endBeat: controller.stage().totalBeats,
+    })
+
+    const playing = controller.play()
+    activation.resolve(undefined)
+    await expect(playing).resolves.toBe(true)
+    expect(scheduledFrames).toHaveLength(1)
+
+    context.currentTime = 100
+    expect(controller.transport.phase()).toBe('playing')
+    expect(controller.practiceLoop()).toMatchObject({
+      currentPass: 2,
+      repeatCount: 5,
+    })
+    expect(scheduledFrames).toHaveLength(1)
+
+    context.currentTime = 200
+    expect(controller.transport.phase()).toBe('playing')
+    expect(controller.practiceLoop().currentPass).toBe(3)
+    controller.setPracticeRepeatCount(2)
+    expect(controller.practiceLoop()).toMatchObject({
+      currentPass: 3,
+      repeatCount: 3,
+    })
+
+    context.currentTime = 300
+    expect(controller.transport.phase()).toBe('complete')
+    expect(controller.practiceRunComplete()).toBe(true)
+    expect(controller.statusMessage()).toContain('3 passes')
+    expect(createAudioContext).toHaveBeenCalledOnce()
+  })
+
+  it('runs a final section from A when B is the final beat', async () => {
+    class ImmediateAudioContext {
+      currentTime = 0
+      state: AudioContextState = 'running'
+      readonly resume = vi.fn(async () => undefined)
+      readonly close = vi.fn(async () => {
+        this.state = 'closed'
+      })
+    }
+    const context = new ImmediateAudioContext()
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return context
+      }),
+    )
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+    const totalBeats = controller.stage().totalBeats
+    controller.configurePracticeLoop({
+      startBeat: totalBeats - 2,
+      endBeat: totalBeats,
+    })
+    controller.setPracticeRepeatCount(2)
+
+    await expect(controller.play()).resolves.toBe(true)
+    context.currentTime = 40
+    expect(controller.transport.phase()).toBe('playing')
+    expect(controller.practiceLoop().currentPass).toBe(2)
+    expect(controller.playheadBeat()).toBe(totalBeats - 2)
+
+    context.currentTime = 80
+    expect(controller.transport.phase()).toBe('complete')
+    expect(controller.practiceRunComplete()).toBe(true)
+    expect(controller.playheadBeat()).toBe(totalBeats)
+  })
+
+  it('cancels a pending Play before applying a new A/B range', async () => {
+    const activation = deferred<undefined>()
+    class DeferredAudioContext {
+      currentTime = 0
+      state: AudioContextState = 'suspended'
+      readonly resume = vi.fn(async () => {
+        await activation.promise
+        this.state = 'running'
+      })
+      readonly close = vi.fn(async () => {
+        this.state = 'closed'
+      })
+    }
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return new DeferredAudioContext()
+      }),
+    )
+    const controller = mountController()
+    controller.configurePracticeLoop({ startBeat: 2, endBeat: 4 })
+
+    const playing = controller.play()
+    expect(controller.transport.phase()).toBe('loading')
+    controller.configurePracticeLoop({ startBeat: 6, endBeat: 8 })
+    activation.resolve(undefined)
+
+    await expect(playing).resolves.toBe(false)
+    expect(controller.transport.phase()).toBe('paused')
+    expect(controller.practiceLoop()).toMatchObject({
+      range: { startBeat: 6, endBeat: 8 },
+      enabled: true,
+      currentPass: 1,
+    })
+    expect(controller.statusMessage()).toContain('beat 6.0 to 8.0')
+  })
+
+  it('resets to A and preserves practice preferences across a source swap', () => {
+    const createAudioContext = vi.fn()
+    vi.stubGlobal('AudioContext', createAudioContext)
+    const controller = mountController()
+    controller.configurePracticeLoop({ startBeat: 2, endBeat: 4 })
+    controller.setPracticeRepeatCount(12)
+    expect(controller.setPracticeSpeed(0.75)).toBe(true)
+    controller.setMasterVolume(0.64)
+    controller.seekToBeat(3)
+
+    controller.stop()
+
+    expect(controller.playheadBeat()).toBe(2)
+    expect(controller.practiceLoop()).toMatchObject({
+      enabled: true,
+      repeatCount: 12,
+      currentPass: 1,
+    })
+    expect(controller.practiceSpeed()).toBe(0.75)
+    expect(controller.masterVolume()).toBe(0.64)
+    expect(
+      localStorage.getItem('pitchperfect_piano_night_practice_speed'),
+    ).toBe('0.75')
+    expect(localStorage.getItem('pitchperfect_piano_night_master_volume')).toBe(
+      '0.64',
+    )
+    expect(createAudioContext).not.toHaveBeenCalled()
+
+    controller.replaceSource(compositionSource('New Practice Piece'))
+
+    expect(controller.practiceLoop()).toEqual({
+      range: null,
+      enabled: false,
+      repeatCount: 12,
+      currentPass: 1,
+    })
+    expect(controller.practiceSpeed()).toBe(0.75)
+    expect(controller.masterVolume()).toBe(0.64)
+  })
+
+  it('restores sound choices as silent configuration', () => {
+    const createAudioContext = vi.fn()
+    vi.stubGlobal('AudioContext', createAudioContext)
+    const controller = mountController()
+    controller.setInstrumentPreference('fallback')
+    controller.setSoundCharacter('bright')
+    controller.setSoundAmbience('hall')
+    controller.setPracticeSpeed(1.25)
+    controller.setMasterVolume(0.47)
+
+    cleanup()
+    const restored = mountController()
+
+    expect(restored.instrumentPreference()).toBe('fallback')
+    expect(restored.soundCharacter()).toBe('bright')
+    expect(restored.soundAmbience()).toBe('hall')
+    expect(restored.practiceSpeed()).toBe(1.25)
+    expect(restored.masterVolume()).toBe(0.47)
+    expect(createAudioContext).not.toHaveBeenCalled()
+  })
+
+  it('rejects invalid A/B edits and bounds the pass count', () => {
+    const controller = mountController()
+
+    expect(controller.setPracticeLoopEnd(0.1)).toBe(false)
+    controller.setPracticeRepeatCount(200)
+
+    expect(controller.practiceLoop().repeatCount).toBe(100)
+    expect(controller.statusMessage()).toBe(
+      'Practice will finish after 100 passes.',
+    )
   })
 })

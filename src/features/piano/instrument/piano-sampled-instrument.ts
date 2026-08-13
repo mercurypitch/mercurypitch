@@ -390,6 +390,7 @@ export function createPianoSampledInstrument(
   let pedalVariant = 0
   let sustainDown = false
   let softPedalValue = 0
+  let volume = 1
   let character: PianoSampledCharacter = 'balanced'
   let ambience: PianoSampledAmbience = 'studio'
   let loadStatus: PianoSampledLoadStatus = 'idle'
@@ -427,6 +428,15 @@ export function createPianoSampledInstrument(
     emit()
   }
 
+  const applyMasterGain = (activeGraph: SampleGraph): void => {
+    const setting = CHARACTER_SETTINGS[character]
+    setAudioParameter(
+      activeGraph.input.gain,
+      0.76 * setting.gain * volume,
+      activeGraph.context.currentTime,
+    )
+  }
+
   const applyCharacter = (activeGraph: SampleGraph): void => {
     const setting = CHARACTER_SETTINGS[character]
     const now = activeGraph.context.currentTime
@@ -436,7 +446,7 @@ export function createPianoSampledInstrument(
     )
     setAudioParameter(activeGraph.tone.frequency, nyquistSafeCutoff, now)
     setAudioParameter(activeGraph.tone.Q, setting.resonance, now)
-    setAudioParameter(activeGraph.input.gain, 0.76 * setting.gain, now)
+    applyMasterGain(activeGraph)
   }
 
   const applyAmbience = (activeGraph: SampleGraph): void => {
@@ -1150,6 +1160,12 @@ export function createPianoSampledInstrument(
         return
       }
       await prepare(plan.resources, plan.coverageResources, signal)
+    },
+
+    setVolume(nextVolume) {
+      if (disposed) return
+      volume = clamp(nextVolume, 0, 1)
+      if (graph !== null) applyMasterGain(graph)
     },
 
     noteOn(note: PianoInstrumentNoteOn) {

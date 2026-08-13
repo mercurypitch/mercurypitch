@@ -44,6 +44,12 @@ export interface PianoAudioClockTransport extends PianoPerformanceTransport {
   contextTimeAtBeat(beat: number): number | null
   /** Score beat at an AudioContext time, clamped to this performance. */
   beatAtContextTime(contextTime: number): number
+  /**
+   * Re-anchor an already-running performance without activating another
+   * context. A natural final-beat completion may re-enter playing so a
+   * route-owned loop can wrap on the same audio clock.
+   */
+  rebasePlayingBeat(beat: number): boolean
   getAudioContext(): AudioContext | null
   subscribe(listener: () => void): () => void
   dispose(): Promise<void>
@@ -326,6 +332,28 @@ export function createPianoAudioClockTransport(
 
     activate,
     play: beginPlay,
+
+    rebasePlayingBeat(beat) {
+      if (
+        disposed ||
+        context === null ||
+        (currentPhase !== 'playing' && currentPhase !== 'complete')
+      ) {
+        return false
+      }
+
+      const duration = totalBeats()
+      if (!(duration > 0) || !Number.isFinite(beat)) return false
+      const target = clamp(beat, 0, duration)
+      if (target >= duration) return false
+
+      parkedBeat = target
+      startedBeat = target
+      startedAtContextTime = context.currentTime
+      if (currentPhase === 'playing') emit()
+      else setPhase('playing')
+      return true
+    },
 
     pause() {
       if (disposed) return

@@ -22,14 +22,22 @@ import { pianoTempoBeatToSeconds } from '@/features/piano/runtime/piano-tempo-ma
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
+import { createPersistedSignal } from '@/lib/storage'
 import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
 import { createPianoNightArrangement } from './piano-night-arrangement'
+import type { PianoNightPracticeLoopState, PianoNightPracticeRange, } from './piano-night-practice-loop'
+import { clampPianoNightMasterVolume, clampPianoNightRepeatCount, INITIAL_PIANO_NIGHT_PRACTICE_LOOP, isBeatInPianoNightPracticeRange, isPianoNightPracticeSpeed, normalizePianoNightPracticeRange, PIANO_NIGHT_DEFAULT_MASTER_VOLUME, } from './piano-night-practice-loop'
 import type { PianoNightSource } from './piano-night-source'
 import { PIANO_NIGHT_INCLUDED_SOURCE } from './piano-night-source'
 
 const MINIMUM_TEMPO_BPM = 40
 const MAXIMUM_TEMPO_BPM = 280
 const SAMPLE_WINDOW_BEATS = 4
+const PRACTICE_SPEED_STORAGE_KEY = 'pitchperfect_piano_night_practice_speed'
+const MASTER_VOLUME_STORAGE_KEY = 'pitchperfect_piano_night_master_volume'
+const INSTRUMENT_STORAGE_KEY = 'pitchperfect_piano_night_instrument'
+const SOUND_CHARACTER_STORAGE_KEY = 'pitchperfect_piano_night_character'
+const SOUND_AMBIENCE_STORAGE_KEY = 'pitchperfect_piano_night_ambience'
 
 export type PianoNightSoundLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type PianoNightSoundCharacter = 'soft' | 'balanced' | 'bright'
@@ -64,6 +72,20 @@ type PianoNightSamplePreparationMode = 'initial' | 'current' | 'rolling'
 function boundedTempoBpm(tempoBpm: number): number {
   if (!Number.isFinite(tempoBpm)) return 120
   return Math.max(MINIMUM_TEMPO_BPM, Math.min(MAXIMUM_TEMPO_BPM, tempoBpm))
+}
+
+function isInstrumentPreference(
+  value: unknown,
+): value is PianoInstrumentPreference {
+  return value === 'auto' || value === 'sampled' || value === 'fallback'
+}
+
+function isSoundCharacter(value: unknown): value is PianoNightSoundCharacter {
+  return value === 'soft' || value === 'balanced' || value === 'bright'
+}
+
+function isSoundAmbience(value: unknown): value is PianoNightSoundAmbience {
+  return value === 'close' || value === 'studio' || value === 'hall'
 }
 
 function sameMidiSet(
@@ -121,6 +143,24 @@ export function usePianoNightController() {
   const [source, setSource] = createSignal<PianoNightSource>(
     PIANO_NIGHT_INCLUDED_SOURCE,
   )
+  const [practiceLoop, setPracticeLoop] =
+    createSignal<PianoNightPracticeLoopState>(INITIAL_PIANO_NIGHT_PRACTICE_LOOP)
+  const [practiceSpeed, setPracticeSpeedState] = createPersistedSignal<number>(
+    PRACTICE_SPEED_STORAGE_KEY,
+    1,
+    { validator: isPianoNightPracticeSpeed },
+  )
+  const [masterVolume, setMasterVolumeState] = createPersistedSignal<number>(
+    MASTER_VOLUME_STORAGE_KEY,
+    PIANO_NIGHT_DEFAULT_MASTER_VOLUME,
+    {
+      validator: (value): value is number =>
+        typeof value === 'number' &&
+        Number.isFinite(value) &&
+        value >= 0 &&
+        value <= 1,
+    },
+  )
   const stage = () => source().stage
   const arrangement = createMemo(() => createPianoNightArrangement(source()))
   const projectActiveMidis = createMemo(() =>
@@ -130,6 +170,7 @@ export function usePianoNightController() {
     totalBeats: () => stage().totalBeats,
     tempoMap: () => stage().tempoMap,
     initialTempoBpm: stage().initialTempoBpm,
+    initialSpeed: practiceSpeed(),
   })
   const fallbackSynth = createPianoFallbackSynth({
     getAudioContext: () => transport.getAudioContext(),
@@ -138,10 +179,15 @@ export function usePianoNightController() {
     fallback: fallbackSynth,
     preference: 'fallback',
   })
+  instrument.setVolume(masterVolume())
   const scheduler = createPianoPerformanceScheduler({
     transport,
     notes: () => arrangement().audibleNotes,
     synth: instrument,
+    playbackEndBeat: () => {
+      const loop = practiceLoop()
+      return loop.enabled ? (loop.range?.endBeat ?? null) : null
+    },
   })
   const input = createPianoInputState()
   const scoring = createPianoPerformanceScoringEngine(
@@ -171,7 +217,11 @@ export function usePianoNightController() {
   const [audioError, setAudioError] = createSignal<string | null>(null)
   const [audioActive, setAudioActive] = createSignal(false)
   const [instrumentPreference, setInstrumentPreferenceState] =
-    createSignal<PianoInstrumentPreference>('auto')
+    createPersistedSignal<PianoInstrumentPreference>(
+      INSTRUMENT_STORAGE_KEY,
+      'auto',
+      { validator: isInstrumentPreference },
+    )
   const [soundLoadStatus, setSoundLoadStatus] =
     createSignal<PianoNightSoundLoadStatus>('idle')
   const [soundLoadError, setSoundLoadError] = createSignal<string | null>(null)
@@ -179,15 +229,24 @@ export function usePianoNightController() {
   const [soundTotalSamples, setSoundTotalSamples] = createSignal(0)
   const [soundRefining, setSoundRefining] = createSignal(false)
   const [soundCharacter, setSoundCharacterState] =
-    createSignal<PianoNightSoundCharacter>('balanced')
+    createPersistedSignal<PianoNightSoundCharacter>(
+      SOUND_CHARACTER_STORAGE_KEY,
+      'balanced',
+      { validator: isSoundCharacter },
+    )
   const [soundAmbience, setSoundAmbienceState] =
-    createSignal<PianoNightSoundAmbience>('studio')
+    createPersistedSignal<PianoNightSoundAmbience>(
+      SOUND_AMBIENCE_STORAGE_KEY,
+      'studio',
+      { validator: isSoundAmbience },
+    )
   const [reducedMotion, setReducedMotion] = createSignal(false)
   const [scoringState, setScoringState] =
     createSignal<PianoPerformanceScoringState>(scoring.snapshot())
   const [statusMessage, setStatusMessage] = createSignal(
     `${stage().title} is ready. Audio and input are off.`,
   )
+  const [practiceRunComplete, setPracticeRunComplete] = createSignal(false)
 
   const pendingPointers = new Map<number, number>()
   const keyboardReleaseTimers = new Map<number, number>()
@@ -279,6 +338,80 @@ export function usePianoNightController() {
     setStatusMessage(`${stage().title} complete. Ready to play again.`)
   }
 
+  const isAtPracticeBoundary = (beat: number): boolean => {
+    const loop = practiceLoop()
+    return (
+      !practiceRunComplete() &&
+      loop.enabled &&
+      loop.range !== null &&
+      beat >= loop.range.endBeat
+    )
+  }
+
+  const settlePracticeBoundary = (beat: number): boolean => {
+    const loop = practiceLoop()
+    const range = loop.range
+    const phase = transport.phase()
+    if (
+      practiceRunComplete() ||
+      !loop.enabled ||
+      range === null ||
+      (phase !== 'playing' && phase !== 'complete') ||
+      beat < range.endBeat
+    ) {
+      return false
+    }
+
+    const finished = scoring.sample({
+      phase: 'complete',
+      playheadBeat: range.endBeat,
+      sampledAtMs: performance.now(),
+      playbackRate: scoringPlaybackRate(range.endBeat),
+      input: input.snapshot(),
+    })
+    applyScoringUpdate(finished)
+    scheduler.stop()
+    releaseLiveVoices()
+
+    if (loop.currentPass < loop.repeatCount) {
+      const nextPass = loop.currentPass + 1
+      const rebased = transport.rebasePlayingBeat(range.startBeat)
+      if (!rebased) {
+        setStatusMessage('The practice loop could not restart. Press Play.')
+        return true
+      }
+      applyScoringUpdate(
+        scoring.reset(
+          {
+            playheadBeat: range.startBeat,
+            input: input.snapshot(),
+          },
+          range,
+        ),
+      )
+      setPracticeLoop({ ...loop, currentPass: nextPass })
+      setPlayheadBeat(range.startBeat)
+      completionSettled = false
+      setPracticeRunComplete(false)
+      prepareCurrentSampleWindow(range.startBeat)
+      scheduler.start()
+      setStatusMessage(
+        `Pass ${loop.currentPass} finished at ${finished.state.accuracyPercent}%. Pass ${nextPass} of ${loop.repeatCount}.`,
+      )
+      return true
+    }
+
+    completionSettled = true
+    setPracticeRunComplete(true)
+    if (phase === 'playing') transport.pause()
+    transport.seekToBeat(range.endBeat)
+    setPlayheadBeat(range.endBeat)
+    setStatusMessage(
+      `Practice complete — ${loop.repeatCount} passes. Final pass ${finished.state.accuracyPercent}%.`,
+    )
+    return true
+  }
+
   // Presentation cap: every setPlayheadBeat write re-renders the falling
   // notes and key glow, and on a low-tier device (a television) capping that
   // hands the saved budget back to the audio thread. Capable devices keep an
@@ -290,9 +423,21 @@ export function usePianoNightController() {
   const presentationLimiter = createAdaptiveFrameRateLimiter(presentationFps)
 
   const sampleClock = (timestampMs: number): void => {
+    // The callback has consumed this request. Any synchronous transport
+    // notification may now schedule exactly one successor via startFrame().
+    frame = null
     recordAnimationFrame(timestampMs)
-    const beat = transport.timeline.playheadBeat()
-    const phase = transport.phase()
+    let beat = transport.timeline.playheadBeat()
+    let phase = transport.phase()
+    if (phase === 'playing' && isAtPracticeBoundary(beat)) {
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
+      if (phase === 'playing' && isAtPracticeBoundary(beat)) {
+        settlePracticeBoundary(beat)
+        beat = transport.timeline.playheadBeat()
+        phase = transport.phase()
+      }
+    }
     if (
       presentationLimiter.shouldRun(timestampMs / 1000) ||
       // The final position must land exactly, cap or no cap.
@@ -308,7 +453,7 @@ export function usePianoNightController() {
     }
     sampleScoring(input.snapshot(), beat, phase)
     maybePrepareNextSampleWindow(beat)
-    frame = requestAnimationFrame(sampleClock)
+    startFrame()
   }
 
   const startFrame = (): void => {
@@ -316,8 +461,29 @@ export function usePianoNightController() {
   }
 
   const syncTransport = (): void => {
-    const beat = transport.timeline.playheadBeat()
-    const phase = transport.phase()
+    let beat = transport.timeline.playheadBeat()
+    let phase = transport.phase()
+
+    // A final-beat read can synchronously flip the transport to complete.
+    // Settle that boundary before cancelling the only pending presentation
+    // frame, then re-read because an intermediate pass rebases to A.
+    if (phase === 'complete' && isAtPracticeBoundary(beat)) {
+      settlePracticeBoundary(beat)
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
+    } else if (phase === 'playing' && isAtPracticeBoundary(beat)) {
+      // An outer accessor can retain the old B value after its synchronous
+      // completion notification already rebased the nested subscriber to A.
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
+    }
+
+    if (phase === 'playing' && isAtPracticeBoundary(beat)) {
+      settlePracticeBoundary(beat)
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
+    }
+
     setPlayheadBeat(beat)
     if (phase === 'playing') {
       completionSettled = false
@@ -725,7 +891,183 @@ export function usePianoNightController() {
     )
   })
 
+  const cancelPendingPlayForPracticeMutation = (): void => {
+    if (transport.phase() !== 'loading') return
+    commandGeneration += 1
+    transport.pause()
+    cancelFrame()
+  }
+
+  const configurePracticeLoop = (
+    requestedRange: PianoNightPracticeRange,
+  ): boolean => {
+    const range = normalizePianoNightPracticeRange(
+      requestedRange,
+      stage().totalBeats,
+    )
+    if (range === null) {
+      setStatusMessage('Choose a practice range at least a quarter beat long.')
+      return false
+    }
+
+    cancelPendingPlayForPracticeMutation()
+    cancelSamplePreparation(true)
+    scheduler.stop()
+    releaseLiveVoices()
+    setPracticeRunComplete(false)
+    completionSettled = false
+    setPracticeLoop((current) => ({
+      range,
+      enabled: true,
+      repeatCount: current.repeatCount,
+      currentPass: 1,
+    }))
+    transport.seekToBeat(range.startBeat)
+    applyScoringUpdate(
+      scoring.reset(
+        { playheadBeat: range.startBeat, input: input.snapshot() },
+        range,
+      ),
+    )
+    setPlayheadBeat(range.startBeat)
+    if (transport.phase() === 'playing') scheduler.start()
+    else scheduler.stop()
+    prepareCurrentSampleWindow(range.startBeat)
+    setStatusMessage(
+      `Practice loop set from beat ${range.startBeat.toFixed(1)} to ${range.endBeat.toFixed(1)}. Pass 1 of ${practiceLoop().repeatCount}.`,
+    )
+    return true
+  }
+
+  const setPracticeLoopStart = (beat: number): boolean => {
+    const current = practiceLoop().range
+    return configurePracticeLoop({
+      startBeat: beat,
+      endBeat: current?.endBeat ?? stage().totalBeats,
+    })
+  }
+
+  const setPracticeLoopEnd = (beat: number): boolean => {
+    const current = practiceLoop().range
+    return configurePracticeLoop({
+      startBeat: current?.startBeat ?? 0,
+      endBeat: beat,
+    })
+  }
+
+  const setPracticeLoopEnabled = (enabled: boolean): boolean => {
+    const loop = practiceLoop()
+    const range = loop.range
+    if (enabled && range === null) {
+      setStatusMessage('Set a section or A/B range before turning repeat on.')
+      return false
+    }
+    if (loop.enabled === enabled) return true
+
+    cancelPendingPlayForPracticeMutation()
+    scheduler.stop()
+    releaseLiveVoices()
+    setPracticeRunComplete(false)
+    completionSettled = false
+    const currentBeat = transport.timeline.playheadBeat()
+    const targetBeat =
+      enabled &&
+      range !== null &&
+      !isBeatInPianoNightPracticeRange(currentBeat, range)
+        ? range.startBeat
+        : currentBeat
+    setPracticeLoop({ ...loop, enabled, currentPass: 1 })
+    transport.seekToBeat(targetBeat)
+    applyScoringUpdate(
+      scoring.reset(
+        { playheadBeat: targetBeat, input: input.snapshot() },
+        enabled && range !== null ? range : undefined,
+      ),
+    )
+    setPlayheadBeat(targetBeat)
+    if (transport.phase() === 'playing') scheduler.start()
+    prepareCurrentSampleWindow(targetBeat)
+    setStatusMessage(
+      enabled
+        ? `Repeat on. Pass 1 of ${loop.repeatCount}.`
+        : 'Repeat off. The A/B markers are saved.',
+    )
+    return true
+  }
+
+  const clearPracticeLoop = (): void => {
+    const loop = practiceLoop()
+    const beat = transport.timeline.playheadBeat()
+    cancelPendingPlayForPracticeMutation()
+    scheduler.stop()
+    releaseLiveVoices()
+    setPracticeRunComplete(false)
+    completionSettled = false
+    setPracticeLoop({
+      range: null,
+      enabled: false,
+      repeatCount: loop.repeatCount,
+      currentPass: 1,
+    })
+    applyScoringUpdate(
+      scoring.reset({ playheadBeat: beat, input: input.snapshot() }),
+    )
+    if (transport.phase() === 'playing') scheduler.start()
+    setStatusMessage('Practice loop cleared.')
+  }
+
+  const setPracticeRepeatCount = (repeatCount: number): void => {
+    const current = practiceLoop()
+    const clamped = Math.max(
+      current.currentPass,
+      clampPianoNightRepeatCount(repeatCount),
+    )
+    setPracticeLoop({ ...current, repeatCount: clamped })
+    setStatusMessage(`Practice will finish after ${clamped} passes.`)
+  }
+
+  const setPracticeSpeed = (speed: number): boolean => {
+    if (!isPianoNightPracticeSpeed(speed)) return false
+    const beat = transport.timeline.playheadBeat()
+    applyScoringUpdate(
+      scoring.discontinue({
+        reason: 'rate-change',
+        playheadBeat: beat,
+        input: input.snapshot(),
+      }),
+    )
+    transport.setSpeed(speed)
+    setPracticeSpeedState(speed)
+    if (transport.phase() === 'playing') scheduler.refresh()
+    syncTransport()
+    setStatusMessage(`Practice speed set to ${speed}×.`)
+    return true
+  }
+
+  const setMasterVolume = (volume: number): void => {
+    const normalized = clampPianoNightMasterVolume(volume)
+    setMasterVolumeState(normalized)
+    instrument.setVolume(normalized)
+    setStatusMessage(`Piano volume set to ${Math.round(normalized * 100)}%.`)
+  }
+
   const play = async (): Promise<boolean> => {
+    const loop = practiceLoop()
+    const range = loop.enabled ? loop.range : null
+    if (practiceRunComplete() && range !== null) {
+      transport.seekToBeat(range.startBeat)
+      applyScoringUpdate(
+        scoring.reset(
+          { playheadBeat: range.startBeat, input: input.snapshot() },
+          range,
+        ),
+      )
+      setPracticeLoop({ ...loop, currentPass: 1 })
+      setPlayheadBeat(range.startBeat)
+      setPracticeRunComplete(false)
+      completionSettled = false
+      prepareCurrentSampleWindow(range.startBeat)
+    }
     const generation = commandGeneration
     const previousPhase = transport.phase()
     if (previousPhase === 'complete') {
@@ -752,7 +1094,7 @@ export function usePianoNightController() {
     }
     applyScoringUpdate(
       previousPhase === 'complete'
-        ? scoring.reset(resumedPosition)
+        ? scoring.reset(resumedPosition, range ?? undefined)
         : scoring.discontinue({ reason: 'resume', ...resumedPosition }),
     )
     scheduler.start()
@@ -785,18 +1127,66 @@ export function usePianoNightController() {
     else void play()
   }
 
+  const stop = (): void => {
+    commandGeneration += 1
+    cancelSamplePreparation(true)
+    scheduler.stop()
+    cancelFrame()
+    transport.stop()
+    releaseLiveVoices()
+    setPracticeRunComplete(false)
+    completionSettled = false
+    const loop = practiceLoop()
+    const range = loop.enabled ? loop.range : null
+    const resetBeat = range?.startBeat ?? 0
+    if (resetBeat > 0) transport.seekToBeat(resetBeat)
+    setPracticeLoop({ ...loop, currentPass: 1 })
+    applyScoringUpdate(
+      scoring.reset(
+        { playheadBeat: resetBeat, input: input.snapshot() },
+        range ?? undefined,
+      ),
+    )
+    setPlayheadBeat(resetBeat)
+    prepareCurrentSampleWindow(resetBeat)
+    setStatusMessage(
+      range === null
+        ? `${stage().title} reset to the beginning.`
+        : `Practice reset to beat ${range.startBeat.toFixed(1)}. Pass 1 of ${loop.repeatCount}.`,
+    )
+  }
+
   const seekToBeat = (beat: number): void => {
     const targetBeat = Number.isFinite(beat)
       ? Math.min(stage().totalBeats, Math.max(0, beat))
       : 0
+    cancelPendingPlayForPracticeMutation()
     cancelSamplePreparation(true)
-    applyScoringUpdate(
-      scoring.discontinue({
-        reason: 'seek',
-        playheadBeat: targetBeat,
-        input: input.snapshot(),
-      }),
-    )
+    const loop = practiceLoop()
+    const leavesActiveRange =
+      loop.enabled &&
+      loop.range !== null &&
+      !isBeatInPianoNightPracticeRange(targetBeat, loop.range)
+    if (leavesActiveRange) {
+      setPracticeLoop({ ...loop, enabled: false, currentPass: 1 })
+      setPracticeRunComplete(false)
+      completionSettled = false
+      applyScoringUpdate(
+        scoring.reset({
+          playheadBeat: targetBeat,
+          input: input.snapshot(),
+        }),
+      )
+      setStatusMessage('Repeat paused because the playhead moved outside A/B.')
+    } else {
+      applyScoringUpdate(
+        scoring.discontinue({
+          reason: 'seek',
+          playheadBeat: targetBeat,
+          input: input.snapshot(),
+        }),
+      )
+    }
     transport.seekToBeat(targetBeat)
     releaseLiveVoices()
     if (transport.phase() === 'playing') scheduler.refresh()
@@ -837,8 +1227,15 @@ export function usePianoNightController() {
     transport.stop()
     releaseLiveVoices()
     completionSettled = false
+    setPracticeRunComplete(false)
     batch(() => {
       setSource(nextSource)
+      setPracticeLoop((current) => ({
+        range: null,
+        enabled: false,
+        repeatCount: current.repeatCount,
+        currentPass: 1,
+      }))
       transport.setTempoBpm(boundedTempoBpm(nextSource.stage.initialTempoBpm))
       setScoringState(
         scoring.replaceSource(scoringSourceFor(nextSource), {
@@ -1048,14 +1445,27 @@ export function usePianoNightController() {
     soundRefining,
     soundCharacter,
     soundAmbience,
+    practiceLoop,
+    practiceRunComplete,
+    practiceSpeed,
+    masterVolume,
     reducedMotion,
     statusMessage,
     scoringState,
     play,
     pause,
+    stop,
     togglePlayback,
     seekToBeat,
     setTempoBpm,
+    configurePracticeLoop,
+    setPracticeLoopStart,
+    setPracticeLoopEnd,
+    setPracticeLoopEnabled,
+    clearPracticeLoop,
+    setPracticeRepeatCount,
+    setPracticeSpeed,
+    setMasterVolume,
     loadSampledInstrument,
     setInstrumentPreference,
     setSoundCharacter,

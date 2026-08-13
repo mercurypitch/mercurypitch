@@ -12,6 +12,7 @@ export type PianoInstrumentPreference = 'auto' | 'sampled' | 'fallback'
 
 export interface PianoInstrumentRouterSnapshot {
   readonly preference: PianoInstrumentPreference
+  readonly volume: number
   readonly fallback: PianoInstrumentDescriptor
   readonly sampled: PianoInstrumentDescriptor | null
   /** The preferred engine before per-note fallback is attempted. */
@@ -56,6 +57,11 @@ function callNoteOff(
   }
 }
 
+function normalizedVolume(volume: number): number {
+  if (!Number.isFinite(volume)) return 0
+  return Math.min(1, Math.max(0, volume))
+}
+
 /** Create a router that owns and eventually disposes every attached engine. */
 export function createPianoInstrumentRouter(
   options: PianoInstrumentRouterOptions,
@@ -69,6 +75,7 @@ export function createPianoInstrumentRouter(
   const listeners = new Set<(snapshot: PianoInstrumentRouterSnapshot) => void>()
   let sampled = options.sampled ?? null
   let preference = options.preference ?? 'auto'
+  let volume = 1
   let disposed = false
 
   if (sampled !== null) knownInstruments.add(sampled)
@@ -79,6 +86,7 @@ export function createPianoInstrumentRouter(
   const createSnapshot = (): PianoInstrumentRouterSnapshot =>
     Object.freeze({
       preference,
+      volume,
       fallback: options.fallback.descriptor(),
       sampled: sampled?.descriptor() ?? null,
       selected: selectedInstrument().descriptor(),
@@ -135,6 +143,21 @@ export function createPianoInstrumentRouter(
     async prewarm(midis, signal) {
       if (disposed) throw new Error('Piano instrument router is disposed')
       await selectedInstrument().prewarm(midis, signal)
+    },
+
+    setVolume(nextVolume) {
+      if (disposed) return
+      const normalized = normalizedVolume(nextVolume)
+      const changed = normalized !== volume
+      volume = normalized
+      for (const instrument of knownInstruments) {
+        try {
+          instrument.setVolume(volume)
+        } catch {
+          // One failed output control must not desynchronize other engines.
+        }
+      }
+      if (changed) publish()
     },
 
     noteOn(note) {
@@ -209,6 +232,11 @@ export function createPianoInstrumentRouter(
       sampled = instrument
       if (instrument !== null) {
         knownInstruments.add(instrument)
+        try {
+          instrument.setVolume(volume)
+        } catch {
+          // A failed output control must not prevent engine attachment.
+        }
         // The engine may be attached after a hardware pedal moved. Replay the
         // current values before it can be selected so its first notes use the
         // same performance state as the fallback engine.

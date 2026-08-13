@@ -26,6 +26,7 @@ function instrumentHarness(
   const dispose = vi.fn()
   const load = vi.fn(() => Promise.resolve())
   const prewarm = vi.fn(() => Promise.resolve())
+  const setVolume = vi.fn()
   const descriptor = Object.freeze({
     id,
     name: id,
@@ -38,6 +39,7 @@ function instrumentHarness(
     prewarm,
     noteOn,
     noteOff,
+    setVolume,
     pedal,
     panic,
     activeVoiceIds: () => Array.from(active),
@@ -52,6 +54,7 @@ function instrumentHarness(
     pedal,
     port,
     prewarm,
+    setVolume,
     setAcceptance(value: boolean) {
       acceptsNotes = value
     },
@@ -177,6 +180,40 @@ describe('createPianoInstrumentRouter', () => {
       { pedal: 'soft', value: 0.75 },
       { pedal: 'sustain', value: 1 },
     ])
+  })
+
+  it('keeps normalized master volume synchronized across attached engines', () => {
+    const fallback = instrumentHarness('fallback', 'fallback')
+    const firstSampled = instrumentHarness('sampled-a', 'sampled')
+    const secondSampled = instrumentHarness('sampled-b', 'sampled')
+    const router = createPianoInstrumentRouter({
+      fallback: fallback.port,
+      sampled: firstSampled.port,
+    })
+    const listener = vi.fn()
+    router.subscribe(listener)
+
+    router.setVolume(0.35)
+    expect(fallback.setVolume).toHaveBeenLastCalledWith(0.35)
+    expect(firstSampled.setVolume).toHaveBeenLastCalledWith(0.35)
+    expect(router.getSnapshot().volume).toBe(0.35)
+
+    router.setSampled(secondSampled.port)
+    expect(secondSampled.setVolume).toHaveBeenCalledOnce()
+    expect(secondSampled.setVolume).toHaveBeenLastCalledWith(0.35)
+
+    router.setVolume(4)
+    expect(fallback.setVolume).toHaveBeenLastCalledWith(1)
+    expect(firstSampled.setVolume).toHaveBeenLastCalledWith(1)
+    expect(secondSampled.setVolume).toHaveBeenLastCalledWith(1)
+    expect(router.getSnapshot().volume).toBe(1)
+
+    router.setVolume(-2)
+    expect(fallback.setVolume).toHaveBeenLastCalledWith(0)
+    expect(firstSampled.setVolume).toHaveBeenLastCalledWith(0)
+    expect(secondSampled.setVolume).toHaveBeenLastCalledWith(0)
+    expect(router.getSnapshot().volume).toBe(0)
+    expect(listener).toHaveBeenCalledTimes(4)
   })
 
   it('sends pedal expression to a non-selected engine that reports active voices', () => {

@@ -238,6 +238,61 @@ describe('createPianoPerformanceScoringEngine', () => {
     })
   })
 
+  it('resets and completes only the targets inside a half-open range', () => {
+    const scorer = createPianoPerformanceScoringEngine(
+      source([
+        note('before', 58, 0.5),
+        note('at-a', 60, 1),
+        note('inside', 62, 2.5),
+        note('at-b', 64, 3),
+        note('after', 65, 4),
+      ]),
+      { playheadBeat: 0, input: input(0) },
+    )
+
+    const reset = scorer.reset(
+      { playheadBeat: 1, input: input(1) },
+      { startBeat: 1, endBeat: 3 },
+    )
+
+    expect(reset.state).toMatchObject({
+      hits: 0,
+      misses: 0,
+      pendingNotes: 2,
+      skippedNotes: 3,
+      totalNotes: 5,
+      complete: false,
+    })
+
+    const completed = scorer.sample({
+      phase: 'complete',
+      playheadBeat: 3,
+      sampledAtMs: 3_000,
+      playbackRate: 1,
+      input: input(2),
+    })
+
+    expect(completed.judgments.map((judgment) => judgment.noteId)).toEqual([
+      'at-a',
+      'inside',
+    ])
+    expect(completed.state).toMatchObject({
+      misses: 2,
+      pendingNotes: 0,
+      skippedNotes: 3,
+      totalNotes: 5,
+      complete: true,
+    })
+
+    expect(
+      scorer.reset({ playheadBeat: 0, input: input(3) }).state,
+    ).toMatchObject({
+      pendingNotes: 5,
+      skippedNotes: 0,
+      complete: false,
+    })
+  })
+
   it('matches chord onsets independently and never reuses sustained voices', () => {
     const scorer = createPianoPerformanceScoringEngine(
       source([note('c', 60, 1), note('e', 64, 1), note('later-c', 60, 2)]),
