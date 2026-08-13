@@ -284,17 +284,25 @@ export interface StatsSource {
 }
 
 /**
- * Is this connection going through a TURN relay?
+ * Which way this connection actually goes.
  *
- * Asked BEFORE a transfer rather than discovered partway through. Song
- * audio never travels over TURN -- it would eat the free 1,000 GB -- so a
- * relayed peer is told plainly that they will not get the backing track,
- * while keeping the lyrics, the target notes and the pitch lanes.
+ * `unknown` is a real third answer, not a polite `relayed`. ICE keeps
+ * choosing after the DataChannel opens, so for a moment right at the
+ * start there is no succeeded candidate pair to read -- the route is not
+ * relayed, it is undecided. Collapsing the two is what made a send
+ * attempted immediately after connecting fail with a message about
+ * Wi-Fi, and succeed on the retry a few seconds later with nothing
+ * changed.
  *
- * Unknown counts as relayed. If the route cannot be established the safe
- * answer is the one that does not spend somebody's bandwidth allowance.
+ * Callers still have to treat `unknown` as "do not send" (see
+ * `awaitDirectRoute`, which waits before giving that answer). The
+ * distinction is about what to DO and what to SAY, not about permission.
  */
-export async function isRelayedConnection(pc: StatsSource): Promise<boolean> {
+export type ConnectionRoute = 'direct' | 'relayed' | 'unknown'
+
+export async function describeConnectionRoute(
+  pc: StatsSource,
+): Promise<ConnectionRoute> {
   try {
     const raw = await pc.getStats()
     const stats = new Map<string, Record<string, unknown>>()
@@ -313,14 +321,71 @@ export async function isRelayedConnection(pc: StatsSource): Promise<boolean> {
         if (value['nominated'] === true) break
       }
     }
-    if (pair === null) return true
+    // Nothing chosen yet. Ask again in a moment rather than concluding.
+    if (pair === null) return 'unknown'
     for (const key of ['localCandidateId', 'remoteCandidateId']) {
       const id = pair[key]
       if (typeof id !== 'string') continue
-      if (stats.get(id)?.['candidateType'] === 'relay') return true
+      if (stats.get(id)?.['candidateType'] === 'relay') return 'relayed'
     }
-    return false
+    return 'direct'
   } catch {
-    return true
+    // A browser that will not answer at all is not a browser we can clear
+    // for a gigabyte of audio, and no amount of waiting will change that.
+    return 'unknown'
   }
+}
+
+/** How long to let ICE finish choosing before giving up on knowing. */
+const ROUTE_SETTLE_MS = 4000
+const ROUTE_POLL_MS = 250
+
+/**
+ * The route, once ICE has actually settled on one.
+ *
+ * Polls rather than answering from the first sample, because the first
+ * sample is taken at the exact moment the answer is least likely to
+ * exist: the caller has just seen the channel open and pressed Send.
+ * Still fails closed -- `unknown` after the deadline stays `unknown` --
+ * but only after giving the connection a fair chance to say.
+ */
+export async function awaitDirectRoute(
+  pc: StatsSource,
+  options: {
+    timeoutMs?: number
+    /** Injected in tests; real callers get the wall clock. */
+    now?: () => number
+    sleep?: (ms: number) => Promise<void>
+  } = {},
+): Promise<ConnectionRoute> {
+  const now = options.now ?? (() => Date.now())
+  const nap =
+    options.sleep ??
+    ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+  const deadline = now() + (options.timeoutMs ?? ROUTE_SETTLE_MS)
+  for (;;) {
+    const route = await describeConnectionRoute(pc)
+    // Relayed is as final as direct: ICE does not un-choose a relay in
+    // favour of a host pair once it has nominated one.
+    if (route !== 'unknown') return route
+    if (now() >= deadline) return 'unknown'
+    await nap(ROUTE_POLL_MS)
+  }
+}
+
+/**
+ * Is this connection going through a TURN relay?
+ *
+ * Asked BEFORE a transfer rather than discovered partway through. Song
+ * audio never travels over TURN -- it would eat the free 1,000 GB -- so a
+ * relayed peer is told plainly that they will not get the backing track,
+ * while keeping the lyrics, the target notes and the pitch lanes.
+ *
+ * Unknown counts as relayed. If the route cannot be established the safe
+ * answer is the one that does not spend somebody's bandwidth allowance.
+ * Callers that can afford to wait should prefer `awaitDirectRoute`, which
+ * distinguishes the two and does not mistake "not yet" for "no".
+ */
+export async function isRelayedConnection(pc: StatsSource): Promise<boolean> {
+  return (await describeConnectionRoute(pc)) !== 'direct'
 }

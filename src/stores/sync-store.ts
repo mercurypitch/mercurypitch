@@ -20,7 +20,7 @@ import { storageEstimate } from '@/db/durable-write'
 import { requestPersistentStorage } from '@/db/persistent-storage'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
 import { formatBytes } from '@/lib/fetch-progress'
-import { isRelayedConnection } from '@/lib/jam/jam-song-transfer'
+import { awaitDirectRoute } from '@/lib/jam/jam-song-transfer'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
 import { isReadableManifest } from '@/lib/portable/portable-bundle'
 import { normalizeRoomCode } from '@/lib/room-code'
@@ -40,6 +40,17 @@ import { getUvrSession } from '@/stores/uvr-store'
  */
 const RELAY_REFUSAL =
   'These devices could only reach each other through a relay, and songs are too big to send that way. Put both on the same Wi-Fi and try again.'
+
+/**
+ * Different problem, different sentence.
+ *
+ * "We could not work out how you are connected" is not "you are on
+ * different networks", and telling somebody to change their Wi-Fi when
+ * their Wi-Fi was never the problem sends them off to check a VPN,
+ * restart a router, and come back to find it working anyway.
+ */
+const ROUTE_UNKNOWN_REFUSAL =
+  'Could not confirm a direct connection between these devices, so the song was not sent. Wait a moment and press Send again.'
 
 export type SyncSessionState = 'idle' | 'starting' | 'waiting' | 'connected'
 
@@ -222,6 +233,12 @@ function ensurePeer(): SyncPeer {
         activePeerId = peerId
         setSyncPeerLabel(displayName)
         setSyncState('connected')
+        // The arrival deadline may have already fired and left "nobody
+        // joined with that code" on screen. A device just joined with
+        // that code, so the warning is now a lie sitting directly above
+        // a green Connected chip.
+        clearWaitingError()
+        console.info(`[sync] connected to "${displayName}"`)
         void announceSelf(peerId)
       }
     },
@@ -233,8 +250,15 @@ function ensurePeer(): SyncPeer {
       const gone = 'The other device left.'
       activeSender?.abort(gone)
       activeReceiver?.abort(gone)
+      console.info('[sync] the other device left')
       // The room is still open; the same code still works for a retry.
-      if (syncState() === 'connected') setSyncState('waiting')
+      if (syncState() === 'connected') {
+        setSyncState('waiting')
+        // Back to waiting means back on the clock. Without re-arming, a
+        // device that connects, drops, and never returns leaves the modal
+        // saying "Waiting for a device" with no deadline behind it.
+        armPeerArrivalDeadline('left')
+      }
     },
     onControl: (peerId, raw) => {
       if (peerId !== activePeerId || !isSyncWireMessage(raw)) return
@@ -280,8 +304,35 @@ function ensurePeer(): SyncPeer {
  * devices wait for each other in different places. Nothing but a
  * deadline can tell that apart from a slow connection, so this is the
  * only thing standing between the user and "Connecting…" for ever.
+ *
+ * Thirty seconds because the cost of the two mistakes is not symmetric.
+ * Late is a few more seconds of a spinner somebody is already watching;
+ * early is an accusation that the code was mistyped, aimed at somebody
+ * who is still walking across the room with the other device.
  */
-const PEER_ARRIVAL_MS = 20_000
+const PEER_ARRIVAL_MS = 30_000
+
+/** The exact text the deadline leaves behind, so it can be taken back. */
+const NOBODY_JOINED =
+  'No device joined with that code. Check the code on the other device — and that both are on the same Wi-Fi — then try again.'
+
+/** After a device has already been here, the code is not the suspect. */
+const PEER_NOT_BACK =
+  'The other device has not come back. It is still welcome on the same code.'
+
+/**
+ * Retract the waiting warning, and nothing else.
+ *
+ * Scoped to those two messages on purpose: a transfer that failed for its
+ * own reasons is still worth reading after a device reconnects, and
+ * clearing the whole error slot would swallow it.
+ */
+function clearWaitingError(): void {
+  const current = syncError()
+  if (current === NOBODY_JOINED || current === PEER_NOT_BACK) {
+    setSyncError(null)
+  }
+}
 
 /** Poll until signaling has answered with an id, or give up. */
 async function waitFor(
@@ -297,16 +348,25 @@ async function waitFor(
   }
 }
 
-/** Watch for the far device, and say something if it never arrives. */
-function armPeerArrivalDeadline(): void {
+/**
+ * Watch for the far device, and say something if it never arrives.
+ *
+ * `since` is not decoration. "No device joined with that code" is a
+ * reasonable guess the first time and plainly wrong the second: a device
+ * that connected and dropped proved the code was right, and telling
+ * somebody to go and re-check it sends them to look at the one thing
+ * that is definitely fine.
+ */
+function armPeerArrivalDeadline(since: 'never-joined' | 'left'): void {
   const mine = generation
   setTimeout(() => {
     if (mine !== generation) return
     if (activePeerId !== null) return
     if (syncState() !== 'waiting') return
-    setSyncError(
-      'No device joined with that code. Check the code on the other device — and that both are on the same Wi-Fi — then try again.',
+    console.info(
+      `[sync] no peer in room ${syncRoomId() ?? '(none)'} after ${PEER_ARRIVAL_MS / 1000}s (${since})`,
     )
+    setSyncError(since === 'left' ? PEER_NOT_BACK : NOBODY_JOINED)
   }, PEER_ARRIVAL_MS)
 }
 
@@ -339,7 +399,7 @@ export async function startSyncReceive(): Promise<string | null> {
   }
   setSyncRoomId(roomId)
   setSyncState('waiting')
-  armPeerArrivalDeadline()
+  armPeerArrivalDeadline('never-joined')
   return roomId
 }
 
@@ -376,7 +436,7 @@ export async function startSyncSend(roomId: string): Promise<boolean> {
   setSyncRoomId(code)
   // 'waiting' until the DataChannel to the receiver actually opens.
   if (syncState() === 'starting') setSyncState('waiting')
-  armPeerArrivalDeadline()
+  armPeerArrivalDeadline('never-joined')
   return true
 }
 
@@ -419,9 +479,25 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
     // then that the route is relayed -- and refusing -- spends all of it
     // to say no.
     const connection = p.connectionTo(target)
-    if (connection === null || (await isRelayedConnection(connection))) {
-      upsertTransfer(fileHash, { status: 'failed', message: RELAY_REFUSAL })
-      showNotification(RELAY_REFUSAL, 'warning')
+    if (connection === null) {
+      const message = 'The connection to the other device is no longer open.'
+      console.warn('[sync] refusing to send: no peer connection')
+      upsertTransfer(fileHash, { status: 'failed', message })
+      showNotification(message, 'warning')
+      return
+    }
+    // Waits for ICE to settle rather than reading one sample. Pressing
+    // Send the instant the green Connected chip appears used to land in
+    // the window where no candidate pair has been nominated yet, and that
+    // was reported as a relay -- so the answer was "put both devices on
+    // the same Wi-Fi" to somebody whose devices were already on it.
+    const route = await awaitDirectRoute(connection)
+    console.info(`[sync] route to peer: ${route}`)
+    if (route !== 'direct') {
+      const message =
+        route === 'relayed' ? RELAY_REFUSAL : ROUTE_UNKNOWN_REFUSAL
+      upsertTransfer(fileHash, { status: 'failed', message })
+      showNotification(message, 'warning')
       return
     }
 
