@@ -105,6 +105,12 @@ export function useGuitarNightTunerController(
   const [referenceStringIndex, setReferenceStringIndex] = createSignal<
     number | null
   >(null)
+  const [listeningWillResume, setListeningWillResume] = createSignal(false)
+  let listeningResumePending = false
+  const updateListeningResume = (pending: boolean): void => {
+    listeningResumePending = pending
+    setListeningWillResume(pending)
+  }
   const [localError, setLocalError] = createSignal<string | null>(null)
   const targets = createMemo(() => getTunerTargets(options.tuning()))
   /**
@@ -154,7 +160,7 @@ export function useGuitarNightTunerController(
   let stableTargetIndex: number | null = null
   let stableReadingCount = 0
 
-  const stopReferenceTone = (): void => {
+  const clearReferenceTone = (): void => {
     referenceGeneration += 1
     if (referenceTimer !== 0) window.clearTimeout(referenceTimer)
     referenceTimer = 0
@@ -173,23 +179,11 @@ export function useGuitarNightTunerController(
     }
   }
 
-  const prepare = (): void => {
-    options.pausePlayback?.()
-    stopReferenceTone()
-    cancelInputLifetime()
-    setLocalError(null)
-  }
-
-  const close = (): void => {
-    stopReferenceTone()
-    cancelInputLifetime()
-    setLocalError(null)
-  }
-
-  const startListening = async (): Promise<boolean> => {
+  async function startListening(): Promise<boolean> {
     const profile = options.listening.inputProfile()
     options.pausePlayback?.()
-    stopReferenceTone()
+    updateListeningResume(false)
+    clearReferenceTone()
     setLocalError(null)
     if (profile === 'midi') {
       setLocalError('Choose Room mic or Plugged in to measure tuning.')
@@ -198,7 +192,31 @@ export function useGuitarNightTunerController(
     return options.listening.start({ purpose: 'tuner' })
   }
 
+  /** End a reference and restore capture only when it interrupted this tuner. */
+  const stopReferenceTone = (): void => {
+    const shouldResume = listeningResumePending
+    updateListeningResume(false)
+    clearReferenceTone()
+    if (shouldResume) void startListening()
+  }
+
+  const prepare = (): void => {
+    options.pausePlayback?.()
+    updateListeningResume(false)
+    clearReferenceTone()
+    cancelInputLifetime()
+    setLocalError(null)
+  }
+
+  const close = (): void => {
+    updateListeningResume(false)
+    clearReferenceTone()
+    cancelInputLifetime()
+    setLocalError(null)
+  }
+
   const stopListening = (): void => {
+    updateListeningResume(false)
     cancelInputLifetime()
   }
 
@@ -206,9 +224,20 @@ export function useGuitarNightTunerController(
     profile: Extract<GuitarInputProfileKind, 'microphone' | 'interface'>,
   ): Promise<void> => {
     const selectedProfile = profile
+    if (
+      options.listening.inputProfile() === selectedProfile &&
+      !listeningResumePending &&
+      referenceVoice === null
+    ) {
+      return
+    }
+    const shouldResume =
+      captureIsActive(options.listening.status()) || listeningResumePending
     setLocalError(null)
-    stopReferenceTone()
+    updateListeningResume(shouldResume)
+    clearReferenceTone()
     await options.listening.selectInputProfile(selectedProfile)
+    if (shouldResume && listeningResumePending) await startListening()
   }
 
   const selectTarget = (stringIndex: number | null): void => {
@@ -237,20 +266,25 @@ export function useGuitarNightTunerController(
     if (target === undefined) return false
 
     options.pausePlayback?.()
+    updateListeningResume(
+      listeningResumePending || captureIsActive(options.listening.status()),
+    )
     cancelInputLifetime()
-    stopReferenceTone()
+    clearReferenceTone()
     setLocalError(null)
     const generation = referenceGeneration
     const activated = await options.activateAudio()
     if (generation !== referenceGeneration) return false
     if (!activated) {
       setLocalError('The reference string could not sound. Try again.')
+      stopReferenceTone()
       return false
     }
     const graph = options.getAudioGraph()
     if (generation !== referenceGeneration) return false
     if (graph === null) {
       setLocalError('The room audio path is unavailable.')
+      stopReferenceTone()
       return false
     }
 
@@ -310,7 +344,8 @@ export function useGuitarNightTunerController(
   })
 
   onCleanup(() => {
-    stopReferenceTone()
+    updateListeningResume(false)
+    clearReferenceTone()
     cancelInputLifetime()
   })
 
@@ -323,6 +358,7 @@ export function useGuitarNightTunerController(
     manualTargetIndex,
     readyStringIndices,
     referenceStringIndex,
+    listeningWillResume,
     isListening,
     isOpeningInput,
     error,

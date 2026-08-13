@@ -255,7 +255,7 @@ describe('GuitarNightRoom', () => {
     document.dispatchEvent(space)
     expect(transport.play).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Allow microphone' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start listening' }))
     expect(listening.start).toHaveBeenCalledWith({ purpose: 'tuner' })
 
     fireEvent.keyDown(document, { key: 'Escape' })
