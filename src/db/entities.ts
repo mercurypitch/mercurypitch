@@ -673,8 +673,18 @@ export interface UserActivity extends DbEntity {
   userId: string
   kind: UserActivityKind
   /** What was acted on. Not a foreign key — deleting a playlist does not
-   *  un-make the act of having made it. */
-  refId?: string
+   *  un-make the act of having made it.
+   *
+   *  `| null` for the same reason the five evidence fields above carry it:
+   *  `0011_userActivity.sql` declares `refId TEXT` with no NOT NULL, and the
+   *  server adapter hands JSON straight through without normalising, so the
+   *  database can produce a literal `null` here. Declaring it `?: string`
+   *  alone made the type lie — `row.refId !== undefined` type-checked and
+   *  passed at runtime on `null`, which in `countActivity` collapses every
+   *  null-ref row of a once-per-ref kind onto the single key `"kind:null"`
+   *  and undercounts them. Those counts feed the Composer, Songwriter and
+   *  Prolific badges. */
+  refId?: string | null
   /** Per-kind detail (song count, duration). Never queried structurally. */
   metaJson?: string
   /** When it happened, which is not always when it synced. */

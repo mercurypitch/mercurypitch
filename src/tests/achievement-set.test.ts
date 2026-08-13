@@ -122,4 +122,30 @@ describe('activity counting', () => {
       ]).melody_created,
     ).toBe(2)
   })
+
+  // The other spelling of "no reference". `0011_userActivity.sql` declares
+  // `refId TEXT` with no NOT NULL and the server adapter does not normalise,
+  // so this is the shape the database can actually produce. Guarding only
+  // `!== undefined` let null through, and every null-ref row of a
+  // once-per-ref kind then collapsed onto the key `melody_created:null` --
+  // two unrelated melodies counted as one, under-awarding Composer,
+  // Songwriter and Prolific.
+  it('counts rows whose refId is null individually, like undefined', () => {
+    expect(
+      countActivity([
+        { kind: 'melody_created', refId: null },
+        { kind: 'melody_created', refId: null },
+      ]).melody_created,
+    ).toBe(2)
+  })
+
+  it('still dedupes a real refId when nulls are mixed in', () => {
+    expect(
+      countActivity([
+        { kind: 'melody_created', refId: 'm1' },
+        { kind: 'melody_created', refId: null },
+        { kind: 'melody_created', refId: 'm1' },
+      ]).melody_created,
+    ).toBe(2)
+  })
 })

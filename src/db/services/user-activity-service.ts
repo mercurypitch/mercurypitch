@@ -103,7 +103,12 @@ export function countActivity(
   const counts: ActivityCounts = {}
   const seen = new Set<string>()
   for (const row of rows) {
-    if (COUNTED_ONCE_PER_REF.has(row.kind) && row.refId !== undefined) {
+    // `!= null` covers both spellings of "no reference": our own writers
+    // always supply one, but the column is nullable and the server adapter
+    // does not normalise, so a null would otherwise pass this guard and put
+    // every such row under the single key `${row.kind}:null` — deduplicating
+    // unrelated rows against each other and undercounting them.
+    if (COUNTED_ONCE_PER_REF.has(row.kind) && row.refId != null) {
       const key = `${row.kind}:${row.refId}`
       if (seen.has(key)) continue
       seen.add(key)
