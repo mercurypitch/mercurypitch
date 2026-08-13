@@ -175,6 +175,25 @@ describe('useGuitarNightTunerController', () => {
     })
   })
 
+  it('silently abandons a reference request cancelled during audio activation', async () => {
+    await withController(async (controller, _listening, _pause, activate) => {
+      let finishActivation!: (activated: boolean) => void
+      const activation = new Promise<boolean>((resolve) => {
+        finishActivation = resolve
+      })
+      activate.mockReturnValueOnce(activation)
+
+      const pendingReference = controller.playReference(5)
+      controller.stopReferenceTone()
+      finishActivation(true)
+
+      expect(await pendingReference).toBe(false)
+      expect(controller.error()).toBeNull()
+      expect(voices.createGuitar).not.toHaveBeenCalled()
+      expect(controller.referenceStringIndex()).toBeNull()
+    })
+  })
+
   it('invalidates a pending cross-tab handoff before sounding a reference', async () => {
     await withController(async (controller, listening, _pause, activate) => {
       listening.setStatus('error')
@@ -210,6 +229,21 @@ describe('useGuitarNightTunerController', () => {
 
       listening.pushReading(lowE.targetHz)
       expect(controller.readyStringIndices()).toEqual([5])
+    })
+  })
+
+  it('keeps direction evidence outside Auto without claiming target acquisition', async () => {
+    await withController(async (controller, listening) => {
+      const lowE = controller.targets()[5]
+      listening.pushReading(lowE.targetHz * 2 ** (88 / 1200))
+
+      expect(controller.reading()).toBeNull()
+      expect(controller.manualTargetIndex()).toBeNull()
+      expect(controller.evidenceReading()).toMatchObject({
+        stringIndex: 5,
+      })
+      expect(controller.evidenceReading()?.centsDeviation).toBeCloseTo(88, 5)
+      expect(controller.readyStringIndices()).toEqual([])
     })
   })
 

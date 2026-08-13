@@ -9,7 +9,7 @@ import type { GuitarVoice } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import type { TunerReading, TuningPreset } from '@/lib/guitar/tuner'
-import { classifyInstrumentPitch, getTunerTargets, instrumentTuningForPreset, } from '@/lib/guitar/tuner'
+import { classifyPitchAgainstTarget, findNearestTunerTarget, getTunerTargets, instrumentTuningForPreset, isTuningSignal, } from '@/lib/guitar/tuner'
 import type { GuitarListeningStartOptions, GuitarListeningStatus, } from './useGuitarListeningController'
 
 const READY_READING_COUNT = 6
@@ -107,17 +107,32 @@ export function useGuitarNightTunerController(
   >(null)
   const [localError, setLocalError] = createSignal<string | null>(null)
   const targets = createMemo(() => getTunerTargets(options.tuning()))
-  const reading = createMemo<TunerReading | null>(() => {
+  /**
+   * Ungated display evidence keeps a physical-tuner direction visible even
+   * before Auto is close enough to claim that it acquired an open string.
+   */
+  const evidenceReading = createMemo<TunerReading | null>(() => {
     if (options.listening.inputProfile() === 'midi') return null
     const frequency = options.listening.detectedFrequency()
     if (frequency === null) return null
     const targetStringIndex = manualTargetIndex()
-    return classifyInstrumentPitch(
+    const target =
+      targetStringIndex === null
+        ? findNearestTunerTarget(frequency, targets())
+        : (targets()[targetStringIndex] ?? null)
+    if (target === null) return null
+    return classifyPitchAgainstTarget(
       frequency,
       options.listening.clarity(),
-      options.tuning(),
-      targetStringIndex === null ? {} : { targetStringIndex },
+      target,
     )
+  })
+  const reading = createMemo<TunerReading | null>(() => {
+    const evidence = evidenceReading()
+    if (evidence === null) return null
+    return manualTargetIndex() !== null || isTuningSignal(evidence)
+      ? evidence
+      : null
   })
   const activePreset = createMemo(() => matchingPreset(options.tuning()))
   const tuningName = createMemo(
@@ -226,15 +241,15 @@ export function useGuitarNightTunerController(
     stopReferenceTone()
     setLocalError(null)
     const generation = referenceGeneration
-    if (
-      !(await options.activateAudio()) ||
-      generation !== referenceGeneration
-    ) {
+    const activated = await options.activateAudio()
+    if (generation !== referenceGeneration) return false
+    if (!activated) {
       setLocalError('The reference string could not sound. Try again.')
       return false
     }
     const graph = options.getAudioGraph()
-    if (graph === null || generation !== referenceGeneration) {
+    if (generation !== referenceGeneration) return false
+    if (graph === null) {
       setLocalError('The room audio path is unavailable.')
       return false
     }
@@ -302,6 +317,7 @@ export function useGuitarNightTunerController(
   return {
     targets,
     reading,
+    evidenceReading,
     tuningName,
     activePreset,
     manualTargetIndex,

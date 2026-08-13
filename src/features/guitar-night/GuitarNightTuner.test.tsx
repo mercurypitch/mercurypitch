@@ -4,8 +4,9 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { MicPermissionState } from '@/lib/jam/media-errors'
 import type { GuitarNightTunerInputProfile, GuitarNightTunerListeningState, GuitarNightTunerPitchState, GuitarNightTunerPreset, GuitarNightTunerString, GuitarNightTunerSurfaceMode, GuitarNightTunerTargetMode, } from './GuitarNightTuner'
-import { clampTunerCents, GuitarNightTuner } from './GuitarNightTuner'
+import { clampTunerCents, GuitarNightTuner, tunerOverflowDirection, } from './GuitarNightTuner'
 
 afterEach(() => {
   cleanup()
@@ -28,6 +29,8 @@ function TunerHarness(props: {
   readyStringIds?: readonly string[]
   pitchState?: GuitarNightTunerPitchState
   pitchStateAccessor?: () => GuitarNightTunerPitchState
+  cents?: number
+  microphonePermission?: MicPermissionState
   statusDetail?: string
   recoveryActionLabel?: string
   onRecoveryAction?: () => void
@@ -58,10 +61,15 @@ function TunerHarness(props: {
       }
       detectedNoteLabel={() => null}
       detectedFrequencyHz={() => null}
-      cents={() => null}
+      cents={() => props.cents ?? null}
       statusDetail={() => props.statusDetail ?? null}
       referenceStringId={referenceStringId}
       readyStringIds={() => props.readyStringIds ?? []}
+      microphonePermission={
+        props.microphonePermission === undefined
+          ? undefined
+          : () => props.microphonePermission!
+      }
       recoveryActionLabel={() => props.recoveryActionLabel ?? null}
       autoFocusHeading={false}
       onBack={() => props.onBack?.()}
@@ -88,6 +96,7 @@ function TunerSetupHarness(props: {
   onInputProfileChange: (profile: GuitarNightTunerInputProfile) => void
   onTuningPresetChange: (presetId: string) => void
   initialInputProfile?: GuitarNightTunerInputProfile | null
+  onBack?: () => void
 }) {
   const initialInputProfile =
     props.initialInputProfile === undefined
@@ -117,7 +126,7 @@ function TunerSetupHarness(props: {
       tuningPresets={() => TUNING_PRESETS}
       activeTuningPreset={activePreset}
       autoFocusHeading={false}
-      onBack={() => undefined}
+      onBack={() => props.onBack?.()}
       onTargetModeChange={() => undefined}
       onTargetStringChange={() => undefined}
       onStartListening={() => undefined}
@@ -155,6 +164,7 @@ describe('GuitarNightTuner', () => {
         name: 'Choose a string to hear its reference',
       }),
     ).toBeDisabled()
+    expect(screen.queryByRole('meter')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Start listening' }))
     expect(screen.getByRole('button', { name: 'Stop listening' })).toBeEnabled()
@@ -165,24 +175,26 @@ describe('GuitarNightTuner', () => {
     ).toBeEnabled()
   })
 
-  it('turns a selected string into a manual target and controls its reference', () => {
+  it('turns the whole string tile into a manual target and auditions it', () => {
     const startReference = vi.fn()
 
     render(() => <TunerHarness onStartReference={startReference} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'String 6, E2, 82.41 Hz' }),
-    )
+    const stringTile = screen.getByRole('button', {
+      name: 'String 6, E2, 82.41 Hz, play reference',
+    })
+    fireEvent.click(stringTile.querySelector('small')!)
 
     expect(screen.getByRole('button', { name: 'Manual' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
     expect(
-      screen.getByRole('button', { name: 'String 6, E2, 82.41 Hz' }),
+      screen.getByRole('button', {
+        name: 'String 6, E2, 82.41 Hz, play reference',
+      }),
     ).toHaveAttribute('aria-pressed', 'true')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hear E2 reference' }))
     expect(startReference).toHaveBeenCalledWith(STANDARD_STRINGS[0])
     expect(
       screen.getByRole('button', { name: 'Stop E2 reference' }),
@@ -219,7 +231,7 @@ describe('GuitarNightTuner', () => {
       />
     ))
 
-    expect(screen.getByRole('status')).toHaveTextContent('Pitch low')
+    expect(screen.getByRole('status')).toHaveTextContent('E2. Pitch low')
     expect(screen.getByLabelText('Detected frequency')).toHaveTextContent(
       '81.93 Hz',
     )
@@ -234,6 +246,47 @@ describe('GuitarNightTuner', () => {
       'aria-valuetext',
       '−10 cents. Pitch low.',
     )
+  })
+
+  it('announces a stable note and direction as one reading', async () => {
+    vi.useFakeTimers()
+    const [pitchState, setPitchState] =
+      createSignal<GuitarNightTunerPitchState>('low')
+    const [detectedNote, setDetectedNote] = createSignal<string | null>('E2')
+
+    render(() => (
+      <GuitarNightTuner
+        instrumentLabel={() => '6-string guitar'}
+        tuningLabel={() => 'Standard'}
+        strings={() => STANDARD_STRINGS}
+        targetMode={() => 'auto'}
+        targetStringId={() => null}
+        listeningState={() => 'listening'}
+        pitchState={pitchState}
+        detectedNoteLabel={detectedNote}
+        detectedFrequencyHz={() => 82.41}
+        cents={() => -8}
+        referenceStringId={() => null}
+        autoFocusHeading={false}
+        onBack={() => undefined}
+        onTargetModeChange={() => undefined}
+        onTargetStringChange={() => undefined}
+        onStartListening={() => undefined}
+        onStopListening={() => undefined}
+        onStartReference={() => undefined}
+        onStopReference={() => undefined}
+      />
+    ))
+
+    const announcement = screen.getByRole('status')
+    expect(announcement).toHaveTextContent('E2. Pitch low')
+
+    setDetectedNote('A2')
+    setPitchState('high')
+    expect(announcement).toHaveTextContent('E2. Pitch low')
+
+    await vi.advanceTimersByTimeAsync(500)
+    expect(announcement).toHaveTextContent('A2. Pitch high')
   })
 
   it('renders every target for an eight-string instrument', () => {
@@ -283,7 +336,9 @@ describe('GuitarNightTuner', () => {
       screen.getByRole('group', { name: '8-string tuning targets' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'String 8, F#1, 46.25 Hz' }),
+      screen.getByRole('button', {
+        name: 'String 8, F#1, 46.25 Hz, play reference',
+      }),
     ).toBeInTheDocument()
   })
 
@@ -292,6 +347,65 @@ describe('GuitarNightTuner', () => {
     expect(clampTunerCents(63)).toBe(50)
     expect(clampTunerCents(Number.NaN)).toBeNull()
     expect(clampTunerCents(null)).toBeNull()
+    expect(tunerOverflowDirection(-50)).toBeNull()
+    expect(tunerOverflowDirection(-50.1)).toBe('low')
+    expect(tunerOverflowDirection(50.1)).toBe('high')
+  })
+
+  it('keeps far-off manual guidance visible at the meter edge', () => {
+    render(() => <TunerHarness pitchState="high" cents={240.125} />)
+
+    expect(screen.getByTestId('guitar-night-tuner')).toHaveAttribute(
+      'data-pitch-state',
+      'high',
+    )
+    expect(
+      screen
+        .getByTestId('guitar-night-tuner')
+        .querySelector('[data-overflow="high"]'),
+    ).not.toBeNull()
+    expect(screen.getByText('Lower')).toBeVisible()
+    expect(screen.getByRole('meter', { name: 'Pitch offset' })).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    )
+    expect(
+      screen
+        .getByRole('meter', { name: 'Pitch offset' })
+        .getAttribute('aria-valuetext'),
+    ).toContain('Beyond the displayed high range')
+  })
+
+  it('primes first-time microphone permission without hiding the action', () => {
+    render(() => <TunerHarness microphonePermission="prompt" />)
+
+    expect(
+      screen.getByRole('button', { name: 'Allow microphone' }),
+    ).toBeEnabled()
+    expect(
+      screen.getByText(/Choose Allow microphone when your browser asks/),
+    ).toBeVisible()
+  })
+
+  it('uses neutral microphone copy when the browser cannot report permission', () => {
+    render(() => <TunerHarness microphonePermission="unknown" />)
+
+    expect(
+      screen.getByRole('button', { name: 'Start listening' }),
+    ).toBeEnabled()
+    expect(screen.getByText(/If access is needed/)).toBeVisible()
+    expect(
+      screen.queryByText(/Choose Allow microphone/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('explains how to recover when microphone permission is blocked', () => {
+    render(() => <TunerHarness microphonePermission="denied" />)
+
+    expect(
+      screen.getByRole('button', { name: 'Retry microphone' }),
+    ).toBeEnabled()
+    expect(screen.getByText(/site’s browser settings/)).toBeVisible()
   })
 
   it('returns through the explicit Back control', () => {
@@ -383,16 +497,18 @@ describe('GuitarNightTuner', () => {
 
   it('marks completed strings and keeps tuning presets in a disclosure', async () => {
     const changePreset = vi.fn()
+    const back = vi.fn()
 
     render(() => (
       <TunerSetupHarness
         onInputProfileChange={() => undefined}
         onTuningPresetChange={changePreset}
+        onBack={back}
       />
     ))
 
     const readyTarget = screen.getByRole('button', {
-      name: 'String 6, E2, 82.41 Hz, ready',
+      name: 'String 6, E2, 82.41 Hz, play reference, ready',
     })
     expect(readyTarget).toHaveAttribute('data-ready', 'true')
     expect(readyTarget.querySelector('svg')).not.toBeNull()
@@ -400,6 +516,23 @@ describe('GuitarNightTuner', () => {
     const disclosure = screen.getByLabelText('Tuning presets, Standard')
     fireEvent.click(disclosure)
     expect(disclosure.parentElement).toHaveAttribute('open')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await Promise.resolve()
+    expect(disclosure.parentElement).not.toHaveAttribute('open')
+    expect(disclosure).toHaveFocus()
+    expect(back).not.toHaveBeenCalled()
+
+    fireEvent.click(disclosure)
+    const dropD = screen.getByRole('button', { name: /Drop D/ })
+    dropD.focus()
+    expect(dropD).toHaveFocus()
+    fireEvent.pointerDown(document.body)
+    await Promise.resolve()
+    expect(disclosure.parentElement).not.toHaveAttribute('open')
+    expect(disclosure).toHaveFocus()
+    expect(back).not.toHaveBeenCalled()
+
+    fireEvent.click(disclosure)
     fireEvent.click(screen.getByRole('button', { name: /Drop D/ }))
     await Promise.resolve()
 
@@ -435,7 +568,9 @@ describe('GuitarNightTuner', () => {
     ))
 
     expect(
-      screen.getByRole('button', { name: 'String 6, E2, 82.41 Hz' }),
+      screen.getByRole('button', {
+        name: 'String 6, E2, 82.41 Hz, play reference',
+      }),
     ).toHaveAttribute('aria-pressed', 'false')
   })
 

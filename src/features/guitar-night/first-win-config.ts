@@ -35,6 +35,7 @@ export type GuitarFirstWinConfigV1 = {
   timingToleranceMs: number
   tuningMidiHighToLow: [number, number, number, number, number, number]
   percussionPreset: string
+  percussionVariantPresets: string[]
   exerciseSteps: GuitarFirstWinExerciseStepV1[]
   inputFallbacks: GuitarFirstWinInputKind[]
   completionActions: GuitarFirstWinCompletionAction[]
@@ -49,7 +50,7 @@ const DEFAULT_TUNING: GuitarFirstWinConfigV1['tuningMidiHighToLow'] = [
 export const DEFAULT_GUITAR_FIRST_WIN_CONFIG: GuitarFirstWinConfigV1 = {
   schemaVersion: 1,
   flowVersion: 'first-win-v1',
-  configVersion: '2026.08.2',
+  configVersion: '2026.08.3',
   enabled: true,
   tempoBpm: 78,
   countInBeats: 4,
@@ -58,6 +59,11 @@ export const DEFAULT_GUITAR_FIRST_WIN_CONFIG: GuitarFirstWinConfigV1 = {
   timingToleranceMs: 180,
   tuningMidiHighToLow: DEFAULT_TUNING,
   percussionPreset: 'first-win-rock',
+  percussionVariantPresets: [
+    'first-win-rock',
+    'first-win-pocket',
+    'first-win-lift',
+  ],
   exerciseSteps: [
     {
       id: 'open-low-e',
@@ -146,6 +152,21 @@ function safeStringLabel(value: unknown, fallback: string): string {
   return typeof value === 'string' && /^[A-Za-z0-9 #b-]{1,16}$/.test(value)
     ? value
     : fallback
+}
+
+function safeIdentifierArray(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 8) {
+    return [...fallback]
+  }
+  const resolved = [
+    ...new Set(
+      value.filter(
+        (item): item is string =>
+          typeof item === 'string' && /^[A-Za-z0-9._-]{1,48}$/.test(item),
+      ),
+    ),
+  ]
+  return resolved.length > 0 ? resolved : [...fallback]
 }
 
 function safeFrets(value: unknown, fallback: number[]): number[] {
@@ -291,6 +312,9 @@ function cloneDefaults(): GuitarFirstWinConfigV1 {
     exerciseSteps: DEFAULT_GUITAR_FIRST_WIN_CONFIG.exerciseSteps.map((step) =>
       resolveExerciseStep(null, step),
     ),
+    percussionVariantPresets: [
+      ...DEFAULT_GUITAR_FIRST_WIN_CONFIG.percussionVariantPresets,
+    ],
     inputFallbacks: [...DEFAULT_GUITAR_FIRST_WIN_CONFIG.inputFallbacks],
     completionActions: [...DEFAULT_GUITAR_FIRST_WIN_CONFIG.completionActions],
   }
@@ -353,6 +377,10 @@ export function resolveGuitarFirstWinConfig(
     percussionPreset: safeIdentifier(
       value.percussionPreset,
       defaults.percussionPreset,
+    ),
+    percussionVariantPresets: safeIdentifierArray(
+      value.percussionVariantPresets,
+      defaults.percussionVariantPresets,
     ),
     exerciseSteps: sourceSteps.map((step, index) =>
       resolveExerciseStep(

@@ -29,13 +29,18 @@ status states that it is quiet.
 
 ## Interaction contract
 
-- `Start` first demonstrates the configurable one-string tab win with touch
-  and keyboard available before any listening permission. Its explicit
-  count-in starts a local percussion pulse; progress and expert skip are
-  versioned and stored locally.
+- `Start` first makes four open low-E notes feel musical, then teaches a
+  one-string tab phrase. Touch and keyboard work before any listening
+  permission. The explicit count-in starts a local percussion pulse; progress
+  and expert skip are versioned and stored locally.
 - The first win is a room, not a lesson card: its short tab explanation floats
   over the shared stage, accepted free taps move the visible fret target, and
   progress plus the two musical actions stay in one bounded bottom deck.
+- Loop is an opt-in rehearsal state, not another mode. It repeats the current
+  practice gaplessly on the same clock while earned progress remains earned.
+  One compact beat choice and an optional Shuffle action can vary the drums at
+  lap boundaries without changing tempo, restarting the room, or turning the
+  bottom deck into a sequencer.
 - `Load a song` opens completed separation sessions already on this device or
   selects one new local audio file. A distinct durable guitar stem may be
   staged muted; a two-stem instrumental must say that guitar remains in its
@@ -68,13 +73,17 @@ core Learn set in
 - `Tune guitar` opens the same full-room preflight from entry, the prepared-song
   room, and the authored-tab room. Entry owns a temporary listener; mounted
   rooms reuse their existing listener, input lease, detector path, audio graph,
-  and guide bus. Nothing requests permission or sounds until Start listening or
-  an explicit reference-string action.
+  and guide bus. Entry inspects browser permission silently, names a known
+  first-use prompt `Allow microphone`, and otherwise keeps the action neutral;
+  nothing requests capture or sounds until that action or a reference-string
+  action.
 - The tuner follows the current 4–8-string guitar or bass tuning, including
   source pitches and capo, and offers honest Room mic / Plugged in routes. MIDI
   is never presented as a pitch measurement route. Automatic targeting remains
-  gated to nearby open strings; a selected physical string keeps useful
-  low/high evidence while substantially detuned.
+  gated to nearby open strings, while the gauge keeps edge direction from
+  farther evidence instead of hiding the player's position. Selecting anywhere
+  on a physical string tile chooses it and auditions its reference; the whole
+  tile remains one dependable touch target.
 - Opening Tune parks playback without resetting the backing mix, score position,
   or A/B loop. Reference sound and capture are mutually exclusive. Back or
   Escape closes the overlay without resuming playback and restores the Tune
@@ -86,12 +95,19 @@ core Learn set in
   keeps Tune unavailable until its evidence has completed rather than silently
   discarding the take.
 - The phone composition keeps the gauge, all open strings, and the primary
-  Start action immediately available. Secondary input and preset setup can
+  listening action immediately available with dark text on amber. Secondary
+  input and preset setup can
   scroll beneath sticky navigation and controls without horizontal overflow;
   every visible action remains at least 44px and reduced motion removes needle
-  interpolation. Overlay focus is contained, collapsed tuning presets restore
-  their summary, mobile visual and keyboard order agree, and spoken pitch
-  direction changes only after the reading remains stable.
+  interpolation. Tuning choices float above the room without moving strings or
+  controls; outside pointer and Escape close them first and restore their
+  summary. Overlay focus is contained, mobile visual and keyboard order agree,
+  and spoken pitch direction changes only after the reading remains stable.
+
+- The first-win rhythm catalog is a small data-only seam over the existing room
+  drum bus. Straight, Pocket, and Lift are tempo-free patterns today; future
+  approved soundbank assets can replace their renderer without changing lesson
+  configuration, loop state, progress, or the audio clock.
 
 - Learn opens as one protected-focus setlist over the existing room rather than
   reproducing the legacy practice-mode selector. Opening it pauses or suspends
@@ -297,8 +313,10 @@ subordinate to the crop until the source receives a final retouch.
    or quality claims.
 2. Measure the upgraded string highway on representative mobile hardware, add
    stable screenshot baselines, and complete the final material/lighting pass.
-3. Extend the configurable first win into a beginner progression, then add the
-   professional band presets, drummer controls and take history.
+3. Extend the shipped first-win loop into a paced beginner progression and an
+   approved soundbank catalog, then add professional band scenes, drummer
+   controls, and take history without promoting them into first-viewport mode
+   selectors.
 4. Complete authored-score-to-recording alignment plus release and
    continuous-pitch evidence before adding sustain or intonation observations.
 5. Move the proved runtime lifecycle beneath the remaining legacy Guitar

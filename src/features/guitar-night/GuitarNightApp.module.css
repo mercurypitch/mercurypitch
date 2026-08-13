@@ -798,6 +798,50 @@
   gap: var(--space-tight);
 }
 
+.practiceModes {
+  display: inline-flex;
+  flex: none;
+  gap: 0.12rem;
+  padding: 0.12rem;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.52rem;
+  background: rgba(244, 234, 219, 0.025);
+}
+
+.practiceModes button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0.4rem 0.56rem;
+  border: 0;
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.58);
+  background: transparent;
+  font-size: 0.6rem;
+  font-weight: 670;
+  cursor: pointer;
+}
+
+.practiceModes button:hover:not(:disabled) {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.055);
+}
+
+.practiceModes button[aria-pressed='true'] {
+  color: var(--amber-bright);
+  background: rgba(224, 164, 93, 0.13);
+  box-shadow: inset 0 0 0 1px rgba(224, 164, 93, 0.16);
+}
+
+.practiceModes button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.practiceModes button:focus-visible {
+  outline: 2px solid var(--ivory);
+  outline-offset: 1px;
+}
+
 .firstWinUtilities > button,
 .firstWinUtilities > details > summary {
   display: grid;

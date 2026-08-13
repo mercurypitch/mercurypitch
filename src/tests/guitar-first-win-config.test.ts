@@ -23,6 +23,12 @@ describe('resolveGuitarFirstWinConfig', () => {
       freshHitsRequested: 6,
       passHits: 5,
       tuningMidiHighToLow: [62, 57, 53, 48, 43, 38],
+      percussionPreset: 'first-win-pocket',
+      percussionVariantPresets: [
+        'first-win-pocket',
+        'first-win-lift',
+        'first-win-pocket',
+      ],
       inputFallbacks: ['keyboard', 'touch'],
       exerciseSteps: [
         {
@@ -39,6 +45,11 @@ describe('resolveGuitarFirstWinConfig', () => {
     expect(resolved.freshHitsRequested).toBe(6)
     expect(resolved.passHits).toBe(5)
     expect(resolved.tuningMidiHighToLow).toEqual([62, 57, 53, 48, 43, 38])
+    expect(resolved.percussionPreset).toBe('first-win-pocket')
+    expect(resolved.percussionVariantPresets).toEqual([
+      'first-win-pocket',
+      'first-win-lift',
+    ])
     expect(resolved.inputFallbacks).toEqual(['keyboard', 'touch'])
     expect(resolved.exerciseSteps[0].expectedMidi).toEqual([38, 40, 42])
     expect(resolved.exerciseSteps[0].phraseChunks).toEqual([
@@ -77,6 +88,7 @@ describe('resolveGuitarFirstWinConfig', () => {
       timingToleranceMs: 900,
       tuningMidiHighToLow: [1, 2, 3],
       percussionPreset: '<script>',
+      percussionVariantPresets: ['https://unapproved.example/beat', '<script>'],
       inputFallbacks: ['unsupported'],
       completionActions: ['unsupported'],
       exerciseSteps: [
@@ -109,6 +121,9 @@ describe('resolveGuitarFirstWinConfig', () => {
     )
     expect(resolved.percussionPreset).toBe(
       DEFAULT_GUITAR_FIRST_WIN_CONFIG.percussionPreset,
+    )
+    expect(resolved.percussionVariantPresets).toEqual(
+      DEFAULT_GUITAR_FIRST_WIN_CONFIG.percussionVariantPresets,
     )
     expect(resolved.inputFallbacks).toEqual(
       DEFAULT_GUITAR_FIRST_WIN_CONFIG.inputFallbacks,

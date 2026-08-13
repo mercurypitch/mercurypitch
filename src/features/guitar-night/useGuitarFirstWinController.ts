@@ -5,6 +5,7 @@ import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
+import { nextGuitarRoomRhythmVariant, resolveGuitarRoomRhythmPreset, resolveGuitarRoomRhythmPresets, } from '@/features/guitar/backing/guitar-room-rhythm'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { GuitarFirstWinConfigV1, GuitarFirstWinExerciseStepV1, GuitarFirstWinInputKind, } from './first-win-config'
@@ -22,6 +23,14 @@ interface GuitarFirstWinControllerOptions {
   config: Accessor<GuitarFirstWinConfigV1>
   createBand?: () => GuitarRoomBand
   now?: () => number
+  random?: () => number
+}
+
+interface GuitarFirstWinScheduledTarget {
+  key: string
+  iteration: number
+  expectedAtMs: number
+  consumed: boolean
 }
 
 function stepTargetCount(
@@ -104,8 +113,20 @@ export function useGuitarFirstWinController(
   const [countInBeats, setCountInBeatsSignal] = createSignal(
     initialConfig.countInBeats,
   )
+  const initialRhythmPreset = resolveGuitarRoomRhythmPreset(
+    initialConfig.percussionPreset,
+  )
+  const [loopEnabled, setLoopEnabledSignal] = createSignal(false)
+  const [shuffleBeats, setShuffleBeatsSignal] = createSignal(false)
+  const [selectedRhythmPresetId, setSelectedRhythmPresetIdSignal] =
+    createSignal(initialRhythmPreset.id)
+  const [activeRhythmPresetId, setActiveRhythmPresetId] = createSignal(
+    initialRhythmPreset.id,
+  )
+  const [loopIteration, setLoopIteration] = createSignal(0)
   const [progress, setProgress] = createSignal(initialProgress)
   const now = options.now ?? (() => performance.now())
+  const random = options.random ?? Math.random
   const band = options.createBand?.() ?? createGuitarRoomBand()
   const currentStep = createMemo(() => {
     const config = options.config()
@@ -139,7 +160,13 @@ export function useGuitarFirstWinController(
       ? Math.min(options.config().passHits, targetHits())
       : targetHits()
   })
-  const stepPassed = createMemo(() => passHits() > 0 && hits() >= passHits())
+  const stepAlreadyCompleted = createMemo(() => {
+    const step = currentStep()
+    return step !== undefined && progress().completedStepIds.includes(step.id)
+  })
+  const stepPassed = createMemo(
+    () => stepAlreadyCompleted() || (passHits() > 0 && hits() >= passHits()),
+  )
   const stepFinished = createMemo(
     () => targetHits() > 0 && hits() >= targetHits(),
   )
@@ -181,9 +208,23 @@ export function useGuitarFirstWinController(
       return currentHits >= end ? count + 1 : count
     }, 0)
   })
-  let expectedHitTimesMs: readonly number[] = []
-  const consumedTargets = new Set<number>()
+  const rhythmPresets = createMemo(() => {
+    const config = options.config()
+    const primaryPreset = resolveGuitarRoomRhythmPreset(config.percussionPreset)
+    return resolveGuitarRoomRhythmPresets([
+      primaryPreset.id,
+      ...config.percussionVariantPresets,
+    ])
+  })
+  const selectedRhythmPreset = createMemo(() =>
+    resolveGuitarRoomRhythmPreset(selectedRhythmPresetId()),
+  )
+  const activeRhythmPreset = createMemo(() =>
+    resolveGuitarRoomRhythmPreset(activeRhythmPresetId()),
+  )
+  let scheduledTargets: GuitarFirstWinScheduledTarget[] = []
   let startGeneration = 0
+  let activeRunLoops = false
 
   const persist = (next: ReturnType<typeof progress>): void => {
     setProgress(next)
@@ -209,7 +250,17 @@ export function useGuitarFirstWinController(
   const finish = (): void => {
     const step = currentStep()
     if (step === undefined) return
+    completeActiveStep()
+    if (activeRunLoops && status() === 'playing') {
+      setLastFeedback(
+        step.kind === 'one-string-tab'
+          ? 'Phrase complete. The loop stays with you for another lap.'
+          : `${targetHits()} targets marked. Keep playing; the loop stays on.`,
+      )
+      return
+    }
     band.stop()
+    activeRunLoops = false
     setStatus('complete')
     setCountInRemaining(0)
     setLastFeedback(
@@ -217,7 +268,6 @@ export function useGuitarFirstWinController(
         ? 'You followed the full one-string phrase.'
         : `${targetHits()} open-string targets marked. The pulse is yours.`,
     )
-    completeActiveStep()
   }
 
   const registerHit = (inputKind: GuitarFirstWinInputKind): boolean => {
@@ -234,23 +284,23 @@ export function useGuitarFirstWinController(
       setLastFeedback('Wait for the count-in to finish, then mark the note.')
       return false
     }
-    if (status() === 'playing' && expectedHitTimesMs.length > 0) {
+    if (status() === 'playing' && scheduledTargets.length > 0) {
       const currentTime = now()
-      let targetIndex = -1
+      let target: GuitarFirstWinScheduledTarget | null = null
       let targetDistance = Number.POSITIVE_INFINITY
-      expectedHitTimesMs.forEach((target, index) => {
-        if (consumedTargets.has(index)) return
-        const distance = Math.abs(currentTime - target)
+      for (const candidate of scheduledTargets) {
+        if (candidate.consumed) continue
+        const distance = Math.abs(currentTime - candidate.expectedAtMs)
         if (distance < targetDistance) {
           targetDistance = distance
-          targetIndex = index
+          target = candidate
         }
-      })
-      if (targetIndex < 0 || targetDistance > config.timingToleranceMs) {
+      }
+      if (target === null || targetDistance > config.timingToleranceMs) {
         setLastFeedback('Listen for the next pulse, then mark once.')
         return false
       }
-      consumedTargets.add(targetIndex)
+      target.consumed = true
       absoluteTimingMs = targetDistance
       timingFeedback =
         targetDistance <= config.timingToleranceMs * 0.45
@@ -268,6 +318,7 @@ export function useGuitarFirstWinController(
     )
     const nextHits = Math.min(hits() + 1, hitTarget)
     setHits(nextHits)
+    if (nextHits >= passHits()) completeActiveStep()
     if (status() !== 'playing') {
       setPlayheadBeat(Math.min(nextHits, Math.max(0, notes().length - 1)))
     }
@@ -293,11 +344,13 @@ export function useGuitarFirstWinController(
     const generation = startGeneration
     const activeStepAtStart = step.id
     band.stop()
-    consumedTargets.clear()
-    expectedHitTimesMs = []
+    scheduledTargets = []
+    activeRunLoops = loopEnabled()
     setHits(0)
     setPlayheadBeat(0)
     setCountInRemaining(countInBeats())
+    setLoopIteration(0)
+    setActiveRhythmPresetId(selectedRhythmPreset().id)
     setStatus('starting')
     setLastFeedback('Setting the room clock…')
     try {
@@ -305,8 +358,67 @@ export function useGuitarFirstWinController(
         tempoBpm: tempoBpm(),
         countInBeats: countInBeats(),
         exerciseBeats: exerciseNotes.length,
+        loop: activeRunLoops ? { start: 0, end: exerciseNotes.length } : null,
         feel: step.guide === 'percussion-only' ? 'groove' : 'click',
         exercisePulse: step.guide === 'percussion-only',
+        inputTimingWindowMs: options.config().timingToleranceMs,
+        rhythmPresetForIteration: (iteration, previousPreset) => {
+          const selected = resolveGuitarRoomRhythmPreset(
+            selectedRhythmPresetId(),
+          )
+          if (iteration === 0 || !shuffleBeats()) return selected
+          return nextGuitarRoomRhythmVariant(
+            rhythmPresets().map((preset) => preset.id),
+            previousPreset?.id ?? selected.id,
+            random,
+          )
+        },
+        onRhythmPreset: (preset, iteration) => {
+          if (
+            generation !== startGeneration ||
+            currentStep()?.id !== activeStepAtStart
+          ) {
+            return
+          }
+          setActiveRhythmPresetId(preset.id)
+          setLoopIteration(iteration)
+        },
+        onLoopIteration: (iteration) => {
+          if (
+            iteration === 0 ||
+            generation !== startGeneration ||
+            currentStep()?.id !== activeStepAtStart
+          ) {
+            return
+          }
+          scheduledTargets = scheduledTargets.filter(
+            (target) => target.iteration >= iteration,
+          )
+          setHits(0)
+          setPlayheadBeat(0)
+          setStatus('playing')
+          setLoopIteration(iteration)
+          setLastFeedback(`Lap ${iteration + 1}. Settle back into the pulse.`)
+        },
+        onExerciseBeatScheduled: (scheduledBeat) => {
+          if (
+            generation !== startGeneration ||
+            currentStep()?.id !== activeStepAtStart
+          ) {
+            return
+          }
+          const key = `${scheduledBeat.iteration}:${scheduledBeat.beatIndex}`
+          if (scheduledTargets.some((target) => target.key === key)) return
+          scheduledTargets.push({
+            key,
+            iteration: scheduledBeat.iteration,
+            expectedAtMs: scheduledBeat.expectedAtPerformanceMs,
+            consumed: false,
+          })
+          if (scheduledTargets.length > 64) {
+            scheduledTargets = scheduledTargets.slice(-64)
+          }
+        },
         onBeat: (beatIndex, phase) => {
           if (
             generation !== startGeneration ||
@@ -348,10 +460,20 @@ export function useGuitarFirstWinController(
       ) {
         return false
       }
-      expectedHitTimesMs = result.expectedHitTimesMs
+      if (scheduledTargets.length === 0) {
+        scheduledTargets = result.expectedHitTimesMs.map(
+          (expectedAtMs, index) => ({
+            key: `0:${index}`,
+            iteration: 0,
+            expectedAtMs,
+            consumed: false,
+          }),
+        )
+      }
       return true
     } catch {
       if (generation !== startGeneration) return false
+      activeRunLoops = false
       setStatus('error')
       setLastFeedback(
         'The count-in could not start. Touch and Space still work without audio.',
@@ -363,8 +485,8 @@ export function useGuitarFirstWinController(
   const stopGroove = (): void => {
     startGeneration += 1
     band.stop()
-    expectedHitTimesMs = []
-    consumedTargets.clear()
+    activeRunLoops = false
+    scheduledTargets = []
     setStatus('quiet')
     setCountInRemaining(0)
     setPlayheadBeat(0)
@@ -419,12 +541,58 @@ export function useGuitarFirstWinController(
     resetStepSignals(firstStep)
   }
 
+  const grooveRunning = (): boolean =>
+    status() === 'starting' || status() === 'count-in' || status() === 'playing'
+
   const setTempoBpm = (value: number): void => {
+    if (grooveRunning()) return
     setTempoBpmSignal(Math.min(160, Math.max(40, Math.round(value))))
   }
 
   const setCountInBeats = (value: number): void => {
+    if (grooveRunning()) return
     setCountInBeatsSignal(Math.min(8, Math.max(0, Math.round(value))))
+  }
+
+  const setLoopEnabled = (enabled: boolean): boolean => {
+    const wasRunning = grooveRunning()
+    if (wasRunning && (enabled || !loopEnabled())) return false
+    if (wasRunning) stopGroove()
+    setLoopEnabledSignal(enabled)
+    if (!enabled) setShuffleBeatsSignal(false)
+    setLastFeedback(
+      enabled
+        ? 'Loop on. The next count-in will keep this practice moving.'
+        : wasRunning
+          ? 'Loop off. The groove stopped at your marked targets.'
+          : 'Loop off. The next count-in will play once.',
+    )
+    return true
+  }
+
+  const setShuffleBeats = (enabled: boolean): void => {
+    if (enabled && !loopEnabled()) setLoopEnabledSignal(true)
+    setShuffleBeatsSignal(enabled)
+    setLastFeedback(
+      enabled
+        ? 'Beat shuffle on. A different feel can arrive at each lap.'
+        : 'Beat shuffle off. This feel will stay steady.',
+    )
+  }
+
+  const setRhythmPresetId = (presetId: string): void => {
+    const available = rhythmPresets().find((preset) => preset.id === presetId)
+    if (available === undefined) return
+    setSelectedRhythmPresetIdSignal(available.id)
+    setShuffleBeatsSignal(false)
+    if (!grooveRunning()) setActiveRhythmPresetId(available.id)
+    setLastFeedback(
+      grooveRunning()
+        ? activeRunLoops
+          ? `${available.label} is queued for an upcoming lap.`
+          : `${available.label} is ready for the next count-in.`
+        : `${available.label} beat ready for the next count-in.`,
+    )
   }
 
   const skip = (): void => {
@@ -459,6 +627,12 @@ export function useGuitarFirstWinController(
     lastFeedback,
     tempoBpm,
     countInBeats,
+    loopEnabled,
+    shuffleBeats,
+    loopIteration,
+    rhythmPresets,
+    selectedRhythmPreset,
+    activeRhythmPreset,
     progress,
     registerHit,
     startGroove,
@@ -468,6 +642,9 @@ export function useGuitarFirstWinController(
     replayFlow,
     setTempoBpm,
     setCountInBeats,
+    setLoopEnabled,
+    setShuffleBeats,
+    setRhythmPresetId,
     skip,
   }
 }

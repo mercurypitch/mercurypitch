@@ -239,9 +239,12 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   without requesting device permission, activating capture, starting or
   resuming room playback, or sounding a reference tone.
 - **REQ-GN-TUNER-002 — Explicit audio start:** WHEN the player selects `Start
-listening`, the tuner shall use an explicitly selected microphone or direct
-  audio-interface route. MIDI shall not be presented or interpreted as a
-  pitch-tuning input.
+listening` or the first-use `Allow microphone` action, the tuner shall use an
+  explicitly selected microphone or direct audio-interface route. MIDI shall
+  not be presented or interpreted as a
+  pitch-tuning input. WHEN the tuner opens, it shall inspect existing browser
+  permission without opening capture, name the first-use action truthfully, and
+  explain a site-level block rather than waiting for a prompt that cannot open.
 - **REQ-GN-TUNER-003 — Shared listening graph:** WHILE the tuner is open from
   an existing room, it shall reuse that room's single listening controller,
   input lease, detector path, `AudioContext`, and output graph rather than
@@ -253,8 +256,9 @@ listening`, the tuner shall use an explicitly selected microphone or direct
 - **REQ-GN-TUNER-005 — Automatic and explicit targets:** WHILE no string is
   selected, the tuner shall acquire the nearest open-string target only within
   its bounded automatic signal window. WHEN the player selects a string, the
-  tuner shall retain that exact row identity and show useful flat/sharp
-  deviation even outside the automatic window.
+  complete string tile shall retain that exact row identity, sound its
+  reference, and show useful flat/sharp deviation even outside the automatic
+  window.
 - **REQ-GN-TUNER-006 — Exclusive reference tone:** WHEN the player starts a
   reference tone, active capture shall stop first and the tone shall sound
   through the room's guide bus. WHEN capture starts, every reference tone
@@ -275,13 +279,16 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   remain at least 44 by 44 CSS pixels on supported phone and desktop layouts.
   Target, cents direction, listening state, and in-tune judgment shall be
   available without colour alone; live announcements shall be throttled; and
-  reduced motion shall remove continuous needle or lock animation without
-  hiding the current reading.
+  readings outside the visible cents rail shall retain an edge cue naming the
+  corrective direction. Reduced motion shall remove continuous needle or lock
+  animation without hiding the current reading.
 - **REQ-GN-TUNER-010 — Preset synchronization:** WHEN the player chooses a
   built-in tuning preset, Guitar Night shall update the current
   `InstrumentTuning`, tuner targets, reference tones, and every stage
   projection together in high-string-first row order; a preset shall never be
-  a label-only tuner change.
+  a label-only tuner change. WHILE the preset choices are open, they shall
+  overlay rather than reflow the tuner, close on an outside pointer, and yield
+  the first Escape press before Escape closes the tuner.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 
@@ -349,9 +356,9 @@ listening`, the tuner shall use an explicitly selected microphone or direct
 - **REQ-GN-FIRST-002 — Configurable parameters:** `GuitarFirstWinConfig` shall
   define whether the intro is offered, tempo, count-in, timing tolerance,
   requested hit count, pass threshold, target string label, expected pitch,
-  tuning assumption, percussion preset, tab-note sequence, phrase chunks,
-  guide behaviour, enabled input fallbacks, completion actions, and schema
-  version.
+  tuning assumption, percussion preset and variant list, tab-note sequence,
+  phrase chunks, guide behaviour, enabled input fallbacks, completion actions,
+  and schema version.
 - **REQ-GN-FIRST-002A — Version-one shape and defaults:** The bundled
   version-one configuration shall have the following normative shape and
   defaults. The target MIDI may be explicit or derived from
@@ -370,6 +377,7 @@ listening`, the tuner shall use an explicitly selected microphone or direct
     timingToleranceMs: number // 180
     tuningMidiHighToLow: [number, number, number, number, number, number]
     percussionPreset: string // 'first-win-rock'
+    percussionVariantPresets: string[]
     exerciseSteps: Array<{
       id: string
       kind: 'open-string-groove' | 'one-string-tab'
@@ -406,7 +414,9 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   `1..freshHitsRequested`, timing tolerance within `50..500` ms, string index
   within `0..5`, tuning as six MIDI values within `0..127`, and frets within
   `0..24`. Each explicit expected-MIDI array shall match its step's fret count
-  and contain only values within `0..127`.
+  and contain only values within `0..127`. Percussion variant configuration
+  shall contain at most eight safe local preset identifiers; unknown identifiers
+  shall resolve to the bundled default and shall never be treated as asset URLs.
 - **REQ-GN-FIRST-004 — Contextual user adjustment:** WHERE the player opens
   intro options, the system shall allow relevant adjustments such as tempo,
   count-in, handedness/tuning, input source, and exercise choice without
@@ -492,6 +502,30 @@ listening`, the tuner shall use an explicitly selected microphone or direct
   retain the stage and quiet guide controls, and mark the flow complete only
   after the full phrase. A completed legacy one-step record shall migrate to
   this newly incomplete tab step without starting audio or capture.
+- **REQ-GN-FIRST-017 — Opt-in practice loop:** WHEN the player enables `Loop`
+  before starting a first-win groove, the current configured exercise shall
+  repeat gaplessly on the same room clock until the player explicitly stops or
+  leaves. A later lap shall not replay the count-in or recreate the audio graph.
+- **REQ-GN-FIRST-018 — Earned progress while looping:** WHEN a looping player
+  reaches the configured pass or completion threshold, the system shall persist
+  that progress without stopping the groove. Each new lap shall reset only the
+  visible lap markers and playhead; it shall not revoke a completed step.
+- **REQ-GN-FIRST-019 — Tempo-free beat catalog:** First-win drum variants shall
+  be data-only semantic hit patterns with no embedded tempo, audio ownership,
+  arbitrary code, or asset URL. The room band shall render those patterns on
+  its existing drum bus, leaving a stable preset boundary for a later approved
+  soundbank renderer.
+- **REQ-GN-FIRST-020 — Boundary-safe beat shuffle:** WHERE `Loop` and `Shuffle`
+  are enabled, the next allowed beat shall be chosen only at a lap boundary,
+  shall retain the take's snapshotted tempo, and shall avoid an immediate repeat
+  while more than one variant is available. Choosing a beat directly shall take
+  effect at the first lap boundary admitted to the Web Audio scheduling
+  horizon after that choice, without interrupting the current lap.
+- **REQ-GN-FIRST-021 — Loop timing integrity:** A looping assessed exercise
+  shall map each newly scheduled target onto the performance clock with the
+  configured timing tolerance. Enabling Loop shall not silently downgrade a
+  timed microphone, interface, MIDI, keyboard, or touch attempt into an untimed
+  completion path.
 
 ## Learn setlist and Note Hunt — `GN-LEARN-*`
 

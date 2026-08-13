@@ -40,6 +40,11 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
     props.controller.status() === 'playing' ||
     props.controller.status() === 'starting'
   const grooveLabel = () => (grooveRunning() ? 'Stop groove' : 'Start count-in')
+  const grooveDetail = () => {
+    const exercise = step()
+    if (exercise?.guide === 'count-in-only') return 'Count-in only'
+    return `${props.controller.activeRhythmPreset().label} beat`
+  }
   const targetLabel = () => {
     const target = props.controller.currentTarget()
     const stringLabel = step()?.stringLabel ?? 'string'
@@ -75,6 +80,14 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
       return isTabStep()
         ? 'Full phrase marked. You followed your first one-string tab.'
         : `${props.controller.targetHits()} open-string targets marked. The pulse is yours.`
+    }
+    if (
+      props.controller.stepPassed() &&
+      props.controller.hits() < props.controller.passHits()
+    ) {
+      return isTabStep()
+        ? 'Phrase complete. This lap is fresh; your win is already saved.'
+        : 'Open-string win saved. This lap is fresh; move on whenever you like.'
     }
     if (props.controller.stepPassed()) {
       return props.controller.nextStep()?.kind === 'one-string-tab'
@@ -195,11 +208,7 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
             </span>
             <span>
               <strong>{grooveLabel()}</strong>
-              <small>
-                {step()?.guide === 'count-in-only'
-                  ? 'Count-in only'
-                  : 'Percussion only'}
-              </small>
+              <small>{grooveDetail()}</small>
             </span>
           </button>
           <button
@@ -226,50 +235,102 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
           <button type="button" onClick={() => props.onBack()}>
             Back
           </button>
-          <Show when={props.controller.hits() > 0}>
-            <details class={styles.lessonOptions}>
-              <summary>Adjust intro</summary>
-              <div>
-                <label>
-                  <span>Tempo</span>
-                  <input
-                    type="range"
-                    min="40"
-                    max="160"
-                    step="1"
-                    value={props.controller.tempoBpm()}
-                    aria-label="Intro tempo"
-                    onInput={(event) =>
-                      props.controller.setTempoBpm(
-                        Number(event.currentTarget.value),
-                      )
-                    }
-                  />
-                  <strong>{props.controller.tempoBpm()} BPM</strong>
-                </label>
-                <label>
-                  <span>Count-in</span>
-                  <select
-                    aria-label="Count-in beats"
-                    value={props.controller.countInBeats()}
-                    onChange={(event) =>
-                      props.controller.setCountInBeats(
-                        Number(event.currentTarget.value),
-                      )
-                    }
-                  >
-                    <For each={[0, 2, 4, 8]}>
-                      {(beats) => (
-                        <option value={beats}>
-                          {beats === 0 ? 'Off' : `${beats} beats`}
-                        </option>
-                      )}
-                    </For>
-                  </select>
-                </label>
-              </div>
-            </details>
-          </Show>
+          <div
+            class={styles.practiceModes}
+            role="group"
+            aria-label="Groove repeat options"
+          >
+            <button
+              type="button"
+              aria-pressed={props.controller.loopEnabled()}
+              title={
+                grooveRunning() && props.controller.loopEnabled()
+                  ? 'Stop this loop'
+                  : 'Loop this practice'
+              }
+              disabled={grooveRunning() && !props.controller.loopEnabled()}
+              onClick={() =>
+                props.controller.setLoopEnabled(!props.controller.loopEnabled())
+              }
+            >
+              Loop
+            </button>
+            <button
+              type="button"
+              aria-pressed={props.controller.shuffleBeats()}
+              title="Shuffle the beat at each loop"
+              disabled={!props.controller.loopEnabled()}
+              onClick={() =>
+                props.controller.setShuffleBeats(
+                  !props.controller.shuffleBeats(),
+                )
+              }
+            >
+              Shuffle
+            </button>
+          </div>
+          <details class={styles.lessonOptions}>
+            <summary>Adjust intro</summary>
+            <div>
+              <label>
+                <span>Tempo</span>
+                <input
+                  type="range"
+                  min="40"
+                  max="160"
+                  step="1"
+                  value={props.controller.tempoBpm()}
+                  aria-label="Intro tempo"
+                  disabled={grooveRunning()}
+                  onInput={(event) =>
+                    props.controller.setTempoBpm(
+                      Number(event.currentTarget.value),
+                    )
+                  }
+                />
+                <strong>{props.controller.tempoBpm()} BPM</strong>
+              </label>
+              <label>
+                <span>Count-in</span>
+                <select
+                  aria-label="Count-in beats"
+                  value={props.controller.countInBeats()}
+                  disabled={grooveRunning()}
+                  onChange={(event) =>
+                    props.controller.setCountInBeats(
+                      Number(event.currentTarget.value),
+                    )
+                  }
+                >
+                  <For each={[0, 2, 4, 8]}>
+                    {(beats) => (
+                      <option value={beats}>
+                        {beats === 0 ? 'Off' : `${beats} beats`}
+                      </option>
+                    )}
+                  </For>
+                </select>
+              </label>
+              <label>
+                <span>Beat</span>
+                <select
+                  aria-label="Intro beat"
+                  value={props.controller.selectedRhythmPreset().id}
+                  onChange={(event) =>
+                    props.controller.setRhythmPresetId(
+                      event.currentTarget.value,
+                    )
+                  }
+                >
+                  <For each={props.controller.rhythmPresets()}>
+                    {(preset) => (
+                      <option value={preset.id}>{preset.label}</option>
+                    )}
+                  </For>
+                </select>
+              </label>
+            </div>
+          </details>
           <Show
             when={props.controller.stepPassed()}
             fallback={

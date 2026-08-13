@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBandBeatPhase } from './guitar-room-band'
 import { createGuitarRoomBand, groupNotesByBeat, resolveBandLoop, } from './guitar-room-band'
+import { resolveGuitarRoomRhythmPreset } from './guitar-room-rhythm'
 
 const guitarVoices = vi.hoisted(() => ({
   createBassVoice: vi.fn(),
@@ -118,6 +119,87 @@ describe('groupNotesByBeat', () => {
 })
 
 describe('createGuitarRoomBand', () => {
+  it('schedules a semantic beat including fractional hits on the shared clock', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 1,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 1,
+      feel: 'groove',
+      rhythmPreset: resolveGuitarRoomRhythmPreset('first-win-rock'),
+    })
+
+    expect(
+      drumVoices.triggerDrumVoice.mock.calls.map((call) => [call[0], call[2]]),
+    ).toEqual([
+      ['kick', 5.09],
+      ['hh-closed', 5.09],
+      ['hh-closed', 5.34],
+    ])
+
+    await band.dispose()
+  })
+
+  it('changes a rhythm only on a gapless loop boundary', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const onBeat = vi.fn()
+    const onRhythmPreset = vi.fn()
+    const rhythmPresetForIteration = vi.fn((iteration: number) =>
+      resolveGuitarRoomRhythmPreset(
+        iteration % 2 === 0 ? 'first-win-rock' : 'first-win-pocket',
+      ),
+    )
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 0.12,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 4,
+      loop: { start: 0, end: 4 },
+      feel: 'groove',
+      rhythmPresetForIteration,
+      onBeat,
+      onRhythmPreset,
+    })
+    await vi.advanceTimersByTimeAsync(1_600)
+    expect(rhythmPresetForIteration).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(580)
+
+    expect(rhythmPresetForIteration).toHaveBeenNthCalledWith(1, 0, null)
+    expect(rhythmPresetForIteration.mock.calls[1]?.[0]).toBe(1)
+    expect(
+      onRhythmPreset.mock.calls
+        .slice(0, 2)
+        .map((call) => [call[0].id, call[1], call[2]]),
+    ).toEqual([
+      ['first-win-rock', 0, 5.09],
+      ['first-win-pocket', 1, 7.09],
+    ])
+    expect(onBeat.mock.calls.slice(0, 5).map((call) => call[0])).toEqual([
+      0, 1, 2, 3, 0,
+    ])
+    expect(onBeat.mock.calls.slice(0, 5).map((call) => call[2])).toEqual([
+      5.09, 5.59, 6.09, 6.59, 7.09,
+    ])
+
+    await band.dispose()
+  })
+
   it('keeps 220 BPM and reports the authoritative audio time for each beat', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)

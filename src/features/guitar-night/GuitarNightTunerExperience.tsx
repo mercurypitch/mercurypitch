@@ -7,9 +7,11 @@
 // effects stay behind the controller so every host shares the same lifecycle.
 
 import type { Accessor } from 'solid-js'
-import { createMemo, onCleanup, onMount } from 'solid-js'
+import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import type { TunerTarget } from '@/lib/guitar/tuner'
+import type { MicPermissionState } from '@/lib/jam/media-errors'
+import { micPermissionState } from '@/lib/jam/media-errors'
 import type { GuitarNightTunerInputProfile, GuitarNightTunerPitchState, GuitarNightTunerPreset, GuitarNightTunerProps, GuitarNightTunerString, GuitarNightTunerSurfaceMode, GuitarNightTunerTargetMode, } from './GuitarNightTuner'
 import { GuitarNightTuner } from './GuitarNightTuner'
 import type { GuitarNightTunerController } from './useGuitarNightTunerController'
@@ -93,6 +95,9 @@ function inputLabel(
 export function GuitarNightTunerExperience(
   props: GuitarNightTunerExperienceProps,
 ) {
+  let closed = false
+  const [microphonePermission, setMicrophonePermission] =
+    createSignal<MicPermissionState>('unknown')
   const displayStrings = createMemo<readonly DisplayString[]>(() =>
     [...props.controller.targets()].reverse().map(displayString),
   )
@@ -143,8 +148,8 @@ export function GuitarNightTunerExperience(
     if (props.controller.isOpeningInput()) return 'searching'
     if (!props.controller.isListening()) return 'idle'
 
-    const reading = props.controller.reading()
-    if (reading === null) {
+    const evidence = props.controller.evidenceReading()
+    if (evidence === null) {
       const detectedFrequency = props.detectedFrequencyHz()
       return detectedFrequency !== null &&
         Number.isFinite(detectedFrequency) &&
@@ -152,9 +157,9 @@ export function GuitarNightTunerExperience(
         ? 'unsteady'
         : 'searching'
     }
-    if (reading.inTune) return 'in-tune'
-    if (reading.centsDeviation < 0) return 'low'
-    if (reading.centsDeviation > 0) return 'high'
+    if (evidence.inTune) return 'in-tune'
+    if (evidence.centsDeviation < 0) return 'low'
+    if (evidence.centsDeviation > 0) return 'high'
     return 'unsteady'
   })
   const instrumentLabel = createMemo(() => {
@@ -216,7 +221,11 @@ export function GuitarNightTunerExperience(
     if (preset !== undefined) props.controller.selectPreset(preset)
   }
 
-  let closed = false
+  const refreshMicrophonePermission = async (): Promise<void> => {
+    const state = await micPermissionState()
+    if (!closed) setMicrophonePermission(state)
+  }
+
   const closeController = (): void => {
     if (closed) return
     closed = true
@@ -227,7 +236,10 @@ export function GuitarNightTunerExperience(
     props.onBack()
   }
 
-  onMount(() => props.controller.prepare())
+  onMount(() => {
+    props.controller.prepare()
+    void refreshMicrophonePermission()
+  })
   onCleanup(closeController)
 
   return (
@@ -244,10 +256,11 @@ export function GuitarNightTunerExperience(
       pitchState={pitchState}
       detectedNoteLabel={props.detectedNoteLabel}
       detectedFrequencyHz={props.detectedFrequencyHz}
-      cents={() => props.controller.reading()?.centsDeviation ?? null}
+      cents={() => props.controller.evidenceReading()?.centsDeviation ?? null}
       statusDetail={props.controller.error}
       referenceStringId={referenceStringId}
       inputProfile={selectedInputProfile}
+      microphonePermission={microphonePermission}
       onInputProfileChange={(profile) => {
         void props.controller.selectInputProfile(profile)
       }}
@@ -260,7 +273,14 @@ export function GuitarNightTunerExperience(
       onTargetModeChange={selectTargetMode}
       onTargetStringChange={selectTargetString}
       onStartListening={() => {
-        void props.controller.startListening()
+        void props.controller.startListening().then((started) => {
+          if (closed) return
+          if (started) {
+            setMicrophonePermission('granted')
+            return
+          }
+          void refreshMicrophonePermission()
+        })
       }}
       onStopListening={() => props.controller.stopListening()}
       onStartReference={startReference}
