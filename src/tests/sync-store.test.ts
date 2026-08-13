@@ -46,7 +46,9 @@ const route = vi.hoisted(() => ({
 vi.mock('@/lib/jam/jam-song-transfer', () => route)
 
 const bundle = vi.hoisted(() => ({
-  buildPortableBundle: vi.fn(() =>
+  // Typed with its real first argument so the queue tests can assert the
+  // ORDER songs were packed in, which is the whole point of a queue.
+  buildPortableBundle: vi.fn((_sessionId: string, _opts?: unknown) =>
     Promise.resolve({
       manifest: { song: { quality: 'portable' }, parts: [{ bytes: 10 }] },
     }),
@@ -59,8 +61,12 @@ const uvr = vi.hoisted(() => ({
   session: { id: 's1', fileHash: 'hash-1' } as
     | Record<string, unknown>
     | undefined,
+  /** Set by the queue tests, which need the ids to be told apart. */
+  byId: null as Record<string, Record<string, unknown>> | null,
 }))
-vi.mock('@/stores/uvr-store', () => ({ getUvrSession: () => uvr.session }))
+vi.mock('@/stores/uvr-store', () => ({
+  getUvrSession: (id: string) => uvr.byId?.[id] ?? uvr.session,
+}))
 
 const notes = vi.hoisted(() => ({ showNotification: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => notes)
@@ -72,7 +78,7 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { sendSongToPeer, startSyncReceive, stopSync, syncBusy, syncError, syncPeerRoom, syncState, syncTransfers, } from '@/stores/sync-store'
+import { enqueueSongs, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
 
 /** Drive the store to a live room with a connected peer. */
 async function connect(): Promise<void> {
@@ -87,6 +93,7 @@ beforeEach(async () => {
   peerMock.roomId = 'ABCD2345'
   peerMock.peerId = 'peer-1'
   uvr.session = { id: 's1', fileHash: 'hash-1' }
+  uvr.byId = null
   route.awaitDirectRoute.mockResolvedValue('direct')
   // `clearAllMocks` forgets calls but keeps implementations, so anything
   // a test points at a different answer has to be pointed back by hand.
@@ -350,6 +357,99 @@ describe('telling the receiver a song is being packed', () => {
     // closing it by hand it waits for ever.
     expect(syncTransfers()[0]?.status).toBe('failed')
     expect(syncTransfers()[0]?.message).toContain('left')
+  })
+})
+
+describe('sending several songs', () => {
+  /** Three distinct songs, so the order they go in can be asserted. */
+  function threeSongs(): void {
+    uvr.byId = {
+      s1: { id: 's1', fileHash: 'hash-1' },
+      s2: { id: 's2', fileHash: 'hash-2' },
+      s3: { id: 's3', fileHash: 'hash-3' },
+    }
+  }
+
+  /** Which sessions were actually packed, in the order they were. */
+  function packed(): string[] {
+    return bundle.buildPortableBundle.mock.calls.map((call) => call[0])
+  }
+
+  it('sends them one at a time, in the order they were chosen', async () => {
+    threeSongs()
+    await connect()
+
+    enqueueSongs(['s1', 's2', 's3'])
+
+    await vi.waitFor(() => expect(packed()).toHaveLength(3))
+    // Sequential, for the same reason a single send was: two songs
+    // interleaving on one channel helps neither, and the receiver's pull
+    // loop assumes one bundle at a time.
+    expect(packed()).toEqual(['s1', 's2', 's3'])
+    expect(syncQueue()).toEqual([])
+  })
+
+  it('does not send the same song twice for pressing Send twice', async () => {
+    threeSongs()
+    await connect()
+
+    enqueueSongs(['s1', 's2'])
+    enqueueSongs(['s2', 's3'])
+
+    await vi.waitFor(() => expect(packed()).toHaveLength(3))
+    expect(packed()).toEqual(['s1', 's2', 's3'])
+  })
+
+  it('keeps going when one song fails', async () => {
+    threeSongs()
+    bundle.buildPortableBundle.mockImplementationOnce(() =>
+      Promise.reject(new Error('That stem could not be read.')),
+    )
+    await connect()
+
+    enqueueSongs(['s1', 's2', 's3'])
+
+    // One unreadable stem must not cost somebody the other two songs.
+    await vi.waitFor(() => expect(packed()).toHaveLength(3))
+    const failed = syncTransfers().find((t) => t.fileHash === 'hash-1')
+    expect(failed?.status).toBe('failed')
+    expect(failed?.message).toBe('That stem could not be read.')
+  })
+
+  it('stops when the other device leaves, and says so', async () => {
+    threeSongs()
+    await connect()
+
+    enqueueSongs(['s1', 's2', 's3'])
+    peerMock.handlers?.onPeerLeft('peer-1')
+
+    await vi.waitFor(() => expect(syncQueue()).toEqual([]))
+    // Nothing after this could have succeeded, so the queue is not left
+    // quietly draining into a device that has gone.
+    expect(syncError()).toContain('were not sent')
+    expect(packed().length).toBeLessThan(3)
+  })
+
+  it('drops what is still waiting when asked to stop', async () => {
+    threeSongs()
+    await connect()
+
+    enqueueSongs(['s1', 's2', 's3'])
+    stopQueue()
+
+    await vi.waitFor(() => expect(syncQueue()).toEqual([]))
+    // The song already in flight is half sent; only the waiting ones go.
+    expect(packed().length).toBeLessThan(3)
+  })
+
+  it('forgets the queue when the session ends', async () => {
+    threeSongs()
+    await connect()
+    enqueueSongs(['s1', 's2', 's3'])
+
+    stopSync()
+
+    expect(syncQueue()).toEqual([])
   })
 })
 

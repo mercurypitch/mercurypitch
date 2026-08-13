@@ -370,12 +370,17 @@ measuring told them apart. They stay for the next surprise.
 2. ~~**F** — measure hydration.~~ Done; it was a bug, see above.
 3. ~~**E's cheap tests** — property test, the `syncBusy` table, the
    missing timeout.~~ Done.
-4. **C** — the card redesign, in stages. Has to land before B, because B
-   adds selection to a surface that cannot take another control. _In
-   progress: the shared overflow menu and the compact card are in; §D's
-   send-surface polish follows._
-5. **B** — multi-select, the queue, and group send.
-6. **E's two-peer specs** — QR sign-in first, then song transfer.
+4. ~~**C** — the card redesign, in stages.~~ Done: the shared overflow
+   menu, the compact card, and §D's send-surface polish all landed. It had
+   to come before B, because B adds selection to a surface that could not
+   have taken another control.
+5. ~~**B** — multi-select, the queue, and group send.~~ Done. The queue
+   lives in `sync-store`; a group filter plus Select all is what "send a
+   playlist" turned out to be.
+6. **E's two-peer specs** — QR sign-in first, then song transfer. The only
+   part still open, and the one that matters most: every sync test so far
+   fakes either the peer or the channel, and both bugs found by hand lived
+   exactly where nothing automated has ever looked.
 
 ## Decisions
 

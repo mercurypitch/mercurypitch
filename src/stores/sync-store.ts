@@ -105,6 +105,19 @@ const [syncOwnRoom, setSyncOwnRoom] = createSignal<{
   quota: number
 } | null>(null)
 const [syncTransfers, setSyncTransfers] = createSignal<SyncTransfer[]>([])
+/**
+ * Songs waiting their turn, in order.
+ *
+ * A QUEUE of bundles rather than one archive of several songs, and that
+ * is the whole design decision. The bundle format already gives partial
+ * success (a link that dies at song four leaves three playable over
+ * there), a per-song "I already have that one" before a byte moves, and
+ * flat memory because one part is ever in flight. A zip takes all three
+ * away and doubles peak disk on both sides to do it.
+ *
+ * See docs/plans/device-sync-followups.md (§B).
+ */
+const [syncQueue, setSyncQueue] = createSignal<string[]>([])
 /** True while a song is packing or moving in either direction. */
 const [syncBusy, setSyncBusy] = createSignal(false)
 
@@ -119,6 +132,7 @@ export { setSyncCodeToJoin, syncCodeToJoin }
 export {
   syncBusy,
   syncError,
+  syncQueue,
   syncOwnRoom,
   syncPeerLabel,
   syncPeerRoom,
@@ -734,6 +748,94 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
   }
 }
 
+/** A device that has gone will not take song five. */
+const QUEUE_PEER_GONE =
+  'The other device left, so the songs still waiting were not sent.'
+
+/** Only one drain runs; a second `enqueueSongs` joins the one in flight. */
+let draining = false
+
+async function nap(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Send the queue, one song at a time.
+ *
+ * Sequential for the same reason a single send was: two songs
+ * interleaving on one channel helps neither, and the receiver's pull loop
+ * assumes one bundle at a time. `syncBusy` stays the interlock; this just
+ * refills it.
+ *
+ * A song that fails does NOT stop the rest. Its reason stays on screen in
+ * its own row, which is the honest outcome — one unreadable stem should
+ * not cost somebody the other five songs. A peer that LEAVES does stop it,
+ * because nothing after that could succeed.
+ */
+async function drainQueue(): Promise<void> {
+  if (draining) return
+  draining = true
+  const mine = generation
+  try {
+    while (mine === generation) {
+      const queue = syncQueue()
+      const next = queue[0]
+      if (next === undefined) break
+      if (activePeerId === null) {
+        setSyncQueue([])
+        setSyncError(QUEUE_PEER_GONE)
+        break
+      }
+      // A song arriving from the other direction owns the channel. Wait
+      // for it rather than dropping the queue on the floor — but not for
+      // ever, because a stuck receive must not hang the send queue too.
+      let waited = 0
+      while (syncBusy() && waited < 60_000 && mine === generation) {
+        await nap(250)
+        waited += 250
+      }
+      if (mine !== generation) break
+      if (syncBusy()) {
+        setSyncQueue([])
+        setSyncError(
+          'The other device is still busy with an earlier song, so the rest were not sent.',
+        )
+        break
+      }
+      // Popped BEFORE the attempt, so the loop always advances. Filtering
+      // afterwards is how a refusal that returns instantly turns into a
+      // loop that never ends.
+      setSyncQueue(queue.slice(1))
+      await sendSongToPeer(next)
+    }
+  } finally {
+    draining = false
+  }
+}
+
+/**
+ * Queue songs to send. Already-queued ids are ignored, so pressing Send
+ * twice on the same selection does not send anything twice.
+ */
+export function enqueueSongs(sessionIds: string[]): void {
+  const queued = new Set(syncQueue())
+  const fresh = sessionIds.filter((id) => !queued.has(id))
+  if (fresh.length === 0) return
+  setSyncQueue((current) => [...current, ...fresh])
+  console.info(`[sync] queued ${fresh.length} song(s)`)
+  void drainQueue()
+}
+
+/** Take one song back out of the queue. The one in flight keeps going. */
+export function cancelQueued(sessionId: string): void {
+  setSyncQueue((current) => current.filter((id) => id !== sessionId))
+}
+
+/** Stop after the song in flight — it is already half sent. */
+export function stopQueue(): void {
+  setSyncQueue([])
+}
+
 function handleIncomingOffer(manifest: unknown): void {
   const p = peer
   const from = activePeerId
@@ -850,6 +952,7 @@ function resetSync(notice: string | null): void {
   // `sendSongToPeer` would refuse against the same stale figure.
   setSyncPeerRoom(null)
   setSyncOwnRoom(null)
+  setSyncQueue([])
   setSyncTransfers([])
   setSyncBusy(false)
   if (notice !== null) {
