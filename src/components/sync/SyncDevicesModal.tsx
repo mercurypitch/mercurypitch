@@ -153,6 +153,31 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     }
   })
 
+  /**
+   * Whether a song of this size would be refused over there.
+   *
+   * Only ever true on a KNOWN shortage: a device that will not report its
+   * quota must not have every song greyed out. Passing 0 asks the same
+   * question about the device rather than about a song.
+   *
+   * Declared HERE, above every memo that calls it, and that placement is
+   * load-bearing. `createMemo` runs its body immediately, so a memo that
+   * reaches down the file to a `const` arrow declared later hits its
+   * temporal dead zone the moment the first song makes the memo call it —
+   * which is to say on every device that has something to send, and on no
+   * device that does not.
+   */
+  const tooBigForPeer = (bytes: number): boolean => {
+    const room = syncPeerRoom()
+    return room !== null && bytes > 0 && room.freeBytes < bytes
+  }
+
+  /** True when the far device has less room than a typical song needs. */
+  const lowOnRoom = (): boolean => {
+    const room = syncPeerRoom()
+    return room !== null && room.freeBytes < 20 * 1024 * 1024
+  }
+
   const sendable = createMemo<UvrSession[]>(() => {
     const group = groupFilter()
     return getAllUvrSessionsReactive()
@@ -236,24 +261,6 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
   const connected = () => syncState() === 'connected'
 
-  /**
-   * Whether a song of this size would be refused over there.
-   *
-   * Only ever true on a KNOWN shortage: a device that will not report its
-   * quota must not have every song greyed out. Passing 0 asks the same
-   * question about the device rather than about a song.
-   */
-  const tooBigForPeer = (bytes: number): boolean => {
-    const room = syncPeerRoom()
-    return room !== null && bytes > 0 && room.freeBytes < bytes
-  }
-
-  /** True when the far device has less room than a typical song needs. */
-  const lowOnRoom = (): boolean => {
-    const room = syncPeerRoom()
-    return room !== null && room.freeBytes < 20 * 1024 * 1024
-  }
-
   const receiveStatus = (): string => {
     if (connected()) return `Connected: ${syncPeerLabel() ?? 'another device'}`
     if (syncState() === 'waiting')
@@ -274,6 +281,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
           aria-modal="true"
           aria-label="Sync with another device"
           onClick={(e) => e.stopPropagation()}
+          data-testid="sync-modal"
         >
           <div class={styles.header}>
             <h3>Sync with another device</h3>
@@ -306,6 +314,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   type="button"
                   class={styles.choice}
                   onClick={enterReceive}
+                  data-testid="sync-choose-receive"
                 >
                   <span class={styles.choiceIcon}>
                     <DeviceSync size={28} />
@@ -321,6 +330,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   type="button"
                   class={styles.choice}
                   onClick={() => setMode('send')}
+                  data-testid="sync-choose-send"
                 >
                   <span class={styles.choiceIcon}>
                     <DeviceSync />
@@ -363,7 +373,9 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                 {(code) => (
                   <>
                     <div class={styles.pairing}>
-                      <code class={styles.code}>{code()}</code>
+                      <code class={styles.code} data-testid="sync-room-code">
+                        {code()}
+                      </code>
                       {/* The device showing this is the one that cannot
                           type; the phone pointing at it can. Scanning
                           carries the code across without anyone reading
@@ -432,6 +444,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                       <input
                         class={styles.joinInput}
                         type="text"
+                        data-testid="sync-join-input"
                         placeholder="Code from the other device"
                         value={joinCode()}
                         maxLength={ROOM_CODE_LENGTH}
@@ -458,6 +471,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                         class={styles.btn}
                         disabled={!isCompleteRoomCode(joinCode()) || joining()}
                         onClick={join}
+                        data-testid="sync-join-submit"
                       >
                         {joining() || syncState() === 'starting'
                           ? 'Connecting…'
@@ -546,6 +560,8 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                       <div
                         class={styles.songRow}
                         classList={{ [styles.songRowOut!]: !fits(session) }}
+                        data-testid="sync-song-row"
+                        data-session-id={session.sessionId}
                       >
                         <Show
                           when={fits(session)}
@@ -581,6 +597,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                           class={styles.songBtn}
                           disabled={syncBusy() || !fits(session)}
                           onClick={() => void sendSongToPeer(session.sessionId)}
+                          data-testid="sync-song-send"
                         >
                           <DeviceSync /> Send
                         </button>
@@ -596,6 +613,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                       class={styles.btn}
                       disabled={selectionTooBig()}
                       onClick={sendPicked}
+                      data-testid="sync-send-picked"
                     >
                       <DeviceSync /> Send {pickedSessions().length} song
                       {pickedSessions().length === 1 ? '' : 's'} —{' '}
@@ -629,7 +647,12 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
               <div class={styles.transfers}>
                 <For each={syncTransfers()}>
                   {(t) => (
-                    <div class={styles.transfer}>
+                    <div
+                      class={styles.transfer}
+                      data-testid="sync-transfer"
+                      data-status={t.status}
+                      data-direction={t.direction}
+                    >
                       <div class={styles.transferHead}>
                         <span class={styles.transferTitle} title={t.title}>
                           {t.title}

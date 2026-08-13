@@ -314,6 +314,31 @@ that is working.
 
 **See:** `.tab-overflow-trigger` in `src/styles/app.css`
 
+### Declare a helper ABOVE every memo that calls it
+
+**Symptom:** the sync modal threw `TypeError: Cannot read properties of
+undefined (reading 'reduce')` on a device that had a song to send, and
+mounted perfectly on a device that had none. The reported line was a memo
+that had nothing wrong with it.
+
+**Cause:** two things compounding. `createMemo` runs its body immediately,
+not on first read, so a memo that calls a `const` arrow declared further
+down the component hits its temporal dead zone. And the resulting error is
+SWALLOWED: the memo keeps `undefined`, and what surfaces is the
+`Cannot read properties of undefined` thrown by whichever memo reads it
+next — one or two declarations later, pointing at innocent code. Here
+`tooBigForPeer` sat 50 lines below `sendable` and `pickable`; an empty
+library never called it, because `[].filter(fits)` does not call `fits`.
+
+**Rule:** in a Solid component, every helper a memo touches goes above the
+first memo that touches it. And when a memo blows up on `undefined`, look
+at the memos declared BEFORE it before believing the line number. Test the
+shape that triggers it: mount the list WITH data, since mounting it empty
+is what made this invisible.
+
+**See:** `src/components/sync/SyncDevicesModal.tsx`,
+`src/components/__tests__/SyncDevicesModal.test.tsx`
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
