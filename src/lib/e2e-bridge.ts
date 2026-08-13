@@ -1,5 +1,6 @@
 import type { Setter } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { registerE2ESongSeed } from '@/lib/e2e-song-seed'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { appStore } from '@/stores'
@@ -65,4 +66,9 @@ export function registerE2EBridge(deps: E2EBridgeDeps): void {
   // Karaoke playlist store — lets specs seed a playlist and read it back
   // without audio hardware or UVR sessions (e.g. the vocal-slider drag spec).
   exposeForE2E('__karaokePlaylists', karaokePlaylistStore)
+
+  // A song with real stem blobs behind it, for the two-device specs. Its
+  // database services are imported inside the seed itself, so a production
+  // boot never pulls them in on account of this line.
+  registerE2ESongSeed()
 }
