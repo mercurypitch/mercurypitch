@@ -146,7 +146,8 @@ describe('KaraokeMobileStage load overlay', () => {
 
   it('shows nothing once the load is done', () => {
     render(() => KaraokeMobileStage(makeProps({ loading: () => false })))
-    expect(screen.queryByRole('progressbar', { name: 'Loading the song' }))
-      .toBeNull()
+    expect(
+      screen.queryByRole('progressbar', { name: 'Loading the song' }),
+    ).toBeNull()
   })
 })
