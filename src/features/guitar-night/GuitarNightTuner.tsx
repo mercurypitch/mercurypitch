@@ -8,6 +8,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { CheckSmall, ChevronDown, ChevronLeft, Mic, Volume2, VolumeX, } from '@/components/icons'
+import type { MicPermissionState } from '@/lib/jam/media-errors'
 import styles from './GuitarNightTuner.module.css'
 
 export type GuitarNightTunerSurfaceMode = 'standalone' | 'overlay'
@@ -69,6 +70,8 @@ export interface GuitarNightTunerProps {
   /** Optional two-route audio choice. Null leaves both physical routes unselected. */
   inputProfile?: Accessor<GuitarNightTunerInputProfile | null>
   onInputProfileChange?(profile: GuitarNightTunerInputProfile): void
+  /** Browser permission is observed without opening capture on entry. */
+  microphonePermission?: Accessor<MicPermissionState>
   tuningPresets?: Accessor<readonly GuitarNightTunerPreset[]>
   activeTuningPreset?: Accessor<string | null>
   onTuningPresetChange?(presetId: string): void
@@ -112,6 +115,8 @@ const PITCH_STATE_DETAILS: Readonly<
 
 const SCALE_MARKS = [-50, -25, 0, 25, 50] as const
 const ANNOUNCEMENT_STABILITY_MS = 420
+const TUNER_FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
 
 function finiteNumber(value: number | null): value is number {
   return value !== null && Number.isFinite(value)
@@ -120,6 +125,17 @@ function finiteNumber(value: number | null): value is number {
 export function clampTunerCents(value: number | null): number | null {
   if (!finiteNumber(value)) return null
   return Math.min(50, Math.max(-50, value))
+}
+
+export type GuitarNightTunerOverflowDirection = 'low' | 'high' | null
+
+export function tunerOverflowDirection(
+  value: number | null,
+): GuitarNightTunerOverflowDirection {
+  if (!finiteNumber(value)) return null
+  if (value < -50) return 'low'
+  if (value > 50) return 'high'
+  return null
 }
 
 function pitchName(target: GuitarNightTunerString): string {
@@ -199,20 +215,47 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
     return label
   })
   const clampedCents = createMemo(() => clampTunerCents(props.cents()))
+  const overflowDirection = createMemo(() =>
+    tunerOverflowDirection(props.cents()),
+  )
   const hasReading = createMemo(() => clampedCents() !== null)
   const pitchStatus = createMemo(() => PITCH_STATE_LABELS[props.pitchState()])
-  const [announcedPitchState, setAnnouncedPitchState] =
-    createSignal<GuitarNightTunerPitchState>('idle')
-  let announcementInitialized = false
-  const pitchDetail = createMemo(
-    () => props.statusDetail?.() ?? PITCH_STATE_DETAILS[props.pitchState()],
-  )
+  const pitchDetail = createMemo(() => {
+    const suppliedDetail = props.statusDetail?.()
+    if (suppliedDetail !== undefined && suppliedDetail !== null) {
+      return suppliedDetail
+    }
+    if (
+      props.pitchState() === 'idle' &&
+      props.microphonePermission?.() === 'denied'
+    ) {
+      return 'Microphone access is blocked. Allow it in this site’s browser settings, then try again.'
+    }
+    if (
+      props.pitchState() === 'idle' &&
+      props.microphonePermission?.() === 'prompt'
+    ) {
+      return 'Choose Allow microphone when your browser asks. Audio stays on this device.'
+    }
+    if (
+      props.pitchState() === 'idle' &&
+      props.microphonePermission?.() === 'unknown'
+    ) {
+      return 'Start listening when you are ready. If access is needed, your browser will ask then. Audio stays on this device.'
+    }
+    return PITCH_STATE_DETAILS[props.pitchState()]
+  })
   const displayedPitch = createMemo(() => {
     const detected = props.detectedNoteLabel()?.trim()
     if (detected !== undefined && detected !== '') return detected
     const target = selectedTarget()
     return target === null ? '—' : pitchName(target)
   })
+  const [announcedPitch, setAnnouncedPitch] = createSignal<{
+    label: string
+    state: GuitarNightTunerPitchState
+  }>({ label: '—', state: 'idle' })
+  let announcementInitialized = false
   const listeningActive = createMemo(() => props.listeningState() !== 'idle')
   const controlsDisabled = createMemo(() => props.controlsDisabled?.() ?? false)
   const surfaceStyle = createMemo(() => {
@@ -231,7 +274,22 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
   })
   const meterValueText = createMemo(() => {
     if (!hasReading()) return pitchStatus()
+    if (overflowDirection() === 'low') {
+      return `${centsLabel(props.cents())}. Beyond the displayed low range. Raise the pitch toward centre.`
+    }
+    if (overflowDirection() === 'high') {
+      return `${centsLabel(props.cents())}. Beyond the displayed high range. Lower the pitch toward centre.`
+    }
     return `${centsLabel(props.cents())}. ${pitchStatus()}.`
+  })
+  const listeningControlCopy = createMemo(() => {
+    if (props.listeningState() === 'starting') return 'Opening input'
+    if (listeningActive()) return 'Stop listening'
+    if (props.microphonePermission === undefined) return 'Start listening'
+    if (props.microphonePermission() === 'granted') return 'Start listening'
+    if (props.microphonePermission() === 'denied') return 'Retry microphone'
+    if (props.microphonePermission() === 'prompt') return 'Allow microphone'
+    return 'Start listening'
   })
   const referenceControlLabel = createMemo(() => {
     const sounding = referenceTarget()
@@ -247,13 +305,14 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
   })
 
   const targetAriaLabel = (target: GuitarNightTunerString): string => {
-    const base = `String ${target.stringNumber}, ${pitchName(target)}, ${frequencyLabel(target.frequencyHz)}`
+    const base = `String ${target.stringNumber}, ${pitchName(target)}, ${frequencyLabel(target.frequencyHz)}, play reference`
     return readyStringIds().has(target.id) ? `${base}, ready` : base
   }
 
   const selectTarget = (target: GuitarNightTunerString): void => {
     if (props.targetMode() !== 'manual') props.onTargetModeChange('manual')
     props.onTargetStringChange(target.id)
+    props.onStartReference(target)
   }
 
   const toggleListening = (): void => {
@@ -279,13 +338,35 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
     queueMicrotask(() => presetSummary?.focus())
   }
 
+  const closeTuningPresets = (restoreFocus: boolean): boolean => {
+    if (presetDetails?.open !== true) return false
+    presetDetails.removeAttribute('open')
+    if (restoreFocus) queueMicrotask(() => presetSummary?.focus())
+    return true
+  }
+
+  const handleDocumentPointerDown = (event: PointerEvent): void => {
+    if (
+      presetDetails?.open !== true ||
+      !(event.target instanceof Node) ||
+      presetDetails.contains(event.target)
+    ) {
+      return
+    }
+    const clickedControl =
+      event.target instanceof Element
+        ? event.target.closest(TUNER_FOCUSABLE_SELECTOR)
+        : null
+    const focusWillMove =
+      clickedControl !== null && clickedControl.closest('[inert]') === null
+    closeTuningPresets(!focusWillMove)
+  }
+
   const focusableControls = (): readonly HTMLElement[] =>
     Array.from(
-      surface.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
-      ),
+      surface.querySelectorAll<HTMLElement>(TUNER_FOCUSABLE_SELECTOR),
     ).filter((element) => {
-      if (element.closest('[hidden], [aria-hidden="true"]') !== null) {
+      if (element.closest('[hidden], [aria-hidden="true"], [inert]') !== null) {
         return false
       }
       const closedDisclosure = element.closest('details:not([open])')
@@ -299,6 +380,7 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
     if (event.key === 'Escape') {
       event.preventDefault()
       event.stopPropagation()
+      if (closeTuningPresets(true)) return
       props.onBack()
       return
     }
@@ -327,9 +409,11 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
 
   onMount(() => {
     document.addEventListener('keydown', handleDocumentKeyDown)
-    onCleanup(() =>
-      document.removeEventListener('keydown', handleDocumentKeyDown),
-    )
+    document.addEventListener('pointerdown', handleDocumentPointerDown)
+    onCleanup(() => {
+      document.removeEventListener('keydown', handleDocumentKeyDown)
+      document.removeEventListener('pointerdown', handleDocumentPointerDown)
+    })
     if (props.autoFocusHeading !== false) {
       heading.focus({ preventScroll: true })
     }
@@ -337,17 +421,19 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
 
   createEffect(() => {
     const nextState = props.pitchState()
+    const nextLabel = displayedPitch()
+    const nextAnnouncement = { label: nextLabel, state: nextState }
     if (!announcementInitialized) {
       announcementInitialized = true
-      setAnnouncedPitchState(nextState)
+      setAnnouncedPitch(nextAnnouncement)
       return
     }
     if (nextState === 'idle' || nextState === 'error') {
-      setAnnouncedPitchState(nextState)
+      setAnnouncedPitch(nextAnnouncement)
       return
     }
     const timer = window.setTimeout(
-      () => setAnnouncedPitchState(nextState),
+      () => setAnnouncedPitch(nextAnnouncement),
       ANNOUNCEMENT_STABILITY_MS,
     )
     onCleanup(() => window.clearTimeout(timer))
@@ -404,6 +490,7 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
           class={styles.gauge}
           data-state={props.pitchState()}
           data-has-reading={hasReading() ? 'true' : 'false'}
+          data-overflow={overflowDirection() ?? undefined}
         >
           <div class={styles.pitchReadout}>
             <span>{targetModeCopy()}</span>
@@ -423,18 +510,20 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
               aria-live={props.pitchState() === 'error' ? 'off' : 'polite'}
               aria-atomic="true"
             >
-              {PITCH_STATE_LABELS[announcedPitchState()]}
+              {announcedPitch().label}.{' '}
+              {PITCH_STATE_LABELS[announcedPitch().state]}
             </span>
           </div>
 
           <div
             class={styles.gaugeMeter}
-            role="meter"
-            aria-label="Pitch offset"
-            aria-valuemin="-50"
-            aria-valuemax="50"
-            aria-valuenow={clampedCents() ?? undefined}
-            aria-valuetext={meterValueText()}
+            role={hasReading() ? 'meter' : undefined}
+            aria-hidden={hasReading() ? undefined : 'true'}
+            aria-label={hasReading() ? 'Pitch offset' : undefined}
+            aria-valuemin={hasReading() ? '-50' : undefined}
+            aria-valuemax={hasReading() ? '50' : undefined}
+            aria-valuenow={hasReading() ? clampedCents()! : undefined}
+            aria-valuetext={hasReading() ? meterValueText() : undefined}
           >
             <span class={styles.rangeLabel}>Low</span>
             <div class={styles.gaugeRail} aria-hidden="true">
@@ -450,6 +539,18 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
               </div>
               <span class={styles.tuningWindow} />
               <span class={styles.needle} />
+              <Show when={overflowDirection()}>
+                {(direction) => (
+                  <span
+                    class={styles.overflowCue}
+                    data-direction={direction()}
+                    aria-hidden="true"
+                  >
+                    <b>{direction() === 'low' ? '›' : '‹'}</b>
+                    <small>{direction() === 'low' ? 'Raise' : 'Lower'}</small>
+                  </span>
+                )}
+              </Show>
             </div>
             <span class={styles.rangeLabel}>High</span>
           </div>
@@ -490,7 +591,11 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
         </div>
 
         <Show when={hasSetupControls()}>
-          <div class={styles.setupRail} aria-label="Tuner setup controls">
+          <div
+            class={styles.setupRail}
+            data-testid="guitar-night-tuner-setup"
+            aria-label="Tuner setup controls"
+          >
             <Show when={hasInputProfileControls()}>
               <div class={styles.inputProfiles}>
                 <span>Input</span>
@@ -553,7 +658,7 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
           </div>
         </Show>
 
-        <div class={styles.stringRail}>
+        <div class={styles.stringRail} data-testid="guitar-night-tuner-strings">
           <div class={styles.stringRailLabel}>
             <strong>Open strings</strong>
             <span>
@@ -603,7 +708,11 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
         </div>
       </div>
 
-      <div class={styles.controlDeck} aria-label="Tuner controls">
+      <div
+        class={styles.controlDeck}
+        data-testid="guitar-night-tuner-controls"
+        aria-label="Tuner controls"
+      >
         <div class={styles.targetModes}>
           <span>Target</span>
           <div role="group" aria-label="String targeting">
@@ -650,13 +759,7 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
           onClick={toggleListening}
         >
           <Mic />
-          <span>
-            {props.listeningState() === 'starting'
-              ? 'Opening input'
-              : listeningActive()
-                ? 'Stop listening'
-                : 'Start listening'}
-          </span>
+          <span>{listeningControlCopy()}</span>
         </button>
       </div>
     </section>

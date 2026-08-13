@@ -50,7 +50,7 @@ describe('useGuitarFirstWinController', () => {
         expect(controller.registerHit('touch')).toBe(true)
       }
       expect(controller.stepPassed()).toBe(true)
-      expect(controller.progress().completedStepIds).toEqual([])
+      expect(controller.progress().completedStepIds).toEqual(['open-low-e'])
       expect(controller.advanceStep()).toBe(true)
 
       expect(controller.currentStep()?.id).toBe('first-one-string-tab')
@@ -231,6 +231,98 @@ describe('useGuitarFirstWinController', () => {
           resolve()
         })
       })
+    })
+  })
+
+  it('keeps a passed practice playing and resets markers on the next lap', async () => {
+    const harness = createBandHarness([])
+    let now = 1_000
+
+    await new Promise<void>((resolve) => {
+      createRoot((dispose) => {
+        const controller = useGuitarFirstWinController({
+          config: () => DEFAULT_GUITAR_FIRST_WIN_CONFIG,
+          createBand: () => harness.band,
+          now: () => now,
+          random: () => 0,
+        })
+
+        expect(controller.setLoopEnabled(true)).toBe(true)
+        controller.setShuffleBeats(true)
+        expect(harness.band.start).not.toHaveBeenCalled()
+
+        void controller.startGroove().then(() => {
+          const callbacks = harness.getCallbacks()
+          expect(callbacks?.loop).toEqual({ start: 0, end: 4 })
+          expect(callbacks?.inputTimingWindowMs).toBe(180)
+          const firstBeat = callbacks?.rhythmPresetForIteration?.(0, null)
+          const secondBeat = callbacks?.rhythmPresetForIteration?.(
+            1,
+            firstBeat ?? null,
+          )
+          expect(firstBeat?.id).toBe('first-win-rock')
+          expect(secondBeat?.id).toBe('first-win-pocket')
+
+          controller.setTempoBpm(120)
+          controller.setCountInBeats(8)
+          expect(controller.tempoBpm()).toBe(78)
+          expect(controller.countInBeats()).toBe(4)
+
+          callbacks?.onBeat?.(0, 'exercise', 0)
+          for (let hit = 0; hit < 3; hit += 1) {
+            callbacks?.onExerciseBeatScheduled?.({
+              beatIndex: hit,
+              iteration: 0,
+              scheduledAtSeconds: hit / 2,
+              expectedAtPerformanceMs: now,
+            })
+            expect(controller.registerHit('touch')).toBe(true)
+            now += 500
+          }
+
+          expect(controller.status()).toBe('playing')
+          expect(controller.stepFinished()).toBe(false)
+          expect(controller.stepPassed()).toBe(true)
+          expect(controller.progress().completedStepIds).toContain('open-low-e')
+          expect(harness.band.stop).toHaveBeenCalledTimes(1)
+
+          callbacks?.onLoopIteration?.(1, 2)
+          expect(controller.hits()).toBe(0)
+          expect(controller.stepFinished()).toBe(false)
+          expect(controller.stepPassed()).toBe(true)
+          expect(controller.status()).toBe('playing')
+
+          expect(controller.setLoopEnabled(false)).toBe(true)
+          expect(controller.loopEnabled()).toBe(false)
+          expect(controller.shuffleBeats()).toBe(false)
+          expect(controller.status()).toBe('quiet')
+          expect(harness.band.stop).toHaveBeenCalledTimes(2)
+          dispose()
+          resolve()
+        })
+      })
+    })
+  })
+
+  it('keeps the safe fallback visible when a remote primary preset is unknown', () => {
+    const config = {
+      ...DEFAULT_GUITAR_FIRST_WIN_CONFIG,
+      percussionPreset: 'future-kit',
+      percussionVariantPresets: ['first-win-pocket'],
+    }
+
+    createRoot((dispose) => {
+      const controller = useGuitarFirstWinController({
+        config: () => config,
+        createBand: () => createBandHarness().band,
+      })
+
+      expect(controller.selectedRhythmPreset().id).toBe('first-win-rock')
+      expect(controller.rhythmPresets().map((preset) => preset.id)).toEqual([
+        'first-win-rock',
+        'first-win-pocket',
+      ])
+      dispose()
     })
   })
 })

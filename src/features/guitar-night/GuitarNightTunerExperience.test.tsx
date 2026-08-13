@@ -4,7 +4,7 @@
 
 import { cleanup, render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import type { TunerReading, TunerTarget } from '@/lib/guitar/tuner'
@@ -14,6 +14,14 @@ import type { GuitarNightTunerController } from './useGuitarNightTunerController
 
 const tunerSurface = vi.hoisted(() => ({
   props: null as GuitarNightTunerProps | null,
+}))
+
+const permissionProbe = vi.hoisted(() => ({
+  read: vi.fn<() => Promise<'granted' | 'denied' | 'prompt' | 'unknown'>>(),
+}))
+
+vi.mock('@/lib/jam/media-errors', () => ({
+  micPermissionState: permissionProbe.read,
 }))
 
 vi.mock('./GuitarNightTuner', () => ({
@@ -34,6 +42,7 @@ vi.mock('./GuitarNightTuner', () => ({
 interface ControllerHarness {
   controller: GuitarNightTunerController
   setReading(reading: TunerReading | null): void
+  setEvidenceReading(reading: TunerReading | null): void
   setListening(listening: boolean): void
   setOpening(opening: boolean): void
   setError(error: string | null): void
@@ -94,6 +103,8 @@ function createControllerHarness(
     null,
   )
   const [reading, setReading] = createSignal<TunerReading | null>(null)
+  const [evidenceReading, setEvidenceReading] =
+    createSignal<TunerReading | null>(null)
   const [isListening, setListening] = createSignal(false)
   const [isOpeningInput, setOpening] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
@@ -105,6 +116,7 @@ function createControllerHarness(
   const controller = {
     targets: () => suppliedTargets,
     reading,
+    evidenceReading,
     tuningName: () => 'Standard',
     activePreset: () => 'Standard',
     manualTargetIndex,
@@ -127,7 +139,11 @@ function createControllerHarness(
 
   return {
     controller,
-    setReading,
+    setReading(nextReading) {
+      setReading(nextReading)
+      setEvidenceReading(nextReading)
+    },
+    setEvidenceReading,
     setListening,
     setOpening,
     setError,
@@ -146,7 +162,37 @@ afterEach(() => {
   tunerSurface.props = null
 })
 
+beforeEach(() => {
+  permissionProbe.read.mockReset()
+  permissionProbe.read.mockResolvedValue('prompt')
+})
+
 describe('GuitarNightTunerExperience', () => {
+  it('observes microphone permission without opening capture', async () => {
+    const harness = createControllerHarness()
+    const tuning = standardTuning('guitar')
+
+    render(() => (
+      <GuitarNightTunerExperience
+        controller={harness.controller}
+        tuning={() => tuning}
+        detectedFrequencyHz={() => null}
+        detectedNoteLabel={() => null}
+        onBack={() => undefined}
+      />
+    ))
+
+    expect(harness.controller.startListening).not.toHaveBeenCalled()
+    expect(permissionProbe.read).toHaveBeenCalledOnce()
+    await Promise.resolve()
+    expect(currentSurface().microphonePermission?.()).toBe('prompt')
+
+    currentSurface().onStartListening()
+    await Promise.resolve()
+    expect(harness.controller.startListening).toHaveBeenCalledOnce()
+    expect(currentSurface().microphonePermission?.()).toBe('granted')
+  })
+
   it('presents targets low-to-high while keeping stage string identities', () => {
     const harness = createControllerHarness()
     const tuning = standardTuning('guitar')
@@ -316,5 +362,40 @@ describe('GuitarNightTunerExperience', () => {
     rendered.unmount()
     surface = currentSurface()
     expect(harness.controller.close).toHaveBeenCalledOnce()
+  })
+
+  it('shows far-off direction in Auto without claiming a target string', () => {
+    const harness = createControllerHarness()
+    const tuning = standardTuning('guitar')
+    harness.setListening(true)
+    harness.setEvidenceReading({
+      frequency: 86.71,
+      stringIndex: 5,
+      stringName: 'E2',
+      stringLabel: 'E',
+      targetMidi: 40,
+      targetHz: 82.41,
+      centsDeviation: 88,
+      inTune: false,
+      close: false,
+      midi: 40,
+      clarity: 0.9,
+    })
+
+    render(() => (
+      <GuitarNightTunerExperience
+        controller={harness.controller}
+        tuning={() => tuning}
+        detectedFrequencyHz={() => 86.71}
+        detectedNoteLabel={() => 'F2'}
+        onBack={() => undefined}
+      />
+    ))
+
+    const surface = currentSurface()
+    expect(surface.targetMode()).toBe('auto')
+    expect(surface.targetStringId()).toBeNull()
+    expect(surface.pitchState()).toBe('high')
+    expect(surface.cents()).toBe(88)
   })
 })

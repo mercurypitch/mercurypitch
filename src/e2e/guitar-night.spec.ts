@@ -408,7 +408,7 @@ test('opens the Velvet tuner silently and returns focus on Escape @smoke', async
   await expect(tuner).toBeVisible()
   await expect(tuner).toHaveAttribute('role', 'dialog')
   await expect(
-    tuner.getByRole('button', { name: 'Start listening' }),
+    tuner.getByRole('button', { name: 'Allow microphone' }),
   ).toBeVisible()
   expect(
     await page.evaluate(
@@ -428,6 +428,158 @@ test('opens the Velvet tuner silently and returns focus on Escape @smoke', async
           .__guitarNightMicCalls,
     ),
   ).toBe(0)
+})
+
+test('keeps the tuner touchable and stable on an Android tablet @smoke', async ({
+  browser,
+}) => {
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+    viewport: { width: 800, height: 1280 },
+  })
+  const page = await context.newPage()
+  await instrumentMicrophoneRequests(page)
+  await instrumentAudioContext(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+
+  const expectViewportFit = async (): Promise<void> => {
+    const metrics = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      innerHeight: window.innerHeight,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    const controls = await page
+      .getByTestId('guitar-night-tuner-controls')
+      .boundingBox()
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
+    expect(controls).not.toBeNull()
+    expect((controls?.y ?? 0) + (controls?.height ?? 0)).toBeLessThanOrEqual(
+      metrics.innerHeight + 1,
+    )
+  }
+
+  try {
+    await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+    await page.locator('[data-entry="tuner"]').click()
+
+    const tuner = page.getByTestId('guitar-night-tuner')
+    const listening = tuner.getByRole('button', { name: 'Allow microphone' })
+    await expect(tuner).toBeVisible()
+    await expect(listening).toBeVisible()
+
+    const listeningMetrics = await listening.evaluate((control) => {
+      const style = getComputedStyle(control)
+      const parseRgb = (value: string): [number, number, number] => {
+        const channels = value
+          .match(/[\d.]+/g)
+          ?.slice(0, 3)
+          .map(Number)
+        if (channels === undefined || channels.length !== 3) return [0, 0, 0]
+        return [channels[0] ?? 0, channels[1] ?? 0, channels[2] ?? 0]
+      }
+      const luminance = ([red, green, blue]: [number, number, number]) => {
+        const linear = [red, green, blue].map((channel) => {
+          const encoded = channel / 255
+          return encoded <= 0.04045
+            ? encoded / 12.92
+            : Math.pow((encoded + 0.055) / 1.055, 2.4)
+        })
+        return (
+          (linear[0] ?? 0) * 0.2126 +
+          (linear[1] ?? 0) * 0.7152 +
+          (linear[2] ?? 0) * 0.0722
+        )
+      }
+      const foreground = luminance(parseRgb(style.color))
+      const background = luminance(parseRgb(style.backgroundColor))
+      return {
+        contrast:
+          (Math.max(foreground, background) + 0.05) /
+          (Math.min(foreground, background) + 0.05),
+        height: control.getBoundingClientRect().height,
+        textFill: style.webkitTextFillColor,
+        width: control.getBoundingClientRect().width,
+      }
+    })
+    expect(listeningMetrics.contrast).toBeGreaterThanOrEqual(4.5)
+    expect(listeningMetrics.height).toBeGreaterThanOrEqual(44)
+    expect(listeningMetrics.width).toBeGreaterThanOrEqual(44)
+    expect(listeningMetrics.textFill).not.toBe('rgb(244, 234, 219)')
+
+    const strings = tuner.getByTestId('guitar-night-tuner-strings')
+    const controls = tuner.getByTestId('guitar-night-tuner-controls')
+    const setup = tuner.getByTestId('guitar-night-tuner-setup')
+    const beforeDisclosure = {
+      controls: await controls.boundingBox(),
+      strings: await strings.boundingBox(),
+    }
+    await setup.getByLabel('Tuning presets, Standard').click()
+    const presetChoice = setup.getByRole('button', { name: /Drop D/ })
+    await expect(presetChoice).toBeVisible()
+    const afterDisclosure = {
+      controls: await controls.boundingBox(),
+      strings: await strings.boundingBox(),
+    }
+    expect(afterDisclosure.strings?.y).toBeCloseTo(
+      beforeDisclosure.strings?.y ?? 0,
+      0,
+    )
+    expect(afterDisclosure.strings?.height).toBeCloseTo(
+      beforeDisclosure.strings?.height ?? 0,
+      0,
+    )
+    expect(afterDisclosure.controls?.y).toBeCloseTo(
+      beforeDisclosure.controls?.y ?? 0,
+      0,
+    )
+
+    await page.keyboard.press('Escape')
+    await expect(presetChoice).toBeHidden()
+    await expect(setup.getByLabel('Tuning presets, Standard')).toBeFocused()
+    await expect(tuner).toBeVisible()
+
+    const stringTargets = strings.getByRole('button')
+    for (const [index, corner] of [
+      [0, 'top-left'],
+      [2, 'top-right'],
+      [3, 'bottom-left'],
+      [5, 'bottom-right'],
+    ] as const) {
+      const target = stringTargets.nth(index)
+      const bounds = await target.boundingBox()
+      expect(bounds).not.toBeNull()
+      if (bounds === null) continue
+      const x = corner.endsWith('left')
+        ? bounds.x + 4
+        : bounds.x + bounds.width - 4
+      const y = corner.startsWith('top')
+        ? bounds.y + 4
+        : bounds.y + bounds.height - 4
+      await page.touchscreen.tap(x, y)
+      await expect(target).toHaveAttribute('aria-pressed', 'true')
+    }
+
+    await expectViewportFit()
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await expectViewportFit()
+
+    await listening.click()
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __guitarNightMicCalls: number })
+              .__guitarNightMicCalls,
+        ),
+      )
+      .toBe(1)
+  } finally {
+    await context.close()
+  }
 })
 
 test('opens Learn and marks exact Note Hunt positions with a real pointer @smoke', async ({
@@ -954,13 +1106,43 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
     await tuner.evaluate((surface) => {
       surface.scrollTop = surface.scrollHeight
     })
-    await expect(tuner.getByLabel('Tuning presets, Standard')).toBeVisible()
+    const tuningSummary = tuner.getByLabel('Tuning presets, Standard')
+    const tunerStrings = tuner.getByTestId('guitar-night-tuner-strings')
+    const stringsBeforePreset = await tunerStrings.boundingBox()
+    await expect(tuningSummary).toBeVisible()
+    await tuningSummary.click()
+    const tuningChoices = tuner.getByRole('group', { name: 'Tuning preset' })
+    await expect(tuningChoices).toBeVisible()
+    for (
+      let index = 0;
+      index < (await tuningChoices.getByRole('button').count());
+      index += 1
+    ) {
+      const bounds = await tuningChoices
+        .getByRole('button')
+        .nth(index)
+        .boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds?.y).toBeGreaterThanOrEqual(0)
+      expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThanOrEqual(
+        viewportMetrics.innerHeight,
+      )
+    }
+    const stringsAfterPreset = await tunerStrings.boundingBox()
+    expect(stringsAfterPreset?.y).toBeCloseTo(stringsBeforePreset?.y ?? 0, 0)
+    expect(stringsAfterPreset?.height).toBeCloseTo(
+      stringsBeforePreset?.height ?? 0,
+      0,
+    )
+    await page.keyboard.press('Escape')
+    await expect(tuningChoices).toBeHidden()
+    await expect(tuningSummary).toBeFocused()
 
     const targetModeBox = await tuner
       .getByRole('button', { name: 'Auto' })
       .boundingBox()
     const listeningBox = await tuner
-      .getByRole('button', { name: 'Start listening' })
+      .getByRole('button', { name: 'Allow microphone' })
       .boundingBox()
     expect(targetModeBox?.y).toBeLessThan(listeningBox?.y ?? 0)
 
@@ -1035,6 +1217,33 @@ test('keeps the first-win stage dominant across phone orientations @smoke', asyn
     await page.getByRole('button', { name: 'Start', exact: true }).click()
     await expect(page.getByTestId('guitar-night-first-win')).toBeVisible()
     await expectStageFirstLayout(0.55, '32.0000')
+
+    const loopPractice = page.getByRole('button', {
+      name: 'Loop',
+      exact: true,
+    })
+    const shuffleBeats = page.getByRole('button', {
+      name: 'Shuffle',
+      exact: true,
+    })
+    await expect(loopPractice).toHaveAttribute('aria-pressed', 'false')
+    await expect(shuffleBeats).toBeDisabled()
+    await loopPractice.click()
+    await expect(loopPractice).toHaveAttribute('aria-pressed', 'true')
+    await expect(shuffleBeats).toBeEnabled()
+    await shuffleBeats.click()
+    await expect(shuffleBeats).toHaveAttribute('aria-pressed', 'true')
+    await page.getByRole('button', { name: 'Start count-in' }).click()
+    await expect(
+      page.getByRole('button', { name: 'Stop groove' }),
+    ).toBeVisible()
+    await expect(loopPractice).toBeEnabled()
+    await loopPractice.click()
+    await expect(loopPractice).toHaveAttribute('aria-pressed', 'false')
+    await expect(shuffleBeats).toBeDisabled()
+    await expect(
+      page.getByRole('button', { name: 'Start count-in' }),
+    ).toBeVisible()
 
     const firstWinButtons = page
       .getByTestId('guitar-night-first-win')

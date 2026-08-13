@@ -9,6 +9,8 @@ import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { foldIntoLoop } from '@/lib/guitar/loop-span'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock } from '@/lib/midi-song'
+import type { GuitarRoomRhythmPreset } from './guitar-room-rhythm'
+import { guitarRoomRhythmHitsForBeat } from './guitar-room-rhythm'
 import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
 import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
 
@@ -34,6 +36,14 @@ export interface GuitarRoomBandNote {
   durationBeats: number
 }
 
+/** One exercise pulse exposed while it is inside the Web Audio look-ahead. */
+export interface GuitarRoomBandScheduledBeat {
+  beatIndex: number
+  iteration: number
+  scheduledAtSeconds: number
+  expectedAtPerformanceMs: number
+}
+
 export interface GuitarRoomBandStartOptions {
   tempoBpm: number
   /** Tempo events already scaled so beat zero agrees with `tempoBpm`. */
@@ -53,6 +63,28 @@ export interface GuitarRoomBandStartOptions {
   loop?: LoopSpan | null
   /** Defaults to the drum groove, which is what the play-along room wants. */
   feel?: GuitarRoomBandFeel
+  /** A tempo-free semantic rhythm rendered through this room's drum bus. */
+  rhythmPreset?: GuitarRoomRhythmPreset
+  /** Resolve one pinned rhythm at the beginning of each gapless loop lap. */
+  rhythmPresetForIteration?(
+    iteration: number,
+    previousPreset: GuitarRoomRhythmPreset | null,
+  ): GuitarRoomRhythmPreset
+  /** Announced on the audible boundary, never when look-ahead first queues it. */
+  onRhythmPreset?(
+    preset: GuitarRoomRhythmPreset,
+    iteration: number,
+    scheduledAtSeconds: number,
+  ): void
+  /** Called for lap zero and every later loop boundary on the audible clock. */
+  onLoopIteration?(iteration: number, scheduledAtSeconds: number): void
+  /**
+   * Immediate timing evidence for input matching. Increasing this value also
+   * widens this run's scheduling horizon so early hits inside the named window
+   * are already known to the controller.
+   */
+  inputTimingWindowMs?: number
+  onExerciseBeatScheduled?(beat: GuitarRoomBandScheduledBeat): void
   /**
    * Keep the count-in audible while leaving the exercise itself silent. This
    * is the assessed-microphone path: sounding a click into an open microphone
@@ -326,6 +358,18 @@ export function createGuitarRoomBand(
         loop,
       )
       const feel = startOptions.feel ?? 'groove'
+      const inputTimingWindowSeconds = Number.isFinite(
+        startOptions.inputTimingWindowMs,
+      )
+        ? Math.min(
+            0.5,
+            Math.max(0, startOptions.inputTimingWindowMs ?? 0) / 1000,
+          )
+        : 0
+      const runScheduleAheadSeconds = Math.max(
+        scheduleAheadSeconds,
+        inputTimingWindowSeconds + 0.03,
+      )
       const notesByBeat = groupNotesByBeat(startOptions.melody ?? [])
       const melodyVariant = startOptions.melodyVariant ?? 'electric'
       const firstBeatAt = currentGraph.context.currentTime + 0.09
@@ -364,6 +408,12 @@ export function createGuitarRoomBand(
       let exerciseStartScheduled = false
       let partialNotesScheduled = Number.isInteger(startBeat)
       let completionScheduled = false
+      let loopIteration = 0
+      let loopBoundaryPending = false
+      let activeRhythmPreset =
+        startOptions.rhythmPresetForIteration?.(0, null) ??
+        startOptions.rhythmPreset ??
+        null
 
       const scheduleUiCallback = (at: number, callback: () => void): void => {
         const delay = Math.max(
@@ -405,8 +455,36 @@ export function createGuitarRoomBand(
         }
       }
 
+      const soundRhythmBeat = (
+        preset: GuitarRoomRhythmPreset,
+        exerciseIndex: number,
+        at: number,
+      ): void => {
+        for (const hit of guitarRoomRhythmHitsForBeat(preset, exerciseIndex)) {
+          if (
+            !Number.isFinite(hit.beatOffset) ||
+            !Number.isFinite(hit.velocity)
+          ) {
+            continue
+          }
+          const fractionalOffset = hit.beatOffset - Math.floor(hit.beatOffset)
+          const hitAt =
+            at +
+            beatToSeconds(exerciseIndex + fractionalOffset) -
+            beatToSeconds(exerciseIndex)
+          triggerDrumVoice(
+            hit.voice,
+            currentGraph.context,
+            hitAt,
+            Math.min(1, Math.max(0, hit.velocity)),
+            drumsOutput,
+          )
+        }
+      }
+
       const schedule = (): void => {
-        const horizon = currentGraph.context.currentTime + scheduleAheadSeconds
+        const horizon =
+          currentGraph.context.currentTime + runScheduleAheadSeconds
         while (nextCountInBeat < countInBeats && nextCountInAt <= horizon) {
           const scheduledBeat = nextCountInBeat
           const at = nextCountInAt
@@ -428,9 +506,14 @@ export function createGuitarRoomBand(
 
         if (!exerciseStartScheduled && firstExerciseAt <= horizon) {
           exerciseStartScheduled = true
-          scheduleUiCallback(firstExerciseAt, () =>
-            startOptions.onExerciseStart?.(startBeat, firstExerciseAt),
-          )
+          const openingRhythm = activeRhythmPreset
+          scheduleUiCallback(firstExerciseAt, () => {
+            startOptions.onExerciseStart?.(startBeat, firstExerciseAt)
+            startOptions.onLoopIteration?.(0, firstExerciseAt)
+            if (openingRhythm !== null) {
+              startOptions.onRhythmPreset?.(openingRhythm, 0, firstExerciseAt)
+            }
+          })
         }
 
         if (
@@ -446,6 +529,32 @@ export function createGuitarRoomBand(
           (loop !== null || nextExerciseBeat < durationBeats) &&
           nextExerciseAt <= horizon
         ) {
+          if (loopBoundaryPending) {
+            activeRhythmPreset =
+              startOptions.rhythmPresetForIteration?.(
+                loopIteration,
+                activeRhythmPreset,
+              ) ??
+              startOptions.rhythmPreset ??
+              activeRhythmPreset
+            const iterationAtBoundary = loopIteration
+            const rhythmAtBoundary = activeRhythmPreset
+            const scheduledBoundaryAt = nextExerciseAt
+            scheduleUiCallback(scheduledBoundaryAt, () => {
+              startOptions.onLoopIteration?.(
+                iterationAtBoundary,
+                scheduledBoundaryAt,
+              )
+              if (rhythmAtBoundary !== null) {
+                startOptions.onRhythmPreset?.(
+                  rhythmAtBoundary,
+                  iterationAtBoundary,
+                  scheduledBoundaryAt,
+                )
+              }
+            })
+            loopBoundaryPending = false
+          }
           const exerciseIndex = nextExerciseBeat
           const at = nextExerciseAt
           if (startOptions.exercisePulse === false) {
@@ -459,6 +568,8 @@ export function createGuitarRoomBand(
               exerciseIndex % 4 === 0 ? 0.82 : 0.5,
               drumsOutput,
             )
+          } else if (activeRhythmPreset !== null) {
+            soundRhythmBeat(activeRhythmPreset, exerciseIndex, at)
           } else {
             triggerDrumVoice(
               exerciseIndex % 4 === 0 ? 'kick' : 'hh-closed',
@@ -479,14 +590,27 @@ export function createGuitarRoomBand(
           }
 
           soundBucket(exerciseIndex, at)
+          startOptions.onExerciseBeatScheduled?.({
+            beatIndex: exerciseIndex,
+            iteration: loopIteration,
+            scheduledAtSeconds: at,
+            expectedAtPerformanceMs:
+              performance.now() +
+              Math.max(0, at - currentGraph.context.currentTime) * 1000,
+          })
           scheduleUiCallback(at, () =>
             startOptions.onBeat?.(exerciseIndex, 'exercise', at),
           )
 
           if (loop !== null && exerciseIndex + 1 >= loop.end) {
-            nextExerciseAt +=
-              beatToSeconds(loop.end) - beatToSeconds(exerciseIndex)
+            const nextIterationAt =
+              nextExerciseAt +
+              beatToSeconds(loop.end) -
+              beatToSeconds(exerciseIndex)
+            nextExerciseAt = nextIterationAt
             nextExerciseBeat = loop.start
+            loopIteration += 1
+            loopBoundaryPending = true
           } else {
             nextExerciseAt +=
               beatToSeconds(exerciseIndex + 1) - beatToSeconds(exerciseIndex)
