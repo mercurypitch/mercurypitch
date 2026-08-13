@@ -98,6 +98,7 @@ let latestFrame: FrameRequestCallback | null
 let originalRequestMidiAccess: PropertyDescriptor | undefined
 
 beforeEach(() => {
+  localStorage.clear()
   context = new ControllerAudioContext()
   latestFrame = null
   vi.stubGlobal(
@@ -158,6 +159,7 @@ beforeEach(() => {
     noteOff: sampled.noteOff,
     pedal: sampled.pedal,
     panic: sampled.panic,
+    setVolume: vi.fn(),
     activeVoiceIds: () => [],
     dispose: sampled.dispose,
     setCharacter: sampled.setCharacter,

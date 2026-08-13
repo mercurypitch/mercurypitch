@@ -45,6 +45,12 @@ export interface PianoPerformanceScoringPosition {
   readonly input: PianoInputSnapshot
 }
 
+/** Half-open score range used by one bounded practice pass. */
+export interface PianoPerformanceScoringRange {
+  readonly startBeat: number
+  readonly endBeat: number
+}
+
 export interface PianoPerformanceScoringSample extends PianoPerformanceScoringPosition {
   readonly phase: PianoPerformancePhase
   /** Monotonic time in the same time base as PianoInputVoice.startedAtMs. */
@@ -123,6 +129,7 @@ export interface PianoPerformanceScoringEngine {
   ): PianoPerformanceScoringUpdate
   reset(
     position: PianoPerformanceScoringPosition,
+    range?: PianoPerformanceScoringRange,
   ): PianoPerformanceScoringUpdate
 }
 
@@ -260,6 +267,8 @@ export function createPianoPerformanceScoringEngine(
   let pendingNotes = 0
   let skippedNotes = 0
   let retainedJudgments: PianoPerformanceJudgment[] = []
+  let activeRange: PianoPerformanceScoringRange | null = null
+  let activeTargetCount = 0
   let revision = 0
   let currentState: PianoPerformanceScoringState
 
@@ -326,6 +335,28 @@ export function createPianoPerformanceScoringEngine(
     retainedJudgments = []
   }
 
+  const normalizedRange = (
+    range: PianoPerformanceScoringRange | undefined,
+  ): PianoPerformanceScoringRange | null => {
+    if (
+      range === undefined ||
+      !Number.isFinite(range.startBeat) ||
+      !Number.isFinite(range.endBeat) ||
+      range.endBeat <= range.startBeat
+    ) {
+      return null
+    }
+    return Object.freeze({
+      startBeat: range.startBeat,
+      endBeat: range.endBeat,
+    })
+  }
+
+  const targetIsInActiveRange = (target: ScoreTarget): boolean =>
+    activeRange === null ||
+    (target.note.startBeat >= activeRange.startBeat &&
+      target.note.startBeat < activeRange.endBeat)
+
   const setTargetStatus = (
     target: ScoreTarget,
     nextStatus: TargetStatus,
@@ -352,7 +383,9 @@ export function createPianoPerformanceScoringEngine(
     for (const target of targets) {
       if (target.status === 'hit' || target.status === 'miss') continue
       const nextStatus =
-        target.note.startBeat < playheadBeat ? 'skipped' : 'pending'
+        targetIsInActiveRange(target) && target.note.startBeat >= playheadBeat
+          ? 'pending'
+          : 'skipped'
       changed = setTargetStatus(target, nextStatus) || changed
     }
 
@@ -380,13 +413,21 @@ export function createPianoPerformanceScoringEngine(
       pendingNotes,
       skippedNotes,
       totalNotes: targets.length,
-      complete: targets.length > 0 && pendingNotes === 0,
+      complete: activeTargetCount > 0 && pendingNotes === 0,
       judgments: Object.freeze([...retainedJudgments]),
     })
   }
 
-  const resetRun = (position: PianoPerformanceScoringPosition): void => {
+  const resetRun = (
+    position: PianoPerformanceScoringPosition,
+    range?: PianoPerformanceScoringRange,
+  ): void => {
     resetMetrics()
+    activeRange = normalizedRange(range)
+    activeTargetCount = targets.reduce(
+      (count, target) => count + Number(targetIsInActiveRange(target)),
+      0,
+    )
     for (const target of targets) target.status = 'pending'
     pendingNotes = targets.length
     skippedNotes = 0
@@ -712,8 +753,8 @@ export function createPianoPerformanceScoringEngine(
       buildState(true)
       return frozenUpdate(currentState, [], 'source-replacement')
     },
-    reset(position) {
-      resetRun(position)
+    reset(position, range) {
+      resetRun(position, range)
       buildState(true)
       return frozenUpdate(currentState, [], 'reset')
     },

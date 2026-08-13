@@ -239,8 +239,8 @@
   min-width: 720px;
   height: 68px;
   grid-template-columns:
-    58px minmax(180px, 1.5fr) 86px minmax(150px, 1.3fr) 72px
-    minmax(86px, 0.75fr) 58px;
+    58px minmax(160px, 1.35fr) 82px minmax(130px, 1.15fr) 70px
+    70px 144px;
   align-items: stretch;
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -267,8 +267,7 @@
   color: var(--ivory-strong);
 }
 
-.sessionDocument,
-.viewButton {
+.sessionDocument {
   display: grid;
   place-items: center;
 }
@@ -277,8 +276,7 @@
   color: var(--muted);
 }
 
-.sessionDocument svg,
-.viewButton svg {
+.sessionDocument svg {
   width: 22px;
   height: 22px;
 }
@@ -345,6 +343,8 @@
 }
 
 .sessionTrace > div {
+  position: absolute;
+  inset: 0 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,12 +379,24 @@
 .traceProgress {
   position: absolute;
   z-index: 1;
-  right: 15px;
-  left: 15px;
+  right: 0;
+  left: 0;
   height: 2px;
   background: linear-gradient(90deg, var(--cyan), var(--coral));
   box-shadow: 0 0 10px rgb(105 196 220 / 24%);
   transform-origin: left center;
+}
+
+.traceLoop {
+  position: absolute;
+  z-index: 0;
+  top: 16px;
+  bottom: 16px;
+  min-width: 2px;
+  border-right: 1px solid var(--brass-soft);
+  border-left: 1px solid var(--brass-soft);
+  background: rgb(181 138 80 / 16%);
+  box-shadow: 0 0 12px rgb(181 138 80 / 16%);
 }
 
 .sessionTrace i {
@@ -413,28 +425,40 @@
   color: var(--brass-soft);
 }
 
-.viewButton {
-  position: relative;
+.viewSelector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(44px, 1fr));
+  align-items: stretch;
+  padding: 5px;
   border-radius: 0 20px 20px 0;
+  background: rgb(255 255 255 / 1.5%);
 }
 
-.viewButton > span {
-  position: absolute;
-  top: calc(100% + 8px);
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ivory);
-  background: var(--panel);
-  font-size: 9px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 150ms ease-out;
+.viewSelector button {
+  display: flex;
+  min-width: 44px;
+  min-height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 11px;
+  font-size: 8px;
 }
 
-.viewButton:hover > span,
-.viewButton:focus-visible > span {
-  opacity: 1;
+.viewSelector svg {
+  width: 17px;
+  height: 17px;
+}
+
+.viewSelector .viewChoiceActive {
+  color: var(--ivory-strong);
+  background: rgb(181 138 80 / 15%);
+  box-shadow: inset 0 0 0 1px rgb(181 138 80 / 30%);
+}
+
+.practiceStrip {
+  display: none;
 }
 
 .fallStage,
@@ -966,33 +990,31 @@
   transform: rotate(8deg);
 }
 
-.coachPeek {
-  position: fixed;
-  z-index: 31;
-  right: 18px;
-  bottom: calc(var(--keybed-height) + var(--fallboard-height) + 18px);
-  display: none;
-  min-width: 112px;
+.coachPracticeButton {
+  display: flex;
+  width: 100%;
   min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--ivory);
-  background: rgb(7 9 11 / 90%);
-  box-shadow: 0 10px 26px rgb(0 0 0 / 32%);
+  margin-top: 4px;
+  border: 1px solid rgb(181 138 80 / 48%);
+  border-radius: 12px;
+  color: var(--ivory-strong);
+  background: rgb(181 138 80 / 12%);
   cursor: pointer;
+  font-size: 12px;
 }
 
-.coachPeek svg {
+.coachPracticeButton:hover {
+  border-color: var(--brass-soft);
+  background: rgb(181 138 80 / 19%);
+}
+
+.coachPracticeButton svg {
   width: 18px;
   height: 18px;
-  color: var(--cyan);
-}
-
-.coachPeek span {
-  font-size: 11px;
+  color: var(--brass-soft);
 }
 
 .coachScrim {
@@ -1154,6 +1176,7 @@
 }
 
 .transport button {
+  position: relative;
   display: grid;
   min-width: 44px;
   min-height: 44px;
@@ -1201,6 +1224,21 @@
   background: rgb(181 138 80 / 12%);
 }
 
+.repeatBadge {
+  position: absolute;
+  top: 2px;
+  right: -1px;
+  min-width: 21px;
+  padding: 2px 4px;
+  border: 1px solid rgb(181 138 80 / 52%);
+  border-radius: 999px;
+  color: var(--ivory-strong);
+  background: #15120e;
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 .transportDivider {
   width: 1px;
   height: 28px;
@@ -1218,6 +1256,28 @@
 .tempoReadout strong {
   color: var(--ivory);
   font-size: 17px;
+}
+
+.transportSpeed {
+  display: grid;
+  min-width: 60px;
+  min-height: 44px;
+  place-items: center;
+  margin-left: 3px;
+}
+
+.transportSpeed select {
+  min-width: 58px;
+  min-height: 44px;
+  padding: 0 20px 0 9px;
+  border: 1px solid rgb(224 207 180 / 14%);
+  border-radius: 10px;
+  color: var(--ivory);
+  background: #0d1012;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .mobileNav {
@@ -1367,8 +1427,214 @@
   line-height: 1.62;
 }
 
+.practicePanel {
+  display: grid;
+  gap: 14px;
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid rgb(181 138 80 / 24%);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0, rgb(105 196 220 / 7%), transparent 44%),
+    rgb(255 255 255 / 2.5%);
+}
+
+.practicePanelHeading,
+.practicePrimaryActions,
+.practiceNumberField,
+.practiceVolume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.practicePanelHeading span {
+  color: var(--brass-soft);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.practicePanelHeading h3 {
+  margin: 3px 0 0;
+  color: var(--ivory-strong);
+  font-family:
+    Iowan Old Style,
+    Palatino Linotype,
+    Book Antiqua,
+    Palatino,
+    Georgia,
+    serif;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.practicePanelHeading > strong {
+  color: var(--cyan);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.practicePrimaryActions .actionButton {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+}
+
+.practicePrimaryActions .actionButton svg {
+  width: 17px;
+  height: 17px;
+}
+
+.practicePrimaryActions .textButton {
+  min-width: 90px;
+  padding: 0 12px;
+  border: 1px solid rgb(224 207 180 / 13%);
+  color: var(--quiet);
+  background: rgb(0 0 0 / 12%);
+}
+
+.practicePrimaryActions .textButton[aria-pressed='true'] {
+  border-color: rgb(181 138 80 / 48%);
+  color: var(--brass-soft);
+  background: rgb(181 138 80 / 10%);
+}
+
+.practicePrimaryActions button:disabled,
+.loopBoundaryActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.loopBoundaryActions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.loopBoundaryActions button,
+.practiceSpeedGroup button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid rgb(224 207 180 / 13%);
+  border-radius: 10px;
+  color: var(--muted);
+  background: rgb(0 0 0 / 16%);
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.loopBoundaryActions button:hover,
+.practiceSpeedGroup button:hover {
+  border-color: rgb(181 138 80 / 42%);
+  color: var(--ivory);
+}
+
+.practiceNumberField {
+  min-height: 52px;
+  border-top: 1px solid rgb(224 207 180 / 9%);
+  border-bottom: 1px solid rgb(224 207 180 / 9%);
+}
+
+.practiceNumberField > span {
+  display: flex;
+  flex-direction: column;
+  color: var(--ivory);
+  font-size: 12px;
+}
+
+.practiceNumberField small {
+  margin-top: 3px;
+  color: var(--quiet);
+  font-size: 9px;
+}
+
+.practiceNumberField input {
+  width: 64px;
+  min-height: 44px;
+  border: 1px solid rgb(224 207 180 / 15%);
+  border-radius: 9px;
+  color: var(--ivory);
+  background: #0c0f11;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.practiceSpeedGroup {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.practiceSpeedGroup legend {
+  margin-bottom: 8px;
+  color: var(--quiet);
+  font-size: 10px;
+}
+
+.practiceSpeedGroup > div {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.practiceSpeedGroup .practiceChoiceActive {
+  border-color: rgb(181 138 80 / 55%);
+  color: var(--ivory-strong);
+  background: rgb(181 138 80 / 14%);
+}
+
+.practiceVolume {
+  min-height: 44px;
+}
+
+.practiceVolume > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ivory);
+  font-size: 11px;
+}
+
+.practiceVolume svg {
+  width: 17px;
+  height: 17px;
+  color: var(--cyan);
+}
+
+.practiceVolume input {
+  min-width: 80px;
+  height: 44px;
+  flex: 1;
+  accent-color: var(--brass);
+}
+
+.practiceVolume strong {
+  min-width: 36px;
+  color: var(--brass-soft);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.drawerSubheading {
+  margin: 28px 0 0;
+  color: var(--brass-soft);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .sessionFacts {
-  margin: 30px 0 20px;
+  margin: 8px 0 20px;
 }
 
 .sessionFacts > div {
@@ -1649,6 +1915,14 @@
   color: var(--ivory);
 }
 
+.soundControlGroup:disabled {
+  opacity: 0.52;
+}
+
+.soundControlGroup button:disabled {
+  cursor: not-allowed;
+}
+
 .soundControlGroup .soundControlActive {
   color: var(--ivory-strong);
   background: rgb(181 138 80 / 16%);
@@ -1706,15 +1980,11 @@
     min-width: 660px;
     grid-template-columns:
       54px minmax(165px, 1.4fr) 80px minmax(120px, 1fr)
-      68px 52px;
+      68px 132px;
   }
 
   .sessionHud .streakMetric {
     display: none;
-  }
-
-  .sessionHud .viewButton {
-    border-radius: 0 20px 20px 0;
   }
 }
 
@@ -1724,9 +1994,67 @@
     left: calc(var(--rail-width) + 80px);
     width: auto;
     min-width: 0;
-    grid-template-columns:
-      54px minmax(180px, 1.4fr) 82px minmax(150px, 1fr)
-      70px 54px;
+  }
+
+  .sessionHudCompact {
+    grid-template-columns: 54px minmax(180px, 1fr) 82px 70px 132px;
+  }
+
+  .practiceStrip {
+    position: fixed;
+    z-index: 34;
+    top: 102px;
+    right: 28px;
+    left: calc(var(--rail-width) + 80px);
+    display: grid;
+    height: 48px;
+    grid-template-columns: minmax(160px, 1fr) 72px 66px 60px;
+    align-items: stretch;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--ivory);
+    background: rgb(7 9 11 / 88%);
+    box-shadow: 0 12px 26px rgb(0 0 0 / 24%);
+    backdrop-filter: blur(12px) saturate(0.88);
+  }
+
+  .practiceStrip > * + * {
+    border-left: 1px solid rgb(224 207 180 / 9%);
+  }
+
+  .practiceStripMetric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .practiceStripMetric strong {
+    color: var(--ivory-strong);
+    font-family:
+      Iowan Old Style,
+      Palatino Linotype,
+      Book Antiqua,
+      Palatino,
+      Georgia,
+      serif;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+  }
+
+  .practiceStripMetric span {
+    margin-top: 1px;
+    color: var(--quiet);
+    font-size: 7px;
+    letter-spacing: 0.06em;
+  }
+
+  .fallStage,
+  .scoreStage,
+  .keysStage {
+    top: 158px;
   }
 
   .coach {
@@ -1771,10 +2099,6 @@
     padding-right: 44px;
   }
 
-  .coachPeek {
-    display: flex;
-  }
-
   .laneGuides {
     right: 12%;
   }
@@ -1785,7 +2109,8 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px),
+  (max-width: 1180px) and (hover: none) and (pointer: coarse) {
   .shell {
     --rail-width: 0px;
     --keybed-height: clamp(112px, 15vh, 136px);
@@ -1805,15 +2130,19 @@
     right: 12px;
     left: 12px;
     height: 66px;
-    grid-template-columns:
-      50px minmax(150px, 1fr) 76px minmax(120px, 1fr)
-      68px 52px;
+    grid-template-columns: 50px minmax(150px, 1fr) 76px 68px 132px;
+  }
+
+  .practiceStrip {
+    top: calc(max(10px, env(safe-area-inset-top)) + 74px);
+    right: 12px;
+    left: 12px;
   }
 
   .fallStage,
   .scoreStage,
   .keysStage {
-    top: 76px;
+    top: calc(max(10px, env(safe-area-inset-top)) + 132px);
     bottom: calc(
       var(--keybed-height) + var(--fallboard-height) + var(--mobile-nav-height)
     );
@@ -1828,13 +2157,6 @@
 
   .fallboard {
     bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
-  }
-
-  .coachPeek {
-    bottom: calc(
-      var(--keybed-height) + var(--fallboard-height) +
-        var(--mobile-nav-height) + 14px + env(safe-area-inset-bottom)
-    );
   }
 
   .mobileNav {
@@ -1917,7 +2239,7 @@
 
   .sessionHud {
     height: 60px;
-    grid-template-columns: 46px minmax(132px, 1fr) 58px 46px;
+    grid-template-columns: 42px minmax(90px, 1fr) 52px 132px;
     border-radius: 16px;
   }
 
@@ -1944,14 +2266,23 @@
     font-size: 16px;
   }
 
-  .viewButton {
+  .viewSelector {
     border-radius: 0 16px 16px 0;
   }
 
   .fallStage,
   .scoreStage,
   .keysStage {
-    top: 70px;
+    top: calc(max(10px, env(safe-area-inset-top)) + 124px);
+  }
+
+  .practiceStrip {
+    height: 44px;
+    grid-template-columns: minmax(110px, 1fr) 56px 50px 48px;
+  }
+
+  .practiceStripMetric strong {
+    font-size: 12px;
   }
 
   .laneGuides {
@@ -1962,11 +2293,6 @@
     width: 18px;
   }
 
-  .coachPeek {
-    right: 10px;
-    min-width: 98px;
-  }
-
   .transport {
     width: calc(100% - 20px);
     height: 56px;
@@ -1975,9 +2301,9 @@
     border-radius: 16px;
   }
 
-  .transport > button:first-child,
   .transportDivider,
-  .tempoReadout {
+  .tempoReadout,
+  .tempoStep {
     display: none;
   }
 
@@ -2123,9 +2449,9 @@
 
 @media (max-width: 900px) and (max-height: 500px) {
   .shell {
-    --keybed-height: 88px;
-    --fallboard-height: 58px;
-    --mobile-nav-height: 52px;
+    --keybed-height: 84px;
+    --fallboard-height: 52px;
+    --mobile-nav-height: 48px;
   }
 
   .sessionHud {
@@ -2135,10 +2461,23 @@
     height: 52px;
   }
 
+  .viewSelector {
+    padding: 3px;
+  }
+
+  .practiceStrip {
+    top: calc(max(4px, env(safe-area-inset-top)) + 58px);
+    height: 38px;
+  }
+
   .fallStage,
   .scoreStage,
   .keysStage {
-    top: 60px;
+    top: calc(max(4px, env(safe-area-inset-top)) + 96px);
+  }
+
+  .transport {
+    height: 50px;
   }
 
   .coach {
@@ -2200,18 +2539,19 @@
   .sessionHud {
     right: 8px;
     left: 8px;
-    grid-template-columns: 44px minmax(116px, 1fr) 54px 44px;
+    grid-template-columns: 42px minmax(88px, 1fr) 132px;
+  }
+
+  .sessionHud > .sessionMetric {
+    display: none;
   }
 
   .sessionPiece span {
     max-width: 25vw;
   }
 
-  .coachPeek {
-    bottom: calc(
-      var(--keybed-height) + var(--fallboard-height) + 74px +
-        env(safe-area-inset-bottom)
-    );
+  .transport .phraseStep {
+    display: none;
   }
 
   .whiteKeys button:nth-child(3n) {

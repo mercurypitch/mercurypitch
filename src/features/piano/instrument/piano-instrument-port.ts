@@ -55,6 +55,11 @@ export interface PianoInstrumentPort extends PianoInstrumentVoicePort {
   descriptor(): PianoInstrumentDescriptor
   load(signal?: AbortSignal): Promise<void>
   prewarm(midis: readonly number[], signal?: AbortSignal): Promise<void>
+  /**
+   * Set normalized master output in the inclusive range 0..1.
+   * This configuration call must not construct or activate an audio graph.
+   */
+  setVolume(volume: number): void
   pedal(event: PianoInstrumentPedalEvent): void
   panic(atContextTime?: number): void
   activeVoiceIds(): readonly string[]

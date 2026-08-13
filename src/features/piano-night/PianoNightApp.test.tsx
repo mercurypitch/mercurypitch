@@ -275,15 +275,96 @@ describe('PianoNightApp', () => {
     expect(createAudioContext).toHaveBeenCalledOnce()
   })
 
+  it('rebases the same audio clock for each bounded practice pass', async () => {
+    const scheduledFrames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrames.push(callback)
+      return 72
+    })
+    render(() => <PianoNightApp />)
+
+    const repeat = screen.getByTestId('piano-night-repeat')
+    fireEvent.click(repeat)
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    const session = screen.getByRole('tabpanel', { name: 'Session' })
+    fireEvent.change(
+      within(session).getByRole('spinbutton', { name: /Passes/ }),
+      {
+        target: { value: '2' },
+      },
+    )
+    fireEvent.click(
+      within(
+        screen.getByRole('dialog', { name: 'Piano Night controls' }),
+      ).getByRole('button', { name: 'Close Piano Night controls' }),
+    )
+
+    const play = screen.getByTestId('piano-night-play')
+    fireEvent.click(play)
+    await waitFor(() => expect(play).toHaveAccessibleName('Pause Piano Night'))
+    expect(createAudioContext).toHaveBeenCalledOnce()
+    expect(scheduledFrames).toHaveLength(1)
+
+    audioContext.currentTime = 60
+    const firstBoundaryFrame = scheduledFrames.at(-1)
+    if (firstBoundaryFrame === undefined) {
+      throw new Error('Missing first loop frame')
+    }
+    firstBoundaryFrame(performance.now())
+
+    expect(play).toHaveAccessibleName('Pause Piano Night')
+    expect(repeat).toHaveTextContent('2/2')
+    expect(
+      screen.getByLabelText('Piano Night session status'),
+    ).toHaveTextContent('pass 2 accuracy')
+    expect(createAudioContext).toHaveBeenCalledOnce()
+
+    audioContext.currentTime = 80
+    const finalBoundaryFrame = scheduledFrames.at(-1)
+    if (finalBoundaryFrame === undefined) {
+      throw new Error('Missing final loop frame')
+    }
+    finalBoundaryFrame(performance.now())
+
+    expect(play).toHaveAccessibleName('Play Piano Night')
+    expect(screen.getByLabelText('Seek piano project')).toHaveValue('16')
+    expect(repeat).toHaveTextContent('2/2')
+    expect(
+      screen.getByLabelText('Piano Night session status'),
+    ).toHaveTextContent('final pass')
+    expect(createAudioContext).toHaveBeenCalledOnce()
+
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Open Piano Night settings',
+      })[0],
+    )
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'Session' })).getByText(
+        'Final pass result',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('projects one prepared score through Fall, Score, and Keys', () => {
     render(() => <PianoNightApp />)
 
     expect(screen.getByTestId('piano-night-fall-view')).toBeInTheDocument()
-    const view = screen.getByRole('button', {
-      name: 'Change performance view. Current view: Fall',
+    const fallView = screen.getByRole('button', {
+      name: 'Fall performance view',
     })
+    const scoreView = screen.getByRole('button', {
+      name: 'Score performance view',
+    })
+    const keysView = screen.getByRole('button', {
+      name: 'Keys performance view',
+    })
+    expect(fallView).toHaveAttribute('aria-pressed', 'true')
+    expect(scoreView).toHaveAttribute('aria-pressed', 'false')
 
-    fireEvent.click(view)
+    fireEvent.click(scoreView)
     const score = screen.getByTestId('piano-night-score-view')
     expect(score).toHaveAccessibleName(
       'Project score for Afterglow Study in E-flat',
@@ -291,11 +372,8 @@ describe('PianoNightApp', () => {
     expect(screen.getByText('Prepared score lens')).toBeVisible()
     expect(screen.getByText(/notes$/)).toBeVisible()
 
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Change performance view. Current view: Score',
-      }),
-    )
+    expect(scoreView).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(keysView)
     expect(screen.getByTestId('piano-night-keys-view')).toBeInTheDocument()
     expect(screen.getByText('Next project entrance')).toBeVisible()
     expect(screen.getByRole('heading', { name: 'A♭2 · G3 · G4' })).toBeVisible()
@@ -328,7 +406,7 @@ describe('PianoNightApp', () => {
     const playhead = screen.getByTestId('piano-night-trace-playhead')
     expect(seek).toHaveAttribute('aria-valuetext', 'Beat 0.0 of 64')
     expect(playhead).toHaveStyle({
-      left: 'clamp(15px, 0%, calc(100% - 15px))',
+      left: '0%',
     })
 
     fireEvent.input(seek, {
@@ -337,12 +415,10 @@ describe('PianoNightApp', () => {
 
     expect(seek).toHaveAttribute('aria-valuetext', 'Beat 20.0 of 64')
     expect(playhead).toHaveStyle({
-      left: 'clamp(15px, 31.25%, calc(100% - 15px))',
+      left: '31.25%',
     })
     fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Change performance view. Current view: Fall',
-      }),
+      screen.getByRole('button', { name: 'Score performance view' }),
     )
 
     expect(screen.getByTestId('piano-night-score-view')).toHaveTextContent(
@@ -350,6 +426,70 @@ describe('PianoNightApp', () => {
     )
     expect(screen.getByText('Phrase 2 of 4')).toBeVisible()
     expectSilentBrowserBoundary()
+  })
+
+  it('turns the current phrase into an exact, configurable practice loop', () => {
+    render(() => <PianoNightApp />)
+
+    const repeat = screen.getByTestId('piano-night-repeat')
+    expect(repeat).toHaveAccessibleName('Practise the current phrase')
+    expect(repeat).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(repeat)
+
+    expect(repeat).toHaveAccessibleName('Turn practice repeat off')
+    expect(repeat).toHaveAttribute('aria-pressed', 'true')
+    expect(repeat).toHaveTextContent('1/5')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Phrase 1 ready for 5 passes.',
+    )
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    const session = screen.getByRole('tabpanel', { name: 'Session' })
+    expect(session).toHaveTextContent('A 0.0 · B 16.0')
+
+    const passes = within(session).getByRole('spinbutton', { name: /Passes/ })
+    fireEvent.change(passes, { target: { value: '3' } })
+    expect(repeat).toHaveTextContent('1/3')
+
+    fireEvent.click(within(session).getByRole('button', { name: '0.75×' }))
+    expect(
+      screen.getByRole('combobox', { name: 'Practice speed' }),
+    ).toHaveValue('0.75')
+    fireEvent.input(
+      within(session).getByRole('slider', { name: /Piano volume/ }),
+      {
+        target: { value: '0.64' },
+      },
+    )
+    expect(session).toHaveTextContent('64%')
+    expectSilentBrowserBoundary()
+  })
+
+  it('renders one compact seek timeline with live tempo and speed', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn((query: string) => ({
+        matches: query === '(max-width: 1180px)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(() => true),
+      })),
+    })
+
+    render(() => <PianoNightApp />)
+
+    expect(screen.getAllByLabelText('Seek piano project')).toHaveLength(1)
+    expect(screen.getByLabelText('Practice timeline')).toHaveTextContent(
+      /POSITION.*LIVE BPM.*SPEED/,
+    )
+    expect(screen.getByLabelText('Practice timeline')).toHaveTextContent('1×')
   })
 
   it('offers a roving keyboard path and releases its voice on seek', async () => {
@@ -642,9 +782,7 @@ describe('PianoNightApp', () => {
     ).not.toBeInTheDocument()
 
     fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Change performance view. Current view: Fall',
-      }),
+      screen.getByRole('button', { name: 'Score performance view' }),
     )
     expect(screen.getByTestId('piano-night-score-view')).toHaveAccessibleName(
       'Project score for Device Nocturne',
@@ -652,9 +790,7 @@ describe('PianoNightApp', () => {
     expect(screen.getByText('Project score lens')).toBeVisible()
     expect(screen.getByText('Key not specified')).toBeVisible()
     fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Change performance view. Current view: Score',
-      }),
+      screen.getByRole('button', { name: 'Keys performance view' }),
     )
     expect(screen.getByTestId('piano-night-keys-view')).toHaveTextContent(
       'Beat 0.0 of 2',
@@ -805,6 +941,19 @@ describe('PianoNightApp', () => {
       'aria-pressed',
       'true',
     )
+    fireEvent.click(feltSynth)
+    expect(
+      within(character).getByRole('button', { name: 'Bright' }),
+    ).toBeDisabled()
+    expect(
+      within(soundPanel).getByText(
+        /Character and Space shape Mercury Concert Grand only/,
+      ),
+    ).toBeVisible()
+    fireEvent.click(concertGrand)
+    expect(
+      within(character).getByRole('button', { name: 'Bright' }),
+    ).not.toBeDisabled()
 
     expect(
       within(soundPanel).getByRole('link', {

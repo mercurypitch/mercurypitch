@@ -154,7 +154,11 @@ export function PianoNightSoundPanel(
         )}
       </Show>
 
-      <fieldset class={styles.soundControlGroup}>
+      <fieldset
+        class={styles.soundControlGroup}
+        disabled={!concertGrandSelected()}
+        aria-describedby="piano-night-sampled-controls-note"
+      >
         <legend>Character</legend>
         <div>
           <For each={SOUND_CHARACTERS}>
@@ -176,7 +180,11 @@ export function PianoNightSoundPanel(
         </div>
       </fieldset>
 
-      <fieldset class={styles.soundControlGroup}>
+      <fieldset
+        class={styles.soundControlGroup}
+        disabled={!concertGrandSelected()}
+        aria-describedby="piano-night-sampled-controls-note"
+      >
         <legend>Space</legend>
         <div>
           <For each={SOUND_AMBIENCES}>
@@ -197,6 +205,11 @@ export function PianoNightSoundPanel(
           </For>
         </div>
       </fieldset>
+
+      <p id="piano-night-sampled-controls-note" class={styles.soundReadyNote}>
+        Character and Space shape Mercury Concert Grand only. Piano volume in
+        Session controls both instruments.
+      </p>
 
       <p class={styles.soundAttribution}>
         Samples from{' '}

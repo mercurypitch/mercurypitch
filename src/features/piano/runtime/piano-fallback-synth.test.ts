@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createPianoFallbackSynth, PIANO_FALLBACK_MAX_VOICES, } from './piano-fallback-synth'
 
 interface ParamEvent {
-  kind: 'cancel' | 'hold' | 'set' | 'exponential'
+  kind: 'cancel' | 'hold' | 'set' | 'target' | 'exponential'
   value?: number
   at: number
 }
@@ -18,6 +18,12 @@ class FakeAudioParam {
   setValueAtTime(value: number, at: number): this {
     this.value = value
     this.events.push({ kind: 'set', value, at })
+    return this
+  }
+
+  setTargetAtTime(value: number, at: number): this {
+    this.value = value
+    this.events.push({ kind: 'target', value, at })
     return this
   }
 
@@ -130,6 +136,33 @@ describe('createPianoFallbackSynth', () => {
     expect(synth.noteOn({ id: 'live:1', midi: 60, velocity: 0.8 })).toBe(false)
     expect(getAudioContext).toHaveBeenCalledOnce()
     expect(synth.activeVoiceIds()).toEqual([])
+  })
+
+  it('stages normalized master volume without constructing an audio graph', () => {
+    const { context, getAudioContext, synth } = harness()
+
+    synth.setVolume(0.4)
+
+    expect(getAudioContext).not.toHaveBeenCalled()
+    expect(context.gains).toHaveLength(0)
+    expect(synth.noteOn({ id: 'quiet-master', midi: 60, velocity: 1 })).toBe(
+      true,
+    )
+    expect(context.gains[0].gain.value).toBeCloseTo(0.72 * 0.4)
+
+    synth.setVolume(5)
+    expect(context.gains[0].gain.events.at(-1)).toMatchObject({
+      kind: 'target',
+      value: 0.72,
+      at: 5,
+    })
+    synth.setVolume(-1)
+    expect(context.gains[0].gain.events.at(-1)).toMatchObject({
+      kind: 'target',
+      value: 0,
+      at: 5,
+    })
+    expect(context.gains).toHaveLength(2)
   })
 
   it('starts live and scheduled string voices on the shared audio clock', () => {
