@@ -30,6 +30,31 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   and how many of those this device cannot play. It also says whether the
   library is protected from being evicted, and offers to ask for protection.
 
+- **A Progress tab.** Practice used to end when you closed the tab. This is
+  the record it leaves: one honest moment picked out of your history, the
+  evidence behind it, and a way straight back to the practice that can carry
+  it forward. It reads as a map rather than a wall of equal cards — the
+  Resonance Atlas — and it is built from takes you have already sung, so it
+  has something to say on the first visit rather than after a month. There is
+  a share composer too, on the Mercury Pressing plate, for one moment at a
+  time; it leaves out your name unless you add a handle yourself, and the
+  image is made on your device and handed to your own share sheet, never
+  uploaded to us.
+
+- **Send a song straight to another device.** Two of your devices on the same
+  Wi-Fi: one shows a code, the other enters it, and the song moves directly
+  between them. Nothing is uploaded — not to us, not to anyone. The receiving
+  device says up front whether it has room, so a phone that cannot hold a song
+  refuses it before minutes of packing rather than after. Available from the
+  Karaoke tab and from Karaoke Night.
+
+- **Back your library up to your own Google Drive.** Songs go into a plain,
+  visible MercuryPitch folder as one file each, so you can see them in Drive
+  like anything else you own. It restores onto a new device, which is the case
+  peer-to-peer cannot cover: the other device is gone. The app can only ever
+  see the files it created there, and the audio travels between your browser
+  and Google directly — it never passes through, or rests on, our servers.
+
 - **Guided Voice analysis,** the foundation for coach-led vocal work inside
   Vocal Analysis.
 
