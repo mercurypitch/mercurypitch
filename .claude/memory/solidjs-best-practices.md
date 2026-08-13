@@ -1,8 +1,9 @@
 ---
 name: solidjs-best-practices
-description: "SolidJS props and control-flow conventions used in this codebase: never destructure props, plain value props, Show/For"
+description: 'SolidJS props and control-flow conventions used in this codebase: never destructure props, plain value props, Show/For'
 type: reference
 ---
+
 # SolidJS Best Practices
 
 ## Props Pattern (GOTCHA - DO NOT DESTRUCTURE)
@@ -72,5 +73,6 @@ was written to mount the list **with songs in it**. Mount-with-data is the
 test shape this needs; mount-empty proves nothing.
 
 ## Control-Flow
+
 - Use `<Show when={condition()}>` not `condition() && <div>`
 - Use `<For each={items()}>` for lists
