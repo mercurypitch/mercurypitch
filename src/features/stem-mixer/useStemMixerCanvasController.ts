@@ -6,6 +6,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createEffect, onCleanup } from 'solid-js'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
 import { renderScale } from '@/lib/device-tier'
+import { eventBus } from '@/lib/event-bus'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
 import { foldCentsToOctave } from '@/lib/pitch-compare-engine'
@@ -234,6 +235,30 @@ export const useStemMixerCanvasController = (
     return vocals.length > 0 ? vocals : all
   }
 
+  /**
+   * Backdrop behind the lane names (Vocal, Instrumental, …) and the
+   * MONITORING badge.
+   *
+   * These are painted onto the canvas, so the stage-glass slider — which works
+   * by fading CSS variables — cannot reach them, and the names sat on opaque
+   * plates while every surface around them turned translucent. Karaoke Night
+   * derives `--sm-lane-label-bg` from the same `--kn-alpha` the slider writes;
+   * resolved once per redraw rather than per lane, and the studio (which does
+   * not define it) keeps the fixed backdrop it has always had.
+   */
+  const LANE_LABEL_BACKDROP = 'rgba(5, 8, 18, 0.82)'
+  let laneLabelBackdrop = LANE_LABEL_BACKDROP
+
+  const resolveLaneLabelBackdrop = () => {
+    const canvas = canvasRefs.live ?? canvasRefs.overview
+    if (!canvas) return
+    const value = window
+      .getComputedStyle(canvas)
+      .getPropertyValue('--sm-lane-label-bg')
+      .trim()
+    laneLabelBackdrop = value === '' ? LANE_LABEL_BACKDROP : value
+  }
+
   const drawWaveformOverview = () => {
     drawOverviewInto(canvasRefs.overview, deps.tracks())
     drawOverviewInto(canvasRefs.mapperOverview, mapperTracks())
@@ -283,7 +308,7 @@ export const useStemMixerCanvasController = (
       const bufferDuration = buffer.duration
       const yOff = ti * trackHeight
 
-      ctx.fillStyle = 'rgba(5, 8, 18, 0.82)'
+      ctx.fillStyle = laneLabelBackdrop
       ctx.fillRect(0, yOff, labelRailWidth, trackHeight)
       if (ti > 0) {
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)'
@@ -554,7 +579,7 @@ export const useStemMixerCanvasController = (
       // Names live in a dedicated rail instead of masking the active signal.
       // The rail remains compact on narrow side panels while the waveform
       // keeps a protected minimum drawing width.
-      ctx.fillStyle = 'rgba(5, 8, 18, 0.82)'
+      ctx.fillStyle = laneLabelBackdrop
       ctx.fillRect(0, yOff, labelRailWidth, trackHeight)
       if (ti > 0) {
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)'
@@ -637,7 +662,7 @@ export const useStemMixerCanvasController = (
       ctx.font = '600 8px ui-monospace, monospace'
       const labelWidth = ctx.measureText(label).width
       const labelX = w - labelWidth - 15
-      ctx.fillStyle = 'rgba(5, 8, 18, 0.74)'
+      ctx.fillStyle = laneLabelBackdrop
       ctx.fillRect(labelX - 8, 4, labelWidth + 16, 15)
       ctx.fillStyle = '#4ade80'
       ctx.beginPath()
@@ -1191,6 +1216,7 @@ export const useStemMixerCanvasController = (
 
   const redrawAll = () => {
     syncCanvasSizes()
+    resolveLaneLabelBackdrop()
     drawWaveformOverview()
     drawLiveWaveform()
     drawPitchCanvas()
@@ -1218,6 +1244,12 @@ export const useStemMixerCanvasController = (
    * (elapsed, pitch history) is already carried by the frame loop, and adding
    * it would queue a redraw from inside a redraw.
    */
+  // The stage-glass slider changes a CSS variable the canvases read by hand,
+  // and while playback runs the frame loop picks that up for free. Paused,
+  // nothing is drawing — so without this the lane names keep the alpha they
+  // were painted with until the next unrelated repaint.
+  onCleanup(eventBus.on('karaoke:stage-glass', queueCanvasRedraw))
+
   createEffect(() => {
     deps.showNoteLabels()
     deps.showLyricLabels()
