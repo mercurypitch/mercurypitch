@@ -536,22 +536,34 @@ export async function startSyncSend(roomId: string): Promise<boolean> {
 }
 
 /**
+ * How a send ended, for the queue to act on.
+ *
+ * The queue steps over a `song-failed` — one unreadable stem must not
+ * cost somebody the other five songs — but stops on `link-failed`,
+ * because a link that refused this song (no connection, relayed route,
+ * dead channel) will refuse every song after it the same way, one
+ * identical error at a time.
+ */
+export type SendResult = 'sent' | 'already' | 'song-failed' | 'link-failed'
+
+/**
  * Pack one song and push it to the connected device.
  *
  * Sequential by design — `syncBusy` guards the UI — because two songs
  * interleaving on one channel helps neither of them (same reasoning as
  * the jam room's one-peer-at-a-time share).
  */
-export async function sendSongToPeer(sessionId: string): Promise<void> {
+export async function sendSongToPeer(sessionId: string): Promise<SendResult> {
   const p = peer
   const target = activePeerId
-  if (p === null || target === null || syncBusy()) return
+  if (p === null || target === null) return 'link-failed'
+  if (syncBusy()) return 'song-failed'
   const session = getUvrSession(sessionId)
   if (session === undefined) {
     // Deleted between opening the modal and pressing Send. Saying so
     // beats a Send button that does nothing and explains nothing.
     setSyncError('That song is no longer on this device.')
-    return
+    return 'song-failed'
   }
   const fileHash = session.fileHash ?? sessionId
   const title = session.originalFile?.name ?? 'Untitled song'
@@ -589,7 +601,7 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       console.warn('[sync] refusing to send: no peer connection')
       upsertTransfer(fileHash, { status: 'failed', message })
       showNotification(message, 'warning')
-      return
+      return 'link-failed'
     }
     // Waits for ICE to settle rather than reading one sample. Pressing
     // Send the instant the green Connected chip appears used to land in
@@ -603,7 +615,7 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
         route === 'relayed' ? RELAY_REFUSAL : ROUTE_UNKNOWN_REFUSAL
       upsertTransfer(fileHash, { status: 'failed', message })
       showNotification(message, 'warning')
-      return
+      return 'link-failed'
     }
 
     // And so is the far device's room, for the same reason: a TV that
@@ -617,7 +629,7 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       const message = `${syncPeerLabel() ?? 'That device'} has about ${formatBytes(far.freeBytes)} free and this song needs roughly ${formatBytes(estimate)}. Free some space over there and try again.`
       upsertTransfer(fileHash, { status: 'failed', message })
       showNotification(message, 'warning')
-      return
+      return 'song-failed'
     }
 
     // Everything that could refuse before a promise is made has now had
@@ -650,7 +662,7 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       // goes nowhere and the far side's own peer-left handler closes the
       // row. It costs one frame to also cover the case where it is not.
       cancel('The other device stopped before the song was ready.')
-      return
+      return 'link-failed'
     }
     const bytes = bundle.manifest.parts.reduce((n, part) => n + part.bytes, 0)
     upsertTransfer(fileHash, { bytes })
@@ -667,7 +679,7 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
       // it. Telling it why beats leaving "preparing" on screen for ever.
       cancel(message)
       showNotification(message, 'warning')
-      return
+      return 'song-failed'
     }
 
     const channel = p.channelTo(target)
@@ -679,14 +691,14 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
         message:
           'The connection to the other device dropped while the song was being packed.',
       })
-      return
+      return 'link-failed'
     }
     if (channel === null) {
       upsertTransfer(fileHash, {
         status: 'failed',
         message: 'The connection closed before the song could be sent.',
       })
-      return
+      return 'link-failed'
     }
 
     upsertTransfer(fileHash, { status: 'transferring', ratio: 0 })
@@ -720,8 +732,10 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
         `[sync] sent "${title}": ${(bytes / (1024 * 1024)).toFixed(1)} MB in ${(elapsedMs / 1000).toFixed(1)}s (${mbps.toFixed(1)} MB/s) at ${bundle.manifest.song.quality}`,
       )
       showNotification(`“${title}” is now on the other device.`, 'success')
+      return 'sent'
     } else if (outcome.outcome === 'already-there') {
       upsertTransfer(fileHash, { status: 'already', ratio: 1 })
+      return 'already'
     } else {
       upsertTransfer(fileHash, { status: 'failed', message: outcome.message })
       if (!closing) {
@@ -730,6 +744,9 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
           'error',
         )
       }
+      // A wire failure can be the receiver refusing THIS song (no room,
+      // busy) as easily as a dying link, so it does not stop the queue.
+      return 'song-failed'
     }
   } catch (err) {
     const message =
@@ -739,6 +756,7 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
     // true — and it is the one thing it cannot work out for itself.
     cancel(message)
     if (!closing) showNotification(message, 'error')
+    return 'song-failed'
   } finally {
     // Only if this job still owns the session — see `generation`.
     if (mine === generation) {
@@ -751,6 +769,10 @@ export async function sendSongToPeer(sessionId: string): Promise<void> {
 /** A device that has gone will not take song five. */
 const QUEUE_PEER_GONE =
   'The other device left, so the songs still waiting were not sent.'
+
+/** A link that refused this song refuses the next one identically. */
+const QUEUE_LINK_DEAD =
+  'The connection to the other device is not working, so the songs still waiting were not sent.'
 
 /** Only one drain runs; a second `enqueueSongs` joins the one in flight. */
 let draining = false
@@ -806,7 +828,14 @@ async function drainQueue(): Promise<void> {
       // afterwards is how a refusal that returns instantly turns into a
       // loop that never ends.
       setSyncQueue(queue.slice(1))
-      await sendSongToPeer(next)
+      const result = await sendSongToPeer(next)
+      // A dead link fails every remaining song the same way — four VPN
+      // refusals in a row taught us nobody needs the last three of them.
+      if (result === 'link-failed' && mine === generation) {
+        if (syncQueue().length > 0) setSyncError(QUEUE_LINK_DEAD)
+        setSyncQueue([])
+        break
+      }
     }
   } finally {
     draining = false
@@ -829,6 +858,24 @@ export function enqueueSongs(sessionIds: string[]): void {
 /** Stop after the song in flight — it is already half sent. */
 export function stopQueue(): void {
   setSyncQueue([])
+}
+
+/**
+ * Sweep finished rows (done, already, failed) out of the transfer list.
+ *
+ * Live rows stay — clearing a song mid-flight would hide real work — and
+ * this exists so a long session's history can be dismissed without
+ * closing the modal, which would end the sync session with it.
+ */
+export function clearFinishedTransfers(): void {
+  setSyncTransfers((prev) =>
+    prev.filter(
+      (t) =>
+        t.status === 'packing' ||
+        t.status === 'preparing' ||
+        t.status === 'transferring',
+    ),
+  )
 }
 
 function handleIncomingOffer(manifest: unknown): void {
