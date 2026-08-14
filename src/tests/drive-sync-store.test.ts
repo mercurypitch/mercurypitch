@@ -190,6 +190,12 @@ describe('scan', () => {
     sessions.armPendingReady()
     const pending = scanDrive()
 
+    // Give a scan that does NOT wait every chance to finish: all the
+    // Drive fakes resolve in microtasks, so by the end of this macrotask
+    // the unfixed code has already compared against the empty cache.
+    // Only then does the library "arrive" — a scan that reports it must
+    // have parked on whenSessionStoreReady().
+    await new Promise((resolve) => setTimeout(resolve, 0))
     sessions.list = [localSession('h-9', 'Late.mp3')]
     sessions.grantReady()
 
