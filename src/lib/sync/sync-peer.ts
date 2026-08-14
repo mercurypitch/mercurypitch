@@ -91,15 +91,23 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     { rememberRooms: false },
   )
 
+  // The disposed check has to happen on BOTH sides of the await. getIceServers
+  // is a network call with a 4s timeout path, and closing the sync modal during
+  // it runs dispose() — which disconnects the signaling client that has not
+  // connected yet. Without the second check the continuation then opens a
+  // WebSocket and a room, after the only thing that could close them is gone.
+
   async function createRoom(displayName: string): Promise<void> {
     if (disposed) return
     iceServers = await getIceServers()
+    if (disposed) return
     signaling.createRoom(displayName)
   }
 
   async function joinRoom(roomId: string, displayName: string): Promise<void> {
     if (disposed) return
     iceServers = await getIceServers()
+    if (disposed) return
     signaling.connect(roomId, displayName)
   }
 
