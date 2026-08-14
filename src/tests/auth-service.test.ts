@@ -366,8 +366,10 @@ describe('Google redirect signup tracking', () => {
 // Drive cannot change who you are signed in as), which means it comes back
 // carrying #gdrive and NO gauth token. Matching only '#gauth' therefore
 // dropped every Drive return on the floor.
+//
+// Requirements: docs/specs/drive-connect-redirect.ears.md (REQ-DRV-*).
 describe('Drive connect redirect', () => {
-  it('records a refusal reason from a #gdrive-only return', () => {
+  it('REQ-DRV-001/002: records a refusal reason from a #gdrive-only return', () => {
     sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive_error=declined')
 
@@ -376,7 +378,7 @@ describe('Drive connect redirect', () => {
     expect(takeDriveConnectResult()).toEqual({ ok: false, error: 'declined' })
   })
 
-  it('records success from a #gdrive-only return', () => {
+  it('REQ-DRV-001/002: records success from a #gdrive-only return', () => {
     sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive=1')
 
@@ -389,7 +391,7 @@ describe('Drive connect redirect', () => {
   // route -- it waits in sessionStorage and hijacks the NEXT unrelated
   // Google sign-in, which is the hazard startDriveConnect's late stash
   // exists to avoid.
-  it('restores the stashed route and clears the stash', () => {
+  it('REQ-DRV-005: restores the stashed route and clears the stash', () => {
     sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive=1')
 
@@ -400,7 +402,7 @@ describe('Drive connect redirect', () => {
   })
 
   // A Drive return must not be mistaken for a sign-in.
-  it('does not produce a sign-in result or touch the token', () => {
+  it('REQ-DRV-004: does not produce a sign-in result or touch the token', () => {
     setAuthToken(makeToken(3600, 'password'))
     const before = getAuthToken()
     history.replaceState(null, '', '/#gdrive=1')
@@ -412,7 +414,7 @@ describe('Drive connect redirect', () => {
     takeDriveConnectResult() // one-shot: drain it so it cannot leak forward
   })
 
-  it('leaves an unrelated fragment alone', () => {
+  it('REQ-DRV-006: leaves an unrelated fragment alone', () => {
     sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#/karaoke')
 
@@ -421,6 +423,48 @@ describe('Drive connect redirect', () => {
     expect(takeDriveConnectResult()).toBeNull()
     expect(window.location.hash).toBe('#/karaoke')
     expect(sessionStorage.getItem('mp:gauthReturnHash')).toBe('#/settings/sync')
+  })
+
+  // The restore lives in the shared tail of consumeGoogleRedirect, so a
+  // refusal walks the same path as a success -- but only a test keeps it
+  // there. A declined connect that skipped the restore would strand the
+  // person on a URL reading #gdrive_error=declined with their route lost.
+  it('REQ-DRV-005: a refusal also restores the route and clears the stash', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#gdrive_error=declined')
+
+    consumeGoogleRedirect()
+
+    expect(window.location.hash).toBe('#/settings/sync')
+    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBeNull()
+    takeDriveConnectResult() // drain the one-shot
+  })
+
+  // The worker never produces this shape today -- it returns from a Drive
+  // pass before resolving any account -- but the reader of this code has
+  // to handle it, because the fix moved the gdrive read OUT of the sign-in
+  // branch precisely so both halves survive together.
+  it('REQ-DRV-003: a combined pass records the sign-in AND the Drive refusal', () => {
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gdrive_error=declined`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleRedirectResult()).toEqual({ ok: true })
+    expect(takeDriveConnectResult()).toEqual({ ok: false, error: 'declined' })
+    expect(hasValidToken()).toBe(true)
+  })
+
+  it('REQ-DRV-007: the Drive outcome is one-shot', () => {
+    history.replaceState(null, '', '/#gdrive=1')
+
+    consumeGoogleRedirect()
+
+    expect(takeDriveConnectResult()).toEqual({ ok: true })
+    expect(takeDriveConnectResult()).toBeNull()
   })
 })
 
