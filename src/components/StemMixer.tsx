@@ -2278,10 +2278,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
                   onClick={() => {
                     const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-                    void navigator.clipboard.writeText(url).then(() => {
-                      setShareToast('Link copied to clipboard!')
-                      setTimeout(() => setShareToast(''), 2500)
-                    })
+                    // No catch here meant a blocked clipboard — iOS Safari,
+                    // or any non-secure origin such as a LAN dev host — became
+                    // an unhandled rejection, and AppErrorBoundary turns those
+                    // into the full-screen crash modal. Failing to copy a link
+                    // is a toast, not a crash.
+                    void navigator.clipboard
+                      .writeText(url)
+                      .then(() => {
+                        setShareToast('Link copied to clipboard!')
+                      })
+                      .catch(() => {
+                        setShareToast(
+                          'Could not copy — press and hold the link',
+                        )
+                      })
+                      .finally(() => {
+                        setTimeout(() => setShareToast(''), 2500)
+                      })
                   }}
                   title="Copy share link"
                 >
