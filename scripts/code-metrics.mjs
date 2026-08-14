@@ -22,7 +22,7 @@
 // without the optional devDependencies still gets the cheap metrics.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -39,7 +39,14 @@ const updateMode = args.includes('--update')
 // ------------------------------------------------------------
 
 const SOURCE_ROOTS = ['src', 'workers', 'packages', 'apps']
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git', 'build', '.wrangler'])
+const SKIP_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'coverage',
+  '.git',
+  'build',
+  '.wrangler',
+])
 
 /** Every TS/TSX file under the source roots, repo-relative. */
 function collectSourceFiles() {
@@ -56,7 +63,10 @@ function collectSourceFiles() {
       if (SKIP_DIRS.has(entry.name)) continue
       const full = join(dir, entry.name)
       if (entry.isDirectory()) walk(full)
-      else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) {
+      else if (
+        /\.(ts|tsx)$/.test(entry.name) &&
+        !entry.name.endsWith('.d.ts')
+      ) {
         out.push(relative(ROOT, full))
       }
     }
@@ -78,7 +88,8 @@ function layerOf(file) {
   if (file.startsWith('src/db/')) return 'db'
   if (file.startsWith('src/pages/')) return 'pages'
   if (file.startsWith('workers/')) return 'workers'
-  if (file.startsWith('packages/') || file.startsWith('apps/')) return 'beside-cue'
+  if (file.startsWith('packages/') || file.startsWith('apps/'))
+    return 'beside-cue'
   return 'other'
 }
 
@@ -98,7 +109,12 @@ function fileSizeMetrics(files) {
 
   const byLayer = {}
   for (const r of rows) {
-    const l = (byLayer[r.layer] ??= { files: 0, lines: 0, over800: 0, over1500: 0 })
+    const l = (byLayer[r.layer] ??= {
+      files: 0,
+      lines: 0,
+      over800: 0,
+      over1500: 0,
+    })
     l.files += 1
     l.lines += r.lines
     if (r.lines > 800) l.over800 += 1
@@ -109,7 +125,9 @@ function fileSizeMetrics(files) {
     productionFiles: prod.length,
     productionLines: total,
     testFiles: rows.length - prod.length,
-    testLines: rows.filter((r) => r.layer === 'test').reduce((n, r) => n + r.lines, 0),
+    testLines: rows
+      .filter((r) => r.layer === 'test')
+      .reduce((n, r) => n + r.lines, 0),
     filesOver500: prod.filter((r) => r.lines > 500).length,
     filesOver800: prod.filter((r) => r.lines > 800).length,
     filesOver1500: prod.filter((r) => r.lines > 1500).length,
@@ -166,13 +184,26 @@ const LAYER_RULES = [
   { name: 'lib-no-features', from: 'src/lib/', to: /(^|\/)features\// },
   { name: 'lib-no-components', from: 'src/lib/', to: /(^|\/)components\// },
   { name: 'lib-no-stores', from: 'src/lib/', to: /(^|\/)stores\// },
-  { name: 'components-no-features', from: 'src/components/', to: /(^|\/)features\// },
+  {
+    name: 'components-no-features',
+    from: 'src/components/',
+    to: /(^|\/)features\//,
+  },
   { name: 'stores-no-features', from: 'src/stores/', to: /(^|\/)features\// },
-  { name: 'stores-no-components', from: 'src/stores/', to: /(^|\/)components\// },
-  { name: 'db-no-ui', from: 'src/db/', to: /(^|\/)(features|components|pages)\// },
+  {
+    name: 'stores-no-components',
+    from: 'src/stores/',
+    to: /(^|\/)components\//,
+  },
+  {
+    name: 'db-no-ui',
+    from: 'src/db/',
+    to: /(^|\/)(features|components|pages)\//,
+  },
 ]
 
-const IMPORT_RE = /(?:^|\n)\s*(?:import|export)\s[^;\n]*?from\s+['"]([^'"]+)['"]/g
+const IMPORT_RE =
+  /(?:^|\n)\s*(?:import|export)\s[^;\n]*?from\s+['"]([^'"]+)['"]/g
 
 function layeringMetrics(files) {
   const result = {}
@@ -193,7 +224,8 @@ function layeringMetrics(files) {
         if (!spec.startsWith('.') && !spec.startsWith('@/')) continue
         if (rule.to.test(spec)) {
           result[rule.name] += 1
-          if (detail[rule.name].length < 30) detail[rule.name].push(`${f} -> ${spec}`)
+          if (detail[rule.name].length < 30)
+            detail[rule.name].push(`${f} -> ${spec}`)
         }
       }
     }
@@ -211,7 +243,8 @@ function layeringMetrics(files) {
       const hit = /(?:^|\/)features\/([^/'"]+)/.exec(spec)
       if (hit && hit[1] !== own) {
         crossFeature += 1
-        if (crossFeatureDetail.length < 30) crossFeatureDetail.push(`${f} -> ${spec}`)
+        if (crossFeatureDetail.length < 30)
+          crossFeatureDetail.push(`${f} -> ${spec}`)
       }
     }
   }
@@ -229,7 +262,12 @@ function layeringMetrics(files) {
  * rather than opinion: a test whose every matcher is a presence or truthiness
  * check would still pass if the feature under it were gutted.
  */
-const WEAK_MATCHERS = new Set(['toBeInTheDocument', 'toBeVisible', 'toBeTruthy', 'toBeDefined'])
+const WEAK_MATCHERS = new Set([
+  'toBeInTheDocument',
+  'toBeVisible',
+  'toBeTruthy',
+  'toBeDefined',
+])
 const MATCHER_RE =
   /\.(toBeInTheDocument|toBeVisible|toBeTruthy|toBeDefined|toBe|toEqual|toStrictEqual|toBeCloseTo|toHaveBeenCalled\w*|toHaveTextContent|toHaveAttribute|toContain\w*|toMatch\w*|toThrow\w*|toBeNull|toBeGreaterThan\w*|toBeLessThan\w*|toHaveLength|toBeFalsy|toBeUndefined|toHaveProperty|toSatisfy)\b/g
 
@@ -257,7 +295,9 @@ function testShapeMetrics(files) {
     }
   }
 
-  const e2eFiles = files.filter((f) => f.startsWith('src/e2e/') && f.endsWith('.spec.ts'))
+  const e2eFiles = files.filter(
+    (f) => f.startsWith('src/e2e/') && f.endsWith('.spec.ts'),
+  )
   let hardWaits = 0
   let e2eNoAssertion = 0
   for (const f of e2eFiles) {
@@ -273,9 +313,10 @@ function testShapeMetrics(files) {
   for (const f of [...testFiles, ...e2eFiles]) {
     const lines = readFileSync(join(ROOT, f), 'utf8').split('\n')
     for (let i = 0; i < lines.length; i++) {
-      const m = /expect\(\s*([A-Za-z_$][\w$.?[\]]*)\s*\)\.toBeGreaterThanOrEqual\(\s*0\s*\)/.exec(
-        lines[i],
-      )
+      const m =
+        /expect\(\s*([A-Za-z_$][\w$.?[\]]*)\s*\)\.toBeGreaterThanOrEqual\(\s*0\s*\)/.exec(
+          lines[i],
+        )
       if (m == null) continue
       const root = m[1].split('.')[0]
       const prior = lines.slice(Math.max(0, i - 25), i).join('\n')
@@ -328,9 +369,18 @@ function hasLocalBin(name) {
   return existsSync(join(ROOT, 'node_modules/.bin', name))
 }
 
+/**
+ * Per-file cognitive complexity, harvested as a side effect of the audit lint
+ * run so the hotspot report below does not have to pay for a second one.
+ */
+let COGNITIVE_BY_FILE = {}
+
 /** Cognitive and cyclomatic complexity, via the existing audit ESLint config. */
 function complexityMetrics() {
-  if (!existsSync(join(ROOT, 'eslint.audit.config.js')) || !hasLocalBin('eslint')) {
+  if (
+    !existsSync(join(ROOT, 'eslint.audit.config.js')) ||
+    !hasLocalBin('eslint')
+  ) {
     return { skipped: 'eslint.audit.config.js or eslint not available' }
   }
 
@@ -353,22 +403,27 @@ function complexityMetrics() {
 
   const cognitive = []
   const byRule = {}
+  const perFileCognitive = {}
   for (const file of results) {
+    const rel = relative(ROOT, file.filePath)
     for (const msg of file.messages) {
       const rule = msg.ruleId ?? '(none)'
       byRule[rule] = (byRule[rule] ?? 0) + 1
       if (rule === 'sonarjs/cognitive-complexity') {
         const m = /from (\d+) to/.exec(msg.message)
-        cognitive.push({
-          value: m ? Number(m[1]) : 0,
-          location: `${relative(ROOT, file.filePath)}:${msg.line}`,
-        })
+        const value = m ? Number(m[1]) : 0
+        cognitive.push({ value, location: `${rel}:${msg.line}` })
+        const entry = (perFileCognitive[rel] ??= { sum: 0, max: 0 })
+        entry.sum += value
+        entry.max = Math.max(entry.max, value)
       }
     }
   }
   cognitive.sort((a, b) => b.value - a.value)
+  COGNITIVE_BY_FILE = perFileCognitive
 
-  const bucket = (min, max) => cognitive.filter((c) => c.value >= min && c.value <= max).length
+  const bucket = (min, max) =>
+    cognitive.filter((c) => c.value >= min && c.value <= max).length
   return {
     totalAuditWarnings: Object.values(byRule).reduce((a, b) => a + b, 0),
     functionsOverCognitive15: cognitive.length,
@@ -385,7 +440,8 @@ function complexityMetrics() {
 
 /** Import cycles, via dependency-cruiser when installed. */
 function cycleMetrics() {
-  if (!hasLocalBin('depcruise')) return { skipped: 'dependency-cruiser not installed' }
+  if (!hasLocalBin('depcruise'))
+    return { skipped: 'dependency-cruiser not installed' }
   const raw = tryRun(join(ROOT, 'node_modules/.bin/depcruise'), [
     '--config',
     '.dependency-cruiser.cjs',
@@ -398,7 +454,8 @@ function cycleMetrics() {
     const parsed = JSON.parse(raw)
     const violations = parsed.summary.violations ?? []
     const byRule = {}
-    for (const v of violations) byRule[v.rule.name] = (byRule[v.rule.name] ?? 0) + 1
+    for (const v of violations)
+      byRule[v.rule.name] = (byRule[v.rule.name] ?? 0) + 1
     return {
       modules: parsed.modules.length,
       errors: parsed.summary.error,
@@ -408,6 +465,70 @@ function cycleMetrics() {
     }
   } catch {
     return { skipped: 'depcruise output was not JSON' }
+  }
+}
+
+/**
+ * Churn x complexity hotspots — the one metric on this list with a defensible
+ * claim to predicting where defects will land.
+ *
+ * The reasoning (Tornhill, "Your Code as a Crime Scene"): complexity alone
+ * ranks code nobody touches, and churn alone ranks trivial files that change
+ * constantly. The product ranks code that is both hard to understand and under
+ * active change, which is where a reader's time and a bug's odds both
+ * concentrate. Complexity is summed rather than maxed per file, so a file with
+ * many moderately gnarly functions outranks one with a single outlier.
+ *
+ * Requires real git history: a shallow clone silently produces a ranking built
+ * from whatever handful of commits it happens to have, which looks like a
+ * result and is not one. That is checked and reported rather than guessed at.
+ */
+function hotspotMetrics() {
+  const shallow = tryRun('git', ['rev-parse', '--is-shallow-repository'])
+  if (shallow != null && shallow.trim() === 'true') {
+    return {
+      skipped:
+        'shallow clone — run `git fetch --unshallow` before trusting churn',
+    }
+  }
+  if (Object.keys(COGNITIVE_BY_FILE).length === 0) {
+    return { skipped: 'complexity data unavailable (audit lint did not run)' }
+  }
+
+  const log = tryRun('git', [
+    'log',
+    '--since=12 months ago',
+    '--name-only',
+    '--pretty=format:',
+  ])
+  if (log == null) return { skipped: 'git log produced no output' }
+
+  const churn = {}
+  for (const line of log.split('\n')) {
+    const f = line.trim()
+    if (!f.endsWith('.ts') && !f.endsWith('.tsx')) continue
+    if (isTest(f) || f.startsWith('src/tests/')) continue
+    churn[f] = (churn[f] ?? 0) + 1
+  }
+
+  const rows = []
+  for (const [file, commits] of Object.entries(churn)) {
+    const cog = COGNITIVE_BY_FILE[file]
+    if (cog == null || !existsSync(join(ROOT, file))) continue
+    rows.push({
+      file,
+      score: commits * cog.sum,
+      commits,
+      cognitiveSum: cog.sum,
+      cognitiveMax: cog.max,
+    })
+  }
+  rows.sort((a, b) => b.score - a.score)
+
+  return {
+    filesTouchedLast12Months: Object.keys(churn).length,
+    filesWithBothChurnAndComplexity: rows.length,
+    top: rows.slice(0, 20),
   }
 }
 
@@ -457,6 +578,7 @@ const metrics = {
   tests: testShapeMetrics(files),
   complexity: complexityMetrics(),
   cycles: cycleMetrics(),
+  hotspots: hotspotMetrics(),
   duplication: duplicationMetrics(),
 }
 
@@ -474,7 +596,10 @@ const RATCHET_KEYS = [
   ['tests.e2eHardWaits', (m) => m.tests.e2eHardWaits],
   ['tests.e2eSpecsWithoutAssertion', (m) => m.tests.e2eSpecsWithoutAssertion],
   ['tests.alwaysTrueAssertions', (m) => m.tests.alwaysTrueAssertions],
-  ['complexity.functionsOverCognitive15', (m) => m.complexity.functionsOverCognitive15],
+  [
+    'complexity.functionsOverCognitive15',
+    (m) => m.complexity.functionsOverCognitive15,
+  ],
   ['complexity.cognitiveOver50', (m) => m.complexity.cognitiveOver50],
   ['cycles.errors', (m) => m.cycles.errors],
   ['cycles.circular', (m) => m.cycles.circular],
@@ -502,7 +627,9 @@ if (asJson) {
 
 if (checkMode) {
   if (!existsSync(BASELINE_PATH)) {
-    console.error(`No baseline at ${relative(ROOT, BASELINE_PATH)} — run with --update first.`)
+    console.error(
+      `No baseline at ${relative(ROOT, BASELINE_PATH)} — run with --update first.`,
+    )
     process.exit(1)
   }
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
@@ -512,8 +639,10 @@ if (checkMode) {
   for (const [key, value] of Object.entries(current)) {
     const was = baseline[key]
     if (was == null) continue
-    if (value > was) regressions.push(`${key}: ${was} -> ${value} (+${value - was})`)
-    else if (value < was) improvements.push(`${key}: ${was} -> ${value} (-${was - value})`)
+    if (value > was)
+      regressions.push(`${key}: ${was} -> ${value} (+${value - was})`)
+    else if (value < was)
+      improvements.push(`${key}: ${was} -> ${value} (-${was - value})`)
   }
   for (const line of improvements) console.info(`improved  ${line}`)
   if (regressions.length > 0) {
@@ -533,10 +662,19 @@ if (checkMode) {
 }
 
 // Default: human-readable summary.
-const { size, escapeHatches, layering, tests, complexity, cycles, duplication } = metrics
+const {
+  size,
+  escapeHatches,
+  layering,
+  tests,
+  complexity,
+  cycles,
+  duplication,
+  hotspots,
+} = metrics
 const row = (label, value) => console.info(`  ${label.padEnd(38)} ${value}`)
 
-console.info('\nMercuryPitch code metrics\n' + '='.repeat(60))
+console.info(`\nMercuryPitch code metrics\n${'='.repeat(60)}`)
 
 console.info('\nSIZE')
 row('production files (ts/tsx)', size.productionFiles)
@@ -556,14 +694,18 @@ row('eslint-disable directives', escapeHatches.eslintDisable)
 row('TODO/FIXME/HACK/XXX', escapeHatches.todoComments)
 
 console.info('\nLAYERING (an architecture rule broken is an error)')
-for (const [name, count] of Object.entries(layering.violations)) row(name, count)
+for (const [name, count] of Object.entries(layering.violations))
+  row(name, count)
 row('TOTAL layering errors', layering.totalErrors)
 row('cross-feature imports (warn)', layering.crossFeatureImports)
 
 console.info('\nTESTS')
 row('unit test files', tests.unitTestFiles)
 row('test blocks', tests.testBlocks)
-row('presence-only blocks', `${tests.presenceOnlyBlocks} (${tests.presenceOnlyPct}%)`)
+row(
+  'presence-only blocks',
+  `${tests.presenceOnlyBlocks} (${tests.presenceOnlyPct}%)`,
+)
 row('blocks with no assertion', tests.blocksWithoutAssertion)
 row('e2e spec files', tests.e2eSpecFiles)
 row('e2e hard waits (waitForTimeout)', tests.e2eHardWaits)
@@ -597,7 +739,24 @@ else {
   row('duplicated tokens %', duplication.duplicatedTokenPct)
 }
 
+console.info('\nHOTSPOTS (churn x cognitive complexity, last 12 months)')
+if (hotspots.skipped != null) row('skipped', hotspots.skipped)
+else {
+  row('files touched', hotspots.filesTouchedLast12Months)
+  row('of those, also complex', hotspots.filesWithBothChurnAndComplexity)
+  console.info(
+    `    ${'score'.padStart(7)} ${'commits'.padStart(7)} ${'cog'.padStart(5)}  file`,
+  )
+  for (const h of hotspots.top.slice(0, 12)) {
+    console.info(
+      `    ${String(h.score).padStart(7)} ${String(h.commits).padStart(7)} ${String(h.cognitiveSum).padStart(5)}  ${h.file}`,
+    )
+  }
+}
+
 console.info('\nLARGEST PRODUCTION FILES')
 for (const f of size.largest.slice(0, 12)) row(f.file, f.lines)
 
-console.info('\nRun with --json for the full record, --check to ratchet against the baseline.\n')
+console.info(
+  '\nRun with --json for the full record, --check to ratchet against the baseline.\n',
+)

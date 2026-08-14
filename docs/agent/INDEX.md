@@ -177,7 +177,7 @@ These are the rules that break things when ignored.
 | [jam-store.ts](../../src/stores/jam-store.ts) | 2.8k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 2.0k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
-| [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
+| [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [sync-store.ts](../../src/stores/sync-store.ts) | 750 | ── Sync store One person, two devices, a room code between them. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 700 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 550 | ── Drive sync store The user's own Google Drive as the place a library survives. |
@@ -347,11 +347,11 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
+| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/features/guitar-night/GuitarNightStage.tsx](../../src/features/guitar-night/GuitarNightStage.tsx) | 1.5k |
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
-| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
@@ -417,6 +417,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test` | `vitest` |
 | `pnpm test:ui` | `vitest --ui` |
 | `pnpm test:run` | `vitest run` |
+| `pnpm test:db` | `vitest run workers/db-worker` |
+| `pnpm test:jam` | `vitest run workers/jam-worker` |
 | `pnpm test:coverage` | `vitest run --coverage` |
 | `pnpm test:e2e` | `playwright test` |
 | `pnpm lyrics:compare` | `node scripts/compare-lrc-timing.mjs` |
@@ -436,6 +438,14 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm lint` | `eslint src` |
 | `pnpm lint:fix` | `eslint src --fix` |
 | `pnpm lint:audit` | `eslint -c eslint.audit.config.js src workers` |
+| `pnpm arch` | `depcruise --config .dependency-cruiser.cjs --output-type err-long src` |
+| `pnpm arch:summary` | `depcruise --config .dependency-cruiser.cjs --output-type err src` |
+| `pnpm arch:graph` | `depcruise --config .dependency-cruiser.cjs --output-type archi src | dot -T svg > docs/agent/architecture.svg` |
+| `pnpm metrics` | `node scripts/code-metrics.mjs` |
+| `pnpm metrics:json` | `node scripts/code-metrics.mjs --json` |
+| `pnpm metrics:check` | `node scripts/code-metrics.mjs --check` |
+| `pnpm metrics:update` | `node scripts/code-metrics.mjs --update` |
+| `pnpm audit:dup` | `jscpd src workers --min-tokens 70 --reporters console --format typescript,tsx --ignore '**/*.test.ts,**/*.test.tsx,**/*.spec.ts'` |
 | `pnpm lines` | `cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'` |
 | `pnpm docs:index` | `node scripts/gen-agent-index.mjs` |
 | `pnpm docs:index:check` | `node scripts/gen-agent-index.mjs --check` |

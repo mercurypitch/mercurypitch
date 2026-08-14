@@ -291,8 +291,14 @@ export class FFTDetector implements IPitchDetector {
       const reOdd = (data[k * 2 + 1] + data[nk * 2 + 1]) * 0.5
       const imOdd = (data[nk * 2] - data[k * 2]) * 0.5
 
-      const twRe = reOdd * cosVal - imOdd * sinVal
-      const twIm = reOdd * sinVal + imOdd * cosVal
+      // Forward transform, so the twiddle is e^(-i*pi*k/halfN) — multiply by
+      // (cos - i*sin), not (cos + i*sin). The conjugate that used to be here
+      // reflected energy into the mirror bins (halfN - k): on a two-tone test
+      // signal, bin 111 read 15.56 where a naive DFT reads 0. The argmax
+      // usually survived that, which is why the frequency assertions passed
+      // while the spectrum itself was wrong.
+      const twRe = reOdd * cosVal + imOdd * sinVal
+      const twIm = imOdd * cosVal - reOdd * sinVal
 
       outReal[k] = reEven + twRe
       outImag[k] = imEven + twIm

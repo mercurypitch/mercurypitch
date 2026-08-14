@@ -112,7 +112,8 @@ module.exports = {
     // ── Hygiene ───────────────────────────────────────────────
     {
       name: 'no-orphans',
-      comment: 'A module nothing imports is either dead code or a missing wiring.',
+      comment:
+        'A module nothing imports is either dead code or a missing wiring.',
       severity: 'warn',
       from: {
         orphan: true,
@@ -127,7 +128,8 @@ module.exports = {
     },
     {
       name: 'no-deprecated-core',
-      comment: 'Node core modules that have been deprecated should not appear in new code.',
+      comment:
+        'Node core modules that have been deprecated should not appear in new code.',
       severity: 'error',
       from: {},
       to: { dependencyTypes: ['core'], path: '^(punycode|domain|sys)$' },
@@ -142,7 +144,8 @@ module.exports = {
     },
     {
       name: 'no-non-package-json',
-      comment: 'An import that is not declared in package.json will break a clean install.',
+      comment:
+        'An import that is not declared in package.json will break a clean install.',
       severity: 'error',
       from: {},
       to: { dependencyTypes: ['npm-no-pkg', 'npm-unknown'] },
@@ -167,8 +170,12 @@ module.exports = {
       mainFields: ['module', 'main', 'types', 'typings'],
     },
     reporterOptions: {
-      dot: { collapsePattern: '^src/(features|components|lib|stores|db|pages)/[^/]+' },
-      archi: { collapsePattern: '^src/(features|components|lib|stores|db|pages)/[^/]+' },
+      dot: {
+        collapsePattern: '^src/(features|components|lib|stores|db|pages)/[^/]+',
+      },
+      archi: {
+        collapsePattern: '^src/(features|components|lib|stores|db|pages)/[^/]+',
+      },
     },
   },
 }
