@@ -8,6 +8,22 @@ import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 
+/**
+ * decodeURIComponent throws URIError on a malformed escape ('%E0%A4%A', a
+ * lone '%'). parseHash runs during boot — App.tsx reads it while rendering and
+ * useHashRouter calls it on hashchange — so an uncaught throw here takes the
+ * whole app down on a link anyone can paste or truncate. A hash we cannot
+ * decode is a hash we do not recognise: hand back the raw text and let the
+ * route matcher fail normally.
+ */
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
   | { type: 'jam-room'; roomId: string }
@@ -216,8 +232,8 @@ export function parseHash(rawHash: string): HashRoute {
   if (shareFallbackMatch) {
     return {
       type: 'share-fallback',
-      shareType: decodeURIComponent(shareFallbackMatch[1]),
-      shareId: decodeURIComponent(shareFallbackMatch[2]),
+      shareType: safeDecode(shareFallbackMatch[1]),
+      shareId: safeDecode(shareFallbackMatch[2]),
     }
   }
 
@@ -298,7 +314,7 @@ export function parseHash(rawHash: string): HashRoute {
   if (resetMatch) {
     return {
       type: 'reset-password',
-      token: resetMatch[1] != null ? decodeURIComponent(resetMatch[1]) : null,
+      token: resetMatch[1] != null ? safeDecode(resetMatch[1]) : null,
     }
   }
 
