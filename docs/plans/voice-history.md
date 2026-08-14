@@ -423,7 +423,7 @@ in one copy/config location while the product name remains undecided.
 
 Implementation touchpoints include:
 
-- `src/features/tabs/constants.ts`: tab ID, `ActiveTab`, practice group, singing
+- `src/features/tabs/constants.ts`: tab ID, `ActiveTab`, **You** group, singing
   scope, ordering, labels, and DOM IDs;
 - `src/lib/hash-router.ts` and routing tests;
 - `src/components/AppNavTabs.tsx` and mobile nav metadata;
@@ -431,10 +431,12 @@ Implementation touchpoints include:
 - home destination card: reveal-only before the flag, navigable afterward;
 - tour coverage only after the navigation and empty state are stable.
 
-The new tab belongs to the singing practice scope. Whether it appears directly
-in the simple-mode bar or under mobile **More** should be decided with the final
-navigation label and ordering; adding it must not accidentally displace a
-current primary mobile tab.
+The tab belongs to the singing practice scope and the **You** group beside
+Progress: it is a personal listening record, not a performance destination.
+It remains available in simple singing mode. On phones, the stable four-slot
+priority keeps Home, Path, Progress, and the current scope's instrument on the
+bar; Hear Yourself remains reachable under **More** without displacing a
+primary practice destination.
 
 ### Release control
 

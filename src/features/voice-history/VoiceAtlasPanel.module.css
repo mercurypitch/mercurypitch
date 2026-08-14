@@ -38,6 +38,52 @@
   letter-spacing: -0.025em;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.titleRow h3 {
+  min-width: 0;
+}
+
+.titleRow .mapInfo {
+  width: 28px;
+  height: 28px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.mapInfoPanel {
+  max-width: min(350px, calc(100vw - 16px));
+  padding: 14px;
+}
+
+.mapExplanation {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+}
+
+.mapExplanation > div {
+  display: grid;
+  gap: 3px;
+}
+
+.mapExplanation dt {
+  color: #e4edf8;
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+.mapExplanation dd {
+  margin: 0;
+  color: #9bacc0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 .heading p {
   max-width: 72ch;
   margin: 0;
@@ -1147,6 +1193,13 @@
 }
 
 @media (max-width: 680px) {
+  .titleRow .mapInfo {
+    width: 44px;
+    height: 44px;
+    margin-block: -8px;
+    margin-inline: -7px;
+  }
+
   .atlas {
     gap: 15px;
     margin-top: 16px;

@@ -9,6 +9,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Pencil, SlidersHorizontal } from '@/components/icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import { Sheet } from '@/components/mobile/Sheet'
 import type { VoiceTakeRecord } from '@/db/entities'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
@@ -818,7 +819,41 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
       <div class={styles.heading}>
         <div>
           <span class={styles.kicker}>Voice Atlas</span>
-          <h3 id={titleId}>{atlasTitle()}</h3>
+          <div class={styles.titleRow}>
+            <h3 id={titleId}>{atlasTitle()}</h3>
+            <InfoPopover
+              label={`About ${atlasTitle()}`}
+              class={styles.mapInfo}
+              panelClass={styles.mapInfoPanel}
+            >
+              <dl class={styles.mapExplanation}>
+                <div>
+                  <dt>What it shows</dt>
+                  <dd>
+                    Time runs left to right and detected pitch moves up and
+                    down. Gaps are moments where pitch was not drawn
+                    confidently.
+                  </dd>
+                </div>
+                <div>
+                  <dt>How it is mapped</dt>
+                  <dd>
+                    The saved pitch contour supplies the line. Its width mixes
+                    relative input level with detector confidence, normalized
+                    separately inside each take.
+                  </dd>
+                </div>
+                <div>
+                  <dt>Keep in mind</dt>
+                  <dd>
+                    Both takes share real time and pitch scales, but nothing is
+                    phrase-aligned or stretched. This map does not score pitch
+                    accuracy or compare loudness between takes.
+                  </dd>
+                </div>
+              </dl>
+            </InfoPopover>
+          </div>
           <p>
             {availabilityCopy()}{' '}
             <span>True time · pitch + energy · gaps preserved.</span>

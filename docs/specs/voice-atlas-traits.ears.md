@@ -68,3 +68,9 @@ inspector rail.
 the system shall show direct recording-dependent estimates and shall not expose
 the shared Lab's breathiness-quality, richness-quality, or dominant-resonance
 categories as claims about air use, register, placement, technique, or health.
+
+### REQ-VAT-010 — Explain every reported trait
+
+**WHEN** Voice Atlas presents a pitch or spectrum trait, the system shall
+provide an adjacent accessible explanation of what the value means, how it is
+estimated, and which recording conditions limit its interpretation.

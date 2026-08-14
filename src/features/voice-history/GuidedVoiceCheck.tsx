@@ -50,8 +50,13 @@ interface GuidedVoiceCheckProps {
   initialProtocol?: Readonly<GuidedRetakeProtocol> | null
   returningFromPractice?: boolean
   onClose: () => void
+  onCloseRequestReady?: (request: GuidedCloseRequester | null) => void
   onKept: (comparisonKey: string, takeId: string) => Promise<void> | void
 }
+
+export type GuidedCloseRequester = (
+  onResolved: (closed: boolean) => void,
+) => void
 
 const MIC_CONSUMER_PREFIX = 'voice-history-guided-pitch-centre'
 const LANDING_CAPTURE_MS =
@@ -192,6 +197,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   let toneContext: AudioContext | null = null
   let flowGeneration = 0
   let previousStage: GuidedStage | null = null
+  let closeResolution: ((closed: boolean) => void) | null = null
   let mainCanvas: HTMLDivElement | undefined
   let inspectorPanel: HTMLDivElement | undefined
   let stageFocusTimer: number | null = null
@@ -700,11 +706,21 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     flowGeneration += 1
     voiceCapture.discard()
     setDiscardPromptOpen(false)
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(true)
     props.onClose()
   }
 
-  function requestClose(): void {
-    if (saving()) return
+  function requestClose(onResolved?: (closed: boolean) => void): void {
+    if (closeResolution !== null) closeResolution(false)
+    closeResolution = onResolved ?? null
+    if (saving()) {
+      const resolve = closeResolution
+      closeResolution = null
+      resolve?.(false)
+      return
+    }
     const captureIsActive =
       voiceCapture.state() === 'starting' ||
       voiceCapture.state() === 'recording' ||
@@ -725,6 +741,13 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
       return
     }
     discardAndClose()
+  }
+
+  function cancelDiscardRequest(): void {
+    setDiscardPromptOpen(false)
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(false)
   }
 
   function resultInspector(): JSX.Element {
@@ -755,8 +778,10 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
               {reinforce
                 ? 'These landings repeatedly found the centre. Give that pathway a little more familiar time.'
                 : fraction.numerator === 0
-                  ? 'None of these landings settled inside the target window. Practise meeting one clear centre without pushing.'
-                  : 'Some landings needed more time to settle. Practise meeting one clear centre without pushing.'}
+                  ? 'None of these landings met the settling rule. Practise meeting one clear centre without pushing.'
+                  : fraction.numerator === fraction.denominator
+                    ? 'All three met the settling rule, but the typical settled position was farther from the target centre. Practise one clear centre without pushing.'
+                    : 'Some landings did not meet the settling rule. Practise meeting one clear centre without pushing.'}
             </p>
           </div>
           <div class={styles.practiceRoute}>
@@ -888,8 +913,9 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
           <p>
             Three exact-register pitch landings were measured from confident
             fundamental-frequency frames. A landing settled after staying within
-            ±35 cents for 300 ms. This is a task reading, not a voice or health
-            score.
+            ±35 cents for 300 ms. The centred-pathway result also requires all
+            three landings and a typical settled error no greater than 25 cents.
+            This is a task reading, not a voice or health score.
           </p>
           <p>
             Input-noise separation is not available in this browser path, so a
@@ -1131,7 +1157,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
             <button
               type="button"
               class={styles.quietButton}
-              onClick={requestClose}
+              onClick={() => requestClose()}
             >
               Close
             </button>
@@ -1177,12 +1203,25 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     }, 0)
   })
 
+  createEffect(() => {
+    const register = props.onCloseRequestReady
+    if (register === undefined) return
+    // The parent receives an imperative navigation guard; signal reads remain
+    // inside requestClose when the user actually invokes it.
+    // eslint-disable-next-line solid/reactivity
+    register((onResolved) => requestClose(onResolved))
+    onCleanup(() => register(null))
+  })
+
   onMount(() => {
     window.addEventListener('keydown', toggleTemporaryReplayWithSpace, true)
   })
 
   onCleanup(() => {
     flowGeneration += 1
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(false)
     window.removeEventListener('keydown', toggleTemporaryReplayWithSpace, true)
     if (stageFocusTimer !== null) window.clearTimeout(stageFocusTimer)
     if (toneContext !== null && toneContext.state !== 'closed') {
@@ -1207,7 +1246,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
           class={styles.closeButton}
           aria-label="Close guided voice check"
           disabled={saving()}
-          onClick={requestClose}
+          onClick={() => requestClose()}
         >
           <X />
         </button>
@@ -1385,7 +1424,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
         }
         confirmLabel="Discard take"
         confirmIcon={<X />}
-        onCancel={() => setDiscardPromptOpen(false)}
+        onCancel={cancelDiscardRequest}
         onConfirm={discardAndClose}
       />
     </section>
