@@ -2108,11 +2108,34 @@ export function leaveJamRoom(): void {
  * would show an unmuted mic for as long as the prompt is on screen, which
  * is the one moment it must not lie.
  */
+let jamUnmuteInFlight = false
+
 export async function toggleJamMute(): Promise<void> {
   const muted = !jamIsMuted()
   if (!muted && jamService?.hasLocalAudio() === false) {
-    const got = await jamService.startLocalAudio()
+    // hasLocalAudio() is still false while the permission prompt is up, so a
+    // second tap used to pass this guard too and open a second getUserMedia.
+    // Both resolved, the second stream's track replaced the first in the
+    // local stream, and the first stayed live and unreachable — a recording
+    // indicator that never goes out, and a mic the Leave button cannot stop.
+    if (jamUnmuteInFlight) return
+    jamUnmuteInFlight = true
+
+    const serviceAtStart = jamService
+    const roomAtStart = jamRoomId()
+    let got: boolean
+    try {
+      got = await serviceAtStart.startLocalAudio()
+    } finally {
+      jamUnmuteInFlight = false
+    }
     if (!got) return
+
+    // Leaving while the prompt was up disposes the service and clears the
+    // room. Continuing here would re-arm pitch detection for a room we are no
+    // longer in, holding a 20 Hz interval and a live capture after Leave.
+    if (jamService !== serviceAtStart || jamRoomId() !== roomAtStart) return
+
     // The stream object is the same one; its track list is not. Re-publish
     // so the local video chip and anything else reading it sees the mic,
     // and start listening to ourselves now that there is something to hear.
