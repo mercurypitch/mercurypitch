@@ -161,6 +161,14 @@ export function createJamService(callbacks: JamCallbacks) {
       pc.close()
       peerConnections.delete(id)
     }
+    // Release the microphone and camera too. Closing the peer connections stops
+    // anyone hearing the capture, but it does not stop the capture: the tracks
+    // stayed live, so the browser's recording indicator remained lit after
+    // Leave and the microphone was held until the tab closed. dispose() has
+    // always done this, and nothing calls dispose() — leaving a room is the
+    // only way out of one. jam-store's cleanupJam already assumes this happened
+    // ("the next room captures its own microphone on its own first unmute").
+    stopLocalStream()
     signaling.leaveRoom()
   }
 
