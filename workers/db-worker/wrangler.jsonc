@@ -12,10 +12,13 @@
     // `wrangler secret put <NAME>` (per env). GOOGLE_CLIENT_SECRET powers
     // the redirect sign-in flow; this worker's /api/auth/google/callback
     // URL must be an Authorized redirect URI on the Google OAuth client.
-    // NOTE: env.dev runs the newer verified-branding client; this
-    // (local) and env.prod stay on the old one until the next production
-    // release, because id and secret must flip together per env.
-    "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+    // This is the verified-branding client (Proton Pass item
+    // mp-oauth-client-secret); every env references it, and each env's
+    // GOOGLE_CLIENT_SECRET must be the matching one. Local `wrangler dev`
+    // reads the secret from .dev.vars — keep that in step too. On dev,
+    // `secret put` is refused while a PR preview version is newer than
+    // the deployment; dispatch deploy-db.yml (dev) first to reset that.
+    "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
     // Browser-origin allowlist (see Env.ALLOWED_ORIGINS). Local `wrangler
     // dev` (pnpm dev:db, no --env) accepts only localhost origins.
     "ALLOWED_ORIGINS": "localhost",
@@ -110,10 +113,6 @@
         { "pattern": "studio-dev.mercurypitch.com", "custom_domain": true },
       ],
       "vars": {
-        // Verified-branding OAuth client. Dev runs it first; top-level
-        // (local) and prod move at the next production release, together
-        // with their GOOGLE_CLIENT_SECRET. The secret for THIS client is
-        // already set: `wrangler secret put GOOGLE_CLIENT_SECRET --env dev`.
         "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
         // Managed campaign identities exist only in the development database.
         // Set the dedicated TESTING_PROVISION_KEY with:
@@ -195,7 +194,14 @@
         { "pattern": "studio.mercurypitch.com", "custom_domain": true },
       ],
       "vars": {
-        "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+        // Staged ahead of the release: prod only deploys on a v* tag (or
+        // an explicit prod dispatch — don't, until the secret is done).
+        // In the same sitting as tagging, run
+        // `wrangler secret put GOOGLE_CLIENT_SECRET --env prod` via the
+        // pass-cli template (mercurypitch-google-oauth.env.tmpl). Google
+        // sign-in on prod is down between that put and the tag deploy —
+        // id and secret only work as a pair.
+        "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
         "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
