@@ -197,7 +197,14 @@ export function detectChords(
     }
 
     const last = merged[merged.length - 1]
-    const lastTime = (merged.length - 1) * frameTime
+    // The previous segment's start is the one it stored, not its position in
+    // the merged array. `merged` collapses runs of frames, so `merged.length`
+    // trails the frame index badly — after the first few chords it reported a
+    // start far earlier than the truth, which inflated every segmentDuration
+    // below and let the `>= minDuration` gate pass for segments it exists to
+    // absorb. The result was chord flicker surviving the very filter written to
+    // remove it.
+    const lastTime = last.time
 
     if (
       current.root === last.root &&

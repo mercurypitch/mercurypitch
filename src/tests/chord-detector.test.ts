@@ -147,3 +147,72 @@ describe('simplifyChordSequence', () => {
     expect(simplifyChordSequence(chords)).toHaveLength(1)
   })
 })
+
+describe('detectChords — the minimum-duration gate', () => {
+  // The gate exists to absorb chords that flicker past too briefly to be real.
+  // It compared the incoming frame time against `(merged.length - 1) * hop` —
+  // the previous segment's INDEX in the output array — rather than the start it
+  // actually stored. Because merging collapses runs, that index trails the
+  // frame index badly, so the computed duration grew far larger than the truth
+  // and the gate passed almost everything through.
+
+  const chroma = (weights: Record<number, number>): Float32Array => {
+    const c = new Float32Array(12)
+    for (const [bin, value] of Object.entries(weights)) c[Number(bin)] = value
+    return c
+  }
+
+  const C = chroma({ 0: 0.5, 4: 0.3, 7: 0.2 })
+  const G = chroma({ 7: 0.5, 11: 0.3, 2: 0.2 })
+
+  /** n frames of a, then one frame of b, then n frames of a again. */
+  const withBlip = (a: Float32Array, b: Float32Array, run: number) => [
+    ...Array.from({ length: run }, () => a),
+    b,
+    ...Array.from({ length: run }, () => a),
+  ]
+
+  it('drops a one-frame chord that is far shorter than minDuration', () => {
+    const hop = 0.05
+    // A single 50 ms blip against a 1 s minimum. Whatever else the detector
+    // decides, that blip must not survive as its own segment.
+    const chords = detectChords(withBlip(C, G, 20), hop, {
+      medianWindow: 1,
+      minDuration: 1,
+    })
+
+    const durations = chords.map((c, i) =>
+      i + 1 < chords.length ? chords[i + 1].time - c.time : Infinity,
+    )
+    // No emitted segment may be shorter than the minimum it was filtered on.
+    expect(durations.filter((d) => d < 1)).toHaveLength(0)
+  })
+
+  it('reports segment starts that increase and match the frame grid', () => {
+    const hop = 0.05
+    const chords = detectChords(withBlip(C, G, 10), hop, { medianWindow: 1 })
+
+    for (let i = 1; i < chords.length; i++) {
+      expect(chords[i].time).toBeGreaterThan(chords[i - 1].time)
+    }
+    for (const c of chords) {
+      // Every start is a real frame boundary, not an array index scaled by hop.
+      expect(Math.round(c.time / hop) * hop).toBeCloseTo(c.time, 10)
+    }
+  })
+
+  it('still emits a genuine chord change that outlasts the minimum', () => {
+    // The negative control: a gate that dropped everything would satisfy the
+    // first case while destroying the feature.
+    const hop = 0.05
+    const chords = detectChords(
+      [
+        ...Array.from({ length: 20 }, () => C),
+        ...Array.from({ length: 20 }, () => G),
+      ],
+      hop,
+      { medianWindow: 1, minDuration: 0.25 },
+    )
+    expect(chords.length).toBeGreaterThanOrEqual(2)
+  })
+})
