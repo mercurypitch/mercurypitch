@@ -3,7 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onMount, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCross, IconMic } from '@/components/exercise-icons'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { trackEvent } from '@/lib/analytics'
@@ -21,10 +22,17 @@ type RecorderState = DryVoiceCaptureState | 'saving' | 'saved'
 
 interface FreeformVoiceRecorderProps {
   target: FreeformThreadTarget
+  initialDraftTitle?: string
   onClose: () => void
+  onCloseRequestReady?: (request: FreeformRecorderCloseRequester | null) => void
+  onDraftTitleChange?: (title: string) => void
   onKept: (comparisonKey: string) => Promise<void> | void
   onStartNewThread: () => void
 }
+
+export type FreeformRecorderCloseRequester = (
+  onResolved: (closed: boolean) => void,
+) => void
 
 const MIC_CONSUMER_PREFIX = 'voice-history-freeform'
 let recorderInstance = 0
@@ -40,7 +48,13 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   props,
 ) => {
   const micConsumerId = `${MIC_CONSUMER_PREFIX}:${++recorderInstance}`
-  const [title, setTitle] = createSignal(untrack(() => props.target.title))
+  const [title, setTitle] = createSignal(
+    untrack(() =>
+      props.target.title === ''
+        ? (props.initialDraftTitle ?? '')
+        : props.target.title,
+    ),
+  )
   const [titleError, setTitleError] = createSignal<string | null>(null)
   const [persistenceState, setPersistenceState] = createSignal<
     'idle' | 'saving' | 'saved'
@@ -48,6 +62,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   const [persistenceMessage, setPersistenceMessage] = createSignal<
     string | null
   >(null)
+  const [discardPromptOpen, setDiscardPromptOpen] = createSignal(false)
   const voiceCapture = useDryVoiceCapture({
     consumerId: micConsumerId,
     maxDurationMs: MAX_CAPTURE_MS,
@@ -66,6 +81,12 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
 
   let titleInput: HTMLInputElement | undefined
   let startButton: HTMLButtonElement | undefined
+  let stopButton: HTMLButtonElement | undefined
+  let liveVisual: HTMLDivElement | undefined
+  let revealFrame: number | null = null
+  let wasRecording = false
+  let closeRequestGeneration = 0
+  let closeResolution: ((closed: boolean) => void) | null = null
 
   const persistenceLocked = (): boolean =>
     state() === 'saving' || state() === 'saved'
@@ -84,6 +105,45 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     })
   })
 
+  createEffect(() => {
+    const recording = state() === 'recording'
+    if (!recording || wasRecording) {
+      wasRecording = recording
+      return
+    }
+    wasRecording = true
+    if (revealFrame !== null) cancelAnimationFrame(revealFrame)
+    revealFrame = requestAnimationFrame(() => {
+      revealFrame = null
+      const target = liveVisual
+      if (target === undefined) return
+      stopButton?.focus({ preventScroll: true })
+      const bounds = target.getBoundingClientRect()
+      const viewport = window.visualViewport
+      const visualTop = viewport?.offsetTop ?? 0
+      const visualBottom = visualTop + (viewport?.height ?? window.innerHeight)
+      const scrollOwner = document.getElementById('main-content')
+      const scrollBounds = scrollOwner?.getBoundingClientRect()
+      const viewportTop = Math.max(visualTop, scrollBounds?.top ?? visualTop)
+      const viewportBottom = Math.min(
+        visualBottom,
+        scrollBounds?.bottom ?? visualBottom,
+      )
+      const edgeInset = 16
+      const fullyVisible =
+        bounds.top >= viewportTop + edgeInset &&
+        bounds.bottom <= viewportBottom - edgeInset
+      if (fullyVisible) return
+      const reduceMotion =
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+      target.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'center',
+        inline: 'nearest',
+      })
+    })
+  })
+
   function beginRecording(): void {
     const threadTitle = title().trim()
     if (threadTitle === '') {
@@ -93,6 +153,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
 
     resetTemporary()
     setTitle(threadTitle)
+    if (props.target.title === '') props.onDraftTitleChange?.(threadTitle)
     setTitleError(null)
     void voiceCapture.start()
   }
@@ -128,6 +189,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
         })
         if (result.ok) {
           setPersistenceState('saved')
+          if (target.title === '') props.onDraftTitleChange?.('')
           trackEvent('voice_keep_success')
           try {
             await props.onKept(target.comparisonKey)
@@ -161,10 +223,85 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     })()
   }
 
-  function closeRecorder(): void {
+  function finishClose(): void {
+    closeRequestGeneration += 1
+    setDiscardPromptOpen(false)
     resetTemporary()
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(true)
     props.onClose()
   }
+
+  function cancelCloseRequest(): void {
+    closeRequestGeneration += 1
+    setDiscardPromptOpen(false)
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(false)
+  }
+
+  function rejectCloseRequest(): void {
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(false)
+  }
+
+  async function stopBeforeClose(requestGeneration: number): Promise<void> {
+    const take = await voiceCapture.stop()
+    if (requestGeneration !== closeRequestGeneration) return
+    if (take === null) finishClose()
+    else setDiscardPromptOpen(true)
+  }
+
+  function requestClose(onResolved?: (closed: boolean) => void): void {
+    const previous = closeResolution
+    closeResolution = onResolved ?? null
+    previous?.(false)
+    const requestGeneration = ++closeRequestGeneration
+
+    if (persistenceState() === 'saving') {
+      rejectCloseRequest()
+      return
+    }
+    if (persistenceState() === 'saved') {
+      finishClose()
+      return
+    }
+
+    const captureState = voiceCapture.state()
+    if (captureState === 'starting') {
+      finishClose()
+      return
+    }
+    if (captureState === 'recording' || captureState === 'paused') {
+      void stopBeforeClose(requestGeneration)
+      return
+    }
+    if (captureState === 'processing' || captureState === 'ready') {
+      setDiscardPromptOpen(true)
+      return
+    }
+    finishClose()
+  }
+
+  createEffect(() => {
+    const register = props.onCloseRequestReady
+    if (register === undefined) return
+    // The parent receives an imperative navigation guard; signal reads remain
+    // inside requestClose when the singer actually chooses another thread.
+    // eslint-disable-next-line solid/reactivity
+    register((onResolved) => requestClose(onResolved))
+    onCleanup(() => register(null))
+  })
+
+  onCleanup(() => {
+    closeRequestGeneration += 1
+    const resolve = closeResolution
+    closeResolution = null
+    resolve?.(false)
+    if (revealFrame !== null) cancelAnimationFrame(revealFrame)
+  })
 
   return (
     <section
@@ -188,7 +325,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
         <button
           type="button"
           class={styles.closeButton}
-          onClick={closeRecorder}
+          onClick={() => requestClose()}
           aria-label="Close recorder"
           disabled={state() === 'saving'}
         >
@@ -219,8 +356,12 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
               aria-invalid={titleError() !== null}
               aria-describedby="freeform-prompt-help"
               onInput={(event) => {
-                setTitle(event.currentTarget.value)
-                if (event.currentTarget.value.trim() !== '') setTitleError(null)
+                const nextTitle = event.currentTarget.value
+                setTitle(nextTitle)
+                if (props.target.title === '') {
+                  props.onDraftTitleChange?.(nextTitle)
+                }
+                if (nextTitle.trim() !== '') setTitleError(null)
               }}
             />
             <Show when={props.target.title !== '' && state() === 'idle'}>
@@ -314,7 +455,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
           </p>
 
           <Show when={state() === 'recording'}>
-            <div class={styles.liveVisual}>
+            <div ref={liveVisual} class={styles.liveVisual}>
               <LiveVoiceCapture
                 active={true}
                 frame={voiceCapture.latestSmoothedFrame}
@@ -341,6 +482,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
             </Show>
             <Show when={state() === 'recording'}>
               <button
+                ref={stopButton}
                 type="button"
                 class={styles.stopButton}
                 onClick={stopRecording}
@@ -447,6 +589,15 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
           {message()}
         </p>
       </Show>
+      <ConfirmDialog
+        open={discardPromptOpen()}
+        title="Discard this temporary take?"
+        message="This recording has not been kept. Leaving now will discard it from this device."
+        confirmLabel="Discard take"
+        confirmIcon={<IconCross size={16} />}
+        onConfirm={finishClose}
+        onCancel={cancelCloseRequest}
+      />
     </section>
   )
 }

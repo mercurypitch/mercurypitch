@@ -182,9 +182,7 @@
 
 .captureFieldLive {
   border-color: rgb(255 102 112 / 28%);
-  box-shadow:
-    inset 3px 0 var(--recorder-red),
-    inset 0 1px rgb(255 255 255 / 3%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
 }
 
 .captureFieldReady {
@@ -292,6 +290,7 @@
 .liveVisual {
   width: 100%;
   min-width: 0;
+  scroll-margin-block: clamp(16px, 6vh, 48px);
 }
 
 .liveVisual > div,

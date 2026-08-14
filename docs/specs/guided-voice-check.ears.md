@@ -156,6 +156,13 @@ comparison, the system shall suppress that delta and name why.
 Controlled assessment and scoring shall use the dry microphone source without
 accompaniment or listening-room effects.
 
+### REQ-GVC-036 — Explain unavailable checks plainly
+
+**When** an optional recording-quality check is unavailable, the method
+disclosure shall name the missing check in plain singer language, shall not
+attribute it to the browser unless a browser capability was actually tested,
+and shall not expose internal quality-gate labels as user guidance.
+
 ## 5. Focus reading
 
 ### REQ-GVC-040 — One useful reading

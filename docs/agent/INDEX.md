@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.8k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 9.8k | Voice History — local listening desk for kept voice takes |
+| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.0k | Voice History — local listening desk for kept voice takes |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 6.0k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 5.8k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.6k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
