@@ -1,10 +1,24 @@
 // ============================================================
-// Follow Service — social graph for the Friends leaderboard
+// Follow Service — the friend graph behind the Friends leaderboard
 // ============================================================
 //
-// Rows live in the cloud `follows` table (private, JWT-scoped: you can
-// only read/write your own follow list). The worker joins it server-side
-// for the Friends leaderboard view.
+// A follow is half of a mutual agreement, not a subscription. Being in
+// someone's friend list means reading their streak, longest streak, average
+// and best score, accuracy and session count off the Friends board — so a row
+// only counts once both sides have said yes:
+//
+//   pending   — asked. Grants nothing, to either of you.
+//   accepted  — agreed. Both rows exist and both say accepted.
+//
+// The worker owns every write (see workers/db-worker/src/friends.ts); the
+// generic `POST /api/follows` route answers 405 now, because the one thing it
+// could write was the unagreed half. Reads stay generic: `GET /api/follows`
+// returns your own rows, which is where `following()` and `pending()` come
+// from without a second round trip.
+//
+// Redeeming a friend code still links both directions at once. Handing over
+// the code is the yes, and asking its owner to approve afterwards would be
+// asking them to agree twice.
 
 import { getDb } from '@/db'
 import type { Follow } from '@/db/entities'
@@ -57,72 +71,146 @@ export interface RedeemResult {
 
 /** Redeem someone's code. Links both ways — sharing the code is the consent. */
 export async function redeemFriendCode(code: string): Promise<RedeemResult> {
+  const res = await friendAction('redeem', { code }, 'Could not add friend')
+  return res.ok
+    ? { ok: true, displayName: res.displayName }
+    : { ok: false, error: res.error }
+}
+
+// ── Requests ────────────────────────────────────────────────────────
+
+/** What a friend action did, or why it could not. */
+export interface FriendActionResult {
+  ok: boolean
+  /** Where the pair ended up. 'accepted' when the other side had also asked. */
+  status?: 'pending' | 'accepted'
+  displayName?: string
+  error?: string
+}
+
+/** Someone waiting on an answer, in either direction. */
+export interface FriendRequest {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  createdAt: string
+}
+
+const OFFLINE = 'Friends need a connection'
+
+async function friendAction(
+  route: 'request' | 'accept' | 'remove' | 'redeem',
+  body: Record<string, string>,
+  fallbackError: string,
+): Promise<FriendActionResult> {
   if (API_BASE_URL == null || API_BASE_URL === '') {
-    return { ok: false, error: 'Friends need a connection' }
+    return { ok: false, error: OFFLINE }
   }
   try {
-    const res = await fetch(`${API_BASE_URL}/api/friends/redeem`, {
+    const res = await fetch(`${API_BASE_URL}/api/friends/${route}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify(body),
     })
-    const data = (await res.json().catch(() => ({}))) as {
-      displayName?: string
-      error?: string
-    }
-    if (!res.ok)
-      return { ok: false, error: data.error ?? 'Could not add friend' }
-    return { ok: true, displayName: data.displayName }
+    const data = (await res.json().catch(() => ({}))) as FriendActionResult
+    if (!res.ok) return { ok: false, error: data.error ?? fallbackError }
+    return { ok: true, status: data.status, displayName: data.displayName }
   } catch {
     return { ok: false, error: 'Could not reach the server' }
   }
 }
 
-/** User ids the current user follows. Empty when signed out/offline. */
-export async function getFollowing(): Promise<string[]> {
+/**
+ * Ask to be someone's friend.
+ *
+ * Resolves `status: 'pending'` normally, and `'accepted'` when they had
+ * already asked you — two yeses need no third step.
+ */
+export async function requestFriend(
+  userId: string,
+): Promise<FriendActionResult> {
+  if (userId === '' || userId === getUserId()) {
+    return { ok: false, error: 'You can’t friend yourself' }
+  }
+  return friendAction('request', { userId }, 'Could not send the request')
+}
+
+/** Say yes to someone who asked. Links both directions. */
+export async function acceptFriend(
+  userId: string,
+): Promise<FriendActionResult> {
+  return friendAction('accept', { userId }, 'Could not accept the request')
+}
+
+/**
+ * Say no, or take back a yes. Clears both directions — ending a friendship
+ * halfway would leave the person you removed still able to see you.
+ */
+export async function removeFriend(
+  userId: string,
+): Promise<FriendActionResult> {
+  return friendAction('remove', { userId }, 'Could not remove that friend')
+}
+
+/**
+ * Pending requests both ways. Incoming rows are owned by the person who sent
+ * them, so the per-user list below cannot see them — this endpoint is the
+ * only way to learn you have been asked.
+ */
+export async function listFriendRequests(): Promise<{
+  incoming: FriendRequest[]
+  outgoing: FriendRequest[]
+}> {
+  const empty = { incoming: [], outgoing: [] }
+  if (API_BASE_URL == null || API_BASE_URL === '') return empty
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/friends/requests`, {
+      headers: getAuthHeaders(),
+    })
+    if (!res.ok) return empty
+    const data = (await res.json()) as Partial<{
+      incoming: FriendRequest[]
+      outgoing: FriendRequest[]
+    }>
+    return { incoming: data.incoming ?? [], outgoing: data.outgoing ?? [] }
+  } catch {
+    return empty
+  }
+}
+
+// ── Your own rows ───────────────────────────────────────────────────
+
+/**
+ * Your follow rows split by whether the other side agreed.
+ *
+ * One read serves both the Friends tab and the button states, and reading
+ * them together is what keeps them from disagreeing: a singer cannot be shown
+ * as a friend on one surface and as a pending ask on another.
+ */
+export async function loadFollowState(): Promise<{
+  accepted: string[]
+  pending: string[]
+}> {
   try {
     const db = await getDb()
     const repo = db.getRepository<Follow>('follows')
     const rows = await repo.findAll()
-    return rows.map((r) => r.followedUserId)
+    return {
+      accepted: rows
+        .filter((r) => r.status === 'accepted')
+        .map((r) => r.followedUserId),
+      // Rows written before the status column existed default to 'pending',
+      // which is the honest reading: nobody ever agreed to them.
+      pending: rows
+        .filter((r) => r.status !== 'accepted')
+        .map((r) => r.followedUserId),
+    }
   } catch {
-    return []
+    return { accepted: [], pending: [] }
   }
 }
 
-export async function isFollowing(userId: string): Promise<boolean> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<Follow>('follows')
-    const rows = await repo.findAll({ where: { followedUserId: userId } })
-    return rows.length > 0
-  } catch {
-    return false
-  }
-}
-
-/** Follow a user. Returns false when it failed (signed out, self, …). */
-export async function follow(userId: string): Promise<boolean> {
-  if (userId === '' || userId === getUserId()) return false
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<Follow>('follows')
-    if (await isFollowing(userId)) return true
-    await repo.create({ userId: getUserId(), followedUserId: userId })
-    return true
-  } catch {
-    return false
-  }
-}
-
-export async function unfollow(userId: string): Promise<boolean> {
-  try {
-    const db = await getDb()
-    const repo = db.getRepository<Follow>('follows')
-    const rows = await repo.findAll({ where: { followedUserId: userId } })
-    await Promise.all(rows.map((r) => repo.delete(r.id)))
-    return true
-  } catch {
-    return false
-  }
+/** User ids who agreed to be your friend. Empty when signed out/offline. */
+export async function getFollowing(): Promise<string[]> {
+  return (await loadFollowState()).accepted
 }

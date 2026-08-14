@@ -6,11 +6,13 @@ import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
+import { FriendRequests } from '@/components/friends/FriendRequests'
 import { CheckCircle, ChevronDown, Play } from '@/components/icons'
 import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
 import { hasValidToken } from '@/db/services/auth-service'
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
-import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
+import type { FriendRequest } from '@/db/services/follow-service'
+import { acceptFriend, listFriendRequests, loadFollowState, removeFriend, requestFriend, } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
 import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league-service'
 import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
@@ -331,8 +333,13 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   const [totalEntries, setTotalEntries] = createSignal(0)
   const [loadingMore, setLoadingMore] = createSignal(false)
 
-  // Who the current user follows (drives the Friends tab + buttons)
+  // The friend graph, split the way the worker splits it. `following` is the
+  // agreed half and is what the Friends tab counts; `requested` is people who
+  // have not answered yet, and it exists so the button can say so instead of
+  // claiming a friendship that nobody accepted.
   const [following, setFollowing] = createSignal<string[]>([])
+  const [requested, setRequested] = createSignal<string[]>([])
+  const [incoming, setIncoming] = createSignal<FriendRequest[]>([])
 
   // Real weekly challenges: definitions + own progress
   const [weeklyChallenges, setWeeklyChallenges] = createSignal<
@@ -492,7 +499,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
   createEffect(() => {
     authVersion()
-    void getFollowing().then(setFollowing)
+    void refreshFollowing()
     void (async () => {
       const [defs, progress] = await Promise.all([
         loadChallengeDefinitions(),
@@ -527,19 +534,76 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   }
 
   async function refreshFollowing(): Promise<void> {
-    setFollowing(await getFollowing())
+    const [state, requests] = await Promise.all([
+      loadFollowState(),
+      listFriendRequests(),
+    ])
+    setFollowing(state.accepted)
+    setRequested(state.pending)
+    setIncoming(requests.incoming)
   }
 
+  /** Re-read the graph, and the board too when it is showing that graph. */
+  async function afterFriendChange(): Promise<void> {
+    await refreshFollowing()
+    if (activeView() === 'friends') void loadPage(0)
+  }
+
+  /**
+   * What pressing the button would mean right now. "Requested" is the label
+   * that had nowhere to live before: an ask that has not been answered is
+   * neither "Follow Player" nor "Following", and showing either one told the
+   * singer they had access they did not have.
+   */
+  function friendButtonLabel(userId: string): string {
+    if (following().includes(userId)) return 'Friends'
+    if (requested().includes(userId)) return 'Requested'
+    return 'Add Friend'
+  }
+
+  /**
+   * The one button on a singer's card. Which of the three things it does
+   * depends on where the pair already stands, so the label and the action are
+   * read from the same two signals and cannot disagree.
+   */
   async function toggleFollow(userId: string): Promise<void> {
-    const isFollowed = following().includes(userId)
-    const ok = isFollowed ? await unfollow(userId) : await follow(userId)
-    if (!ok) {
-      showNotification('Sign in to follow players', 'warning')
+    const linked = following().includes(userId) || requested().includes(userId)
+    const result = linked
+      ? await removeFriend(userId)
+      : await requestFriend(userId)
+    if (!result.ok) {
+      showNotification(result.error ?? 'Sign in to add friends', 'warning')
       return
     }
-    setFollowing(await getFollowing())
-    showNotification(isFollowed ? 'Unfollowed' : 'Following player', 'info')
-    if (activeView() === 'friends') void loadPage(0)
+    await afterFriendChange()
+    showNotification(
+      linked
+        ? 'Removed'
+        : result.status === 'accepted'
+          ? 'You’re friends — they had asked you too'
+          : 'Request sent',
+      'info',
+    )
+  }
+
+  async function acceptRequest(userId: string): Promise<void> {
+    const result = await acceptFriend(userId)
+    if (!result.ok) {
+      showNotification(result.error ?? 'Could not accept', 'warning')
+      return
+    }
+    await afterFriendChange()
+    showNotification('You’re friends', 'info')
+  }
+
+  async function declineRequest(userId: string): Promise<void> {
+    const result = await removeFriend(userId)
+    if (!result.ok) {
+      showNotification(result.error ?? 'Could not decline', 'warning')
+      return
+    }
+    await afterFriendChange()
+    showNotification('Request declined', 'info')
   }
 
   // Real data only — server-derived in cloud mode, locally-derived from
@@ -616,8 +680,13 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               <>
                 <h3>No friends yet</h3>
                 <p>
+                  {requested().length > 0
+                    ? requested().length === 1
+                      ? 'One request is waiting on an answer. '
+                      : `${requested().length} requests are waiting on an answer. `
+                    : ''}
                   Swap the code above, or open a singer on the Global board and
-                  follow them.
+                  ask them.
                 </p>
                 <button
                   type="button"
@@ -1079,6 +1148,14 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 void loadPage(0)
               }}
             />
+            {/* Requests sit above the board, not inside it: until one is
+                answered the sender is on nobody's board, so there is no row
+                to hang the answer off. */}
+            <FriendRequests
+              requests={incoming()}
+              onAccept={acceptRequest}
+              onDecline={declineRequest}
+            />
           </Show>
           {/* Everything below needs somebody on the board. The podium pads
               itself to three with "—" placeholders, so an empty board used
@@ -1338,25 +1415,15 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 <button
                   class="profile-follow-btn"
                   data-testid="follow-button"
-                  aria-label={
-                    following().includes(selectedUser()?.userId ?? '')
-                      ? 'Unfollow player'
-                      : 'Follow player'
-                  }
-                  title={
-                    following().includes(selectedUser()?.userId ?? '')
-                      ? 'Unfollow player'
-                      : 'Follow player'
-                  }
+                  aria-label={friendButtonLabel(selectedUser()?.userId ?? '')}
+                  title={friendButtonLabel(selectedUser()?.userId ?? '')}
                   onClick={() => {
                     const id = selectedUser()?.userId
                     if (id != null && id !== '') void toggleFollow(id)
                   }}
                 >
                   <CheckCircle />
-                  {following().includes(selectedUser()?.userId ?? '')
-                    ? 'Following'
-                    : 'Follow Player'}
+                  {friendButtonLabel(selectedUser()?.userId ?? '')}
                 </button>
               </div>
             </Show>
