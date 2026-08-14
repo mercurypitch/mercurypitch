@@ -16,16 +16,31 @@ export const JamInviteModal: Component<JamInviteModalProps> = (props) => {
   const [linkCopied, setLinkCopied] = createSignal(false)
   const roomLink = () => `${window.location.origin}/#/jam:${props.roomId}`
 
+  /**
+   * Confirm only what actually happened. Both handlers used to set the copied
+   * flag unconditionally next to a swallowed rejection, so a blocked clipboard
+   * (iOS Safari, any non-secure origin) still flashed "Copied!" — and the
+   * person then pasted whatever was in the buffer before into the chat where
+   * they meant to send the room code.
+   */
+  const copyToClipboard = (text: string, markCopied: (v: boolean) => void) => {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        markCopied(true)
+        setTimeout(() => markCopied(false), 2000)
+      })
+      .catch(() => {
+        markCopied(false)
+      })
+  }
+
   const handleCopyRoomId = () => {
-    navigator.clipboard.writeText(props.roomId).catch(() => {})
-    setRoomCopied(true)
-    setTimeout(() => setRoomCopied(false), 2000)
+    copyToClipboard(props.roomId, setRoomCopied)
   }
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(roomLink()).catch(() => {})
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
+    copyToClipboard(roomLink(), setLinkCopied)
   }
 
   return (
