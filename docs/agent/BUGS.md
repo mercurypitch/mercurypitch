@@ -21,10 +21,13 @@ Confidence is the finding agent's own rating and is orthogonal to status.
 
 ## Fixed on this branch
 
-Eleven defects are fixed here — ten from the hunt, plus one found while
-reviewing those fixes. Seven carry a regression test verified to fail when the
-fix is reverted; for the other four, the reason there is no test is stated
-rather than glossed:
+**19 defects are fixed on this branch** — 18 from the hunt plus one found while
+reviewing those fixes. Every `certain`-confidence candidate has now been read
+against the code; see the verification pass below for the two that are confirmed
+but deliberately left unfixed, and the three whose _suggested fix_ was wrong.
+
+13 of the fixes carry a regression test that was verified to fail when the fix
+is reverted. Where there is no test, the reason is stated rather than glossed:
 
 | Location                                                      | Fix                                                                                   | Test                                                                                                            |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -46,6 +49,67 @@ by running. See TESTING.md §5.3.
 
 The remaining 36 are unfixed. The one that most needs a decision rather than a
 patch is the account takeover in §2.
+
+## Verification pass — what is real, and where the hunt was wrong
+
+Every `certain`-confidence candidate was read against the code. The findings
+themselves held up well: **not one was fabricated**, and the file/line citations
+were accurate throughout. What did not hold up as reliably were the _suggested
+fixes_ and, in two cases, the severity.
+
+That is the useful lesson from this pass. The hunt reasoned locally — correctly
+about the code in front of it, and without checking who else depended on that
+code. Three of its remedies would have introduced a worse defect than the one
+they closed.
+
+### Verified real, and fixed
+
+| Finding                                                             | Note                                                                                                                     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `AppErrorBoundary.tsx:56` network errors show the crash modal       | Exactly as described. `preventDefault()` in the other listener does not stop this one.                                   |
+| `uvr-service.ts:115` the `*Strict` reads are not strict             | All four readers, not just the one cited.                                                                                |
+| `sync-peer.ts:94` dispose during the ICE fetch                      | Same check-then-await-then-act shape as the jam unmute bug.                                                              |
+| `index.ts:218` `where[]` filters as a query oracle                  | Real. Values were already parameterised, so this is disclosure, not injection. Fixed for `privateCols` only — see below. |
+| `chord-detector.ts:200` previous-segment start from the array index | Real, and worse than described: it makes the minimum-duration filter largely inert.                                      |
+| `OfflinePitchCanvas.tsx:61` `forceRedraw` never queues a frame      | Real. The loop only re-arms while playing, so a stopped canvas never repaints.                                           |
+| `HistoryCanvas.tsx:84` waveform double-scaled                       | Real. Arithmetic confirmed: past x=400 of an 800px strip every column reads out of range.                                |
+
+### Verified real, severity corrected downward
+
+**`jam/service.ts:152` — ICE recovery timers survive leaving the room.**
+The hunt implied a restart is attempted on a closed connection. It is not: the
+timer callback re-checks `pc.iceConnectionState === 'disconnected'`, and a closed
+connection reports `'closed'`. What is real is narrower — the timer holds the
+peer connection alive for the rest of the grace window, and stale retry counts
+carry into the next room. Cleared anyway, as hygiene.
+
+### Verified real, but the suggested fix is wrong
+
+These are the ones to be careful with. The defect is genuine; applying the
+proposed remedy as written would break something else.
+
+**`StemMixer.tsx:1724` — the added stem's object URL is never revoked.**
+Leak confirmed. The suggested fix — "revoke as soon as `decodeAudioData`
+resolves" — is **wrong**: the URL is stored on the track and re-fetched later by
+`useStemMixerAudioController.ts:588` (`loadOne(t.url)`) and `:1284`. Revoking
+after the decode would break stem reloading and export. The correct place is
+when the extra stem is removed, or when the mixer tears down. Left unfixed
+because it needs that lifetime traced properly.
+
+**`melody-store.ts:1041` — deleting a melody leaves dangling `melodyId`s.**
+Confirmed: `deleteMelody` filters `playlists[].melodyKeys` and never touches
+`library.sessions`. The suggested fix — drop session items whose `melodyId`
+matches — would break `restoreMelody`, the undo path directly below it: undoing
+the delete would bring the melody back with the session items already gone. The
+`missing: true` variant the hunt offered as an alternative is the right shape.
+Left unfixed because it is a product decision about what a session with a
+deleted melody should look like.
+
+**`index.ts:218` — the `publicCols` half of the query oracle.**
+Only the `privateCols` half is fixed. Rejecting filters on non-public columns
+would also block a user filtering their _own_ rows on a `user`-scoped table,
+where `scopeRead` already restricts the result set and no oracle exists. Closing
+that half needs a policy decision, not a patch.
 
 ## A defect the hunt missed, found by reviewing the fixes
 
@@ -199,54 +263,54 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 46 candidates, ordered by severity. The four above are marked; the rest carry the
 `reported` status defined at the top.
 
-| Severity | Location                                                             | Finding                                                                                                                     | Confidence | Status        |
-| -------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------- |
-| critical | `src/lib/pitch-algorithms/fft-detector.ts:294`                       | realFFT applies the conjugate (wrong-sign) twiddle, producing a mirrored phantom spectrum                                   | certain    | **FIXED**     |
-| critical | `src/stores/uvr-store.ts:967`                                        | Startup prune permanently deletes completed songs when the IndexedDB read merely fails                                      | certain    | **FIXED**     |
-| critical | `workers/db-worker/src/auth.ts:1057`                                 | Anonymous account takeover: the anonymous credential (deviceId) is published as userProfiles.id                             | certain    | **CONFIRMED** |
-| high     | `src/components/AppErrorBoundary.tsx:56`                             | Network-error rejections still trigger the full-screen crash modal — preventDefault() does not stop the second listener     | certain    | reported      |
-| high     | `src/components/HistoryCanvas.tsx:84`                                | HistoryCanvas live waveform is double-scaled — the right half of the strip always draws flat                                | certain    | reported      |
-| high     | `src/components/PitchTestingTab.tsx:674`                             | Lab pitch analysis mixes two sample rates: detectors hardcode 44100 while the AudioContext runs at 48000                    | likely     | reported      |
-| high     | `src/db/services/settings-service.ts:241`                            | Cloud settings sync silently discards local annotations once they exceed the 8 KB push ceiling                              | likely     | reported      |
-| high     | `src/db/services/streak-service.ts:81`                               | Streaks, daily goal and Ascent days key on UTC dates while the rest of the app uses local dates                             | likely     | reported      |
-| high     | `src/db/services/uvr-service.ts:115`                                 | The uvr-service `*Strict` reads are not strict — findAll swallows storage failures and returns []                           | certain    | reported      |
-| high     | `src/features/stem-mixer/useStemMixerCanvasController.ts:197`        | Stem-mixer waveform peak cache is a strong Map keyed by AudioBuffer — every decoded song stays resident                     | certain    | **FIXED**     |
-| high     | `src/lib/jam/jam-song-transfer.ts:238`                               | sendInChunks can wait forever on `bufferedamountlow` after the peer's channel dies, wedging the jam song share              | likely     | reported      |
-| high     | `src/lib/pitch-detector.ts:274`                                      | Frequency-domain fallback converts bin index to Hz with the wrong denominator — every pitch is exactly one octave sharp     | certain    | **FIXED**     |
-| high     | `src/lib/sync/sync-peer.ts:94`                                       | Closing the sync modal mid-connect still opens a WebSocket and a room nothing can ever close                                | certain    | reported      |
-| high     | `src/stores/drive-sync-store.ts:172`                                 | Drive backup finds zero songs after any page reload because `outputs` is never rehydrated                                   | likely     | reported      |
-| high     | `src/stores/jam-store.ts:2113`                                       | Double-tap unmute in a jam room opens two microphone captures                                                               | certain    | **FIXED**     |
-| high     | `src/stores/jam-store.ts:2114`                                       | Leaving a jam room during the unmute await restarts pitch detection and leaks a 20 Hz interval plus a live mic              | likely     | **FIXED**     |
-| high     | `workers/db-worker/src/index.ts:904`                                 | Unilateral follow rows let any authenticated user read any user's private streak and score aggregates                       | likely     | reported      |
-| medium   | `src/components/OfflinePitchCanvas.tsx:61`                           | OfflinePitchCanvas sets forceRedraw but never queues a frame — analysis results and label toggles do not repaint            | certain    | reported      |
-| medium   | `src/components/PitchCanvas.tsx:199`                                 | PitchCanvas starts the AudioEngine with a floating promise, turning a failed AudioContext into an unhandled rejection       | likely     | reported      |
-| medium   | `src/components/PitchCanvas.tsx:2079`                                | PitchCanvas runs a full redraw from a createEffect on top of its own rAF loop — two render paths, double the work per frame | certain    | reported      |
-| medium   | `src/components/StemMixer.tsx:1724`                                  | "Add stem" mints a blob URL for a multi-megabyte WAV that is never revoked                                                  | certain    | reported      |
-| medium   | `src/components/StemMixer.tsx:2281`                                  | Share button's clipboard write has no rejection handler — a blocked clipboard pops the crash modal instead of a toast       | certain    | **FIXED**     |
-| medium   | `src/components/UvrPanel.tsx:153`                                    | Shazam fingerprinting leaks the vocal stem's blob URL on every indexed song                                                 | certain    | **FIXED**     |
-| medium   | `src/components/jam/JamInviteModal.tsx:20`                           | Jam "Copy link" buttons show "Copied!" even when the clipboard write is rejected                                            | certain    | **FIXED**     |
-| medium   | `src/components/panes/WaveformPane.tsx:63`                           | WaveformPane maps absolute window time through the window duration — the waveform collapses once the view scrolls off zero  | likely     | reported      |
-| medium   | `src/db/services/grant-flush.ts:253`                                 | grant-flush's local badge write is not idempotent, so a retried flush duplicates userBadges rows                            | likely     | reported      |
-| medium   | `src/features/stem-mixer/useStemMixerLyricsController.ts:864`        | Lyrics lookup reports a network outage as "no lyrics found"; the abort branch is dead code                                  | likely     | reported      |
-| medium   | `src/lib/chord-detector.ts:200`                                      | detectChords computes the previous segment's start time from the merged-array index instead of its stored time              | certain    | reported      |
-| medium   | `src/lib/hash-router.ts:220`                                         | A malformed percent-escape in the URL hash makes parseHash throw URIError and crash the app                                 | certain    | **FIXED**     |
-| medium   | `src/lib/jam/service.ts:152`                                         | Jam ICE recovery timers survive leaving the room and disposing the service                                                  | certain    | reported      |
-| medium   | `src/lib/uvr-processing-pipeline.ts:162`                             | Processing pipeline mutates the live session cache array in place, bypassing copy-on-write                                  | likely     | reported      |
-| medium   | `src/stores/melody-store.ts:1041`                                    | Deleting a melody leaves dangling melodyId references in every session that used it                                         | certain    | reported      |
-| medium   | `src/workers/spectral.worker.ts:40`                                  | Spectral worker reads only STFT frame 0, which is half zero-padding — timbre is measured on a decaying half-window          | likely     | reported      |
-| medium   | `workers/db-worker/src/billing.ts:925`                               | Stripe checkout grants credits without checking payment_status                                                              | possible   | reported      |
-| medium   | `workers/db-worker/src/index.ts:218`                                 | where[] filters accept any column, turning masked/private columns into a query oracle                                       | certain    | reported      |
-| low      | `src/components/PitchCanvas.tsx:989`                                 | Target-pitch tolerance band on the practice canvas is 0.1 cents wide, so it renders as zero pixels                          | likely     | reported      |
-| low      | `src/components/StemMixerTransport.tsx:603`                          | Stem-mixer transport seek bar is a click-only div with no role, tabindex or keyboard handler                                | certain    | reported      |
-| low      | `src/features/editor/useEditorController.ts:35`                      | Editor share handler leaves a clipboard rejection unhandled and gives no failure feedback                                   | certain    | reported      |
-| low      | `src/features/stem-mixer/useStemMixerCanvasController.ts:151`        | setCanvasRef's teardown branch is unreachable — canvases are never unobserved and their listeners never removed             | likely     | reported      |
-| low      | `src/features/stem-mixer/useStemMixerPitchAnalysisController.ts:242` | parseInt(noteName.slice(-1)) \|\| 4 mangles octave 0, negative octaves and octave 10                                        | likely     | reported      |
-| low      | `src/lib/lyrics-service.ts:280`                                      | Timeout timer and abort listener leak whenever the lyrics fetch rejects                                                     | likely     | reported      |
-| low      | `src/lib/vocal-analyzer.ts:320`                                      | computeHNR returns -Infinity for hnrDb when no harmonic bin carries energy                                                  | possible   | reported      |
-| low      | `workers/db-worker/src/auth.ts:1361`                                 | verifyState decodes the OAuth state signature outside any try/catch — malformed state returns 500, not 400                  | certain    | reported      |
-| low      | `workers/db-worker/src/auth.ts:2093`                                 | Device-link poll token hash compared with !== (non-constant-time)                                                           | possible   | reported      |
-| low      | `workers/db-worker/src/index.ts:2133`                                | decodeURIComponent on the path segment throws on malformed percent-encoding, yielding 500                                   | certain    | reported      |
-| low      | `workers/db-worker/src/index.ts:236`                                 | Unvalidated offset query parameter is bound to SQL as NaN                                                                   | possible   | reported      |
+| Severity | Location                                                             | Finding                                                                                                                     | Confidence | Status                                     |
+| -------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------ |
+| critical | `src/lib/pitch-algorithms/fft-detector.ts:294`                       | realFFT applies the conjugate (wrong-sign) twiddle, producing a mirrored phantom spectrum                                   | certain    | **FIXED**                                  |
+| critical | `src/stores/uvr-store.ts:967`                                        | Startup prune permanently deletes completed songs when the IndexedDB read merely fails                                      | certain    | **FIXED**                                  |
+| critical | `workers/db-worker/src/auth.ts:1057`                                 | Anonymous account takeover: the anonymous credential (deviceId) is published as userProfiles.id                             | certain    | **CONFIRMED**                              |
+| high     | `src/components/AppErrorBoundary.tsx:56`                             | Network-error rejections still trigger the full-screen crash modal — preventDefault() does not stop the second listener     | certain    | **FIXED**                                  |
+| high     | `src/components/HistoryCanvas.tsx:84`                                | HistoryCanvas live waveform is double-scaled — the right half of the strip always draws flat                                | certain    | **FIXED**                                  |
+| high     | `src/components/PitchTestingTab.tsx:674`                             | Lab pitch analysis mixes two sample rates: detectors hardcode 44100 while the AudioContext runs at 48000                    | likely     | reported                                   |
+| high     | `src/db/services/settings-service.ts:241`                            | Cloud settings sync silently discards local annotations once they exceed the 8 KB push ceiling                              | likely     | reported                                   |
+| high     | `src/db/services/streak-service.ts:81`                               | Streaks, daily goal and Ascent days key on UTC dates while the rest of the app uses local dates                             | likely     | reported                                   |
+| high     | `src/db/services/uvr-service.ts:115`                                 | The uvr-service `*Strict` reads are not strict — findAll swallows storage failures and returns []                           | certain    | **FIXED**                                  |
+| high     | `src/features/stem-mixer/useStemMixerCanvasController.ts:197`        | Stem-mixer waveform peak cache is a strong Map keyed by AudioBuffer — every decoded song stays resident                     | certain    | **FIXED**                                  |
+| high     | `src/lib/jam/jam-song-transfer.ts:238`                               | sendInChunks can wait forever on `bufferedamountlow` after the peer's channel dies, wedging the jam song share              | likely     | reported                                   |
+| high     | `src/lib/pitch-detector.ts:274`                                      | Frequency-domain fallback converts bin index to Hz with the wrong denominator — every pitch is exactly one octave sharp     | certain    | **FIXED**                                  |
+| high     | `src/lib/sync/sync-peer.ts:94`                                       | Closing the sync modal mid-connect still opens a WebSocket and a room nothing can ever close                                | certain    | **FIXED**                                  |
+| high     | `src/stores/drive-sync-store.ts:172`                                 | Drive backup finds zero songs after any page reload because `outputs` is never rehydrated                                   | likely     | reported                                   |
+| high     | `src/stores/jam-store.ts:2113`                                       | Double-tap unmute in a jam room opens two microphone captures                                                               | certain    | **FIXED**                                  |
+| high     | `src/stores/jam-store.ts:2114`                                       | Leaving a jam room during the unmute await restarts pitch detection and leaks a 20 Hz interval plus a live mic              | likely     | **FIXED**                                  |
+| high     | `workers/db-worker/src/index.ts:904`                                 | Unilateral follow rows let any authenticated user read any user's private streak and score aggregates                       | likely     | reported                                   |
+| medium   | `src/components/OfflinePitchCanvas.tsx:61`                           | OfflinePitchCanvas sets forceRedraw but never queues a frame — analysis results and label toggles do not repaint            | certain    | **FIXED**                                  |
+| medium   | `src/components/PitchCanvas.tsx:199`                                 | PitchCanvas starts the AudioEngine with a floating promise, turning a failed AudioContext into an unhandled rejection       | likely     | reported                                   |
+| medium   | `src/components/PitchCanvas.tsx:2079`                                | PitchCanvas runs a full redraw from a createEffect on top of its own rAF loop — two render paths, double the work per frame | certain    | reported                                   |
+| medium   | `src/components/StemMixer.tsx:1724`                                  | "Add stem" mints a blob URL for a multi-megabyte WAV that is never revoked                                                  | certain    | **CONFIRMED** (fix needs care — see above) |
+| medium   | `src/components/StemMixer.tsx:2281`                                  | Share button's clipboard write has no rejection handler — a blocked clipboard pops the crash modal instead of a toast       | certain    | **FIXED**                                  |
+| medium   | `src/components/UvrPanel.tsx:153`                                    | Shazam fingerprinting leaks the vocal stem's blob URL on every indexed song                                                 | certain    | **FIXED**                                  |
+| medium   | `src/components/jam/JamInviteModal.tsx:20`                           | Jam "Copy link" buttons show "Copied!" even when the clipboard write is rejected                                            | certain    | **FIXED**                                  |
+| medium   | `src/components/panes/WaveformPane.tsx:63`                           | WaveformPane maps absolute window time through the window duration — the waveform collapses once the view scrolls off zero  | likely     | reported                                   |
+| medium   | `src/db/services/grant-flush.ts:253`                                 | grant-flush's local badge write is not idempotent, so a retried flush duplicates userBadges rows                            | likely     | reported                                   |
+| medium   | `src/features/stem-mixer/useStemMixerLyricsController.ts:864`        | Lyrics lookup reports a network outage as "no lyrics found"; the abort branch is dead code                                  | likely     | reported                                   |
+| medium   | `src/lib/chord-detector.ts:200`                                      | detectChords computes the previous segment's start time from the merged-array index instead of its stored time              | certain    | **FIXED**                                  |
+| medium   | `src/lib/hash-router.ts:220`                                         | A malformed percent-escape in the URL hash makes parseHash throw URIError and crash the app                                 | certain    | **FIXED**                                  |
+| medium   | `src/lib/jam/service.ts:152`                                         | Jam ICE recovery timers survive leaving the room and disposing the service                                                  | certain    | **FIXED**                                  |
+| medium   | `src/lib/uvr-processing-pipeline.ts:162`                             | Processing pipeline mutates the live session cache array in place, bypassing copy-on-write                                  | likely     | reported                                   |
+| medium   | `src/stores/melody-store.ts:1041`                                    | Deleting a melody leaves dangling melodyId references in every session that used it                                         | certain    | **CONFIRMED** (fix needs care — see above) |
+| medium   | `src/workers/spectral.worker.ts:40`                                  | Spectral worker reads only STFT frame 0, which is half zero-padding — timbre is measured on a decaying half-window          | likely     | reported                                   |
+| medium   | `workers/db-worker/src/billing.ts:925`                               | Stripe checkout grants credits without checking payment_status                                                              | possible   | reported                                   |
+| medium   | `workers/db-worker/src/index.ts:218`                                 | where[] filters accept any column, turning masked/private columns into a query oracle                                       | certain    | **FIXED**                                  |
+| low      | `src/components/PitchCanvas.tsx:989`                                 | Target-pitch tolerance band on the practice canvas is 0.1 cents wide, so it renders as zero pixels                          | likely     | reported                                   |
+| low      | `src/components/StemMixerTransport.tsx:603`                          | Stem-mixer transport seek bar is a click-only div with no role, tabindex or keyboard handler                                | certain    | reported                                   |
+| low      | `src/features/editor/useEditorController.ts:35`                      | Editor share handler leaves a clipboard rejection unhandled and gives no failure feedback                                   | certain    | reported                                   |
+| low      | `src/features/stem-mixer/useStemMixerCanvasController.ts:151`        | setCanvasRef's teardown branch is unreachable — canvases are never unobserved and their listeners never removed             | likely     | reported                                   |
+| low      | `src/features/stem-mixer/useStemMixerPitchAnalysisController.ts:242` | parseInt(noteName.slice(-1)) \|\| 4 mangles octave 0, negative octaves and octave 10                                        | likely     | reported                                   |
+| low      | `src/lib/lyrics-service.ts:280`                                      | Timeout timer and abort listener leak whenever the lyrics fetch rejects                                                     | likely     | reported                                   |
+| low      | `src/lib/vocal-analyzer.ts:320`                                      | computeHNR returns -Infinity for hnrDb when no harmonic bin carries energy                                                  | possible   | reported                                   |
+| low      | `workers/db-worker/src/auth.ts:1361`                                 | verifyState decodes the OAuth state signature outside any try/catch — malformed state returns 500, not 400                  | certain    | reported                                   |
+| low      | `workers/db-worker/src/auth.ts:2093`                                 | Device-link poll token hash compared with !== (non-constant-time)                                                           | possible   | reported                                   |
+| low      | `workers/db-worker/src/index.ts:2133`                                | decodeURIComponent on the path segment throws on malformed percent-encoding, yielding 500                                   | certain    | reported                                   |
+| low      | `workers/db-worker/src/index.ts:236`                                 | Unvalidated offset query parameter is bound to SQL as NaN                                                                   | possible   | reported                                   |
 
 ---
 
@@ -295,7 +359,7 @@ The leaderboard (index.ts:988 `userId: r.userId`) and `handleFriendRedeem` also 
 
 ### [high] Network-error rejections still trigger the full-screen crash modal — preventDefault() does not stop the second listener
 
-`src/components/AppErrorBoundary.tsx:56` — confidence: certain — status: reported
+`src/components/AppErrorBoundary.tsx:56` — confidence: certain — status: FIXED
 
 Two independent `unhandledrejection` listeners are installed on `window`. `initGlobalErrorHandlers()` (src/index.tsx:35, before the app mounts) registers one that deliberately swallows offline/backend-unreachable rejections:
 
@@ -321,7 +385,7 @@ window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
 
 ### [high] HistoryCanvas live waveform is double-scaled — the right half of the strip always draws flat
 
-`src/components/HistoryCanvas.tsx:84` — confidence: certain — status: reported
+`src/components/HistoryCanvas.tsx:84` — confidence: certain — status: FIXED
 
 The per-column sample index is scaled twice by `step`. `step = floor(N / w)` already converts pixels to samples, but the index expression multiplies `x * step` AND then by `N / w` again, so the buffer is consumed `step` times too fast. Data runs out at `x = w / step`; every column past that has `idx >= waveform.length`, so `count` stays 0, `avg` is 0, and `ctx.lineTo(x, centerY)` paints a dead flat line. The analyser buffer is 2048 samples (`bufferSize = 2048` in src/lib/audio-engine.ts:133), so on any container narrower than ~1024 CSS px — i.e. every phone, tablet, and most desktop practice-panel widths — `step >= 2` and at least half the live waveform strip is permanently flat. The correct index is `x * step + j` (or `floor(x * N / w) + j`).
 
@@ -376,7 +440,7 @@ Because the UTC day boundary lands mid-afternoon or mid-evening in local terms o
 
 ### [high] The uvr-service `*Strict` reads are not strict — findAll swallows storage failures and returns []
 
-`src/db/services/uvr-service.ts:115` — confidence: certain — status: reported
+`src/db/services/uvr-service.ts:115` — confidence: certain — status: FIXED
 
 Every `*Strict` reader in uvr-service is documented as preserving storage failures for archive/data-integrity work, but each one calls `repo.findAll(...)` without `throwOnError: true`. `DexieRepository.findAll` catches the error, `console.warn`s, and returns `[]` (dexie-adapter.ts:209-215). So the strict readers report "absent", not "unreadable":
 
@@ -424,7 +488,7 @@ Two consequences. (1) `listSessionExportStems` (session-export-service.ts:139) b
 
 ### [high] Closing the sync modal mid-connect still opens a WebSocket and a room nothing can ever close
 
-`src/lib/sync/sync-peer.ts:94` — confidence: certain — status: reported
+`src/lib/sync/sync-peer.ts:94` — confidence: certain — status: FIXED
 
 `createRoom`/`joinRoom` check `disposed` before awaiting `getIceServers()` and never re-check afterwards, so `signaling.createRoom()` / `signaling.connect()` run even when the peer was disposed during the await. `getIceServers` (src/lib/jam/ice-servers.ts:26) allows a 4000 ms fetch timeout, so the window is seconds wide. `SyncDevicesModal` calls `startSyncReceive()` from `onMount` (src/components/sync/SyncDevicesModal.tsx:111) and `stopSync()` from both `close()` (line 98) and `onCleanup` (line 108); `stopSync` → `resetSync` (src/stores/sync-store.ts:726-755) calls `peer.leaveRoom()`, `peer.dispose()` and then `peer = null`, dropping every reference to the client. The resumed `createRoom` then opens a fresh WebSocket on that orphaned signaling client — nothing in the store can reach it to disconnect it, and `scheduleReconnect` will re-arm it on close. `startSyncReceive` also continues past its own await and writes `setSyncRoomId(roomId)` / `setSyncState('waiting')` / `armPeerArrivalDeadline(...)` after the session was already reset.
 
@@ -484,7 +548,7 @@ Combined with the public `userProfiles` id listing, this makes every user's prac
 
 ### [medium] OfflinePitchCanvas sets forceRedraw but never queues a frame — analysis results and label toggles do not repaint
 
-`src/components/OfflinePitchCanvas.tsx:61` — confidence: certain — status: reported
+`src/components/OfflinePitchCanvas.tsx:61` — confidence: certain — status: FIXED
 
 This effect tracks `props.waveform`, `props.analysisResults`, `props.segmentedNotes`, `props.showNoteLabels`, `props.showLyricLabels` and `props.alignedWords` and sets the `forceRedraw` flag — but it never calls `redraw.queue()`. The only three places that schedule a frame are line 323 (a pointer handler), line 392 (`isPlaying()` flipping) and line 403 (an effect tracking only `zoom()`, `scrollX()`, `hiddenAlgos()`). None of them is triggered by the props above. So while playback is stopped, changing any of these inputs sets a flag that nobody acts on. Compare src/features/stem-mixer/useStemMixerCanvasController.ts:1221-1239, which tracks exactly this class of state and ends with `queueCanvasRedraw()` — the fix the offline canvas is missing.
 
@@ -514,7 +578,7 @@ This effect tracks `props.waveform`, `props.analysisResults`, `props.segmentedNo
 
 ### [medium] "Add stem" mints a blob URL for a multi-megabyte WAV that is never revoked
 
-`src/components/StemMixer.tsx:1724` — confidence: certain — status: reported
+`src/components/StemMixer.tsx:1724` — confidence: certain — status: CONFIRMED, unfixed
 
 `getStemBlobUrl` (src/db/services/uvr-service.ts:168) builds a `Blob` from the stored stem bytes and returns `URL.createObjectURL(blob)`. `handleAddStem` passes that URL to `audio.addExtraStem`, which fetches + decodes it and then stores the raw URL on the track (`url: input.url`, useStemMixerAudioController.ts:679). Grepping `revokeObjectURL` in useStemMixerAudioController.ts finds exactly one occurrence — line 1304, in the unrelated download path. Nothing revokes the extras' URLs when a stem is removed, when a new song is loaded, or when StemMixer unmounts (the `onCleanup` at StemMixer.tsx:2010-2020 does not touch them). A blob URL pins its data for the life of the document, which the codebase already documents in src/stores/jam-store.ts:565-568 and mitigates with the `openUvrStemLease` helper in src/lib/uvr-stem-lease.ts — a mechanism this path bypasses entirely.
 
@@ -607,7 +671,7 @@ So `await searchLyricsMulti(title, signal)` returns `[]` and `await searchLyrics
 
 ### [medium] detectChords computes the previous segment's start time from the merged-array index instead of its stored time
 
-`src/lib/chord-detector.ts:200` — confidence: certain — status: reported
+`src/lib/chord-detector.ts:200` — confidence: certain — status: FIXED
 
 Inside the merge loop, `time` is the current frame's time (`i * frameTime`, where `i` indexes the smoothed FRAME array), but `lastTime` is computed as `(merged.length - 1) * frameTime` — using the count of merged chord SEGMENTS as if it were a frame index. The previous segment's real start is `last.time`, which is already stored. `segmentDuration = time - lastTime` is therefore meaningless: with `merged.length` typically in the single digits and `frameTime = HOP_SIZE / sampleRate ≈ 0.0116 s` (SpectralWorkbench.tsx:131), `lastTime` is essentially 0, so `segmentDuration ≈ time` and grows monotonically — after ~22 frames every candidate passes the `>= minDuration` test and the min-duration filter stops filtering entirely. The else branch then does `last.time = time`, which moves the previous segment's START forward rather than extending its end, corrupting the chord timeline.
 
@@ -632,7 +696,7 @@ The regexes deliberately capture greedily (`([^&]+)`, `(.+)`), so any hash of th
 
 ### [medium] Jam ICE recovery timers survive leaving the room and disposing the service
 
-`src/lib/jam/service.ts:152` — confidence: certain — status: reported
+`src/lib/jam/service.ts:152` — confidence: certain — status: FIXED
 
 `iceRecoveryTimers` (declared line 63) is populated with a `DISCONNECTED_GRACE_MS` (4 s) `setTimeout` per peer in `oniceconnectionstatechange` (lines 554-565), and each timer's closure captures the `RTCPeerConnection`. `clearIceRecovery` is only called from the 'connected' branch, from `recoverIce`, and when a new timer replaces an old one. Neither `leaveRoom()` (152-165), nor `dispose()` (918-930), nor the `onPeerLeft` handler (103-116) clears them, and `iceRetries` is never cleared either. Every closed peer connection that was in the 'disconnected' state at teardown is therefore pinned in memory for the grace window by a timer that fires against a corpse, and in a SPA that never reloads the per-peer `iceRetries` entries accumulate for every peer ever seen across every room.
 
@@ -656,7 +720,7 @@ The second half is worse than the aliasing: `persistAllSessionsToDb(sessions)` w
 
 ### [medium] Deleting a melody leaves dangling melodyId references in every session that used it
 
-`src/stores/melody-store.ts:1041` — confidence: certain — status: reported
+`src/stores/melody-store.ts:1041` — confidence: certain — status: CONFIRMED, unfixed
 
 `deleteMelody` removes the melody from `library.melodies` and carefully filters `melodyKeys` out of every playlist — but it never touches `library.sessions`, whose items carry `melodyId` references to exactly the same melodies (`createMelodyItem`, session-store.ts, and the seeded default session are all built this way).
 
@@ -692,7 +756,7 @@ The reconciliation sweep (billing.ts:reconcileBilling) has the same gap: it list
 
 ### [medium] where[] filters accept any column, turning masked/private columns into a query oracle
 
-`workers/db-worker/src/index.ts:218` — confidence: certain — status: reported
+`workers/db-worker/src/index.ts:218` — confidence: certain — status: FIXED
 
 `parseListQuery` accepts `where[<col>]` for any identifier matching `/^[A-Za-z_][A-Za-z0-9_]*$/` and `handleList` turns each into a bound `"col" = ?` predicate. There is no allowlist tying filterable columns to the table's readable columns. Confidentiality is enforced only on the OUTPUT, by `maskPublicRow` (tables.ts:113), which strips everything outside `publicCols` (or removes `privateCols`) AFTER the WHERE clause has already selected rows.
 
