@@ -204,20 +204,31 @@ describe('the door to another device', () => {
   })
 
   it('REQ-SKL-011: a scanned link opens the door and hands over its code', async () => {
-    // karaoke.html has no hash router; the QR shown by THIS page's
-    // receive screen links back to this page, so the rail itself has to
-    // catch #/sync:CODE — otherwise the scan lands on the stage with the
-    // code silently ignored.
-    window.location.hash = '#/sync:ABCD2345'
-    try {
-      const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+    // The PAGE catches and consumes #/sync:CODE (the rail does not mount
+    // at all while collapsed) and hands the code down exactly once; the
+    // rail's half of the contract is to take it, stash it for the modal
+    // and open the door.
+    const take = vi.fn(() => 'ABCD2345')
+    const { container } = render(() => (
+      <KaraokeRailPanels {...railProps} takeScannedSyncCode={take} />
+    ))
 
-      await waitFor(() =>
-        expect(container.querySelector('[role="dialog"]')).not.toBeNull(),
-      )
-      expect(syncStore.setSyncCodeToJoin).toHaveBeenCalledWith('ABCD2345')
-    } finally {
-      window.location.hash = ''
-    }
+    await waitFor(() =>
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull(),
+    )
+    expect(take).toHaveBeenCalledTimes(1)
+    expect(syncStore.setSyncCodeToJoin).toHaveBeenCalledWith('ABCD2345')
+  })
+
+  it('REQ-SKL-011: leaves the door shut when nothing was scanned', async () => {
+    syncStore.setSyncCodeToJoin.mockClear()
+    const { container } = render(() => (
+      <KaraokeRailPanels {...railProps} takeScannedSyncCode={() => null} />
+    ))
+
+    // Give any stray dynamic import a beat to land before asserting.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(syncStore.setSyncCodeToJoin).not.toHaveBeenCalled()
   })
 })

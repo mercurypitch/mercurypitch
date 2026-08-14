@@ -58,19 +58,30 @@ paint never pays for it. Verified by `REQ-SKL-009` in
 
 ### REQ-SKL-010 — The sync modal must not carry the app shell
 
-The sync modal's module graph shall not import `@/stores/app-store`. **IF**
-it did, **THEN** opening the sync door on the standalone Karaoke Night page
-would pull the app ENTRY chunk in, whose evaluation renders the entire app
-into that page's `#root` — the app's tab bar stacked under the karaoke
-stage, which is how it shipped (found on a real phone, 2026-08-14; the
-group list comes from `uvr-store`, where it is defined, and app-store only
-re-exports it). Verified by "never reaches for the app shell" in
-`SyncDevicesModal.test.tsx`.
+The sync modal's import closure shall never reach the app ENTRY chunk.
+**IF** it does, **THEN** opening the sync door on the standalone Karaoke
+Night page executes that entry, whose evaluation renders the entire app
+into the page's `#root` — the app's tab bar stacked under the karaoke
+stage, which is how it shipped (found on a real phone, 2026-08-14; on
+that build the entry residents in the modal's closure were `sync-store`
+and `QrCode`, since re-colored by importing the group list from
+`uvr-store` where it is defined and pinning `QrCode` its own chunk).
+The source-level tripwire — the modal must not import the app shell's
+own stores — is "never reaches for the app shell" in
+`SyncDevicesModal.test.tsx`; the chunk graph itself is the truth, so a
+new modal import of anything app-shaped deserves a build and a look at
+what the modal chunk pulls in.
 
 ### REQ-SKL-011 — The stage page catches its own scanned link
 
 **WHEN** the Karaoke Night page opens with `#/sync:CODE` in the URL — the QR
 its own receive screen shows links back to this page, and the page has no
-hash router — the system shall stash the code and open the sync door itself,
-so the scan joins unprompted (the studio half is REQ-SYNC-026). Verified by
-`REQ-SKL-011` in `KaraokeRailPanels.test.tsx`.
+hash router — the PAGE shall parse the link, CONSUME it from the URL, show
+the rail even when collapsed (the door lives there, and collapsed is a
+persisted preference), and hand the code to the rail exactly once; the rail
+stashes it and opens the sync door, so the scan joins unprompted (the
+studio half is REQ-SYNC-026). **IF** the hash survived, **THEN** every
+reload, tab restore, or rail collapse/expand would silently re-join the
+scanned session. Verified by `takeScannedSyncLink` tests in
+`karaoke-night-link.test.ts` and `REQ-SKL-011` in
+`KaraokeRailPanels.test.tsx`.

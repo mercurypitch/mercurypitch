@@ -2,6 +2,8 @@
 // tiny pure leaf so both studio components and the night page's runtime can
 // share the deep-link format.
 
+import { parseSyncLinkHash } from '@/lib/room-code'
+
 export const KARAOKE_NIGHT_PATH = '/karaoke-night'
 
 /** Deep-link that opens Karaoke Night with this playlist armed (the page
@@ -62,6 +64,31 @@ export function parseKaraokeNightLaunch(
     startAtSec: Number.isFinite(t) && t >= 0 ? t : null,
     autoplay: autoplayRaw === '1' || autoplayRaw === 'true',
   }
+}
+
+/**
+ * Catch a scanned `#/sync:CODE` link at page boot: parse it, CONSUME it,
+ * and hand the code back — or null when the hash is no such link.
+ *
+ * Consuming (rewriting the URL without the hash) is the load-bearing
+ * half: the page has no hash router to do it, and a hash that survives
+ * means every reload, tab restore, or rail collapse/expand would re-join
+ * a session the person already finished — the same one-shot contract the
+ * app side gets from its router rewriting to `#/karaoke` after dispatch.
+ */
+export function takeScannedSyncLink(): string | null {
+  const scanned = parseSyncLinkHash(window.location.hash)
+  if (scanned === null) return null
+  try {
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${window.location.search}`,
+    )
+  } catch {
+    /* history unavailable — worst case the hash survives a reload */
+  }
+  return scanned
 }
 
 /** Deep-link from Karaoke Night back to the main studio app for a loaded session. */
