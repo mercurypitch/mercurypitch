@@ -149,8 +149,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // fingerprinted, which is the second of work per song this costs.
     if (!karaokeAutoIndexShazam()) return
     setFingerprintingSession(sessionId)
+    // getStemBlobUrl mints an object URL, which pins the whole vocal WAV until
+    // it is revoked. This runs on every completed separation, so leaving it
+    // unrevoked held a full-length stem per indexed song for the life of the
+    // tab. Tracked here and released in the finally below, on every exit path.
+    let vocalUrl: string | null = null
     try {
-      const vocalUrl = await getStemBlobUrl(sessionId, 'vocal')
+      vocalUrl = await getStemBlobUrl(sessionId, 'vocal')
       if (vocalUrl === null) {
         setFingerprintingSession('')
         return
@@ -180,6 +185,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     } catch (err) {
       console.warn('[shazam] stem fingerprint extraction failed:', err)
     } finally {
+      if (vocalUrl !== null) URL.revokeObjectURL(vocalUrl)
       setFingerprintingSession('')
     }
   }

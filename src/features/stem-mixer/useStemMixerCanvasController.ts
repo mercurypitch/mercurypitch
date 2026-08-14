@@ -194,7 +194,13 @@ export const useStemMixerCanvasController = (
 
   // ── Drawing helpers ──────────────────────────────────────────
 
-  const peakCache = new Map<AudioBuffer, WaveformPeakCache>()
+  // WeakMap, not Map: this is only ever keyed and read by buffer identity, so
+  // nothing is lost by letting entries go — and a strong Map pinned every
+  // AudioBuffer the mixer ever decoded for the life of the controller. A
+  // 4-minute 44.1 kHz stereo buffer is roughly 42 MB, and a session that plays
+  // several songs without a reload decodes 2-4 stems each. Matches
+  // liveWaveformData and liveWaveformGain immediately below.
+  const peakCache = new WeakMap<AudioBuffer, WaveformPeakCache>()
   const liveWaveformData = new WeakMap<AnalyserNode, Uint8Array<ArrayBuffer>>()
   const liveWaveformGain = new WeakMap<AnalyserNode, number>()
 
