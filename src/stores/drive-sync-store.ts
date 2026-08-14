@@ -24,9 +24,10 @@
 
 import { createSignal } from 'solid-js'
 import { currentAccountId, disconnectDrive, fetchDriveAccessToken, fetchDriveStatus, startDriveConnect, } from '@/db/services/auth-service'
-import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
+import { buildPortableBundle, BundleSourceError, importPortableBundle, } from '@/db/services/portable-bundle-service'
 import type { DriveClient, DriveSongFile } from '@/lib/drive/drive-client'
 import { createDriveClient, DriveAuthError, SONG_FILE_SUFFIX, } from '@/lib/drive/drive-client'
+import { platform } from '@/lib/platform'
 import type { EncodeAbort } from '@/lib/portable/portable-audio'
 import type { PortablePartInfo } from '@/lib/portable/portable-bundle'
 import type { ParsedContainerHeader } from '@/lib/portable/portable-container'
@@ -70,6 +71,12 @@ export interface DriveJob {
   failed: number
 }
 
+/** One song a job could not move, and the reason a person can act on. */
+export interface DriveFailure {
+  title: string
+  reason: string
+}
+
 const [driveState, setDriveState] =
   createSignal<DriveConnectionState>('unknown')
 const [driveEmail, setDriveEmail] = createSignal<string | null>(null)
@@ -77,8 +84,21 @@ const [driveError, setDriveError] = createSignal<string | null>(null)
 const [driveScan, setDriveScan] = createSignal<DriveScan | null>(null)
 const [driveJob, setDriveJob] = createSignal<DriveJob | null>(null)
 const [driveBusy, setDriveBusy] = createSignal(false)
+// Survives the job that filled it — the whole point is reading it after.
+const [driveJobFailures, setDriveJobFailures] = createSignal<DriveFailure[]>([])
+// The MercuryPitch folder, once resolved — what "Open in Drive" links to.
+const [driveFolderId, setDriveFolderId] = createSignal<string | null>(null)
 
-export { driveBusy, driveEmail, driveError, driveJob, driveScan, driveState }
+export {
+  driveBusy,
+  driveEmail,
+  driveError,
+  driveFolderId,
+  driveJob,
+  driveJobFailures,
+  driveScan,
+  driveState,
+}
 
 /**
  * The current access token and when it stops being usable.
@@ -123,7 +143,39 @@ function forgetIfAccountChanged(): void {
   setDriveScan(null)
   setDriveError(null)
   setDriveJob(null)
+  setDriveJobFailures([])
+  setDriveFolderId(null)
   jobAbort.aborted = true
+}
+
+// ── The folder, remembered by id ─────────────────────────────────────
+// The id survives what the name cannot: a rename or move in Drive. A
+// name-only lookup after a rename finds nothing, quietly creates a
+// second "MercuryPitch" folder, and the next scan offers the whole
+// library for re-upload. Keyed per account so two people sharing a
+// browser cannot inherit each other's folder.
+
+const FOLDER_ID_KEY_PREFIX = 'pitchperfect_drive_folder:'
+
+function folderKey(): string {
+  return `${FOLDER_ID_KEY_PREFIX}${ownerAccountId ?? 'anonymous'}`
+}
+
+async function resolveFolder(drive: DriveClient): Promise<string> {
+  let remembered: string | null = null
+  try {
+    remembered = localStorage.getItem(folderKey())
+  } catch {
+    /* storage unavailable — the name lookup still works */
+  }
+  const id = await drive.ensureFolder(remembered)
+  try {
+    localStorage.setItem(folderKey(), id)
+  } catch {
+    /* storage unavailable */
+  }
+  setDriveFolderId(id)
+  return id
 }
 
 /**
@@ -196,6 +248,26 @@ function describe(error: unknown): string {
   if (error instanceof DriveAuthError) return error.message
   return error instanceof Error ? error.message : String(error)
 }
+
+/** One line a person can act on, from whatever a failed song threw. */
+function describeSongFailure(error: unknown): string {
+  if (error instanceof BundleSourceError) {
+    return 'A stem could not be read on this device.'
+  }
+  if (error instanceof TypeError) {
+    // fetch throws TypeError for network-level failure — the one case
+    // where "try again" is genuinely the whole answer.
+    return 'The connection dropped. It will be offered again on the next scan.'
+  }
+  if (error instanceof Error && error.name === 'StemEncodeUnsupportedError') {
+    return 'This browser cannot re-encode audio for backup.'
+  }
+  return describe(error)
+}
+
+/** How many times one song's upload is attempted before giving up. */
+const UPLOAD_ATTEMPTS = 3
+const UPLOAD_RETRY_DELAY_MS = 1500
 
 /**
  * Turn a thrown error into the state it implies.
@@ -291,6 +363,13 @@ export async function disconnectDriveSync(): Promise<void> {
     lastTokenFailure = null
     setDriveScan(null)
     setDriveJob(null)
+    setDriveJobFailures([])
+    setDriveFolderId(null)
+    try {
+      localStorage.removeItem(folderKey())
+    } catch {
+      /* storage unavailable */
+    }
     setDriveState('disconnected')
     setDriveEmail(null)
   } finally {
@@ -317,7 +396,7 @@ export async function scanDrive(): Promise<DriveScan | null> {
     // as having nothing to back up.
     await whenSessionStoreReady()
     const drive = driveClient()
-    const folderId = await drive.ensureFolder()
+    const folderId = await resolveFolder(drive)
     const remote = await drive.listSongs(folderId)
     const local = localSongs()
 
@@ -364,6 +443,18 @@ export function stopDriveJob(): void {
 function startJob(kind: DriveJob['kind'], total: number): void {
   jobAbort = { aborted: false }
   setDriveJob({ kind, title: '', done: 0, total, ratio: 0, failed: 0 })
+  setDriveJobFailures([])
+  // The screen going to sleep is the number-one way a phone backup dies:
+  // the OS freezes the page and the job stalls where it stood. Held for
+  // the job, released with it. (Best effort — the browser refuses the
+  // lock when the page is hidden or the battery is low, and the job
+  // still works without it.)
+  void platform.keepAwake.enable()
+}
+
+function endJob(): void {
+  setDriveJob(null)
+  void platform.keepAwake.disable()
 }
 
 function advanceJob(patch: Partial<DriveJob>): void {
@@ -392,7 +483,7 @@ export async function backUpToDrive(): Promise<void> {
   let failed = 0
 
   try {
-    const folderId = await drive.ensureFolder()
+    const folderId = await resolveFolder(drive)
     for (const song of queue) {
       if (jobAbort.aborted) break
       advanceJob({ title: song.title, ratio: 0 })
@@ -415,32 +506,74 @@ export async function backUpToDrive(): Promise<void> {
         })
         if (jobAbort.aborted) break
         const container = buildContainerBlob(bundle)
-        await drive.uploadSong(
-          folderId,
-          container,
-          {
-            title: bundle.manifest.song.title,
-            properties: {
-              fileHash: bundle.manifest.song.fileHash,
-              quality: bundle.manifest.song.quality,
-              ...(bundle.manifest.song.durationSec !== undefined
-                ? { durationSec: bundle.manifest.song.durationSec }
-                : {}),
-            },
-          },
-          {
-            signal: jobAbort,
-            onProgress: (sent, total) =>
-              advanceJob({
-                ratio: 0.9 + (total === 0 ? 0 : sent / total) * 0.1,
-              }),
-          },
-        )
+        // Two more tries for transient trouble: a router blip must not
+        // cost a song that took minutes to pack. Auth failures and Stop
+        // pass straight through — retrying those helps nobody.
+        let uploaded = false
+        let lastError: unknown = null
+        for (
+          let attempt = 1;
+          attempt <= UPLOAD_ATTEMPTS && !uploaded;
+          attempt += 1
+        ) {
+          if (attempt > 1) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, UPLOAD_RETRY_DELAY_MS * (attempt - 1)),
+            )
+            if (jobAbort.aborted) break
+          }
+          try {
+            await drive.uploadSong(
+              folderId,
+              container,
+              {
+                // The scan's title, not the manifest's: the manifest
+                // carries the raw upload name, and "Song.mp3.mpsong"
+                // is a Drive listing nobody should have to read.
+                title: song.title,
+                properties: {
+                  fileHash: bundle.manifest.song.fileHash,
+                  quality: bundle.manifest.song.quality,
+                  ...(bundle.manifest.song.durationSec !== undefined
+                    ? { durationSec: bundle.manifest.song.durationSec }
+                    : {}),
+                },
+              },
+              {
+                signal: jobAbort,
+                onProgress: (sent, total) =>
+                  advanceJob({
+                    ratio: 0.9 + (total === 0 ? 0 : sent / total) * 0.1,
+                  }),
+              },
+            )
+            uploaded = true
+          } catch (error) {
+            if (error instanceof DriveAuthError) throw error
+            lastError = error
+            if (jobAbort.aborted) break
+          }
+        }
+        if (!uploaded) throw lastError ?? new Error('The upload failed.')
         done += 1
         // ratio back to 0, not 1: the bar reads (done + ratio) / total,
         // so leaving it at 1 counts the finished song twice and the next
         // song's reset then slides the bar visibly backwards.
         advanceJob({ done, ratio: 0 })
+        // The headline figures move as each song lands, so somebody
+        // deciding whether to press Stop can see what they would keep.
+        // The rescan at the end is still the authoritative count.
+        setDriveScan((prev) =>
+          prev === null
+            ? null
+            : {
+                ...prev,
+                inDrive: prev.inDrive + 1,
+                toBackUp: prev.toBackUp.filter(
+                  (c) => c.fileHash !== song.fileHash,
+                ),
+              },
+        )
       } catch (error) {
         if (error instanceof DriveAuthError) throw error
         // Stopping throws from inside the encoder and the uploader both.
@@ -449,6 +582,10 @@ export async function backUpToDrive(): Promise<void> {
         if (jobAbort.aborted) break
         failed += 1
         advanceJob({ failed })
+        setDriveJobFailures((list) => [
+          ...list,
+          { title: song.title, reason: describeSongFailure(error) },
+        ])
         console.warn(`[drive] "${song.title}" could not be backed up:`, error)
       }
     }
@@ -465,7 +602,7 @@ export async function backUpToDrive(): Promise<void> {
   } catch (error) {
     noteError(error)
   } finally {
-    setDriveJob(null)
+    endJob()
     await scanDrive()
   }
 }
@@ -557,6 +694,19 @@ export async function restoreFromDrive(): Promise<void> {
         // so leaving it at 1 counts the finished song twice and the next
         // song's reset then slides the bar visibly backwards.
         advanceJob({ done, ratio: 0 })
+        // Headline figures move as each song arrives — the same live
+        // count the backup keeps, for the same Stop decision.
+        setDriveScan((prev) =>
+          prev === null
+            ? null
+            : {
+                ...prev,
+                here: prev.here + 1,
+                toRestore: prev.toRestore.filter(
+                  (c) => c.fileHash !== song.fileHash,
+                ),
+              },
+        )
       } catch (error) {
         if (error instanceof DriveAuthError) throw error
         // The stop signal reaches this as a thrown error from getPart; it
@@ -564,6 +714,10 @@ export async function restoreFromDrive(): Promise<void> {
         if (jobAbort.aborted) break
         failed += 1
         advanceJob({ failed })
+        setDriveJobFailures((list) => [
+          ...list,
+          { title: song.title, reason: describeSongFailure(error) },
+        ])
         console.warn(`[drive] "${song.title}" could not be restored:`, error)
       }
     }
@@ -580,7 +734,7 @@ export async function restoreFromDrive(): Promise<void> {
   } catch (error) {
     noteError(error)
   } finally {
-    setDriveJob(null)
+    endJob()
     await scanDrive()
   }
 }
