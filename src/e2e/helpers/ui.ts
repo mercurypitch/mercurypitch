@@ -88,35 +88,56 @@ const NAV_OVERFLOW_MENU = '[role="menu"][aria-label^="More "]'
  * triggers until the button turns up — so it never has to be kept in step with
  * the group taxonomy.
  */
+/** Where revealNavTab found the tab — callers close only what the scan opened. */
+type NavTabSurface = 'inline' | 'overflow-menu' | 'more-sheet' | 'missing'
+
+/**
+ * Make `#buttonId` visible wherever the bar currently keeps it: already
+ * inline, behind a desktop group's "..." menu, or (phone) inside the bottom
+ * bar's More sheet. The one scan both openNavTab and expectNavTabOffered
+ * ride, so the two can never disagree about where a tab lives. Returns the
+ * surface that revealed it, so a caller can close exactly what the scan
+ * opened and nothing else.
+ */
+async function revealNavTab(
+  page: Page,
+  buttonId: string,
+): Promise<NavTabSurface> {
+  const button = page.locator(`#${buttonId}`)
+  const visible = async () => await button.isVisible().catch(() => false)
+
+  if (await visible()) return 'inline'
+
+  // Desktop: try each group's overflow menu in turn.
+  const triggers = page.locator('[data-testid^="tab-overflow-"]')
+  const count = await triggers.count()
+  for (let i = 0; i < count; i++) {
+    await triggers.nth(i).click()
+    if (await visible()) return 'overflow-menu'
+    await page.keyboard.press('Escape')
+  }
+
+  // Phone: everything off the bar lives in the More sheet.
+  const more = page.locator('[data-tour="mobile-tabbar-more"]')
+  if ((await more.count()) > 0) {
+    await more.click()
+    if (await visible()) return 'more-sheet'
+  }
+
+  return 'missing'
+}
+
 export async function openNavTab(
   page: Page,
   buttonId: string,
   options: { force?: boolean } = {},
 ) {
-  const button = page.locator(`#${buttonId}`)
-  const visible = async () => await button.isVisible().catch(() => false)
-
-  if (!(await visible())) {
-    // Desktop: try each group's overflow menu in turn.
-    const triggers = page.locator('[data-testid^="tab-overflow-"]')
-    const count = await triggers.count()
-    for (let i = 0; i < count && !(await visible()); i++) {
-      await triggers.nth(i).click()
-      if (await visible()) break
-      await page.keyboard.press('Escape')
-    }
-  }
-
-  if (!(await visible())) {
-    // Phone: everything off the bar lives in the More sheet.
-    const more = page.locator('[data-tour="mobile-tabbar-more"]')
-    if ((await more.count()) > 0) await more.click()
-  }
+  await revealNavTab(page, buttonId)
 
   // `force` is for the specs that deliberately skip dismissOverlays: the
   // onboarding flow covers the page, so the button is visible but the pointer
   // is intercepted. It was `click({ force: true })` before this helper existed.
-  await button.click({ force: options.force })
+  await page.locator(`#${buttonId}`).click({ force: options.force })
   // The menu that held it unmounts as the tab activates (the active tab is
   // promoted into the bar). Wait for that so a following locator cannot
   // catch a frame with both the row and the bar button on screen. Scoped by
@@ -125,6 +146,33 @@ export async function openNavTab(
   await expect(page.locator(NAV_OVERFLOW_MENU)).toHaveCount(0, {
     timeout: 5000,
   })
+}
+
+/**
+ * Assert a nav tab is offered: as an inline bar button, or as a row inside
+ * some group's "..." overflow menu (or the phone bar's More sheet). Which
+ * side of the split a tab lands on depends on the viewport and on how many
+ * tabs are visible — a spec that asserts raw visibility on the button id
+ * fails the moment its tab folds. Closes only what the scan itself opened,
+ * so a surface the caller had open stays open.
+ */
+export async function expectNavTabOffered(page: Page, buttonId: string) {
+  const surface = await revealNavTab(page, buttonId)
+  await expect(page.locator(`#${buttonId}`)).toBeVisible()
+
+  if (surface === 'overflow-menu' || surface === 'more-sheet') {
+    await page.keyboard.press('Escape')
+    if (surface === 'overflow-menu') {
+      await expect(page.locator(NAV_OVERFLOW_MENU)).toHaveCount(0, {
+        timeout: 5000,
+      })
+    }
+    // Closing the menu refocuses its trigger, where a later Space/Enter
+    // would reopen it — blur so the helper leaves no armed control behind.
+    await page.evaluate(() =>
+      (document.activeElement as HTMLElement | null)?.blur(),
+    )
+  }
 }
 
 export async function switchTab(

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, openPlaybackSetup } from './helpers/ui'
+import { dismissOverlays, openPlaybackSetup, switchTab } from './helpers/ui'
 
 /**
  * CSS Module Refactor -- Visual Regression Audit
@@ -94,6 +94,9 @@ test.describe('CSS Module Refactor - Style Verification', () => {
   })
 
   test('settings-toggle switches render', async ({ page }) => {
+    // The visibility toggles live in the sidebar's Display panel, which the
+    // per-tab registry mounts on the Singing tab — not on the Home default.
+    await switchTab(page, 'singing')
     const toggles = page.locator('.settings-toggle')
     const count = await toggles.count()
     // Sidebar has visibility toggles
@@ -106,7 +109,9 @@ test.describe('CSS Module Refactor - Style Verification', () => {
 
   test('dropdown-select-style has correct appearance', async ({ page }) => {
     // The dropdown-select-style selects live in the sidebar's Playback Setup
-    // section, which is collapsed (and unmounted) by default — expand it first.
+    // panel, which the per-tab registry mounts on the Singing tab; its section
+    // is collapsed (and unmounted) by default — switch there, then expand it.
+    await switchTab(page, 'singing')
     await openPlaybackSetup(page)
     const dropdowns = page.locator('.dropdown-select-style')
     const count = await dropdowns.count()

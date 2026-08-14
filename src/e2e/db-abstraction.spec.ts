@@ -3,9 +3,8 @@
 // Tests IndexedDB initialization, seed data, feature flags, and session persistence
 // ============================================================
 
-import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { dismissOverlays, switchTab } from './helpers/ui'
+import { dismissOverlays, expectNavTabOffered, switchTab } from './helpers/ui'
 
 /** Trigger DB creation by toggling a feature flag, then wait for IndexedDB to be ready. */
 async function ensureDb(page: import('@playwright/test').Page): Promise<void> {
@@ -591,17 +590,12 @@ test.describe('Database Abstraction Layer', () => {
   // Hidden Feature Tab Visibility Tests
   // ==========================================
 
-  // The bar shows three tabs per group and folds the rest behind that
-  // group's "..." button, so "is this tab offered?" is no longer the same
-  // question as "is this button on screen?". Play holds five tabs, which
-  // puts Community and Leaderboard in its menu — open it before asserting.
-  const openPlayOverflow = async (page: Page) => {
-    const trigger = page.locator('[data-testid="tab-overflow-play"]')
-    if ((await trigger.count()) === 0) return
-    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
-      await trigger.click()
-    }
-  }
+  // A group folds its tail tabs behind its "..." button whenever it holds
+  // more than the inline cap — a ceiling of three that fitToWidth only ever
+  // lowers, so Play's five tabs fold Community and Leaderboard at every
+  // width. "Is this tab offered?" is therefore no longer the same question
+  // as "is this button on screen?"; expectNavTabOffered answers the former
+  // wherever the tab landed.
 
   test('Hidden feature tabs appear when advanced features enabled', async ({
     page,
@@ -611,12 +605,10 @@ test.describe('Database Abstraction Layer', () => {
       await new Promise((r) => setTimeout(r, 500))
     })
 
-    await expect(page.locator('#tab-challenges')).toBeVisible()
-    await expect(page.locator('#tab-analysis')).toBeVisible()
-
-    await openPlayOverflow(page)
-    await expect(page.locator('#tab-leaderboard')).toBeVisible()
-    await expect(page.locator('#tab-community')).toBeVisible()
+    await expectNavTabOffered(page, 'tab-challenges')
+    await expectNavTabOffered(page, 'tab-analysis')
+    await expectNavTabOffered(page, 'tab-leaderboard')
+    await expectNavTabOffered(page, 'tab-community')
   })
 
   test('Social tabs stay visible even when advanced features are disabled', async ({
@@ -628,11 +620,9 @@ test.describe('Database Abstraction Layer', () => {
     })
 
     // Community / Leaderboard / Challenges are no longer gated by the flag.
-    await expect(page.locator('#tab-challenges')).toBeVisible()
-
-    await openPlayOverflow(page)
-    await expect(page.locator('#tab-community')).toBeVisible()
-    await expect(page.locator('#tab-leaderboard')).toBeVisible()
+    await expectNavTabOffered(page, 'tab-challenges')
+    await expectNavTabOffered(page, 'tab-community')
+    await expectNavTabOffered(page, 'tab-leaderboard')
   })
 
   test('Can navigate to Challenges tab when enabled', async ({ page }) => {
@@ -678,17 +668,17 @@ test.describe('Database Abstraction Layer', () => {
   test('Social tabs remain visible across an advanced-features toggle', async ({
     page,
   }) => {
-    // Challenges is decoupled from the flag — visible both ways.
+    // Challenges is decoupled from the flag — offered both ways.
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(false)
       await new Promise((r) => setTimeout(r, 300))
     })
-    await expect(page.locator('#tab-challenges')).toBeVisible()
+    await expectNavTabOffered(page, 'tab-challenges')
 
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(true)
       await new Promise((r) => setTimeout(r, 300))
     })
-    await expect(page.locator('#tab-challenges')).toBeVisible()
+    await expectNavTabOffered(page, 'tab-challenges')
   })
 })
