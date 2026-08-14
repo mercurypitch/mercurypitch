@@ -19,6 +19,33 @@ Confidence is the finding agent's own rating and is orthogonal to status.
 
 ---
 
+## Fixed on this branch
+
+Ten of the 46 are fixed here. Five carry a regression test that was verified to
+fail when the fix is reverted; the other five are marked below, and the reason
+each has no test is stated rather than glossed:
+
+| Location                                                      | Fix                                                                                   | Test                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `src/stores/uvr-store.ts:967`                                 | `sessionStemPresence` reports present/absent/unknown; only absent authorises a delete | mutation-verified                                                                                               |
+| `src/lib/pitch-algorithms/fft-detector.ts:294`                | Forward twiddle sign; spectrum now matches a naive DFT bin for bin                    | mutation-verified                                                                                               |
+| `src/lib/pitch-detector.ts:274`                               | Bin to hertz divides by `bufferSize`, not `bufferSize/2`                              | mutation-verified                                                                                               |
+| `src/lib/hash-router.ts:220`                                  | `safeDecode` — a malformed URL no longer takes the app down at boot                   | mutation-verified                                                                                               |
+| `src/stores/jam-store.ts:2113`                                | In-flight guard — one capture per unmute                                              | mutation-verified                                                                                               |
+| `src/stores/jam-store.ts:2114`                                | Service and room re-checked after the await, so Leave really leaves                   | none — needs a leave-during-await harness                                                                       |
+| `src/features/stem-mixer/useStemMixerCanvasController.ts:197` | Peak cache is a `WeakMap`, so decoded audio can be collected                          | none — behaviourally identical; only a heap profile can tell them apart                                         |
+| `src/components/UvrPanel.tsx:153`                             | Vocal-stem object URL revoked in a `finally`                                          | none — `setup.ts` stubs `createObjectURL` and does not stub `revokeObjectURL`, so the balance is not observable |
+| `src/components/StemMixer.tsx:2281`                           | Clipboard rejection shows a toast instead of the crash modal                          | none — no test drives this button                                                                               |
+| `src/components/jam/JamInviteModal.tsx:20`                    | "Copied!" only after the write actually succeeds                                      | none — no test drives this modal                                                                                |
+
+Making the last four testable is itself a finding: the `revokeObjectURL` gap in
+`src/tests/setup.ts` means **no leak of this class is observable anywhere in the
+suite**, and it is the reason the audit had to find these by reading rather than
+by running. See TESTING.md §5.3.
+
+The remaining 36 are unfixed. The one that most needs a decision rather than a
+patch is the account takeover in §2.
+
 ## The four that were verified in depth
 
 ### 1. FIXED — Startup prune could permanently delete paid separations
@@ -141,7 +168,7 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 
 | Severity | Location                                                             | Finding                                                                                                                     | Confidence | Status        |
 | -------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------- |
-| critical | `src/lib/pitch-algorithms/fft-detector.ts:294`                       | realFFT applies the conjugate (wrong-sign) twiddle, producing a mirrored phantom spectrum                                   | certain    | **CONFIRMED** |
+| critical | `src/lib/pitch-algorithms/fft-detector.ts:294`                       | realFFT applies the conjugate (wrong-sign) twiddle, producing a mirrored phantom spectrum                                   | certain    | **FIXED**     |
 | critical | `src/stores/uvr-store.ts:967`                                        | Startup prune permanently deletes completed songs when the IndexedDB read merely fails                                      | certain    | **FIXED**     |
 | critical | `workers/db-worker/src/auth.ts:1057`                                 | Anonymous account takeover: the anonymous credential (deviceId) is published as userProfiles.id                             | certain    | **CONFIRMED** |
 | high     | `src/components/AppErrorBoundary.tsx:56`                             | Network-error rejections still trigger the full-screen crash modal — preventDefault() does not stop the second listener     | certain    | reported      |
@@ -150,26 +177,26 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 | high     | `src/db/services/settings-service.ts:241`                            | Cloud settings sync silently discards local annotations once they exceed the 8 KB push ceiling                              | likely     | reported      |
 | high     | `src/db/services/streak-service.ts:81`                               | Streaks, daily goal and Ascent days key on UTC dates while the rest of the app uses local dates                             | likely     | reported      |
 | high     | `src/db/services/uvr-service.ts:115`                                 | The uvr-service `*Strict` reads are not strict — findAll swallows storage failures and returns []                           | certain    | reported      |
-| high     | `src/features/stem-mixer/useStemMixerCanvasController.ts:197`        | Stem-mixer waveform peak cache is a strong Map keyed by AudioBuffer — every decoded song stays resident                     | certain    | reported      |
+| high     | `src/features/stem-mixer/useStemMixerCanvasController.ts:197`        | Stem-mixer waveform peak cache is a strong Map keyed by AudioBuffer — every decoded song stays resident                     | certain    | **FIXED**     |
 | high     | `src/lib/jam/jam-song-transfer.ts:238`                               | sendInChunks can wait forever on `bufferedamountlow` after the peer's channel dies, wedging the jam song share              | likely     | reported      |
-| high     | `src/lib/pitch-detector.ts:274`                                      | Frequency-domain fallback converts bin index to Hz with the wrong denominator — every pitch is exactly one octave sharp     | certain    | **CONFIRMED** |
+| high     | `src/lib/pitch-detector.ts:274`                                      | Frequency-domain fallback converts bin index to Hz with the wrong denominator — every pitch is exactly one octave sharp     | certain    | **FIXED**     |
 | high     | `src/lib/sync/sync-peer.ts:94`                                       | Closing the sync modal mid-connect still opens a WebSocket and a room nothing can ever close                                | certain    | reported      |
 | high     | `src/stores/drive-sync-store.ts:172`                                 | Drive backup finds zero songs after any page reload because `outputs` is never rehydrated                                   | likely     | reported      |
-| high     | `src/stores/jam-store.ts:2113`                                       | Double-tap unmute in a jam room opens two microphone captures                                                               | certain    | reported      |
-| high     | `src/stores/jam-store.ts:2114`                                       | Leaving a jam room during the unmute await restarts pitch detection and leaks a 20 Hz interval plus a live mic              | likely     | reported      |
+| high     | `src/stores/jam-store.ts:2113`                                       | Double-tap unmute in a jam room opens two microphone captures                                                               | certain    | **FIXED**     |
+| high     | `src/stores/jam-store.ts:2114`                                       | Leaving a jam room during the unmute await restarts pitch detection and leaks a 20 Hz interval plus a live mic              | likely     | **FIXED**     |
 | high     | `workers/db-worker/src/index.ts:904`                                 | Unilateral follow rows let any authenticated user read any user's private streak and score aggregates                       | likely     | reported      |
 | medium   | `src/components/OfflinePitchCanvas.tsx:61`                           | OfflinePitchCanvas sets forceRedraw but never queues a frame — analysis results and label toggles do not repaint            | certain    | reported      |
 | medium   | `src/components/PitchCanvas.tsx:199`                                 | PitchCanvas starts the AudioEngine with a floating promise, turning a failed AudioContext into an unhandled rejection       | likely     | reported      |
 | medium   | `src/components/PitchCanvas.tsx:2079`                                | PitchCanvas runs a full redraw from a createEffect on top of its own rAF loop — two render paths, double the work per frame | certain    | reported      |
 | medium   | `src/components/StemMixer.tsx:1724`                                  | "Add stem" mints a blob URL for a multi-megabyte WAV that is never revoked                                                  | certain    | reported      |
-| medium   | `src/components/StemMixer.tsx:2281`                                  | Share button's clipboard write has no rejection handler — a blocked clipboard pops the crash modal instead of a toast       | certain    | reported      |
-| medium   | `src/components/UvrPanel.tsx:153`                                    | Shazam fingerprinting leaks the vocal stem's blob URL on every indexed song                                                 | certain    | reported      |
-| medium   | `src/components/jam/JamInviteModal.tsx:20`                           | Jam "Copy link" buttons show "Copied!" even when the clipboard write is rejected                                            | certain    | reported      |
+| medium   | `src/components/StemMixer.tsx:2281`                                  | Share button's clipboard write has no rejection handler — a blocked clipboard pops the crash modal instead of a toast       | certain    | **FIXED**     |
+| medium   | `src/components/UvrPanel.tsx:153`                                    | Shazam fingerprinting leaks the vocal stem's blob URL on every indexed song                                                 | certain    | **FIXED**     |
+| medium   | `src/components/jam/JamInviteModal.tsx:20`                           | Jam "Copy link" buttons show "Copied!" even when the clipboard write is rejected                                            | certain    | **FIXED**     |
 | medium   | `src/components/panes/WaveformPane.tsx:63`                           | WaveformPane maps absolute window time through the window duration — the waveform collapses once the view scrolls off zero  | likely     | reported      |
 | medium   | `src/db/services/grant-flush.ts:253`                                 | grant-flush's local badge write is not idempotent, so a retried flush duplicates userBadges rows                            | likely     | reported      |
 | medium   | `src/features/stem-mixer/useStemMixerLyricsController.ts:864`        | Lyrics lookup reports a network outage as "no lyrics found"; the abort branch is dead code                                  | likely     | reported      |
 | medium   | `src/lib/chord-detector.ts:200`                                      | detectChords computes the previous segment's start time from the merged-array index instead of its stored time              | certain    | reported      |
-| medium   | `src/lib/hash-router.ts:220`                                         | A malformed percent-escape in the URL hash makes parseHash throw URIError and crash the app                                 | certain    | reported      |
+| medium   | `src/lib/hash-router.ts:220`                                         | A malformed percent-escape in the URL hash makes parseHash throw URIError and crash the app                                 | certain    | **FIXED**     |
 | medium   | `src/lib/jam/service.ts:152`                                         | Jam ICE recovery timers survive leaving the room and disposing the service                                                  | certain    | reported      |
 | medium   | `src/lib/uvr-processing-pipeline.ts:162`                             | Processing pipeline mutates the live session cache array in place, bypassing copy-on-write                                  | likely     | reported      |
 | medium   | `src/stores/melody-store.ts:1041`                                    | Deleting a melody leaves dangling melodyId references in every session that used it                                         | certain    | reported      |
@@ -197,7 +224,7 @@ by the hunt. Locations are unchanged from the table above.
 
 ### [critical] realFFT applies the conjugate (wrong-sign) twiddle, producing a mirrored phantom spectrum
 
-`src/lib/pitch-algorithms/fft-detector.ts:294` — confidence: certain — status: CONFIRMED
+`src/lib/pitch-algorithms/fft-detector.ts:294` — confidence: certain — status: FIXED
 
 `realFFT` unpacks the half-length complex FFT using the standard split formula X[k] = Xe[k] + W^k·Xo[k], where for a forward DFT W^k = e^(-i·π·k/halfN) = cosVal - i·sinVal. The code instead multiplies (reOdd + i·imOdd) by (cosVal + i·sinVal), i.e. e^(+i·π·k/halfN) — the inverse twiddle. The complexFFT it feeds from is a forward transform (`this.complexFFT(data, halfN, false)` → sign = -1), so the two conventions disagree. The result is not the correct magnitude spectrum: energy at bin k leaks into bin (fftSize/2 - k), i.e. every real component at frequency f produces a phantom peak at (sampleRate/2 - f), and the true peak is attenuated. I verified this by diffing `realFFT` against a naive DFT (max magnitude error 0.197 on a 64-point two-tone signal, vs <1e-9 after flipping the sign to `twRe = reOdd*cosVal + imOdd*sinVal; twIm = -reOdd*sinVal + imOdd*cosVal`). All 52 existing fft-detector tests pass with the bug present, because pure in-band tones put their phantom above 20 kHz, outside the 65-2100 Hz search range — so the defect is invisible to the suite but live in production.
 
@@ -334,7 +361,7 @@ Two consequences. (1) `listSessionExportStems` (session-export-service.ts:139) b
 
 ### [high] Stem-mixer waveform peak cache is a strong Map keyed by AudioBuffer — every decoded song stays resident
 
-`src/features/stem-mixer/useStemMixerCanvasController.ts:197` — confidence: certain — status: reported
+`src/features/stem-mixer/useStemMixerCanvasController.ts:197` — confidence: certain — status: FIXED
 
 `peakCache` is a plain `Map` keyed by `AudioBuffer`. `getPeaks(buffer)` inserts on first draw and nothing ever deletes, clears, or evicts (grep for `peakCache` yields only lines 197, 202, 205). The Map therefore holds a strong reference to every AudioBuffer the mixer has ever painted, plus the segment tree built from it (two Float32Arrays of `leafCount * 2` — roughly 4 MB per 4-minute stem, see src/lib/waveform-peak-cache.ts:40-41). The two neighbouring caches on lines 198-199 correctly use `WeakMap`, which shows the pattern was known and this one was missed. Every song load calls `ctx.decodeAudioData` for each stem (useStemMixerAudioController.ts:546, 676) producing fresh AudioBuffer objects, so nothing is ever reused — the cache only grows.
 
@@ -354,7 +381,7 @@ Two consequences. (1) `listSessionExportStems` (session-export-service.ts:139) b
 
 ### [high] Frequency-domain fallback converts bin index to Hz with the wrong denominator — every pitch is exactly one octave sharp
 
-`src/lib/pitch-detector.ts:274` — confidence: certain — status: CONFIRMED
+`src/lib/pitch-detector.ts:274` — confidence: certain — status: FIXED
 
 `detectFromFreqDataFallback` maps the peak bin to a frequency with `(maxIdx * sampleRate) / (this.bufferSize / 2)`. `fftToFrequencyData` produces N = timeDomainBuffer.length/2 bins whose spacing is `sampleRate / bufferSize` (it sums only even samples with `angle = 2π·i·j/this.bufferSize`, which is an N-point DFT of the 2×-decimated signal at rate sampleRate/2, so bin i sits at i·(sampleRate/2)/N = i·sampleRate/bufferSize). Dividing by `bufferSize/2` doubles that — a constant factor-of-2, i.e. exactly one octave sharp. This is the code path taken by _every synchronous_ `detect()` call when `algorithm === 'swift'` (line 171-173 routes swift through `fftToFrequencyData` → `detectFromFreqDataFallback`), and by `detectFromFrequencyData()`. The same function also reports `clarity: maxVal / 255` on a spectrum already normalised to roughly 0..1, and applies no confidence gate at all.
 
@@ -390,7 +417,7 @@ Effects: `scanDrive` reports `here: 0` and `toBackUp: []`, and `backUpToDrive` r
 
 ### [high] Double-tap unmute in a jam room opens two microphone captures
 
-`src/stores/jam-store.ts:2113` — confidence: certain — status: reported
+`src/stores/jam-store.ts:2113` — confidence: certain — status: FIXED
 
 `toggleJamMute` guards the capture with `jamService?.hasLocalAudio() === false`, then awaits `startLocalAudio()`. Nothing marks "a capture is in flight": `jamIsMuted` is only written after the await (line 2123) and the mic track is only added to `localStream` after the await inside the service. The mute button (`src/components/jam/JamPanel.tsx:863`, `onClick={() => void toggleJamMute()}`) is never disabled during the await, and the permission prompt can sit on screen for seconds. A second tap therefore re-reads `jamIsMuted() === true` and `hasLocalAudio() === false`, passes the same guard, and runs a second `getUserMedia`. In `src/lib/jam/service.ts:260-290` the same stale guard (`if (localStream!.getAudioTracks().length > 0) return true`) is checked before the await, so both calls add a raw track to `localStream` and both build a processed clone; the first clone is overwritten by `transmitAudio = await makeTransmitTrack(rawAudio)` and is never stopped. Compare `useStemMixerMicController` (src/features/stem-mixer/useStemMixerMicController.ts:305-313), which explicitly holds a `toggling` flag for exactly this reason — the jam path has no equivalent.
 
@@ -400,7 +427,7 @@ Effects: `scanDrive` reports `here: 0` and `toBackUp: []`, and `backUpToDrive` r
 
 ### [high] Leaving a jam room during the unmute await restarts pitch detection and leaks a 20 Hz interval plus a live mic
 
-`src/stores/jam-store.ts:2114` — confidence: likely — status: reported
+`src/stores/jam-store.ts:2114` — confidence: likely — status: FIXED
 
 `toggleJamMute` never re-checks that the room still exists after `await jamService.startLocalAudio()`. `leaveJamRoom()` (line 2093) calls `jamService.leaveRoom()` — which in `src/lib/jam/service.ts:152-165` closes the data channels and peer connections but deliberately does NOT call `stopLocalStream()` — and then `cleanupJam()`, which runs `stopJamPitchDetection()`, `setJamLocalStream(null)`, `setJamIsMuted(true)` and `setJamState('idle')`. When the awaited getUserMedia then resolves, the continuation runs against a torn-down room: it republishes the live stream into the store and calls `startJamPitchDetection()`, whose `if (pitchDetector) return` guard is now false because cleanup nulled it. That starts a fresh `JamPitchDetector` and `pitchNetworkInterval = setInterval(..., 50)` (line 2189) that nothing will ever clear — `stopJamPitchDetection` is only reached from the next `cleanupJam`. `jamService` is not nulled by `leaveJamRoom` (only `disposeJam` does that, and `disposeJam` has no callers outside the store), so the object is still alive to be driven.
 
@@ -464,7 +491,7 @@ This effect tracks `props.waveform`, `props.analysisResults`, `props.segmentedNo
 
 ### [medium] Share button's clipboard write has no rejection handler — a blocked clipboard pops the crash modal instead of a toast
 
-`src/components/StemMixer.tsx:2281` — confidence: certain — status: reported
+`src/components/StemMixer.tsx:2281` — confidence: certain — status: FIXED
 
 `navigator.clipboard.writeText()` rejects with a `DOMException` when the page is not a secure context, when the permission is denied, or when Safari/Firefox refuse a write that is not synchronously inside a user gesture. This call site attaches only a fulfilment handler; `void` discards the promise but does not mark the rejection handled. Combined with the AppErrorBoundary defect above, the rejection becomes an `unhandledrejection` and pops the "Application Error" modal. Even without that, the user gets zero feedback: no toast, no error.
 
@@ -476,7 +503,7 @@ The codebase handles this correctly elsewhere — `src/components/CommunityShare
 
 ### [medium] Shazam fingerprinting leaks the vocal stem's blob URL on every indexed song
 
-`src/components/UvrPanel.tsx:153` — confidence: certain — status: reported
+`src/components/UvrPanel.tsx:153` — confidence: certain — status: FIXED
 
 `indexStemFingerprint` mints an object URL via `getStemBlobUrl`, fetches it, decodes it, and returns through several early-return branches and a `finally` block — none of which calls `URL.revokeObjectURL(vocalUrl)`. Reading the whole function (lines 145-185) confirms there is no revoke on any path: success, `'reason' in fp`, or the `catch`. The surrounding code knows the pattern — `runBandSplitChain` 700 lines below does `URL.revokeObjectURL(existing)` (line 872) for exactly this kind of probe URL.
 
@@ -486,7 +513,7 @@ The codebase handles this correctly elsewhere — `src/components/CommunityShare
 
 ### [medium] Jam "Copy link" buttons show "Copied!" even when the clipboard write is rejected
 
-`src/components/jam/JamInviteModal.tsx:20` — confidence: certain — status: reported
+`src/components/jam/JamInviteModal.tsx:20` — confidence: certain — status: FIXED
 
 Three jam copy buttons fire `navigator.clipboard.writeText(...).catch(() => {})` and then set the copied flag unconditionally on the next statement — the flag is set synchronously, before the promise settles, and the empty catch discards the denial. The UI therefore reports success for an operation that did nothing.
 
@@ -557,7 +584,7 @@ Inside the merge loop, `time` is the current frame's time (`i * frameTime`, wher
 
 ### [medium] A malformed percent-escape in the URL hash makes parseHash throw URIError and crash the app
 
-`src/lib/hash-router.ts:220` — confidence: certain — status: reported
+`src/lib/hash-router.ts:220` — confidence: certain — status: FIXED
 
 `parseHash` calls `decodeURIComponent` on raw capture groups taken straight from `window.location.hash` at three places (lines 219, 220 and 301). `decodeURIComponent` throws `URIError: URI malformed` on any lone or truncated percent escape (`%`, `%z`, `%E0%A4`). There is no try/catch anywhere in `parseHash`, and none at any call site:
 
