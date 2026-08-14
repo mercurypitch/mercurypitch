@@ -170,6 +170,43 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
+  it('keeps acoustic live scoring silent but lets MIDI retain the configured guide', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions, setResult } = bandHarness()
+      const frames = frameHarness()
+      setResult({
+        expectedHitTimesMs: [],
+        exerciseStartedAtSeconds: 11,
+        completedAtSeconds: 13,
+      })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        loop: () => ({ start: 0, end: 2 }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: false })
+      expect(getOptions()).toMatchObject({
+        startBeat: 0,
+        durationBeats: 2,
+        loop: null,
+        melody: [],
+        exercisePulse: false,
+      })
+      room.stop()
+
+      await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: true })
+      expect(getOptions()).toMatchObject({
+        loop: null,
+        exercisePulse: true,
+      })
+      expect(getOptions()?.melody).toHaveLength(2)
+      dispose()
+    })
+  })
+
   it('abandons an interrupted assessment instead of resuming it as a full take', async () => {
     await createRoot(async (dispose) => {
       const { band, getOptions, setResult } = bandHarness()

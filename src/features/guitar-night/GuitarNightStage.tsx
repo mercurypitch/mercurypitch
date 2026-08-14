@@ -84,6 +84,8 @@ interface GuitarNightStageProps {
   neckLabel?: Accessor<string>
   /** Free-play hosts may replace the generic ready copy without inventing a guide. */
   idleStatus?: Accessor<{ label: string; detail: string }>
+  /** Host-owned evidence may extend the signal faceplate without becoming stage chrome. */
+  signalAccessory?: JSX.Element
   /** Focused beginner activities may remove expert display chrome entirely. */
   showHeader?: Accessor<boolean>
   /** Host-owned cues and sheets sit over the instrument without entering layout. */
@@ -698,6 +700,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   let viewDetails: HTMLDetailsElement | undefined
   let viewSummary: HTMLElement | undefined
   const overlay = children(() => props.overlay)
+  const signalAccessory = children(() => props.signalAccessory)
   const narrowQuery = '(max-width: 720px)'
   const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
   const matchesNarrowViewport = () =>
@@ -1110,7 +1113,12 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     >
       <Show when={props.showHeader?.() ?? true}>
         <header class={styles.stageHeader}>
-          <div>
+          <div
+            classList={{
+              [styles.stageSignalWithAccessory]:
+                signalAccessory() !== undefined,
+            }}
+          >
             <span>
               {isListening()
                 ? heardNote() === null
@@ -1129,6 +1137,11 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                       'Follow the next note into the neck')
                   : idleStatus().detail)}
             </strong>
+            <Show when={signalAccessory()}>
+              {(accessory) => (
+                <div class={styles.stageSignalAccessory}>{accessory()}</div>
+              )}
+            </Show>
           </div>
           <span
             class={styles.visuallyHidden}

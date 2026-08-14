@@ -266,6 +266,16 @@ core Learn set in
   Rehearse loop without opening an analysis dashboard. On a phone, room, Studio
   and account utilities collapse behind one Room control so the instrument
   keeps the viewport.
+- Explicit Listening upgrades the next authored-score Play into one independent
+  live-score take. Its quiet score latch extends the existing stage signal
+  faceplate rather than adding a card, modal, arcade HUD, combo, or diagnosis.
+  The active number is a recoverable last-16 note percentage, the completed
+  number is cumulative, and the letter waits for four judged notes. V1 is
+  deliberately notes-only: MIDI can prove chords and fast note messages, while
+  microphone/interface chords and too-close notes are excluded. Acoustic scored
+  takes keep the guide and exercise pulse silent after the count-in; MIDI may
+  retain the guide. Jam Doctor remains the separate action for phrase evidence,
+  explanation, and recovery.
 - Jam Doctor is an on-demand overlay/sheet rather than normal-flow content, so
   opening it never collapses the instrument. Desktop, tablet, and phone
   regressions keep the stage and pedalboard in the first viewport, preserve

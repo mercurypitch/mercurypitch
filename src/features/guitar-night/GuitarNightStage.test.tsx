@@ -118,6 +118,20 @@ describe('GuitarNightStage views', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('51')
   })
 
+  it('keeps host evidence inside the signal faceplate without adding a control', () => {
+    render(() => (
+      <GuitarNightStage
+        source={SOURCE}
+        active={() => true}
+        signalAccessory={<span data-testid="stage-signal-evidence">A 86</span>}
+      />
+    ))
+
+    const evidence = screen.getByTestId('stage-signal-evidence')
+    expect(evidence.closest('header')).toBeTruthy()
+    expect(evidence.closest('button, a, summary')).toBeNull()
+  })
+
   it('keeps camera and visual preferences in one compact persisted View menu', async () => {
     render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
     const sharedStage = await screen.findByTestId('shared-3d-stage')

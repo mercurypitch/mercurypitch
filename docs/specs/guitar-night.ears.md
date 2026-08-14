@@ -37,6 +37,13 @@ evidence, dependable polyphonic analysis, real-device latency and
 highway-performance validation, and the legacy runtime cutover remain target
 work.
 
+The score-only room now also has an independent compact live score for
+ordinary authored-note rehearsal. It consumes the same bounded input take and
+exact room boundary as playback, while Jam Doctor remains an explicit,
+separate diagnostic review. The initial score is notes-only: unmeasured route
+delay never becomes a timing grade, and unsupported acoustic chords or fast
+passages are excluded rather than counted as mistakes.
+
 The restrained Learn shelf and the first rebuilt legacy activity, Note Hunt,
 were merged through
 [#492](https://github.com/mercurypitch/mercurypitch/pull/492). Hear & Find,
@@ -301,6 +308,58 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   second Start action. IF the player invokes Stop, Back, or Escape while that
   transfer is pending, a late result shall not restart hidden capture.
 
+## Continuous authored-note score — `GN-SCORE-*`
+
+- **REQ-GN-SCORE-001 — Explicit scored take:** WHERE an authored score is
+  staged and Listening is already active, WHEN the player selects Play,
+  Guitar Night shall begin one continuous live-score take without requesting
+  input permission, opening Jam Doctor, or creating another input recorder.
+  Play without active Listening shall remain an ordinary unscored rehearsal.
+- **REQ-GN-SCORE-002 — Independent contract:** Live score shall use a neutral,
+  framework-free scoring boundary with no Jam Doctor diagnosis, recovery,
+  history, or persistence dependency. Opening, closing, or clearing Jam Doctor
+  shall not create, change, or be required for a live score.
+- **REQ-GN-SCORE-003 — Exact run boundary:** A scored take shall pin the
+  authored reference, track, half-open beat range, complete tempo map, sample
+  rate, input route, and exact scheduled AudioContext start and end. Count-in
+  evidence shall be excluded, and one input event and one authored target shall
+  each be consumed at most once.
+- **REQ-GN-SCORE-004 — Notes-only evidence:** The initial live score shall
+  award an exact authored MIDI-pitch match and count an expired unmatched
+  eligible target as a miss. Its timing window may associate an attack with a
+  target but shall not change the score or imply early/late accuracy. A timing
+  basis shall remain unavailable until the active route has separately
+  validated latency evidence.
+- **REQ-GN-SCORE-005 — Route honesty:** MIDI may score simultaneous targets and
+  fast passages but shall not claim absolute timing while route delay is
+  unmeasured. Room microphone and direct-interface routes shall exclude
+  simultaneous targets and passages closer than the validated pitch-attachment
+  window. Clipping, noisy or uncertain input and unobserved recorder windows
+  shall exclude affected targets rather than turn them into misses.
+- **REQ-GN-SCORE-006 — Recoverable live result:** WHILE a take runs, the visible
+  percentage shall use at most the latest 16 eligible judgments; WHEN it
+  completes, the result shall settle to the cumulative eligible judgments.
+  The S/A/B/C/D grade shall remain hidden until at least four targets are
+  judged. No zero, failing grade, or placeholder grade shall appear before
+  sufficient evidence exists.
+- **REQ-GN-SCORE-007 — Acoustic isolation:** A microphone or direct-interface
+  scored take shall keep the pitched authored guide and exercise pulse silent
+  after its audible count-in so room audio cannot become player evidence. A
+  MIDI scored take may retain the configured guide because speaker output
+  cannot create MIDI note messages.
+- **REQ-GN-SCORE-008 — Calm stage latch:** Live score shall extend the existing
+  stage signal faceplate with its basis, percentage, and letter rather than add
+  a dashboard, modal, streak, combo, celebration, or second coaching cue.
+  Rolling number changes shall not enter a live region; only readiness, first
+  established grade, letter changes, pause, input loss, and completion may be
+  announced politely.
+- **REQ-GN-SCORE-009 — Discontinuities:** Pause or input loss shall retain the
+  last earned result without continuing to sample. A new scored Play, seek,
+  source, track, tempo, or loop configuration shall create a fresh score run;
+  one marked loop shall be scored as one bounded pass. Backing-only rooms shall
+  remain unscored until an authored reference has an explicit alignment to the
+  recording.
+
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 
 - **REQ-GN-DOCTOR-001 — Explicit review range:** WHEN a player requests a
@@ -331,10 +390,11 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   path, THEN the affected metric shall be unavailable with a concrete reason.
   Attack completeness, sustain, pitch center, and pitch stability shall remain
   unavailable until articulation, release, or continuous-pitch evidence exists.
-- **REQ-GN-DOCTOR-006 — Minimal live state:** WHILE Listening is active, the
-  stage shall show only the live heard-note and input-health state. A completed
-  take shall announce one compact `Take ready` cue and shall not open its full
-  review automatically.
+- **REQ-GN-DOCTOR-006 — Minimal diagnostic state:** WHILE Listening is active,
+  Jam Doctor shall add no live diagnosis beyond the heard-note and input-health
+  state. A separate compact live score may appear under `GN-SCORE-*`, but a
+  completed diagnostic take shall announce only one compact `Take ready` cue
+  and shall not open its full review automatically.
 - **REQ-GN-DOCTOR-007 — One-action recovery:** Every completed phrase review
   shall identify one primary issue or supported success and one direct action.
   Replay, slowdown, shorter-range, and range-selection actions shall restage the

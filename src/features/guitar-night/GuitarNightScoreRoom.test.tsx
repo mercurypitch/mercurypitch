@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightScoreRoom, scoreAssessmentRange, scoreLoopPendingRestart, } from './GuitarNightScoreRoom'
+import { GuitarNightScoreRoom, scoreAssessmentRange, scoreLiveRange, scoreLoopPendingRestart, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 
@@ -193,6 +193,30 @@ describe('scoreAssessmentRange', () => {
     expect(scoreAssessmentRange(null, 7.95, 8, [0, 4])).toEqual({
       start: 4,
       end: 8,
+    })
+  })
+})
+
+describe('scoreLiveRange', () => {
+  it('scores one explicit loop pass on whole-beat boundaries', () => {
+    expect(scoreLiveRange({ start: 1.2, end: 5.7 }, 3, 12)).toEqual({
+      start: 1,
+      end: 6,
+    })
+  })
+
+  it('continues from an exact parked beat through the score end', () => {
+    expect(scoreLiveRange(null, 2.4, 12)).toEqual({ start: 2.4, end: 12 })
+  })
+
+  it('replays from the beginning when parked at the score end', () => {
+    expect(scoreLiveRange(null, 12, 12)).toEqual({ start: 0, end: 12 })
+  })
+
+  it('replays instead of opening an empty take after the final onset', () => {
+    expect(scoreLiveRange(null, 11.5, 12, [0, 4, 8])).toEqual({
+      start: 0,
+      end: 12,
     })
   })
 })
