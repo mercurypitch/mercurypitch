@@ -45,6 +45,7 @@ export default defineConfig(
             '*.js',
             '*.mjs',
             'scripts/assert-piano-night-bundle.mjs',
+            'scripts/code-metrics.mjs',
             'scripts/pr-prepare.mjs',
             'scripts/pr-prepare.test.mjs',
           ],
@@ -290,6 +291,7 @@ export default defineConfig(
   {
     files: [
       'scripts/assert-piano-night-bundle.mjs',
+      'scripts/code-metrics.mjs',
       'scripts/pr-prepare.mjs',
       'scripts/pr-prepare.test.mjs',
     ],

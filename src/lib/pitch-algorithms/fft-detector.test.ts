@@ -488,3 +488,92 @@ describe('FFTDetector', () => {
     })
   })
 })
+
+// ── Spectrum correctness ────────────────────────────────────────
+//
+// Every test above asserts the detected FREQUENCY, i.e. the argmax of the
+// spectrum. The argmax is robust: it survived a wrong-sign twiddle in the
+// real-FFT unpack that reflected energy into the mirror bins (halfN - k) and
+// left phantom peaks at 40% of a genuine harmonic's magnitude. Nothing here
+// noticed, because for a single dominant tone the peak bin stayed correct.
+//
+// This asserts the spectrum itself, against a naive O(n^2) DFT — slow, obvious,
+// and impossible to get wrong in the same way the fast path can.
+
+/** Ground-truth magnitude spectrum, straight from the definition. */
+function naiveDftMagnitudes(x: Float32Array): Float64Array {
+  const n = x.length
+  const out = new Float64Array(n / 2 + 1)
+  for (let k = 0; k <= n / 2; k++) {
+    let re = 0
+    let im = 0
+    for (let t = 0; t < n; t++) {
+      const angle = (-2 * Math.PI * k * t) / n
+      re += x[t] * Math.cos(angle)
+      im += x[t] * Math.sin(angle)
+    }
+    out[k] = Math.hypot(re, im)
+  }
+  return out
+}
+
+describe('realFFT spectrum', () => {
+  it('matches a naive DFT bin for bin', () => {
+    const n = 256
+    const x = new Float32Array(n)
+    // Two tones at different amplitudes and a phase offset: a single tone would
+    // land symmetrically and hide a mirroring error.
+    for (let i = 0; i < n; i++) {
+      x[i] =
+        0.7 * Math.sin((2 * Math.PI * 3 * i) / n) +
+        0.3 * Math.sin((2 * Math.PI * 17 * i) / n + 0.9)
+    }
+
+    const truth = naiveDftMagnitudes(x)
+    const detector = new FFTDetector({ sampleRate: 44100, bufferSize: n })
+    const outRe = new Float32Array(n)
+    const outIm = new Float32Array(n)
+    // realFFT is private; the spectrum is the thing under test, so reach it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(detector as any).realFFT(Float32Array.from(x), outRe, outIm, n)
+
+    let worstBin = -1
+    let worstError = 0
+    for (let k = 0; k <= n / 2; k++) {
+      const error = Math.abs(Math.hypot(outRe[k], outIm[k]) - truth[k])
+      if (error > worstError) {
+        worstError = error
+        worstBin = k
+      }
+    }
+
+    // Carries the bin in the compared object so a failure names where the
+    // spectrum went wrong instead of only reporting that it did.
+    expect({ bin: worstBin, withinTolerance: worstError < 1e-2 }).toEqual({
+      bin: worstBin,
+      withinTolerance: true,
+    })
+  })
+
+  it('leaves the mirror bins empty for a two-tone signal', () => {
+    const n = 256
+    const x = new Float32Array(n)
+    for (let i = 0; i < n; i++) {
+      x[i] =
+        0.7 * Math.sin((2 * Math.PI * 3 * i) / n) +
+        0.3 * Math.sin((2 * Math.PI * 17 * i) / n + 0.9)
+    }
+
+    const detector = new FFTDetector({ sampleRate: 44100, bufferSize: n })
+    const outRe = new Float32Array(n)
+    const outIm = new Float32Array(n)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(detector as any).realFFT(Float32Array.from(x), outRe, outIm, n)
+
+    // 128 - 17 and 128 - 3: where the conjugate twiddle used to put 15.56 and
+    // 6.59 of phantom energy against a true value of 0.
+    for (const bin of [111, 125]) {
+      expect(Math.hypot(outRe[bin], outIm[bin])).toBeLessThan(0.01)
+    }
+  })
+})
