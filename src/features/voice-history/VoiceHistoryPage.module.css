@@ -397,6 +397,57 @@
   color: #76dec3;
 }
 
+.savedFocusLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.savedFocusLabel > span {
+  font-size: 0.66rem;
+  font-weight: 760;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #76dec3;
+}
+
+.savedFocusLabel .savedFocusInfo {
+  width: 28px;
+  height: 28px;
+  margin-block: -4px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.savedFocusInfoPanel {
+  max-width: min(350px, calc(100vw - 16px));
+  padding: 14px;
+}
+
+.savedFocusExplanation {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+}
+
+.savedFocusExplanation > div {
+  display: grid;
+  gap: 3px;
+}
+
+.savedFocusExplanation dt {
+  color: #e4edf8;
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+.savedFocusExplanation dd {
+  margin: 0;
+  color: #9bacc0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 .savedFocusReading h3 {
   margin: 5px 0 7px;
   font-size: clamp(1.05rem, 1.5vw, 1.25rem);
@@ -985,6 +1036,13 @@
 }
 
 @media (max-width: 860px) {
+  .savedFocusLabel .savedFocusInfo {
+    width: 44px;
+    height: 44px;
+    margin-block: -12px;
+    margin-inline: -7px;
+  }
+
   .page {
     padding: 18px 14px 100px;
   }

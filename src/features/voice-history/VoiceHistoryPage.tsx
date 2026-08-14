@@ -23,6 +23,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconMic } from '@/components/exercise-icons'
 import { ChevronLeft, MoreVertical, Sparkles } from '@/components/icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, getVoiceTakeContour, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, updateVoiceTakeReflections, wipeVoiceTakes, } from '@/db/services/voice-take-service'
@@ -43,6 +44,7 @@ import type { GuidedPracticeHandoff } from './guided-practice-handoff'
 import { armGuidedPracticeHandoff, consumeGuidedPracticeReturn, guidedPracticeLaunchFromRecommendation, } from './guided-practice-handoff'
 import type { GuidedVoiceTakeContextV1 } from './guided-voice-take'
 import { isVoiceTakeComparisonEligible, parseGuidedVoiceTakeContext, } from './guided-voice-take'
+import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import { bindListeningRoomSettings } from './listening-room-settings'
 import { PracticeLoomPanel } from './PracticeLoomPanel'
@@ -264,10 +266,22 @@ function savedFocusCopy(focus: SavedGuidedFocus): {
     }
   }
 
+  const settledEvidence = focus.context.assessment.evidence.find(
+    (evidence) => evidence.id === focus.context.reading.focusFinding.evidenceId,
+  )
+  const settledMeasurement =
+    settledEvidence?.availability === 'available' &&
+    'measurement' in settledEvidence
+      ? settledEvidence.measurement
+      : null
+  const allLandingsSettled =
+    settledMeasurement?.kind === 'fraction' &&
+    settledMeasurement.numerator === settledMeasurement.denominator
   return {
     title: 'Meet one clear centre without pushing.',
-    detail:
-      'Some landings needed more time to settle. Pitch Hold keeps the next step narrow and repeatable.',
+    detail: allLandingsSettled
+      ? 'All three landings met the settling rule, but their typical settled position was farther from the target centre. Pitch Hold keeps the next step narrow and repeatable.'
+      : 'Some landings did not meet the settling rule. Pitch Hold keeps the next step narrow and repeatable.',
   }
 }
 
@@ -380,6 +394,8 @@ export function VoiceHistoryPage(): JSX.Element {
   let guidedLaunchButton: HTMLButtonElement | undefined
   let guidedFocusCard: HTMLElement | undefined
   let guidedCheckAgainButton: HTMLButtonElement | undefined
+  let requestGuidedClose: GuidedCloseRequester | null = null
+  let guidedThreadDestination: string | null = null
   let guidedReturnTarget: 'launch' | 'saved-focus' = 'launch'
   let recorderReturnFocus: HTMLElement | null = null
   let recorderOpenedFromThread = false
@@ -1447,11 +1463,18 @@ export function VoiceHistoryPage(): JSX.Element {
   function closeGuidedCheck(): void {
     const pending = pendingGuidedRefresh()
     const returnTarget = guidedReturnTarget
+    const threadDestination = guidedThreadDestination
+    guidedThreadDestination = null
     setPendingGuidedRefresh(null)
     setGuidedOpen(false)
     setGuidedProtocol(null)
     setGuidedReturning(false)
     if (pending === null) {
+      if (threadDestination !== null) {
+        commitThreadSelection(threadDestination)
+        queueMicrotask(() => threadDetailHeading?.focus())
+        return
+      }
       if (selectedThread() === null) setMobileDetailOpen(false)
       restoreGuidedReturnFocus(returnTarget)
       return
@@ -1541,7 +1564,7 @@ export function VoiceHistoryPage(): JSX.Element {
     })()
   }
 
-  function selectThread(key: string): void {
+  function commitThreadSelection(key: string): void {
     disposeAudio()
     closeActionMenus()
     setRenamingKey(null)
@@ -1554,6 +1577,18 @@ export function VoiceHistoryPage(): JSX.Element {
     setActiveView('compare')
     setSelectedKey(key)
     setMobileDetailOpen(true)
+  }
+
+  function selectThread(key: string): void {
+    if (!guidedOpen()) {
+      commitThreadSelection(key)
+      return
+    }
+    if (requestGuidedClose === null) return
+    guidedThreadDestination = key
+    requestGuidedClose((closed) => {
+      if (!closed) guidedThreadDestination = null
+    })
   }
 
   function selectAllTake(id: string): void {
@@ -1718,6 +1753,9 @@ export function VoiceHistoryPage(): JSX.Element {
                 initialProtocol={guidedProtocol()}
                 returningFromPractice={guidedReturning()}
                 onClose={closeGuidedCheck}
+                onCloseRequestReady={(request) => {
+                  requestGuidedClose = request
+                }}
                 onKept={handleGuidedKept}
               />
             </Show>
@@ -1996,7 +2034,49 @@ export function VoiceHistoryPage(): JSX.Element {
                                     tabIndex={-1}
                                   >
                                     <div class={styles.savedFocusReading}>
-                                      <span>Saved Focus reading</span>
+                                      <div class={styles.savedFocusLabel}>
+                                        <span>Saved Focus reading</span>
+                                        <InfoPopover
+                                          label="About this saved Focus reading"
+                                          class={styles.savedFocusInfo}
+                                          panelClass={
+                                            styles.savedFocusInfoPanel
+                                          }
+                                        >
+                                          <dl
+                                            class={styles.savedFocusExplanation}
+                                          >
+                                            <div>
+                                              <dt>What it means</dt>
+                                              <dd>
+                                                A reading of the three-note
+                                                Pitch Centre task, not a general
+                                                rating of your voice.
+                                              </dd>
+                                            </div>
+                                            <div>
+                                              <dt>How it is measured</dt>
+                                              <dd>
+                                                Each landing must hold confident
+                                                detected pitch within 35 cents
+                                                of its target for 300 ms. The
+                                                centred pathway also requires
+                                                all three landings and a typical
+                                                settled error within 25 cents.
+                                              </dd>
+                                            </div>
+                                            <div>
+                                              <dt>Keep in mind</dt>
+                                              <dd>
+                                                This describes one fitted task
+                                                in this recording. It cannot
+                                                assess technique or vocal
+                                                health.
+                                              </dd>
+                                            </div>
+                                          </dl>
+                                        </InfoPopover>
+                                      </div>
                                       <h3 id="saved-guided-focus-title">
                                         {copy.title}
                                       </h3>
@@ -2454,6 +2534,9 @@ export function VoiceHistoryPage(): JSX.Element {
                   initialProtocol={guidedProtocol()}
                   returningFromPractice={guidedReturning()}
                   onClose={closeGuidedCheck}
+                  onCloseRequestReady={(request) => {
+                    requestGuidedClose = request
+                  }}
                   onKept={handleGuidedKept}
                 />
               </Show>

@@ -3,11 +3,11 @@
 // ============================================================
 //
 // The Apple-style floating glass bar (mobile-kit.md §2, decision D1):
-// the first 4 visible tabs of the primary groups (You + Practice) plus a
-// More tab that opens a Sheet with every remaining visible tab.
-// Visibility is delegated to the existing scope/UI-mode gating
-// (visibleTabOrder — the same source the swipe gesture uses), so the bar
-// can never drift from the app's navigation model.
+// four stable, scope-aware destinations plus a More tab that opens a Sheet
+// with every remaining visible tab.
+// Visibility is delegated to the existing scope/UI-mode policy. More and the
+// swipe gesture still derive from visibleTabOrder, so every visible tab that
+// is not pinned here remains reachable in canonical order.
 //
 // This is the pattern the desktop bar now copies: AppNavTabs shows three
 // tabs per group and folds the rest behind a "..." per group. Same
@@ -26,7 +26,7 @@ import { TAB_META } from '@/components/AppNavTabs'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
-import { isTabVisible, PRIMARY_TABS, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
+import { mobileBarTabs, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -39,22 +39,13 @@ export interface BottomTabBarProps {
   tabLabel: (tab: ActiveTab) => string
 }
 
-/** How many tabs fit the bar before the rest overflow into More. */
-const BAR_SLOTS = 4
-
 export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   const [moreOpen, setMoreOpen] = createSignal(false)
 
-  // Bar = the primary groups (You + Practice) under the current scope/mode,
-  // capped at BAR_SLOTS; everything else visible (Play, Studio, Settings, and
-  // any primary overflow) lives in the More sheet. PRIMARY_TABS is asked for
-  // by name because Home and Path no longer live inside the practice group —
-  // reading `practice` alone would quietly drop the daily hub off the bar.
-  const barTabs = createMemo(() =>
-    PRIMARY_TABS.filter((t) =>
-      isTabVisible(t, practiceScope(), uiMode()),
-    ).slice(0, BAR_SLOTS),
-  )
+  // Bar = the stable mobile priority under the current scope/mode. Everything
+  // else visible — including personal destinations added to You — lives in
+  // More without displacing the scope's core instrument.
+  const barTabs = createMemo(() => mobileBarTabs(practiceScope(), uiMode()))
 
   const moreTabs = createMemo(() => {
     const inBar = new Set(barTabs())

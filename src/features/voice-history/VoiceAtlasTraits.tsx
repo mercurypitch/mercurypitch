@@ -9,6 +9,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, Show, } from 'solid-js'
 import { Sparkles } from '@/components/icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import type { VoiceTakeRecord } from '@/db/entities'
 import { getVoiceTakeBlob } from '@/db/services/voice-take-service'
 import { decodeAudioBlobToMono } from '@/lib/decode-audio-to-mono'
@@ -43,7 +44,59 @@ interface TraitRowProps {
   label: string
   value: string
   detail: string
+  explanation: TraitExplanation
   visual?: JSX.Element
+}
+
+interface TraitExplanation {
+  meaning: string
+  calculation: string
+  limits: string
+}
+
+const HELD_TONE_PULSE_EXPLANATION: TraitExplanation = {
+  meaning:
+    'A repeating rise and fall of pitch inside the clearest held part of this take. Resolving a pulse is descriptive; it is not a better-or-worse result.',
+  calculation:
+    'We keep confident, continuous pitch regions held for at least half a second, then look for a repeating 3–10 Hz pattern with more than 10 cents of span. The strongest reliable region is shown.',
+  limits:
+    'Short notes, slides, consonants, accompaniment, and background noise can prevent a pulse from resolving.',
+}
+
+const LOCAL_PITCH_SPREAD_EXPLANATION: TraitExplanation = {
+  meaning:
+    'How tightly detected pitch gathered around its local centre during held notes. A smaller number means less movement in those moments, not automatically better singing.',
+  calculation:
+    'We measure pitch variation in overlapping half-second windows with at least five confident frames and no large note change. The median window spread is reported in cents; 100 cents equals one semitone.',
+  limits:
+    'Intentional vibrato and expressive movement can increase this number. It should only be compared in similar material and recording conditions.',
+}
+
+const HARMONIC_CONTRAST_EXPLANATION: TraitExplanation = {
+  meaning:
+    'The contrast between energy near harmonic multiples and the remaining recorded spectrum. Higher means harmonics dominate this recording more strongly; it is not a breath-support or health rating.',
+  calculation:
+    'From an average of the stronger recorded frames, we anchor the spectrum to the detected fundamental, add the power near its first 15 harmonics, and compare that with the remaining power. The ratio is shown in decibels.',
+  limits:
+    'Vowels, melody, microphone, distance, room, and background sound all change this estimate, so compare only like-for-like recordings.',
+}
+
+const HARMONIC_PEAKS_EXPLANATION: TraitExplanation = {
+  meaning:
+    'How many harmonic multiples were clearly visible in this recording snapshot. More peaks are not inherently better; different pitches and vowels naturally produce different patterns.',
+  calculation:
+    'We inspect up to the first 15 multiples of the detected fundamental in the average spectrum. A peak counts when it is stronger than 5% of the first harmonic.',
+  limits:
+    'The count depends on pitch, vowel, microphone bandwidth, distance, room, and noise. It is a recording landmark, not a tone-quality score.',
+}
+
+const SPECTRAL_CENTRE_EXPLANATION: TraitExplanation = {
+  meaning:
+    'The frequency balance point of the recorded sound. A higher or lower centre describes where this take carried more spectral energy; it does not identify register or resonance placement.',
+  calculation:
+    'Each frequency is weighted by its power in the average stronger-frame spectrum. The percentages are shares of total recorded spectral power around 200–800 Hz, 800–2500 Hz, and above 2500 Hz; the muted remainder is energy outside those bands.',
+  limits:
+    'Pitch, vowel, microphone, distance, room, and recording level can all move the balance point. Use it as a same-setup comparison clue only.',
 }
 
 function clampPercent(value: number): number {
@@ -54,7 +107,29 @@ function TraitRow(props: TraitRowProps): JSX.Element {
   return (
     <li class={styles.traitRow}>
       <div class={styles.traitCopy}>
-        <span>{props.label}</span>
+        <div class={styles.traitLabel}>
+          <span>{props.label}</span>
+          <InfoPopover
+            label={`About ${props.label}`}
+            class={styles.traitInfo}
+            panelClass={styles.traitInfoPanel}
+          >
+            <dl class={styles.traitExplanation}>
+              <div>
+                <dt>What it means</dt>
+                <dd>{props.explanation.meaning}</dd>
+              </div>
+              <div>
+                <dt>How it is estimated</dt>
+                <dd>{props.explanation.calculation}</dd>
+              </div>
+              <div>
+                <dt>Keep in mind</dt>
+                <dd>{props.explanation.limits}</dd>
+              </div>
+            </dl>
+          </InfoPopover>
+        </div>
         <strong>{props.value}</strong>
         <small>{props.detail}</small>
       </div>
@@ -85,11 +160,20 @@ function SpectrumVisual(props: {
 
 function BandBalanceVisual(props: { timbre: TimbreReading }): JSX.Element {
   const resonance = (): TimbreReading['resonance'] => props.timbre.resonance
+  const remaining = (): number =>
+    Math.max(
+      0,
+      1 -
+        resonance().chestRatio -
+        resonance().maskRatio -
+        resonance().headRatio,
+    )
   return (
     <div class={styles.resonanceVisual} aria-hidden="true">
-      <i style={{ flex: Math.max(0.02, resonance().chestRatio) }} />
-      <i style={{ flex: Math.max(0.02, resonance().maskRatio) }} />
-      <i style={{ flex: Math.max(0.02, resonance().headRatio) }} />
+      <i style={{ flex: `${resonance().chestRatio} 1 0` }} />
+      <i style={{ flex: `${resonance().maskRatio} 1 0` }} />
+      <i style={{ flex: `${resonance().headRatio} 1 0` }} />
+      <i style={{ flex: `${remaining()} 1 0` }} />
     </div>
   )
 }
@@ -110,6 +194,7 @@ function PitchRows(props: { pitch: VoicePitchTraits | null }): JSX.Element {
           <TraitRow
             label="Held-tone pulse"
             value={vibratoLabel(pitch)}
+            explanation={HELD_TONE_PULSE_EXPLANATION}
             detail={
               pitch.vibrato.detected
                 ? `Strongest qualifying held region · ${pitch.vibrato.rateHz.toFixed(1)} Hz · ~${pitch.vibrato.depthCents} cent span`
@@ -127,6 +212,7 @@ function PitchRows(props: { pitch: VoicePitchTraits | null }): JSX.Element {
           />
           <TraitRow
             label="Local pitch spread"
+            explanation={LOCAL_PITCH_SPREAD_EXPLANATION}
             value={
               pitch.heldCenterSpreadCents === null
                 ? 'Not resolved'
@@ -168,6 +254,7 @@ function ToneRows(props: { state: ToneState }): JSX.Element {
           <TraitRow
             label="Harmonic contrast estimate"
             value={`${reading.breathiness.hnrDb.toFixed(1)} dB`}
+            explanation={HARMONIC_CONTRAST_EXPLANATION}
             detail="Whole-recording estimate; melody, microphone, distance, and room affect it"
             visual={
               <SpectrumVisual
@@ -179,6 +266,7 @@ function ToneRows(props: { state: ToneState }): JSX.Element {
           />
           <TraitRow
             label="Resolved harmonic peaks"
+            explanation={HARMONIC_PEAKS_EXPLANATION}
             value={
               reading.richness.harmonicProfile.length === 0
                 ? 'Not resolved'
@@ -193,6 +281,7 @@ function ToneRows(props: { state: ToneState }): JSX.Element {
           <TraitRow
             label="Spectral centre"
             value={`${reading.resonance.spectralCentroid} Hz`}
+            explanation={SPECTRAL_CENTRE_EXPLANATION}
             detail={`${Math.round(reading.resonance.chestRatio * 100)}% low · ${Math.round(reading.resonance.maskRatio * 100)}% mid · ${Math.round(reading.resonance.headRatio * 100)}% high recorded energy`}
             visual={<BandBalanceVisual timbre={reading} />}
           />
@@ -220,11 +309,46 @@ function TakeTraitColumn(props: {
       <div class={styles.takeHeading}>
         <span>{props.selected.label}</span>
         <strong>{props.selected.take.title}</strong>
-        <small>
-          {pitch() === null
-            ? 'Waveform archive'
-            : `Pitch resolved in ${Math.round(pitch()!.resolvedPitchRatio * 100)}% of saved frames`}
-        </small>
+        <div class={styles.takeCoverage}>
+          <small>
+            {pitch() === null
+              ? 'Waveform archive'
+              : `Trait-ready pitch · ${Math.round(pitch()!.resolvedPitchRatio * 100)}% of saved frames`}
+          </small>
+          <Show when={pitch() !== null}>
+            <InfoPopover
+              label={`About ${props.selected.label.toLowerCase()} take pitch coverage`}
+              class={styles.coverageInfo}
+              panelClass={styles.traitInfoPanel}
+            >
+              <dl class={styles.traitExplanation}>
+                <div>
+                  <dt>What it means</dt>
+                  <dd>
+                    The share of all saved moments with pitch clear enough for
+                    the Atlas traits. This is coverage, not pitch accuracy.
+                  </dd>
+                </div>
+                <div>
+                  <dt>How it is calculated</dt>
+                  <dd>
+                    We count saved contour frames that contain pitch and clear
+                    the trait confidence floor, then divide by every saved frame
+                    in the take.
+                  </dd>
+                </div>
+                <div>
+                  <dt>Keep in mind</dt>
+                  <dd>
+                    Silence, consonants, noise, and ambiguous sound remain in
+                    the denominator. The listening map may draw some
+                    lower-confidence pitch that these traits do not use.
+                  </dd>
+                </div>
+              </dl>
+            </InfoPopover>
+          </Show>
+        </div>
       </div>
       <ul class={styles.traitList}>
         <PitchRows pitch={pitch()} />
