@@ -21,9 +21,10 @@ Confidence is the finding agent's own rating and is orthogonal to status.
 
 ## Fixed on this branch
 
-Ten of the 46 are fixed here. Five carry a regression test that was verified to
-fail when the fix is reverted; the other five are marked below, and the reason
-each has no test is stated rather than glossed:
+Eleven defects are fixed here — ten from the hunt, plus one found while
+reviewing those fixes. Seven carry a regression test verified to fail when the
+fix is reverted; for the other four, the reason there is no test is stated
+rather than glossed:
 
 | Location                                                      | Fix                                                                                   | Test                                                                                                            |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -45,6 +46,38 @@ by running. See TESTING.md §5.3.
 
 The remaining 36 are unfixed. The one that most needs a decision rather than a
 patch is the account takeover in §2.
+
+## A defect the hunt missed, found by reviewing the fixes
+
+`src/lib/jam/service.ts:152` — `leaveRoom`
+
+The hunt's `jam-store.ts:2114` finding observed in passing that `leaveRoom`
+"closes the data channels and peer connections but **deliberately** does NOT
+call `stopLocalStream()`". Reviewing the fix for that finding showed the word
+"deliberately" was doing a lot of work:
+
+- `leaveRoom()` releases no local media.
+- `dispose()` does release it — and `disposeJam()`, its only caller, has **zero call sites in the app**. `JamPanel.tsx:1075` wires the Leave button to `leaveJamRoom`, which calls `leaveRoom()`, never `dispose()`.
+- `cleanupJam()` runs `setJamLocalStream(null)`, which drops the store's reference but leaves the service holding a live `MediaStream`.
+
+So leaving a jam room never released the microphone. The capture stayed live,
+with the browser's recording indicator lit, until the tab was closed. Rejoining
+reused the still-open capture, which is why nothing looked broken from inside
+the app.
+
+`cleanupJam` states the intended contract in its own comment — "the next room
+captures its own microphone on its own first unmute" — which is only true if the
+previous capture was released. It was not.
+
+Fixed by stopping local media in `leaveRoom`. Covered by
+`src/lib/jam/service-local-media.test.ts`, which drives the real
+`createJamService` rather than a double; reverting the fix turns two of its
+three cases red.
+
+**Worth noting for how the audit ran:** the hunt found the narrow race and
+described the broad bug in a subordinate clause without recognising it. That is
+an argument for reviewing findings against the code rather than accepting the
+framing that comes with them.
 
 ## The four that were verified in depth
 

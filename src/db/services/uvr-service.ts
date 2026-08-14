@@ -138,6 +138,9 @@ export async function sessionHasPlayableStems(
   return (await sessionStemPresence(sessionId)) === 'present'
 }
 
+/** Present, absent, or "the read failed so we do not know". */
+export type StemPresence = 'present' | 'absent' | 'unknown'
+
 /**
  * Whether a session's separated stems are on disk.
  *
@@ -152,8 +155,6 @@ export async function sessionHasPlayableStems(
  * completed separation in the library on one transient read error at startup.
  * Deleters must call this function and skip on `unknown`.
  */
-export type StemPresence = 'present' | 'absent' | 'unknown'
-
 export async function sessionStemPresence(
   sessionId: string,
 ): Promise<StemPresence> {
