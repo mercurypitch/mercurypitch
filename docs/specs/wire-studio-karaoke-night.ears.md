@@ -2,8 +2,8 @@
 
 Requirements for bidirectional linking and session URL state synchronization between the main MercuryPitch studio app and the standalone Karaoke Night stage (`/karaoke-night`).
 
-**Source:** `src/lib/karaoke-night-link.ts` — deep link helpers (`karaokeNightSessionUrl`, `studioSessionUrl`); `src/features/karaoke-night/KaraokeNightApp.tsx` — Karaoke Night URL state sync & restoration; `src/components/UvrPanel.tsx` — studio topbar link
-**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`)
+**Source:** `src/lib/karaoke-night-link.ts` — deep link helpers (`karaokeNightSessionUrl`, `studioSessionUrl`); `src/features/karaoke-night/KaraokeNightApp.tsx` — Karaoke Night URL state sync & restoration; `src/components/UvrPanel.tsx` — studio topbar link and the phone signpost; `src/features/karaoke-night/KaraokeRailPanels.tsx` — the rail's sync door
+**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`); `src/components/__tests__/UvrPanel.test.tsx` and `src/features/karaoke-night/KaraokeRailPanels.test.tsx` (`REQ-SKL-007..009`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
@@ -26,3 +26,23 @@ EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behavi
 
 ### REQ-SKL-006 — Studio link targeting loaded session
 **WHILE** a separation session is active in the studio stem mixer (`UvrPanel`), the "Karaoke Night" view tab link shall point to `/karaoke-night?session=<sessionId>`. Verified by `SK-LINK-6`.
+
+### REQ-SKL-007 — The studio signposts the stage on a phone
+**WHILE** the studio upload view is shown on a narrow viewport that is not a
+television, the system shall show a signpost naming the difference between the
+two surfaces ("you're in the studio; Karaoke Night is the stage") with a link
+to `KARAOKE_NIGHT_PATH`. **IF** the viewport is wide, or the device is a TV
+(which has its own note), **THEN** no signpost shall be shown. Verified by
+`REQ-SKL-007` tests in `UvrPanel.test.tsx`.
+
+### REQ-SKL-008 — Karaoke Night offers device sync without songs
+**WHEN** the Karaoke Night rail renders, the system shall offer the device
+sync door ("send or receive a song") even when the library is empty — the
+device most in need of receiving is the one with nothing on it yet. Verified
+by `REQ-SKL-008` in `KaraokeRailPanels.test.tsx`.
+
+### REQ-SKL-009 — The sync machinery loads only when the door opens
+**WHILE** the sync door has not been opened, the system shall not load the
+sync chunk (WebRTC signaling, portable-bundle machinery); the rail's first
+paint never pays for it. Verified by `REQ-SKL-009` in
+`KaraokeRailPanels.test.tsx`.

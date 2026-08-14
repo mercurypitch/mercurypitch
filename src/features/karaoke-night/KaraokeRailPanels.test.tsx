@@ -168,7 +168,7 @@ describe('the door to another device', () => {
   // nothing on it yet: it is the device that needs to RECEIVE. Gating the
   // door on already owning songs would hide it from exactly that case, so
   // this pins the placement, not just the presence.
-  it('offers to send or receive even with an empty library', async () => {
+  it('REQ-SKL-008: offers to send or receive even with an empty library', async () => {
     store.readSessions = () => []
 
     const { container } = render(() => <KaraokeRailPanels {...railProps} />)
@@ -183,7 +183,7 @@ describe('the door to another device', () => {
     expect(container.querySelectorAll('.kn-library-song').length).toBe(0)
   })
 
-  it('does not load the sync chunk until the door is opened', async () => {
+  it('REQ-SKL-009: does not load the sync chunk until the door is opened', async () => {
     store.readSessions = () => [session('uvr-a', 3)]
 
     const { container } = render(() => <KaraokeRailPanels {...railProps} />)
