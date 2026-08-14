@@ -323,6 +323,30 @@ async function handleList(
   const scope = scopeRead(def, q, auth)
   if (scope instanceof Response) return scope
 
+  // A filter is a read. maskPublicRow keeps privateCols out of the response,
+  // but nothing stopped a caller filtering ON one — and a filter that changes
+  // whether a row comes back answers the same question the mask refused, one
+  // bit at a time. Rejecting rather than ignoring: silently dropping the filter
+  // would widen the result set and look like the query succeeded.
+  //
+  // Scoped to privateCols on purpose. Those are documented as admin-only reads,
+  // so refusing them cannot break a legitimate caller. The publicCols case is a
+  // real oracle too, but narrowing it needs a product decision — on a `user`
+  // table, scopeRead already restricts rows to the caller, so filtering by a
+  // non-public column there reveals nothing about anyone else. See
+  // docs/agent/BUGS.md.
+  if (!admin && def.privateCols !== undefined) {
+    const privateFilter = q.filters.find(([col]) =>
+      def.privateCols?.includes(col),
+    )
+    if (privateFilter) {
+      return respond(
+        { error: `Cannot filter on "${privateFilter[0]}"` },
+        { status: 400 },
+      )
+    }
+  }
+
   const clauses: string[] = []
   const binds: SqlValue[] = []
   if (scope.clause) {

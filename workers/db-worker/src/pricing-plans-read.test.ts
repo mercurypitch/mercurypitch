@@ -92,3 +92,43 @@ describe('GET /api/pricingPlans', () => {
     expect(rows[0]!.stripePriceId).toBe(SECRET_PRICE)
   })
 })
+
+describe('GET /api/pricingPlans — filtering on the withheld column', () => {
+  // Masking the column out of the response is only half the door. A filter is
+  // also a read: `?where[stripePriceId]=...` changes whether a row comes back,
+  // which answers the same question the mask refused — one guess at a time,
+  // unauthenticated, against live Stripe configuration.
+
+  it('refuses a filter on stripePriceId for an anonymous caller', async () => {
+    const response = await get(
+      `/api/pricingPlans?where[stripePriceId]=${SECRET_PRICE}`,
+    )
+    expect(response.status).toBe(400)
+    const body = await response.text()
+    // The refusal must not echo the guess back, or it becomes the oracle it
+    // was meant to close.
+    expect(body).not.toContain(SECRET_PRICE)
+  })
+
+  it('refuses it on the count endpoint, which is the cheapest oracle', async () => {
+    const response = await get(
+      `/api/pricingPlans/count?where[stripePriceId]=${SECRET_PRICE}`,
+    )
+    expect(response.status).toBe(400)
+  })
+
+  it('still allows filtering on a column the caller can read', async () => {
+    // The negative control: a guard that rejected every filter would pass both
+    // cases above and break the pricing page.
+    const response = await get('/api/pricingPlans?where[kind]=donation')
+    expect(response.status).toBe(200)
+  })
+
+  it('still allows the admin studio to filter on it', async () => {
+    const response = await get(
+      `/api/pricingPlans?where[stripePriceId]=${SECRET_PRICE}`,
+      { 'X-Admin-Key': 'test-admin-key' },
+    )
+    expect(response.status).toBe(200)
+  })
+})
