@@ -44,6 +44,7 @@ export default defineConfig(
           allowDefaultProject: [
             '*.js',
             '*.mjs',
+            '.dependency-cruiser.cjs',
             'scripts/assert-piano-night-bundle.mjs',
             'scripts/code-metrics.mjs',
             'scripts/pr-prepare.mjs',
@@ -290,6 +291,7 @@ export default defineConfig(
   // rules while declaring Node globals and disabling that TS-only check.
   {
     files: [
+      '.dependency-cruiser.cjs',
       'scripts/assert-piano-night-bundle.mjs',
       'scripts/code-metrics.mjs',
       'scripts/pr-prepare.mjs',
@@ -298,7 +300,9 @@ export default defineConfig(
     languageOptions: {
       globals: {
         console: 'readonly',
+        module: 'writable',
         process: 'readonly',
+        require: 'readonly',
       },
     },
     rules: {
