@@ -16,7 +16,7 @@
     "required": ["ADMIN_KEY", "JWT_SECRET"],
   },
   "vars": {
-    "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+    "GOOGLE_CLIENT_ID": "940402390643-sb89ek7ocuoikqpd5llc6ike4fasccdl.apps.googleusercontent.com",
     "ALLOWED_ORIGINS": "*.workers.dev",
     "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
   },
