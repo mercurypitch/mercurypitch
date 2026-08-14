@@ -5,6 +5,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPitchCentrePilotProtocol } from '@/lib/guided-voice'
+import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import type { DryVoiceCaptureController } from './useDryVoiceCapture'
 
@@ -166,5 +167,40 @@ describe('GuidedVoiceCheck', () => {
         name: 'Three notes, centred where you are comfortable.',
       }),
     ).toBeInTheDocument()
+  })
+
+  it('lets external navigation use the same discard confirmation', () => {
+    const controller = captureController()
+    controller.state = () => 'recording'
+    useDryVoiceCaptureMock.mockReturnValue(controller)
+    const onClose = vi.fn()
+    const onResolved = vi.fn()
+    const onCloseRequestReady = vi.fn()
+    render(() => (
+      <GuidedVoiceCheck
+        onClose={onClose}
+        onCloseRequestReady={onCloseRequestReady}
+        onKept={vi.fn()}
+      />
+    ))
+
+    const requestClose = onCloseRequestReady.mock.calls[0]?.[0] as
+      | GuidedCloseRequester
+      | undefined
+    expect(requestClose).toBeDefined()
+    requestClose?.(onResolved)
+    expect(controller.discard).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole('heading', { name: 'Discard this temporary take?' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onResolved).toHaveBeenLastCalledWith(false)
+    expect(onClose).not.toHaveBeenCalled()
+
+    requestClose?.(onResolved)
+    fireEvent.click(screen.getByRole('button', { name: 'Discard take' }))
+    expect(onResolved).toHaveBeenLastCalledWith(true)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

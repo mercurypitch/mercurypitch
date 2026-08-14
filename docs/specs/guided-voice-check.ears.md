@@ -42,6 +42,12 @@ remove the temporary audio and shall not create a voice-history thread.
 **When** the singer explicitly keeps a Focus Take, the system shall store it
 through the existing durable voice-take service.
 
+### REQ-GVC-006 — Thread navigation remains available
+
+**WHEN** a singer selects an existing Hear Yourself thread while Guided Check
+is open, the system shall return to that thread; if the guide holds an unkept
+capture, the system shall first use the same discard confirmation as Close.
+
 ## 2. Protocol and capture
 
 ### REQ-GVC-010 — Versioned protocol identity

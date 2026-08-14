@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TAB_META } from '@/components/AppNavTabs'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, MOBILE_BAR_TAB_PRIORITY, mobileBarTabs, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 
 // These tests pin the single source of truth that drives BOTH the visible tab
 // bar (AppNavTabs) and the mobile swipe navigation (App.tsx). If a tab is
@@ -40,6 +40,14 @@ describe('tab order', () => {
     expect(progress).toBe(path + 1)
   })
 
+  it('keeps Hear Yourself immediately after Progress', () => {
+    const progress = TAB_ORDER.indexOf(TAB_PROGRESS)
+    const voiceHistory = TAB_ORDER.indexOf(TAB_VOICE_HISTORY)
+
+    expect(progress).toBeGreaterThanOrEqual(0)
+    expect(voiceHistory).toBe(progress + 1)
+  })
+
   it.each(['all', 'singing', 'guitar', 'piano'] as const)(
     'keeps Progress visible in simple mode for the %s scope',
     (scope) => {
@@ -56,9 +64,15 @@ describe('tab order', () => {
 })
 
 describe('tab groups', () => {
-  it('puts Home and the Ascent in the You group', () => {
-    expect(tabGroupOf(TAB_HOME)?.id).toBe('you')
-    expect(tabGroupOf(TAB_PATH)?.id).toBe('you')
+  it('keeps orientation and personal records together in You', () => {
+    const you = TAB_GROUPS.find((group) => group.id === 'you')
+    expect(you?.tabs).toEqual([
+      TAB_HOME,
+      TAB_PATH,
+      TAB_PROGRESS,
+      TAB_VOICE_HISTORY,
+    ])
+    expect(tabGroupOf(TAB_VOICE_HISTORY)?.id).toBe('you')
   })
 
   it('keeps the Practice group an instrument selector plus drills', () => {
@@ -150,6 +164,13 @@ describe('simple mode after the regrouping', () => {
     expect(isTabVisible(TAB_PATH, 'all', 'simple')).toBe(true)
   })
 
+  it('keeps Hear Yourself reachable for singers', () => {
+    expect(isTabVisible(TAB_VOICE_HISTORY, 'singing', 'simple')).toBe(true)
+    expect(visibleTabOrder('singing', 'simple')).toContain(TAB_VOICE_HISTORY)
+    expect(isTabVisible(TAB_VOICE_HISTORY, 'guitar', 'simple')).toBe(false)
+    expect(isTabVisible(TAB_VOICE_HISTORY, 'piano', 'simple')).toBe(false)
+  })
+
   it('still hides the Play and Studio surfaces', () => {
     expect(isTabVisible(TAB_CHALLENGES, 'all', 'simple')).toBe(false)
     expect(isTabVisible(TAB_COMPOSE, 'all', 'simple')).toBe(false)
@@ -167,9 +188,7 @@ describe('simple mode after the regrouping', () => {
   })
 })
 
-describe('the phone bar and the desktop bar agree', () => {
-  // BottomTabBar slices PRIMARY_TABS; AppNavTabs splits each group. Both have
-  // to start from the same list or the two bars offer different destinations.
+describe('primary groups and phone priority', () => {
   it('derives the primary tabs from the You and Practice groups', () => {
     const expected = TAB_GROUPS.filter((g) =>
       ['you', 'practice'].includes(g.id),
@@ -178,6 +197,33 @@ describe('the phone bar and the desktop bar agree', () => {
   })
 
   it('puts Home first, so the phone bar always opens on the hub', () => {
-    expect(PRIMARY_TABS[0]).toBe(TAB_HOME)
+    expect(MOBILE_BAR_TAB_PRIORITY[0]).toBe(TAB_HOME)
+  })
+
+  it.each([
+    ['all', TAB_SINGING],
+    ['singing', TAB_SINGING],
+    ['guitar', TAB_GUITAR],
+    ['piano', TAB_PIANO],
+  ] as const)(
+    'keeps the %s scope instrument in the fourth phone slot',
+    (scope, instrument) => {
+      expect(mobileBarTabs(scope, 'advanced')).toEqual([
+        TAB_HOME,
+        TAB_PATH,
+        TAB_PROGRESS,
+        instrument,
+      ])
+    },
+  )
+
+  it('keeps Hear Yourself in More without hiding it in simple singing mode', () => {
+    const bar = mobileBarTabs('singing', 'simple')
+    const more = visibleTabOrder('singing', 'simple').filter(
+      (tab) => !bar.includes(tab),
+    )
+
+    expect(bar).not.toContain(TAB_VOICE_HISTORY)
+    expect(more).toContain(TAB_VOICE_HISTORY)
   })
 })

@@ -49,6 +49,17 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.getByRole('heading', { name: 'Room and waveform check' }),
   ).toBeFocused({ timeout: 10000 })
+  await page.getByRole('button', { name: 'Find my next focus' }).click()
+  await expect(page.getByTestId('guided-voice-check')).toBeVisible()
+  await page
+    .locator('aside[aria-label="Practice threads"]')
+    .getByRole('button')
+    .filter({ hasText: 'Room and waveform check' })
+    .click()
+  await expect(page.getByTestId('guided-voice-check')).not.toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Room and waveform check' }),
+  ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Room', exact: true }),
   ).toBeVisible({ timeout: 10000 })
@@ -58,7 +69,19 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.getByRole('heading', { name: 'The shape behind the trail.' }),
   ).toBeVisible()
+  await page.getByRole('button', { name: 'About Take Topography' }).click()
+  await expect(page.getByText('What it shows')).toBeVisible()
+  await expect(
+    page.getByText('Both takes share real time and pitch scales', {
+      exact: false,
+    }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(page.getByText('Held-tone pulse', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'About Held-tone pulse' }).click()
+  await expect(page.getByText('How it is estimated')).toBeVisible()
+  await expect(page.getByText('3–10 Hz', { exact: false })).toBeVisible()
+  await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'Map spectrum snapshot' }).click()
   await expect(
     page.getByRole('button', { name: 'Remap spectrum snapshot' }),
@@ -66,6 +89,13 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.getByText('Harmonic contrast estimate', { exact: true }),
   ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'About Harmonic contrast estimate' })
+    .click()
+  await expect(
+    page.getByText('first 15 harmonics', { exact: false }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)

@@ -141,12 +141,26 @@
   white-space: nowrap;
 }
 
-.takeHeading small {
+.takeCoverage {
   grid-row: 1 / span 2;
   grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   align-self: center;
+}
+
+.takeCoverage small {
   font-size: 0.65rem;
   color: #7f8fa3;
+}
+
+.takeCoverage .coverageInfo {
+  width: 28px;
+  height: 28px;
+  margin-block: -4px;
+  border-color: transparent;
+  background: transparent;
 }
 
 .traitList {
@@ -176,10 +190,54 @@
   min-width: 0;
 }
 
-.traitCopy span {
+.traitLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.traitLabel > span {
   font-size: 0.64rem;
   font-weight: 720;
   color: #8e9eb1;
+}
+
+.traitLabel .traitInfo {
+  width: 28px;
+  height: 28px;
+  margin-block: -4px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.traitInfoPanel {
+  max-width: min(350px, calc(100vw - 16px));
+  padding: 14px;
+}
+
+.traitExplanation {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+}
+
+.traitExplanation > div {
+  display: grid;
+  gap: 3px;
+}
+
+.traitExplanation dt {
+  color: #e4edf8;
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+.traitExplanation dd {
+  margin: 0;
+  color: #9bacc0;
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .traitCopy strong {
@@ -242,7 +300,7 @@
 }
 
 .resonanceVisual i {
-  min-width: 4px;
+  min-width: 0;
   border-radius: 999px;
 }
 
@@ -256,6 +314,10 @@
 
 .resonanceVisual i:nth-child(3) {
   background: #bc8cff;
+}
+
+.resonanceVisual i:nth-child(4) {
+  background: #354359;
 }
 
 .pulseVisual {
@@ -309,6 +371,20 @@
 
   .takeGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .traitLabel .traitInfo {
+    width: 44px;
+    height: 44px;
+    margin-block: -12px;
+    margin-inline: -7px;
+  }
+
+  .takeCoverage .coverageInfo {
+    width: 44px;
+    height: 44px;
+    margin-block: -12px;
+    margin-inline: -7px;
   }
 }
 

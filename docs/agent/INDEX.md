@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 13.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.8k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.6k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 9.5k | Voice History — local listening desk for kept voice takes |
+| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 9.8k | Voice History — local listening desk for kept voice takes |
 | `ear-lab` | [ThresholdDrillView.tsx](../../src/features/ear-lab/ThresholdDrillView.tsx) | 7.0k | ThresholdDrillView — every Ruler-A drill on the stage. |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 6.9k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 6.6k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
@@ -110,9 +110,9 @@ These are the rules that break things when ignored.
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 500 | What's New — the v0.9.0 release, in the visitor's terms Content, not code. |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 450 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
+| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 350 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
-| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 350 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 250 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
@@ -342,9 +342,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
+| [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.6k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.6k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.5k |
-| [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.5k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.4k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
