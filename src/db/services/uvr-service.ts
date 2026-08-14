@@ -117,7 +117,10 @@ export async function listStemTypesStrict(
 ): Promise<UvrStemType[]> {
   const db = await getDb()
   const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-  const blobs = await repo.findAll({ where: { sessionId } })
+  const blobs = await repo.findAll({
+    where: { sessionId },
+    throwOnError: true,
+  })
   return [...new Set(blobs.map((blob) => blob.stemType))]
 }
 
@@ -259,6 +262,7 @@ export async function getStemBlobStrict(
     orderBy: 'createdAt',
     orderDir: 'desc',
     limit: 1,
+    throwOnError: true,
   })
   if (results.length === 0) return null
   const entry = results[0]
@@ -289,6 +293,7 @@ export async function getOriginalFileBlobStrict(
     orderBy: 'createdAt',
     orderDir: 'desc',
     limit: 1,
+    throwOnError: true,
   })
   if (results.length === 0) return null
   const entry = results[0]
@@ -388,6 +393,7 @@ export async function getStemFingerprintDataStrict(
     orderBy: 'createdAt',
     orderDir: 'desc',
     limit: 1,
+    throwOnError: true,
   })
   if (results.length === 0) return null
   return JSON.parse(results[0].fingerprintJson) as MelodyFingerprint

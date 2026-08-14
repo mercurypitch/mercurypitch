@@ -9,7 +9,14 @@ import { exposeForE2E } from './test-utils'
  * is a degraded-but-expected state — not an app crash. We warn instead of error
  * and swallow the rejection so it never surfaces as "Uncaught (in promise)".
  */
-function isNetworkError(reason: unknown): boolean {
+/**
+ * Whether a failure is the network being unavailable rather than the app being
+ * broken. Exported because AppErrorBoundary installs a second listener on the
+ * same events and must reach the same verdict — calling preventDefault() here
+ * does not stop that listener running (only stopImmediatePropagation would),
+ * so both filters have to agree or an offline blip shows a crash screen.
+ */
+export function isNetworkError(reason: unknown): boolean {
   const msg =
     reason instanceof Error
       ? reason.message

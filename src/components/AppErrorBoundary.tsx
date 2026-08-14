@@ -5,6 +5,7 @@
 import type { JSX, ParentComponent } from 'solid-js'
 import { onMount } from 'solid-js'
 import { ErrorBoundary } from 'solid-js/web'
+import { isNetworkError } from '@/lib/global-error-handler'
 import { exposeForE2E } from '@/lib/test-utils'
 import { setAppError as setAppErrorSignal } from '@/stores/app-store'
 import { CrashModal } from './CrashModal'
@@ -17,7 +18,7 @@ interface AppErrorBoundaryProps {
  * Global error handler for unhandled errors.
  * Works in addition to the ErrorBoundary component.
  */
-const setupGlobalErrorHandler = () => {
+export const setupGlobalErrorHandler = () => {
   const errorHandler = (event: ErrorEvent | PromiseRejectionEvent): void => {
     // ResizeObserver loop errors are benign browser internals — they fire
     // when a ResizeObserver callback triggers further layout changes that
@@ -44,6 +45,18 @@ const setupGlobalErrorHandler = () => {
       event instanceof ErrorEvent
         ? (event.error ?? new Error(event.message))
         : (event.reason ?? new Error('Unhandled promise rejection'))
+
+    // The backend being unreachable is not a crash. global-error-handler.ts
+    // already calls preventDefault() for these, but preventDefault only
+    // suppresses the browser's default action — it does not stop this second
+    // listener from running. Without the same check here, going offline, or a
+    // worker being briefly down, put the full-screen CrashModal in front of a
+    // user whose app was working fine.
+    if (isNetworkError(err)) {
+      console.warn('[net] request failed (backend unreachable / offline):', err)
+      return
+    }
+
     console.error('Unhandled error:', err)
     exposeForE2E('__globalError', err)
     setAppErrorSignal({
