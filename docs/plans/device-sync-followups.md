@@ -140,8 +140,7 @@ In `sync-store.ts`:
 ```ts
 const [syncQueue, setSyncQueue] = createSignal<string[]>([])
 export function enqueueSongs(sessionIds: string[]): void
-export function cancelQueued(sessionId: string): void
-export function stopAfterCurrent(): void
+export function stopQueue(): void
 ```
 
 Strictly sequential, draining through the existing `sendSongToPeer` — the
