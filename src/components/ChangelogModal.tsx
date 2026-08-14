@@ -141,7 +141,7 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
               {(entry, i) => (
                 <>
                   {i() > 0 && <FancyDivider />}
-                  <div class={styles.version}>
+                  <div class={styles.version} data-testid="changelog-version">
                     <div class={styles.versionHeader}>
                       <span class={styles.versionTag}>v{entry.version}</span>
                       <span class={styles.date}>{entry.date}</span>

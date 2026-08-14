@@ -149,43 +149,43 @@ test.describe('CSS Module Refactor - Style Verification', () => {
   })
 
   test('changelog modal styles load correctly', async ({ page }) => {
-    // Open settings, then changelog
-    const settingsTab = page.locator('[data-testid="tab-settings"]')
-    if ((await settingsTab.count()) > 0) {
-      await settingsTab.click()
-      await page.waitForTimeout(500)
+    // switchTab finds the Settings button wherever the bar keeps it — the
+    // old [data-testid="tab-settings"] guard matched inline buttons only
+    // and silently skipped the whole test once the tab folded into its
+    // group's overflow menu.
+    await switchTab(page, 'settings')
 
-      // Look for the What's New / changelog trigger
-      const changelogBtn = page.locator('[data-testid="whats-new-btn"]')
-      if ((await changelogBtn.count()) > 0) {
-        await changelogBtn.click()
-        await page.waitForTimeout(500)
+    // The What's New button sits in the About block of the Account & App
+    // sub-tab, which a fresh page always opens on.
+    await page.locator('[data-testid="whats-new-btn"]').click()
 
-        const changelogVersion = page.locator('.changelog-version')
-        if ((await changelogVersion.count()) > 0) {
-          const styles = await getStyles(page, '.changelog-version', [
-            'margin-bottom',
-          ])
-          expect(styles).not.toBeNull()
-          // Should have spacing, not 0
-          expect(parseInt(styles!['margin-bottom'])).toBeGreaterThan(0)
-        }
-      }
-    }
+    const dialog = page.locator('[role="dialog"][aria-label="Changelog"]')
+    await expect(dialog).toBeVisible()
+
+    // Version blocks parse from CHANGELOG.md at build time, so at least one
+    // always exists; the module CSS spaces the blocks apart (last one
+    // excepted, hence .first() via querySelector order in getStyles).
+    await expect(
+      dialog.locator('[data-testid="changelog-version"]').first(),
+    ).toBeVisible()
+    const styles = await getStyles(page, '[data-testid="changelog-version"]', [
+      'margin-bottom',
+    ])
+    expect(styles).not.toBeNull()
+    // Should have spacing, not 0
+    expect(parseInt(styles!['margin-bottom'])).toBeGreaterThan(0)
   })
 
   test('vocal analysis tab renders with styles', async ({ page }) => {
-    const analysisTab = page.locator('[data-testid="tab-analysis"]')
-    if ((await analysisTab.count()) > 0) {
-      await analysisTab.click()
-      await page.waitForTimeout(500)
+    // Same silent-skip fix as above: no [data-testid="tab-analysis"] count
+    // guard — switchTab either lands on the tab or fails loudly.
+    await switchTab(page, 'analysis')
 
-      // Check that analysis container is visible
-      const container = page.locator('.vocal-analysis-tab')
-      if ((await container.count()) > 0) {
-        await expect(container).toBeVisible()
-      }
-    }
+    // The dashboard arrives as a lazy chunk; its header proves the page
+    // mounted and its stylesheet laid it out.
+    await expect(
+      page.getByRole('heading', { name: 'Analysis', level: 1 }),
+    ).toBeVisible()
   })
 
   test('no unstyled elements with class but zero dimensions', async ({
