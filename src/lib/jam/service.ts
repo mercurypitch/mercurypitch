@@ -169,7 +169,23 @@ export function createJamService(callbacks: JamCallbacks) {
     // only way out of one. jam-store's cleanupJam already assumes this happened
     // ("the next room captures its own microphone on its own first unmute").
     stopLocalStream()
+    clearAllIceRecovery()
     signaling.leaveRoom()
+  }
+
+  /**
+   * Drop every pending ICE-recovery timer and retry count.
+   *
+   * Not a correctness fix: the pending callback re-checks
+   * `pc.iceConnectionState === 'disconnected'`, and a closed connection reports
+   * 'closed', so no restart was ever attempted on a torn-down pair. What the
+   * timer did do is hold the RTCPeerConnection alive for the rest of the grace
+   * window after the room was left, and carry stale retry counts into the next
+   * room on the same service instance.
+   */
+  function clearAllIceRecovery(): void {
+    for (const peerId of [...iceRecoveryTimers.keys()]) clearIceRecovery(peerId)
+    iceRetries.clear()
   }
 
   // ── Local audio ─────────────────────────────────────────────────
@@ -925,6 +941,7 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function dispose(): void {
     disposed = true
+    clearAllIceRecovery()
     for (const [, dc] of dataChannels) {
       dc.close()
     }
