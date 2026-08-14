@@ -214,4 +214,33 @@ describe('pruneOrphanedCompletedSessions', () => {
     expect(pruned).toBe(0)
     expect(getUvrSession(id)).toBeDefined()
   })
+
+  it('keeps a paid session when the stem read fails transiently', async () => {
+    // The prune runs unconditionally at startup and deletes durably, with no
+    // undo. It used to decide on a boolean that could not distinguish "this
+    // session has no stems" from "the read failed", so a single transient
+    // IndexedDB error on the presence check destroyed a completed separation
+    // the user paid for.
+    //
+    // The failure has to be transient to be dangerous, and that is the honest
+    // scenario: a total outage is self-limiting, because deleteUvrSessionFromDb
+    // reads the same store and bails out too. One failed read followed by a
+    // working one is the window — and IndexedDB does fail per-transaction
+    // (TransactionInactiveError, an eviction mid-session, a timeout under load).
+    const withStems = newSession('paid-1.mp3')
+    await saveStemBlobDurable(withStems, 'vocal', wav([1]), 'v.wav')
+    await completeUvrSession(withStems, { vocal: 'blob:x' }, {})
+
+    const findAll = vi
+      .spyOn(adapter.getRepository('uvrStemBlobs'), 'findAll')
+      .mockRejectedValueOnce(new Error('TransactionInactiveError'))
+
+    const pruned = await pruneOrphanedCompletedSessions()
+
+    expect(pruned).toBe(0)
+    expect(getUvrSession(withStems)?.status).toBe('completed')
+    expect(await dbStatus(withStems)).toBe('completed')
+
+    findAll.mockRestore()
+  })
 })

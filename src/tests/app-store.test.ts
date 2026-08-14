@@ -2,39 +2,56 @@
 // App Store Tests — Settings and persistence
 // ============================================================
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { appStore, getBandRating, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, setSettings, } from '@/stores'
 import { deleteAllUvrSessions, getUvrSession, importUvrSession, updateUvrSessionOutputs, } from '@/stores/app-store'
-import { SENSITIVITY_PRESETS, sensitivityPreset } from '@/stores/settings-store'
+import { SENSITIVITY_PRESETS } from '@/stores/settings-store'
+
+/**
+ * The settings signal resolves its stored value once, at module init, so a
+ * "fresh browser" case cannot be expressed by clearing localStorage alone —
+ * a sibling test's setSettings() has already moved the live signal, and
+ * removeItem does not move it back. Re-import after resetModules to get the
+ * module-init path the assertion is actually about. Same shape as
+ * karaoke-settings-store.test.ts.
+ */
+const loadFreshStores = async () => {
+  vi.resetModules()
+  const [stores, settingsStore] = await Promise.all([
+    import('@/stores'),
+    import('@/stores/settings-store'),
+  ])
+  return { ...stores, ...settingsStore }
+}
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
   })
 
-  it('starts a fresh browser on the most forgiving profile', () => {
+  it('starts a fresh browser on the most forgiving profile', async () => {
     // Nothing has measured the room yet, and the two ways of being wrong are
     // not equivalent: too strict reads as a dead mic with no explanation
     // ('noisy' was the original default and did exactly that), too forgiving
     // lets a little room noise through, which is visible and fixable.
     // Asserted against the preset rather than by repeating its numbers, so
     // the label and the thresholds cannot drift apart.
-    const s = appStore.settings()
+    const fresh = await loadFreshStores()
+    const s = fresh.appStore.settings()
     expect(s.detectionThreshold).toBe(
-      SENSITIVITY_PRESETS.quiet.detectionThreshold,
+      fresh.SENSITIVITY_PRESETS.quiet.detectionThreshold,
     )
-    expect(s.sensitivity).toBe(SENSITIVITY_PRESETS.quiet.sensitivity)
-    expect(s.minConfidence).toBe(SENSITIVITY_PRESETS.quiet.minConfidence)
-    expect(s.minAmplitude).toBe(SENSITIVITY_PRESETS.quiet.minAmplitude)
+    expect(s.sensitivity).toBe(fresh.SENSITIVITY_PRESETS.quiet.sensitivity)
+    expect(s.minConfidence).toBe(fresh.SENSITIVITY_PRESETS.quiet.minConfidence)
+    expect(s.minAmplitude).toBe(fresh.SENSITIVITY_PRESETS.quiet.minAmplitude)
     expect(s.bands).toHaveLength(5)
   })
 
-  it('labels that starting profile as the preset it actually is', () => {
+  it('labels that starting profile as the preset it actually is', async () => {
     // The sidebar/settings label and the thresholds are two halves of one
-    // choice: a mismatch shows a preset the numbers do not reflect. (The
-    // signal resolves its stored value at module init, so this reads the
-    // fresh-browser default.)
-    expect(sensitivityPreset()).toBe('quiet')
+    // choice: a mismatch shows a preset the numbers do not reflect.
+    const fresh = await loadFreshStores()
+    expect(fresh.sensitivityPreset()).toBe('quiet')
     expect(SENSITIVITY_PRESETS.quiet.minConfidence).toBeLessThan(
       SENSITIVITY_PRESETS.home.minConfidence,
     )
@@ -178,8 +195,24 @@ describe('Settings — setBand', () => {
 })
 
 describe('Settings — getBandRating', () => {
+  // getBandRating maps a cents error onto whichever band table is currently in
+  // the settings signal. These cases used to assert against the table that the
+  // 'loads from localStorage if present' case above happens to leave behind:
+  // clearing localStorage does not reset an in-memory signal, so under a
+  // shuffled order they failed (cents 5 scores 100 against the shipped
+  // 'learning' table, not 90). Set the table this block is actually about, so
+  // the expectations below are readable and independent of file order.
+  const BANDS = [
+    { threshold: 0, band: 100, color: '#3fb950' },
+    { threshold: 10, band: 90, color: '#58a6ff' },
+    { threshold: 25, band: 75, color: '#2dd4bf' },
+    { threshold: 50, band: 50, color: '#d29922' },
+    { threshold: 999, band: 0, color: '#f85149' },
+  ]
+
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
+    setSettings((prev) => ({ ...prev, bands: BANDS }))
   })
 
   it('returns 100 for cents <= 0', () => {

@@ -1,0 +1,16 @@
+{
+  "size.filesOver800": 78,
+  "size.filesOver1500": 26,
+  "escapeHatches.explicitAny": 7,
+  "escapeHatches.tsIgnore": 0,
+  "layering.totalErrors": 181,
+  "layering.crossFeatureImports": 300,
+  "tests.presenceOnlyBlocks": 159,
+  "tests.blocksWithoutAssertion": 44,
+  "tests.e2eHardWaits": 492,
+  "tests.e2eSpecsWithoutAssertion": 3,
+  "complexity.functionsOverCognitive15": 306,
+  "complexity.cognitiveOver50": 30,
+  "cycles.errors": 0,
+  "cycles.circular": 22
+}
