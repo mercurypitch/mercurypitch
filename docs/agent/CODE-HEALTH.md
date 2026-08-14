@@ -29,23 +29,23 @@ compiler or a linter can enforce are in the top decile, and the things that only
 a convention can enforce have drifted badly. The gap between those two numbers
 is the actionable finding.
 
-| Signal | Value | Reading |
-| --- | --- | --- |
-| Type coverage | **99.78%** (657,612 / 659,040) | Excellent — top decile |
-| Explicit `any` in production | **7** in 342k lines | Excellent |
-| `@ts-ignore` / `@ts-nocheck` | **0** | Excellent |
-| `tsc --noEmit` | clean | Excellent |
-| Code duplication | **2.2% lines / 2.41% tokens** | Good (industry tolerance is 3–5%) |
-| TODO / FIXME / HACK | **4** in 342k lines | Excellent |
-| Snapshot tests | **0** | Deliberate, and correct for a canvas-heavy app |
-| Unit tests | 7,652 across 645 files | Substantial |
-| — | | |
-| Layer-boundary violations | **181** | Poor, and unenforced until today |
-| Cross-feature imports | **300** | Poor |
-| Import cycles | **22** | Poor |
-| Functions over cognitive complexity 15 | **306** (8 over 100) | Poor |
-| Production files over 800 lines | **78** (26 over 1500) | Poor |
-| Test coverage | **47.3% lines / 44.1% branches / 37.6% functions** | Middling, and misleading — see §5 |
+| Signal                                 | Value                                              | Reading                                        |
+| -------------------------------------- | -------------------------------------------------- | ---------------------------------------------- |
+| Type coverage                          | **99.78%** (657,612 / 659,040)                     | Excellent — top decile                         |
+| Explicit `any` in production           | **7** in 342k lines                                | Excellent                                      |
+| `@ts-ignore` / `@ts-nocheck`           | **0**                                              | Excellent                                      |
+| `tsc --noEmit`                         | clean                                              | Excellent                                      |
+| Code duplication                       | **2.2% lines / 2.41% tokens**                      | Good (industry tolerance is 3–5%)              |
+| TODO / FIXME / HACK                    | **4** in 342k lines                                | Excellent                                      |
+| Snapshot tests                         | **0**                                              | Deliberate, and correct for a canvas-heavy app |
+| Unit tests                             | 7,652 across 645 files                             | Substantial                                    |
+| —                                      |                                                    |                                                |
+| Layer-boundary violations              | **181**                                            | Poor, and unenforced until today               |
+| Cross-feature imports                  | **300**                                            | Poor                                           |
+| Import cycles                          | **22**                                             | Poor                                           |
+| Functions over cognitive complexity 15 | **306** (8 over 100)                               | Poor                                           |
+| Production files over 800 lines        | **78** (26 over 1500)                              | Poor                                           |
+| Test coverage                          | **47.3% lines / 44.1% branches / 37.6% functions** | Middling, and misleading — see §5              |
 
 The one-line version: **where the compiler is the referee, this codebase is
 exemplary; where a human has to be the referee, it has drifted.** Almost every
@@ -113,16 +113,16 @@ devDependency, and no import resolves outside `package.json`.
 `docs/agent/INDEX.md` §1 describes a clean layered design. Measured against the
 code, that description is **aspirational**:
 
-| Rule | Violations | What it means |
-| --- | ---: | --- |
-| `components-no-features` | 106 | The legacy layer depends on the newer layer |
-| `no-cross-feature-import` | 300 | Features reach into each other's internals |
-| `lib-no-stores` | 26 | "Pure" algorithms read global state |
-| `lib-no-features` | 20 | The bottom layer depends on the top |
-| `stores-no-features` | 16 | State depends on UI |
-| `db-no-ui` | 13 | Persistence depends on screens |
-| `no-circular` | 22 | Mutual imports |
-| **Total** | **181 errors + 300 warnings** | |
+| Rule                      |                    Violations | What it means                               |
+| ------------------------- | ----------------------------: | ------------------------------------------- |
+| `components-no-features`  |                           106 | The legacy layer depends on the newer layer |
+| `no-cross-feature-import` |                           300 | Features reach into each other's internals  |
+| `lib-no-stores`           |                            26 | "Pure" algorithms read global state         |
+| `lib-no-features`         |                            20 | The bottom layer depends on the top         |
+| `stores-no-features`      |                            16 | State depends on UI                         |
+| `db-no-ui`                |                            13 | Persistence depends on screens              |
+| `no-circular`             |                            22 | Mutual imports                              |
+| **Total**                 | **181 errors + 300 warnings** |                                             |
 
 The `lib-no-stores` number is the one that costs the most day to day.
 `src/lib/audio-engine.ts` imports `stores/notifications-store` and
@@ -157,13 +157,13 @@ two) and are the cheapest to remove.
 
 78 production files exceed 800 lines; 26 exceed 1,500.
 
-| File | Lines |
-| --- | ---: |
-| `src/components/StemMixer.tsx` | 7,721 |
-| `src/lib/piano-roll.ts` | 5,954 |
-| `src/App.tsx` | 4,183 |
-| `src/components/UvrPanel.tsx` | 3,309 |
-| `src/stores/jam-store.ts` | 2,773 |
+| File                            | Lines |
+| ------------------------------- | ----: |
+| `src/components/StemMixer.tsx`  | 7,721 |
+| `src/lib/piano-roll.ts`         | 5,954 |
+| `src/App.tsx`                   | 4,183 |
+| `src/components/UvrPanel.tsx`   | 3,309 |
+| `src/stores/jam-store.ts`       | 2,773 |
 | `workers/db-worker/src/auth.ts` | 2,615 |
 
 The function-level picture is worse than the file-level one. The largest single
@@ -176,36 +176,84 @@ exceed 900.
 distribution matters more than the count:
 
 | Cognitive complexity | Functions |
-| --- | ---: |
-| 16–29 | 214 |
-| 30–49 | 62 |
-| 50–99 | 22 |
-| 100+ | **8** |
+| -------------------- | --------: |
+| 16–29                |       214 |
+| 30–49                |        62 |
+| 50–99                |        22 |
+| 100+                 |     **8** |
 
 The worst eight:
 
-| Function | Cognitive | Cyclomatic |
-| --- | ---: | ---: |
-| `src/components/PitchCanvas.tsx:1055` | **255** | 153 |
-| `src/components/OfflinePitchCanvas.tsx:460` | 153 | 63 |
-| `src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts:964` | 138 | 48 |
-| `src/lib/midi-song.ts:311` | 137 | 61 |
-| `src/components/guitar/GuitarFretboardCanvas.tsx:281` | 135 | 87 |
-| `src/components/guitar/InteractiveGuitarFretboardCanvas.tsx:226` | 125 | 68 |
-| `src/features/stem-mixer/useStemMixerCanvasController.ts:651` | 116 | 77 |
-| `workers/db-worker/src/premium-background-admin.ts:1936` | 106 | 79 |
+| Function                                                                  | Cognitive | Cyclomatic |
+| ------------------------------------------------------------------------- | --------: | ---------: |
+| `src/components/PitchCanvas.tsx:1055`                                     |   **255** |        153 |
+| `src/components/OfflinePitchCanvas.tsx:460`                               |       153 |         63 |
+| `src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts:964` |       138 |         48 |
+| `src/lib/midi-song.ts:311`                                                |       137 |         61 |
+| `src/components/guitar/GuitarFretboardCanvas.tsx:281`                     |       135 |         87 |
+| `src/components/guitar/InteractiveGuitarFretboardCanvas.tsx:226`          |       125 |         68 |
+| `src/features/stem-mixer/useStemMixerCanvasController.ts:651`             |       116 |         77 |
+| `workers/db-worker/src/premium-background-admin.ts:1936`                  |       106 |         79 |
 
-**A caveat this report will not skip.** The published evidence that complexity
-metrics predict defects *independently of size* is weak — Herraiz & Hassan and
-Landman et al. both find cyclomatic complexity correlates so strongly with lines
-of code that it adds little once you control for LOC. Treat the 306 as a
-**ranked worklist**, not a quality score, and never as a gate. The threshold of
-15 is SonarSource's default convention, not an empirical finding.
+**What the evidence actually supports** — this matters, because complexity
+metrics are routinely oversold and routinely dismissed, and both are wrong.
+See [METRICS.md](METRICS.md) for the full treatment.
+
+- **Cognitive complexity is validated against comprehension _time_, not defects.** Muñoz Barón, Wyrich & Wagner (ESEM 2020) meta-analysed ~24,000 understandability evaluations and found a weighted mean correlation of **0.54** with time-based comprehension, and **0.65** among the significant correlations. Against _correctness_ of comprehension it is mixed and non-significant. So it predicts how long code takes to read — which is the right thing to care about here.
+- **It is not simply a proxy for size at function level.** Landman et al. (2016), over 17.6M Java methods and 6.3M C functions, found method-level R² of only 0.40–0.44 (0.68–0.71 log-transformed) — and, counter-intuitively, the correlation gets _weaker_ for larger subroutines (R² 0.40 → 0.14 as the minimum size rises). At **file** level, though, log-log R² reaches **0.90**: a file-level complexity dashboard really is a LOC dashboard with extra steps.
+- **The threshold of 15 is convention, not a finding.** It is hard-coded as `DEFAULT_THRESHOLD = 15` in the `eslint-plugin-sonarjs` already installed here; SonarSource picked it per-language by tolerance, not from defect data.
+
+The honest reading: treat the 306 as a **ranked reading-cost worklist**, not a
+quality score, and never as an absolute gate. Track the _count_ as a ratchet —
+which is what `pnpm metrics:check` does.
 
 What makes the eight above genuinely worth attention is not the number itself,
 it is that they intersect with the coverage gap. `PitchCanvas.draw` at
 complexity 255 has **no test at all**. That intersection — high complexity ×
 zero tests — is the hotspot signal worth acting on.
+
+### 3.5 Hotspots — where to actually spend the effort
+
+Complexity alone ranks code nobody touches. Churn alone ranks trivial files that
+change constantly. The product ranks code that is both hard to read and under
+active change, which is where reading time and defect odds both concentrate.
+See [METRICS.md](METRICS.md) §2 for the evidence behind this one; it is the
+metric on that page with the strongest claim to predicting _where_ bugs land.
+
+Top 12 by `commits × summed cognitive complexity`, over the last 12 months:
+
+|  Score | Commits | Σ cognitive | File                                                                  |
+| -----: | ------: | ----------: | --------------------------------------------------------------------- |
+| 42,883 |      61 |         703 | `src/lib/piano-roll.ts`                                               |
+| 15,660 |      54 |         290 | `src/components/PitchCanvas.tsx`                                      |
+| 14,076 |     207 |          68 | `src/App.tsx`                                                         |
+| 13,600 |     100 |         136 | `src/components/UvrPanel.tsx`                                         |
+| 13,464 |      36 |         374 | `src/features/stem-mixer/useStemMixerCanvasController.ts`             |
+|  8,740 |      46 |         190 | `workers/db-worker/src/index.ts`                                      |
+|  5,092 |      38 |         134 | `src/features/stem-mixer/useStemMixerAudioController.ts`              |
+|  4,087 |      67 |          61 | `src/features/stem-mixer/useStemMixerLyricsController.ts`             |
+|  3,979 |     173 |          23 | `src/components/StemMixer.tsx`                                        |
+|  2,888 |      38 |          76 | `src/lib/audio-engine.ts`                                             |
+|  2,744 |       8 |         343 | `src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts` |
+|  2,601 |      17 |         153 | `src/components/OfflinePitchCanvas.tsx`                               |
+
+1,321 production files were touched in the last 12 months; 183 of those also
+carry at least one over-threshold function. **`piano-roll.ts` is the single
+clearest target in the codebase** — 5,954 lines, 61 commits, and 703 points of
+summed cognitive complexity across its functions.
+
+Two entries are worth reading against each other. `StemMixer.tsx` has the second
+highest churn in the repo (173 commits) but low measured complexity — its
+problem is size and responsibility count, not tangled functions.
+`Canvas2dTabRenderer.ts` is the opposite: only 8 commits, but 343 points of
+complexity, so it is a comprehension cliff waiting for whoever touches it next
+rather than an active fire.
+
+> **This section requires unshallow history.** The container cloned this repo
+> shallow — 51 commits, all from a two-day window — which would have produced a
+> confident and meaningless ranking. `git fetch --unshallow` brought it to 2,138.
+> `scripts/code-metrics.mjs` now detects a shallow clone and reports `skipped`
+> instead of guessing.
 
 **The pattern behind it is worth naming, because it points at the fix.**
 `renderSheetMusic` has complexity 94 and is thoroughly tested. `PitchCanvas.draw`
@@ -243,7 +291,7 @@ A read failure is not the same claim as "this session has no stems", but the
 deleter could not tell them apart. The delete is durable and there is no undo,
 and each lost session is a separation the user paid for.
 
-**Severity, stated honestly:** this needs a *transient* failure, not a total
+**Severity, stated honestly:** this needs a _transient_ failure, not a total
 one. Under a total IndexedDB outage the bug is self-limiting, because
 `deleteUvrSessionFromDb` reads the same store and bails out too. The dangerous
 window is one failed read followed by a working one — which IndexedDB does
@@ -260,18 +308,18 @@ with `expected 1 to be +0` when the fix is reverted.
 ## 5. Tests
 
 Full analysis in [TESTING.md](TESTING.md). The short version, because the
-question asked was specifically *are these proper tests or just poking at UI
-elements*:
+question asked was specifically _are these proper tests or just poking at UI
+elements_:
 
 **Mostly proper tests.** The measured shape does not support the suspicion:
 
-| Signal | Value |
-| --- | --- |
-| Test blocks | 7,422 |
-| Presence-only blocks (every matcher is `toBeInTheDocument`/`toBeVisible`/`toBeTruthy`/`toBeDefined`) | **159 (2.14%)** |
-| Blocks with no assertion at all | 44 |
-| `getByRole` vs `getByTestId` | 598 vs 203 — correct priority |
-| Snapshot tests | 0 |
+| Signal                                                                                               | Value                         |
+| ---------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Test blocks                                                                                          | 7,422                         |
+| Presence-only blocks (every matcher is `toBeInTheDocument`/`toBeVisible`/`toBeTruthy`/`toBeDefined`) | **159 (2.14%)**               |
+| Blocks with no assertion at all                                                                      | 44                            |
+| `getByRole` vs `getByTestId`                                                                         | 598 vs 203 — correct priority |
+| Snapshot tests                                                                                       | 0                             |
 
 2.14% presence-only is a good number. The concentration matters more than the
 rate: 68 of those 159 are in five UVR component files.
@@ -281,19 +329,19 @@ here.** Eight deliberate mutations of production code were made during the
 audit. **Two were caught, six survived** — and each survivor sits in code that
 line coverage reports as fully exercised:
 
-| Mutation | Effect if shipped | Result |
-| --- | --- | --- |
-| `pitch-detector.ts:449` period off-by-one | ~17 cents error | **32 tests red** |
-| `KaraokeRailPanels.tsx` resource source reverted | rail re-suspends every store tick | **red** |
-| `vocal-analyzer.ts:293` `computeHNR` replaced by a constant | HNR computation deleted | 64/64 pass |
-| `audio-engine.ts:2372` RIFF magic → `'XXXX'` | **every exported WAV unplayable** | 98/98 pass |
-| `PitchCanvas.tsx:783` skip predicate → `+9999` | ball skips every note after the first | 96/96 pass |
-| `UvrSessionResult.tsx:130` `formatDate` → `'BROKEN'` | every date reads BROKEN | 35/35 pass |
-| `UvrProcessControl.tsx` all status icons → `<Music />` | every status shows a music note | 28/28 pass |
-| `SettingsPanel.tsx` strip every `role="tab"` | tablist gone for screen readers | 1/1 pass |
+| Mutation                                                    | Effect if shipped                     | Result           |
+| ----------------------------------------------------------- | ------------------------------------- | ---------------- |
+| `pitch-detector.ts:449` period off-by-one                   | ~17 cents error                       | **32 tests red** |
+| `KaraokeRailPanels.tsx` resource source reverted            | rail re-suspends every store tick     | **red**          |
+| `vocal-analyzer.ts:293` `computeHNR` replaced by a constant | HNR computation deleted               | 64/64 pass       |
+| `audio-engine.ts:2372` RIFF magic → `'XXXX'`                | **every exported WAV unplayable**     | 98/98 pass       |
+| `PitchCanvas.tsx:783` skip predicate → `+9999`              | ball skips every note after the first | 96/96 pass       |
+| `UvrSessionResult.tsx:130` `formatDate` → `'BROKEN'`        | every date reads BROKEN               | 35/35 pass       |
+| `UvrProcessControl.tsx` all status icons → `<Music />`      | every status shows a music note       | 28/28 pass       |
+| `SettingsPanel.tsx` strip every `role="tab"`                | tablist gone for screen readers       | 1/1 pass         |
 
 This is why §5 does not recommend a repo-wide coverage threshold. The arc-physics
-tests execute every line of `arc-physics.ts` while asserting against a *copy* of
+tests execute every line of `arc-physics.ts` while asserting against a _copy_ of
 the logic pasted into the test file; the WAV tests execute every line of the
 encoder while asserting only `toBeInstanceOf(Blob)`. An 80% line-coverage gate
 would have been green through all three.
@@ -320,7 +368,7 @@ would have been green through all three.
 ### The suite is not deterministic
 
 Three full runs on the same commit, same machine, gave three different answers:
-**2 failed / 0 failed / 1 failed**, in *different files* each time, every failure
+**2 failed / 0 failed / 1 failed**, in _different files_ each time, every failure
 a timeout rather than a wrong value. The suite is CPU-bound (645 files, 4 cores,
 ~320s) and any test near the 5,000 ms default flips under load.
 
@@ -377,8 +425,22 @@ so the cheapest failure happens first. This is a well-built pipeline.
 
 ## 7. Bug hunt results
 
-See [BUGS.md](BUGS.md) for the full verified list with file:line, failure
-scenario and suggested fix for each.
+Six independent hunts, one per lens. 46 candidates; four verified in depth
+during the audit, one of them fixed. Full list with file:line, failure scenario
+and suggested fix in [BUGS.md](BUGS.md).
+
+The four verified:
+
+| Severity | Finding                                                                                                            | Status                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| critical | Startup prune could permanently delete paid separations on a transient IndexedDB read failure                      | **FIXED**, mutation-verified test                 |
+| critical | Anonymous account takeover — the `deviceId` credential is published as `userId` on the unauthenticated leaderboard | **CONFIRMED**, not fixed (needs an auth decision) |
+| critical | `realFFT` applies the conjugate twiddle, producing mirrored phantom peaks                                          | **FIXED**, verified against a naive DFT           |
+| high     | Frequency-domain pitch fallback divides by `bufferSize/2` — every pitch one octave sharp                           | **FIXED**, mutation-verified test                 |
+
+The account-takeover finding is left unfixed on purpose: every remedy changes an
+authentication or wire contract, and that is the owner's call. See BUGS.md §2
+for the three options and the recommendation.
 
 ---
 
@@ -404,4 +466,4 @@ This document is only worth committing if it cannot quietly become false.
 - `scripts/code-metrics.mjs` produces every number above. `pnpm metrics` prints them; `pnpm metrics:json` emits the full record including per-violation samples.
 - `docs/agent/code-metrics.baseline.json` is the frozen baseline. `pnpm metrics:check` exits non-zero if any tracked number grew, and names which.
 - When a regression is deliberate, `pnpm metrics:update` and say why in the commit message. The baseline is a record of agreed debt, not a high-water mark to hide behind.
-- The ratchet caught a regression introduced *during this audit*, which is the only real evidence that it works.
+- The ratchet caught a regression introduced _during this audit_, which is the only real evidence that it works.

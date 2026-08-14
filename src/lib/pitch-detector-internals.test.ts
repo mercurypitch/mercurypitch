@@ -966,3 +966,62 @@ describe('PitchDetector — histogram update and metrics', () => {
     expect(d.getLastComputationTime()).toBe(0)
   })
 })
+
+// ── Frequency-domain fallback: bin index to hertz ───────────────
+//
+// This path runs when the SwiftF0 model is unavailable, which is the normal
+// state on first load and on any device where the ONNX fetch fails. It reported
+// every pitch exactly one octave sharp — it divided the bin index by
+// bufferSize/2 rather than bufferSize — and nothing caught it, because no test
+// had ever asserted what this path returns.
+
+describe('PitchDetector — frequency-domain fallback', () => {
+  /**
+   * freqData carries fftSize/2 bins, so bin k is k * sampleRate / fftSize.
+   * Building the spectrum directly rather than synthesizing audio keeps the
+   * expected answer exact: a single loud bin has exactly one right answer.
+   */
+  const spectrumWithPeakAt = (bin: number, bins: number): Float32Array => {
+    const data = new Float32Array(bins)
+    data.fill(0.001)
+    data[bin] = 1
+    return data
+  }
+
+  it('places bin k at k * sampleRate / fftSize, not twice that', () => {
+    const sampleRate = 44100
+    const fftSize = 2048
+    const detector = new PitchDetector({ sampleRate, bufferSize: fftSize })
+
+    // 440 Hz sits at bin 440 * 2048 / 44100 = 20.43, so bin 20 is 430.66 Hz.
+    const bin = 20
+    const expected = (bin * sampleRate) / fftSize
+
+    const result = detector.detectFromFrequencyData(
+      spectrumWithPeakAt(bin, fftSize / 2),
+    )
+
+    expect(result).not.toBeNull()
+    expect(result!.frequency).toBeCloseTo(expected, 5)
+    // The old code returned 2x this. Pin the octave explicitly so a regression
+    // reads as "an octave out" rather than as a tolerance argument.
+    expect(result!.frequency).toBeLessThan(expected * 1.5)
+  })
+
+  it('reports the octave a listener would hear for a bin near A4', () => {
+    const sampleRate = 44100
+    const fftSize = 4096
+    const detector = new PitchDetector({ sampleRate, bufferSize: fftSize })
+
+    // 440 Hz -> bin 40.87; bin 41 is 441.5 Hz, comfortably inside A4.
+    const result = detector.detectFromFrequencyData(
+      spectrumWithPeakAt(41, fftSize / 2),
+    )
+
+    expect(result).not.toBeNull()
+    expect({
+      note: result!.noteName,
+      octave: result!.octave,
+    }).toEqual({ note: 'A', octave: 4 })
+  })
+})

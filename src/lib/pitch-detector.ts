@@ -271,7 +271,11 @@ export class PitchDetector {
       }
     }
 
-    const frequency = (maxIdx * this.sampleRate) / (this.bufferSize / 2)
+    // freqData holds fftSize/2 bins, so bin k is at k * sampleRate / fftSize.
+    // Dividing by bufferSize/2 instead doubled every result: this path reported
+    // a 220 Hz tone as 430.66 Hz — exactly one octave sharp — for as long as it
+    // has existed.
+    const frequency = (maxIdx * this.sampleRate) / this.bufferSize
 
     if (frequency < this.minFrequency || frequency > this.maxFrequency) {
       return {

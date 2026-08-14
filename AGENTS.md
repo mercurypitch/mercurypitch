@@ -13,6 +13,10 @@ worker — cheaper than grepping, and it will not be stale (CI checks it).
 | [docs/agent/CONVENTIONS.md](docs/agent/CONVENTIONS.md)     | Writing code — naming, state, styling, tests                                  |
 | [docs/agent/MISTAKES.md](docs/agent/MISTAKES.md)           | Before a first change in an unfamiliar area                                   |
 | [docs/agent/REFACTOR-PLAN.md](docs/agent/REFACTOR-PLAN.md) | Touching one of the oversized files                                           |
+| [docs/agent/CODE-HEALTH.md](docs/agent/CODE-HEALTH.md)     | Deciding what to work on — measured state, hotspots, ranked problems          |
+| [docs/agent/TESTING.md](docs/agent/TESTING.md)             | Writing or reviewing a test                                                   |
+| [docs/agent/METRICS.md](docs/agent/METRICS.md)             | Reading a metric, or tempted to add a quality gate                            |
+| [docs/agent/BUGS.md](docs/agent/BUGS.md)                   | Looking for known defects before reporting a new one                          |
 | [docs/specs/](docs/specs/)                                 | Changing behaviour that has an EARS spec — 32 files, `*.ears.md`              |
 | [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md)       | Before trusting anything in `docs/plans/` — many "pending" plans have shipped |
 
@@ -54,9 +58,29 @@ pnpm typecheck       # root application typecheck; select a different command be
 pnpm pr:validate     # non-mutating changed-file gate used by CI
 pnpm check:ci        # full non-mutating gate; CI is authoritative
 pnpm check           # optional full-tree local fix pass, not a routine per-commit gate
-pnpm test:run       # vitest
+pnpm test:run       # vitest (whole repo)
+pnpm test:db        # vitest, DB Worker only
+pnpm test:jam       # vitest, Jam Worker only
 pnpm test:e2e       # playwright
 ```
+
+### Code health
+
+```bash
+pnpm metrics         # measured state: size, layering, cycles, complexity, hotspots, test shape
+pnpm metrics:check   # ratchet — fails if any tracked number got worse
+pnpm metrics:update  # re-freeze the baseline; say why in the commit message
+pnpm arch            # layer-boundary violations and import cycles, by rule
+```
+
+`pnpm metrics:check` is a **ratchet, not a threshold**: it compares against
+`docs/agent/code-metrics.baseline.json` and only complains about regressions.
+Absolute gates on a codebase this size either never fire or are red forever, and
+both teach people to ignore them — see [METRICS.md](docs/agent/METRICS.md).
+
+The churn-based hotspot section needs real history. A shallow clone (which is
+what cloud sessions get) makes it report `skipped`; run `git fetch --unshallow`
+first if you want it.
 
 `pnpm pr:prepare` always regenerates `docs/agent/INDEX.md`, formats and lints
 only files changed from `origin/main`, and runs `git diff --check`. It does not
