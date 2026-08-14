@@ -22,7 +22,7 @@ import * as transportStore from '@/stores/transport-store'
 import * as uiStore from '@/stores/ui-store'
 import type { PlaybackMode } from '@/types'
 
-interface KeyboardShortcutHandlers {
+export interface KeyboardShortcutHandlers {
   isPlaying: Accessor<boolean>
   isPaused: Accessor<boolean>
   play: () => void
@@ -74,6 +74,11 @@ interface KeyboardShortcutHandlers {
   /** Mic toggle handler for keyboard shortcut. */
   onMicToggle?: () => void
 
+  /** Voice control toggle — V key. */
+  onVoiceToggle?: () => void
+  /** Opens the spoken-command list (also reachable by saying it). */
+  onShowVoiceCommands?: () => void
+
   /** Toggle shortcut help overlay. */
   onToggleShortcutHelp?: () => void
 
@@ -82,6 +87,13 @@ interface KeyboardShortcutHandlers {
     strumKeyboard: (e: KeyboardEvent) => void
     /** Toggle drum machine / jam playback in interactive view, or practice play in hero view. */
     togglePlayback?: () => void
+    /**
+     * Whether the CURRENT toggle target is running. Space never needed
+     * this — a keypress means "flip it" — but the spoken words "play",
+     * "pause" and "stop" carry direction, and a blind toggle made "stop"
+     * START the drums on a quiet tab.
+     */
+    isPlaying?: () => boolean
   }
 }
 
@@ -89,10 +101,11 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
   const onKeyDown = (e: KeyboardEvent) => {
     if (handlers.isSuspended?.() === true) return
 
-    // Skip if typing in input/select/textarea
-    const isTyping = !!(e.target as Element | null)?.closest(
-      'input,textarea,select,[contenteditable]',
-    )
+    // Skip if typing in input/select/textarea. instanceof guard: synthetic
+    // events can target window itself, which has no closest().
+    const isTyping =
+      e.target instanceof Element &&
+      e.target.closest('input,textarea,select,[contenteditable]') !== null
 
     const tab = handlers.activeTab?.()
 
@@ -167,6 +180,21 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     if (e.code === 'KeyM' && !isTyping && !e.ctrlKey && !e.metaKey) {
       e.preventDefault()
       handlers.onMicToggle?.()
+      return
+    }
+
+    // ── V — voice control; Shift+V — what can I say ────────
+    // "?" belongs to the shortcut-help overlay above (on a US layout it IS
+    // Shift+/, so a second "?" binding here could never fire) — the voice
+    // command center gets the V family instead: V toggles the ear,
+    // Shift+V shows what it answers to.
+    if (e.code === 'KeyV' && !isTyping && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      if (e.shiftKey) {
+        handlers.onShowVoiceCommands?.()
+      } else {
+        handlers.onVoiceToggle?.()
+      }
       return
     }
 
@@ -282,8 +310,9 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
  * Attempt to close the topmost open modal/overlay.
  * Returns true if a modal was dismissed, false if nothing was open.
  * Order: specific overlays first, then library modals, then walkthrough.
+ * Exported for voice control's "close this" — one dismiss chain, two inputs.
  */
-function tryDismissModal(handlers: KeyboardShortcutHandlers): boolean {
+export function tryDismissModal(handlers: KeyboardShortcutHandlers): boolean {
   // App-level modals passed via the handlers
   const m = handlers.modals
   if (m) {

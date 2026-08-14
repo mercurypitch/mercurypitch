@@ -9,6 +9,26 @@
 
 import type { DtwResult } from './types'
 
+/** How far apart two values are. Absolute difference unless a feature
+ *  needs something else — see {@link circularDistance12}. */
+export type DtwCost = (a: number, b: number) => number
+
+const absoluteDistance: DtwCost = (a, b) => Math.abs(a - b)
+
+/**
+ * Distance on the twelve-note circle, for chroma (pitch class) sequences.
+ *
+ * Chroma is a note with its octave thrown away: C is 0, C# is 1 … B is 11.
+ * The scale wraps, so B and C are ONE semitone apart — but plain
+ * subtraction calls them eleven apart, the furthest apart two notes can
+ * be. Every melody that crosses B→C was being punished for it, in the one
+ * feature whose whole job is to be forgiving about how a person hums.
+ */
+export const circularDistance12: DtwCost = (a, b) => {
+  const raw = Math.abs(a - b) % 12
+  return Math.min(raw, 12 - raw)
+}
+
 /**
  * Classic DTW with Sakoe-Chiba band constraint.
  *
@@ -20,6 +40,7 @@ export function dtwMatch(
   query: number[],
   reference: number[],
   bandWidth?: number,
+  cost: DtwCost = absoluteDistance,
 ): DtwResult {
   const n = query.length
   const m = reference.length
@@ -35,9 +56,9 @@ export function dtwMatch(
   const band = bandWidth ?? Math.max(1, Math.ceil(maxLen * 0.1))
 
   // Cost matrix — use Float64Array for numeric stability
-  const cost = new Float64Array(n * m)
-  cost.fill(Infinity)
-  cost[0] = Math.abs(query[0] - reference[0])
+  const costs = new Float64Array(n * m)
+  costs.fill(Infinity)
+  costs[0] = cost(query[0], reference[0])
 
   // Back-pointer matrix for path reconstruction
   // 0 = diagonal, 1 = up, 2 = left
@@ -51,12 +72,12 @@ export function dtwMatch(
     for (let j = bandStart; j <= bandEnd; j++) {
       if (i === 0 && j === 0) continue
 
-      const d = Math.abs(query[i] - reference[j])
+      const d = cost(query[i], reference[j])
       const idx = i * m + j
 
-      const diag = i > 0 && j > 0 ? cost[(i - 1) * m + (j - 1)] : Infinity
-      const up = i > 0 ? cost[(i - 1) * m + j] : Infinity
-      const left = j > 0 ? cost[i * m + (j - 1)] : Infinity
+      const diag = i > 0 && j > 0 ? costs[(i - 1) * m + (j - 1)] : Infinity
+      const up = i > 0 ? costs[(i - 1) * m + j] : Infinity
+      const left = j > 0 ? costs[i * m + (j - 1)] : Infinity
 
       let best = diag
       let bestPtr = 0 // diagonal
@@ -69,12 +90,12 @@ export function dtwMatch(
         bestPtr = 2 // left
       }
 
-      cost[idx] = best + d
+      costs[idx] = best + d
       backptr[idx] = bestPtr
     }
   }
 
-  const totalCost = cost[(n - 1) * m + (m - 1)]
+  const totalCost = costs[(n - 1) * m + (m - 1)]
   // The band never reached the far corner, so these two sequences have no
   // alignment under this constraint. Same trap as the empty case: scoring
   // an impossible alignment at 0.37 handed every over-long reference a
@@ -109,6 +130,7 @@ export function dtwMatchSubsequence(
   query: number[],
   reference: number[],
   bandWidth?: number,
+  cost: DtwCost = absoluteDistance,
 ): DtwResult & { matchEnd: number } {
   const n = query.length
   const m = reference.length
@@ -131,8 +153,8 @@ export function dtwMatchSubsequence(
   // the backtrace honest: a second pass over the finished matrix does
   // not know about the band or the open-begin row, so it could point at
   // cells the forward pass never filled.
-  const cost = new Float64Array(n * m)
-  cost.fill(Infinity)
+  const costs = new Float64Array(n * m)
+  costs.fill(Infinity)
   // 0 = diagonal, 1 = up, 2 = left
   const backptr = new Uint8Array(n * m)
 
@@ -156,31 +178,31 @@ export function dtwMatchSubsequence(
     const bandEnd = Math.min(m - 1, i + band)
 
     for (let j = bandStart; j <= bandEnd; j++) {
-      const d = Math.abs(query[i] - reference[j])
+      const d = cost(query[i], reference[j])
       const idx = i * m + j
 
       if (i === 0) {
         // Free to begin anywhere along the reference.
-        cost[idx] = d
+        costs[idx] = d
         continue
       }
 
-      let minPrev = cost[(i - 1) * m + j] // up
+      let minPrev = costs[(i - 1) * m + j] // up
       let bestPtr = 1
       if (j > 0) {
-        const diag = cost[(i - 1) * m + (j - 1)]
+        const diag = costs[(i - 1) * m + (j - 1)]
         if (diag < minPrev) {
           minPrev = diag
           bestPtr = 0
         }
-        const left = cost[i * m + (j - 1)]
+        const left = costs[i * m + (j - 1)]
         if (left < minPrev) {
           minPrev = left
           bestPtr = 2
         }
       }
 
-      cost[idx] = minPrev + d
+      costs[idx] = minPrev + d
       backptr[idx] = bestPtr
     }
   }
@@ -191,8 +213,8 @@ export function dtwMatchSubsequence(
   const lastRow = n - 1
   for (let j = 0; j < m; j++) {
     const idx = lastRow * m + j
-    if (cost[idx] < bestCost) {
-      bestCost = cost[idx]
+    if (costs[idx] < bestCost) {
+      bestCost = costs[idx]
       matchEnd = j
     }
   }

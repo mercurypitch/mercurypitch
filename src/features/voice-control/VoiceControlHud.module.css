@@ -1,0 +1,253 @@
+/* ============================================================
+   VoiceControlHud — ambient voice pill
+   ============================================================
+   Bottom-left corner shared with the practice-timer pill (which owns the
+   default offset); when that pill is visible this one raises a row above
+   it. Top-right stays clear for toasts, bottom-right for the floating
+   transport controls. */
+
+.pill {
+  position: fixed;
+  left: calc(var(--safe-left, 0px) + 0.75rem);
+  bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
+  z-index: var(--z-tabbar, 380);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1;
+  opacity: 0.82;
+  transition:
+    opacity 0.2s ease,
+    bottom 0.2s ease;
+}
+
+.pill:hover,
+.pill:focus-within {
+  opacity: 1;
+}
+
+.raised {
+  bottom: calc(var(--safe-bottom, 0px) + 3.15rem);
+}
+
+.expanded {
+  padding-right: 0.6rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.toggle svg {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-card),
+    0 0 0 4px var(--accent);
+}
+
+.listening {
+  color: var(--accent);
+  animation: voice-pulse 2.2s ease-out infinite;
+}
+
+@keyframes voice-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent-glow, rgb(88 166 255 / 30%));
+  }
+
+  70% {
+    box-shadow: 0 0 0 9px rgb(0 0 0 / 0%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(0 0 0 / 0%);
+  }
+}
+
+.errorState {
+  color: var(--warning, #e5a50a);
+}
+
+.unsupported {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status {
+  overflow: hidden;
+  max-width: 15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusMatched {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.statusMiss {
+  font-style: italic;
+}
+
+.statusWarn {
+  color: var(--warning, #e5a50a);
+}
+
+.latency {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  opacity: 0.65;
+}
+
+/* Clear the mobile tab bar rather than sitting on it. */
+@media (max-width: 768px) {
+  .pill {
+    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
+  }
+
+  .raised {
+    bottom: calc(var(--tabbar-total, 54px) + 3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+
+  .listening {
+    animation: none;
+  }
+}
+
+/* ── Engine picker ────────────────────────────────────────── */
+/* Which model is listening changes the experience more than anything
+   else here, and comparing models means switching them often — so it
+   lives on the pill rather than three clicks deep in Settings. */
+
+.tools {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.toolButton {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 140ms ease,
+    color 140ms ease;
+}
+
+.toolButton:hover,
+.toolButton:focus-visible {
+  color: var(--text);
+  opacity: 1;
+}
+
+.toolButton svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.menu {
+  /* Anchored to the LEFT edge, not centred: the pill lives in the
+     bottom-left corner, and a centred menu walked off the screen. */
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 1;
+  display: flex;
+  min-width: 11rem;
+  max-width: min(16rem, calc(100vw - 2rem));
+  flex-direction: column;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 40%);
+}
+
+.menuHeading {
+  margin: 0.1rem 0 0.25rem;
+  padding: 0 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.34rem 0.45rem;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: rgb(127 127 127 / 16%);
+}
+
+.menuDot {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex-shrink: 0;
+  border: 1px solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.menuItemActive .menuDot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.menuItemActive {
+  color: var(--accent);
+}
+
+.menuDivider {
+  height: 1px;
+  margin: 0.3rem 0.2rem;
+  background: var(--border);
+}

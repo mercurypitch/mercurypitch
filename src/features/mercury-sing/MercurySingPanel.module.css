@@ -1,0 +1,411 @@
+/* ============================================================
+   MercurySingPanel — the listening stage's skin
+   ============================================================
+   Dark by design on every theme: this overlay is a moment, not a
+   document, and the wheel's glow needs a night sky behind it. Colours are
+   therefore literal rather than themed, and the card sits on its own
+   backdrop instead of the app's surface tokens. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  isolation: isolate;
+}
+
+/* ── Backdrop ─────────────────────────────────────────────── */
+
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: radial-gradient(
+    120% 90% at 50% 44%,
+    rgb(28 26 48 / 96%) 0%,
+    rgb(10 10 22 / 98%) 58%,
+    rgb(4 4 10 / 99%) 100%
+  );
+}
+
+/* Two sparse dot layers drifting at different speeds — a starfield with
+   no image and no canvas. */
+.stars {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    radial-gradient(
+      1.4px 1.4px at 12% 22%,
+      rgb(255 255 255 / 55%) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1.2px 1.2px at 78% 12%,
+      rgb(255 255 255 / 45%) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1.6px 1.6px at 62% 74%,
+      rgb(255 236 208 / 55%) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1.1px 1.1px at 28% 82%,
+      rgb(255 255 255 / 40%) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1.3px 1.3px at 88% 58%,
+      rgb(255 255 255 / 35%) 50%,
+      transparent 51%
+    ),
+    radial-gradient(
+      1px 1px at 42% 38%,
+      rgb(255 255 255 / 30%) 50%,
+      transparent 51%
+    );
+  background-size:
+    42% 42%,
+    37% 37%,
+    51% 51%,
+    33% 33%,
+    46% 46%,
+    29% 29%;
+  animation: mercury-drift 90s linear infinite;
+  opacity: 0.9;
+}
+
+@keyframes mercury-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-3%, 2%, 0);
+  }
+}
+
+/* The backdrop art, 17KB, over the gradient sky. It carries the crescent
+   and the horizon; the drawn sky underneath is what shows if it fails to
+   load, so the overlay is never a flat black rectangle. */
+.crescent {
+  position: absolute;
+  inset: 0;
+  background-image: url('/mercury-sing/backdrop.webp');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.85;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 78vmin;
+  height: 78vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(240 180 100 / 9%) 0%,
+    transparent 62%
+  );
+  pointer-events: none;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: min(34rem, 100%);
+  max-height: min(88vh, 46rem);
+  padding: 0 0 1rem;
+  overflow-y: auto;
+  border: 1px solid rgb(246 217 168 / 18%);
+  border-radius: 18px;
+  background: linear-gradient(
+    180deg,
+    rgb(30 28 50 / 82%) 0%,
+    rgb(14 13 28 / 88%) 100%
+  );
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 60%),
+    inset 0 1px 0 rgb(255 255 255 / 6%);
+  color: #f4efe6;
+  backdrop-filter: blur(14px);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem 0.7rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.brand {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* A small Mercury in the header — the brand mark, drawn not imported. */
+.brandMark {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 36% 32%,
+    #f6d9a8 0%,
+    #c98d4b 52%,
+    #4a2d18 100%
+  );
+  box-shadow: 0 0 14px rgb(240 180 100 / 45%);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.subtitle {
+  margin: 0.1rem 0 0;
+  color: rgb(244 239 230 / 62%);
+  font-size: 0.78rem;
+}
+
+.closeButton {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgb(244 239 230 / 60%);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: #f4efe6;
+}
+
+/* ── States ───────────────────────────────────────────────── */
+
+.statusLine {
+  margin: 0;
+  padding: 0.5rem 1.25rem;
+  color: rgb(244 239 230 / 72%);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.waiting {
+  display: flex;
+  flex-direction: column;
+}
+
+.waitingLine {
+  margin: 0;
+  padding: 0 1.25rem;
+  color: rgb(244 239 230 / 62%);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* ── Leader strip ─────────────────────────────────────────── */
+
+.leaderStrip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0 1.25rem;
+  text-align: center;
+}
+
+.leaderName {
+  overflow: hidden;
+  min-width: 0;
+  color: #f6d9a8;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderMeta {
+  color: rgb(244 239 230 / 52%);
+  font-size: 0.68rem;
+}
+
+/* ── Pitch trail ──────────────────────────────────────────── */
+
+.trail {
+  width: calc(100% - 2.5rem);
+  height: 2.6rem;
+  margin: 0.2rem 1.25rem 0;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 26%);
+}
+
+.trailLine {
+  fill: none;
+  stroke: #f0a550;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px rgb(240 165 80 / 65%));
+}
+
+.heardLine {
+  /* Label row, then the transcript on its OWN full-width line — it was
+     sharing a row with the note and getting half the space. Two lines of
+     text, then an ellipsis: enough to read, never enough to sprawl. */
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.1rem 1.25rem;
+  font-size: 0.8rem;
+}
+
+.heardMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.heardLabel {
+  color: rgb(244 239 230 / 40%);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.heardText {
+  display: -webkit-box;
+  overflow: hidden;
+  min-width: 0;
+  -webkit-box-orient: vertical;
+  color: #f6d9a8;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.heardNote {
+  color: rgb(244 239 230 / 34%);
+  font-size: 0.62rem;
+  text-align: right;
+}
+
+.frozenLine {
+  margin: 0;
+  padding: 0 1.25rem;
+  color: rgb(240 165 80 / 70%);
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.fingerprintLine {
+  margin: 0;
+  padding: 0 1.25rem;
+  color: rgb(244 239 230 / 48%);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+/* ── Roster ───────────────────────────────────────────────── */
+
+.rosterHeading {
+  margin: 0.5rem 0 0.2rem;
+  padding: 0 1.25rem;
+  color: rgb(244 239 230 / 45%);
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.roster {
+  display: flex;
+  overflow: hidden auto;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 9rem;
+  margin: 0;
+  padding: 0 1.25rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.rosterButton {
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #f4efe6;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rosterButton:hover {
+  border-color: rgb(240 180 100 / 55%);
+  background: rgb(240 180 100 / 10%);
+}
+
+.rosterPending {
+  color: rgb(244 239 230 / 52%);
+}
+
+.rosterName {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rosterChip {
+  flex-shrink: 0;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  color: rgb(244 239 230 / 55%);
+  font-size: 0.62rem;
+}
+
+.hint {
+  margin: 0.35rem 0 0;
+  padding: 0 1.25rem;
+  color: rgb(244 239 230 / 45%);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stars {
+    animation: none;
+  }
+}

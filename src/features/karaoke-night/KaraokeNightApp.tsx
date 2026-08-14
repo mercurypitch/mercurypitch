@@ -14,9 +14,18 @@ import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense
 import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
+import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
+import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
+import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
+import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
+import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
+import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
+import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { eventBus } from '@/lib/event-bus'
-import { studioSessionUrl } from '@/lib/karaoke-night-link'
+import type { KaraokeNightLaunchParams } from '@/lib/karaoke-night-link'
+import { parseKaraokeNightLaunch, studioSessionUrl, } from '@/lib/karaoke-night-link'
 import { isNarrow } from '@/lib/use-viewport'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
@@ -52,6 +61,13 @@ const KaraokeAccount = lazy(async () => {
   return { default: m.KaraokeAccount }
 })
 
+// The Mercury Sing stage drags in the whole pitch/matcher stack — lazy, it
+// costs nothing until someone actually says "mercury sing".
+const MercurySingStage = lazy(async () => {
+  const m = await import('@/features/mercury-sing/MercurySingStage')
+  return { default: m.MercurySingStage }
+})
+
 const RAIL_KEY = 'pitchperfect_kn_rail_collapsed'
 
 function loadRailCollapsed(): boolean {
@@ -63,6 +79,15 @@ function loadRailCollapsed(): boolean {
 }
 
 export function KaraokeNightApp() {
+  // Voice control works here exactly like in the app: the stage host's
+  // mixer registers its command set on mount, and this flag lets that set
+  // through its tab gate (there are no tabs on this surface).
+  markStandaloneKaraokeSurface()
+  const voiceControl = useVoiceControlController()
+  useVoiceToggleKey(voiceControl.toggle, () => setShowVoiceHelp(true))
+  const [showVoiceHelp, setShowVoiceHelp] = createSignal(false)
+  const mercurySingCommands = createMercurySingVoiceCommands()
+  onCleanup(registerVoiceCommands(() => mercurySingCommands))
   const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our
@@ -131,6 +156,9 @@ export function KaraokeNightApp() {
   const restoreFromUrl = async (
     sessionId: string | null,
     demoList?: DemoSongManifest[],
+    // The one-shot launch half of the deep link (`t=`, `autoplay=`) — only
+    // the initial boot passes it; popstate restores stage silently.
+    launch?: KaraokeNightLaunchParams,
   ) => {
     if (sessionId === null || sessionId === '') {
       setActiveSong(null)
@@ -154,7 +182,8 @@ export function KaraokeNightApp() {
         sessionId,
         title: `${demoSong.title} — ${demoSong.artist}`,
         stems: demoSong.stems,
-        autoPlay: false,
+        autoPlay: launch?.autoplay === true,
+        initialSeekSec: launch?.startAtSec ?? undefined,
       })
       return
     }
@@ -183,7 +212,8 @@ export function KaraokeNightApp() {
             vocal: outputs?.vocal,
             instrumental: outputs?.instrumental,
           },
-          autoPlay: false,
+          autoPlay: launch?.autoplay === true,
+          initialSeekSec: launch?.startAtSec ?? undefined,
         })
       } else {
         updateSessionUrl(null, false)
@@ -195,12 +225,30 @@ export function KaraokeNightApp() {
 
   onMount(() => {
     const searchParams = new URLSearchParams(window.location.search)
-    const initialSession = searchParams.get('session')
+    const launch = parseKaraokeNightLaunch(searchParams)
+    const initialSession = launch.sessionId
+
+    // `t` and `autoplay` are consumed by THIS boot — strip them so a
+    // refresh or a share of the resulting page does not replay the launch.
+    if (searchParams.has('t') || searchParams.has('autoplay')) {
+      try {
+        searchParams.delete('t')
+        searchParams.delete('autoplay')
+        const searchStr = searchParams.toString()
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${window.location.pathname}${searchStr !== '' ? `?${searchStr}` : ''}${window.location.hash}`,
+        )
+      } catch {
+        /* history state unavailable */
+      }
+    }
 
     void loadDemoSongs().then((list) => {
       setDemos(list)
       if (initialSession !== null && isDemoSessionId(initialSession)) {
-        void restoreFromUrl(initialSession, list)
+        void restoreFromUrl(initialSession, list, launch)
       }
     })
 
@@ -209,7 +257,7 @@ export function KaraokeNightApp() {
       initialSession !== '' &&
       !isDemoSessionId(initialSession)
     ) {
-      void restoreFromUrl(initialSession)
+      void restoreFromUrl(initialSession, undefined, launch)
     }
 
     const handlePopState = () => {
@@ -745,6 +793,18 @@ export function KaraokeNightApp() {
           (e.g. "song unavailable, skipping…"); without this they'd render
           nowhere on the standalone page. */}
       <Notifications />
+      <VoiceControlHud
+        controller={voiceControl}
+        onShowCommands={() => setShowVoiceHelp(true)}
+      />
+      <Show when={showVoiceHelp()}>
+        <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
+      </Show>
+      <Show when={mercurySingOpen()}>
+        <Suspense>
+          <MercurySingStage />
+        </Suspense>
+      </Show>
       <Suspense>
         <KaraokeNightRuntime onSong={(s) => setSongWithUrl(s, true)} />
       </Suspense>

@@ -1,0 +1,208 @@
+// ============================================================
+// VoiceControlHud — the ambient hands-free control pill
+// ============================================================
+//
+// Bottom-left, sharing the corner with the practice-timer pill: when that
+// pill is visible this one raises itself a row so both stay readable.
+// Deliberately quiet — an icon button when idle, live text only while the
+// listener hears something or a command just landed. Not a live region:
+// interim transcripts change many times a second while music plays.
+
+import { createSignal, For, Show } from 'solid-js'
+import { Mic, Settings } from '@/components/icons'
+import { practiceTimerVisible } from '@/stores/practice-timer-store'
+import type { VoiceControlEngine } from '@/stores/settings-store'
+import { setVoiceControlEngine, voiceControlEngine, } from '@/stores/settings-store'
+import type { VoiceControlController } from './useVoiceControlController'
+import styles from './VoiceControlHud.module.css'
+
+interface VoiceControlHudProps {
+  controller: VoiceControlController
+  /** Opens the spoken-command list — the same panel "what can I say" opens. */
+  onShowCommands?: () => void
+}
+
+/**
+ * Engine names as a person would compare them, not as the code spells
+ * them. The latency chip beside the pill is the other half of this: it
+ * reports end-of-speech to transcript, which is the number that actually
+ * differs between these three.
+ */
+const ENGINES: Array<{
+  id: VoiceControlEngine
+  label: string
+  hint: string
+}> = [
+  {
+    id: 'webspeech',
+    label: 'Browser',
+    hint: 'Chrome/Edge/Safari built-in — fast, needs a connection, sends audio to the browser vendor',
+  },
+  {
+    id: 'local',
+    label: 'Whisper',
+    hint: 'OpenAI whisper-tiny, on this device — private, slower to start',
+  },
+  {
+    id: 'moonshine',
+    label: 'Moonshine',
+    hint: 'Moonshine tiny, on this device — built for short commands, English only',
+  },
+]
+
+export function VoiceControlHud(props: VoiceControlHudProps) {
+  const [menuOpen, setMenuOpen] = createSignal(false)
+  const listening = () =>
+    props.controller.enabled() &&
+    props.controller.listenerState() === 'listening'
+  const hasError = () =>
+    props.controller.enabled() && props.controller.listenerState() === 'error'
+
+  const statusText = () => {
+    if (hasError()) {
+      // The mic and the model fail differently; say which one it was.
+      return props.controller.errorDetail() === 'local-engine-failed'
+        ? 'Voice engine failed'
+        : 'Mic unavailable'
+    }
+    if (props.controller.listenerState() === 'starting') {
+      return 'Loading voice engine'
+    }
+    // Enabled but idle is a listener that STOPPED under us — the mic
+    // sentinel killing a dead stream, or a backgrounded tab losing its
+    // hold. Saying "Listening" over it would be a lie with no tell.
+    if (props.controller.listenerState() === 'idle') {
+      return 'Voice stopped — press V twice'
+    }
+    const fb = props.controller.feedback()
+    if (fb !== null && fb.kind === 'matched') return fb.action ?? 'Done'
+    if (fb !== null && (fb.kind === 'failed' || fb.kind === 'unavailable')) {
+      return fb.message ?? 'Could not do that'
+    }
+    const interim = props.controller.interim()
+    if (interim !== '') return interim
+    if (fb !== null) return `"${fb.heard}"?`
+    return 'Listening'
+  }
+
+  const title = () => {
+    if (!props.controller.isSupported) {
+      return 'Voice control is not supported in this browser (try Chrome, Edge or Safari)'
+    }
+    return props.controller.enabled()
+      ? 'Turn voice control off (V)'
+      : 'Turn voice control on (V)'
+  }
+
+  return (
+    <div
+      class={styles.pill}
+      classList={{
+        [styles.raised]: practiceTimerVisible(),
+        [styles.expanded]: props.controller.enabled(),
+      }}
+      data-testid="voice-control-pill"
+    >
+      <button
+        type="button"
+        class={styles.toggle}
+        classList={{
+          [styles.listening]: listening(),
+          [styles.errorState]: hasError(),
+          [styles.unsupported]: !props.controller.isSupported,
+        }}
+        aria-pressed={props.controller.enabled()}
+        aria-label={title()}
+        title={title()}
+        onClick={() => props.controller.toggle()}
+      >
+        <Mic />
+      </button>
+      {/* The engine picker, one hover away rather than three clicks deep
+          in Settings. Which model is listening changes the experience more
+          than any other setting here, and comparing them means switching
+          them often. */}
+      <Show when={props.controller.enabled()}>
+        <div class={styles.tools}>
+          <button
+            type="button"
+            class={styles.toolButton}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen()}
+            aria-label="Voice engine and commands"
+            title="Voice engine and commands"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <Settings />
+          </button>
+          <Show when={menuOpen()}>
+            <div
+              class={styles.menu}
+              role="menu"
+              onMouseLeave={() => setMenuOpen(false)}
+            >
+              <p class={styles.menuHeading}>Engine</p>
+              <For each={ENGINES}>
+                {(engine) => (
+                  <button
+                    type="button"
+                    class={styles.menuItem}
+                    classList={{
+                      [styles.menuItemActive]:
+                        voiceControlEngine() === engine.id,
+                    }}
+                    role="menuitemradio"
+                    aria-checked={voiceControlEngine() === engine.id}
+                    title={engine.hint}
+                    onClick={() => setVoiceControlEngine(engine.id)}
+                  >
+                    <span class={styles.menuDot} aria-hidden="true" />
+                    {engine.label}
+                  </button>
+                )}
+              </For>
+              <Show when={props.onShowCommands !== undefined}>
+                <div class={styles.menuDivider} />
+                <button
+                  type="button"
+                  class={styles.menuItem}
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    props.onShowCommands?.()
+                  }}
+                >
+                  What can I say?
+                </button>
+              </Show>
+            </div>
+          </Show>
+        </div>
+        <span
+          class={styles.status}
+          classList={{
+            [styles.statusMatched]:
+              props.controller.feedback()?.kind === 'matched',
+            [styles.statusMiss]:
+              props.controller.feedback()?.kind === 'unrecognized',
+            [styles.statusWarn]:
+              props.controller.feedback()?.kind === 'failed' ||
+              props.controller.feedback()?.kind === 'unavailable',
+          }}
+          title={props.controller.feedback()?.heard ?? ''}
+          data-testid="voice-control-status"
+        >
+          {statusText()}
+        </span>
+        <Show when={props.controller.lastLatencyMs() !== null}>
+          <span
+            class={styles.latency}
+            title="End-of-speech to text time (on-device engine)"
+          >
+            {props.controller.lastLatencyMs()} ms
+          </span>
+        </Show>
+      </Show>
+    </div>
+  )
+}

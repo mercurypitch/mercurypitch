@@ -35,6 +35,9 @@ export interface KaraokeSong {
    *  playlists run their own countdown flow and background auto-stagings
    *  must stay silent. */
   autoPlay?: boolean
+  /** Start position in seconds — the `t=` half of the launch contract
+   *  (Mercury Sing / Shazam open the song where the singer already is). */
+  initialSeekSec?: number
 }
 
 interface KaraokeRailPanelsProps {

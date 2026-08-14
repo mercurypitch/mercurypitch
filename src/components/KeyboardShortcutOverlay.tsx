@@ -27,6 +27,8 @@ const SHORTCUTS: ShortcutGroup[] = [
       { keys: ['R'], action: 'Toggle Repeat mode' },
       { keys: ['P'], action: 'Toggle Session mode' },
       { keys: ['M'], action: 'Toggle microphone' },
+      { keys: ['V'], action: 'Toggle voice control' },
+      { keys: ['Shift', 'V'], action: 'Voice commands panel' },
     ],
   },
   {
