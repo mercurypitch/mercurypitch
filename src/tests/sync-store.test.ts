@@ -78,7 +78,7 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { enqueueSongs, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
 
 /** Drive the store to a live room with a connected peer. */
 async function connect(): Promise<void> {
@@ -416,6 +416,23 @@ describe('sending several songs', () => {
     expect(failed?.message).toBe('That stem could not be read.')
   })
 
+  it('REQ-SYNC-024: stops the queue when the link itself is the failure', async () => {
+    threeSongs()
+    route.awaitDirectRoute.mockResolvedValue('relayed')
+    await connect()
+
+    enqueueSongs(['s1', 's2', 's3'])
+
+    await vi.waitFor(() => expect(syncQueue()).toEqual([]))
+    // A relayed route refuses every song identically. Four VPN refusals
+    // in a row, one per queued song, taught us nobody needs the last
+    // three of them — one failed row and a plain "the rest were not
+    // sent" is the whole story.
+    expect(bundle.buildPortableBundle).not.toHaveBeenCalled()
+    expect(syncTransfers().filter((t) => t.status === 'failed')).toHaveLength(1)
+    expect(syncError()).toContain('were not sent')
+  })
+
   it('stops when the other device leaves, and says so', async () => {
     threeSongs()
     await connect()
@@ -450,6 +467,27 @@ describe('sending several songs', () => {
     stopSync()
 
     expect(syncQueue()).toEqual([])
+  })
+})
+
+describe('clearing the transfer history', () => {
+  it('REQ-SYNC-025: sweeps finished rows and keeps one still moving', async () => {
+    route.awaitDirectRoute.mockResolvedValue('relayed')
+    await connect()
+    await sendSongToPeer('s1')
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-preparing',
+      fileHash: 'hash-9',
+      title: 'Still packing over there',
+    })
+    expect(syncTransfers()).toHaveLength(2)
+
+    clearFinishedTransfers()
+
+    // The failed row goes; the song still being packed on the far device
+    // stays — clearing history must never hide live work.
+    expect(syncTransfers()).toHaveLength(1)
+    expect(syncTransfers()[0]?.status).toBe('preparing')
   })
 })
 

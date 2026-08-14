@@ -230,3 +230,45 @@ them as filters; **WHEN** one is chosen, only its songs are listed, so
 filter-then-Select-all is "send this playlist" with no new concept and
 nothing new to store.
 _Tests:_ `SyncDevicesModal` — "filters the list to one group, and back".
+
+## What the first real four-song run taught — `REQ-SYNC-024..026`
+
+### REQ-SYNC-024 — A dead link stops the queue
+
+**WHEN** a send is refused by the link itself — no peer connection, a
+relayed route, a channel that closed — WHILE songs are waiting, the
+system shall drop the remainder and say the rest were not sent. **IF**
+it kept going, **THEN** every remaining song would fail with the same
+message one at a time, which is what four VPN refusals in a row looked
+like. A song that fails for its OWN reasons (unreadable stem, no room
+for that one song) still does not stop the rest (REQ-SYNC-012).
+_Tests:_ `sync-store` — "REQ-SYNC-024: stops the queue when the link
+itself is the failure"; the `SendResult` classification on
+`sendSongToPeer` is the mechanism.
+
+### REQ-SYNC-025 — The history must not bury the modal
+
+**WHILE** transfer rows accumulate, the modal shall keep every control
+reachable — the row list scrolls on its own and the modal body scrolls
+inside its height cap — and **WHERE** any row is finished (done,
+already, failed), the system shall offer to clear the finished rows
+WITHOUT closing the modal, because closing it ends the sync session.
+Rows still moving survive a clear.
+_Tests:_ `sync-store` — "REQ-SYNC-025: sweeps finished rows and keeps
+one still moving"; `SyncDevicesModal` — "REQ-SYNC-025: offers Clear
+finished only when something has finished". The scroll itself is CSS
+(`min-height: 0` on the modal body — a flex child's min-height is its
+content height, so without it the body never engages its own overflow
+and four finished rows push the modal past the bottom of a phone).
+
+### REQ-SYNC-026 — A scan is the whole request
+
+**WHEN** the app opens with a scanned sync code stashed (`#/sync:CODE`),
+the system shall open the sync modal itself, which then skips the
+chooser and joins with the code unprompted. **IF** the code merely sat
+stashed, **THEN** the scan would land on the Karaoke tab and do nothing
+visible until somebody happened to press the sync button — which is
+exactly how it shipped first.
+_Tests:_ `UvrPanel` — "REQ-SYNC-026: opens the sync modal without
+another press" / "leaves the modal closed when nothing was scanned";
+the Karaoke Night page's half is REQ-SKL-011.
