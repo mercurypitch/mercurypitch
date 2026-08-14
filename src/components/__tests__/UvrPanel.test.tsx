@@ -3,7 +3,7 @@
 // ============================================================
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
-import { beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { UvrSession } from '@/stores/app-store'
 import { deleteUvrSession, importUvrSession } from '@/stores/app-store'
 import { UvrPanel } from '../UvrPanel'
@@ -253,31 +253,31 @@ describe('UvrPanel Component', () => {
   })
 
   // REQ-SKL-007 (docs/specs/wire-studio-karaoke-night.ears.md): a phone
-// arriving in the studio met the widest surface in the app with no hint
-// that a stage built for it was one tap away.
-describe('the signpost to Karaoke Night', () => {
-  it('REQ-SKL-007: points a phone at the stage from the upload view', () => {
-    viewportMocks.narrow = true
-    render(() => <UvrPanel />)
-    const note = screen.getByTestId('uvr-stage-lead')
-    const link = note.querySelector('a')
-    expect(link?.getAttribute('href')).toBe('/karaoke-night')
+  // arriving in the studio met the widest surface in the app with no hint
+  // that a stage built for it was one tap away.
+  describe('the signpost to Karaoke Night', () => {
+    it('REQ-SKL-007: points a phone at the stage from the upload view', () => {
+      viewportMocks.narrow = true
+      render(() => <UvrPanel />)
+      const note = screen.getByTestId('uvr-stage-lead')
+      const link = note.querySelector('a')
+      expect(link?.getAttribute('href')).toBe('/karaoke-night')
+    })
+
+    it('REQ-SKL-007: says nothing on a desktop', () => {
+      render(() => <UvrPanel />)
+      expect(screen.queryByTestId('uvr-stage-lead')).toBeNull()
+    })
+
+    it('REQ-SKL-007: says nothing on a TV, which has its own note', () => {
+      viewportMocks.narrow = true
+      viewportMocks.tv = true
+      render(() => <UvrPanel />)
+      expect(screen.queryByTestId('uvr-stage-lead')).toBeNull()
+    })
   })
 
-  it('REQ-SKL-007: says nothing on a desktop', () => {
-    render(() => <UvrPanel />)
-    expect(screen.queryByTestId('uvr-stage-lead')).toBeNull()
-  })
-
-  it('REQ-SKL-007: says nothing on a TV, which has its own note', () => {
-    viewportMocks.narrow = true
-    viewportMocks.tv = true
-    render(() => <UvrPanel />)
-    expect(screen.queryByTestId('uvr-stage-lead')).toBeNull()
-  })
-})
-
-describe('Local Mode Device (CPU/GPU) Toggle', () => {
+  describe('Local Mode Device (CPU/GPU) Toggle', () => {
     it('renders CPU and GPU toggle pills in browser/local mode', () => {
       render(() => <UvrPanel {...defaultProps} />)
       expect(screen.getByTestId('uvr-device-cpu')).toBeInTheDocument()
