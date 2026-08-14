@@ -234,11 +234,15 @@ describe('SyncDevicesModal send list', () => {
   })
 
   it('never reaches for the app shell', async () => {
-    // The modal is lazy-loaded by the standalone Karaoke Night page. An
-    // `@/stores/app-store` import here drags the app ENTRY chunk into
-    // that page — which renders the entire app under the karaoke stage
+    // The modal is lazy-loaded by the standalone Karaoke Night page, so
+    // nothing in its import closure may reach the app ENTRY chunk —
+    // executing the entry renders the entire app under the karaoke stage
     // the moment the sync door opens (found on a real phone, 2026-08-14).
-    // The group list must come from uvr-store, where it is defined.
+    // This guards the imports a modal could plausibly grow: the app
+    // shell's own stores, in any spelling (alias or relative, either
+    // quote). It is a source-level tripwire, not proof — the chunk graph
+    // itself decides, so a suspicious new modal import deserves a build
+    // and a look at what the modal chunk pulls in.
     const [fs, path] = await Promise.all([
       import('node:fs/promises'),
       import('node:path'),
@@ -247,6 +251,8 @@ describe('SyncDevicesModal send list', () => {
       path.join(process.cwd(), 'src/components/sync/SyncDevicesModal.tsx'),
       'utf8',
     )
-    expect(source).not.toContain("from '@/stores/app-store'")
+    expect(source).not.toMatch(
+      /from\s+['"][^'"]*stores\/(?:app-store|ui-store)['"]/,
+    )
   })
 })

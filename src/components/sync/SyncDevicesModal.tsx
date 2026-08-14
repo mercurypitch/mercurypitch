@@ -18,10 +18,13 @@ import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 // From uvr-store, NOT app-store, although app-store re-exports it: this
-// modal is lazy-loaded by the standalone Karaoke Night page, and an
-// app-store import drags the whole app entry chunk with it — which
-// RENDERS the app into that page's #root the moment the sync door
-// opens, leaving the app's tab bar stacked under the karaoke stage.
+// modal is lazy-loaded by the standalone Karaoke Night page, and its
+// import closure must never reach the app ENTRY chunk — executing the
+// entry RENDERS the app into that page's #root the moment the sync door
+// opens, leaving the app's tab bar stacked under the karaoke stage
+// (which is how it shipped; found on a real phone, 2026-08-14).
+// Importing from the module that DEFINES a thing keeps this graph to
+// stores the build can color independently of the app shell.
 import type { SyncTransfer } from '@/stores/sync-store'
 import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncQueue, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
