@@ -57,6 +57,12 @@
   gap: 14px;
   padding: 18px;
   overflow-y: auto;
+  /* Load-bearing: a flex child's min-height is its CONTENT height by
+     default, so without this the body refuses to shrink to the modal's
+     max-height and the overflow above never engages — the content simply
+     spills past the modal's bottom edge with no way to scroll to it,
+     which is exactly what four finished transfers did to a phone. */
+  min-height: 0;
 }
 
 .hint {
@@ -248,6 +254,30 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Its own scroll, so a session's worth of finished rows cannot push
+     the song list and its footer out of reach. */
+  max-height: 34vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.transfersHead {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.transfersClear {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #8b949e);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.transfersClear:hover {
+  color: var(--text-primary);
 }
 
 .transfer {

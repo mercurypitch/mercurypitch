@@ -17,11 +17,15 @@ import { formatBytes } from '@/lib/fetch-progress'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { getGroupsReactive } from '@/stores/app-store'
+// From uvr-store, NOT app-store, although app-store re-exports it: this
+// modal is lazy-loaded by the standalone Karaoke Night page, and an
+// app-store import drags the whole app entry chunk with it — which
+// RENDERS the app into that page's #root the moment the sync door
+// opens, leaving the app's tab bar stacked under the karaoke stage.
 import type { SyncTransfer } from '@/stores/sync-store'
-import { enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncQueue, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncQueue, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
-import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
+import { getAllUvrSessionsReactive, getGroupsReactive, } from '@/stores/uvr-store'
 import { DeviceSync } from '../icons'
 import styles from './SyncDevicesModal.module.css'
 
@@ -645,6 +649,30 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
             <Show when={syncTransfers().length > 0}>
               <div class={styles.transfers}>
+                {/* Four sends leave four rows, and on a phone they used to
+                    grow the modal right past the bottom of the screen.
+                    The list scrolls on its own now, and finished rows can
+                    be swept without closing the modal — closing would end
+                    the sync session along with the history. */}
+                <Show
+                  when={syncTransfers().some(
+                    (t) =>
+                      t.status === 'done' ||
+                      t.status === 'already' ||
+                      t.status === 'failed',
+                  )}
+                >
+                  <div class={styles.transfersHead}>
+                    <button
+                      type="button"
+                      class={styles.transfersClear}
+                      onClick={clearFinishedTransfers}
+                      data-testid="sync-clear-transfers"
+                    >
+                      Clear finished
+                    </button>
+                  </div>
+                </Show>
                 <For each={syncTransfers()}>
                   {(t) => (
                     <div

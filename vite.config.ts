@@ -357,6 +357,13 @@ export default defineConfig(({ command, mode }) => {
             // app library graph (stores, IndexedDB and media code).
             if (id.includes('/src/components/icons.')) return 'shared-icons'
             if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
+            // Shared by the app's sign-in surface (statically, via
+            // AuthModal → PhoneSignIn) and the sync modal that Karaoke
+            // Night lazy-loads. Without a pin it is hoisted into the APP
+            // ENTRY chunk, and opening the sync door on the standalone
+            // page then executes that entry — which renders the whole app
+            // under the karaoke stage (2026-08-14, found on a phone).
+            if (id.includes('/src/components/QrCode.')) return 'qr-code'
             // These dependency-free runtime leaves are shared with the main
             // app, but putting them into its broad pitch-core/advanced chunks
             // turns those chunks into static Piano Night dependencies.

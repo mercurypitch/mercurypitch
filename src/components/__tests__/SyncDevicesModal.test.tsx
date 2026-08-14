@@ -14,11 +14,13 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { SyncTransfer } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { SyncDevicesModal } from '../sync/SyncDevicesModal'
 
 const sync = vi.hoisted(() => {
   return {
+    clearFinishedTransfers: vi.fn(),
     enqueueSongs: vi.fn(),
     sendSongToPeer: vi.fn(() => Promise.resolve()),
     startSyncReceive: vi.fn(() => Promise.resolve()),
@@ -35,6 +37,7 @@ const state = vi.hoisted(() => ({
   groups: [] as unknown[],
   peerRoom: null as { freeBytes: number; quota: number } | null,
   syncState: 'connected' as string,
+  transfers: [] as SyncTransfer[],
 }))
 
 vi.mock('@/stores/sync-store', () => ({
@@ -47,14 +50,17 @@ vi.mock('@/stores/sync-store', () => ({
   syncQueue: () => [],
   syncRoomId: () => 'ABCD1234',
   syncState: () => state.syncState,
-  syncTransfers: () => [],
+  syncTransfers: () => state.transfers,
 }))
 
+// NO app-store mock, deliberately: the modal must not import the app
+// shell at all. It is lazy-loaded by the standalone Karaoke Night page,
+// and an app-store edge drags the app entry chunk in — which RENDERS
+// the whole app under that page the moment the sync door opens. If the
+// import ever comes back, the real app-store loads here and this suite
+// fails loudly instead of masking it. See the boundary test below.
 vi.mock('@/stores/uvr-store', () => ({
   getAllUvrSessionsReactive: () => state.sessions,
-}))
-
-vi.mock('@/stores/app-store', () => ({
   getGroupsReactive: () => state.groups,
 }))
 
@@ -94,6 +100,7 @@ describe('SyncDevicesModal send list', () => {
     state.groups = []
     state.peerRoom = { freeBytes: 500 * 1024 * 1024, quota: 1024 * 1024 * 1024 }
     state.syncState = 'connected'
+    state.transfers = []
     vi.clearAllMocks()
     sync.takeSyncCodeToJoin.mockReturnValue(null)
     sync.estimatePackedBytes.mockReturnValue(5 * 1024 * 1024)
@@ -191,5 +198,55 @@ describe('SyncDevicesModal send list', () => {
     expect(sync.enqueueSongs).toHaveBeenCalledTimes(1)
     expect(sync.sendSongToPeer).not.toHaveBeenCalled()
     expect(sync.enqueueSongs.mock.calls[0]?.[0]).toHaveLength(2)
+  })
+
+  it('REQ-SYNC-025: offers Clear finished only when something has finished', () => {
+    state.transfers = [
+      {
+        fileHash: 'h1',
+        title: 'Still moving',
+        direction: 'out',
+        status: 'transferring',
+        ratio: 0.4,
+        bytes: 100,
+      },
+    ]
+    openSendList()
+    // A list of only live rows has nothing to sweep; a Clear button here
+    // would either do nothing or hide real work.
+    expect(screen.queryByTestId('sync-clear-transfers')).toBeNull()
+
+    state.transfers = [
+      ...state.transfers,
+      {
+        fileHash: 'h2',
+        title: 'Done one',
+        direction: 'out',
+        status: 'done',
+        ratio: 1,
+        bytes: 100,
+      },
+    ]
+    cleanup()
+    openSendList()
+    fireEvent.click(screen.getByTestId('sync-clear-transfers'))
+    expect(sync.clearFinishedTransfers).toHaveBeenCalledTimes(1)
+  })
+
+  it('never reaches for the app shell', async () => {
+    // The modal is lazy-loaded by the standalone Karaoke Night page. An
+    // `@/stores/app-store` import here drags the app ENTRY chunk into
+    // that page — which renders the entire app under the karaoke stage
+    // the moment the sync door opens (found on a real phone, 2026-08-14).
+    // The group list must come from uvr-store, where it is defined.
+    const [fs, path] = await Promise.all([
+      import('node:fs/promises'),
+      import('node:path'),
+    ])
+    const source = await fs.readFile(
+      path.join(process.cwd(), 'src/components/sync/SyncDevicesModal.tsx'),
+      'utf8',
+    )
+    expect(source).not.toContain("from '@/stores/app-store'")
   })
 })
