@@ -15,7 +15,7 @@ import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReac
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
 import { ExampleCredit } from './ExampleCredit'
-import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { Box, Calendar, CheckCircle, ChevronDown, Cpu, DeviceSync, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 import type { OverflowMenuItem } from './OverflowMenu'
 import { PlayAlongSelect } from './PlayAlongSelect'
 import { UvrSessionActions } from './UvrSessionActions'
@@ -491,6 +491,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               : session()?.provider === 'webgpu'
                 ? 'GPU (WebGPU)'
                 : 'CPU (WASM)'}
+          </div>
+        </Show>
+        {/* A song that arrived by device sync or Drive restore is the
+            bundle's re-encode, not the original — said on the card, so
+            "why does this one sound different" has a visible answer. */}
+        <Show when={session()?.audioQuality?.startsWith('portable')}>
+          <div
+            class="status-provider"
+            title="Received from another device at travel quality. The full-quality original stays on the device that separated it."
+          >
+            <span class="provider-icon">
+              <DeviceSync />
+            </span>
+            Compact copy
           </div>
         </Show>
         <Show when={!session()}>
