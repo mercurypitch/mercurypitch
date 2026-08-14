@@ -59,6 +59,14 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     const trackReactivity = (..._args: unknown[]) => {}
     trackReactivity(_wf, _ar, _sn, _sl, _sll, _aw)
     forceRedraw = true
+    // Setting the flag is not enough on its own. The animation loop only
+    // re-arms itself while isPlaying() is true, so with audio stopped nothing
+    // was scheduled to read the flag: toggling note or lyric labels, or a new
+    // analysis result arriving, left the canvas showing the previous frame
+    // until playback happened to start. `redraw` is declared further down, but
+    // an effect body runs after render, so it is initialised by the time this
+    // executes.
+    redraw.queue()
   })
 
   const [hiddenAlgos, setHiddenAlgos] = createSignal<Set<string>>(new Set())
