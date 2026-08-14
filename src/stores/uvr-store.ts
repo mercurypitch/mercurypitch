@@ -20,7 +20,7 @@ import type { SongAudioQuality } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
 import { recordActivity } from '@/db/services/user-activity-service'
-import { deleteAllUvrSessionsFromDb, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -967,8 +967,19 @@ export async function resumableServerSessions(): Promise<UvrSession[]> {
 export async function pruneOrphanedCompletedSessions(): Promise<number> {
   const completed = getAllUvrSessions().filter((s) => s.status === 'completed')
   let pruned = 0
+  let skipped = 0
   for (const s of completed) {
-    if (!(await sessionHasPlayableStems(s.sessionId))) {
+    // Only 'absent' authorises a delete. A failed read reports 'unknown', and
+    // deleting on that would erase the user's whole paid library the first time
+    // IndexedDB is briefly unavailable at startup — which is exactly when this
+    // runs. Leaving an orphan in place costs a confusing row; deleting a real
+    // session costs a separation the user paid for and cannot get back.
+    const presence = await sessionStemPresence(s.sessionId)
+    if (presence === 'unknown') {
+      skipped++
+      continue
+    }
+    if (presence === 'absent') {
       const ok = await deleteUvrSessionFromDb(s.sessionId)
       if (ok) {
         removeUvrSessionFromCache(s.sessionId)
@@ -978,6 +989,11 @@ export async function pruneOrphanedCompletedSessions(): Promise<number> {
   }
   if (pruned > 0) {
     console.info(`[SessionStore] pruned ${pruned} orphaned session(s)`)
+  }
+  if (skipped > 0) {
+    console.warn(
+      `[SessionStore] skipped ${skipped} session(s) whose stem storage could not be read`,
+    )
   }
   return pruned
 }
