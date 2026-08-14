@@ -361,7 +361,10 @@ export async function saveStemFingerprintDataStrict(
   // Upsert as create-then-delete: write the new row first, and only prune the
   // old ones once it succeeds. Delete-then-create would wipe the existing
   // fingerprint if the create threw (quota, lock), losing recoverable data.
-  const existing = await repo.findAll({ where: { sessionId } })
+  const existing = await repo.findAll({
+    where: { sessionId },
+    throwOnError: true,
+  })
   const created = await repo.create({
     sessionId,
     fingerprintJson: JSON.stringify(fingerprint),
@@ -597,21 +600,29 @@ export async function deleteImportedUvrSessionDataStrict(
     const groupRepo =
       transactionDb.getRepository<SessionGroupRecord>('sessionGroups')
 
-    const blobs = await blobRepo.findAll({ where: { sessionId } })
+    const blobs = await blobRepo.findAll({
+      where: { sessionId },
+      throwOnError: true,
+    })
     for (const blob of blobs) await blobRepo.delete(blob.id)
 
     const fingerprints = await fingerprintRepo.findAll({
       where: { sessionId },
+      throwOnError: true,
     })
     for (const fingerprint of fingerprints) {
       await fingerprintRepo.delete(fingerprint.id)
     }
 
-    const lyrics = await lyricsRepo.findAll({ where: { sessionId } })
+    const lyrics = await lyricsRepo.findAll({
+      where: { sessionId },
+      throwOnError: true,
+    })
     for (const entry of lyrics) await lyricsRepo.delete(entry.id)
 
     const transcriptions = await transcriptionRepo.findAll({
       where: { sessionId },
+      throwOnError: true,
     })
     for (const transcription of transcriptions) {
       await transcriptionRepo.delete(transcription.id)
@@ -619,10 +630,11 @@ export async function deleteImportedUvrSessionDataStrict(
 
     const pitchRecords = await pitchRepo.findAll({
       where: { fileHash: `session:${sessionId}` },
+      throwOnError: true,
     })
     for (const pitch of pitchRecords) await pitchRepo.delete(pitch.id)
 
-    const groups = await groupRepo.findAll({})
+    const groups = await groupRepo.findAll({ throwOnError: true })
     for (const group of groups) {
       if (!group.sessionIds.includes(sessionId)) continue
       await groupRepo.update(group.id, {
@@ -635,6 +647,7 @@ export async function deleteImportedUvrSessionDataStrict(
     // that can be retried instead of an invisible orphaned payload.
     const sessions = await sessionRepo.findAll({
       where: { appSessionId: sessionId },
+      throwOnError: true,
     })
     for (const session of sessions) await sessionRepo.delete(session.id)
   }
