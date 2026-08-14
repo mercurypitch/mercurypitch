@@ -25,18 +25,25 @@ export default defineConfig({
     // they would otherwise run the HybridAdapter against a live worker.
     env: { VITE_API_BASE_URL: '' },
     setupFiles: ['./src/tests/setup.ts'],
+    // One glob for src, rather than a per-directory list. The list silently
+    // dropped whole categories: src/components/__tests__ matched only .test.tsx,
+    // so a .test.ts placed there ran nowhere and reported nothing — a test file
+    // that cannot fail is worse than no test file. It also blocked the move to
+    // colocated tests (docs/agent/TESTING.md §3.1), because a test next to its
+    // module was only picked up under src/features, src/lib or src/tests.
+    //
+    // Playwright specs are .spec.ts and live in src/e2e, so they stay out of
+    // this by naming. The beside-cue workspaces are deliberately absent: they
+    // are a separate Vitest project, run by `pnpm beside-cue:test`.
     include: [
       'tools/**/*.test.ts',
-      'src/tests/**/*.test.ts',
-      'src/tests/**/*.test.tsx',
-      'src/features/**/*.test.ts',
-      'src/features/**/*.test.tsx',
-      'src/lib/**/*.test.ts',
-      'src/components/__tests__/**/*.test.tsx',
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
       'workers/db-worker/src/**/*.test.ts',
       'workers/db-worker/node-tests/**/*.test.ts',
       'workers/jam-worker/src/**/*.test.ts',
     ],
+    exclude: ['**/node_modules/**', '**/dist/**', 'src/e2e/**'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: [
