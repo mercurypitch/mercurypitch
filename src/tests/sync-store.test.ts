@@ -400,6 +400,41 @@ describe('sending several songs', () => {
     expect(packed()).toEqual(['s1', 's2', 's3'])
   })
 
+  it('REQ-SYNC-027: keeps a song queued while the drain waits its turn', async () => {
+    threeSongs()
+    await connect()
+
+    // A direct send whose packing hangs on this gate holds the busy
+    // interlock, so the drain naps instead of popping.
+    let releasePack: () => void = () => {}
+    bundle.buildPortableBundle.mockReturnValueOnce(
+      new Promise((resolve) => {
+        releasePack = () =>
+          resolve({
+            manifest: { song: { quality: 'portable' }, parts: [{ bytes: 10 }] },
+          })
+      }),
+    )
+    const direct = sendSongToPeer('s1')
+    await vi.waitFor(() => expect(syncBusy()).toBe(true))
+
+    // One song queued before the nap, one DURING it — the second lands in
+    // the window where a stale-capture pop used to overwrite the queue
+    // and silently drop it: no send, no row, no error.
+    enqueueSongs(['s2'])
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    enqueueSongs(['s3'])
+
+    releasePack()
+    await direct
+
+    await vi.waitFor(() => expect(packed()).toHaveLength(3), {
+      timeout: 3000,
+    })
+    expect(packed()).toEqual(['s1', 's2', 's3'])
+    expect(syncQueue()).toEqual([])
+  })
+
   it('keeps going when one song fails', async () => {
     threeSongs()
     bundle.buildPortableBundle.mockImplementationOnce(() =>

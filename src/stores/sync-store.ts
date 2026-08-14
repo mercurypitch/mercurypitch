@@ -826,8 +826,10 @@ async function drainQueue(): Promise<void> {
       }
       // Popped BEFORE the attempt, so the loop always advances. Filtering
       // afterwards is how a refusal that returns instantly turns into a
-      // loop that never ends.
-      setSyncQueue(queue.slice(1))
+      // loop that never ends. Functional on purpose: the busy nap above
+      // can last a while, and a song enqueued during it lives only in
+      // the CURRENT queue — writing back a stale capture would drop it.
+      setSyncQueue((q) => q.slice(1))
       const result = await sendSongToPeer(next)
       // A dead link fails every remaining song the same way — four VPN
       // refusals in a row taught us nobody needs the last three of them.
