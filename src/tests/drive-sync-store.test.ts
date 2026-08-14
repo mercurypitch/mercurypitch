@@ -40,10 +40,26 @@ vi.mock('@/db/services/auth-service', () => ({
   currentAccountId: () => auth.account,
 }))
 
-const sessions = vi.hoisted(() => ({ list: [] as unknown[] }))
+const sessions = vi.hoisted(() => {
+  let resolveReady: () => void = () => {}
+  return {
+    list: [] as unknown[],
+    readyPromise: Promise.resolve() as Promise<void>,
+    /** Make readiness something a test has to grant explicitly. */
+    armPendingReady(): void {
+      this.readyPromise = new Promise<void>((resolve) => {
+        resolveReady = resolve
+      })
+    },
+    grantReady(): void {
+      resolveReady()
+    },
+  }
+})
 vi.mock('@/stores/uvr-store', () => ({
   getAllUvrSessions: () => sessions.list,
   getUvrSessionByHash: () => undefined,
+  whenSessionStoreReady: () => sessions.readyPromise,
 }))
 
 const bundleMock = vi.hoisted(() => ({
@@ -97,6 +113,7 @@ function manifestFor(hash: string, parts: number[]): PortableBundleManifest {
 beforeEach(() => {
   vi.clearAllMocks()
   sessions.list = []
+  sessions.readyPromise = Promise.resolve()
   auth.account = 'user-1'
   auth.fetchDriveAccessToken.mockResolvedValue({
     ok: true,
@@ -141,15 +158,43 @@ describe('scan', () => {
       { ...localSession('h-1', 'Done.mp3') },
       // Still separating: there is nothing to pack yet.
       { ...localSession('h-2', 'Working.mp3'), status: 'processing' },
-      // A record with no audio behind it -- the library list knows about
-      // it, but this device holds nothing to upload.
-      { ...localSession('h-3', 'Elsewhere.mp3'), outputs: {} },
       // No hash means no identity, so it could never be matched again.
       { ...localSession('', 'Nameless.mp3') },
     ]
     const scan = await scanDrive()
     expect(scan?.here).toBe(1)
     expect(scan?.toBackUp.map((c) => c.title)).toEqual(['Done'])
+  })
+
+  it('REQ-DRV-010: counts a completed hashed song this page never played', async () => {
+    // Exactly what a session looks like fresh off IndexedDB: completed,
+    // hashed, and with NO outputs — those are minted lazily on first
+    // play, and packing reads the stems from the database anyway.
+    // Requiring outputs made a full library answer "nothing here to
+    // back up" after every reload, which is the shipped bug.
+    const fresh: Record<string, unknown> = localSession('h-1', 'Song.mp3')
+    delete fresh.outputs
+    sessions.list = [fresh]
+
+    const scan = await scanDrive()
+
+    expect(scan?.here).toBe(1)
+    expect(scan?.toBackUp).toHaveLength(1)
+    expect(scan?.toBackUp[0]?.title).toBe('Song')
+  })
+
+  it('REQ-DRV-011: waits for the library to finish loading first', async () => {
+    // The post-OAuth-redirect boot runs the scan while IndexedDB is
+    // still loading; comparing against a cache that is merely EMPTY SO
+    // FAR reports a full device as having nothing to back up.
+    sessions.armPendingReady()
+    const pending = scanDrive()
+
+    sessions.list = [localSession('h-9', 'Late.mp3')]
+    sessions.grantReady()
+
+    const scan = await pending
+    expect(scan?.toBackUp).toHaveLength(1)
   })
 })
 

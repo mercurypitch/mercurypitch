@@ -834,6 +834,22 @@ export const isSessionStoreReady = sessionStoreReady
 
 let _sessionStoreReady = false
 
+let resolveSessionStoreReady: (() => void) | null = null
+const sessionStoreReadyPromise = new Promise<void>((resolve) => {
+  resolveSessionStoreReady = resolve
+})
+
+/**
+ * Resolves once the sessions have been read from IndexedDB — including
+ * the failure path, which leaves an empty cache rather than never
+ * answering. For code that runs off a boot-time trigger (the Drive scan
+ * fires on the way back from the OAuth redirect) and would otherwise
+ * read an empty library that is merely still loading.
+ */
+export function whenSessionStoreReady(): Promise<void> {
+  return sessionStoreReadyPromise
+}
+
 /**
  * Initialize the session store: load from IndexedDB and populate the
  * in-memory cache.
@@ -869,6 +885,7 @@ export async function initSessionStore(): Promise<void> {
 
   _sessionStoreReady = true
   setSessionStoreReady(true)
+  resolveSessionStoreReady?.()
   await reconcileGroupMembershipIfReady()
 
   // Run stale-session cleanup on the loaded cache
