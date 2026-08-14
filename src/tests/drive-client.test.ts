@@ -75,6 +75,51 @@ describe('drive client — the folder', () => {
     expect(body.name).toBe(DRIVE_FOLDER_NAME)
     expect(body.mimeType).toBe('application/vnd.google-apps.folder')
   })
+
+  it('REQ-DRV-016: trusts the remembered id over the name', async () => {
+    // The user renamed the folder in Drive. The id still resolves, so
+    // nothing is created — a name-only lookup here would quietly make a
+    // second "MercuryPitch" and split the library in half.
+    const { client, calls } = clientWith([
+      (c) =>
+        c.url.includes('/files/folder-kept?fields=id,trashed')
+          ? jsonResponse({ id: 'folder-kept', trashed: false })
+          : null,
+    ])
+    expect(await client.ensureFolder('folder-kept')).toBe('folder-kept')
+    expect(calls).toHaveLength(1)
+  })
+
+  it('falls back to the name when the remembered folder is gone', async () => {
+    const { client, calls } = clientWith([
+      (c) =>
+        c.url.includes('/files/folder-gone?fields=id,trashed')
+          ? new Response('not found', { status: 404 })
+          : null,
+      (c) =>
+        c.url.includes('/files?q=')
+          ? jsonResponse({ files: [{ id: 'folder-1' }] })
+          : null,
+    ])
+    expect(await client.ensureFolder('folder-gone')).toBe('folder-1')
+    expect(calls).toHaveLength(2)
+  })
+
+  it('does not trust a remembered folder sitting in the trash', async () => {
+    // Trashed is not gone: uploads into a trashed folder vanish with it
+    // in thirty days, silently.
+    const { client } = clientWith([
+      (c) =>
+        c.url.includes('fields=id,trashed')
+          ? jsonResponse({ id: 'folder-t', trashed: true })
+          : null,
+      (c) =>
+        c.url.includes('/files?q=')
+          ? jsonResponse({ files: [{ id: 'folder-fresh' }] })
+          : null,
+    ])
+    expect(await client.ensureFolder('folder-t')).toBe('folder-fresh')
+  })
 })
 
 describe('drive client — listing', () => {
@@ -138,10 +183,58 @@ describe('drive client — upload', () => {
   const container = (bytes: number): Blob =>
     new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' })
 
+  /** Answers the post-upload size check with what Drive "stored". */
+  const storedSize =
+    (bytes: number) =>
+    (c: Call): Response | null =>
+      c.url.includes('fields=size')
+        ? jsonResponse({ size: String(bytes) })
+        : null
+
+  it('refuses an upload Drive stored short, and trashes the remnant', async () => {
+    // The resumable protocol verifies offsets, not arrival. A truncated
+    // file discovered at restore time, on the replacement device, is a
+    // song lost for good — so the size is checked while the original is
+    // still here to send again.
+    const trashed: string[] = []
+    const { client } = clientWith([
+      (c) =>
+        c.url.includes('uploadType=resumable')
+          ? new Response(null, {
+              status: 200,
+              headers: { Location: 'https://upload.example/session-7' },
+            })
+          : null,
+      (c) =>
+        c.url.startsWith('https://upload.example/')
+          ? jsonResponse({ id: 'file-7' })
+          : null,
+      storedSize(3),
+      (c) => {
+        if (c.init.method !== 'PATCH' || !c.url.includes('/files/file-7')) {
+          return null
+        }
+        trashed.push(c.url)
+        return jsonResponse({ id: 'file-7' })
+      },
+    ])
+
+    await expect(
+      client.uploadSong('f', container(16), {
+        title: 'T',
+        properties: { fileHash: 'h', quality: 'portable-128' },
+      }),
+    ).rejects.toThrow(/did not arrive intact/)
+    // The bad copy is trashed so the next scan offers the song again
+    // instead of counting a truncated file as a backup.
+    expect(trashed).toHaveLength(1)
+  })
+
   it('opens a session, sends slices, and reports honest progress', async () => {
     const size = UPLOAD_CHUNK_BYTES * 2 + 10
     const ranges: string[] = []
     const { client, calls } = clientWith([
+      storedSize(size),
       (c) =>
         c.url.includes('uploadType=resumable')
           ? new Response(null, {
@@ -206,6 +299,7 @@ describe('drive client — upload', () => {
     const size = UPLOAD_CHUNK_BYTES * 2
     const ranges: string[] = []
     const { client } = clientWith([
+      storedSize(size),
       (c) =>
         c.url.includes('uploadType=resumable')
           ? new Response(null, {
@@ -254,6 +348,7 @@ describe('drive client — upload', () => {
 
   it('replaces in place when the song is already in Drive', async () => {
     const { client, calls } = clientWith([
+      storedSize(8),
       (c) =>
         c.url.includes('uploadType=resumable')
           ? new Response(null, {
@@ -289,6 +384,7 @@ describe('drive client — upload', () => {
     const size = UPLOAD_CHUNK_BYTES + 100
     const ranges: string[] = []
     const { client } = clientWith([
+      storedSize(size),
       (c) =>
         c.url.includes('uploadType=resumable')
           ? new Response(null, {

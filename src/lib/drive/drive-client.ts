@@ -134,8 +134,34 @@ export function createDriveClient(deps: DriveClientDeps) {
    * Looked up by name under the Drive root. Deliberately visible and
    * ordinarily named: the user should be able to open Drive and see
    * their songs as files, not find an opaque app-data blob.
+   *
+   * A remembered `preferredId` is tried first because it survives what a
+   * name cannot: the user renaming or moving the folder in Drive. On a
+   * name-only lookup a rename silently splits the library — the search
+   * finds nothing, a second "MercuryPitch" folder appears, and the next
+   * scan offers every song for re-upload.
    */
-  async function ensureFolder(): Promise<string> {
+  async function ensureFolder(preferredId?: string | null): Promise<string> {
+    if (
+      preferredId !== undefined &&
+      preferredId !== null &&
+      preferredId !== ''
+    ) {
+      try {
+        const known = await requestJson<{ id?: string; trashed?: boolean }>(
+          `${API}/files/${preferredId}?fields=id,trashed`,
+        )
+        if (known.id !== undefined && known.trashed !== true) return known.id
+      } catch (error) {
+        // 404 means the remembered folder is gone for good (or belongs
+        // to a different account): fall through to the name search.
+        // Anything else — auth, a 5xx — would fail that search too, so
+        // let it speak for itself.
+        if (!(error instanceof DriveApiError) || error.status !== 404) {
+          throw error
+        }
+      }
+    }
     const q = encodeURIComponent(
       `name = '${DRIVE_FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false`,
     )
@@ -332,6 +358,22 @@ export function createDriveClient(deps: DriveClientDeps) {
     }
     if (fileId === '') {
       throw new DriveApiError(500, 'Drive did not return the uploaded file.')
+    }
+    // The resumable protocol verifies offsets, not arrival: a finalize
+    // that slipped through a flaky proxy can leave a shorter file Drive
+    // still reports as complete. Ask for the stored size and refuse a
+    // mismatch — a truncated backup discovered at restore time, months
+    // later on a replacement device, is a song lost for good. The bad
+    // copy is trashed so the next scan offers the song again.
+    const stored = await requestJson<{ size?: string }>(
+      `${API}/files/${fileId}?fields=size`,
+    )
+    if (Number(stored.size ?? -1) !== total) {
+      await trashFile(fileId).catch(() => {})
+      throw new DriveApiError(
+        0,
+        'The upload did not arrive intact — Drive stored a different number of bytes than was sent.',
+      )
     }
     return fileId
   }
