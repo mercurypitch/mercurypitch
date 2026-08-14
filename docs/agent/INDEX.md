@@ -180,9 +180,9 @@ These are the rules that break things when ignored.
 | [app-store.ts](../../src/stores/app-store.ts) | 2.0k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
-| [sync-store.ts](../../src/stores/sync-store.ts) | 950 | ── Sync store One person, two devices, a room code between them. |
+| [sync-store.ts](../../src/stores/sync-store.ts) | 1.0k | ── Sync store One person, two devices, a room code between them. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 700 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
-| [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 550 | ── Drive sync store The user's own Google Drive as the place a library survives. |
+| [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 600 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [session-store.ts](../../src/stores/session-store.ts) | 450 | Session Store — Unified session management with localStorage |
@@ -329,7 +329,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.8k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/App.tsx](../../src/App.tsx) | 4.3k |
-| [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.3k |
+| [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.6k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
