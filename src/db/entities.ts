@@ -455,6 +455,13 @@ export interface UserSetting extends DbEntity {
 export interface Follow extends DbEntity {
   userId: string
   followedUserId: string
+  /**
+   * Whether the other side agreed. Server-written: the only route to
+   * 'accepted' is `POST /api/friends/accept` or a redeemed friend code —
+   * see workers/db-worker/src/friends.ts. Optional because rows written
+   * before the column existed have none, and those were never agreed to.
+   */
+  status?: 'pending' | 'accepted'
 }
 
 // ── Melody Library (entity types ready for future migration) ────

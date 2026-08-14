@@ -534,7 +534,7 @@ Effects: `scanDrive` reports `here: 0` and `toBackUp: []`, and `backUpToDrive` r
 
 ### [high] Unilateral follow rows let any authenticated user read any user's private streak and score aggregates
 
-`workers/db-worker/src/index.ts:904` — confidence: likely — status: reported
+`workers/db-worker/src/index.ts:904` — confidence: likely — status: FIXED
 
 `handleLeaderboard` deliberately refuses to rank or publish streaks outside the friends view (index.ts:869 returns 400 for `category=streak` with `view!=='friends'`, and the projection at index.ts:996 zeroes `streak`/`longestStreak` for anyone who is neither you nor a friend). It also skips the `requireOptIn` consent gate and the `minSessions`/`minStreakDays` thresholds entirely for the friends view (the opt-in clause is only in the `else if (config.requireOptIn)` branch at index.ts:907, and the threshold filter at index.ts:976 short-circuits on `view === 'friends'`).
 
@@ -545,6 +545,8 @@ Combined with the public `userProfiles` id listing, this makes every user's prac
 **Failure scenario.** Victim V has `leaderboardOptIn = 0` (the migration 0003 default — explicitly chosen because "nobody on it today was ever asked"). Attacker A signs in, obtains V's userId from `GET /api/userProfiles`, then `POST /api/follows {"followedUserId":"<V>"}` → 201. A then calls `GET /api/leaderboard?category=streak&view=friends`. The friends clause matches V's sessionRecords, the opt-in clause is never applied, the threshold filter is skipped, and the projection branch `view === 'friends'` returns V's real `streak` and `longestStreak` plus `score`, `bestScore`, `accuracy` and `totalSessions` — exactly the behavioural record the handler's own comments say must not be published without consent.
 
 **Suggested fix.** Make the friends view require a mutual/consented edge rather than a unilateral one: change the friends clause to require rows in `follows` in BOTH directions (as `handleFriendRedeem` writes them), or add a server-side `consented` flag that only the friend-code redemption path can set. Additionally, validate `followedUserId` on create (must reference an existing, non-suspended user) and consider removing `follows` from the client-writable TABLES allowlist in favour of the friend-code endpoints.
+
+**Fixed** by migration `0028_follow_requests.sql` and `workers/db-worker/src/friends.ts`. A `follows` row now carries a `status`, and the friends clause requires `'accepted'`. Nothing a caller can do alone reaches that value: `POST /api/friends/request` writes `'pending'`, only the person who was asked can `POST /api/friends/accept`, and generic CRUD writes to `follows` answer 405 (`writeRoute` on the table def) so the create that took `followedUserId` on trust no longer exists. Redeeming a friend code still links both directions at once — being handed the code is the consent. Existing rows were back-filled by shape: a reciprocal pair could only have come from a friend code and became `'accepted'`; a lone row became `'pending'`, which is precisely the set nobody agreed to. Proof is in `workers/db-worker/node-tests/follow-requests-integration.test.ts` — `leaksThroughFriendsBoard` is the scenario above, asserted false for a one-sided row.
 
 ### [medium] OfflinePitchCanvas sets forceRedraw but never queues a frame — analysis results and label toggles do not repaint
 

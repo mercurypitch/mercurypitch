@@ -345,21 +345,46 @@ describe('weekly leaderboard', () => {
 // ── Follows ─────────────────────────────────────────────────────
 
 describe('follow flows', () => {
-  it('follows and unfollows a player', async () => {
-    const { follow, getFollowing, isFollowing, unfollow } =
+  /** Write a follow row the way the worker would have. */
+  function seedFollow(
+    followedUserId: string,
+    status?: 'pending' | 'accepted',
+  ): Promise<unknown> {
+    return adapter
+      .getRepository('follows')
+      .create({ userId: getUserId(), followedUserId, status })
+  }
+
+  it('counts only the singers who agreed', async () => {
+    const { getFollowing, loadFollowState } =
       await import('@/db/services/follow-service')
+    await seedFollow('friend-1', 'accepted')
+    await seedFollow('asked-1', 'pending')
 
-    expect(await follow('player-1')).toBe(true)
-    expect(await follow('player-1')).toBe(true) // idempotent
-    expect(await getFollowing()).toEqual(['player-1'])
-    expect(await isFollowing('player-1')).toBe(true)
-
-    expect(await unfollow('player-1')).toBe(true)
-    expect(await getFollowing()).toEqual([])
+    // A pending row is an ask, not a friendship. Reading it as one is what
+    // let an unanswered request open the other singer's board.
+    expect(await getFollowing()).toEqual(['friend-1'])
+    expect(await loadFollowState()).toEqual({
+      accepted: ['friend-1'],
+      pending: ['asked-1'],
+    })
   })
 
-  it('refuses to follow yourself', async () => {
-    const { follow } = await import('@/db/services/follow-service')
-    expect(await follow(getUserId())).toBe(false)
+  it('treats a row from before the status column as never agreed', async () => {
+    const { loadFollowState } = await import('@/db/services/follow-service')
+    await seedFollow('legacy-1')
+
+    expect(await loadFollowState()).toEqual({
+      accepted: [],
+      pending: ['legacy-1'],
+    })
+  })
+
+  it('refuses to friend yourself before it reaches the network', async () => {
+    const { requestFriend } = await import('@/db/services/follow-service')
+    await expect(requestFriend(getUserId())).resolves.toMatchObject({
+      ok: false,
+    })
+    await expect(requestFriend('')).resolves.toMatchObject({ ok: false })
   })
 })

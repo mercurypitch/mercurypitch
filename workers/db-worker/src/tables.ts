@@ -34,6 +34,19 @@ export interface TableDef {
    */
   serverCols?: string[]
   /**
+   * Generic CRUD may read this table but never write it. Holds the route that
+   * does own its writes, which POST/PATCH/DELETE on `/api/<entity>` name in
+   * their 405 so the caller is told where to go instead.
+   *
+   * `serverCols` is the finer tool and the right one when most of a row is
+   * the client's to fill in. This is for a table where the *shape* of a write
+   * is the rule — `follows`, where a row must come in pairs, must name a real
+   * account, and may only reach 'accepted' with the other person's consent.
+   * None of that is a per-column question, so none of it can be enforced by
+   * stripping columns.
+   */
+  writeRoute?: string
+  /**
    * Writes require a REAL account (password/Google), not merely a token.
    *
    * An anonymous identity is a UUID in one browser's localStorage: clearing
@@ -190,7 +203,10 @@ export const TABLES: Record<string, TableDef> = {
   },
   featureFlags: { access: 'admin', boolCols: ['value'] },
   userSettings: { access: 'user' },
-  follows: { access: 'user' },
+  // Reads stay generic — your own follow list is an ordinary private list.
+  // Writes belong to /api/friends/* (see friends.ts): a follow is half of a
+  // mutual agreement, and the generic create could only ever write the half.
+  follows: { access: 'user', writeRoute: '/api/friends/*' },
   userSurveyResponses: { access: 'user', jsonCols: ['answersJson'] },
   // A singer's measured voice over time. Private per-user: the twin and the
   // numbers are yours, and nothing here is a leaderboard.

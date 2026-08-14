@@ -1,0 +1,98 @@
+/* Mirrors FriendCodePanel.module.css — the two sit stacked in the Friends
+   tab and reading as one surface is the point. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  /* .leaderboard-content carries no padding so the table can run edge to
+     edge, so the inset is this panel's own responsibility. */
+  margin: 12px 16px 0;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-primary, #eee);
+  margin: 0;
+}
+
+/* What accepting actually does. It is a privacy decision, not a social one,
+   and the singer has no way to know that unless it is written down. */
+.note {
+  font-size: 12px;
+  color: var(--text-secondary, #9aa4b2);
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #eee);
+  /* A long display name must not push the buttons off a phone screen. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #eee);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--accent, #7aa2f7);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.accept {
+  composes: button;
+  background: var(--accent, #7aa2f7);
+  border-color: var(--accent, #7aa2f7);
+  color: var(--bg-primary, #111);
+  font-weight: 600;
+}
+
+.button svg {
+  width: 15px;
+  height: 15px;
+}

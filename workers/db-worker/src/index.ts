@@ -21,6 +21,7 @@ import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual,
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
+import { handleFriendAccept, handleFriendCode, handleFriendRedeem, handleFriendRemove, handleFriendRequest, handleFriendRequests, } from './friends'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
@@ -706,170 +707,6 @@ async function loadLeaderboardConfig(env: Env): Promise<LeaderboardConfig> {
   }
 }
 
-// ── Friend codes ─────────────────────────────────────────────────────
-//
-// Following someone used to require finding them on the public leaderboard.
-// Once the board is opt-in and threshold-gated that stops being a discovery
-// surface at all, so friends need their own path in: a short code you can
-// read out loud, paste into a chat, or carry in a link.
-//
-// Crockford base32 minus the ambiguous glyphs (I, L, O, U) — no confusing 0/O
-// or 1/I when someone reads a code aloud, and no accidental English words.
-
-const FRIEND_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
-const FRIEND_CODE_LENGTH = 8
-
-function generateFriendCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(FRIEND_CODE_LENGTH))
-  let out = ''
-  for (const b of bytes)
-    out += FRIEND_CODE_ALPHABET[b % FRIEND_CODE_ALPHABET.length]
-  return out
-}
-
-/** Accept the pretty form (`K7QM-2X4B`), lower case, and stray spaces. */
-export function normalizeFriendCode(raw: string): string {
-  return raw.replace(/[\s-]/g, '').toUpperCase()
-}
-
-/**
- * The caller's friend code, minted on first request. Registered accounts
- * only: an anonymous identity disappears with a cleared browser, and a dead
- * entry in someone else's friend list is worse than no entry.
- */
-async function handleFriendCode(request: Request, env: Env): Promise<Response> {
-  const auth = await getAuth(request, env)
-  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-
-  const user = await env.DB.prepare(
-    'SELECT authProvider FROM users WHERE id = ?',
-  )
-    .bind(auth.userId)
-    .first<{ authProvider: string }>()
-  if (!user || user.authProvider === 'anonymous') {
-    return respond(
-      { error: 'Create an account to add friends' },
-      { status: 403 },
-    )
-  }
-
-  const existing = await env.DB.prepare(
-    'SELECT friendCode FROM userProfiles WHERE id = ?',
-  )
-    .bind(auth.userId)
-    .first<{ friendCode: string | null }>()
-  if (existing?.friendCode) return respond({ code: existing.friendCode })
-
-  // Retry on the (vanishingly unlikely) collision rather than trusting one draw.
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const code = generateFriendCode()
-    try {
-      const res = await env.DB.prepare(
-        'UPDATE userProfiles SET friendCode = ?, updatedAt = ? WHERE id = ? AND friendCode IS NULL',
-      )
-        .bind(code, new Date().toISOString(), auth.userId)
-        .run()
-      if (res.meta.changes > 0) return respond({ code })
-      // Someone else minted ours concurrently — re-read and return that.
-      const now = await env.DB.prepare(
-        'SELECT friendCode FROM userProfiles WHERE id = ?',
-      )
-        .bind(auth.userId)
-        .first<{ friendCode: string | null }>()
-      if (now?.friendCode) return respond({ code: now.friendCode })
-    } catch {
-      // UNIQUE violation — the code was taken, draw another.
-    }
-  }
-  return respond(
-    { error: 'Could not allocate a code, try again' },
-    { status: 503 },
-  )
-}
-
-/**
- * Redeem someone's code. Sharing a code IS the consent, so this links both
- * directions immediately — a pending-request queue would be machinery with
- * nothing to decide. Both parties must be registered.
- */
-async function handleFriendRedeem(
-  request: Request,
-  env: Env,
-): Promise<Response> {
-  const auth = await getAuth(request, env)
-  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-
-  let body: { code?: string }
-  try {
-    body = await request.json<{ code?: string }>()
-  } catch {
-    return respond({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-  const code = normalizeFriendCode(body.code ?? '')
-  if (code.length !== FRIEND_CODE_LENGTH) {
-    return respond({ error: 'That code doesn’t look right' }, { status: 400 })
-  }
-
-  const me = await env.DB.prepare('SELECT authProvider FROM users WHERE id = ?')
-    .bind(auth.userId)
-    .first<{ authProvider: string }>()
-  if (!me || me.authProvider === 'anonymous') {
-    return respond(
-      { error: 'Create an account to add friends' },
-      { status: 403 },
-    )
-  }
-
-  const target = await env.DB.prepare(
-    'SELECT id, displayName FROM userProfiles WHERE friendCode = ?',
-  )
-    .bind(code)
-    .first<{ id: string; displayName: string }>()
-  // Same message for "no such code" and "that's you" would be confusing; but
-  // an unknown code must not reveal whether it merely belongs to nobody yet.
-  if (!target)
-    return respond({ error: 'No one found for that code' }, { status: 404 })
-  if (target.id === auth.userId) {
-    return respond({ error: 'That’s your own code' }, { status: 400 })
-  }
-
-  const now = new Date().toISOString()
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
-       SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
-         (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
-    ).bind(
-      crypto.randomUUID(),
-      now,
-      now,
-      auth.userId,
-      target.id,
-      auth.userId,
-      target.id,
-    ),
-    env.DB.prepare(
-      `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
-       SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
-         (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
-    ).bind(
-      crypto.randomUUID(),
-      now,
-      now,
-      target.id,
-      auth.userId,
-      target.id,
-      auth.userId,
-    ),
-  ])
-
-  return respond({
-    ok: true,
-    userId: target.id,
-    displayName: target.displayName,
-  })
-}
-
 async function handleLeaderboard(
   url: URL,
   auth: AuthUser | null,
@@ -924,8 +761,14 @@ async function handleLeaderboard(
     binds.push(weekStartIso())
   }
   if (view === 'friends') {
+    // `status = 'accepted'` is the consent check. Without it a lone follow row
+    // — which anyone could once create for anyone — was enough to read a
+    // singer's streak and score aggregates, including a singer who had never
+    // opted in to the public board. See friends.ts.
     clauses.push(
-      '(s."userId" = ? OR s."userId" IN (SELECT "followedUserId" FROM "follows" WHERE "userId" = ?))',
+      `(s."userId" = ? OR s."userId" IN (
+         SELECT "followedUserId" FROM "follows"
+         WHERE "userId" = ? AND "status" = 'accepted'))`,
     )
     binds.push((auth as AuthUser).userId, (auth as AuthUser).userId)
   } else if (config.requireOptIn) {
@@ -2099,7 +1942,7 @@ async function handleRequest(
       'friend-code',
     )
     if (!rl.allowed) return rateLimited(rl)
-    return handleFriendCode(request, env)
+    return handleFriendCode(auth, env, respond)
   }
 
   if (url.pathname === '/api/friends/redeem' && request.method === 'POST') {
@@ -2111,7 +1954,38 @@ async function handleRequest(
       'friend-redeem',
     )
     if (!rl.allowed) return rateLimited(rl)
-    return handleFriendRedeem(request, env)
+    return handleFriendRedeem(auth, request, env, respond)
+  }
+
+  // The rest of the friend graph. Reading your own pending requests is a
+  // plain read; the three writes share the redeem bucket, since they are the
+  // same kind of action against the same table and a caller who is being
+  // told to slow down should not be able to switch verbs and continue.
+  if (url.pathname === '/api/friends/requests' && request.method === 'GET') {
+    return handleFriendRequests(auth, env, respond)
+  }
+
+  if (
+    url.pathname === '/api/friends/request' ||
+    url.pathname === '/api/friends/accept' ||
+    url.pathname === '/api/friends/remove'
+  ) {
+    if (request.method !== 'POST') {
+      return respond({ error: 'Method not allowed' }, { status: 405 })
+    }
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'friend-redeem',
+    )
+    if (!rl.allowed) return rateLimited(rl)
+    if (url.pathname === '/api/friends/request') {
+      return handleFriendRequest(auth, request, env, respond)
+    }
+    if (url.pathname === '/api/friends/accept') {
+      return handleFriendAccept(auth, request, env, respond)
+    }
+    return handleFriendRemove(auth, request, env, respond)
   }
 
   if (url.pathname === '/api/demo-songs') {
@@ -2155,6 +2029,15 @@ async function handleRequest(
     return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
 
   const sub = match[2] ? decodeURIComponent(match[2]) : undefined
+
+  // A table whose rows only make sense in sets the generic handlers cannot
+  // see. Answer before the rate limiter so the refusal is cheap and constant.
+  if (def.writeRoute !== undefined && request.method !== 'GET') {
+    return respond(
+      { error: `Use ${def.writeRoute} to change ${entity}` },
+      { status: 405 },
+    )
+  }
 
   // Per-user (per-IP when anonymous) write rate limit on mutations — bounds
   // scripted spam / unbounded row creation. (Volumetric DDoS is absorbed at
