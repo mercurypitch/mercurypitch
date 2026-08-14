@@ -9,7 +9,6 @@ import { listStemTypes } from '@/db/services/uvr-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
-import { parseSyncLinkHash } from '@/lib/room-code'
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -48,6 +47,12 @@ interface KaraokeRailPanelsProps {
   stageBusy: () => boolean
   /** Session currently on stage — accents its row in the library list. */
   activeSessionId: () => string | null
+  /** One-shot handover of a scanned `#/sync:CODE` — the PAGE catches and
+   *  consumes the link (this rail does not mount at all while collapsed,
+   *  and the collapsed state is a persisted preference), then expands the
+   *  rail and hands the code down here exactly once. Taking, rather than
+   *  reading, is what keeps a collapse/expand from re-joining. */
+  takeScannedSyncCode?: () => string | null
 }
 
 // Module scope on purpose: collapsing the rail unmounts this component, and
@@ -108,13 +113,13 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     // ready by the time a song opens.
     void initKaraokePlaylistStore()
     // A QR scanned off THIS page's receive screen links back to this page
-    // (#/sync:CODE), and karaoke.html has no hash router to catch it. The
-    // scan already says what the person wants: stash the code and open
-    // the modal, which takes it on mount and joins by itself. The store
-    // is imported dynamically for the same reason the modal is lazy —
-    // a rail first paint must not pay for the WebRTC machinery, and a
-    // scan is the moment that machinery is genuinely wanted.
-    const scanned = parseSyncLinkHash(window.location.hash)
+    // (#/sync:CODE). The PAGE parses and consumes the link (see
+    // takeScannedSyncCode on the props); this end stashes the code and
+    // opens the modal, which takes it on mount and joins by itself. The
+    // store is imported dynamically for the same reason the modal is
+    // lazy — a rail first paint must not pay for the WebRTC machinery,
+    // and a scan is the moment that machinery is genuinely wanted.
+    const scanned = props.takeScannedSyncCode?.() ?? null
     if (scanned !== null) {
       void import('@/stores/sync-store').then((store) => {
         store.setSyncCodeToJoin(scanned)

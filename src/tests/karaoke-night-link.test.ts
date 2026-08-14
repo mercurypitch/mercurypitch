@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { KARAOKE_NIGHT_PATH, karaokeNightPlaylistUrl, karaokeNightSessionUrl, parseKaraokeNightLaunch, studioSessionUrl, } from '@/lib/karaoke-night-link'
+import { KARAOKE_NIGHT_PATH, karaokeNightPlaylistUrl, karaokeNightSessionUrl, parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
 
 describe('karaoke-night-link', () => {
   // REQ-SKL-001 & REQ-SKL-006: karaokeNightSessionUrl
@@ -93,5 +93,42 @@ describe('karaoke-night-link', () => {
     })
     // `autoplay=true` from a hand-typed link still counts.
     expect(parseKaraokeNightLaunch('?autoplay=true').autoplay).toBe(true)
+  })
+
+  // REQ-SKL-011: the page catches its own scanned link — and CONSUMES it,
+  // so a reload, tab restore, or rail collapse/expand cannot re-join a
+  // session the person already finished.
+  describe('takeScannedSyncLink', () => {
+    it('hands back the code once and eats the hash', () => {
+      window.location.hash = '#/sync:abcd2345'
+      try {
+        expect(takeScannedSyncLink()).toBe('ABCD2345')
+        expect(window.location.hash).toBe('')
+        // The second boot of the same URL has nothing left to act on.
+        expect(takeScannedSyncLink()).toBeNull()
+      } finally {
+        window.location.hash = ''
+      }
+    })
+
+    it('leaves an unrelated hash alone', () => {
+      window.location.hash = '#/karaoke'
+      try {
+        expect(takeScannedSyncLink()).toBeNull()
+        expect(window.location.hash).toBe('#/karaoke')
+      } finally {
+        window.location.hash = ''
+      }
+    })
+
+    it('refuses a mangled code without consuming anything', () => {
+      window.location.hash = '#/sync:zz'
+      try {
+        expect(takeScannedSyncLink()).toBeNull()
+        expect(window.location.hash).toBe('#/sync:zz')
+      } finally {
+        window.location.hash = ''
+      }
+    })
   })
 })

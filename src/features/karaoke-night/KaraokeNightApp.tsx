@@ -25,7 +25,7 @@ import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { eventBus } from '@/lib/event-bus'
 import type { KaraokeNightLaunchParams } from '@/lib/karaoke-night-link'
-import { parseKaraokeNightLaunch, studioSessionUrl, } from '@/lib/karaoke-night-link'
+import { parseKaraokeNightLaunch, studioSessionUrl, takeScannedSyncLink, } from '@/lib/karaoke-night-link'
 import { isNarrow } from '@/lib/use-viewport'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
@@ -98,6 +98,14 @@ export function KaraokeNightApp() {
   const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
   const [creditsOpen, setCreditsOpen] = createSignal(false)
+  // A scanned #/sync:CODE, parked here until the rail mounts and takes it.
+  // The PAGE has to catch it: the rail never mounts while collapsed, and
+  // collapsed is a persisted preference — a handler down there would make
+  // the scan silently do nothing for exactly the people who tidied their
+  // stage. Take-once semantics so a later collapse/expand cannot re-join.
+  const [scannedSyncCode, setScannedSyncCode] = createSignal<string | null>(
+    null,
+  )
 
   const updateAlpha = (v: number) => {
     setStageAlpha(persistKaraokeStageAlpha(v))
@@ -224,6 +232,16 @@ export function KaraokeNightApp() {
   }
 
   onMount(() => {
+    // A QR scanned off a receive screen lands here as #/sync:CODE. Catch
+    // and consume it first, and make sure the door it needs is on screen.
+    const syncLink = takeScannedSyncLink()
+    if (syncLink !== null) {
+      setScannedSyncCode(syncLink)
+      // Deliberately NOT updateRail: showing the door for this scan is
+      // not the person choosing a layout, so nothing is persisted.
+      setRailCollapsed(false)
+    }
+
     const searchParams = new URLSearchParams(window.location.search)
     const launch = parseKaraokeNightLaunch(searchParams)
     const initialSession = launch.sessionId
@@ -644,6 +662,11 @@ export function KaraokeNightApp() {
                 onSing={(s) => setSongWithUrl(s, true)}
                 stageBusy={() => activeSong() !== null}
                 activeSessionId={() => activeSong()?.sessionId ?? null}
+                takeScannedSyncCode={() => {
+                  const code = scannedSyncCode()
+                  setScannedSyncCode(null)
+                  return code
+                }}
               />
             </Suspense>
           </Show>
