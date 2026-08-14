@@ -4,6 +4,7 @@
 
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { stashPendingFriendCode } from '@/lib/pending-friend-code'
+import { parseSyncLinkHash } from '@/lib/room-code'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
@@ -164,13 +165,15 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'jam-room', roomId: jamMatch[1].toUpperCase() }
   }
 
-  // Match: /sync:CODE — the QR a receiving device puts on screen. Folded
-  // to upper case here because the code is a case-sensitive Durable
-  // Object name, and a link that passed through anything which lowercases
-  // URLs would otherwise ask for a room nobody is in.
-  const syncMatch = hash.match(/^\/sync:(.+)$/)
-  if (syncMatch) {
-    return { type: 'sync-room', code: syncMatch[1].toUpperCase() }
+  // Match: /sync:CODE — the QR a receiving device puts on screen. The
+  // same link is parsed by the Karaoke Night page (which has no router),
+  // so both go through the ONE parser in room-code.ts: it uppercases
+  // (the code is a case-sensitive Durable Object name, and links that
+  // pass through chat apps come back lowercased) and refuses anything
+  // that is not a complete code, so a mangled link cannot auto-join.
+  const syncCode = parseSyncLinkHash(`#${hash}`)
+  if (syncCode !== null) {
+    return { type: 'sync-room', code: syncCode }
   }
 
   // Match: /link:CODE — the QR a TV shows to be signed in. Opening this
