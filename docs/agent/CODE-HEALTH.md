@@ -425,9 +425,14 @@ so the cheapest failure happens first. This is a well-built pipeline.
 
 ## 7. Bug hunt results
 
-Six independent hunts, one per lens. 46 candidates; **11 fixed on this branch**
-(10 from the hunt plus one found while reviewing those fixes), 7 of them with a
-mutation-verified regression test. Full list with file:line, failure scenario
+Six independent hunts, one per lens, then a full read-back of every
+`certain`-confidence candidate. 46 candidates; **19 fixed on this branch**, 13
+of them with a mutation-verified regression test.
+
+The findings held up: none was fabricated and the citations were accurate. The
+_suggested fixes_ held up less well — three would have introduced a worse defect
+than they closed, because the hunt reasoned locally without checking who else
+depended on the code. BUGS.md records each one. Full list with file:line, failure scenario
 and suggested fix in [BUGS.md](BUGS.md).
 
 The four verified:
