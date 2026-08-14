@@ -7,11 +7,13 @@ import { ChevronLeft, Mic, MusicNote, Pause, Play, SkipBack, SlidersHorizontal, 
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
+import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
+import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputError } from './GuitarNightInputError'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
@@ -128,6 +130,46 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
   const isCalibrating = createMemo(() => listening.status() === 'calibrating')
+
+  // ── Voice commands (room-owned) ────────────────────────────
+  // The same transport controller the room's buttons drive; registered for
+  // the room's lifetime. Track ids are stem kinds, so the shared stem
+  // vocabulary maps straight onto mute/unmute.
+  const voiceCommands = createGuitarNightVoiceCommands({
+    playing: () => props.transport.status() === 'playing',
+    positionSeconds: () => props.transport.positionSeconds(),
+    durationSeconds: () => props.transport.durationSeconds(),
+    play: () => {
+      void props.transport.play()
+    },
+    pause: () => props.transport.pause(),
+    stop: () => props.transport.stop(),
+    seek: (seconds) => props.transport.seek(seconds),
+    playbackRate: () => props.transport.playbackRate(),
+    setPlaybackRate: (rate) => {
+      void props.transport.setPlaybackRate(rate)
+    },
+    tracks: () =>
+      props.transport
+        .tracks()
+        .map((t) => ({ id: t.id, muted: t.muted, available: t.available })),
+    setTrackMuted: (id, muted) => props.transport.setTrackMuted(id, muted),
+  })
+  // A suspending sheet parks EVERY side effect (its contract, see props) —
+  // spoken transport included, or "play" would punch through the sheet.
+  // Read lazily per utterance by the registry, deliberately outside any
+  // tracked scope — same seam as StemMixer's registration.
+  onCleanup(
+    // eslint-disable-next-line solid/reactivity
+    registerVoiceCommands(() =>
+      props.suspended?.() === true ? [] : voiceCommands,
+    ),
+  )
+  // Wake-word mode must hear this stage's playback as "music rolling".
+  onCleanup(
+    // eslint-disable-next-line solid/reactivity
+    registerMusicPlayingSource(() => props.transport.status() === 'playing'),
+  )
   const isListening = createMemo(
     () =>
       listening.status() === 'listening' ||

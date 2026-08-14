@@ -7,7 +7,8 @@
 // multiple feature representations. Returns ranked results.
 // ============================================================
 
-import { distanceToScore, dtwMatch, dtwMatchSubsequence } from './dtw'
+import type { DtwCost } from './dtw'
+import { circularDistance12, distanceToScore, dtwMatch, dtwMatchSubsequence, } from './dtw'
 import { getFingerprintArray } from './melody-fingerprints'
 import type { LivePitchContour, MatchBreakdown, MatchCandidate, MatcherOptions, } from './types'
 import { DEFAULT_MATCH_WEIGHTS } from './types'
@@ -84,18 +85,24 @@ export function matchPitchContour(
       if (opts.sourceFilter === 'melody' && isStem) continue
     }
 
-    // ── Early termination filters ────────────────────────
-    const shorterLen = Math.min(fp.noteCount, noteSeq.length)
-    if (shorterLen > 0) {
-      const noteRatio =
-        Math.max(fp.noteCount, noteSeq.length) / Math.max(1, shorterLen)
-      if (noteRatio > 3 && shorterLen < 20) {
-        if (debug)
-          console.log(
-            `  [SKIP] ${fp.name}: note ratio ${noteRatio.toFixed(1)}x (${fp.noteCount} vs ${noteSeq.length})`,
-          )
-        continue
-      }
+    // ── Early termination filter ─────────────────────────
+    //
+    // Only one direction is hopeless: a query far LONGER than the
+    // reference cannot be contained in it. The opposite direction — a
+    // short phrase inside a long song — is the entire point of
+    // subsequence DTW.
+    //
+    // The old rule ("skip when the counts differ by 3x and the shorter
+    // side is under 20 notes") threw away exactly the case this feature
+    // exists for: measured against a 200-note song, a perfect 8-, 12- or
+    // 19-note excerpt was skipped outright and returned NO candidates.
+    // Sing a short phrase and nothing could ever match.
+    if (noteSeq.length > fp.noteCount * 3) {
+      if (debug)
+        console.log(
+          `  [SKIP] ${fp.name}: query longer than reference (${noteSeq.length} vs ${fp.noteCount})`,
+        )
+      continue
     }
 
     // Note: no duration-ratio filter here. Subsequence DTW is designed to find
@@ -108,11 +115,16 @@ export function matchPitchContour(
     let pitchScore = 0
     let pitchMatchStartIdx = -1
     let pitchMatchPath: [number, number][] = []
+    /** Reference notes the query actually aligned to, for the length bonus. */
+    let matchedSpan = fp.noteCount
     if (fp.pitchSequence.length > 0 && noteSeq.length > 0) {
       const pm = bestMatchWithOffset(noteSeq, fp.pitchSequence)
       pitchScore = pm.score
       pitchMatchStartIdx = pm.startIndex
       pitchMatchPath = pm.path
+      if (pm.usedSubsequence && pm.path.length > 0) {
+        matchedSpan = pm.path[pm.path.length - 1][1] - pm.path[0][1] + 1
+      }
     }
 
     // 2. Interval match (transposition-invariant)
@@ -135,20 +147,32 @@ export function matchPitchContour(
     let chromaScore = 0
     if (haveChroma) {
       const contourChroma = noteSeq.map((m) => m % 12)
-      chromaScore = bestMatchWithOffset(contourChroma, fp.chromaSequence).score
+      // Chroma wraps at twelve — B to C is one semitone, not eleven.
+      chromaScore = bestMatchWithOffset(
+        contourChroma,
+        fp.chromaSequence,
+        circularDistance12,
+      ).score
     }
 
     // 4. Rhythm match (IOI-based, tempo-normalized)
     const haveRhythm = ioiSeq.length > 0 && fp.ioiSequence.length > 0
     let rhythmScore = 0
     if (haveRhythm) {
-      const contourIOIs = normalizeIOIs(ioiSeq, contour.durationSec)
-      const fpIOIs = normalizeIOIs(fp.ioiSequence, fp.durationSec)
+      const contourIOIs = normalizeIOIs(ioiSeq)
+      const fpIOIs = normalizeIOIs(fp.ioiSequence)
       rhythmScore = bestMatchWithOffset(contourIOIs, fpIOIs).score
     }
 
-    // 5. Length bonus — prefer similar note counts
-    const lengthBonus = computeLengthBonus(noteSeq.length, fp.noteCount)
+    // 5. Length bonus — prefer a query that covers its match.
+    //
+    // Measured against the STRETCH the query aligned to, not the whole
+    // reference. Against a full song the old comparison was arithmetic
+    // against the feature's own purpose: a flawless 25-note excerpt of a
+    // 200-note song scored 25/200 = 0.125 here, which capped total
+    // confidence at 91% — below Mercury Sing's 95% auto-open threshold, so
+    // a perfect match could never open anything (measured, not theorised).
+    const lengthBonus = computeLengthBonus(noteSeq.length, matchedSpan)
 
     // ── Humming normalization ────────────────────────────
     // When pitch score is low but chroma score is high, the user
@@ -182,7 +206,10 @@ export function matchPitchContour(
 
     const spent = weighed.reduce((sum, [w]) => sum + w, 0)
     const earned = weighed.reduce((sum, [w, s]) => sum + w * s, 0)
-    const confidence = spent > 0 ? Math.round((earned / spent) * 100) : 0
+    const confidence =
+      spent > 0
+        ? Math.round((earned / spent) * querySubstance(noteSeq.length) * 100)
+        : 0
 
     if (confidence < (opts.minConfidence ?? 0)) continue
 
@@ -302,35 +329,93 @@ export function matchPitchContourWithMeta(
 function bestMatchWithOffset(
   query: number[],
   reference: number[],
-): { score: number; startIndex: number; path: [number, number][] } {
-  const classic = dtwMatch(query, reference)
+  cost?: DtwCost,
+): {
+  score: number
+  startIndex: number
+  path: [number, number][]
+  usedSubsequence: boolean
+} {
+  const classic = dtwMatch(query, reference, undefined, cost)
   const classicScore = distanceToScore(classic.normalizedDistance)
 
   // Subsequence DTW only makes sense when reference is longer than query
   if (reference.length > query.length) {
-    const sub = dtwMatchSubsequence(query, reference)
+    const sub = dtwMatchSubsequence(query, reference, undefined, cost)
     const subScore = distanceToScore(sub.normalizedDistance)
     if (subScore > classicScore) {
       // Find the earliest reference index in the path
       const startIdx = sub.path.length > 0 ? sub.path[0][1] : 0
-      return { score: subScore, startIndex: startIdx, path: sub.path }
+      return {
+        score: subScore,
+        startIndex: startIdx,
+        path: sub.path,
+        usedSubsequence: true,
+      }
     }
   }
 
-  return { score: classicScore, startIndex: 0, path: classic.path }
+  return {
+    score: classicScore,
+    startIndex: 0,
+    path: classic.path,
+    usedSubsequence: false,
+  }
 }
 
-/** Normalize IOI sequence to [0, 1] range relative to total duration */
-function normalizeIOIs(iois: number[], totalDuration: number): number[] {
-  if (totalDuration <= 0 || iois.length === 0) return iois
-  return iois.map((ioi) => ioi / totalDuration)
+/**
+ * Put an IOI sequence on a tempo-relative scale: each gap as a multiple of
+ * the sequence's own median gap. The same rhythm then lands on the same
+ * numbers whatever the tempo, and — crucially — whatever the excerpt
+ * length.
+ *
+ * Dividing by TOTAL duration (the previous rule) collapsed every value
+ * toward zero for a long reference: an 8-second query's gaps came out ~25x
+ * larger than the same gaps inside a 200-second song, and because all the
+ * numbers were tiny, so were the distances between them. Measured result:
+ * a deliberately wrong rhythm scored 0.946 where the correct one scored
+ * 0.970 — 15% of the weight budget spent on a feature that could not tell
+ * them apart.
+ */
+function normalizeIOIs(iois: number[]): number[] {
+  if (iois.length === 0) return iois
+  const positive = iois.filter((v) => v > 0).sort((a, b) => a - b)
+  if (positive.length === 0) return iois
+  const median = positive[Math.floor(positive.length / 2)]
+  if (median <= 0) return iois
+  return iois.map((ioi) => ioi / median)
 }
 
-/** Length bonus: 1.0 when note counts match exactly, decays with ratio */
-function computeLengthBonus(queryNotes: number, refNotes: number): number {
-  if (queryNotes <= 0 || refNotes <= 0) return 0
-  const ratio = Math.min(queryNotes, refNotes) / Math.max(queryNotes, refNotes)
-  return ratio
+/**
+ * How few notes can still be called evidence of a melody. Set at the
+ * length of a real identifying phrase — "Twinkle Twinkle Little Star" is
+ * seven notes and must score full marks — so the taper only bites on
+ * fragments too short to name anything.
+ */
+const SUBSTANTIAL_QUERY_NOTES = 6
+
+/**
+ * Coverage: did the query cover the stretch it aligned to? Comparing it
+ * against the WHOLE reference instead punished every honest subsequence
+ * match — a flawless excerpt of a long song scored ~0.12 here.
+ */
+function computeLengthBonus(queryNotes: number, matchedSpan: number): number {
+  if (queryNotes <= 0 || matchedSpan <= 0) return 0
+  return Math.min(queryNotes, matchedSpan) / Math.max(queryNotes, matchedSpan)
+}
+
+/**
+ * How much this query is worth believing at all, from its length alone.
+ *
+ * This is a discount on the WHOLE confidence, not one more feature to
+ * average in: two notes that align perfectly are still two notes, and
+ * every feature saturates on them. Weighing it at a tenth (as the length
+ * bonus did) left a two-note query claiming 93%. The old whole-reference
+ * ratio suppressed that by accident, at the cost of making real
+ * subsequence matches impossible — this does it on purpose.
+ */
+function querySubstance(queryNotes: number): number {
+  return Math.min(1, Math.max(0, queryNotes) / SUBSTANTIAL_QUERY_NOTES)
 }
 
 /** Indices of `targetLen` evenly spaced items across a run of `length`. */

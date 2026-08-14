@@ -1,0 +1,175 @@
+/* ============================================================
+   MercurySingWheel — the radial picker
+   ============================================================ */
+
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0 0.3rem;
+}
+
+.wheel {
+  width: min(23rem, 76vw);
+  height: auto;
+  aspect-ratio: 1;
+  overflow: visible;
+}
+
+/* ── Wedges ───────────────────────────────────────────────── */
+/* Outlined rather than filled: the glow is the emphasis, so an empty slot
+   reads as an absence and the leader reads as lit. */
+
+.wedge {
+  fill: rgb(255 255 255 / 2.5%);
+  stroke: rgb(255 255 255 / 12%);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition:
+    fill 200ms ease,
+    stroke 200ms ease;
+}
+
+.filled .wedge {
+  fill: rgb(240 165 80 / 7%);
+  stroke: rgb(240 165 80 / 55%);
+  cursor: pointer;
+}
+
+.filled:hover .wedge,
+.wedgeGroup:focus-visible .wedge {
+  fill: rgb(240 165 80 / 16%);
+  stroke: rgb(255 214 154 / 95%);
+}
+
+.wedgeGroup {
+  outline: none;
+}
+
+.wedgeGroup:focus-visible .wedge {
+  stroke-width: 2.5;
+}
+
+.leader .wedge {
+  fill: rgb(240 165 80 / 20%);
+  stroke: #ffd69a;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 10px rgb(240 165 80 / 55%));
+}
+
+/* ── Wedge labels ─────────────────────────────────────────── */
+
+/* Size comes from the component — it scales to the title length, because a
+   textPath cannot wrap and clips instead. */
+.wedgeName {
+  fill: #f7efe2;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.leader .wedgeName {
+  fill: #fff3df;
+}
+
+.wedgeConfidence {
+  fill: rgb(240 180 110 / 88%);
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.leader .wedgeConfidence {
+  fill: #ffd69a;
+}
+
+/* The spoken handle: "sing number three" only works if the number is
+   readable at a glance. */
+.slotNumber {
+  fill: rgb(255 214 154 / 78%);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.leader .slotNumber {
+  fill: #ffd69a;
+}
+
+/* ── Core and rings ───────────────────────────────────────── */
+
+.corePhoto {
+  /* Sits over the drawn gradient; a failed load simply reveals it. */
+  filter: drop-shadow(0 0 12px rgb(240 165 80 / 35%));
+}
+
+.coreEdge {
+  fill: none;
+  stroke: rgb(255 214 154 / 42%);
+  stroke-width: 1.5;
+}
+
+.coreLabel {
+  fill: rgb(255 214 154 / 55%);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+}
+
+.halo {
+  pointer-events: none;
+}
+
+.ringTrack {
+  fill: none;
+  stroke: rgb(255 255 255 / 9%);
+  stroke-width: 2.5;
+}
+
+.ringFill {
+  fill: none;
+  stroke: #f0a550;
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px rgb(240 165 80 / 70%));
+  transition: stroke-dashoffset 220ms linear;
+}
+
+/* ── Sonar ────────────────────────────────────────────────── */
+
+.sonar circle {
+  fill: none;
+  stroke: rgb(240 165 80 / 40%);
+  stroke-width: 1.5;
+  transform-origin: 200px 200px;
+  animation: mercury-sonar 4.2s ease-out infinite;
+}
+
+.sonar circle:nth-child(2) {
+  animation-delay: 1.4s;
+}
+
+.sonar circle:nth-child(3) {
+  animation-delay: 2.8s;
+}
+
+@keyframes mercury-sonar {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.58);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sonar circle {
+    animation: none;
+    opacity: 0.14;
+  }
+
+  .ringFill {
+    transition: none;
+  }
+}

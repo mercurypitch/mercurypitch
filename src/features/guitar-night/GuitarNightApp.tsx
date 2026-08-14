@@ -9,11 +9,16 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
+import { Notifications } from '@/components/Notifications'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
+import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
+import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
+import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
@@ -161,6 +166,11 @@ function unavailableSongCopy(
 }
 
 export function GuitarNightApp(props: GuitarNightAppProps) {
+  // Voice control: the room registers its command set on entry; this shell
+  // owns the listener, the pill and the V shortcut, like App does in-app.
+  const voiceControl = useVoiceControlController()
+  useVoiceToggleKey(voiceControl.toggle, () => setShowVoiceHelp(true))
+  const [showVoiceHelp, setShowVoiceHelp] = createSignal(false)
   const firstWinConfig = createMemo(() =>
     resolveGuitarFirstWinConfig(props.firstWinConfig),
   )
@@ -1835,6 +1845,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           </Switch>
         </div>
       </main>
+
+      <Notifications />
+      <VoiceControlHud
+        controller={voiceControl}
+        onShowCommands={() => setShowVoiceHelp(true)}
+      />
+      <Show when={showVoiceHelp()}>
+        <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
+      </Show>
 
       <Show when={view() === 'tuner'}>
         <GuitarNightTunerPreflight

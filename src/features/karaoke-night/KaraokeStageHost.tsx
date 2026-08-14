@@ -86,6 +86,7 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       preset="performance"
       showStageSettings={false}
       autoPlay={props.song.autoPlay === true}
+      initialSeekSec={props.song.initialSeekSec}
       karaokeReferenceVocal={isPlaylistActive()}
       onThirtySecondsPlayed={
         isDemoSessionId(props.song.sessionId)
