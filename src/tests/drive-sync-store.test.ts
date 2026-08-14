@@ -66,13 +66,27 @@ const bundleMock = vi.hoisted(() => ({
   buildPortableBundle: vi.fn(),
   importPortableBundle: vi.fn(),
 }))
-vi.mock('@/db/services/portable-bundle-service', () => bundleMock)
+vi.mock('@/db/services/portable-bundle-service', () => ({
+  ...bundleMock,
+  // The store instanceof-checks this to word a failure; a mock without
+  // it turns every failure handler into `instanceof undefined`.
+  BundleSourceError: class BundleSourceError extends Error {},
+}))
 
 const notify = vi.hoisted(() => ({ showNotification: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => notify)
 
+const power = vi.hoisted(() => ({
+  enable: vi.fn(() => Promise.resolve()),
+  disable: vi.fn(() => Promise.resolve()),
+}))
+vi.mock('@/lib/platform', () => ({
+  platform: { keepAwake: { enable: power.enable, disable: power.disable } },
+}))
+
+import { DriveApiError } from '@/lib/drive/drive-client'
 import { encodeContainerHeader } from '@/lib/portable/portable-container'
-import { backUpToDrive, disconnectDriveSync, driveError, driveJob, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
+import { backUpToDrive, disconnectDriveSync, driveError, driveFolderId, driveJob, driveJobFailures, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
 
 function localSession(hash: string, name: string) {
   return {
@@ -112,6 +126,7 @@ function manifestFor(hash: string, parts: number[]): PortableBundleManifest {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   sessions.list = []
   sessions.readyPromise = Promise.resolve()
   auth.account = 'user-1'
@@ -128,6 +143,7 @@ beforeEach(() => {
   auth.disconnectDrive.mockResolvedValue(true)
   driveMock.ensureFolder.mockResolvedValue('folder-1')
   driveMock.listSongs.mockResolvedValue([])
+  driveMock.uploadSong.mockResolvedValue('file-x')
 })
 
 describe('scan', () => {
@@ -291,6 +307,142 @@ describe('backup', () => {
     expect(said?.[0]).toContain('before you stopped')
     expect(said?.[0]).not.toContain('could not be')
     expect(said?.[1]).toBe('success')
+  })
+})
+
+describe('what the first real 27-song backup taught', () => {
+  function oneSongReady(name = 'One.mp3', hash = 'h-1'): void {
+    sessions.list = [localSession(hash, name)]
+    bundleMock.buildPortableBundle.mockResolvedValue({
+      manifest: manifestFor(hash, [4]),
+      parts: new Map([['stem:vocal', new Uint8Array([1, 2, 3, 4])]]),
+    })
+  }
+
+  it('REQ-DRV-012: tries a failed upload again before giving up', async () => {
+    vi.useFakeTimers()
+    try {
+      oneSongReady()
+      driveMock.uploadSong
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+        .mockResolvedValueOnce('file-x')
+
+      await scanDrive()
+      const job = backUpToDrive()
+      await vi.advanceTimersByTimeAsync(30_000)
+      await job
+
+      // The blip cost an attempt, not the song.
+      expect(driveMock.uploadSong).toHaveBeenCalledTimes(2)
+      expect(driveJobFailures()).toHaveLength(0)
+      const said = notify.showNotification.mock.calls.at(-1) as [string]
+      expect(said[0]).toContain('1 song backed up')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('REQ-DRV-014: names the song that failed, and why', async () => {
+    vi.useFakeTimers()
+    try {
+      oneSongReady('Stubborn.mp3')
+      driveMock.uploadSong.mockRejectedValue(
+        new DriveApiError(500, 'Drive answered 500'),
+      )
+
+      await scanDrive()
+      const job = backUpToDrive()
+      await vi.advanceTimersByTimeAsync(60_000)
+      await job
+
+      // All three attempts spent, then a reason a person can read —
+      // "5 could not be" with no names was the first real run's actual
+      // support experience.
+      expect(driveMock.uploadSong).toHaveBeenCalledTimes(3)
+      expect(driveJobFailures()).toHaveLength(1)
+      expect(driveJobFailures()[0]?.title).toBe('Stubborn')
+      expect(driveJobFailures()[0]?.reason).toContain('Drive answered 500')
+      // The rescan at the end still offers the song for another go.
+      expect(driveScan()?.toBackUp).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('REQ-DRV-015: moves the headline counts as each song lands', async () => {
+    sessions.list = [
+      localSession('h-1', 'One.mp3'),
+      localSession('h-2', 'Two.mp3'),
+    ]
+    let releaseSecond: () => void = () => {}
+    bundleMock.buildPortableBundle.mockImplementation((sessionId: string) => {
+      const bundle = {
+        manifest: manifestFor(sessionId.replace('session-', ''), [4]),
+        parts: new Map([['stem:vocal', new Uint8Array([1, 2, 3, 4])]]),
+      }
+      if (sessionId === 'session-h-2') {
+        // The second song packs only when the test says so, holding the
+        // job mid-flight where the live figures can be read.
+        return new Promise((resolve) => {
+          releaseSecond = () => resolve(bundle)
+        })
+      }
+      return Promise.resolve(bundle)
+    })
+
+    await scanDrive()
+    expect(driveScan()?.inDrive).toBe(0)
+    const job = backUpToDrive()
+
+    // One song landed, one still packing: the numbers already say what
+    // pressing Stop right now would keep.
+    await vi.waitFor(() => expect(driveScan()?.inDrive).toBe(1))
+    expect(driveScan()?.toBackUp).toHaveLength(1)
+
+    releaseSecond()
+    await job
+  })
+
+  it('REQ-DRV-016: remembers the folder and asks for it by id next time', async () => {
+    await scanDrive()
+    expect(driveMock.ensureFolder).toHaveBeenLastCalledWith(null)
+    expect(localStorage.getItem('pitchperfect_drive_folder:user-1')).toBe(
+      'folder-1',
+    )
+    expect(driveFolderId()).toBe('folder-1')
+
+    await scanDrive()
+    // The id survives a rename in Drive; the name does not.
+    expect(driveMock.ensureFolder).toHaveBeenLastCalledWith('folder-1')
+  })
+
+  it('REQ-DRV-017: holds the screen awake for exactly the job', async () => {
+    oneSongReady()
+    await scanDrive()
+    power.enable.mockClear()
+    power.disable.mockClear()
+
+    await backUpToDrive()
+
+    // The screen going to sleep freezes the page and the job with it —
+    // held for the job, released with it, never left dangling.
+    expect(power.enable).toHaveBeenCalledTimes(1)
+    expect(power.disable).toHaveBeenCalledTimes(1)
+  })
+
+  it('REQ-DRV-018: names the Drive file from the title, not the upload', async () => {
+    oneSongReady('Song.mp3')
+
+    await scanDrive()
+    await backUpToDrive()
+
+    const call = driveMock.uploadSong.mock.calls[0] as unknown as [
+      string,
+      Blob,
+      { title: string },
+    ]
+    // "Song.mp3.mpsong" is a Drive listing nobody should have to read.
+    expect(call[2].title).toBe('Song')
   })
 })
 
