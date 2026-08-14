@@ -181,9 +181,30 @@ test.describe('Karaoke Night staging funnel events', () => {
     const staged = (event: string): number =>
       funnelEvents.filter((entry) => entry === event).length
 
-    // First visit creates the database schema; then seed and reload so the
-    // app boots with both rows already in its library.
-    await page.goto('/karaoke-night', { waitUntil: 'domcontentloaded' })
+    // If a boot-adjacent navigation ever again destroys an in-flight
+    // evaluate (the historical full-suite-only flake), the failure's stdout
+    // names every navigation and when it happened.
+    const startedAt = Date.now()
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) {
+        console.log(
+          `[karaoke-staging nav +${Date.now() - startedAt}ms] ${frame.url()}`,
+        )
+      }
+    })
+
+    await page.goto('/karaoke-night', { waitUntil: 'load' })
+    // Settle on the rail's upload card before touching IndexedDB, for two
+    // reasons. A locator assertion re-resolves across navigations, unlike
+    // page.evaluate — under full-suite load, boot ran slowly enough that a
+    // late boot navigation could destroy the first seed's context. And the
+    // card paints from the lazy rail chunk whose onMount issues the app's
+    // versioned getDb() open; IndexedDB serialises opens per database, so
+    // from here the seed's version-less open can only resolve against the
+    // created schema, never beat the app to creating it.
+    await expect(page.locator('.kn-card').first()).toBeVisible({
+      timeout: 20_000,
+    })
     await seedSession(page, {
       sessionId: OWN_SONG_ID,
       fileName: OWN_SONG_NAME,
@@ -194,7 +215,7 @@ test.describe('Karaoke Night staging funnel events', () => {
       fileName: LEGACY_EXAMPLE_NAME,
       // No provider on purpose: only the id format identifies it.
     })
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.reload({ waitUntil: 'load' })
 
     // The rail library must show ONLY the upload — demo-format ids are
     // presented through the opener/demo UI, never as library rows. This
