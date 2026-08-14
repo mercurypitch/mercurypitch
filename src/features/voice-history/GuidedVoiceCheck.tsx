@@ -121,7 +121,7 @@ function resultStatusCopy(
   switch (result.outcome.kind) {
     case 'focus-reading': {
       const fraction = fractionFromResult(result)
-      return `${fraction.numerator} of ${fraction.denominator} landings settled inside the target window.`
+      return `${fraction.numerator} of ${fraction.denominator} holds settled near the target pitch.`
     }
     case 'needs-another-recording': {
       if (result.quality.blockingCheckIds.includes('microphone-continuity')) {
@@ -766,22 +766,23 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
 
         <Show when={result?.outcome.kind === 'focus-reading'}>
           <div class={styles.readingRule}>
-            <span>What held</span>
+            <span>What we could measure</span>
             <p>
+              We could clearly track pitch in{' '}
               {result?.aggregate.measuredRepetitions} of {fraction.denominator}{' '}
-              landings contained enough confident pitch for this reading.
+              holds.
             </p>
           </div>
           <div class={styles.readingRule}>
             <span>Current focus</span>
             <p>
               {reinforce
-                ? 'These landings repeatedly found the centre. Give that pathway a little more familiar time.'
+                ? 'These notes repeatedly found the centre. Give that pathway a little more familiar time.'
                 : fraction.numerator === 0
-                  ? 'None of these landings met the settling rule. Practise meeting one clear centre without pushing.'
+                  ? 'None of the three notes stayed near the target long enough. Practise meeting one clear centre without pushing.'
                   : fraction.numerator === fraction.denominator
-                    ? 'All three met the settling rule, but the typical settled position was farther from the target centre. Practise one clear centre without pushing.'
-                    : 'Some landings did not meet the settling rule. Practise meeting one clear centre without pushing.'}
+                    ? 'All three notes stayed near the target long enough, but they usually settled a little away from its centre. Practise one clear centre without pushing.'
+                    : 'Some notes did not stay near the target long enough. Practise meeting one clear centre without pushing.'}
             </p>
           </div>
           <div class={styles.practiceRoute}>
@@ -909,19 +910,25 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
         </Show>
 
         <details class={styles.measurementDetails}>
-          <summary>How this was measured</summary>
+          <summary>What this check measured</summary>
           <p>
-            Three exact-register pitch landings were measured from confident
-            fundamental-frequency frames. A landing settled after staying within
-            ±35 cents for 300 ms. The centred-pathway result also requires all
-            three landings and a typical settled error no greater than 25 cents.
-            This is a task reading, not a voice or health score.
+            You sang three short notes. For each one, we looked for a clear
+            pitch that stayed within 35 cents—about one-third of a semitone—of
+            the target for 0.3 seconds. A result saying you repeatedly found the
+            centre requires all three to settle, with their typical pitch within
+            25 cents of the target. This describes this one task; it is not a
+            score for your overall voice or vocal health.
           </p>
-          <p>
-            Input-noise separation is not available in this browser path, so a
-            valid reading is marked partial rather than pretending that check
-            passed.
-          </p>
+          <Show
+            when={result?.quality.partialCheckIds.includes('noise-separation')}
+          >
+            <p>
+              One limitation: this check does not yet measure your voice
+              separately from background sound. It uses only pitch it can
+              identify clearly and asks for another recording if there is not
+              enough clear pitch.
+            </p>
+          </Show>
         </details>
       </>
     )

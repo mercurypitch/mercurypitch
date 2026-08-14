@@ -569,6 +569,11 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - In-place freeform capture with a named recurring prompt, dry temporary
   replay, explicit Keep/Discard/Record again, five-minute cap, and shared mic
   lifecycle cleanup.
+- Starting capture reveals the live waveform inside the current scroll area and
+  moves keyboard focus from the removed Start control to Stop. Switching to a
+  saved thread closes an idle recorder immediately, keeps an unrecorded new
+  thread name as a page-session draft, and confirms before discarding temporary
+  audio.
 - Stable freeform thread keys: nothing enters the vault until the first keep,
   and later takes in the same thread become eligible for Earlier/Later.
 - Multiple named freeform threads can coexist. Singers can start a different
@@ -660,6 +665,10 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Confirm capture shows a live waveform/pitch contour, saved history uses the
   Glass canvas waveform, and take/thread/all deletion opens only the in-app
   dialog.
+- In a short tablet viewport, start a freeform take without manually scrolling
+  and confirm the whole live waveform is brought into view. Leave a named but
+  unrecorded new thread through the rail, reopen it, and confirm its draft name
+  remains; temporary audio still requires the in-app discard confirmation.
 - Deny mic; lose mic mid-capture; recover without a stuck indicator.
 - Disable network and repeat the full local flow.
 - Simulate low quota without falsely reporting a successful save.

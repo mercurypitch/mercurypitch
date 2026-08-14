@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { FreeformRecorderCloseRequester } from '@/features/voice-history/FreeformVoiceRecorder'
 import { drainPitchStream, FreeformVoiceRecorder, } from '@/features/voice-history/FreeformVoiceRecorder'
 
 const {
@@ -63,6 +64,10 @@ const target = {
   comparisonKey: 'freeform:test-thread:v1',
   title: '',
 }
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(
+  Element.prototype,
+  'scrollIntoView',
+)
 
 class TestAudioTrack extends EventTarget {
   readyState: MediaStreamTrackState = 'live'
@@ -126,7 +131,19 @@ describe('FreeformVoiceRecorder', () => {
     })
   })
 
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+    if (originalScrollIntoView === undefined) {
+      Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+    } else {
+      Object.defineProperty(
+        Element.prototype,
+        'scrollIntoView',
+        originalScrollIntoView,
+      )
+    }
+  })
 
   it('moves focus into a newly opened recorder', async () => {
     renderRecorder()
@@ -154,6 +171,33 @@ describe('FreeformVoiceRecorder', () => {
     expect(keepMock).not.toHaveBeenCalled()
   })
 
+  it('reveals the live canvas and moves focus to Stop when recording begins', async () => {
+    const scheduledFrames: FrameRequestCallback[] = []
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      (callback: FrameRequestCallback): number => {
+        scheduledFrames.push(callback)
+        return scheduledFrames.length
+      },
+    )
+    renderRecorder()
+    fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
+      target: { value: 'First chorus after warm-up' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }))
+    const stop = await screen.findByRole('button', { name: 'Stop recording' })
+    const pendingFrames = scheduledFrames.splice(0)
+    pendingFrames.forEach((callback) => callback(0))
+
+    expect(stop).toHaveFocus()
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ block: 'center' }),
+    )
+  })
+
   it('drains the raw contour exactly once before stream teardown', () => {
     const takeFrames = vi.fn().mockReturnValue([
       { t: 0, f0: 440, conf: 0.9, rms: 0.25 },
@@ -173,7 +217,7 @@ describe('FreeformVoiceRecorder', () => {
     expect(dispose).toHaveBeenCalledOnce()
   })
 
-  it('discards an active temporary take and releases the shared mic on close', async () => {
+  it('stops an active take and confirms before discarding it on close', async () => {
     const { onClose } = renderRecorder()
     fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
       target: { value: 'First chorus after warm-up' },
@@ -183,13 +227,53 @@ describe('FreeformVoiceRecorder', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Close recorder' }))
 
-    expect(discardMock).toHaveBeenCalled()
+    await screen.findByRole('heading', {
+      name: 'Discard this temporary take?',
+    })
+    expect(stopMock).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Play replay' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close recorder' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Discard take' }))
+
     expect(disposeMock).toHaveBeenCalled()
     expect(releaseMock).toHaveBeenCalledWith(
       expect.stringMatching(/^voice-history-freeform:/),
     )
     expect(onClose).toHaveBeenCalled()
+    expect(
+      screen.queryByRole('button', { name: 'Play replay' }),
+    ).not.toBeInTheDocument()
     expect(keepMock).not.toHaveBeenCalled()
+  })
+
+  it('lets external navigation close a title-only draft without a dialog', () => {
+    const onClose = vi.fn()
+    const onResolved = vi.fn()
+    const onCloseRequestReady = vi.fn()
+    render(() => (
+      <FreeformVoiceRecorder
+        target={target}
+        initialDraftTitle="Unfinished chorus"
+        onClose={onClose}
+        onCloseRequestReady={onCloseRequestReady}
+        onKept={vi.fn()}
+        onStartNewThread={vi.fn()}
+      />
+    ))
+    const requestClose = onCloseRequestReady.mock.calls[0]?.[0] as
+      | FreeformRecorderCloseRequester
+      | undefined
+
+    requestClose?.(onResolved)
+
+    expect(onResolved).toHaveBeenCalledWith(true)
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
   it('registers its recording state with the microphone sentinel', () => {
