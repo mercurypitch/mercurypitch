@@ -6,6 +6,7 @@ import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_DYNAMIC_SWEL
 import { activePathExercises, activePathWarmup, } from '@/features/path/path-progress'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
+import { localDayOfYear, localDayString } from '@/lib/local-day'
 import { createPersistedSignal } from '@/lib/storage'
 import { setActiveTab, startExercise } from '@/stores/ui-store'
 import type { RoutineSegment, RoutineTemplate } from './types'
@@ -73,14 +74,16 @@ const [recentTemplateIds, setRecentTemplateIds] = createPersistedSignal<
 >(RECENT_KEY, [])
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  // Local calendar day, so "today's routine" and its saved marker roll over at
+  // the singer's midnight rather than UTC's. See src/lib/local-day.ts.
+  return localDayString()
 }
 
 /** 0-based day-of-year — the deterministic seed for today's generated session. */
 export function dayOfYear(d = new Date()): number {
-  const startOfYear = Date.UTC(d.getUTCFullYear(), 0, 0)
-  const midnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-  return Math.floor((midnight - startOfYear) / 86_400_000)
+  // Local day-of-year: the routine must change at the singer's midnight, not
+  // UTC's, or someone east of Greenwich sees yesterday's routine all morning.
+  return localDayOfYear(d)
 }
 
 // The daily session's rotating pieces (deterministic by day-of-year so

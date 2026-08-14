@@ -22,6 +22,7 @@ import type { ExerciseType } from '@/features/exercises/types'
 import type { PathWeek } from '@/features/path/path-content'
 import { ASCENT_ID, ASCENT_WEEKS, DAYS_PER_WEEK, getWeek, } from '@/features/path/path-content'
 import { IS_DEV, IS_TEST } from '@/lib/defaults'
+import { localDayString } from '@/lib/local-day'
 import { createPersistedSignal } from '@/lib/storage'
 
 /** Also the cloud-sync key — see settings-service's INCLUDED_KEYS. */
@@ -75,7 +76,10 @@ const [progress, setProgress] = createPersistedSignal<PathProgress | null>(
 export const pathProgress = progress
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  // Local calendar day — an Ascent practice day is one of the singer's days,
+  // and keying it in UTC put late-evening or early-morning practice on the
+  // wrong day. See src/lib/local-day.ts.
+  return localDayString()
 }
 
 /** Begin The Ascent — week 1 active with the endowed segment pre-lit. */

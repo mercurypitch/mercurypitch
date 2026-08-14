@@ -24,6 +24,7 @@
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import { findOwnProfile, getUserId } from '@/db/services/user-service'
+import { localDayString } from '@/lib/local-day'
 
 export const MAX_FREEZES = 3
 /**
@@ -79,7 +80,11 @@ export interface StreakState {
 }
 
 export function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10)
+  // Local, not UTC. A streak is a run of the singer's own days; keying it in
+  // UTC broke it for anyone practising near their local midnight. daysBetween
+  // and addDays below stay UTC-based on purpose — they do calendar-string
+  // arithmetic, which is correct once every anchor is a local calendar day.
+  return localDayString()
 }
 
 /** Whole-day difference b - a for two YYYY-MM-DD strings (UTC-safe). */
