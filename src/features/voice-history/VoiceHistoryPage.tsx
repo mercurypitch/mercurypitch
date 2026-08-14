@@ -39,6 +39,7 @@ import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
 import { startExercise } from '@/stores/ui-store'
 import type { FreeformThreadTarget } from './freeform-voice-take'
 import { createFreeformThreadTarget } from './freeform-voice-take'
+import type { FreeformRecorderCloseRequester } from './FreeformVoiceRecorder'
 import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
 import type { GuidedPracticeHandoff } from './guided-practice-handoff'
 import { armGuidedPracticeHandoff, consumeGuidedPracticeReturn, guidedPracticeLaunchFromRecommendation, } from './guided-practice-handoff'
@@ -280,8 +281,8 @@ function savedFocusCopy(focus: SavedGuidedFocus): {
   return {
     title: 'Meet one clear centre without pushing.',
     detail: allLandingsSettled
-      ? 'All three landings met the settling rule, but their typical settled position was farther from the target centre. Pitch Hold keeps the next step narrow and repeatable.'
-      : 'Some landings did not meet the settling rule. Pitch Hold keeps the next step narrow and repeatable.',
+      ? 'All three notes stayed near the target long enough, but they usually settled a little away from its centre. Pitch Hold keeps the next step narrow and repeatable.'
+      : 'Some notes did not stay near the target long enough. Pitch Hold keeps the next step narrow and repeatable.',
   }
 }
 
@@ -347,6 +348,7 @@ export function VoiceHistoryPage(): JSX.Element {
   const [playerError, setPlayerError] = createSignal<string | null>(null)
   const [recorderTarget, setRecorderTarget] =
     createSignal<FreeformThreadTarget | null>(null)
+  const [newThreadDraftTitle, setNewThreadDraftTitle] = createSignal('')
   const [guidedProtocol, setGuidedProtocol] = createSignal<
     GuidedPracticeHandoff['retake'] | null
   >(null)
@@ -394,6 +396,8 @@ export function VoiceHistoryPage(): JSX.Element {
   let guidedLaunchButton: HTMLButtonElement | undefined
   let guidedFocusCard: HTMLElement | undefined
   let guidedCheckAgainButton: HTMLButtonElement | undefined
+  let requestRecorderClose: FreeformRecorderCloseRequester | null = null
+  let recorderThreadDestination: string | null = null
   let requestGuidedClose: GuidedCloseRequester | null = null
   let guidedThreadDestination: string | null = null
   let guidedReturnTarget: 'launch' | 'saved-focus' = 'launch'
@@ -1365,9 +1369,16 @@ export function VoiceHistoryPage(): JSX.Element {
   }): void {
     const previous = recorderReturnFocus
     const returnToThread = recorderOpenedFromThread
+    const threadDestination = recorderThreadDestination
+    recorderThreadDestination = null
     recorderReturnFocus = null
     recorderOpenedFromThread = false
     setRecorderTarget(null)
+    if (threadDestination !== null) {
+      commitThreadSelection(threadDestination)
+      queueMicrotask(() => threadDetailHeading?.focus())
+      return
+    }
     if (!returnToThread && options?.keepMobileDetailOpen !== true) {
       setMobileDetailOpen(false)
     }
@@ -1580,6 +1591,16 @@ export function VoiceHistoryPage(): JSX.Element {
   }
 
   function selectThread(key: string): void {
+    if (recorderTarget() !== null) {
+      if (requestRecorderClose === null) return
+      recorderThreadDestination = key
+      requestRecorderClose((closed) => {
+        if (!closed && recorderThreadDestination === key) {
+          recorderThreadDestination = null
+        }
+      })
+      return
+    }
     if (!guidedOpen()) {
       commitThreadSelection(key)
       return
@@ -1741,7 +1762,14 @@ export function VoiceHistoryPage(): JSX.Element {
                   {(target) => (
                     <FreeformVoiceRecorder
                       target={target}
+                      initialDraftTitle={newThreadDraftTitle()}
                       onClose={closeRecorder}
+                      onCloseRequestReady={(request) => {
+                        requestRecorderClose = request
+                      }}
+                      onDraftTitleChange={(title) =>
+                        setNewThreadDraftTitle(title)
+                      }
                       onKept={handleFreeformKept}
                       onStartNewThread={openNewRecorder}
                     />
@@ -2522,7 +2550,14 @@ export function VoiceHistoryPage(): JSX.Element {
                     {(target) => (
                       <FreeformVoiceRecorder
                         target={target}
+                        initialDraftTitle={newThreadDraftTitle()}
                         onClose={closeRecorder}
+                        onCloseRequestReady={(request) => {
+                          requestRecorderClose = request
+                        }}
+                        onDraftTitleChange={(title) =>
+                          setNewThreadDraftTitle(title)
+                        }
                         onKept={handleFreeformKept}
                         onStartNewThread={openNewRecorder}
                       />

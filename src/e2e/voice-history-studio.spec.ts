@@ -25,6 +25,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await dismissOverlays(page)
   await openNavTab(page, 'tab-voice-history')
   await expect(page.getByTestId('voice-history-page')).toBeVisible()
+  await page.setViewportSize({ width: 1024, height: 560 })
 
   await page.getByRole('button', { name: 'Record freely' }).click()
   await page
@@ -38,6 +39,19 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     'voice input and pitch detected',
     { timeout: 10000 },
   )
+  await expect
+    .poll(async () => {
+      const liveBounds = await page
+        .getByTestId('live-voice-capture')
+        .boundingBox()
+      const scrollBounds = await page.locator('#main-content').boundingBox()
+      if (liveBounds === null || scrollBounds === null) return false
+      return (
+        liveBounds.y >= scrollBounds.y &&
+        liveBounds.y + liveBounds.height <= scrollBounds.y + scrollBounds.height
+      )
+    })
+    .toBe(true)
   await page.waitForTimeout(900)
 
   await page.getByRole('button', { name: 'Stop recording' }).click()
@@ -45,10 +59,31 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     timeout: 15000,
   })
   await page.getByRole('button', { name: 'Keep Take' }).click()
+  await page.setViewportSize({ width: 1280, height: 900 })
 
   await expect(
     page.getByRole('heading', { name: 'Room and waveform check' }),
   ).toBeFocused({ timeout: 10000 })
+  await page.getByRole('button', { name: 'New practice thread' }).click()
+  const newThreadName = page.getByLabel(/what do you want to repeat/i)
+  await newThreadName.fill('Unfinished chorus draft')
+  await page
+    .locator('aside[aria-label="Practice threads"]')
+    .getByRole('button')
+    .filter({ hasText: 'Room and waveform check' })
+    .click()
+  await expect(
+    page.getByRole('heading', { name: 'Start a practice thread' }),
+  ).not.toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Room and waveform check' }),
+  ).toBeFocused()
+  await expect(page.getByTestId('confirm-overlay')).not.toBeVisible()
+  await page.getByRole('button', { name: 'New practice thread' }).click()
+  await expect(page.getByLabel(/what do you want to repeat/i)).toHaveValue(
+    'Unfinished chorus draft',
+  )
+  await page.getByRole('button', { name: 'Close recorder' }).click()
   await page.getByRole('button', { name: 'Find my next focus' }).click()
   await expect(page.getByTestId('guided-voice-check')).toBeVisible()
   await page
