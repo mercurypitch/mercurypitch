@@ -12,6 +12,41 @@ interface HistoryCanvasProps {
   liveScore: () => number | null
 }
 
+/**
+ * Mean sample amplitude for the column at `x`, over `step` samples.
+ *
+ * Exported and pure so the mapping can be asserted directly — it is the only
+ * part of the waveform strip that can be wrong in a way a person would notice,
+ * and it was: the index used to be
+ *
+ *     Math.floor(((x * step) / w) * waveform.length) + j
+ *
+ * which applies the samples-per-pixel scale twice, because `step` already is
+ * `waveform.length / w`. With a 2048-sample buffer on an 800px strip that put
+ * every column past x=400 out of range, so `count` stayed 0, the average read
+ * as 0, and the right half of the strip drew as a flat line at all times.
+ */
+export function columnAmplitude(
+  waveform: Float32Array,
+  x: number,
+  step: number,
+): number {
+  let sum = 0
+  let count = 0
+  for (let j = 0; j < step; j++) {
+    const idx = x * step + j
+    if (idx >= waveform.length) break
+    sum += waveform[idx]
+    count++
+  }
+  return count > 0 ? sum / count : 0
+}
+
+/** Samples collapsed into one pixel column; at least one. */
+export function waveformStep(sampleCount: number, width: number): number {
+  return Math.max(1, Math.floor(sampleCount / width))
+}
+
 export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined
   let ctx: CanvasRenderingContext2D | null = null
@@ -67,7 +102,7 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
       // Draw waveform as a filled area in the upper portion
       const waveH = Math.floor(h * 0.6)
       const centerY = waveH / 2
-      const step = Math.max(1, Math.floor(waveform.length / w))
+      const step = waveformStep(waveform.length, w)
 
       // Gradient for the waveform
       const gradient = ctx.createLinearGradient(0, 0, 0, waveH)
@@ -78,18 +113,8 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
       ctx.beginPath()
       ctx.moveTo(0, centerY)
       for (let x = 0; x < w; x++) {
-        let sum = 0
-        let count = 0
-        for (let j = 0; j < step; j++) {
-          const idx = Math.floor(((x * step) / w) * waveform.length) + j
-          if (idx < waveform.length) {
-            sum += waveform[idx]
-            count++
-          }
-        }
-        const avg = count > 0 ? sum / count : 0
-        const y = centerY - avg * centerY * 0.9
-        ctx.lineTo(x, y)
+        const avg = columnAmplitude(waveform, x, step)
+        ctx.lineTo(x, centerY - avg * centerY * 0.9)
       }
       ctx.strokeStyle = 'rgba(0, 200, 120, 0.8)'
       ctx.lineWidth = 1.5
@@ -99,18 +124,8 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
       ctx.beginPath()
       ctx.moveTo(0, centerY)
       for (let x = 0; x < w; x++) {
-        let sum = 0
-        let count = 0
-        for (let j = 0; j < step; j++) {
-          const idx = Math.floor(((x * step) / w) * waveform.length) + j
-          if (idx < waveform.length) {
-            sum += waveform[idx]
-            count++
-          }
-        }
-        const avg = count > 0 ? sum / count : 0
-        const y = centerY + avg * centerY * 0.9
-        ctx.lineTo(x, y)
+        const avg = columnAmplitude(waveform, x, step)
+        ctx.lineTo(x, centerY + avg * centerY * 0.9)
       }
       ctx.strokeStyle = 'rgba(0, 200, 120, 0.4)'
       ctx.lineWidth = 1
