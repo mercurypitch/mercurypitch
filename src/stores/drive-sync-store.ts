@@ -33,7 +33,7 @@ import type { ParsedContainerHeader } from '@/lib/portable/portable-container'
 import { buildContainerBlob, CONTAINER_HEAD_FETCH_BYTES, containerPartRanges, parseContainerHead, } from '@/lib/portable/portable-container'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession } from '@/stores/uvr-store'
-import { getAllUvrSessions } from '@/stores/uvr-store'
+import { getAllUvrSessions, whenSessionStoreReady } from '@/stores/uvr-store'
 
 export type DriveConnectionState = 'unknown' | 'disconnected' | 'connected'
 
@@ -168,14 +168,22 @@ function driveClient(): DriveClient {
   return client
 }
 
-/** Songs this device can actually send: separated, hashed, playable. */
+/**
+ * Songs this device can actually back up: separated and hashed.
+ *
+ * Deliberately NOT gated on `outputs`: those URLs are minted lazily the
+ * first time a song is played, and a session loaded from the database
+ * carries none at all (`dbRecordToSession`). Requiring them made every
+ * unplayed song invisible to the scan after a reload — a full library
+ * answered "0 songs here", which is the bug the first Drive connect
+ * found. Packing reads the stems from the database itself, so a minted
+ * URL proves nothing it needs. Same filter as the peer-transfer send
+ * list, for the same reason (REQ-SYNC-018).
+ */
 function localSongs(): UvrSession[] {
   return getAllUvrSessions().filter(
     (s) =>
-      s.status === 'completed' &&
-      s.fileHash !== undefined &&
-      s.fileHash !== '' &&
-      (s.outputs?.vocal !== undefined || s.outputs?.instrumental !== undefined),
+      s.status === 'completed' && s.fileHash !== undefined && s.fileHash !== '',
   )
 }
 
@@ -303,6 +311,11 @@ export async function scanDrive(): Promise<DriveScan | null> {
   setDriveBusy(true)
   setDriveError(null)
   try {
+    // The scan that runs on the way back from the OAuth redirect fires
+    // while the library is still loading from IndexedDB; comparing Drive
+    // against a cache that is merely EMPTY SO FAR reports a full device
+    // as having nothing to back up.
+    await whenSessionStoreReady()
     const drive = driveClient()
     const folderId = await drive.ensureFolder()
     const remote = await drive.listSongs(folderId)
