@@ -73,6 +73,24 @@ describe('ensurePersistentStorage', () => {
     )
   })
 
+  it('explains a voice-take persistence request without changing the default flow', async () => {
+    const storage = {
+      persist: vi.fn().mockResolvedValue(false),
+      persisted: vi.fn().mockResolvedValue(false),
+    }
+    stubStorageApi(storage)
+    const { ensurePersistentStorage } = await loadSubject()
+
+    await expect(ensurePersistentStorage('voice-takes')).resolves.toBe(false)
+
+    expect(storage.persist).toHaveBeenCalledTimes(1)
+    expect(mocks.showNotification).toHaveBeenCalledWith(
+      expect.stringContaining('Take saved on this device.'),
+      'info',
+      { durationMs: 12000 },
+    )
+  })
+
   it('still requests persistence when localStorage access is blocked', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('Blocked', 'SecurityError')

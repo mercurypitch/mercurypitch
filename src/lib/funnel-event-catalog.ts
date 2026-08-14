@@ -66,6 +66,15 @@ export const APP_FUNNEL_EVENTS = [
   'progress_share_cancelled',
   'progress_share_downloaded',
   'progress_account_continuity_clicked',
+  'voice_history_open',
+  'voice_keep_attempt',
+  'voice_keep_success',
+  'voice_keep_failure',
+  'voice_compare_start',
+  'voice_compare_complete',
+  'voice_export',
+  'voice_delete',
+  'voice_storage_warning',
 ] as const
 
 /** Karaoke Night (src/features/karaoke-night/funnel.ts). */

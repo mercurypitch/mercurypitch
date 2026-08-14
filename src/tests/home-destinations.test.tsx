@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DestinationGallery, HOME_DESTINATIONS, } from '@/features/home/DestinationGallery'
-import { TAB_ANALYSIS, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 
 afterEach(() => {
@@ -26,7 +26,7 @@ describe('Home destination gallery', () => {
       ...container.querySelectorAll<HTMLElement>('[data-destination]'),
     ]
 
-    // Five navigable destinations plus the veiled coming-soon teaser.
+    // Five direct destinations plus the veiled voice-history entry.
     expect(covers).toHaveLength(HOME_DESTINATIONS.length + 1)
 
     for (let index = 0; index < HOME_DESTINATIONS.length; index++) {
@@ -47,20 +47,16 @@ describe('Home destination gallery', () => {
     }
   })
 
-  it('keeps the teaser un-navigable and toggles its reveal on tap', () => {
+  it('opens voice history from the veiled cover', () => {
     const { container } = render(() => <DestinationGallery />)
     const teaser = container.querySelector<HTMLElement>(
       '[data-destination="mystery"]',
     )!
 
     expect(teaser.tagName).toBe('BUTTON')
-    expect(teaser.getAttribute('aria-expanded')).toBe('false')
+    expect(teaser.getAttribute('aria-label')).toContain('Hear Yourself')
 
     fireEvent.click(teaser)
-    expect(teaser.getAttribute('aria-expanded')).toBe('true')
-    expect(activeTab()).toBe(TAB_HOME)
-
-    fireEvent.click(teaser)
-    expect(teaser.getAttribute('aria-expanded')).toBe('false')
+    expect(activeTab()).toBe(TAB_VOICE_HISTORY)
   })
 })

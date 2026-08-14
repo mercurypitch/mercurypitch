@@ -130,6 +130,16 @@ export function useSightSingingController(base: BaseExerciseController) {
     noteStartMs = []
   }
 
+  /** Use an authored note-for-note line instead of generating a scale drill. */
+  function setSequence(midiNotes: readonly number[]): void {
+    sequence = midiNotes
+      .filter((midi) => Number.isFinite(midi))
+      .map((midi, index) => noteFromMidi(Math.round(midi), index))
+    currentIndex = 0
+    noteScores.length = 0
+    noteStartMs = []
+  }
+
   function startRounds(): void {
     if (sequence.length === 0) return
     advanceToNote(0)
@@ -267,6 +277,7 @@ export function useSightSingingController(base: BaseExerciseController) {
 
   return {
     setScale,
+    setSequence,
     startRounds,
     stopRounds,
     stopAndCompute,

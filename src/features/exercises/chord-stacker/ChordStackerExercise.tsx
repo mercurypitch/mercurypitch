@@ -41,7 +41,7 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'chord-stacker', targetNote: untrack(() => startNote()) },
+    config: () => ({ type: 'chord-stacker', targetNote: startNote() }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -106,6 +106,7 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

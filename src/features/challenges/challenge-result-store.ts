@@ -8,6 +8,7 @@
 // frozen trace; another scored attempt must be armed explicitly.
 
 import { createSignal } from 'solid-js'
+import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
 import type { MelodyItem } from '@/types'
 import type { WeeklyTier } from './weekly-attempt'
 
@@ -21,6 +22,8 @@ export interface ChallengeResult {
   badgeGranted: boolean
   /** Present for stage-launched attempts so the line can move into Zen. */
   targetItems?: MelodyItem[]
+  /** Temporary local replay handed off before the Exercise page unmounts. */
+  voiceCapture?: ExerciseVoiceCaptureOutcome
 }
 
 const [lastChallengeResult, setLastChallengeResult] =
@@ -60,4 +63,15 @@ export function presentChallengeResult(result: ChallengeResult): void {
 export function clearChallengeResult(): void {
   setLastChallengeResult(null)
   setFinalizingResult(false)
+}
+
+export function discardChallengeVoiceCapture(): void {
+  setLastChallengeResult((result) =>
+    result === null || result.voiceCapture === undefined
+      ? result
+      : {
+          ...result,
+          voiceCapture: { state: 'discarded', take: null },
+        },
+  )
 }

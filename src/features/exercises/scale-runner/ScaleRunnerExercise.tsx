@@ -52,7 +52,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'scale-runner', targetNote: untrack(() => startNote()) },
+    config: () => ({ type: 'scale-runner', targetNote: startNote() }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -116,6 +116,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

@@ -107,8 +107,9 @@ export const WeeklyLegendHero: Component = () => {
           </Show>
         </div>
         <p class={styles.attemptHint}>
-          One take counts — "Sing it" records your very next run. Anything after
-          is practice until you tap it again.
+          One scored take counts. A temporary local voice replay follows the
+          result; it is kept only if you choose. Anything after is practice
+          until you tap "Sing it" again.
         </p>
 
         {/* ── Board ──────────────────────────────────────── */}

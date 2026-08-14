@@ -1,0 +1,534 @@
+.check {
+  --guided-gold: #ffe09a;
+  --guided-aqua: #6ee1de;
+  --guided-line: rgb(185 210 239 / 13%);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.header h2 {
+  margin: 3px 0 0;
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.eyebrow,
+.inspectorHeading > span,
+.readingRule > span,
+.practiceRoute span {
+  font-size: 0.67rem;
+  font-weight: 780;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8fc0ff;
+}
+
+.closeButton {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  color: #aab7ca;
+  border: 1px solid var(--guided-line);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.closeButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(286px, 340px);
+  gap: clamp(16px, 2.1vw, 26px);
+  align-items: start;
+}
+
+.mainCanvas {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.mainCanvas:focus,
+.inspectorContent:focus {
+  outline: none;
+}
+
+.inspector {
+  position: sticky;
+  top: 18px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--guided-line);
+  border-radius: 18px;
+  background: linear-gradient(155deg, #0b111c, #0b0f18 58%, #111124);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
+}
+
+.inspectorContent {
+  display: grid;
+  gap: 19px;
+  padding: clamp(20px, 2.4vw, 28px);
+}
+
+.inspectorHeading h3 {
+  margin: 7px 0 10px;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  color: #f1f7ff;
+}
+
+.inspectorHeading p,
+.privacyNote p,
+.readingRule p,
+.practiceRoute p,
+.recoveryCopy,
+.measurementDetails p {
+  margin: 0;
+  color: #98a7bc;
+  font-size: 0.79rem;
+  line-height: 1.58;
+}
+
+.privacyNote {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--guided-line);
+}
+
+.privacyNote > span {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  color: #88cdd0;
+  border: 1px solid rgb(110 225 222 / 22%);
+  border-radius: 50%;
+}
+
+.primaryButton,
+.secondaryButton,
+.quietButton,
+.stopButton,
+.drawerButton,
+.targetControl button,
+.effortGrid button {
+  min-height: 44px;
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 740;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.primaryButton,
+.secondaryButton,
+.drawerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.primaryButton {
+  color: #07131d;
+  border: 0;
+  background: linear-gradient(135deg, #c9ddff, #9dc3ff);
+  box-shadow: 0 10px 24px rgb(70 113 184 / 22%);
+}
+
+.secondaryButton {
+  color: #dbe9fa;
+  border: 1px solid rgb(151 188 235 / 22%);
+  background: rgb(136 175 226 / 6%);
+}
+
+.secondaryButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.quietButton {
+  color: #8997ab;
+  border: 0;
+  background: transparent;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.targetControl button:disabled,
+.stopButton:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.stackActions {
+  display: grid;
+  gap: 8px;
+}
+
+.targetControl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 9px;
+  border-top: 1px solid var(--guided-line);
+  border-bottom: 1px solid var(--guided-line);
+}
+
+.targetControl > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  text-align: center;
+}
+
+.targetControl strong {
+  font-size: 1.4rem;
+  color: var(--guided-gold);
+}
+
+.targetControl span {
+  overflow: hidden;
+  font-size: 0.68rem;
+  color: #8898ad;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.targetControl button {
+  padding-inline: 8px;
+  color: #aebbd0;
+  border: 0;
+  background: transparent;
+}
+
+.matchedTarget {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-top: 1px solid var(--guided-line);
+  border-bottom: 1px solid var(--guided-line);
+  background: rgb(110 225 222 / 4%);
+}
+
+.matchedTarget span {
+  font-size: 0.66rem;
+  font-weight: 760;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #89d5d3;
+}
+
+.matchedTarget strong {
+  color: var(--guided-gold);
+  font-size: 1rem;
+}
+
+.matchedTarget p {
+  margin: 0;
+  color: #8d9cb1;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.readyNote,
+.errorText {
+  margin: 0;
+  padding: 10px 11px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  border-radius: 9px;
+}
+
+.readyNote {
+  color: #9ce1d3;
+  background: rgb(53 160 140 / 9%);
+}
+
+.errorText {
+  color: #ffc2c4;
+  background: rgb(180 60 72 / 11%);
+}
+
+.captureDock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 66px;
+  padding: 11px 13px;
+  border: 1px solid var(--guided-line);
+  border-radius: 14px;
+  background: #0a0f18;
+}
+
+.captureDockLive {
+  border-color: rgb(255 101 108 / 22%);
+  background: linear-gradient(90deg, rgb(83 24 31 / 22%), #0a0f18 46%);
+}
+
+.recordingState {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 11px;
+}
+
+.recordingState > div {
+  display: grid;
+  gap: 3px;
+}
+
+.recordingState strong {
+  font-size: 0.83rem;
+  color: #e9f1fb;
+}
+
+.recordingState span:not(.micPulse) {
+  font-size: 0.7rem;
+  color: #7f8da2;
+}
+
+.micPulse {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #78879a;
+  border: 1px solid rgb(144 171 204 / 15%);
+  border-radius: 50%;
+  background: #111925;
+}
+
+.captureDockLive .micPulse {
+  color: #fff2f2;
+  border-color: rgb(255 101 108 / 48%);
+  background: #d84b55;
+  box-shadow: 0 0 24px rgb(232 67 79 / 28%);
+  animation: recordingPulse 1.45s ease-in-out infinite;
+}
+
+@keyframes recordingPulse {
+  50% {
+    box-shadow:
+      0 0 0 8px rgb(232 67 79 / 8%),
+      0 0 28px rgb(232 67 79 / 36%);
+    transform: scale(1.04);
+  }
+}
+
+.stopButton {
+  color: #e2eaf5;
+  border: 1px solid rgb(205 218 236 / 17%);
+  background: transparent;
+}
+
+.previewStrip {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--guided-line);
+  border-radius: 13px;
+  background: #090e17;
+}
+
+.playButton {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  padding: 0;
+  color: #dceafe;
+  border: 1px solid rgb(140 190 239 / 22%);
+  border-radius: 10px;
+  background: rgb(111 162 216 / 8%);
+  cursor: pointer;
+}
+
+.playButton svg {
+  width: 17px;
+  height: 17px;
+}
+
+.previewWave {
+  min-width: 0;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0b1421;
+  cursor: crosshair;
+}
+
+.previewWaveCanvas {
+  display: block;
+  width: 100%;
+  height: 42px;
+}
+
+.previewTime {
+  font-size: 0.69rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #8594aa;
+}
+
+.effortGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.effortGrid button {
+  color: #dce7f5;
+  border: 1px solid rgb(144 180 223 / 18%);
+  background: rgb(130 167 213 / 5%);
+}
+
+.effortGrid button:hover,
+.effortGrid button:focus-visible {
+  border-color: rgb(110 225 222 / 38%);
+  background: rgb(70 191 192 / 9%);
+}
+
+.readingRule {
+  display: grid;
+  gap: 7px;
+  padding-top: 16px;
+  border-top: 1px solid var(--guided-line);
+}
+
+.practiceRoute {
+  display: grid;
+  gap: 14px;
+  padding: 17px;
+  border: 1px solid rgb(110 225 222 / 17%);
+  border-radius: 13px;
+  background: linear-gradient(
+    145deg,
+    rgb(33 99 106 / 12%),
+    rgb(46 36 91 / 14%)
+  );
+}
+
+.practiceRoute > div {
+  display: grid;
+  gap: 5px;
+}
+
+.practiceRoute strong {
+  font-size: 1.08rem;
+  color: #eef8ff;
+}
+
+.resultActions {
+  display: grid;
+  gap: 8px;
+}
+
+.measurementDetails {
+  padding-top: 15px;
+  border-top: 1px solid var(--guided-line);
+}
+
+.measurementDetails summary {
+  min-height: 40px;
+  color: #9fb0c6;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.measurementDetails p + p {
+  margin-top: 9px;
+}
+
+.drawerButton {
+  width: 100%;
+  color: #d9e8fb;
+  border: 1px solid rgb(141 184 255 / 22%);
+  background: #0d1622;
+}
+
+.drawerButton svg {
+  width: 17px;
+  height: 17px;
+}
+
+.mobileSheet {
+  --sheet-bg: #0b1019;
+}
+
+.mobileSheet .inspectorContent {
+  padding: 2px 18px calc(18px + env(safe-area-inset-bottom));
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.quietButton:focus-visible,
+.stopButton:focus-visible,
+.drawerButton:focus-visible,
+.targetControl button:focus-visible,
+.effortGrid button:focus-visible,
+.closeButton:focus-visible,
+.playButton:focus-visible,
+.previewWave:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    margin-bottom: 13px;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .captureDock {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stopButton {
+    width: 100%;
+  }
+
+  .previewStrip {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .previewTime {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .captureDockLive .micPulse {
+    animation: none;
+  }
+}

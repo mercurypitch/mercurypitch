@@ -724,6 +724,16 @@ stays at zero.
 
 **See:** `.mirror-peek-card` in `src/features/mirror/mirror.css`
 
+### Open mobile More before selecting an overflow tab
+
+**Symptom:** `pnpm audit:mobile` could not find Exercises even though the tab
+was visible in the app's mobile navigation.
+**Cause:** overflow destinations are not mounted until More is opened and do
+not necessarily keep their desktop tab id.
+**Rule:** mobile automation opens More when the stable tab id is absent, then
+selects the destination by its exact accessible name.
+**See:** `scripts/audit-exercises-mobile.mjs`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked

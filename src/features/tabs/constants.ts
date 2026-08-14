@@ -14,6 +14,7 @@ export const TAB_COMMUNITY = 'community' as const
 export const TAB_LEADERBOARD = 'leaderboard' as const
 export const TAB_CHALLENGES = 'challenges' as const
 export const TAB_KARAOKE = 'karaoke' as const
+export const TAB_VOICE_HISTORY = 'voice-history' as const
 export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
 /** Hidden audio-research surface. Hash route only — never in TAB_GROUPS. */
@@ -35,6 +36,7 @@ export type ActiveTab =
   | typeof TAB_LEADERBOARD
   | typeof TAB_CHALLENGES
   | typeof TAB_KARAOKE
+  | typeof TAB_VOICE_HISTORY
   | typeof TAB_PITCH_TEST
   | typeof TAB_PITCH_ALGO
   | typeof TAB_LAB
@@ -77,11 +79,12 @@ export const MAX_INLINE_GROUP_TABS = 3
 
 export const TAB_GROUPS: readonly TabGroupDef[] = [
   {
-    // Where you are, not what you practise: the daily hub, the guided
-    // path, and Progress. Every instrument shares these.
+    // Where you are, not what you practise: the daily hub, guided path,
+    // Progress, and the personal records you return to. Individual records
+    // may still be scoped to one instrument.
     id: 'you',
     label: 'You',
-    tabs: [TAB_HOME, TAB_PATH, TAB_PROGRESS],
+    tabs: [TAB_HOME, TAB_PATH, TAB_PROGRESS, TAB_VOICE_HISTORY],
   },
   {
     // An instrument selector, plus the drills that back it. Karaoke moved
@@ -185,6 +188,7 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_GUITAR]: ['guitar'],
   [TAB_EXERCISES]: ['singing'],
   [TAB_KARAOKE]: ['singing'],
+  [TAB_VOICE_HISTORY]: ['singing'],
   [TAB_JAM]: ['singing'],
   [TAB_COMMUNITY]: ['singing', 'guitar', 'piano'],
   [TAB_LEADERBOARD]: ['singing', 'guitar', 'piano'],
@@ -199,13 +203,12 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
 }
 
 /**
- * Groups that make up the practice-first UI, and the phone's bottom bar.
+ * Groups that make up the practice-first UI.
  *
- * Named rather than inlined because two very different consumers read it:
- * simple mode (which tabs exist at all) and BottomTabBar (which tabs get a
- * bar slot). Home and Path used to live inside the practice group, so both
- * consumers got them for free; after the regrouping they have to be asked
- * for by name or simple mode silently loses its hub.
+ * Home and Path used to live inside the practice group, so simple mode got
+ * them for free. After the regrouping the primary groups must be named or
+ * simple mode silently loses its hub. Phone bar priority is separate below:
+ * belonging to You makes a destination reachable, not automatically pinned.
  */
 export const PRIMARY_GROUP_IDS: readonly string[] = ['you', 'practice']
 
@@ -213,6 +216,26 @@ export const PRIMARY_GROUP_IDS: readonly string[] = ['you', 'practice']
 export const PRIMARY_TABS: readonly ActiveTab[] = TAB_GROUPS.filter((g) =>
   PRIMARY_GROUP_IDS.includes(g.id),
 ).flatMap((g) => [...g.tabs])
+
+/**
+ * Stable priority for the phone's four direct destinations.
+ *
+ * This is deliberately independent from group membership. You can gain a
+ * personal destination such as Hear Yourself without pushing the scope's
+ * core instrument off the bar; every visible destination not selected here
+ * remains reachable through More.
+ */
+export const MOBILE_BAR_TAB_PRIORITY: readonly ActiveTab[] = [
+  TAB_HOME,
+  TAB_PATH,
+  TAB_PROGRESS,
+  TAB_SINGING,
+  TAB_GUITAR,
+  TAB_PIANO,
+  TAB_EXERCISES,
+]
+
+export const MOBILE_BAR_SLOT_COUNT = 4
 
 /** Simple mode keeps only the primary groups + Settings (the way back). */
 const SIMPLE_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
@@ -230,6 +253,13 @@ export function isTabVisible(
   if (tab === TAB_SETTINGS) return true
   if (mode === 'simple' && !SIMPLE_TABS.has(tab)) return false
   return scope === 'all' || TAB_SCOPES[tab].includes(scope)
+}
+
+/** Direct phone destinations for the current scope and mode, in priority order. */
+export function mobileBarTabs(scope: PracticeScope, mode: UiMode): ActiveTab[] {
+  return MOBILE_BAR_TAB_PRIORITY.filter((tab) =>
+    isTabVisible(tab, scope, mode),
+  ).slice(0, MOBILE_BAR_SLOT_COUNT)
 }
 
 /** Canonical order filtered to the visible tabs (drives the swipe nav). */
@@ -283,6 +313,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_LEADERBOARD]: 'leaderboard',
   [TAB_CHALLENGES]: 'challenges',
   [TAB_KARAOKE]: 'karaoke',
+  [TAB_VOICE_HISTORY]: 'voice-history',
   [TAB_PITCH_TEST]: 'pitch-test',
   [TAB_PITCH_ALGO]: 'pitch-algo',
   [TAB_LAB]: 'lab',
@@ -316,6 +347,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_LEADERBOARD]: 'Leaderboard',
     [TAB_CHALLENGES]: 'Challenges',
     [TAB_KARAOKE]: 'Karaoke',
+    [TAB_VOICE_HISTORY]: 'Hear Yourself',
     [TAB_PITCH_TEST]: 'Pitch Analysis',
     [TAB_PITCH_ALGO]: 'Pitch Test',
     [TAB_LAB]: 'Lab',

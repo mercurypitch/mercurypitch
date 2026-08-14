@@ -233,10 +233,12 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
+import { currentGuidedPracticeLaunch, returnFromGuidedPractice, } from '@/features/voice-history/guided-practice-handoff'
+import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -503,14 +505,19 @@ const AppShell: Component<AppProps> = (props) => {
   const [selectedExercise, setSelectedExercise] =
     createSignal<ExerciseType | null>(null)
   const [autoStartExercise, setAutoStartExercise] = createSignal(false)
-  const clearExercise = () => {
+  const resetExerciseLaunchState = () => {
     setSelectedExercise(null)
     setPendingDrill(null)
     setAutoStartExercise(false)
     clearLaunchOverride()
-    // Backing out of the exercise abandons any armed challenge attempt —
-    // a later unrelated run must not count toward the challenge.
+    // A later unrelated run must not inherit a challenge attempt from the
+    // exercise that just left the screen.
     clearChallengeAttempt()
+  }
+  const clearExercise = () => {
+    const guidedReturn = returnFromGuidedPractice()
+    resetExerciseLaunchState()
+    if (guidedReturn !== null) setActiveTab(TAB_VOICE_HISTORY)
   }
   const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
     // A targeted drill carries a one-shot difficulty / target note; a normal
@@ -573,13 +580,25 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
-      if (drill.notes.length > 0 || drill.pattern != null) {
+      const armedGuidedPractice = currentGuidedPracticeLaunch()
+      const guidedPractice =
+        drill.guidedPractice ??
+        (armedGuidedPractice?.exercise.exerciseId === drill.exercise
+          ? armedGuidedPractice
+          : undefined)
+      if (
+        drill.notes.length > 0 ||
+        drill.difficulty !== undefined ||
+        drill.pattern != null ||
+        guidedPractice !== undefined
+      ) {
         setLaunchOverride(drill.exercise, {
           type: drill.exercise,
           targetNote: drill.notes[0],
           targetNotes: drill.notes.length > 0 ? drill.notes : undefined,
           difficulty: drill.difficulty,
           pattern: drill.pattern,
+          guidedPractice,
         })
       }
       // Exercises read their launch override at mount. If the same type is
@@ -1581,6 +1600,16 @@ const AppShell: Component<AppProps> = (props) => {
   onTabTransition((prevTab, newTab) => {
     closeSingingZen()
     closeChallengeStage()
+
+    // A guided dose is launch-scoped. Leaving Exercises through the sidebar
+    // must end that launch just as reliably as its Back button; otherwise the
+    // old prescription and target remount when Exercises is visited again.
+    // Mark the handoff returned without redirecting away from the tab the
+    // singer deliberately chose. Hear Yourself consumes it on their return.
+    if (prevTab === TAB_EXERCISES && currentGuidedPracticeLaunch() !== null) {
+      returnFromGuidedPractice()
+      resetExerciseLaunchState()
+    }
 
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
@@ -3641,6 +3670,12 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_ANALYSIS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_ANALYSIS)}>
                   <AnalysisPage />
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_VOICE_HISTORY}>
+                <TabErrorBoundary tabName={tabLabel(TAB_VOICE_HISTORY)}>
+                  <VoiceHistoryPage />
                 </TabErrorBoundary>
               </Show>
 

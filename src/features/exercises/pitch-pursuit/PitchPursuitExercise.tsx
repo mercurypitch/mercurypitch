@@ -33,7 +33,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'pitch-pursuit' },
+    config: () => ({ type: 'pitch-pursuit' }),
   })
 
   const controller = usePitchPursuitController(base)
@@ -168,6 +168,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

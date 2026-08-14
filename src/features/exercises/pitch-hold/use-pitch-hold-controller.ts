@@ -14,15 +14,27 @@ const SCORE_UPDATE_HZ = 10
 const SCORE_ZONE_WEIGHT = 0.6
 const SCORE_DURATION_WEIGHT = 0.4
 const TARGET_DURATION_SEC = 60
+const MIN_VOICED_EVIDENCE_FRAMES = 10
 // No fresh voiced sample for this long ⇒ the singer has gone silent.
 const VOICE_GAP_SEC = 0.2
 
-export function usePitchHoldController(base: BaseExerciseController) {
+interface PitchHoldControllerOptions {
+  /** Reviewed task zone; unlike adaptive practice, it never shrinks. */
+  fixedZoneCents?: number
+  /** Reviewed hold duration used by the guided score denominator. */
+  fixedTargetDurationSeconds?: number
+}
+
+export function usePitchHoldController(
+  base: BaseExerciseController,
+  options: PitchHoldControllerOptions = {},
+) {
   let targetMidi = 0
   let zoneRadius = INITIAL_ZONE_CENTS
   let lastShrinkTime = 0
   let inZoneFrames = 0
   let totalFrames = 0
+  let voicedFrames = 0
   // Set once the singer first makes sound, so leading reaction-time silence
   // isn't counted against them (silence after they start still is).
   let hasPhonated = false
@@ -38,11 +50,15 @@ export function usePitchHoldController(base: BaseExerciseController) {
   }
 
   function startLoop(): void {
-    const difficulty = launchDifficulty(EXERCISE_PITCH_HOLD)
-    // scale by adaptive difficulty: tighter zone when harder
-    zoneRadius = INITIAL_ZONE_CENTS * difficultyFactor(difficulty)
+    // Ordinary practice adapts to the stored difficulty. A guided route uses
+    // the reviewed assessment tolerance verbatim for every repetition.
+    zoneRadius =
+      options.fixedZoneCents ??
+      INITIAL_ZONE_CENTS *
+        difficultyFactor(launchDifficulty(EXERCISE_PITCH_HOLD))
     inZoneFrames = 0
     totalFrames = 0
+    voicedFrames = 0
     hasPhonated = false
     lastShrinkTime = performance.now()
 
@@ -52,7 +68,10 @@ export function usePitchHoldController(base: BaseExerciseController) {
       const elapsed = base._getElapsed()
 
       // Shrink zone over time
-      if (now - lastShrinkTime > SHRINK_INTERVAL_MS) {
+      if (
+        options.fixedZoneCents === undefined &&
+        now - lastShrinkTime > SHRINK_INTERVAL_MS
+      ) {
         zoneRadius = Math.max(MIN_ZONE_CENTS, zoneRadius - SHRINK_AMOUNT)
         lastShrinkTime = now
       }
@@ -65,7 +84,10 @@ export function usePitchHoldController(base: BaseExerciseController) {
       const latest = history[history.length - 1]
       const voiced =
         latest !== undefined && elapsed / 1000 - latest.time <= VOICE_GAP_SEC
-      if (voiced) hasPhonated = true
+      if (voiced) {
+        hasPhonated = true
+        voicedFrames++
+      }
 
       // Once singing has started, every frame counts — silence in the middle or
       // at the end now dilutes the in-zone percentage instead of being ignored.
@@ -83,6 +105,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
         base._updateMetrics({
           zoneRadius,
           zonePct: Math.round(zonePct),
+          voicedFrames,
           elapsedMs: Math.round(elapsed),
         })
       })
@@ -94,29 +117,35 @@ export function usePitchHoldController(base: BaseExerciseController) {
     const durationSec = elapsed / 1000
     const zonePct = totalFrames > 0 ? (inZoneFrames / totalFrames) * 100 : 0
 
-    if (totalFrames < 10) {
+    if (!hasSufficientVoicedEvidence()) {
       return {
         type: EXERCISE_PITCH_HOLD,
         score: 0,
         metrics: {
           durationSec: 0,
           zonePct: 0,
-          minZoneCents: INITIAL_ZONE_CENTS,
+          minZoneCents: options.fixedZoneCents ?? INITIAL_ZONE_CENTS,
           survivedSec: 0,
+          voicedFrames,
         },
         completedAt: Date.now(),
       }
     }
 
     // Score: zone percentage weighted by duration
-    const difficulty = launchDifficulty(EXERCISE_PITCH_HOLD)
-    // scale by adaptive difficulty: longer required hold when harder
     const targetDurationSec =
-      TARGET_DURATION_SEC * (2 - difficultyFactor(difficulty))
+      options.fixedTargetDurationSeconds ??
+      TARGET_DURATION_SEC *
+        (2 - difficultyFactor(launchDifficulty(EXERCISE_PITCH_HOLD)))
     const durationScore = Math.min(100, (durationSec / targetDurationSec) * 100)
-    const score = Math.round(
-      zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT,
-    )
+    // A reviewed guided hold reports its one direct construct only. Ordinary
+    // practice keeps the legacy pitch-plus-duration score for progression.
+    const score =
+      options.fixedTargetDurationSeconds === undefined
+        ? Math.round(
+            zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT,
+          )
+        : Math.round(zonePct)
 
     return {
       type: EXERCISE_PITCH_HOLD,
@@ -126,6 +155,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
         zonePct: Math.round(zonePct),
         minZoneCents: zoneRadius,
         survivedSec: Math.round(durationSec),
+        voicedFrames,
       },
       completedAt: Date.now(),
     }
@@ -139,10 +169,15 @@ export function usePitchHoldController(base: BaseExerciseController) {
     return result
   }
 
+  function hasSufficientVoicedEvidence(): boolean {
+    return voicedFrames >= MIN_VOICED_EVIDENCE_FRAMES
+  }
+
   return {
     setTarget,
     startLoop,
     computeResult,
     stopAndCompute,
+    hasSufficientVoicedEvidence,
   }
 }

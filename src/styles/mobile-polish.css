@@ -158,6 +158,37 @@
     font-size: 1.1rem;
   }
 
+  .exercise-guided-dose {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
+  .exercise-guided-dose-heading {
+    justify-content: space-between;
+  }
+
+  .exercise-guided-dose p {
+    grid-row: auto;
+    grid-column: auto;
+    white-space: normal;
+  }
+
+  .exercise-guided-dose small {
+    grid-column: auto;
+  }
+
+  .exercise-guided-stop-question {
+    width: 100%;
+  }
+
+  .exercise-guided-pause,
+  .exercise-guided-discomfort {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
   .exercise-canvas-area.is-idle {
     justify-content: flex-start;
     min-height: 0;

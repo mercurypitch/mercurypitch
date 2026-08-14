@@ -32,6 +32,8 @@ export default defineConfig({
       'src/features/**/*.test.ts',
       'src/features/**/*.test.tsx',
       'src/lib/**/*.test.ts',
+      'src/features/**/*.test.ts',
+      'src/features/**/*.test.tsx',
       'src/components/__tests__/**/*.test.tsx',
       'workers/db-worker/src/**/*.test.ts',
       'workers/db-worker/node-tests/**/*.test.ts',

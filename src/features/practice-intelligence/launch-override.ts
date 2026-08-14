@@ -10,7 +10,7 @@
 // when the exercise is exited so it never leaks into the next session.
 
 import { createSignal } from 'solid-js'
-import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
+import type { ExerciseConfig, ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
 import { clampDifficulty } from './adaptive-difficulty'
 import { getDifficulty } from './difficulty-store'
 
@@ -61,4 +61,12 @@ export function launchTargetNotes(type: ExerciseType): string[] | undefined {
 export function launchPattern(type: ExerciseType): string | undefined {
   const o = override()
   return o && o.type === type ? o.config.pattern : undefined
+}
+
+/** Reviewed guided-practice prescription attached to this one launch. */
+export function launchGuidedPractice(
+  type: ExerciseType,
+): GuidedPracticeLaunchConfig | undefined {
+  const o = override()
+  return o && o.type === type ? o.config.guidedPractice : undefined
 }

@@ -11,7 +11,7 @@
 // reload, or the welcome overlay covers the page under test.
 
 import { createSignal, untrack } from 'solid-js'
-import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
@@ -421,6 +421,8 @@ export interface PendingDrill {
   difficulty?: number
   /** Step-pattern for pattern-driven exercises (warmup blocks). */
   pattern?: string
+  /** Reviewed, launch-scoped guided practice prescription. */
+  guidedPractice?: GuidedPracticeLaunchConfig
 }
 
 export const [pendingDrill, setPendingDrill] =
@@ -434,13 +436,19 @@ export function launchDrill(drill: PendingDrill): void {
 /** Launch an exercise directly (used by daily routine Start buttons) */
 export function startExercise(
   exercise: ExerciseType,
-  opts?: { notes?: string[]; challengeName?: string; pattern?: string },
+  opts?: {
+    notes?: string[]
+    challengeName?: string
+    pattern?: string
+    guidedPractice?: GuidedPracticeLaunchConfig
+  },
 ): void {
   setPendingDrill({
     exercise,
     notes: opts?.notes ?? [],
     challengeName: opts?.challengeName ?? '',
     pattern: opts?.pattern,
+    guidedPractice: opts?.guidedPractice,
   })
   setActiveTab(TAB_EXERCISES)
 }
