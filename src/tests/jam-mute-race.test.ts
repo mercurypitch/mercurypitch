@@ -131,3 +131,9 @@ describe('toggleJamMute — a second action during the permission prompt', () =>
     expect(store.jamIsMuted()).toBe(false)
   })
 })
+
+// The "does Leave release the microphone?" case is deliberately NOT here.
+// It belongs to the service, and a store test built on the double above could
+// only assert what the double was programmed to do — the exact shape this
+// audit flags elsewhere as testing a copy of the system. It lives in
+// src/lib/jam/service-local-media.test.ts, against the real createJamService.

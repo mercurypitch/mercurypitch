@@ -2095,6 +2095,9 @@ export function leaveJamRoom(): void {
   cleanupJam()
 }
 
+/** Guards the capture in toggleJamMute against a second concurrent unmute. */
+let jamUnmuteInFlight = false
+
 /**
  * Turn the microphone on or off.
  *
@@ -2108,8 +2111,6 @@ export function leaveJamRoom(): void {
  * would show an unmuted mic for as long as the prompt is on screen, which
  * is the one moment it must not lie.
  */
-let jamUnmuteInFlight = false
-
 export async function toggleJamMute(): Promise<void> {
   const muted = !jamIsMuted()
   if (!muted && jamService?.hasLocalAudio() === false) {
