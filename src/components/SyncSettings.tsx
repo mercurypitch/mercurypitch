@@ -22,14 +22,15 @@
 // See docs/plans/device-sync.md.
 
 import type { Component } from 'solid-js'
-import { createSignal, onMount, Show } from 'solid-js'
+import { createSignal, For, onMount, Show } from 'solid-js'
 import { storageEstimate } from '@/db/durable-write'
 import { isStoragePersisted, requestPersistentStorage, } from '@/db/persistent-storage'
 import { accountHeld, takeDriveConnectResult } from '@/db/services/auth-service'
 import { readLibraryManifests, syncLibraryList, } from '@/db/services/song-manifest-service'
 import { isStandalone, needsIosInstallHint } from '@/lib/pwa-install'
-import { backUpToDrive, connectDrive, disconnectDriveSync, driveBusy, driveEmail, driveError, driveJob, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
-import { getAllUvrSessions } from '@/stores/uvr-store'
+import { backUpToDrive, connectDrive, disconnectDriveSync, driveBusy, driveEmail, driveError, driveFolderId, driveJob, driveJobFailures, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
+import { getAllUvrSessions, whenSessionStoreReady } from '@/stores/uvr-store'
+import { LinkChain } from './icons'
 import { InstallAppButton } from './InstallAppButton'
 import panel from './SettingsPanel.module.css'
 import styles from './SyncSettings.module.css'
@@ -66,6 +67,11 @@ export const SyncSettings: Component = () => {
   const refresh = async (): Promise<void> => {
     setBusy(true)
     try {
+      // The session cache fills from IndexedDB asynchronously at app
+      // boot. Reloading straight into Settings used to race it and show
+      // "0 songs on this device" to somebody whose library was merely
+      // still loading — until they happened to visit the Karaoke tab.
+      await whenSessionStoreReady()
       const sessions = getAllUvrSessions()
       setHere(sessions.filter((s) => s.status === 'completed').length)
       const missing = await syncLibraryList(sessions)
@@ -374,8 +380,31 @@ export const SyncSettings: Component = () => {
                       could not be moved; the rest are still going.
                     </p>
                   </Show>
+                  <p class={styles.note}>
+                    Keep the app open — packing and moving songs pause while it
+                    is in the background.
+                  </p>
                 </div>
               )}
+            </Show>
+
+            <Show when={driveJob() === null && driveJobFailures().length > 0}>
+              <div class={styles.warn}>
+                <p>
+                  {driveJobFailures().length === 1
+                    ? 'One song did not make it:'
+                    : 'These songs did not make it:'}
+                </p>
+                <ul>
+                  <For each={driveJobFailures()}>
+                    {(failure) => (
+                      <li>
+                        {failure.title} — {failure.reason}
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </div>
             </Show>
 
             <div class={styles.actions}>
@@ -421,6 +450,18 @@ export const SyncSettings: Component = () => {
                     {driveScan()?.toRestore.length === 1 ? 'song' : 'songs'}
                   </button>
                 </Show>
+                <Show when={driveFolderId()}>
+                  {(folderId) => (
+                    <a
+                      class={panel.settingsActionBtn}
+                      href={`https://drive.google.com/drive/folders/${folderId()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <LinkChain size={14} /> Open in Drive
+                    </a>
+                  )}
+                </Show>
                 <button
                   type="button"
                   class={panel.settingsActionBtn}
@@ -433,10 +474,9 @@ export const SyncSettings: Component = () => {
             </div>
 
             <p class={styles.note}>
-              Songs are stored in a MercuryPitch folder you can open in Drive —
-              one file each, at the portable quality, with the lyrics and
-              analysis alongside. Backing up and restoring both work a piece at
-              a time, so a lost connection costs the piece rather than the song.
+              Songs are stored in a MercuryPitch folder in your Drive — one file
+              each, at the portable quality, with the lyrics and analysis
+              alongside.
             </p>
           </Show>
 
