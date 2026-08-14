@@ -135,6 +135,28 @@ export async function listStemTypes(sessionId: string): Promise<UvrStemType[]> {
 export async function sessionHasPlayableStems(
   sessionId: string,
 ): Promise<boolean> {
+  return (await sessionStemPresence(sessionId)) === 'present'
+}
+
+/**
+ * Whether a session's separated stems are on disk.
+ *
+ * Three states, not two, and the third one matters: `unknown` means the read
+ * itself failed (IndexedDB blocked or evicted, a stalled upgrade, Safari in
+ * private mode), which is NOT the same answer as "this session has no stems".
+ *
+ * `sessionHasPlayableStems` collapses `unknown` to false, which is the safe
+ * reading for callers that only decide whether to offer a resume. It is the
+ * catastrophic reading for a caller that deletes on false — see
+ * pruneOrphanedCompletedSessions, which would otherwise erase every paid,
+ * completed separation in the library on one transient read error at startup.
+ * Deleters must call this function and skip on `unknown`.
+ */
+export type StemPresence = 'present' | 'absent' | 'unknown'
+
+export async function sessionStemPresence(
+  sessionId: string,
+): Promise<StemPresence> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
@@ -142,10 +164,11 @@ export async function sessionHasPlayableStems(
     return blobs.some(
       (b) => b.stemType === 'vocal' || b.stemType === 'instrumental',
     )
+      ? 'present'
+      : 'absent'
   } catch (err) {
-    if (IS_DEV)
-      console.warn('[UvrService] sessionHasPlayableStems failed:', err)
-    return false
+    if (IS_DEV) console.warn('[UvrService] sessionStemPresence failed:', err)
+    return 'unknown'
   }
 }
 

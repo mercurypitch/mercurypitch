@@ -194,9 +194,23 @@ jobs:
         if: steps.scope.outputs.db == 'true'
         run: pnpm run typecheck:db
 
+      # The worker suites live in the root vitest project, so `pnpm test:run`
+      # above already covers them whenever root=true. A worker-only PR never
+      # sets root, though, and used to be gated by `tsc` alone — 19 db-worker
+      # test files, including the 2243-line auth suite and the node-tests that
+      # replay every real migration against SQLite, did not run on the change
+      # they were written to protect. Run them explicitly in that case.
+      - name: Test DB Worker units
+        if: steps.scope.outputs.db == 'true' && steps.scope.outputs.root != 'true'
+        run: pnpm run test:db
+
       - name: Typecheck Jam Worker
         if: steps.scope.outputs.jam == 'true'
         run: pnpm run typecheck:jam
+
+      - name: Test Jam Worker units
+        if: steps.scope.outputs.jam == 'true' && steps.scope.outputs.root != 'true'
+        run: pnpm run test:jam
 
       - name: Check Beside Cue
         if: steps.scope.outputs.beside == 'true'

@@ -158,10 +158,33 @@ describe('renderPluckWaveform', () => {
 
   it('handles high frequencies without blowing up', () => {
     const data = renderPluckWaveform(44100, 1318.5, ACOUSTIC_PARAMS)
-    for (const v of data) {
-      expect(Number.isFinite(v)).toBe(true)
-      expect(Math.abs(v)).toBeLessThanOrEqual(1)
+
+    // Scan first, assert once. Asserting inside the loop runs expect() twice
+    // per sample — about 194k calls for this 2.2s buffer — which made the test
+    // time out under a loaded CI runner. Reporting the offending index keeps
+    // the diagnostic that the per-sample assertion was there for.
+    let firstNonFinite = -1
+    let worstIndex = -1
+    let worstMagnitude = 0
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i]
+      if (firstNonFinite < 0 && !Number.isFinite(v)) firstNonFinite = i
+      const magnitude = Math.abs(v)
+      if (magnitude > worstMagnitude) {
+        worstMagnitude = magnitude
+        worstIndex = i
+      }
     }
+
+    // Both assertions carry the offending index in the compared object, so a
+    // failure names the sample rather than just the predicate.
+    expect({ firstNonFiniteIndex: firstNonFinite }).toEqual({
+      firstNonFiniteIndex: -1,
+    })
+    expect({
+      peakIndex: worstIndex,
+      withinUnitRange: worstMagnitude <= 1,
+    }).toEqual({ peakIndex: worstIndex, withinUnitRange: true })
   })
 })
 
