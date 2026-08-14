@@ -680,3 +680,47 @@ describe('device sign-in links', () => {
     expect(parseHash('#/link:ABCD2345').type).toBe('device-link')
   })
 })
+
+// ── Malformed input ───────────────────────────────────────────
+
+describe('parseHash — malformed percent-encoding', () => {
+  // parseHash runs during boot: App.tsx reads it while rendering and
+  // useHashRouter calls it on every hashchange. decodeURIComponent throws
+  // URIError on a truncated escape, so an uncaught throw here was a white
+  // screen on a link anyone can paste, truncate, or have mangled by a chat
+  // client. These assert the parser survives; what it returns for junk only
+  // has to be a route the app can handle.
+  const malformed = [
+    '#/share?type=melody&id=%E0%A4%A',
+    '#/share?type=%&id=abc',
+    '#/reset-password?token=%zz',
+    '#/share?type=a&id=100%',
+  ]
+
+  for (const hash of malformed) {
+    it(`does not throw on ${hash}`, () => {
+      expect(() => parseHash(hash)).not.toThrow()
+      // not.toThrow() alone would pass on a parser that returned undefined,
+      // so pin that a usable route object comes back.
+      expect(typeof parseHash(hash).type).toBe('string')
+    })
+  }
+
+  it('still decodes a well-formed escape', () => {
+    expect(parseHash('#/share?type=melody&id=a%20b')).toEqual({
+      type: 'share-fallback',
+      shareType: 'melody',
+      shareId: 'a b',
+    })
+  })
+
+  it('passes the raw text through when it cannot be decoded', () => {
+    // Better than dropping the segment: a downstream lookup fails and the
+    // user sees "not found" rather than the app disappearing.
+    expect(parseHash('#/share?type=melody&id=%E0%A4%A')).toEqual({
+      type: 'share-fallback',
+      shareType: 'melody',
+      shareId: '%E0%A4%A',
+    })
+  })
+})
