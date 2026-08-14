@@ -1561,6 +1561,36 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
 
     const stage = room.getByTestId('guitar-night-stage')
     await expect(stage).toBeVisible()
+    const liveScore = stage.getByTestId('guitar-night-live-score')
+    await expect(liveScore).toBeVisible()
+    await expect(liveScore).toHaveAttribute('data-state', 'needs-input')
+    await expect(liveScore.getByLabel('Live score')).toHaveCount(0)
+    const scoreBounds = await liveScore.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      const stageBounds = element
+        .closest('[data-testid="guitar-night-stage"]')
+        ?.getBoundingClientRect()
+      const toolBounds = element
+        .closest('[data-testid="guitar-night-stage"]')
+        ?.querySelector('[aria-label="Stage view"]')
+        ?.parentElement?.getBoundingClientRect()
+      return {
+        bottom: bounds.bottom,
+        left: bounds.left,
+        right: bounds.right,
+        stageBottom: stageBounds?.bottom ?? 0,
+        stageLeft: stageBounds?.left ?? 0,
+        stageRight: stageBounds?.right ?? 0,
+        stageTop: stageBounds?.top ?? 0,
+        top: bounds.top,
+        toolsBottom: toolBounds?.bottom ?? 0,
+      }
+    })
+    expect(scoreBounds.left).toBeGreaterThanOrEqual(scoreBounds.stageLeft)
+    expect(scoreBounds.right).toBeLessThanOrEqual(scoreBounds.stageRight)
+    expect(scoreBounds.top).toBeGreaterThanOrEqual(scoreBounds.stageTop)
+    expect(scoreBounds.top).toBeGreaterThanOrEqual(scoreBounds.toolsBottom)
+    expect(scoreBounds.bottom).toBeLessThanOrEqual(scoreBounds.stageBottom)
     await expect(stage.locator('canvas')).toHaveAttribute(
       'data-camera-ready',
       'true',

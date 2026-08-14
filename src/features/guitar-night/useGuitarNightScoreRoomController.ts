@@ -48,7 +48,7 @@ interface GuitarNightScoreRoomControllerOptions {
 }
 
 interface GuitarNightScoreRoomRunConfiguration {
-  mode: 'rehearsal' | 'assessment'
+  mode: 'rehearsal' | 'assessment' | 'live-score'
   reference: GuitarNightReference
   scoreTempoBpm: number
   tempoBpm: number
@@ -81,6 +81,8 @@ export interface GuitarNightScoreAssessmentBoundary {
   completedAtSeconds: number
   beatToSeconds: (beat: number) => number
 }
+
+export type GuitarNightScoreLiveBoundary = GuitarNightScoreAssessmentBoundary
 
 /** Copy every mutable collection whose later edit would rewrite a take. */
 function snapshotReference(
@@ -345,6 +347,8 @@ export function useGuitarNightScoreRoomController(
 
   const buildRun = (
     requestedAssessment?: LoopSpan,
+    boundedMode: 'assessment' | 'live-score' = 'assessment',
+    audibleGuide = false,
   ): GuitarNightScoreRoomRunConfiguration | null => {
     const currentReference = options.reference()
     if (currentReference === null || currentReference.notes.length === 0) {
@@ -380,9 +384,9 @@ export function useGuitarNightScoreRoomController(
     if (requestedAssessment !== undefined && assessmentRange === null) {
       return null
     }
-    const mode = assessmentRange === null ? 'rehearsal' : 'assessment'
+    const mode = assessmentRange === null ? 'rehearsal' : boundedMode
     const loopForRun =
-      mode === 'assessment'
+      mode !== 'rehearsal'
         ? null
         : resolveBandLoop(scheduledLoop(), exerciseBeatsForRun)
     const startBeatForRun = assessmentRange?.start ?? 0
@@ -403,10 +407,17 @@ export function useGuitarNightScoreRoomController(
       beatToSeconds: beatToSecondsForRun,
       secondsToBeat: secondsToBeatForRun,
       loop: loopForRun,
-      hearScore: mode === 'rehearsal' && configuredHearScore(),
-      melody: mode === 'rehearsal' ? scoreToBandMelody(reference) : [],
+      hearScore:
+        mode === 'rehearsal'
+          ? configuredHearScore()
+          : mode === 'live-score' && audibleGuide && configuredHearScore(),
+      melody:
+        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
+          ? scoreToBandMelody(reference)
+          : [],
       melodyVariant: configuredMelodyVariant(),
-      exercisePulse: mode === 'rehearsal',
+      exercisePulse:
+        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide),
     }
   }
 
@@ -519,7 +530,7 @@ export function useGuitarNightScoreRoomController(
     originSeconds = null
     setCountInRemaining(0)
     setStatus('paused')
-    if (run?.mode === 'assessment') setRunningTake(null)
+    if (run !== null && run.mode !== 'rehearsal') setRunningTake(null)
   }
 
   /** Park the playhead exactly where the rail points, without opening audio. */
@@ -623,6 +634,43 @@ export function useGuitarNightScoreRoomController(
     }
   }
 
+  /**
+   * Schedule one evidence-scored range on the same exact boundary as review.
+   * Room-microphone routes keep the range silent so the app cannot grade its
+   * own guide. MIDI may retain the configured guide because its note messages
+   * cannot originate from the room speakers.
+   */
+  const startLiveScore = async (
+    range: LoopSpan,
+    options: { audibleGuide: boolean },
+  ): Promise<GuitarNightScoreLiveBoundary | null> => {
+    const run = buildRun(range, 'live-score', options.audibleGuide)
+    if (run === null || run.mode !== 'live-score') return null
+    const result = await launch(run, run.startBeat, run.countInBeats)
+    if (
+      result?.exerciseStartedAtSeconds === null ||
+      result?.exerciseStartedAtSeconds === undefined ||
+      result.completedAtSeconds === null
+    ) {
+      return null
+    }
+    const context = band.getAudioGraph()?.context
+    if (context === undefined) return null
+    assessmentSequence += 1
+    return {
+      id: `guitar-score-live-${assessmentSequence}`,
+      reference: run.reference,
+      range: { start: run.startBeat, end: run.endBeat },
+      tempoBpm: run.tempoBpm,
+      scoreTempoBpm: run.scoreTempoBpm,
+      countInBeats: run.countInBeats,
+      sampleRate: context.sampleRate,
+      startedAtSeconds: result.exerciseStartedAtSeconds,
+      completedAtSeconds: result.completedAtSeconds,
+      beatToSeconds: run.beatToSeconds,
+    }
+  }
+
   const toggle = (): void => {
     if (
       status() === 'starting' ||
@@ -690,6 +738,7 @@ export function useGuitarNightScoreRoomController(
     countInBeats,
     start,
     startAssessment,
+    startLiveScore,
     pause,
     stop,
     toggle,
