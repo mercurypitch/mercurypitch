@@ -58,6 +58,15 @@ vi.mock('@/stores/uvr-store', () => ({
 }))
 vi.mock('./demo-song', () => ({ isDemoSessionId: () => false }))
 vi.mock('./funnel', () => ({ trackKaraoke: vi.fn() }))
+
+// The real modal drags WebRTC signaling and the bundle machinery in; the
+// scanned-code test only needs to see that the door OPENED.
+const syncStore = vi.hoisted(() => ({ setSyncCodeToJoin: vi.fn() }))
+vi.mock('@/stores/sync-store', () => syncStore)
+vi.mock('@/components/sync/SyncDevicesModal', () => ({
+  default: () => <div role="dialog" data-testid="sync-modal-mock" />,
+  SyncDevicesModal: () => <div role="dialog" data-testid="sync-modal-mock" />,
+}))
 vi.mock('./karaoke-account', () => ({
   credits: () => [],
   refreshCredits: vi.fn(),
@@ -192,5 +201,23 @@ describe('the door to another device', () => {
     // The modal is lazy() precisely so the rail's first paint never pays for
     // WebRTC signaling and the bundle machinery.
     expect(container.querySelector('[role="dialog"]')).toBeNull()
+  })
+
+  it('REQ-SKL-011: a scanned link opens the door and hands over its code', async () => {
+    // karaoke.html has no hash router; the QR shown by THIS page's
+    // receive screen links back to this page, so the rail itself has to
+    // catch #/sync:CODE — otherwise the scan lands on the stage with the
+    // code silently ignored.
+    window.location.hash = '#/sync:ABCD2345'
+    try {
+      const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+      await waitFor(() =>
+        expect(container.querySelector('[role="dialog"]')).not.toBeNull(),
+      )
+      expect(syncStore.setSyncCodeToJoin).toHaveBeenCalledWith('ABCD2345')
+    } finally {
+      window.location.hash = ''
+    }
   })
 })

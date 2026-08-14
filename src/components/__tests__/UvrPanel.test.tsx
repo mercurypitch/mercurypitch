@@ -65,12 +65,26 @@ vi.mock('@/lib/device-tier', async (importOriginal) => {
   return { ...actual, isTvDevice: () => viewportMocks.tv }
 })
 
+// The stashed code a scanned QR leaves behind (read at mount by the
+// auto-open effect), with the modal stubbed so opening it does not pull
+// the WebRTC machinery into this suite.
+const syncMocks = vi.hoisted(() => ({ code: null as string | null }))
+vi.mock('@/stores/sync-store', () => ({
+  syncCodeToJoin: () => syncMocks.code,
+  takeSyncCodeToJoin: () => syncMocks.code,
+}))
+vi.mock('@/components/sync/SyncDevicesModal', () => ({
+  default: () => <div data-testid="sync-modal-mock" />,
+  SyncDevicesModal: () => <div data-testid="sync-modal-mock" />,
+}))
+
 // File-level, not per-describe: a leaked `narrow = true` re-renders every
 // LATER test in the phone layout, where the desktop-only header controls
 // (mode selector, CPU/GPU pills) do not exist.
 beforeEach(() => {
   viewportMocks.narrow = false
   viewportMocks.tv = false
+  syncMocks.code = null
 })
 
 // Mock the entire stores barrel
@@ -274,6 +288,25 @@ describe('UvrPanel Component', () => {
       viewportMocks.tv = true
       render(() => <UvrPanel />)
       expect(screen.queryByTestId('uvr-stage-lead')).toBeNull()
+    })
+  })
+
+  describe('a scanned sync code', () => {
+    it('REQ-SYNC-026: opens the sync modal without another press', async () => {
+      // Scanning the QR lands here with the code stashed. Before the
+      // auto-open, the scan sat inert until somebody happened to press
+      // the sync button — at which point the code autofilled, proving
+      // the stash worked and only the opening was missing.
+      syncMocks.code = 'ABCD2345'
+      render(() => <UvrPanel />)
+      await waitFor(() =>
+        expect(screen.getByTestId('sync-modal-mock')).toBeInTheDocument(),
+      )
+    })
+
+    it('leaves the modal closed when nothing was scanned', () => {
+      render(() => <UvrPanel />)
+      expect(screen.queryByTestId('sync-modal-mock')).toBeNull()
     })
   })
 

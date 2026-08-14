@@ -43,3 +43,18 @@ export function normalizeRoomCode(raw: string): string {
 export function isCompleteRoomCode(raw: string): boolean {
   return normalizeRoomCode(raw).length === ROOM_CODE_LENGTH
 }
+
+/**
+ * The complete sync code carried by a scanned QR link's hash, or null.
+ *
+ * The link format (`#/sync:CODE`) is minted by the sync modal and parsed
+ * in two places — the app's hash router, and the Karaoke Night page,
+ * which has no router. This lives here so neither can drift from the
+ * other: room-code.ts is the one module both trees already import.
+ */
+export function parseSyncLinkHash(hash: string): string | null {
+  const match = /^#\/?sync:([^/?&]+)$/i.exec(hash)
+  if (match === null) return null
+  const code = normalizeRoomCode(match[1] ?? '')
+  return code.length === ROOM_CODE_LENGTH ? code : null
+}
