@@ -272,3 +272,14 @@ exactly how it shipped first.
 _Tests:_ `UvrPanel` — "REQ-SYNC-026: opens the sync modal without
 another press" / "leaves the modal closed when nothing was scanned";
 the Karaoke Night page's half is REQ-SKL-011.
+
+### REQ-SYNC-027 — The queue is popped from the present, not a capture
+
+**WHEN** a song is enqueued WHILE the drain is napping on the busy
+interlock, the system shall still send it. **IF** the drain popped a
+queue captured before its nap, **THEN** the write-back would overwrite
+the newer queue and the song would vanish without a send, a transfer
+row, or an error — the person just watches their "more waiting" note
+disappear.
+_Tests:_ `sync-store` — "REQ-SYNC-027: keeps a song queued while the
+drain waits its turn".
