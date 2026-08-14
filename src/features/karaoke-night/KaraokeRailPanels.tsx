@@ -9,6 +9,7 @@ import { listStemTypes } from '@/db/services/uvr-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
+import { parseSyncLinkHash } from '@/lib/room-code'
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -106,6 +107,20 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     // The stage's playlist sidebar reads this store; warm it here so it's
     // ready by the time a song opens.
     void initKaraokePlaylistStore()
+    // A QR scanned off THIS page's receive screen links back to this page
+    // (#/sync:CODE), and karaoke.html has no hash router to catch it. The
+    // scan already says what the person wants: stash the code and open
+    // the modal, which takes it on mount and joins by itself. The store
+    // is imported dynamically for the same reason the modal is lazy —
+    // a rail first paint must not pay for the WebRTC machinery, and a
+    // scan is the moment that machinery is genuinely wanted.
+    const scanned = parseSyncLinkHash(window.location.hash)
+    if (scanned !== null) {
+      void import('@/stores/sync-store').then((store) => {
+        store.setSyncCodeToJoin(scanned)
+        setSyncOpen(true)
+      })
+    }
   })
 
   const sessions = () => getAllUvrSessionsReactive()

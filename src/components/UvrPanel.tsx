@@ -43,6 +43,7 @@ import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { syncCodeToJoin } from '@/stores/sync-store'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
@@ -243,6 +244,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [syncModalTarget, setSyncModalTarget] = createSignal<{
     sessionId?: string
   } | null>(null)
+
+  // A scanned QR link (#/sync:CODE) lands on this tab with the code
+  // stashed. Opening the modal is the only thing the code is FOR — the
+  // modal takes it on mount, skips the chooser and joins by itself, so
+  // leaving it stashed until somebody happens to press the sync button
+  // strands the scan halfway. One-shot by construction: the modal's
+  // takeSyncCodeToJoin() clears the signal this effect watches.
+  createEffect(() => {
+    if (syncCodeToJoin() !== null && untrack(syncModalTarget) === null) {
+      setSyncModalTarget({})
+    }
+  })
   const [sessionGalleryOpen, setSessionGalleryOpen] = createPersistedSignal(
     'uvr-session-gallery-open',
     true,

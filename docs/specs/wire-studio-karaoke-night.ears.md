@@ -55,3 +55,22 @@ by `REQ-SKL-008` in `KaraokeRailPanels.test.tsx`.
 sync chunk (WebRTC signaling, portable-bundle machinery); the rail's first
 paint never pays for it. Verified by `REQ-SKL-009` in
 `KaraokeRailPanels.test.tsx`.
+
+### REQ-SKL-010 — The sync modal must not carry the app shell
+
+The sync modal's module graph shall not import `@/stores/app-store`. **IF**
+it did, **THEN** opening the sync door on the standalone Karaoke Night page
+would pull the app ENTRY chunk in, whose evaluation renders the entire app
+into that page's `#root` — the app's tab bar stacked under the karaoke
+stage, which is how it shipped (found on a real phone, 2026-08-14; the
+group list comes from `uvr-store`, where it is defined, and app-store only
+re-exports it). Verified by "never reaches for the app shell" in
+`SyncDevicesModal.test.tsx`.
+
+### REQ-SKL-011 — The stage page catches its own scanned link
+
+**WHEN** the Karaoke Night page opens with `#/sync:CODE` in the URL — the QR
+its own receive screen shows links back to this page, and the page has no
+hash router — the system shall stash the code and open the sync door itself,
+so the scan joins unprompted (the studio half is REQ-SYNC-026). Verified by
+`REQ-SKL-011` in `KaraokeRailPanels.test.tsx`.
