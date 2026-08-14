@@ -826,11 +826,6 @@ export function enqueueSongs(sessionIds: string[]): void {
   void drainQueue()
 }
 
-/** Take one song back out of the queue. The one in flight keeps going. */
-export function cancelQueued(sessionId: string): void {
-  setSyncQueue((current) => current.filter((id) => id !== sessionId))
-}
-
 /** Stop after the song in flight — it is already half sent. */
 export function stopQueue(): void {
   setSyncQueue([])
