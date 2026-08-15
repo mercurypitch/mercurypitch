@@ -701,11 +701,19 @@ async function readContainerHeader(
  * locally, so restoring a library onto a phone never needs more free
  * memory than its largest single part.
  */
-export async function restoreFromDrive(): Promise<void> {
+export async function restoreFromDrive(
+  onlyHashes?: readonly string[],
+): Promise<void> {
   forgetIfAccountChanged()
   const scan = driveScan() ?? (await scanDrive())
   if (scan === null) return
-  const queue = scan.toRestore
+  // The picker hands in the hashes somebody ticked; no argument keeps
+  // the original everything-missing restore.
+  const chosen = onlyHashes === undefined ? null : new Set(onlyHashes)
+  const queue =
+    chosen === null
+      ? scan.toRestore
+      : scan.toRestore.filter((c) => chosen.has(c.fileHash))
   if (queue.length === 0) return
 
   setDriveError(null)

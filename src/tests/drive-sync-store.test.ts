@@ -635,6 +635,59 @@ describe('restore', () => {
     expect(ranges[2]).toEqual([header.byteLength + 3, header.byteLength + 8])
   })
 
+  it('REQ-DRV-026: restores only the chosen songs, and keeps the rest on offer', async () => {
+    const manifest = manifestFor('h-2', [3])
+    const header = encodeContainerHeader(manifest)
+    driveMock.listSongs.mockResolvedValue([
+      driveFile('h-1', 'Left Behind', 64),
+      driveFile('h-2', 'Chosen One', header.byteLength + 3),
+    ])
+    const file = new Uint8Array(header.byteLength + 3)
+    file.set(header, 0)
+    file.set(new Uint8Array([1, 1, 1]), header.byteLength)
+    driveMock.downloadRange.mockImplementation((...args: unknown[]) => {
+      const [, start, end] = args as [string, number, number]
+      return Promise.resolve(file.slice(start, end))
+    })
+    bundleMock.importPortableBundle.mockImplementation(
+      async (
+        m: PortableBundleManifest,
+        getPart: (info: PortablePartInfo) => Promise<Uint8Array>,
+      ) => {
+        for (const part of m.parts) await getPart(part)
+        // A real import lands the song in the library; without this the
+        // closing rescan would honestly offer it again.
+        sessions.list = [
+          ...sessions.list,
+          localSession(m.song.fileHash, 'Chosen One.mp3'),
+        ]
+        return { outcome: 'imported', sessionId: 's' }
+      },
+    )
+
+    await scanDrive()
+    await restoreFromDrive(['h-2'])
+
+    // One import, and every byte read named the chosen file.
+    expect(bundleMock.importPortableBundle).toHaveBeenCalledTimes(1)
+    const pulledFrom = driveMock.downloadRange.mock.calls.map((c) => c[0])
+    expect(pulledFrom.length).toBeGreaterThan(0)
+    expect(pulledFrom.every((id) => id === 'file-h-2')).toBe(true)
+    // The song nobody ticked is still on offer for next time.
+    expect(driveScan()?.toRestore.map((c) => c.fileHash)).toEqual(['h-1'])
+    expect(driveJob()).toBeNull()
+  })
+
+  it('an empty choice starts no job at all', async () => {
+    driveMock.listSongs.mockResolvedValue([driveFile('h-1', 'Missing', 64)])
+
+    await scanDrive()
+    await restoreFromDrive([])
+
+    expect(bundleMock.importPortableBundle).not.toHaveBeenCalled()
+    expect(driveJob()).toBeNull()
+  })
+
   it('declines a file that is not one of ours instead of importing it', async () => {
     driveMock.listSongs.mockResolvedValue([driveFile('h-9', 'Not Ours', 64)])
     driveMock.downloadRange.mockResolvedValue(

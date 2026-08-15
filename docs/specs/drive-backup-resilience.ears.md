@@ -200,3 +200,15 @@ the difference between "slow" and "stuck" is numbers that move.
 _Tests:_ `drive-sync-store` — "REQ-DRV-025: the bar and the bytes move
 through one big upload", "REQ-DRV-025: a restore's bar moves inside a
 part, not only between parts".
+
+## REQ-DRV-026 — A restore is a choice, not all-or-nothing
+
+**WHERE** the scan finds songs in Drive that are not on this device, the
+system shall list them by name and size, every one chosen by default,
+and restore exactly the chosen set — the everything-missing restore
+stays one press. **IF** the only restore were the whole list, **THEN**
+somebody with a hundred songs in Drive and room for five on a phone
+could only decline the entire library.
+_Tests:_ `drive-sync-store` — "REQ-DRV-026: restores only the chosen
+songs, and keeps the rest on offer", "an empty choice starts no job at
+all"; `SyncSettings` — "REQ-DRV-026: restores only what is ticked".

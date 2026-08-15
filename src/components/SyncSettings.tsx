@@ -63,6 +63,23 @@ export const SyncSettings: Component = () => {
   const [refused, setRefused] = createSignal(false)
   const [checked, setChecked] = createSignal(false)
   const [connectRefusal, setConnectRefusal] = createSignal<string | null>(null)
+  // The restore picker's memory is the songs someone UNticked, so a fresh
+  // scan arrives with everything chosen — the common case stays one press.
+  const [skippedRestore, setSkippedRestore] = createSignal<ReadonlySet<string>>(
+    new Set(),
+  )
+
+  const restoreChoices = () => driveScan()?.toRestore ?? []
+  const chosenRestore = () =>
+    restoreChoices().filter((c) => !skippedRestore().has(c.fileHash))
+  const toggleRestorePick = (fileHash: string): void => {
+    setSkippedRestore((prev) => {
+      const next = new Set(prev)
+      if (next.has(fileHash)) next.delete(fileHash)
+      else next.add(fileHash)
+      return next
+    })
+  }
 
   const refresh = async (): Promise<void> => {
     setBusy(true)
@@ -382,6 +399,53 @@ export const SyncSettings: Component = () => {
               )}
             </Show>
 
+            {/* What Drive holds that this device does not, each row
+                choosable — a hundred-song Drive must not mean
+                all-or-nothing. Hidden while a job runs; the progress
+                block owns that space. */}
+            <Show when={restoreChoices().length > 0 && driveJob() === null}>
+              <div
+                class={styles.pickList}
+                role="group"
+                aria-label="Songs in Drive to restore"
+              >
+                <label class={`${styles.pickRow} ${styles.pickHead}`}>
+                  <input
+                    type="checkbox"
+                    checked={chosenRestore().length === restoreChoices().length}
+                    onChange={(e) =>
+                      setSkippedRestore(
+                        e.currentTarget.checked
+                          ? new Set()
+                          : new Set(restoreChoices().map((c) => c.fileHash)),
+                      )
+                    }
+                  />
+                  <span class={styles.pickTitle}>In Drive, not here</span>
+                  <span class={styles.pickSize}>
+                    {chosenRestore().length} of {restoreChoices().length} chosen
+                  </span>
+                </label>
+                <For each={restoreChoices()}>
+                  {(candidate) => (
+                    <label class={styles.pickRow}>
+                      <input
+                        type="checkbox"
+                        checked={!skippedRestore().has(candidate.fileHash)}
+                        onChange={() => toggleRestorePick(candidate.fileHash)}
+                      />
+                      <span class={styles.pickTitle}>{candidate.title}</span>
+                      <Show when={candidate.bytes !== undefined}>
+                        <span class={styles.pickSize}>
+                          {megabytes(candidate.bytes ?? 0)}
+                        </span>
+                      </Show>
+                    </label>
+                  )}
+                </For>
+              </div>
+            </Show>
+
             <Show when={driveJob()}>
               {(job) => (
                 <div class={styles.progress}>
@@ -477,15 +541,19 @@ export const SyncSettings: Component = () => {
                     {driveScan()?.toBackUp.length === 1 ? 'song' : 'songs'}
                   </button>
                 </Show>
-                <Show when={(driveScan()?.toRestore.length ?? 0) > 0}>
+                <Show when={restoreChoices().length > 0}>
                   <button
                     type="button"
                     class={panel.settingsActionBtn}
-                    disabled={driveBusy()}
-                    onClick={() => void restoreFromDrive()}
+                    disabled={driveBusy() || chosenRestore().length === 0}
+                    onClick={() =>
+                      void restoreFromDrive(
+                        chosenRestore().map((c) => c.fileHash),
+                      )
+                    }
                   >
-                    Restore {driveScan()?.toRestore.length}{' '}
-                    {driveScan()?.toRestore.length === 1 ? 'song' : 'songs'}
+                    Restore {chosenRestore().length}{' '}
+                    {chosenRestore().length === 1 ? 'song' : 'songs'}
                   </button>
                 </Show>
                 <Show when={driveFolderId()}>
