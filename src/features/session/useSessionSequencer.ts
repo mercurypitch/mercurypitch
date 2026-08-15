@@ -16,7 +16,7 @@ import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import { buildSessionItemMelody } from '@/lib/session-builder'
+import { buildSessionItemMelody, isSessionItemMelodyMissing, } from '@/lib/session-builder'
 import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PlaybackMode, PracticeResult, SessionResult, } from '@/types'
@@ -317,6 +317,17 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       setPlaybackDisplayMelody(scaleItems)
       setPlaybackDisplayBeats(melodyTotalBeats(scaleItems))
       startAfterCompleteCleanup()
+    } else if (isSessionItemMelodyMissing(nextItem)) {
+      // The melody this item names has been deleted. It used to resolve to a
+      // single middle C and the singer was scored against that, under the
+      // label of the melody they wrote. Say so and move on instead; the item
+      // stays in the session, because restoring the melody makes it whole.
+      playbackRuntime.stop()
+      showNotification(
+        `Skipping “${nextItem.label}” — that melody was deleted.`,
+        'warning',
+      )
+      scheduleCleanup(() => handleSessionItemComplete(), 0)
     } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
       const melodyItems = buildSessionItemMelody(nextItem)
       const totalBeats = melodyTotalBeats(melodyItems)
@@ -351,7 +362,13 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
 
   const loadAndPlayMelodyForSession = (melodyId: string): void => {
     const melody = melodyStore.getMelody(melodyId)
-    if (!melody) return
+    if (!melody) {
+      // A session item can outlive its melody on purpose — see
+      // isSessionItemMelodyMissing. Returning in silence left the user
+      // pressing a pill that did nothing at all.
+      showNotification('That melody was deleted.', 'warning')
+      return
+    }
 
     closeSidebar()
     setBpm(melody.bpm)

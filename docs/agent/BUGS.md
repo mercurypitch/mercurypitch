@@ -102,8 +102,8 @@ Confirmed: `deleteMelody` filters `playlists[].melodyKeys` and never touches
 matches — would break `restoreMelody`, the undo path directly below it: undoing
 the delete would bring the melody back with the session items already gone. The
 `missing: true` variant the hunt offered as an alternative is the right shape.
-Left unfixed because it is a product decision about what a session with a
-deleted melody should look like.
+**Fixed** that way, with the state derived rather than stored so the undo needs
+no second write. See the full entry below.
 
 **`index.ts:218` — the `publicCols` half of the query oracle.**
 Only the `privateCols` half is fixed. Rejecting filters on non-public columns
@@ -312,7 +312,7 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 | medium   | `src/lib/hash-router.ts:220`                                         | A malformed percent-escape in the URL hash makes parseHash throw URIError and crash the app                                 | certain    | **FIXED**                                  |
 | medium   | `src/lib/jam/service.ts:152`                                         | Jam ICE recovery timers survive leaving the room and disposing the service                                                  | certain    | **FIXED**                                  |
 | medium   | `src/lib/uvr-processing-pipeline.ts:162`                             | Processing pipeline mutates the live session cache array in place, bypassing copy-on-write                                  | likely     | reported                                   |
-| medium   | `src/stores/melody-store.ts:1041`                                    | Deleting a melody leaves dangling melodyId references in every session that used it                                         | certain    | **CONFIRMED** (fix needs care — see above) |
+| medium   | `src/stores/melody-store.ts:1041`                                    | Deleting a melody leaves dangling melodyId references in every session that used it                                         | certain    | **CONFIRMED** — FIXED                      |
 | medium   | `src/workers/spectral.worker.ts:40`                                  | Spectral worker reads only STFT frame 0, which is half zero-padding — timbre is measured on a decaying half-window          | likely     | reported                                   |
 | medium   | `workers/db-worker/src/billing.ts:925`                               | Stripe checkout grants credits without checking payment_status                                                              | possible   | reported                                   |
 | medium   | `workers/db-worker/src/index.ts:218`                                 | where[] filters accept any column, turning masked/private columns into a query oracle                                       | certain    | **FIXED**                                  |
@@ -746,7 +746,7 @@ The second half is worse than the aliasing: `persistAllSessionsToDb(sessions)` w
 
 ### [medium] Deleting a melody leaves dangling melodyId references in every session that used it
 
-`src/stores/melody-store.ts:1041` — confidence: certain — status: CONFIRMED, unfixed
+`src/stores/melody-store.ts:1041` — confidence: certain — status: FIXED
 
 `deleteMelody` removes the melody from `library.melodies` and carefully filters `melodyKeys` out of every playlist — but it never touches `library.sessions`, whose items carry `melodyId` references to exactly the same melodies (`createMelodyItem`, session-store.ts, and the seeded default session are all built this way).
 
@@ -757,6 +757,12 @@ So the session keeps its item, keeps its label, and plays a one-beat C4 in place
 **Failure scenario.** A user builds a 6-item practice session referencing melodies A–F, then deletes melody C from the library. The session still lists six items with C's original label. On "Play All in sequence", item 3 resolves to `undefined` in `melodyStore.getMelody`, `buildSessionItemMelody` returns the middle-C fallback, and the user is scored against a single C4 note under a label that promises the melody they wrote. Nothing in the editor marks the item as broken.
 
 **Suggested fix.** Extend `deleteMelody` to walk `library.sessions` and either drop items whose `melodyId === key` or mark them (e.g. `missing: true`) so the editor and sequencer can render them as broken and skip them during playback. At minimum, replace the silent fallback in `buildSessionItemMelody` for `type === 'melody'` with an explicit empty result so the sequencer advances past the item instead of scoring a placeholder note.
+
+**Fixed** as the missing-state variant, by owner decision — `deleteMelody` is untouched, so `restoreMelody` still undoes cleanly and a restored melody makes its session items whole again with no second write to keep in step. `isSessionItemMelodyMissing` (session-builder.ts) derives the state instead of storing a `missing: true` flag, for exactly that reason.
+
+`buildSessionItemMelody` now returns `[]` for a melody item that resolves to nothing, the sequencer skips such an item and names it in a notification, `loadAndPlayMelodyForSession` says "That melody was deleted" instead of returning in silence, and LibraryTab stops loading a C4 into the editor when a broken pill is clicked. The editor timeline already rendered "Missing melody" — it was the only surface that did.
+
+One unreachable line went with it: the scale branch carried a second single-note fallback for an empty scale, which `buildMultiOctaveScale` cannot produce (`parseCustomScaleDegrees` returns null below two degrees, never `[]`; every `SCALE_DEFINITIONS` entry has degrees; the last resort is `MAJOR_SCALE_INTERVALS`). A fallback that never fires still reads to the next person as a case that happens.
 
 ### [medium] Spectral worker reads only STFT frame 0, which is half zero-padding — timbre is measured on a decaying half-window
 
