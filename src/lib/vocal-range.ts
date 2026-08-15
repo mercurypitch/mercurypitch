@@ -56,6 +56,19 @@ export function vocalRangeMelodyId(preset: VocalRangePreset): string {
 }
 
 /**
+ * Every melody the auto-select is allowed to put in the roll — and therefore
+ * the only ones it is allowed to take back out.
+ */
+const VOCAL_RANGE_MELODY_IDS: ReadonlySet<string> = new Set(
+  (Object.keys(VOCAL_RANGES) as VocalRangePreset[]).map(vocalRangeMelodyId),
+)
+
+/** Is this melody one the auto-select put there itself? */
+export function isVocalRangeMelody(melodyId: string): boolean {
+  return VOCAL_RANGE_MELODY_IDS.has(melodyId)
+}
+
+/**
  * Which melody the Default Session should open for this voice type, or `null`
  * when it should open nothing.
  *
@@ -78,17 +91,33 @@ export function vocalRangeMelodyId(preset: VocalRangePreset): string {
  * library cannot resolve. The second part matters as much as the first: this
  * runs off an effect on every load, and a real miss here is not the singer
  * pressing a dead pill — it must not borrow that warning.
+ *
+ * `loadedMelodyId` is the third refusal, and the one that only became
+ * necessary once the rest of this worked. Loading a melody REPLACES what is in
+ * the piano roll. For as long as the lookup missed, that was theoretical;
+ * the moment it hit, an effect keyed on the session started overwriting
+ * whatever the singer had open — an import, an edit, a recording — every time
+ * the session settled. A convenience is not allowed to destroy work. So it
+ * declines unless the roll holds one of its own scales, or nothing at all.
  */
 export function pickVocalRangeMelody(
   session: PlaybackSession | null | undefined,
   preset: VocalRangePreset,
   melodyExists: (melodyId: string) => boolean,
+  loadedMelodyId: string | null,
 ): string | null {
   if (session === null || session === undefined || session.id !== 'default') {
     return null
   }
 
   const melodyId = vocalRangeMelodyId(preset)
+  // Already open. Reloading it would restart nothing and lose any edit in
+  // progress on the scale itself.
+  if (loadedMelodyId === melodyId) return null
+  if (loadedMelodyId !== null && !isVocalRangeMelody(loadedMelodyId)) {
+    return null
+  }
+
   const inSession = session.items.some(
     (item) => item.type === 'melody' && item.melodyId === melodyId,
   )

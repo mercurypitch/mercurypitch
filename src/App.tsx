@@ -1395,6 +1395,7 @@ const AppShell: Component<AppProps> = (props) => {
           sessionState as PlaybackSession | null | undefined,
           preset,
           (id) => melodyStore.getMelody(id) !== undefined,
+          melodyStore.currentMelody()?.id ?? null,
         )
 
         if (melodyId !== null) {
