@@ -238,7 +238,19 @@ export const SyncSettings: Component = () => {
       </div>
 
       <div class={panel.settingsSection}>
-        <h3 class={panel.settingsSectionTitle}>Your library</h3>
+        <div class={styles.sectionHead}>
+          <h3 class={panel.settingsSectionTitle}>Your library</h3>
+          <button
+            type="button"
+            class={`${panel.settingsActionBtn} ${styles.iconAction} ${busy() ? styles.spinning : ''}`}
+            disabled={busy()}
+            onClick={() => void refresh()}
+            aria-label="Check again"
+            title="Check again"
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
         <div class={panel.settingsDivider} />
 
         <p class={styles.stat}>
@@ -260,21 +272,27 @@ export const SyncSettings: Component = () => {
           up to your Google Drive below, send it straight to another device from
           the Karaoke tab, or export a song here and import it there.
         </p>
-
-        <button
-          type="button"
-          class={`${panel.settingsActionBtn} ${styles.iconAction} ${styles.action} ${busy() ? styles.spinning : ''}`}
-          disabled={busy()}
-          onClick={() => void refresh()}
-          aria-label="Check again"
-          title="Check again"
-        >
-          <RotateCcw size={16} />
-        </button>
       </div>
 
       <div class={panel.settingsSection}>
-        <h3 class={panel.settingsSectionTitle}>Google Drive</h3>
+        <div class={styles.sectionHead}>
+          <h3 class={panel.settingsSectionTitle}>Google Drive</h3>
+          {/* The check is automatic; the arrow is the nudge for forcing
+              one. It spins only for a scan — during a backup it would
+              otherwise claim a check that is not running. */}
+          <Show when={accountHeld() && driveState() === 'connected'}>
+            <button
+              type="button"
+              class={`${panel.settingsActionBtn} ${styles.iconAction} ${driveBusy() && driveJob() === null ? styles.spinning : ''}`}
+              disabled={driveBusy()}
+              onClick={() => void scanDrive()}
+              aria-label="Check Drive again"
+              title="Check Drive again"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </Show>
+        </div>
         <div class={panel.settingsDivider} />
 
         <Show
@@ -448,16 +466,6 @@ export const SyncSettings: Component = () => {
                   </button>
                 }
               >
-                <button
-                  type="button"
-                  class={`${panel.settingsActionBtn} ${styles.iconAction} ${driveBusy() ? styles.spinning : ''}`}
-                  disabled={driveBusy()}
-                  onClick={() => void scanDrive()}
-                  aria-label="Check Drive again"
-                  title="Check Drive again"
-                >
-                  <RotateCcw size={16} />
-                </button>
                 <Show when={(driveScan()?.toBackUp.length ?? 0) > 0}>
                   <button
                     type="button"
@@ -488,7 +496,8 @@ export const SyncSettings: Component = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <LinkChain size={14} /> Open in Drive
+                      <LinkChain size={14} />
+                      Open in Drive
                     </a>
                   )}
                 </Show>

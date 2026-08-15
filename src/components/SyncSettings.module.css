@@ -95,6 +95,16 @@
   transition: width 0.2s ease;
 }
 
+/* The section title with its refresh arrow on the far edge. The check
+   is automatic, so the arrow lives up in the header as a nudge instead
+   of standing among the real actions. */
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 /* The checks run by themselves now, so the button is a nudge, not the
    mechanism: a small round arrow that spins while a check is in flight,
    so a slow answer reads as working rather than ignored. */

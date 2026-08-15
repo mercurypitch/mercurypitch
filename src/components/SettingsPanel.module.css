@@ -808,6 +808,9 @@ input:checked + .settingsSlider:before {
 .settingsActionBtn {
   display: inline-flex;
   align-items: center;
+  /* Flex drops the whitespace between an icon and its label, so without
+     a gap "Open in Drive" sits welded to its icon. */
+  gap: 8px;
   padding: 8px 16px;
   border-radius: 8px;
   border: 1px solid var(--border);
