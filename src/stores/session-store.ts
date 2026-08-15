@@ -7,6 +7,13 @@ import type { MelodyItem, PlaybackSession, SessionTemplate } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
 import { melodyStore, STORAGE_KEY_SESSION_HIST } from './melody-store'
 
+/**
+ * The seeded Default Session's id. It is a literal rather than a generated one
+ * because everything looks it up by name — `getDefaultSession`, the library
+ * seed, the vocal-range auto-select.
+ */
+export const DEFAULT_SESSION_ID = 'default'
+
 // ── Reactive UI state ──────────────────────────────────────────
 
 export const [userSession, setUserSession] =
@@ -241,12 +248,14 @@ export function templateToSession(template: SessionTemplate): PlaybackSession {
 /**
  * Create new internal/default session.
  *
- * NOTE: `deletable: true` (changed from `false` in v3). The seeded
- * "Default Session" used to be locked from deletion, which made the
- * SessionLibraryModal hide it entirely (filter `deletable === true`)
- * AND prevented `deleteSession` from removing it. Per UX request, the
- * user can now delete it like any other session — and we lazily
- * recreate it via `getDefaultSession()` after a "reset all data".
+ * NOTE: `deletable: true` (changed from `false` in v3). It was flipped to get
+ * the seeded "Default Session" visible in the SessionLibraryModal, which back
+ * then filtered its list on `deletable === true` and so hid it entirely. The
+ * modal no longer filters — `melodyStore.getSessions()` lists everything — so
+ * the flag now only says "not one of the locked internal sessions".
+ *
+ * It does NOT mean the Default Session can be deleted. It cannot; ask
+ * `isDeletableSession`, which knows why.
  */
 export function createInternalSession(
   name: string,
@@ -372,16 +381,48 @@ export function saveSession(session: PlaybackSession): void {
   _saveSessions(sessions)
 }
 
+/**
+ * Whether a session can be removed — and, just as importantly, whether it can
+ * STAY removed.
+ *
+ * The Default Session cannot. Every path that lists or reaches for sessions
+ * ends up in `getDefaultSession()`, which recreates and persists it when it is
+ * missing: `getAll()` does it, and so does the Library tab on each render. It
+ * is not a leak to plug either — that lazy rebuild is what brings the session
+ * back after a "reset all data", and the reset path has no other way to ask.
+ *
+ * v3 made the session deletable so it would appear in the SessionLibraryModal,
+ * which at the time filtered its list on `deletable === true`. That filter is
+ * gone (`melodyStore.getSessions()` lists everything), so the flag was buying
+ * visibility that no longer costs anything — while selling a delete that never
+ * happened. The singer got a confirm dialog, a "Deleted ..." toast, an Undo
+ * that undid nothing, and the session back on the next render.
+ *
+ * One predicate rather than two rules in two places: the UI asks this before
+ * drawing a trash can, `deleteSession` asks it before removing anything, and
+ * neither has to remember why. It also closes the older version of the same
+ * hole — the list stopped filtering on `deletable`, so a locked internal
+ * session had been getting a trash can that did nothing either.
+ */
+export function isDeletableSession<
+  T extends Pick<PlaybackSession, 'id' | 'deletable'>,
+>(session: T | null | undefined): session is T {
+  return (
+    session !== null &&
+    session !== undefined &&
+    session.deletable === true &&
+    session.id !== DEFAULT_SESSION_ID
+  )
+}
+
 /** Delete a user-deletable session */
 export function deleteSession(id: string): boolean {
   const sessions = getAllSessions()
-  const session = sessions[id]
-  if (session?.deletable === true) {
-    delete sessions[id]
-    _saveSessions(sessions)
-    return true
-  }
-  return false
+  if (!isDeletableSession(sessions[id])) return false
+
+  delete sessions[id]
+  _saveSessions(sessions)
+  return true
 }
 
 /** Reset all sessions (clear localStorage and the in-memory library) */

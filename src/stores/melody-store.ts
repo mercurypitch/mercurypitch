@@ -33,8 +33,10 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
       id: 'default',
       name: 'Default Session',
       author: 'System',
-      // Per UX request: the seeded "Default Session" is now user-deletable.
-      // If they reset all data we recreate it via getDefaultSession().
+      // Not "user-deletable" despite the name — see isDeletableSession. The
+      // flag reads "not a locked internal session", which is what keeps this
+      // one listed in the SessionLibraryModal. A reset-all-data still clears
+      // it, and getDefaultSession() rebuilds it.
       deletable: true,
       items: [
         // NOTE: every non-rest item in the default session is a melody
@@ -86,16 +88,17 @@ function loadLibrary(): UnifiedLibrary {
       ) {
         // Ensure default session exists
         const library = parsed as UnifiedLibrary
-        // NOTE: we used to resurrect the default session on every load if
-        // it was missing. That meant a user who deleted "Default Session"
-        // saw it reappear after every reload. Now we only resurrect when
-        // the entire library reset happens (`resetMelodyLibrary` /
-        // `resetAllSessions`), and `seedDefaultSession()` re-runs
-        // explicitly. Mid-session deletion is sticky.
+        // NOTE: loading no longer resurrects a missing default session — but
+        // this comment used to claim that made mid-session deletion sticky,
+        // and it never did. `getDefaultSession()` rebuilds and persists it,
+        // and the Library tab calls that on every render. The session is
+        // permanent in practice, so `isDeletableSession` now says so out loud
+        // rather than letting the UI offer a delete it cannot honour.
         if (library.sessions['default']?.deletable === false) {
-          // Migration: legacy storage had `deletable: false`. Flip it so the
-          // user can delete the default session (and so it actually shows
-          // up in the SessionLibraryModal, which filters by deletable).
+          // Migration: legacy storage had `deletable: false`, which hid the
+          // session from the SessionLibraryModal back when the modal filtered
+          // on this flag. Flip it so those libraries list it like everyone
+          // else's. Deletion is governed by isDeletableSession, not by this.
           library.sessions['default'] = {
             ...library.sessions['default'],
             deletable: true,
@@ -264,8 +267,13 @@ export function updateSession(
   }
 }
 
-export function deleteSession(id: string): void {
-  deleteSessionStore(id)
+/**
+ * Remove a session. Returns whether it actually went — the Default Session is
+ * permanent (see `isDeletableSession`), and a caller that announces a deletion
+ * should announce the one that happened.
+ */
+export function deleteSession(id: string): boolean {
+  return deleteSessionStore(id)
 }
 
 /** Restore a previously deleted session (undo support). */

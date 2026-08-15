@@ -12,7 +12,7 @@ import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
 import { useConfirm } from '@/lib/use-confirm'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showActionNotification, showNotification, } from '@/stores'
-import { createSession, saveSession } from '@/stores/session-store'
+import { createSession, isDeletableSession, saveSession, } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
 import { ConfirmDialog } from './ConfirmDialog'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
@@ -80,7 +80,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   const handleDelete = (id: string) => {
     const session = melodyStore.getSession(id)
-    if (session === undefined) return
+    if (!isDeletableSession(session)) return
     const sessionName = session.name || 'Unnamed'
     confirm.request({
       title: 'Delete Session',
@@ -90,7 +90,10 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
         </>
       ),
       onConfirm: () => {
-        melodyStore.deleteSession(id)
+        // Only say "Deleted" about a session that is actually gone. The old
+        // toast fired unconditionally, which is how deleting the Default
+        // Session came to report a success it had not had.
+        if (!melodyStore.deleteSession(id)) return
         showActionNotification(`Deleted "${sessionName}"`, 'warning', {
           label: 'Undo',
           onClick: () => {
@@ -257,19 +260,25 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                         />
                       </svg>
                     </button>
-                    <button
-                      class={`${modalStyles.actionBtn} delete-btn`}
-                      onClick={() => handleDelete(session.id)}
-                      title="Delete"
-                      aria-label="Delete"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14">
-                        <path
-                          fill="currentColor"
-                          d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                        />
-                      </svg>
-                    </button>
+                    {/* No trash on the Default Session: it is rebuilt on
+                        demand by getDefaultSession(), so deleting it only ever
+                        produced a toast and a session that was still there.
+                        Better to not offer than to offer and not deliver. */}
+                    <Show when={isDeletableSession(session)}>
+                      <button
+                        class={`${modalStyles.actionBtn} delete-btn`}
+                        onClick={() => handleDelete(session.id)}
+                        title="Delete"
+                        aria-label="Delete"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
                   </>
                 )
               }}
