@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import { batch, createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { batch, createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
@@ -26,6 +26,7 @@ import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAc
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { formatBytes } from '@/lib/fetch-progress'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -381,6 +382,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       volume: 0.8,
     }))
   const [extras, setExtras] = createSignal<StemTrack[]>(extraTracks())
+
+  // ── Blob-URL ownership ──────────────────────────────────────────
+  //
+  // A blob URL pins its data for the life of the DOCUMENT, not of the
+  // component that made it, so somebody has to let go — and it has to be
+  // whoever minted it. Two mint here: UvrPanel's openMixerWithStems, which
+  // hands the extras over saying exactly that ("The new StemMixer now owns
+  // these blob URLs") and then never revoked them, and "Add stem" below.
+  // A four-minute stem WAV is 20-60 MB apiece.
+  //
+  // They are held for the whole mount rather than released once decoded,
+  // because decoding does not spend them: the track keeps its url and
+  // re-fetches it on seek (useStemMixerAudioController.ts:588) and on
+  // download (:1284). Revoking after decode would leave both dead.
+  //
+  // props.stems.vocal/instrumental are deliberately absent. Those are the
+  // session store's runtime URLs, still in use by the panel behind us.
+  const stemUrlOwner = createBlobUrlOwner(untrack(extras).map((t) => t.url))
+
+  onCleanup(() => stemUrlOwner.releaseAll())
 
   const tracks = () => {
     const req = props.requestedStems
@@ -1806,8 +1827,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         url,
       })
       if (!ok) {
+        // Nothing holds it now, so let go immediately rather than carrying a
+        // failed add's blob until unmount. Repeated retries are the case that
+        // matters: each one mints another.
+        revokeBlobUrl(url)
         showNotification("Couldn't load that stem — try again.", 'error')
+        return
       }
+      stemUrlOwner.own(url)
     } finally {
       setAddingStem(null)
     }
