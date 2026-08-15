@@ -307,6 +307,41 @@ function canWriteRow(
   }
 }
 
+/**
+ * The first column in `columns` this requester may not read, or null.
+ *
+ * Two policies, one question. `privateCols` names the few columns that must
+ * not leave an otherwise-public table; `publicCols` names the only ones that
+ * may, on a table where everything else is the subject's own business.
+ * Filtering or ordering by any of them turns the mask into a query oracle:
+ * `?where[id]=<victim>&where[leaderboardOptIn]=1` answers a consent question
+ * the response was projected to hide, and `?where[friendCode]=<candidate>` is
+ * a membership test against a linking credential.
+ *
+ * `access: 'user'` is exempt on purpose, and it has to be said out loud rather
+ * than left to the fact that no such table declares publicCols today: those
+ * reads are pinned to the caller's own rows by `scopeRead`, so a filter there
+ * can only reveal something about the caller. Without this clause, the day one
+ * of them gains a publicCols list is the day people stop being able to search
+ * their own history.
+ *
+ * Admins see whole rows, so nothing is hidden from them to probe.
+ */
+function hiddenReadColumn(
+  def: TableDef,
+  admin: boolean,
+  columns: readonly string[],
+): string | null {
+  if (admin || def.access === 'user') return null
+  for (const col of columns) {
+    if (def.privateCols?.includes(col) === true) return col
+    if (def.publicCols !== undefined && !def.publicCols.includes(col)) {
+      return col
+    }
+  }
+  return null
+}
+
 // ── CRUD handlers ────────────────────────────────────────────────────
 
 async function handleList(
@@ -324,28 +359,22 @@ async function handleList(
   const scope = scopeRead(def, q, auth)
   if (scope instanceof Response) return scope
 
-  // A filter is a read. maskPublicRow keeps privateCols out of the response,
-  // but nothing stopped a caller filtering ON one — and a filter that changes
-  // whether a row comes back answers the same question the mask refused, one
-  // bit at a time. Rejecting rather than ignoring: silently dropping the filter
-  // would widen the result set and look like the query succeeded.
+  // A filter is a read, and so is a sort. `maskPublicRow` keeps hidden columns
+  // out of the response, but nothing stopped a caller filtering or ordering ON
+  // one — and a filter that changes whether a row comes back answers the same
+  // question the mask refused, one bit at a time. An `orderBy` is the same
+  // oracle with a binary search attached: paginate a sort on a hidden column
+  // and you recover its value without ever reading it.
   //
-  // Scoped to privateCols on purpose. Those are documented as admin-only reads,
-  // so refusing them cannot break a legitimate caller. The publicCols case is a
-  // real oracle too, but narrowing it needs a product decision — on a `user`
-  // table, scopeRead already restricts rows to the caller, so filtering by a
-  // non-public column there reveals nothing about anyone else. See
-  // docs/agent/BUGS.md.
-  if (!admin && def.privateCols !== undefined) {
-    const privateFilter = q.filters.find(([col]) =>
-      def.privateCols?.includes(col),
-    )
-    if (privateFilter) {
-      return respond(
-        { error: `Cannot filter on "${privateFilter[0]}"` },
-        { status: 400 },
-      )
-    }
+  // Rejecting rather than ignoring. Silently dropping a filter would widen the
+  // result set and still look like the query succeeded, which is worse than an
+  // error — the caller acts on rows it did not ask for.
+  const hidden = hiddenReadColumn(def, admin, [
+    ...q.filters.map(([col]) => col),
+    ...(q.orderBy !== undefined ? [q.orderBy] : []),
+  ])
+  if (hidden !== null) {
+    return respond({ error: `Cannot filter on "${hidden}"` }, { status: 400 })
   }
 
   const clauses: string[] = []

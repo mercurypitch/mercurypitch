@@ -106,10 +106,12 @@ the delete would bring the melody back with the session items already gone. The
 no second write. See the full entry below.
 
 **`index.ts:218` — the `publicCols` half of the query oracle.**
-Only the `privateCols` half is fixed. Rejecting filters on non-public columns
-would also block a user filtering their _own_ rows on a `user`-scoped table,
-where `scopeRead` already restricts the result set and no oracle exists. Closing
-that half needs a policy decision, not a patch.
+**Now fixed too.** The worry that it would block a singer filtering their own
+rows on a `user`-scoped table was right, and is handled by exempting
+`access: 'user'` outright — `scopeRead` pins those reads to the caller, so a
+filter there can only reveal something about the caller. `orderBy` went the
+same way, which the original entry had missed: paginating a sort on a hidden
+column recovers its value without ever reading it.
 
 ## A defect the hunt missed, found by reviewing the fixes
 
@@ -799,6 +801,12 @@ The result is a boolean oracle over every hidden column of every publicly-readab
 **Failure scenario.** Unauthenticated attacker issues `GET /api/userProfiles?where[id]=<victim>&where[leaderboardOptIn]=1` — a non-empty array means the victim opted in, an empty array means they did not, even though `leaderboardOptIn` is absent from `publicCols`. Iterating `where[currentStreak]=0..365` recovers the exact streak the profile mask exists to hide; `where[lastPracticeDate]=2026-08-13` reveals whether they practised yesterday. `GET /api/userProfiles/count?where[friendCode]=<candidate>` is an unrate-limited membership test against the friend-code space, bypassing the `friend-redeem` 20/5min limiter entirely.
 
 **Suggested fix.** Constrain filterable columns to what the requester may read: in `parseListQuery`/`handleList`, reject (400) any `where[col]` that is not in `def.publicCols` (when the requester is neither owner nor admin) and that is in `def.privateCols`. Also add a read rate limit to the generic list/count routes, which are currently the only unmetered D1 surface.
+
+**Fixed** in `hiddenReadColumn` (index.ts), which answers one question for both policies: may this requester read this column? A filter or an `orderBy` naming a column outside `publicCols`, or inside `privateCols`, is rejected with 400 rather than dropped — dropping it would widen the result set and still look like the query succeeded. `orderBy` was not in the original suggestion and is the same oracle with a binary search attached.
+
+`access: 'user'` is exempt, and deliberately says so in code rather than relying on the fact that no such table declares `publicCols` today: `scopeRead` pins those reads to the caller's own rows, so a filter there reveals nothing about anybody else, and the day one of them gains a `publicCols` list must not be the day singers lose search over their own history. The test gives `sessionRecords` one for its duration, since the rule is about the shape of a table definition rather than about today's tables.
+
+**Not done: the read rate limit.** The generic list/count routes remain the only unmetered D1 surface. Adding a bucket there is the one change in this set with a plausible regression — anonymous callers are keyed by IP, and a classroom of devices cold-starting together makes tens of reads each, so any limit tight enough to bother a prober is tight enough to break a music lab. With the column policy in place the probe is answered 400 on the first request, so the limiter would be bounding a query that no longer works. Revisit if reads become a cost problem rather than a disclosure one.
 
 ### [low] Target-pitch tolerance band on the practice canvas is 0.1 cents wide, so it renders as zero pixels
 
