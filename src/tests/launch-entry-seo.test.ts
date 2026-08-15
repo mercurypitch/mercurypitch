@@ -65,7 +65,9 @@ describe('launch entry documents', () => {
   it('builds Piano Night from a dedicated noindex pilot document', () => {
     const document = repoHtml('piano-night.html')
     const vite = repoFile('vite.config.ts')
-    const serviceWorker = repoFile('src/sw.ts')
+    // The standalone-document list lives with the rest of the worker's routing
+    // rules, which moved out of src/sw.ts into src/lib/sw-runtime.ts.
+    const serviceWorker = repoFile('src/lib/sw-runtime.ts')
     const sitemap = repoFile('public/sitemap.xml')
 
     expect(document.title).toBe('Piano Night — MercuryPitch')
