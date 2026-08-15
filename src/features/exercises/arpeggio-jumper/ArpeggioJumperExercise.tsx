@@ -150,8 +150,8 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
             selected={startNote()}
             onChange={setStartNote}
           />
-          <div class="exercise-target-selector">
-            <label>Chord:</label>
+          <label class="exercise-target-selector">
+            <span>Chord</span>
             <select
               value={arpeggioType()}
               onChange={(e) =>
@@ -162,9 +162,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
                 {(s) => <option value={s.value}>{s.label}</option>}
               </For>
             </select>
-          </div>
-          <div class="exercise-target-selector">
-            <label>Direction:</label>
+          </label>
+          <label class="exercise-target-selector">
+            <span>Direction</span>
             <select
               value={direction()}
               onChange={(e) =>
@@ -174,7 +174,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
               <option value="up">Ascending</option>
               <option value="down">Descending</option>
             </select>
-          </div>
+          </label>
           <div
             class="exercise-timer-toggle"
             role="group"

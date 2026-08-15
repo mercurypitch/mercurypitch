@@ -1,5 +1,6 @@
 import type { Accessor } from 'solid-js'
 import { Show } from 'solid-js'
+import { IconChevronRight } from '@/components/exercise-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
 import CallResponseExercise from '@/features/exercises/call-response/CallResponseExercise'
@@ -48,27 +49,29 @@ export function ExercisesPage(props: ExercisesPageProps) {
       <Show
         when={props.selectedExercise()}
         fallback={
-          <>
-            <Show when={props.onOpenZen !== undefined}>
-              <section class={styles.zenEntry} aria-label="Guided pitch loops">
-                <div>
-                  <span>New practice space</span>
-                  <h2>Guided pitch loops</h2>
-                  <p>
-                    Sing short vocal patterns on a focused two-octave canvas,
-                    then compare each pass.
-                  </p>
-                </div>
-                <button type="button" onClick={() => props.onOpenZen?.()}>
-                  Open Zen exercises
+          <ExerciseMenu
+            onSelect={(type) => props.onSelect(type)}
+            onQuickStart={props.onQuickStart}
+            headerAction={
+              <Show when={props.onOpenZen !== undefined}>
+                {/* Was a full-width banner above the gallery — a 110px card
+                    with its own heading, sitting where the page's title
+                    should be. It is one entry point among eighteen, so it
+                    gets a chip beside the title instead of a row of its
+                    own. The description it used to carry is on the Zen page
+                    it opens. */}
+                <button
+                  type="button"
+                  class={styles.zenChip}
+                  onClick={() => props.onOpenZen?.()}
+                >
+                  <span class={styles.zenChipBadge}>New</span>
+                  <span class={styles.zenChipLabel}>Guided pitch loops</span>
+                  <IconChevronRight size={15} />
                 </button>
-              </section>
-            </Show>
-            <ExerciseMenu
-              onSelect={(type) => props.onSelect(type)}
-              onQuickStart={props.onQuickStart}
-            />
-          </>
+              </Show>
+            }
+          />
         }
       >
         <Show when={props.selectedExercise() === 'warmup'}>

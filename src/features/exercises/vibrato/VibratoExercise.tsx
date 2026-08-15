@@ -151,8 +151,11 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
                 )}
               </For>
             </div>
+            {/* Inside the row, not after it: the hint describes the style
+                you just picked, and as a sibling of the row it read as a
+                third unrelated thing in the column. */}
+            <p class="vibrato-style-hint">{currentStyle().hint}</p>
           </div>
-          <p class="vibrato-style-hint">{currentStyle().hint}</p>
           <label class="exercise-toggle-row">
             <input
               type="checkbox"

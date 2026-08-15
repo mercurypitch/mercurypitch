@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconFire } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
@@ -12,6 +12,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNote } from '@/lib/scale-data'
+import { isNarrow } from '@/lib/use-viewport'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
@@ -239,37 +240,41 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
-            A coached vocal warmup: breathing, hums, lip trills, sirens, and a
-            light scale. Follow the steps — no grades, just get the voice
-            moving.
+            A coached warmup — breathing, hums, lip trills, sirens, a light
+            scale. No grades, just get the voice moving.
           </p>
-          <p class="exercise-idle-target-note">
-            {WARMUP_PATTERN_LABELS[pattern()]} · ~
-            {Math.round(warmupTotalSeconds(steps()) / 60)} min · around{' '}
-            <strong>{comfortNote()}</strong>
-          </p>
+          {/* Only where the settings are behind the sheet button. Beside a
+              routine picker and a dial that both say the same thing, this
+              line was a row spent restating the two rows under it. */}
+          <Show when={isNarrow()}>
+            <p class="exercise-idle-target-note">
+              {WARMUP_PATTERN_LABELS[pattern()]} · ~
+              {Math.round(warmupTotalSeconds(steps()) / 60)} min · around{' '}
+              <strong>{comfortNote()}</strong>
+            </p>
+          </Show>
         </div>
       }
       settingsSheetLabel="Routine & comfort note"
       idleSettings={
         <>
-          <div class="routine-picker">
+          {/* Six routines were six pills wrapping to three rows of a panel
+              that is short of them, and the only multi-choice control in the
+              drills drawn as pills. A select is one row and the same control
+              the scale and arpeggio drills already use. */}
+          <label class="exercise-target-selector">
             <span class="routine-picker-label">Routine</span>
-            <div class="routine-row">
+            <select
+              value={pattern()}
+              onChange={(e) =>
+                setPattern(e.currentTarget.value as WarmupPattern)
+              }
+            >
               <For each={PATTERN_ORDER}>
-                {(p) => (
-                  <button
-                    type="button"
-                    class={`routine-pill${pattern() === p ? ' routine-pill-selected' : ''}`}
-                    onClick={() => setPattern(p)}
-                    aria-pressed={pattern() === p}
-                  >
-                    {WARMUP_PATTERN_LABELS[p]}
-                  </button>
-                )}
+                {(p) => <option value={p}>{WARMUP_PATTERN_LABELS[p]}</option>}
               </For>
-            </div>
-          </div>
+            </select>
+          </label>
           <NoteDial
             class="warmup-comfort-note"
             label="Comfort note"

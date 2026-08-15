@@ -91,12 +91,12 @@
      reason; beside the launch column it can afford to be smaller still, and
      the room it gives back is the room Start needs. */
   .exercise-idle-center {
-    gap: 10px;
-    padding: 8px 16px;
+    gap: 8px;
+    padding: 6px 16px;
   }
 
   .exercise-idle-setup svg[class*='face'] {
-    width: clamp(150px, min(34vw, 38dvh), 220px);
+    width: clamp(150px, min(34vw, 34dvh), 200px);
   }
 
   /* Here the split happens whether or not there is a timer: a stacked dial
@@ -117,7 +117,7 @@
     .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-launch {
       align-items: stretch;
       flex: 0 0 auto;
-      width: min(300px, 40vw);
+      width: min(260px, 30vw);
     }
 
     .exercise-idle-body:has(.exercise-timer-field)

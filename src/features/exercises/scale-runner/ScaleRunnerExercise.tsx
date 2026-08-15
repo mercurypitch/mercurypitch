@@ -138,8 +138,8 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
             selected={startNote()}
             onChange={setStartNote}
           />
-          <div class="exercise-target-selector">
-            <label>Scale:</label>
+          <label class="exercise-target-selector">
+            <span>Scale</span>
             <select
               value={scaleType()}
               onChange={(e) => setScaleType(e.currentTarget.value as ScaleType)}
@@ -148,9 +148,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
                 {(s) => <option value={s.value}>{s.label}</option>}
               </For>
             </select>
-          </div>
-          <div class="exercise-target-selector">
-            <label>Direction:</label>
+          </label>
+          <label class="exercise-target-selector">
+            <span>Direction</span>
             <select
               value={direction()}
               onChange={(e) =>
@@ -160,7 +160,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
               <option value="up">Ascending</option>
               <option value="down">Descending</option>
             </select>
-          </div>
+          </label>
         </>
       }
       onStart={() => void handleStart()}
