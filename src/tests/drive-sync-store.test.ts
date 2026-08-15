@@ -175,6 +175,26 @@ describe('scan', () => {
     expect(scan?.toRestore[0]?.title).toBe('Only In Drive')
   })
 
+  it('REQ-DRV-027: a song Drive holds twice is offered once — the newest copy', async () => {
+    // An interrupted-and-retried backup left the same song in the folder
+    // twice. Two picker rows keyed by one hash shared their checkbox:
+    // ticking one ticked its twin.
+    driveMock.listSongs.mockResolvedValue([
+      { ...driveFile('h-1', 'Twice Uploaded'), fileId: 'file-old' },
+      {
+        ...driveFile('h-1', 'Twice Uploaded'),
+        fileId: 'file-new',
+        modifiedTime: '2026-03-05T00:00:00Z',
+      },
+    ])
+
+    const scan = await scanDrive()
+
+    expect(scan?.inDrive).toBe(1)
+    expect(scan?.toRestore).toHaveLength(1)
+    expect(scan?.toRestore[0]?.ref).toBe('file-new')
+  })
+
   it('ignores songs this device cannot actually send', async () => {
     sessions.list = [
       { ...localSession('h-1', 'Done.mp3') },
