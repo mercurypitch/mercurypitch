@@ -1,6 +1,7 @@
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
+import type { PlaybackSession } from '@/types'
 
 /**
  * Return the comfortable MIDI range for a given voice type preset.
@@ -43,4 +44,54 @@ export function getNoteOptions(preset: VocalRangePreset): string[] {
     notes.push(midiToNoteName(midi))
   }
   return notes
+}
+
+/**
+ * The library melody a voice type should open on: the major scale rooted in
+ * that voice's default octave, so a bass lands on `scale-major-c2` and a
+ * soprano on `scale-major-c4`.
+ */
+export function vocalRangeMelodyId(preset: VocalRangePreset): string {
+  return `scale-major-c${VOCAL_RANGES[preset].defaultOctave}`
+}
+
+/**
+ * Which melody the Default Session should open for this voice type, or `null`
+ * when it should open nothing.
+ *
+ * Two id namespaces meet here and they do not interchange. A `SessionItem`
+ * carries its own `id` — a generated key, unique per item, meaningless to the
+ * melody library — and separately a `melodyId` pointing at the library entry
+ * it plays. The caller of this auto-select fed the ITEM id to the loader,
+ * which looks its argument up with `melodyStore.getMelody`. That lookup could
+ * never hit: the default session's items are built with
+ * `generateSessionItemId()`, so no item id is ever a melody id.
+ *
+ * The consequence was invisible for as long as a miss returned in silence —
+ * the auto-select simply never worked, and nobody knew there was a feature to
+ * miss. Once the loader started warning on a miss (a session item may outlive
+ * its melody, and a pill that did nothing at all was worse), the same dead
+ * lookup started announcing "That melody was deleted." on every single page
+ * load, about a melody sitting right there in the library.
+ *
+ * So this returns a MELODY id, and returns `null` rather than a melody the
+ * library cannot resolve. The second part matters as much as the first: this
+ * runs off an effect on every load, and a real miss here is not the singer
+ * pressing a dead pill — it must not borrow that warning.
+ */
+export function pickVocalRangeMelody(
+  session: PlaybackSession | null | undefined,
+  preset: VocalRangePreset,
+  melodyExists: (melodyId: string) => boolean,
+): string | null {
+  if (session === null || session === undefined || session.id !== 'default') {
+    return null
+  }
+
+  const melodyId = vocalRangeMelodyId(preset)
+  const inSession = session.items.some(
+    (item) => item.type === 'melody' && item.melodyId === melodyId,
+  )
+
+  return inSession && melodyExists(melodyId) ? melodyId : null
 }
