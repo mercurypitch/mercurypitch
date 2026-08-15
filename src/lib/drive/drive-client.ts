@@ -389,12 +389,42 @@ export function createDriveClient(deps: DriveClientDeps) {
     fileId: string,
     start: number,
     endExclusive: number,
+    opts: {
+      /** Cumulative bytes received, reported as the body streams in — a
+       *  big part on a slow connection is minutes, and a bar that only
+       *  moves between parts reads as stuck for all of them. */
+      onBytes?: (receivedBytes: number) => void
+      signal?: { aborted: boolean }
+    } = {},
   ): Promise<Uint8Array> {
     const res = await request(`${API}/files/${fileId}?alt=media`, {
       headers: { Range: `bytes=${start}-${endExclusive - 1}` },
     })
     if (res.status === 206) {
-      return new Uint8Array(await res.arrayBuffer())
+      if (res.body === null) {
+        return new Uint8Array(await res.arrayBuffer())
+      }
+      const reader = res.body.getReader()
+      const chunks: Uint8Array[] = []
+      let received = 0
+      for (;;) {
+        if (opts.signal?.aborted === true) {
+          await reader.cancel().catch(() => {})
+          throw new DriveApiError(0, 'The download was cancelled.')
+        }
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value)
+        received += value.byteLength
+        opts.onBytes?.(received)
+      }
+      const out = new Uint8Array(received)
+      let at = 0
+      for (const chunk of chunks) {
+        out.set(chunk, at)
+        at += chunk.byteLength
+      }
+      return out
     }
     if (res.ok) {
       const whole = new Uint8Array(await res.arrayBuffer())

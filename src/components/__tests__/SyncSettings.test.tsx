@@ -34,8 +34,9 @@ vi.mock('@/db/persistent-storage', () => ({
   isStoragePersisted: () => Promise.resolve(true),
   requestPersistentStorage: () => Promise.resolve(true),
 }))
+const auth = vi.hoisted(() => ({ held: false }))
 vi.mock('@/db/services/auth-service', () => ({
-  accountHeld: () => false,
+  accountHeld: () => auth.held,
   takeDriveConnectResult: () => null,
 }))
 vi.mock('@/db/services/song-manifest-service', () => ({
@@ -46,6 +47,15 @@ vi.mock('@/lib/pwa-install', () => ({
   isStandalone: () => true,
   needsIosInstallHint: () => false,
 }))
+const drive = vi.hoisted(() => ({
+  state: 'unknown' as string,
+  scan: null as unknown,
+  job: null as unknown,
+  stopping: false,
+  refreshDriveStatus: vi.fn(() => Promise.resolve()),
+  scanDrive: vi.fn(() => Promise.resolve(null)),
+  stopDriveJob: vi.fn(),
+}))
 vi.mock('@/stores/drive-sync-store', () => ({
   backUpToDrive: vi.fn(),
   connectDrive: vi.fn(),
@@ -54,14 +64,15 @@ vi.mock('@/stores/drive-sync-store', () => ({
   driveEmail: () => null,
   driveError: () => null,
   driveFolderId: () => null,
-  driveJob: () => null,
+  driveJob: () => drive.job,
   driveJobFailures: () => [],
-  driveScan: () => null,
-  driveState: () => 'unknown',
-  refreshDriveStatus: vi.fn(() => Promise.resolve()),
+  driveJobStopping: () => drive.stopping,
+  driveScan: () => drive.scan,
+  driveState: () => drive.state,
+  refreshDriveStatus: drive.refreshDriveStatus,
   restoreFromDrive: vi.fn(),
-  scanDrive: vi.fn(() => Promise.resolve(null)),
-  stopDriveJob: vi.fn(),
+  scanDrive: drive.scanDrive,
+  stopDriveJob: drive.stopDriveJob,
 }))
 vi.mock('../InstallAppButton', () => ({ InstallAppButton: () => null }))
 
@@ -72,6 +83,13 @@ function completedSession(id: string): Record<string, unknown> {
 beforeEach(() => {
   uvr.sessions = []
   uvr.readyPromise = Promise.resolve()
+  auth.held = false
+  drive.state = 'unknown'
+  drive.scan = null
+  drive.job = null
+  drive.stopping = false
+  drive.refreshDriveStatus.mockClear()
+  drive.scanDrive.mockClear()
 })
 
 afterEach(() => cleanup())
@@ -107,5 +125,60 @@ describe('the device count', () => {
     await waitFor(() => {
       expect(screen.getByText('1')).toBeTruthy()
     })
+  })
+})
+
+describe('the Drive section', () => {
+  it('REQ-DRV-023: checks a connected Drive by itself on arrival', async () => {
+    auth.held = true
+    drive.state = 'connected'
+
+    render(() => <SyncSettings />)
+
+    // No button pressed: the check is one folder listing, and the
+    // section should open with answers instead of another button.
+    await waitFor(() => expect(drive.scanDrive).toHaveBeenCalledTimes(1))
+  })
+
+  it('keeps a comparison it already holds instead of re-scanning', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    drive.scan = { inDrive: 3, here: 3, toBackUp: [], toRestore: [] }
+
+    render(() => <SyncSettings />)
+
+    await waitFor(() =>
+      expect(drive.refreshDriveStatus).toHaveBeenCalledTimes(1),
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(drive.scanDrive).not.toHaveBeenCalled()
+  })
+
+  it('REQ-DRV-024: says it is stopping once Stop is pressed', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    drive.job = {
+      kind: 'backup',
+      title: 'Big Song',
+      done: 1,
+      total: 5,
+      ratio: 0.6,
+      failed: 0,
+      movedBytes: 12_000_000,
+      totalBytes: 40_000_000,
+    }
+    drive.stopping = true
+
+    render(() => <SyncSettings />)
+
+    await waitFor(() => {
+      const button = screen.getByText(
+        'Stopping after this song…',
+      ) as HTMLButtonElement
+      expect(button.disabled).toBe(true)
+    })
+    // The byte figures ride the same label, so a big song on a slow
+    // connection reads as moving rather than stuck.
+    expect(screen.getByText(/11 MB of 38 MB/)).toBeTruthy()
   })
 })

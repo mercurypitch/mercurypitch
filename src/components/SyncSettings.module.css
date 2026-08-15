@@ -95,6 +95,59 @@
   transition: width 0.2s ease;
 }
 
+/* The checks run by themselves now, so the button is a nudge, not the
+   mechanism: a small round arrow that spins while a check is in flight,
+   so a slow answer reads as working rather than ignored. */
+.iconAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.spinning svg {
+  animation: syncSpin 1s linear infinite;
+}
+
+/* The arrow on the icon points counter-clockwise; spinning it the other
+   way reads as rewinding. */
+@keyframes syncSpin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* The scan's own bar. Indeterminate, because listing a Drive folder has
+   no honest fraction -- it exists so a slow connection reads as
+   "checking" instead of a page that ignored the visit. */
+.scanTrack {
+  height: 4px;
+  margin: 2px 0 8px;
+  border-radius: 2px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.scanFill {
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: syncSlide 1.2s ease-in-out infinite;
+}
+
+@keyframes syncSlide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+
 /* A failure that the job stepped over rather than stopped for. Stated in
    the section, not as a toast, because the toast is gone by the time
    somebody wonders which songs did not make it. */

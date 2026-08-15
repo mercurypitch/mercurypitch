@@ -159,3 +159,42 @@ to delete a paid library on a transient IndexedDB error.
 _Tests:_ `uvr-session-reconcile` — "REQ-DRV-022: a degraded stem read
 answers unknown, never absent", "keeps a paid session when the stem
 read fails transiently".
+
+## REQ-DRV-023 — A connected Drive is checked without being asked
+
+**WHEN** the Settings sync page opens WHILE Drive is connected, the
+system shall run the Drive comparison by itself — it is one folder
+listing — showing an indeterminate bar while it runs, and shall keep a
+comparison already held from this session rather than re-listing on
+every visit. The manual button remains as a refresh arrow for forcing a
+re-check. **IF** the page only ever answered to a button, **THEN** the
+section would open as a question ("Check Drive") about information the
+app could simply have fetched.
+_Tests:_ `SyncSettings` — "REQ-DRV-023: checks a connected Drive by
+itself on arrival", "keeps a comparison it already holds instead of
+re-scanning".
+
+## REQ-DRV-024 — Stop is acknowledged the moment it is pressed
+
+**WHEN** somebody presses Stop during a backup or restore, the system
+shall immediately disable the button and say the job is stopping after
+the song in flight (which finishes so it is not re-moved from zero next
+time). **IF** the press changed nothing on screen, **THEN** it reads as
+ignored and gets pressed again and again — the shipped experience.
+_Tests:_ `drive-sync-store` — "REQ-DRV-024: acknowledges Stop while the
+song in flight finishes"; `SyncSettings` — "REQ-DRV-024: says it is
+stopping once Stop is pressed".
+
+## REQ-DRV-025 — The bar moves through a song, not only between songs
+
+**WHILE** a song is being uploaded or downloaded, the system shall move
+the progress bar with the actual bytes on the wire and show the moved /
+total figures beside the song count. Uploads split the per-song bar
+evenly between packing and pushing (neither side dominates on every
+connection); downloads stream, so the bar moves inside a part rather
+than jumping once per part. **IF** the bar only moved at coarse
+boundaries, **THEN** a big song on a slow connection reads as a hang —
+the difference between "slow" and "stuck" is numbers that move.
+_Tests:_ `drive-sync-store` — "REQ-DRV-025: the bar and the bytes move
+through one big upload", "REQ-DRV-025: a restore's bar moves inside a
+part, not only between parts".
