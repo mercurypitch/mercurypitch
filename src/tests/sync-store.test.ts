@@ -63,9 +63,13 @@ const uvr = vi.hoisted(() => ({
     | undefined,
   /** Set by the queue tests, which need the ids to be told apart. */
   byId: null as Record<string, Record<string, unknown>> | null,
+  /** The whole library, for the hello's hash announcement. */
+  all: [] as Record<string, unknown>[],
 }))
 vi.mock('@/stores/uvr-store', () => ({
   getUvrSession: (id: string) => uvr.byId?.[id] ?? uvr.session,
+  getAllUvrSessions: () => uvr.all,
+  initSessionStore: () => Promise.resolve(),
 }))
 
 const notes = vi.hoisted(() => ({ showNotification: vi.fn() }))
@@ -84,7 +88,7 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncPeerSongs, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
 import { closeSyncModal, openSyncModal } from '@/stores/sync-ui'
 import type { UvrSession } from '@/stores/uvr-store'
 
@@ -102,6 +106,7 @@ beforeEach(async () => {
   peerMock.peerId = 'peer-1'
   uvr.session = { id: 's1', fileHash: 'hash-1' }
   uvr.byId = null
+  uvr.all = []
   route.awaitDirectRoute.mockResolvedValue('direct')
   // `clearAllMocks` forgets calls but keeps implementations, so anything
   // a test points at a different answer has to be pointed back by hand.
@@ -760,5 +765,62 @@ describe('the dialog is a view; the session is not', () => {
     // Enabled the moment packing started; released once nothing moved.
     expect(wake.enable).toHaveBeenCalledTimes(1)
     await vi.waitFor(() => expect(wake.disable).toHaveBeenCalledTimes(1))
+  })
+})
+
+describe('what each device knows about the far library', () => {
+  it('REQ-SYNC-034: the hello carries this library, by hash', async () => {
+    uvr.all = [
+      { status: 'completed', fileHash: 'hash-1' },
+      // A duplicate separation of the same file is one song over there.
+      { status: 'completed', fileHash: 'hash-1' },
+      // No identity, nothing the far device could recognise.
+      { status: 'completed', fileHash: '' },
+      // Still separating — there are no stems to be "already there".
+      { status: 'processing', fileHash: 'hash-2' },
+    ]
+    await connect()
+
+    await vi.waitFor(() => {
+      const hello = peerMock.sendControl.mock.calls
+        .map((call) => call[1] as { type?: string; songHashes?: string[] })
+        .find((msg) => msg.type === 'sync-hello')
+      expect(hello?.songHashes).toEqual(['hash-1'])
+    })
+  })
+
+  it('REQ-SYNC-034: the far library is remembered, and dies with the peer', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'TV',
+      songHashes: ['h9'],
+    })
+    expect(syncPeerSongs()?.has('h9')).toBe(true)
+
+    peerMock.handlers?.onPeerLeft('peer-1')
+    // The next device on the same code has a different library; stale
+    // hashes would mark ITS missing songs as already-there.
+    expect(syncPeerSongs()).toBeNull()
+  })
+
+  it('a hello that says nothing about songs means unknown, not empty', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-hello', label: 'TV' })
+    expect(syncPeerSongs()).toBeNull()
+  })
+
+  it('REQ-SYNC-035: a peer that comes back is welcomed behind a hidden dialog', async () => {
+    await connect()
+    peerMock.handlers?.onPeerLeft('peer-1')
+    expect(syncState()).toBe('waiting')
+
+    peerMock.handlers?.onChannelReady('peer-1', 'Computer')
+
+    expect(syncState()).toBe('connected')
+    expect(notes.showNotification).toHaveBeenCalledWith(
+      'Reconnected to Computer.',
+      'success',
+    )
   })
 })

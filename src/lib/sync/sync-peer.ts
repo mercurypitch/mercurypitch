@@ -138,10 +138,40 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
    * page reload. Removing it first is what lets a re-announced peer
    * build a fresh connection.
    */
-  function losePeer(peerId: string): void {
+  function losePeer(peerId: string, retry = false): void {
     if (!peerConnections.has(peerId) && !dataChannels.has(peerId)) return
+    const displayName = displayNames.get(peerId) ?? 'Another device'
     dropPeer(peerId)
     cb.onPeerLeft(peerId)
+    // A pair that died while both devices stayed in the room (a Wi-Fi
+    // wobble, a phone carried through a doorway) can simply be rebuilt —
+    // the pairing is warm state now (REQ-SYNC-030), and nobody should
+    // retype a code over a two-second blip. Signaling-level departures
+    // do not retry: an offer to a peer that left the room lands nowhere.
+    if (retry) scheduleReconnect(peerId, displayName)
+  }
+
+  /**
+   * Try to rebuild a dropped pair while both sides are still in the
+   * room — twice, then let the store's arrival deadline speak. The same
+   * glare rule as a fresh join picks one initiator; the polite side only
+   * restores the display name and waits for the offer. This is not ICE
+   * restart: it is a brand-new connection, which is exactly what
+   * losePeer removing the corpse makes possible. A transfer that was in
+   * flight has already failed honestly (REQ-SYNC-035 restores the
+   * PAIRING, never the song).
+   */
+  function scheduleReconnect(peerId: string, displayName: string): void {
+    for (const delay of [2_000, 8_000]) {
+      setTimeout(() => {
+        if (disposed || peerConnections.has(peerId)) return
+        displayNames.set(peerId, displayName)
+        const myId = signaling.getPeerId()
+        if (myId === null || myId === '' || myId > peerId) {
+          initiateNewPeer(peerId).catch(() => {})
+        }
+      }, delay)
+    }
   }
 
   async function initiateNewPeer(peerId: string): Promise<void> {
@@ -251,11 +281,13 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     // not hours, and the honest answer to a dropped pair mid-transfer is
     // to say so and let the person try again -- not a renegotiation
     // dance. What matters is that the dead pair is REMOVED, so the next
-    // attempt builds a new one instead of reusing a corpse.
+    // attempt builds a new one instead of reusing a corpse — and
+    // scheduleReconnect IS that next attempt, made without anyone
+    // retyping a code.
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === 'failed') {
         cb.onError('The connection between the devices was lost.')
-        losePeer(peerId)
+        losePeer(peerId, true)
       }
     }
   }
@@ -273,7 +305,7 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     // pair is gone, and without this the store keeps a channel it can
     // write to and never hears back from.
     dc.onclose = () => {
-      losePeer(peerId)
+      losePeer(peerId, true)
     }
     dc.onmessage = (event) => {
       if (event.data instanceof ArrayBuffer) {

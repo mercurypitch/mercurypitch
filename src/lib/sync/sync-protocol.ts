@@ -51,8 +51,19 @@ export type SyncWireMessage =
    * in TOTAL, so the sender needs to know the far side is nearly full
    * BEFORE it spends minutes packing a song that cannot land. Omitted when
    * the browser will not say, which means "unknown", never "unlimited".
+   *
+   * `songHashes` is the device's library by content hash, so the send
+   * list can mark what is already over there and offer to select only
+   * the missing (REQ-SYNC-034). Omitted by builds that predate it,
+   * which means "unknown", never "empty".
    */
-  | { type: 'sync-hello'; label: string; freeBytes?: number; quota?: number }
+  | {
+      type: 'sync-hello'
+      label: string
+      freeBytes?: number
+      quota?: number
+      songHashes?: string[]
+    }
   /**
    * "I have started packing a song for you."
    *
