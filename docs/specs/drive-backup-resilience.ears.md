@@ -105,3 +105,34 @@ a reload straight into Settings would tell somebody with a full library
 the same boot race REQ-DRV-011 pinned for the scan.
 _Tests:_ `SyncSettings` — "REQ-DRV-019: waits for the library before
 counting it".
+
+## REQ-DRV-020 — A hash match without stems does not block a restore
+
+**WHEN** the scan matches a Drive file to a local session by content
+hash, **IF** that session's stem blobs are absent from IndexedDB, the
+system shall still offer the song for restore. An interrupted delete can
+leave (or resurrect) a completed row whose stems are gone; matching it
+by hash alone made the scan swear the song was safe on the device while
+the library could not play it — and the one good copy in Drive was never
+offered back. A presence answer of `unknown` (the read failed) shall
+keep the match blocking, because restoring over a session that may be
+healthy would duplicate it. The import path applies the same rule: an
+"already-here" decline is only honest about a session that still has its
+stems (see REQ-SYNC-028).
+_Tests:_ `drive-sync-store` — "REQ-DRV-020: offers a song back when the
+local match has no stems", "keeps a hash match blocking when the stem
+read merely failed".
+
+## REQ-DRV-021 — Deleting a song deletes it durably, and completely
+
+**WHEN** a person deletes a song from the library, the system shall
+remove the session record AND everything it owns — stem blobs,
+fingerprints, lyrics, transcriptions, pitch analyses, group membership —
+in one awaitable cascade, blobs before the record. **IF** the delete
+only re-persisted the surviving rows fire-and-forget, **THEN** a reload
+racing it would bring the "deleted" song back whole, and its hash would
+then convince the scan that nothing needed restoring — the shipped "it
+only offered once" bug. An interrupted cascade now leaves at worst a
+stemless row, which REQ-DRV-020 sees through and the boot prune removes.
+_Tests:_ `uvr-session-reconcile` — "REQ-DRV-021: removes the record AND
+everything it owns, awaitably".

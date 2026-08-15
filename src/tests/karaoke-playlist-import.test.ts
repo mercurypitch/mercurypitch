@@ -32,7 +32,7 @@ import type { KaraokePlaylistRecord, SessionGroupRecord, UvrSessionLyrics, UvrSe
 import { loadLyricsFromDb, loadLyricsFromDbStrict, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
 import { buildKaraokePlaylistZip, buildSessionZip, exportGroup, exportSession, getSafeSessionName, importSessionsFromZip, inspectSessionZip, isZipFile, sanitizeArchiveEntryName, } from '@/db/services/session-export-service'
 import { savePitchAnalysisToDb } from '@/db/services/session-pitch-analysis-service'
-import { deleteUvrSessionFromDb, getStemBlob, getStemFingerprintData, listStemTypes, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { getStemBlob, getStemFingerprintData, listStemTypes, saveStemBlob, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { saveTranscriptionToDb } from '@/db/services/whisper-transcription-db-service'
 import type { UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessions, getGroupsReactive, importUvrSession, } from '@/stores/app-store'
@@ -1121,8 +1121,7 @@ describe('session archive stem selection', () => {
         (session) => !sessionIdsBefore.has(session.sessionId),
       )
       for (const session of retained) {
-        await deleteUvrSessionFromDb(session.sessionId)
-        deleteUvrSession(session.sessionId)
+        await deleteUvrSession(session.sessionId)
       }
     }
   })

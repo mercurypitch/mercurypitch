@@ -15,10 +15,10 @@ vi.mock('@/db', () => ({
   getDb: async () => adapter,
 }))
 
-import type { UvrSessionRecord } from '@/db/entities'
+import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrSession } from '@/stores/app-store'
-import { cleanupStaleUvrSessions, completeUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, refreshUvrSessionFromDb, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
+import { cleanupStaleUvrSessions, completeUvrSession, deleteUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, refreshUvrSessionFromDb, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
 
 if (typeof Blob.prototype.arrayBuffer !== 'function') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,6 +179,26 @@ describe('cleanupStaleUvrSessions — recoverable server jobs survive reload', (
     ])
     const list = await resumableServerSessions()
     expect(list.map((s) => s.sessionId)).toContain('s-rec2')
+  })
+})
+
+describe('deleteUvrSession — durable cascade', () => {
+  it('REQ-DRV-021: removes the record AND everything it owns, awaitably', async () => {
+    // The old delete re-persisted the survivors fire-and-forget and never
+    // touched the stem blobs; a reload racing it brought the song back
+    // whole, and its hash then blocked the Drive restore offer.
+    const id = newSession('gone.mp3')
+    await saveStemBlobDurable(id, 'vocal', wav([1]), 'v.wav')
+    await completeUvrSession(id, { vocal: 'blob:x' }, {})
+
+    await deleteUvrSession(id)
+
+    expect(getUvrSession(id)).toBeUndefined()
+    expect(await dbStatus(id)).toBeUndefined()
+    const blobs = await adapter
+      .getRepository<UvrStemBlob>('uvrStemBlobs')
+      .findAll({ where: { sessionId: id } })
+    expect(blobs).toEqual([])
   })
 })
 

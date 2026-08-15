@@ -18,9 +18,9 @@ import { getDb } from '@/db'
 import { durableWrite } from '@/db/durable-write'
 import type { SongAudioQuality } from '@/db/entities'
 import { getUserId } from '@/db/seed'
-import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
+import { deleteAllLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { recordActivity } from '@/db/services/user-activity-service'
-import { deleteAllUvrSessionsFromDb, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteImportedUvrSessionDataStrict, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -1388,15 +1388,23 @@ export function retryUvrSession(sessionId: string): void {
 }
 
 /** Delete UVR session */
-export function deleteUvrSession(sessionId: string): void {
+export function deleteUvrSession(sessionId: string): Promise<void> {
   removeDeletedSessionFromGroupIndexes(sessionId)
-  const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
-  updateCacheAndPersist(sessions)
-  // Clean up associated lyrics from DB
-  void deleteLyricsFromDb(sessionId)
+  removeUvrSessionFromCache(sessionId)
   if (currentUvrSession()?.sessionId === sessionId) {
     setCurrentUvrSession(null)
   }
+  // The durable cascade must delete what the row owns, not just the row:
+  // the old fire-and-forget re-persist let a reload resurrect the song,
+  // whose hash then convinced the Drive scan nothing needed restoring.
+  // The strict helper removes blobs before the record, so an interrupted
+  // delete leaves a stemless row the scan and import can see through
+  // (REQ-DRV-020), never a playable ghost.
+  return deleteImportedUvrSessionDataStrict(sessionId).catch(
+    (error: unknown) => {
+      console.error('[SessionStore] durable session delete failed:', error)
+    },
+  )
 }
 
 /**

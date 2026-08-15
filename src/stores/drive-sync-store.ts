@@ -25,6 +25,7 @@
 import { createSignal } from 'solid-js'
 import { currentAccountId, disconnectDrive, fetchDriveAccessToken, fetchDriveStatus, startDriveConnect, } from '@/db/services/auth-service'
 import { buildPortableBundle, BundleSourceError, importPortableBundle, } from '@/db/services/portable-bundle-service'
+import { sessionStemPresence } from '@/db/services/uvr-service'
 import type { DriveClient, DriveSongFile } from '@/lib/drive/drive-client'
 import { createDriveClient, DriveAuthError, SONG_FILE_SUFFIX, } from '@/lib/drive/drive-client'
 import { platform } from '@/lib/platform'
@@ -402,7 +403,24 @@ export async function scanDrive(): Promise<DriveScan | null> {
 
     const remoteByHash = new Map<string, DriveSongFile>()
     for (const file of remote) remoteByHash.set(file.properties.fileHash, file)
-    const localHashes = new Set(local.map((s) => s.fileHash as string))
+    const localByHash = new Map<string, UvrSession>()
+    for (const s of local) localByHash.set(s.fileHash as string, s)
+
+    // A hash match only blocks a restore offer when the stems are actually
+    // on disk. An interrupted delete can leave (or resurrect) a completed
+    // row whose blobs are gone; that ghost made the scan swear the song
+    // was safe here while the library could not play it, and the one copy
+    // in Drive was never offered back (REQ-DRV-020). 'unknown' stays
+    // blocking: restoring over a session that may have stems would
+    // duplicate it, and the import guard rechecks anyway.
+    const ghostHashes = new Set<string>()
+    for (const file of remote) {
+      const match = localByHash.get(file.properties.fileHash)
+      if (match === undefined) continue
+      if ((await sessionStemPresence(match.sessionId)) === 'absent') {
+        ghostHashes.add(file.properties.fileHash)
+      }
+    }
 
     const scan: DriveScan = {
       inDrive: remote.length,
@@ -415,7 +433,11 @@ export async function scanDrive(): Promise<DriveScan | null> {
           ref: s.sessionId,
         })),
       toRestore: remote
-        .filter((f) => !localHashes.has(f.properties.fileHash))
+        .filter(
+          (f) =>
+            !localByHash.has(f.properties.fileHash) ||
+            ghostHashes.has(f.properties.fileHash),
+        )
         .map((f) => ({
           fileHash: f.properties.fileHash,
           title: f.name.endsWith(SONG_FILE_SUFFIX)

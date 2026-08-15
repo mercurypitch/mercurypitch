@@ -5,7 +5,6 @@
 import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
-import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { sessionSize, sessionSizeLabel } from '@/lib/session-size'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
@@ -212,8 +211,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const confirmDelete = () => {
-    deleteUvrSession(props.sessionId)
-    void deleteUvrSessionFromDb(props.sessionId)
+    void deleteUvrSession(props.sessionId)
     setShowDeleteConfirm(false)
     if (props.onClose) props.onClose()
     setToastMessage('Session deleted')
