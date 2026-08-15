@@ -4,7 +4,12 @@
    Bottom-left corner shared with the practice-timer pill (which owns the
    default offset); when that pill is visible this one raises a row above
    it. Top-right stays clear for toasts, bottom-right for the floating
-   transport controls. */
+   transport controls.
+
+   Every token here carries a literal fallback: the Night surfaces
+   (karaoke/guitar) never load app.css, so without them the pill lost
+   its card and border entirely and the bare glyph sank into the stage
+   backdrop. The fallbacks are app.css's own values. */
 
 .pill {
   position: fixed;
@@ -15,11 +20,11 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.22rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 999px;
-  background: var(--bg-card);
+  background: var(--bg-card, #1c2128);
   box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
   font-size: 0.78rem;
   line-height: 1;
   opacity: 0.82;
@@ -64,12 +69,12 @@
 .toggle:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 2px var(--bg-card),
-    0 0 0 4px var(--accent);
+    0 0 0 2px var(--bg-card, #1c2128),
+    0 0 0 4px var(--accent, #58a6ff);
 }
 
 .listening {
-  color: var(--accent);
+  color: var(--accent, #58a6ff);
   animation: voice-pulse 2.2s ease-out infinite;
 }
 
@@ -104,7 +109,7 @@
 }
 
 .statusMatched {
-  color: var(--accent);
+  color: var(--accent, #58a6ff);
   font-weight: 600;
 }
 
@@ -164,7 +169,7 @@
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
   cursor: pointer;
   opacity: 0.55;
   transition:
@@ -174,7 +179,7 @@
 
 .toolButton:hover,
 .toolButton:focus-visible {
-  color: var(--text);
+  color: var(--text, #e6edf3);
   opacity: 1;
 }
 
@@ -195,16 +200,16 @@
   max-width: min(16rem, calc(100vw - 2rem));
   flex-direction: column;
   padding: 0.35rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 10px;
-  background: var(--bg-card);
+  background: var(--bg-card, #1c2128);
   box-shadow: 0 12px 32px rgb(0 0 0 / 40%);
 }
 
 .menuHeading {
   margin: 0.1rem 0 0.25rem;
   padding: 0 0.45rem;
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -218,7 +223,7 @@
   border: none;
   border-radius: 7px;
   background: transparent;
-  color: var(--text);
+  color: var(--text, #e6edf3);
   font-size: 0.8rem;
   text-align: left;
   cursor: pointer;
@@ -233,21 +238,21 @@
   width: 0.42rem;
   height: 0.42rem;
   flex-shrink: 0;
-  border: 1px solid var(--text-muted);
+  border: 1px solid var(--text-muted, #6e7681);
   border-radius: 50%;
 }
 
 .menuItemActive .menuDot {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--accent, #58a6ff);
+  background: var(--accent, #58a6ff);
 }
 
 .menuItemActive {
-  color: var(--accent);
+  color: var(--accent, #58a6ff);
 }
 
 .menuDivider {
   height: 1px;
   margin: 0.3rem 0.2rem;
-  background: var(--border);
+  background: var(--border, #30363d);
 }

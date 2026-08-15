@@ -26,10 +26,10 @@ import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
-import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamShowPitch, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, setJamShowPitch, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
-import { setSidebarCollapsed as setAppSidebarCollapsed, setSidebarOpen as setAppSidebarOpen, } from '@/stores/ui-store'
+import { setSidebarCollapsed as setAppSidebarCollapsed, setSidebarOpen as setAppSidebarOpen, sidebarCollapsed as appSidebarCollapsed, sidebarOpen as appSidebarOpen, } from '@/stores/ui-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import jamStyles from './Jam.module.css'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
@@ -128,7 +128,11 @@ export const JamPanel: Component = () => {
     })
   })
   const [linkCopied, setLinkCopied] = createSignal(false)
-  const [showLivePitch, setShowLivePitch] = createSignal(true)
+  // Whether the roster rail is showing right now — the mobile drawer and
+  // the desktop collapse are different mechanisms, so "showing" is
+  // whichever one this viewport actually uses.
+  const rosterShowing = (): boolean =>
+    isMobile() ? appSidebarOpen() : !appSidebarCollapsed()
   // Read once, not tracked: this is the starting position of a switch the
   // user then owns. Reacting to it would snatch the tray back the moment a
   // window crossed the breakpoint, undoing a choice they had just made.
@@ -861,6 +865,7 @@ export const JamPanel: Component = () => {
                 <button
                   class={`${jamStyles.iconBtn} ${panelStyles.micBtn} ${jamIsMuted() ? jamStyles.iconBtnOff : jamStyles.iconBtnOn}`}
                   onClick={() => void toggleJamMute()}
+                  aria-pressed={!jamIsMuted()}
                   title={jamIsMuted() ? 'Unmute microphone' : 'Mute microphone'}
                 >
                   <Show
@@ -921,12 +926,13 @@ export const JamPanel: Component = () => {
                       screen. It belongs with the other things that fold
                       into the menu. */}
                   <button
-                    class={`${jamStyles.iconBtn} ${showLivePitch() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral} ${panelStyles.phoneOnlyAction}`}
-                    onClick={() => setShowLivePitch((v) => !v)}
+                    class={`${jamStyles.iconBtn} ${jamShowPitch() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral} ${panelStyles.phoneOnlyAction}`}
+                    onClick={() => setJamShowPitch((v) => !v)}
+                    aria-pressed={jamShowPitch()}
                     title={
-                      showLivePitch()
-                        ? 'Hide live pitch monitor'
-                        : 'Show live pitch monitor'
+                      jamShowPitch()
+                        ? 'Hide the live pitch'
+                        : 'Show the live pitch'
                     }
                   >
                     <svg
@@ -950,6 +956,7 @@ export const JamPanel: Component = () => {
                   <button
                     class={`${jamStyles.iconBtn} ${showCameras() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral} ${panelStyles.phoneOnlyAction}`}
                     onClick={() => setShowCameras((v) => !v)}
+                    aria-pressed={showCameras()}
                     title={
                       showCameras() ? 'Hide the cameras' : 'Show the cameras'
                     }
@@ -970,14 +977,30 @@ export const JamPanel: Component = () => {
                   </button>
 
                   {/* Peers now live in the APP sidebar (JamRoomPanel);
-                      this reveals it for anyone who collapsed the rail. */}
+                      this shows or hides it. A second press must undo the
+                      first — a button that can only open reads as ignored
+                      the moment it is pressed while already open. */}
                   <button
-                    class={`${jamStyles.iconBtn} ${jamStyles.iconBtnNeutral}`}
+                    class={`${jamStyles.iconBtn} ${
+                      rosterShowing()
+                        ? jamStyles.iconBtnOn
+                        : jamStyles.iconBtnNeutral
+                    }`}
                     onClick={() => {
-                      setAppSidebarCollapsed(false)
-                      setAppSidebarOpen(true)
+                      if (rosterShowing()) {
+                        if (isMobile()) setAppSidebarOpen(false)
+                        else setAppSidebarCollapsed(true)
+                      } else {
+                        setAppSidebarCollapsed(false)
+                        setAppSidebarOpen(true)
+                      }
                     }}
-                    title="Show the room roster in the sidebar"
+                    aria-pressed={rosterShowing()}
+                    title={
+                      rosterShowing()
+                        ? 'Hide the room roster'
+                        : 'Show the room roster in the sidebar'
+                    }
                   >
                     <svg
                       width="18"
@@ -1000,6 +1023,7 @@ export const JamPanel: Component = () => {
                   <button
                     class={`${jamStyles.iconBtn} ${jamVideoEnabled() ? jamStyles.iconBtnOn : jamStyles.iconBtnOff}`}
                     onClick={() => void toggleJamVideo()}
+                    aria-pressed={jamVideoEnabled()}
                     title={
                       jamVideoEnabled() ? 'Turn camera off' : 'Turn camera on'
                     }
@@ -1135,6 +1159,7 @@ export const JamPanel: Component = () => {
                 </Show>
                 <JamTransport
                   onSelectExercise={togglePicker}
+                  pickerOpen={showExercisePicker()}
                   loopEnabled={jamExerciseLoop()}
                   onToggleLoop={() => setJamExerciseLoop((v) => !v)}
                 />
@@ -1203,13 +1228,14 @@ export const JamPanel: Component = () => {
                   <button
                     class={panelStyles.pitchToggleBtn}
                     classList={{
-                      [panelStyles.pitchToggleBtnActive]: showLivePitch(),
+                      [panelStyles.pitchToggleBtnActive]: jamShowPitch(),
                     }}
-                    onClick={() => setShowLivePitch((v) => !v)}
+                    onClick={() => setJamShowPitch((v) => !v)}
+                    aria-pressed={jamShowPitch()}
                     title={
-                      showLivePitch()
-                        ? 'Hide live pitch monitor'
-                        : 'Show live pitch monitor'
+                      jamShowPitch()
+                        ? 'Hide the live pitch'
+                        : 'Show the live pitch'
                     }
                   >
                     <svg
@@ -1336,10 +1362,10 @@ export const JamPanel: Component = () => {
                 <div
                   class={panelStyles.pitchStrip}
                   classList={{
-                    [panelStyles.pitchStripCollapsed]: !showLivePitch(),
+                    [panelStyles.pitchStripCollapsed]: !jamShowPitch(),
                   }}
                 >
-                  <Show when={showLivePitch()}>
+                  <Show when={jamShowPitch()}>
                     <div class={panelStyles.pitchStripLabel}>
                       Live Pitch Monitor
                     </div>
