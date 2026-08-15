@@ -26,7 +26,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap'
 // Importing from the module that DEFINES a thing keeps this graph to
 // stores the build can color independently of the app shell.
 import type { SyncTransfer } from '@/stores/sync-store'
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncQueue, syncRole, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncRole, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive, getGroupsReactive, } from '@/stores/uvr-store'
 import { DeviceSync } from '../icons'
@@ -191,6 +191,15 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     return room !== null && bytes > 0 && room.freeBytes < bytes
   }
 
+  /**
+   * Whether the far device says it already holds this song, by hash
+   * (REQ-SYNC-034). False when it has not said — an older build's
+   * silence must not mark anything. Declared up here with tooBigForPeer,
+   * and for the same TDZ reason: memos below call it as they are made.
+   */
+  const peerHas = (session: UvrSession): boolean =>
+    syncPeerSongs()?.has(session.fileHash ?? '') ?? false
+
   /** True when the far device has less room than a typical song needs. */
   const lowOnRoom = (): boolean => {
     const room = syncPeerRoom()
@@ -213,6 +222,11 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
         const aFits = tooBigForPeer(estimatePackedBytes(a)) ? 1 : 0
         const bFits = tooBigForPeer(estimatePackedBytes(b)) ? 1 : 0
         if (aFits !== bFits) return aFits - bFits
+        // Among those, the ones already over there sink below the ones
+        // that are missing — the list leads with what a send is FOR.
+        const aHeld = peerHas(a) ? 1 : 0
+        const bHeld = peerHas(b) ? 1 : 0
+        if (aHeld !== bHeld) return aHeld - bHeld
         return b.createdAt - a.createdAt
       })
   })
@@ -235,6 +249,19 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
   const pickable = createMemo(() => sendable().filter(fits))
 
+  /**
+   * What "Select all" actually selects. Once the far device has said
+   * what it holds, the bulk action is "the songs it is missing" — the
+   * whole point of a bulk send. Every row stays individually sendable
+   * (a torn copy over there is repaired by a resend, REQ-SYNC-028); it
+   * just stops being the default.
+   */
+  const selectTargets = createMemo(() =>
+    syncPeerSongs() === null
+      ? pickable()
+      : pickable().filter((s) => !peerHas(s)),
+  )
+
   const togglePick = (sessionId: string): void => {
     setPicked((current) => {
       const next = new Set(current)
@@ -253,13 +280,14 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   )
 
   const allPicked = (): boolean =>
-    pickable().length > 0 && pickedSessions().length === pickable().length
+    selectTargets().length > 0 &&
+    selectTargets().every((s) => picked().has(s.sessionId))
 
   const toggleAll = (): void => {
     setPicked(
       allPicked()
         ? new Set<string>()
-        : new Set(pickable().map((s) => s.sessionId)),
+        : new Set(selectTargets().map((s) => s.sessionId)),
     )
   }
 
@@ -575,14 +603,14 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   </div>
                 </Show>
 
-                <Show when={pickable().length > 1}>
+                <Show when={selectTargets().length > 1}>
                   <label class={styles.selectAll}>
                     <input
                       type="checkbox"
                       checked={allPicked()}
                       onChange={toggleAll}
                     />
-                    Select all
+                    {syncPeerSongs() === null ? 'Select all' : 'Select missing'}
                     {groupFilter() === null ? '' : ' in this group'}
                   </label>
                 </Show>
@@ -619,6 +647,12 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                               — about{' '}
                               {formatBytes(estimatePackedBytes(session))}, too
                               big for that device
+                            </span>
+                          </Show>
+                          <Show when={fits(session) && peerHas(session)}>
+                            <span class={styles.songNote}>
+                              {' '}
+                              — already on that device
                             </span>
                           </Show>
                         </span>

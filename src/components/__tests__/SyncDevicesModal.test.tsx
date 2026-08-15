@@ -39,6 +39,7 @@ const state = vi.hoisted(() => ({
   syncState: 'connected' as string,
   transfers: [] as SyncTransfer[],
   role: null as 'send' | 'receive' | null,
+  peerSongs: null as ReadonlySet<string> | null,
 }))
 
 vi.mock('@/stores/sync-store', () => ({
@@ -48,6 +49,7 @@ vi.mock('@/stores/sync-store', () => ({
   syncOwnRoom: () => null,
   syncPeerLabel: () => 'The other one',
   syncPeerRoom: () => state.peerRoom,
+  syncPeerSongs: () => state.peerSongs,
   syncQueue: () => [],
   syncRole: () => state.role,
   syncRoomId: () => 'ABCD1234',
@@ -104,6 +106,7 @@ describe('SyncDevicesModal send list', () => {
     state.syncState = 'connected'
     state.transfers = []
     state.role = null
+    state.peerSongs = null
     vi.clearAllMocks()
     sync.takeSyncCodeToJoin.mockReturnValue(null)
     sync.estimatePackedBytes.mockReturnValue(5 * 1024 * 1024)
@@ -268,6 +271,7 @@ describe('closing, and what it must not do', () => {
     state.syncState = 'connected'
     state.transfers = []
     state.role = null
+    state.peerSongs = null
     vi.clearAllMocks()
     sync.takeSyncCodeToJoin.mockReturnValue(null)
   })
@@ -333,5 +337,40 @@ describe('closing, and what it must not do', () => {
     ]
     render(() => <SyncDevicesModal onClose={() => {}} />)
     expect(screen.getByText(/Closing this window stops nothing/i)).toBeTruthy()
+  })
+
+  it('REQ-SYNC-034: marks songs the far device holds, and selects only the missing', () => {
+    state.peerSongs = new Set(['hash-1'])
+    state.sessions = [
+      song(),
+      song({ sessionId: 'session-2', fileHash: 'h2', createdAt: 2 }),
+      song({ sessionId: 'session-3', fileHash: 'h3', createdAt: 3 }),
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-choose-send'))
+
+    expect(screen.getByText(/already on that device/i)).toBeTruthy()
+
+    // The bulk action is now "the songs it is missing" — but every row
+    // keeps its own checkbox, because a torn copy over there is only
+    // repaired by a resend (REQ-SYNC-028).
+    const selectMissing = screen.getByText(/Select missing/)
+    fireEvent.click(selectMissing.closest('label')!.querySelector('input')!)
+    fireEvent.click(screen.getByTestId('sync-send-picked'))
+    // Newest first among the missing; the held song is not in the batch.
+    expect(sync.enqueueSongs).toHaveBeenCalledWith(['session-3', 'session-2'])
+  })
+
+  it('an older build that announced nothing marks nothing', () => {
+    state.peerSongs = null
+    state.sessions = [
+      song(),
+      song({ sessionId: 'session-2', fileHash: 'h2', createdAt: 2 }),
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-choose-send'))
+
+    expect(screen.queryByText(/already on that device/i)).toBeNull()
+    expect(screen.getByText(/Select all/)).toBeTruthy()
   })
 })

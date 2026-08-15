@@ -363,3 +363,34 @@ stood — the same death REQ-DRV-017 already guards the backup against.
 _Tests:_ `sync-store` — "REQ-SYNC-033: holds the wake lock while a
 song moves, then lets go"; `keep-awake` — "holds the lock until the
 last holder lets go".
+
+### REQ-SYNC-034 — The sender knows what is already over there
+
+**WHEN** the channel opens, each device's hello shall carry its
+library's content hashes (completed songs with an identity only,
+capped at 2000), and the send list shall mark songs the far device
+already holds, sink them below the missing ones, and make "Select
+missing" the bulk action. Every row stays individually sendable — a
+torn copy over there is repaired only by a resend (REQ-SYNC-028) — and
+a build that announces nothing marks nothing: unknown is not empty.
+The announcement dies with the peer; the next device on the same code
+speaks for itself.
+_Tests:_ `sync-store` — "REQ-SYNC-034: the hello carries this library,
+by hash", "REQ-SYNC-034: the far library is remembered, and dies with
+the peer"; `SyncDevicesModal` — "REQ-SYNC-034: marks songs the far
+device holds, and selects only the missing".
+
+### REQ-SYNC-035 — A dropped pair rebuilds itself
+
+**WHILE** both devices remain in the room, **WHEN** the pair between
+them dies (channel closed, ICE failed), the peer layer shall attempt a
+brand-new connection at 2 s and 8 s, the initiator chosen by the same
+glare rule as a fresh join. A device that LEFT the room is not chased —
+that offer lands nowhere. A transfer that was in flight has already
+failed honestly: what returns is the PAIRING, never the song. Behind a
+hidden dialog the comeback is announced, because the corner chip
+changing its text is not an announcement.
+_Tests:_ `sync-peer` — "REQ-SYNC-035: rebuilds a dropped pair while
+both stay in the room", "does not chase a peer that left the room";
+`sync-store` — "REQ-SYNC-035: a peer that comes back is welcomed
+behind a hidden dialog".
