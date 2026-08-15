@@ -846,7 +846,9 @@ describe('friends are a registered-account feature', () => {
   })
 
   function followCount(): number {
-    return (sqlite.prepare('SELECT COUNT(*) n FROM follows').get() as { n: number }).n
+    return (
+      sqlite.prepare('SELECT COUNT(*) n FROM follows').get() as { n: number }
+    ).n
   }
 
   it('turns an anonymous singer away from every route that adds a friend', async () => {
