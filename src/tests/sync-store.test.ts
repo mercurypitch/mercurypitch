@@ -78,7 +78,8 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { clearFinishedTransfers, enqueueSongs, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import type { UvrSession } from '@/stores/uvr-store'
 
 /** Drive the store to a live room with a connected peer. */
 async function connect(): Promise<void> {
@@ -651,5 +652,37 @@ describe('refusing to send', () => {
     await connect()
     await sendSongToPeer('s1')
     expect(bundle.buildPortableBundle).toHaveBeenCalled()
+  })
+})
+
+describe('what a song is estimated to weigh', () => {
+  it('REQ-SYNC-029: prices a cold-loaded session from its persisted stem sizes', () => {
+    // After a reload `outputs` is gone — it is minted lazily on first
+    // play — while stemMeta is persisted. Gating on outputs priced every
+    // song at 0 bytes: "Send 3 songs — 0 MB".
+    const session = {
+      sessionId: 's-cold',
+      status: 'completed',
+      fileHash: 'hash-cold',
+      stemMeta: {
+        vocal: { size: 3_000_000, duration: 0 },
+        instrumental: { size: 5_000_000, duration: 0 },
+      },
+    } as unknown as UvrSession
+    expect(estimatePackedBytes(session)).toBe(8_000_000)
+  })
+
+  it('REQ-SYNC-029: durations still price a session that has no stored sizes', () => {
+    const session = {
+      sessionId: 's-dur',
+      status: 'completed',
+      fileHash: 'hash-dur',
+      stemMeta: {
+        vocal: { size: 0, duration: 100 },
+        instrumental: { size: 0, duration: 100 },
+      },
+    } as unknown as UvrSession
+    // Two stems, 100 seconds, 192 kbps: 2 × 100 × 24 000 bytes.
+    expect(estimatePackedBytes(session)).toBe(4_800_000)
   })
 })

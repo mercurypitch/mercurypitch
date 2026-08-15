@@ -340,7 +340,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   data-testid="sync-choose-send"
                 >
                   <span class={styles.choiceIcon}>
-                    <DeviceSync />
+                    <DeviceSync size={28} />
                   </span>
                   <span>
                     <strong>Send songs from this device</strong>
@@ -351,8 +351,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                 </button>
               </div>
               <p class={styles.hint}>
-                Both devices need to be on the same Wi-Fi. Songs travel directly
-                between them — nothing is uploaded anywhere.
+                Both devices need to be on the same Wi-Fi.
               </p>
             </Show>
 
