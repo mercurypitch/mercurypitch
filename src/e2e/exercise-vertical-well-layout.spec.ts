@@ -26,6 +26,9 @@ import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TONE_WAV = writeToneWav()
 
+const SIREN = 'Siren / Range Explorer'
+const SLIDE = 'Slide In/Out'
+
 test.use({
   launchOptions: { args: fakeMicArgs(TONE_WAV) },
   permissions: ['microphone'],
@@ -44,13 +47,16 @@ interface Stage {
   tracker: Box | null
   well: Box | null
   stop: Box | null
+  phase: Box | null
+  footer: Box | null
   stageScrollHeight: number
   stageClientHeight: number
 }
 
-/** Start Siren and hand back the geometry of the three boxes that collided. */
-async function runSiren(
+/** Start a drill and hand back the geometry of the boxes that collided. */
+async function runDrill(
   page: import('@playwright/test').Page,
+  drill: string,
   width: number,
   height: number,
 ): Promise<Stage> {
@@ -60,18 +66,15 @@ async function runSiren(
   await dismissOverlays(page)
 
   await openNavTab(page, 'tab-exercises')
-  await page
-    .locator('.exercise-card', { hasText: 'Siren / Range Explorer' })
-    .first()
-    .click()
+  await page.locator('.exercise-card', { hasText: drill }).first().click()
 
   const start = page.locator('.exercise-btn-primary:has-text("Start")')
   await expect(start).toBeVisible({ timeout: 10000 })
   await start.scrollIntoViewIfNeeded()
   await start.click()
 
-  // The well only exists once the run is active.
-  await expect(page.locator('.mirror-melody-viz')).toBeVisible({
+  // The visual only exists once the run is active.
+  await expect(page.locator('.exercise-tall-viz')).toBeVisible({
     timeout: 15000,
   })
 
@@ -92,8 +95,10 @@ async function runSiren(
     const stage = document.querySelector('.exercise-active-stage')
     return {
       tracker: box('.exercise-pitch-tracker'),
-      well: box('.mirror-melody-viz'),
+      well: box('.exercise-tall-viz'),
       stop: box('.exercise-btn-stop'),
+      phase: box('.exercise-active-phase'),
+      footer: box('.exercise-active-footer'),
       stageScrollHeight: stage?.scrollHeight ?? 0,
       stageClientHeight: stage?.clientHeight ?? 0,
     }
@@ -122,7 +127,7 @@ test.describe('the vertical well shares a row with the tracker when height runs 
   test('side by side at 1280x660, and nothing sits on Stop', async ({
     page,
   }) => {
-    const stage = await runSiren(page, 1280, 660)
+    const stage = await runDrill(page, SIREN, 1280, 660)
 
     expect(stage.tracker).not.toBeNull()
     expect(stage.well).not.toBeNull()
@@ -156,7 +161,7 @@ test.describe('the vertical well shares a row with the tracker when height runs 
 
   // A meaner one: the same tablet with more chrome, or a small netbook.
   test('side by side at 1024x560', async ({ page }) => {
-    const stage = await runSiren(page, 1024, 560)
+    const stage = await runDrill(page, SIREN, 1024, 560)
 
     expect(stage.tracker!.right).toBeLessThanOrEqual(stage.well!.left + 1)
     expect(
@@ -179,7 +184,7 @@ test.describe('the vertical well shares a row with the tracker when height runs 
   test('still stacked at 1280x900, where there is height for it', async ({
     page,
   }) => {
-    const stage = await runSiren(page, 1280, 900)
+    const stage = await runDrill(page, SIREN, 1280, 900)
 
     expect(stage.tracker!.bottom).toBeLessThanOrEqual(stage.well!.top + 1)
     expect(
@@ -199,7 +204,7 @@ test.describe('the vertical well shares a row with the tracker when height runs 
   }) => {
     // 520 rather than 660 deliberately: at 660 the stack still fits, so there
     // is nothing to scroll and the test would pass without proving anything.
-    await runSiren(page, 390, 520)
+    await runDrill(page, SIREN, 390, 520)
 
     const after = await page.evaluate(() => {
       const stage = document.querySelector('.exercise-active-stage')
@@ -242,4 +247,118 @@ test.describe('the vertical well shares a row with the tracker when height runs 
       expect(collides, `Stop overlaps the ${name} after scrolling`).toBe(false)
     }
   })
+
+  // Slide draws the other shape of tall visual — a 240px pitch ladder rather
+  // than a 72px well — and carries both a phase line ("A3 → C4") and a metrics
+  // row. It is the drill that proves the marker class and the two slots are
+  // doing the work, not eleven copies of one arrangement.
+  test('Slide gets the same row, with its readouts clear of Stop', async ({
+    page,
+  }) => {
+    const stage = await runDrill(page, SLIDE, 1280, 660)
+
+    expect(stage.tracker!.right).toBeLessThanOrEqual(stage.well!.left + 1)
+    expect(stage.phase).not.toBeNull()
+    expect(stage.footer).not.toBeNull()
+
+    // The instruction reads for the whole stage, so it sits above both boxes
+    // rather than in the narrow column beside one of them.
+    expect(stage.phase!.bottom).toBeLessThanOrEqual(stage.tracker!.top + 1)
+    expect(stage.phase!.bottom).toBeLessThanOrEqual(stage.well!.top + 1)
+
+    // The readouts read for the whole stage too, from underneath — and must
+    // not land behind the Stop button, which is what they used to do.
+    expect(stage.footer!.top).toBeGreaterThanOrEqual(stage.well!.bottom - 1)
+    expect(overlaps(stage.footer!, stage.stop!), 'Stop covers the metrics row').toBe(false) // prettier-ignore
+
+    expect(stage.stageScrollHeight).toBeLessThanOrEqual(
+      stage.stageClientHeight + 2,
+    )
+  })
+
+  // A full desktop matched neither the phone rule nor the short-viewport one,
+  // so it was the one size that never reserved a strip for Stop — and the
+  // centred Stop pill sat straight on the metrics row it was written to avoid.
+  test('a full desktop reserves room for Stop too (1440x900)', async ({
+    page,
+  }) => {
+    const stage = await runDrill(page, SLIDE, 1440, 900)
+
+    expect(overlaps(stage.footer!, stage.stop!), 'Stop covers the metrics row').toBe(false) // prettier-ignore
+    expect(stage.footer!.bottom).toBeLessThanOrEqual(stage.stop!.top + 1)
+  })
+})
+
+// ============================================================
+// Before the run: one header, one body, no column of five
+// ============================================================
+//
+// The idle panel spent a row on the drill's icon, a row on its description, a
+// row naming the dial, a row on the dial, and two more on the timer and Start
+// — under a header that had already said which drill this was. On a landscape
+// tablet that did not fit, and Start went under the fold.
+//
+// The icon moved up beside the title, and the launch controls moved beside the
+// dial instead of under it. These assert the outcome rather than the row
+// count: everything reachable without scrolling, on the screens that could not
+// manage it before.
+
+test.describe('the idle panel fits without scrolling', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('pitchperfect_advanced_features', 'true')
+    })
+  })
+
+  for (const vp of [
+    { name: '1280x660', width: 1280, height: 660 },
+    { name: '1024x560', width: 1024, height: 560 },
+  ]) {
+    test(`Start is on screen at ${vp.name} without a scroll`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await page.goto('/')
+      await waitForNav(page)
+      await dismissOverlays(page)
+      await openNavTab(page, 'tab-exercises')
+      // Long Note carries the dial AND the timer — the tallest idle setup, and
+      // the one the two-column split was built for.
+      await page
+        .locator('.exercise-card', { hasText: 'Long Note' })
+        .first()
+        .click()
+
+      const start = page.locator('.exercise-idle-start')
+      await expect(start).toBeVisible({ timeout: 10000 })
+      await expect(start).toBeInViewport()
+
+      const idle = await page.evaluate(() => {
+        const el = (s: string) => document.querySelector(s)
+        const r = (s: string) => {
+          const e = el(s)
+          if (e === null) return null
+          const b = e.getBoundingClientRect()
+          return { top: b.top, right: b.right, bottom: b.bottom, left: b.left }
+        }
+        const card = el('.exercise-canvas-area')
+        return {
+          dial: r('.exercise-idle-setup'),
+          launch: r('.exercise-idle-launch'),
+          icon: el('.exercise-title-icon') !== null,
+          placeholderIcon: el('.exercise-idle-placeholder svg') !== null,
+          overflow: (card?.scrollHeight ?? 0) - (card?.clientHeight ?? 0),
+        }
+      })
+
+      // Beside, not below — that is the row this reclaimed.
+      expect(idle.dial!.right).toBeLessThanOrEqual(idle.launch!.left + 1)
+      // The icon is in the header now, and only there.
+      expect(idle.icon).toBe(true)
+      expect(idle.placeholderIcon).toBe(false)
+      // Nothing left over to scroll to.
+      expect(idle.overflow).toBeLessThanOrEqual(1)
+    })
+  }
 })

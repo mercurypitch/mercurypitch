@@ -380,10 +380,31 @@
   font-size: 0.8rem;
 }
 
+/* The drill's mark sits with its name. It used to open the idle panel at 48px,
+   under a header that had already said which drill this was — a row of the
+   panel spent restating the row above it. Here it costs nothing and is on
+   screen during a run too. */
+.exercise-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.exercise-title-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  flex: none;
+}
+
 .exercise-title {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .exercise-score-display {
@@ -433,9 +454,39 @@
    short screen Stop rode up over the exercise's own visuals and then left the
    viewport entirely: the run could be seen but not ended. Being unable to END
    a run is worse than being unable to start one. */
+/* `padding-bottom` reserves the strip Stop floats in. It used to be set only
+   under `max-width: 768px` and `max-height: 720px`, so on a full desktop the
+   centred Stop pill sat straight on top of a drill's metrics row — the exact
+   complaint those two breakpoints were written for, on the one viewport
+   neither of them matched. */
 .exercise-canvas-area.is-active {
   justify-content: safe center;
   overflow: hidden;
+  padding-bottom: 64px;
+}
+
+/* The instruction for the current phase, above both boxes of the stage and
+   centred across them. It is deliberately outside `.exercise-active-stage`:
+   the stage scrolls, and an instruction you have to scroll to is not one. */
+.exercise-active-phase {
+  flex: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 16px 4px;
+}
+
+/* The run's readouts, below the stage and across it. Same reasoning as the
+   phase line, mirrored: a metrics row is wide and short, the drill's visual is
+   narrow and tall, and in one column it was the row that got squeezed. Out
+   here it also stops landing under the Stop button on a short screen. */
+.exercise-active-footer {
+  flex: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 4px 16px 12px;
 }
 
 /* The run's two boxes: the pitch tracker and whatever the exercise draws.
@@ -605,19 +656,75 @@
   flex-shrink: 0;
 }
 
-/* Inside the centred idle group the description shouldn't claim full height. */
+/* Inside the centred idle group the description shouldn't claim full height.
+   It is prose now rather than a poster: the icon moved up to the title, so
+   what is left is one or two lines that read at a text width. */
 .exercise-idle-center .exercise-idle-placeholder {
   min-height: 0;
   height: auto;
   padding: 0;
+  gap: 4px;
+  max-width: 56ch;
+  text-wrap: balance;
 }
 
-.exercise-idle-controls {
+/* ── Idle body: setup on one side, launch on the other ──────
+   The setup (a dial, a scale picker) is what a singer studies. The launch
+   (how long, and go) is decided in a second and never looked at again.
+   Stacked, the second pushed the first off a short screen. Column by
+   default — a phone has height to spend and none to give sideways — and a
+   row as soon as there is width for one. */
+.exercise-idle-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   width: 100%;
+}
+
+.exercise-idle-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.exercise-idle-launch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Split only when the launch column has something to say. A drill with no
+   timer has one button in it, and a lone button floating in a column beside a
+   340px dial reads as a mistake — for those the stack is both tidier and
+   already short, since the icon row is gone. A short viewport overrides this
+   and splits regardless; see short-viewport.css, where height is the scarce
+   axis and balance is not the point. */
+@media (min-width: 700px) {
+  .exercise-idle-body:has(.exercise-timer-field) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    width: auto;
+  }
+
+  /* Launch takes a column of its own and fills it, so the timer segments and
+     Start line up at one width instead of each finding their own. Wide enough
+     for all six timer segments on one line — at 280px "Custom" wrapped to a
+     row of its own. */
+  .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-launch {
+    align-items: stretch;
+    flex: 0 0 auto;
+    width: min(330px, 40vw);
+  }
+
+  .exercise-idle-launch .exercise-idle-start {
+    width: 100%;
+  }
 }
 
 /* Start sits on its own row beneath the settings/description. */
@@ -1198,7 +1305,6 @@
   gap: 12px;
   width: 100%;
   max-width: 420px;
-  margin-top: 12px;
 }
 
 .vibrato-metric {
@@ -1226,7 +1332,6 @@
   gap: 16px;
   font-size: 1.4rem;
   font-weight: 700;
-  margin-bottom: 12px;
 }
 
 .slide-note-display .arrow {
@@ -1237,13 +1342,21 @@
 
 /* Vertical pitch ladder: low note at the bottom, high at the top, user dot
    slides up/down. */
+/* The ladder is the drill. It gets the height the stage can spare, between a
+   floor that keeps two targets and a dot distinguishable and a ceiling that
+   keeps it from swallowing a tall card. */
 .slide-viz {
   position: relative;
-  width: 100%;
-  max-width: 240px;
+  /* Definite, not `width: 100%; max-width: 240px`. Every child in here is
+     absolutely positioned, so the box has no intrinsic width of its own — the
+     percentage resolved to zero the moment the column around it stopped being
+     full width, and the ladder vanished. */
+  width: 240px;
+  max-width: 100%;
   flex: 1;
   min-height: 200px;
-  margin: 8px auto 0;
+  max-height: 320px;
+  margin: 0 auto;
 }
 
 .slide-viz::before {
@@ -1315,13 +1428,15 @@
   text-shadow: 0 0 8px rgba(88, 166, 255, 0.4);
 }
 
+/* `auto-fit` rather than a hard four: in the footer this can be handed a
+   narrow strip on a phone, and four columns there printed four labels on top
+   of four values. */
 .slide-metrics {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px;
   width: 100%;
   max-width: 500px;
-  margin-top: 12px;
 }
 
 .slide-metric {
@@ -1442,7 +1557,6 @@
   gap: 12px;
   width: 100%;
   max-width: 420px;
-  margin-top: 12px;
 }
 
 .pitch-hold-metric {
@@ -1472,6 +1586,13 @@
   margin-bottom: 12px;
   font-size: 1rem;
   font-weight: 600;
+}
+
+/* In the phase slot it is the row, so the bottom margin it carried to clear
+   the drill's visuals beneath it is somebody else's spacing now. */
+.exercise-active-phase .mirror-melody-phase {
+  margin-bottom: 0;
+  text-align: center;
 }
 
 .mirror-melody-phase .listen {

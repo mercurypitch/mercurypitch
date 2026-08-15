@@ -99,9 +99,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconTarget size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconTarget size={48} />
           <p>Hold a steady pitch. The longer and steadier, the better.</p>
           <p class="exercise-idle-target-note">
             Target: <strong>{targetNote()}</strong>
@@ -130,37 +130,39 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
             Target: <strong>{targetNote()}</strong>
           </div>
           <div class="long-note-timer">{elapsed().toFixed(1)}s</div>
-          <div class="long-note-metrics">
-            <div class="long-note-metric">
-              <span class="long-note-metric-label">Stability</span>
-              <span class="long-note-metric-value">
-                {base.state().metrics.pitchStabilityCents != null
-                  ? `${base.state().metrics.pitchStabilityCents}¢`
-                  : '—'}
-              </span>
-              <div class="long-note-metric-bar">
-                <div
-                  class={`long-note-metric-fill ${fillClass(Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2), [80, 50])}`}
-                  style={`width:${Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2)}%`}
-                />
-              </div>
-            </div>
-            <div class="long-note-metric">
-              <span class="long-note-metric-label">Steady Zone</span>
-              <span class="long-note-metric-value">
-                {base.state().metrics.steadyZonePct != null
-                  ? `${base.state().metrics.steadyZonePct}%`
-                  : '—'}
-              </span>
-              <div class="long-note-metric-bar">
-                <div
-                  class={`long-note-metric-fill ${fillClass(base.state().metrics.steadyZonePct || 0, [80, 50])}`}
-                  style={`width:${base.state().metrics.steadyZonePct || 0}%`}
-                />
-              </div>
+        </>
+      }
+      activeFooter={
+        <div class="long-note-metrics">
+          <div class="long-note-metric">
+            <span class="long-note-metric-label">Stability</span>
+            <span class="long-note-metric-value">
+              {base.state().metrics.pitchStabilityCents != null
+                ? `${base.state().metrics.pitchStabilityCents}¢`
+                : '—'}
+            </span>
+            <div class="long-note-metric-bar">
+              <div
+                class={`long-note-metric-fill ${fillClass(Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2), [80, 50])}`}
+                style={`width:${Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2)}%`}
+              />
             </div>
           </div>
-        </>
+          <div class="long-note-metric">
+            <span class="long-note-metric-label">Steady Zone</span>
+            <span class="long-note-metric-value">
+              {base.state().metrics.steadyZonePct != null
+                ? `${base.state().metrics.steadyZonePct}%`
+                : '—'}
+            </span>
+            <div class="long-note-metric-bar">
+              <div
+                class={`long-note-metric-fill ${fillClass(base.state().metrics.steadyZonePct || 0, [80, 50])}`}
+                style={`width:${base.state().metrics.steadyZonePct || 0}%`}
+              />
+            </div>
+          </div>
+        </div>
       }
       resultSummary={
         <>

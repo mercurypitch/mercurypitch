@@ -84,41 +84,98 @@
   .exercise-canvas-area {
     min-height: 240px;
   }
+
+  /* ── Idle, on a screen with no height to spare ─────────────
+     The dial is square, so every pixel of width it takes it also takes of
+     height. `NoteDial.module.css` already caps it at 46dvh for exactly this
+     reason; beside the launch column it can afford to be smaller still, and
+     the room it gives back is the room Start needs. */
+  .exercise-idle-center {
+    gap: 10px;
+    padding: 8px 16px;
+  }
+
+  .exercise-idle-setup svg[class*='face'] {
+    width: clamp(150px, min(34vw, 38dvh), 220px);
+  }
+
+  /* Here the split happens whether or not there is a timer: a stacked dial
+     and Start do not both fit, and a button you cannot reach beats an
+     unbalanced row. Needs the width to spend, same as the stage does. */
+  @media (min-width: 560px) {
+    .exercise-idle-body {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      width: auto;
+    }
+
+    /* A column wide enough for the timer segments, but only when there ARE
+       timer segments. Stretched around a lone Start button it made a 300px
+       slab floating in space next to the dial. */
+    .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-launch {
+      align-items: stretch;
+      flex: 0 0 auto;
+      width: min(300px, 40vw);
+    }
+
+    .exercise-idle-body:has(.exercise-timer-field)
+      .exercise-idle-launch
+      .exercise-idle-start {
+      width: 100%;
+    }
+  }
+
+  /* The description is the first thing to give up room when there is none —
+     the full text is a keypress away behind the header's help button. */
+  .exercise-idle-center .exercise-idle-placeholder p {
+    font-size: 0.82rem;
+    margin: 0;
+  }
+
+  .exercise-idle-center .exercise-idle-placeholder .idle-hint {
+    margin-top: 2px;
+  }
 }
 
 /* ── Side by side, when stacking has run out of room ─────────
-   Eleven drills — Siren, Slide, Mirror Melody, Scale Runner, Interval
-   Trainer, Arpeggio Jumper, Chord Stacker, Drone Intonation, Dynamic Swell,
-   Staccato Precision, Call & Response — draw a TALL, NARROW well: a 72px
-   column with the target line across the middle and a dot riding it. Stacked
-   under a 148px tracker it asks for 148 + phase + dots + 140 + a 76px strip
-   for Stop, which is more than a landscape tablet has. The card scrolled, and
-   a run you have to scroll is a run you are not watching.
+   Thirteen drills draw a TALL, NARROW visual — the 72px well with a dot
+   riding a target line (eleven of them), Slide's 240px pitch ladder, Pitch
+   Hold's column. Stacked under a 148px tracker they ask for 148 + a phase
+   line + the visual + a metrics row + a 76px strip for Stop, which is more
+   than a landscape tablet has. The card scrolled, and a run you have to
+   scroll is a run you are not watching.
 
-   The well is narrow, and a short screen is a wide one. So on this axis the
-   two visuals go beside each other: the tracker takes the width it can use,
-   the well keeps its 72px and grows into the height instead. One row, no
-   scroll, Stop where it has always been.
+   Those visuals are narrow, and a short screen is a wide one. So on this axis
+   the visual and the tracker go beside each other: the tracker takes the
+   width it can use, the visual keeps its own and grows into the height
+   instead. One row, no scroll, Stop where it has always been.
 
-   Keyed on `:has()` rather than a prop on each drill, because the trigger
-   really is "this exercise draws the tall well" — a twelfth one that adopts
-   the class gets the layout, and a browser without `:has()` gets today's
-   stack, which is a worse fit but never a broken one.
+   The phase line above the row and the metrics below it are what make the row
+   work — see `activePhase` / `activeFooter` in ExerciseShell. Both are wide
+   and short; the visual is narrow and tall. Sharing one column, the wide ones
+   were the ones that got squeezed.
+
+   Keyed on `:has(.exercise-tall-viz)` — a marker the drill puts on its own
+   visual — rather than a prop on each drill or a growing list of class names.
+   A fourteenth that adopts the marker gets the layout, and a browser without
+   `:has()` gets the stack: a worse fit, never a broken one.
 
    `min-width` guards the case this would make worse: a phone in portrait is
    short but has no width to spend, and two columns there would squeeze both. */
 @media (max-height: 720px) and (min-width: 560px) {
-  .exercise-active-stage:has(.mirror-melody-viz) {
+  .exercise-active-stage:has(.exercise-tall-viz) {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 14px;
-    padding: 0 14px;
+    gap: 18px;
+    padding: 4px 16px;
   }
 
   /* Was 88% of the card and centred by `margin: 0 auto`; here it is simply
      "whatever is left", and the bottom margin belonged to the stack. */
-  .exercise-active-stage:has(.mirror-melody-viz) .exercise-pitch-tracker {
+  .exercise-active-stage:has(.exercise-tall-viz) .exercise-pitch-tracker {
     flex: 1 1 auto;
     width: auto;
     max-width: none;
@@ -128,9 +185,9 @@
     margin: 0;
   }
 
-  /* The phase line, the round dots and the well, still stacked — as a column
-     narrow enough to sit next to the tracker rather than under it. */
-  .exercise-active-stage:has(.mirror-melody-viz) .exercise-active-content {
+  /* Whatever the drill draws, as a column narrow enough to sit next to the
+     tracker rather than under it. */
+  .exercise-active-stage:has(.exercise-tall-viz) .exercise-active-content {
     flex: 0 0 auto;
     width: auto;
     max-width: 42%;
@@ -139,14 +196,24 @@
   }
 
   /* Free to use the full height now that nothing is stacked beneath it. The
-     280px ceiling was there to stop it crowding the tracker. */
-  .exercise-active-stage:has(.mirror-melody-viz) .mirror-melody-viz {
+     ceilings were there to stop them crowding the tracker. */
+  .exercise-active-stage:has(.exercise-tall-viz) .exercise-tall-viz {
     max-height: none;
     min-height: 120px;
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
-  /* Both margins were spacing for a stack. */
-  .exercise-active-stage:has(.mirror-melody-viz) .mirror-melody-progress {
+  /* Spacing that belonged to a stack. */
+  .exercise-active-stage:has(.exercise-tall-viz) .mirror-melody-progress {
     margin-bottom: 8px;
+  }
+
+  /* Slide's ladder is the one tall visual that is not already narrow: 240px,
+     of which the line and its two labels use about 60 in the middle. Full
+     width it was fine under the tracker and looks marooned beside it, so it
+     keeps only what it draws in. */
+  .exercise-active-stage:has(.exercise-tall-viz) .slide-viz {
+    width: 150px;
   }
 }

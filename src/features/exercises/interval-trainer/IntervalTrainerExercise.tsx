@@ -111,9 +111,9 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconArrowUpDown size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconArrowUpDown size={48} />
           <p>
             Hear two notes, then sing them back. Train your ear to recognize
             intervals.
@@ -136,29 +136,30 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> Listen to the interval...
+              </>
+            ) : phase() === 2 ? (
+              <>
+                <IconMic size={16} /> Sing both notes back!
+              </>
+            ) : (
+              '...'
+            )}
+          </span>
+          {phase() === 2 && (
+            <span class="mirror-melody-current-note">
+              {midiToNoteName(currentMidi())}
+            </span>
+          )}
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> Listen to the interval...
-                </>
-              ) : phase() === 2 ? (
-                <>
-                  <IconMic size={16} /> Sing both notes back!
-                </>
-              ) : (
-                '...'
-              )}
-            </span>
-            {phase() === 2 && (
-              <span class="mirror-melody-current-note">
-                {midiToNoteName(currentMidi())}
-              </span>
-            )}
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalRounds() })}>
               {(_, i) => (
@@ -181,7 +182,7 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

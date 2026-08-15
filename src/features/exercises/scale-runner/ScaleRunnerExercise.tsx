@@ -118,9 +118,9 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconArrowUpDown size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconArrowUpDown size={48} />
           <p>
             Sing each note of the scale in tune. Build your scale fluency note
             by note.
@@ -171,29 +171,30 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
         upcomingTargets: () => controller.getUpcomingMidi(),
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> Listen to the note...
+              </>
+            ) : phase() === 2 ? (
+              <>
+                <IconMic size={16} /> Sing it back!
+              </>
+            ) : (
+              '...'
+            )}
+          </span>
+          {phase() === 2 && (
+            <span class="mirror-melody-current-note">
+              {midiToNoteName(currentMidi())}
+            </span>
+          )}
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> Listen to the note...
-                </>
-              ) : phase() === 2 ? (
-                <>
-                  <IconMic size={16} /> Sing it back!
-                </>
-              ) : (
-                '...'
-              )}
-            </span>
-            {phase() === 2 && (
-              <span class="mirror-melody-current-note">
-                {midiToNoteName(currentMidi())}
-              </span>
-            )}
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: scaleLength() })}>
               {(_, i) => (
@@ -216,7 +217,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

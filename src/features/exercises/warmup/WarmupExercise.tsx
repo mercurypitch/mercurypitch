@@ -235,9 +235,9 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconFire size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconFire size={48} />
           <p>
             A coached vocal warmup: breathing, hums, lip trills, sirens, and a
             light scale. Follow the steps — no grades, just get the voice

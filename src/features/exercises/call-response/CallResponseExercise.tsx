@@ -107,9 +107,9 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconReply size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconReply size={48} />
           <p>
             Listen to a short melodic phrase, then sing it back exactly. Train
             your ear and memory together.
@@ -135,23 +135,24 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
         upcomingTargets: () => controller.getUpcomingMidi(),
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> Listen to the phrase... (
+                {phraseLength()} notes)
+              </>
+            ) : (
+              <>
+                <IconMic size={16} /> Sing it back!
+              </>
+            )}
+          </span>
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> Listen to the phrase... (
-                  {phraseLength()} notes)
-                </>
-              ) : (
-                <>
-                  <IconMic size={16} /> Sing it back!
-                </>
-              )}
-            </span>
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalRounds() })}>
               {(_, i) => (
@@ -174,7 +175,7 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

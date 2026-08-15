@@ -128,9 +128,9 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconLayers size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconLayers size={48} />
           <p>
             {mode() === 'echo'
               ? 'Hear the whole arpeggio, then sing it back from memory — train your inner ear, not just your pitch.'
@@ -209,33 +209,34 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
         upcomingTargets: () => controller.getUpcomingMidi(),
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} />{' '}
+                {isEcho()
+                  ? 'Listen to the whole arpeggio...'
+                  : 'Listen to the note...'}
+              </>
+            ) : phase() === 2 ? (
+              <>
+                <IconMic size={16} />{' '}
+                {isEcho() ? 'Now sing it all back!' : 'Sing it back!'}
+              </>
+            ) : (
+              '...'
+            )}
+          </span>
+          {phase() === 2 && (
+            <span class="mirror-melody-current-note">
+              {midiToNoteName(currentMidi())}
+            </span>
+          )}
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} />{' '}
-                  {isEcho()
-                    ? 'Listen to the whole arpeggio...'
-                    : 'Listen to the note...'}
-                </>
-              ) : phase() === 2 ? (
-                <>
-                  <IconMic size={16} />{' '}
-                  {isEcho() ? 'Now sing it all back!' : 'Sing it back!'}
-                </>
-              ) : (
-                '...'
-              )}
-            </span>
-            {phase() === 2 && (
-              <span class="mirror-melody-current-note">
-                {midiToNoteName(currentMidi())}
-              </span>
-            )}
-          </div>
-
           <ExerciseFeedback state={base.state} />
 
           <div class="mirror-melody-progress">
@@ -260,7 +261,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

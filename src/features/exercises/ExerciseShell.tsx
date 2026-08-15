@@ -70,6 +70,15 @@ export interface ExerciseTrackerConfig {
 export interface ExerciseShellProps {
   type: ExerciseType
   title: string
+  /**
+   * The drill's mark, shown beside the title in the header.
+   *
+   * It used to open the idle panel at 48px with the title already spelled out
+   * two rows above it, which cost a row of the panel to say something the
+   * header had said. Beside the title it identifies the drill in the one place
+   * that is on screen during a run as well.
+   */
+  icon?: JSX.Element
   status: () => ExerciseStatus
   /** Live score 0-100 (shown in the header during a run). */
   currentScore: () => number
@@ -94,7 +103,29 @@ export interface ExerciseShellProps {
    *  nothing (Ear Training's listening-only rounds). */
   tracker?: ExerciseTrackerConfig
 
+  /**
+   * The one-line instruction for the current phase — "Listen", "Breathe",
+   * "Glide C3 → C4, follow the dot".
+   *
+   * Separate from `activeContent` because of where it belongs on screen. On a
+   * short viewport the tracker and the drill's own visual sit side by side,
+   * and a phase line inside the drill's column ended up squeezed into the
+   * narrow half, off to one side of a stage it is talking about. It reads for
+   * the whole stage, so it goes above the whole stage.
+   */
+  activePhase?: JSX.Element
+
   activeContent: JSX.Element
+  /**
+   * The run's readouts — smoothness, accuracy, held seconds.
+   *
+   * Below the stage rather than inside it, for the mirror of the reason the
+   * phase line is above it. A metrics row is wide and short; the drill's
+   * visual is narrow and tall. Sharing a column, the row was the thing that
+   * got squeezed, and on a short viewport it was also the thing that landed
+   * under the Stop button.
+   */
+  activeFooter?: JSX.Element
   stopLabel?: string
   onStop: () => void
 
@@ -398,9 +429,16 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         </div>
         {/* The title shares the header row on a phone and ellipsises when
             it has to; the attribute keeps the full name reachable. */}
-        <h2 class="exercise-title" title={props.title}>
-          {props.title}
-        </h2>
+        <div class="exercise-header-title">
+          <Show when={props.icon}>
+            <span class="exercise-title-icon" aria-hidden="true">
+              {props.icon}
+            </span>
+          </Show>
+          <h2 class="exercise-title" title={props.title}>
+            {props.title}
+          </h2>
+        </div>
         <div class="exercise-header-right">
           <span
             class="exercise-level-chip"
@@ -491,42 +529,54 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             >
               {props.idlePlaceholder}
             </Show>
-            <div class="exercise-idle-controls">
+            {/* Two groups, not one column of five.
+                The setup — a dial, a scale picker — is the part that needs
+                room and the part a singer studies. The launch — how long, and
+                go — is a decision made in a second and then never looked at
+                again. Stacked, the second pushed the first off a short screen
+                and the panel spent five rows saying what two can. Given width
+                they sit beside each other; a phone keeps the stack, since it
+                has height to spend and none to give sideways. */}
+            <div class="exercise-idle-body">
               <Show when={props.idleSettings}>
-                {/* Heavy setups (settingsSheetLabel set) move into a bottom
-                    sheet on phones so Start stays above the fold; inline
-                    everywhere else. useSettingsSheet is false on desktop. */}
-                <Show when={useSettingsSheet()} fallback={props.idleSettings}>
-                  <button
-                    type="button"
-                    class="exercise-btn exercise-settings-trigger"
-                    onClick={() => setSettingsSheetOpen(true)}
-                  >
-                    {props.settingsSheetLabel}
-                  </button>
-                  <OptionsSheet
-                    isOpen={settingsSheetOpen()}
-                    close={() => setSettingsSheetOpen(false)}
-                    ariaLabel={props.settingsSheetLabel ?? 'Settings'}
-                  >
-                    {props.idleSettings}
-                  </OptionsSheet>
+                <div class="exercise-idle-setup">
+                  {/* Heavy setups (settingsSheetLabel set) move into a bottom
+                      sheet on phones so Start stays above the fold; inline
+                      everywhere else. useSettingsSheet is false on desktop. */}
+                  <Show when={useSettingsSheet()} fallback={props.idleSettings}>
+                    <button
+                      type="button"
+                      class="exercise-btn exercise-settings-trigger"
+                      onClick={() => setSettingsSheetOpen(true)}
+                    >
+                      {props.settingsSheetLabel}
+                    </button>
+                    <OptionsSheet
+                      isOpen={settingsSheetOpen()}
+                      close={() => setSettingsSheetOpen(false)}
+                      ariaLabel={props.settingsSheetLabel ?? 'Settings'}
+                    >
+                      {props.idleSettings}
+                    </OptionsSheet>
+                  </Show>
+                </div>
+              </Show>
+              <div class="exercise-idle-launch">
+                <Show when={props.autoTimer}>
+                  <TimerToggle />
                 </Show>
-              </Show>
-              <Show when={props.autoTimer}>
-                <TimerToggle />
-              </Show>
-              <Show when={props.error?.() != null}>
-                <div class="exercise-error">{props.error!()}</div>
-              </Show>
-              <button
-                class="exercise-btn exercise-btn-primary exercise-idle-start"
-                onClick={() =>
-                  isComplete() ? props.onTryAgain() : props.onStart()
-                }
-              >
-                {isComplete() ? 'Try Again' : (props.startLabel ?? 'Start')}
-              </button>
+                <Show when={props.error?.() != null}>
+                  <div class="exercise-error">{props.error!()}</div>
+                </Show>
+                <button
+                  class="exercise-btn exercise-btn-primary exercise-idle-start"
+                  onClick={() =>
+                    isComplete() ? props.onTryAgain() : props.onStart()
+                  }
+                >
+                  {isComplete() ? 'Try Again' : (props.startLabel ?? 'Start')}
+                </button>
+              </div>
             </div>
           </div>
         </Show>
@@ -544,6 +594,16 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             own visuals and then off the bottom entirely. Scrolling in here
             leaves Stop anchored to the card where it belongs. */}
         <Show when={isActive()}>
+          {/* Above the stage, not inside it. The instruction speaks for the
+              whole run — both the tracker and the drill's own visual — so it
+              spans both of them and stays centred whether they are stacked or
+              side by side. Inside the drill's column it was squeezed into the
+              narrow half, captioning the thing it was standing next to. It is
+              also outside the scroll, since an instruction you have to scroll
+              to is not an instruction. */}
+          <Show when={props.activePhase}>
+            <div class="exercise-active-phase">{props.activePhase}</div>
+          </Show>
           <div class="exercise-active-stage">
             <Show when={props.tracker}>
               {(tracker) => (
@@ -560,6 +620,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             </Show>
             <div class="exercise-active-content">{props.activeContent}</div>
           </div>
+          <Show when={props.activeFooter}>
+            <div class="exercise-active-footer">{props.activeFooter}</div>
+          </Show>
         </Show>
 
         {/* Stop lives inside the exercise card, right under the action —

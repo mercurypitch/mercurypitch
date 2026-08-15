@@ -95,9 +95,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconLock size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconLock size={48} />
           <p>
             Keep your pitch locked inside the target zone as it shrinks over
             time.
@@ -128,7 +128,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
             <span class="timer">{elapsed().toFixed(1)}s</span>
           </div>
 
-          <div class="pitch-hold-viz">
+          <div class="pitch-hold-viz exercise-tall-viz">
             <div
               class="pitch-hold-zone"
               style={`top:${zoneTop()}%;height:${zoneBottom() - zoneTop()}%`}
@@ -144,24 +144,25 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
             />
             <div class="pitch-hold-target-label">{targetNote()}</div>
           </div>
-
-          <div class="pitch-hold-metrics">
-            <div class="pitch-hold-metric">
-              <span class="pitch-hold-metric-label">In Zone</span>
-              <span class="pitch-hold-metric-value">
-                {base.state().metrics.zonePct != null
-                  ? `${base.state().metrics.zonePct}%`
-                  : '—'}
-              </span>
-            </div>
-            <div class="pitch-hold-metric">
-              <span class="pitch-hold-metric-label">Zone Size</span>
-              <span class="pitch-hold-metric-value">
-                {zoneRadius() != null ? `±${Math.round(zoneRadius())}¢` : '—'}
-              </span>
-            </div>
-          </div>
         </>
+      }
+      activeFooter={
+        <div class="pitch-hold-metrics">
+          <div class="pitch-hold-metric">
+            <span class="pitch-hold-metric-label">In Zone</span>
+            <span class="pitch-hold-metric-value">
+              {base.state().metrics.zonePct != null
+                ? `${base.state().metrics.zonePct}%`
+                : '—'}
+            </span>
+          </div>
+          <div class="pitch-hold-metric">
+            <span class="pitch-hold-metric-label">Zone Size</span>
+            <span class="pitch-hold-metric-value">
+              {zoneRadius() != null ? `±${Math.round(zoneRadius())}¢` : '—'}
+            </span>
+          </div>
+        </div>
       }
       resultSummary={
         <>
