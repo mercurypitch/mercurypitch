@@ -94,3 +94,41 @@ describe('streaks use the singer’s calendar day', () => {
     expect(todayDateString()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 })
+
+describe('the daily routine rolls over at the same midnight', () => {
+  // The routine is seeded by day-of-year, so it must change when the singer's
+  // day changes. Under the old UTC seed a singer east of Greenwich was handed
+  // yesterday's routine every morning until 02:00 local — and their streak
+  // and their routine disagreed about what day it was.
+  const justAfterLocalMidnight = new Date('2026-07-06T22:30:00Z')
+
+  it('seeds from the local day-of-year, one ahead of UTC past midnight', async () => {
+    process.env.TZ = 'Europe/Zagreb'
+    vi.resetModules()
+    const { dayOfYear } = await import('@/features/routines/use-daily-routine')
+
+    // 00:30 on 7 July local, still 6 July in UTC.
+    const utcSeed = Math.floor(
+      (Date.UTC(
+        justAfterLocalMidnight.getUTCFullYear(),
+        justAfterLocalMidnight.getUTCMonth(),
+        justAfterLocalMidnight.getUTCDate(),
+      ) -
+        Date.UTC(justAfterLocalMidnight.getUTCFullYear(), 0, 0)) /
+        86_400_000,
+    )
+    expect(dayOfYear(justAfterLocalMidnight)).toBe(utcSeed + 1)
+  })
+
+  it('agrees with the streak’s idea of today', async () => {
+    process.env.TZ = 'Europe/Zagreb'
+    vi.resetModules()
+    const { dayOfYear } = await import('@/features/routines/use-daily-routine')
+    const { localDayOfYear } = await import('@/lib/local-day')
+
+    // The point of routing both through local-day.ts: one answer, not two.
+    expect(dayOfYear(justAfterLocalMidnight)).toBe(
+      localDayOfYear(justAfterLocalMidnight),
+    )
+  })
+})

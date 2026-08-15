@@ -32,6 +32,32 @@ describe('startAscent', () => {
 })
 
 describe('recordPathPracticeDay', () => {
+  it('defaults to the singer’s calendar day, not UTC’s', () => {
+    // The default argument is what production actually calls: the daily-goal
+    // accumulator passes no date. It used to be
+    // `new Date().toISOString().slice(0, 10)`, so an Ascent day practised at
+    // 01:00 in Zagreb was filed under the previous day and a singer could
+    // fill two ring segments with one calendar day of practice — or none, on
+    // the other side of Greenwich.
+    const originalTz = process.env.TZ
+    process.env.TZ = 'Europe/Zagreb'
+    try {
+      startAscent()
+      recordPathPracticeDay()
+      const [, recorded] = pathProgress()?.weekDays[1] ?? []
+      const now = new Date()
+      expect(recorded).toBe(
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      )
+      // Idempotent on the same local day, which is the property the key is
+      // for: a second call must not fill a second segment.
+      recordPathPracticeDay()
+      expect(ringFill(1)).toBe(2)
+    } finally {
+      process.env.TZ = originalTz
+    }
+  })
+
   it('no-ops before the path is started', () => {
     recordPathPracticeDay(day(1))
     expect(pathProgress()).toBeNull()
