@@ -43,6 +43,30 @@
   color: var(--text-primary, #e6edf3);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The deliberate way out of a pairing; the X beside it only hides the
+   dialog (REQ-SYNC-030). */
+.headerAction {
+  padding: 4px 10px;
+  border: 1px solid var(--border-color, var(--border, #30363d));
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary, #8b949e);
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.headerAction:hover {
+  color: var(--text-primary, #e6edf3);
+  border-color: var(--text-muted, #6e7681);
+}
+
 .close {
   background: none;
   border: none;

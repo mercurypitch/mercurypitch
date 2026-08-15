@@ -10,7 +10,7 @@
 // which are exactly the numbers the plan wants measured per device.
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { QrCode } from '@/components/QrCode'
 import { formatBytes } from '@/lib/fetch-progress'
@@ -26,7 +26,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap'
 // Importing from the module that DEFINES a thing keeps this graph to
 // stores the build can color independently of the app shell.
 import type { SyncTransfer } from '@/stores/sync-store'
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncQueue, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncRole, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive, getGroupsReactive, } from '@/stores/uvr-store'
 import { DeviceSync } from '../icons'
@@ -93,12 +93,12 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   // to do, and asking them to pick "Send songs" and retype the code is
   // undoing the thing the QR was for.
   const scanned = takeSyncCodeToJoin()
+  // Reopening over a live session lands on the screen it was closed on
+  // (syncRole), not on a chooser offering to start a second one.
   const [mode, setMode] = createSignal<SyncMode>(
-    scanned !== null
+    scanned !== null || props.initialSessionId !== undefined
       ? 'send'
-      : props.initialSessionId === undefined
-        ? 'choose'
-        : 'send',
+      : (syncRole() ?? 'choose'),
   )
   const [joinCode, setJoinCode] = createSignal(scanned ?? '')
   const [joining, setJoining] = createSignal(false)
@@ -118,9 +118,17 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   // connect — not again after every reconnect wobble.
   let initialSent = false
 
+  // Hiding, not ending: what happens to the session is sync-store's
+  // call (registerSyncUiLifecycle) — a connected pair stays alive behind
+  // the corner chip, a half-opened one is torn down. REQ-SYNC-030.
   const close = (): void => {
-    stopSync()
     props.onClose()
+  }
+
+  // The one deliberate way to end the pairing — the X above only hides.
+  const disconnect = (): void => {
+    stopSync()
+    setMode('choose')
   }
 
   useFocusTrap(() => dialogRef, {
@@ -128,11 +136,15 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     onClose: close,
   })
 
-  // Leaving the tab with the modal open must not leave a room behind.
-  onCleanup(() => stopSync())
-
   onMount(() => {
-    if (mode() === 'receive' && !jamSignalingIsMocked()) void startSyncReceive()
+    // Guarded on idle: reopening the dialog over a live receiving
+    // session must not open a second room beside it.
+    if (
+      mode() === 'receive' &&
+      syncState() === 'idle' &&
+      !jamSignalingIsMocked()
+    )
+      void startSyncReceive()
     // A scanned code is a complete one, so there is nothing left to ask.
     if (scanned !== null && !jamSignalingIsMocked()) join()
   })
@@ -179,6 +191,27 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     return room !== null && bytes > 0 && room.freeBytes < bytes
   }
 
+  /**
+   * Whether that song is already over there — because the far device's
+   * hello said so (REQ-SYNC-034), or because it was sent (or declined as
+   * a duplicate) in THIS session: the hello's set never refreshes
+   * between sends, and without the second half "Select missing" would
+   * re-pick every song the batch just delivered. False when nothing is
+   * known — an older build's silence must not mark anything. Declared up
+   * here with tooBigForPeer, and for the same TDZ reason: memos below
+   * call it as they are made.
+   */
+  const peerHas = (session: UvrSession): boolean => {
+    const hash = session.fileHash ?? ''
+    if (syncPeerSongs()?.has(hash) === true) return true
+    return syncTransfers().some(
+      (t) =>
+        t.direction === 'out' &&
+        t.fileHash === hash &&
+        (t.status === 'done' || t.status === 'already'),
+    )
+  }
+
   /** True when the far device has less room than a typical song needs. */
   const lowOnRoom = (): boolean => {
     const room = syncPeerRoom()
@@ -201,6 +234,11 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
         const aFits = tooBigForPeer(estimatePackedBytes(a)) ? 1 : 0
         const bFits = tooBigForPeer(estimatePackedBytes(b)) ? 1 : 0
         if (aFits !== bFits) return aFits - bFits
+        // Among those, the ones already over there sink below the ones
+        // that are missing — the list leads with what a send is FOR.
+        const aHeld = peerHas(a) ? 1 : 0
+        const bHeld = peerHas(b) ? 1 : 0
+        if (aHeld !== bHeld) return aHeld - bHeld
         return b.createdAt - a.createdAt
       })
   })
@@ -223,6 +261,16 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
   const pickable = createMemo(() => sendable().filter(fits))
 
+  /**
+   * What "Select all" actually selects: the songs not already over
+   * there. Every row stays individually sendable (a torn copy over
+   * there is repaired only by a resend, REQ-SYNC-028); being skipped by
+   * the bulk action is all that "already there" costs a song. When
+   * nothing is known or held, this is simply everything — and the label
+   * below says which of the two it is.
+   */
+  const selectTargets = createMemo(() => pickable().filter((s) => !peerHas(s)))
+
   const togglePick = (sessionId: string): void => {
     setPicked((current) => {
       const next = new Set(current)
@@ -241,13 +289,14 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   )
 
   const allPicked = (): boolean =>
-    pickable().length > 0 && pickedSessions().length === pickable().length
+    selectTargets().length > 0 &&
+    selectTargets().every((s) => picked().has(s.sessionId))
 
   const toggleAll = (): void => {
     setPicked(
       allPicked()
         ? new Set<string>()
-        : new Set(pickable().map((s) => s.sessionId)),
+        : new Set(selectTargets().map((s) => s.sessionId)),
     )
   }
 
@@ -280,26 +329,41 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
   return (
     <Portal>
-      <div class={styles.overlay} onClick={close}>
+      {/* No click-to-close on the backdrop, deliberately (REQ-SYNC-031):
+          a stray tap outside used to end the session and abort whatever
+          was in flight. Closing is the X or Escape — and even those only
+          hide a connected session. */}
+      <div class={styles.overlay}>
         <div
           ref={dialogRef}
           class={styles.modal}
           role="dialog"
           aria-modal="true"
           aria-label="Sync with another device"
-          onClick={(e) => e.stopPropagation()}
           data-testid="sync-modal"
         >
           <div class={styles.header}>
             <h3>Sync with another device</h3>
-            <button
-              type="button"
-              class={styles.close}
-              onClick={close}
-              aria-label="Close"
-            >
-              &times;
-            </button>
+            <div class={styles.headerActions}>
+              <Show when={syncState() !== 'idle'}>
+                <button
+                  type="button"
+                  class={styles.headerAction}
+                  onClick={disconnect}
+                  data-testid="sync-disconnect"
+                >
+                  Disconnect
+                </button>
+              </Show>
+              <button
+                type="button"
+                class={styles.close}
+                onClick={close}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
           </div>
 
           <div class={styles.body}>
@@ -548,14 +612,16 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   </div>
                 </Show>
 
-                <Show when={pickable().length > 1}>
+                <Show when={selectTargets().length > 1}>
                   <label class={styles.selectAll}>
                     <input
                       type="checkbox"
                       checked={allPicked()}
                       onChange={toggleAll}
                     />
-                    Select all
+                    {selectTargets().length === pickable().length
+                      ? 'Select all'
+                      : 'Select missing'}
                     {groupFilter() === null ? '' : ' in this group'}
                   </label>
                 </Show>
@@ -592,6 +658,12 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                               — about{' '}
                               {formatBytes(estimatePackedBytes(session))}, too
                               big for that device
+                            </span>
+                          </Show>
+                          <Show when={fits(session) && peerHas(session)}>
+                            <span class={styles.songNote}>
+                              {' '}
+                              — already on that device
                             </span>
                           </Show>
                         </span>
@@ -735,6 +807,26 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                   )}
                 </For>
               </div>
+            </Show>
+
+            {/* Said exactly when somebody is deciding whether they may
+                leave: mid-transfer. The chip it promises is SyncHost's. */}
+            <Show
+              when={
+                syncBusy() ||
+                syncTransfers().some(
+                  (t) =>
+                    t.status === 'packing' ||
+                    t.status === 'preparing' ||
+                    t.status === 'transferring',
+                )
+              }
+            >
+              <p class={styles.hint}>
+                Closing this window stops nothing — the transfer keeps going
+                behind a small chip in the corner, and the devices stay
+                connected.
+              </p>
             </Show>
 
             <Show when={syncError()}>

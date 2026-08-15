@@ -38,6 +38,8 @@ const state = vi.hoisted(() => ({
   peerRoom: null as { freeBytes: number; quota: number } | null,
   syncState: 'connected' as string,
   transfers: [] as SyncTransfer[],
+  role: null as 'send' | 'receive' | null,
+  peerSongs: null as ReadonlySet<string> | null,
 }))
 
 vi.mock('@/stores/sync-store', () => ({
@@ -47,7 +49,9 @@ vi.mock('@/stores/sync-store', () => ({
   syncOwnRoom: () => null,
   syncPeerLabel: () => 'The other one',
   syncPeerRoom: () => state.peerRoom,
+  syncPeerSongs: () => state.peerSongs,
   syncQueue: () => [],
+  syncRole: () => state.role,
   syncRoomId: () => 'ABCD1234',
   syncState: () => state.syncState,
   syncTransfers: () => state.transfers,
@@ -101,6 +105,8 @@ describe('SyncDevicesModal send list', () => {
     state.peerRoom = { freeBytes: 500 * 1024 * 1024, quota: 1024 * 1024 * 1024 }
     state.syncState = 'connected'
     state.transfers = []
+    state.role = null
+    state.peerSongs = null
     vi.clearAllMocks()
     sync.takeSyncCodeToJoin.mockReturnValue(null)
     sync.estimatePackedBytes.mockReturnValue(5 * 1024 * 1024)
@@ -254,5 +260,147 @@ describe('SyncDevicesModal send list', () => {
     expect(source).not.toMatch(
       /from\s+['"][^'"]*stores\/(?:app-store|ui-store)['"]/,
     )
+  })
+})
+
+describe('closing, and what it must not do', () => {
+  beforeEach(() => {
+    state.sessions = []
+    state.groups = []
+    state.peerRoom = null
+    state.syncState = 'connected'
+    state.transfers = []
+    state.role = null
+    state.peerSongs = null
+    vi.clearAllMocks()
+    sync.takeSyncCodeToJoin.mockReturnValue(null)
+  })
+
+  afterEach(cleanup)
+
+  // REQ-SYNC-031: before this, a stray tap on the backdrop ended the
+  // session and aborted whatever was in flight.
+  it('REQ-SYNC-031: a click on the backdrop neither closes nor disconnects', () => {
+    const onClose = vi.fn()
+    render(() => <SyncDevicesModal onClose={onClose} />)
+    fireEvent.click(screen.getByTestId('sync-modal').parentElement!)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(sync.stopSync).not.toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-030: the X hides the dialog without ending the session', () => {
+    const onClose = vi.fn()
+    render(() => <SyncDevicesModal onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(sync.stopSync).not.toHaveBeenCalled()
+  })
+
+  it('Escape behaves exactly like the X', () => {
+    const onClose = vi.fn()
+    render(() => <SyncDevicesModal onClose={onClose} />)
+    fireEvent.keyDown(screen.getByTestId('sync-modal'), { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(sync.stopSync).not.toHaveBeenCalled()
+  })
+
+  it('Disconnect is the deliberate way out, and only it ends the session', () => {
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-disconnect'))
+    expect(sync.stopSync).toHaveBeenCalledTimes(1)
+  })
+
+  it('reopens onto the send list the sender was closed on', () => {
+    state.role = 'send'
+    state.sessions = [song()]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    // No chooser press: the list is simply there again.
+    expect(screen.getAllByTestId('sync-song-row')).toHaveLength(1)
+  })
+
+  it('reopening as the receiver does not open a second room', () => {
+    state.role = 'receive'
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    expect(sync.startSyncReceive).not.toHaveBeenCalled()
+  })
+
+  it('says mid-transfer that closing stops nothing', () => {
+    state.transfers = [
+      {
+        fileHash: 'h1',
+        title: 'Moving',
+        direction: 'out',
+        status: 'transferring',
+        ratio: 0.5,
+        bytes: 10,
+      },
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    expect(screen.getByText(/Closing this window stops nothing/i)).toBeTruthy()
+  })
+
+  it('REQ-SYNC-034: marks songs the far device holds, and selects only the missing', () => {
+    state.peerSongs = new Set(['hash-1'])
+    state.sessions = [
+      song(),
+      song({ sessionId: 'session-2', fileHash: 'h2', createdAt: 2 }),
+      song({ sessionId: 'session-3', fileHash: 'h3', createdAt: 3 }),
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-choose-send'))
+
+    expect(screen.getByText(/already on that device/i)).toBeTruthy()
+
+    // The bulk action is now "the songs it is missing" — but every row
+    // keeps its own checkbox, because a torn copy over there is only
+    // repaired by a resend (REQ-SYNC-028).
+    const selectMissing = screen.getByText(/Select missing/)
+    fireEvent.click(selectMissing.closest('label')!.querySelector('input')!)
+    fireEvent.click(screen.getByTestId('sync-send-picked'))
+    // Newest first among the missing; the held song is not in the batch.
+    expect(sync.enqueueSongs).toHaveBeenCalledWith(['session-3', 'session-2'])
+  })
+
+  it('REQ-SYNC-034: a song sent this session stops being missing', () => {
+    // The hello's set never refreshes between sends; the terminal
+    // transfer row is the proof the song landed. Even against an older
+    // build that announced nothing.
+    state.peerSongs = null
+    state.transfers = [
+      {
+        fileHash: 'hash-1',
+        title: 'A Song.wav',
+        direction: 'out',
+        status: 'done',
+        ratio: 1,
+        bytes: 10,
+      },
+    ]
+    state.sessions = [
+      song(),
+      song({ sessionId: 'session-2', fileHash: 'h2', createdAt: 2 }),
+      song({ sessionId: 'session-3', fileHash: 'h3', createdAt: 3 }),
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-choose-send'))
+
+    expect(screen.getByText(/already on that device/i)).toBeTruthy()
+    const selectMissing = screen.getByText(/Select missing/)
+    fireEvent.click(selectMissing.closest('label')!.querySelector('input')!)
+    fireEvent.click(screen.getByTestId('sync-send-picked'))
+    expect(sync.enqueueSongs).toHaveBeenCalledWith(['session-3', 'session-2'])
+  })
+
+  it('an older build that announced nothing marks nothing', () => {
+    state.peerSongs = null
+    state.sessions = [
+      song(),
+      song({ sessionId: 'session-2', fileHash: 'h2', createdAt: 2 }),
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-choose-send'))
+
+    expect(screen.queryByText(/already on that device/i)).toBeNull()
+    expect(screen.getByText(/Select all/)).toBeTruthy()
   })
 })

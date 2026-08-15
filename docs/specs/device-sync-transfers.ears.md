@@ -312,3 +312,89 @@ refusal, which trusts a positive estimate, switched itself off.
 _Tests:_ `sync-store` — "REQ-SYNC-029: prices a cold-loaded session
 from its persisted stem sizes", "REQ-SYNC-029: durations still price a
 session that has no stored sizes".
+
+### REQ-SYNC-030 — Closing the dialog is not ending the session
+
+**WHEN** the sync dialog is closed (the X or Escape) **WHILE** the
+session is connected or a transfer is packing, being prepared, or on
+the wire, the session and every transfer shall keep running, and a
+corner chip (where notifications land) shall show progress and reopen
+the dialog when pressed. Reopening lands on the screen the dialog was
+closed on, not on the chooser. A session still being set up (starting,
+waiting) is torn down as before — its code is on screen nowhere once
+the dialog is gone, so nobody could ever join it. Ending a connected
+pairing is a deliberate act: the dialog's Disconnect button.
+_Tests:_ `sync-store` — "REQ-SYNC-030: hiding the dialog keeps a
+connected session", "REQ-SYNC-030: hiding a session still being set up
+tears it down"; `SyncHost` — "REQ-SYNC-030: the chip appears when a
+live session is hidden"; `SyncDevicesModal` — "REQ-SYNC-030: the X
+hides the dialog without ending the session".
+
+### REQ-SYNC-031 — Only the X (or Escape) closes the dialog
+
+**WHEN** the user clicks or taps outside the open sync dialog, nothing
+shall happen. **IF** the backdrop closed it, **THEN** — before
+REQ-SYNC-030 — a stray tap aborted the pack mid-slice, disposed the
+peer and ended the session; even after it, the dialog people stand in
+front of while a code is being read out must not vanish by accident.
+_Tests:_ `SyncDevicesModal` — "REQ-SYNC-031: a click on the backdrop
+neither closes nor disconnects".
+
+### REQ-SYNC-032 — A hidden, idle session ends itself
+
+**WHILE** the dialog is hidden and the session has nothing moving,
+**WHEN** ten minutes pass, the session shall end and say so in a
+notification. Reopening the dialog or any transfer activity rewinds
+the countdown, and a moving transfer is never cut — its completion
+starts the ten minutes over.
+_Tests:_ `sync-store` — "REQ-SYNC-032: a hidden idle session closes
+after ten minutes", "REQ-SYNC-032: reopening the dialog stops the
+countdown".
+
+### REQ-SYNC-033 — The screen stays awake while songs move
+
+**WHILE** anything is packing, being prepared, or transferring, the
+device shall hold a screen wake lock (best effort — the browser may
+refuse), released when nothing is moving. The lock is shared with
+Drive backups by count: one feature finishing shall not release the
+other's hold. **IF** no lock were held, **THEN** a phone whose screen
+sleeps mid-pack freezes the page and the transfer stalls where it
+stood — the same death REQ-DRV-017 already guards the backup against.
+_Tests:_ `sync-store` — "REQ-SYNC-033: holds the wake lock while a
+song moves, then lets go"; `keep-awake` — "holds the lock until the
+last holder lets go".
+
+### REQ-SYNC-034 — The sender knows what is already over there
+
+**WHEN** the channel opens, each device's hello shall carry its
+library's content hashes (completed songs with an identity only,
+capped at 2000), and the send list shall mark songs the far device
+already holds, sink them below the missing ones, and make "Select
+missing" the bulk action. A song sent (or declined as a duplicate)
+during the session counts as held too — the hello's set never
+refreshes between sends, and without that the bulk action would
+re-pick every song the last batch just delivered. Every row stays
+individually sendable — a torn copy over there is repaired only by a
+resend (REQ-SYNC-028) — and a build that announces nothing marks
+nothing: unknown is not empty. The announcement dies with the peer;
+the next device on the same code speaks for itself.
+_Tests:_ `sync-store` — "REQ-SYNC-034: the hello carries this library,
+by hash", "REQ-SYNC-034: the far library is remembered, and dies with
+the peer"; `SyncDevicesModal` — "REQ-SYNC-034: marks songs the far
+device holds, and selects only the missing", "REQ-SYNC-034: a song
+sent this session stops being missing".
+
+### REQ-SYNC-035 — A dropped pair rebuilds itself
+
+**WHILE** both devices remain in the room, **WHEN** the pair between
+them dies (channel closed, ICE failed), the peer layer shall attempt a
+brand-new connection at 2 s and 8 s, the initiator chosen by the same
+glare rule as a fresh join. A device that LEFT the room is not chased —
+that offer lands nowhere. A transfer that was in flight has already
+failed honestly: what returns is the PAIRING, never the song. Behind a
+hidden dialog the comeback is announced, because the corner chip
+changing its text is not an announcement.
+_Tests:_ `sync-peer` — "REQ-SYNC-035: rebuilds a dropped pair while
+both stay in the room", "does not chase a peer that left the room";
+`sync-store` — "REQ-SYNC-035: a peer that comes back is welcomed
+behind a hidden dialog".

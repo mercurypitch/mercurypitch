@@ -364,6 +364,18 @@ export default defineConfig(({ command, mode }) => {
             // page then executes that entry — which renders the whole app
             // under the karaoke stage (2026-08-14, found on a phone).
             if (id.includes('/src/components/QrCode.')) return 'qr-code'
+            // The sync dialog's open-state (sync-ui) and its always-
+            // mounted host run in BOTH entries at first paint (app shell
+            // and Karaoke Night) and depend only on solid-js. Unpinned,
+            // Rollup hoists them into the app ENTRY chunk and the
+            // standalone page executes the whole app to read one signal
+            // — the QrCode failure all over again.
+            if (
+              id.includes('/src/stores/sync-ui.') ||
+              id.includes('/src/components/sync/SyncHost.')
+            ) {
+              return 'sync-ui'
+            }
             // These dependency-free runtime leaves are shared with the main
             // app, but putting them into its broad pitch-core/advanced chunks
             // turns those chunks into static Piano Night dependencies.

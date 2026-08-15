@@ -13,6 +13,7 @@
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { ChevronDown, Info } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
+import { SyncHost } from '@/components/sync/SyncHost'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
 import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
@@ -816,6 +817,10 @@ export function KaraokeNightApp() {
           (e.g. "song unavailable, skipping…"); without this they'd render
           nowhere on the standalone page. */}
       <Notifications />
+      {/* The sync dialog + corner chip mount at page scope, not in the
+          rail: a transfer must survive the rail collapsing and the
+          dialog closing — REQ-SYNC-030. */}
+      <SyncHost />
       <VoiceControlHud
         controller={voiceControl}
         onShowCommands={() => setShowVoiceHelp(true)}

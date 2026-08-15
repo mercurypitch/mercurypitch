@@ -59,6 +59,13 @@ const vibrate = (pattern: number | number[]): void => {
 }
 
 let wakeSentinel: WakeLockSentinel | null = null
+/**
+ * How many features want the screen held right now. Drive backups and
+ * device-sync transfers can overlap, and the sentinel is one per page —
+ * without a count, whichever finished first would release the lock out
+ * from under the other. Callers must pair enable/disable exactly.
+ */
+let wakeWanted = 0
 
 export const platform: PlatformServices = {
   haptics: {
@@ -69,6 +76,7 @@ export const platform: PlatformServices = {
 
   keepAwake: {
     async enable() {
+      wakeWanted += 1
       if (wakeSentinel || typeof navigator === 'undefined') return
       if (!('wakeLock' in navigator)) return
       try {
@@ -81,6 +89,8 @@ export const platform: PlatformServices = {
       }
     },
     async disable() {
+      wakeWanted = Math.max(0, wakeWanted - 1)
+      if (wakeWanted > 0) return
       const sentinel = wakeSentinel
       wakeSentinel = null
       try {

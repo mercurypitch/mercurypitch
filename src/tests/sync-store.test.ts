@@ -63,13 +63,23 @@ const uvr = vi.hoisted(() => ({
     | undefined,
   /** Set by the queue tests, which need the ids to be told apart. */
   byId: null as Record<string, Record<string, unknown>> | null,
+  /** The whole library, for the hello's hash announcement. */
+  all: [] as Record<string, unknown>[],
 }))
 vi.mock('@/stores/uvr-store', () => ({
   getUvrSession: (id: string) => uvr.byId?.[id] ?? uvr.session,
+  getAllUvrSessions: () => uvr.all,
+  initSessionStore: () => Promise.resolve(),
 }))
 
 const notes = vi.hoisted(() => ({ showNotification: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => notes)
+
+const wake = vi.hoisted(() => ({
+  enable: vi.fn(() => Promise.resolve()),
+  disable: vi.fn(() => Promise.resolve()),
+}))
+vi.mock('@/lib/platform', () => ({ platform: { keepAwake: wake } }))
 
 vi.mock('@/db/durable-write', () => ({
   storageEstimate: () => Promise.resolve({ quota: 1e9, usage: 0 }),
@@ -78,7 +88,8 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncPeerSongs, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { closeSyncModal, openSyncModal } from '@/stores/sync-ui'
 import type { UvrSession } from '@/stores/uvr-store'
 
 /** Drive the store to a live room with a connected peer. */
@@ -95,6 +106,7 @@ beforeEach(async () => {
   peerMock.peerId = 'peer-1'
   uvr.session = { id: 's1', fileHash: 'hash-1' }
   uvr.byId = null
+  uvr.all = []
   route.awaitDirectRoute.mockResolvedValue('direct')
   // `clearAllMocks` forgets calls but keeps implementations, so anything
   // a test points at a different answer has to be pointed back by hand.
@@ -684,5 +696,131 @@ describe('what a song is estimated to weigh', () => {
     } as unknown as UvrSession
     // Two stems, 100 seconds, 192 kbps: 2 × 100 × 24 000 bytes.
     expect(estimatePackedBytes(session)).toBe(4_800_000)
+  })
+})
+
+describe('the dialog is a view; the session is not', () => {
+  beforeEach(() => {
+    // The signal is module-level and a prior test may have left the
+    // dialog "open"; every test here starts with it hidden.
+    closeSyncModal()
+    notes.showNotification.mockClear()
+  })
+
+  it('REQ-SYNC-030: hiding the dialog keeps a connected session', async () => {
+    await connect()
+    expect(syncState()).toBe('connected')
+
+    closeSyncModal()
+
+    expect(syncState()).toBe('connected')
+    expect(peerMock.dispose).not.toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-030: hiding a session still being set up tears it down', async () => {
+    await startSyncReceive()
+    expect(syncState()).toBe('waiting')
+
+    closeSyncModal()
+
+    // A waiting room whose code is on screen nowhere can never be
+    // joined; keeping it would be a leak, not a feature.
+    expect(syncState()).toBe('idle')
+    expect(peerMock.dispose).toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-032: a hidden idle session closes after ten minutes', async () => {
+    await connect()
+    vi.useFakeTimers()
+
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+    expect(syncState()).toBe('idle')
+    expect(notes.showNotification).toHaveBeenCalledWith(
+      expect.stringContaining('10 minutes'),
+      'info',
+    )
+  })
+
+  it('REQ-SYNC-032: reopening the dialog stops the countdown', async () => {
+    await connect()
+    vi.useFakeTimers()
+
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(9 * 60 * 1000)
+    openSyncModal()
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000)
+
+    expect(syncState()).toBe('connected')
+    closeSyncModal()
+  })
+
+  it('REQ-SYNC-033: holds the wake lock while a song moves, then lets go', async () => {
+    await connect()
+    expect(wake.enable).not.toHaveBeenCalled()
+
+    await sendSongToPeer('s1')
+
+    // Enabled the moment packing started; released once nothing moved.
+    expect(wake.enable).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(wake.disable).toHaveBeenCalledTimes(1))
+  })
+})
+
+describe('what each device knows about the far library', () => {
+  it('REQ-SYNC-034: the hello carries this library, by hash', async () => {
+    uvr.all = [
+      { status: 'completed', fileHash: 'hash-1' },
+      // A duplicate separation of the same file is one song over there.
+      { status: 'completed', fileHash: 'hash-1' },
+      // No identity, nothing the far device could recognise.
+      { status: 'completed', fileHash: '' },
+      // Still separating — there are no stems to be "already there".
+      { status: 'processing', fileHash: 'hash-2' },
+    ]
+    await connect()
+
+    await vi.waitFor(() => {
+      const hello = peerMock.sendControl.mock.calls
+        .map((call) => call[1] as { type?: string; songHashes?: string[] })
+        .find((msg) => msg.type === 'sync-hello')
+      expect(hello?.songHashes).toEqual(['hash-1'])
+    })
+  })
+
+  it('REQ-SYNC-034: the far library is remembered, and dies with the peer', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'TV',
+      songHashes: ['h9'],
+    })
+    expect(syncPeerSongs()?.has('h9')).toBe(true)
+
+    peerMock.handlers?.onPeerLeft('peer-1')
+    // The next device on the same code has a different library; stale
+    // hashes would mark ITS missing songs as already-there.
+    expect(syncPeerSongs()).toBeNull()
+  })
+
+  it('a hello that says nothing about songs means unknown, not empty', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-hello', label: 'TV' })
+    expect(syncPeerSongs()).toBeNull()
+  })
+
+  it('REQ-SYNC-035: a peer that comes back is welcomed behind a hidden dialog', async () => {
+    await connect()
+    peerMock.handlers?.onPeerLeft('peer-1')
+    expect(syncState()).toBe('waiting')
+
+    peerMock.handlers?.onChannelReady('peer-1', 'Computer')
+
+    expect(syncState()).toBe('connected')
+    expect(notes.showNotification).toHaveBeenCalledWith(
+      'Reconnected to Computer.',
+      'success',
+    )
   })
 })
