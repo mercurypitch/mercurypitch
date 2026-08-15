@@ -79,5 +79,40 @@ export function validateWrite(entity: string, body: Row): string | null {
       return 'comparabilityKey requires sourceRef and sourceVersion'
     }
   }
+  if (entity === 'userProfiles') {
+    // The streak columns are not `serverCols` — the client owns the streak
+    // rules (freezes, repairs, local midnights) and writes the result — so
+    // until now nothing checked what it wrote, while the leaderboard ranked
+    // and gated on the values. Bound them here so `clampStreakHighWater`
+    // has numbers to compare: `Math.max(NaN, n)` is NaN, and a NaN bound to
+    // an INTEGER column is how an invariant gets enforced into nonsense.
+    for (const col of STREAK_COUNTERS) {
+      const value = body[col]
+      if (value === undefined) continue
+      if (
+        typeof value !== 'number' ||
+        !Number.isInteger(value) ||
+        value < 0 ||
+        value > MAX_STREAK_DAYS
+      ) {
+        return `${col} must be a whole number of days from 0 to ${MAX_STREAK_DAYS}`
+      }
+    }
+  }
   return null
 }
+
+/**
+ * A century of unbroken daily practice. Not a product rule — nobody is
+ * getting near it — just a ceiling that keeps a typo or a scripted client
+ * out of the column the leaderboard sorts on.
+ */
+export const MAX_STREAK_DAYS = 36_500
+
+/** Profile columns counted in days, all of which must stay whole and >= 0. */
+export const STREAK_COUNTERS = [
+  'currentStreak',
+  'longestStreak',
+  'previousStreak',
+  'streakFreezes',
+] as const

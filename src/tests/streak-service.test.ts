@@ -48,10 +48,22 @@ describe('advanceStreak', () => {
     // which is the steady state: a second run today counts nothing and banks
     // nothing. (An UNANCHORED profile is not identical — it gets its clock
     // and its opening balance. That is the opening-balance block's business.)
-    const today = f({ currentStreak: 5, lastPracticeDate: '2026-07-14' })
+    //
+    // `longestStreak: 5` is not decoration. These fixtures used to inherit the
+    // base 0 and still assert object-identity, which quietly made "a 5-day run
+    // whose record is 0" the expected output of this branch — the exact row
+    // shape 0030_streak_high_water.sql exists to repair. A fixture describing
+    // an impossible profile can only ever assert impossible behaviour, so the
+    // record now matches the run and the identity claim means what it says.
+    const today = f({
+      currentStreak: 5,
+      longestStreak: 5,
+      lastPracticeDate: '2026-07-14',
+    })
     expect(advanceStreak(today, '2026-07-14')).toEqual(today)
     const anchored = f({
       currentStreak: 5,
+      longestStreak: 5,
       lastPracticeDate: '2026-07-14',
       lastFreezeEarnedDate: '2026-07-14',
     })
@@ -403,11 +415,132 @@ describe('applyRepair', () => {
     // Same distinction as advanceStreak's idempotence: nothing about the
     // streak moves, but a never-anchored accrual clock still starts. A repair
     // that silently reset the clock would be worse than one that starts it.
+    //
+    // `longestStreak: 3` for the same reason as the idempotence fixture above
+    // — a consistent profile is the only one whose unchanged output proves
+    // anything.
     const clean = f({
       currentStreak: 3,
+      longestStreak: 3,
       lastPracticeDate: '2026-07-14',
       lastFreezeEarnedDate: '2026-07-14',
     })
     expect(applyRepair(clean, '2026-07-14')).toEqual(clean)
+  })
+})
+
+// ── The high-water invariant ─────────────────────────────────────────
+//
+// `longestStreak` is a record, so it can never be smaller than the run that
+// set it. It was, for 60 production rows and 13 on dev: the client that owned
+// streak writes before f2a5ccc wrote `currentStreak` only, the column landed
+// as `INTEGER NOT NULL DEFAULT 0`, and the read-time repair that was supposed
+// to cover that spelled itself `p?.longestStreak ?? p?.currentStreak` — a
+// nullish coalesce, which a stored 0 walks straight past.
+//
+// Every fixture below starts from `(currentStreak: n, longestStreak: 0)`,
+// which IS the shape those rows hold. Reverting any one guard turns the
+// matching test red.
+describe('the high-water invariant', () => {
+  const legacy = (over: Partial<StreakFields> = {}): StreakFields =>
+    f({ currentStreak: 1, longestStreak: 0, ...over })
+
+  it('reads a stored record back as at least the run that beat it', () => {
+    expect(
+      streakFieldsOf({ currentStreak: 1, longestStreak: 0 }).longestStreak,
+    ).toBe(1)
+    expect(
+      streakFieldsOf({ currentStreak: 2, longestStreak: 0 }).longestStreak,
+    ).toBe(2)
+  })
+
+  it('never talks a genuine record down to the current run', () => {
+    expect(
+      streakFieldsOf({ currentStreak: 1, longestStreak: 7 }).longestStreak,
+    ).toBe(7)
+    // No profile at all is still zero, not a fabricated record.
+    expect(streakFieldsOf(undefined).longestStreak).toBe(0)
+  })
+
+  it('repairs the row on a second practice the same day', () => {
+    // The branch that re-persisted the violation rather than merely leaving
+    // it: `advanceStreak` returned the fields untouched and `streakPatch`
+    // wrote `longestStreak: 0` straight back next to `currentStreak: 1`.
+    const next = advanceStreak(
+      legacy({ lastPracticeDate: '2026-07-14' }),
+      '2026-07-14',
+    )
+    expect(next.currentStreak).toBe(1)
+    expect(next.longestStreak).toBe(1)
+  })
+
+  it('repairs the row when the streak breaks and restarts', () => {
+    // The other non-raising branch. Practise once, break it, practise once —
+    // which is what 59 of the 60 production rows had been doing — and the
+    // reset drops `currentStreak` to 1 without ever touching the record.
+    const next = advanceStreak(
+      legacy({ lastPracticeDate: '2026-06-01', streakFreezes: 0 }),
+      '2026-07-14',
+    )
+    expect(next.currentStreak).toBe(1)
+    expect(next.previousStreak).toBe(1)
+    expect(next.longestStreak).toBe(1)
+  })
+
+  it('still sets the record on the branches that raise the streak', () => {
+    const yesterday = advanceStreak(
+      legacy({ currentStreak: 4, lastPracticeDate: '2026-07-13' }),
+      '2026-07-14',
+    )
+    expect(yesterday.currentStreak).toBe(5)
+    expect(yesterday.longestStreak).toBe(5)
+
+    const bridged = advanceStreak(
+      legacy({
+        currentStreak: 4,
+        streakFreezes: 1,
+        lastPracticeDate: '2026-07-12',
+      }),
+      '2026-07-14',
+    )
+    expect(bridged.currentStreak).toBe(5)
+    expect(bridged.longestStreak).toBe(5)
+  })
+
+  it('repairs the row even when a repair is refused', () => {
+    // `applyStreakRepair` persists whatever comes back, so the refusal path
+    // is a write path too — declining must not be a way to put a violating
+    // row back on the profile.
+    const refused = applyRepair(
+      legacy({ currentStreak: 3, lastPracticeDate: '2026-07-14' }),
+      '2026-07-14',
+    )
+    expect(refused.currentStreak).toBe(3)
+    expect(refused.longestStreak).toBe(3)
+  })
+
+  it('holds end to end, from a stored legacy profile to the next patch', () => {
+    // The shape that actually ships: read the row, advance it, and the fields
+    // handed to `streakPatch` are already consistent.
+    const stored = { currentStreak: 2, longestStreak: 0 }
+    const next = advanceStreak(streakFieldsOf(stored), '2026-07-14')
+    expect(next.longestStreak).toBeGreaterThanOrEqual(next.currentStreak)
+    expect(next.longestStreak).toBe(2)
+  })
+
+  it('shows the record on the card once the run is broken', () => {
+    // What the singer actually saw: a 2-day run, a week off, and a Home card
+    // reporting a lifetime best of 0 because `max(longestStreak, 0)` had
+    // nothing to work with.
+    const state = computeStreakState(
+      streakFieldsOf({
+        currentStreak: 2,
+        longestStreak: 0,
+        lastPracticeDate: '2026-07-01',
+      }),
+      '2026-07-14',
+    )
+    expect(state.currentStreak).toBe(0)
+    expect(state.longestStreak).toBe(2)
   })
 })
