@@ -69,7 +69,9 @@ export async function handleGrantContext(
        ORDER BY endedAt DESC LIMIT ${RECORD_LIMIT}`,
     ).bind(uid),
     env.DB.prepare('SELECT * FROM challengeDefinitions'),
-    env.DB.prepare('SELECT * FROM challengeProgress WHERE userId = ?').bind(uid),
+    env.DB.prepare('SELECT * FROM challengeProgress WHERE userId = ?').bind(
+      uid,
+    ),
     // Only the two columns countActivity reads. metaJson is per-kind detail
     // nothing aggregates, and it is the widest column on the table.
     env.DB.prepare(
@@ -79,9 +81,15 @@ export async function handleGrantContext(
     env.DB.prepare(
       'SELECT COUNT(*) AS n FROM voiceprints WHERE userId = ?',
     ).bind(uid),
-    env.DB.prepare('SELECT COUNT(*) AS n FROM follows WHERE userId = ?').bind(
-      uid,
-    ),
+    // `status = 'accepted'` matters: a pending request grants nothing else,
+    // and it must not grant a friends badge either. The client-side context
+    // counts accepted rows only (follow-service.ts), but in cloud mode this
+    // payload wins — so without the clause a singer could unlock a social
+    // badge by asking strangers who never answered.
+    env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM follows
+       WHERE userId = ? AND status = 'accepted'`,
+    ).bind(uid),
     // Counted per OWNER, which the client could not do for itself: its
     // sharedMelodies read is scoped to isPublic, so it was counting the whole
     // community board and handing every new singer the "share something"
@@ -303,7 +311,9 @@ export async function handleBadgeBulk(
   }
   if (parsed.length === 0) return respond({ written: 0, skipped: 0 })
 
-  const defs = await env.DB.prepare('SELECT id FROM badgeDefinitions').all<Row>()
+  const defs = await env.DB.prepare(
+    'SELECT id FROM badgeDefinitions',
+  ).all<Row>()
   const known = new Set((defs.results ?? []).map((r) => String(r.id)))
 
   const now = new Date().toISOString()
@@ -320,7 +330,14 @@ export async function handleBadgeBulk(
            (id, createdAt, updatedAt, userId, badgeId, earnedAt)
          VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(userId, badgeId) DO NOTHING`,
-      ).bind(crypto.randomUUID(), now, now, auth.userId, row.badgeId, row.earnedAt),
+      ).bind(
+        crypto.randomUUID(),
+        now,
+        now,
+        auth.userId,
+        row.badgeId,
+        row.earnedAt,
+      ),
     )
   }
 

@@ -25,6 +25,29 @@ export function isSessionItemMelodyMissing(item: SessionItem): boolean {
 }
 
 /**
+ * Index of the first item a session can actually start on.
+ *
+ * Leading items whose melody was deleted are skipped rather than played. The
+ * sequencer already skips them for items 2..N, but the FIRST item is built on
+ * a different path (usePlaybackController) that never reaches that guard — and
+ * since `buildSessionItemMelody` returns nothing for a missing melody, letting
+ * one through there starts the session on a generated scale, which is a worse
+ * stand-in than the middle C it replaced.
+ *
+ * Returns `items.length` when every item is missing, which the caller must
+ * read as "there is nothing here to play".
+ */
+export function firstPlayableSessionIndex(
+  items: readonly SessionItem[],
+): number {
+  let index = 0
+  while (index < items.length && isSessionItemMelodyMissing(items[index])) {
+    index += 1
+  }
+  return index
+}
+
+/**
  * Builds MelodyItems for a single session item.
  *
  * Extracted from app-store to maintain pure functions separating
@@ -56,7 +79,12 @@ export function buildSessionItemMelody(item: SessionItem): MelodyItem[] {
     // last resort is MAJOR_SCALE_INTERVALS. There used to be a second
     // single-note fallback here for the empty case; it could not run, and a
     // fallback that never fires still reads to the next person as a case that
-    // happens. If one ever does arrive, the shared fallback below catches it.
+    // happens.
+    //
+    // Note this branch returns unconditionally, so the shared fallback at the
+    // bottom of this function is NOT a net under it. An earlier version of
+    // this comment said it was; that was wrong, and saying so was worse than
+    // saying nothing, because it invited the next reader to skip the check.
     const numNotes = Math.min(scale.length, beats)
     return scale.slice(0, numNotes).map((note, i) => ({
       id: melodyStore.generateId(),

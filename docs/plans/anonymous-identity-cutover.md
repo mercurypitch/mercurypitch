@@ -19,9 +19,11 @@ applied to an in-memory SQLite, not reasoned about. §7 says how to re-run it.
 > to have a new ID, rather than using the old ID they had for leaderboard etc.
 > So we can just fill their new identities and no grandfathering?"
 
-**Half true, and the other half is a blocker.** Client-side data does survive.
-But an anonymous singer's practice history, streak, profile and friendships are
-server-side only — and the client cannot currently recover from being refused.
+**Half true, and the other half is a blocker.** Most client-side data does
+survive. But an anonymous singer's practice history, streak, profile and
+friendships are server-side only; one piece of _local_ data is lost too,
+because its localStorage key contains the user id; and the client cannot
+currently recover from being refused at all.
 
 ---
 
@@ -29,23 +31,33 @@ server-side only — and the client cannot currently recover from being refused.
 
 Measured by counting what a signed-in identity can reach through the API.
 
-| Data                                                        | Where it lives                                                              | Survives a new id? |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------ |
-| Written melodies, playlists, practice sessions              | `localStorage`, one blob (`melody-store.ts:120`)                            | **Yes**            |
-| Separated stems, original songs, lyrics, pitch analyses     | IndexedDB (`dexie-adapter.ts`)                                              | **Yes**            |
-| App settings held locally                                   | `localStorage`                                                              | **Yes**            |
-| Practice history (`sessionRecords`)                         | **Cloud only** — `CLOUD_ENTITIES` (`hybrid-adapter.ts:20`), no local mirror | **No**             |
-| Current + longest streak                                    | **Cloud only** — `userProfiles.currentStreak/longestStreak`                 | **No**             |
-| Display name, bio, avatar, join date                        | **Cloud only** — `userProfiles`                                             | **No**             |
-| Leaderboard opt-in and standing                             | **Cloud only** — `userProfiles.leaderboardOptIn` + derived board            | **No**             |
-| Friendships (`follows`)                                     | **Cloud only**                                                              | **No**             |
-| Voiceprints, song manifests, user activity, synced settings | **Cloud only**                                                              | **No**             |
-| League placement                                            | **Cloud only** — `leagueMembership`                                         | **No**             |
-| Supporter perks                                             | Keyed by **verified email**, not user id (`perks.ts`)                       | N/A for anonymous  |
+| Data                                                               | Where it lives                                                              | Survives a new id? |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------ |
+| Written melodies, playlists, practice sessions                     | `localStorage`, one blob (`melody-store.ts:120`)                            | **Yes**            |
+| Separated stems, original songs, lyrics, pitch analyses            | IndexedDB (`dexie-adapter.ts`)                                              | **Yes**            |
+| App settings held locally                                          | `localStorage`                                                              | **Yes**            |
+| **Today's daily-goal minutes, and "streak already counted today"** | `localStorage`, but **keyed by user id** (`practice-minutes.ts:19-32`)      | **No**             |
+| Practice history (`sessionRecords`)                                | **Cloud only** — `CLOUD_ENTITIES` (`hybrid-adapter.ts:20`), no local mirror | **No**             |
+| Current + longest streak                                           | **Cloud only** — `userProfiles.currentStreak/longestStreak`                 | **No**             |
+| Display name, bio, avatar, join date                               | **Cloud only** — `userProfiles`                                             | **No**             |
+| Leaderboard opt-in and standing                                    | **Cloud only** — `userProfiles.leaderboardOptIn` + derived board            | **No**             |
+| Friendships (`follows`)                                            | **Cloud only**                                                              | **No**             |
+| Voiceprints, song manifests, user activity, synced settings        | **Cloud only**                                                              | **No**             |
+| League placement                                                   | **Cloud only** — `leagueMembership`                                         | **No**             |
+| Supporter perks                                                    | Keyed by **verified email**, not user id (`perks.ts`)                       | N/A for anonymous  |
 
 The reason it splits this way is deliberate and documented: audio never goes to
 our servers, so it is local; everything rankable is server-derived so it cannot
 be forged.
+
+**One correction to the "no client-side data is lost" framing.** It is not quite
+true. `practice-minutes.ts:19` keys today's accumulated practice as
+`mp_practice_ms_<userId>_<date>`, and the "streak already counted today" marker
+the same way. Both are local, and both become unreachable when the id changes:
+the daily-goal ring resets to zero mid-day and the singer has to practise the
+day's minutes again for it to count. The pruning at `:60-80` only sweeps the
+current owner's prefix, so the old keys are orphaned in localStorage rather than
+cleaned up.
 
 ---
 

@@ -21,9 +21,10 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyIndicesAtBeat, melodyTotalBeats, } from '@/lib/scale-data'
-import { buildSessionItemMelody } from '@/lib/session-builder'
+import { buildSessionItemMelody, firstPlayableSessionIndex, } from '@/lib/session-builder'
 import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { showNotification } from '@/stores/notifications-store'
 import { playback } from '@/stores/playback-store'
 import type { MelodyItem, NoteResult, PlaybackMode, PlaybackSession, PracticeResult, PracticeSubMode, SessionResult, } from '@/types'
 
@@ -291,7 +292,26 @@ export function usePlaybackController(
         // v3 fix: Start from the very first item, even if it's a rest.
         // Sequential advancement handles the rest duration via the
         // PlaybackRuntime's completion event.
-        const firstItem = activeSession.items[0]
+        //
+        // Except an item whose melody was deleted: skip past those. The
+        // sequencer skips them for items 2..N, but item 1 is built here and
+        // never passes through that guard, and buildSessionItemMelody now
+        // returns nothing for a missing melody — which would fall to the
+        // empty-baseMelody branch below and start the session on a generated
+        // scale, under the label of the melody the singer wrote.
+        const startIndex = firstPlayableSessionIndex(activeSession.items)
+        if (startIndex > 0) {
+          setSessionItemIndex(startIndex)
+          showNotification(
+            startIndex >= activeSession.items.length
+              ? 'Every melody in this session was deleted.'
+              : startIndex === 1
+                ? `Skipping “${activeSession.items[0].label}” — that melody was deleted.`
+                : `Skipping ${startIndex} items whose melodies were deleted.`,
+            'warning',
+          )
+        }
+        const firstItem = activeSession.items[startIndex]
 
         if (firstItem !== undefined) {
           if (firstItem.type === 'rest') {
