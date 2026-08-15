@@ -480,7 +480,7 @@ describe('what the first real 27-song backup taught', () => {
 })
 
 describe('what a slow connection taught', () => {
-  it('REQ-DRV-024: acknowledges Stop while the song in flight finishes', async () => {
+  it('REQ-DRV-024: acknowledges Stop the moment it lands', async () => {
     oneSongReady()
     let releaseUpload: () => void = () => {}
     driveMock.uploadSong.mockImplementation(
@@ -497,7 +497,7 @@ describe('what a slow connection taught', () => {
     expect(driveJobStopping()).toBe(false)
     stopDriveJob()
     // Acknowledged at once — the button that says nothing gets pressed
-    // five times while the current song quietly finishes.
+    // five times while the job finds its next checkpoint.
     expect(driveJobStopping()).toBe(true)
 
     releaseUpload()
