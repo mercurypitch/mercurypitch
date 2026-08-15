@@ -71,11 +71,13 @@ vi.mock('@/lib/device-tier', async (importOriginal) => {
 const syncMocks = vi.hoisted(() => ({ code: null as string | null }))
 vi.mock('@/stores/sync-store', () => ({
   syncCodeToJoin: () => syncMocks.code,
-  takeSyncCodeToJoin: () => syncMocks.code,
 }))
-vi.mock('@/components/sync/SyncDevicesModal', () => ({
-  default: () => <div data-testid="sync-modal-mock" />,
-  SyncDevicesModal: () => <div data-testid="sync-modal-mock" />,
+// The dialog itself mounts in the app shell (SyncHost); this panel only
+// rings the bell, so the mock is the bell.
+const syncUi = vi.hoisted(() => ({ openSyncModal: vi.fn() }))
+vi.mock('@/stores/sync-ui', () => ({
+  openSyncModal: syncUi.openSyncModal,
+  syncModalOpen: () => false,
 }))
 
 // File-level, not per-describe: a leaked `narrow = true` re-renders every
@@ -85,6 +87,7 @@ beforeEach(() => {
   viewportMocks.narrow = false
   viewportMocks.tv = false
   syncMocks.code = null
+  syncUi.openSyncModal.mockClear()
 })
 
 // Mock the entire stores barrel
@@ -299,14 +302,12 @@ describe('UvrPanel Component', () => {
       // the stash worked and only the opening was missing.
       syncMocks.code = 'ABCD2345'
       render(() => <UvrPanel />)
-      await waitFor(() =>
-        expect(screen.getByTestId('sync-modal-mock')).toBeInTheDocument(),
-      )
+      await waitFor(() => expect(syncUi.openSyncModal).toHaveBeenCalled())
     })
 
     it('leaves the modal closed when nothing was scanned', () => {
       render(() => <UvrPanel />)
-      expect(screen.queryByTestId('sync-modal-mock')).toBeNull()
+      expect(syncUi.openSyncModal).not.toHaveBeenCalled()
     })
   })
 

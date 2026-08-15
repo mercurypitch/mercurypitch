@@ -45,6 +45,7 @@ import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { syncCodeToJoin } from '@/stores/sync-store'
+import { openSyncModal, syncModalOpen } from '@/stores/sync-ui'
 import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
@@ -63,12 +64,6 @@ const ShazamResults = lazy(async () =>
   import('@/components/ShazamResults').then((m) => ({
     default: m.ShazamResults,
   })),
-)
-
-// Lazy so the karaoke first paint never pays for WebRTC signaling and the
-// bundle machinery — they load when somebody actually opens the sync door.
-const SyncDevicesModal = lazy(
-  async () => import('@/components/sync/SyncDevicesModal'),
 )
 
 export type UvrView =
@@ -241,11 +236,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const activeGroupId = karaokeActiveGroupId
   const setActiveGroupId = setKaraokeActiveGroupId
   const [sessionSearch, setSessionSearch] = createSignal('')
-  // null = closed; sessionId undefined = opened from the header (chooser).
-  const [syncModalTarget, setSyncModalTarget] = createSignal<{
-    sessionId?: string
-  } | null>(null)
-
   // A scanned QR link (#/sync:CODE) lands on this tab with the code
   // stashed. Opening the modal is the only thing the code is FOR — the
   // modal takes it on mount, skips the chooser and joins by itself, so
@@ -253,8 +243,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // strands the scan halfway. One-shot by construction: the modal's
   // takeSyncCodeToJoin() clears the signal this effect watches.
   createEffect(() => {
-    if (syncCodeToJoin() !== null && untrack(syncModalTarget) === null) {
-      setSyncModalTarget({})
+    if (syncCodeToJoin() !== null && !untrack(syncModalOpen)) {
+      openSyncModal()
     }
   })
   const [sessionGalleryOpen, setSessionGalleryOpen] = createPersistedSignal(
@@ -2428,7 +2418,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       device is exactly the one that needs to receive. */}
                   <button
                     class="section-action-btn section-action-btn-accent icon-only"
-                    onClick={() => setSyncModalTarget({})}
+                    onClick={() => openSyncModal()}
                     title="Sync songs with another of your devices"
                     aria-label="Sync songs with another of your devices"
                   >
@@ -2568,9 +2558,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                             hasActiveSeparation(),
                           )
                         }}
-                        onSendToDevice={(sessionId) =>
-                          setSyncModalTarget({ sessionId })
-                        }
+                        onSendToDevice={(sessionId) => openSyncModal(sessionId)}
                       />
                     )}
                   </For>
@@ -2935,18 +2923,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           }}
         </Show>
 
-        {/* Own Suspense boundary: the component is lazy, and letting it
-            suspend an ancestor would blank the tab while the chunk loads. */}
-        <Show when={syncModalTarget()}>
-          {(target) => (
-            <Suspense fallback={null}>
-              <SyncDevicesModal
-                initialSessionId={target().sessionId}
-                onClose={() => setSyncModalTarget(null)}
-              />
-            </Suspense>
-          )}
-        </Show>
+        {/* The sync dialog itself mounts in the app shell (SyncHost), so
+            a session and its transfers survive this tab unmounting —
+            REQ-SYNC-030. */}
 
         <SessionExportDialog
           open={libraryExportDialogOpen()}

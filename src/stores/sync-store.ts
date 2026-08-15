@@ -15,12 +15,13 @@
 //
 // See docs/plans/device-sync.md (Phase 5).
 
-import { createSignal } from 'solid-js'
+import { createEffect, createRoot, createSignal } from 'solid-js'
 import { storageEstimate } from '@/db/durable-write'
 import { requestPersistentStorage } from '@/db/persistent-storage'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
 import { formatBytes } from '@/lib/fetch-progress'
 import { awaitDirectRoute } from '@/lib/jam/jam-song-transfer'
+import { platform } from '@/lib/platform'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
 import { isReadableManifest } from '@/lib/portable/portable-bundle'
 import { normalizeRoomCode } from '@/lib/room-code'
@@ -30,6 +31,7 @@ import { createSyncPeer } from '@/lib/sync/sync-peer'
 import type { BundleReceiver, BundleSender, SyncWireMessage, } from '@/lib/sync/sync-protocol'
 import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, } from '@/lib/sync/sync-protocol'
 import { showNotification } from '@/stores/notifications-store'
+import { registerSyncUiLifecycle, setSyncSessionLive, syncModalOpen, } from '@/stores/sync-ui'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getUvrSession } from '@/stores/uvr-store'
 
@@ -98,6 +100,12 @@ const [syncPeerRoom, setSyncPeerRoom] = createSignal<{
  * does not silently reopen a session that has been closed.
  */
 const [syncCodeToJoin, setSyncCodeToJoin] = createSignal<string | null>(null)
+/**
+ * Which side this device chose, held while the session lives. Reopening
+ * the dialog over a live session lands on the same screen it was closed
+ * on, instead of a chooser that would offer to start over.
+ */
+const [syncRole, setSyncRole] = createSignal<'send' | 'receive' | null>(null)
 
 /** What THIS device can still hold, for the modal to show plainly. */
 const [syncOwnRoom, setSyncOwnRoom] = createSignal<{
@@ -136,6 +144,7 @@ export {
   syncOwnRoom,
   syncPeerLabel,
   syncPeerRoom,
+  syncRole,
   syncRoomId,
   syncState,
   syncTransfers,
@@ -318,6 +327,11 @@ function ensurePeer(): SyncPeer {
       // the packing has gone, so that row would sit there for ever.
       failPreparingRows(gone)
       console.info('[sync] the other device left')
+      // Behind a closed dialog the only sign would be the corner chip
+      // quietly changing its text; say it where notifications land.
+      if (!closing && !syncModalOpen()) {
+        showNotification('The other device left the sync session.', 'warning')
+      }
       // The room is still open; the same code still works for a retry.
       if (syncState() === 'connected') {
         setSyncState('waiting')
@@ -388,6 +402,11 @@ function ensurePeer(): SyncPeer {
       setSyncError(message)
     },
     onRoomClosed: () => {
+      // Same courtesy as a leaving peer: with the dialog closed, the
+      // chip vanishing is the only other sign the session is gone.
+      if (!closing && !syncModalOpen()) {
+        showNotification('The sync session ended.', 'warning')
+      }
       resetSync('The sync session ended.')
     },
   })
@@ -497,6 +516,7 @@ export async function startSyncReceive(): Promise<string | null> {
     return null
   }
   setSyncRoomId(roomId)
+  setSyncRole('receive')
   setSyncState('waiting')
   armPeerArrivalDeadline('never-joined')
   return roomId
@@ -533,6 +553,7 @@ export async function startSyncSend(roomId: string): Promise<boolean> {
     return false
   }
   setSyncRoomId(code)
+  setSyncRole('send')
   // 'waiting' until the DataChannel to the receiver actually opens.
   if (syncState() === 'starting') setSyncState('waiting')
   armPeerArrivalDeadline('never-joined')
@@ -976,6 +997,7 @@ function resetSync(notice: string | null): void {
   const stopped = 'The sync session was closed.'
   generation += 1
   closing = true
+  cancelIdleStop()
   // Stops a pack mid-slice. Without it a phone keeps decoding and
   // encoding a whole song for a screen that is already gone.
   packAbort.aborted = true
@@ -990,6 +1012,7 @@ function resetSync(notice: string | null): void {
   peer = null
   setSyncState('idle')
   setSyncRoomId(null)
+  setSyncRole(null)
   setSyncPeerLabel(null)
   // Both readings describe a pairing that no longer exists. `onPeerLeft`
   // already clears them; ending the whole session did not, so the numbers
@@ -1018,3 +1041,99 @@ export function stopSync(): void {
   resetSync(null)
   setSyncError(null)
 }
+
+/** True while anything is packing, being prepared, or on the wire. */
+function transferMoving(): boolean {
+  return (
+    syncBusy() ||
+    syncQueue().length > 0 ||
+    syncTransfers().some(
+      (t) =>
+        t.status === 'packing' ||
+        t.status === 'preparing' ||
+        t.status === 'transferring',
+    )
+  )
+}
+
+/**
+ * How long a hidden-but-connected session may sit with nothing moving
+ * before it closes itself. Long enough to walk to the other device,
+ * pick more songs and come back; short enough that a forgotten pairing
+ * does not hold a room and a peer connection open all evening.
+ */
+const SYNC_IDLE_STOP_MS = 10 * 60 * 1000
+
+const IDLE_STOPPED =
+  'The sync session closed after 10 minutes with nothing moving. Open sync to pair again.'
+
+let idleStopTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelIdleStop(): void {
+  if (idleStopTimer !== null) {
+    clearTimeout(idleStopTimer)
+    idleStopTimer = null
+  }
+}
+
+/** (Re)start the countdown; every call is a fresh ten minutes. */
+function armIdleStop(): void {
+  cancelIdleStop()
+  idleStopTimer = setTimeout(() => {
+    idleStopTimer = null
+    // Never cuts a moving transfer — its own completion re-arms this.
+    if (syncModalOpen() || syncState() === 'idle' || transferMoving()) return
+    resetSync(IDLE_STOPPED)
+    showNotification(IDLE_STOPPED, 'info')
+  }, SYNC_IDLE_STOP_MS)
+}
+
+// ── The dialog is a view; the session is not ─────────────────────────
+// Closing the dialog keeps a connected session — and anything it is
+// moving — alive behind the corner chip (REQ-SYNC-030). A session still
+// being set up dies with it: its code is on screen nowhere once the
+// dialog is gone, so nobody could ever join, and a half-open room left
+// behind would be exactly the leak the old close-means-stop prevented.
+registerSyncUiLifecycle({
+  onForeground: cancelIdleStop,
+  onBackground: () => {
+    if (syncState() === 'idle') return
+    if (syncState() === 'connected' || transferMoving()) {
+      armIdleStop()
+      return
+    }
+    stopSync()
+  },
+})
+
+// Module-scope reactivity needs an owner or Solid warns about leaks;
+// this root lives as long as the page, which is exactly the intent.
+createRoot(() => {
+  // The corner chip's one question — is there a session? — answered
+  // without making its always-mounted host import this (WebRTC-heavy)
+  // module at first paint.
+  createEffect(() => setSyncSessionLive(syncState() !== 'idle'))
+
+  // A phone that sleeps mid-pack stalls the job where it stood — the
+  // same death the Drive backup guards against (REQ-DRV-017). Strictly
+  // paired enable/disable: keepAwake counts holders, and an unpaired
+  // disable here would release a running Drive job's lock (REQ-SYNC-033).
+  let holdingWake = false
+  createEffect(() => {
+    const moving = transferMoving()
+    if (moving && !holdingWake) {
+      holdingWake = true
+      void platform.keepAwake.enable()
+    } else if (!moving && holdingWake) {
+      holdingWake = false
+      void platform.keepAwake.disable()
+    }
+    // The idle countdown only ever runs behind a hidden dialog with
+    // nothing moving; any transition here rewinds it (REQ-SYNC-032).
+    if (moving) {
+      cancelIdleStop()
+    } else if (!syncModalOpen() && syncState() !== 'idle') {
+      armIdleStop()
+    }
+  })
+})

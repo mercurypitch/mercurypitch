@@ -1,0 +1,72 @@
+/* Portalled to <body> and shown on surfaces that never load app.css
+   (Karaoke Night), so every token carries the app's literal value —
+   same rule as SyncDevicesModal.module.css. */
+
+.chip {
+  position: fixed;
+
+  /* Below the toast stack's landing zone (Notifications.module.css pins
+     itself to the very corner) and clear of the account buttons both
+     surfaces keep up there. */
+  top: calc(env(safe-area-inset-top) + 52px);
+  right: 10px;
+  z-index: var(--z-toast, 11000);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  max-width: min(320px, calc(100vw - 20px));
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, var(--border, #30363d));
+  border-radius: 10px;
+  background: var(--bg-card, #1c2128);
+  color: var(--text-primary, #e6edf3);
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
+}
+
+.chip:hover {
+  border-color: var(--text-muted, #6e7681);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent, #58a6ff);
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-color, var(--border, #30363d));
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--accent, #58a6ff);
+  transition: width 0.3s ease;
+}
