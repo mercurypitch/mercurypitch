@@ -466,3 +466,74 @@ test.describe('the vibrato style row holds still', () => {
     })
   }
 })
+
+// ============================================================
+// The warmup's routine picker still picks routines
+// ============================================================
+//
+// Six routine pills became one select, which is a layout win and a
+// behaviour risk: a Solid `<select value={...}>` whose options come from a
+// `<For>` is the classic case where the value is set before the options
+// exist and silently fails to stick. So this checks the control works, not
+// that it fits — that it starts on the stored routine, and that choosing
+// another one takes.
+
+test.describe('the warmup routine select', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('pitchperfect_advanced_features', 'true')
+    })
+  })
+
+  test('starts on the current routine and changes it', async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 806 })
+    await page.goto('/')
+    await waitForNav(page)
+    await dismissOverlays(page)
+    await openNavTab(page, 'tab-exercises')
+    await page
+      .locator('.exercise-card', { hasText: 'Guided Warmup' })
+      .first()
+      .click()
+    await expect(page.locator('.exercise-idle-start')).toBeVisible({
+      timeout: 10000,
+    })
+
+    const select = page.locator('.exercise-target-selector select')
+    await expect(select).toBeVisible()
+
+    // The default routine, showing — not an empty control, and not the first
+    // option by accident: 'full' happens to be first, so assert the label too.
+    await expect(select).toHaveValue('full')
+    await expect(select.locator('option:checked')).toHaveText(/warm|full/i)
+
+    // And a different one takes.
+    await select.selectOption('cooldown')
+    await expect(select).toHaveValue('cooldown')
+  })
+
+  test('the choice reaches the drill, not just the DOM', async ({ page }) => {
+    // On a phone the settings live in a sheet and the panel prints what is
+    // selected, which is the one place the drill's own signal is rendered
+    // back. If the select were writing to nothing, this line would not move.
+    await page.setViewportSize({ width: 390, height: 780 })
+    await page.goto('/')
+    await waitForNav(page)
+    await dismissOverlays(page)
+    await openNavTab(page, 'tab-exercises')
+    await page
+      .locator('.exercise-card', { hasText: 'Guided Warmup' })
+      .first()
+      .click()
+
+    const summary = page.locator('.exercise-idle-target-note')
+    await expect(summary).toContainText('Full warmup', { timeout: 10000 })
+
+    await page.locator('.exercise-settings-trigger').click()
+    await page
+      .locator('.exercise-target-selector select')
+      .selectOption('cooldown')
+    await expect(summary).toContainText('Cool-down')
+  })
+})
