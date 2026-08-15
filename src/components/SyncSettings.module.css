@@ -130,6 +130,52 @@
   }
 }
 
+/* The restore picker: what Drive holds that this device does not, one
+   choosable row per song, scrolling past a screenful -- a hundred-song
+   Drive must not mean all-or-nothing. */
+.pickList {
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.pickRow + .pickRow {
+  border-top: 1px solid var(--border);
+}
+
+/* The choose-everything row stays put while the list scrolls under it. */
+.pickHead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.pickTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickSize {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 /* The scan's own bar. Indeterminate, because listing a Drive folder has
    no honest fraction -- it exists so a slow connection reads as
    "checking" instead of a page that ignored the visit. */

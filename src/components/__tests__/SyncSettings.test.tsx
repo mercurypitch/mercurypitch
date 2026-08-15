@@ -3,7 +3,7 @@
 // had filled it and told somebody with a full library "0 songs on this
 // device" — until they happened to visit the Karaoke tab.
 
-import { cleanup, render, screen, waitFor } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SyncSettings } from '../SyncSettings'
 
@@ -53,6 +53,7 @@ const drive = vi.hoisted(() => ({
   job: null as unknown,
   stopping: false,
   refreshDriveStatus: vi.fn(() => Promise.resolve()),
+  restoreFromDrive: vi.fn(() => Promise.resolve()),
   scanDrive: vi.fn(() => Promise.resolve(null)),
   stopDriveJob: vi.fn(),
 }))
@@ -70,7 +71,7 @@ vi.mock('@/stores/drive-sync-store', () => ({
   driveScan: () => drive.scan,
   driveState: () => drive.state,
   refreshDriveStatus: drive.refreshDriveStatus,
-  restoreFromDrive: vi.fn(),
+  restoreFromDrive: drive.restoreFromDrive,
   scanDrive: drive.scanDrive,
   stopDriveJob: drive.stopDriveJob,
 }))
@@ -89,6 +90,7 @@ beforeEach(() => {
   drive.job = null
   drive.stopping = false
   drive.refreshDriveStatus.mockClear()
+  drive.restoreFromDrive.mockClear()
   drive.scanDrive.mockClear()
 })
 
@@ -178,5 +180,40 @@ describe('the Drive section', () => {
     // The byte figures ride the same label, so a big song on a slow
     // connection reads as moving rather than stuck.
     expect(screen.getByText(/11 MB of 38 MB/)).toBeTruthy()
+  })
+
+  it('REQ-DRV-026: restores only what is ticked', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    drive.scan = {
+      inDrive: 2,
+      here: 0,
+      toBackUp: [],
+      toRestore: [
+        {
+          fileHash: 'h-1',
+          title: 'Left Behind',
+          ref: 'file-h-1',
+          bytes: 12_000_000,
+        },
+        {
+          fileHash: 'h-2',
+          title: 'Chosen One',
+          ref: 'file-h-2',
+          bytes: 5_000_000,
+        },
+      ],
+    }
+
+    render(() => <SyncSettings />)
+
+    // Every song arrives chosen — the common case stays one press. The
+    // first checkbox is the choose-everything head; untick song one.
+    const boxes = await screen.findAllByRole('checkbox')
+    fireEvent.click(boxes[1] as HTMLInputElement)
+
+    const button = screen.getByText('Restore 1 song') as HTMLButtonElement
+    fireEvent.click(button)
+    expect(drive.restoreFromDrive).toHaveBeenCalledWith(['h-2'])
   })
 })
