@@ -29,6 +29,7 @@ import statusBarStyles from '@/components/shared/status-bar/SongStatusBar.module
 import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
+import { SyncHost } from '@/components/sync/SyncHost'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -4207,6 +4208,10 @@ const AppShell: Component<AppProps> = (props) => {
         <LocalProgressNotice />
 
         <Notifications />
+        {/* The sync dialog and its corner chip outlive any tab — a
+            transfer must survive the panel that started it
+            (REQ-SYNC-030), so they mount in the shell. */}
+        <SyncHost />
         {/* Follows the mic, not the tab, so it belongs to the shell too. */}
         <PracticeTimerPill />
         {/* Shares the bottom-left corner with the timer pill and raises

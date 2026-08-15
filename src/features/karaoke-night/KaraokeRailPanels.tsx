@@ -1,7 +1,7 @@
 // Store-backed rail panels (upload + library) for the Karaoke Night page.
 // This module owns every db/store dependency of the rail, so the page shell
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
-import { createMemo, createResource, createSignal, For, lazy, onMount, Show, Suspense, } from 'solid-js'
+import { createMemo, createResource, createSignal, For, onMount, Show, } from 'solid-js'
 import type { GroupDeleteTarget } from '@/components/GroupDeleteConfirmDialog'
 import { GroupDeleteConfirmDialog } from '@/components/GroupDeleteConfirmDialog'
 import { DeviceSync, Trash2 } from '@/components/icons'
@@ -12,19 +12,13 @@ import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-pic
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
+import { openSyncModal } from '@/stores/sync-ui'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, uvrProcessingMode, } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'
 import { isExampleSession } from './examples-library'
 import { trackKaraoke } from './funnel'
 import { groupLibrarySongs } from './library-grouping'
-
-// Lazy for the same reason the studio loads it lazily: the rail's first paint
-// should never pay for WebRTC signaling and the portable-bundle machinery.
-// They arrive when somebody actually opens the sync door.
-const SyncDevicesModal = lazy(
-  async () => import('@/components/sync/SyncDevicesModal'),
-)
 
 export interface KaraokeSong {
   sessionId: string
@@ -75,7 +69,6 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   // a mode the rest of the app had moved off. Coming back from the studio
   // then looked like the toggle had stopped working.
   const mode = uvrProcessingMode
-  const [syncOpen, setSyncOpen] = createSignal(false)
   const [groupToDelete, setGroupToDelete] =
     createSignal<GroupDeleteTarget | null>(null)
   const [deletingGroup, setDeletingGroup] = createSignal(false)
@@ -132,7 +125,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     if (scanned !== null) {
       void import('@/stores/sync-store').then((store) => {
         store.setSyncCodeToJoin(scanned)
-        setSyncOpen(true)
+        openSyncModal()
       })
     }
   })
@@ -651,20 +644,15 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           Move a song between two of your own devices over the local network.
           Nothing is uploaded.
         </p>
-        <button class="kn-btn" onClick={() => setSyncOpen(true)}>
+        <button class="kn-btn" onClick={() => openSyncModal()}>
           <DeviceSync />
           Send or receive a song
         </button>
       </section>
 
-      {/* Its own Suspense boundary, as in the studio: the chunk carries the
-          WebRTC signaling and bundle machinery, and letting it suspend an
-          ancestor would blank the rail while it loads. */}
-      <Show when={syncOpen()}>
-        <Suspense fallback={null}>
-          <SyncDevicesModal onClose={() => setSyncOpen(false)} />
-        </Suspense>
-      </Show>
+      {/* The dialog itself mounts at page scope (KaraokeNightApp →
+          SyncHost), behind lazy() there, so a session and its transfers
+          survive this rail collapsing — REQ-SYNC-030. */}
     </>
   )
 }

@@ -38,6 +38,7 @@ const state = vi.hoisted(() => ({
   peerRoom: null as { freeBytes: number; quota: number } | null,
   syncState: 'connected' as string,
   transfers: [] as SyncTransfer[],
+  role: null as 'send' | 'receive' | null,
 }))
 
 vi.mock('@/stores/sync-store', () => ({
@@ -48,6 +49,7 @@ vi.mock('@/stores/sync-store', () => ({
   syncPeerLabel: () => 'The other one',
   syncPeerRoom: () => state.peerRoom,
   syncQueue: () => [],
+  syncRole: () => state.role,
   syncRoomId: () => 'ABCD1234',
   syncState: () => state.syncState,
   syncTransfers: () => state.transfers,
@@ -101,6 +103,7 @@ describe('SyncDevicesModal send list', () => {
     state.peerRoom = { freeBytes: 500 * 1024 * 1024, quota: 1024 * 1024 * 1024 }
     state.syncState = 'connected'
     state.transfers = []
+    state.role = null
     vi.clearAllMocks()
     sync.takeSyncCodeToJoin.mockReturnValue(null)
     sync.estimatePackedBytes.mockReturnValue(5 * 1024 * 1024)
@@ -254,5 +257,81 @@ describe('SyncDevicesModal send list', () => {
     expect(source).not.toMatch(
       /from\s+['"][^'"]*stores\/(?:app-store|ui-store)['"]/,
     )
+  })
+})
+
+describe('closing, and what it must not do', () => {
+  beforeEach(() => {
+    state.sessions = []
+    state.groups = []
+    state.peerRoom = null
+    state.syncState = 'connected'
+    state.transfers = []
+    state.role = null
+    vi.clearAllMocks()
+    sync.takeSyncCodeToJoin.mockReturnValue(null)
+  })
+
+  afterEach(cleanup)
+
+  // REQ-SYNC-031: before this, a stray tap on the backdrop ended the
+  // session and aborted whatever was in flight.
+  it('REQ-SYNC-031: a click on the backdrop neither closes nor disconnects', () => {
+    const onClose = vi.fn()
+    render(() => <SyncDevicesModal onClose={onClose} />)
+    fireEvent.click(screen.getByTestId('sync-modal').parentElement!)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(sync.stopSync).not.toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-030: the X hides the dialog without ending the session', () => {
+    const onClose = vi.fn()
+    render(() => <SyncDevicesModal onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(sync.stopSync).not.toHaveBeenCalled()
+  })
+
+  it('Escape behaves exactly like the X', () => {
+    const onClose = vi.fn()
+    render(() => <SyncDevicesModal onClose={onClose} />)
+    fireEvent.keyDown(screen.getByTestId('sync-modal'), { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(sync.stopSync).not.toHaveBeenCalled()
+  })
+
+  it('Disconnect is the deliberate way out, and only it ends the session', () => {
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-disconnect'))
+    expect(sync.stopSync).toHaveBeenCalledTimes(1)
+  })
+
+  it('reopens onto the send list the sender was closed on', () => {
+    state.role = 'send'
+    state.sessions = [song()]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    // No chooser press: the list is simply there again.
+    expect(screen.getAllByTestId('sync-song-row')).toHaveLength(1)
+  })
+
+  it('reopening as the receiver does not open a second room', () => {
+    state.role = 'receive'
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    expect(sync.startSyncReceive).not.toHaveBeenCalled()
+  })
+
+  it('says mid-transfer that closing stops nothing', () => {
+    state.transfers = [
+      {
+        fileHash: 'h1',
+        title: 'Moving',
+        direction: 'out',
+        status: 'transferring',
+        ratio: 0.5,
+        bytes: 10,
+      },
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    expect(screen.getByText(/Closing this window stops nothing/i)).toBeTruthy()
   })
 })
