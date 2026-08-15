@@ -70,6 +70,11 @@ export interface DriveJob {
   ratio: number
   /** Songs that failed; the job carries on past them. */
   failed: number
+  /** Network bytes moved for the current song, when the phase is
+   *  byte-accurate (upload slices, download streams) — null while
+   *  packing, where only parts are countable. */
+  movedBytes: number | null
+  totalBytes: number | null
 }
 
 /** One song a job could not move, and the reason a person can act on. */
@@ -87,6 +92,10 @@ const [driveJob, setDriveJob] = createSignal<DriveJob | null>(null)
 const [driveBusy, setDriveBusy] = createSignal(false)
 // Survives the job that filled it — the whole point is reading it after.
 const [driveJobFailures, setDriveJobFailures] = createSignal<DriveFailure[]>([])
+// Stop is deliberately soft — the song in flight finishes so it is not
+// re-uploaded from zero next time. Without an acknowledgement the button
+// looks dead and gets pressed five times; this is the acknowledgement.
+const [driveJobStopping, setDriveJobStopping] = createSignal(false)
 // The MercuryPitch folder, once resolved — what "Open in Drive" links to.
 const [driveFolderId, setDriveFolderId] = createSignal<string | null>(null)
 
@@ -97,6 +106,7 @@ export {
   driveFolderId,
   driveJob,
   driveJobFailures,
+  driveJobStopping,
   driveScan,
   driveState,
 }
@@ -145,6 +155,7 @@ function forgetIfAccountChanged(): void {
   setDriveError(null)
   setDriveJob(null)
   setDriveJobFailures([])
+  setDriveJobStopping(false)
   setDriveFolderId(null)
   jobAbort.aborted = true
 }
@@ -457,14 +468,28 @@ export async function scanDrive(): Promise<DriveScan | null> {
   }
 }
 
-/** Stop a running backup or restore after the slice in flight. */
+/** Stop a running backup or restore after the song in flight. */
 export function stopDriveJob(): void {
   jobAbort.aborted = true
+  // Acknowledged on screen: the current song still finishes (so it is
+  // not re-moved from zero next time), and pressing Stop again must not
+  // look like the first press was ignored.
+  if (driveJob() !== null) setDriveJobStopping(true)
 }
 
 function startJob(kind: DriveJob['kind'], total: number): void {
   jobAbort = { aborted: false }
-  setDriveJob({ kind, title: '', done: 0, total, ratio: 0, failed: 0 })
+  setDriveJob({
+    kind,
+    title: '',
+    done: 0,
+    total,
+    ratio: 0,
+    failed: 0,
+    movedBytes: null,
+    totalBytes: null,
+  })
+  setDriveJobStopping(false)
   setDriveJobFailures([])
   // The screen going to sleep is the number-one way a phone backup dies:
   // the OS freezes the page and the job stalls where it stood. Held for
@@ -476,6 +501,7 @@ function startJob(kind: DriveJob['kind'], total: number): void {
 
 function endJob(): void {
   setDriveJob(null)
+  setDriveJobStopping(false)
   void platform.keepAwake.disable()
 }
 
@@ -508,7 +534,12 @@ export async function backUpToDrive(): Promise<void> {
     const folderId = await resolveFolder(drive)
     for (const song of queue) {
       if (jobAbort.aborted) break
-      advanceJob({ title: song.title, ratio: 0 })
+      advanceJob({
+        title: song.title,
+        ratio: 0,
+        movedBytes: null,
+        totalBytes: null,
+      })
       try {
         // Packing reports 0-1 within EACH part, so a bar wired straight
         // to it would snap back to zero as every stem began -- which
@@ -518,12 +549,15 @@ export async function backUpToDrive(): Promise<void> {
         const partsSeen = new Set<string>()
         const bundle = await buildPortableBundle(song.ref, {
           signal: jobAbort,
-          // Packing is most of the wall clock; the upload that follows is
-          // fast by comparison, so the bar tracks packing to 90%.
+          // Half the bar for packing, half for the upload. Neither side
+          // dominates everywhere -- a fast connection spends the time
+          // encoding, a slow one spends it uploading -- and giving the
+          // upload a sliver made every slow connection watch the bar
+          // "stick" at the end for minutes.
           onProgress: (p) => {
             partsSeen.add(p.part)
             const of = Math.max(partsSeen.size, 2)
-            advanceJob({ ratio: ((partsSeen.size - 1 + p.ratio) / of) * 0.9 })
+            advanceJob({ ratio: ((partsSeen.size - 1 + p.ratio) / of) * 0.5 })
           },
         })
         if (jobAbort.aborted) break
@@ -563,9 +597,14 @@ export async function backUpToDrive(): Promise<void> {
               },
               {
                 signal: jobAbort,
+                // Bytes, not just a fraction: on a slow connection this
+                // half of the bar is the whole wait, and numbers moving
+                // are what separate "slow" from "stuck".
                 onProgress: (sent, total) =>
                   advanceJob({
-                    ratio: 0.9 + (total === 0 ? 0 : sent / total) * 0.1,
+                    ratio: 0.5 + (total === 0 ? 0 : sent / total) * 0.5,
+                    movedBytes: sent,
+                    totalBytes: total,
                   }),
               },
             )
@@ -581,7 +620,7 @@ export async function backUpToDrive(): Promise<void> {
         // ratio back to 0, not 1: the bar reads (done + ratio) / total,
         // so leaving it at 1 counts the finished song twice and the next
         // song's reset then slides the bar visibly backwards.
-        advanceJob({ done, ratio: 0 })
+        advanceJob({ done, ratio: 0, movedBytes: null, totalBytes: null })
         // The headline figures move as each song lands, so somebody
         // deciding whether to press Stop can see what they would keep.
         // The rescan at the end is still the authoritative count.
@@ -677,7 +716,12 @@ export async function restoreFromDrive(): Promise<void> {
   try {
     for (const song of queue) {
       if (jobAbort.aborted) break
-      advanceJob({ title: song.title, ratio: 0 })
+      advanceJob({
+        title: song.title,
+        ratio: 0,
+        movedBytes: null,
+        totalBytes: null,
+      })
       try {
         const header = await readContainerHeader(
           drive,
@@ -690,6 +734,7 @@ export async function restoreFromDrive(): Promise<void> {
           0,
         )
         let pulled = 0
+        advanceJob({ movedBytes: 0, totalBytes })
 
         const getPart = async (info: PortablePartInfo): Promise<Uint8Array> => {
           if (jobAbort.aborted) throw new Error('Restore stopped.')
@@ -701,9 +746,26 @@ export async function restoreFromDrive(): Promise<void> {
             song.ref,
             range.start,
             range.end,
+            {
+              signal: jobAbort,
+              // Streamed, so a big stem on a slow connection moves the
+              // bar as it arrives instead of holding still per part —
+              // and Stop lands between chunks, not after the part.
+              onBytes: (received) =>
+                advanceJob({
+                  ratio:
+                    totalBytes === 0
+                      ? 1
+                      : Math.min(1, (pulled + received) / totalBytes),
+                  movedBytes: pulled + received,
+                }),
+            },
           )
           pulled += info.bytes
-          advanceJob({ ratio: totalBytes === 0 ? 1 : pulled / totalBytes })
+          advanceJob({
+            ratio: totalBytes === 0 ? 1 : pulled / totalBytes,
+            movedBytes: pulled,
+          })
           return bytes
         }
 
@@ -715,7 +777,7 @@ export async function restoreFromDrive(): Promise<void> {
         // ratio back to 0, not 1: the bar reads (done + ratio) / total,
         // so leaving it at 1 counts the finished song twice and the next
         // song's reset then slides the bar visibly backwards.
-        advanceJob({ done, ratio: 0 })
+        advanceJob({ done, ratio: 0, movedBytes: null, totalBytes: null })
         // Headline figures move as each song arrives — the same live
         // count the backup keeps, for the same Stop decision.
         setDriveScan((prev) =>

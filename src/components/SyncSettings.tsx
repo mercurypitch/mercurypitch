@@ -28,9 +28,9 @@ import { isStoragePersisted, requestPersistentStorage, } from '@/db/persistent-s
 import { accountHeld, takeDriveConnectResult } from '@/db/services/auth-service'
 import { readLibraryManifests, syncLibraryList, } from '@/db/services/song-manifest-service'
 import { isStandalone, needsIosInstallHint } from '@/lib/pwa-install'
-import { backUpToDrive, connectDrive, disconnectDriveSync, driveBusy, driveEmail, driveError, driveFolderId, driveJob, driveJobFailures, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
+import { backUpToDrive, connectDrive, disconnectDriveSync, driveBusy, driveEmail, driveError, driveFolderId, driveJob, driveJobFailures, driveJobStopping, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
 import { getAllUvrSessions, whenSessionStoreReady } from '@/stores/uvr-store'
-import { LinkChain } from './icons'
+import { LinkChain, RotateCcw } from './icons'
 import { InstallAppButton } from './InstallAppButton'
 import panel from './SettingsPanel.module.css'
 import styles from './SyncSettings.module.css'
@@ -102,10 +102,13 @@ export const SyncSettings: Component = () => {
     // driveState at 'unknown' forever with nothing on screen saying why.
     void refreshDriveStatus()
       .then(() => {
-        // Straight into the comparison on the way back from a successful
-        // connect: the person pressed a button expecting to see their
-        // songs, not another button.
-        if (connectResult?.ok === true && driveState() === 'connected') {
+        if (driveState() !== 'connected') return
+        // Straight into the comparison whenever Drive is connected: the
+        // check is one folder listing, and the section should open with
+        // answers, not another button. A scan already held from this
+        // session stays — except on the way back from a fresh connect,
+        // where the person pressed a button expecting to see their songs.
+        if (driveScan() === null || connectResult?.ok === true) {
           void scanDrive()
         }
       })
@@ -260,11 +263,13 @@ export const SyncSettings: Component = () => {
 
         <button
           type="button"
-          class={`${panel.settingsActionBtn} ${styles.action}`}
+          class={`${panel.settingsActionBtn} ${styles.iconAction} ${styles.action} ${busy() ? styles.spinning : ''}`}
           disabled={busy()}
           onClick={() => void refresh()}
+          aria-label="Check again"
+          title="Check again"
         >
-          {busy() ? 'Checking…' : 'Check again'}
+          <RotateCcw size={16} />
         </button>
       </div>
 
@@ -321,6 +326,19 @@ export const SyncSettings: Component = () => {
               <Show when={driveEmail()}>{(email) => <> as {email()}</>}</Show>
             </p>
 
+            {/* The auto-check in flight. Indeterminate on purpose:
+                listing a folder has no honest fraction, and the bar only
+                exists so a slow connection reads as checking, not stuck. */}
+            <Show when={driveBusy() && driveJob() === null}>
+              <div
+                class={styles.scanTrack}
+                role="progressbar"
+                aria-label="Checking your Drive"
+              >
+                <div class={styles.scanFill} />
+              </div>
+            </Show>
+
             <Show when={driveScan()}>
               {(scan) => (
                 <p class={styles.stat}>
@@ -356,6 +374,15 @@ export const SyncSettings: Component = () => {
                     </span>
                     <span class={styles.progressCount}>
                       {job().done} / {job().total}
+                      <Show
+                        when={
+                          job().movedBytes !== null && job().totalBytes !== null
+                        }
+                      >
+                        {' · '}
+                        {megabytes(job().movedBytes ?? 0)} of{' '}
+                        {megabytes(job().totalBytes ?? 0)}
+                      </Show>
                     </span>
                   </div>
                   <div class={styles.progressTrack}>
@@ -414,19 +441,22 @@ export const SyncSettings: Component = () => {
                   <button
                     type="button"
                     class={panel.settingsActionBtn}
+                    disabled={driveJobStopping()}
                     onClick={() => stopDriveJob()}
                   >
-                    Stop
+                    {driveJobStopping() ? 'Stopping after this song…' : 'Stop'}
                   </button>
                 }
               >
                 <button
                   type="button"
-                  class={panel.settingsActionBtn}
+                  class={`${panel.settingsActionBtn} ${styles.iconAction} ${driveBusy() ? styles.spinning : ''}`}
                   disabled={driveBusy()}
                   onClick={() => void scanDrive()}
+                  aria-label="Check Drive again"
+                  title="Check Drive again"
                 >
-                  {driveBusy() ? 'Checking…' : 'Check Drive'}
+                  <RotateCcw size={16} />
                 </button>
                 <Show when={(driveScan()?.toBackUp.length ?? 0) > 0}>
                   <button

@@ -11,8 +11,10 @@ import type { PortableBundleManifest, PortablePartInfo, } from '@/lib/portable/p
 const driveMock = vi.hoisted(() => ({
   ensureFolder: vi.fn(() => Promise.resolve('folder-1')),
   listSongs: vi.fn(() => Promise.resolve([] as unknown[])),
-  uploadSong: vi.fn(() => Promise.resolve('file-x')),
-  downloadRange: vi.fn((_id: string, _start: number, _end: number) =>
+  // Variadic so a test can install an implementation that reads the
+  // options argument (onProgress, signal) without fighting the types.
+  uploadSong: vi.fn((..._args: unknown[]) => Promise.resolve('file-x')),
+  downloadRange: vi.fn((..._args: unknown[]) =>
     Promise.resolve(new Uint8Array()),
   ),
   trashFile: vi.fn(() => Promise.resolve()),
@@ -89,7 +91,7 @@ vi.mock('@/lib/platform', () => ({
 
 import { DriveApiError } from '@/lib/drive/drive-client'
 import { encodeContainerHeader } from '@/lib/portable/portable-container'
-import { backUpToDrive, disconnectDriveSync, driveError, driveFolderId, driveJob, driveJobFailures, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
+import { backUpToDrive, disconnectDriveSync, driveError, driveFolderId, driveJob, driveJobFailures, driveJobStopping, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
 
 function localSession(hash: string, name: string) {
   return {
@@ -341,15 +343,15 @@ describe('backup', () => {
   })
 })
 
-describe('what the first real 27-song backup taught', () => {
-  function oneSongReady(name = 'One.mp3', hash = 'h-1'): void {
-    sessions.list = [localSession(hash, name)]
-    bundleMock.buildPortableBundle.mockResolvedValue({
-      manifest: manifestFor(hash, [4]),
-      parts: new Map([['stem:vocal', new Uint8Array([1, 2, 3, 4])]]),
-    })
-  }
+function oneSongReady(name = 'One.mp3', hash = 'h-1'): void {
+  sessions.list = [localSession(hash, name)]
+  bundleMock.buildPortableBundle.mockResolvedValue({
+    manifest: manifestFor(hash, [4]),
+    parts: new Map([['stem:vocal', new Uint8Array([1, 2, 3, 4])]]),
+  })
+}
 
+describe('what the first real 27-song backup taught', () => {
   it('REQ-DRV-012: tries a failed upload again before giving up', async () => {
     vi.useFakeTimers()
     try {
@@ -477,6 +479,121 @@ describe('what the first real 27-song backup taught', () => {
   })
 })
 
+describe('what a slow connection taught', () => {
+  it('REQ-DRV-024: acknowledges Stop while the song in flight finishes', async () => {
+    oneSongReady()
+    let releaseUpload: () => void = () => {}
+    driveMock.uploadSong.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          releaseUpload = () => resolve('file-x')
+        }),
+    )
+
+    await scanDrive()
+    const job = backUpToDrive()
+    await vi.waitFor(() => expect(driveMock.uploadSong).toHaveBeenCalled())
+
+    expect(driveJobStopping()).toBe(false)
+    stopDriveJob()
+    // Acknowledged at once — the button that says nothing gets pressed
+    // five times while the current song quietly finishes.
+    expect(driveJobStopping()).toBe(true)
+
+    releaseUpload()
+    await job
+    expect(driveJob()).toBeNull()
+    expect(driveJobStopping()).toBe(false)
+  })
+
+  it('REQ-DRV-025: the bar and the bytes move through one big upload', async () => {
+    oneSongReady()
+    let seen: {
+      ratio: number
+      movedBytes: number | null
+      totalBytes: number | null
+    } | null = null
+    driveMock.uploadSong.mockImplementation((...args: unknown[]) => {
+      const opts = args[3] as
+        | { onProgress?: (sent: number, total: number) => void }
+        | undefined
+      opts?.onProgress?.(5_000_000, 10_000_000)
+      const job = driveJob()
+      seen =
+        job === null
+          ? null
+          : {
+              ratio: job.ratio,
+              movedBytes: job.movedBytes,
+              totalBytes: job.totalBytes,
+            }
+      return Promise.resolve('file-x')
+    })
+
+    await scanDrive()
+    await backUpToDrive()
+
+    // Halfway through the upload half of the bar, with the real numbers
+    // alongside — on a slow connection this is the whole wait, and
+    // numbers moving are what separate "slow" from "stuck".
+    expect(seen).toEqual({
+      ratio: 0.75,
+      movedBytes: 5_000_000,
+      totalBytes: 10_000_000,
+    })
+  })
+
+  it("REQ-DRV-025: a restore's bar moves inside a part, not only between parts", async () => {
+    const manifest = manifestFor('h-9', [3, 5])
+    const header = encodeContainerHeader(manifest)
+    driveMock.listSongs.mockResolvedValue([
+      driveFile('h-9', 'Missing Here', header.byteLength + 8),
+    ])
+    const file = new Uint8Array(header.byteLength + 8)
+    file.set(header, 0)
+    file.set(new Uint8Array([1, 1, 1]), header.byteLength)
+    file.set(new Uint8Array([2, 2, 2, 2, 2]), header.byteLength + 3)
+
+    const midPart: Array<{ ratio: number; movedBytes: number | null }> = []
+    driveMock.downloadRange.mockImplementation((...args: unknown[]) => {
+      const [, start, end] = args as [string, number, number]
+      const opts = args[3] as
+        | { onBytes?: (received: number) => void }
+        | undefined
+      // Stream half the part, then note where the bar stands: it must
+      // already have moved, not wait for the part to complete.
+      if (opts?.onBytes !== undefined && start >= header.byteLength) {
+        opts.onBytes(Math.floor((end - start) / 2))
+        const job = driveJob()
+        if (job !== null) {
+          midPart.push({ ratio: job.ratio, movedBytes: job.movedBytes })
+        }
+      }
+      return Promise.resolve(file.slice(start, end))
+    })
+    bundleMock.importPortableBundle.mockImplementation(
+      async (
+        m: PortableBundleManifest,
+        getPart: (info: PortablePartInfo) => Promise<Uint8Array>,
+      ) => {
+        for (const part of m.parts) await getPart(part)
+        return { outcome: 'imported', sessionId: 's' }
+      },
+    )
+
+    await scanDrive()
+    await restoreFromDrive()
+
+    // First part of 8 bytes total, 1 byte streamed in: the bar is off
+    // zero before any part has finished.
+    expect(midPart[0]?.ratio).toBeCloseTo(1 / 8)
+    expect(midPart[0]?.movedBytes).toBe(1)
+    // Second part mid-stream: whole first part plus the streamed half.
+    expect(midPart[1]?.ratio).toBeCloseTo(5 / 8)
+    expect(midPart[1]?.movedBytes).toBe(5)
+  })
+})
+
 describe('restore', () => {
   it('pulls one part at a time, at the offsets the header names', async () => {
     const manifest = manifestFor('h-9', [3, 5])
@@ -508,7 +625,7 @@ describe('restore', () => {
     await restoreFromDrive()
 
     const ranges = driveMock.downloadRange.mock.calls.map(
-      (c) => (c as unknown as [string, number, number]).slice(1) as number[],
+      (c) => (c as unknown as [string, number, number]).slice(1, 3) as number[],
     )
     // The header read first, then each part at its computed offset. Never
     // the whole file: a phone restoring a library has to survive on the
