@@ -18,42 +18,69 @@ Fifty-nine of the sixty production violations store `(1, 0)`; the last stores
 that _raises_ `currentStreak` already raised `longestStreak` with it — the
 debt is bounded, legacy, and cannot grow.
 
-## Why there is no maintenance window
+## What actually protects the repair
 
-The clamp ships before the backfill, so a write landing mid-migration is
-already subject to the invariant and cannot re-introduce a violation. There is
-nothing for a window to protect. Ordering is doing the work a window would.
+Not the ordering, in the end — the idempotence.
+
+The intuition is that the Worker clamp should be live before the backfill
+runs, so nothing can undo it. `deploy-db.yml` does the opposite: it applies
+migrations and _then_ deploys the Worker, so that application code never runs
+against a database missing the tables it queries. That is the correct default
+for every other migration and is not worth bending here.
+
+So there is a window, and it is worth being exact about its size. The clamp
+exists to stop an **old client** re-persisting a violating pair — the
+pre-normalisation bundle reads a legacy row, holds `longestStreak: 0` in
+memory, and writes it back on the same-day or reset branch. Old clients do not
+disappear when the app deploys; a PWA-cached shell keeps running until its
+owner reloads. So:
+
+- **Before the Worker deploys** — any client can re-introduce a violation.
+- **After the Worker deploys** — none can, whatever bundle they are on.
+- **Between the migration and the Worker deploy** — roughly one deploy step,
+  during which the rows are repaired and unprotected.
+
+The migration is written to be re-runnable precisely so that window costs
+nothing: **apply it once more after the Worker is live.** A second pass
+selects nothing if nothing slipped through, and repairs it if something did.
+
+No maintenance window, and no writes lost to one.
 
 ## Release order
 
-Both steps are per-environment. Dev first, in full, including the checks.
+Per-environment, dev first and in full, including the checks.
 
-1. **Deploy the Worker** — this is what carries `clampStreakHighWater` and the
-   streak-column validation. From this moment no client, old bundle or new,
-   can write a violating profile.
-2. **Apply the migration** — `0030_streak_high_water.sql`, which repairs the
-   stored rows.
-3. **Deploy the app** — the client-side normalisation. Deliberately last: it
-   is the only part that is purely cosmetic, because steps 1 and 2 have
-   already made the stored data right.
+CI does steps 1 and 2 by itself on a merge to `main` that touches
+`workers/db-worker/**` (`deploy-db.yml`), and step 3 in parallel
+(`build.yml`). Step 4 is the manual part and the one that is easy to forget.
+
+1. **Migrations apply** — `0030_streak_high_water.sql` repairs the stored rows.
+2. **Worker deploys** — carries `clampStreakHighWater` and the streak-column
+   validation.
+3. **App deploys** — the client-side normalisation. In parallel, and it can
+   lag by any amount: steps 1 and 2 already made the stored data right.
+4. **Re-apply the migration**, once the Worker deploy has finished. This is
+   the step that closes the window above.
 
 ```sh
-# 1
-pnpm deploy:db:dev
-# 2
 cd workers/db-worker
 pnpm exec wrangler d1 migrations apply mercurypitch-db-dev --env dev --remote
-# 3
-pnpm deploy:dev
 ```
 
-Steps 1 and 2 must not be reordered. Step 3 may lag by any amount. For
-production, the same three with `:prod` / `mercurypitch-db --env prod` — and
-production deploys on a `v*` tag, so step 3 is the tag.
+`d1 migrations apply` records applied files, so a re-run reports nothing to
+do. To actually re-run the repair, execute the statement directly:
+
+```sh
+pnpm exec wrangler d1 execute mercurypitch-db-dev --env dev --remote \
+  --command "UPDATE userProfiles SET longestStreak = currentStreak WHERE currentStreak > longestStreak"
+```
+
+For production it is the same shape against `mercurypitch-db --env prod`, and
+production deploys on a `v*` tag rather than a merge.
 
 ## Verification
 
-Run against dev after step 2, and again after real practice on a real device.
+Run against dev after step 4, and again after real practice on a real device.
 
 ```sql
 -- Must be 0. The invariant, stated directly.
