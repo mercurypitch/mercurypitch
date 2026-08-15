@@ -335,6 +335,24 @@ export function createServiceWorkerRuntime(
   const servesShell = (pathname: string): boolean =>
     !STANDALONE_DOCUMENT_PATHS.has(pathname) && !pathname.startsWith('/api/')
 
+  /**
+   * Cache work that must never fail the request it belongs to. Storage can
+   * refuse — a full quota, site data cleared mid-session — and a promise that
+   * rejects inside `respondWith` does not fall back to the network: it shows
+   * the browser's network-error page, which no reload clears while the worker
+   * is installed. Degrading to "as if no worker were here" is the only
+   * acceptable answer.
+   */
+  const bestEffort = async <T>(
+    work: () => Promise<T>,
+  ): Promise<T | undefined> => {
+    try {
+      return await work()
+    } catch {
+      return undefined
+    }
+  }
+
   /** Fetch one allowlisted URL and store it, but never fail the caller. */
   const warm = async (cache: Cache, pathname: string): Promise<void> => {
     if (!allowedPaths.has(pathname)) return
@@ -381,7 +399,14 @@ export function createServiceWorkerRuntime(
           if (!allowedPaths.has(pathname)) return
           if ((await cache.match(pathname)) !== undefined) return
           const response = await previous.match(request)
-          if (response !== undefined) await cache.put(pathname, response)
+          if (response === undefined) return
+          try {
+            await cache.put(pathname, response)
+          } catch {
+            // Copying forward is an optimisation. If storage refuses — a full
+            // quota is the only realistic reason — the URL is simply fetched
+            // when it is needed, and the build still installs.
+          }
         }),
       )
     }
@@ -402,7 +427,15 @@ export function createServiceWorkerRuntime(
       // whole, and the browser retries on the next update check.
       throw new Error('sw: the shell document belongs to a different build')
     }
-    await cache.put(SHELL_KEY, shell)
+    try {
+      await cache.put(SHELL_KEY, shell)
+    } catch {
+      // Whether the shell can be *stored* is a storage question, not a
+      // correctness one: without it this worker serves navigations from the
+      // network, which is what the previous design did for every visitor.
+      // Failing the install instead would strand someone with a full quota on
+      // a build they can never leave.
+    }
     await Promise.all(
       [...firstPaintAssets(html, allowedPaths), ...STABLE_SHELL_ASSETS].map(
         (path) => warm(cache, path),
@@ -437,8 +470,9 @@ export function createServiceWorkerRuntime(
   }
 
   const handleShellNavigation = async (request: Request): Promise<Response> => {
-    const cache = await env.caches.open(cacheName)
-    const shell = await readShell(cache)
+    const cache = await bestEffort(() => env.caches.open(cacheName))
+    const shell =
+      cache === undefined ? undefined : await bestEffort(() => readShell(cache))
     if (shell !== undefined) return shell
 
     // No shell yet: the worker is controlling before its install finished, or
@@ -449,10 +483,13 @@ export function createServiceWorkerRuntime(
     // address bar while showing the target's content. Hand it back and let the
     // browser perform it, which is what happens without a worker in the way.
     if (response.redirected) return Response.redirect(response.url, 302)
-    if (isHtmlDocument(response)) {
+    if (cache !== undefined && isHtmlDocument(response)) {
       const html = await response.clone().text()
       if (htmlBelongsToBuild(html, allowedPaths)) {
-        await cache.put(SHELL_KEY, response.clone())
+        // Storing the shell is what makes the *next* load offline-capable.
+        // Failing this navigation over it would turn a full quota into a blank
+        // page.
+        await bestEffort(() => cache.put(SHELL_KEY, response.clone()))
       }
     }
     return response
@@ -482,13 +519,18 @@ export function createServiceWorkerRuntime(
     request: Request,
     pathname: string,
   ): Promise<Response> => {
-    const cache = await env.caches.open(cacheName)
-    const cached = await cache.match(pathname)
+    const cache = await bestEffort(() => env.caches.open(cacheName))
+    const cached =
+      cache === undefined
+        ? undefined
+        : await bestEffort(() => cache.match(pathname))
     if (cached !== undefined) return cached
 
     const response = await env.fetch(request)
     if (isCacheableAsset(pathname, response)) {
-      await cache.put(pathname, response.clone())
+      if (cache !== undefined) {
+        await bestEffort(() => cache.put(pathname, response.clone()))
+      }
       return response
     }
     // In the manifest, but the edge no longer has it: this build is being
