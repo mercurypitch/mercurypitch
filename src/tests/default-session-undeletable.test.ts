@@ -21,6 +21,8 @@
 // the button.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as MelodyStore from '@/stores/melody-store'
+import type * as SessionStore from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
 
 beforeEach(() => {
@@ -30,8 +32,8 @@ beforeEach(() => {
 
 /** A freshly seeded library, as a first launch leaves it. */
 async function seeded(): Promise<{
-  store: typeof import('@/stores/melody-store')
-  sessions: typeof import('@/stores/session-store')
+  store: typeof MelodyStore
+  sessions: typeof SessionStore
 }> {
   const store = await import('@/stores/melody-store')
   store.seedDefaultSession()
