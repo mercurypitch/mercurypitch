@@ -117,9 +117,15 @@ export const AuthModal: Component = () => {
   })
 
   /** Full-page redirect via the worker: COOP severs window.opener, so
-   *  the GIS popup flow cannot work here (see auth-service). */
-  function startGoogleSignIn(): void {
-    window.location.assign(googleSignInUrl())
+   *  the GIS popup flow cannot work here (see auth-service). The URL is
+   *  fetched rather than built, because the device secret that authorises
+   *  absorbing this browser's anonymous progress goes in a POST body. */
+  async function startGoogleSignIn(): Promise<void> {
+    try {
+      window.location.assign(await googleSignInUrl())
+    } catch {
+      setError('Could not reach Google sign-in. Try again.')
+    }
   }
 
   // Live password validity (register only) — red border + checklist so
@@ -276,7 +282,7 @@ export const AuthModal: Component = () => {
                 <button
                   type="button"
                   class={styles.googleButton}
-                  onClick={startGoogleSignIn}
+                  onClick={() => void startGoogleSignIn()}
                   data-testid="auth-google"
                 >
                   <GoogleMark />

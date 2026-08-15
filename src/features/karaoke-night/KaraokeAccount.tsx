@@ -31,6 +31,16 @@ export function KaraokeAccount() {
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
 
+  /** The consent URL is fetched, not built: the device secret that lets this
+   *  browser's anonymous progress carry over goes in a POST body. */
+  async function startGoogleSignIn(): Promise<void> {
+    try {
+      window.location.assign(await googleSignInUrl())
+    } catch {
+      setError('Could not reach Google sign-in. Try again.')
+    }
+  }
+
   // Full email for the title/menu; a compact local-part for the chip so a
   // long address never spills off the top-right on a phone (the chip is a
   // flex row, where text-overflow can't truncate a bare text node — it needs
@@ -226,7 +236,7 @@ export function KaraokeAccount() {
             </form>
             <button
               class="kn-modal-google"
-              onClick={() => window.location.assign(googleSignInUrl())}
+              onClick={() => void startGoogleSignIn()}
             >
               Continue with Google
             </button>

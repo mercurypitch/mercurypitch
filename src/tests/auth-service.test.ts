@@ -176,7 +176,13 @@ describe('requireAuth', () => {
       RequestInit,
     ]
     expect(url).toBe('http://api.test/api/auth/anonymous')
-    expect(JSON.parse(init.body as string)).toEqual({ deviceId })
+    // The deviceId is published on the leaderboard, so it is not the
+    // credential any more — the secret beside it is, and it must actually be
+    // sent or every anonymous singer is locked out of their own history.
+    expect(JSON.parse(init.body as string)).toEqual({
+      deviceId,
+      deviceSecret: expect.stringMatching(/^[A-Za-z0-9_-]{22,128}$/),
+    })
   })
 
   it('skips the network when a valid token exists', async () => {
@@ -296,7 +302,10 @@ describe('requireAuth', () => {
       'http://api.test/api/auth/anonymous',
     )
     const init = fetchMock.mock.calls[2][1] as RequestInit
-    expect(JSON.parse(init.body as string)).toEqual({ deviceId })
+    expect(JSON.parse(init.body as string)).toEqual({
+      deviceId,
+      deviceSecret: expect.stringMatching(/^[A-Za-z0-9_-]{22,128}$/),
+    })
     infoSpy.mockRestore()
   })
 
@@ -563,6 +572,8 @@ describe('login and register', () => {
     expect(JSON.parse(init.body as string)).toEqual({
       idToken: 'google-id-token',
       deviceId,
+      // Signing in with a deviceId absorbs that anonymous account for good.
+      deviceSecret: expect.stringMatching(/^[A-Za-z0-9_-]{22,128}$/),
     })
   })
 })

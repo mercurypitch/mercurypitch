@@ -1,0 +1,24 @@
+-- ── The anonymous credential stops being a public identifier ─────────
+--
+-- An anonymous account's id IS the client's deviceId, and that id is
+-- published: userProfiles.id is publicly readable and lists 'id' in
+-- publicCols, and every leaderboard row carries userId. The id was also the
+-- entire credential — POST /api/auth/anonymous returned a session for it, and
+-- POST /api/auth/register took the row over permanently from the same value.
+-- So the board was a list of working credentials.
+--
+-- The id stays public: sessionRecords, follows, userProfiles and every share
+-- reference it, and renaming it would orphan all of them for no gain. What
+-- changes is that it is no longer sufficient. The client now holds a separate
+-- 256-bit secret and sends it in the request body; the server keeps its
+-- SHA-256 and compares.
+--
+-- NULL means "never bound", which — because every account created from now on
+-- binds one at creation — is exactly the set of accounts that existed before
+-- this migration. Those keep working from the id alone, once, and bind their
+-- secret on that first sign-in. It is trust-on-first-use, deliberately: a hard
+-- cutover would sign every existing anonymous singer out of their own history,
+-- and there is no secret to back-fill with. See docs/agent/BUGS.md for the
+-- residual window that leaves.
+
+ALTER TABLE users ADD COLUMN deviceSecretHash TEXT;

@@ -67,7 +67,9 @@ describe('FriendRequests', () => {
     const panel = screen.getByTestId('friend-requests')
     expect(panel.textContent).toContain('2 singers want to be friends')
     expect(
-      screen.getAllByRole('button', { name: /^Accept / }).map((b) => b.ariaLabel),
+      screen
+        .getAllByRole('button', { name: /^Accept / })
+        .map((b) => b.ariaLabel),
     ).toEqual(['Accept Ada', 'Accept Grace'])
   })
 
