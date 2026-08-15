@@ -198,3 +198,46 @@ describe('AuthModal', () => {
     )
   })
 })
+
+// The wiring the extraction to lib/google-sign-in left behind: this modal
+// shows a failed start inline, next to the form. Untested until now — the
+// Karaoke copy's own test claimed "the same change in AuthModal and
+// AccountSection is covered by their own files", and it was not.
+describe('Continue with Google', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { assign: vi.fn(), href: 'http://localhost/' },
+    })
+  })
+
+  it('navigates to the consent url the worker handed back', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-google'))
+
+    await waitFor(() =>
+      expect(window.location.assign).toHaveBeenCalledWith(
+        'http://api.test/api/auth/google/start',
+      ),
+    )
+  })
+
+  it('shows the failure inline rather than navigating to nothing', async () => {
+    mocks.googleSignInUrl.mockImplementation(() => {
+      throw new Error('offline')
+    })
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-google'))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Could not reach Google sign-in. Try again.'),
+      ).toBeTruthy(),
+    )
+    expect(window.location.assign).not.toHaveBeenCalled()
+  })
+})

@@ -10,8 +10,14 @@
 //
 // That turned this button's handler from a synchronous expression into an
 // awaited call that can fail. Karaoke Night is a standalone surface with its
-// own account UI — the same change in AuthModal and AccountSection is covered
-// by their own files, and this is the third copy.
+// own account UI, so this covers THIS surface's wiring: that a failure lands
+// in its own error line rather than the notification the settings panel uses.
+//
+// This comment used to claim the same change "is covered by their own files"
+// in AuthModal and AccountSection. It was not — both were uncovered, and the
+// claim is what stopped anyone looking. Now the shared half lives in
+// lib/google-sign-in with its own unit tests, and all three surfaces have a
+// wiring test.
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
