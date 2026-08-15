@@ -9,13 +9,15 @@
 // Beat the Founder. Never throws into the exercise completion flow.
 
 import { createSignal } from 'solid-js'
+import { needsSignIn } from '@/db/services/auth-service'
 import { checkAndGrantBadges, grantBadgeByRef, } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { fingerprintOf } from '@/features/community/share-identity'
 import type { ExerciseType } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
-import { showNotification } from '@/stores/notifications-store'
+import { removeNotification, showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import type { MelodyItem } from '@/types'
 import { armScoredAttempt, disarmScoredAttempt } from './attempt-coordinator'
 import { presentChallengeResult, whileFinalizing, } from './challenge-result-store'
@@ -219,10 +221,30 @@ export async function recordWeeklyAttempt(entry: {
     return true
   }
   if (!sessionSaved) {
-    showNotification(
-      `We couldn't save that Legend attempt. Your score was not posted; try the line again when you're ready.`,
-      'error',
-    )
+    // Say WHY. "We couldn't save that" names the effect and withholds the
+    // cause, which leaves a singer retrying a line that will fail again for
+    // the same reason. There is exactly one cause we can identify from here,
+    // and it happens to be the one the singer can do something about.
+    if (needsSignIn()) {
+      const id = showActionNotification(
+        `Sign in to post Legend scores. This device is signed out, so that attempt was not recorded — not on the board, and not in your practice history.`,
+        'error',
+        {
+          label: 'Sign in',
+          onClick: () => {
+            removeNotification(id)
+            openAuthModal('login')
+          },
+        },
+        // Longer than a status blip: this one asks for a decision.
+        { durationMs: 15_000 },
+      )
+    } else {
+      showNotification(
+        `We couldn't save that Legend attempt — your score was not posted. Try the line again when you're ready.`,
+        'error',
+      )
+    }
     return true
   }
   // One armed attempt consumes exactly one run. Staying armed meant every

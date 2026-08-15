@@ -266,6 +266,23 @@ function requiresLogin(): boolean {
   return localStorage.getItem(REQUIRES_LOGIN_KEY) === '1'
 }
 
+/**
+ * This device cannot reach the cloud without somebody signing in.
+ *
+ * True only in one state, and it is worth naming because it is easy to
+ * mistake for a network fault: an anonymous account that was upgraded and
+ * then signed out of. The server refuses anonymous re-auth for that device —
+ * its old identity belongs to the account it became — so `requireAuth` stops
+ * trying rather than retrying a doomed handshake forever.
+ *
+ * Anything that failed to save while this is true failed for a reason the
+ * singer can fix, so it must say "sign in" rather than "something went
+ * wrong".
+ */
+export function needsSignIn(): boolean {
+  return requiresLogin()
+}
+
 function setRequiresLogin(value: boolean): void {
   if (value) {
     localStorage.setItem(REQUIRES_LOGIN_KEY, '1')
