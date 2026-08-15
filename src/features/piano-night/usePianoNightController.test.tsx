@@ -348,6 +348,49 @@ describe('usePianoNightController practice controls', () => {
     expect(controller.playheadBeat()).toBe(totalBeats)
   })
 
+  it('settles B before a touch onset can enter the finished pass', async () => {
+    class ImmediateAudioContext {
+      currentTime = 0
+      state: AudioContextState = 'running'
+      readonly resume = vi.fn(async () => undefined)
+      readonly close = vi.fn(async () => {
+        this.state = 'closed'
+      })
+    }
+    const context = new ImmediateAudioContext()
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return context
+      }),
+    )
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+    controller.replaceSource(
+      compositionSource('Boundary Onset', {
+        noteStartBeat: 3.9,
+        tempoBpm: 96,
+      }),
+    )
+    controller.configurePracticeLoop({ startBeat: 2, endBeat: 4 })
+    controller.setPracticeRepeatCount(2)
+
+    await expect(controller.play()).resolves.toBe(true)
+    context.currentTime = ((4.05 - 2) * 60) / 96
+    controller.playKeyboardKey(67)
+
+    await vi.waitFor(() => {
+      expect(controller.practiceLoop().currentPass).toBe(2)
+    })
+    expect(controller.transport.phase()).toBe('playing')
+    expect(controller.transport.timeline.playheadBeat()).toBeCloseTo(2, 5)
+    expect(controller.scoringState()).toMatchObject({
+      hits: 0,
+      misses: 0,
+      pendingNotes: 1,
+    })
+  })
+
   it('cancels a pending Play before applying a new A/B range', async () => {
     const activation = deferred<undefined>()
     class DeferredAudioContext {

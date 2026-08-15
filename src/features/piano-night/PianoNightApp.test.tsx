@@ -468,6 +468,32 @@ describe('PianoNightApp', () => {
     expectSilentBrowserBoundary()
   })
 
+  it('captures manual A/B from the audio clock between presentation frames', async () => {
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(73)
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(screen.getByTestId('piano-night-play'))
+    await waitFor(() =>
+      expect(screen.getByTestId('piano-night-play')).toHaveAccessibleName(
+        'Pause Piano Night',
+      ),
+    )
+    expect(screen.getByLabelText('Seek piano project')).toHaveValue('0')
+
+    audioContext.currentTime = 5
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    const session = screen.getByRole('tabpanel', { name: 'Session' })
+    fireEvent.click(within(session).getByRole('button', { name: 'Set A here' }))
+
+    expect(session).toHaveTextContent('A 6.5 · B 64.0')
+    expect(
+      (screen.getByLabelText('Seek piano project') as HTMLInputElement)
+        .valueAsNumber,
+    ).toBeCloseTo(6.5, 4)
+  })
+
   it('renders one compact seek timeline with live tempo and speed', () => {
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
@@ -517,24 +543,19 @@ describe('PianoNightApp', () => {
   it('keeps the roving keyboard focus visible after entering phone layout', async () => {
     let mobile = false
     let notifyMobileChange: (() => void) | undefined
+    const compactKeyboardQuery =
+      '(max-width: 680px), (max-width: 900px) and (max-height: 500px), (max-width: 1180px) and (hover: none) and (pointer: coarse)'
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn((query: string) => ({
         get matches() {
-          return query ===
-            '(max-width: 680px), (max-width: 900px) and (max-height: 500px)'
-            ? mobile
-            : false
+          return query === compactKeyboardQuery ? mobile : false
         },
         media: query,
         onchange: null,
         addEventListener: vi.fn(
           (type: string, listener: EventListenerOrEventListenerObject) => {
-            if (
-              query !==
-                '(max-width: 680px), (max-width: 900px) and (max-height: 500px)' ||
-              type !== 'change'
-            ) {
+            if (query !== compactKeyboardQuery || type !== 'change') {
               return
             }
             notifyMobileChange = () => {

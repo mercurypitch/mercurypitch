@@ -50,7 +50,7 @@ const ORDERED_KEYS = [...KEYBOARD.white, ...KEYBOARD.black].sort(
 )
 const MOBILE_RANGE_STARTS = [36, 48, 60, 72] as const
 const COMPACT_KEYBOARD_MEDIA_QUERY =
-  '(max-width: 680px), (max-width: 900px) and (max-height: 500px)'
+  '(max-width: 680px), (max-width: 900px) and (max-height: 500px), (max-width: 1180px) and (hover: none) and (pointer: coarse)'
 
 export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
   const [mobile, setMobile] = createSignal(false)

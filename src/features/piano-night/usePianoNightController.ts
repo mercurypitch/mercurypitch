@@ -6,7 +6,7 @@
 // activate only from Play, Connect MIDI, or an on-screen key gesture.
 
 import { batch, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import type { PianoInputSnapshot, PianoPedalKind, } from '@/features/piano/input/piano-input-state'
+import type { PianoInputSnapshot, PianoInputState, PianoPedalKind, } from '@/features/piano/input/piano-input-state'
 import { createPianoInputState } from '@/features/piano/input/piano-input-state'
 import { createTouchPianoInputPort } from '@/features/piano/input/touch-piano-input-port'
 import type { WebMidiInputPortSnapshot } from '@/features/piano/input/web-midi-input-port'
@@ -190,6 +190,31 @@ export function usePianoNightController() {
     },
   })
   const input = createPianoInputState()
+  type InputTransportSample = Readonly<{
+    beat: number
+    phase: ReturnType<typeof transport.phase>
+  }>
+  let prepareInputTransportSample = (): InputTransportSample => ({
+    beat: transport.timeline.playheadBeat(),
+    phase: transport.phase(),
+  })
+  let pendingInputTransportSample: InputTransportSample | null = null
+  const withInputTransportSample = <T>(apply: () => T): T => {
+    const transportSample = prepareInputTransportSample()
+    pendingInputTransportSample = transportSample
+    try {
+      return apply()
+    } finally {
+      pendingInputTransportSample = null
+    }
+  }
+  const boundaryAwareInput: PianoInputState = {
+    apply(event) {
+      return withInputTransportSample(() => input.apply(event))
+    },
+    snapshot: input.snapshot,
+    subscribe: input.subscribe,
+  }
   const scoring = createPianoPerformanceScoringEngine(
     // eslint-disable-next-line solid/reactivity -- one-time seed; source swaps are explicit below
     scoringSourceFor(source()),
@@ -202,7 +227,7 @@ export function usePianoNightController() {
     defaultVelocity: 0.78,
   })
   const midi = createWebMidiInputPort({
-    onInput: (event) => input.apply(event),
+    onInput: (event) => boundaryAwareInput.apply(event),
   })
 
   const [playheadBeat, setPlayheadBeat] = createSignal(0)
@@ -254,6 +279,7 @@ export function usePianoNightController() {
   let uninstallAudioUnlock: (() => void) | null = null
   let commandGeneration = 0
   let completionSettled = false
+  let settlingPracticeBoundary = false
   let disposed = false
   let sampledInstrument:
     | (PianoNightSampledInstrument &
@@ -354,6 +380,7 @@ export function usePianoNightController() {
     const phase = transport.phase()
     if (
       practiceRunComplete() ||
+      settlingPracticeBoundary ||
       !loop.enabled ||
       range === null ||
       (phase !== 'playing' && phase !== 'complete') ||
@@ -362,54 +389,86 @@ export function usePianoNightController() {
       return false
     }
 
-    const finished = scoring.sample({
-      phase: 'complete',
-      playheadBeat: range.endBeat,
-      sampledAtMs: performance.now(),
-      playbackRate: scoringPlaybackRate(range.endBeat),
-      input: input.snapshot(),
-    })
-    applyScoringUpdate(finished)
-    scheduler.stop()
-    releaseLiveVoices()
+    settlingPracticeBoundary = true
+    try {
+      const finished = scoring.sample({
+        phase: 'complete',
+        playheadBeat: range.endBeat,
+        sampledAtMs: performance.now(),
+        playbackRate: scoringPlaybackRate(range.endBeat),
+        input: input.snapshot(),
+      })
+      applyScoringUpdate(finished)
+      scheduler.stop()
+      releaseLiveVoices()
 
-    if (loop.currentPass < loop.repeatCount) {
-      const nextPass = loop.currentPass + 1
-      const rebased = transport.rebasePlayingBeat(range.startBeat)
-      if (!rebased) {
-        setStatusMessage('The practice loop could not restart. Press Play.')
+      if (loop.currentPass < loop.repeatCount) {
+        const nextPass = loop.currentPass + 1
+        const rebased = transport.rebasePlayingBeat(range.startBeat)
+        if (!rebased) {
+          setStatusMessage('The practice loop could not restart. Press Play.')
+          return true
+        }
+        applyScoringUpdate(
+          scoring.reset(
+            {
+              playheadBeat: range.startBeat,
+              input: input.snapshot(),
+            },
+            range,
+          ),
+        )
+        setPracticeLoop({ ...loop, currentPass: nextPass })
+        setPlayheadBeat(range.startBeat)
+        completionSettled = false
+        setPracticeRunComplete(false)
+        prepareCurrentSampleWindow(range.startBeat)
+        scheduler.start()
+        setStatusMessage(
+          `Pass ${loop.currentPass} finished at ${finished.state.accuracyPercent}%. Pass ${nextPass} of ${loop.repeatCount}.`,
+        )
         return true
       }
-      applyScoringUpdate(
-        scoring.reset(
-          {
-            playheadBeat: range.startBeat,
-            input: input.snapshot(),
-          },
-          range,
-        ),
-      )
-      setPracticeLoop({ ...loop, currentPass: nextPass })
-      setPlayheadBeat(range.startBeat)
-      completionSettled = false
-      setPracticeRunComplete(false)
-      prepareCurrentSampleWindow(range.startBeat)
-      scheduler.start()
+
+      completionSettled = true
+      setPracticeRunComplete(true)
+      if (phase === 'playing') transport.pause()
+      transport.seekToBeat(range.endBeat)
+      setPlayheadBeat(range.endBeat)
       setStatusMessage(
-        `Pass ${loop.currentPass} finished at ${finished.state.accuracyPercent}%. Pass ${nextPass} of ${loop.repeatCount}.`,
+        `Practice complete — ${loop.repeatCount} passes. Final pass ${finished.state.accuracyPercent}%.`,
       )
       return true
+    } finally {
+      settlingPracticeBoundary = false
+    }
+  }
+
+  // eslint-disable-next-line solid/reactivity -- invoked only by MIDI/touch event handlers
+  prepareInputTransportSample = (): InputTransportSample => {
+    let beat = transport.timeline.playheadBeat()
+    let phase = transport.phase()
+
+    // Input events arrive outside the presentation RAF. Settle B against the
+    // audio clock before the normalized onset can become scoring evidence.
+    // Re-read after each synchronous transport notification because a final
+    // beat read can rebase an intermediate pass to A while returning stale B.
+    if (phase === 'complete' && isAtPracticeBoundary(beat)) {
+      settlePracticeBoundary(beat)
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
+    } else if (phase === 'playing' && isAtPracticeBoundary(beat)) {
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
     }
 
-    completionSettled = true
-    setPracticeRunComplete(true)
-    if (phase === 'playing') transport.pause()
-    transport.seekToBeat(range.endBeat)
-    setPlayheadBeat(range.endBeat)
-    setStatusMessage(
-      `Practice complete — ${loop.repeatCount} passes. Final pass ${finished.state.accuracyPercent}%.`,
-    )
-    return true
+    if (phase === 'playing' && isAtPracticeBoundary(beat)) {
+      settlePracticeBoundary(beat)
+      beat = transport.timeline.playheadBeat()
+      phase = transport.phase()
+    }
+
+    return { beat, phase }
   }
 
   // Presentation cap: every setPlayheadBeat write re-renders the falling
@@ -845,6 +904,7 @@ export function usePianoNightController() {
   const unsubscribeMidi = midi.subscribe(setMidiSnapshot)
   // eslint-disable-next-line solid/reactivity -- external input callback
   const unsubscribeInput = input.subscribe((update) => {
+    const inputTransportSample = pendingInputTransportSample
     if (update.event.type === 'pedal') {
       const pedal = update.event.pedal
       syncInstrumentPedal(update.snapshot, pedal)
@@ -886,8 +946,8 @@ export function usePianoNightController() {
     setInputSnapshot(update.snapshot)
     sampleScoring(
       update.snapshot,
-      transport.timeline.playheadBeat(),
-      transport.phase(),
+      inputTransportSample?.beat ?? transport.timeline.playheadBeat(),
+      inputTransportSample?.phase ?? transport.phase(),
     )
   })
 
@@ -1316,7 +1376,7 @@ export function usePianoNightController() {
       }
       const pendingMidi = pendingPointers.get(pointerId)
       if (pendingMidi === undefined) return
-      touch.press(pointerId, pendingMidi)
+      withInputTransportSample(() => touch.press(pointerId, pendingMidi))
       setStatusMessage(`Playing ${pendingMidi} from the touch keyboard.`)
     })
   }
@@ -1334,13 +1394,13 @@ export function usePianoNightController() {
     if (pendingPointers.has(event.pointerId)) {
       pendingPointers.set(event.pointerId, midiNote)
     } else {
-      touch.move(event.pointerId, midiNote)
+      withInputTransportSample(() => touch.move(event.pointerId, midiNote))
     }
   }
 
   const releaseTouchKey = (event: PointerEvent): void => {
     pendingPointers.delete(event.pointerId)
-    touch.release(event.pointerId)
+    withInputTransportSample(() => touch.release(event.pointerId))
     const target = event.currentTarget as HTMLElement | null
     if (target?.hasPointerCapture?.(event.pointerId) === true) {
       target.releasePointerCapture(event.pointerId)
@@ -1356,12 +1416,12 @@ export function usePianoNightController() {
         return
       }
       if (pendingPointers.get(pointerId) !== midiNote) return
-      touch.press(pointerId, midiNote)
+      withInputTransportSample(() => touch.press(pointerId, midiNote))
       const previousTimer = keyboardReleaseTimers.get(pointerId)
       if (previousTimer !== undefined) window.clearTimeout(previousTimer)
       const timer = window.setTimeout(() => {
         pendingPointers.delete(pointerId)
-        touch.release(pointerId)
+        withInputTransportSample(() => touch.release(pointerId))
         keyboardReleaseTimers.delete(pointerId)
       }, 420)
       keyboardReleaseTimers.set(pointerId, timer)
