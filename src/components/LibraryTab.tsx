@@ -478,6 +478,16 @@ export const LibraryTab: Component = () => {
                       handleMelodyClick(id, e)
                       return
                     }
+                    if (isMissingMelody()) {
+                      // buildSessionItemMelody used to answer this with a
+                      // single middle C, so clicking a broken item quietly
+                      // loaded a C4 into the editor under the melody's name.
+                      showNotification(
+                        `“${itemLabel()}” was deleted. Undo the delete to bring it back.`,
+                        'warning',
+                      )
+                      return
+                    }
                     // Legacy scale/preset items — flatten into a transient
                     // melody. Single-click should not switch tabs.
                     const built = buildSessionItemMelody(item)
