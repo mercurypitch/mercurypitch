@@ -100,7 +100,17 @@ export function streakFieldsOf(
 ): StreakFields {
   return {
     currentStreak: p?.currentStreak ?? 0,
-    longestStreak: p?.longestStreak ?? p?.currentStreak ?? 0,
+    // A record cannot be smaller than the run that set it, so the larger of
+    // the two is the only honest read of a stored profile.
+    //
+    // This was `p?.longestStreak ?? p?.currentStreak ?? 0`, which reads like
+    // a repair for rows written before the column existed and is not one:
+    // `longestStreak` is `INTEGER NOT NULL DEFAULT 0`, so those rows hold a
+    // literal 0 and `0 ?? n` is 0. Exactly the trap `streakFreezes`
+    // documents below. It only ever fired for `streakFieldsOf(undefined)` —
+    // no profile at all — so the unit test passed while 60 production rows
+    // stored a record lower than their own current streak.
+    longestStreak: Math.max(p?.longestStreak ?? 0, p?.currentStreak ?? 0),
     // Mirror the column default (0) rather than defaulting to
     // `STARTING_FREEZES` here. Granting the opening balance is `accrueFreezes`'
     // job and only its job — doing it at read time looked equivalent and was
@@ -173,6 +183,25 @@ export function accrueFreezes(f: StreakFields, today: string): StreakFields {
 }
 
 /**
+ * The high-water invariant, applied at the exit of every streak transition.
+ *
+ * This used to be a `Math.max` repeated inside each branch that raised the
+ * streak, which is the shape that produced the bug: the two branches that do
+ * NOT raise it — same-day, and the reset that drops back to 1 — had nothing
+ * to repeat, so a profile that arrived already violating the invariant was
+ * returned still violating and written straight back by `streakPatch`. A
+ * branch cannot forget a rule it does not have to remember, so the rule
+ * lives here instead, where every path out of a transition passes through.
+ *
+ * Only ever raises. Lowering a record is not this function's business.
+ */
+function withHighWater(f: StreakFields): StreakFields {
+  return f.longestStreak >= f.currentStreak
+    ? f
+    : { ...f, longestStreak: f.currentStreak }
+}
+
+/**
  * Advance the streak for a practice that happened today. Pure — returns the
  * next StreakFields. Handles first-ever, same-day (idempotent), yesterday,
  * and gap (freeze-bridge or reset-with-snapshot).
@@ -181,6 +210,10 @@ export function advanceStreak(
   fields: StreakFields,
   today: string,
 ): StreakFields {
+  return withHighWater(advanceStreakFrom(fields, today))
+}
+
+function advanceStreakFrom(fields: StreakFields, today: string): StreakFields {
   // Accrue FIRST, deliberately. The gap being bridged is itself time waited,
   // so a singer coming back after five weeks should spend the freeze that
   // waiting earned them — settling up afterwards would let the same absence
@@ -188,13 +221,7 @@ export function advanceStreak(
   const f = accrueFreezes(fields, today)
   const last = f.lastPracticeDate
   if (last === null || last === '') {
-    const currentStreak = 1
-    return {
-      ...f,
-      currentStreak,
-      longestStreak: Math.max(f.longestStreak, currentStreak),
-      lastPracticeDate: today,
-    }
+    return { ...f, currentStreak: 1, lastPracticeDate: today }
   }
 
   const gap = daysBetween(last, today)
@@ -204,11 +231,9 @@ export function advanceStreak(
   if (gap <= 0) return f
 
   if (gap === 1) {
-    const currentStreak = f.currentStreak + 1
     return {
       ...f,
-      currentStreak,
-      longestStreak: Math.max(f.longestStreak, currentStreak),
+      currentStreak: f.currentStreak + 1,
       lastPracticeDate: today,
     }
   }
@@ -217,13 +242,11 @@ export function advanceStreak(
   const missedDays = gap - 1
   if (f.streakFreezes >= missedDays) {
     // Freezes bridge the gap — streak survives, freezes consumed.
-    const currentStreak = f.currentStreak + 1
     return {
       ...f,
-      currentStreak,
+      currentStreak: f.currentStreak + 1,
       streakFreezes: f.streakFreezes - missedDays,
       lastFreezeUsedDate: today,
-      longestStreak: Math.max(f.longestStreak, currentStreak),
       lastPracticeDate: today,
     }
   }
@@ -318,6 +341,13 @@ export function computeStreakState(
 
   return {
     currentStreak: displayStreak,
+    // Belt and braces now, and worth naming as such: this `Math.max` is what
+    // kept the card looking right for years while the stored column was
+    // wrong, because `displayStreak` came from `currentStreak` and papered
+    // over a `longestStreak` that trailed it. With `streakFieldsOf`
+    // normalising on the way in, `f.longestStreak` already wins — but this
+    // function is exported and reachable with hand-built fields, so the
+    // clamp stays rather than becoming a rule the caller has to know.
     longestStreak: Math.max(f.longestStreak, displayStreak),
     freezes: f.streakFreezes,
     maxFreezes: MAX_FREEZES,
@@ -340,17 +370,18 @@ export function applyRepair(fields: StreakFields, today: string): StreakFields {
   // a freeze that came due today.
   const f = accrueFreezes(fields, today)
   const state = computeStreakState(f, today)
-  if (!state.canRepair) return f
-  const currentStreak = state.repairableStreak
-  return {
+  // The refusal returns through `withHighWater` too: `applyStreakRepair`
+  // persists whatever comes back, so a declined repair must not be a way to
+  // write a violating row back to the profile.
+  if (!state.canRepair) return withHighWater(f)
+  return withHighWater({
     ...f,
-    currentStreak,
-    longestStreak: Math.max(f.longestStreak, currentStreak),
+    currentStreak: state.repairableStreak,
     lastPracticeDate: today,
     previousStreak: 0,
     streakResetDate: null,
     lastRepairDate: today,
-  }
+  })
 }
 
 /** Columns we persist back — only the streak subset. */

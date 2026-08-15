@@ -470,6 +470,48 @@ async function handleGetById(
   )
 }
 
+/**
+ * `longestStreak` is a high-water mark. Make that true here, because here is
+ * the one place every client write to a profile passes through.
+ *
+ * It was never true before. The streak columns are not `serverCols` — the
+ * streak rules (freezes, repairs, local midnights) belong to the client and
+ * the server stores the result — so a profile PATCH could raise
+ * `currentStreak` and leave `longestStreak` behind. That is precisely what
+ * the client did before f2a5ccc, and 0030_streak_high_water.sql repairs the
+ * 60 production rows it left. Repairing them is pointless while the door
+ * that let them through is still open, so: this closes the door, and it
+ * ships BEFORE the migration runs.
+ *
+ * Only ever raises, and never from a stored value that is already higher —
+ * a client sending a smaller record cannot talk one down.
+ *
+ * No admin exemption, and the reason is worth writing down because the
+ * obvious one does not survive contact with `canWriteRow`: profiles are
+ * `access: 'owner'`, which grants writes to the row's own user and to
+ * nobody else, admin key or not. So an exemption here could only ever fire
+ * for somebody editing their own profile while also holding the admin key —
+ * a combination nothing does. Correcting a wrong-high record is an operator
+ * job, and the operator path is direct SQL through `wrangler d1 execute`,
+ * which does not come through this function at all. That keeps the rule
+ * absolute for every route that exists.
+ */
+function clampStreakHighWater(body: Row, stored: Row | null): void {
+  if (body.currentStreak === undefined && body.longestStreak === undefined) {
+    return
+  }
+  // `validateWrite` has already refused anything that is not a whole
+  // non-negative number, so anything unusable here is an absent column.
+  const days = (v: unknown): number => (typeof v === 'number' ? v : 0)
+  body.longestStreak = Math.max(
+    body.currentStreak === undefined
+      ? days(stored?.currentStreak)
+      : days(body.currentStreak),
+    days(body.longestStreak),
+    days(stored?.longestStreak),
+  )
+}
+
 async function handleCreate(
   entity: string,
   def: TableDef,
@@ -499,6 +541,10 @@ async function handleCreate(
   delete body.createdAt
   delete body.updatedAt
   for (const col of def.serverCols ?? []) delete body[col]
+  // No stored row yet, so this is only "a profile may not be born violating
+  // the invariant" — but a create carrying a streak is a real write, and
+  // leaving it out would be a hole the size of one POST.
+  if (entity === 'userProfiles') clampStreakHighWater(body, null)
   if (auth && def.access !== 'admin' && def.access !== 'owner') {
     body.userId = auth.userId
   }
@@ -581,6 +627,7 @@ async function handleUpdate(
   delete body.updatedAt
   delete body.userId // ownership is immutable
   for (const col of def.serverCols ?? []) delete body[col]
+  if (entity === 'userProfiles') clampStreakHighWater(body, row)
 
   const sets: string[] = ['"updatedAt" = ?']
   const binds: SqlValue[] = [new Date().toISOString()]
