@@ -20,7 +20,7 @@ import type { SongAudioQuality } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { recordActivity } from '@/db/services/user-activity-service'
-import { deleteAllUvrSessionsFromDb, deleteImportedUvrSessionDataStrict, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteImportedUvrSessionDataStrict, deleteSessionGroupFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -761,6 +761,9 @@ function persistAllSessionsToDb(sessions: UvrSession[]): void {
 
       // Upsert each session
       for (const session of sessions) {
+        // A whole-list persist can be carrying a snapshot taken before a
+        // delete; its create branch would resurrect the deleted row.
+        if (deletedSessionIds.has(session.sessionId)) continue
         const recs = existingByAppId.get(session.sessionId)
         if (recs && recs.length > 0) {
           // Update the first one
@@ -997,10 +1000,16 @@ export async function pruneOrphanedCompletedSessions(): Promise<number> {
       continue
     }
     if (presence === 'absent') {
-      const ok = await deleteUvrSessionFromDb(s.sessionId)
-      if (ok) {
+      // The same strict cascade the UI delete and the import use: a
+      // pruned ghost must not leave its lyrics, transcriptions and pitch
+      // rows behind as permanent orphans keyed to a session that no
+      // longer exists.
+      try {
+        await deleteImportedUvrSessionDataStrict(s.sessionId)
         removeUvrSessionFromCache(s.sessionId)
         pruned++
+      } catch (error) {
+        console.error('[SessionStore] prune could not delete:', error)
       }
     }
   }
@@ -1387,8 +1396,9 @@ export function retryUvrSession(sessionId: string): void {
   setCurrentUvrSession(updated)
 }
 
-/** Delete UVR session */
-export function deleteUvrSession(sessionId: string): Promise<void> {
+/** Delete UVR session everywhere. Resolves false when the durable
+ *  cascade failed and the song may resurface after a reload. */
+export function deleteUvrSession(sessionId: string): Promise<boolean> {
   removeDeletedSessionFromGroupIndexes(sessionId)
   removeUvrSessionFromCache(sessionId)
   if (currentUvrSession()?.sessionId === sessionId) {
@@ -1399,12 +1409,30 @@ export function deleteUvrSession(sessionId: string): Promise<void> {
   // whose hash then convinced the Drive scan nothing needed restoring.
   // The strict helper removes blobs before the record, so an interrupted
   // delete leaves a stemless row the scan and import can see through
-  // (REQ-DRV-020), never a playable ghost.
-  return deleteImportedUvrSessionDataStrict(sessionId).catch(
-    (error: unknown) => {
+  // (REQ-DRV-020), never a playable ghost. False means the cascade did
+  // not land — the caller owes the person a warning, because the song
+  // they watched disappear can walk back in on the next reload.
+  return (async () => {
+    // Tombstone before the cascade and drain the per-session write chain,
+    // the same defense deleteGroupWithSessions uses: a queued write that
+    // lands after the cascade would otherwise re-create the row. Fresh
+    // imports mint new UUIDs, so a lasting tombstone can block nothing.
+    deletedSessionIds.add(sessionId)
+    await waitForSessionWrites([sessionId])
+    try {
+      await deleteImportedUvrSessionDataStrict(sessionId)
+      return true
+    } catch (error) {
       console.error('[SessionStore] durable session delete failed:', error)
-    },
-  )
+      // The row survives in IndexedDB, so lift the tombstone: after the
+      // reload the warning asks for, the session must persist normally
+      // again. Until that reload the cache and the database disagree —
+      // a Drive restore run in this window would import a duplicate of
+      // the still-intact song, which the next scan-and-prune reconciles.
+      deletedSessionIds.delete(sessionId)
+      return false
+    }
+  })()
 }
 
 /**

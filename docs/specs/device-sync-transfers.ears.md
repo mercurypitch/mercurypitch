@@ -297,4 +297,5 @@ block both the peer transfer and the Drive restore of that song
 still declines: importing over a session whose stems merely could not
 be read would duplicate it.
 _Tests:_ `sync-protocol` — "REQ-SYNC-028: replaces a hash match whose
-stems are gone, instead of declining".
+stems are gone, instead of declining"; `portable-bundle` —
+"REQ-SYNC-028: still declines when the ghost check answers 'unknown'".

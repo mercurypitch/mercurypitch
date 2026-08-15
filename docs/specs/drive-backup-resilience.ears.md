@@ -134,5 +134,28 @@ racing it would bring the "deleted" song back whole, and its hash would
 then convince the scan that nothing needed restoring — the shipped "it
 only offered once" bug. An interrupted cascade now leaves at worst a
 stemless row, which REQ-DRV-020 sees through and the boot prune removes.
+**IF** the cascade fails outright, the delete shall resolve false and
+the UI shall warn that the song can come back after a reload — a delete
+the person watched succeed must not silently un-happen. The delete also
+tombstones the session and drains its write chain first, so a queued or
+whole-list persist carrying a pre-delete snapshot cannot re-create the
+row after the cascade commits.
 _Tests:_ `uvr-session-reconcile` — "REQ-DRV-021: removes the record AND
-everything it owns, awaitably".
+everything it owns, awaitably", "a stale whole-list persist cannot
+resurrect a deleted row", "resolves false when the cascade fails, so
+the UI can warn"; `uvr-delete` — "REQ-DRV-021: warns when the cascade
+fails, in words about a reload", "stays quiet when the delete lands".
+
+## REQ-DRV-022 — A failed stem read never reads as "absent"
+
+**WHEN** the stem-presence check cannot read the blob store, it shall
+answer `unknown`, never `absent`. The check now asks the compound index
+for counts (strict — failures reject) instead of materializing the
+session's multi-MB stem rows; where an adapter offers no index counts,
+the row-read fallback must pass `throwOnError`, because the generic
+read degrades a failure to an empty list — and to a presence check an
+empty list IS `absent`, the one answer that authorises the boot prune
+to delete a paid library on a transient IndexedDB error.
+_Tests:_ `uvr-session-reconcile` — "REQ-DRV-022: a degraded stem read
+answers unknown, never absent", "keeps a paid session when the stem
+read fails transiently".

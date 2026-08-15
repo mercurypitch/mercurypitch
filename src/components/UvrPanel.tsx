@@ -30,6 +30,7 @@ import { isE2ETestMode } from '@/lib/test-utils'
 import { isNarrow } from '@/lib/use-viewport'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, } from '@/lib/uvr-api'
 import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
+import { deleteUvrSessionWithWarning } from '@/lib/uvr-delete'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import { prepareUvrSong } from '@/lib/uvr-song-preparation'
@@ -38,7 +39,7 @@ import { PART_STEM_DISPLAY, StemSplitError } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, karaokeActiveGroupId, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setKaraokeActiveGroupId, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, karaokeActiveGroupId, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setKaraokeActiveGroupId, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
@@ -2633,8 +2634,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       props.onViewChange?.('results')
                     }}
                     onDeleteAndNew={() => {
-                      const s = sess()
-                      void deleteUvrSession(s.sessionId)
+                      void deleteUvrSessionWithWarning(sess().sessionId)
                       setCurrentView('upload')
                     }}
                     onFetchStems={

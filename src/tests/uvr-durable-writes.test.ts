@@ -18,7 +18,7 @@ vi.mock('@/db', () => ({
 
 import { durableWrite, hasRoomFor, isQuotaError } from '@/db/durable-write'
 import type { UvrStemBlob } from '@/db/entities'
-import { countStemBlobs, deleteUvrSessionFromDb, getStemFingerprintData, saveStemBlobDurable, saveStemFingerprintData, sessionHasPlayableStems, } from '@/db/services/uvr-service'
+import { countStemBlobs, getStemFingerprintData, saveStemBlobDurable, saveStemFingerprintData, sessionHasPlayableStems, } from '@/db/services/uvr-service'
 
 // jsdom's Blob has no arrayBuffer(); the service relies on it (real browsers
 // implement it). Polyfill via FileReader.
@@ -194,22 +194,8 @@ describe('saveStemFingerprintData (create-then-delete upsert)', () => {
 })
 
 // ── Delete cascade ───────────────────────────────────────────────
-
-describe('deleteUvrSessionFromDb', () => {
-  it('removes the stem blobs and reports success', async () => {
-    await saveStemBlobDurable('s', 'vocal', wav([1]), 'v.wav')
-    await saveStemBlobDurable('s', 'instrumental', wav([2]), 'i.wav')
-    expect(await countStemBlobs('s')).toBe(2)
-
-    const ok = await deleteUvrSessionFromDb('s')
-    expect(ok).toBe(true)
-    expect(await countStemBlobs('s')).toBe(0)
-  })
-
-  it('returns false (does not throw) when a delete fails', async () => {
-    await saveStemBlobDurable('s', 'vocal', wav([1]), 'v.wav')
-    const repo = adapter.getRepository<UvrStemBlob>('uvrStemBlobs')
-    vi.spyOn(repo, 'delete').mockRejectedValue(new Error('locked'))
-    expect(await deleteUvrSessionFromDb('s')).toBe(false)
-  })
-})
+// The non-cascading deleteUvrSessionFromDb that used to be pinned here
+// is gone: every full-session delete (UI, prune, import ghost-clearing)
+// now runs deleteImportedUvrSessionDataStrict, whose behavior is pinned
+// by uvr-session-reconcile and portable-bundle tests. Keeping the weak
+// sibling exported invited the satellite-orphan bug back.

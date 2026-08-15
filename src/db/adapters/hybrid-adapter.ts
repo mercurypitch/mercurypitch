@@ -199,6 +199,28 @@ export class HybridAdapter implements DatabaseAdapter {
     return this.local.transaction(fn)
   }
 
+  /** Index-only count on the local half, when the local adapter offers one
+   *  (DexieAdapter does). Strict: a failure rejects, it does not become 0. */
+  countByCompoundIndexStrict(
+    entityName: string,
+    indexName: string,
+    value: readonly (string | number)[],
+  ): Promise<number> {
+    const local = this.local as Partial<{
+      countByCompoundIndexStrict: (
+        entityName: string,
+        indexName: string,
+        value: readonly (string | number)[],
+      ) => Promise<number>
+    }>
+    if (typeof local.countByCompoundIndexStrict !== 'function') {
+      return Promise.reject(
+        new Error('The local adapter cannot count by index.'),
+      )
+    }
+    return local.countByCompoundIndexStrict(entityName, indexName, value)
+  }
+
   async destroy(): Promise<void> {
     this.guarded.clear()
     await this.cloud.destroy()

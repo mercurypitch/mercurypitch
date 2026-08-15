@@ -16,9 +16,11 @@ vi.mock('@/db', () => ({
 }))
 
 import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
+import { saveLyricsToDbStrict } from '@/db/services/lyrics-db-service'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
+import { saveTranscriptionToDbStrict } from '@/db/services/whisper-transcription-db-service'
 import type { UvrSession } from '@/stores/app-store'
-import { cleanupStaleUvrSessions, completeUvrSession, deleteUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, refreshUvrSessionFromDb, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
+import { cleanupStaleUvrSessions, completeUvrSession, deleteUvrSession, getAllUvrSessions, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, refreshUvrSessionFromDb, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
 
 if (typeof Blob.prototype.arrayBuffer !== 'function') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,19 +188,72 @@ describe('deleteUvrSession — durable cascade', () => {
   it('REQ-DRV-021: removes the record AND everything it owns, awaitably', async () => {
     // The old delete re-persisted the survivors fire-and-forget and never
     // touched the stem blobs; a reload racing it brought the song back
-    // whole, and its hash then blocked the Drive restore offer.
+    // whole, and its hash then blocked the Drive restore offer. "Owns"
+    // means the satellites too — an orphaned lyrics or pitch row keyed to
+    // a session that no longer exists is junk nothing can ever clean.
     const id = newSession('gone.mp3')
     await saveStemBlobDurable(id, 'vocal', wav([1]), 'v.wav')
+    await saveLyricsToDbStrict(id, {
+      text: '[00:01.00]Soon gone',
+      format: 'lrc',
+      filename: 'gone.lrc',
+    })
+    await saveTranscriptionToDbStrict(id, [])
     await completeUvrSession(id, { vocal: 'blob:x' }, {})
 
     await deleteUvrSession(id)
 
     expect(getUvrSession(id)).toBeUndefined()
     expect(await dbStatus(id)).toBeUndefined()
-    const blobs = await adapter
-      .getRepository<UvrStemBlob>('uvrStemBlobs')
-      .findAll({ where: { sessionId: id } })
-    expect(blobs).toEqual([])
+    for (const store of [
+      'uvrStemBlobs',
+      'uvrSessionLyrics',
+      'whisperTranscriptions',
+    ]) {
+      const rows = await adapter
+        .getRepository<UvrStemBlob>(store)
+        .findAll({ where: { sessionId: id } })
+      expect(rows, store).toEqual([])
+    }
+  })
+
+  it('a stale whole-list persist cannot resurrect a deleted row', async () => {
+    // The hydration path saves the WHOLE session list fire-and-forget. A
+    // snapshot taken before a delete, landing after it, used to walk the
+    // deleted row straight back into IndexedDB through the create branch
+    // — a delete that resolved true, un-happening with no warning.
+    const id = newSession('racy.mp3')
+    await completeUvrSession(id, { vocal: 'blob:x' }, {})
+    const staleSnapshot = getAllUvrSessions()
+
+    const gone = await deleteUvrSession(id)
+    saveAllUvrSessions(staleSnapshot)
+    // Let the fire-and-forget persist land before looking.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(gone).toBe(true)
+    expect(await dbStatus(id)).toBeUndefined()
+  })
+
+  it('resolves false when the cascade fails, so the UI can warn', async () => {
+    // A delete the person watched succeed but that did not land durably
+    // is a song that walks back in on the next reload. The store cannot
+    // show UI; it CAN refuse to claim success.
+    const id = newSession('stuck.mp3')
+    await completeUvrSession(id, { vocal: 'blob:x' }, {})
+
+    const tx = vi
+      .spyOn(adapter, 'transaction')
+      .mockRejectedValueOnce(new Error('QuotaExceededError'))
+
+    const gone = await deleteUvrSession(id)
+
+    expect(gone).toBe(false)
+    // The optimistic cache removal stands — the row will resurface from
+    // IndexedDB on reload, which is exactly what the warning says.
+    expect(getUvrSession(id)).toBeUndefined()
+
+    tx.mockRestore()
   })
 })
 
@@ -243,7 +298,7 @@ describe('pruneOrphanedCompletedSessions', () => {
     // the user paid for.
     //
     // The failure has to be transient to be dangerous, and that is the honest
-    // scenario: a total outage is self-limiting, because deleteUvrSessionFromDb
+    // scenario: a total outage is self-limiting, because the delete cascade
     // reads the same store and bails out too. One failed read followed by a
     // working one is the window — and IndexedDB does fail per-transaction
     // (TransactionInactiveError, an eviction mid-session, a timeout under load).
@@ -254,6 +309,34 @@ describe('pruneOrphanedCompletedSessions', () => {
     const findAll = vi
       .spyOn(adapter.getRepository('uvrStemBlobs'), 'findAll')
       .mockRejectedValueOnce(new Error('TransactionInactiveError'))
+
+    const pruned = await pruneOrphanedCompletedSessions()
+
+    expect(pruned).toBe(0)
+    expect(getUvrSession(withStems)?.status).toBe('completed')
+    expect(await dbStatus(withStems)).toBe('completed')
+
+    findAll.mockRestore()
+  })
+
+  it('REQ-DRV-022: a degraded stem read answers unknown, never absent', async () => {
+    // Dexie's generic findAll swallows a failed read into an empty list
+    // unless throwOnError is set. To a presence check, that empty list is
+    // indistinguishable from "this session has no stems" — and 'absent'
+    // is the one answer that authorises the boot prune to delete. The
+    // presence check must force the failure to surface instead.
+    const withStems = newSession('paid-2.mp3')
+    await saveStemBlobDurable(withStems, 'vocal', wav([1]), 'v.wav')
+    await completeUvrSession(withStems, { vocal: 'blob:x' }, {})
+
+    const repo = adapter.getRepository('uvrStemBlobs')
+    const findAll = vi
+      .spyOn(repo, 'findAll')
+      .mockImplementationOnce((opts?: { throwOnError?: boolean }) =>
+        opts?.throwOnError === true
+          ? Promise.reject(new Error('TransactionInactiveError'))
+          : Promise.resolve([]),
+      )
 
     const pruned = await pruneOrphanedCompletedSessions()
 

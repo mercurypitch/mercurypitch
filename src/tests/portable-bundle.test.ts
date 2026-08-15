@@ -25,13 +25,25 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
 
 import { loadLyricsFromDbStrict, saveLyricsToDbStrict, } from '@/db/services/lyrics-db-service'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
+import type * as UvrService from '@/db/services/uvr-service'
 import * as uvrService from '@/db/services/uvr-service'
-import { getStemBlobStrict, saveStemBlobDurable, } from '@/db/services/uvr-service'
+import { getStemBlobStrict, saveStemBlobDurable, sessionStemPresence, } from '@/db/services/uvr-service'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
 import { isReadableManifest, MAX_PART_BYTES, PortablePartCorruptError, } from '@/lib/portable/portable-bundle'
 import type { UvrSession } from '@/stores/uvr-store'
 import { deleteAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
+
+// Real uvr-service, with one seam: sessionStemPresence stays the real
+// implementation until a test forces the answer the real database will
+// not give on demand ('unknown' — the read itself failing).
+vi.mock('@/db/services/uvr-service', async (importOriginal) => {
+  const actual = await importOriginal<typeof UvrService>()
+  return {
+    ...actual,
+    sessionStemPresence: vi.fn(actual.sessionStemPresence),
+  }
+})
 
 // Deterministic "encoding": the tier is legible in the bytes, so a test
 // can tell what a stem was encoded at without decoding anything.
@@ -158,6 +170,27 @@ describe('portable bundle round trip', () => {
       sessionId: SOURCE_ID,
     })
     expect(getPart).not.toHaveBeenCalled()
+  })
+
+  it("REQ-SYNC-028: still declines when the ghost check answers 'unknown'", async () => {
+    // 'unknown' means the presence read failed, not that the stems are
+    // gone. Clearing the "ghost" on that answer would delete a session
+    // that may be perfectly healthy — the import must decline instead.
+    await seedSourceSong()
+    const built = await buildPortableBundle(SOURCE_ID)
+    vi.mocked(sessionStemPresence).mockResolvedValueOnce('unknown')
+
+    const getPart = vi.fn()
+    const result = await importPortableBundle(built.manifest, getPart)
+
+    expect(result).toEqual({
+      outcome: 'already-here',
+      sessionId: SOURCE_ID,
+    })
+    expect(getPart).not.toHaveBeenCalled()
+    // The maybe-healthy session is untouched.
+    expect(getUvrSessionByHash(HASH)?.sessionId).toBe(SOURCE_ID)
+    expect(await getStemBlobStrict(SOURCE_ID, 'vocal')).not.toBeNull()
   })
 
   it('keeps nothing when a part arrives corrupt', async () => {
