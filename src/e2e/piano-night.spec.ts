@@ -1089,6 +1089,11 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
       }
 
       if (viewport.name === 'phone landscape') {
+        const seekBox = await page
+          .getByRole('slider', { name: 'Seek piano project' })
+          .boundingBox()
+        expect(seekBox?.height).toBeGreaterThanOrEqual(44)
+
         const fallBox = await page
           .getByTestId('piano-night-fall-view')
           .boundingBox()
@@ -1191,6 +1196,28 @@ test('uses touch navigation on a coarse-pointer tablet @smoke', async ({
     await expect(
       page.getByRole('button', { name: 'Choose music for Piano Night' }),
     ).toHaveCount(1)
+
+    const keyboard = page.getByTestId('piano-night-keyboard')
+    const keyboardRange = page.getByLabel('Touch keyboard range')
+    await expect(keyboardRange).toBeVisible()
+    await expect(keyboard.locator('button[data-in-range="true"]')).toHaveCount(
+      25,
+    )
+    await expect(
+      keyboard.locator('button[data-in-range="false"]:visible'),
+    ).toHaveCount(0)
+    for (const button of await keyboardRange.getByRole('button').all()) {
+      const target = await button.boundingBox()
+      expect(target?.width).toBeGreaterThanOrEqual(44)
+      expect(target?.height).toBeGreaterThanOrEqual(44)
+    }
+    for (const key of await keyboard
+      .locator('button[data-in-range="true"]')
+      .all()) {
+      const target = await key.boundingBox()
+      expect(target?.width).toBeGreaterThanOrEqual(44)
+      expect(target?.height).toBeGreaterThanOrEqual(44)
+    }
 
     const metrics = await page.evaluate(() => ({
       clientHeight: document.documentElement.clientHeight,

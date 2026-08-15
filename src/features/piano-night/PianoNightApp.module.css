@@ -1145,7 +1145,50 @@
 }
 
 .keyboardRange {
+  position: absolute;
+  z-index: 7;
+  top: 9px;
+  right: 8px;
+  left: 8px;
   display: none;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.keyboardRange button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(224 207 180 / 32%);
+  border-radius: 50%;
+  color: var(--ivory-strong);
+  background: rgb(5 7 9 / 82%);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 24%);
+  pointer-events: auto;
+}
+
+.keyboardRange button:last-child svg {
+  transform: rotate(180deg);
+}
+
+.keyboardRange button:disabled {
+  opacity: 0.34;
+}
+
+.keyboardRange svg {
+  width: 18px;
+  height: 18px;
+}
+
+.keyboardRange span {
+  padding: 4px 8px;
+  border-radius: 7px;
+  color: #ddd5c9;
+  background: rgb(5 7 9 / 76%);
+  font-size: 9px;
 }
 
 .fallboard {
@@ -2277,7 +2320,7 @@
   }
 
   .practiceStrip {
-    height: 44px;
+    height: 46px;
     grid-template-columns: minmax(110px, 1fr) 56px 50px 48px;
   }
 
@@ -2389,7 +2432,11 @@
   .drawerPanel h2 {
     font-size: 28px;
   }
+}
 
+@media (max-width: 680px),
+  (max-width: 900px) and (max-height: 500px),
+  (max-width: 1180px) and (hover: none) and (pointer: coarse) {
   .whiteKeys button[data-in-range='false'],
   .blackKeys button[data-in-range='false'] {
     display: none;
@@ -2400,57 +2447,14 @@
   }
 
   .keyboardRange {
-    position: absolute;
-    z-index: 7;
-    top: 9px;
-    right: 8px;
-    left: 8px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    pointer-events: none;
-  }
-
-  .keyboardRange button {
-    display: grid;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    place-items: center;
-    border: 1px solid rgb(224 207 180 / 32%);
-    border-radius: 50%;
-    color: var(--ivory-strong);
-    background: rgb(5 7 9 / 82%);
-    box-shadow: 0 8px 18px rgb(0 0 0 / 24%);
-    pointer-events: auto;
-  }
-
-  .keyboardRange button:last-child svg {
-    transform: rotate(180deg);
-  }
-
-  .keyboardRange button:disabled {
-    opacity: 0.34;
-  }
-
-  .keyboardRange svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .keyboardRange span {
-    padding: 4px 8px;
-    border-radius: 7px;
-    color: #ddd5c9;
-    background: rgb(5 7 9 / 76%);
-    font-size: 9px;
   }
 }
 
 @media (max-width: 900px) and (max-height: 500px) {
   .shell {
     --keybed-height: 84px;
-    --fallboard-height: 52px;
+    --fallboard-height: 50px;
     --mobile-nav-height: 48px;
   }
 
@@ -2467,13 +2471,13 @@
 
   .practiceStrip {
     top: calc(max(4px, env(safe-area-inset-top)) + 58px);
-    height: 38px;
+    height: 46px;
   }
 
   .fallStage,
   .scoreStage,
   .keysStage {
-    top: calc(max(4px, env(safe-area-inset-top)) + 96px);
+    top: calc(max(4px, env(safe-area-inset-top)) + 104px);
   }
 
   .transport {

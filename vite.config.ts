@@ -402,6 +402,11 @@ export default defineConfig(({ command, mode }) => {
             // make that payload a static dependency of the standalone room.
             if (id.includes('/src/lib/use-scroll-lock.')) return 'scroll-lock'
             if (id.includes('/src/lib/use-viewport.')) return 'viewport'
+            // Persisted standalone-room preferences need only Solid and
+            // localStorage. Keeping this primitive inside the broad
+            // pitch-core chunk makes any standalone setting inherit the main
+            // app's notification store on first paint.
+            if (id.includes('/src/lib/storage.')) return 'runtime-storage'
             // Background catalog refresh needs only the auth revision signal
             // and API base. Isolate those leaves before the broad pitch-core
             // rule below so the standalone controller does not inherit it.
@@ -488,7 +493,7 @@ export default defineConfig(({ command, mode }) => {
               return 'local-song-library'
             }
             if (
-              /src\/lib\/(mirror\/|glass\/|pitch-measurements\/|pitch-pipeline\/(?:log-pitch|running-median)|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|mic-lock|mic-level|input-health|id\.|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
+              /src\/lib\/(mirror\/|glass\/|pitch-measurements\/|pitch-pipeline\/(?:log-pitch|running-median)|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|mic-lock|mic-level|input-health|id\.|defaults|frequency-to-note|vocal-analyzer|legal-links|analytics\.|consent\.)/.test(
                 id,
               ) ||
               /src\/stores\/notifications-store/.test(id) ||

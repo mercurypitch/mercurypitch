@@ -1185,7 +1185,9 @@ export function PianoNightApp(): JSX.Element {
                 <button
                   type="button"
                   onClick={() =>
-                    controller.setPracticeLoopStart(controller.playheadBeat())
+                    controller.setPracticeLoopStart(
+                      controller.transport.timeline.playheadBeat(),
+                    )
                   }
                 >
                   Set A here
@@ -1193,7 +1195,9 @@ export function PianoNightApp(): JSX.Element {
                 <button
                   type="button"
                   onClick={() =>
-                    controller.setPracticeLoopEnd(controller.playheadBeat())
+                    controller.setPracticeLoopEnd(
+                      controller.transport.timeline.playheadBeat(),
+                    )
                   }
                 >
                   Set B here
