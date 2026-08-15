@@ -172,9 +172,7 @@ describe('the Drive section', () => {
     render(() => <SyncSettings />)
 
     await waitFor(() => {
-      const button = screen.getByText(
-        'Stopping after this song…',
-      ) as HTMLButtonElement
+      const button = screen.getByText('Stopping…') as HTMLButtonElement
       expect(button.disabled).toBe(true)
     })
     // The byte figures ride the same label, so a big song on a slow

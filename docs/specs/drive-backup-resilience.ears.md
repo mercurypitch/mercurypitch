@@ -177,13 +177,15 @@ re-scanning".
 ## REQ-DRV-024 — Stop is acknowledged the moment it is pressed
 
 **WHEN** somebody presses Stop during a backup or restore, the system
-shall immediately disable the button and say the job is stopping after
-the song in flight (which finishes so it is not re-moved from zero next
-time). **IF** the press changed nothing on screen, **THEN** it reads as
-ignored and gets pressed again and again — the shipped experience.
-_Tests:_ `drive-sync-store` — "REQ-DRV-024: acknowledges Stop while the
-song in flight finishes"; `SyncSettings` — "REQ-DRV-024: says it is
-stopping once Stop is pressed".
+shall immediately disable the button and say the job is stopping; the
+job then halts at its next checkpoint — an upload slice, a streamed
+download chunk, a packing step — and the song in flight is offered
+again next run rather than counted as failed. **IF** the press changed
+nothing on screen, **THEN** it reads as ignored and gets pressed again
+and again — the shipped experience.
+_Tests:_ `drive-sync-store` — "REQ-DRV-024: acknowledges Stop the
+moment it lands"; `SyncSettings` — "REQ-DRV-024: says it is stopping
+once Stop is pressed".
 
 ## REQ-DRV-025 — The bar moves through a song, not only between songs
 

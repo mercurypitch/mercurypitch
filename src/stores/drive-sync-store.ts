@@ -92,9 +92,10 @@ const [driveJob, setDriveJob] = createSignal<DriveJob | null>(null)
 const [driveBusy, setDriveBusy] = createSignal(false)
 // Survives the job that filled it — the whole point is reading it after.
 const [driveJobFailures, setDriveJobFailures] = createSignal<DriveFailure[]>([])
-// Stop is deliberately soft — the song in flight finishes so it is not
-// re-uploaded from zero next time. Without an acknowledgement the button
-// looks dead and gets pressed five times; this is the acknowledgement.
+// Stop lands at the next checkpoint — an upload slice, a streamed
+// chunk, a packing step — honored in seconds, but not instantly.
+// Without an acknowledgement the button looks dead for those seconds
+// and gets pressed five times; this is the acknowledgement.
 const [driveJobStopping, setDriveJobStopping] = createSignal(false)
 // The MercuryPitch folder, once resolved — what "Open in Drive" links to.
 const [driveFolderId, setDriveFolderId] = createSignal<string | null>(null)
@@ -468,12 +469,12 @@ export async function scanDrive(): Promise<DriveScan | null> {
   }
 }
 
-/** Stop a running backup or restore after the song in flight. */
+/** Stop a running backup or restore at the next safe checkpoint. */
 export function stopDriveJob(): void {
   jobAbort.aborted = true
-  // Acknowledged on screen: the current song still finishes (so it is
-  // not re-moved from zero next time), and pressing Stop again must not
-  // look like the first press was ignored.
+  // Acknowledged on screen at once. The song in flight is abandoned at
+  // its next checkpoint and offered again next run — never counted as
+  // failed (both loops break before counting once the signal is set).
   if (driveJob() !== null) setDriveJobStopping(true)
 }
 

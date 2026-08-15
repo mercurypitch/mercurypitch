@@ -444,7 +444,7 @@ export const SyncSettings: Component = () => {
                     disabled={driveJobStopping()}
                     onClick={() => stopDriveJob()}
                   >
-                    {driveJobStopping() ? 'Stopping after this song…' : 'Stop'}
+                    {driveJobStopping() ? 'Stopping…' : 'Stop'}
                   </button>
                 }
               >
