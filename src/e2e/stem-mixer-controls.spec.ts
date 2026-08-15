@@ -246,6 +246,99 @@ test('switches songs directly from the Songs drawer @smoke', async ({
   ).toBeVisible()
 })
 
+test('keeps the play-along role picker readable in dark and light themes @smoke', async ({
+  page,
+}) => {
+  const readMetrics = (target: import('@playwright/test').Locator) =>
+    target.evaluate((element) => {
+      const parse = (value: string): [number, number, number] => {
+        const channels = value.match(/[\d.]+/g)?.map(Number)
+        if (channels === undefined || channels.length < 3) {
+          throw new Error(`Expected an RGB color, received ${value}`)
+        }
+        return [channels[0], channels[1], channels[2]]
+      }
+      const luminance = ([red, green, blue]: [number, number, number]) => {
+        const channels = [red, green, blue].map((channel) => {
+          const value = channel / 255
+          return value <= 0.04045
+            ? value / 12.92
+            : Math.pow((value + 0.055) / 1.055, 2.4)
+        })
+        return (
+          0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+        )
+      }
+      const style = getComputedStyle(element)
+      const foreground = luminance(parse(style.color))
+      const background = luminance(parse(style.backgroundColor))
+
+      return {
+        background: style.backgroundColor,
+        color: style.color,
+        colorScheme: style.getPropertyValue('color-scheme'),
+        contrast:
+          (Math.max(foreground, background) + 0.05) /
+          (Math.min(foreground, background) + 0.05),
+      }
+    })
+
+  const assertReadablePalette = async (
+    role: import('@playwright/test').Locator,
+    expectedScheme: 'dark' | 'light',
+  ): Promise<void> => {
+    await expect(role).toBeVisible()
+    await expect(role).toHaveCSS('color-scheme', expectedScheme)
+    const enabledOption = role.locator('option:not(:disabled)').first()
+    await expect(enabledOption).toBeEnabled()
+
+    for (const target of [role, enabledOption]) {
+      // The surface eases between theme colors for 150ms. Poll until each
+      // rendered pair is readable instead of sleeping for a fixed frame.
+      await expect
+        .poll(async () => (await readMetrics(target)).contrast)
+        .toBeGreaterThanOrEqual(4.5)
+      const metrics = await readMetrics(target)
+
+      expect(metrics.background).not.toBe('rgba(0, 0, 0, 0)')
+      expect(metrics.contrast, JSON.stringify(metrics)).toBeGreaterThanOrEqual(
+        4.5,
+      )
+    }
+  }
+
+  const assertReadableTheme = async (
+    role: import('@playwright/test').Locator,
+    theme: 'dark' | 'light',
+  ): Promise<void> => {
+    await page.evaluate((nextTheme) => {
+      document.documentElement.setAttribute('data-theme', nextTheme)
+    }, theme)
+    await assertReadablePalette(role, theme)
+  }
+
+  await page.getByRole('button', { name: 'Songs' }).click()
+  const drawerRole = page.getByRole('combobox', {
+    name: 'Choose what you perform in Stem control regression',
+  })
+  await expect(drawerRole).toBeEnabled()
+  await assertReadableTheme(drawerRole, 'dark')
+  await assertReadableTheme(drawerRole, 'light')
+  await page.getByTitle('Karaoke focus mode').click()
+  await expect(page.locator('.stem-mixer')).toHaveClass(/stem-mixer--focus/)
+  await expect(drawerRole).toHaveCSS('background-color', 'rgb(28, 33, 40)')
+  await assertReadablePalette(drawerRole, 'dark')
+
+  await page.goto(`/#/karaoke/session/${SESSION_ID}`)
+  await dismissOverlays(page)
+  const sessionRole = page.getByRole('combobox', {
+    name: 'Choose what you perform in this song',
+  })
+  await expect(sessionRole).toBeEnabled({ timeout: 15_000 })
+  await assertReadableTheme(sessionRole, 'dark')
+  await assertReadableTheme(sessionRole, 'light')
+})
+
 test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   page,
 }) => {
