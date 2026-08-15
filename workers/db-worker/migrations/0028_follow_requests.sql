@@ -10,10 +10,17 @@
 -- directions, because being given the code IS the consent. This makes that
 -- the rule everywhere — a follow is a request until the other side accepts.
 --
--- Existing rows cannot be told apart by origin, but they can by shape: a
--- reciprocal pair was consensual (it can only have come from a friend code),
--- a lone row was not. Pairs become 'accepted'; lone rows become 'pending',
--- which is exactly the set that was never agreed to.
+-- Existing rows cannot be told apart by origin, but they can by shape. A
+-- reciprocal pair means both people chose the other: either one of them
+-- redeemed the other's friend code (which writes both rows), or each pressed
+-- Follow independently. Both are two yeses, so both become 'accepted'. A lone
+-- row is one person's decision about somebody who was never asked, and becomes
+-- 'pending' — exactly the set nobody agreed to.
+--
+-- (An earlier draft of this comment said a pair "can only have come from a
+-- friend code". That is wrong: two independent one-way follows produce a pair
+-- too. The rule is unchanged, because two independent follows are still mutual
+-- interest — but the reason had to be right.)
 
 ALTER TABLE follows ADD COLUMN status TEXT NOT NULL DEFAULT 'pending';
 
