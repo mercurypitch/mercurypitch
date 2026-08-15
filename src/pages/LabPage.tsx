@@ -6,11 +6,23 @@ import { authVersion } from '@/db/services/user-service'
 import type { LabTab } from '@/features/lab/LabSurface'
 import type { PerksMe } from '@/lib/backgrounds/background-access'
 import { fetchPerksMe, hasSupporterFeatureAccess, } from '@/lib/backgrounds/background-access'
+import { isE2ETestMode } from '@/lib/test-utils'
 import styles from './LabPage.module.css'
 
 const LabSurface = lazy(async () =>
   import('@/features/lab/LabSurface').then((m) => ({ default: m.LabSurface })),
 )
+
+/** Keep the real-mouse Lab specs runnable without putting a supporter token in
+ * CI. All three conditions are required: a deliberately compiled E2E build,
+ * the pre-boot test marker, and a loopback host. Normal local and production
+ * builds therefore continue to fail closed on the server-held grant. */
+function hasLocalE2ELabAccess(): boolean {
+  if (import.meta.env.VITE_E2E_LAB_ACCESS !== '1' || !isE2ETestMode()) {
+    return false
+  }
+  return ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+}
 
 /** Supporter research surface. The heavy spectral tooling is requested only
  * after the authenticated Worker grants access in every environment. */
@@ -32,7 +44,9 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
     const resolved = access()
     return resolved?.authKey === authKey() ? resolved.perks : null
   }
-  const granted = () => hasSupporterFeatureAccess(currentPerks(), 'lab-access')
+  const granted = () =>
+    hasLocalE2ELabAccess() ||
+    hasSupporterFeatureAccess(currentPerks(), 'lab-access')
 
   onMount(() => {
     const refreshAccess = (): void => {

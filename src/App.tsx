@@ -237,7 +237,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -1693,6 +1693,8 @@ const AppShell: Component<AppProps> = (props) => {
     if (tab === TAB_LAB) return 'workbench'
     if (tab === TAB_PITCH_TEST) return 'detection'
     if (tab === TAB_PITCH_ALGO) return 'algorithms'
+    if (tab === TAB_LAB_TRANSCRIBE) return 'transcribe'
+    if (tab === TAB_LAB_DIFF) return 'lrc-diff'
     return null
   })
 
@@ -2960,7 +2962,7 @@ const AppShell: Component<AppProps> = (props) => {
         {/* Guide Tour — Interactive spotlight overlay */}
         <Walkthrough />
 
-        <Show when={sidebarOpen() === true}>
+        <Show when={sidebarOpen() === true && labTab() === null}>
           <div class="sidebar-backdrop" onClick={closeSidebar} />
         </Show>
 
@@ -2971,154 +2973,158 @@ const AppShell: Component<AppProps> = (props) => {
             challengeStageLaunch() === null
           }
         >
-          <header>
-            <div class="header-left">
-              <button
-                class="sidebar-toggle-btn"
-                onClick={toggleSidebar}
-                title="Menu"
-                aria-label="Menu"
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                  <path
-                    fill="currentColor"
-                    d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
-                  />
-                </svg>
-              </button>
-              <button
-                id="app-title"
-                class="logo-btn"
-                onClick={() => void handleTabChange(TAB_SINGING)}
-                title="Go to Practice"
-                aria-label="MercuryPitch — Go to Practice"
-              >
-                <span class="app-title" role="heading" aria-level="1">
-                  MercuryPitch
-                </span>
-              </button>
-              <Show
-                when={headerPracticeContext()}
-                fallback={<p class="subtitle">Voice Pitch Practice</p>}
-                keyed
-              >
-                {/* Dynamic practice context — opens the sidebar controls for
+          <Show when={labTab() === null}>
+            <header>
+              <div class="header-left">
+                <button
+                  class="sidebar-toggle-btn"
+                  onClick={toggleSidebar}
+                  title="Menu"
+                  aria-label="Menu"
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      fill="currentColor"
+                      d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  id="app-title"
+                  class="logo-btn"
+                  onClick={() => void handleTabChange(TAB_SINGING)}
+                  title="Go to Practice"
+                  aria-label="MercuryPitch — Go to Practice"
+                >
+                  <span class="app-title" role="heading" aria-level="1">
+                    MercuryPitch
+                  </span>
+                </button>
+                <Show
+                  when={headerPracticeContext()}
+                  fallback={<p class="subtitle">Voice Pitch Practice</p>}
+                  keyed
+                >
+                  {/* Dynamic practice context — opens the sidebar controls for
                     the active song/character. Own class (not .subtitle) so it
                     stays visible on mobile. */}
-                {(ctx) => (
-                  <button
-                    type="button"
-                    class="header-melody-context"
-                    onClick={() => {
-                      setSidebarCollapsed(false)
-                      setSidebarOpen(true)
-                      if (ctx.tab === TAB_SINGING) {
-                        applyPersistedValue('sidebar-character-open', 'true')
-                        triggerTargetFocus([
-                          'sidebar-character',
-                          'sidebar-library',
-                        ])
-                      } else {
-                        triggerTargetFocus('sidebar-library')
-                      }
-                    }}
-                    title={
-                      ctx.character != null
-                        ? `Now loaded: ${ctx.name} · ${ctx.character} (Click to change)`
-                        : `Now loaded: ${ctx.name} (Click to change)`
-                    }
-                  >
-                    <Show
-                      when={ctx.tab === TAB_SINGING}
-                      fallback={
-                        ctx.tab === TAB_PIANO ? (
-                          <PianoKeys class="header-melody-glyph" size={18} />
-                        ) : (
-                          <GuitarGlyph />
-                        )
+                  {(ctx) => (
+                    <button
+                      type="button"
+                      class="header-melody-context"
+                      onClick={() => {
+                        setSidebarCollapsed(false)
+                        setSidebarOpen(true)
+                        if (ctx.tab === TAB_SINGING) {
+                          applyPersistedValue('sidebar-character-open', 'true')
+                          triggerTargetFocus([
+                            'sidebar-character',
+                            'sidebar-library',
+                          ])
+                        } else {
+                          triggerTargetFocus('sidebar-library')
+                        }
+                      }}
+                      title={
+                        ctx.character != null
+                          ? `Now loaded: ${ctx.name} · ${ctx.character} (Click to change)`
+                          : `Now loaded: ${ctx.name} (Click to change)`
                       }
                     >
-                      <img
-                        class="header-melody-avatar"
-                        src={ctx.avatar}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                    </Show>
-                    <span class="header-melody-name">{ctx.name}</span>
-                    <Show when={ctx.character != null}>
-                      <span class="header-melody-char">{ctx.character}</span>
-                    </Show>
-                  </button>
-                )}
-              </Show>
-            </div>
-            <div class="header-right">
-              {/* Current melody indicator pill */}
+                      <Show
+                        when={ctx.tab === TAB_SINGING}
+                        fallback={
+                          ctx.tab === TAB_PIANO ? (
+                            <PianoKeys class="header-melody-glyph" size={18} />
+                          ) : (
+                            <GuitarGlyph />
+                          )
+                        }
+                      >
+                        <img
+                          class="header-melody-avatar"
+                          src={ctx.avatar}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </Show>
+                      <span class="header-melody-name">{ctx.name}</span>
+                      <Show when={ctx.character != null}>
+                        <span class="header-melody-char">{ctx.character}</span>
+                      </Show>
+                    </button>
+                  )}
+                </Show>
+              </div>
+              <div class="header-right">
+                {/* Current melody indicator pill */}
 
-              {/* Walkthrough Control Button */}
-              <WalkthroughControl
-                showOnStart={false}
-                onOpenGuide={openGuideSelection}
-              />
-            </div>
-            {/* Desktop/tablet: top tab bar. On narrow viewports it unmounts
+                {/* Walkthrough Control Button */}
+                <WalkthroughControl
+                  showOnStart={false}
+                  onOpenGuide={openGuideSelection}
+                />
+              </div>
+              {/* Desktop/tablet: top tab bar. On narrow viewports it unmounts
                 and BottomTabBar (same #tab-* ids) takes over, so tour
                 selectors resolve on whichever bar is actually visible. */}
-            <Show when={!isNarrow()}>
-              <AppNavTabs
-                activeTab={activeTab}
-                handleTabChange={(tab) => {
-                  handleTabChange(tab)
-                }}
-                tabLabel={tabLabel}
-              />
-            </Show>
+              <Show when={!isNarrow()}>
+                <AppNavTabs
+                  activeTab={activeTab}
+                  handleTabChange={(tab) => {
+                    handleTabChange(tab)
+                  }}
+                  tabLabel={tabLabel}
+                />
+              </Show>
 
-            {/* Version + support (Ko-fi) double-pill, pinned to the far
+              {/* Version + support (Ko-fi) double-pill, pinned to the far
                 right of the header row (after the nav tabs) */}
-            <div class="header-support">
-              {/* Renders nothing unless the browser can actually install the
+              <div class="header-support">
+                {/* Renders nothing unless the browser can actually install the
                   app and has not already, so it only ever crowds this row in
                   the one case where it is worth the space. */}
-              <InstallAppButton />
-              <HeaderAccount />
-              <SupportBadge />
-            </div>
-          </header>
+                <InstallAppButton />
+                <HeaderAccount />
+                <SupportBadge />
+              </div>
+            </header>
 
-          {/* Mobile primary nav — floating glass bar (self-gates on
-              isNarrow; sits under stages/FocusMode by z-scale design). */}
-          <BottomTabBar
-            activeTab={activeTab}
-            handleTabChange={(tab) => {
-              handleTabChange(tab)
-            }}
-            tabLabel={tabLabel}
-          />
+            {/* Mobile primary nav — floating glass bar (self-gates on
+                isNarrow; sits under stages/FocusMode by z-scale design). */}
+            <BottomTabBar
+              activeTab={activeTab}
+              handleTabChange={(tab) => {
+                handleTabChange(tab)
+              }}
+              tabLabel={tabLabel}
+            />
+          </Show>
 
           {/* Main layout: sidebar + content */}
           <div class={styles.mainLayout} id="main-layout">
             {/* Shared sidebar — with mobile open class */}
-            <AppSidebar
-              class={sidebarOpen() === true ? 'open' : ''}
-              onOctaveShift={handleOctaveShift}
-              onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-              onOpenLearn={openLearningWalkthrough}
-              onOpenGuide={openGuideSelection}
-              melody={() => melodyStore.items()}
-              currentNoteIndex={currentNoteIndex}
-              noteResults={noteResults}
-              isPlaying={isPlaying}
-              onClose={closeSidebar}
-              // Collapse is a desktop-rail concept. On a phone the sidebar is
-              // the full-width off-canvas drawer; never apply the collapsed
-              // (40px, content-hidden) state there, or a desktop-collapsed
-              // preference leaves the mobile drawer stuck as a thin rail.
-              collapsed={sidebarCollapsed() && !isNarrow()}
-              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-              onAutoCalibrate={handleAutoCalibrate}
-            />
+            <Show when={labTab() === null}>
+              <AppSidebar
+                class={sidebarOpen() === true ? 'open' : ''}
+                onOctaveShift={handleOctaveShift}
+                onOpenScaleBuilder={() => setShowScaleBuilder(true)}
+                onOpenLearn={openLearningWalkthrough}
+                onOpenGuide={openGuideSelection}
+                melody={() => melodyStore.items()}
+                currentNoteIndex={currentNoteIndex}
+                noteResults={noteResults}
+                isPlaying={isPlaying}
+                onClose={closeSidebar}
+                // Collapse is a desktop-rail concept. On a phone the sidebar is
+                // the full-width off-canvas drawer; never apply the collapsed
+                // (40px, content-hidden) state there, or a desktop-collapsed
+                // preference leaves the mobile drawer stuck as a thin rail.
+                collapsed={sidebarCollapsed() && !isNarrow()}
+                onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+                onAutoCalibrate={handleAutoCalibrate}
+              />
+            </Show>
 
             {/* Tab content */}
             <main class="main-content" id="main-content" tabindex="-1">
@@ -4168,10 +4174,12 @@ const AppShell: Component<AppProps> = (props) => {
         <PracticeTimerPill />
         {/* Shares the bottom-left corner with the timer pill and raises
             itself above it when both are visible. */}
-        <VoiceControlHud
-          controller={voiceControl}
-          onShowCommands={() => setShowVoiceHelp(true)}
-        />
+        <Show when={labTab() === null || voiceControl.enabled()}>
+          <VoiceControlHud
+            controller={voiceControl}
+            onShowCommands={() => setShowVoiceHelp(true)}
+          />
+        </Show>
         <Show when={showVoiceHelp()}>
           <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
         </Show>

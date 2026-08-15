@@ -1,21 +1,9 @@
 /* ============================================================
-   PitchAlgorithmTester — detector benchmark bench
+   PitchAlgorithmTester — detector decision bench
 
-   Renders inside Lab.module.css's `.page`, so that file's private `--lab-*`
-   palette (void/panel/raised/line/ink/muted, signal/measured, bevel, mono)
-   already inherits down here. The alias block on `.root` restates each name
-   with a global fallback once instead of repeating `var(--lab-x, var(--y))`
-   at fifty call sites: the component is also re-exported from
-   src/components/index.ts, so a mount outside the Lab has to degrade rather
-   than render colourless.
-
-   The Lab's two-accent split is honoured rather than flattened. `signal` is
-   anything the operator drives — algorithm rows, sample pills, run buttons.
-   `measured` is anything a run produced — summary cards, table headers. Use
-   one accent for both and the surface stops reading as an instrument.
-
-   No literal hex or rgba anywhere below. Eight themes swap the palette via
-   `[data-theme]`, so a literal is correct in exactly one of them.
+   The Lab owns the authored palette. These aliases keep the component safe
+   when it is mounted by itself while preserving the Lab's control/output
+   accent split: signal for setup, measured for benchmark results.
    ============================================================ */
 
 .root {
@@ -33,583 +21,758 @@
   );
   --bench-mono: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 
-  overflow-y: auto;
   height: 100%;
   padding: var(--spacing-xl);
+  overflow-y: auto;
 }
 
-/* ── Header ─────────────────────────────────────────────────── */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
-/* The Lab page header and the active tab already name this tool, so the panel
-   title stays a quiet labelled rule rather than a second mark-plus-heading
-   block competing with the one directly above it. */
+/* ── Introduction ─────────────────────────────────────────── */
+
 .header {
-  margin-bottom: var(--spacing-xl);
+  display: grid;
+  gap: var(--spacing-sm);
+  max-width: 74ch;
   padding-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
   border-bottom: 1px solid var(--bench-line);
 }
 
-.header h2 {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: var(--spacing-md);
-  margin: 0;
-  color: var(--bench-ink);
-  font-size: var(--text-md);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* A short signal tick instead of an icon chip: this is one panel inside the
-   Lab, not its own page, and it should not claim a page's worth of mark. */
-.header h2::before {
-  width: 3px;
-  height: 14px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--bench-signal);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--bench-signal) 55%, transparent);
-  content: '';
-}
-
-/* ── Layout ─────────────────────────────────────────────────── */
-
-/* `minmax(0, 1fr)` rather than `1fr`: the right column holds a wide table, and
-   a bare `1fr` track floors at the content's min-content width, which pushes
-   the whole grid past the viewport instead of scrolling inside the panel. */
-.layout {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: var(--spacing-2xl);
-  min-height: 0;
-  opacity: 1;
-  transition: opacity 0.15s ease;
-}
-
-/* Dimming beats a spinner here: a run fills the table in place, and the
-   half-written results underneath are still the useful thing to look at. */
-.layout.busy {
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-/* ── Controls ───────────────────────────────────────────────── */
-
-.controls {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--spacing-xl);
-}
-
-.section {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.section h3 {
-  margin: 0;
-  color: var(--bench-muted);
+.kicker {
+  color: var(--bench-signal);
   font-size: var(--text-xs);
   font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-/* ── Algorithm picker ───────────────────────────────────────── */
+.header h2,
+.resultsHeading h3,
+.detailHeading h3 {
+  margin: 0;
+  color: var(--bench-ink);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
 
-.algorithmList {
+.header h2 {
+  font-size: clamp(var(--text-lg), 2vw, var(--text-xl));
+}
+
+.header p,
+.resultsHeading p,
+.detailHeading p {
+  margin: 0;
+  color: var(--bench-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+/* ── Workspace ────────────────────────────────────────────── */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: var(--spacing-2xl);
+  align-items: start;
+  min-width: 0;
+}
+
+.controls {
   display: flex;
+  min-width: 0;
   flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.section {
+  display: grid;
   gap: var(--spacing-sm);
 }
 
-/* Raised control, not a list row: hairline + 10px radius + the bevel. The
-   bevel is doing most of the work — one inset top highlight is the whole
-   difference between "a div with a border" and something physical. */
+.section > h3,
+.scopeHeader h3 {
+  margin: 0;
+  color: var(--bench-ink);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* ── Scope and presets ────────────────────────────────────── */
+
+.scopeHeader {
+  display: grid;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--bench-line);
+}
+
+.scopeHeader > div:first-child {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.scopeHeader p {
+  margin: 0;
+  color: var(--bench-muted);
+  font-family: var(--bench-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.scopePresets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border: 1px solid var(--bench-line);
+  border-radius: 9px;
+  background: var(--bench-raised);
+  box-shadow: var(--bench-bevel);
+}
+
+.scopePreset {
+  min-height: 32px;
+  padding: 0 var(--spacing-md);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bench-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.scopePreset:hover:not(:disabled) {
+  color: var(--bench-ink);
+}
+
+.scopePreset.active {
+  background: color-mix(in srgb, var(--bench-signal) 17%, var(--bench-panel));
+  color: color-mix(in srgb, var(--bench-signal) 86%, var(--bench-ink));
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--bench-void) 35%, transparent);
+}
+
+/* ── Algorithm selection ──────────────────────────────────── */
+
+.algorithmList {
+  overflow: hidden;
+  border: 1px solid var(--bench-line);
+  border-radius: 10px;
+  background: var(--bench-panel);
+  box-shadow: var(--bench-bevel);
+}
+
 .algorithmItem {
   display: flex;
   align-items: flex-start;
   min-width: 0;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
-  border: 1px solid var(--bench-line);
-  border-radius: 10px;
-  background: var(--bench-raised);
-  box-shadow: var(--bench-bevel);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--bench-line);
+  background: transparent;
   cursor: pointer;
-  transition:
-    border-color 0.14s ease,
-    background 0.14s ease,
-    transform 0.14s ease;
+  transition: background 0.14s ease;
+}
+
+.algorithmItem:last-child {
+  border-bottom: 0;
 }
 
 .algorithmItem:hover {
-  border-color: color-mix(in srgb, var(--bench-signal) 42%, transparent);
-  background: color-mix(in srgb, var(--bench-signal) 8%, var(--bench-raised));
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--bench-signal) 7%, transparent);
 }
 
-/* Accent fill, no ring. The previous rule painted a 1px box-shadow ring on top
-   of an already-accented 1px border: two adjacent 1px bands in two slightly
-   different colours, which reads as a paint bug rather than as selection. */
 .algorithmItem.selected {
-  border-color: color-mix(in srgb, var(--bench-signal) 55%, transparent);
-  background: color-mix(in srgb, var(--bench-signal) 18%, transparent);
+  background: color-mix(in srgb, var(--bench-signal) 13%, transparent);
 }
 
-.algorithmItem.selected .algoName {
-  color: color-mix(in srgb, var(--bench-signal) 82%, var(--text-primary));
+.algorithmItem:focus-within {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--bench-signal);
+  outline-offset: -2px;
 }
 
 .algorithmItem input {
-  flex-shrink: 0;
-  margin-top: 2px;
+  flex: 0 0 auto;
+  margin-top: 3px;
   accent-color: var(--bench-signal);
-  cursor: pointer;
 }
 
 .algoInfo {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-direction: column;
   gap: 2px;
 }
 
-/* Detector names run long ("McLeod Pitch Method"). Letting one wrap to two
-   lines would offset its description and desynchronise the whole column. */
 .algoName {
-  overflow: hidden;
   color: var(--bench-ink);
   font-size: var(--text-body);
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: -0.01em;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .algoDesc {
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--bench-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-/* ── Sample picker ──────────────────────────────────────────── */
+/* ── Sample customization ─────────────────────────────────── */
+
+.sampleChooser {
+  border: 1px solid var(--bench-line);
+  border-radius: 10px;
+  background: var(--bench-panel);
+  box-shadow: var(--bench-bevel);
+}
+
+.sampleChooser summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-md);
+  color: var(--bench-ink);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  list-style-position: inside;
+}
+
+.sampleChooser[open] summary {
+  border-bottom: 1px solid var(--bench-line);
+}
+
+.selectionCount {
+  color: var(--bench-muted);
+  font-family: var(--bench-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
 
 .samplePillList {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-sm);
+  padding: var(--spacing-md);
 }
 
 .samplePill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 var(--spacing-lg);
+  min-width: 0;
+  min-height: 34px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  overflow: hidden;
   border: 1px solid var(--bench-line);
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--bench-raised);
-  box-shadow: var(--bench-bevel);
-  color: var(--text-secondary);
+  color: var(--bench-muted);
   cursor: pointer;
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  transition:
-    border-color 0.14s ease,
-    background 0.14s ease,
-    color 0.14s ease,
-    transform 0.14s ease;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: left;
+  text-overflow: ellipsis;
 }
 
-.samplePill:hover {
-  border-color: color-mix(in srgb, var(--bench-signal) 42%, transparent);
-  background: color-mix(in srgb, var(--bench-signal) 10%, var(--bench-raised));
+.samplePill:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--bench-signal) 45%, var(--bench-line));
   color: var(--bench-ink);
-  transform: translateY(-1px);
 }
 
 .samplePill.selected {
-  border-color: color-mix(in srgb, var(--bench-signal) 55%, transparent);
-  background: color-mix(in srgb, var(--bench-signal) 18%, transparent);
-  color: color-mix(in srgb, var(--bench-signal) 85%, var(--text-primary));
-  font-weight: 700;
+  border-color: color-mix(in srgb, var(--bench-signal) 55%, var(--bench-line));
+  background: color-mix(in srgb, var(--bench-signal) 14%, var(--bench-raised));
+  color: color-mix(in srgb, var(--bench-signal) 85%, var(--bench-ink));
 }
 
-/* ── Run controls ───────────────────────────────────────────── */
+/* ── Primary action and feedback ──────────────────────────── */
 
-.buttons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-sm);
+.actionPanel {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--bench-line);
+  background: var(--bench-void);
 }
 
-/* Shared shape as a selector group rather than `composes: runBtn`. Composing
-   left both class names on the element, so `.runBtn:hover:not(:disabled)`
-   (0,3,0) out-specified everything `.runAllBtn` (0,1,0) could say and the
-   neutral button kept the accent glow it was trying to opt out of. A group has
-   no such back-channel, and nothing else in the file leans on the composition. */
-.runBtn,
-.runAllBtn {
+.runBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-md);
-  min-height: 34px;
+  min-height: 42px;
+  gap: var(--spacing-sm);
   padding: 0 var(--spacing-lg);
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--bench-signal) 65%, transparent);
   border-radius: 9px;
+  background: var(--bench-signal);
+  color: var(--bg-primary);
   cursor: pointer;
-  font-family: inherit;
+  font: inherit;
   font-size: var(--text-body);
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: -0.01em;
   transition:
-    border-color 0.15s ease,
     background 0.15s ease,
     box-shadow 0.15s ease,
     transform 0.15s ease;
 }
 
-/* Icon components hardcode 24px and take no class, so the parent sizes them. */
-.runBtn svg,
-.runAllBtn svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
+.runBtn svg {
+  width: 15px;
+  height: 15px;
 }
 
-/* `--bg-primary` on the fill, not white: each theme picks its own accent and
-   white is 2.53:1 on the default one, worse on amber. The page background is
-   the one colour guaranteed to contrast with whatever the accent turns out to
-   be. src/styles/exercises.css carries the same note for the filter pills. */
-.runBtn {
-  border-color: color-mix(in srgb, var(--bench-signal) 62%, transparent);
-  background: var(--bench-signal);
-  color: var(--bg-primary);
-}
-
-/* Mixing toward the ink instead of dropping opacity — opacity faded the label
-   along with the fill, so the button got quieter on hover, not brighter. */
 .runBtn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--bench-signal) 86%, var(--text-primary));
   box-shadow: 0 4px 14px
-    color-mix(in srgb, var(--bench-signal) 32%, transparent);
-  transform: translateY(-1px);
-}
-
-.runAllBtn {
-  border-color: var(--bench-line);
-  background: var(--bench-raised);
-  box-shadow: var(--bench-bevel);
-  color: var(--bench-ink);
-}
-
-.runAllBtn:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--bench-signal) 46%, transparent);
-  background: color-mix(in srgb, var(--bench-signal) 10%, var(--bench-raised));
+    color-mix(in srgb, var(--bench-signal) 30%, transparent);
   transform: translateY(-1px);
 }
 
 .runBtn:disabled,
-.runAllBtn:disabled {
-  box-shadow: none;
+.scopePreset:disabled,
+.samplePill:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
-  transform: none;
+  opacity: 0.48;
 }
 
-/* ── Progress ───────────────────────────────────────────────── */
+.actionPanel > span {
+  color: var(--bench-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
 
 .progress {
-  margin-top: var(--spacing-md);
+  display: grid;
+  gap: var(--spacing-sm);
 }
 
 .progressBar {
-  overflow: hidden;
   width: 100%;
-  height: 6px;
+  height: 7px;
+  overflow: hidden;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--bench-ink) 10%, transparent);
 }
 
 .progressFill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: inherit;
   background: var(--bench-signal);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--bench-signal) 55%, transparent);
-  transition: width 0.3s ease;
+  box-shadow: 0 0 9px color-mix(in srgb, var(--bench-signal) 52%, transparent);
+  transition: width 0.2s ease;
 }
 
-/* The readout names the algorithm and sample currently under test, so it
-   changes length on every tick. A fixed family and tabular digits stop it
-   reflowing the row it sits in. */
 .progressText {
-  display: block;
-  margin-top: var(--spacing-sm);
   color: var(--bench-muted);
   font-family: var(--bench-mono);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
-/* ── Legend ─────────────────────────────────────────────────── */
-
-.resultsLegend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-md) var(--spacing-lg);
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--bench-line);
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--bench-muted);
-  font-family: var(--bench-mono);
+.errorPanel {
+  padding: var(--spacing-md);
+  border: 1px solid color-mix(in srgb, var(--red) 42%, var(--bench-line));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--red) 9%, var(--bench-panel));
+  color: var(--bench-ink);
   font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  line-height: 1.5;
 }
 
-/* Each variant sets `color`, and the dot paints itself from `currentColor` —
-   one glow rule then covers all four bands instead of four. */
-.legendDot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 6px color-mix(in srgb, currentColor 55%, transparent);
+.errorPanel strong {
+  color: var(--red);
+  font-size: var(--text-sm);
 }
 
-.legendGood {
-  color: var(--green);
+.errorPanel p {
+  margin: 2px 0 var(--spacing-sm);
+  color: var(--bench-muted);
 }
 
-.legendOk {
-  color: var(--yellow);
+.errorPanel ul {
+  max-height: 120px;
+  margin: 0;
+  padding-left: var(--spacing-xl);
+  overflow-y: auto;
 }
 
-.legendBad {
-  color: var(--orange);
-}
-
-.legendMiss {
-  color: var(--text-muted);
-}
-
-/* ── Results panel ──────────────────────────────────────────── */
+/* ── Decision summary ─────────────────────────────────────── */
 
 .results {
-  display: flex;
+  display: grid;
   min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  flex-direction: column;
   gap: var(--spacing-xl);
-  padding: var(--spacing-xl);
+}
+
+.resultsHeading,
+.detailHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--spacing-xl);
+}
+
+.resultsHeading > div,
+.detailHeading > div:first-child {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.resultsHeading h3,
+.detailHeading h3 {
+  font-size: var(--text-lg);
+}
+
+.resultsHeading > p {
+  max-width: 44ch;
+  text-align: right;
+}
+
+.comparisonTableViewport {
+  max-width: 100%;
+  overflow-x: auto;
   border: 1px solid var(--bench-line);
-  border-radius: 12px;
+  border-radius: 11px;
   background: var(--bench-panel);
   box-shadow: var(--bench-bevel);
 }
 
-/* ── Summary cards ──────────────────────────────────────────── */
-
-.overallScore {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
+.comparisonTable {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  color: var(--bench-ink);
+  font-size: var(--text-sm);
 }
 
-/* The 2px rail on the leading edge is the `measured` half of the Lab's accent
-   pair: everything in this panel came back out of a run, and the rail says so
-   without spending a colour on the text. Inset shadow rather than a border-left
-   so the 11px radius keeps clipping it into the corner. */
-.resultCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 0;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border: 1px solid var(--bench-line);
-  border-radius: 11px;
+.comparisonTable th,
+.comparisonTable td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--bench-line);
+  text-align: right;
+  vertical-align: middle;
+}
+
+.comparisonTable tr:last-child th,
+.comparisonTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.comparisonTable thead th {
   background: var(--bench-raised);
-  box-shadow:
-    inset 2px 0 color-mix(in srgb, var(--bench-measured) 70%, transparent),
-    var(--bench-bevel);
+  color: var(--bench-muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.resultCardLeft {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: var(--spacing-md);
+.comparisonTable th:first-child {
+  text-align: left;
 }
 
-.resultAlgoName {
+.comparisonTable tbody tr.recommended {
+  background: color-mix(in srgb, var(--bench-measured) 7%, transparent);
+}
+
+.comparisonTable tbody th {
+  min-width: 290px;
+}
+
+.comparisonTable tbody tr.recommended th:first-child {
+  box-shadow: inset 3px 0
+    color-mix(in srgb, var(--bench-measured) 78%, transparent);
+}
+
+.rank {
+  display: inline-block;
+  width: 22px;
+  color: var(--bench-muted);
+  font-family: var(--bench-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+
+.algorithmResultName {
+  display: inline-grid;
+  min-width: 110px;
+  gap: 1px;
+  margin-left: var(--spacing-sm);
+  vertical-align: middle;
+}
+
+.algorithmResultName strong {
   overflow: hidden;
   color: var(--bench-ink);
   font-size: var(--text-body);
-  font-weight: 700;
-  letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.algorithmResultName > span {
+  color: var(--bench-muted);
+  font-family: var(--bench-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.resultTags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: var(--spacing-sm);
+  vertical-align: middle;
+}
+
+.recommendedTag,
+.neutralTag,
 .perfBadge {
-  flex-shrink: 0;
   padding: 2px 6px;
   border: 1px solid color-mix(in srgb, currentColor 34%, transparent);
   border-radius: 5px;
   font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 750;
+  letter-spacing: 0.06em;
   line-height: 1.4;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.perfGreen {
-  background: color-mix(in srgb, var(--green) 15%, transparent);
-  color: var(--green);
-}
-
-/* `Good` borrows the Lab's `measured` purple rather than the accent: the accent
-   is amber on one theme, which would put `Good` and `Acceptable` in the same
-   hue and read as the same verdict twice. */
-.perfBlue {
+.recommendedTag {
   background: color-mix(in srgb, var(--bench-measured) 15%, transparent);
   color: var(--bench-measured);
 }
 
+.neutralTag {
+  background: color-mix(in srgb, var(--bench-ink) 7%, transparent);
+  color: var(--bench-muted);
+}
+
+.resultScore {
+  display: block;
+  font-family: var(--bench-mono);
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.metricVerdict {
+  display: block;
+  margin-top: 2px;
+  color: var(--bench-muted);
+  font-size: var(--text-xs);
+}
+
+.comparisonTable tbody td {
+  font-family: var(--bench-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.comparisonTable .perfBadge {
+  display: block;
+  width: max-content;
+  margin: 3px 0 0 auto;
+  padding: 1px 4px;
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+}
+
+.perfGreen {
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: var(--green);
+}
+
+.perfBlue {
+  background: color-mix(in srgb, var(--bench-measured) 14%, transparent);
+  color: var(--bench-measured);
+}
+
 .perfYellow {
-  background: color-mix(in srgb, var(--yellow) 15%, transparent);
+  background: color-mix(in srgb, var(--yellow) 14%, transparent);
   color: var(--yellow);
 }
 
 .perfOrange {
-  background: color-mix(in srgb, var(--orange) 15%, transparent);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
   color: var(--orange);
 }
 
 .perfRed {
-  background: color-mix(in srgb, var(--red) 15%, transparent);
+  background: color-mix(in srgb, var(--red) 14%, transparent);
   color: var(--red);
 }
 
-.resultCardRight {
+/* ── Note detail drill-down ───────────────────────────────── */
+
+.detailHeading {
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--bench-line);
+}
+
+.bandLegend {
   display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: var(--spacing-lg);
-}
-
-/* The inline band colour from ACCURACY_BAND_COLORS wins over any `color` here,
-   so this rule owns shape only: size, weight and digit alignment. */
-.resultScore {
-  font-family: var(--bench-mono);
-  font-size: 1.05rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-/* Nested inside `.resultScore`, so it has to restate colour and tracking — the
-   parent's inline colour and negative tracking would otherwise inherit into
-   the denominator and make it shout as loudly as the score. */
-.scoreMax {
-  margin-left: 1px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--spacing-sm) var(--spacing-md);
   color: var(--bench-muted);
+  font-family: var(--bench-mono);
   font-size: var(--text-xs);
-  font-weight: 650;
-  letter-spacing: 0;
-}
-
-.resultTime {
-  color: var(--text-secondary);
-  font-family: var(--bench-mono);
-  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
-.resultOffset {
-  color: var(--bench-muted);
-  font-family: var(--bench-mono);
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.detailSections {
+  display: grid;
+  gap: var(--spacing-sm);
 }
-
-.resultOffset.good {
-  color: var(--green);
-}
-
-.resultOffset.bad {
-  color: var(--red);
-}
-
-/* ── Per-sample table ───────────────────────────────────────── */
 
 .resultSection {
-  display: flex;
   min-width: 0;
-  flex-direction: column;
-  gap: var(--spacing-md);
+  border: 1px solid var(--bench-line);
+  border-radius: 9px;
+  background: var(--bench-panel);
+  box-shadow: var(--bench-bevel);
 }
 
-.resultSampleName {
-  overflow: hidden;
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid var(--bench-line);
+.resultSection summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-md);
   color: var(--bench-ink);
-  font-size: var(--text-body);
+  cursor: pointer;
+  font-size: var(--text-sm);
   font-weight: 700;
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
+  list-style-position: inside;
+}
+
+.resultSection summary span:last-child {
+  color: var(--bench-muted);
+  font-family: var(--bench-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.resultSection[open] summary {
+  border-bottom: 1px solid var(--bench-line);
+}
+
+.tableViewport {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.detailTable {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  color: var(--bench-ink);
+  font-size: var(--text-sm);
+}
+
+.detailTable th,
+.detailTable td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--bench-line);
+  text-align: right;
   white-space: nowrap;
 }
 
-.detailedResults {
-  display: flex;
-  min-width: 0;
-  overflow-x: auto;
-  flex-direction: column;
-  gap: 2px;
+.detailTable tr:last-child th,
+.detailTable tr:last-child td {
+  border-bottom: 0;
 }
 
-/* ── Score bands ────────────────────────────────────────────── */
-/* Applied to .resultScore and .resultDev, keyed by ACCURACY_BAND_NAMES. Declared
-   after both so they win over the base rules at equal specificity. */
+.detailTable thead th {
+  background: var(--bench-raised);
+  color: var(--bench-muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 
+.detailTable th:first-child,
+.detailTable td:first-child {
+  text-align: left;
+}
+
+.detailTable tbody th,
+.detailTable tbody td:nth-child(2) {
+  font-family: var(--bench-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.detailTable tbody th {
+  font-weight: 700;
+}
+
+.detailTable tbody td:nth-child(2) {
+  color: var(--bench-muted);
+}
+
+.detailValue,
+.detailVerdict {
+  display: block;
+  font-family: var(--bench-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.detailValue {
+  font-weight: 700;
+}
+
+.detailVerdict {
+  margin-top: 1px;
+  color: var(--bench-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Typed semantic bands from ACCURACY_BAND_NAMES. */
 .band100 {
   color: var(--green);
 }
 
 .band90 {
-  color: color-mix(in srgb, var(--green) 70%, var(--accent));
+  color: color-mix(in srgb, var(--green) 72%, var(--bench-signal));
 }
 
 .band75 {
-  color: color-mix(in srgb, var(--green) 60%, var(--yellow));
+  color: color-mix(in srgb, var(--green) 58%, var(--yellow));
 }
 
 .band50 {
@@ -621,111 +784,19 @@
 }
 
 .bandMuted {
-  color: var(--text-muted);
-}
-
-/* No `grid-template-columns` here on purpose: the column count is the number of
-   algorithms in the run, so the component sets the track list inline per
-   section. This rule also drops the `overflow-x: auto` that a second, duplicate
-   `.resultRow` block used to add — it gave every row its own scrollbar while
-   `.detailedResults` above was already the scroll container. */
-.resultRow {
-  display: grid;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  border: 1px solid var(--bench-line);
-  border-radius: 8px;
-  background: var(--bench-raised);
-  box-shadow: var(--bench-bevel);
-  font-size: var(--text-sm);
-}
-
-/* Sticky, so the fill has to be fully opaque — a translucent tint lets the data
-   rows scroll visibly through it. `--bench-void` is the one opaque step darker
-   than the panel behind it. */
-.resultRow.headerRow {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  border-color: color-mix(
-    in srgb,
-    var(--bench-measured) 30%,
-    var(--bench-line)
-  );
-  background: var(--bench-void);
   color: var(--bench-muted);
-  font-size: var(--text-xs);
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
-/* Cell classes are shared between the header row and the data rows, so without
-   this the header would inherit three different colours and weights from the
-   columns it labels. */
-.resultRow.headerRow .resultName,
-.resultRow.headerRow .resultFreq,
-.resultRow.headerRow .resultDev {
-  color: inherit;
-  font-weight: inherit;
-}
+/* ── Empty state ──────────────────────────────────────────── */
 
-/* Every cell in this table is a number or a note name, and a benchmark whose
-   digits do not line up column to column is worse than no table at all. */
-.resultName {
-  overflow: hidden;
-  color: var(--bench-ink);
-  font-family: var(--bench-mono);
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.resultFreq {
-  color: var(--text-secondary);
-  font-family: var(--bench-mono);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.resultDev {
-  overflow: hidden;
-  font-family: var(--bench-mono);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Hue is already spoken for — the component sets the band colour inline, which
-   beats any `color` here — so these two carry weight instead. That keeps the
-   verdict legible for a red/green-blind reader and on a monochrome display. */
-.resultDevGood {
-  font-weight: 650;
-}
-
-.resultDevPoor {
-  font-weight: 750;
-}
-
-/* ── Empty state ────────────────────────────────────────────── */
-
-/* Was a dashed box holding one grey sentence, which reads as a feature that
-   failed to load. Glyph, heading and one paragraph reads as a designed state
-   that tells you what to do next. Same recipe as Lab.module.css's `.empty`, so
-   the Lab's tools agree with each other on what "nothing yet" looks like. */
 .emptyResults {
   display: flex;
-  flex: 1 1 auto;
+  min-height: min(420px, 58vh);
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-md);
-  min-height: 200px;
-  padding: var(--spacing-2xl) var(--spacing-xl);
+  padding: var(--spacing-2xl);
   border: 1px dashed color-mix(in srgb, var(--bench-signal) 34%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--bench-signal) 5%, transparent);
@@ -735,84 +806,162 @@
 .emptyGlyph {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border: 1px solid color-mix(in srgb, var(--bench-signal) 44%, transparent);
   border-radius: 11px;
   background: color-mix(in srgb, var(--bench-signal) 12%, transparent);
-  box-shadow: var(--bench-bevel);
-  color: color-mix(in srgb, var(--bench-signal) 82%, var(--text-primary));
+  color: color-mix(in srgb, var(--bench-signal) 82%, var(--bench-ink));
 }
 
 .emptyGlyph svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 
-.emptyTitle {
+.emptyResults h3 {
   margin: 0;
   color: var(--bench-ink);
   font-size: var(--text-md);
-  font-weight: 650;
-  letter-spacing: -0.01em;
 }
 
-.emptyBody {
-  max-width: 56ch;
+.emptyResults p {
+  max-width: 54ch;
   margin: 0;
   color: var(--bench-muted);
   font-size: var(--text-sm);
   line-height: 1.55;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
+/* ── Focus and responsive behavior ────────────────────────── */
 
-/* Layout breakpoint. A 320px control column beside a multi-column table needs
-   a wide window, and there is no narrower arrangement that keeps both. */
+.scopePreset:focus-visible,
+.samplePill:focus-visible,
+.runBtn:focus-visible,
+.sampleChooser summary:focus-visible,
+.resultSection summary:focus-visible {
+  outline: 2px solid var(--bench-signal);
+  outline-offset: 2px;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .algorithmList {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .algorithmItem {
+    border-right: 1px solid var(--bench-line);
+    border-bottom: 0;
+  }
+
+  .algorithmItem:last-child {
+    border-right: 0;
+  }
+
+  .actionPanel {
+    position: static;
+  }
 }
 
-/* Touch breakpoint, deliberately separate from the layout one above: a finger
-   needs 44px well before the two columns need to stack. */
-@media (max-width: 768px) {
+@media (max-height: 720px) and (min-width: 901px) {
   .root {
     padding: var(--spacing-lg);
   }
 
-  .algorithmItem,
+  .header {
+    gap: var(--spacing-xs);
+    padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .layout {
+    gap: var(--spacing-xl);
+  }
+
+  .controls {
+    gap: var(--spacing-md);
+  }
+
+  .algoDesc {
+    display: none;
+  }
+
+  .algorithmItem {
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .emptyResults {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    padding: var(--spacing-lg);
+  }
+
+  .header {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .algorithmList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .algorithmItem {
+    min-height: var(--touch-target, 44px);
+    border-right: 0;
+    border-bottom: 1px solid var(--bench-line);
+  }
+
+  .algorithmItem:last-child {
+    border-bottom: 0;
+  }
+
+  .scopePreset,
   .samplePill,
   .runBtn,
-  .runAllBtn {
+  .sampleChooser summary,
+  .resultSection summary {
     min-height: var(--touch-target, 44px);
   }
 
-  /* Pills share the row instead of wrapping to whatever their label needs, so
-     the smallest sample name is still a full-height target. */
-  .samplePill {
-    flex: 1 1 auto;
-    justify-content: center;
+  .samplePillList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resultsHeading,
+  .detailHeading {
+    align-items: start;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .resultsHeading > p,
+  .bandLegend {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .comparisonTable {
+    min-width: 660px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .layout,
   .algorithmItem,
-  .samplePill,
   .runBtn,
-  .runAllBtn,
   .progressFill {
     transition: none;
   }
 
-  /* The hover lift is not a transition, so killing transitions alone would
-     leave it — and it still moves the row out from under the cursor. */
-  .algorithmItem:hover,
-  .samplePill:hover,
-  .runBtn:hover:not(:disabled),
-  .runAllBtn:hover:not(:disabled) {
+  .runBtn:hover:not(:disabled) {
     transform: none;
   }
 }

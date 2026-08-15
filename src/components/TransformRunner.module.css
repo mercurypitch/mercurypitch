@@ -100,6 +100,7 @@
 .search {
   width: 100%;
   min-width: 0;
+  min-height: var(--touch-target, 44px);
   padding: 6px var(--spacing-md) 6px 28px;
   border: 1px solid var(--lab-line, var(--border));
   border-radius: 8px;
@@ -132,7 +133,7 @@
 }
 
 .chip {
-  min-height: 32px;
+  min-height: var(--touch-target, 44px);
   padding: 0 var(--spacing-lg);
   border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
   border-radius: 8px;
@@ -435,7 +436,7 @@
   max-width: 100%;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: var(--touch-target, 44px);
   margin-top: var(--spacing-md);
   gap: var(--spacing-md);
   padding: 0 var(--spacing-xl);

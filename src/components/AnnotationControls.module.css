@@ -91,7 +91,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  min-height: 32px;
+  min-height: var(--touch-target, 44px);
   padding: 0 var(--spacing-lg);
   border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
   border-radius: 8px;
@@ -177,7 +177,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
-  min-height: 26px;
+  min-height: var(--touch-target, 44px);
   padding: 0 var(--spacing-md);
   border: 0;
   border-radius: 7px;
@@ -251,13 +251,13 @@
 .row {
   display: flex;
   min-width: 0;
+  min-height: var(--touch-target, 44px);
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-sm);
+  padding: 2px var(--spacing-sm) 2px var(--spacing-md);
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
-  cursor: pointer;
   transition:
     color 0.14s ease,
     background 0.14s ease,
@@ -281,6 +281,32 @@
     transparent
   );
   box-shadow: var(--lab-bevel, none);
+}
+
+.rowSelect,
+.rowEditor {
+  display: flex;
+  min-width: 0;
+  min-height: var(--touch-target, 44px);
+  flex: 1;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rowSelect {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.rowSelect:focus-visible {
+  border-radius: 5px;
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 1px;
 }
 
 .rowIcon {
@@ -350,8 +376,8 @@
 
 .rowBtn {
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
   flex-shrink: 0;
   padding: 0;
   place-items: center;
@@ -466,7 +492,8 @@
   }
 
   .actionBtn,
-  .filterBtn {
+  .filterBtn,
+  .rowBtn {
     min-height: var(--touch-target, 44px);
   }
 
@@ -474,8 +501,8 @@
      annotation row twice as tall as its own text — but they get the full
      target width, which is the axis a thumb actually misses on. */
   .rowBtn {
-    width: 34px;
-    height: 34px;
+    width: var(--touch-target, 44px);
+    height: var(--touch-target, 44px);
   }
 }
 
@@ -483,6 +510,7 @@
   .actionBtn,
   .filterBtn,
   .row,
+  .rowSelect,
   .rowBtn {
     transition: none;
   }

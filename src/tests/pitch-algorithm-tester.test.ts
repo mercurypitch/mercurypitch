@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { ACCURACY_BAND_LABELS, ACCURACY_BAND_NAMES, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '../lib/pitch-algorithm-tester'
+import { ACCURACY_BAND_LABELS, ACCURACY_BAND_NAMES, DEFAULT_ALGORITHMS, getAccuracyScoreBand, getPerformanceClassification, } from '../lib/pitch-algorithm-tester'
 
 describe('Pitch Algorithm Tester', () => {
   describe('Performance Classification', () => {
@@ -115,6 +115,28 @@ describe('Pitch Algorithm Tester', () => {
       expect(ACCURACY_BAND_LABELS[75]).toBe('Good')
       expect(ACCURACY_BAND_LABELS[50]).toBe('Okay')
       expect(ACCURACY_BAND_LABELS[0]).toBe('Failed')
+    })
+  })
+
+  describe('Aggregate Accuracy Score Bands', () => {
+    it.each([
+      [100, 100],
+      [95, 100],
+      [94, 90],
+      [85, 90],
+      [84, 75],
+      [70, 75],
+      [69, 50],
+      [50, 50],
+      [49, 0],
+      [0, 0],
+    ])('classifies an averaged score of %s as band %s', (score, band) => {
+      expect(getAccuracyScoreBand(score)).toBe(band)
+    })
+
+    it('keeps out-of-range values in the nearest terminal band', () => {
+      expect(getAccuracyScoreBand(130)).toBe(100)
+      expect(getAccuracyScoreBand(-20)).toBe(0)
     })
   })
 

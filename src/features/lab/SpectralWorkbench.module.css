@@ -1,0 +1,769 @@
+/* ============================================================
+   Spectral Workbench — capture, measure, and inspect in one ordered flow.
+
+   The Lab owns the --lab-* palette. This module only assigns those semantic
+   colours to the workbench hierarchy: signal for controls, measured for
+   output, and neutral surfaces for the canvas and reference utilities.
+   ============================================================ */
+
+.workbench {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* ── Shared hierarchy ───────────────────────────────────────── */
+
+.stageLabel {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stageTitle {
+  margin: 0;
+  color: var(--lab-ink, var(--text-primary));
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.sectionHeading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-xl);
+}
+
+.sectionHint {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  text-align: right;
+}
+
+.toolBtn,
+.analysisBtn {
+  display: inline-flex;
+  min-height: var(--touch-target, 44px);
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-xl);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 11%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 680;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.toolBtn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.toolBtn:hover:not(:disabled),
+.analysisBtn:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 48%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 11%,
+    transparent
+  );
+  color: var(--lab-ink, var(--text-primary));
+  transform: translateY(-1px);
+}
+
+.toolBtn:focus-visible,
+.analysisBtn:focus-visible,
+.workspaceSummary:focus-visible,
+.advancedDisclosure > summary:focus-visible,
+.utilityDisclosure > summary:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 2px;
+}
+
+.toolBtn:disabled,
+.analysisBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  transform: none;
+}
+
+/* ── Capture command bar ────────────────────────────────────── */
+
+.captureBar {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    var(--lab-raised, var(--bg-tertiary)),
+    color-mix(in srgb, var(--lab-panel, var(--bg-card)) 96%, transparent)
+  );
+  box-shadow:
+    0 8px 24px color-mix(in srgb, #000 20%, transparent),
+    var(--lab-bevel, none);
+}
+
+.captureCluster {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-xl);
+}
+
+.captureCopy {
+  min-width: 180px;
+}
+
+.captureStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  color: var(--lab-muted, var(--text-muted));
+  font-family: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.captureBtn {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 56%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 18%,
+    var(--lab-panel, var(--bg-card))
+  );
+  color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 90%,
+    var(--text-primary)
+  );
+}
+
+.captureBtn:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 74%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 25%,
+    var(--lab-panel, var(--bg-card))
+  );
+}
+
+.captureActive {
+  border-color: color-mix(in srgb, var(--danger) 58%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--danger) 16%,
+    var(--lab-panel, var(--bg-card))
+  );
+  color: color-mix(in srgb, var(--danger) 88%, var(--text-primary));
+}
+
+.captureActive:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger) 74%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--danger) 23%,
+    var(--lab-panel, var(--bg-card))
+  );
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--danger) 65%, transparent);
+  animation: capturePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes capturePulse {
+  50% {
+    opacity: 0.38;
+  }
+}
+
+/* Native details provides keyboard and disclosure semantics. The actions
+   float beside the command bar instead of becoming two more permanent peers. */
+.workspaceDisclosure {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.workspaceSummary {
+  display: flex;
+  min-height: var(--touch-target, 44px);
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 11%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 680;
+  list-style: none;
+}
+
+.workspaceSummary::-webkit-details-marker,
+.advancedDisclosure > summary::-webkit-details-marker,
+.utilityDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.workspaceSummary::after,
+.advancedDisclosure > summary::after,
+.utilityDisclosure > summary::after {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  content: '';
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.workspaceDisclosure[open] > .workspaceSummary::after,
+.advancedDisclosure[open] > summary::after,
+.utilityDisclosure[open] > summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.workspaceActions {
+  position: absolute;
+  top: calc(100% + var(--spacing-sm));
+  right: 0;
+  z-index: 120;
+  display: flex;
+  min-width: 192px;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 11px;
+  background: var(--lab-panel, var(--bg-card));
+  box-shadow:
+    0 14px 34px color-mix(in srgb, #000 32%, transparent),
+    var(--lab-bevel, none);
+}
+
+.workspaceActions .toolBtn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.visuallyHiddenFile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  border: 0;
+  margin: -1px;
+  white-space: nowrap;
+}
+
+/* ── Messages and capture primer ────────────────────────────── */
+
+.errorMessage,
+.systemMessage,
+.analysisStatus {
+  margin: calc(var(--spacing-xl) * -0.45) 0 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: 9px;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.errorMessage {
+  border: 1px solid color-mix(in srgb, var(--danger) 36%, transparent);
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: color-mix(in srgb, var(--danger) 80%, var(--text-primary));
+}
+
+.systemMessage,
+.analysisStatus {
+  border: 1px solid
+    color-mix(in srgb, var(--lab-signal, var(--accent)) 28%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 7%,
+    transparent
+  );
+  color: var(--text-secondary);
+}
+
+.capturePrimer {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) 0;
+  grid-template-columns: auto minmax(0, 1fr) minmax(150px, 220px);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--lab-line, var(--border)) 68%, transparent);
+}
+
+.primerGlyph {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid
+    color-mix(in srgb, var(--lab-signal, var(--accent)) 38%, transparent);
+  border-radius: 11px;
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 10%,
+    transparent
+  );
+  color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 82%,
+    var(--text-primary)
+  );
+}
+
+.primerGlyph svg {
+  width: 20px;
+  height: 20px;
+}
+
+.primerCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.primerCopy strong {
+  color: var(--lab-ink, var(--text-primary));
+  font-size: var(--text-body);
+  font-weight: 680;
+}
+
+.primerCopy > span {
+  max-width: 68ch;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.key {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 5px;
+  background: var(--lab-void, var(--bg-primary));
+  color: var(--text-secondary);
+  font: 0.68rem/1.45
+    var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+.bufferReadout {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.bufferTrack {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.bufferFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lab-signal, var(--accent));
+}
+
+.bufferValue,
+.frameReadout {
+  color: var(--lab-muted, var(--text-muted));
+  font-family: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.bufferValue {
+  text-align: right;
+}
+
+/* ── Analysis actions ───────────────────────────────────────── */
+
+.analysisSection,
+.measurements,
+.inspectSection,
+.referenceSection {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.analysisSection {
+  padding: var(--spacing-xl) 0;
+  border-top: 1px solid
+    color-mix(in srgb, var(--lab-line, var(--border)) 72%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--lab-line, var(--border)) 72%, transparent);
+}
+
+.analysisActions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.analysisBtn {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 26%,
+    transparent
+  );
+}
+
+.advancedDisclosure {
+  position: relative;
+  flex: 0 1 auto;
+}
+
+.advancedDisclosure > summary {
+  display: flex;
+  min-height: var(--touch-target, 44px);
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
+  color: var(--lab-muted, var(--text-muted));
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  list-style: none;
+}
+
+.advancedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0 0;
+}
+
+.analysisStatus {
+  align-self: flex-start;
+  margin: 0;
+}
+
+/* ── Measured output ────────────────────────────────────────── */
+
+.results {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+}
+
+.resultCard {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg)
+    calc(var(--spacing-lg) + 3px);
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--lab-measured, var(--purple)) 6%,
+    var(--lab-panel, var(--bg-card))
+  );
+}
+
+.resultCard::before {
+  position: absolute;
+  top: var(--spacing-lg);
+  bottom: var(--spacing-lg);
+  left: 0;
+  width: 1px;
+  border-radius: 999px;
+  background: var(--lab-measured, var(--purple));
+  content: '';
+}
+
+.resultLabel {
+  overflow: hidden;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-xs);
+  font-weight: 680;
+  letter-spacing: 0.07em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.resultValue {
+  color: var(--lab-ink, var(--text-primary));
+  font: 700 1.35rem/1.15
+    var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.resultUnit {
+  margin-left: 3px;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-sm);
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.resultDetail {
+  overflow: hidden;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Primary inspection surface ─────────────────────────────── */
+
+.inspectSection {
+  gap: var(--spacing-md);
+}
+
+.paneWrap {
+  height: clamp(320px, 58vh, 700px);
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 14px;
+  background: var(--lab-void, var(--bg-primary));
+  box-shadow:
+    0 18px 44px color-mix(in srgb, #000 28%, transparent),
+    var(--lab-bevel, none);
+  resize: vertical;
+}
+
+/* ── Progressive reference utilities ───────────────────────── */
+
+.referenceSection {
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid
+    color-mix(in srgb, var(--lab-line, var(--border)) 72%, transparent);
+}
+
+.referenceTools {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--lab-line, var(--border));
+}
+
+.utilityDisclosure {
+  border-bottom: 1px solid var(--lab-line, var(--border));
+}
+
+.utilityDisclosure > summary {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) 0;
+  color: var(--lab-ink, var(--text-primary));
+  cursor: pointer;
+  font-size: var(--text-body);
+  font-weight: 680;
+  list-style: none;
+}
+
+.utilityDisclosure > summary > span {
+  min-width: 0;
+  flex: 1;
+}
+
+.utilityDisclosure > summary > small {
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-xs);
+  font-weight: 550;
+}
+
+.utilityBody {
+  padding: 0 0 var(--spacing-lg);
+}
+
+/* ── Short windows and tablet landscape ────────────────────── */
+
+@media (max-height: 780px) and (min-width: 769px) {
+  .workbench {
+    gap: var(--spacing-lg);
+  }
+
+  .captureBar {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+
+  .analysisSection {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .paneWrap {
+    height: clamp(280px, 51vh, 510px);
+  }
+}
+
+@media (max-width: 1000px) {
+  .sectionHeading {
+    align-items: flex-start;
+  }
+
+  .sectionHint {
+    max-width: 44ch;
+  }
+
+  .paneWrap {
+    height: clamp(300px, 54vh, 620px);
+  }
+}
+
+/* Phones get the complete basic workflow in one column. Deep reference
+   tools remain available, but no attempt is made to reproduce a desktop
+   multi-pane editing station at this width. */
+@media (max-width: 640px) {
+  .captureBar,
+  .captureCluster,
+  .sectionHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .captureCluster {
+    gap: var(--spacing-lg);
+  }
+
+  .captureCopy {
+    min-width: 0;
+  }
+
+  .captureCluster > .toolBtn,
+  .workspaceSummary {
+    width: 100%;
+  }
+
+  .workspaceSummary {
+    justify-content: space-between;
+  }
+
+  .workspaceActions {
+    right: auto;
+    left: 0;
+    width: 100%;
+  }
+
+  .capturePrimer {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .bufferReadout {
+    grid-column: 1 / -1;
+  }
+
+  .sectionHint {
+    max-width: 65ch;
+    text-align: left;
+  }
+
+  .analysisActions,
+  .advancedDisclosure,
+  .advancedActions,
+  .analysisBtn {
+    width: 100%;
+  }
+
+  .advancedDisclosure > summary {
+    justify-content: space-between;
+  }
+
+  .frameReadout {
+    margin-top: var(--spacing-sm);
+  }
+
+  .paneWrap {
+    height: 430px;
+    resize: none;
+  }
+
+  .utilityDisclosure > summary {
+    flex-wrap: wrap;
+    gap: 2px var(--spacing-md);
+  }
+
+  .utilityDisclosure > summary > small {
+    width: calc(100% - 18px);
+    order: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolBtn,
+  .analysisBtn,
+  .workspaceSummary::after,
+  .advancedDisclosure > summary::after,
+  .utilityDisclosure > summary::after {
+    transition: none;
+  }
+
+  .toolBtn:hover:not(:disabled),
+  .analysisBtn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .liveDot {
+    animation: none;
+  }
+}

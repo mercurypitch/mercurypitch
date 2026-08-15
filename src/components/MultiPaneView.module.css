@@ -52,7 +52,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  min-height: 32px;
+  min-height: var(--touch-target, 44px);
   padding: 0 var(--spacing-lg);
   border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
   border-radius: 8px;
@@ -116,9 +116,8 @@
 }
 
 /* Opaque on purpose: this floats over live canvases, and every token it
-   mixes from is itself opaque. `display` stays an inline style — the
-   open/close toggle reads `menu.style.display`, so moving the initial
-   `none` here would leave that read empty and invert the first click. */
+   mixes from is itself opaque. The component mounts it only while open, so
+   there is no hidden menu left in the accessibility tree. */
 .menu {
   position: absolute;
   top: 100%;
@@ -141,7 +140,7 @@
   min-width: 0;
   align-items: center;
   gap: var(--spacing-md);
-  min-height: 30px;
+  min-height: var(--touch-target, 44px);
   padding: 0 var(--spacing-md);
   border: 0;
   border-radius: 7px;
@@ -199,7 +198,6 @@
   min-height: 60px;
   flex-direction: column;
   overflow: hidden;
-  transition: height 0.15s ease;
 }
 
 /* The last pane sits on the time ruler's own top border. */
@@ -212,16 +210,10 @@
   min-height: 32px;
 }
 
-/* Applied while a splitter is dragging: an eased height would lag the
-   pointer by a frame and make the drag feel elastic. */
-.paneStatic {
-  transition: none;
-}
-
 .paneHeader {
   display: flex;
   min-width: 0;
-  min-height: 28px;
+  min-height: var(--touch-target, 44px);
   flex-shrink: 0;
   align-items: center;
   gap: var(--spacing-md);
@@ -262,8 +254,8 @@
 
 .paneBtn {
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
   flex-shrink: 0;
   padding: 0;
   place-items: center;
@@ -308,6 +300,21 @@
   overflow: hidden;
 }
 
+/* Every canvas pane has a concise text equivalent. It stays in the DOM for
+   assistive technology without competing with the dense visual instrument. */
+.assistiveSummary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  border: 0;
+  margin: -1px;
+  white-space: nowrap;
+}
+
 /* The vibrato canvas is the one pane that is not a *Pane wrapper, so it
    needs its own gutter. Its height stays an inline style — it is derived
    from the pane's share of the measured container. */
@@ -323,31 +330,34 @@
 
 /* ── Splitters ──────────────────────────────────────────────── */
 
-/* A hairline at rest, an accent line under the pointer. The 6px slab this
-   replaces was visible dead space between every pair of panes; the hit
-   area is now bigger than that slab was (::before, below) while the thing
-   you see is one pixel. Drag maths is untouched — it reads pointer delta
-   against the container height, not this element's box. */
+/* The separator has a generous real hit area while the visible rule stays a
+   hairline. It can also be focused and moved with Up/Down, Home and End. */
 .handle {
   position: relative;
-  height: 1px;
-  min-height: 1px;
+  height: 12px;
+  min-height: 12px;
   flex-shrink: 0;
   z-index: 10;
-  background: var(--lab-line, var(--border));
+  background: transparent;
   cursor: row-resize;
+}
+
+.handle::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  transform: translateY(-50%);
+  background: var(--lab-line, var(--border));
+  content: '';
   transition:
     background 0.14s ease,
     box-shadow 0.14s ease;
 }
 
-.handle::before {
-  position: absolute;
-  inset: -4px 0;
-  content: '';
-}
-
-.handle:hover {
+.handle:hover::before,
+.handle:focus-visible::before {
   background: color-mix(
     in srgb,
     var(--lab-signal, var(--accent)) 55%,
@@ -355,8 +365,13 @@
   );
 }
 
-.handleActive,
-.handleActive:hover {
+.handle:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: -2px;
+}
+
+.handleActive::before,
+.handleActive:hover::before {
   background: var(--lab-signal, var(--accent));
   box-shadow: 0 0 8px
     color-mix(in srgb, var(--lab-signal, var(--accent)) 55%, transparent);
@@ -417,15 +432,40 @@
     min-height: var(--touch-target, 44px);
   }
 
-  /* Short buttons in a 28px header row, wide enough for a thumb. */
+  /* A pane header stays compact, but every action remains a full target. */
   .paneBtn {
-    width: 34px;
-    height: 26px;
+    width: var(--touch-target, 44px);
+    height: var(--touch-target, 44px);
   }
 
-  /* A one-pixel line is not a touch target — the hit area does the work. */
-  .handle::before {
-    inset: -9px 0;
+  .paneHeader {
+    min-height: var(--touch-target, 44px);
+  }
+
+  .handle {
+    height: 18px;
+    min-height: 18px;
+  }
+}
+
+@media (max-width: 1100px), (pointer: coarse) {
+  .toolBtn,
+  .menuItem {
+    min-height: var(--touch-target, 44px);
+  }
+
+  .paneBtn {
+    width: var(--touch-target, 44px);
+    height: var(--touch-target, 44px);
+  }
+
+  .paneHeader {
+    min-height: var(--touch-target, 44px);
+  }
+
+  .handle {
+    height: 18px;
+    min-height: 18px;
   }
 }
 

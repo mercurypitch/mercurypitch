@@ -39,6 +39,11 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
     return `${mins}:${secs.padStart(4, '0')}`
   }
 
+  const annotationName = (annotation: Annotation): string => {
+    const label = annotation.label?.trim()
+    return label === undefined || label === '' ? 'unlabeled annotation' : label
+  }
+
   // The three annotation kinds as SVG marks (repo rule: no emoji, and no
   // glyph standing in for an icon). A time instant is a point on the clock,
   // a value is a reading off a meter, a region is a stretch bounded at both
@@ -222,36 +227,49 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
               <div
                 class={styles.row}
                 classList={{ [styles.rowSelected]: a.id === props.selectedId }}
-                onClick={() => props.onSelect(a.id)}
               >
-                <span class={styles.rowIcon} aria-hidden="true">
-                  {typeIcon(a.type)}
-                </span>
-                <span class={styles.rowTime}>{formatTime(a.time)}</span>
-
                 <Show
                   when={editingId() === a.id}
                   fallback={
-                    <span class={styles.rowLabel}>
-                      {a.label != null ? (
-                        a.label
-                      ) : (
-                        <i class={styles.rowUnlabeled}>unlabeled</i>
-                      )}
-                    </span>
+                    <button
+                      type="button"
+                      class={styles.rowSelect}
+                      aria-label={`Select ${annotationName(a)} at ${formatTime(a.time)}`}
+                      aria-pressed={a.id === props.selectedId}
+                      onClick={() => props.onSelect(a.id)}
+                    >
+                      <span class={styles.rowIcon} aria-hidden="true">
+                        {typeIcon(a.type)}
+                      </span>
+                      <span class={styles.rowTime}>{formatTime(a.time)}</span>
+                      <span class={styles.rowLabel}>
+                        {a.label != null ? (
+                          a.label
+                        ) : (
+                          <i class={styles.rowUnlabeled}>unlabeled</i>
+                        )}
+                      </span>
+                    </button>
                   }
                 >
-                  <input
-                    class={styles.rowInput}
-                    value={editLabel()}
-                    onInput={(e) => setEditLabel(e.currentTarget.value)}
-                    onBlur={commitEdit}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitEdit()
-                      if (e.key === 'Escape') setEditingId(null)
-                    }}
-                    autofocus
-                  />
+                  <div class={styles.rowEditor}>
+                    <span class={styles.rowIcon} aria-hidden="true">
+                      {typeIcon(a.type)}
+                    </span>
+                    <span class={styles.rowTime}>{formatTime(a.time)}</span>
+                    <input
+                      class={styles.rowInput}
+                      aria-label={`Label for annotation at ${formatTime(a.time)}`}
+                      value={editLabel()}
+                      onInput={(e) => setEditLabel(e.currentTarget.value)}
+                      onBlur={commitEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitEdit()
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      autofocus
+                    />
+                  </div>
                 </Show>
 
                 <button
@@ -261,6 +279,7 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
                     e.stopPropagation()
                     startEdit(a)
                   }}
+                  aria-label={`Edit ${annotationName(a)} at ${formatTime(a.time)}`}
                   title="Edit label"
                 >
                   <Pencil />
@@ -273,6 +292,7 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
                     if (a.id === props.selectedId) props.onDeselectAll()
                     removeAnnotation(a.id)
                   }}
+                  aria-label={`Delete ${annotationName(a)} at ${formatTime(a.time)}`}
                   title="Delete"
                 >
                   <X />

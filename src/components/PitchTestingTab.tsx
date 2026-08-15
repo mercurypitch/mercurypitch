@@ -146,10 +146,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [ensembleTickResults, setEnsembleTickResults] = createSignal<
     EnsembleTickResult[]
   >([])
+  const [uiError, setUiError] = createSignal<string | null>(null)
   const [detectionMode, _setDetectionMode] = createSignal<DetectionMode>(
     (localStorage.getItem('pitch_test_mode') as DetectionMode) || 'mic',
   )
   const setDetectionMode = (mode: DetectionMode) => {
+    setUiError(null)
     localStorage.setItem('pitch_test_mode', mode)
     _setDetectionMode(mode)
   }
@@ -474,6 +476,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   let detectionStartTime = 0
   let streamStopTimeout: number | null = null
   let cancelTest = false
+  let audioFileInput: HTMLInputElement | undefined
 
   // Resize state
   let waveformHeight = 280
@@ -523,6 +526,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Load audio file
   const handleLrcUpload = async (file: File, trackId: string) => {
+    setUiError(null)
     try {
       const text = await file.text()
       const lrcLines = parseLrcFile(text)
@@ -548,6 +552,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       )
     } catch (err) {
       console.error('Error parsing LRC file', err)
+      setUiError('Lyrics could not be read. Choose a valid LRC or text file.')
     }
   }
 
@@ -555,6 +560,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const target = event.currentTarget as HTMLInputElement
     const file = target.files?.[0]
     if (!file) return
+    setUiError(null)
 
     const newId = Math.random().toString(36).substring(2, 9)
     const newTrack: AnalyzedTrack = {
@@ -645,7 +651,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       stopLiveDetection() // Reset detection
     } catch (error) {
       console.error('Error processing audio file:', error)
-      alert('Failed to process audio file')
+      setUiError(
+        'The audio file could not be decoded. Try a WAV, MP3, M4A, or OGG file.',
+      )
     }
   }
 
@@ -900,7 +908,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               await analyzeUploadedAudio()
             } catch (err) {
               console.error('Error post-processing vocal stem:', err)
-              alert('Failed to process separated vocals. See console.')
+              setUiError(
+                'The vocal stem was separated, but its pitch analysis failed. Try analysing the original file.',
+              )
             } finally {
               setIsSeparating(false)
               setActiveUvrSessionId(undefined)
@@ -911,7 +921,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           setErrorUvrSession(sessionId, err)
           if (err !== 'Cancelled') {
             console.error('Failed to separate vocals:', err)
-            alert('Failed to separate vocals. See console for details.')
+            setUiError(
+              'Vocal separation failed. You can still analyse the original file.',
+            )
           }
           setIsSeparating(false)
           setActiveUvrSessionId(undefined)
@@ -919,13 +931,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       })
     } catch (err) {
       console.error('Failed to initialize separation:', err)
-      alert('Failed to initialize separation. See console for details.')
+      setUiError(
+        'Vocal separation could not start. You can still analyse the original file.',
+      )
       setIsSeparating(false)
     }
   }
 
   // Start microphone input (only sets up, doesn't start detection loop)
   const startMicrophoneInput = async () => {
+    setUiError(null)
     try {
       const ctx = new AudioContext({ sampleRate: 44100 })
       setAudioContext(ctx)
@@ -946,8 +961,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       setIsMicStartedByUser(true)
     } catch (error) {
       console.error('Error accessing microphone:', error)
-      alert(
-        'Failed to access microphone. Please ensure you have granted permission.',
+      if (detectionTimerId !== null) {
+        clearInterval(detectionTimerId)
+        detectionTimerId = null
+      }
+      setIsDetecting(false)
+      setIsMicStartedByUser(false)
+      void audioContext()?.close()
+      setAudioContext(null)
+      setUiError(
+        'Microphone access failed. Check the browser permission and input device, then try again.',
       )
     }
   }
@@ -960,8 +983,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setMediaStream(null)
     sourceNode()?.disconnect()
     setSourceNode(null)
-    audioContext()?.close()
+    void audioContext()?.close()
     setAudioContext(null)
+    setIsMicStartedByUser(false)
   }
 
   const stopMicrophoneInput = () => {
@@ -1085,6 +1109,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Start live detection
   const startLiveDetection = () => {
+    setUiError(null)
     setIsDetecting(true)
     setLiveResults([])
     setPitchSamples([])
@@ -1117,6 +1142,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Run automated test
   const runTest = () => {
+    setUiError(null)
     setIsRunningTest(true)
     cancelTest = false
     setTestResults({ passed: 0, failed: 0, errors: [], noteResults: [] })
@@ -1228,6 +1254,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Reset everything
   const resetAll = () => {
+    setUiError(null)
     cancelTest = true
     stopLiveDetection()
     detectors().forEach((d) => d.reset())
@@ -1374,6 +1401,64 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     return null
   })
 
+  const sourceLabel = createMemo(() => {
+    if (detectionMode() === 'mic') return 'Microphone'
+    if (detectionMode() === 'file') return 'Audio file'
+    return 'Test tone'
+  })
+
+  const sourceDescription = createMemo(() => {
+    if (detectionMode() === 'mic') {
+      return 'Listen to a live voice or instrument through the selected detector.'
+    }
+    if (detectionMode() === 'file') {
+      return 'Inspect a recording, compare detector output, and optionally isolate vocals.'
+    }
+    return 'Probe the detector with a controlled sine wave at a known frequency.'
+  })
+
+  const sourceIsReady = createMemo(
+    () => detectionMode() !== 'file' || (fileWaveform()?.length ?? 0) > 0,
+  )
+
+  const primaryActionLabel = createMemo(() => {
+    if (isRunningTest()) return 'Stop benchmark'
+    if (isDetecting()) return 'Stop detection'
+    if (detectionMode() === 'mic') return 'Start microphone detection'
+    if (detectionMode() === 'file') return 'Start file detection'
+    return 'Start tone detection'
+  })
+
+  const controlStatus = createMemo(() => {
+    if (isRunningTest()) {
+      return `Benchmarking ${testResults().noteResults.length} of ${TEST_FREQUENCIES.length} notes`
+    }
+    if (isSeparating()) {
+      return `Separating vocals, ${Math.min(100, Math.round(offlineProgress() * 2))}%`
+    }
+    if (isAnalyzingOffline()) {
+      return `Analysing pitch, ${Math.round(offlineProgress())}%`
+    }
+    if (isDetecting()) {
+      return `Listening to ${sourceLabel().toLowerCase()}`
+    }
+    if (detectionMode() === 'file' && !sourceIsReady()) {
+      return 'Choose an audio file to begin'
+    }
+    if (detectionMode() === 'mic' && isMicStartedByUser()) {
+      return 'Microphone ready'
+    }
+    return `${sourceLabel()} ready`
+  })
+
+  const showReadyState = createMemo(
+    () =>
+      !isDetecting() &&
+      !isRunningTest() &&
+      testResults().noteResults.length === 0 &&
+      !(detectionMode() === 'file' && analyzedTracks().length > 0),
+  )
+
   return (
     <div class={styles.pitchTestingTab}>
       <div class={styles.pitchTestingHeader}>
@@ -1390,398 +1475,574 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       </div>
 
       <div class={styles.pitchTestingLayout}>
-        {/* Left Panel - Controls */}
-        <div class={styles.pitchTestingControls}>
-          <div class={styles.controlGroup}>
-            <div class={styles.algorithmHeaderRow}>
-              <label>Algorithm</label>
-              <label class={styles.ensembleToggleLabel}>
-                <input
-                  type="checkbox"
-                  checked={ensembleMode()}
-                  disabled={isDetecting() || isRunningTest()}
-                  onChange={(e) => setEnsembleMode(e.currentTarget.checked)}
-                />
-                <span class={styles.ensembleToggleText}>Ensemble</span>
-              </label>
-            </div>
-            <Show
-              when={ensembleMode()}
-              fallback={
-                <SafeSelect
-                  disabled={isDetecting() || isRunningTest()}
-                  value={selectedAlgorithm()}
-                  onChange={(e) =>
-                    setSelectedAlgorithm(e.currentTarget.value as AlgorithmId)
-                  }
-                >
-                  <option value="yin">YIN Algorithm</option>
-                  <option value="autocorr">Autocorrelation</option>
-                  <option value="fft">FFT Max Bin</option>
-                  <option value="swift">SwiftF0 ML (ONNX)</option>
-                </SafeSelect>
-              }
+        {/* Control rail: configuration scrolls; the active command never does. */}
+        <aside
+          class={styles.pitchTestingControls}
+          aria-label="Pitch detection controls"
+          aria-busy={isRunningTest() || isAnalyzingOffline() || isSeparating()}
+        >
+          <div class={styles.controlScroll}>
+            <section
+              class={styles.controlSection}
+              aria-labelledby="pitch-source-heading"
             >
-              <div class={styles.ensemblePills}>
-                <For each={detectors()}>
-                  {(d) => {
-                    const algo = d.algorithm as AlgorithmId
-                    return (
-                      <button
-                        classList={{
-                          [styles.ensemblePill]: true,
-                          [styles.selected]: ensembleAlgorithms().has(algo),
-                        }}
-                        disabled={isDetecting() || isRunningTest()}
-                        onClick={() => toggleEnsembleAlgorithm(algo)}
-                      >
-                        {d.getName()}
-                      </button>
-                    )
-                  }}
-                </For>
+              <div class={styles.sectionIntro}>
+                <div>
+                  <span class={styles.sectionKicker}>Input</span>
+                  <h3 id="pitch-source-heading">Choose a source</h3>
+                </div>
+                <span class={styles.sectionValue}>{sourceLabel()}</span>
               </div>
-            </Show>
-          </div>
+              <p class={styles.sectionDescription}>{sourceDescription()}</p>
 
-          <Show when={ensembleMode() || selectedAlgorithm() !== 'swift'}>
-            <div class={styles.controlGroup}>
-              <label>
-                Sensitivity{' '}
-                <span class={styles.sliderValueBadge}>{sensitivity()}</span>
-              </label>
-              <input
-                type="range"
-                class="sensitivity-slider"
-                min="1"
-                max="10"
-                step="1"
-                value={sensitivity()}
-                disabled={isRunningTest()}
-                onInput={(e) => {
-                  const val = Number(e.currentTarget.value)
-                  setSensitivity(val)
-                  if (ensembleMode()) {
-                    detectors().forEach((d) => d.setSensitivity(val))
-                  } else {
-                    detectorForAlgorithm()?.setSensitivity(val)
-                  }
-                }}
-              />
-              <div class={styles.sliderRangeLabels}>
-                <span>1</span>
-                <span>10</span>
-              </div>
-            </div>
-
-            <div class={styles.controlGroup}>
-              <label>
-                Min Confidence{' '}
-                <span class={styles.sliderValueBadge}>
-                  {minConfidence().toFixed(1)}
-                </span>
-              </label>
-              <input
-                type="range"
-                class="confidence-slider"
-                min="0.1"
-                max="0.9"
-                step="0.05"
-                value={minConfidence()}
-                disabled={isRunningTest()}
-                onInput={(e) => {
-                  const val = Number(e.currentTarget.value)
-                  setMinConfidence(val)
-                  if (ensembleMode()) {
-                    detectors().forEach((d) => d.setMinConfidence(val))
-                  } else {
-                    detectorForAlgorithm()?.setMinConfidence(val)
-                  }
-                }}
-              />
-              <div class={styles.sliderRangeLabels}>
-                <span>0.1</span>
-                <span>0.9</span>
-              </div>
-            </div>
-          </Show>
-
-          <div class={styles.controlGroup}>
-            <label>
-              Cents Threshold{' '}
-              <span class={styles.sliderValueBadge}>{centsThreshold()}¢</span>
-            </label>
-            <div class={styles.presetButtons}>
-              <button
-                class={`btn ${styles.btnPreset}`}
-                classList={{ [styles.active]: centsThreshold() === 0 }}
-                disabled={isRunningTest()}
-                onClick={() => setCentsThreshold(0)}
+              <div
+                class={styles.sourceModes}
+                role="group"
+                aria-label="Input source"
               >
-                Perfect (0¢)
-              </button>
-              <button
-                class={`btn ${styles.btnPreset}`}
-                classList={{ [styles.active]: centsThreshold() === 5 }}
-                disabled={isRunningTest()}
-                onClick={() => setCentsThreshold(5)}
-              >
-                Great (±5¢)
-              </button>
-              <button
-                class={`btn ${styles.btnPreset}`}
-                classList={{ [styles.active]: centsThreshold() === 10 }}
-                disabled={isRunningTest()}
-                onClick={() => setCentsThreshold(10)}
-              >
-                Okay (±10¢)
-              </button>
-            </div>
-            <input
-              type="range"
-              class="cents-threshold-slider"
-              min="0"
-              max="20"
-              step="1"
-              value={centsThreshold()}
-              disabled={isRunningTest()}
-              onInput={(e) => setCentsThreshold(Number(e.currentTarget.value))}
-            />
-            <div class={styles.sliderRangeLabels}>
-              <span>0¢</span>
-              <span>20¢</span>
-            </div>
-          </div>
-
-          <div class={styles.controlGroup}>
-            <label for="detection-mode-select">Detection Mode</label>
-            <SafeSelect
-              id="detection-mode-select"
-              disabled={isDetecting() || isRunningTest()}
-              value={detectionMode()}
-              onChange={(e) =>
-                setDetectionMode(e.currentTarget.value as DetectionMode)
-              }
-            >
-              <option value="generate">Generate Sine Wave</option>
-              <option value="file">Load Audio File</option>
-              <option value="mic">Microphone Input</option>
-            </SafeSelect>
-          </div>
-
-          {/* Microphone Mode UI */}
-          <Show when={detectionMode() === 'mic'}>
-            <div class={styles.micControls}>
-              {!audioContext() && (
-                <>
-                  <button
-                    class={`btn ${styles.btnPrimary} ${styles.btnSm}`}
-                    onclick={() => void startMicrophoneInput()}
-                  >
-                    Enable Microphone
-                  </button>
-                  <span class={styles.micHint}>
-                    Allows live testing with your voice or instrument
-                  </span>
-                </>
-              )}
-              {audioContext() && (
                 <button
-                  class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
-                  onclick={stopMicrophoneInput}
+                  type="button"
+                  classList={{
+                    [styles.sourceMode]: true,
+                    [styles.active]: detectionMode() === 'mic',
+                  }}
+                  aria-pressed={detectionMode() === 'mic'}
+                  disabled={isDetecting() || isRunningTest()}
+                  onClick={() => setDetectionMode('mic')}
                 >
-                  Stop Microphone
+                  <strong>Microphone</strong>
+                  <span>Live input</span>
                 </button>
-              )}
-              {audioContext() && (
-                <span class={`${styles.micStatus} ${styles.active}`}>
-                  Microphone Active
-                </span>
-              )}
-              {!audioContext() && (
-                <span class={styles.micStatus}>Microphone Inactive</span>
-              )}
-            </div>
-          </Show>
-
-          {/* File Upload Mode UI */}
-          <Show when={detectionMode() === 'file'}>
-            <div class={styles.fileControls}>
-              <div class={styles.fileRow}>
-                <label class={`btn ${styles.btnSecondary} ${styles.btnSm}`}>
-                  <FileUpload />
-                  Browse Audio
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    data-testid="pitch-file-input"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+                <button
+                  type="button"
+                  classList={{
+                    [styles.sourceMode]: true,
+                    [styles.active]: detectionMode() === 'file',
+                  }}
+                  aria-pressed={detectionMode() === 'file'}
+                  disabled={isDetecting() || isRunningTest()}
+                  onClick={() => setDetectionMode('file')}
+                >
+                  <strong>Audio file</strong>
+                  <span>Recording</span>
+                </button>
+                <button
+                  type="button"
+                  classList={{
+                    [styles.sourceMode]: true,
+                    [styles.active]: detectionMode() === 'generate',
+                  }}
+                  aria-pressed={detectionMode() === 'generate'}
+                  disabled={isDetecting() || isRunningTest()}
+                  onClick={() => setDetectionMode('generate')}
+                >
+                  <strong>Test tone</strong>
+                  <span>Sine wave</span>
+                </button>
               </div>
 
-              <Show when={fileWaveform()}>
-                <div class={styles.fileActions}>
-                  <button
-                    class={`btn ${styles.btnPrimary} ${styles.btnSm}`}
-                    onclick={() => {
-                      void analyzeUploadedAudio()
-                    }}
-                    disabled={isAnalyzingOffline() || isSeparating()}
-                  >
-                    {isAnalyzingOffline()
-                      ? `Processing... ${Math.round(offlineProgress())}%`
-                      : 'Analyze Pitch'}
-                  </button>
-                  <button
-                    class={`btn ${styles.btnOutline} ${styles.btnSm}`}
-                    classList={{
-                      [styles.usingStem]: activeTrack()?.isVocalStem === true,
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.filter = 'brightness(1.2)')
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.filter = 'none')
-                    }
-                    onclick={() => {
-                      void separateVocalsFirst()
-                    }}
-                    disabled={
-                      isAnalyzingOffline() ||
-                      isSeparating() ||
-                      activeTrack()?.isVocalStem === true
+              <Show when={detectionMode() === 'mic'}>
+                <div class={styles.micControls}>
+                  <Show
+                    when={audioContext()}
+                    fallback={
+                      <button
+                        type="button"
+                        class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
+                        onClick={() => void startMicrophoneInput()}
+                      >
+                        Enable microphone
+                      </button>
                     }
                   >
-                    {activeTrack()?.isVocalStem === true
-                      ? 'Using Vocal Stem'
-                      : isSeparating()
-                        ? `Separating... ${Math.round(offlineProgress() * 2)}%`
-                        : 'Separate Vocals First'}
-                  </button>
-                  <Show when={isSeparating()}>
                     <button
-                      class={`btn ${styles.btnDanger} ${styles.btnSm}`}
-                      onClick={() =>
-                        cancelUvrPipeline(
-                          getUvrProcessingMode(),
-                          activeUvrSessionId(),
-                        )
-                      }
+                      type="button"
+                      class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
+                      onClick={stopMicrophoneInput}
                     >
-                      Cancel Separation
+                      Release microphone
                     </button>
                   </Show>
+                  <span
+                    classList={{
+                      [styles.micStatus]: true,
+                      [styles.active]: audioContext() !== null,
+                    }}
+                  >
+                    {audioContext() ? 'Microphone active' : 'Permission needed'}
+                  </span>
+                </div>
+              </Show>
+
+              <Show when={detectionMode() === 'file'}>
+                <div class={styles.fileControls}>
+                  <div class={styles.fileRow}>
+                    <button
+                      type="button"
+                      class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
+                      onClick={() => audioFileInput?.click()}
+                    >
+                      <FileUpload />
+                      Choose audio file
+                    </button>
+                    <input
+                      ref={audioFileInput}
+                      type="file"
+                      accept="audio/*"
+                      hidden
+                      data-testid="pitch-file-input"
+                      onChange={handleFileUpload}
+                    />
+                  </div>
+
                   <Show
-                    when={
-                      (activeTrack()?.analysisResults?.length ?? 0) > 0 &&
-                      activeTrack()?.fileHash
+                    when={(fileWaveform()?.length ?? 0) > 0}
+                    fallback={
+                      <span class={styles.fileInfo}>No file loaded</span>
                     }
                   >
-                    <button
-                      class={`btn ${styles.btnDanger} ${styles.btnSm}`}
-                      onClick={() => {
-                        const track = activeTrack()
-                        const fileHash = track?.fileHash
-                        if (!track || fileHash == null || fileHash === '')
-                          return
-                        void (async () => {
-                          await deleteOfflineAnalysis(fileHash)
-                          setAnalyzedTracks((prev) =>
-                            prev.map((t) =>
-                              t.id === track.id
-                                ? {
-                                    ...t,
-                                    analysisResults: [],
-                                    lrcLines: undefined,
-                                    segmentedNotes: undefined,
-                                  }
-                                : t,
-                            ),
-                          )
-                        })()
-                      }}
-                    >
-                      Clear Analysis Cache
-                    </button>
+                    <span class={styles.fileInfo}>{uploadedFile()?.name}</span>
+                    <div class={styles.fileActions}>
+                      <button
+                        type="button"
+                        class={`btn ${styles.btnPrimary} ${styles.btnSm}`}
+                        onClick={() => void analyzeUploadedAudio()}
+                        disabled={isAnalyzingOffline() || isSeparating()}
+                      >
+                        {isAnalyzingOffline()
+                          ? `Analysing ${Math.round(offlineProgress())}%`
+                          : 'Analyse pitch'}
+                      </button>
+                      <button
+                        type="button"
+                        class={`btn ${styles.btnOutline} ${styles.btnSm}`}
+                        classList={{
+                          [styles.usingStem]:
+                            activeTrack()?.isVocalStem === true,
+                        }}
+                        onClick={() => void separateVocalsFirst()}
+                        disabled={
+                          isAnalyzingOffline() ||
+                          isSeparating() ||
+                          activeTrack()?.isVocalStem === true
+                        }
+                      >
+                        {activeTrack()?.isVocalStem === true
+                          ? 'Using vocal stem'
+                          : isSeparating()
+                            ? `Separating ${Math.round(offlineProgress() * 2)}%`
+                            : 'Separate vocals first'}
+                      </button>
+                      <Show when={isSeparating()}>
+                        <button
+                          type="button"
+                          class={`btn ${styles.btnDanger} ${styles.btnSm}`}
+                          onClick={() =>
+                            cancelUvrPipeline(
+                              getUvrProcessingMode(),
+                              activeUvrSessionId(),
+                            )
+                          }
+                        >
+                          Cancel separation
+                        </button>
+                      </Show>
+                      <Show
+                        when={
+                          (activeTrack()?.analysisResults?.length ?? 0) > 0 &&
+                          activeTrack()?.fileHash
+                        }
+                      >
+                        <button
+                          type="button"
+                          class={`btn ${styles.btnDanger} ${styles.btnSm}`}
+                          onClick={() => {
+                            const track = activeTrack()
+                            const fileHash = track?.fileHash
+                            if (!track || fileHash == null || fileHash === '')
+                              return
+                            void (async () => {
+                              await deleteOfflineAnalysis(fileHash)
+                              setAnalyzedTracks((prev) =>
+                                prev.map((t) =>
+                                  t.id === track.id
+                                    ? {
+                                        ...t,
+                                        analysisResults: [],
+                                        lrcLines: undefined,
+                                        segmentedNotes: undefined,
+                                      }
+                                    : t,
+                                ),
+                              )
+                            })()
+                          }}
+                        >
+                          Clear analysis cache
+                        </button>
+                      </Show>
+                    </div>
                   </Show>
                 </div>
               </Show>
-              <Show when={!fileWaveform()}>
-                <span class={styles.fileInfo}>No file loaded</span>
+
+              <Show when={detectionMode() === 'generate'}>
+                <div class={styles.generateControls}>
+                  <div class={styles.controlGroup}>
+                    <label for="pitch-test-frequency">Test frequency</label>
+                    <div class={styles.frequencyRow}>
+                      <input
+                        id="pitch-test-frequency"
+                        type="number"
+                        value={frequency()}
+                        min={FREQ_SLIDER_MIN}
+                        max={FREQ_SLIDER_MAX}
+                        step="0.01"
+                        aria-describedby="pitch-test-frequency-readout"
+                        onChange={(e) =>
+                          setFrequency(Number(e.currentTarget.value))
+                        }
+                      />
+                      <span aria-hidden="true">Hz</span>
+                    </div>
+                    <label
+                      class={styles.srOnly}
+                      for="pitch-test-frequency-slider"
+                    >
+                      Adjust test frequency
+                    </label>
+                    <input
+                      id="pitch-test-frequency-slider"
+                      type="range"
+                      class={styles.freqSlider}
+                      min="0"
+                      max={FREQ_SLIDER_STEPS}
+                      value={freqToSliderVal(frequency())}
+                      aria-valuetext={`${frequency()} hertz`}
+                      disabled={isRunningTest()}
+                      onInput={(e) =>
+                        setFrequency(
+                          sliderValToFreq(Number(e.currentTarget.value)),
+                        )
+                      }
+                    />
+                    <span
+                      id="pitch-test-frequency-readout"
+                      class={styles.controlHint}
+                    >
+                      {frequency()} Hz · 0.5 second waveform
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
+                    onClick={loadGeneratedWaveform}
+                  >
+                    Regenerate waveform
+                  </button>
+                </div>
               </Show>
-            </div>
-          </Show>
+            </section>
 
-          {/* Generate Mode UI */}
-          <Show when={detectionMode() === 'generate'}>
-            <div class={styles.generateControls}>
-              <button
-                class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
-                onclick={loadGeneratedWaveform}
-              >
-                Regenerate Waveform
-              </button>
-              <span class={styles.waveformInfo}>
-                Generated: {frequency()} Hz • 0.5 s
-              </span>
-            </div>
-          </Show>
+            <section
+              class={styles.controlSection}
+              aria-labelledby="pitch-detector-heading"
+            >
+              <div class={styles.sectionIntro}>
+                <div>
+                  <span class={styles.sectionKicker}>Detector</span>
+                  <h3 id="pitch-detector-heading">Choose an algorithm</h3>
+                </div>
+              </div>
 
-          <div class={styles.controlGroup}>
-            <label>Test Frequency (Hz)</label>
-            <input
-              type="number"
-              value={frequency()}
-              onChange={(e) => setFrequency(Number(e.currentTarget.value))}
-              step="0.01"
-            />
-            <input
-              type="range"
-              class={styles.freqSlider}
-              min="0"
-              max={FREQ_SLIDER_STEPS}
-              value={freqToSliderVal(frequency())}
-              disabled={isRunningTest()}
-              onInput={(e) => {
-                setFrequency(sliderValToFreq(Number(e.currentTarget.value)))
-              }}
-            />
-            <span class={styles.controlHint}>{frequency()} Hz</span>
+              <div class={styles.controlGroup}>
+                <div class={styles.algorithmHeaderRow}>
+                  <label for="pitch-detector-algorithm">Algorithm</label>
+                  <label class={styles.ensembleToggleLabel}>
+                    <input
+                      type="checkbox"
+                      checked={ensembleMode()}
+                      disabled={isDetecting() || isRunningTest()}
+                      onChange={(e) => setEnsembleMode(e.currentTarget.checked)}
+                    />
+                    <span class={styles.ensembleToggleText}>Ensemble</span>
+                  </label>
+                </div>
+                <Show
+                  when={ensembleMode()}
+                  fallback={
+                    <SafeSelect
+                      id="pitch-detector-algorithm"
+                      disabled={isDetecting() || isRunningTest()}
+                      value={selectedAlgorithm()}
+                      onChange={(e) =>
+                        setSelectedAlgorithm(
+                          e.currentTarget.value as AlgorithmId,
+                        )
+                      }
+                    >
+                      <option value="yin">YIN Algorithm</option>
+                      <option value="autocorr">Autocorrelation</option>
+                      <option value="fft">FFT Max Bin</option>
+                      <option value="swift">SwiftF0 ML (ONNX)</option>
+                    </SafeSelect>
+                  }
+                >
+                  <div class={styles.ensemblePills}>
+                    <For each={detectors()}>
+                      {(detector) => {
+                        const algo = detector.algorithm as AlgorithmId
+                        return (
+                          <button
+                            type="button"
+                            classList={{
+                              [styles.ensemblePill]: true,
+                              [styles.selected]: ensembleAlgorithms().has(algo),
+                            }}
+                            aria-pressed={ensembleAlgorithms().has(algo)}
+                            disabled={isDetecting() || isRunningTest()}
+                            onClick={() => toggleEnsembleAlgorithm(algo)}
+                          >
+                            {detector.getName()}
+                          </button>
+                        )
+                      }}
+                    </For>
+                  </div>
+                </Show>
+              </div>
+
+              <details class={styles.advancedControls}>
+                <summary>
+                  <span>Advanced thresholds</span>
+                  <span class={styles.advancedSummaryValue}>
+                    {sensitivity()} · {minConfidence().toFixed(1)} ·{' '}
+                    {centsThreshold()}¢
+                  </span>
+                </summary>
+                <div class={styles.advancedBody}>
+                  <Show
+                    when={ensembleMode() || selectedAlgorithm() !== 'swift'}
+                  >
+                    <div class={styles.controlGroup}>
+                      <label for="pitch-detector-sensitivity">
+                        Sensitivity{' '}
+                        <span class={styles.sliderValueBadge}>
+                          {sensitivity()}
+                        </span>
+                      </label>
+                      <input
+                        id="pitch-detector-sensitivity"
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={sensitivity()}
+                        aria-valuetext={`${sensitivity()} out of 10`}
+                        disabled={isRunningTest()}
+                        onInput={(e) => {
+                          const val = Number(e.currentTarget.value)
+                          setSensitivity(val)
+                          if (ensembleMode()) {
+                            detectors().forEach((d) => d.setSensitivity(val))
+                          } else {
+                            detectorForAlgorithm()?.setSensitivity(val)
+                          }
+                        }}
+                      />
+                      <div class={styles.sliderRangeLabels} aria-hidden="true">
+                        <span>1</span>
+                        <span>10</span>
+                      </div>
+                    </div>
+
+                    <div class={styles.controlGroup}>
+                      <label for="pitch-detector-confidence">
+                        Minimum confidence{' '}
+                        <span class={styles.sliderValueBadge}>
+                          {minConfidence().toFixed(1)}
+                        </span>
+                      </label>
+                      <input
+                        id="pitch-detector-confidence"
+                        type="range"
+                        min="0.1"
+                        max="0.9"
+                        step="0.05"
+                        value={minConfidence()}
+                        aria-valuetext={minConfidence().toFixed(2)}
+                        disabled={isRunningTest()}
+                        onInput={(e) => {
+                          const val = Number(e.currentTarget.value)
+                          setMinConfidence(val)
+                          if (ensembleMode()) {
+                            detectors().forEach((d) => d.setMinConfidence(val))
+                          } else {
+                            detectorForAlgorithm()?.setMinConfidence(val)
+                          }
+                        }}
+                      />
+                      <div class={styles.sliderRangeLabels} aria-hidden="true">
+                        <span>0.1</span>
+                        <span>0.9</span>
+                      </div>
+                    </div>
+                  </Show>
+
+                  <div class={styles.controlGroup}>
+                    <label for="pitch-detector-cents-threshold">
+                      Benchmark tolerance{' '}
+                      <span class={styles.sliderValueBadge}>
+                        {centsThreshold()}¢
+                      </span>
+                    </label>
+                    <div class={styles.presetButtons}>
+                      <button
+                        type="button"
+                        class={`btn ${styles.btnPreset}`}
+                        classList={{ [styles.active]: centsThreshold() === 0 }}
+                        aria-pressed={centsThreshold() === 0}
+                        disabled={isRunningTest()}
+                        onClick={() => setCentsThreshold(0)}
+                      >
+                        Exact
+                      </button>
+                      <button
+                        type="button"
+                        class={`btn ${styles.btnPreset}`}
+                        classList={{ [styles.active]: centsThreshold() === 5 }}
+                        aria-pressed={centsThreshold() === 5}
+                        disabled={isRunningTest()}
+                        onClick={() => setCentsThreshold(5)}
+                      >
+                        ±5¢
+                      </button>
+                      <button
+                        type="button"
+                        class={`btn ${styles.btnPreset}`}
+                        classList={{ [styles.active]: centsThreshold() === 10 }}
+                        aria-pressed={centsThreshold() === 10}
+                        disabled={isRunningTest()}
+                        onClick={() => setCentsThreshold(10)}
+                      >
+                        ±10¢
+                      </button>
+                    </div>
+                    <input
+                      id="pitch-detector-cents-threshold"
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="1"
+                      value={centsThreshold()}
+                      aria-valuetext={`${centsThreshold()} cents`}
+                      disabled={isRunningTest()}
+                      onInput={(e) =>
+                        setCentsThreshold(Number(e.currentTarget.value))
+                      }
+                    />
+                    <div class={styles.sliderRangeLabels} aria-hidden="true">
+                      <span>0¢</span>
+                      <span>20¢</span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </section>
           </div>
 
-          <button
-            class={`btn ${styles.btnPrimary}`}
-            onclick={startLiveDetection}
-            disabled={isDetecting() || isRunningTest()}
-          >
-            {isDetecting() ? 'Detecting...' : 'Start Detection'}
-          </button>
-
-          <button
-            class={`btn ${styles.btnSecondary}`}
-            onclick={stopAll}
-            disabled={!isDetecting() && !isRunningTest()}
-          >
-            Stop
-          </button>
-
-          <button
-            class={`btn ${styles.btnTest}`}
-            onclick={runTest}
-            disabled={isRunningTest() || isDetecting()}
-          >
-            {isRunningTest() ? 'Running Test...' : 'Run Benchmark'}
-          </button>
-
-          <button class={`btn ${styles.btnOutline}`} onclick={resetAll}>
-            Reset All
-          </button>
-        </div>
+          <div class={styles.actionDock}>
+            <Show when={uiError()}>
+              {(message) => (
+                <div class={styles.controlError} role="alert">
+                  <span>{message()}</span>
+                  <button
+                    type="button"
+                    aria-label="Dismiss pitch detection error"
+                    onClick={() => setUiError(null)}
+                  >
+                    <X />
+                  </button>
+                </div>
+              )}
+            </Show>
+            <p
+              class={styles.actionStatus}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {controlStatus()}
+            </p>
+            <button
+              type="button"
+              class={`btn ${
+                isDetecting() || isRunningTest()
+                  ? styles.btnDanger
+                  : styles.btnPrimary
+              } ${styles.primaryAction}`}
+              onClick={() =>
+                isDetecting() || isRunningTest()
+                  ? stopAll()
+                  : startLiveDetection()
+              }
+              disabled={
+                (!isDetecting() && !isRunningTest() && !sourceIsReady()) ||
+                isAnalyzingOffline() ||
+                isSeparating()
+              }
+            >
+              {primaryActionLabel()}
+            </button>
+            <div class={styles.secondaryActions}>
+              <button
+                type="button"
+                class={`btn ${styles.btnTest}`}
+                onClick={runTest}
+                disabled={
+                  isRunningTest() ||
+                  isDetecting() ||
+                  isAnalyzingOffline() ||
+                  isSeparating()
+                }
+              >
+                Run benchmark
+              </button>
+              <button
+                type="button"
+                class={`btn ${styles.btnOutline}`}
+                onClick={resetAll}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </aside>
 
         {/* Right Panel - Visualization */}
         <div class={styles.pitchTestingVisualization}>
+          <Show when={showReadyState()}>
+            <div class={styles.readyState}>
+              <span class={styles.readyEyebrow}>{sourceLabel()} selected</span>
+              <h3>Ready to inspect detector output</h3>
+              <p>{sourceDescription()}</p>
+              <dl class={styles.readyFacts}>
+                <div>
+                  <dt>Detector</dt>
+                  <dd>
+                    {ensembleMode()
+                      ? `${ensembleAlgorithms().size} algorithm ensemble`
+                      : (currentDetector()?.getName() ?? selectedAlgorithm())}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Output</dt>
+                  <dd>Pitch, clarity, cents, and timeline</dd>
+                </div>
+              </dl>
+            </div>
+          </Show>
+
           {/* Live Detection Display */}
           <Show when={isDetecting()}>
             <div class={styles.detectionPanel}>
@@ -1930,13 +2191,20 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         [styles.galleryItem]: true,
                         [styles.active]: activeTrackId() === track.id,
                       }}
-                      onClick={() => setActiveTrackId(track.id)}
+                      role="group"
+                      aria-label={track.file.name}
                     >
                       <div class={styles.galleryItemHead}>
-                        <span class={styles.galleryItemName}>
-                          {track.file.name}
-                        </span>
                         <button
+                          type="button"
+                          class={styles.gallerySelectBtn}
+                          aria-pressed={activeTrackId() === track.id}
+                          onClick={() => setActiveTrackId(track.id)}
+                        >
+                          {track.file.name}
+                        </button>
+                        <button
+                          type="button"
                           class={styles.galleryRemoveBtn}
                           aria-label={`Remove ${track.file.name} from the session gallery`}
                           onClick={(e) => {
@@ -1968,6 +2236,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       <div class={styles.galleryItemActions}>
                         <div class={styles.lyricsControls}>
                           <button
+                            type="button"
                             classList={{
                               [styles.lyricsBtn]: true,
                               [styles.lyricsBtnPrimary]: !!track.lrcLines,
@@ -2043,6 +2312,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         <select
                           class="sm-whisper-lang-select"
                           value={whisper.language()}
+                          aria-label="Whisper transcription language"
                           onChange={(e) =>
                             whisper.setLanguage(e.currentTarget.value)
                           }
@@ -2052,6 +2322,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                           <option value="hr">HR</option>
                         </select>
                         <button
+                          type="button"
                           class="sm-transcribe-btn"
                           data-testid="whisper-transcribe"
                           style={{ 'margin-left': 'auto' }}

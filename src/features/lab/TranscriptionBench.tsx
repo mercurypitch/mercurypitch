@@ -18,6 +18,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { WaveformBars } from '@/components/icons'
 import type { MidiSong, MidiSongTrack } from '@/lib/midi-song'
 import { createBeatClock, parseMidiSong } from '@/lib/midi-song'
 import { downloadMIDI } from '@/lib/piano-roll'
@@ -107,10 +108,13 @@ export const TranscriptionBench: Component = () => {
   const [alignTab, setAlignTab] = createSignal(true)
   const [playing, setPlaying] = createSignal<'heard' | 'tab' | null>(null)
   const [playhead, setPlayhead] = createSignal(0)
-  let canvas!: HTMLCanvasElement
+  let canvas: HTMLCanvasElement | undefined
   let abort: AbortController | null = null
 
-  onCleanup(() => abort?.abort())
+  onCleanup(() => {
+    abort?.abort()
+    canvas = undefined
+  })
 
   // ── Profile ──────────────────────────────────────────────────
 
@@ -454,15 +458,19 @@ export const TranscriptionBench: Component = () => {
   }
   let drag: Drag | null = null
 
-  const localPoint = (event: PointerEvent): { x: number; y: number } => {
-    const box = canvas.getBoundingClientRect()
+  const localPoint = (event: PointerEvent): { x: number; y: number } | null => {
+    const element = canvas
+    if (element === undefined) return null
+    const box = element.getBoundingClientRect()
     return { x: event.clientX - box.left, y: event.clientY - box.top }
   }
 
   const onPointerDown = (event: PointerEvent): void => {
     const view = viewport()
     if (view === null) return
-    const { x, y } = localPoint(event)
+    const point = localPoint(event)
+    if (point === null) return
+    const { x, y } = point
     const hit = hitTest(rollNotes(), view, x, y)
     if (hit === null) {
       setSelected(null)
@@ -476,7 +484,7 @@ export const TranscriptionBench: Component = () => {
     }
     setSelected(hit.note.id)
     if (!editing()) return
-    canvas.setPointerCapture(event.pointerId)
+    canvas?.setPointerCapture?.(event.pointerId)
     drag = {
       hit,
       startSeconds: xToSeconds(x, view),
@@ -488,9 +496,12 @@ export const TranscriptionBench: Component = () => {
     const view = viewport()
     if (view === null) return
     if (drag === null) {
-      const { x, y } = localPoint(event)
+      const point = localPoint(event)
+      const element = canvas
+      if (point === null || element === undefined) return
+      const { x, y } = point
       const hover = hitTest(rollNotes(), view, x, y)
-      canvas.style.cursor = !editing()
+      element.style.cursor = !editing()
         ? 'default'
         : hover === null
           ? 'crosshair'
@@ -505,9 +516,11 @@ export const TranscriptionBench: Component = () => {
     const active = drag
     drag = null
     if (active === null || view === null) return
-    canvas.releasePointerCapture(event.pointerId)
+    canvas?.releasePointerCapture?.(event.pointerId)
 
-    const { x, y } = localPoint(event)
+    const point = localPoint(event)
+    if (point === null) return
+    const { x, y } = point
     const note = notes().find((entry) => entry.id === active.hit.note.id)
     if (note === undefined) return
 
@@ -535,8 +548,10 @@ export const TranscriptionBench: Component = () => {
   const onWheel = (event: WheelEvent): void => {
     const view = viewport()
     if (view === null) return
+    const element = canvas
+    if (element === undefined) return
     event.preventDefault()
-    const box = canvas.getBoundingClientRect()
+    const box = element.getBoundingClientRect()
     if (event.ctrlKey || event.shiftKey) {
       setViewport(
         zoomViewport(
@@ -571,21 +586,24 @@ export const TranscriptionBench: Component = () => {
 
   // ── Drawing ──────────────────────────────────────────────────
 
+  const resizeCanvas = (): void => {
+    const element = canvas
+    if (element === undefined) return
+    const ratio = window.devicePixelRatio || 1
+    const box = element.getBoundingClientRect()
+    element.width = Math.round(box.width * ratio)
+    element.height = Math.round(box.height * ratio)
+    setViewport((current) =>
+      current === null
+        ? null
+        : { ...current, width: box.width, height: box.height },
+    )
+  }
+
   onMount(() => {
-    const resize = (): void => {
-      const ratio = window.devicePixelRatio || 1
-      const box = canvas.getBoundingClientRect()
-      canvas.width = Math.round(box.width * ratio)
-      canvas.height = Math.round(box.height * ratio)
-      setViewport((current) =>
-        current === null
-          ? null
-          : { ...current, width: box.width, height: box.height },
-      )
-    }
-    resize()
-    window.addEventListener('resize', resize)
-    onCleanup(() => window.removeEventListener('resize', resize))
+    resizeCanvas()
+    window.addEventListener('resize', resizeCanvas)
+    onCleanup(() => window.removeEventListener('resize', resizeCanvas))
   })
 
   // A null viewport means "frame whatever is loaded now" — set after a run, a
@@ -594,17 +612,21 @@ export const TranscriptionBench: Component = () => {
     const heard = rollNotes()
     const truth = alignedReferenceNotes()
     if (viewport() !== null || heard.length + truth.length === 0) return
-    const box = canvas.getBoundingClientRect()
+    const element = canvas
+    if (element === undefined) return
+    const box = element.getBoundingClientRect()
     setViewport(fitViewport([...heard, ...truth], box.width, box.height))
   })
 
   createEffect(() => {
     const view = viewport()
-    const context = canvas.getContext('2d')
+    const element = canvas
+    if (element === undefined) return
+    const context = element.getContext('2d')
     if (context === null) return
     const ratio = window.devicePixelRatio || 1
     context.setTransform(ratio, 0, 0, ratio, 0, 0)
-    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.clearRect(0, 0, element.width, element.height)
     if (view === null) return
 
     const rows = rowHeight(view)
@@ -933,152 +955,173 @@ export const TranscriptionBench: Component = () => {
         )}
       </Show>
 
-      <div class={styles.rollTools}>
-        <button
-          type="button"
-          aria-pressed={editing()}
-          classList={{ [styles.toolActive]: editing() }}
-          onClick={() => setEditing((on) => !on)}
-        >
-          {editing() ? 'Editing' : 'Edit mode'}
-        </button>
-        <button type="button" disabled={history().length === 0} onClick={undo}>
-          Undo
-        </button>
-        <button
-          type="button"
-          disabled={selectedNote() === null || !editing()}
-          onClick={splitSelected}
-        >
-          Split
-        </button>
-        <button
-          type="button"
-          disabled={selectedNote() === null || !editing()}
-          onClick={removeSelected}
-        >
-          Delete
-        </button>
-        <button
-          type="button"
-          disabled={result() === null}
-          onClick={() => setViewport(null)}
-        >
-          Fit
-        </button>
-        <button
-          type="button"
-          disabled={notes().length === 0}
-          aria-pressed={playing() === 'heard'}
-          classList={{ [styles.toolActive]: playing() === 'heard' }}
-          onClick={() => togglePlayback('heard')}
-        >
-          {playing() === 'heard' ? 'Stop' : 'Play heard'}
-        </button>
-        <button
-          type="button"
-          disabled={alignedReferenceNotes().length === 0}
-          aria-pressed={playing() === 'tab'}
-          classList={{ [styles.toolActive]: playing() === 'tab' }}
-          onClick={() => togglePlayback('tab')}
-        >
-          {playing() === 'tab' ? 'Stop' : 'Play tab'}
-        </button>
-        <button
-          type="button"
-          disabled={score() === null}
-          aria-pressed={alignTab()}
-          classList={{ [styles.toolActive]: alignTab() }}
-          onClick={() => setAlignTab((on) => !on)}
-        >
-          {alignTab() ? 'Tab aligned' : 'Tab raw'}
-        </button>
-        <span class={styles.spacer} />
-        <button type="button" disabled={result() === null} onClick={exportMidi}>
-          Export MIDI
-        </button>
-        <button type="button" disabled={result() === null} onClick={exportJson}>
-          Export JSON
-        </button>
-      </div>
+      <Show
+        when={result() !== null}
+        fallback={
+          <div class={styles.outputEmpty}>
+            <span class={styles.outputEmptyIcon} aria-hidden="true">
+              <WaveformBars />
+            </span>
+            <div>
+              <h2>Notes will appear here</h2>
+              <p>
+                Choose a separated stem, tune the confidence floor if needed,
+                then transcribe. A reference tab is optional.
+              </p>
+            </div>
+          </div>
+        }
+      >
+        <div class={styles.rollTools}>
+          <button
+            type="button"
+            aria-pressed={editing()}
+            classList={{ [styles.toolActive]: editing() }}
+            onClick={() => setEditing((on) => !on)}
+          >
+            {editing() ? 'Editing' : 'Edit mode'}
+          </button>
+          <button
+            type="button"
+            disabled={history().length === 0}
+            onClick={undo}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            disabled={selectedNote() === null || !editing()}
+            onClick={splitSelected}
+          >
+            Split
+          </button>
+          <button
+            type="button"
+            disabled={selectedNote() === null || !editing()}
+            onClick={removeSelected}
+          >
+            Delete
+          </button>
+          <button type="button" onClick={() => setViewport(null)}>
+            Fit
+          </button>
+          <button
+            type="button"
+            disabled={notes().length === 0}
+            aria-pressed={playing() === 'heard'}
+            classList={{ [styles.toolActive]: playing() === 'heard' }}
+            onClick={() => togglePlayback('heard')}
+          >
+            {playing() === 'heard' ? 'Stop' : 'Play heard'}
+          </button>
+          <button
+            type="button"
+            disabled={alignedReferenceNotes().length === 0}
+            aria-pressed={playing() === 'tab'}
+            classList={{ [styles.toolActive]: playing() === 'tab' }}
+            onClick={() => togglePlayback('tab')}
+          >
+            {playing() === 'tab' ? 'Stop' : 'Play tab'}
+          </button>
+          <button
+            type="button"
+            disabled={score() === null}
+            aria-pressed={alignTab()}
+            classList={{ [styles.toolActive]: alignTab() }}
+            onClick={() => setAlignTab((on) => !on)}
+          >
+            {alignTab() ? 'Tab aligned' : 'Tab raw'}
+          </button>
+          <span class={styles.spacer} />
+          <button type="button" onClick={exportMidi}>
+            Export MIDI
+          </button>
+          <button type="button" onClick={exportJson}>
+            Export JSON
+          </button>
+        </div>
 
-      <div class={styles.rollFrame}>
-        <canvas
-          ref={canvas}
-          class={styles.roll}
-          tabindex="0"
-          aria-label="Transcribed notes"
-          onKeyDown={onKeyDown}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onWheel={onWheel}
-        />
-      </div>
+        <div class={styles.rollFrame}>
+          <canvas
+            ref={(element) => {
+              canvas = element
+              queueMicrotask(resizeCanvas)
+            }}
+            class={styles.roll}
+            tabindex="0"
+            aria-label="Transcribed notes"
+            onKeyDown={onKeyDown}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onWheel={onWheel}
+          />
+        </div>
 
-      <div class={styles.legend}>
-        <span>
-          <i
-            class={styles.swatch}
-            style={{ background: VERDICT_COLORS.exact }}
-          />
-          Exact
-        </span>
-        <span>
-          <i
-            class={styles.swatch}
-            style={{ background: VERDICT_COLORS.octave }}
-          />
-          Octave off
-        </span>
-        <span>
-          <i
-            class={styles.swatch}
-            style={{ background: VERDICT_COLORS['wrong-pitch'] }}
-          />
-          Wrong pitch
-        </span>
-        <span>
-          <i
-            class={styles.swatch}
-            style={{ background: VERDICT_COLORS.shadow }}
-          />
-          Shadow of a miss
-        </span>
-        <span>
-          <i
-            class={styles.swatch}
-            style={{ background: VERDICT_COLORS.spurious }}
-          />
-          No tab note near
-        </span>
-        <span>
-          <i class={styles.swatchOutline} />
-          Tab
-        </span>
-      </div>
+        <div class={styles.legend}>
+          <span>
+            <i
+              class={styles.swatch}
+              style={{ background: VERDICT_COLORS.exact }}
+            />
+            Exact
+          </span>
+          <span>
+            <i
+              class={styles.swatch}
+              style={{ background: VERDICT_COLORS.octave }}
+            />
+            Octave off
+          </span>
+          <span>
+            <i
+              class={styles.swatch}
+              style={{ background: VERDICT_COLORS['wrong-pitch'] }}
+            />
+            Wrong pitch
+          </span>
+          <span>
+            <i
+              class={styles.swatch}
+              style={{ background: VERDICT_COLORS.shadow }}
+            />
+            Shadow of a miss
+          </span>
+          <span>
+            <i
+              class={styles.swatch}
+              style={{ background: VERDICT_COLORS.spurious }}
+            />
+            No tab note near
+          </span>
+          <span>
+            <i class={styles.swatchOutline} />
+            Tab
+          </span>
+        </div>
 
-      <Show when={selectedNote()}>
-        {(note) => (
-          <p class={labStyles.hint}>
-            Selected: <strong>{noteName(note().midi)}</strong> at{' '}
-            {formatTime(note().startBeat)}, lasting{' '}
-            {(note().endBeat - note().startBeat).toFixed(2)} s.{' '}
-            {editing()
-              ? 'Drag to move, drag the right edge to resize, arrows retune (shift for an octave), S splits, Delete removes.'
-              : 'Turn on edit mode to change it.'}
-          </p>
-        )}
+        <Show when={selectedNote()}>
+          {(note) => (
+            <p class={labStyles.hint}>
+              Selected: <strong>{noteName(note().midi)}</strong> at{' '}
+              {formatTime(note().startBeat)}, lasting{' '}
+              {(note().endBeat - note().startBeat).toFixed(2)} s.{' '}
+              {editing()
+                ? 'Drag to move, drag the right edge to resize, arrows retune (shift for an octave), S splits, Delete removes.'
+                : 'Turn on edit mode to change it.'}
+            </p>
+          )}
+        </Show>
+
+        <p class={labStyles.hint}>
+          Scroll to pan, ctrl or shift and scroll to zoom. Click empty space to
+          move the playhead; Space plays and stops. A shadow note is probably
+          RIGHT — the tab holds its pitch just next door, and the real defect is
+          the neighbour that went unheard. Edits are pinned and survive a re-run
+          at different settings, so a manual pass is not lost every time the
+          profile moves.
+        </p>
       </Show>
-
-      <p class={labStyles.hint}>
-        Scroll to pan, ctrl or shift and scroll to zoom. Click empty space to
-        move the playhead; Space plays and stops. A shadow note is probably
-        RIGHT — the tab holds its pitch just next door, and the real defect is
-        the neighbour that went unheard. Edits are pinned and survive a re-run
-        at different settings, so a manual pass is not lost every time the
-        profile moves.
-      </p>
     </div>
   )
 }
