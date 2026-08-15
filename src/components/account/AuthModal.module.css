@@ -132,6 +132,19 @@
   border-color: var(--accent, #58a6ff);
 }
 
+/* Both providers, one silhouette: icons pinned to the Google mark's
+   16px so the two buttons come out the same height, and stacked
+   buttons get air between them instead of touching. */
+.googleButton svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.googleButton + .googleButton {
+  margin-top: 10px;
+}
+
 /* "or use email" — hairline on both sides of a quiet label */
 .divider {
   display: flex;
