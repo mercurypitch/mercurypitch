@@ -33,7 +33,7 @@ import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, } from '@
 import { showNotification } from '@/stores/notifications-store'
 import { registerSyncUiLifecycle, setSyncSessionLive, syncModalOpen, } from '@/stores/sync-ui'
 import type { UvrSession } from '@/stores/uvr-store'
-import { getUvrSession } from '@/stores/uvr-store'
+import { getAllUvrSessions, getUvrSession, initSessionStore, } from '@/stores/uvr-store'
 
 /**
  * Song audio must never cross a TURN relay — it is the same bandwidth
@@ -93,6 +93,13 @@ const [syncPeerRoom, setSyncPeerRoom] = createSignal<{
   quota: number
 } | null>(null)
 /**
+ * The far device's library, by content hash — null until (unless) its
+ * hello says. Null and empty mean different things: an older build that
+ * announces nothing must not make every song look missing over there.
+ */
+const [syncPeerSongs, setSyncPeerSongs] =
+  createSignal<ReadonlySet<string> | null>(null)
+/**
  * A code that arrived by deep link, waiting for the modal to consume it.
  *
  * Set by the router when somebody scans the QR a receiving device is
@@ -144,6 +151,7 @@ export {
   syncOwnRoom,
   syncPeerLabel,
   syncPeerRoom,
+  syncPeerSongs,
   syncRole,
   syncRoomId,
   syncState,
@@ -228,14 +236,31 @@ export function estimatePackedBytes(session: UvrSession): number {
 /** The default portable tier's bitrate, for the estimate above. */
 const PORTABLE_BITRATE = 192_000
 
-/** Tell the far device who we are and how much we can still hold. */
+/** Tell the far device who we are, our room, and our library's hashes. */
 async function announceSelf(peerId: string): Promise<void> {
   const room = await ownRoom()
   setSyncOwnRoom(room)
+  // The library must actually be loaded before its hashes are read: a
+  // receiver opened straight from a QR scan can get here before any tab
+  // has initialised the session store, and announcing an empty library
+  // would mark nothing as already-there. Idempotent, cheap when warm.
+  await initSessionStore()
+  // Completed songs only — an in-flight separation has no stems to be
+  // "already there". Capped so a giant library cannot bloat the hello;
+  // past the cap the per-song already-here check still catches dupes.
+  const songHashes = [
+    ...new Set(
+      getAllUvrSessions()
+        .filter((s) => s.status === 'completed')
+        .map((s) => s.fileHash)
+        .filter((h): h is string => h !== undefined && h !== ''),
+    ),
+  ].slice(0, 2000)
   peer?.sendControl(peerId, {
     type: 'sync-hello',
     label: syncDeviceLabel(),
     ...(room === null ? {} : { freeBytes: room.freeBytes, quota: room.quota }),
+    songHashes,
   })
 }
 
@@ -258,6 +283,8 @@ let generation = 0
 let packAbort: { aborted: boolean } = { aborted: false }
 /** True while tearing down, so the user's own Close is not "an error". */
 let closing = false
+/** A peer dropped and the session stayed — the next arrival is a comeback. */
+let peerDropped = false
 
 function upsertTransfer(
   fileHash: string,
@@ -311,14 +338,25 @@ function ensurePeer(): SyncPeer {
         // a green Connected chip.
         clearWaitingError()
         console.info(`[sync] connected to "${displayName}"`)
+        // The other half of the peer-left toast: behind a hidden dialog
+        // a comeback (REQ-SYNC-035) is otherwise a silent text change on
+        // the corner chip.
+        if (peerDropped && !syncModalOpen()) {
+          showNotification(`Reconnected to ${displayName}.`, 'success')
+        }
+        peerDropped = false
         void announceSelf(peerId)
       }
     },
     onPeerLeft: (peerId) => {
       if (peerId !== activePeerId) return
       activePeerId = null
+      peerDropped = true
       setSyncPeerLabel(null)
       setSyncPeerRoom(null)
+      // The library announcement dies with the device that made it; the
+      // next hello (same device back, or a different one) speaks anew.
+      setSyncPeerSongs(null)
       const gone = 'The other device left.'
       activeSender?.abort(gone)
       activeReceiver?.abort(gone)
@@ -350,6 +388,9 @@ function ensurePeer(): SyncPeer {
           msg.freeBytes === undefined
             ? null
             : { freeBytes: msg.freeBytes, quota: msg.quota ?? 0 },
+        )
+        setSyncPeerSongs(
+          msg.songHashes === undefined ? null : new Set(msg.songHashes),
         )
         return
       }
@@ -1022,10 +1063,12 @@ function resetSync(notice: string | null): void {
   // device" after the TV was gone and a laptop had taken its place, and
   // `sendSongToPeer` would refuse against the same stale figure.
   setSyncPeerRoom(null)
+  setSyncPeerSongs(null)
   setSyncOwnRoom(null)
   setSyncQueue([])
   setSyncTransfers([])
   setSyncBusy(false)
+  peerDropped = false
   if (notice !== null) {
     setSyncError(notice)
   }
