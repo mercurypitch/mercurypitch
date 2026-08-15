@@ -158,6 +158,14 @@ describe('probing a profile column the mask hides', () => {
       await idsOrStatus('/api/userProfiles?orderBy=currentStreak&limit=1'),
     ).toBe(400)
     expect(await idsOrStatus('/api/userProfiles?orderBy=friendCode')).toBe(400)
+
+    // And it says so as a sort, not as a filter. A request carrying no filter
+    // at all told to stop filtering sends the client looking in the wrong
+    // place for a parameter it never sent.
+    const response = await get('/api/userProfiles?orderBy=currentStreak')
+    await expect(response.json()).resolves.toEqual({
+      error: 'Cannot sort by "currentStreak"',
+    })
   })
 
   it('refuses rather than quietly dropping the filter', async () => {
