@@ -234,7 +234,7 @@ describe('useGuitarFirstWinController', () => {
     })
   })
 
-  it('keeps a passed practice playing and resets markers on the next lap', async () => {
+  it('keeps a passed practice playing and carries an early next-lap marker', async () => {
     const harness = createBandHarness([])
     let now = 1_000
 
@@ -286,8 +286,20 @@ describe('useGuitarFirstWinController', () => {
           expect(controller.progress().completedStepIds).toContain('open-low-e')
           expect(harness.band.stop).toHaveBeenCalledTimes(1)
 
+          callbacks?.onExerciseBeatScheduled?.({
+            beatIndex: 0,
+            iteration: 1,
+            scheduledAtSeconds: 2,
+            expectedAtPerformanceMs: now,
+          })
+          expect(controller.registerHit('touch')).toBe(true)
+          expect(controller.hits()).toBe(3)
+          expect(controller.lastFeedback()).toBe(
+            'Next lap · 1 of 4 marked early.',
+          )
+
           callbacks?.onLoopIteration?.(1, 2)
-          expect(controller.hits()).toBe(0)
+          expect(controller.hits()).toBe(1)
           expect(controller.stepFinished()).toBe(false)
           expect(controller.stepPassed()).toBe(true)
           expect(controller.status()).toBe('playing')
