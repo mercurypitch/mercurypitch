@@ -28,7 +28,7 @@
 // `melodyId`, and a fixture that made them equal would test nothing.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { pickVocalRangeMelody, vocalRangeMelodyId } from '@/lib/vocal-range'
+import { isVocalRangeMelody, pickVocalRangeMelody, vocalRangeMelodyId, } from '@/lib/vocal-range'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 
@@ -91,7 +91,7 @@ describe('pickVocalRangeMelody', () => {
 
     // `tenor` is the shipped default preset, so this is the path every new
     // singer takes on their first load.
-    const picked = pickVocalRangeMelody(session, 'tenor', melodyExists)
+    const picked = pickVocalRangeMelody(session, 'tenor', melodyExists, null)
 
     // The regression, stated as plainly as it can be: feed this to
     // `melodyStore.getMelody` and something comes back. The old code returned
@@ -110,7 +110,7 @@ describe('pickVocalRangeMelody', () => {
     // Voice types the default session does not carry return null, which is
     // also not an item id.
     for (const preset of ALL_PRESETS) {
-      const picked = pickVocalRangeMelody(session, preset, melodyExists)
+      const picked = pickVocalRangeMelody(session, preset, melodyExists, null)
       expect(itemIds).not.toContain(picked)
       expect(picked === null || picked === vocalRangeMelodyId(preset)).toBe(
         true,
@@ -126,7 +126,7 @@ describe('pickVocalRangeMelody', () => {
       { id: 'item-b', type: 'melody', startBeat: 16, label: 'Low C', melodyId: 'scale-major-c2' }, // prettier-ignore
     ])
 
-    expect(pickVocalRangeMelody(session, 'bass', () => true)).toBe(
+    expect(pickVocalRangeMelody(session, 'bass', () => true, null)).toBe(
       'scale-major-c2',
     )
   })
@@ -138,7 +138,7 @@ describe('pickVocalRangeMelody', () => {
     // the loader warns at all. But this path is an effect firing on load, not
     // the singer pressing a pill, so it declines to call the loader rather
     // than borrowing the loader's warning.
-    expect(pickVocalRangeMelody(session, 'tenor', () => false)).toBeNull()
+    expect(pickVocalRangeMelody(session, 'tenor', () => false, null)).toBeNull()
   })
 
   it('stays quiet when the session does not carry that voice type', async () => {
@@ -147,7 +147,7 @@ describe('pickVocalRangeMelody', () => {
     // The shipped default session holds C and G major in octave 3 only, so a
     // bass finds nothing to open even with a fully stocked library. Quietly
     // is the only acceptable way to find nothing.
-    expect(pickVocalRangeMelody(session, 'bass', melodyExists)).toBeNull()
+    expect(pickVocalRangeMelody(session, 'bass', melodyExists, null)).toBeNull()
   })
 
   it('ignores rests, which have no melody to open', () => {
@@ -157,7 +157,7 @@ describe('pickVocalRangeMelody', () => {
       { id: 'scale-major-c3', type: 'rest', startBeat: 0, label: 'Rest', restMs: 8000 }, // prettier-ignore
     ])
 
-    expect(pickVocalRangeMelody(session, 'tenor', () => true)).toBeNull()
+    expect(pickVocalRangeMelody(session, 'tenor', () => true, null)).toBeNull()
   })
 
   it('only auto-selects on the Default Session', () => {
@@ -167,13 +167,89 @@ describe('pickVocalRangeMelody', () => {
 
     // Someone else's session is theirs to arrange; moving their selection
     // because of a settings value would be an edit they did not ask for.
-    expect(pickVocalRangeMelody(session, 'tenor', () => true)).toBeNull()
+    expect(pickVocalRangeMelody(session, 'tenor', () => true, null)).toBeNull()
   })
 
   it('handles having no session at all', () => {
     // `userSession` is null before one is chosen, and the effect runs anyway —
     // it is registered with `defer: false`.
-    expect(pickVocalRangeMelody(null, 'tenor', () => true)).toBeNull()
-    expect(pickVocalRangeMelody(undefined, 'tenor', () => true)).toBeNull()
+    expect(pickVocalRangeMelody(null, 'tenor', () => true, null)).toBeNull()
+    expect(
+      pickVocalRangeMelody(undefined, 'tenor', () => true, null),
+    ).toBeNull()
+  })
+})
+
+// ============================================================
+// Not at the cost of what is already open
+// ============================================================
+//
+// This is the refusal that only became necessary once the rest of it worked.
+// Loading a melody REPLACES the contents of the piano roll, and the effect
+// that calls this is keyed on the session — so the first build of the fix
+// wiped a 498-note import the moment the session settled underneath it. A
+// convenience is not allowed to destroy work.
+//
+// It was caught by an e2e that had nothing to do with voice types
+// (`compose-bigsong.spec.ts`, which imports a 267-bar song and measures the
+// roll). These are the same rule, stated where it lives.
+
+describe('pickVocalRangeMelody leaves the roll alone when it holds real work', () => {
+  it('declines when the singer has their own melody open', () => {
+    const session = sessionOf('default', [
+      { id: 'item-a', type: 'melody', startBeat: 0, label: 'C', melodyId: 'scale-major-c3' }, // prettier-ignore
+    ])
+
+    // An import, an edit, a recording — anything that is not one of the
+    // handful of scales this feature owns.
+    expect(
+      pickVocalRangeMelody(
+        session,
+        'tenor',
+        () => true,
+        'melody-1786813267641',
+      ),
+    ).toBeNull()
+  })
+
+  it('declines when its own scale is already the one open', () => {
+    const session = sessionOf('default', [
+      { id: 'item-a', type: 'melody', startBeat: 0, label: 'C', melodyId: 'scale-major-c3' }, // prettier-ignore
+    ])
+
+    // Nothing to do, and reloading would throw away an edit to the scale
+    // itself. The effect re-runs on every session change, so this is the
+    // common case rather than an edge one.
+    expect(
+      pickVocalRangeMelody(session, 'tenor', () => true, 'scale-major-c3'),
+    ).toBeNull()
+  })
+
+  it('still swaps one of its own scales for another', () => {
+    const session = sessionOf('default', [
+      { id: 'item-a', type: 'melody', startBeat: 0, label: 'C3', melodyId: 'scale-major-c3' }, // prettier-ignore
+      { id: 'item-b', type: 'melody', startBeat: 16, label: 'C2', melodyId: 'scale-major-c2' }, // prettier-ignore
+    ])
+
+    // The feature itself: a bass arrives on the tenor's scale — which is what
+    // a fresh install loads — and gets their own. Replacing a scale this put
+    // there is the one replacement it is entitled to make.
+    expect(
+      pickVocalRangeMelody(session, 'bass', () => true, 'scale-major-c3'),
+    ).toBe('scale-major-c2')
+  })
+})
+
+describe('isVocalRangeMelody', () => {
+  it('claims exactly the scales the auto-select can load', () => {
+    // Octaves 2, 3 and 4 — every VOCAL_RANGES.defaultOctave there is.
+    expect(isVocalRangeMelody('scale-major-c2')).toBe(true)
+    expect(isVocalRangeMelody('scale-major-c3')).toBe(true)
+    expect(isVocalRangeMelody('scale-major-c4')).toBe(true)
+
+    // A scale nobody's default octave points at is still somebody's work.
+    expect(isVocalRangeMelody('scale-major-c5')).toBe(false)
+    expect(isVocalRangeMelody('scale-major-g3')).toBe(false)
+    expect(isVocalRangeMelody('melody-1786813267641')).toBe(false)
   })
 })
