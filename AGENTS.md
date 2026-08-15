@@ -20,6 +20,13 @@ worker — cheaper than grepping, and it will not be stale (CI checks it).
 | [docs/specs/](docs/specs/)                                 | Changing behaviour that has an EARS spec — 32 files, `*.ears.md`              |
 | [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md)       | Before trusting anything in `docs/plans/` — many "pending" plans have shipped |
 
+Repeatable procedures live in [.agents/skills/](.agents/skills/) — one directory
+per skill, each a `SKILL.md` whose front matter says when to use it. Codex loads
+them for this repo automatically; any other agent can read them as documentation.
+Today: releasing to prod (`prod-upd`), walking the guided tours (`tour-check`),
+auditing the exercise UI on a phone (`mobile-ui-check`), and a summary of these
+rules (`memory`).
+
 ---
 
 ## Guardrails
