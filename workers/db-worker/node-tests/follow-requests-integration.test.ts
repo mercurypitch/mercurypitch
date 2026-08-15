@@ -217,6 +217,23 @@ describe('the follow graph needs both sides', () => {
     })
   })
 
+  it('does not let a pending request count toward a friends badge', async () => {
+    // The grant context is the other place "how many friends do you have?"
+    // is answered, and in cloud mode its payload wins over the client's own
+    // count. Without the status filter a singer could unlock a social badge
+    // by asking strangers who never answered.
+    await post(asker, '/api/friends/request', { userId: target.userId })
+
+    const pending = await authed(asker, '/api/me/grant-context')
+    expect(pending.status).toBe(200)
+    await expect(pending.json()).resolves.toMatchObject({ followingCount: 0 })
+
+    await post(target, '/api/friends/accept', { userId: asker.userId })
+
+    const accepted = await authed(asker, '/api/me/grant-context')
+    await expect(accepted.json()).resolves.toMatchObject({ followingCount: 1 })
+  })
+
   it('leaves a request pending, and pending grants nothing either way', async () => {
     const requested = await post(asker, '/api/friends/request', {
       userId: target.userId,

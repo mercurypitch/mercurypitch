@@ -746,6 +746,18 @@ The second half is worse than the aliasing: `persistAllSessionsToDb(sessions)` w
 
 **Suggested fix.** Use the store's own copy-on-write path instead of mutating the shared array: `const s = getUvrSession(sessionId); if (s) upsertSessionInCache({ ...s, numChunks })`. Apply the same change to the hydration loop in UvrPanel.tsx:1947. Better still, have `getAllUvrSessions()` return a shallow copy so this class of aliasing cannot be written by accident.
 
+### [medium] restoreMelody does not undo the playlist half of deleteMelody
+
+`src/stores/melody-store.ts:1084` — confidence: certain — status: reported
+
+`deleteMelody` does two things: it removes the melody from `library.melodies`, and it rewrites every playlist to strip the key out of `melodyKeys` (melody-store.ts:1065). `restoreMelody` (melody-store.ts:1084-1091) only puts the melody back into `melodies`. The playlist memberships are gone for good. It also does not restore the editor selection that `deleteMelody` clears when the deleted melody was the current one (melody-store.ts:1078-1080).
+
+Found while reviewing the missing-melody fix, which relies on `restoreMelody` being a real undo. It is — for session items, which `deleteMelody` deliberately leaves alone. It is not for playlists.
+
+**Failure scenario.** A singer has "Warm-ups" containing melodies A, B, C. They delete B, see it was a mistake, and undo. B is back in the library but "Warm-ups" now contains only A and C, silently, and nothing in the UI says a playlist changed.
+
+**Suggested fix.** Either have `deleteMelody` leave `melodyKeys` alone too — playlists would then hit the same derived missing-state the sessions do, which is the consistent answer — or have it return the removed memberships so `restoreMelody` can put them back at their original positions. The first is smaller and matches the decision already taken for sessions.
+
 ### [medium] Deleting a melody leaves dangling melodyId references in every session that used it
 
 `src/stores/melody-store.ts:1041` — confidence: certain — status: FIXED
@@ -760,7 +772,7 @@ So the session keeps its item, keeps its label, and plays a one-beat C4 in place
 
 **Suggested fix.** Extend `deleteMelody` to walk `library.sessions` and either drop items whose `melodyId === key` or mark them (e.g. `missing: true`) so the editor and sequencer can render them as broken and skip them during playback. At minimum, replace the silent fallback in `buildSessionItemMelody` for `type === 'melody'` with an explicit empty result so the sequencer advances past the item instead of scoring a placeholder note.
 
-**Fixed** as the missing-state variant, by owner decision — `deleteMelody` is untouched, so `restoreMelody` still undoes cleanly and a restored melody makes its session items whole again with no second write to keep in step. `isSessionItemMelodyMissing` (session-builder.ts) derives the state instead of storing a `missing: true` flag, for exactly that reason.
+**Fixed** as the missing-state variant, by owner decision — `deleteMelody` is untouched, so a restored melody makes its **session items** whole again with no second write to keep in step. `isSessionItemMelodyMissing` (session-builder.ts) derives the state instead of storing a `missing: true` flag, for exactly that reason. (Undo is not clean for _playlists_ — see the separate entry below. That is pre-existing and out of scope here, but this entry previously said "undoes cleanly" without qualification, which was too strong.)
 
 `buildSessionItemMelody` now returns `[]` for a melody item that resolves to nothing, the sequencer skips such an item and names it in a notification, `loadAndPlayMelodyForSession` says "That melody was deleted" instead of returning in silence, and LibraryTab stops loading a C4 into the editor when a broken pill is clicked. The editor timeline already rendered "Missing melody" — it was the only surface that did.
 

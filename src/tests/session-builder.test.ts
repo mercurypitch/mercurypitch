@@ -3,7 +3,7 @@
 // Validates the pure helpers used by controllers and the LibraryTab.
 // ============================================================
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
@@ -22,7 +22,7 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(global, 'localStorage', { value: localStorageMock })
 
-import { buildScaleMelody, buildSessionItemMelody, buildSessionPlaybackMelody, isSessionItemMelodyMissing, } from '@/lib/session-builder'
+import { buildScaleMelody, buildSessionItemMelody, buildSessionPlaybackMelody, firstPlayableSessionIndex, isSessionItemMelodyMissing, } from '@/lib/session-builder'
 import { melodyStore } from '@/stores/melody-store'
 import type { PlaybackSession, SessionItem } from '@/types'
 
@@ -402,5 +402,96 @@ describe('buildScaleMelody', () => {
     expect(melodyStore.items()).toHaveLength(0)
     buildScaleMelody('major', 8)
     expect(melodyStore.items().length).toBeGreaterThan(0)
+  })
+})
+
+describe('firstPlayableSessionIndex', () => {
+  // A REGRESSION FOUND IN REVIEW. The sequencer skips a deleted melody for
+  // items 2..N, but item 1 is built by usePlaybackController on a path that
+  // never reaches that guard. Once buildSessionItemMelody returned [] for a
+  // missing melody, that empty result fell through to the controller's
+  // "nothing loaded, generate a scale" branch — so pressing Play on a session
+  // whose first melody had been deleted started an eight-note scale under
+  // that melody's name. Worse than the single middle C it replaced.
+
+  const melodyItem = (id: string, melodyId: string): SessionItem => ({
+    id,
+    type: 'melody',
+    startBeat: 0,
+    label: `Item ${id}`,
+    melodyId,
+  })
+
+  beforeEach(() => {
+    melodyStore.restoreMelody({
+      id: 'present',
+      name: 'Present',
+      key: 'C',
+      scaleType: 'major',
+      bpm: 90,
+      created: 0,
+      items: [
+        {
+          id: 1,
+          note: { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+          startBeat: 0,
+          duration: 1,
+        },
+      ],
+    } as never)
+  })
+
+  it('starts on item one when it is playable', () => {
+    expect(
+      firstPlayableSessionIndex([
+        melodyItem('a', 'present'),
+        melodyItem('b', 'gone'),
+      ]),
+    ).toBe(0)
+  })
+
+  it('skips a leading deleted melody', () => {
+    expect(
+      firstPlayableSessionIndex([
+        melodyItem('a', 'gone'),
+        melodyItem('b', 'present'),
+      ]),
+    ).toBe(1)
+  })
+
+  it('skips a run of them', () => {
+    expect(
+      firstPlayableSessionIndex([
+        melodyItem('a', 'gone'),
+        melodyItem('b', 'also-gone'),
+        melodyItem('c', 'present'),
+      ]),
+    ).toBe(2)
+  })
+
+  it('reports past the end when every melody is gone', () => {
+    // The caller reads this as "nothing here to play" rather than indexing
+    // into it — items[length] is undefined, which the play path already
+    // guards.
+    const items = [melodyItem('a', 'gone'), melodyItem('b', 'also-gone')]
+    expect(firstPlayableSessionIndex(items)).toBe(items.length)
+  })
+
+  it('never skips a rest or a scale', () => {
+    // Only a melody item can point at something deleted. A rest builds empty
+    // because it IS empty, and starting a session by silently skipping the
+    // singer's warm-up rest would be its own bug.
+    const rest: SessionItem = {
+      id: 'r',
+      type: 'rest',
+      startBeat: 0,
+      label: 'Rest',
+      restMs: 1000,
+    }
+    expect(firstPlayableSessionIndex([rest, melodyItem('b', 'gone')])).toBe(0)
+  })
+
+  it('is empty-safe', () => {
+    expect(firstPlayableSessionIndex([])).toBe(0)
   })
 })
