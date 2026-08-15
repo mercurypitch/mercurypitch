@@ -12,7 +12,7 @@
 // door. Removing stays exempt here exactly as it is in the worker: a row from
 // before the rule must still be escapable by whoever holds it.
 
-import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as FollowService from '@/db/services/follow-service'
 import type * as Defaults from '@/lib/defaults'
@@ -23,7 +23,12 @@ const mocks = vi.hoisted(() => ({
   requestFriend: vi.fn(async () => ({ ok: true, status: 'pending' as const })),
   removeFriend: vi.fn(async () => ({ ok: true })),
   acceptFriend: vi.fn(async () => ({ ok: true, status: 'accepted' as const })),
-  listFriendRequests: vi.fn(async () => ({ incoming: [], outgoing: [] })),
+  listFriendRequests: vi.fn(
+    async (): Promise<{
+      incoming: FollowService.FriendRequest[]
+      outgoing: FollowService.FriendRequest[]
+    }> => ({ incoming: [], outgoing: [] }),
+  ),
   getMyFriendCode: vi.fn(async (): Promise<string | null> => null),
   redeemFriendCode: vi.fn(async () => ({ ok: true })),
   showNotification: vi.fn(),
@@ -62,22 +67,28 @@ vi.mock('@/db/services/user-service', () => ({
 }))
 
 vi.mock('@/db/services/leaderboard-service', () => ({
-  loadLeaderboardPage: async () => ({
-    total: 1,
-    users: [
-      {
-        userId: 'nightingale',
-        displayName: 'Nightingale',
-        score: 4200,
-        rank: 1,
-        streak: 6,
-        longestStreak: 41,
-        totalSessions: 120,
-        bestScore: 93,
-        accuracy: 88,
-      },
-    ],
-  }),
+  // View-aware, because the Friends board of a singer with no friends is
+  // genuinely empty — and a mock that returned a row on both tabs would race
+  // the empty state off the screen mid-assertion.
+  loadLeaderboardPage: async (q: { view?: string }) =>
+    q.view === 'friends'
+      ? { total: 0, users: [] }
+      : {
+          total: 1,
+          users: [
+            {
+              userId: 'nightingale',
+              displayName: 'Nightingale',
+              score: 4200,
+              rank: 1,
+              streak: 6,
+              longestStreak: 41,
+              totalSessions: 120,
+              bestScore: 93,
+              accuracy: 88,
+            },
+          ],
+        },
 }))
 
 vi.mock('@/db/services/league-service', () => ({
@@ -206,6 +217,40 @@ describe('adding a friend from the board', () => {
     expect(mocks.openAuthModal).not.toHaveBeenCalled()
   })
 
+  it('says they had asked you too when the ask lands as a friendship', async () => {
+    // A crossed request: two yeses need no third step, so the worker answers
+    // 'accepted' and the toast must not say "Request sent" — the singer would
+    // go looking for an answer that already arrived.
+    mocks.requestFriend.mockResolvedValueOnce({
+      ok: true,
+      status: 'accepted',
+    } as never)
+
+    fireEvent.click(await openSingerCard())
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'You’re friends — they had asked you too',
+        'info',
+      ),
+    )
+  })
+
+  it('falls back to its own wording when a refusal carries none', async () => {
+    // A 500 or a proxy error page: the status is the truth and the body is
+    // not JSON, so there is no server sentence to show.
+    mocks.requestFriend.mockResolvedValueOnce({ ok: false } as never)
+
+    fireEvent.click(await openSingerCard())
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'Sign in to add friends',
+        'warning',
+      ),
+    )
+  })
+
   it('reports the server’s refusal when it is the server that refuses', async () => {
     // A registered client whose account was refused anyway — a stale token, or
     // a target who is still anonymous. The gate above must not swallow this
@@ -225,5 +270,160 @@ describe('adding a friend from the board', () => {
       ),
     )
     expect(mocks.openAuthModal).not.toHaveBeenCalled()
+  })
+})
+
+describe('answering a request from the Friends tab', () => {
+  const ASKER = {
+    userId: 'asker',
+    displayName: 'Asker Singer',
+    avatarUrl: null,
+    createdAt: '2026-08-09T12:00:00.000Z',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.registered = true
+    mocks.followState = { accepted: [], pending: [] }
+    mocks.listFriendRequests.mockResolvedValue({
+      incoming: [ASKER],
+      outgoing: [],
+    })
+  })
+
+  /** The Friends tab, with the requests panel showing. */
+  async function openRequests(): Promise<void> {
+    render(() => <CommunityLeaderboard view="friends" />)
+    await waitFor(() =>
+      expect(screen.getByTestId('friend-requests')).toBeTruthy(),
+    )
+  }
+
+  it('accepts, and re-reads the board it just changed', async () => {
+    await openRequests()
+    fireEvent.click(screen.getByLabelText('Accept Asker Singer'))
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'You’re friends',
+        'info',
+      ),
+    )
+    expect(mocks.acceptFriend).toHaveBeenCalledWith('asker')
+    // The Friends board is showing the graph that just changed, so it has to
+    // be re-read — on the Global tab there would be nothing to refresh.
+    expect(mocks.listFriendRequests.mock.calls.length).toBeGreaterThan(1)
+  })
+
+  it('declines through remove, which is what a decline is', async () => {
+    await openRequests()
+    fireEvent.click(screen.getByLabelText('Decline Asker Singer'))
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'Request declined',
+        'info',
+      ),
+    )
+    expect(mocks.removeFriend).toHaveBeenCalledWith('asker')
+  })
+
+  it('shows the server’s reason when an answer fails, and does not claim it worked', async () => {
+    mocks.acceptFriend.mockResolvedValueOnce({
+      ok: false,
+      error: 'No request from that singer',
+    } as never)
+
+    await openRequests()
+    fireEvent.click(screen.getByLabelText('Accept Asker Singer'))
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'No request from that singer',
+        'warning',
+      ),
+    )
+    expect(mocks.showNotification).not.toHaveBeenCalledWith(
+      'You’re friends',
+      'info',
+    )
+  })
+
+  it('falls back to its own wording when a failure carries none', async () => {
+    mocks.removeFriend.mockResolvedValueOnce({ ok: false } as never)
+
+    await openRequests()
+    fireEvent.click(screen.getByLabelText('Decline Asker Singer'))
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'Could not decline',
+        'warning',
+      ),
+    )
+  })
+
+  it('does the same for a wordless accept failure', async () => {
+    mocks.acceptFriend.mockResolvedValueOnce({ ok: false } as never)
+
+    await openRequests()
+    fireEvent.click(screen.getByLabelText('Accept Asker Singer'))
+
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        'Could not accept',
+        'warning',
+      ),
+    )
+  })
+})
+
+describe('the Friends board with nobody on it', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.registered = true
+    mocks.listFriendRequests.mockResolvedValue({ incoming: [], outgoing: [] })
+  })
+
+  /**
+   * Render the Friends tab and wait for the empty state to SAY `expected`.
+   *
+   * Waiting on the element alone is not enough: it renders immediately with
+   * an empty board, and the request count only appears once the graph read
+   * resolves — so an eager assertion passes on the pre-load frame.
+   */
+  async function emptyFriendsBoardSaying(
+    expected: string,
+  ): Promise<HTMLElement> {
+    render(() => <CommunityLeaderboard view="friends" />)
+    return await waitFor(() => {
+      const el = screen.getByTestId('friends-empty')
+      expect(el.textContent).toContain(expected)
+      return el
+    })
+  }
+
+  it('counts the asks that are still waiting, singular and plural', async () => {
+    // A singer who has asked three people and been answered by none would
+    // otherwise read "No friends yet" and conclude the asks never sent.
+    mocks.followState = { accepted: [], pending: ['a'] }
+    const one = await emptyFriendsBoardSaying(
+      'One request is waiting on an answer.',
+    )
+    // Not "1 request": the singular reads as a sentence rather than a counter.
+    expect(one.textContent).not.toContain('1 request is')
+    cleanup()
+
+    mocks.followState = { accepted: [], pending: ['a', 'b', 'c'] }
+    const many = await emptyFriendsBoardSaying(
+      '3 requests are waiting on an answer.',
+    )
+    expect(many.textContent).toContain('No friends yet')
+  })
+
+  it('says nothing about requests when there are none', async () => {
+    mocks.followState = { accepted: [], pending: [] }
+    const none = await emptyFriendsBoardSaying('No friends yet')
+    expect(none.textContent).not.toContain('waiting on an answer')
   })
 })

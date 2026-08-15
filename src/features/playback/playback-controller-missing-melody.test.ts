@@ -181,6 +181,26 @@ describe('pressing Play on a session', () => {
     expect(scalesBuilt).toBe(0)
   })
 
+  it('counts them when more than one leads', () => {
+    // Naming one item is helpful; naming four is a wall of text, so the
+    // plural branch counts instead. Both halves of that sentence are shown to
+    // the singer, so both are asserted.
+    store.session = sessionOf([
+      melodyItem('i1', 'Deleted Warm-up', 'gone'),
+      melodyItem('i2', 'Deleted Riff', 'also-gone'),
+      melodyItem('i3', 'Warm-up in D', 'melody-present'),
+    ])
+
+    makeController().handlePlay()
+
+    expect(store.itemIndex).toBe(2)
+    expect(notifications.shown).toEqual([
+      'Skipping 2 items whose melodies were deleted.',
+    ])
+    expect(played.at(-1)?.map((i) => i.note.midi)).toEqual([62])
+    expect(scalesBuilt).toBe(0)
+  })
+
   it('refuses to start at all when every melody is gone', () => {
     // THE DEFECT. Skipping past the last item leaves no first item to load,
     // and the controller's ordinary fallback generates an eight-note scale —
