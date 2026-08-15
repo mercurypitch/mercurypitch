@@ -2,16 +2,21 @@
 // Weekly Legend — pure client logic tests
 // ============================================================
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { needsSignIn } from '@/db/services/auth-service'
+import { saveSessionRecord } from '@/db/services/session-service'
 import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
 import { TAB_HOME } from '@/features/tabs/constants'
-import { showNotification } from '@/stores/notifications-store'
+import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { activeTab, challengeStageLaunch, closeChallengeStage, setActiveTab, } from '@/stores/ui-store'
 
 vi.mock('@/db/services/session-service', () => ({
   saveSessionRecord: vi.fn(async () => ({})),
+}))
+vi.mock('@/db/services/auth-service', () => ({
+  needsSignIn: vi.fn(() => false),
 }))
 vi.mock('@/db/services/badge-grant-engine', () => ({
   checkAndGrantBadges: vi.fn(async () => undefined),
@@ -19,7 +24,9 @@ vi.mock('@/db/services/badge-grant-engine', () => ({
 }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => ({
+  removeNotification: vi.fn(),
   removeNotificationsByChannel: vi.fn(),
+  showActionNotification: vi.fn(() => 1),
   showNotification: vi.fn(),
   TOUR_OFFER_CHANNEL: 'tour-offer',
 }))
@@ -216,5 +223,67 @@ describe('target-note (de)serialization', () => {
     expect(second.map((i) => i.note.midi)).toEqual(
       first.map((i) => i.note.midi),
     )
+  })
+})
+
+// ── Saying WHY a Legend attempt was not saved ────────────────────────
+//
+// The message used to be "We couldn't save that Legend attempt" whatever the
+// reason, which names the effect and withholds the cause — so a singer who
+// simply needs to sign in retries the line, and it fails again identically.
+describe('a Legend attempt that could not be saved', () => {
+  function armAttempt(): void {
+    beginWeeklyAttempt({
+      challengeId: 'w-save',
+      title: 'Nessun Dorma',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+  }
+
+  beforeEach(() => {
+    vi.mocked(showNotification).mockClear()
+    vi.mocked(showActionNotification).mockClear()
+    vi.mocked(needsSignIn).mockReturnValue(false)
+    vi.mocked(saveSessionRecord).mockResolvedValue(null)
+  })
+
+  afterEach(() => {
+    vi.mocked(saveSessionRecord).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof saveSessionRecord>>,
+    )
+  })
+
+  it('asks the singer to sign in when that is the actual reason', async () => {
+    // The state this fires in is specific: an anonymous account that was
+    // upgraded and then signed out of, where the server refuses anonymous
+    // re-auth for the device. Nothing about it looks like a network fault to
+    // the singer, and nothing about it fixes itself.
+    vi.mocked(needsSignIn).mockReturnValue(true)
+    armAttempt()
+
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })
+
+    expect(showActionNotification).toHaveBeenCalledTimes(1)
+    const [message, , action] = vi.mocked(showActionNotification).mock.calls[0]
+    expect(message).toContain('Sign in to post Legend scores')
+    // Names both losses, because the practice row is not written either.
+    expect(message).toContain('not in your practice history')
+    expect(action.label).toBe('Sign in')
+    // No second, contradictory toast.
+    expect(showNotification).not.toHaveBeenCalled()
+  })
+
+  it('does not blame the singer when the cause is not a missing sign-in', async () => {
+    armAttempt()
+
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })
+
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    const message = vi.mocked(showNotification).mock.calls[0][0]
+    expect(message).toContain("couldn't save that Legend attempt")
+    // Telling somebody to sign in when they already are is worse than vague.
+    expect(message).not.toContain('Sign in')
+    expect(showActionNotification).not.toHaveBeenCalled()
   })
 })
