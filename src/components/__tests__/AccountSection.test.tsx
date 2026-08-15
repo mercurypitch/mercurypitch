@@ -5,7 +5,7 @@
 // AuthModal.test.tsx); this section shows the account state and opens
 // that modal from its CTAs.
 
-import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Defaults from '@/lib/defaults'
 
@@ -64,6 +64,7 @@ vi.mock('@/stores/ui-store', () => ({
 }))
 vi.mock('@/db', () => ({ getDb: dbMocks.getDb }))
 
+import { notifications, setNotifications } from '@/stores/notifications-store'
 import { AccountSection } from '../account/AccountSection'
 
 const anonymousMe = {
@@ -180,5 +181,52 @@ describe('AccountSection', () => {
 
     fireEvent.input(input, { target: { value: 'New Name' } })
     expect(save.disabled).toBe(false)
+  })
+})
+
+// The wiring the extraction to lib/google-sign-in left behind. This panel has
+// no inline error line, so a failed start has to surface as a notification —
+// which is the one thing that genuinely differs between the three copies of
+// this button, and the reason the shared helper returns the message instead
+// of showing it. Reads the real store rather than mocking it: the assertion
+// is that the message reached somewhere the singer can see.
+describe('Continue with Google', () => {
+  beforeEach(() => {
+    setNotifications([])
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { assign: vi.fn(), href: 'http://localhost/' },
+    })
+  })
+
+  it('navigates to the consent url the worker handed back', async () => {
+    mocks.fetchMe.mockResolvedValue(anonymousMe)
+    render(() => <AccountSection />)
+
+    fireEvent.click(await screen.findByTestId('google-signin'))
+
+    await waitFor(() =>
+      expect(window.location.assign).toHaveBeenCalledWith(
+        'http://api.test/api/auth/google/start',
+      ),
+    )
+    expect(notifications()).toEqual([])
+  })
+
+  it('says so in a notification rather than navigating to nothing', async () => {
+    mocks.googleSignInUrl.mockImplementation(() => {
+      throw new Error('offline')
+    })
+    mocks.fetchMe.mockResolvedValue(anonymousMe)
+    render(() => <AccountSection />)
+
+    fireEvent.click(await screen.findByTestId('google-signin'))
+
+    await waitFor(() =>
+      expect(notifications().map((n) => n.message)).toContain(
+        'Could not reach Google sign-in. Try again.',
+      ),
+    )
+    expect(window.location.assign).not.toHaveBeenCalled()
   })
 })

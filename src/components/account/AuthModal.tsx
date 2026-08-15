@@ -12,9 +12,10 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
-import { googleSignInUrl, loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
+import { loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
+import { startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -116,16 +117,11 @@ export const AuthModal: Component = () => {
     initialFocus: () => dialogRef?.querySelector('input') ?? undefined,
   })
 
-  /** Full-page redirect via the worker: COOP severs window.opener, so
-   *  the GIS popup flow cannot work here (see auth-service). The URL is
-   *  fetched rather than built, because the device secret that authorises
-   *  absorbing this browser's anonymous progress goes in a POST body. */
-  async function startGoogleSignIn(): Promise<void> {
-    try {
-      window.location.assign(await googleSignInUrl())
-    } catch {
-      setError('Could not reach Google sign-in. Try again.')
-    }
+  /** Shows the failure inline, next to the form the singer is already
+   *  looking at. Starting the redirect is shared — see lib/google-sign-in. */
+  async function onGoogleSignIn(): Promise<void> {
+    const failure = await startGoogleSignIn()
+    if (failure !== null) setError(failure)
   }
 
   // Live password validity (register only) — red border + checklist so
@@ -282,7 +278,7 @@ export const AuthModal: Component = () => {
                 <button
                   type="button"
                   class={styles.googleButton}
-                  onClick={() => void startGoogleSignIn()}
+                  onClick={() => void onGoogleSignIn()}
                   data-testid="auth-google"
                 >
                   <GoogleMark />

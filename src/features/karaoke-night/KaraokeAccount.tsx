@@ -6,7 +6,8 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
-import { googleSignInUrl, loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { account, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
 import { showNotification } from '@/stores/notifications-store'
@@ -31,14 +32,11 @@ export function KaraokeAccount() {
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
 
-  /** The consent URL is fetched, not built: the device secret that lets this
-   *  browser's anonymous progress carry over goes in a POST body. */
-  async function startGoogleSignIn(): Promise<void> {
-    try {
-      window.location.assign(await googleSignInUrl())
-    } catch {
-      setError('Could not reach Google sign-in. Try again.')
-    }
+  /** Shows the failure in this surface's own error line. Starting the
+   *  redirect is shared — see lib/google-sign-in. */
+  async function onGoogleSignIn(): Promise<void> {
+    const failure = await startGoogleSignIn()
+    if (failure !== null) setError(failure)
   }
 
   // Full email for the title/menu; a compact local-part for the chip so a
@@ -236,7 +234,7 @@ export function KaraokeAccount() {
             </form>
             <button
               class="kn-modal-google"
-              onClick={() => void startGoogleSignIn()}
+              onClick={() => void onGoogleSignIn()}
             >
               Continue with Google
             </button>

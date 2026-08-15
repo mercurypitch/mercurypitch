@@ -17,11 +17,12 @@ import { Pencil } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { fetchMe, googleSignInUrl, logout, restoreAuth, } from '@/db/services/auth-service'
+import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
+import { startGoogleSignIn } from '@/lib/google-sign-in'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
@@ -146,16 +147,11 @@ export const AccountSection: Component = () => {
     })()
   })
 
-  /** Full-page redirect via the worker: COOP severs window.opener, so
-   *  the GIS popup flow cannot work here (see auth-service). The URL is
-   *  fetched rather than built, because the device secret that authorises
-   *  absorbing this browser's anonymous progress goes in a POST body. */
-  async function startGoogleSignIn(): Promise<void> {
-    try {
-      window.location.assign(await googleSignInUrl())
-    } catch {
-      showNotification('Could not reach Google sign-in. Try again.', 'error')
-    }
+  /** Shows the failure as a notification — this panel has no inline error
+   *  line of its own. Starting the redirect is shared: lib/google-sign-in. */
+  async function onGoogleSignIn(): Promise<void> {
+    const failure = await startGoogleSignIn()
+    if (failure !== null) showNotification(failure, 'error')
   }
 
   function handleLogout(): void {
@@ -356,7 +352,7 @@ export const AccountSection: Component = () => {
                 </button>
                 <button
                   class={styles.googleButton}
-                  onClick={() => void startGoogleSignIn()}
+                  onClick={() => void onGoogleSignIn()}
                   data-testid="google-signin"
                 >
                   <GoogleMark />
