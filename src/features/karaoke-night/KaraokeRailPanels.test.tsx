@@ -14,7 +14,7 @@
 // These tests pin both halves: a same-id store tick refetches nothing, and a
 // genuinely new id set does not blank what is already on screen.
 
-import { render, waitFor } from '@solidjs/testing-library'
+import { fireEvent, render, waitFor } from '@solidjs/testing-library'
 import { createSignal, Suspense } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -65,10 +65,10 @@ vi.mock('./funnel', () => ({ trackKaraoke: vi.fn() }))
 // scanned-code test only needs to see that the door OPENED.
 const syncStore = vi.hoisted(() => ({ setSyncCodeToJoin: vi.fn() }))
 vi.mock('@/stores/sync-store', () => syncStore)
-vi.mock('@/components/sync/SyncDevicesModal', () => ({
-  default: () => <div role="dialog" data-testid="sync-modal-mock" />,
-  SyncDevicesModal: () => <div role="dialog" data-testid="sync-modal-mock" />,
-}))
+// The dialog mounts at page scope (KaraokeNightApp → SyncHost); the
+// rail only rings the bell, so the mock is the bell.
+const syncUi = vi.hoisted(() => ({ openSyncModal: vi.fn() }))
+vi.mock('@/stores/sync-ui', () => syncUi)
 vi.mock('./karaoke-account', () => ({
   credits: () => [],
   refreshCredits: vi.fn(),
@@ -194,15 +194,22 @@ describe('the door to another device', () => {
     expect(container.querySelectorAll('.kn-library-song').length).toBe(0)
   })
 
-  it('REQ-SKL-009: does not load the sync chunk until the door is opened', async () => {
+  it('REQ-SKL-009: does not open the sync machinery until the door is pressed', async () => {
+    syncUi.openSyncModal.mockClear()
     store.readSessions = () => [session('uvr-a', 3)]
 
     const { container } = render(() => <KaraokeRailPanels {...railProps} />)
     await waitFor(() => expect(listStemTypes).toHaveBeenCalled())
 
-    // The modal is lazy() precisely so the rail's first paint never pays for
-    // WebRTC signaling and the bundle machinery.
-    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    // The dialog — and the WebRTC/bundle machinery behind it — sits at
+    // page scope behind SyncHost's lazy(); painting the rail must not
+    // ask for it, pressing the door is what does.
+    expect(syncUi.openSyncModal).not.toHaveBeenCalled()
+    const door = [...container.querySelectorAll('.kn-btn')].find((b) =>
+      /Send or receive/.test(b.textContent ?? ''),
+    )!
+    fireEvent.click(door)
+    expect(syncUi.openSyncModal).toHaveBeenCalledTimes(1)
   })
 
   it('REQ-SKL-011: a scanned link opens the door and hands over its code', async () => {
@@ -211,26 +218,26 @@ describe('the door to another device', () => {
     // rail's half of the contract is to take it, stash it for the modal
     // and open the door.
     const take = vi.fn(() => 'ABCD2345')
-    const { container } = render(() => (
+    syncUi.openSyncModal.mockClear()
+    render(() => (
       <KaraokeRailPanels {...railProps} takeScannedSyncCode={take} />
     ))
 
-    await waitFor(() =>
-      expect(container.querySelector('[role="dialog"]')).not.toBeNull(),
-    )
+    await waitFor(() => expect(syncUi.openSyncModal).toHaveBeenCalled())
     expect(take).toHaveBeenCalledTimes(1)
     expect(syncStore.setSyncCodeToJoin).toHaveBeenCalledWith('ABCD2345')
   })
 
   it('REQ-SKL-011: leaves the door shut when nothing was scanned', async () => {
     syncStore.setSyncCodeToJoin.mockClear()
-    const { container } = render(() => (
+    syncUi.openSyncModal.mockClear()
+    render(() => (
       <KaraokeRailPanels {...railProps} takeScannedSyncCode={() => null} />
     ))
 
     // Give any stray dynamic import a beat to land before asserting.
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(syncUi.openSyncModal).not.toHaveBeenCalled()
     expect(syncStore.setSyncCodeToJoin).not.toHaveBeenCalled()
   })
 })

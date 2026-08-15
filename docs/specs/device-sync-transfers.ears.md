@@ -312,3 +312,54 @@ refusal, which trusts a positive estimate, switched itself off.
 _Tests:_ `sync-store` — "REQ-SYNC-029: prices a cold-loaded session
 from its persisted stem sizes", "REQ-SYNC-029: durations still price a
 session that has no stored sizes".
+
+### REQ-SYNC-030 — Closing the dialog is not ending the session
+
+**WHEN** the sync dialog is closed (the X or Escape) **WHILE** the
+session is connected or a transfer is packing, being prepared, or on
+the wire, the session and every transfer shall keep running, and a
+corner chip (where notifications land) shall show progress and reopen
+the dialog when pressed. Reopening lands on the screen the dialog was
+closed on, not on the chooser. A session still being set up (starting,
+waiting) is torn down as before — its code is on screen nowhere once
+the dialog is gone, so nobody could ever join it. Ending a connected
+pairing is a deliberate act: the dialog's Disconnect button.
+_Tests:_ `sync-store` — "REQ-SYNC-030: hiding the dialog keeps a
+connected session", "REQ-SYNC-030: hiding a session still being set up
+tears it down"; `SyncHost` — "REQ-SYNC-030: the chip appears when a
+live session is hidden"; `SyncDevicesModal` — "REQ-SYNC-030: the X
+hides the dialog without ending the session".
+
+### REQ-SYNC-031 — Only the X (or Escape) closes the dialog
+
+**WHEN** the user clicks or taps outside the open sync dialog, nothing
+shall happen. **IF** the backdrop closed it, **THEN** — before
+REQ-SYNC-030 — a stray tap aborted the pack mid-slice, disposed the
+peer and ended the session; even after it, the dialog people stand in
+front of while a code is being read out must not vanish by accident.
+_Tests:_ `SyncDevicesModal` — "REQ-SYNC-031: a click on the backdrop
+neither closes nor disconnects".
+
+### REQ-SYNC-032 — A hidden, idle session ends itself
+
+**WHILE** the dialog is hidden and the session has nothing moving,
+**WHEN** ten minutes pass, the session shall end and say so in a
+notification. Reopening the dialog or any transfer activity rewinds
+the countdown, and a moving transfer is never cut — its completion
+starts the ten minutes over.
+_Tests:_ `sync-store` — "REQ-SYNC-032: a hidden idle session closes
+after ten minutes", "REQ-SYNC-032: reopening the dialog stops the
+countdown".
+
+### REQ-SYNC-033 — The screen stays awake while songs move
+
+**WHILE** anything is packing, being prepared, or transferring, the
+device shall hold a screen wake lock (best effort — the browser may
+refuse), released when nothing is moving. The lock is shared with
+Drive backups by count: one feature finishing shall not release the
+other's hold. **IF** no lock were held, **THEN** a phone whose screen
+sleeps mid-pack freezes the page and the transfer stalls where it
+stood — the same death REQ-DRV-017 already guards the backup against.
+_Tests:_ `sync-store` — "REQ-SYNC-033: holds the wake lock while a
+song moves, then lets go"; `keep-awake` — "holds the lock until the
+last holder lets go".

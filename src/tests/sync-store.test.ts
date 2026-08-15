@@ -71,6 +71,12 @@ vi.mock('@/stores/uvr-store', () => ({
 const notes = vi.hoisted(() => ({ showNotification: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => notes)
 
+const wake = vi.hoisted(() => ({
+  enable: vi.fn(() => Promise.resolve()),
+  disable: vi.fn(() => Promise.resolve()),
+}))
+vi.mock('@/lib/platform', () => ({ platform: { keepAwake: wake } }))
+
 vi.mock('@/db/durable-write', () => ({
   storageEstimate: () => Promise.resolve({ quota: 1e9, usage: 0 }),
 }))
@@ -79,6 +85,7 @@ vi.mock('@/db/persistent-storage', () => ({
 }))
 
 import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { closeSyncModal, openSyncModal } from '@/stores/sync-ui'
 import type { UvrSession } from '@/stores/uvr-store'
 
 /** Drive the store to a live room with a connected peer. */
@@ -684,5 +691,74 @@ describe('what a song is estimated to weigh', () => {
     } as unknown as UvrSession
     // Two stems, 100 seconds, 192 kbps: 2 × 100 × 24 000 bytes.
     expect(estimatePackedBytes(session)).toBe(4_800_000)
+  })
+})
+
+describe('the dialog is a view; the session is not', () => {
+  beforeEach(() => {
+    // The signal is module-level and a prior test may have left the
+    // dialog "open"; every test here starts with it hidden.
+    closeSyncModal()
+    notes.showNotification.mockClear()
+  })
+
+  it('REQ-SYNC-030: hiding the dialog keeps a connected session', async () => {
+    await connect()
+    expect(syncState()).toBe('connected')
+
+    closeSyncModal()
+
+    expect(syncState()).toBe('connected')
+    expect(peerMock.dispose).not.toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-030: hiding a session still being set up tears it down', async () => {
+    await startSyncReceive()
+    expect(syncState()).toBe('waiting')
+
+    closeSyncModal()
+
+    // A waiting room whose code is on screen nowhere can never be
+    // joined; keeping it would be a leak, not a feature.
+    expect(syncState()).toBe('idle')
+    expect(peerMock.dispose).toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-032: a hidden idle session closes after ten minutes', async () => {
+    await connect()
+    vi.useFakeTimers()
+
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+    expect(syncState()).toBe('idle')
+    expect(notes.showNotification).toHaveBeenCalledWith(
+      expect.stringContaining('10 minutes'),
+      'info',
+    )
+  })
+
+  it('REQ-SYNC-032: reopening the dialog stops the countdown', async () => {
+    await connect()
+    vi.useFakeTimers()
+
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(9 * 60 * 1000)
+    openSyncModal()
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000)
+
+    expect(syncState()).toBe('connected')
+    closeSyncModal()
+  })
+
+  it('REQ-SYNC-033: holds the wake lock while a song moves, then lets go', async () => {
+    await connect()
+    expect(wake.enable).not.toHaveBeenCalled()
+
+    await sendSongToPeer('s1')
+
+    // Enabled the moment packing started; released once nothing moved.
+    expect(wake.enable).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(wake.disable).toHaveBeenCalledTimes(1))
   })
 })
