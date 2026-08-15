@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SwStaleBuildNotice } from './sw-runtime'
-import { BUILD_ID_MESSAGE, CACHE_PREFIX, createServiceWorkerRuntime, extensionOf, firstPaintAssets, htmlBelongsToBuild, isVersionedAssetPath, manifestRevision, SHELL_KEY, SKIP_WAITING_MESSAGE, STALE_BUILD_MESSAGE, } from './sw-runtime'
+import { BUILD_ID_MESSAGE, CACHE_PREFIX, createServiceWorkerRuntime, extensionOf, firstPaintAssets, htmlBelongsToBuild, isVersionedAssetPath, manifestRevision, SHELL_KEY, SKIP_WAITING_MESSAGE, STALE_BUILD_MESSAGE, STANDALONE_DOCUMENT_PATHS, } from './sw-runtime'
 
 // These tests are the reason the caching rules live outside src/sw.ts. Every
 // case here is a thing that happened, or would have: a deploy landing between
@@ -208,6 +210,42 @@ function healthyRoutes(): Record<string, () => Response> {
     '/icon-192.png': () => image(),
   }
 }
+
+describe('the standalone documents', () => {
+  it('excludes every URL vite.config.ts routes to a document of its own', () => {
+    // The cost of missing one changed with the precached shell. Network-first
+    // fetched whatever the origin answered, so an alias left off this list
+    // still served the right product; cache-first answers it with the app
+    // shell, and the visitor gets the studio where Voice Mirror should be.
+    // Each `const X_PATHS = new Set([...])` in the build config is one
+    // mini-app's URLs, and TONE_DEAF_PATH redirects onto one.
+    const config = readFileSync(
+      resolve(process.cwd(), 'vite.config.ts'),
+      'utf8',
+    )
+    const declarations = [
+      ...config.matchAll(
+        /const [A-Z_]+_PATHS?\s*=\s*(new Set\(\[[^\]]*\]\)|'[^']*')/g,
+      ),
+    ]
+    const paths = declarations.flatMap((match) =>
+      [...(match[1] ?? '').matchAll(/'(\/[^']*)'/g)].map((inner) => inner[1]),
+    )
+
+    expect(paths.length).toBeGreaterThan(10)
+    for (const path of paths) {
+      expect(
+        STANDALONE_DOCUMENT_PATHS.has(path as string),
+        `${path} is its own document in vite.config.ts, so the worker must not answer it with the app shell`,
+      ).toBe(true)
+    }
+  })
+
+  it('does not claim the app shell itself', () => {
+    expect(STANDALONE_DOCUMENT_PATHS.has('/')).toBe(false)
+    expect(STANDALONE_DOCUMENT_PATHS.has('/index.html')).toBe(false)
+  })
+})
 
 describe('manifestRevision', () => {
   it('names a set of URLs, not an order', () => {
@@ -604,7 +642,13 @@ describe('navigation', () => {
     const app = harness({ routes: healthyRoutes() })
     await app.runtime.install()
 
-    for (const path of ['/mirror', '/karaoke-night', '/jam', '/piano-night']) {
+    for (const path of [
+      '/mirror',
+      '/free-sing',
+      '/karaoke-night',
+      '/jam',
+      '/piano-night',
+    ]) {
       expect(app.runtime.handleFetch(navigation(path))).toBeUndefined()
     }
   })
