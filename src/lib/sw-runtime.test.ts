@@ -460,6 +460,22 @@ describe('install', () => {
     expect(await app.cacheEntries()).not.toContain('/favicon.svg')
   })
 
+  it('still adopts the build when storage is full', async () => {
+    const app = harness({ routes: healthyRoutes() })
+    const previous = await app.caches.open(`${CACHE_PREFIX}00000001`)
+    await previous.put(LAZY_JS, javascript())
+    const cache = await app.caches.open(app.runtime.cacheName)
+    cache.put = async () =>
+      Promise.reject(new DOMException('Quota exceeded', 'QuotaExceededError'))
+
+    // A visitor whose quota is full must not be stranded on a build they can
+    // never leave: the worker installs, and serves from the network instead.
+    await expect(app.runtime.install()).resolves.toBeUndefined()
+
+    const response = await app.runtime.handleFetch(navigation('/'))
+    expect(await response?.text()).toContain(ENTRY_JS)
+  })
+
   it('ignores caches belonging to something else on the origin', async () => {
     const app = harness({ routes: healthyRoutes() })
     const foreign = await app.caches.open('some-other-feature')
@@ -775,6 +791,31 @@ describe('assets', () => {
     expect(await app.cacheEntries()).not.toContain(LAZY_JS)
     // Untyped is not the SPA fallback, so it is not evidence of a deploy.
     expect(app.notices).toEqual([])
+  })
+
+  it('serves the network when storage refuses to answer at all', async () => {
+    // Site data cleared mid-session, or storage disabled under a policy. A
+    // promise that rejects inside respondWith() shows the browser's
+    // network-error page, so every cache touch has to degrade instead.
+    app.caches.open = async () =>
+      Promise.reject(new DOMException('denied', 'SecurityError'))
+
+    const asset = await app.runtime.handleFetch(request(LAZY_JS))
+    const document = await app.runtime.handleFetch(navigation('/'))
+
+    expect(asset?.status).toBe(200)
+    expect(await document?.text()).toContain(ENTRY_JS)
+  })
+
+  it('serves the response even when it cannot be stored', async () => {
+    const cache = await app.caches.open(app.runtime.cacheName)
+    cache.put = async () =>
+      Promise.reject(new DOMException('Quota exceeded', 'QuotaExceededError'))
+
+    const response = await app.runtime.handleFetch(request(LAZY_JS))
+
+    expect(response?.status).toBe(200)
+    expect(await response?.text()).toBe('export default 1')
   })
 
   it('never stores an extension it has no rule for', async () => {
