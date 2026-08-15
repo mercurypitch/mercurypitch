@@ -7,6 +7,10 @@ import { expect, test } from '@playwright/test'
 // fetch handler that ends up controlling the page. These assert those, and then
 // the thing most likely to reach a user if the worker is wrong: HTML cached
 // under a hashed asset URL, which never self-heals.
+//
+// They also assert the promise the precached shell makes — the app opens with
+// the network gone, and a chunk from a deploy that has been replaced fails as a
+// load error rather than as HTML fed to a JavaScript parser.
 
 const CONTROLLER_TIMEOUT = 20_000
 
@@ -246,5 +250,74 @@ test('a hashed chunk this build never shipped is passed through, not cached @smo
   // Whatever the host answers — a 404 here, index.html with a 200 in
   // production — the worker must not have cached it.
   expect(result.status).not.toBe(0)
+  expect(await cachedPaths(page)).not.toContain(stale)
+})
+
+test('the installed app opens with the network gone @smoke', async ({
+  page,
+  context,
+}) => {
+  // The whole point of precaching the shell: boot touches no network, so a
+  // visitor entering mid-deploy — or in a tunnel — gets the build they already
+  // have rather than a half-served one.
+  await bootWithWorkerInControl(page)
+  await page.waitForSelector('#root.loaded', { timeout: CONTROLLER_TIMEOUT })
+
+  await context.setOffline(true)
+  try {
+    await page.reload()
+    await page.waitForSelector('#root.loaded', { timeout: CONTROLLER_TIMEOUT })
+    await expect(page.locator('[id^="tab-"]').first()).toBeVisible()
+    await expect(
+      page.getByRole('dialog', { name: 'Application error' }),
+    ).toHaveCount(0)
+  } finally {
+    await context.setOffline(false)
+  }
+})
+
+test('the cache belongs to one build, and holds the shell it boots @smoke', async ({
+  page,
+}) => {
+  await bootWithWorkerInControl(page)
+
+  const names = await page.evaluate(async () => caches.keys())
+  // One cache, named after the set of files this build shipped. A second one
+  // would mean the previous build's cache outlived `activate`, which is how a
+  // visitor ends up on a mixed pair of HTML and chunks.
+  expect(names).toHaveLength(1)
+  expect(names[0]).toMatch(/^mercurypitch-assets-[0-9a-f]{8}$/)
+
+  const paths = await cachedPaths(page)
+  expect(paths).toContain('/')
+  expect(paths.filter((path) => path.endsWith('.js')).length).toBeGreaterThan(0)
+})
+
+test('a replaced deploy’s chunk fails as a load error, never as HTML @smoke', async ({
+  page,
+  context,
+}) => {
+  await bootWithWorkerInControl(page)
+
+  // Production answers a path it no longer has with index.html and a 200
+  // (wrangler `assets.not_found_handling: "single-page-application"`). Handing
+  // that to the page is the crash: HTML through a JavaScript parser, which
+  // surfaces as `SyntaxError: Unexpected token '<'` and no way back.
+  const stale = '/assets/Exercises-D3adB33f.js'
+  await context.route(`**${stale}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><title>SPA fallback</title>',
+    })
+  })
+
+  const result = await page.evaluate(async (url) => {
+    const response = await fetch(url, { cache: 'no-store' })
+    return { status: response.status, body: await response.text() }
+  }, stale)
+
+  expect(result.status).toBe(503)
+  expect(result.body).not.toContain('SPA fallback')
   expect(await cachedPaths(page)).not.toContain(stale)
 })

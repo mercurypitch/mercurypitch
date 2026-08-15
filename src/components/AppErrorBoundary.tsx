@@ -5,7 +5,7 @@
 import type { JSX, ParentComponent } from 'solid-js'
 import { onMount } from 'solid-js'
 import { ErrorBoundary } from 'solid-js/web'
-import { isNetworkError } from '@/lib/global-error-handler'
+import { isNetworkError, isStaleBuildError } from '@/lib/global-error-handler'
 import { exposeForE2E } from '@/lib/test-utils'
 import { setAppError as setAppErrorSignal } from '@/stores/app-store'
 import { CrashModal } from './CrashModal'
@@ -52,6 +52,15 @@ export const setupGlobalErrorHandler = () => {
     // listener from running. Without the same check here, going offline, or a
     // worker being briefly down, put the full-screen CrashModal in front of a
     // user whose app was working fine.
+    // A chunk from a build the origin has already replaced. Not a crash, and
+    // not fixable from inside the page — global-error-handler.ts has already
+    // asked for the update that fixes it, and the reload prompt takes it from
+    // there. Same reason as above for repeating the check here.
+    if (isStaleBuildError(err)) {
+      console.warn('[pwa] this build is no longer served:', err)
+      return
+    }
+
     if (isNetworkError(err)) {
       console.warn('[net] request failed (backend unreachable / offline):', err)
       return

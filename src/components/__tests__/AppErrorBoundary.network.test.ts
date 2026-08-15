@@ -45,6 +45,21 @@ describe('setupGlobalErrorHandler', () => {
     expect(appError()).toBeNull()
   })
 
+  it.each([
+    "Unexpected token '<'",
+    'Failed to fetch dynamically imported module: https://mercurypitch.com/assets/Exercises-D3adB33f.js',
+    'error loading dynamically imported module',
+    'Importing a module script failed.',
+  ])('does not raise a crash for a replaced deploy: %s', (message) => {
+    // A deploy drops every hashed chunk of the build before it, and
+    // `not_found_handling: "single-page-application"` answers the missing ones
+    // with index.html and a 200 — so the page parses HTML as JavaScript. That is
+    // the deployment moving on, not the app breaking, and the reload prompt is
+    // what fixes it.
+    dispatchRejection(new SyntaxError(message))
+    expect(appError()).toBeNull()
+  })
+
   it('still raises a crash for a genuine application error', () => {
     // The negative control. Without this, a handler that swallowed everything
     // would pass every case above.

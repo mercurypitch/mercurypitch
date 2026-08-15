@@ -1,5 +1,16 @@
 import { addConsoleLog } from '@/stores/console-store'
+import { requestUpdateCheck } from './pwa-service-worker'
 import { exposeForE2E } from './test-utils'
+
+function messageOf(reason: unknown): string {
+  return reason instanceof Error
+    ? reason.message
+    : typeof reason === 'string'
+      ? reason
+      : typeof reason === 'object' && reason !== null && 'message' in reason
+        ? String((reason as { message: unknown }).message)
+        : ''
+}
 
 /**
  * A fetch() that can't reach the server rejects with a TypeError whose message
@@ -17,16 +28,35 @@ import { exposeForE2E } from './test-utils'
  * so both filters have to agree or an offline blip shows a crash screen.
  */
 export function isNetworkError(reason: unknown): boolean {
-  const msg =
-    reason instanceof Error
-      ? reason.message
-      : typeof reason === 'string'
-        ? reason
-        : typeof reason === 'object' && reason !== null && 'message' in reason
-          ? String((reason as { message: unknown }).message)
-          : ''
   return /NetworkError when attempting to fetch|Failed to fetch|Load failed/i.test(
-    msg,
+    messageOf(reason),
+  )
+}
+
+/**
+ * Whether a failure means "the build this page is running is not the one the
+ * origin serves any more" rather than "the app is broken". A deploy replaces
+ * every hashed chunk at once, so a page that outlived one asks for files that
+ * are gone, and the host answers them two ways:
+ *
+ * - it 404s, or the import simply fails → "failed to fetch dynamically imported
+ *   module" (Chrome), "error loading dynamically imported module" (Firefox),
+ *   "Importing a module script failed" (Safari);
+ * - `not_found_handling: "single-page-application"` answers with index.html and
+ *   a 200 → the browser parses HTML as JavaScript and throws a SyntaxError
+ *   naming the `<`.
+ *
+ * Neither is an application bug, and neither is fixed by anything the user can
+ * do in the page — only by moving to the current build. So: no CrashModal, and
+ * an immediate update check, which is what raises the reload prompt.
+ *
+ * The `<` patterns also catch JSON.parse of an HTML error page. That is a
+ * deploy or gateway problem too, and treating it as "not a crash, check for an
+ * update" is the right call for it as well.
+ */
+export function isStaleBuildError(reason: unknown): boolean {
+  return /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|unexpected token '<'|unexpected token: '<'|expected expression, got '<'/i.test(
+    messageOf(reason),
   )
 }
 
@@ -45,6 +75,18 @@ export function initGlobalErrorHandlers(): void {
       e.preventDefault()
       return
     }
+    // Checked before the network filter: "Failed to fetch dynamically imported
+    // module" matches both, and only this branch asks for the update that
+    // actually fixes it.
+    if (isStaleBuildError(e.error) || isStaleBuildError(msg)) {
+      console.warn(
+        '[pwa] this build is no longer served; checking for an update:',
+        msg,
+      )
+      requestUpdateCheck()
+      e.preventDefault()
+      return
+    }
     if (isNetworkError(e.error) || isNetworkError(msg)) {
       console.warn('[net] request failed (backend unreachable / offline):', msg)
       e.preventDefault()
@@ -56,6 +98,15 @@ export function initGlobalErrorHandlers(): void {
   })
 
   window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+    if (isStaleBuildError(e.reason)) {
+      console.warn(
+        '[pwa] this build is no longer served; checking for an update:',
+        messageOf(e.reason),
+      )
+      requestUpdateCheck()
+      e.preventDefault()
+      return
+    }
     if (isNetworkError(e.reason)) {
       // Degraded-but-expected: warn, and swallow so it isn't "Uncaught".
       console.warn(
