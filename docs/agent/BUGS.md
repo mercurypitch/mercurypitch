@@ -598,13 +598,19 @@ This effect tracks `props.waveform`, `props.analysisResults`, `props.segmentedNo
 
 ### [medium] "Add stem" mints a blob URL for a multi-megabyte WAV that is never revoked
 
-`src/components/StemMixer.tsx:1724` — confidence: certain — status: CONFIRMED, unfixed
+`src/components/StemMixer.tsx:1724` — confidence: certain — status: FIXED
 
 `getStemBlobUrl` (src/db/services/uvr-service.ts:168) builds a `Blob` from the stored stem bytes and returns `URL.createObjectURL(blob)`. `handleAddStem` passes that URL to `audio.addExtraStem`, which fetches + decodes it and then stores the raw URL on the track (`url: input.url`, useStemMixerAudioController.ts:679). Grepping `revokeObjectURL` in useStemMixerAudioController.ts finds exactly one occurrence — line 1304, in the unrelated download path. Nothing revokes the extras' URLs when a stem is removed, when a new song is loaded, or when StemMixer unmounts (the `onCleanup` at StemMixer.tsx:2010-2020 does not touch them). A blob URL pins its data for the life of the document, which the codebase already documents in src/stores/jam-store.ts:565-568 and mitigates with the `openUvrStemLease` helper in src/lib/uvr-stem-lease.ts — a mechanism this path bypasses entirely.
 
 **Failure scenario.** User opens a full-band session and clicks the drums / bass / guitar / piano "Add stem" pills, then removes two and re-adds them, then navigates away from the mixer. Each click pinned a WAV blob (typically 20-60 MB for a 4-minute stem) that is never released; six clicks leave ~200 MB unreachable-but-alive for the rest of the tab's life, in addition to the decoded AudioBuffers.
 
 **Suggested fix.** Revoke the URL as soon as `decodeAudioData` resolves in `addExtraStem` (the AudioBuffer no longer needs it), or route the add path through `openUvrStemLease` and release the lease on stem removal / component cleanup.
+
+**Fixed**, but NOT by revoking after decode — that suggestion was wrong. Decoding does not spend the URL: `addExtraStem` stores it on the track and the mixer re-fetches it on seek (`useStemMixerAudioController.ts:588`) and on download (`:1284`), so an early revoke would break both. The mixer instead owns every blob URL for its whole mount, which is also what UvrPanel's `openMixerWithStems` already claimed in a comment ("The new StemMixer now owns these blob URLs") without anything acting on it — that handover was the larger half of the leak, and this entry had missed it.
+
+`src/lib/blob-url-owner.ts` holds the two rules that are easy to get wrong (revoke once; never revoke a URL you were not given), `StemMixer` wires it to `onCleanup`, and a failed add releases immediately rather than carrying every retry's blob to unmount. `props.stems.vocal/instrumental` are deliberately excluded — those belong to the session store.
+
+Note for the next leak of this shape: `src/tests/setup.ts` stubs `createObjectURL` and leaves `revokeObjectURL` undefined, which is why the table above records "the balance is not observable". `src/components/__tests__/StemMixerStemUrls.test.tsx` stubs and counts it, and renders the mixer whole — the bug lived in the seam, where every piece behaved and nobody called the release.
 
 ### [medium] Share button's clipboard write has no rejection handler — a blocked clipboard pops the crash modal instead of a toast
 
