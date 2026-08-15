@@ -321,3 +321,17 @@ test('a replaced deploy’s chunk fails as a load error, never as HTML @smoke', 
   expect(result.body).not.toContain('SPA fallback')
   expect(await cachedPaths(page)).not.toContain(stale)
 })
+
+test('a mini-app URL still gets its own document, not the shell @smoke', async ({
+  page,
+}) => {
+  // Every alias that resolves to its own HTML has to be excluded from the
+  // shell, and the cost of missing one is invisible until it ships: the visitor
+  // asks for Voice Mirror and gets the studio. Network-first could not produce
+  // that; a precached shell can.
+  await bootWithWorkerInControl(page)
+
+  await page.goto('/mirror')
+
+  await expect(page).toHaveTitle(/Voice Mirror/)
+})

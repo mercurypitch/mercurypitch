@@ -93,6 +93,11 @@ export const UNKNOWN_BUILD_ID = 'unknown'
 export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/mirror',
   '/mirror.html',
+  // Voice Mirror under a second URL: `run_worker_first` in wrangler.jsonc
+  // serves mirror.html here with the path intact, so there is no /free-sing
+  // document to notice — only the shell being served in its place if this line
+  // is missing. Network-first hid that; a precached shell does not.
+  '/free-sing',
   '/karaoke',
   '/karaoke-night',
   '/karaoke.html',
