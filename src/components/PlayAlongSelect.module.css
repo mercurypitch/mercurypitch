@@ -1,34 +1,53 @@
 /* PlayAlongSelect — quiet native control with a consistent premium surface. */
 
 .root {
+  --play-along-text: var(--text-primary, var(--fg-primary, #f0f6fc));
+  --play-along-text-secondary: var(
+    --text-secondary,
+    var(--fg-secondary, #8b949e)
+  );
+  --play-along-surface: var(--bg-card, #1c2128);
+  --play-along-border: var(--border, #30363d);
+  --play-along-accent: var(--purple, var(--accent, #8b5cf6));
+  --play-along-accent-dim: var(--accent-dim, rgba(139, 92, 246, 0.2));
+
   display: inline-flex;
   min-width: 8.8rem;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .select {
   width: 100%;
   min-height: 2rem;
   padding: 0.38rem 1.8rem 0.38rem 0.65rem;
-  color: var(--text-primary, var(--fg-primary, #f0f6fc));
-  background-color: rgba(13, 17, 23, 0.92);
-  border: 1px solid rgba(139, 92, 246, 0.38);
+  color: var(--play-along-text);
+  background-color: var(--play-along-surface);
+  border: 1px solid
+    color-mix(in srgb, var(--play-along-accent) 38%, var(--play-along-border));
   border-radius: 0.5rem;
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
-  color-scheme: dark;
+  color-scheme: inherit;
   transition:
     border-color 150ms ease,
-    background 150ms ease,
+    background-color 150ms ease,
     box-shadow 150ms ease;
 }
 
 .select:hover:not(:disabled) {
-  background-color: rgba(31, 24, 52, 0.96);
-  border-color: rgba(139, 92, 246, 0.7);
+  background-color: color-mix(
+    in srgb,
+    var(--play-along-surface) 88%,
+    var(--play-along-accent)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--play-along-accent) 70%,
+    var(--play-along-border)
+  );
 }
 
 /* Desktop engines paint the opened option list separately from the closed
@@ -36,23 +55,40 @@
    back to the light/grey OS palette inside the retained Songs drawer. iOS
    still gets its stable system picker via app.css's WebKit safety override. */
 .select option {
-  color: var(--text-primary, var(--fg-primary, #f0f6fc));
-  background-color: var(--bg-secondary, #161b22);
+  color: var(--play-along-text);
+  background-color: var(--play-along-surface);
 }
 
 .select option:disabled {
-  color: var(--text-muted, var(--fg-tertiary, #768390));
+  color: var(--play-along-text-secondary);
 }
 
 .select:focus-visible {
   outline: none;
-  border-color: var(--accent, #8b5cf6);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  border-color: var(--play-along-accent);
+  box-shadow: 0 0 0 3px var(--play-along-accent-dim);
 }
 
 .select:disabled {
-  cursor: default;
-  opacity: 0.46;
+  color: var(--play-along-text-secondary);
+  background-color: var(--play-along-surface);
+  border-color: var(--play-along-border);
+  cursor: not-allowed;
+}
+
+/* Karaoke Night and mixer focus mode are deliberate dark stages. Their
+   native controls keep a dark scheme even when focus mode was launched from
+   the app's light theme; ordinary in-app surfaces inherit the active theme. */
+:global(.kn-app) .root,
+:global(.stem-mixer--focus) .root {
+  --play-along-text: #f0f6fc;
+  --play-along-text-secondary: #8b949e;
+  --play-along-surface: #1c2128;
+  --play-along-border: #30363d;
+  --play-along-accent: #8b5cf6;
+  --play-along-accent-dim: rgba(139, 92, 246, 0.2);
+
+  color-scheme: dark;
 }
 
 .compact {
