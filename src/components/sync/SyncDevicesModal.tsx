@@ -192,13 +192,25 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   }
 
   /**
-   * Whether the far device says it already holds this song, by hash
-   * (REQ-SYNC-034). False when it has not said — an older build's
-   * silence must not mark anything. Declared up here with tooBigForPeer,
-   * and for the same TDZ reason: memos below call it as they are made.
+   * Whether that song is already over there — because the far device's
+   * hello said so (REQ-SYNC-034), or because it was sent (or declined as
+   * a duplicate) in THIS session: the hello's set never refreshes
+   * between sends, and without the second half "Select missing" would
+   * re-pick every song the batch just delivered. False when nothing is
+   * known — an older build's silence must not mark anything. Declared up
+   * here with tooBigForPeer, and for the same TDZ reason: memos below
+   * call it as they are made.
    */
-  const peerHas = (session: UvrSession): boolean =>
-    syncPeerSongs()?.has(session.fileHash ?? '') ?? false
+  const peerHas = (session: UvrSession): boolean => {
+    const hash = session.fileHash ?? ''
+    if (syncPeerSongs()?.has(hash) === true) return true
+    return syncTransfers().some(
+      (t) =>
+        t.direction === 'out' &&
+        t.fileHash === hash &&
+        (t.status === 'done' || t.status === 'already'),
+    )
+  }
 
   /** True when the far device has less room than a typical song needs. */
   const lowOnRoom = (): boolean => {
@@ -250,17 +262,14 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
   const pickable = createMemo(() => sendable().filter(fits))
 
   /**
-   * What "Select all" actually selects. Once the far device has said
-   * what it holds, the bulk action is "the songs it is missing" — the
-   * whole point of a bulk send. Every row stays individually sendable
-   * (a torn copy over there is repaired by a resend, REQ-SYNC-028); it
-   * just stops being the default.
+   * What "Select all" actually selects: the songs not already over
+   * there. Every row stays individually sendable (a torn copy over
+   * there is repaired only by a resend, REQ-SYNC-028); being skipped by
+   * the bulk action is all that "already there" costs a song. When
+   * nothing is known or held, this is simply everything — and the label
+   * below says which of the two it is.
    */
-  const selectTargets = createMemo(() =>
-    syncPeerSongs() === null
-      ? pickable()
-      : pickable().filter((s) => !peerHas(s)),
-  )
+  const selectTargets = createMemo(() => pickable().filter((s) => !peerHas(s)))
 
   const togglePick = (sessionId: string): void => {
     setPicked((current) => {
@@ -610,7 +619,9 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                       checked={allPicked()}
                       onChange={toggleAll}
                     />
-                    {syncPeerSongs() === null ? 'Select all' : 'Select missing'}
+                    {selectTargets().length === pickable().length
+                      ? 'Select all'
+                      : 'Select missing'}
                     {groupFilter() === null ? '' : ' in this group'}
                   </label>
                 </Show>
