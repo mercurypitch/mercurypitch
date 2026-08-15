@@ -269,6 +269,7 @@ import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
+import { pickVocalRangeMelody } from '@/lib/vocal-range'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -1386,27 +1387,21 @@ const AppShell: Component<AppProps> = (props) => {
     on(
       [vocalRangePreset, userSession],
       ([preset, sessionState]) => {
-        const session = sessionState as PlaybackSession | null | undefined
-        if (
-          session !== null &&
-          session !== undefined &&
-          session.id === 'default'
-        ) {
-          const defaultOctave = VOCAL_RANGES[preset].defaultOctave
-          const targetMelodyId = `scale-major-c${defaultOctave}`
-          const match = session.items.find(
-            (item) =>
-              item.type === 'melody' &&
-              (item as unknown as { melodyId: string }).melodyId ===
-                targetMelodyId,
-          )
+        // Melody ids on both lines below, deliberately. `selectedMelodyIds`
+        // is matched against `item.melodyId` when the sidebar decides which
+        // pill is lit, and the loader looks its argument up in the melody
+        // library — neither takes a session-item id. See pickVocalRangeMelody.
+        const melodyId = pickVocalRangeMelody(
+          sessionState as PlaybackSession | null | undefined,
+          preset,
+          (id) => melodyStore.getMelody(id) !== undefined,
+        )
 
-          if (match !== undefined) {
-            // Load it into the piano roll without starting playback
-            loadAndPlayMelodyForSession(match.id)
-            // Select it in the sidebar
-            setSelectedMelodyIds([match.id])
-          }
+        if (melodyId !== null) {
+          // Load it into the piano roll without starting playback
+          loadAndPlayMelodyForSession(melodyId)
+          // Light its pill in the sidebar
+          setSelectedMelodyIds([melodyId])
         }
       },
       { defer: false },
