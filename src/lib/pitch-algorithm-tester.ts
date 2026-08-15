@@ -518,3 +518,19 @@ export const ACCURACY_BAND_NAMES = {
   50: 'band50',
   0: 'band0',
 } as const
+
+/** A semantic accuracy score band shared by exact and aggregate results. */
+export type AccuracyScoreBand = keyof typeof ACCURACY_BAND_NAMES
+
+/**
+ * Classify an aggregate 0–100 score into the same semantic bands used by
+ * individual note results. Aggregate scores are averages, so they rarely land
+ * on the five literal band values stored in {@link ACCURACY_BAND_NAMES}.
+ */
+export function getAccuracyScoreBand(score: number): AccuracyScoreBand {
+  if (score >= 95) return 100
+  if (score >= 85) return 90
+  if (score >= 70) return 75
+  if (score >= 50) return 50
+  return 0
+}

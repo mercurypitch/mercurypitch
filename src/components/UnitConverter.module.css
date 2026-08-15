@@ -114,6 +114,7 @@
    the caret and everything either side of it jump on every keystroke. */
 .field {
   min-width: 0;
+  min-height: var(--touch-target, 44px);
   flex: 1 1 auto;
   padding: 6px var(--spacing-md);
   border: 1px solid var(--lab-line, var(--border));
@@ -148,6 +149,7 @@
    lane reads as one instrument rather than a widget next to a widget. */
 .select {
   min-width: 0;
+  min-height: var(--touch-target, 44px);
   flex: 1 1 auto;
 
   /* 28px of right padding is not decorative — the global `select` rule draws

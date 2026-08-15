@@ -23,7 +23,7 @@
 import type { Component } from 'solid-js'
 import { lazy } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ActivityPanel } from './panels/ActivityPanel'
 import { CharacterPanel } from './panels/CharacterPanel'
 import { DisplayPanel } from './panels/DisplayPanel'
@@ -114,6 +114,8 @@ export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
   [TAB_PITCH_TEST]: DEV_SURFACE_LAYOUT,
   [TAB_PITCH_ALGO]: DEV_SURFACE_LAYOUT,
   [TAB_LAB]: DEV_SURFACE_LAYOUT,
+  [TAB_LAB_TRANSCRIBE]: DEV_SURFACE_LAYOUT,
+  [TAB_LAB_DIFF]: DEV_SURFACE_LAYOUT,
 }
 
 /** The tab's panels in screen order, with the universal mic guaranteed. */

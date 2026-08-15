@@ -36,6 +36,14 @@ describe('parseHash', () => {
     expect(parseHash('#/guitar')).toEqual({ type: 'tab', tab: 'guitar' })
     expect(parseHash('#/piano')).toEqual({ type: 'tab', tab: 'piano' })
     expect(parseHash('#/jam')).toEqual({ type: 'tab', tab: 'jam' })
+    expect(parseHash('#/lab-transcribe')).toEqual({
+      type: 'tab',
+      tab: 'lab-transcribe',
+    })
+    expect(parseHash('#/lab-diff')).toEqual({
+      type: 'tab',
+      tab: 'lab-diff',
+    })
     // #/uvr is treated as uvr-upload by the router, not tab:uvr
     // Test separately in UVR routes below
   })

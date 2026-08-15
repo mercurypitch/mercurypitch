@@ -18,6 +18,9 @@ export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
 /** Hidden audio-research surface. Hash route only — never in TAB_GROUPS. */
 export const TAB_LAB = 'lab' as const
+/** Hidden Lab sub-surfaces. Kept as tabs so every tool remains deep-linkable. */
+export const TAB_LAB_TRANSCRIBE = 'lab-transcribe' as const
+export const TAB_LAB_DIFF = 'lab-diff' as const
 export const TAB_EXERCISES = 'exercises' as const
 export const TAB_JAM = 'jam' as const
 export const TAB_GUITAR = 'guitar' as const
@@ -38,6 +41,8 @@ export type ActiveTab =
   | typeof TAB_PITCH_TEST
   | typeof TAB_PITCH_ALGO
   | typeof TAB_LAB
+  | typeof TAB_LAB_TRANSCRIBE
+  | typeof TAB_LAB_DIFF
   | typeof TAB_EXERCISES
   | typeof TAB_JAM
   | typeof TAB_GUITAR
@@ -196,6 +201,8 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_PITCH_TEST]: ['singing'],
   [TAB_PITCH_ALGO]: ['singing'],
   [TAB_LAB]: ['singing'],
+  [TAB_LAB_TRANSCRIBE]: ['singing'],
+  [TAB_LAB_DIFF]: ['singing'],
 }
 
 /**
@@ -286,6 +293,8 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_PITCH_TEST]: 'pitch-test',
   [TAB_PITCH_ALGO]: 'pitch-algo',
   [TAB_LAB]: 'lab',
+  [TAB_LAB_TRANSCRIBE]: 'lab-transcribe',
+  [TAB_LAB_DIFF]: 'lab-diff',
   [TAB_EXERCISES]: 'exercises',
   [TAB_JAM]: 'jam',
   [TAB_GUITAR]: 'guitar',
@@ -319,6 +328,8 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_PITCH_TEST]: 'Pitch Analysis',
     [TAB_PITCH_ALGO]: 'Pitch Test',
     [TAB_LAB]: 'Lab',
+    [TAB_LAB_TRANSCRIBE]: 'Transcription Bench',
+    [TAB_LAB_DIFF]: 'Mapping Differ',
     [TAB_EXERCISES]: 'Exercises',
     [TAB_JAM]: 'Jam',
     [TAB_GUITAR]: 'Guitar',

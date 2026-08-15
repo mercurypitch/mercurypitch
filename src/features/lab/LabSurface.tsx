@@ -2,7 +2,7 @@
 // Lab — hidden audio-research surface
 //
 // Not in TAB_GROUPS, so it never appears in the tab bar. Reached by hash
-// route (#lab, #pitch-test, #pitch-algo) after a server-held supporter grant
+// route (#lab and its four tool routes) after a server-held supporter grant
 // in every environment. Everything here used to sit on the user-facing
 // Analysis page. Server-backed Lab capabilities must enforce the same grant.
 //
@@ -16,11 +16,12 @@
 // `measured` dresses numbers that came out of a capture.
 // ============================================================
 
-import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, For, lazy, on, Show, Suspense, } from 'solid-js'
-import { Cpu, FileText, Flask, Mic, Split, WaveformBars, } from '@/components/icons'
+import type { Component, JSX, ParentComponent } from 'solid-js'
+import { createEffect, createSignal, ErrorBoundary, For, lazy, on, Show, Suspense, } from 'solid-js'
+import { AlertTriangle, ChevronLeft, Cpu, FileText, Flask, Mic, Split, WaveformBars, } from '@/components/icons'
 import { SkeletonTabContent } from '@/components/Skeleton'
-import { TAB_ANALYSIS } from '@/features/tabs/constants'
+import type { ActiveTab } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_PITCH_ALGO, TAB_PITCH_TEST, } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores'
 import styles from './Lab.module.css'
 import { SpectralWorkbench } from './SpectralWorkbench'
@@ -53,67 +54,204 @@ export type LabTab =
   | 'lrc-diff'
   | 'transcribe'
 
-const TABS: Array<{ id: LabTab; label: string; icon: () => JSX.Element }> = [
+interface LabTool {
+  id: LabTab
+  label: string
+  description: string
+  icon: () => JSX.Element
+  route: ActiveTab
+}
+
+const TABS: LabTool[] = [
   {
     id: 'workbench',
-    label: 'Spectral workbench',
+    label: 'Capture & inspect',
+    description: 'Capture a signal, inspect its spectrum, and run transforms.',
     icon: () => <WaveformBars />,
+    route: TAB_LAB,
   },
-  { id: 'detection', label: 'Pitch detection', icon: () => <Mic /> },
-  { id: 'algorithms', label: 'Pitch algorithms', icon: () => <Cpu /> },
-  { id: 'transcribe', label: 'Transcription bench', icon: () => <FileText /> },
-  { id: 'lrc-diff', label: 'Mapping differ', icon: () => <Split /> },
+  {
+    id: 'detection',
+    label: 'Tune detector',
+    description: 'Compare detector behavior against live or imported audio.',
+    icon: () => <Mic />,
+    route: TAB_PITCH_TEST,
+  },
+  {
+    id: 'algorithms',
+    label: 'Benchmark algorithms',
+    description: 'Measure accuracy and latency across representative signals.',
+    icon: () => <Cpu />,
+    route: TAB_PITCH_ALGO,
+  },
+  {
+    id: 'transcribe',
+    label: 'Transcribe stem',
+    description:
+      'Turn an isolated stem into editable notes and score a reference.',
+    icon: () => <FileText />,
+    route: TAB_LAB_TRANSCRIBE,
+  },
+  {
+    id: 'lrc-diff',
+    label: 'Compare mappings',
+    description:
+      'Inspect timing and content differences between two lyric maps.',
+    icon: () => <Split />,
+    route: TAB_LAB_DIFF,
+  },
 ]
 
+const LabToolBoundary: ParentComponent<{
+  label: string
+  onBack: () => void
+}> = (props) => (
+  <ErrorBoundary
+    fallback={(_error, reset) => (
+      <div class={styles.toolError} role="alert">
+        <span class={styles.toolErrorIcon} aria-hidden="true">
+          <AlertTriangle />
+        </span>
+        <div>
+          <h2>{props.label} stopped unexpectedly</h2>
+          <p>
+            The rest of Lab is still available. Retry this tool or return to the
+            workbench without reloading the app.
+          </p>
+          <div class={styles.toolErrorActions}>
+            <button type="button" class={styles.primaryAction} onClick={reset}>
+              Try again
+            </button>
+            <button
+              type="button"
+              class={styles.secondaryAction}
+              onClick={props.onBack}
+            >
+              Back to workbench
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  >
+    {props.children}
+  </ErrorBoundary>
+)
+
 export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
-  const [tab, setTab] = createSignal<LabTab>(props.initialTab ?? 'workbench')
+  const initial = props.initialTab ?? 'workbench'
+  const [tab, setTab] = createSignal<LabTab>(initial)
+  const [visited, setVisited] = createSignal<ReadonlySet<LabTab>>(
+    new Set([initial]),
+  )
+  let pageRoot: HTMLDivElement | undefined
+  const tabButtons: Partial<Record<LabTab, HTMLButtonElement>> = {}
   const backToAnalysis = () => setActiveTab(TAB_ANALYSIS)
 
-  // #/lab, #/pitch-test and #/pitch-algo all resolve to this component, so a
-  // route change while it stays mounted has to move the tab. Without this the
-  // signal keeps whichever tool the Lab was first opened on.
+  const showTool = (next: LabTab, syncRoute = true): void => {
+    setTab(next)
+    setVisited((current) => {
+      if (current.has(next)) return current
+      const expanded = new Set(current)
+      expanded.add(next)
+      return expanded
+    })
+    if (syncRoute) {
+      const entry = TABS.find((candidate) => candidate.id === next)
+      if (entry !== undefined) setActiveTab(entry.route)
+    }
+
+    // Previously visited tools remain mounted so their input and results do
+    // not vanish on a tab switch. Their canvases listen for resize, so notify
+    // them after the newly active panel has layout dimensions again.
+    queueMicrotask(() => {
+      pageRoot?.scrollIntoView?.({ block: 'start' })
+      window.dispatchEvent(new Event('resize'))
+    })
+  }
+
+  const activeTool = (): LabTool =>
+    TABS.find((entry) => entry.id === tab()) ?? TABS[0]
+
+  const handleTabKeyDown = (
+    event: KeyboardEvent,
+    currentIndex: number,
+  ): void => {
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % TABS.length
+    else if (event.key === 'ArrowLeft')
+      nextIndex = (currentIndex - 1 + TABS.length) % TABS.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = TABS.length - 1
+    if (nextIndex === null) return
+
+    event.preventDefault()
+    const next = TABS[nextIndex]
+    showTool(next.id)
+    queueMicrotask(() => tabButtons[next.id]?.focus())
+  }
+
+  // Every Lab tool route resolves to this component, so a route change while
+  // it stays mounted has to move the tab. Without this the signal keeps
+  // whichever tool the Lab was first opened on.
   createEffect(
     on(
       () => props.initialTab,
       (next) => {
-        if (next !== undefined) setTab(next)
+        if (next !== undefined) showTool(next, false)
       },
       { defer: true },
     ),
   )
 
   return (
-    <div class={styles.page}>
-      <header class={styles.header}>
+    <div
+      ref={(element) => {
+        pageRoot = element
+      }}
+      class={styles.page}
+    >
+      <section class={styles.header} aria-labelledby="lab-title">
         <span class={styles.mark} aria-hidden="true">
           <Flask />
         </span>
         <div class={styles.identity}>
-          <p class={styles.eyebrow}>Research surface</p>
-          <h1 class={styles.title}>Lab</h1>
+          <p class={styles.eyebrow}>Focused research workspace</p>
+          <h1 class={styles.title} id="lab-title">
+            Lab
+          </h1>
           <p class={styles.subtitle}>
-            Spectral tooling and detector benchmarks. Not part of the Analysis
-            page — results here are for development, not practice feedback.
+            Capture, measure, and compare audio without leaving your working
+            context.
           </p>
         </div>
-        <div class={styles.headerMeta}>
-          <span>{TABS.length} tools</span>
-          <span>Local only</span>
-        </div>
-      </header>
+        <button
+          type="button"
+          class={styles.exitButton}
+          onClick={backToAnalysis}
+        >
+          <ChevronLeft />
+          Exit Lab
+        </button>
+      </section>
 
       <div class={styles.tabs} role="tablist" aria-label="Lab tools">
         <For each={TABS}>
-          {(entry) => (
+          {(entry, index) => (
             <button
+              ref={(element) => {
+                tabButtons[entry.id] = element
+              }}
               type="button"
               role="tab"
               id={`lab-tab-${entry.id}`}
-              aria-controls="lab-panel"
+              aria-controls={`lab-panel-${entry.id}`}
               aria-selected={tab() === entry.id}
+              tabindex={tab() === entry.id ? 0 : -1}
               class={styles.tab}
               classList={{ [styles.tabActive]: tab() === entry.id }}
-              onClick={() => setTab(entry.id)}
+              onClick={() => showTool(entry.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index())}
             >
               <span aria-hidden="true">{entry.icon()}</span>
               {entry.label}
@@ -122,34 +260,115 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
         </For>
       </div>
 
-      <div
-        class={styles.panel}
-        id="lab-panel"
-        role="tabpanel"
-        aria-labelledby={`lab-tab-${tab()}`}
-      >
-        <Show when={tab() === 'workbench'}>
-          <SpectralWorkbench />
+      <label class={styles.mobilePicker}>
+        <span>Lab tool</span>
+        <select
+          value={tab()}
+          onChange={(event) => showTool(event.currentTarget.value as LabTab)}
+        >
+          <For each={TABS}>
+            {(entry) => <option value={entry.id}>{entry.label}</option>}
+          </For>
+        </select>
+      </label>
+
+      <p class={styles.toolDescription} id="lab-tool-description">
+        {activeTool().description}
+      </p>
+
+      <div class={styles.panels}>
+        <Show when={visited().has('workbench')}>
+          <section
+            class={styles.panel}
+            id="lab-panel-workbench"
+            role="tabpanel"
+            aria-labelledby="lab-tab-workbench"
+            aria-describedby="lab-tool-description"
+            hidden={tab() !== 'workbench'}
+          >
+            <LabToolBoundary
+              label="Capture & inspect"
+              onBack={() => showTool('workbench')}
+            >
+              <SpectralWorkbench />
+            </LabToolBoundary>
+          </section>
         </Show>
-        <Show when={tab() === 'detection'}>
-          <Suspense fallback={<SkeletonTabContent />}>
-            <PitchTestingTab onClose={backToAnalysis} />
-          </Suspense>
+        <Show when={visited().has('detection')}>
+          <section
+            class={styles.panel}
+            id="lab-panel-detection"
+            role="tabpanel"
+            aria-labelledby="lab-tab-detection"
+            aria-describedby="lab-tool-description"
+            hidden={tab() !== 'detection'}
+          >
+            <LabToolBoundary
+              label="Tune detector"
+              onBack={() => showTool('workbench')}
+            >
+              <Suspense fallback={<SkeletonTabContent />}>
+                <PitchTestingTab onClose={backToAnalysis} />
+              </Suspense>
+            </LabToolBoundary>
+          </section>
         </Show>
-        <Show when={tab() === 'algorithms'}>
-          <Suspense fallback={<SkeletonTabContent />}>
-            <PitchAlgorithmTester onClose={backToAnalysis} />
-          </Suspense>
+        <Show when={visited().has('algorithms')}>
+          <section
+            class={styles.panel}
+            id="lab-panel-algorithms"
+            role="tabpanel"
+            aria-labelledby="lab-tab-algorithms"
+            aria-describedby="lab-tool-description"
+            hidden={tab() !== 'algorithms'}
+          >
+            <LabToolBoundary
+              label="Benchmark algorithms"
+              onBack={() => showTool('workbench')}
+            >
+              <Suspense fallback={<SkeletonTabContent />}>
+                <PitchAlgorithmTester onClose={backToAnalysis} />
+              </Suspense>
+            </LabToolBoundary>
+          </section>
         </Show>
-        <Show when={tab() === 'transcribe'}>
-          <Suspense fallback={<SkeletonTabContent />}>
-            <TranscriptionBench />
-          </Suspense>
+        <Show when={visited().has('transcribe')}>
+          <section
+            class={styles.panel}
+            id="lab-panel-transcribe"
+            role="tabpanel"
+            aria-labelledby="lab-tab-transcribe"
+            aria-describedby="lab-tool-description"
+            hidden={tab() !== 'transcribe'}
+          >
+            <LabToolBoundary
+              label="Transcribe stem"
+              onBack={() => showTool('workbench')}
+            >
+              <Suspense fallback={<SkeletonTabContent />}>
+                <TranscriptionBench />
+              </Suspense>
+            </LabToolBoundary>
+          </section>
         </Show>
-        <Show when={tab() === 'lrc-diff'}>
-          <Suspense fallback={<SkeletonTabContent />}>
-            <LrcDiffTool />
-          </Suspense>
+        <Show when={visited().has('lrc-diff')}>
+          <section
+            class={styles.panel}
+            id="lab-panel-lrc-diff"
+            role="tabpanel"
+            aria-labelledby="lab-tab-lrc-diff"
+            aria-describedby="lab-tool-description"
+            hidden={tab() !== 'lrc-diff'}
+          >
+            <LabToolBoundary
+              label="Compare mappings"
+              onBack={() => showTool('workbench')}
+            >
+              <Suspense fallback={<SkeletonTabContent />}>
+                <LrcDiffTool />
+              </Suspense>
+            </LabToolBoundary>
+          </section>
         </Show>
       </div>
     </div>

@@ -14,9 +14,17 @@ import { TranscriptionBench } from '@/features/lab/TranscriptionBench'
 describe('TranscriptionBench', () => {
   afterEach(cleanup)
 
-  it('mounts with nothing loaded', () => {
+  it('mounts with a focused empty state and no premature roll', () => {
     const { container } = render(() => <TranscriptionBench />)
-    expect(container.querySelector('canvas')).not.toBeNull()
+    expect(screen.getByText('Notes will appear here')).toBeInTheDocument()
+    expect(container.querySelector('canvas')).toBeNull()
+  })
+
+  it('ignores a resize that arrives after the bench unmounts', () => {
+    const { unmount } = render(() => <TranscriptionBench />)
+    unmount()
+
+    expect(() => window.dispatchEvent(new Event('resize'))).not.toThrow()
   })
 
   it('will not transcribe until a stem is chosen', () => {
@@ -47,26 +55,11 @@ describe('TranscriptionBench', () => {
   it('keeps the export and edit tools out of reach until there is a result', () => {
     render(() => <TranscriptionBench />)
     for (const name of ['Export MIDI', 'Export JSON', 'Fit']) {
-      expect(screen.getByRole('button', { name })).toHaveProperty(
-        'disabled',
-        true,
-      )
+      expect(screen.queryByRole('button', { name })).toBeNull()
     }
-    expect(screen.getByRole('button', { name: 'Undo' })).toHaveProperty(
-      'disabled',
-      true,
-    )
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
   })
 
-  it('turns edit mode on and off', () => {
-    render(() => <TranscriptionBench />)
-    const toggle = screen.getByRole('button', { name: 'Edit mode' })
-    expect(toggle.getAttribute('aria-pressed')).toBe('false')
-    fireEvent.click(toggle)
-    expect(
-      screen
-        .getByRole('button', { name: 'Editing' })
-        .getAttribute('aria-pressed'),
-    ).toBe('true')
-  })
+  // Edit-mode interaction is covered with a populated transcription fixture;
+  // the empty state deliberately withholds those controls.
 })

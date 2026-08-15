@@ -20,7 +20,7 @@
   --lab-raised: color-mix(in srgb, var(--bg-card) 84%, var(--text-primary) 4%);
   --lab-line: color-mix(in srgb, var(--border) 82%, var(--text-primary) 8%);
   --lab-ink: var(--text-primary);
-  --lab-muted: var(--text-muted);
+  --lab-muted: var(--text-secondary);
 
   /* The semantic accent pair. `signal` is the instrument — controls, focus,
      anything the Lab itself owns. `measured` is data that came out of a
@@ -37,20 +37,18 @@
   --lab-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-lg);
   padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-2xl);
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
 
-/* AppHeader.css styles the bare `header` element globally — a page-level
-   <header> picks up its background, centring and padding unless we say
-   otherwise. Same reset as the Analysis dashboard. */
 .header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   gap: var(--spacing-lg);
   padding: 0;
   background: transparent;
@@ -92,7 +90,7 @@
 .eyebrow {
   margin: 0;
   color: color-mix(in srgb, var(--lab-signal) 74%, var(--text-secondary));
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   font-weight: 750;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -119,25 +117,38 @@
 
 /* Right-hand meta — monospace with hairline separators, the app's standard
    "instrument readout" treatment. */
-.headerMeta {
-  display: flex;
+.exitButton,
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--spacing-lg);
-  color: var(--lab-muted);
-  font: 0.66rem/1.2 var(--lab-mono);
-  font-variant-numeric: tabular-nums;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--lab-line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.headerMeta > span {
-  padding-right: var(--spacing-lg);
-  border-right: 1px solid var(--lab-line);
-  white-space: nowrap;
+.exitButton {
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-lg);
+  background: color-mix(in srgb, var(--lab-raised) 92%, transparent);
+  box-shadow: var(--lab-bevel);
+  color: var(--text-secondary);
 }
 
-.headerMeta > span:last-child {
-  padding-right: 0;
-  border-right: 0;
+.exitButton:hover {
+  border-color: color-mix(in srgb, var(--lab-signal) 46%, transparent);
+  background: color-mix(in srgb, var(--lab-signal) 10%, var(--lab-raised));
+  color: var(--lab-ink);
+}
+
+.exitButton svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ── Tabs ───────────────────────────────────────────────────── */
@@ -161,7 +172,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-md);
-  min-height: 34px;
+  min-height: 44px;
   padding: 0 var(--spacing-lg);
   border: 0;
   border-radius: 8px;
@@ -206,8 +217,110 @@
   opacity: 1;
 }
 
+.mobilePicker {
+  display: none;
+}
+
+.toolDescription {
+  max-width: 72ch;
+  margin: calc(var(--spacing-sm) * -1) 0 0;
+  color: var(--lab-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.panels {
+  min-width: 0;
+}
+
 .panel {
   min-height: 60vh;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* A failing experiment should never take down the surrounding Lab. */
+.toolError {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--spacing-lg);
+  width: min(100%, 680px);
+  margin: clamp(24px, 8vh, 72px) auto;
+  padding: var(--spacing-2xl);
+  border: 1px solid color-mix(in srgb, var(--danger) 42%, var(--lab-line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 6%, var(--lab-panel));
+  box-shadow: var(--lab-bevel);
+}
+
+.toolErrorIcon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+.toolErrorIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.toolError h2,
+.toolError p {
+  margin: 0;
+}
+
+.toolError h2 {
+  color: var(--lab-ink);
+  font-size: var(--text-lg);
+}
+
+.toolError p {
+  max-width: 58ch;
+  margin-top: var(--spacing-sm);
+  color: var(--lab-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.toolErrorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+.primaryAction,
+.secondaryAction {
+  padding: 0 var(--spacing-lg);
+}
+
+.primaryAction {
+  border-color: color-mix(in srgb, var(--lab-signal) 68%, transparent);
+  background: var(--lab-signal);
+  color: var(--bg-primary);
+}
+
+.secondaryAction {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.secondaryAction:hover {
+  border-color: color-mix(in srgb, var(--lab-signal) 46%, transparent);
+  color: var(--lab-ink);
+}
+
+.exitButton:focus-visible,
+.primaryAction:focus-visible,
+.secondaryAction:focus-visible {
+  outline: 2px solid var(--lab-signal);
+  outline-offset: 2px;
 }
 
 /* ── Toolbar ────────────────────────────────────────────────── */
@@ -519,30 +632,48 @@
     gap: var(--spacing-lg);
   }
 
-  /* The meta readout is the first thing to go — it is a nicety, and the
-     title needs the width more. */
   .header {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .headerMeta {
-    display: none;
+  .exitButton {
+    grid-column: 2;
+    justify-self: start;
   }
 
+  .toolDescription {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
   .tabs {
-    align-self: stretch;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-  }
-
-  .tabs::-webkit-scrollbar {
     display: none;
   }
 
-  .tab {
-    min-height: var(--touch-target, 44px);
-    white-space: nowrap;
+  .mobilePicker {
+    display: grid;
+    gap: var(--spacing-sm);
+    color: var(--lab-muted);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .mobilePicker select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 38px 0 var(--spacing-lg);
+    border: 1px solid var(--lab-line);
+    border-radius: 10px;
+    background: var(--lab-raised);
+    color: var(--lab-ink);
+    font: 650 var(--text-body) / 1.2 inherit;
+  }
+
+  .panel {
+    min-height: 0;
   }
 
   .toolBtn {
@@ -554,11 +685,33 @@
     margin-left: 0;
     justify-content: flex-start;
   }
+
+  .toolError {
+    grid-template-columns: 1fr;
+    margin-block: var(--spacing-xl);
+    padding: var(--spacing-xl);
+  }
+}
+
+@media (max-height: 760px) and (min-width: 769px) {
+  .page {
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
+  }
+
+  .subtitle {
+    line-height: 1.35;
+  }
+
+  .panel {
+    min-height: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tab,
-  .toolBtn {
+  .toolBtn,
+  .exitButton {
     transition: none;
   }
 

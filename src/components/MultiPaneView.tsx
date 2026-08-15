@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { VibratoResult } from '@/lib/vocal-analyzer'
 import { addPane, paneLayout, removePane, setPaneHeights, togglePaneCollapse, toggleSyncTime, } from '@/stores/pane-layout-store'
 import type { PaneConfig, PaneLayerType } from '@/types'
@@ -85,6 +85,7 @@ const paneIcon = (type: PaneLayerType): JSX.Element => {
 
 export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
   const [containerHeight, setContainerHeight] = createSignal(600)
+  const [addMenuOpen, setAddMenuOpen] = createSignal(false)
   const [dragState, setDragState] = createSignal<{
     paneId: string
     startY: number
@@ -92,6 +93,9 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
     nextPaneId: string | null
   } | null>(null)
   let containerRef!: HTMLDivElement
+  let addButtonRef!: HTMLButtonElement
+  let addMenuRef!: HTMLDivElement
+  const addMenuId = `add-pane-${createUniqueId()}`
 
   // ── Time sync ──────────────────────────────────────────────
   const audioDuration = createMemo(() => props.audioDuration || 60)
@@ -141,6 +145,34 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
   let activeDragEnd: (() => void) | null = null
   onCleanup(() => activeDragEnd?.())
 
+  const panePair = (paneId: string) => {
+    const layout = paneLayout()
+    const index = layout.panes.findIndex((pane) => pane.id === paneId)
+    if (index < 0 || index >= layout.panes.length - 1) return null
+
+    const pane = layout.panes[index]
+    const nextPane = layout.panes[index + 1]
+    const total = pane.height + nextPane.height
+    return {
+      pane,
+      nextPane,
+      min: 8,
+      max: Math.max(8, total - 8),
+      total,
+    }
+  }
+
+  const setPanePairHeight = (paneId: string, requestedHeight: number) => {
+    const pair = panePair(paneId)
+    if (pair === null) return
+
+    const paneHeight = Math.max(pair.min, Math.min(pair.max, requestedHeight))
+    const heights = new Map<string, number>()
+    heights.set(pair.pane.id, paneHeight)
+    heights.set(pair.nextPane.id, pair.total - paneHeight)
+    setPaneHeights(heights)
+  }
+
   const onDragStart = (e: MouseEvent | TouchEvent, paneId: string) => {
     e.preventDefault()
     const layout = paneLayout()
@@ -162,18 +194,15 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
       if (ch <= 0) return
 
       const dyPct = (dy / ch) * 100
-      const newHeights = new Map(ds.startHeights)
-
       const currentH = ds.startHeights.get(ds.paneId) ?? 0
-      const newH = Math.max(8, Math.min(90, currentH + dyPct))
-      newHeights.set(ds.paneId, newH)
-
-      if (ds.nextPaneId !== null) {
-        const nextH = ds.startHeights.get(ds.nextPaneId) ?? 0
-        newHeights.set(ds.nextPaneId, Math.max(8, nextH - dyPct))
-      }
-
-      setPaneHeights(newHeights)
+      const nextH =
+        ds.nextPaneId === null ? 0 : (ds.startHeights.get(ds.nextPaneId) ?? 0)
+      const total = currentH + nextH
+      const newH = Math.max(
+        8,
+        Math.min(Math.max(8, total - 8), currentH + dyPct),
+      )
+      setPanePairHeight(ds.paneId, newH)
     }
 
     const onEnd = () => {
@@ -198,6 +227,22 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
     window.addEventListener('touchend', onEnd)
   }
 
+  const onHandleKeyDown = (event: KeyboardEvent, paneId: string) => {
+    const pair = panePair(paneId)
+    if (pair === null) return
+
+    const step = event.shiftKey ? 5 : 2
+    let nextHeight: number | null = null
+    if (event.key === 'ArrowUp') nextHeight = pair.pane.height - step
+    if (event.key === 'ArrowDown') nextHeight = pair.pane.height + step
+    if (event.key === 'Home') nextHeight = pair.min
+    if (event.key === 'End') nextHeight = pair.max
+    if (nextHeight === null) return
+
+    event.preventDefault()
+    setPanePairHeight(paneId, nextHeight)
+  }
+
   // ── Add pane dropdown ──────────────────────────────────────
   const availableTypes: PaneLayerType[] = [
     'spectrogram',
@@ -207,6 +252,72 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
     'vibrato',
     'spectrum',
   ]
+
+  const closeAddMenu = (returnFocus: boolean) => {
+    setAddMenuOpen(false)
+    if (returnFocus) queueMicrotask(() => addButtonRef?.focus())
+  }
+
+  const focusMenuItem = (index: number) => {
+    const items =
+      addMenuRef?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
+    if (items === undefined || items.length === 0) return
+    items[(index + items.length) % items.length].focus()
+  }
+
+  const openAddMenu = () => {
+    setAddMenuOpen(true)
+    queueMicrotask(() => focusMenuItem(0))
+  }
+
+  const handleMenuKeyDown = (event: KeyboardEvent) => {
+    const items = Array.from(
+      addMenuRef?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ??
+        [],
+    )
+    const current = items.indexOf(document.activeElement as HTMLButtonElement)
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      focusMenuItem(current + 1)
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      focusMenuItem(current - 1)
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      focusMenuItem(0)
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      focusMenuItem(items.length - 1)
+    }
+  }
+
+  createEffect(() => {
+    if (!addMenuOpen()) return
+
+    const handleOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node | null
+      if (
+        target !== null &&
+        !addButtonRef.contains(target) &&
+        !addMenuRef.contains(target)
+      ) {
+        closeAddMenu(false)
+      }
+    }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closeAddMenu(true)
+    }
+
+    document.addEventListener('pointerdown', handleOutsidePointer, true)
+    document.addEventListener('keydown', handleEscape)
+    onCleanup(() => {
+      document.removeEventListener('pointerdown', handleOutsidePointer, true)
+      document.removeEventListener('keydown', handleEscape)
+    })
+  })
 
   // ── Time ruler ticks ───────────────────────────────────────
   const timeTicks = createMemo(() => {
@@ -261,6 +372,41 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
               ? 'wide'
               : 'nervous',
       confidence: detected ? 75 : 0,
+    }
+  }
+
+  const paneSummary = (pane: PaneConfig): string => {
+    switch (pane.layerType) {
+      case 'spectrogram':
+        return props.magnitudeSpectrum !== null &&
+          props.magnitudeSpectrum.length > 0
+          ? `Magnitude spectrum available with ${props.magnitudeSpectrum.length} frequency bins.`
+          : 'No spectral reading is available yet.'
+      case 'waveform':
+        return props.waveformData !== undefined && props.waveformData !== null
+          ? `Waveform available with ${props.waveformData.length} samples.`
+          : 'No waveform data is available for this capture.'
+      case 'pitch-trace':
+        return props.pitchHistory.length > 0
+          ? `Pitch trace contains ${props.pitchHistory.length} measured points.`
+          : 'No pitch points have been measured yet.'
+      case 'cents-deviation': {
+        const cents = props.centsOffset
+        if (cents === null) return 'No stable pitch deviation is available.'
+        const direction = cents < 0 ? 'flat' : cents > 0 ? 'sharp' : 'in tune'
+        return `${props.targetNote ?? 'Current pitch'} is ${Math.abs(Math.round(cents))} cents ${direction}.`
+      }
+      case 'vibrato':
+        return props.vibratoRate !== undefined && props.vibratoRate !== null
+          ? `Vibrato rate ${props.vibratoRate.toFixed(1)} hertz${props.vibratoDepth == null ? '' : ` with ${Math.round(props.vibratoDepth)} cents depth`}.`
+          : 'No stable vibrato measurement is available.'
+      case 'spectrum':
+        return props.magnitudeSpectrum !== null &&
+          props.magnitudeSpectrum.length > 0
+          ? `Current spectrum contains ${props.magnitudeSpectrum.length} frequency bins.`
+          : 'No current spectrum is available.'
+      case 'annotation':
+        return `${props.annotationCount ?? 0} annotations are available.`
     }
   }
 
@@ -341,48 +487,62 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
 
   // ── Render ─────────────────────────────────────────────────
   return (
-    <div ref={containerRef!} class={styles.root}>
+    <div
+      ref={containerRef!}
+      class={styles.root}
+      role="region"
+      aria-label="Analysis workspace"
+    >
       {/* Toolbar */}
       <div class={styles.toolbar}>
         {/* Add Pane dropdown */}
         <div class={styles.addWrap}>
           <button
+            ref={addButtonRef!}
             type="button"
             class={styles.toolBtn}
+            aria-controls={addMenuId}
+            aria-expanded={addMenuOpen()}
+            aria-haspopup="menu"
             onClick={() => {
-              const menu = document.getElementById('add-pane-menu')
-              if (menu)
-                menu.style.display =
-                  menu.style.display === 'none' ? 'block' : 'none'
+              if (addMenuOpen()) closeAddMenu(false)
+              else openAddMenu()
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== 'ArrowDown') return
+              event.preventDefault()
+              openAddMenu()
             }}
           >
             <Plus />
             Add Pane
           </button>
-          {/* `display` is the one declaration that cannot move to the
-              stylesheet: the toggle above reads it back off the element, and
-              an empty inline value would invert the first click. */}
-          <div
-            id="add-pane-menu"
-            class={styles.menu}
-            style={{ display: 'none' }}
-          >
-            <For each={availableTypes}>
-              {(type) => (
-                <button
-                  type="button"
-                  class={styles.menuItem}
-                  onClick={() => {
-                    addPane(type)
-                    const menu = document.getElementById('add-pane-menu')
-                    if (menu) menu.style.display = 'none'
-                  }}
-                >
-                  {paneIcon(type)} {PANE_LABELS[type]}
-                </button>
-              )}
-            </For>
-          </div>
+          <Show when={addMenuOpen()}>
+            <div
+              ref={addMenuRef!}
+              id={addMenuId}
+              class={styles.menu}
+              role="menu"
+              aria-label="Pane types"
+              onKeyDown={handleMenuKeyDown}
+            >
+              <For each={availableTypes}>
+                {(type) => (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class={styles.menuItem}
+                    onClick={() => {
+                      addPane(type)
+                      closeAddMenu(true)
+                    }}
+                  >
+                    {paneIcon(type)} {PANE_LABELS[type]}
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
         </div>
 
         <div class={styles.spacer} />
@@ -426,7 +586,6 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                 class={styles.pane}
                 classList={{
                   [styles.paneCollapsed]: pane.collapsed,
-                  [styles.paneStatic]: dragState() !== null,
                 }}
                 style={{
                   height: pane.collapsed ? '32px' : `${pane.height}%`,
@@ -445,6 +604,8 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                     type="button"
                     class={styles.paneBtn}
                     onClick={() => togglePaneCollapse(pane.id)}
+                    aria-label={`${pane.collapsed ? 'Expand' : 'Collapse'} ${PANE_LABELS[pane.layerType]} pane`}
+                    aria-expanded={!pane.collapsed}
                     title={pane.collapsed ? 'Expand' : 'Collapse'}
                   >
                     {pane.collapsed ? <ChevronDown /> : <ChevronUp />}
@@ -454,6 +615,7 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                       type="button"
                       class={`${styles.paneBtn} ${styles.paneBtnDanger}`}
                       onClick={() => removePane(pane.id)}
+                      aria-label={`Remove ${PANE_LABELS[pane.layerType]} pane`}
                       title="Remove pane"
                     >
                       <X />
@@ -463,8 +625,19 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
 
                 {/* Pane Content */}
                 <Show when={!pane.collapsed}>
-                  <div class={styles.paneContent}>
+                  <div
+                    class={styles.paneContent}
+                    role="group"
+                    aria-label={`${PANE_LABELS[pane.layerType]} visualisation`}
+                    aria-describedby={`pane-summary-${pane.id}`}
+                  >
                     {renderPaneContent(pane)}
+                    <span
+                      id={`pane-summary-${pane.id}`}
+                      class={styles.assistiveSummary}
+                    >
+                      {paneSummary(pane)}
+                    </span>
                   </div>
                 </Show>
               </div>
@@ -484,6 +657,13 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                   }}
                   role="separator"
                   aria-orientation="horizontal"
+                  aria-label={`Resize ${PANE_LABELS[pane.layerType]} and ${PANE_LABELS[panes()[idx() + 1].layerType]} panes`}
+                  aria-valuemin={panePair(pane.id)?.min ?? 8}
+                  aria-valuemax={Math.round(panePair(pane.id)?.max ?? 92)}
+                  aria-valuenow={Math.round(pane.height)}
+                  aria-valuetext={`${Math.round(pane.height)} percent for ${PANE_LABELS[pane.layerType]}`}
+                  tabIndex={0}
+                  onKeyDown={(event) => onHandleKeyDown(event, pane.id)}
                   onMouseDown={(e) => onDragStart(e, pane.id)}
                   onTouchStart={(e) =>
                     onDragStart(e as unknown as TouchEvent, pane.id)
