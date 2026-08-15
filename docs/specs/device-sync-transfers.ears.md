@@ -370,15 +370,19 @@ last holder lets go".
 library's content hashes (completed songs with an identity only,
 capped at 2000), and the send list shall mark songs the far device
 already holds, sink them below the missing ones, and make "Select
-missing" the bulk action. Every row stays individually sendable — a
-torn copy over there is repaired only by a resend (REQ-SYNC-028) — and
-a build that announces nothing marks nothing: unknown is not empty.
-The announcement dies with the peer; the next device on the same code
-speaks for itself.
+missing" the bulk action. A song sent (or declined as a duplicate)
+during the session counts as held too — the hello's set never
+refreshes between sends, and without that the bulk action would
+re-pick every song the last batch just delivered. Every row stays
+individually sendable — a torn copy over there is repaired only by a
+resend (REQ-SYNC-028) — and a build that announces nothing marks
+nothing: unknown is not empty. The announcement dies with the peer;
+the next device on the same code speaks for itself.
 _Tests:_ `sync-store` — "REQ-SYNC-034: the hello carries this library,
 by hash", "REQ-SYNC-034: the far library is remembered, and dies with
 the peer"; `SyncDevicesModal` — "REQ-SYNC-034: marks songs the far
-device holds, and selects only the missing".
+device holds, and selects only the missing", "REQ-SYNC-034: a song
+sent this session stops being missing".
 
 ### REQ-SYNC-035 — A dropped pair rebuilds itself
 

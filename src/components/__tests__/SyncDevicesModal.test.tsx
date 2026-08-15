@@ -361,6 +361,36 @@ describe('closing, and what it must not do', () => {
     expect(sync.enqueueSongs).toHaveBeenCalledWith(['session-3', 'session-2'])
   })
 
+  it('REQ-SYNC-034: a song sent this session stops being missing', () => {
+    // The hello's set never refreshes between sends; the terminal
+    // transfer row is the proof the song landed. Even against an older
+    // build that announced nothing.
+    state.peerSongs = null
+    state.transfers = [
+      {
+        fileHash: 'hash-1',
+        title: 'A Song.wav',
+        direction: 'out',
+        status: 'done',
+        ratio: 1,
+        bytes: 10,
+      },
+    ]
+    state.sessions = [
+      song(),
+      song({ sessionId: 'session-2', fileHash: 'h2', createdAt: 2 }),
+      song({ sessionId: 'session-3', fileHash: 'h3', createdAt: 3 }),
+    ]
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('sync-choose-send'))
+
+    expect(screen.getByText(/already on that device/i)).toBeTruthy()
+    const selectMissing = screen.getByText(/Select missing/)
+    fireEvent.click(selectMissing.closest('label')!.querySelector('input')!)
+    fireEvent.click(screen.getByTestId('sync-send-picked'))
+    expect(sync.enqueueSongs).toHaveBeenCalledWith(['session-3', 'session-2'])
+  })
+
   it('an older build that announced nothing marks nothing', () => {
     state.peerSongs = null
     state.sessions = [
