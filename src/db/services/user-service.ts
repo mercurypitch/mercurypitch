@@ -13,6 +13,7 @@ import type { Repository } from '@/db/types'
 import { API_BASE_URL } from '@/lib/defaults'
 
 const USER_ID_KEY = 'mp:userId'
+const DEVICE_SECRET_KEY = 'mp:deviceSecret'
 const AUTH_TOKEN_KEY = 'mp:authToken'
 
 const [authVersionSignal, setAuthVersion] = createSignal(0)
@@ -83,14 +84,61 @@ export function getDeviceId(): string {
   }
 }
 
+// ── The device secret ───────────────────────────────────────────
+//
+// The device id used to be the whole credential for an anonymous account:
+// `POST /api/auth/anonymous {deviceId}` returned a session, and the id was
+// published as `userProfiles.id` and in every leaderboard row. So anyone
+// could read the board, replay the ids, and hold other singers' practice
+// history — or register over the row and own it permanently.
+//
+// The id stays public, because everything references it. What changes is
+// that it is no longer sufficient: this secret is, and it is only ever sent
+// in a request body, never in a URL or a public projection.
+
+/**
+ * This browser's anonymous credential, minted on first use.
+ *
+ * 256 bits from the CSPRNG rather than another UUID: a UUIDv4 carries 122
+ * bits and looks like an identifier, which is how the last one ended up in
+ * a public response. Returns '' when storage is unavailable — the worker
+ * still accepts an account that has never bound one, so a private-mode
+ * visitor is not locked out; they simply get no protection either.
+ */
+export function getDeviceSecret(): string {
+  try {
+    let secret = localStorage.getItem(DEVICE_SECRET_KEY)
+    if (secret == null || secret === '') {
+      const bytes = window.crypto.getRandomValues(new Uint8Array(32))
+      secret = btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
+      localStorage.setItem(DEVICE_SECRET_KEY, secret)
+    }
+    return secret
+  } catch {
+    return ''
+  }
+}
+
 /**
  * Forget this browser's identity and mint a fresh one. Used after account
  * deletion: the device id is what /api/auth/anonymous keys on, so reusing it
  * would resurrect the same user id the erasure request just removed.
+ *
+ * The secret goes with it. Keeping it would leave the next identity holding
+ * a credential the deleted one had already bound, and the worker would
+ * rightly refuse to bind it to anything else.
  */
 export function resetUserId(): string {
   const id = window.crypto.randomUUID()
   localStorage.setItem(USER_ID_KEY, id)
+  try {
+    localStorage.removeItem(DEVICE_SECRET_KEY)
+  } catch {
+    // Nothing to forget if storage is unavailable.
+  }
   cachedUserId = id
   return id
 }

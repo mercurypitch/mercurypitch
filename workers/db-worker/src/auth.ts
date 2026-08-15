@@ -141,6 +141,8 @@ interface UserRow {
   tokenVersion: number
   suspendedAt: string | null
   suspensionReason: string | null
+  /** SHA-256 of this device's anonymous credential. NULL = never bound. */
+  deviceSecretHash: string | null
 }
 
 const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
@@ -461,13 +463,14 @@ async function createUser(
     email?: string
     emailVerified?: boolean
     passwordHash?: string
+    deviceSecretHash?: string
   },
 ): Promise<void> {
   const now = nowIso()
   await db
     .prepare(
-      `INSERT INTO users (id, createdAt, updatedAt, authProvider, providerId, email, emailVerified, passwordHash, lastLoginAt, tokenVersion)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      `INSERT INTO users (id, createdAt, updatedAt, authProvider, providerId, email, emailVerified, passwordHash, lastLoginAt, tokenVersion, deviceSecretHash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
     )
     .bind(
       fields.id,
@@ -479,6 +482,7 @@ async function createUser(
       fields.emailVerified ? 1 : 0,
       fields.passwordHash ?? null,
       now,
+      fields.deviceSecretHash ?? null,
     )
     .run()
 }
@@ -728,8 +732,108 @@ async function issueSession(
   })
 }
 
+// ── The anonymous credential ─────────────────────────────────────────
+//
+// It used to be the deviceId, which is also `users.id`, which is published in
+// `userProfiles` and in every leaderboard row. The public board was therefore
+// a list of working credentials: replay one at /api/auth/anonymous for a
+// session, or at /api/auth/register to own the row for good.
+//
+// The id stays public — everything references it — and a separate secret
+// takes over the credential job. It arrives in a request body only, never in
+// a URL or a query string, and only its SHA-256 is stored.
+
+/** Non-empty, bounded, and shaped like something a CSPRNG produced. */
+const DEVICE_SECRET_RE = /^[A-Za-z0-9_-]{22,128}$/
+
+/**
+ * SHA-256, hex. Not PBKDF2: this is 256 bits of CSPRNG output, so there is no
+ * dictionary to slow an attacker down through, and the per-request cost of
+ * password hashing would buy nothing.
+ */
+async function hashDeviceSecret(secret: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(secret))
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/**
+ * Decide whether `secret` may act for `row`, binding it when the account has
+ * never had one.
+ *
+ * The NULL case is the grandfather clause. Every account created from now on
+ * binds a secret at creation, so a NULL hash means the row predates this
+ * change — and there is nothing to back-fill it with, since the secret only
+ * ever existed on the client. Those accounts keep working from the id alone
+ * exactly once, and that sign-in binds whatever secret the caller presents.
+ *
+ * That is trust-on-first-use, with the window it implies: an attacker who
+ * replays a harvested id before its owner next opens the app binds their own
+ * secret and keeps the account. The alternative was signing every existing
+ * anonymous singer out of their own practice history on deploy day.
+ */
+export async function authorizeDeviceSecret(
+  db: D1Database,
+  row: Pick<UserRow, 'id' | 'deviceSecretHash'>,
+  secret: string | undefined,
+): Promise<boolean> {
+  const presented =
+    typeof secret === 'string' && DEVICE_SECRET_RE.test(secret)
+      ? secret
+      : undefined
+
+  if (row.deviceSecretHash != null && row.deviceSecretHash !== '') {
+    if (presented === undefined) return false
+    return timingSafeEqual(
+      await hashDeviceSecret(presented),
+      row.deviceSecretHash,
+    )
+  }
+
+  // Never bound. Take this one, if there is one — a caller that sends none is
+  // an old client build, and refusing it would lock out the very accounts the
+  // grandfather clause exists for.
+  if (presented !== undefined) {
+    await db
+      .prepare(
+        'UPDATE users SET deviceSecretHash = ?, updatedAt = ? WHERE id = ? AND deviceSecretHash IS NULL',
+      )
+      .bind(await hashDeviceSecret(presented), nowIso(), row.id)
+      .run()
+  }
+  return true
+}
+
+/**
+ * The anonymous account this caller has PROVED it may act for, or undefined.
+ *
+ * Every path that would absorb an anonymous account goes through here first,
+ * so `resolveGoogleUser` and friends can take a deviceId at face value.
+ * Undefined on a failed claim rather than an error, because both Google
+ * entry points want the same recovery: sign in anyway, into a fresh account,
+ * instead of absorbing a device the caller cannot show is theirs.
+ */
+async function claimedDevice(
+  env: Env,
+  deviceId: string | undefined,
+  deviceSecret: string | undefined,
+): Promise<string | undefined> {
+  if (deviceId === undefined || !UUID_RE.test(deviceId)) return undefined
+  const anon = await findUserById(env.DB, deviceId)
+  if (anon?.authProvider !== 'anonymous') return undefined
+  return (await authorizeDeviceSecret(env.DB, anon, deviceSecret))
+    ? deviceId
+    : undefined
+}
+
 interface AuthBody {
   deviceId?: string
+  /**
+   * This browser's anonymous credential. Required to act on an anonymous
+   * account that has bound one; see authorizeDeviceSecret.
+   */
+  deviceSecret?: string
   email?: string
   password?: string
   displayName?: string
@@ -742,6 +846,8 @@ interface AuthBody {
   pollToken?: string
   /** What the TV calls itself, shown to whoever approves (device/start). */
   deviceLabel?: string
+  /** Where to land after the Google redirect (POST /api/auth/google/start). */
+  returnTo?: string
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -1061,16 +1167,82 @@ async function handleAnonymous(
   const existing = await findUserById(env.DB, id)
   if (existing) {
     assertAccountActive(existing)
-    // Knowing the random UUID is the anonymous credential. Upgraded
-    // accounts must log in with their real method instead.
+    // Upgraded accounts must log in with their real method instead.
     if (existing.authProvider !== 'anonymous') {
+      return respond({ error: 'Account requires login' }, { status: 403 })
+    }
+    // The id alone is not a credential — it is printed on the leaderboard.
+    if (!(await authorizeDeviceSecret(env.DB, existing, body.deviceSecret))) {
       return respond({ error: 'Account requires login' }, { status: 403 })
     }
     return issueSession(env, existing, respond)
   }
-  await createUser(env.DB, { id, authProvider: 'anonymous' })
+  await createUser(env.DB, {
+    id,
+    authProvider: 'anonymous',
+    // A new account always binds one, which is what makes a NULL hash mean
+    // "predates this change" rather than "chose not to".
+    deviceSecretHash: DEVICE_SECRET_RE.test(body.deviceSecret ?? '')
+      ? await hashDeviceSecret(body.deviceSecret as string)
+      : undefined,
+  })
   await ensureProfile(env.DB, id, defaultDisplayName(id))
   const row = (await findUserById(env.DB, id)) as UserRow
+  return issueSession(env, row, respond, true)
+}
+
+/**
+ * Turn this device's anonymous account into a password account, in place.
+ *
+ * In place, rather than a fresh row plus a data migration, so every
+ * sessionRecord, share and follow stays attached to the same userId — which is
+ * also exactly why it needs proof: the id it keys on is published, and before
+ * `authorizeDeviceSecret` this branch handed a stranger's whole history to
+ * whoever asked, with the owner locked out afterwards.
+ *
+ * Returns null when there is nothing to upgrade, so the caller falls through
+ * to creating a brand-new account.
+ */
+async function upgradeAnonymousToPassword(
+  request: Request,
+  body: AuthBody,
+  email: string,
+  passwordHash: string,
+  env: Env,
+  respond: Respond,
+): Promise<Response | null> {
+  if (!body.deviceId || !UUID_RE.test(body.deviceId)) return null
+  const anon = await findUserById(env.DB, body.deviceId)
+  if (!anon || anon.authProvider !== 'anonymous') return null
+
+  assertAccountActive(anon)
+  if (!(await authorizeDeviceSecret(env.DB, anon, body.deviceSecret))) {
+    return respond(
+      { error: 'That device belongs to another account' },
+      { status: 403 },
+    )
+  }
+
+  await env.DB.prepare(
+    `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
+  )
+    .bind(email, passwordHash, nowIso(), anon.id)
+    .run()
+  // The anonymous user's profile already exists with a default "Singer-XXXX"
+  // name, so ensureProfile's INSERT OR IGNORE won't apply the chosen name —
+  // update it explicitly when one was provided.
+  const chosenName = body.displayName?.trim()
+  if (chosenName) {
+    await env.DB.prepare(
+      `UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?`,
+    )
+      .bind(chosenName, nowIso(), anon.id)
+      .run()
+  }
+  const row = (await findUserById(env.DB, anon.id)) as UserRow
+  await sendVerificationEmail(request, env, anon.id, email, chosenName)
+  // Upgrading an anonymous device to a password account creates a real
+  // account: report isNew so the client's signup funnel event fires.
   return issueSession(env, row, respond, true)
 }
 
@@ -1100,41 +1272,15 @@ async function handleRegister(
 
   const passwordHash = await hashPassword(body.password)
 
-  // Upgrade the existing anonymous user in place when a deviceId is given,
-  // so all existing rows stay attached to the same userId.
-  if (body.deviceId && UUID_RE.test(body.deviceId)) {
-    const anon = await findUserById(env.DB, body.deviceId)
-    if (anon && anon.authProvider === 'anonymous') {
-      assertAccountActive(anon)
-      await env.DB.prepare(
-        `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
-      )
-        .bind(email, passwordHash, nowIso(), anon.id)
-        .run()
-      // The anonymous user's profile already exists with a default
-      // "Singer-XXXX" name, so ensureProfile's INSERT OR IGNORE won't apply the
-      // chosen name — update it explicitly when one was provided.
-      const chosenName = body.displayName?.trim()
-      if (chosenName) {
-        await env.DB.prepare(
-          `UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?`,
-        )
-          .bind(chosenName, nowIso(), anon.id)
-          .run()
-      }
-      const row = (await findUserById(env.DB, anon.id)) as UserRow
-      await sendVerificationEmail(
-        request,
-        env,
-        anon.id,
-        email,
-        body.displayName?.trim(),
-      )
-      // Upgrading an anonymous device to a password account creates a real
-      // account: report isNew so the client's signup funnel event fires.
-      return issueSession(env, row, respond, true)
-    }
-  }
+  const upgraded = await upgradeAnonymousToPassword(
+    request,
+    body,
+    email,
+    passwordHash,
+    env,
+    respond,
+  )
+  if (upgraded) return upgraded
 
   const id = crypto.randomUUID()
   await createUser(env.DB, {
@@ -1177,6 +1323,13 @@ async function handleLogin(
 
 /** Find-or-create the user for verified Google claims (shared by the
  * POST endpoint and the redirect code flow). */
+/**
+ * Find-or-create the user for verified Google claims.
+ *
+ * `deviceId`, when given, MUST already have been through `claimedDevice` —
+ * step 3 hands that account's entire history to this Google identity for
+ * good, and the id itself is public.
+ */
 async function resolveGoogleUser(
   claims: GoogleClaims,
   deviceId: string | undefined,
@@ -1213,8 +1366,10 @@ async function resolveGoogleUser(
     }
   }
 
-  // 3. Upgrade the anonymous user in place when a deviceId is given
-  if (deviceId && UUID_RE.test(deviceId)) {
+  // 3. Upgrade the claimed anonymous user in place. No shape check here:
+  // claimedDevice already validated and resolved this id, and a second
+  // half-check would read as though this function vets its own input.
+  if (deviceId !== undefined) {
     const anon = await findUserById(env.DB, deviceId)
     if (anon && anon.authProvider === 'anonymous') {
       assertAccountActive(anon)
@@ -1272,7 +1427,8 @@ async function handleGoogle(
   if (!claims) {
     return respond({ error: 'Invalid Google token' }, { status: 401 })
   }
-  const { row, isNew } = await resolveGoogleUser(claims, body.deviceId, env)
+  const deviceId = await claimedDevice(env, body.deviceId, body.deviceSecret)
+  const { row, isNew } = await resolveGoogleUser(claims, deviceId, env)
   return issueSession(env, row, respond, isNew)
 }
 
@@ -1284,8 +1440,11 @@ async function handleGoogle(
 // of null (reading 'postMessage')". So Google sign-in is a full-page
 // redirect through this worker instead:
 //
-//   app → GET /api/auth/google/start?deviceId=&returnTo=
-//       → 302 accounts.google.com (state = HMAC-signed {deviceId,returnTo})
+//   app → POST /api/auth/google/start {deviceId, deviceSecret, returnTo}
+//       → { url } (state = HMAC-signed {deviceId,returnTo}) — the app navigates
+//   (GET ?deviceId=&returnTo= still 302s directly, for older client builds;
+//    it cannot carry the secret, so it only keeps a deviceId whose account has
+//    never bound one)
 //       → 302 GET /api/auth/google/callback?code=&state=
 //       → code exchange (GOOGLE_CLIENT_SECRET) → id_token → user
 //       → 302 {returnTo}#gauth=<our JWT>   (app stores it on load)
@@ -1398,19 +1557,30 @@ async function handleGoogleStart(
     )
   }
   const url = new URL(request.url)
-  const returnTo = url.searchParams.get('returnTo') ?? ''
+  // POST carries the device secret in a body; GET cannot, and a secret has no
+  // business in a URL that lands in history, logs and Referer headers. So the
+  // app posts, gets the consent URL back, and navigates to it itself.
+  const posted = request.method === 'POST' ? await parseBody(request) : null
+  const returnTo = posted?.returnTo ?? url.searchParams.get('returnTo') ?? ''
   if (!isAllowedReturnTo(returnTo, env)) {
     return respond({ error: 'returnTo origin not allowed' }, { status: 400 })
   }
-  const deviceIdRaw = url.searchParams.get('deviceId') ?? undefined
-  const deviceId =
-    deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
+  const claimed =
+    posted?.deviceId ?? url.searchParams.get('deviceId') ?? undefined
+
+  // A deviceId inside the signed state is treated downstream as proof that
+  // this caller may take that anonymous account over permanently, so it is
+  // cleared HERE or not carried at all. Dropping it is the safe failure: the
+  // sign-in still completes, it just creates a fresh account instead of
+  // absorbing somebody else's.
+  const deviceId = await claimedDevice(env, claimed, posted?.deviceSecret)
 
   const state = await signState(
     { deviceId, returnTo, ts: Date.now() },
     env.JWT_SECRET as string,
   )
-  return redirect(googleAuthUrl(env, url, state, false))
+  const consentUrl = googleAuthUrl(env, url, state, false)
+  return posted !== null ? respond({ url: consentUrl }) : redirect(consentUrl)
 }
 
 /** The Google consent URL for a sign-in or a Drive pass. */
@@ -1571,6 +1741,9 @@ async function handleGoogleCallback(
   let resolved: { row: UserRow; isNew: boolean }
   let token: string
   try {
+    // The state is HMAC-signed by this worker, and handleGoogleStart puts a
+    // deviceId in it only after claimedDevice cleared that id — so this one is
+    // already proved and cannot have been forged in transit.
     resolved = await resolveGoogleUser(claims, state.deviceId, env)
     token = await createSession(env, resolved.row)
   } catch (error) {
@@ -2497,7 +2670,10 @@ export async function handleAuth(
   if (route === 'logout' && request.method === 'POST') {
     return handleLogout(request, env, respond)
   }
-  if (route === 'google/start' && request.method === 'GET') {
+  if (
+    route === 'google/start' &&
+    (request.method === 'GET' || request.method === 'POST')
+  ) {
     return handleGoogleStart(request, env, respond)
   }
   if (route === 'google/callback' && request.method === 'GET') {

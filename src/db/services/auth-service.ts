@@ -24,7 +24,7 @@ import { showNotification } from '@/stores/notifications-store'
 // run long after both have initialised. The alternative was a second copy of
 // the token-expiry rule inside grant-flush.
 import { discardPendingGrants, flushGrants } from './grant-flush'
-import { authVersion, getAuthToken, getUserId, resetUserId, setAuthToken, } from './user-service'
+import { authVersion, getAuthToken, getDeviceSecret, getUserId, resetUserId, setAuthToken, } from './user-service'
 
 // Bumped on every auth transition (token issued, redirect consumed, logout)
 // so account-aware UI (e.g. the verify-email banner) can re-check /me
@@ -356,7 +356,10 @@ export async function requireAuth(): Promise<boolean> {
   if (requiresLogin()) return false
   provisioning ??= (async () => {
     try {
-      await postAuth('anonymous', { deviceId: getUserId() })
+      await postAuth('anonymous', {
+        deviceId: getUserId(),
+        deviceSecret: getDeviceSecret(),
+      })
       return true
     } catch (err) {
       if (
@@ -393,6 +396,9 @@ export async function registerWithPassword(
     password,
     displayName,
     deviceId: getUserId(),
+    // Registering with a deviceId takes that anonymous account over
+    // permanently, so the server needs proof it is ours.
+    deviceSecret: getDeviceSecret(),
   })
 }
 
@@ -410,7 +416,11 @@ export async function loginWithPassword(
  * the platform sign-in SDK yields an idToken directly.
  */
 export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
-  return postAuth('google', { idToken, deviceId: getUserId() })
+  return postAuth('google', {
+    idToken,
+    deviceId: getUserId(),
+    deviceSecret: getDeviceSecret(),
+  })
 }
 
 // ── Google sign-in (redirect flow) ──────────────────────────────
@@ -437,12 +447,28 @@ const RETURN_HASH_KEY = 'mp:gauthReturnHash'
 
 /** URL that starts the Google sign-in redirect for this device. Also
  *  stashes the current hash route so the user returns to the same page. */
-export function googleSignInUrl(): string {
+export async function googleSignInUrl(): Promise<string> {
   sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
   const returnTo =
     window.location.origin + window.location.pathname + window.location.search
-  const params = new URLSearchParams({ deviceId: getUserId(), returnTo })
-  return `${requireBaseUrl()}/api/auth/google/start?${params.toString()}`
+  // POST, not a query string: signing in with a deviceId hands that anonymous
+  // account's whole history to the Google identity that comes back, so the
+  // worker needs the device secret to allow it — and a secret in a URL ends up
+  // in browser history, server logs and Referer headers.
+  const base = requireBaseUrl()
+  const res = await fetch(`${base}/api/auth/google/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceId: getUserId(),
+      deviceSecret: getDeviceSecret(),
+      returnTo,
+    }),
+  })
+  if (!res.ok) throw new Error(`google/start failed: ${res.status}`)
+  const { url } = (await res.json()) as { url?: string }
+  if (url == null || url === '') throw new Error('google/start returned no url')
+  return url
 }
 
 /**

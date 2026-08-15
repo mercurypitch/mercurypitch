@@ -195,20 +195,36 @@ streaks and profile.
 The `authProvider !== 'anonymous'` check contains the blast radius to
 un-upgraded accounts. It does not close the hole.
 
-**Not fixed here, deliberately.** Every remedy changes an authentication or wire
-contract, and that is the owner's call, not an audit's:
+**Fixed** — option _(b)_, by owner decision. The id stays public, because
+`sessionRecords`, `follows`, `userProfiles` and every share reference it and
+renaming it would orphan all of them. What changed is that it is no longer
+sufficient: migration `0029_device_secret.sql` adds `users.deviceSecretHash`,
+the client mints a 256-bit secret per browser (`getDeviceSecret`), and every
+path that would act on an anonymous account now goes through
+`authorizeDeviceSecret`:
 
-- _(a)_ Stop emitting raw ids in public projections and hand out an opaque
-  per-board handle. Smallest change, but `follow()`/`unfollow()` and the "this
-  row is me" comparison in `CommunityLeaderboard.tsx:957` both take a raw
-  `userId`, so the server must resolve handles back.
-- _(b)_ Separate the credential from the identifier: keep `users.id` public and
-  give anonymous accounts a distinct secret, issued once and stored client-side.
-  Correct, and a migration.
-- _(c)_ Stop resurrecting an anonymous session from an id alone — bind it to a
-  second factor the client already holds.
+- `POST /api/auth/anonymous` — 403 without the secret
+- `POST /api/auth/register` with a `deviceId` — 403, so the permanent takeover
+  is closed too
+- `POST /api/auth/google` and the redirect flow — the deviceId is dropped
+  unless proved, so sign-in still succeeds and simply creates a fresh account
+  rather than absorbing somebody else's
 
-_(b)_ is the real fix. _(a)_ is the fastest meaningful mitigation.
+The redirect's consent URL is now fetched with `POST /api/auth/google/start`
+rather than assembled from a query string: a secret in a URL lands in browser
+history, server logs and `Referer` headers. The GET form still works for a
+stale cached bundle — it just cannot carry a deviceId whose account has bound
+a secret.
+
+**Residual risk, accepted.** Existing accounts have no hash and nothing can
+back-fill one — the secret only ever existed on a client. They are
+grandfathered: the first sign-in that presents a secret binds it, and the id
+alone stops working from then on. So an attacker who replays a harvested id
+before its owner next opens the app binds their own secret and keeps the
+account. The alternative was signing every existing anonymous singer out of
+their own practice history on deploy day. `'is trust-on-first-use, and this is
+who wins the race'` in `node-tests/device-secret-integration.test.ts` asserts
+that window rather than hiding it.
 
 ### 3. CONFIRMED — realFFT computes a mirrored phantom spectrum
 
@@ -267,7 +283,7 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 | -------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------ |
 | critical | `src/lib/pitch-algorithms/fft-detector.ts:294`                       | realFFT applies the conjugate (wrong-sign) twiddle, producing a mirrored phantom spectrum                                   | certain    | **FIXED**                                  |
 | critical | `src/stores/uvr-store.ts:967`                                        | Startup prune permanently deletes completed songs when the IndexedDB read merely fails                                      | certain    | **FIXED**                                  |
-| critical | `workers/db-worker/src/auth.ts:1057`                                 | Anonymous account takeover: the anonymous credential (deviceId) is published as userProfiles.id                             | certain    | **CONFIRMED**                              |
+| critical | `workers/db-worker/src/auth.ts:1057`                                 | Anonymous account takeover: the anonymous credential (deviceId) is published as userProfiles.id                             | certain    | **CONFIRMED** — FIXED                      |
 | high     | `src/components/AppErrorBoundary.tsx:56`                             | Network-error rejections still trigger the full-screen crash modal — preventDefault() does not stop the second listener     | certain    | **FIXED**                                  |
 | high     | `src/components/HistoryCanvas.tsx:84`                                | HistoryCanvas live waveform is double-scaled — the right half of the strip always draws flat                                | certain    | **FIXED**                                  |
 | high     | `src/components/PitchTestingTab.tsx:674`                             | Lab pitch analysis mixes two sample rates: detectors hardcode 44100 while the AudioContext runs at 48000                    | likely     | reported                                   |
@@ -345,7 +361,7 @@ The codebase already knows this hazard — `listStemTypesStrict` right above it 
 
 ### [critical] Anonymous account takeover: the anonymous credential (deviceId) is published as userProfiles.id
 
-`workers/db-worker/src/auth.ts:1057` — confidence: certain — status: CONFIRMED
+`workers/db-worker/src/auth.ts:1057` — confidence: certain — status: FIXED
 
 An anonymous account's userId IS the client-generated device UUID (`handleAnonymous` uses `body.deviceId` verbatim as `users.id` and `userProfiles.id`), and the comment at auth.ts:1064 declares "Knowing the random UUID is the anonymous credential." But that UUID is not secret: `ensureProfile` creates a `userProfiles` row whose `id` equals it, `userProfiles` has TableDef access `'owner'` (public, unauthenticated reads — `scopeRead` returns `{}` for it, see index.ts:277), and `publicCols` at tables.ts:160 explicitly includes `'id'`. So `GET /api/userProfiles?limit=1000&offset=N` (no Authorization header required, no rate limit — index.ts only rate-limits POST/PATCH/DELETE) enumerates every user id in the deployment, and every id belonging to an anonymous account is a working credential.
 
@@ -356,6 +372,8 @@ The leaderboard (index.ts:988 `userId: r.userId`) and `handleFriendRedeem` also 
 **Failure scenario.** Attacker runs `curl 'https://api/api/userProfiles?limit=1000'` with no auth, receiving `[{"id":"3f2b…","displayName":"Singer-3f2b",…}, …]`. For each id they POST /api/auth/anonymous with that id as deviceId; every id belonging to an anonymous singer returns 200 with a valid 30-day JWT. Using it they read `GET /api/songManifests` (the victim's entire song library: titles, durations, stem sizes) and `GET /api/voiceprints` (measured voice history). Then they POST /api/auth/register with the same deviceId and their own email/password; the UPDATE at auth.ts:1109 flips the row to `authProvider='password'` with the attacker's passwordHash and bumps tokenVersion, evicting the real owner from their own account forever.
 
 **Suggested fix.** Stop treating a publicly-readable identifier as a bearer credential. Either (a) drop `'id'` from `userProfiles.publicCols` and stop emitting raw userIds in the leaderboard/friend responses, replacing them with an opaque per-viewer handle, or preferably (b) decouple the anonymous credential from the row id: keep the client's deviceId as a separate secret column (`users.deviceSecretHash`), mint `users.id = crypto.randomUUID()` server-side, and require the secret — not the id — on /api/auth/anonymous and on the register/google in-place upgrade paths.
+
+**Fixed** by `0029_device_secret.sql` plus `authorizeDeviceSecret` in `auth.ts`, taking option (b) with one deliberate difference: `users.id` keeps equalling the deviceId rather than being re-minted server-side, because every other table joins on it and re-minting would orphan the rows this is meant to protect. The id being public is harmless once it is not a credential. `/api/auth/anonymous`, `/api/auth/register` and both Google paths now require the secret. Existing rows are grandfathered trust-on-first-use — see the CONFIRMED entry above for the window that leaves, which is asserted rather than hidden in `node-tests/device-secret-integration.test.ts`.
 
 ### [high] Network-error rejections still trigger the full-screen crash modal — preventDefault() does not stop the second listener
 
