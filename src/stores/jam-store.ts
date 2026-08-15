@@ -123,6 +123,13 @@ export const [jamIsMuted, setJamIsMuted] = createSignal(true)
  * that with no state to keep in step.
  */
 export const [jamGuideVolume, setJamGuideVolume] = createSignal(0)
+/**
+ * Live pitch visuals on or off — the monitor strip in a drill room, the
+ * per-singer lanes in a song room. Store-backed because the panel fully
+ * unmounts on a tab switch: a panel-local signal silently reset to ON
+ * every time the Jam tab was re-entered.
+ */
+export const [jamShowPitch, setJamShowPitch] = createSignal(true)
 export const [jamError, setJamError] = createSignal<string | null>(null)
 export const [jamState, setJamState] = createSignal<
   'idle' | 'connecting' | 'active'

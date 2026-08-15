@@ -100,6 +100,10 @@
 
 .takeCard {
   width: 100%;
+  /* The card must be allowed to shrink below its content's min-width —
+     without this, one wide badge sets the card's floor and the pills
+     walk out of the border on a narrow phone. */
+  min-width: 0;
   min-height: var(--touch-target, 44px);
   text-align: left;
   background: var(--bg-card);
@@ -157,6 +161,15 @@
   border: 1px solid var(--border);
   color: var(--text-secondary);
   white-space: nowrap;
+
+  /* nowrap makes a pill's min-content width its whole label, and a flex
+     item refuses to shrink below that (min-width: auto) — so a label
+     wider than a small phone's card marched past the border. The row
+     already wraps; this lets a single too-wide pill give ground with an
+     ellipsis instead of overflowing. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badgeAudio {

@@ -22,6 +22,8 @@ import styles from './JamTransport.module.css'
 
 interface JamTransportProps {
   onSelectExercise: () => void
+  /** Whether the picker this button opens is showing right now. */
+  pickerOpen?: boolean
   loopEnabled?: boolean
   onToggleLoop?: () => void
 }
@@ -67,6 +69,7 @@ export const JamTransport: Component<JamTransportProps> = (props) => {
           data-jam-picker-toggle
           class={`${styles.btn} ${styles.btnSelect}`}
           onClick={() => props.onSelectExercise()}
+          aria-expanded={props.pickerOpen ?? false}
           title="Choose a drill or a song"
           aria-label="Choose a drill or a song"
         >
@@ -153,6 +156,7 @@ export const JamTransport: Component<JamTransportProps> = (props) => {
             <button
               class={`${styles.btn} ${props.loopEnabled === true ? styles.btnLoopOn : styles.btnLoopOff}`}
               onClick={() => props.onToggleLoop?.()}
+              aria-pressed={props.loopEnabled === true}
               title={
                 props.loopEnabled === true
                   ? 'Loop on — click to disable'

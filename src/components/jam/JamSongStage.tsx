@@ -18,7 +18,7 @@ import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lyricLineProgress } from '@/lib/jam/jam-song'
 import { initAudioEngine } from '@/stores/app-store'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -585,11 +585,17 @@ export const JamSongStage: Component = () => {
               positionSec={jamSongPositionSec}
               showNotes={false}
             />
-            <JamPeerLanes
-              myPeerId={jamPeerId}
-              notes={() => song().notes}
-              positionSec={jamSongPositionSec}
-            />
+            {/* The PITCH toggle's consumer in a song room. Before this
+                gate the button was rendered here but its only consumer
+                (the drill monitor strip) never mounted — pressing it
+                changed nothing on screen in either direction. */}
+            <Show when={jamShowPitch()}>
+              <JamPeerLanes
+                myPeerId={jamPeerId}
+                notes={() => song().notes}
+                positionSec={jamSongPositionSec}
+              />
+            </Show>
           </div>
         </div>
       )}
