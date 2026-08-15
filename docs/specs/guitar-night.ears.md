@@ -597,6 +597,10 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   configured timing tolerance. Enabling Loop shall not silently downgrade a
   timed microphone, interface, MIDI, keyboard, or touch attempt into an untimed
   completion path.
+- **REQ-GN-FIRST-022 — Boundary-window ownership:** WHEN the timing tolerance
+  admits an early hit for the next lap, that hit shall belong to the next
+  iteration and its visible marker shall carry across the audible boundary. It
+  shall not complete the previous lap or be erased when the next lap begins.
 
 ## Learn setlist and Note Hunt — `GN-LEARN-*`
 

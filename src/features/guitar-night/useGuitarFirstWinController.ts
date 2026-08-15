@@ -274,12 +274,15 @@ export function useGuitarFirstWinController(
     const config = options.config()
     const step = currentStep()
     const hitTarget = targetHits()
-    if (step === undefined || hitTarget === 0 || hits() >= hitTarget) {
+    if (step === undefined || hitTarget === 0) {
       return false
     }
 
+    const currentHits = hits()
+    const currentIteration = loopIteration()
     let absoluteTimingMs: number | null = null
     let timingFeedback: string | null = null
+    let matchedIteration: number | null = null
     if (status() === 'starting' || status() === 'count-in') {
       setLastFeedback('Wait for the count-in to finish, then mark the note.')
       return false
@@ -289,7 +292,13 @@ export function useGuitarFirstWinController(
       let target: GuitarFirstWinScheduledTarget | null = null
       let targetDistance = Number.POSITIVE_INFINITY
       for (const candidate of scheduledTargets) {
-        if (candidate.consumed) continue
+        if (
+          candidate.consumed ||
+          candidate.iteration < currentIteration ||
+          candidate.iteration > currentIteration + (activeRunLoops ? 1 : 0)
+        ) {
+          continue
+        }
         const distance = Math.abs(currentTime - candidate.expectedAtMs)
         if (distance < targetDistance) {
           targetDistance = distance
@@ -300,12 +309,18 @@ export function useGuitarFirstWinController(
         setLastFeedback('Listen for the next pulse, then mark once.')
         return false
       }
+      if (target.iteration === currentIteration && currentHits >= hitTarget) {
+        return false
+      }
       target.consumed = true
+      matchedIteration = target.iteration
       absoluteTimingMs = targetDistance
       timingFeedback =
         targetDistance <= config.timingToleranceMs * 0.45
           ? 'Marked on the pulse.'
           : 'Target marked. Keep the same motion.'
+    } else if (currentHits >= hitTarget) {
+      return false
     }
 
     persist(
@@ -316,7 +331,18 @@ export function useGuitarFirstWinController(
         absoluteTimingMs,
       ),
     )
-    const nextHits = Math.min(hits() + 1, hitTarget)
+    if (matchedIteration !== null && matchedIteration > currentIteration) {
+      const carriedHits = Math.min(
+        hitTarget,
+        scheduledTargets.filter(
+          (target) => target.iteration === matchedIteration && target.consumed,
+        ).length,
+      )
+      setLastFeedback(`Next lap · ${carriedHits} of ${hitTarget} marked early.`)
+      return true
+    }
+
+    const nextHits = Math.min(currentHits + 1, hitTarget)
     setHits(nextHits)
     if (nextHits >= passHits()) completeActiveStep()
     if (status() !== 'playing') {
@@ -394,11 +420,26 @@ export function useGuitarFirstWinController(
           scheduledTargets = scheduledTargets.filter(
             (target) => target.iteration >= iteration,
           )
-          setHits(0)
+          const carriedHits = Math.min(
+            targetHits(),
+            scheduledTargets.filter(
+              (target) => target.iteration === iteration && target.consumed,
+            ).length,
+          )
+          setHits(carriedHits)
           setPlayheadBeat(0)
           setStatus('playing')
           setLoopIteration(iteration)
-          setLastFeedback(`Lap ${iteration + 1}. Settle back into the pulse.`)
+          if (carriedHits >= passHits()) completeActiveStep()
+          if (carriedHits >= targetHits()) {
+            finish()
+            return
+          }
+          setLastFeedback(
+            carriedHits > 0
+              ? `Lap ${iteration + 1}. ${carriedHits} target${carriedHits === 1 ? '' : 's'} marked early.`
+              : `Lap ${iteration + 1}. Settle back into the pulse.`,
+          )
         },
         onExerciseBeatScheduled: (scheduledBeat) => {
           if (

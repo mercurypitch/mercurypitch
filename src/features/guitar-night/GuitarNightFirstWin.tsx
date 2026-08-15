@@ -39,6 +39,8 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
     props.controller.status() === 'count-in' ||
     props.controller.status() === 'playing' ||
     props.controller.status() === 'starting'
+  const loopedGrooveRunning = () =>
+    grooveRunning() && props.controller.loopEnabled()
   const grooveLabel = () => (grooveRunning() ? 'Stop groove' : 'Start count-in')
   const grooveDetail = () => {
     const exercise = step()
@@ -107,6 +109,9 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
     )} of ${exercise.phraseChunks.length}`
   }
   const markButtonLabel = () => {
+    if (props.controller.stepFinished() && loopedGrooveRunning()) {
+      return 'Mark next lap'
+    }
     if (props.controller.stepFinished() && props.controller.isFinalStep()) {
       return 'Play again'
     }
@@ -114,6 +119,10 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
     return `Mark ${targetLabel()}`
   }
   const handleMark = () => {
+    if (loopedGrooveRunning()) {
+      props.onHit()
+      return
+    }
     if (props.controller.stepFinished() && props.controller.isFinalStep()) {
       props.controller.restartStep()
       return
@@ -217,15 +226,19 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
             aria-label={markButtonLabel()}
             onClick={handleMark}
             disabled={
-              props.controller.stepFinished() && !props.controller.isFinalStep()
+              props.controller.stepFinished() &&
+              !props.controller.isFinalStep() &&
+              !loopedGrooveRunning()
             }
           >
             <strong>{markButtonLabel()}</strong>
             <small>
               {props.controller.stepFinished()
-                ? props.controller.isFinalStep()
-                  ? 'Repeat the phrase'
-                  : 'Next lesson is ready'
+                ? loopedGrooveRunning()
+                  ? 'Stay with the loop'
+                  : props.controller.isFinalStep()
+                    ? 'Repeat the phrase'
+                    : 'Next lesson is ready'
                 : 'Tap or press Space'}
             </small>
           </button>
