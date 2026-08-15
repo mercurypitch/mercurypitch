@@ -96,6 +96,14 @@
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+
+  /* Sized by its container, never by its content. Without this, one
+     nowrap song title's min-content climbs section → .page (fit-content
+     inside the main-content flex row) and inflates the WHOLE page past
+     a phone's viewport — every full-width card with it, and the pills
+     at each card's right edge are what visibly fell off. Measured on a
+     375px viewport: page 403px before, 351px with this line. */
+  contain: inline-size;
 }
 
 .takeCard {
