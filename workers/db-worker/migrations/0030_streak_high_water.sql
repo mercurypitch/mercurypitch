@@ -19,12 +19,19 @@
 -- Measured before writing: 60 of the 80 production rows holding any streak
 -- at all, and 13 of 17 on dev. Fifty-nine of the sixty store (1, 0).
 --
--- ORDER MATTERS. The invariant that keeps these rows repaired lives in the
--- Worker (`clampStreakHighWater`, src/index.ts) and must be deployed BEFORE
--- this statement runs -- a client still on the old bundle would otherwise
--- re-introduce a violation in the window between the two. Deployed in that
--- order the repair needs no maintenance window at all: every write landing
--- mid-migration is already clamped. See docs/plans/streak-high-water.md.
+-- ORDER. The invariant that keeps these rows repaired lives in the Worker
+-- (`clampStreakHighWater`, src/index.ts). Ideally it would be live before
+-- this runs, and it is not: deploy-db.yml applies migrations BEFORE it
+-- deploys the Worker, deliberately, so application code never runs against a
+-- database missing the tables it queries. That is the right default and not
+-- worth bending for this.
+--
+-- The consequence is a window of roughly one deploy step in which these rows
+-- are repaired and the Worker cannot yet keep them that way. Which is why
+-- this statement is written to be re-runnable rather than clever: apply it
+-- once more after the Worker is up, and the window closes. Still no
+-- maintenance window, and no writes lost to one.
+-- See docs/plans/streak-high-water.md.
 --
 -- Idempotent by construction -- it raises a record to the run that beat it,
 -- so a second pass selects nothing. It never lowers `currentStreak`, never
