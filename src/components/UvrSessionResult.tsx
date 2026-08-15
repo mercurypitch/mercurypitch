@@ -8,9 +8,10 @@ import { setSessionStem } from '@/db/services/manual-stem-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { sessionSize, sessionSizeLabel } from '@/lib/session-size'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
+import { deleteUvrSessionWithWarning } from '@/lib/uvr-delete'
 import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
 import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
-import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
+import { addSessionToGroup, createGroup, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
 import { ExampleCredit } from './ExampleCredit'
@@ -211,7 +212,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const confirmDelete = () => {
-    void deleteUvrSession(props.sessionId)
+    // The helper warns through the global notifier, not the local toast:
+    // onClose can unmount this component before the cascade settles, and
+    // a warning nobody sees is no warning.
+    void deleteUvrSessionWithWarning(props.sessionId)
     setShowDeleteConfirm(false)
     if (props.onClose) props.onClose()
     setToastMessage('Session deleted')

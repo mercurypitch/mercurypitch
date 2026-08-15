@@ -24,6 +24,21 @@ function supportsLocalTransactions(
   )
 }
 
+interface IndexCountAdapter extends DatabaseAdapter {
+  countByCompoundIndexStrict: (
+    entityName: string,
+    indexName: string,
+    value: readonly (string | number)[],
+  ) => Promise<number>
+}
+
+function supportsIndexCounts(db: DatabaseAdapter): db is IndexCountAdapter {
+  return (
+    typeof (db as Partial<IndexCountAdapter>).countByCompoundIndexStrict ===
+    'function'
+  )
+}
+
 // ── Stem Blob Operations ─────────────────────────────────────────
 
 /** Raw write — throws on failure. Callers pick the wrapper that fits:
@@ -94,7 +109,10 @@ export async function countStemBlobs(sessionId: string): Promise<number> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await repo.findAll({ where: { sessionId } })
+    const blobs = await repo.findAll({
+      where: { sessionId },
+      throwOnError: true,
+    })
     return blobs.length
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] countStemBlobs failed:', err)
@@ -163,8 +181,29 @@ export async function sessionStemPresence(
 ): Promise<StemPresence> {
   try {
     const db = await getDb()
-    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await repo.findAll({ where: { sessionId } })
+    // Existence is an index question. Reading the rows to answer it
+    // materializes the session's multi-MB stem audio — and the boot
+    // prune asks about every completed session in the library.
+    if (supportsIndexCounts(db)) {
+      const [vocals, instrumentals] = await Promise.all([
+        db.countByCompoundIndexStrict('uvrStemBlobs', '[sessionId+stemType]', [
+          sessionId,
+          'vocal',
+        ]),
+        db.countByCompoundIndexStrict('uvrStemBlobs', '[sessionId+stemType]', [
+          sessionId,
+          'instrumental',
+        ]),
+      ])
+      return vocals + instrumentals > 0 ? 'present' : 'absent'
+    }
+    // throwOnError matters: the generic findAll degrades a failed read to
+    // an empty list, and to this check an empty list IS 'absent' — the
+    // answer that authorises the boot prune to delete. A failure must
+    // surface here so it can be reported as 'unknown' instead.
+    const blobs = await db
+      .getRepository<UvrStemBlob>('uvrStemBlobs')
+      .findAll({ where: { sessionId }, throwOnError: true })
     return blobs.some(
       (b) => b.stemType === 'vocal' || b.stemType === 'instrumental',
     )
@@ -538,37 +577,6 @@ export async function findSessionByFileHash(
   }
 }
 
-export async function deleteUvrSessionFromDb(
-  sessionId: string,
-): Promise<boolean> {
-  try {
-    const db = await getDb()
-
-    // Blobs first, then fingerprint, then the session record LAST — so if a
-    // step fails the session row still exists and the user can retry the
-    // delete, rather than a deleted session leaving orphaned blobs behind.
-    const blobRepo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await blobRepo.findAll({ where: { sessionId } })
-    for (const blob of blobs) {
-      await blobRepo.delete(blob.id)
-    }
-
-    await deleteStemFingerprintData(sessionId)
-
-    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
-    // No limit — remove every record for this appSessionId, in case a
-    // concurrent persist ever created a duplicate row.
-    const existing = await repo.findAll({ where: { appSessionId: sessionId } })
-    for (const rec of existing) {
-      await repo.delete(rec.id)
-    }
-    return true
-  } catch (err) {
-    console.error('[UvrService] deleteUvrSessionFromDb failed:', err)
-    return false
-  }
-}
-
 /**
  * Strict, transaction-backed deletion for an archive import that must be
  * rolled back completely. Every local row created or restored for the session
@@ -707,7 +715,10 @@ export async function deleteSessionGroupFromDb(
       }
 
       for (const sessionId of canonicalSessionIds) {
-        const blobs = await blobRepo.findAll({ where: { sessionId } })
+        const blobs = await blobRepo.findAll({
+          where: { sessionId },
+          throwOnError: true,
+        })
         for (const blob of blobs) await blobRepo.delete(blob.id)
 
         const fingerprints = await fingerprintRepo.findAll({
@@ -717,7 +728,10 @@ export async function deleteSessionGroupFromDb(
           await fingerprintRepo.delete(fingerprint.id)
         }
 
-        const lyrics = await lyricsRepo.findAll({ where: { sessionId } })
+        const lyrics = await lyricsRepo.findAll({
+          where: { sessionId },
+          throwOnError: true,
+        })
         for (const entry of lyrics) await lyricsRepo.delete(entry.id)
 
         const sessions = await sessionRepo.findAll({
