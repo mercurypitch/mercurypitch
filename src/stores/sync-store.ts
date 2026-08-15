@@ -1107,8 +1107,11 @@ function transferMoving(): boolean {
  */
 const SYNC_IDLE_STOP_MS = 10 * 60 * 1000
 
+// One string, two audiences: the toast that says it happened, and the
+// error slot of the reopened dialog — so no "open sync" tail, which
+// would read absurdly inside the very dialog it points at.
 const IDLE_STOPPED =
-  'The sync session closed after 10 minutes with nothing moving. Open sync to pair again.'
+  'The sync session closed after 10 minutes with nothing moving.'
 
 let idleStopTimer: ReturnType<typeof setTimeout> | null = null
 
