@@ -66,3 +66,11 @@ These are a summary. The canonical, longer versions are
 [AGENTS.md](../../../AGENTS.md) for the guardrails and
 [docs/agent/CONVENTIONS.md](../../../docs/agent/CONVENTIONS.md) for the SolidJS
 patterns — where they disagree, those win.
+
+**Not to be confused with Codex's own memory.** That lives under `$CODEX_HOME`
+(`~/.codex/`) and is per-machine: it can hold anything from any project, it is
+not in version control, and it is not what `/memory` loads. This file is the
+repo's half — it ships with the checkout and applies to everyone working on it.
+An earlier version of this file pointed at `.Codex/memory/` for "individual
+source files"; no such directory exists in this repo, and a repo file should not
+reach into a home directory anyway.
