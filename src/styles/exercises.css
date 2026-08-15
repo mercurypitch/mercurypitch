@@ -10,6 +10,31 @@
   padding: 20px;
   overflow-y: auto;
   color: var(--text-primary);
+  /* A quiet backdrop behind the top of the gallery — two layers, image under
+     a gradient that does both jobs at once: it veils the art so the title and
+     subtitle keep their contrast, and it dissolves the whole thing into the
+     page before the cards begin. Nothing of it survives past 320px.
+
+     `local` attachment because this element is the scroll container: without
+     it the image would sit still while the cards slid over it, which reads as
+     a window rather than a page. */
+  background-image:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--bg-primary) 40%, transparent) 0,
+      color-mix(in srgb, var(--bg-primary) 74%, transparent) 48%,
+      var(--bg-primary) 100%
+    ),
+    url('./exercises-backdrop.webp');
+  background-repeat: no-repeat;
+  background-size: 100% 320px;
+  background-position: top center;
+  background-attachment: local;
+}
+
+/* The art is near-black and there is no light version of it. */
+[data-theme='light'] .exercises-panel {
+  background-image: none;
 }
 
 /* Title on the left, whatever the page wants to offer on the right. The
@@ -730,7 +755,18 @@
     align-items: center;
     justify-content: center;
     gap: 28px;
-    width: auto;
+    /* Definite, not shrink-to-fit. A content-sized row hands the column
+       widths to whichever child has the longest text, and one of those
+       children is the vibrato hint, whose text changes with the style you
+       pick — so picking a style re-laid-out the styles. With a definite row,
+       launch takes its fixed column and setup takes the rest, and nothing
+       inside either can move them. */
+    width: min(100%, 980px);
+  }
+
+  .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-setup {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   /* Launch takes a column of its own and fills it, so the timer chips and
@@ -796,11 +832,19 @@
 }
 
 /* Vibrato style picker + guide toggle (idle settings). */
+/* `width: 100%` is load-bearing. Without it the row is shrink-to-fit, so its
+   width came from its widest child — and its widest child is the hint, whose
+   text changes with the style you pick. "Natural" has a shorter hint than
+   "Slow & Wide", so choosing it narrowed the row, which narrowed the chip
+   grid inside it, which dropped it from three across to one per line. The
+   layout moved because of what was selected, not because of the screen. */
 .vibrato-style-row {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .vibrato-style-label {
@@ -815,7 +859,7 @@
   font-size: 0.78rem;
   color: var(--text-secondary);
   text-align: center;
-  max-width: 320px;
+  max-width: min(320px, 100%);
 }
 
 .exercise-toggle-row {
@@ -1677,6 +1721,17 @@
   font-size: 2rem;
   font-weight: 800;
   color: var(--accent);
+}
+
+/* Four drills put a NOTE NAME in the phase line, and 2rem accent is right for
+   one — it is the thing you are singing. The routine runner puts a position
+   there instead ("Note 3/5"), and at that size, in that colour, beside a 1rem
+   phase line, it read as a style that had failed to load. */
+.exercise-phase-counter {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .mirror-melody-progress {

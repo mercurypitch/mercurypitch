@@ -393,3 +393,76 @@ test.describe('the gallery header', () => {
     })
   }
 })
+
+// ============================================================
+// Choosing a style must not re-lay-out the styles
+// ============================================================
+//
+// The vibrato style row is a label, three chips and a hint. The hint's text
+// changes with the style you pick, and the row was shrink-to-fit, so its
+// width came from whichever hint was showing — "Natural" has a shorter one
+// than "Slow & Wide". A narrower row meant a narrower chip grid, and the
+// chips went from three across to one per line. Picking a style moved the
+// control you picked it with.
+
+test.describe('the vibrato style row holds still', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('pitchperfect_advanced_features', 'true')
+    })
+  })
+
+  for (const vp of VIEWPORTS) {
+    test(`every style gives the same layout at ${vp.name}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await page.goto('/')
+      await waitForNav(page)
+      await dismissOverlays(page)
+      await openNavTab(page, 'tab-exercises')
+      await page
+        .locator('.exercise-card', { hasText: 'Vibrato' })
+        .first()
+        .click()
+      await expect(page.locator('.exercise-idle-start')).toBeVisible({
+        timeout: 10000,
+      })
+
+      const chips = page.locator('.vibrato-style-row .exercise-timer-segment')
+      const count = await chips.count()
+      expect(count).toBe(3)
+
+      /** The grid's shape: its box, and how many rows the chips sit on. */
+      const shape = async () =>
+        page.evaluate(() => {
+          const row = document.querySelector('.vibrato-style-row')
+          const grid = row?.querySelector('.exercise-timer-toggle')
+          const box = grid?.getBoundingClientRect()
+          const tops = new Set(
+            [...(grid?.children ?? [])].map((c) =>
+              Math.round(c.getBoundingClientRect().top),
+            ),
+          )
+          return {
+            width: Math.round(box?.width ?? 0),
+            height: Math.round(box?.height ?? 0),
+            rows: tops.size,
+          }
+        })
+
+      const shapes: Array<Awaited<ReturnType<typeof shape>>> = []
+      for (let i = 0; i < count; i++) {
+        await chips.nth(i).click()
+        shapes.push(await shape())
+      }
+
+      // Identical for every selection — not "close enough". A width that
+      // moves at all is the hint driving the layout again.
+      for (const s of shapes.slice(1)) {
+        expect(s, JSON.stringify(shapes)).toEqual(shapes[0])
+      }
+    })
+  }
+})

@@ -362,3 +362,57 @@ test.describe('the idle panel fits without scrolling', () => {
     })
   }
 })
+
+// ============================================================
+// The phase line reads as one line
+// ============================================================
+//
+// `.mirror-melody-current-note` is 2rem, weight 800, in the accent colour,
+// and that is right for the four drills that put a NOTE NAME in the phase
+// line — it is the note you are singing. The routine runner used the same
+// class for a position ("Note 3/5"), where 2rem of accent beside a 1rem
+// phase line looks like a stylesheet that failed to load rather than a
+// deliberate emphasis.
+
+test.describe('the routine runner phase line', () => {
+  test('its note counter is sized like the line it sits in', async ({
+    page,
+  }) => {
+    test.slow()
+    await page.addInitScript(() => {
+      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('pitchperfect_advanced_features', 'true')
+    })
+    await page.setViewportSize({ width: 1400, height: 806 })
+    await page.goto('/')
+    await waitForNav(page)
+    await dismissOverlays(page)
+    await openNavTab(page, 'tab-exercises')
+    await page
+      .locator('.exercise-card', { hasText: 'Routine Runner' })
+      .first()
+      .click()
+
+    const start = page.locator('.exercise-btn-primary:has-text("Start")')
+    await expect(start).toBeVisible({ timeout: 10000 })
+    await start.click()
+
+    const counter = page.locator('.exercise-phase-counter')
+    await expect(counter).toBeVisible({ timeout: 15000 })
+
+    const sizes = await page.evaluate(() => {
+      const px = (el: Element | null) =>
+        el === null
+          ? 0
+          : Number.parseFloat(getComputedStyle(el).fontSize.replace('px', ''))
+      return {
+        counter: px(document.querySelector('.exercise-phase-counter')),
+        line: px(document.querySelector('.mirror-melody-phase')),
+      }
+    })
+
+    // Within the line, not shouting over it. 2rem against a 1rem line was 2x.
+    expect(sizes.counter).toBeGreaterThan(0)
+    expect(sizes.counter).toBeLessThanOrEqual(sizes.line)
+  })
+})

@@ -120,6 +120,19 @@
       width: min(260px, 30vw);
     }
 
+    /* Same definite row as the wide case — see exercises.css. Only where
+       there is a launch column with a width of its own to divide against;
+       around a lone Start button the row stays content-sized so the two
+       groups sit together rather than at opposite ends. */
+    .exercise-idle-body:has(.exercise-timer-field) {
+      width: min(100%, 900px);
+    }
+
+    .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-setup {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
     .exercise-idle-body:has(.exercise-timer-field)
       .exercise-idle-launch
       .exercise-idle-start {

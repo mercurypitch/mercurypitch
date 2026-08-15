@@ -153,7 +153,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
               </>
             )}
           </span>
-          <span class="mirror-melody-current-note">
+          <span class="exercise-phase-counter">
             Note {noteIndex() + 1}/{phaseLength()}
           </span>
         </div>
