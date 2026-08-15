@@ -21,9 +21,11 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
   }
 }
 
+import { getDb } from '@/db'
+import type { UvrStemBlob } from '@/db/entities'
 import { saveLyricsToDbStrict } from '@/db/services/lyrics-db-service'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
-import { saveStemBlobDurable } from '@/db/services/uvr-service'
+import { saveStemBlobDurable, sessionStemPresence, } from '@/db/services/uvr-service'
 import type { SendChannel } from '@/lib/jam/jam-song-transfer'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { SyncWireMessage } from '@/lib/sync/sync-protocol'
@@ -241,6 +243,42 @@ describe('sync protocol over a wire', () => {
     expect(kept.outcome).toBe('already-here')
     expect(wire.requests).toEqual([])
     expect(wire.chunksDelivered).toBe(0)
+  })
+
+  it('REQ-SYNC-028: replaces a hash match whose stems are gone, instead of declining', async () => {
+    const wire = makeWire()
+    await seedSourceSong()
+    const bundle = await buildPortableBundle(SOURCE_ID)
+    // The ghost a torn delete leaves behind: the completed row survived
+    // but its stem blobs are gone. Declining "already-here" over THIS
+    // row would strand the only playable copy on the sending side.
+    const db = await getDb()
+    const blobRepo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const blobs = await blobRepo.findAll({ where: { sessionId: SOURCE_ID } })
+    for (const blob of blobs) await blobRepo.delete(blob.id)
+    expect(await sessionStemPresence(SOURCE_ID)).toBe('absent')
+
+    const sender = sendBundleOverWire(bundle, {
+      sendControl: wire.senderPort.sendControl,
+      channel: wire.channel,
+    })
+    wire.toSender.control = (msg) => sender.handleControl(msg)
+    const receiver = receiveBundleOverWire(
+      bundle.manifest,
+      wire.receiverPort,
+      importPortableBundle,
+    )
+    wire.toReceiver.control = (msg) => receiver.handleControl(msg)
+    wire.toReceiver.chunk = (bytes) => receiver.handleChunk(bytes)
+
+    const [sent, kept] = await Promise.all([sender.result, receiver.result])
+    expect(sent).toEqual({ outcome: 'sent' })
+    expect(kept.outcome).toBe('imported')
+    // The healed session is a fresh one, and it is actually playable.
+    const healed = getUvrSessionByHash(HASH)
+    expect(healed).toBeDefined()
+    expect(healed?.sessionId).not.toBe(SOURCE_ID)
+    expect(await sessionStemPresence(healed?.sessionId ?? '')).toBe('present')
   })
 
   it('asks again for a part that arrives corrupt, and the retry lands', async () => {

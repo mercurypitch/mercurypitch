@@ -283,3 +283,18 @@ row, or an error — the person just watches their "more waiting" note
 disappear.
 _Tests:_ `sync-store` — "REQ-SYNC-027: keeps a song queued while the
 drain waits its turn".
+
+### REQ-SYNC-028 — "Already here" is only honest with stems on disk
+
+**WHEN** an incoming song's content hash matches a completed local
+session, **IF** that session's stem blobs are absent from IndexedDB,
+the import shall clear the ghost row (the full strict cascade) and
+accept the transfer instead of declining "already-here". **IF** it
+declined over an unplayable row, **THEN** the only good copy would stay
+stranded on the other device — a torn local delete would permanently
+block both the peer transfer and the Drive restore of that song
+(REQ-DRV-020 is the scan-side half). A presence answer of `unknown`
+still declines: importing over a session whose stems merely could not
+be read would duplicate it.
+_Tests:_ `sync-protocol` — "REQ-SYNC-028: replaces a hash match whose
+stems are gone, instead of declining".

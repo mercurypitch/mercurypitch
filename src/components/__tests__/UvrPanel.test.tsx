@@ -261,7 +261,7 @@ describe('UvrPanel Component', () => {
           ),
         )
       } finally {
-        deleteUvrSession(sessionId)
+        await deleteUvrSession(sessionId)
       }
     })
   })

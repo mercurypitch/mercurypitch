@@ -62,6 +62,9 @@ vi.mock('@/stores/uvr-store', () => ({
   whenSessionStoreReady: () => sessions.readyPromise,
 }))
 
+const stemPresence = vi.hoisted(() => ({ sessionStemPresence: vi.fn() }))
+vi.mock('@/db/services/uvr-service', () => stemPresence)
+
 const bundleMock = vi.hoisted(() => ({
   buildPortableBundle: vi.fn(),
   importPortableBundle: vi.fn(),
@@ -144,6 +147,7 @@ beforeEach(() => {
   driveMock.ensureFolder.mockResolvedValue('folder-1')
   driveMock.listSongs.mockResolvedValue([])
   driveMock.uploadSong.mockResolvedValue('file-x')
+  stemPresence.sessionStemPresence.mockResolvedValue('present')
 })
 
 describe('scan', () => {
@@ -217,6 +221,33 @@ describe('scan', () => {
 
     const scan = await pending
     expect(scan?.toBackUp).toHaveLength(1)
+  })
+
+  it('REQ-DRV-020: offers a song back when the local match has no stems', async () => {
+    // An interrupted delete can leave (or resurrect) a completed row
+    // whose blobs are gone. Matching it by hash alone made the scan
+    // swear the song was safe here, so the one good copy in Drive was
+    // never offered back — the shipped "it only offered once" bug.
+    sessions.list = [localSession('h-1', 'Ghost.mp3')]
+    driveMock.listSongs.mockResolvedValue([driveFile('h-1', 'Ghost')])
+    stemPresence.sessionStemPresence.mockResolvedValue('absent')
+
+    const scan = await scanDrive()
+
+    expect(stemPresence.sessionStemPresence).toHaveBeenCalledWith('session-h-1')
+    expect(scan?.toRestore.map((c) => c.fileHash)).toEqual(['h-1'])
+  })
+
+  it('keeps a hash match blocking when the stem read merely failed', async () => {
+    // 'unknown' means the read failed, not that the stems are gone.
+    // Offering a restore on that answer would import a duplicate over
+    // a session that may be perfectly healthy.
+    sessions.list = [localSession('h-1', 'Maybe.mp3')]
+    driveMock.listSongs.mockResolvedValue([driveFile('h-1', 'Maybe')])
+    stemPresence.sessionStemPresence.mockResolvedValue('unknown')
+
+    const scan = await scanDrive()
+    expect(scan?.toRestore).toEqual([])
   })
 })
 

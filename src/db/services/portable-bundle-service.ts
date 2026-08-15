@@ -19,7 +19,7 @@ import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { loadLyricsFromDbStrict, saveLyricsToDbStrict, } from '@/db/services/lyrics-db-service'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { loadPitchAnalysisFromDbStrict, savePitchAnalysisToDbStrict, } from '@/db/services/session-pitch-analysis-service'
-import { deleteImportedUvrSessionDataStrict, getStemBlobStrict, getStemFingerprintDataStrict, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintDataStrict, } from '@/db/services/uvr-service'
+import { deleteImportedUvrSessionDataStrict, getStemBlobStrict, getStemFingerprintDataStrict, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintDataStrict, sessionStemPresence, } from '@/db/services/uvr-service'
 import { loadTranscriptionFromDbStrict, saveTranscriptionToDbStrict, } from '@/db/services/whisper-transcription-db-service'
 import { formatBytes } from '@/lib/fetch-progress'
 import { sha256Hex } from '@/lib/portable/hash'
@@ -30,7 +30,7 @@ import { decodePrep, encodePrep, PORTABLE_BUNDLE_VERSION, stemOfPart, verifyPart
 import type { MelodyFingerprint } from '@/lib/shazam/types'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import type { UvrSession } from '@/stores/uvr-store'
-import { getUvrSession, getUvrSessionByHash, importUvrSessionDurable, } from '@/stores/uvr-store'
+import { getUvrSession, getUvrSessionByHash, importUvrSessionDurable, removeUvrSessionFromCache, } from '@/stores/uvr-store'
 
 const AAC_MIME = 'audio/mp4'
 const PREP_MIME = 'application/json'
@@ -248,7 +248,18 @@ export async function importPortableBundle(
 ): Promise<ImportOutcome> {
   const existing = getUvrSessionByHash(manifest.song.fileHash)
   if (existing !== undefined) {
-    return { outcome: 'already-here', sessionId: existing.sessionId }
+    // A completed row whose stems are gone (an interrupted delete, or the
+    // pre-fix data loss) must not decline the import that would heal it:
+    // "already-here" about an unplayable song strands the only good copy
+    // on the other side (REQ-DRV-020). Only a definite 'absent' clears
+    // the ghost; 'unknown' still declines, because importing over a
+    // session whose stems merely could not be read would duplicate it.
+    if ((await sessionStemPresence(existing.sessionId)) === 'absent') {
+      await deleteImportedUvrSessionDataStrict(existing.sessionId)
+      removeUvrSessionFromCache(existing.sessionId)
+    } else {
+      return { outcome: 'already-here', sessionId: existing.sessionId }
+    }
   }
 
   const sessionId = globalThis.crypto.randomUUID()
