@@ -196,8 +196,12 @@ export async function roomFor(
  */
 export function estimatePackedBytes(session: UvrSession): number {
   const meta = session.stemMeta ?? {}
+  // stemMeta is persisted; outputs is minted lazily on first play and is
+  // undefined after a reload. Gating on outputs alone made every
+  // cold-loaded row estimate 0 bytes — "Send 3 songs — 0 MB" — and
+  // switched the too-big refusal off entirely.
   const stems = (['vocal', 'instrumental'] as const).filter(
-    (stem) => session.outputs?.[stem] !== undefined,
+    (stem) => meta[stem] !== undefined || session.outputs?.[stem] !== undefined,
   )
   if (stems.length === 0) return 0
   const seconds = Math.max(0, ...stems.map((stem) => meta[stem]?.duration ?? 0))

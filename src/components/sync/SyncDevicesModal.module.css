@@ -1,4 +1,10 @@
-/* SyncDevicesModal — moving songs between two of one person's devices. */
+/* SyncDevicesModal — moving songs between two of one person's devices.
+
+   Every token carries a literal fallback (app.css's own values): the
+   modal portals to document.body and also mounts on Karaoke Night,
+   which never loads app.css — a bare var() there is invalid at
+   computed-value time, which is how the progress fill went invisible
+   and the checkboxes lost their tint mid-transfer. */
 
 .overlay {
   position: fixed;
@@ -12,7 +18,7 @@
 
 .modal {
   background: #161b22;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 8px;
   width: 92%;
   max-width: 460px;
@@ -27,14 +33,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border, #30363d);
 }
 
 .header h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
 }
 
 .close {
@@ -48,7 +54,7 @@
 }
 
 .close:hover {
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
 }
 
 .body {
@@ -69,7 +75,7 @@
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.5;
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
 }
 
 .error {
@@ -94,14 +100,14 @@
   text-align: left;
   padding: 14px;
   background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 8px;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
   cursor: pointer;
 }
 
 .choice:hover {
-  border-color: var(--accent);
+  border-color: var(--accent, #58a6ff);
 }
 
 .choice strong {
@@ -113,12 +119,12 @@
   display: block;
   margin-top: 2px;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
 }
 
 .choiceIcon {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--accent, #58a6ff);
 }
 
 /* ── Receive: the code the other device types ──────────────────── */
@@ -130,9 +136,9 @@
   letter-spacing: 0.25em;
   font-family:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-  color: var(--accent);
+  color: var(--accent, #58a6ff);
   background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 8px;
   user-select: all;
 }
@@ -163,31 +169,46 @@
   letter-spacing: 0.12em;
   font-family:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
   background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 6px;
 }
 
 .joinInput:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent, #58a6ff);
 }
 
 .btn {
+  /* inline-flex + gap, not the button default: an inline SVG rides the
+     text baseline and flex drops the JSX space, so an icon+label button
+     was a 24px glyph welded askew to its word. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 9px 14px;
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
   background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
 }
 
+/* Icons scale with the label instead of arriving at their 24px default. */
+.btn svg,
+.songBtn svg {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}
+
 .btn:hover:not(:disabled) {
-  border-color: var(--accent);
+  border-color: var(--accent, #58a6ff);
 }
 
 .btn:disabled {
@@ -211,7 +232,7 @@
   gap: 10px;
   padding: 8px 10px;
   background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 6px;
 }
 
@@ -219,7 +240,7 @@
   flex: 1;
   min-width: 0;
   font-size: 0.88rem;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -232,15 +253,15 @@
   gap: 6px;
   padding: 5px 10px;
   font-size: 0.8rem;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
   background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .songBtn:hover:not(:disabled) {
-  border-color: var(--accent);
+  border-color: var(--accent, #58a6ff);
 }
 
 .songBtn:disabled {
@@ -271,19 +292,19 @@
   font-size: 0.75rem;
   color: var(--text-secondary, #8b949e);
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .transfersClear:hover {
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
 }
 
 .transfer {
   padding: 9px 10px;
   background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #30363d);
   border-radius: 6px;
 }
 
@@ -297,7 +318,7 @@
 .transferTitle {
   min-width: 0;
   font-size: 0.86rem;
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -329,7 +350,7 @@
 .barFill {
   height: 100%;
   border-radius: 2px;
-  background: var(--accent);
+  background: var(--accent, #58a6ff);
   transition: width 0.15s ease;
 }
 
@@ -365,7 +386,7 @@
   margin: 6px 0 0;
   font-size: 0.76rem;
   line-height: 1.45;
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
 }
 
 /* A device that is nearly full, or a song that will not fit on it. Stated
@@ -412,7 +433,7 @@
 
 .qrHint {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-muted, #6e7681);
 }
 
 /* ── Choosing several songs ──────────────────────────────────────── */
@@ -428,7 +449,7 @@
 .groupChip {
   padding: 4px 10px;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #8b949e);
   background: var(--bg-tertiary, #21262d);
   border: 1px solid transparent;
   border-radius: 999px;
@@ -439,12 +460,12 @@
 }
 
 .groupChip:hover {
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
 }
 
 .groupChipOn {
-  color: var(--text-primary);
-  border-color: var(--accent);
+  color: var(--text-primary, #e6edf3);
+  border-color: var(--accent, #58a6ff);
 }
 
 .selectAll {
@@ -453,7 +474,7 @@
   gap: 8px;
   margin-top: 10px;
   font-size: 0.78rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #8b949e);
   cursor: pointer;
 }
 
@@ -461,7 +482,7 @@
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  accent-color: var(--accent);
+  accent-color: var(--accent, #58a6ff);
   cursor: pointer;
 }
 
@@ -482,7 +503,7 @@
   gap: 6px;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--border-color, var(--border));
+  border-top: 1px solid var(--border-color, var(--border, #30363d));
 }
 
 .queueBar {
@@ -492,19 +513,19 @@
   gap: 10px;
   margin-top: 8px;
   font-size: 0.78rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #8b949e);
 }
 
 .queueStop {
   padding: 3px 8px;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #8b949e);
   background: transparent;
-  border: 1px solid var(--border-color, var(--border));
+  border: 1px solid var(--border-color, var(--border, #30363d));
   border-radius: 6px;
   cursor: pointer;
 }
 
 .queueStop:hover {
-  color: var(--text-primary);
+  color: var(--text-primary, #e6edf3);
 }

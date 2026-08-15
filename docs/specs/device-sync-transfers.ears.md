@@ -299,3 +299,16 @@ be read would duplicate it.
 _Tests:_ `sync-protocol` — "REQ-SYNC-028: replaces a hash match whose
 stems are gone, instead of declining"; `portable-bundle` —
 "REQ-SYNC-028: still declines when the ghost check answers 'unknown'".
+
+### REQ-SYNC-029 — The size estimate survives a reload
+
+**WHEN** the send list prices a song, the estimate shall read the
+persisted stem records (sizes, else durations at the portable bitrate),
+not only the in-memory stem handles — those are minted lazily on first
+play and are gone after every reload. **IF** the estimate needed the
+handles, **THEN** a freshly opened app priced every song at 0 bytes:
+the footer read "Send 3 songs — 0 MB", and the too-big-for-the-peer
+refusal, which trusts a positive estimate, switched itself off.
+_Tests:_ `sync-store` — "REQ-SYNC-029: prices a cold-loaded session
+from its persisted stem sizes", "REQ-SYNC-029: durations still price a
+session that has no stored sizes".
