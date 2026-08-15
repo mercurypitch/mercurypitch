@@ -413,8 +413,20 @@ export async function scanDrive(): Promise<DriveScan | null> {
     const remote = await drive.listSongs(folderId)
     const local = localSongs()
 
-    const remoteByHash = new Map<string, DriveSongFile>()
-    for (const file of remote) remoteByHash.set(file.properties.fileHash, file)
+    // An interrupted-and-retried backup can leave the same song in the
+    // folder twice. Same hash = same song: keep the newest copy, so the
+    // count and the picker say one song and a restore pulls one file.
+    // The extra copy stays in Drive untouched.
+    const newestByHash = new Map<string, DriveSongFile>()
+    for (const file of remote) {
+      const held = newestByHash.get(file.properties.fileHash)
+      if (held === undefined || file.modifiedTime > held.modifiedTime) {
+        newestByHash.set(file.properties.fileHash, file)
+      }
+    }
+    const songsInDrive = [...newestByHash.values()]
+
+    const remoteByHash = newestByHash
     const localByHash = new Map<string, UvrSession>()
     for (const s of local) localByHash.set(s.fileHash as string, s)
 
@@ -426,7 +438,7 @@ export async function scanDrive(): Promise<DriveScan | null> {
     // blocking: restoring over a session that may have stems would
     // duplicate it, and the import guard rechecks anyway.
     const ghostHashes = new Set<string>()
-    for (const file of remote) {
+    for (const file of songsInDrive) {
       const match = localByHash.get(file.properties.fileHash)
       if (match === undefined) continue
       if ((await sessionStemPresence(match.sessionId)) === 'absent') {
@@ -435,7 +447,7 @@ export async function scanDrive(): Promise<DriveScan | null> {
     }
 
     const scan: DriveScan = {
-      inDrive: remote.length,
+      inDrive: songsInDrive.length,
       here: local.length,
       toBackUp: local
         .filter((s) => !remoteByHash.has(s.fileHash as string))
@@ -444,7 +456,7 @@ export async function scanDrive(): Promise<DriveScan | null> {
           title: titleOf(s),
           ref: s.sessionId,
         })),
-      toRestore: remote
+      toRestore: songsInDrive
         .filter(
           (f) =>
             !localByHash.has(f.properties.fileHash) ||

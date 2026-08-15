@@ -452,7 +452,9 @@ export const SyncSettings: Component = () => {
                   <div class={styles.progressLabel}>
                     <span class={styles.progressTitle}>
                       {job().kind === 'backup' ? 'Backing up' : 'Restoring'}
-                      {job().title === '' ? '' : ` ${job().title}`}
+                      {/* Quoted, so the UI's words and the song's own
+                          name never read as one phrase. */}
+                      {job().title === '' ? '' : ` “${job().title}”`}
                     </span>
                     <span class={styles.progressCount}>
                       {job().done} / {job().total}

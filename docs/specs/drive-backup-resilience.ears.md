@@ -212,3 +212,15 @@ could only decline the entire library.
 _Tests:_ `drive-sync-store` — "REQ-DRV-026: restores only the chosen
 songs, and keeps the rest on offer", "an empty choice starts no job at
 all"; `SyncSettings` — "REQ-DRV-026: restores only what is ticked".
+
+## REQ-DRV-027 — Two copies of one song count, and list, as one
+
+**WHEN** the folder holds more than one file with the same content hash
+— an interrupted-and-retried backup can leave the same song twice — the
+scan shall collapse them to the newest copy: the count says one song,
+the picker lists one row, and a restore pulls one file. The extra copy
+stays in Drive untouched. **IF** each copy were listed, **THEN** the
+rows would share a checkbox keyed by the hash — ticking one ticked its
+twin, which is how the duplicate was discovered.
+_Tests:_ `drive-sync-store` — "REQ-DRV-027: a song Drive holds twice is
+offered once — the newest copy".
