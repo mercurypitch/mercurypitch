@@ -19,11 +19,25 @@
 // Redeeming a friend code still links both directions at once. Handing over
 // the code is the yes, and asking its owner to approve afterwards would be
 // asking them to agree twice.
+//
+// The whole feature needs a real account — password or Google — on both sides
+// of every row. An anonymous identity is a device id in this browser's
+// localStorage: it cannot be signed back into, so it can never answer a
+// request from a second device and vanishes with the browser. The worker is
+// the authority (workers/db-worker/src/friends.ts); the guards below only
+// spare an anonymous singer a round trip whose answer is already known, and
+// give the UI the same sentence the server would have sent. Removing is
+// deliberately not guarded, mirroring the worker: leaving a row must never
+// require an account that joining it did not.
 
 import { getDb } from '@/db'
 import type { Follow } from '@/db/entities'
+import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { getAuthHeaders, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+
+/** Word for word what the worker answers with, so the two cannot drift. */
+export const FRIENDS_NEED_ACCOUNT = 'Create an account to add friends'
 
 // ── Friend codes ────────────────────────────────────────────────────
 //
@@ -52,6 +66,7 @@ export function friendInviteUrl(code: string): string {
  */
 export async function getMyFriendCode(): Promise<string | null> {
   if (API_BASE_URL == null || API_BASE_URL === '') return null
+  if (!hasUpgradedAccount()) return null
   try {
     const res = await fetch(`${API_BASE_URL}/api/friends/code`, {
       headers: getAuthHeaders(),
@@ -71,6 +86,9 @@ export interface RedeemResult {
 
 /** Redeem someone's code. Links both ways — sharing the code is the consent. */
 export async function redeemFriendCode(code: string): Promise<RedeemResult> {
+  if (!hasUpgradedAccount()) {
+    return { ok: false, error: FRIENDS_NEED_ACCOUNT }
+  }
   const res = await friendAction('redeem', { code }, 'Could not add friend')
   return res.ok
     ? { ok: true, displayName: res.displayName }
@@ -132,6 +150,9 @@ export async function requestFriend(
   if (userId === '' || userId === getUserId()) {
     return { ok: false, error: 'You can’t friend yourself' }
   }
+  if (!hasUpgradedAccount()) {
+    return { ok: false, error: FRIENDS_NEED_ACCOUNT }
+  }
   return friendAction('request', { userId }, 'Could not send the request')
 }
 
@@ -139,6 +160,9 @@ export async function requestFriend(
 export async function acceptFriend(
   userId: string,
 ): Promise<FriendActionResult> {
+  if (!hasUpgradedAccount()) {
+    return { ok: false, error: FRIENDS_NEED_ACCOUNT }
+  }
   return friendAction('accept', { userId }, 'Could not accept the request')
 }
 
@@ -163,6 +187,7 @@ export async function listFriendRequests(): Promise<{
 }> {
   const empty = { incoming: [], outgoing: [] }
   if (API_BASE_URL == null || API_BASE_URL === '') return empty
+  if (!hasUpgradedAccount()) return empty
   try {
     const res = await fetch(`${API_BASE_URL}/api/friends/requests`, {
       headers: getAuthHeaders(),

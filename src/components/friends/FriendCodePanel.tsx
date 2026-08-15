@@ -107,11 +107,10 @@ export const FriendCodePanel: Component<FriendCodePanelProps> = (props) => {
              the point. */
           <div class={styles.signin} data-testid="friend-code-signin">
             <div class={styles.signinCopy}>
-              <span class={styles.signinTitle}>
-                Friend codes need an account
-              </span>
+              <span class={styles.signinTitle}>Friends need an account</span>
               <span class={styles.signinWhy}>
-                An anonymous profile goes when the browser is cleared.
+                An anonymous profile goes when the browser is cleared, and
+                cannot be signed into from a second device to answer you.
               </span>
             </div>
             <button

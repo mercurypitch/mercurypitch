@@ -115,6 +115,11 @@ again, while the real person, now on a new id, is invisible to them.
 
 A clean break would be better than this. This is worse than losing the friend.
 
+**Since §5 landed, this scenario can only involve rows that already exist.** No
+new friendship can name an anonymous account, so the ghost is bounded by
+whatever the blast-radius query counts today — and on a database where that
+count is zero, scenario C cannot happen at all.
+
 ---
 
 ## 4. The blocker: the client cannot self-heal
@@ -152,9 +157,10 @@ this PR, and it has to reach users before the worker change does.
 
 ---
 
-## 5. Who can actually have friends (correcting an earlier answer)
+## 5. Who can actually have friends (answered, then changed)
 
-You asked whether anonymous singers can have friends at all. Measured:
+You asked whether anonymous singers can have friends at all. What was measured
+at the time, on this PR before the follow-up commit:
 
 | Path                                          | Anonymous allowed?                              | Gate                                                           |
 | --------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------- |
@@ -162,17 +168,23 @@ You asked whether anonymous singers can have friends at all. Measured:
 | Friend codes (`/api/friends/code`, `/redeem`) | **No** — 403 "Create an account to add friends" | `isRegistered()` (`friends.ts:94,181`)                         |
 | The Follow button on the leaderboard          | **Yes**                                         | only gated on "not yourself" (`CommunityLeaderboard.tsx:1413`) |
 
-A full anonymous→anonymous request/accept cycle completes and writes both rows
-as `'accepted'`. So friendships involving anonymous singers are reachable, and
-always were: `follows` carries no `requiresAccount` flag, before or after this
-PR (`tables.ts:209`).
+A full anonymous→anonymous request/accept cycle completed and wrote both rows
+as `'accepted'`. So friendships involving anonymous singers were reachable, and
+always had been: `follows` carried no `requiresAccount` flag.
 
-**This is worth a separate decision.** The reasoning that made sharing
-account-only — an anonymous identity vanishes with a cleared browser and leaves
-a dead entry in somebody else's list — applies to friendships exactly as well.
-If you want friend requests to require an account too, it is one line in
-`friends.ts`. It would also shrink the cutover's blast radius to zero for
-friendships.
+**Now closed.** Friends are a registered-account feature on both sides of every
+row: `accountRequired` in `friends.ts` gates `code`, `redeem`, `request`,
+`accept` and the requests list; `request` also refuses an anonymous _target_,
+and `accept` re-checks the requester so a pending row left by an anonymous
+asker cannot become a friendship. `remove` stays open on purpose — needing an
+account to leave a row you needed none to enter would strand the very people
+the rule protects — and rows already `'accepted'` are left standing rather than
+deleted under anyone.
+
+**What that does to this decision:** friendships drop out of the blast radius
+entirely. No new row can involve an anonymous account, so a cutover cannot
+orphan one; the `follows` line in §6's queries is now a count of history, not
+of exposure. What is left to weigh is only §2's practice data.
 
 ### A correction to the migration comment
 
