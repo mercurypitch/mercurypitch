@@ -426,15 +426,47 @@
   overflow-x: hidden;
 }
 
-/* Active gets the same guarantee. Its canvas is sized to the box, so most of
-   the time nothing overflows and this changes nothing — but an exercise with
-   its own metrics row under the tracker can outgrow a short card, and clipping
-   a run in progress hides the Stop button. Being unable to END a run is worse
-   than being unable to start one. Same `safe` for the same reason. */
+/* Active keeps `safe center` but no longer scrolls ITSELF — `.exercise-active-
+   stage` does, one level in. The card is the Stop button's positioned
+   ancestor, and `bottom: 14px` against a scroll container resolves to the
+   bottom of the scrolled CONTENT, not the bottom of the visible box. So on a
+   short screen Stop rode up over the exercise's own visuals and then left the
+   viewport entirely: the run could be seen but not ended. Being unable to END
+   a run is worse than being unable to start one. */
 .exercise-canvas-area.is-active {
   justify-content: safe center;
+  overflow: hidden;
+}
+
+/* The run's two boxes: the pitch tracker and whatever the exercise draws.
+   Stacked by default, side by side where height has run out — see
+   short-viewport.css. */
+.exercise-active-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  width: 100%;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* `flex: 1 1 auto` matters more than it looks. These elements used to be the
+   card's own flex children, so a `flex: 1` visual inside an exercise (the
+   72px well is one) grew into the card's spare height. Wrapping them without
+   this would have handed that height to nobody and frozen every such visual
+   at its `min-height`. */
+.exercise-active-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .exercise-controls {

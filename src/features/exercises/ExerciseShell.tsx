@@ -531,21 +531,35 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           </div>
         </Show>
 
+        {/* The stage exists so the run has exactly two boxes — the tracker and
+            whatever the exercise draws — instead of the tracker plus however
+            many top-level elements an exercise's fragment happens to spread
+            into the card. Two boxes can be put side by side; a variable number
+            of siblings cannot.
+
+            It is also the scroll container now. It used to be the card, which
+            is the Stop button's positioned ancestor, so `bottom: 14px` pinned
+            Stop to the bottom of the SCROLLED CONTENT rather than the bottom
+            of the card: on a short screen it drifted up over the exercise's
+            own visuals and then off the bottom entirely. Scrolling in here
+            leaves Stop anchored to the card where it belongs. */}
         <Show when={isActive()}>
-          <Show when={props.tracker}>
-            {(tracker) => (
-              <Show when={tracker().when?.() ?? true}>
-                <ExercisePitchTracker
-                  pitchHistory={tracker().pitchHistory}
-                  isActive={isActive}
-                  targetNoteMidi={tracker().targetNoteMidi}
-                  movingTarget={tracker().movingTarget}
-                  upcomingTargets={tracker().upcomingTargets}
-                />
-              </Show>
-            )}
-          </Show>
-          {props.activeContent}
+          <div class="exercise-active-stage">
+            <Show when={props.tracker}>
+              {(tracker) => (
+                <Show when={tracker().when?.() ?? true}>
+                  <ExercisePitchTracker
+                    pitchHistory={tracker().pitchHistory}
+                    isActive={isActive}
+                    targetNoteMidi={tracker().targetNoteMidi}
+                    movingTarget={tracker().movingTarget}
+                    upcomingTargets={tracker().upcomingTargets}
+                  />
+                </Show>
+              )}
+            </Show>
+            <div class="exercise-active-content">{props.activeContent}</div>
+          </div>
         </Show>
 
         {/* Stop lives inside the exercise card, right under the action —
