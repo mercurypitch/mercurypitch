@@ -68,7 +68,6 @@ describe('the Default Session is permanent', () => {
   it('reports the refusal through melodyStore too, so callers can be honest', async () => {
     const { store } = await seeded()
 
-
     // The modal shows `Deleted "..."` off this return value. It used to be
     // void and the toast fired unconditionally, which is how a refused delete
     // came to announce a success.
@@ -126,9 +125,8 @@ describe('the Default Session is permanent', () => {
 
 describe('isDeletableSession', () => {
   it('names the one session that cannot go, and the flag that still counts', async () => {
-    const { isDeletableSession, DEFAULT_SESSION_ID } = await import(
-      '@/stores/session-store'
-    )
+    const { isDeletableSession, DEFAULT_SESSION_ID } =
+      await import('@/stores/session-store')
     const s = (id: string, deletable: boolean): PlaybackSession => ({
       id,
       name: id,
