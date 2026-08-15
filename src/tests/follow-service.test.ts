@@ -33,6 +33,15 @@ vi.mock('@/db/services/user-service', () => ({
   getUserId: () => 'me',
 }))
 
+// Whether this browser holds a REAL account (password/Google) rather than a
+// lazily provisioned device id. Every existing test below runs as a registered
+// singer, which is what the service was written for; `describe('still
+// anonymous')` is the one that flips it.
+const account = vi.hoisted(() => ({ registered: true }))
+vi.mock('@/db/services/auth-service', () => ({
+  hasUpgradedAccount: () => account.registered,
+}))
+
 const rows = vi.hoisted(() => ({
   value: [] as Array<Record<string, unknown>>,
   broken: false,
@@ -82,6 +91,7 @@ beforeEach(() => {
   rows.value = []
   rows.broken = false
   config.base = 'http://api.test'
+  account.registered = true
 })
 
 afterEach(() => {
@@ -357,6 +367,64 @@ describe('a reply that is not JSON', () => {
       ok: false,
       error: 'Could not send the request',
     })
+  })
+})
+
+describe('still anonymous', () => {
+  // Friends are an account feature on both sides of every row, and the worker
+  // is the authority (see the 403s in
+  // workers/db-worker/node-tests/follow-requests-integration.test.ts). These
+  // are the client's half: an anonymous singer must not spend a round trip to
+  // be told what is already knowable from the token in localStorage, and the
+  // wording they see must be the one the server would have sent.
+  beforeEach(() => {
+    account.registered = false
+    stubFetch(201, { status: 'pending' })
+  })
+
+  it('refuses every add without asking the server', async () => {
+    for (const action of [
+      requestFriend('other'),
+      acceptFriend('asker'),
+      redeemFriendCode('K7QM2X4B'),
+    ]) {
+      await expect(action).resolves.toEqual({
+        ok: false,
+        error: 'Create an account to add friends',
+      })
+    }
+    expect(calls).toEqual([])
+  })
+
+  it('has no code to show and no requests to answer', async () => {
+    await expect(getMyFriendCode()).resolves.toBeNull()
+    await expect(listFriendRequests()).resolves.toEqual({
+      incoming: [],
+      outgoing: [],
+    })
+    expect(calls).toEqual([])
+  })
+
+  it('can still leave a row it is already in', async () => {
+    // The deliberate exemption, mirroring the worker: needing an account to
+    // get OUT of a friendship that needed none to get into would strand the
+    // people this rule is meant to protect.
+    stubFetch(200, { ok: true })
+    await expect(removeFriend('friend')).resolves.toMatchObject({ ok: true })
+    expect(calls[0]).toMatchObject({
+      url: 'http://api.test/api/friends/remove',
+      body: { userId: 'friend' },
+    })
+  })
+
+  it('says "you can’t friend yourself" before it says "make an account"', async () => {
+    // Order matters for the sentence that lands: telling someone to register
+    // in order to add themselves would be advice they cannot act on.
+    await expect(requestFriend('me')).resolves.toEqual({
+      ok: false,
+      error: 'You can’t friend yourself',
+    })
+    expect(calls).toEqual([])
   })
 })
 

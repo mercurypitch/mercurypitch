@@ -9,10 +9,10 @@ import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { FriendRequests } from '@/components/friends/FriendRequests'
 import { CheckCircle, ChevronDown, Play } from '@/components/icons'
 import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
-import { hasValidToken } from '@/db/services/auth-service'
+import { accountHeld, hasValidToken } from '@/db/services/auth-service'
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import type { FriendRequest } from '@/db/services/follow-service'
-import { acceptFriend, listFriendRequests, loadFollowState, removeFriend, requestFriend, } from '@/db/services/follow-service'
+import { acceptFriend, FRIENDS_NEED_ACCOUNT, listFriendRequests, loadFollowState, removeFriend, requestFriend, } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
 import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league-service'
 import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
@@ -568,6 +568,17 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
    */
   async function toggleFollow(userId: string): Promise<void> {
     const linked = following().includes(userId) || requested().includes(userId)
+    // Friends are an account feature. Sending the ask anyway would spend a
+    // round trip to be told so, and answer a press with a warning toast where
+    // the singer wanted a door — the league card two hundred lines up makes
+    // the same offer for the same reason. Removing is exempt on purpose,
+    // exactly as the worker is: a row from before the rule must still be
+    // escapable by whoever holds it.
+    if (!linked && !accountHeld()) {
+      showNotification(FRIENDS_NEED_ACCOUNT, 'info')
+      openAuthModal('register')
+      return
+    }
     const result = linked
       ? await removeFriend(userId)
       : await requestFriend(userId)

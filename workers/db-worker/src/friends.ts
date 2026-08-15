@@ -16,6 +16,16 @@
 // generic CRUD route read-only), and the only path to 'accepted' is the other
 // side saying yes — or handing over a friend code, which is the same yes said
 // in advance.
+//
+// And it is a REGISTERED-account feature, on both sides of every row. An
+// anonymous identity is a device id in one browser's localStorage: it cannot
+// be signed back into, so the singer holding it can never answer a request,
+// take one back from a second device, or be found again once that browser is
+// cleared. Friend codes were already gated this way; requests and accepts
+// were not, which left an anonymous singer able to send an ask nobody could
+// usefully answer and to hold a friendship that would evaporate. Removing and
+// declining stay open, because getting OUT of a row must never need an
+// account that getting in did not.
 
 import type { AuthUser, Env } from './auth'
 
@@ -25,6 +35,7 @@ type Respond = (body: object | null, init?: ResponseInit) => Response
 const MAX_REQUESTS = 100
 
 const ACCOUNT_REQUIRED = 'Create an account to add friends'
+const TARGET_ACCOUNT_REQUIRED = 'That singer hasn’t created an account yet'
 
 // Crockford base32 minus the ambiguous glyphs (I, L, O, U) — no confusing 0/O
 // or 1/I when someone reads a code aloud, and no accidental English words.
@@ -81,6 +92,24 @@ async function isRegistered(userId: string, env: Env): Promise<boolean> {
 }
 
 /**
+ * The 403 that gates every friend route except removing: a refusal when the
+ * caller is still anonymous, null when they may proceed.
+ *
+ * Returning the response rather than throwing keeps each handler's happy path
+ * flat, and keeps the refusal worded identically everywhere — an anonymous
+ * singer told one thing by the code endpoint and another by the request
+ * endpoint would reasonably conclude one of them is broken.
+ */
+async function accountRequired(
+  auth: AuthUser,
+  env: Env,
+  respond: Respond,
+): Promise<Response | null> {
+  if (await isRegistered(auth.userId, env)) return null
+  return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
+}
+
+/**
  * The caller's friend code, minted on first request. Registered accounts
  * only: an anonymous identity disappears with a cleared browser, and a dead
  * entry in someone else's friend list is worse than no entry.
@@ -91,9 +120,8 @@ export async function handleFriendCode(
   respond: Respond,
 ): Promise<Response> {
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await isRegistered(auth.userId, env))) {
-    return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
-  }
+  const denied = await accountRequired(auth, env, respond)
+  if (denied) return denied
 
   const existing = await env.DB.prepare(
     'SELECT friendCode FROM userProfiles WHERE id = ?',
@@ -178,10 +206,12 @@ export async function handleFriendRedeem(
     return respond({ error: 'That code doesn’t look right' }, { status: 400 })
   }
 
-  if (!(await isRegistered(auth.userId, env))) {
-    return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
-  }
+  const denied = await accountRequired(auth, env, respond)
+  if (denied) return denied
 
+  // The owner of a code is registered by construction — minting one requires
+  // an account, and no account ever goes back to anonymous — so the caller is
+  // the only side this has to check.
   const target = await env.DB.prepare(
     'SELECT id, displayName FROM userProfiles WHERE friendCode = ?',
   )
@@ -213,6 +243,11 @@ export async function handleFriendRedeem(
  * author and grants no access to the other person's numbers. The one case
  * that resolves immediately is a crossed request: if they already asked you,
  * both of you have now said yes and there is nothing left to decide.
+ *
+ * Both sides must hold a real account. The target's is checked because an
+ * anonymous singer has no way to answer: accepting is gated the same way, so
+ * a request addressed to one would sit pending forever while telling the
+ * asker it had been sent.
  */
 export async function handleFriendRequest(
   auth: AuthUser | null,
@@ -221,6 +256,8 @@ export async function handleFriendRequest(
   respond: Respond,
 ): Promise<Response> {
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await accountRequired(auth, env, respond)
+  if (denied) return denied
 
   const parsed = await readTargetId(request)
   if ('error' in parsed)
@@ -230,10 +267,18 @@ export async function handleFriendRequest(
     return respond({ error: 'You can’t friend yourself' }, { status: 400 })
   }
 
-  const exists = await env.DB.prepare('SELECT id FROM users WHERE id = ?')
+  // One read answers both questions. `authProvider` rather than `id`: a
+  // second query for the same row is a second chance for the two answers to
+  // disagree if the target upgrades in between.
+  const exists = await env.DB.prepare(
+    'SELECT authProvider FROM users WHERE id = ?',
+  )
     .bind(target)
-    .first<{ id: string }>()
+    .first<{ authProvider: string }>()
   if (!exists) return respond({ error: 'No such singer' }, { status: 404 })
+  if (exists.authProvider === 'anonymous') {
+    return respond({ error: TARGET_ACCOUNT_REQUIRED }, { status: 403 })
+  }
 
   const now = new Date().toISOString()
 
@@ -272,6 +317,11 @@ export async function handleFriendRequest(
  * Only the person who was asked can call this, and only while a pending row
  * addressed to them exists — which is what makes 'accepted' unreachable by
  * anyone acting alone.
+ *
+ * The requester is re-checked here, not merely at ask time: rows predating
+ * the account rule can still name an anonymous asker, and accepting one would
+ * mint exactly the friendship this change exists to stop. Declining it works
+ * as it always did — `remove` is deliberately not gated.
  */
 export async function handleFriendAccept(
   auth: AuthUser | null,
@@ -280,6 +330,8 @@ export async function handleFriendAccept(
   respond: Respond,
 ): Promise<Response> {
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await accountRequired(auth, env, respond)
+  if (denied) return denied
 
   const parsed = await readTargetId(request)
   if ('error' in parsed)
@@ -294,6 +346,9 @@ export async function handleFriendAccept(
   if (!incoming) {
     return respond({ error: 'No request from that singer' }, { status: 404 })
   }
+  if (!(await isRegistered(requester, env))) {
+    return respond({ error: TARGET_ACCOUNT_REQUIRED }, { status: 403 })
+  }
 
   await env.DB.batch(
     linkStatements(env, auth.userId, requester, new Date().toISOString()),
@@ -307,6 +362,12 @@ export async function handleFriendAccept(
  * Both directions go, always. A friendship that survives on one side would
  * leave the person who ended it still visible to the person they removed,
  * which is the opposite of what pressing the button means.
+ *
+ * The one write with no account gate. Anything already in the table predates
+ * the rule, and an anonymous singer holding such a row must be able to end it
+ * — requiring an account to leave a friendship you did not need one to enter
+ * would trap the very people the rule is meant to protect. Deleting a row
+ * that was never there is a no-op, so this stays a 200 either way.
  */
 export async function handleFriendRemove(
   auth: AuthUser | null,
@@ -338,6 +399,10 @@ export async function handleFriendRemove(
  * Incoming rows are the point: they are addressed to the caller but owned by
  * somebody else, so the generic per-user list (which only ever returns rows
  * where `userId` is yours) cannot show them.
+ *
+ * Gated like the writes it feeds. An anonymous singer cannot answer anything
+ * this would list, and rendering Accept next to a name only to refuse the
+ * press is worse than not offering it.
  */
 export async function handleFriendRequests(
   auth: AuthUser | null,
@@ -345,6 +410,8 @@ export async function handleFriendRequests(
   respond: Respond,
 ): Promise<Response> {
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const denied = await accountRequired(auth, env, respond)
+  if (denied) return denied
 
   const [incoming, outgoing] = await env.DB.batch<FriendRequestRow>([
     env.DB.prepare(

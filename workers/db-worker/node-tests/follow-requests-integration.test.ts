@@ -64,6 +64,28 @@ function post(
   return authed(account, path, { method: 'POST', body: JSON.stringify(body) })
 }
 
+/**
+ * A lazily provisioned device identity: no email, no password, and nothing
+ * that could sign it in anywhere else. Exactly what the friend graph is now
+ * closed to.
+ */
+async function anonymous(deviceId: string): Promise<Account> {
+  const response = await workerRequest('/api/auth/anonymous', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceId,
+      deviceSecret: `device-secret-${deviceId.replace(/-/g, '')}`,
+    }),
+  })
+  expect(response.status).toBe(200)
+  const body = (await response.json()) as { token: string; userId: string }
+  expect(
+    sqlite.prepare('SELECT authProvider FROM users WHERE id = ?').get(deviceId),
+  ).toEqual({ authProvider: 'anonymous' })
+  return { ...body, displayName: `Singer-${deviceId.slice(0, 6)}` }
+}
+
 async function register(displayName: string): Promise<Account> {
   const response = await workerRequest('/api/auth/register', {
     method: 'POST',
@@ -786,5 +808,244 @@ describe('migration 0028 on rows written before it', () => {
     expect(
       sqlite.prepare('SELECT status FROM follows WHERE userId = ?').get(ALICE),
     ).toEqual({ status: 'pending' })
+  })
+})
+
+// ── Friends are a registered-account feature ─────────────────────────
+//
+// Friend CODES were already account-only; requests and accepts were not. So
+// an anonymous singer — a device id in one browser's localStorage, with no
+// way to sign in from anywhere else — could send an ask, and be sent one.
+// Neither works out: they cannot answer from a second device, they cannot
+// take an ask back after clearing the browser, and the friendship disappears
+// with the profile, leaving a dead name in somebody else's list.
+//
+// Every test below is a reproduction. Delete the `accountRequired` /
+// `TARGET_ACCOUNT_REQUIRED` guards in src/friends.ts and each one goes red on
+// a 200/201 and a row that should not exist.
+
+describe('friends are a registered-account feature', () => {
+  const DEVICE = '00000000-0000-4000-8000-00000000d001'
+  const OTHER_DEVICE = '00000000-0000-4000-8000-00000000d002'
+
+  let singer: Account
+  let anon: Account
+
+  beforeEach(async () => {
+    freshDatabase()
+    singer = await register('Registered Singer')
+    anon = await anonymous(DEVICE)
+    seedSession('singer-run', singer.userId, 84)
+    seedSession('anon-run', anon.userId, 66)
+    seedStreak(singer.userId, 7, 19)
+    seedStreak(anon.userId, 3, 5)
+  })
+
+  afterEach(() => {
+    sqlite.close()
+  })
+
+  function followCount(): number {
+    return (sqlite.prepare('SELECT COUNT(*) n FROM follows').get() as { n: number }).n
+  }
+
+  it('turns an anonymous singer away from every route that adds a friend', async () => {
+    for (const path of ['/api/friends/request', '/api/friends/accept']) {
+      const response = await post(anon, path, { userId: singer.userId })
+      expect(response.status).toBe(403)
+      await expect(response.json()).resolves.toEqual({
+        error: 'Create an account to add friends',
+      })
+    }
+
+    const redeemed = await post(anon, '/api/friends/redeem', {
+      code: 'ABCD1234',
+    })
+    expect(redeemed.status).toBe(403)
+
+    const minted = await authed(anon, '/api/friends/code')
+    expect(minted.status).toBe(403)
+
+    expect(followCount()).toBe(0)
+  })
+
+  it('refuses the request before reading the body, so nothing is half-checked', async () => {
+    // The gate runs ahead of validation on purpose: an anonymous caller gets
+    // the same answer whatever they send, rather than learning which shapes
+    // of body would have been accepted had they held an account.
+    for (const body of [{}, { userId: '' }, { userId: 42 }]) {
+      expect((await post(anon, '/api/friends/request', body)).status).toBe(403)
+    }
+    const malformed = await authed(anon, '/api/friends/request', {
+      method: 'POST',
+      body: '{',
+    })
+    expect(malformed.status).toBe(403)
+    expect(followCount()).toBe(0)
+  })
+
+  it('will not let a registered singer ask an anonymous one', async () => {
+    // The other half of the rule, and the one that would otherwise strand a
+    // request: accepting is gated, so this row could never have been answered
+    // while telling the asker it had been sent.
+    const asked = await post(singer, '/api/friends/request', {
+      userId: anon.userId,
+    })
+    expect(asked.status).toBe(403)
+    await expect(asked.json()).resolves.toEqual({
+      error: 'That singer hasn’t created an account yet',
+    })
+    expect(await followRow(singer.userId, anon.userId)).toBeUndefined()
+    expect(followCount()).toBe(0)
+    expect(await leaksThroughFriendsBoard(singer, anon)).toBe(false)
+  })
+
+  it('still says "no such singer" for an id that is nobody', async () => {
+    // The anonymous refusal must not swallow the missing-user case: a 403
+    // for an id that does not exist would claim an account state for a
+    // singer who has none.
+    const nobody = await post(singer, '/api/friends/request', {
+      userId: '00000000-0000-4000-8000-0000000009ff',
+    })
+    expect(nobody.status).toBe(404)
+    await expect(nobody.json()).resolves.toEqual({ error: 'No such singer' })
+  })
+
+  it('refuses to accept a pending row left by an anonymous asker', async () => {
+    // Rows like this predate the rule. Accepting one would mint exactly the
+    // friendship the rule exists to prevent, so the check is repeated here
+    // rather than trusted to have happened at ask time.
+    insertRawFollow(anon.userId, singer.userId)
+
+    const accepted = await post(singer, '/api/friends/accept', {
+      userId: anon.userId,
+    })
+    expect(accepted.status).toBe(403)
+    await expect(accepted.json()).resolves.toEqual({
+      error: 'That singer hasn’t created an account yet',
+    })
+    expect(await followRow(anon.userId, singer.userId)).toEqual({
+      status: 'pending',
+    })
+    expect(await followRow(singer.userId, anon.userId)).toBeUndefined()
+    expect(await leaksThroughFriendsBoard(singer, anon)).toBe(false)
+    expect(await leaksThroughFriendsBoard(anon, singer)).toBe(false)
+  })
+
+  it('answers the requests list with the same 403, not a list to act on', async () => {
+    insertRawFollow(anon.userId, singer.userId)
+    insertRawFollow(singer.userId, anon.userId)
+
+    const listed = await authed(anon, '/api/friends/requests')
+    expect(listed.status).toBe(403)
+    await expect(listed.json()).resolves.toEqual({
+      error: 'Create an account to add friends',
+    })
+  })
+
+  it('lets an anonymous singer out of a row they cannot get into', async () => {
+    // The deliberate exemption. Removing is what declining is built on, and
+    // requiring an account to LEAVE a friendship that needed none to start
+    // would strand precisely the people this change is protecting.
+    insertRawFollow(anon.userId, singer.userId, 'accepted')
+    insertRawFollow(singer.userId, anon.userId, 'accepted')
+
+    const removed = await post(anon, '/api/friends/remove', {
+      userId: singer.userId,
+    })
+    expect(removed.status).toBe(200)
+    expect(followCount()).toBe(0)
+    expect(await leaksThroughFriendsBoard(singer, anon)).toBe(false)
+  })
+
+  it('leaves a friendship made before the rule standing until someone ends it', async () => {
+    // Not a hard cutover: rows already agreed to keep working. The rule
+    // governs what can be CREATED, and the remove above is how either side
+    // opts out. Deleting them under people instead would be a separate,
+    // louder decision.
+    insertRawFollow(anon.userId, singer.userId, 'accepted')
+    insertRawFollow(singer.userId, anon.userId, 'accepted')
+
+    expect(await leaksThroughFriendsBoard(anon, singer)).toBe(true)
+    expect(await leaksThroughFriendsBoard(singer, anon)).toBe(true)
+  })
+
+  it('does not count an anonymous singer toward a friends badge', async () => {
+    // followingCount feeds the social grants, and in cloud mode its payload
+    // beats the client's own count. Answering the legacy ask is what would
+    // have turned it into a friend — the refusal has to hold all the way
+    // through to the badge, not merely to the endpoint.
+    insertRawFollow(anon.userId, singer.userId)
+    expect(
+      (await post(singer, '/api/friends/accept', { userId: anon.userId }))
+        .status,
+    ).toBe(403)
+
+    const context = await authed(singer, '/api/me/grant-context')
+    expect(context.status).toBe(200)
+    await expect(context.json()).resolves.toMatchObject({ followingCount: 0 })
+  })
+
+  it('leaves two registered singers able to become friends as before', async () => {
+    // The regression guard: the gate must refuse anonymous callers without
+    // catching anybody else, including while an anonymous account sits in
+    // the same table.
+    const friend = await register('Second Singer')
+    seedSession('friend-run', friend.userId, 93)
+    seedStreak(friend.userId, 12, 30)
+
+    expect(
+      (await post(singer, '/api/friends/request', { userId: friend.userId }))
+        .status,
+    ).toBe(201)
+    expect(
+      (await post(friend, '/api/friends/accept', { userId: singer.userId }))
+        .status,
+    ).toBe(200)
+
+    expect(await leaksThroughFriendsBoard(singer, friend)).toBe(true)
+    expect(await leaksThroughFriendsBoard(friend, singer)).toBe(true)
+    // And still nothing for the anonymous account sharing the database.
+    expect(await leaksThroughFriendsBoard(anon, singer)).toBe(false)
+  })
+
+  it('opens the whole feature the moment that device registers', async () => {
+    // An anonymous singer is not banned, they are early. Registering with the
+    // same deviceId upgrades the row in place, so the id that was refused a
+    // minute ago is the id that now works — no second identity, no lost
+    // history.
+    const upgrade = await workerRequest('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'upgraded@example.com',
+        password: 'secret123',
+        displayName: 'Upgraded Singer',
+        deviceId: DEVICE,
+        deviceSecret: `device-secret-${DEVICE.replace(/-/g, '')}`,
+      }),
+    })
+    expect(upgrade.status).toBe(200)
+    const upgraded = (await upgrade.json()) as { token: string; userId: string }
+    expect(upgraded.userId).toBe(anon.userId)
+
+    const account: Account = { ...upgraded, displayName: 'Upgraded Singer' }
+    expect(
+      (await post(account, '/api/friends/request', { userId: singer.userId }))
+        .status,
+    ).toBe(201)
+    expect((await authed(account, '/api/friends/code')).status).toBe(200)
+    expect((await authed(account, '/api/friends/requests')).status).toBe(200)
+
+    // And the registered singer may now ask them back.
+    const second = await anonymous(OTHER_DEVICE)
+    expect(
+      (await post(singer, '/api/friends/request', { userId: second.userId }))
+        .status,
+    ).toBe(403)
+    expect(
+      (await post(singer, '/api/friends/request', { userId: account.userId }))
+        .status,
+    ).toBe(200)
   })
 })
