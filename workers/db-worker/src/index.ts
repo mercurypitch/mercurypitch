@@ -369,12 +369,25 @@ async function handleList(
   // Rejecting rather than ignoring. Silently dropping a filter would widen the
   // result set and still look like the query succeeded, which is worse than an
   // error — the caller acts on rows it did not ask for.
-  const hidden = hiddenReadColumn(def, admin, [
-    ...q.filters.map(([col]) => col),
-    ...(q.orderBy !== undefined ? [q.orderBy] : []),
-  ])
-  if (hidden !== null) {
-    return respond({ error: `Cannot filter on "${hidden}"` }, { status: 400 })
+  //
+  // Asked twice so the refusal names what the caller actually did: a client
+  // debugging `Cannot filter on "currentStreak"` against a request carrying no
+  // filter at all has been sent looking in the wrong place.
+  const hiddenFilter = hiddenReadColumn(
+    def,
+    admin,
+    q.filters.map(([col]) => col),
+  )
+  if (hiddenFilter !== null) {
+    return respond(
+      { error: `Cannot filter on "${hiddenFilter}"` },
+      { status: 400 },
+    )
+  }
+  const hiddenSort =
+    q.orderBy === undefined ? null : hiddenReadColumn(def, admin, [q.orderBy])
+  if (hiddenSort !== null) {
+    return respond({ error: `Cannot sort by "${hiddenSort}"` }, { status: 400 })
   }
 
   const clauses: string[] = []

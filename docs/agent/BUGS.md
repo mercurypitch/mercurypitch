@@ -780,6 +780,8 @@ So the session keeps its item, keeps its label, and plays a one-beat C4 in place
 
 One unreachable line went with it: the scale branch carried a second single-note fallback for an empty scale, which `buildMultiOctaveScale` cannot produce (`parseCustomScaleDegrees` returns null below two degrees, never `[]`; every `SCALE_DEFINITIONS` entry has degrees; the last resort is `MAJOR_SCALE_INTERVALS`). A fallback that never fires still reads to the next person as a case that happens.
 
+**Two follow-ups, both found reviewing this branch and both fixed on it.** (a) The sequencer skips a deleted melody for items 2..N, but item **1** is built by `usePlaybackController`, which never reaches that guard — so an empty first item fell to the controller's "nothing loaded, generate a scale" branch and Play started an eight-note scale under the melody's name. Worse than the middle C it replaced. `firstPlayableSessionIndex` now skips the leading run. (b) When **every** melody in the session is gone that skip lands past the last item, and the same fallback fired again with no item to name; the controller now refuses the start outright and says so, rather than seeding a session whose item index points past its own list. Both are pinned by `src/features/playback/playback-controller-missing-melody.test.ts`, whose scale stub fills `melodyStore` exactly as the real `buildScaleMelody` does — a stub that only counted the call would have hidden the consequence.
+
 ### [medium] Spectral worker reads only STFT frame 0, which is half zero-padding — timbre is measured on a decaying half-window
 
 `src/workers/spectral.worker.ts:40` — confidence: likely — status: reported

@@ -280,15 +280,6 @@ export function usePlaybackController(
     if (playMode() === PLAYBACK_MODE_SESSION) {
       const activeSession = userSession()
       if (activeSession && activeSession.items.length > 0) {
-        // Always (re)seed the practice session
-        if (!sessionMode()) {
-          setSessionMode(true)
-          setSessionActive(true)
-          startPracticeSession(activeSession)
-          setSessionItemIndex(0)
-          setSessionItemRepeat(0)
-        }
-
         // v3 fix: Start from the very first item, even if it's a rest.
         // Sequential advancement handles the rest duration via the
         // PlaybackRuntime's completion event.
@@ -300,14 +291,34 @@ export function usePlaybackController(
         // empty-baseMelody branch below and start the session on a generated
         // scale, under the label of the melody the singer wrote.
         const startIndex = firstPlayableSessionIndex(activeSession.items)
+        if (startIndex >= activeSession.items.length) {
+          // Nothing left to skip TO. Seeding anyway would leave the transport
+          // in session mode with an index past its own item list, find no
+          // first item to load, and reach that same generated-scale branch —
+          // eight notes scored under this session's name. Refuse the start;
+          // the items stay put, so undoing the delete makes it whole.
+          showNotification(
+            'Every melody in this session was deleted. Undo the delete to play it again.',
+            'warning',
+          )
+          return
+        }
+
+        // Always (re)seed the practice session
+        if (!sessionMode()) {
+          setSessionMode(true)
+          setSessionActive(true)
+          startPracticeSession(activeSession)
+          setSessionItemIndex(0)
+          setSessionItemRepeat(0)
+        }
+
         if (startIndex > 0) {
           setSessionItemIndex(startIndex)
           showNotification(
-            startIndex >= activeSession.items.length
-              ? 'Every melody in this session was deleted.'
-              : startIndex === 1
-                ? `Skipping “${activeSession.items[0].label}” — that melody was deleted.`
-                : `Skipping ${startIndex} items whose melodies were deleted.`,
+            startIndex === 1
+              ? `Skipping “${activeSession.items[0].label}” — that melody was deleted.`
+              : `Skipping ${startIndex} items whose melodies were deleted.`,
             'warning',
           )
         }

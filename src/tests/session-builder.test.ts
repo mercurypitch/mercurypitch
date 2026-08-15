@@ -470,9 +470,11 @@ describe('firstPlayableSessionIndex', () => {
   })
 
   it('reports past the end when every melody is gone', () => {
-    // The caller reads this as "nothing here to play" rather than indexing
-    // into it — items[length] is undefined, which the play path already
-    // guards.
+    // The caller must read this as "nothing here to play" and refuse to
+    // start, NOT index into it. `items[length]` is undefined, which the play
+    // path used to survive without crashing while falling straight through to
+    // its generated-scale fallback — see
+    // src/features/playback/playback-controller-missing-melody.test.ts.
     const items = [melodyItem('a', 'gone'), melodyItem('b', 'also-gone')]
     expect(firstPlayableSessionIndex(items)).toBe(items.length)
   })
