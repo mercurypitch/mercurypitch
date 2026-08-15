@@ -158,10 +158,10 @@ These are the rules that break things when ignored.
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 650 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 650 | Shared Whisper transcription controller hook. |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
+| [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 600 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 550 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 550 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
-| [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 550 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 500 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
