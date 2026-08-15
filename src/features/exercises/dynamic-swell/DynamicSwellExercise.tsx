@@ -137,9 +137,9 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconExpand size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconExpand size={48} />
           <p>
             Hold a note and swell your volume from soft to loud and back. Master
             pitch stability under dynamic change.
@@ -164,24 +164,25 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> Listen to{' '}
+                {midiToNoteName(currentMidi())}...
+              </>
+            ) : (
+              <>
+                <IconMic size={16} /> Hold {midiToNoteName(currentMidi())} —
+                swell!
+              </>
+            )}
+          </span>
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> Listen to{' '}
-                  {midiToNoteName(currentMidi())}...
-                </>
-              ) : (
-                <>
-                  <IconMic size={16} /> Hold {midiToNoteName(currentMidi())} —
-                  swell!
-                </>
-              )}
-            </span>
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalRounds() })}>
               {(_, i) => (
@@ -208,7 +209,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

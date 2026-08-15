@@ -170,11 +170,9 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconGame size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <span class="idle-icon">
-            <IconGame size={56} />
-          </span>
           <p>Notes fall from above.</p>
           <p>Sing the matching pitch before they reach the target line.</p>
           <span class="idle-hint">12 notes · Hit within ±50 cents</span>

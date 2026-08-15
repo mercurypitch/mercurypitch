@@ -214,9 +214,9 @@ const SightSingingExercise: Component<Props> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconMusic size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconMusic size={48} />
           <p>
             Read each note on the staff and sing it — the cursor advances once
             you hold the right pitch. No audio preview.

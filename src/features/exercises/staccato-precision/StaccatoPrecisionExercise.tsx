@@ -111,9 +111,9 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconZap size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconZap size={48} />
           <p>
             Hear a short note, then sing it back with a crisp, precise attack.
             Sharpen your pitch accuracy on quick entries.
@@ -138,23 +138,24 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> Listen...
+              </>
+            ) : (
+              <>
+                <IconMic size={16} /> Sing {midiToNoteName(currentMidi())} —
+                crisp and short!
+              </>
+            )}
+          </span>
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> Listen...
-                </>
-              ) : (
-                <>
-                  <IconMic size={16} /> Sing {midiToNoteName(currentMidi())} —
-                  crisp and short!
-                </>
-              )}
-            </span>
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalRounds() })}>
               {(_, i) => (
@@ -177,7 +178,7 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

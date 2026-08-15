@@ -98,9 +98,9 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconMirror size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconMirror size={48} />
           <p>
             Listen to each note played, then sing it back. Match pitch and
             timing.
@@ -123,29 +123,30 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
         upcomingTargets: () => controller.getUpcomingMidi(),
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> Listen...
+              </>
+            ) : phase() === 2 ? (
+              <>
+                <IconMic size={16} /> Your turn!
+              </>
+            ) : (
+              '...'
+            )}
+          </span>
+          {phase() === 2 && (
+            <span class="mirror-melody-current-note">
+              {midiToNoteName(currentMidi())}
+            </span>
+          )}
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> Listen...
-                </>
-              ) : phase() === 2 ? (
-                <>
-                  <IconMic size={16} /> Your turn!
-                </>
-              ) : (
-                '...'
-              )}
-            </span>
-            {phase() === 2 && (
-              <span class="mirror-melody-current-note">
-                {midiToNoteName(currentMidi())}
-              </span>
-            )}
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: melodyLength() })}>
               {(_, i) => (
@@ -169,7 +170,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
           </div>
 
           {/* Pitch matching viz */}
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

@@ -113,9 +113,9 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconList size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconList size={48} />
           <p>
             Complete a full warm-up routine: gentle scales, arpeggios, and
             cool-down phrases.
@@ -139,26 +139,27 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+            {phase() === 1 ? (
+              <>
+                <IconMusic size={16} /> {currentPhaseName()} — Listen...
+              </>
+            ) : (
+              <>
+                <IconMic size={16} /> {currentPhaseName()} — Sing{' '}
+                {midiToNoteName(currentMidi())}
+              </>
+            )}
+          </span>
+          <span class="mirror-melody-current-note">
+            Note {noteIndex() + 1}/{phaseLength()}
+          </span>
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
-              {phase() === 1 ? (
-                <>
-                  <IconMusic size={16} /> {currentPhaseName()} — Listen...
-                </>
-              ) : (
-                <>
-                  <IconMic size={16} /> {currentPhaseName()} — Sing{' '}
-                  {midiToNoteName(currentMidi())}
-                </>
-              )}
-            </span>
-            <span class="mirror-melody-current-note">
-              Note {noteIndex() + 1}/{phaseLength()}
-            </span>
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalPhases() })}>
               {(_, i) => (
@@ -183,7 +184,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

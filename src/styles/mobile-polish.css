@@ -284,6 +284,14 @@
   .exercise-btn-stop-label {
     display: none;
   }
+
+  /* Slide's ladder asks for 200px, which on a phone is 15px more than the
+     column has once the tracker, the metrics row and Stop's strip have taken
+     theirs — and the 15px it lost were the bottom of the ladder. Two targets
+     and a dot stay legible at 170. */
+  .slide-viz {
+    min-height: 170px;
+  }
 }
 
 /* ============================================================

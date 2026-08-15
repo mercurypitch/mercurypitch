@@ -151,9 +151,9 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconSlide size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconSlide size={48} />
           <p>
             Slide cleanly from one note to another. No scooping, no overshoot.
           </p>
@@ -185,14 +185,16 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
         pitchHistory: base.pitchHistory,
         movingTarget,
       }}
+      activePhase={
+        <div class="slide-note-display">
+          <span>{fromNote()}</span>
+          <span style="color:var(--text-secondary)">→</span>
+          <span>{toNote()}</span>
+        </div>
+      }
       activeContent={
         <>
-          <div class="slide-note-display">
-            <span>{fromNote()}</span>
-            <span style="color:var(--text-secondary)">→</span>
-            <span>{toNote()}</span>
-          </div>
-          <div class="slide-viz">
+          <div class="slide-viz exercise-tall-viz">
             <div
               class="slide-target slide-target-start"
               style={`top:${topPctFor(fromMidi())}%`}
@@ -216,43 +218,44 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               </div>
             </Show>
           </div>
-          <div class="slide-metrics">
-            <div class="slide-metric">
-              <span class="slide-metric-label">Smoothness</span>
-              <span class="slide-metric-value">
-                {base.state().metrics.smoothness != null
-                  ? `${base.state().metrics.smoothness}%`
-                  : '—'}
-              </span>
-            </div>
-            <div class="slide-metric">
-              <span class="slide-metric-label">Accuracy</span>
-              <span class="slide-metric-value">
-                {base.state().metrics.arrivalAccuracy != null
-                  ? `${base.state().metrics.arrivalAccuracy}%`
-                  : '—'}
-              </span>
-            </div>
-            <div class="slide-metric">
-              <span class="slide-metric-label">Time</span>
-              <span class="slide-metric-value">
-                {base.state().metrics.slideTimeMs != null
-                  ? `${base.state().metrics.slideTimeMs}ms`
-                  : '—'}
-              </span>
-            </div>
-            <div class="slide-metric">
-              <span class="slide-metric-label">Rating</span>
-              <span class="slide-metric-value" style="font-size:0.78rem">
-                {base.state().metrics.classification != null
-                  ? CLASSIFICATION_LABELS[
-                      base.state().metrics.classification
-                    ] || '...'
-                  : '—'}
-              </span>
-            </div>
-          </div>
         </>
+      }
+      activeFooter={
+        <div class="slide-metrics">
+          <div class="slide-metric">
+            <span class="slide-metric-label">Smoothness</span>
+            <span class="slide-metric-value">
+              {base.state().metrics.smoothness != null
+                ? `${base.state().metrics.smoothness}%`
+                : '—'}
+            </span>
+          </div>
+          <div class="slide-metric">
+            <span class="slide-metric-label">Accuracy</span>
+            <span class="slide-metric-value">
+              {base.state().metrics.arrivalAccuracy != null
+                ? `${base.state().metrics.arrivalAccuracy}%`
+                : '—'}
+            </span>
+          </div>
+          <div class="slide-metric">
+            <span class="slide-metric-label">Time</span>
+            <span class="slide-metric-value">
+              {base.state().metrics.slideTimeMs != null
+                ? `${base.state().metrics.slideTimeMs}ms`
+                : '—'}
+            </span>
+          </div>
+          <div class="slide-metric">
+            <span class="slide-metric-label">Rating</span>
+            <span class="slide-metric-value" style="font-size:0.78rem">
+              {base.state().metrics.classification != null
+                ? CLASSIFICATION_LABELS[base.state().metrics.classification] ||
+                  '...'
+                : '—'}
+            </span>
+          </div>
+        </div>
       }
       resultSummary={
         <>

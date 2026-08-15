@@ -127,9 +127,9 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconSiren size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconSiren size={48} />
           <p>
             Hear two notes, then glide your voice smoothly between them. Develop
             vocal flexibility and range control.
@@ -155,34 +155,35 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
         targetNoteMidi: targetMidi,
         movingTarget,
       }}
+      activePhase={
+        <div class="mirror-melody-phase">
+          <span
+            classList={{
+              listen: phase() === SIREN_PHASE_LISTEN,
+              ready: phase() === SIREN_PHASE_READY,
+              sing: phase() === SIREN_PHASE_GLIDE,
+            }}
+          >
+            <Switch>
+              <Match when={phase() === SIREN_PHASE_LISTEN}>
+                <IconMusic size={16} /> Listen: {midiToNoteName(startMidi())} →{' '}
+                {midiToNoteName(endMidi())}
+              </Match>
+              <Match when={phase() === SIREN_PHASE_READY}>
+                <IconMic size={16} /> Breathe — start on{' '}
+                {midiToNoteName(startMidi())} in{' '}
+                <span class="mirror-melody-count">{readyIn()}</span>
+              </Match>
+              <Match when={phase() === SIREN_PHASE_GLIDE}>
+                <IconMic size={16} /> Glide {midiToNoteName(startMidi())} →{' '}
+                {midiToNoteName(endMidi())} — follow the dot!
+              </Match>
+            </Switch>
+          </span>
+        </div>
+      }
       activeContent={
         <>
-          <div class="mirror-melody-phase">
-            <span
-              classList={{
-                listen: phase() === SIREN_PHASE_LISTEN,
-                ready: phase() === SIREN_PHASE_READY,
-                sing: phase() === SIREN_PHASE_GLIDE,
-              }}
-            >
-              <Switch>
-                <Match when={phase() === SIREN_PHASE_LISTEN}>
-                  <IconMusic size={16} /> Listen: {midiToNoteName(startMidi())}{' '}
-                  → {midiToNoteName(endMidi())}
-                </Match>
-                <Match when={phase() === SIREN_PHASE_READY}>
-                  <IconMic size={16} /> Breathe — start on{' '}
-                  {midiToNoteName(startMidi())} in{' '}
-                  <span class="mirror-melody-count">{readyIn()}</span>
-                </Match>
-                <Match when={phase() === SIREN_PHASE_GLIDE}>
-                  <IconMic size={16} /> Glide {midiToNoteName(startMidi())} →{' '}
-                  {midiToNoteName(endMidi())} — follow the dot!
-                </Match>
-              </Switch>
-            </span>
-          </div>
-
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalRounds() })}>
               {(_, i) => (
@@ -205,7 +206,7 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
             </For>
           </div>
 
-          <div class="mirror-melody-viz">
+          <div class="mirror-melody-viz exercise-tall-viz">
             <div class="mirror-melody-target-line" />
             <div
               class="mirror-melody-dot"

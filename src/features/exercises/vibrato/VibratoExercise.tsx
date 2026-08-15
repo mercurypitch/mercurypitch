@@ -114,9 +114,9 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       resultScore={() => base.result()?.score ?? null}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
+      icon={<IconWave size={20} />}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <IconWave size={48} />
           <p>
             Sustain <strong>{targetNote()}</strong> and let it gently pulse
             above and below. Follow the wave to find the swing.
@@ -175,34 +175,35 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       activeContent={
         <>
           <div class="vibrato-current-note">{currentNote()}</div>
-          <div class="vibrato-metrics">
-            <div class="vibrato-metric">
-              <span class="vibrato-metric-label">Rate</span>
-              <span class="vibrato-metric-value">
-                {metrics().rateHz > 0
-                  ? `${(metrics().rateHz || 0).toFixed(1)} Hz`
-                  : '—'}
-              </span>
-            </div>
-            <div class="vibrato-metric">
-              <span class="vibrato-metric-label">Depth</span>
-              <span class="vibrato-metric-value">
-                {metrics().rateHz > 0
-                  ? `${Math.round(metrics().depthCents || 0)}¢`
-                  : '—'}
-              </span>
-            </div>
-            <div class="vibrato-metric">
-              <span class="vibrato-metric-label">Style</span>
-              <span class="vibrato-metric-value" style="font-size:0.75rem">
-                {metrics().rateHz > 0
-                  ? CLASSIFICATION_LABELS[metrics().classification ?? 0] ||
-                    '...'
-                  : '—'}
-              </span>
-            </div>
-          </div>
         </>
+      }
+      activeFooter={
+        <div class="vibrato-metrics">
+          <div class="vibrato-metric">
+            <span class="vibrato-metric-label">Rate</span>
+            <span class="vibrato-metric-value">
+              {metrics().rateHz > 0
+                ? `${(metrics().rateHz || 0).toFixed(1)} Hz`
+                : '—'}
+            </span>
+          </div>
+          <div class="vibrato-metric">
+            <span class="vibrato-metric-label">Depth</span>
+            <span class="vibrato-metric-value">
+              {metrics().rateHz > 0
+                ? `${Math.round(metrics().depthCents || 0)}¢`
+                : '—'}
+            </span>
+          </div>
+          <div class="vibrato-metric">
+            <span class="vibrato-metric-label">Style</span>
+            <span class="vibrato-metric-value" style="font-size:0.75rem">
+              {metrics().rateHz > 0
+                ? CLASSIFICATION_LABELS[metrics().classification ?? 0] || '...'
+                : '—'}
+            </span>
+          </div>
+        </div>
       }
       resultSummary={
         <>
