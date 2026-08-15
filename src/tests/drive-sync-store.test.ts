@@ -607,10 +607,10 @@ describe('restore', () => {
     file.set(header, 0)
     file.set(new Uint8Array([1, 1, 1]), header.byteLength)
     file.set(new Uint8Array([2, 2, 2, 2, 2]), header.byteLength + 3)
-    driveMock.downloadRange.mockImplementation(
-      (_id: string, start: number, end: number) =>
-        Promise.resolve(file.slice(start, end)),
-    )
+    driveMock.downloadRange.mockImplementation((...args: unknown[]) => {
+      const [, start, end] = args as [string, number, number]
+      return Promise.resolve(file.slice(start, end))
+    })
     bundleMock.importPortableBundle.mockImplementation(
       async (
         m: PortableBundleManifest,
