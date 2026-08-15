@@ -11,6 +11,10 @@ import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKE
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
   onQuickStart?: (type: ExerciseType, config?: ExerciseConfig) => void
+  /** Rendered at the right of the page header. The Zen entry lives here: as
+   *  a banner above the header it pushed the page's own title down a row and
+   *  read as the first thing on the page, which it is not. */
+  headerAction?: JSX.Element
 }
 
 interface ExerciseCardDef {
@@ -328,10 +332,11 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
   return (
     <div class="exercises-panel">
       <div class="exercises-header">
-        <h2>Singing Exercises</h2>
-        <span style="font-size:0.8rem;color:var(--text-secondary)">
-          Choose a drill to start practicing
-        </span>
+        <div class="exercises-header-title">
+          <h2>Singing Exercises</h2>
+          <span>Choose a drill to start practicing</span>
+        </div>
+        <Show when={props.headerAction}>{props.headerAction}</Show>
       </div>
 
       <div

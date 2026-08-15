@@ -31,19 +31,31 @@ import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
 
 const VIEWPORTS = [
   // Samsung Tab S9+ landscape, minus browser chrome — the reported case.
-  { name: 'tab-s9-landscape', width: 1280, height: 660 },
+  // Note the height: 806 is ABOVE the 720px line short-viewport.css keys on,
+  // so nothing in that file reaches this device. Measured, not guessed: the
+  // panel is 1400x876 CSS px and the chrome takes about 70 of it.
+  { name: 'tab-s9-landscape', width: 1400, height: 806 },
+  // The same tablet with more chrome, where the short-screen rules do apply.
+  { name: 'tab-s9-chromed', width: 1280, height: 660 },
   // A meaner one: the same tablet with more chrome, or a small netbook.
   { name: 'short-laptop', width: 1024, height: 560 },
 ] as const
 
 /**
- * Opens Guided Warmup — the busiest idle column: two description lines, the
- * routine pills AND the dial — and asserts its text blocks stack instead of
- * overlapping. Browser zoom shrinks the CSS viewport, so a heavily zoomed
+ * Opens Guided Warmup — the busiest idle panel: a description, the routine
+ * picker AND the dial — and asserts none of its text blocks share pixels
+ * with another. Browser zoom shrinks the CSS viewport, so a heavily zoomed
  * tablet behaves like an even shorter screen; the failure mode there is not
  * clipping but *collapse*. The idle column is a flex item, and once it must
  * shrink, its children give up their height while their text keeps
  * rendering — the description printed across the ROUTINE label.
+ *
+ * Overlap, not stacking order. This used to require each block to begin
+ * below the bottom of the one before it, which is the same thing only while
+ * the panel is one column. It is two columns now on any screen with the
+ * width for them — setup on one side, launch on the other — so Start
+ * legitimately shares its rows with the picker. What must never happen is
+ * two blocks occupying the same pixels.
  */
 async function assertIdleTextStacks(
   page: import('@playwright/test').Page,
@@ -72,20 +84,30 @@ async function assertIdleTextStacks(
     ]
     return blocks.map((el) => {
       const r = el.getBoundingClientRect()
-      return { top: r.top, bottom: r.bottom, height: r.height }
+      return {
+        top: r.top,
+        right: r.right,
+        bottom: r.bottom,
+        left: r.left,
+        height: r.height,
+        text: (el.textContent ?? '').slice(0, 24),
+      }
     })
   })
-  expect(rects.length).toBeGreaterThanOrEqual(4)
+  expect(rects.length).toBeGreaterThanOrEqual(3)
 
-  // Reading order must also be stacking order: each block starts below the
-  // one before it. Two blocks sharing pixels is the reported bug.
-  for (let i = 1; i < rects.length; i++) {
-    expect
-      .soft(
-        rects[i].top,
-        `block ${i} starts above the bottom of block ${i - 1}`,
-      )
-      .toBeGreaterThanOrEqual(rects[i - 1].bottom - 2)
+  // No two blocks may share pixels, whichever side of the panel they are on.
+  for (let i = 0; i < rects.length; i++) {
+    for (let j = i + 1; j < rects.length; j++) {
+      const a = rects[i]
+      const b = rects[j]
+      const overlaps =
+        a.left < b.right - 2 &&
+        b.left < a.right - 2 &&
+        a.top < b.bottom - 2 &&
+        b.top < a.bottom - 2
+      expect.soft(overlaps, `"${a.text}" overlaps "${b.text}"`).toBe(false)
+    }
   }
   // And no block may be squeezed to a sliver of its text.
   for (const r of rects) {

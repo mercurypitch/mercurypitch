@@ -275,3 +275,11 @@ export function IconQuestion(p: IconProps): JSX.Element {
     </svg>
   )
 }
+
+export function IconChevronRight(p: IconProps): JSX.Element {
+  return (
+    <svg {...iconProps(p.size ?? 24)} class={p.class} {...strokeProps}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  )
+}

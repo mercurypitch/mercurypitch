@@ -12,12 +12,28 @@
   color: var(--text-primary);
 }
 
+/* Title on the left, whatever the page wants to offer on the right. The
+   subtitle sits under the title rather than opposite it, so the right side
+   is free for an action that used to be a banner above all of this. */
 .exercises-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   max-width: 1120px;
   margin: 0 auto 18px;
+}
+
+.exercises-header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.exercises-header-title span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .exercises-header h2 {
@@ -336,14 +352,13 @@
   padding: 20px;
 }
 
-.exercise-idle-placeholder .idle-icon {
-  opacity: 0.5;
-  margin-bottom: 4px;
-}
-
+/* The description is read once, before the first run of a drill, and then
+   never again — it is the least valuable row on the panel and it was taking
+   three of them. Smaller, tighter, and allowed to run wider before it wraps. */
 .exercise-idle-placeholder p {
-  margin: 4px 0;
-  font-size: 0.9rem;
+  margin: 2px 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .exercise-idle-placeholder .idle-hint {
@@ -664,7 +679,9 @@
   height: auto;
   padding: 0;
   gap: 4px;
-  max-width: 56ch;
+  /* Wider than the 56ch a paragraph wants to be read at, because here the
+     cost of a wrap is a whole row of a panel that is short of them. */
+  max-width: 68ch;
   text-wrap: balance;
 }
 
@@ -682,10 +699,14 @@
   width: 100%;
 }
 
+/* The gap is the point. Five drills put a scale picker, a style switch or a
+   pair of selects under their dial, and with no gap at all they arrived
+   glued to it and to each other — a stack of controls reading as one blob. */
 .exercise-idle-setup {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -712,10 +733,8 @@
     width: auto;
   }
 
-  /* Launch takes a column of its own and fills it, so the timer segments and
-     Start line up at one width instead of each finding their own. Wide enough
-     for all six timer segments on one line — at 280px "Custom" wrapped to a
-     row of its own. */
+  /* Launch takes a column of its own and fills it, so the timer chips and
+     Start line up at one width instead of each finding their own. */
   .exercise-idle-body:has(.exercise-timer-field) .exercise-idle-launch {
     align-items: stretch;
     flex: 0 0 auto;
@@ -724,6 +743,50 @@
 
   .exercise-idle-launch .exercise-idle-start {
     width: 100%;
+  }
+
+  /* ── Setups with more than a dial in them ──────────────────
+     Five drills put a scale picker, a style switch or a pair of selects
+     under their dial, and a column adds those heights together: Arpeggio
+     Jumper asked for 577px of a 608px card that way, on a tablet with room
+     to spare on the other axis. Beside the dial they cost the taller of the
+     two instead of the sum, and on all five that is the dial.
+
+     The first child spans every row. `repeat(4, auto)` exists so `1 / -1`
+     has explicit row lines to reach: in an implicit grid `-1` resolves to
+     line 1 and the span quietly collapses to a single row.
+
+     Row spacing is a margin on the items rather than a `row-gap`, because a
+     gap between two empty rows is still a gap — with four rows and one
+     control in the second column the warmup paid 36px for three of them. */
+  .exercise-idle-setup:has(> :nth-child(2)) {
+    display: grid;
+    /* The second column has a floor. As a bare `1fr` it collapsed to 47px
+       beside a 303px dial on a 1024px screen, and a style chip with an 84px
+       label overflowed its track and printed over the dial. Both columns can
+       give: the dial's readout wraps, the chips re-flow. */
+    grid-template-columns: minmax(0, auto) minmax(110px, 1fr);
+    grid-template-rows: repeat(4, auto);
+    align-items: center;
+    justify-items: center;
+    gap: 0 18px;
+  }
+
+  .exercise-idle-setup:has(> :nth-child(2)) > :first-child {
+    grid-row: 1 / -1;
+  }
+
+  .exercise-idle-setup:has(> :nth-child(2)) > :not(:first-child) {
+    margin-block: 6px;
+  }
+
+  .exercise-idle-setup:has(> :nth-child(2)) > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .exercise-idle-setup:has(> :nth-child(2)) svg[class*='face'] {
+    max-width: 100%;
   }
 }
 
@@ -871,55 +934,59 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
-/* ── ExerciseShell: auto-score timer toggle ────────────────── */
+/* ── ExerciseShell: segmented choices ─────────────────────── */
 
+/* Three controls share this: the auto-score timer (six segments), the
+   vibrato style (three) and the arpeggio's interaction mode (two). It used
+   to be one joined bar with hairline separators, which is a fine control
+   until it has to wrap — and in a 190px column beside a dial it always has
+   to. A wrapped joined bar has its rounded ends in the middle of itself and
+   reads as a rendering fault, which is what the "Custom on a row of its
+   own" report was. Chips of one width wrap into a tidy grid instead. */
 .exercise-timer-toggle {
-  display: inline-flex;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 
 .exercise-timer-segment {
-  padding: 7px 14px;
-  border: none;
-  background: transparent;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
   color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: var(--transition-fast);
 }
 
-.exercise-timer-segment + .exercise-timer-segment {
-  border-left: 1px solid var(--border);
-}
-
 .exercise-timer-segment:hover {
   color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .exercise-timer-segment.active {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--bg-primary);
 }
 
-/* The toggle and its slider are one control, so they stack as one column.
-   `.exercise-timer-toggle` itself is shared with the arpeggio's mode switch
-   and stays untouched. */
+/* The toggle and its slider are one control, so they stack as one column. */
 .exercise-timer-field {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: min(340px, 100%);
 }
 
-/* Six segments is a wide row on a phone; letting it wrap beats a scrollbar
-   or a squeezed label. */
+/* Six segments, so three and three — auto-fit would leave a row of four and
+   a row of two at some widths and five and one at others. */
 .exercise-timer-field .exercise-timer-toggle {
-  flex-wrap: wrap;
-  justify-content: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .exercise-timer-custom {
@@ -944,16 +1011,33 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Label above the control, not beside it: beside it, two of these stacked
+   under a dial gave every select a different left edge, because the labels
+   ("Chord", "Direction") are different lengths. Above, they line up. */
 .exercise-target-selector {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  width: min(220px, 100%);
   font-size: 0.85rem;
 }
 
+/* The same micro-label the routine picker and the vibrato style row use.
+   The label wraps its select rather than sitting beside it, so the select is
+   named without an id to keep in sync. */
+.exercise-target-selector > span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .exercise-target-selector select {
-  padding: 6px 10px;
-  border-radius: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-primary);
@@ -962,17 +1046,9 @@
 
 /* ── Routine picker ────────────────────────────────────────── */
 
-/* These were the note-pill styles. The warmup's routine picker borrowed
-   them wholesale, so when the note pills became a dial and their CSS
-   went with them, the routine buttons lost their pills too. Renamed to
-   what they actually dress now — one owner, one name. */
-
-.routine-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-}
+/* The warmup's six routines were six pills wrapping to three rows. They are
+   a select now — see WarmupExercise — and the only thing left of the picker
+   is the name over it, which the tablet-landscape spec looks for. */
 
 .routine-picker-label {
   font-size: 0.78rem;
@@ -982,60 +1058,40 @@
   letter-spacing: 0.05em;
 }
 
-.routine-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  justify-content: center;
-  max-width: 420px;
-}
-
-.routine-pill {
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-accent);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background 0.12s,
-    color 0.12s,
-    border-color 0.12s;
-  font-family: inherit;
-  line-height: 1.4;
-}
-
-.routine-pill:hover {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
-}
-
-.routine-pill-selected {
-  background: var(--accent-color, #6366f1);
-  color: var(--bg-primary);
-  border-color: var(--accent-color, #6366f1);
-}
-
-.routine-pill-selected:hover {
-  background: var(--accent-hover, #4f46e5);
-  color: var(--bg-primary);
-  border-color: var(--accent-hover, #4f46e5);
-}
-
 /* ── Note Dial ─────────────────────────────────────────────── */
 
-/* Slide asks for two notes. Side by side keeps the pair inside one
-   screen; below 560px they stack, which is the lesser of the two evils. */
+/* Slide asks for two notes, and they stay side by side at every width. */
 .exercise-dial-pair {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: flex-start;
   justify-content: center;
-  flex-wrap: wrap;
+  /* Never wraps. Two dials stacked are taller than any panel that holds
+     them — 648px inside a 382px card on a landscape tablet, which is how
+     Slide came to be the one drill you had to scroll to start. Sharing one
+     row costs each dial half the width and nothing at all in height. */
+  flex-wrap: nowrap;
   width: 100%;
+}
+
+.exercise-dial-pair > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Sized by the room the pair was given rather than by the viewport, since
+   there are two of them spending it. The cap stops a desktop from drawing a
+   pair wider than the single dial every other drill shows. */
+.exercise-dial-pair svg[class*='face'] {
+  width: 100%;
+  max-width: 260px;
+}
+
+/* A dial sharing its row cannot afford 22px of padding on each side of it —
+   on a phone that is a third of the column. */
+.exercise-dial-pair > * > [class*='body'] {
+  padding: 16px 12px 14px;
+  gap: 12px;
 }
 
 /* ── Exercise Pitch Tracker ────────────────────────────────── */

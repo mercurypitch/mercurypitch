@@ -96,8 +96,8 @@
      the Guided Warmup especially (description + routine pills + a
      36-note comfort grid + Start) — overflowed that fixed box and
      collided with the floating card, leaving text stacked on text.
-     Fix: let the idle/complete state flow and scroll inside the card,
-     pull the score card into the flow, and pin Start to the bottom.
+     Fix: let the idle/complete state flow and scroll inside the card and
+     pull the score card into the flow.
      Scoped to `.is-idle` so live runs keep their fixed viz canvas. */
   .exercise-runner {
     padding: 12px 14px;
@@ -163,20 +163,44 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Consistent breathing room beneath the pinned Start button. */
+    /* Consistent breathing room beneath the Start button. */
     padding-bottom: 12px;
   }
   .exercise-idle-center {
     justify-content: flex-start;
     height: auto;
-    gap: 16px;
-    padding: 16px 12px 0;
+    gap: 12px;
+    padding: 12px 12px 0;
   }
-  .exercise-idle-controls {
-    gap: 16px;
+  /* Was `.exercise-idle-controls`, which no longer exists: the idle column
+     split into a setup group and a launch group, and the rule kept styling a
+     class nothing renders. */
+  .exercise-idle-body {
+    gap: 12px;
   }
   .exercise-idle-placeholder p {
     font-size: 0.85rem;
+  }
+
+  /* One column and no second axis to trade into, so the setup pays for its
+     own spacing in the only currency there is — and the dial gives some of
+     it back. Wider screens put these controls beside the dial instead; see
+     the setup grid in exercises.css. */
+  .exercise-idle-setup {
+    gap: 10px;
+  }
+
+  .exercise-idle-setup svg[class*='face'] {
+    width: clamp(180px, min(54vw, 42dvh), 260px);
+  }
+
+  .exercise-target-selector {
+    gap: 2px;
+    width: 100%;
+  }
+
+  .exercise-target-selector > span {
+    font-size: 0.68rem;
   }
 
   /* Recent scores: an in-flow strip at the top of the card instead of
@@ -208,12 +232,6 @@
     width: 100%;
   }
 
-  /* Roomier tap targets on the routine pills. */
-  .routine-pill {
-    padding: 7px 13px;
-    font-size: 0.8rem;
-  }
-
   /* The comfort note is a dial now, so the 6-column grid that tamed 36
      pills is gone with them. The dial sizes itself (clamp on .face) and
      stacks its octave row underneath below 420px. */
@@ -221,16 +239,22 @@
     width: 100%;
   }
 
-  /* Primary CTA: full-width, thumb-friendly, and pinned to the bottom
-     of the scrolling card so it's always reachable. */
+  /* Primary CTA: full-width and thumb-friendly, at the end of a card that
+     scrolls when a setup is heavier than one screen.
+
+     It used to say `position: sticky; bottom: 0` here, which did nothing:
+     sticky-bottom only lifts an element while its containing block still
+     extends below it, and this button is the last child of the launch
+     group, whose bottom edge IS the button's. Pinning it for real needs the
+     launch group outside the scrolling part of the panel, which is a shell
+     change — see the exercise refactor. Until then the two heaviest setups
+     (Arpeggio Jumper, Vibrato) scroll on a phone; every other drill and
+     every wider screen fits without one. */
   .exercise-idle-start {
-    position: sticky;
-    bottom: 0;
     width: 100%;
     min-width: 0;
     padding: 13px;
     font-size: 0.95rem;
-    box-shadow: 0 -12px 14px -4px var(--bg-card);
   }
 
   /* Active run: on the shorter mobile canvas the full-width, centred
@@ -317,8 +341,8 @@
     padding-bottom: calc(var(--tabbar-total) + 8px);
   }
 
-  /* Exercises: the sticky Start CTA and the Stop FAB sit at the very
-     bottom edge — keep them above the home indicator. */
+  /* Exercises: Start ends the scrolling panel and the Stop FAB sits at the
+     very bottom edge — keep both above the home indicator. */
   .exercise-idle-start {
     padding-bottom: calc(13px + var(--safe-bottom));
   }
