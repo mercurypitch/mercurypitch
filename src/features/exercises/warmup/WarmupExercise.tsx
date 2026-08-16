@@ -26,7 +26,7 @@ import { useBaseExercise } from '../use-base-exercise'
 import { WARMUP_EXERCISES, warmupPatternExercises } from './warmup-exercises'
 import { applyLeadIn, createLeadInTicker, leadInSeconds, } from './warmup-lead-in'
 import type { WarmupPattern } from './warmup-steps'
-import { buildWarmupSteps, normalizeWarmupPattern, WARMUP_PATTERN_LABELS, WARMUP_STEP_GAP_SECONDS, warmupTotalSeconds, } from './warmup-steps'
+import { buildWarmupSteps, normalizeWarmupPattern, WARMUP_PATTERN_LABELS, WARMUP_STEP_GAP_SECONDS, warmupStepScore, warmupTotalSeconds, } from './warmup-steps'
 
 interface WarmupExerciseProps {
   audioEngine: AudioEngine
@@ -225,9 +225,9 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     // one — finalizes without a score, and averaging it as a zero would say
     // the singer failed at breathing.
     const finished = session.runs()
-    const total = finished[finished.length - 1]?.score?.total
-    if (total !== undefined) {
-      scores.push(total)
+    const banked = warmupStepScore(finished[finished.length - 1]?.score)
+    if (banked !== null) {
+      scores.push(banked)
       base._updateScore(averageScore())
     }
 

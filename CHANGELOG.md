@@ -182,6 +182,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The guided warmup now means it when it says "no grades".** The card
+  promises the score "just reflects that you sang along", but the number
+  it showed was a pitch-accuracy grade — a singer who hummed along the
+  whole warmup with a wandering pitch could finish with a discouraging
+  score. The warmup now counts participation: how much of the guided
+  line you actually sang, whatever the pitch.
+
 - **The "your earlier practice stayed here" notice now speaks grammatically
   about a single item.** With exactly one exercise on the device it read
   "The 1 exercise you did here are still on this device"; the verb now

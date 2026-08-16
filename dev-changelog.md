@@ -72,6 +72,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The warmup graded pitch accuracy while promising "no grades"
+  (CLAUDE-JOURNEY-015).** `exercise-help.ts` and the idle card both
+  promise "the score just reflects that you sang along", but
+  `WarmupExercise.advanceStep` banked each step's `score.total` — the
+  pitch/coverage/steadiness-weighted Zen grade — and stored it under a
+  metric literally named `participation`. A new pure seam,
+  `warmupStepScore` in `warmup-steps.ts`, banks the run's `coverage`
+  instead: the share of target time the singer voiced, whatever the
+  pitch (coverage bins count any voiced sample inside a target window —
+  accuracy never enters it). Breath steps still bank nothing. Pinned
+  twice: `warmup-participation.test.ts` (the pure seam plus the promise
+  copy) and `warmup-banks-participation.test.tsx` (the component walked
+  through a full pattern via the session's loop-limit callback — live
+  score, final result and metrics all speak coverage; both fail with the
+  seam flipped back to `total`).
+
 - **`LocalProgressNotice` hard-coded a plural verb (CLAUDE-JOURNEY-016).**
   The sentence template ended "...you did here are still on this device"
   regardless of what `describeLocalProgress` produced, so a single
