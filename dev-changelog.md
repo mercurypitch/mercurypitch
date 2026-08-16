@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Rep-run flow: the shell and ribbon close the multi-rep gap.**
+  `ExerciseShell` derives `repRun` from `useDailyRoutine` (current segment
+  runs this drill, banked > 0, banked < reps) to relabel the dual-purpose
+  button and compact the result card (no `RunTraceCanvas`, no `tier-pop`
+  re-animation via `.mid-reps`). `RoutineRibbon` gains `isComplete`/
+  `onRunAgain` props and reduces its countdown to a single
+  `countdownTarget` memo — segment | 'run' | 'cancel' | null — restarting
+  the clock whenever the destination changes, so the interval can never
+  fire a stale closure (the prior shape kept a live countdown aimed at a
+  target that no longer existed when the last run banked mid-count).
+
 - **Routine segments carry reps, and the session has a five-minute floor.**
   `segment-reps.ts` holds a per-drill table of what one honest run costs
   (30s for held-note drills, 45s for pattern drills, 60s for the long ones),

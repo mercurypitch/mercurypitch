@@ -74,6 +74,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **A routine's repeat runs carry themselves.** When a segment asks for
+  several runs, the result screen's button now says "Start run 2 of 5"
+  instead of "Try Again", the session bar counts the next run in with the
+  same countdown (and Stay here) it gives the next segment, and the
+  between-run score card stays compact — the full card with the pitch
+  contour returns on the segment's last run.
+
 - **The daily routine now asks for the practice it promises.** A drill in
   today's session asks for as many runs as its minutes hold — five long notes
   rather than one — and every session, at every length, is worth at least the

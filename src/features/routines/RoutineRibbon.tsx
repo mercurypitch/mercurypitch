@@ -40,6 +40,19 @@ export interface RoutineRibbonProps {
    * feature meant to save clicks.
    */
   isRunning?: () => boolean
+  /**
+   * Whether the drill sits on its result screen. The between-run countdown
+   * must wait for the result to be visible: a run banks a beat before the
+   * status flips to complete, and a countdown racing that flip would start
+   * over a still-live stage.
+   */
+  isComplete?: () => boolean
+  /**
+   * Starts the next run of the same drill — the shell's Try Again. When a
+   * segment asks for several runs, the countdown fires this instead of
+   * launching the next segment, which is still whole runs away.
+   */
+  onRunAgain?: () => void
 }
 
 /** What a segment calls itself in the chip row. */
@@ -78,6 +91,30 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
       ? (segments()[routine.currentSegmentIndex()] ?? null)
       : null,
   )
+  /**
+   * Runs still owed on the segment this drill is running, once at least one
+   * has banked. Zero before the first run — the singer has not started, and
+   * a countdown on a screen they only just arrived at would be a shove, not
+   * a save. Mutually exclusive with `nextSegment`: while runs remain the
+   * segment is still current, so `myIndex()` is not -1.
+   */
+  const runsLeft = createMemo(() => {
+    if (myIndex() === -1) return 0
+    const banked = routine.currentSegmentRuns()
+    return banked > 0 ? routine.currentSegmentReps() - banked : 0
+  })
+  /** The between-run offer: runs remain, the result is up, and the shell wired a restart. */
+  const runAgainOffer = createMemo(
+    () =>
+      runsLeft() > 0 &&
+      (props.isComplete?.() ?? false) &&
+      props.onRunAgain !== undefined,
+  )
+  const runAgainLabel = (): string =>
+    `Start run ${Math.min(
+      routine.currentSegmentRuns() + 1,
+      routine.currentSegmentReps(),
+    )} of ${routine.currentSegmentReps()}`
 
   // --- Auto-continue ------------------------------------------------------
   // Seconds left, or null when nothing is counting. setInterval rather than
@@ -92,7 +129,7 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
     setRemaining(null)
   }
 
-  const startCountdown = (next: RoutineSegment): void => {
+  const startCountdown = (go: () => void): void => {
     setRemaining(AUTO_CONTINUE_SECONDS)
     ticker = setInterval(() => {
       const left = (remaining() ?? 0) - 1
@@ -101,7 +138,7 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
         return
       }
       stopCountdown()
-      launchRoutineSegment(next)
+      go()
     }, 1000)
   }
 
@@ -112,26 +149,48 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
     noteAutoContinueDismissed()
   }
 
+  /**
+   * What the clock should be doing right now, reduced to one value: the
+   * segment to launch, 'run' for another run of this drill, 'cancel' while
+   * a run is live, or null. The effect below restarts the countdown
+   * whenever this CHANGES — the interval closes over its launch action, so
+   * a countdown that outlives its destination (the last run banks and
+   * "next run" becomes "next segment") would otherwise fire the stale one.
+   * 'cancel' is distinct from null: stopping because the singer started a
+   * run themselves is a dismissal, and a more emphatic one than the button
+   * — they went back to this drill on purpose.
+   */
+  const countdownTarget = createMemo<RoutineSegment | 'run' | 'cancel' | null>(
+    () => {
+      if (props.isRunning?.() ?? false) return 'cancel'
+      // Without this, a drill opened from the exercise list — where the
+      // ribbon renders nothing — would still count down and launch the
+      // routine's next segment out from under the singer.
+      if (!attached() || !autoContinueEnabled()) return null
+      const next = nextSegment()
+      if (next !== null) return next
+      // Between runs of the same segment: same clock, same escape hatches,
+      // but the destination is another run of THIS drill, not the next
+      // segment — which is still whole runs away.
+      return runAgainOffer() ? 'run' : null
+    },
+  )
+
   createEffect(
-    on(
-      () => [attached(), nextSegment(), props.isRunning?.() ?? false] as const,
-      ([isAttached, next, running]) => {
-        // Starting another run IS a cancel, and a more emphatic one than the
-        // button: they went back to this drill on purpose.
-        if (running) {
-          cancelCountdown()
-          return
-        }
-        // Without this, a drill opened from the exercise list — where the
-        // ribbon renders nothing — would still count down and launch the
-        // routine's next segment out from under the singer.
-        if (!isAttached || next === null || !autoContinueEnabled()) {
-          stopCountdown()
-          return
-        }
-        if (ticker === null) startCountdown(next)
-      },
-    ),
+    on(countdownTarget, (target) => {
+      if (target === 'cancel') {
+        cancelCountdown()
+        return
+      }
+      stopCountdown()
+      if (target === null) return
+      if (target === 'run') {
+        // runAgainOffer() has already guaranteed the shell wired onRunAgain.
+        startCountdown(() => props.onRunAgain!())
+      } else {
+        startCountdown(() => launchRoutineSegment(target))
+      }
+    }),
   )
 
   onCleanup(stopCountdown)
@@ -271,6 +330,87 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
               </Show>
             </div>
           )}
+        </Show>
+
+        {/* Between runs of a multi-rep segment: the same countdown the next
+            segment gets, aimed back at this drill. Shown only over the result
+            screen — the button below duplicates the shell's own, which is the
+            point: the ribbon is where the singer looks for "what now". */}
+        <Show when={runAgainOffer()}>
+          <div class={styles.nextRow}>
+            <button
+              type="button"
+              class={styles.next}
+              data-testid="routine-run-again"
+              onClick={() => {
+                stopCountdown()
+                // Inside the runAgainOffer() gate, onRunAgain is wired.
+                props.onRunAgain!()
+              }}
+            >
+              {runAgainLabel()}
+              <Show when={remaining()}>
+                {(left) => (
+                  <span class={styles.tick} aria-hidden="true">
+                    {left()}
+                  </span>
+                )}
+              </Show>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 3-6.7M6 2v4h4" />
+              </svg>
+              <Show when={remaining()}>
+                {(left) => (
+                  <span
+                    class={styles.drain}
+                    aria-hidden="true"
+                    style={{
+                      width: `${(left() / AUTO_CONTINUE_SECONDS) * 100}%`,
+                    }}
+                  />
+                )}
+              </Show>
+            </button>
+
+            <Show when={remaining() !== null}>
+              <button
+                type="button"
+                class={styles.stay}
+                data-testid="routine-stay"
+                onClick={cancelCountdown}
+              >
+                Stay here
+              </button>
+              <span class={styles.srOnly} aria-live="polite">
+                Starting the next run in {AUTO_CONTINUE_SECONDS} seconds.
+                Choose Stay here to cancel.
+              </span>
+            </Show>
+
+            <Show when={shouldOfferToDisable()}>
+              <button
+                type="button"
+                class={styles.optOut}
+                data-testid="routine-autocontinue-off"
+                onClick={() => {
+                  stopCountdown()
+                  setRoutinePrefs((p) => ({ ...p, autoContinue: false }))
+                }}
+              >
+                Stop counting down
+              </button>
+            </Show>
+          </div>
         </Show>
 
         <Show when={myIndex() === -1 && nextSegment() === null}>

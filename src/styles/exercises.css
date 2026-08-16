@@ -2262,6 +2262,14 @@
   animation: tier-pop 0.5s ease-out;
 }
 
+/* Between runs of a multi-rep routine segment the card is pace, not payoff:
+   no pop-in, tighter padding. The full celebratory card returns on the
+   segment's last run. */
+.exercise-result-card.mid-reps {
+  animation: none;
+  padding: 10px 16px;
+}
+
 .exercise-result-grade {
   font-size: 2.4rem;
   font-weight: 800;

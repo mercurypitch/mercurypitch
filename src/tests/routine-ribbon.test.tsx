@@ -358,3 +358,186 @@ describe('RoutineRibbon reps', () => {
     expect(queryByTestId('routine-ribbon-reps')).toBeNull()
   })
 })
+
+// ============================================================
+// Between-run countdown
+// ============================================================
+//
+// The gap the segment-level countdown left open: a run banks, runs remain,
+// and the singer sits on a result screen whose only offer is a button. The
+// ribbon now counts the next RUN in with the same clock, the same Stay here,
+// and the same preference — pinned here so the two countdowns cannot drift.
+
+describe('RoutineRibbon between-run countdown', () => {
+  const REPS_TEMPLATE: RoutineTemplate = {
+    id: 'reps-routine',
+    name: "Today's Session",
+    description: 'a drill worth practising',
+    segments: [{ ...LONG_NOTE_SEGMENT, reps: 3 }, SCALE_SEGMENT],
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    resetAutoContinueDismissals()
+    setRoutinePrefs({ length: 'standard', focus: 'auto', autoContinue: true })
+    setPendingDrill(null)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const runOutTheClock = (): void => {
+    vi.advanceTimersByTime(AUTO_CONTINUE_SECONDS * 1000)
+  }
+
+  /** Render mid-segment: run one banked, the drill's result screen showing. */
+  const renderBetweenRuns = (
+    onRunAgain: () => void,
+    complete: () => boolean = () => true,
+  ): ReturnType<typeof render> => {
+    seedRoutine(REPS_TEMPLATE)
+    const rendered = render(() => (
+      <RoutineRibbon
+        type={EXERCISE_LONG_NOTE}
+        isComplete={complete}
+        onRunAgain={onRunAgain}
+      />
+    ))
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+    return rendered
+  }
+
+  it('counts down to the next run, not the next segment', () => {
+    const onRunAgain = vi.fn()
+    const { getByTestId } = renderBetweenRuns(onRunAgain)
+
+    const button = getByTestId('routine-run-again')
+    expect(button.textContent).toContain('Start run 2 of 3')
+    expect(button.textContent).toContain(String(AUTO_CONTINUE_SECONDS))
+
+    runOutTheClock()
+
+    expect(onRunAgain).toHaveBeenCalledOnce()
+    // The routine itself must not have been advanced past the reps.
+    expect(pendingDrill()).toBeNull()
+  })
+
+  it('waits for the result screen before counting', () => {
+    // A run banks a beat before the drill's status flips to complete;
+    // counting over a still-live stage would race the restart.
+    const onRunAgain = vi.fn()
+    const [complete, setComplete] = createSignal(false)
+    const { queryByTestId, getByTestId } = renderBetweenRuns(
+      onRunAgain,
+      complete,
+    )
+
+    expect(queryByTestId('routine-run-again')).toBeNull()
+    runOutTheClock()
+    expect(onRunAgain).not.toHaveBeenCalled()
+
+    setComplete(true)
+    expect(getByTestId('routine-run-again')).toBeTruthy()
+    runOutTheClock()
+    expect(onRunAgain).toHaveBeenCalledOnce()
+  })
+
+  it('can be stopped, and still started by hand', () => {
+    const onRunAgain = vi.fn()
+    const { getByTestId } = renderBetweenRuns(onRunAgain)
+
+    fireEvent.click(getByTestId('routine-stay'))
+    runOutTheClock()
+    expect(onRunAgain).not.toHaveBeenCalled()
+
+    fireEvent.click(getByTestId('routine-run-again'))
+    expect(onRunAgain).toHaveBeenCalledOnce()
+  })
+
+  it('respects the auto-continue preference', () => {
+    setRoutinePrefs((p) => ({ ...p, autoContinue: false }))
+    const onRunAgain = vi.fn()
+    const { getByTestId, queryByTestId } = renderBetweenRuns(onRunAgain)
+
+    runOutTheClock()
+
+    expect(onRunAgain).not.toHaveBeenCalled()
+    expect(queryByTestId('routine-stay')).toBeNull()
+    // The manual offer stays — the preference turns off the clock, not the
+    // routine.
+    expect(getByTestId('routine-run-again')).toBeTruthy()
+  })
+
+  it('hands over to the segment countdown after the last run', () => {
+    const onRunAgain = vi.fn()
+    const { getByTestId, queryByTestId } = renderBetweenRuns(onRunAgain)
+
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+
+    expect(queryByTestId('routine-run-again')).toBeNull()
+    expect(getByTestId('routine-next').textContent).toContain('Scale Runner')
+
+    runOutTheClock()
+    expect(onRunAgain).not.toHaveBeenCalled()
+    expect(pendingDrill()?.exercise).toBe(EXERCISE_SCALE_RUNNER)
+  })
+
+  it('offers nothing without a restart to fire', () => {
+    // A shell that never wired onRunAgain gets no dangling countdown.
+    seedRoutine(REPS_TEMPLATE)
+    const { queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} isComplete={() => true} />
+    ))
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+
+    expect(queryByTestId('routine-run-again')).toBeNull()
+    runOutTheClock()
+    expect(pendingDrill()).toBeNull()
+  })
+
+  it('offers to stop asking after the second cancel here too', () => {
+    // The dismissal counter is shared with the segment countdown on
+    // purpose: "stop pushing me" means the clock, not one of its two
+    // destinations.
+    const onRunAgain = vi.fn()
+    const [complete, setComplete] = createSignal(true)
+    const { getByTestId, queryByTestId } = renderBetweenRuns(
+      onRunAgain,
+      complete,
+    )
+
+    fireEvent.click(getByTestId('routine-stay'))
+    expect(queryByTestId('routine-autocontinue-off')).toBeNull()
+
+    // Leaving and returning to the result restarts the clock; this time
+    // the second cancel earns the offer, and taking it sticks.
+    setComplete(false)
+    setComplete(true)
+    fireEvent.click(getByTestId('routine-stay'))
+    fireEvent.click(getByTestId('routine-autocontinue-off'))
+    expect(routinePrefs().autoContinue).toBe(false)
+
+    runOutTheClock()
+    expect(onRunAgain).not.toHaveBeenCalled()
+  })
+
+  it('does not count before the first run has banked', () => {
+    // Arriving at the drill is not consent to start it: the countdown only
+    // ever bridges FROM a result. Before run one there is nothing to bridge.
+    const onRunAgain = vi.fn()
+    seedRoutine(REPS_TEMPLATE)
+    const { queryByTestId } = render(() => (
+      <RoutineRibbon
+        type={EXERCISE_LONG_NOTE}
+        isComplete={() => false}
+        onRunAgain={onRunAgain}
+      />
+    ))
+
+    expect(queryByTestId('routine-run-again')).toBeNull()
+    runOutTheClock()
+    expect(onRunAgain).not.toHaveBeenCalled()
+  })
+})
