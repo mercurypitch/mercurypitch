@@ -125,17 +125,19 @@ Home with Ascent week 1 armed and today's session generated.
 ## The Map (beat 6)
 
 The answer to _"what can I actually do here?"_ — a constellation of rooms,
-personalized. Six primary rooms, each a card with a plate, one verb-led line and
-a direct entry:
+personalized. Six primary rooms, each a card with a plate, one line and a direct
+entry. The line says what the room **is** before what you do in it — a title
+alone names a noun the visitor has no picture of (`ROOMS` in
+`src/features/onboarding/rooms.ts` is the source of truth):
 
-| Room           | Line                                                                | Target          |
-| -------------- | ------------------------------------------------------------------- | --------------- |
-| **Practice**   | See every note as you sing it, with per-note accuracy               | `TAB_SINGING`   |
-| **Exercises**  | 14 drills for range, agility, intervals and control                 | `TAB_EXERCISES` |
-| **The Ascent** | A seven-week guided path — one orb at a time                        | `TAB_PATH`      |
-| **Karaoke**    | Load any song, split the vocal out, sing it with lyrics and scoring | `/karaoke`      |
-| **Jam**        | Sing together in real time — share a room code                      | `TAB_JAM`       |
-| **Analysis**   | Pitch traces, harmonics and consistency, in plain language          | `TAB_ANALYSIS`  |
+| Room           | Line                                                                         | Target          |
+| -------------- | ---------------------------------------------------------------------------- | --------------- |
+| **Practice**   | The live singing stage — every note you sing, drawn and scored as it happens  | `TAB_SINGING`   |
+| **Exercises**  | A library of eighteen short drills for range, agility, intervals and control  | `TAB_EXERCISES` |
+| **The Ascent** | A seven-week guided course — one themed week at a time, in order              | `TAB_PATH`      |
+| **Karaoke**    | Your own songs turned into karaoke — the vocal split out, with lyrics and scoring | `/karaoke`  |
+| **Jam**        | A shared room for singing together in real time — send someone the code       | `TAB_JAM`       |
+| **Analysis**   | A read-out of your voice — pitch traces, harmonics and consistency, in plain language | `TAB_ANALYSIS` |
 
 Plus one "and also" strip: Challenges, Leaderboard, Community, Compose, Guitar,
 Piano, Voice Mirror, Glass.
@@ -154,6 +156,10 @@ absorbing them must be a data change, not a layout change.
 | Narrow range   | The Ascent · Range week      | There's more voice up there than you're using |
 | All strong     | Karaoke                      | You're ready to sing a real song              |
 | No voiceprint  | Practice                     | Start here — everything else branches off it  |
+
+The reason sits **under** the room's own line, never instead of it: the reason
+says why you were sent, the line says where — and the recommended card is the
+one that can least afford to answer only half of that.
 
 **Replayable** from the header `?`, Settings → Guide, and `#/guide` — the overlay
 pattern `showAdminWeekly` / `#/admin/weekly` already uses. Replaying re-runs the

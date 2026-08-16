@@ -18,8 +18,20 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
+import { noteArticle } from '@/lib/note-utils'
 import type { OnboardingTrack } from '../flow'
 import styles from '../onboarding.module.css'
+
+/**
+ * What beat 2 heard, in one clause. Both forks open with it, so it lives
+ * in one place — and it says "an A3", never "a A3": A, E and F are read
+ * out loud starting on a vowel sound.
+ */
+const SangNote: Component<{ note: string | null }> = (props) => (
+  <Show when={props.note !== null}>
+    You sang {noteArticle(props.note ?? '')} {props.note}.{' '}
+  </Show>
+)
 
 export interface BeatForkProps {
   /** The note heard at beat 2, e.g. 'G3'. Null if the mic was skipped. */
@@ -42,12 +54,9 @@ export const BeatFork: Component<BeatForkProps> = (props) => (
           <p class={styles.eyebrow}>Two ways in</p>
           <h1 class={styles.headline}>Want the whole map?</h1>
           <p class={styles.sub}>
-            <Show when={props.firstNote !== null}>
-              You sang a {props.firstNote}.{' '}
-            </Show>
-            A minute and a half of singing tells us the rest — your range, how
-            steady you hold a note, and how close your ear lands. Or skip it;
-            you can do this any time.
+            <SangNote note={props.firstNote} />A minute and a half of singing
+            tells us the rest — your range, how steady you hold a note, and how
+            close your ear lands. Or skip it; you can do this any time.
           </p>
         </>
       }
@@ -55,9 +64,7 @@ export const BeatFork: Component<BeatForkProps> = (props) => (
       <p class={styles.eyebrow}>Welcome back</p>
       <h1 class={styles.headline}>You've already mapped your voice</h1>
       <p class={styles.sub}>
-        <Show when={props.firstNote !== null}>
-          You sang a {props.firstNote}.{' '}
-        </Show>
+        <SangNote note={props.firstNote} />
         <Show
           when={props.savedCount === 1}
           fallback={`You have ${props.savedCount} voiceprints on file`}

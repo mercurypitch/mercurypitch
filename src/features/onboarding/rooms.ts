@@ -7,8 +7,11 @@
 // adding the two Home cards from PR #359 (Jam Rooms, Hear Yourself)
 // is a data change here and nothing else.
 //
-// The verb-led line is the whole point — "See every note as you sing
-// it" tells someone what happens; "Practice Engine" does not.
+// The line is the whole point, and it has one job: say what the room IS
+// before saying what you do in it. A title alone ("Analysis") names a
+// noun the visitor has no picture of; "A read-out of your voice — pitch
+// traces, harmonics and consistency" gives them the picture first and
+// the activity second. Write every line that way round.
 
 import type { DestinationVisual } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -29,7 +32,7 @@ export type RoomTarget =
 export interface Room {
   id: RoomId
   title: string
-  /** One verb-led line: what happens when you go there. */
+  /** One line: what the room is, then what you do there. */
   line: string
   target: RoomTarget
   /**
@@ -54,7 +57,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'practice',
     title: 'Practice',
-    line: 'See every note as you sing it, with per-note accuracy.',
+    line: 'The live singing stage — every note you sing, drawn and scored as it happens.',
     target: { kind: 'tab', tab: TAB_SINGING },
     tourTab: TAB_SINGING,
     visual: 'practice',
@@ -62,7 +65,11 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'exercises',
     title: 'Exercises',
-    line: 'Fourteen drills for range, agility, intervals and control.',
+    // The count is real and pinned by a test — EXERCISE_HELP in
+    // src/features/exercises/exercise-help.ts is keyed by every
+    // ExerciseType, so adding a drill without updating this line fails.
+    // It said "fourteen" through four additions before that.
+    line: 'A library of eighteen short drills for range, agility, intervals and control.',
     target: { kind: 'tab', tab: TAB_EXERCISES },
     tourTab: TAB_EXERCISES,
     visual: 'exercises',
@@ -70,7 +77,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'ascent',
     title: 'The Ascent',
-    line: 'A seven-week guided path — one orb at a time.',
+    line: 'A seven-week guided course — one themed week at a time, in order.',
     target: { kind: 'tab', tab: TAB_PATH },
     tourTab: TAB_PATH,
     visual: 'ascent',
@@ -78,14 +85,14 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'karaoke',
     title: 'Karaoke',
-    line: 'Load any song, split the vocal out, and sing it with lyrics and scoring.',
+    line: 'Your own songs turned into karaoke — the vocal split out, with lyrics and scoring.',
     target: { kind: 'page', href: '/karaoke' },
     visual: 'karaoke',
   },
   {
     id: 'jam',
     title: 'Jam',
-    line: 'Sing together in real time — share a room code.',
+    line: 'A shared room for singing together in real time — send someone the code.',
     target: { kind: 'tab', tab: TAB_JAM },
     tourTab: TAB_JAM,
     visual: 'jam',
@@ -93,7 +100,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'analysis',
     title: 'Analysis',
-    line: 'Pitch traces, harmonics and consistency, in plain language.',
+    line: 'A read-out of your voice — pitch traces, harmonics and consistency, in plain language.',
     target: { kind: 'tab', tab: TAB_ANALYSIS },
     tourTab: TAB_ANALYSIS,
     visual: 'analysis',

@@ -42,3 +42,21 @@ export function midiToNoteNameOctave(midi: number): string {
 export function noteColor(midi: number): string {
   return NOTE_COLORS[midiToNoteName(midi)] ?? '#8b949e'
 }
+
+/**
+ * Note letters that are SPOKEN starting with a vowel sound, so they take
+ * "an": "an A3", "an E4", "an F sharp". F is the trap — the letter is a
+ * consonant but the name is said "eff".
+ */
+const VOWEL_SOUND_LETTERS: ReadonlySet<string> = new Set(['A', 'E', 'F'])
+
+/**
+ * The indefinite article to put in front of a note name, e.g. 'an' for
+ * 'A3' and 'a' for 'G3'. Driven by the letter alone, so it is right for
+ * every accidental and octave ('A#2', 'Ab2', 'a3') and falls back to 'a'
+ * for anything that is not a note name.
+ */
+export function noteArticle(note: string): 'a' | 'an' {
+  const letter = note.trim().charAt(0).toUpperCase()
+  return VOWEL_SOUND_LETTERS.has(letter) ? 'an' : 'a'
+}

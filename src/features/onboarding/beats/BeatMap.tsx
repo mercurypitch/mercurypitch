@@ -131,10 +131,14 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                   {stop().detail}
                 </Show>
               </span>
-              <Show
-                when={isFirst(room)}
-                fallback={<span class={styles.roomLine}>{room.line}</span>}
-              >
+              {/* What the room IS, on every card including the
+                  recommended one. The reason used to REPLACE this line on
+                  the first stop, so the single card we push hardest was
+                  the only one that never said what it was — "Your tone
+                  wavers when you hold" tells you why you were sent, not
+                  where you are being sent. Now it says both. */}
+              <span class={styles.roomLine}>{room.line}</span>
+              <Show when={isFirst(room)}>
                 <span class={styles.roomReason}>{stop().reason}</span>
               </Show>
 
