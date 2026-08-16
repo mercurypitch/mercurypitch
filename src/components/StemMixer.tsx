@@ -28,6 +28,7 @@ import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/v
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
+import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
@@ -285,7 +286,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [shareToast, setShareToast] = createSignal('')
 
   const updateStageAlpha = (value: number) => {
-    setStageAlpha(persistKaraokeStageAlpha(value))
+    const alpha = persistKaraokeStageAlpha(value)
+    setStageAlpha(alpha)
+    // The lane-name plates are painted onto the canvas, not styled by it, so
+    // moving the CSS variable changes nothing until something repaints. The
+    // canvases listen for this; Karaoke Night's own slider already sends it.
+    eventBus.dispatch('karaoke:stage-glass', { alpha })
   }
 
   // ── Karaoke Focus Mode ────────────────────────────────────────
@@ -3036,6 +3042,20 @@ export const StemMixerStyles: string = `
     17,
     23,
     min(1, calc(var(--sm-stage-alpha) + 0.12))
+  );
+  /* The lane names (Vocal, Instrumental, …) and the MONITORING badge are
+     painted onto the canvas, so CSS cannot fade them — the canvas controller
+     reads this variable on each redraw instead. Carries more weight than the
+     glass itself: small mono type over a moving waveform needs the contrast,
+     and at the slider's floor a matching alpha would erase the names.
+     Defined here rather than per host, so the studio's slider reaches the
+     lane rails exactly as Karaoke Night's does (the performance preset
+     resolves --sm-stage-alpha from --kn-alpha, so both arrive here). */
+  --sm-lane-label-bg: rgba(
+    5,
+    8,
+    18,
+    min(1, calc(var(--sm-stage-alpha) + 0.2))
   );
   position: relative;
   display: flex;
