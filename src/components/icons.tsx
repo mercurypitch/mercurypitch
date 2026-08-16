@@ -1058,6 +1058,46 @@ export const Metronome: Component = () => (
 )
 
 // Waveform Bars Icon (audio visualization)
+// Mercury — the planet, carrying the brand's own waterline.
+//
+// Drawn rather than generated: an icon has to read at 20px in one colour and
+// sit beside the rest of this set, which a rendered image cannot do. The
+// shapes are the brand mark's (public/brand-mark.svg) reduced to strokes —
+// the orb, a single pitch wave across it as the meniscus, and the tilted
+// orbit that says planet rather than ball.
+export const MercuryPlanet: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="12" cy="12" r="7" />
+    {/* The waterline: one pitch wave, clipped to the orb so it reads as
+        liquid held inside rather than a line drawn over the top. */}
+    <clipPath id="mercury-orb">
+      <circle cx="12" cy="12" r="7" />
+    </clipPath>
+    <path
+      d="M4 13.2c1.8 0 2-2.6 4-2.6s2.2 2.6 4 2.6 2-2.6 4-2.6 2.2 2.6 4 2.6"
+      clip-path="url(#mercury-orb)"
+    />
+    {/* Orbit, tilted and open at the ends so the planet sits in front of it. */}
+    <path
+      d="M5.2 7.2C2.6 8 1 9.3 1.2 10.6c.2 1.4 2.6 2.2 5.6 2"
+      opacity="0.75"
+    />
+    <path
+      d="M18.8 16.8c2.6-.8 4.2-2.1 4-3.4-.2-1.4-2.6-2.2-5.6-2"
+      opacity="0.75"
+    />
+  </svg>
+)
+
 export const WaveformBars: Component<{ size?: number }> = (p) => (
   <svg
     width={p.size ?? 24}
