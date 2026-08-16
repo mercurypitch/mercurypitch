@@ -72,6 +72,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`FirstLight` claimed `aria-modal` without trapping focus
+  (CLAUDE-JOURNEY-018).** The onboarding overlay renders `role="dialog"
+aria-modal="true"` but never took or fenced focus: the first Tab after
+  load landed in the obscured app behind the star field. Wired the house
+  `useFocusTrap` (`@/lib/use-focus-trap` — the same primitive every other
+  modal uses) onto the overlay ref with `isOpen: () => true` and no
+  `onClose`, deliberately: Escape must not skip onboarding. Focus moves in
+  on mount, Tab/Shift-Tab cycle, and the previously focused element is
+  restored on unmount. Pinned by `src/tests/onboarding-focus.test.tsx`
+  (both tests fail with the trap removed) and verified in headless
+  Chromium: focus lands on the first button at open and stays inside the
+  dialog through a full Tab cycle.
+
 - **Four controllers fed `_setTargetPitch` a MIDI number where the contract is
   Hz (CLAUDE-JOURNEY-005).** `use-base-exercise` records every target change
   into the published run trace as a frequency; Sight-Singing passed
