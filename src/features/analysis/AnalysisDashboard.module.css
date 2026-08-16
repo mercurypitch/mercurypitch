@@ -8,6 +8,18 @@
    ============================================================ */
 
 .page {
+  /* Sized by its container, never by its content.
+
+     `margin: 0 auto` makes this a shrink-to-fit box inside .main-content's
+     column flex, and a shrink-to-fit box is never narrower than its
+     min-content — so one nowrap song title in the rail below used to set
+     the width of the WHOLE page (699px inside a 375px phone, measured),
+     carrying every full-width card off the right edge with it. A definite
+     width takes min-content out of the question entirely; the title then
+     ellipsises where it is supposed to.
+
+     The auto margins still centre it once max-width caps the used width. */
+  width: 100%;
   max-width: 960px;
   margin: 0 auto;
   padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-2xl);
@@ -97,13 +109,13 @@
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 
-  /* Sized by its container, never by its content. Without this, one
-     nowrap song title's min-content climbs section → .page (fit-content
-     inside the main-content flex row) and inflates the WHOLE page past
-     a phone's viewport — every full-width card with it, and the pills
-     at each card's right edge are what visibly fell off. Measured on a
-     375px viewport: page 403px before, 351px with this line. */
-  contain: inline-size;
+  /* No `contain: inline-size` here. It did stop a long title inflating the
+     page, but by making the rail contribute NOTHING to its parent's
+     max-content width — so above 720px, where the rail is the widest thing
+     on the page, .page shrank to the width of its subtitle text: a 416px
+     column of one-per-row cards on a 1280px screen. The page now takes a
+     definite width instead, which fixes the phone without lying to the
+     desktop about how wide this rail wants to be. */
 }
 
 .takeCard {
@@ -113,6 +125,23 @@
      walk out of the border on a narrow phone. */
   min-width: 0;
   min-height: var(--touch-target, 44px);
+
+  /* Height is the card's own business, never the rail's.
+
+     The rail is a column flex container with a height cap, so its items
+     inherit flex-shrink: 1 and are squeezed to fit it — and the explicit
+     min-height above replaces the automatic content-based floor that
+     would otherwise stop the squeeze. With more takes than the cap fits,
+     every card collapsed to exactly 44px: the title (overflow: hidden,
+     so its own floor is zero) vanished entirely, and the badge row and
+     date, which cannot shrink, painted outside the border and over the
+     card below. That is the overlap on a phone with a few songs
+     separated. Measured at 390x844 with 8 takes: cards 44px tall and
+     content 65px before, both 65px after.
+
+     Refusing to shrink is what makes the cap do its job — the rail
+     scrolls, which is what `overflow-y: auto` on it is already for. */
+  flex-shrink: 0;
   text-align: left;
   background: var(--bg-card);
   border: 1px solid var(--border);
