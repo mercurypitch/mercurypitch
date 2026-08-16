@@ -15,9 +15,19 @@ interface TierSelectorProps {
 export const TierSelector: Component<TierSelectorProps> = (props) => {
   return (
     <div class={`${styles.tierSelector} ${props.class ?? ''}`}>
-      <div class={styles.tierButtons}>
+      {/* A radiogroup, like the sidebar's own Strictness and Room controls:
+          the tint that marks the active tier is the only thing that said so,
+          so a screen reader read three identical buttons and heard nothing
+          change when one was pressed. */}
+      <div
+        class={styles.tierButtons}
+        role="radiogroup"
+        aria-label="Accuracy tier"
+      >
         <button
           class={`${styles.tierBtn} ${styles.tierLearning}${accuracyTier() === 'learning' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={accuracyTier() === 'learning'}
           onClick={() => applyAccuracyTier('learning')}
           title="Perfect within 15 cents. Great for beginners starting out."
         >
@@ -42,6 +52,8 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
         </button>
         <button
           class={`${styles.tierBtn} ${styles.tierSinger}${accuracyTier() === 'singer' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={accuracyTier() === 'singer'}
           onClick={() => applyAccuracyTier('singer')}
           title="Perfect within 8 cents. Good for intermediate singers."
         >
@@ -67,6 +79,8 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
         </button>
         <button
           class={`${styles.tierBtn} ${styles.tierProfessional}${accuracyTier() === 'professional' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={accuracyTier() === 'professional'}
           onClick={() => applyAccuracyTier('professional')}
           title="Perfect within 0 cents. Advanced virtuoso level."
         >

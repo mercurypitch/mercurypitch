@@ -22,6 +22,9 @@ interface LoopControlsProps {
   emphasizeB?: boolean
 }
 
+// Whether a point is set, and whether the loop is running, were carried by a
+// tint on the button and nothing else — so the ARIA snapshot read the same
+// before and after pressing one. aria-pressed is what says it out loud.
 export const LoopControls: Component<LoopControlsProps> = (props) => {
   return (
     <>
@@ -32,6 +35,7 @@ export const LoopControls: Component<LoopControlsProps> = (props) => {
         data-testid="loop-a-btn"
         title="Set loop start (A)"
         aria-label="Set loop start (A)"
+        aria-pressed={props.loopA() > 0}
         onClick={() => props.onSetLoopA()}
       >
         <IconLoopPoint label="A" set={props.loopA() > 0} />
@@ -46,6 +50,7 @@ export const LoopControls: Component<LoopControlsProps> = (props) => {
         data-testid="loop-b-btn"
         title="Set loop end (B)"
         aria-label="Set loop end (B)"
+        aria-pressed={props.loopB() > 0}
         onClick={() => props.onSetLoopB()}
       >
         <IconLoopPoint label="B" set={props.loopB() > 0} />
@@ -56,6 +61,7 @@ export const LoopControls: Component<LoopControlsProps> = (props) => {
           class={styles.btn}
           classList={{ [styles.active]: props.loopEnabled() }}
           data-testid="loop-toggle-btn"
+          aria-pressed={props.loopEnabled()}
           title={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
           aria-label={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
           onClick={() => props.onToggleLoop()}

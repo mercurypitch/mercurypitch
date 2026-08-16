@@ -78,12 +78,19 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
         </button>
       </Show>
 
+      {/* A radiogroup, like the sidebar's own Strictness and Room controls.
+          Six buttons whose only difference was a background tint told a
+          screen reader nothing about which voice the engine was set to. */}
       <div
         class={styles.tierButtons}
+        role="radiogroup"
+        aria-label="Singing voice range"
         style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.5rem;"
       >
         <button
           class={`${styles.tierBtn} ${styles.tierSoprano}${vocalRangePreset() === 'soprano' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={vocalRangePreset() === 'soprano'}
           onClick={() => setVocalRangePreset('soprano')}
           title="High Female Voice (C4-C6)"
         >
@@ -107,6 +114,8 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
 
         <button
           class={`${styles.tierBtn} ${styles.tierMezzo}${vocalRangePreset() === 'mezzo-soprano' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={vocalRangePreset() === 'mezzo-soprano'}
           onClick={() => setVocalRangePreset('mezzo-soprano')}
           title="Mid-High Female Voice (A3-A5)"
         >
@@ -132,6 +141,8 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
 
         <button
           class={`${styles.tierBtn} ${styles.tierAlto}${vocalRangePreset() === 'alto' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={vocalRangePreset() === 'alto'}
           onClick={() => setVocalRangePreset('alto')}
           title="Low Female Voice (F3-F5)"
         >
@@ -155,6 +166,8 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
 
         <button
           class={`${styles.tierBtn} ${styles.tierTenor}${vocalRangePreset() === 'tenor' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={vocalRangePreset() === 'tenor'}
           onClick={() => setVocalRangePreset('tenor')}
           title="High Male Voice (C3-C5)"
         >
@@ -178,6 +191,8 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
 
         <button
           class={`${styles.tierBtn} ${styles.tierBaritone}${vocalRangePreset() === 'baritone' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={vocalRangePreset() === 'baritone'}
           onClick={() => setVocalRangePreset('baritone')}
           title="Mid Male Voice (G2-G4)"
         >
@@ -203,6 +218,8 @@ export const VocalRangeSelector: Component<VocalRangeSelectorProps> = (
 
         <button
           class={`${styles.tierBtn} ${styles.tierBass}${vocalRangePreset() === 'bass' ? ` ${styles.tierActive}` : ''}`}
+          role="radio"
+          aria-checked={vocalRangePreset() === 'bass'}
           onClick={() => setVocalRangePreset('bass')}
           title="Low Male Voice (E2-E4)"
         >

@@ -72,16 +72,28 @@
 }
 
 /* Mobile: compact the account to an icon so the header row stays a
-   single clean band instead of wrapping the account to its own line. */
+   single clean band instead of wrapping the account to its own line.
+   The icon is compact, the TARGET is not: at 390x844 these were 24px tall
+   and shared an edge with the sign-out button, so a thumb aiming at the
+   profile could sign the singer out mid-practice. */
 @media (max-width: 768px) {
   .signInPill span,
   .name {
     display: none;
   }
-  .signInPill {
+  .signInPill,
+  .nameBtn {
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
     padding: 0.32rem 0.4rem;
   }
-  .nameBtn {
-    padding: 0.32rem 0.42rem;
+
+  /* Sign out is not a thing to put a thumb's width from the profile
+     button on a phone. It keeps its full-size home in Settings > Account,
+     which is where this button goes — one deliberate tap further away
+     from the one people press to check who they are signed in as. */
+  .logoutBtn {
+    display: none;
   }
 }

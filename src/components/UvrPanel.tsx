@@ -2001,8 +2001,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const headerExtras = () => (
     <>
       <div class="uvr-mode-stack">
-        <div class="uvr-mode-toggle">
+        {/* Radiogroups, like the app's own segmented controls: which mode,
+            which stem count and which device are chosen was carried by a
+            tint alone, so the ARIA snapshot read the same before and after
+            a change. */}
+        <div class="uvr-mode-toggle" role="radiogroup" aria-label="Processing">
           <button
+            role="radio"
+            aria-checked={uvrProcessingMode() === 'server'}
             class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
             title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
             onClick={() => {
@@ -2015,6 +2021,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <span class="mode-hq-pill">HQ</span>
           </button>
           <button
+            role="radio"
+            aria-checked={uvrProcessingMode() === 'local'}
             class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
             title="Processing: Browser"
             onClick={() => setUvrProcessingMode('local')}
@@ -2023,8 +2031,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             Browser
           </button>
           <Show when={uvrProcessingMode() === 'server'}>
-            <div class="uvr-device-toggle" data-testid="uvr-stem-choice">
+            <div
+              class="uvr-device-toggle"
+              data-testid="uvr-stem-choice"
+              role="radiogroup"
+              aria-label="Stems"
+            >
               <button
+                role="radio"
+                aria-checked={!bandSplitChoice()}
                 class="device-toggle-btn"
                 classList={{ active: !bandSplitChoice() }}
                 onClick={() => chooseBandSplit(false)}
@@ -2038,6 +2053,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </Show>
               </button>
               <button
+                role="radio"
+                aria-checked={bandSplitChoice()}
                 class="device-toggle-btn"
                 classList={{ active: bandSplitChoice() }}
                 onClick={() => chooseBandSplit(true)}
@@ -2053,8 +2070,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </div>
           </Show>
           <Show when={uvrProcessingMode() === 'local'}>
-            <div class="uvr-device-toggle">
+            <div
+              class="uvr-device-toggle"
+              role="radiogroup"
+              aria-label="Device"
+            >
               <button
+                role="radio"
+                aria-checked={!uvrForceWebGpu()}
                 class="device-toggle-btn"
                 classList={{ active: !uvrForceWebGpu() }}
                 onClick={() => handleForceWebGpuToggle(false)}
@@ -2066,6 +2089,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <span>CPU</span>
               </button>
               <button
+                role="radio"
+                aria-checked={uvrForceWebGpu()}
                 class="device-toggle-btn"
                 classList={{ active: uvrForceWebGpu() }}
                 onClick={() => handleForceWebGpuToggle(true)}

@@ -158,6 +158,23 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The "your earlier practice stayed here" notice no longer opens mid-drill.**
+  It counted every run on the device, including the ones done after signing
+  in, so it could appear on a result screen — covering the button that keeps
+  you there — to explain practice you had just finished. It now describes only
+  what was on the device when you signed in.
+
+- **The account button on a phone is a proper target, and signing out asks
+  first.** The two controls in the top-right corner were 24 pixels tall and
+  shared an edge, so a thumb aiming at the profile could sign you out. The
+  phone now shows one full-size account button; sign-out lives in
+  Settings > Account, and where it stays in the header it confirms first.
+
+- **The pitch engine's settings say which choice is active.** Voice range,
+  accuracy tier, buffer size, play mode and the karaoke processing pills
+  marked the current choice with a colour and nothing else, so a screen reader
+  read the same thing before and after you changed it.
+
 - **Challenges and badges you have not earned no longer claim a date.**
   Anything unfinished was being stamped 1 January 1970 instead of showing
   nothing at all.

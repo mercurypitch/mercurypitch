@@ -10,7 +10,7 @@
 //
 // The predicate is pure, so every branch is testable without a session.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The two ids are the whole signal, so the wiring block below drives them
 // directly rather than standing up a token and a session.
@@ -29,10 +29,16 @@ const {
   localProgressTotal,
   markNoticeSeen,
   noticeSeen,
+  accountFirstSeenAt,
+  localProgressAtSignIn,
   progressHandoffMailto,
   summarizeLocalProgress,
 } = await import('@/features/account/local-progress-notice')
-const { recordExerciseResult } = await import('@/stores/exercise-history-store')
+const { clearExerciseHistory, recordExerciseResult } =
+  await import('@/stores/exercise-history-store')
+const { recordPathPracticeDay, resetAscent, startAscent } =
+  await import('@/features/path/path-progress')
+const { setSessionResults } = await import('@/stores/practice-session-store')
 
 const SOME_PROGRESS = { exercises: 12, sessions: 3, ascentDays: 4 }
 
@@ -251,5 +257,130 @@ describe('localProgressNoticeDue — the wiring', () => {
     })
     ids.account = ids.device // register upgrades the row in place
     expect(localProgressNoticeDue()).toBe(false)
+  })
+})
+
+// ── The cutoff ───────────────────────────────────────────────────
+//
+// The local stores are one device-wide list each and keep growing while the
+// singer practises, signed in or not. So the notice counted runs finished
+// AFTER the sign-in, became due mid-session, and — at 390x844 — opened over
+// the auto-continue row, covering the "Stay here" button its own sentence
+// tells you to press. "Earlier practice" has to mean earlier.
+describe('the cutoff — what "earlier" means', () => {
+  const HOUR = 60 * 60 * 1000
+  const SIGN_IN = new Date('2026-08-16T12:00:00.000Z').getTime()
+
+  const aRun = (completedAt: number) => ({
+    type: 'long-note' as const,
+    score: 80,
+    metrics: {},
+    completedAt,
+  })
+
+  beforeEach(() => {
+    localStorage.clear()
+    clearExerciseHistory()
+    setSessionResults([])
+    resetAscent()
+    ids.device = 'device-a'
+    ids.account = 'account-b'
+    vi.useFakeTimers()
+    vi.setSystemTime(SIGN_IN)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('counts the practice that was here before the account arrived', () => {
+    recordExerciseResult(aRun(SIGN_IN - HOUR))
+    expect(localProgressAtSignIn('account-b').exercises).toBe(1)
+    expect(localProgressNoticeDue()).toBe(true)
+  })
+
+  // The regression itself: finish a drill while signed in and nothing is
+  // owed an explanation, so no modal opens over the result screen.
+  it('does not count a run finished after signing in', () => {
+    expect(localProgressNoticeDue()).toBe(false)
+
+    vi.setSystemTime(SIGN_IN + HOUR)
+    recordExerciseResult(aRun(SIGN_IN + HOUR))
+
+    expect(localProgressAtSignIn('account-b').exercises).toBe(0)
+    expect(localProgressNoticeDue()).toBe(false)
+  })
+
+  it('holds the line where the first sign-in put it', () => {
+    expect(accountFirstSeenAt('account-b')).toBe(SIGN_IN)
+    vi.setSystemTime(SIGN_IN + 5 * HOUR)
+    expect(accountFirstSeenAt('account-b')).toBe(SIGN_IN)
+  })
+
+  // Signing out and into a second account made elsewhere is its own arrival,
+  // and the practice done under the first one WAS left behind.
+  it('gives a second account its own line', () => {
+    expect(localProgressNoticeDue()).toBe(false)
+
+    vi.setSystemTime(SIGN_IN + HOUR)
+    recordExerciseResult(aRun(SIGN_IN + HOUR))
+
+    vi.setSystemTime(SIGN_IN + 2 * HOUR)
+    ids.account = 'account-c'
+    expect(localProgressAtSignIn('account-c').exercises).toBe(1)
+    expect(localProgressNoticeDue()).toBe(true)
+  })
+
+  // Merely opening The Ascent seeds a granted day that nobody practised.
+  // Counting it would raise the notice for a device with no practice on it.
+  it('does not count the Ascent day the app grants for free', () => {
+    startAscent()
+    expect(localProgressAtSignIn('account-b').ascentDays).toBe(0)
+    expect(localProgressNoticeDue()).toBe(false)
+  })
+
+  it('counts an Ascent day practised before the account arrived', () => {
+    startAscent()
+    recordPathPracticeDay('2026-08-15')
+    expect(localProgressAtSignIn('account-b').ascentDays).toBe(1)
+  })
+
+  // Sessions are the other list the notice counts, and they are stamped the
+  // same way — a session sung after signing in is not practice left behind.
+  it('divides practice sessions at the same line', () => {
+    const session = (completedAt: number) => ({
+      name: 'Warm-up',
+      sessionName: 'Warm-up',
+      score: 80,
+      practiceItemResult: [],
+      itemsCompleted: 1,
+      completedAt,
+    })
+
+    setSessionResults([session(SIGN_IN - HOUR)])
+    expect(localProgressAtSignIn('account-b').sessions).toBe(1)
+
+    setSessionResults([session(SIGN_IN + HOUR)])
+    expect(localProgressAtSignIn('account-b').sessions).toBe(0)
+  })
+
+  it('survives junk in the first-seen store', () => {
+    localStorage.setItem(
+      'mercurypitch.localProgressNotice.firstSeen.v1',
+      'not json',
+    )
+    expect(accountFirstSeenAt('account-b', 4242)).toBe(4242)
+    expect(accountFirstSeenAt('account-b', 9999)).toBe(4242)
+  })
+
+  // Signed out, the two ids are the same and nothing was left anywhere. The
+  // stamp is what divides one account's practice from another's, so writing
+  // one for a device that has not signed in would date the division wrong.
+  it('stamps nothing while signed out', () => {
+    ids.account = ids.device
+    expect(localProgressNoticeDue()).toBe(false)
+    expect(
+      localStorage.getItem('mercurypitch.localProgressNotice.firstSeen.v1'),
+    ).toBeNull()
   })
 })
