@@ -82,7 +82,7 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
           role="radio"
           aria-checked={accuracyTier() === 'professional'}
           onClick={() => applyAccuracyTier('professional')}
-          title="Perfect within 0 cents. Advanced virtuoso level."
+          title="Perfect within 1 cent. Advanced virtuoso level."
         >
           <span class={styles.tierIconWrap}>
             <svg
@@ -99,7 +99,7 @@ export const TierSelector: Component<TierSelectorProps> = (props) => {
             </svg>
           </span>
           <span class={styles.tierName}>Professional</span>
-          <span class={styles.tierDesc}>&plusmn;0 cents</span>
+          <span class={styles.tierDesc}>&plusmn;1 cent</span>
         </button>
       </div>
     </div>

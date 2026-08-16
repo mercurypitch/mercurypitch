@@ -129,7 +129,10 @@ const ACCURACY_PRESETS: Record<
     { threshold: 999, band: 0, color: '#f85149' },
   ],
   professional: [
-    { threshold: 0, band: 100, color: '#3fb950' },
+    // 1, not 0: bands are consumed as `avgCents <= threshold`, so a 0-cent
+    // Perfect band is unreachable on a continuous pitch trace — and the
+    // Accuracy Bands editor's own Perfect field declares min="1".
+    { threshold: 1, band: 100, color: '#3fb950' },
     { threshold: 3, band: 90, color: '#58a6ff' },
     { threshold: 8, band: 75, color: '#2dd4bf' },
     { threshold: 15, band: 50, color: '#d29922' },
@@ -178,9 +181,26 @@ export const [sensitivityPreset, _setSensitivityPreset] =
     'quiet',
   )
 
+/**
+ * Users who applied the Professional tier before its Perfect threshold was
+ * fixed have a 0 persisted — a band `avgCents <= threshold` can never enter.
+ * Heal scoring bands (band > 0) to the editor's own floor of 1 on every
+ * read; the catch-all row (band 0) keeps its sentinel threshold.
+ */
+function healBands(parsed: SettingsConfig): SettingsConfig {
+  if (!Array.isArray(parsed.bands)) return parsed
+  return {
+    ...parsed,
+    bands: parsed.bands.map((b) =>
+      b.band > 0 && b.threshold < 1 ? { ...b, threshold: 1 } : b,
+    ),
+  }
+}
+
 export const [settings, setSettings] = createPersistedSignal<SettingsConfig>(
   'pitchperfect_settings',
   DEFAULT_SETTINGS,
+  { deserializer: (item) => healBands(JSON.parse(item) as SettingsConfig) },
 )
 
 export const [adsr, setAdsr] = createPersistedSignal<ADSRConfig>(
@@ -267,9 +287,15 @@ export function setTonicAnchor(enabled: boolean): void {
 }
 
 export function setBand(index: number, threshold: number): void {
+  // Floor at 1: the editor's fields declare min="1", but its handler parses
+  // a cleared field to 0 — and a 0-cent band is unreachable (`<=` on an
+  // absolute deviation). Non-finite input lands on the floor too.
+  const safe = Number.isFinite(threshold)
+    ? Math.max(1, Math.round(threshold))
+    : 1
   setSettings((s) => {
     const bands = [...s.bands]
-    bands[index] = { ...bands[index], threshold }
+    bands[index] = { ...bands[index], threshold: safe }
     bands.sort((a, b) => a.threshold - b.threshold)
     return { ...s, bands }
   })
@@ -697,7 +723,7 @@ export function getAccuracyTierInfo(tier: AccuracyTier): {
     professional: {
       label: 'Professional',
       description:
-        'Perfect pitch means being within 0 cents of the target note. For advanced virtuosos.',
+        'Perfect pitch means being within 1 cent of the target note. For advanced virtuosos.',
       difficulty: 'Advanced',
     },
   } as const
