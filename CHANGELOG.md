@@ -187,6 +187,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   the app hidden behind it, so keyboard and screen-reader users could
   operate controls they could not see. Focus now moves into the dialog on
   open, cycles inside it, and returns where it was when onboarding ends.
+- **The Professional tier's "Perfect" rating can now actually be earned.**
+  The tier asked for a pitch deviation of 0 cents — a value no live reading
+  ever lands on exactly, so the top rating was unreachable and the settings
+  field that displays it marked its own preset invalid. The tier now asks
+  for within 1 cent (still virtuoso territory), stored presets from before
+  the fix heal themselves on load, and the note list's fallback grading got
+  the same correction.
 
 - **"Furthest off" on the result card now names a note the drill actually
   asked for.** Four drills — Sight-Singing, Long Note, Pitch Hold and Mirror

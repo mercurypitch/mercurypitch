@@ -25,7 +25,9 @@ const PRACTICE_MIC_OWNER = 'practice-engine'
 
 // Accuracy bands (threshold in cents → band score)
 const DEFAULT_BANDS: { threshold: number; band: number }[] = [
-  { threshold: 0, band: SCORE_PERFECT },
+  // CENTS_PERFECT / 2 matches centsToRating's own 'perfect' line; the old
+  // 0 made the top band unreachable (`<=` on an absolute deviation).
+  { threshold: CENTS_PERFECT / 2, band: SCORE_PERFECT },
   { threshold: CENTS_PERFECT, band: SCORE_EXCELLENT },
   { threshold: CENTS_EXCELLENT, band: SCORE_GOOD },
   { threshold: CENTS_GOOD, band: SCORE_OKAY },

@@ -84,6 +84,25 @@ aria-modal="true"` but never took or fenced focus: the first Tab after
   (both tests fail with the trap removed) and verified in headless
   Chromium: focus lands on the first button at open and stays inside the
   dialog through a full Tab cycle.
+- **The Professional accuracy tier installed an unreachable Perfect band
+  (CLAUDE-JOURNEY-020).** Every band table is consumed as
+  `avgCents <= threshold` on an absolute deviation, so
+  `ACCURACY_PRESETS.professional`'s `{ threshold: 0, band: 100 }` admitted
+  only an exact 0.0-cent reading — measure zero on a continuous trace — and
+  the Accuracy Bands editor's Perfect field (`min="1"`) sat in `:invalid`
+  displaying the 0 the preset had just written. Fixed at every seam the 0
+  could come from: the preset is now `threshold: 1` (copy updated in
+  `TierSelector` and `getAccuracyTierInfo` to "within 1 cent"); `setBand`
+  floors at 1 (the panel's `parseInt(value) || 0` smuggled a 0 in on
+  field-clear, and non-finite input now lands on the floor instead of
+  storing NaN); the persisted-settings signal gained a deserializer that
+  heals scoring bands (`band > 0`) below 1 on load, so users who picked
+  Professional before the fix are unstuck without re-clicking the tier; and
+  `practice-engine`'s `DEFAULT_BANDS` fallback (the table `centsToBand`
+  uses when callers pass none, e.g. `NoteList`) had the same 0-threshold
+  row, now `CENTS_PERFECT / 2` to match `centsToRating`'s own perfect line.
+  Pinned by `src/tests/settings-accuracy-bands.test.tsx` (7 of the pins
+  fail against the unfixed code).
 
 - **Four controllers fed `_setTargetPitch` a MIDI number where the contract is
   Hz (CLAUDE-JOURNEY-005).** `use-base-exercise` records every target change
