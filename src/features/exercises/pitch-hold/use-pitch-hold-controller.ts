@@ -1,6 +1,7 @@
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
+import { midiToFrequency } from '@/lib/frequency-to-note'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
@@ -34,7 +35,7 @@ export function usePitchHoldController(base: BaseExerciseController) {
 
   function setTarget(midi: number): void {
     targetMidi = midi
-    base._setTargetPitch(midi)
+    base._setTargetPitch(midiToFrequency(midi))
   }
 
   function startLoop(): void {

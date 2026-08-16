@@ -158,3 +158,17 @@ describe('usePitchHoldController', () => {
     expect(result.metrics.zonePct).toBeLessThan(30)
   })
 })
+
+describe('the trace speaks Hz', () => {
+  it('reports the target in Hz, never as a raw MIDI number', () => {
+    const seen: Array<number | null> = []
+    const base = createMockBase({
+      _setTargetPitch: (v) => {
+        seen.push(v)
+      },
+    })
+    const ctrl = usePitchHoldController(base)
+    ctrl.setTarget(69) // A4
+    expect(seen).toEqual([440])
+  })
+})

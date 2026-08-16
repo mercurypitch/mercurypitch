@@ -77,7 +77,7 @@ export function useMirrorMelodyController(
     melody = generateMelody(baseMidi, length, range)
     noteIndex = 0
     noteScores = []
-    base._setTargetPitch(baseMidi)
+    base._setTargetPitch(midiToFreq(baseMidi))
   }
 
   function startSequence(): void {

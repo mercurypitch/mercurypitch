@@ -175,6 +175,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **"Furthest off" on the result card now names a note the drill actually
+  asked for.** Four drills — Sight-Singing, Long Note, Pitch Hold and Mirror
+  Melody — recorded their target for the run readback in the wrong unit, so
+  the card could claim you were thousands of cents off a note that was never
+  a target. The readback now hears the same notes you did.
+
 - **Practice drills now land in your range.** A routine or challenge that
   handed a baritone "London Bridge" starting on G4 sang it there — and the
   call-and-response walk could wander into the fifth octave on top of it.

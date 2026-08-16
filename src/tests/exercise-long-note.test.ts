@@ -168,3 +168,20 @@ describe('useLongNoteController', () => {
     expect(resultLong.score).toBeGreaterThan(resultShort.score)
   })
 })
+
+describe('the trace speaks Hz', () => {
+  it('reports the target in Hz, never as a raw MIDI number', () => {
+    const seen: Array<number | null> = []
+    const base = createMockBase({
+      _setTargetPitch: (v) => {
+        seen.push(v)
+      },
+    })
+    const ctrl = useLongNoteController(base)
+    ctrl.setTarget(69) // A4
+    // The run-trace timeline speaks Hz; a MIDI number recorded as Hz puts
+    // the result card octaves off a note that was never a target
+    // (CLAUDE-JOURNEY-005's sibling in this drill).
+    expect(seen).toEqual([440])
+  })
+})

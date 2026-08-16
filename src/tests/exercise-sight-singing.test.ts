@@ -209,6 +209,25 @@ describe('useSightSingingController', () => {
     expect(result.metrics.notesScored).toBe(total)
     expect(result.metrics.notesAttempted).toBe(total)
   })
+
+  it('reports the target to the trace in Hz, never as a raw MIDI number', () => {
+    vi.useFakeTimers()
+    const seen: Array<number | null> = []
+    const base = createMockBase({
+      _setTargetPitch: (v) => {
+        seen.push(v)
+      },
+    })
+    const ctrl = useSightSingingController(base)
+    ctrl.setNotes([69]) // A4
+    ctrl.startRounds()
+    vi.useRealTimers()
+    // The trace timeline speaks Hz. MIDI 69 recorded as 69 Hz is the
+    // "Furthest off: ~3200 cents off a note that was never a target"
+    // result card (CLAUDE-JOURNEY-005).
+    expect(seen).toContain(midiToFreq(69)) // 440 Hz
+    expect(seen).not.toContain(69)
+  })
 })
 
 describe('finalizeSightSingingScore (the 1-of-6 = 70% board fix)', () => {
