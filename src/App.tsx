@@ -294,7 +294,7 @@ import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -2614,7 +2614,6 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   onMount(() => {
-    initTheme()
     initDefaultOGTags()
 
     // Blur a <select> after a pointer pick so Spacebar hits the global

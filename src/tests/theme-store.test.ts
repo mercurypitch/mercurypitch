@@ -3,8 +3,9 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { applyPersistedValue } from '@/lib/storage'
 import { appStore, initTheme, setTheme, toggleTheme } from '@/stores'
-import { autoDayTheme, autoNightTheme, isDaytime, resolveThemeForSource, setAutoTheme, setThemeSource, stopThemeAutoWatch, themeSource, } from '@/stores/theme-store'
+import { autoDayTheme, autoNightTheme, isDaytime, resolveThemeForSource, setAutoTheme, setThemeSource, stopThemeAutoWatch, THEME_CHROME_COLORS, themeSource, } from '@/stores/theme-store'
 
 /**
  * jsdom ships no `window.matchMedia` at all, so `system` mode needs a fake
@@ -14,6 +15,7 @@ import { autoDayTheme, autoNightTheme, isDaytime, resolveThemeForSource, setAuto
 const NO_MATCH_MEDIA = Symbol('no matchMedia')
 let originalMatchMedia: typeof window.matchMedia | typeof NO_MATCH_MEDIA =
   NO_MATCH_MEDIA
+let themeColorMeta: HTMLMetaElement
 
 function installMatchMedia(initialDark: boolean) {
   if (originalMatchMedia === NO_MATCH_MEDIA && 'matchMedia' in window) {
@@ -53,6 +55,9 @@ function restoreMatchMedia(): void {
 
 describe('Theme Store', () => {
   beforeEach(() => {
+    themeColorMeta = document.createElement('meta')
+    themeColorMeta.name = 'theme-color'
+    document.head.append(themeColorMeta)
     // Reset to dark theme (also drops any auto source back to manual)
     setTheme('dark')
     setAutoTheme('day', 'light')
@@ -64,6 +69,8 @@ describe('Theme Store', () => {
     stopThemeAutoWatch()
     restoreMatchMedia()
     vi.useRealTimers()
+    themeColorMeta.remove()
+    document.documentElement.style.removeProperty('color-scheme')
   })
 
   describe('theme signal', () => {
@@ -104,6 +111,54 @@ describe('Theme Store', () => {
     it('should set data-theme attribute on document', () => {
       setTheme('light')
       expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    })
+
+    it('keeps browser chrome and native controls aligned with the preset', () => {
+      setTheme('light')
+
+      expect(themeColorMeta.content).toBe(THEME_CHROME_COLORS.light)
+      expect(document.documentElement.style.colorScheme).toBe('light')
+
+      setTheme('ocean')
+
+      expect(themeColorMeta.content).toBe(THEME_CHROME_COLORS.ocean)
+      expect(document.documentElement.style.colorScheme).toBe('dark')
+    })
+
+    it('reconciles the document when cloud sync hydrates a theme', () => {
+      applyPersistedValue('pitchperfect_theme', 'light')
+
+      expect(appStore.theme()).toBe('light')
+      expect(document.documentElement.dataset.theme).toBe('light')
+      expect(document.documentElement.style.colorScheme).toBe('light')
+      expect(themeColorMeta.content).toBe(THEME_CHROME_COLORS.light)
+    })
+
+    it('reconciles externally hydrated auto source, presets, and listeners', () => {
+      const media = installMatchMedia(false)
+
+      applyPersistedValue('pitchperfect_theme_source', 'system')
+      expect(themeSource()).toBe('system')
+      expect(media.listenerCount()).toBe(1)
+      expect(appStore.theme()).toBe('light')
+
+      applyPersistedValue('pitchperfect_theme_auto_day', 'amber')
+      expect(autoDayTheme()).toBe('amber')
+      expect(appStore.theme()).toBe('amber')
+      expect(document.documentElement.dataset.theme).toBe('amber')
+
+      media.setDark(true)
+      expect(appStore.theme()).toBe('dark')
+      applyPersistedValue('pitchperfect_theme_auto_night', 'ocean')
+      expect(autoNightTheme()).toBe('ocean')
+      expect(appStore.theme()).toBe('ocean')
+      expect(themeColorMeta.content).toBe(THEME_CHROME_COLORS.ocean)
+
+      applyPersistedValue('pitchperfect_theme_source', 'manual')
+      expect(themeSource()).toBe('manual')
+      expect(media.listenerCount()).toBe(0)
+      media.setDark(false)
+      expect(appStore.theme()).toBe('ocean')
     })
   })
 

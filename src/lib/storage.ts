@@ -42,6 +42,8 @@ export function createPersistedSignal<T>(
     validator?: (val: unknown) => val is T
     serializer?: (val: T) => string
     deserializer?: (val: string) => T
+    /** Reconcile non-reactive host state after a cloud/external hydration. */
+    onExternalApply?: (value: T) => void
   },
 ): Signal<T> {
   const deserialize =
@@ -78,6 +80,7 @@ export function createPersistedSignal<T>(
       const parsed = deserialize(serialized)
       if (!options?.validator || options.validator(parsed)) {
         setValue(() => parsed)
+        options?.onExternalApply?.(parsed)
       }
     } catch (e) {
       console.warn(`[createPersistedSignal] Bad synced value for "${key}":`, e)
