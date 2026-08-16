@@ -29,12 +29,13 @@ import { freqToMidi } from '@/lib/scale-data'
 import { exposeForE2E } from '@/lib/test-utils'
 import { formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
-import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import { runUvrPipeline } from '@/lib/uvr-processing-pipeline'
 import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, } from '@/stores/app-store'
 import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 import { FileText, FileUpload, Minus, Plus, X } from './icons'
+import { cancelPitchTestingUvrSession, preservePitchTestingUvrCancellation, settlePitchTestingUvrError, } from './pitch-testing-uvr-cancellation'
 import styles from './PitchTestingTab.module.css'
 
 interface PitchTestingTabProps {
@@ -43,6 +44,45 @@ interface PitchTestingTabProps {
 
 type DetectionMode = 'mic' | 'file' | 'generate'
 type AlgorithmId = 'yin' | 'fft' | 'autocorr' | 'swift'
+
+class CancelledPitchTestingPostProcessing extends Error {}
+
+const createPitchTestingAudioContext = (): AudioContext =>
+  new (typeof window.AudioContext !== 'undefined'
+    ? window.AudioContext
+    : (
+        window as unknown as {
+          webkitAudioContext: typeof AudioContext
+        }
+      ).webkitAudioContext)()
+
+const mixAudioBufferToMono = (decoded: AudioBuffer): Float32Array => {
+  const mono = new Float32Array(decoded.length)
+  if (decoded.numberOfChannels === 1) {
+    mono.set(decoded.getChannelData(0))
+    return mono
+  }
+
+  const ch0 = decoded.getChannelData(0)
+  const ch1 = decoded.getChannelData(1)
+  for (let index = 0; index < decoded.length; index++) {
+    mono[index] = (ch0[index] + ch1[index]) * 0.5
+  }
+  return mono
+}
+
+const decodeVocalStem = async (
+  url: string,
+  context: AudioContext,
+  requireActive: () => void,
+): Promise<{ decoded: AudioBuffer; mono: Float32Array }> => {
+  const response = await fetch(url)
+  const bytes = await response.arrayBuffer()
+  requireActive()
+  const decoded = await context.decodeAudioData(bytes)
+  requireActive()
+  return { decoded, mono: mixAudioBufferToMono(decoded) }
+}
 
 export interface AnalyzedTrack {
   id: string
@@ -319,7 +359,19 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   let disposed = false
   let micRequestGeneration = 0
   let offlineAnalysisGeneration = 0
+  let uvrRunGeneration = 0
   let cancelActiveUvr: (() => void) | null = null
+
+  const cancelSeparation = () => {
+    uvrRunGeneration += 1
+    const cancelRun = cancelActiveUvr
+    cancelActiveUvr = null
+    cancelRun?.()
+    if (!disposed) {
+      setIsSeparating(false)
+      setActiveUvrSessionId(undefined)
+    }
+  }
 
   // Microphone state
   const [audioContext, setAudioContext] = createSignal<AudioContext | null>(
@@ -838,6 +890,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     )
       return
 
+    const generation = ++uvrRunGeneration
     setIsSeparating(true)
     setOfflineProgress(0)
     setAnalyzedTracks((prev) =>
@@ -850,7 +903,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     try {
       const file = track.file
       const hash = await computeFileHash(file)
-      if (disposed) return
+      if (disposed || generation !== uvrRunGeneration) return
       const mode = getUvrProcessingMode()
       const sessionId = startUvrSession(
         file.name,
@@ -861,7 +914,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         hash,
       )
       setActiveUvrSessionId(sessionId)
-      cancelActiveUvr = () => cancelUvrPipeline(mode, sessionId)
+      const controller = new AbortController()
+      const cancelled = () =>
+        disposed || controller.signal.aborted || generation !== uvrRunGeneration
+      const cancelProviderRun = () =>
+        cancelPitchTestingUvrSession(sessionId, mode, controller)
+      cancelActiveUvr = cancelProviderRun
 
       const sessions = getAllUvrSessions()
       const session = sessions.find((s) => s.sessionId === sessionId)
@@ -871,124 +929,144 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         setCurrentUvrSession({ ...session })
       }
 
-      await runUvrPipeline(file, sessionId, mode, {
-        onProgress: (pct) => {
-          if (!disposed) setOfflineProgress(pct * 0.5) // First 50% is separation
-        },
-        onComplete: (result) => {
-          if (disposed) return
-          void (async () => {
-            try {
-              await completeUvrSession(
-                sessionId,
-                result.outputs,
-                result.stemMeta,
-              )
-              if (disposed) return
-
-              const s = getUvrSession(sessionId)
-              if (s) {
-                await saveUvrSession({
-                  sessionId,
-                  status: 'completed',
-                  progress: 100,
-                  fileHash: s.fileHash,
-                  originalFileName: s.originalFile?.name ?? file.name,
-                  originalFileSize: s.originalFile?.size ?? file.size,
-                  originalFileType: s.originalFile?.mimeType ?? file.type,
-                  processingMode: mode,
-                  processingTime: s.processingTime,
-                })
-                if (disposed) return
-              }
-
-              // Now fetch the vocal stem back to Float32Array to continue with pitch detection
-              if (
-                result.outputs !== undefined &&
-                result.outputs.vocal !== undefined
-              ) {
-                const resp = await fetch(result.outputs.vocal)
-                const ab = await resp.arrayBuffer()
-                if (disposed) return
-                let ctx = currentAudioCtx
-                if (!ctx) {
-                  ctx = new (
-                    typeof window.AudioContext !== 'undefined'
-                      ? window.AudioContext
-                      : (
-                          window as unknown as {
-                            webkitAudioContext: typeof AudioContext
-                          }
-                        ).webkitAudioContext
-                  )()
-                  setAudioContext(ctx)
-                }
-                const decoded = await ctx.decodeAudioData(ab)
-                if (disposed) return
-
-                const mono = new Float32Array(decoded.length)
-                if (decoded.numberOfChannels > 1) {
-                  const ch0 = decoded.getChannelData(0)
-                  const ch1 = decoded.getChannelData(1)
-                  for (let i = 0; i < decoded.length; i++) {
-                    mono[i] = (ch0[i] + ch1[i]) * 0.5
-                  }
-                } else {
-                  mono.set(decoded.getChannelData(0))
-                }
-
-                setAnalyzedTracks((prev) =>
-                  prev.map((t) => {
-                    if (t.id === activeId)
-                      return {
-                        ...t,
-                        waveform: mono,
-                        analysisResults: [],
-                        isVocalStem: true,
-                        audioBuffer: decoded,
-                      }
-                    return t
-                  }),
-                )
-              }
-
-              setOfflineProgress(50)
-              // Since analyzeUploadedAudio expects fileWaveform() to be updated, yield to reactivity
-              await new Promise((r) => setTimeout(r, 0))
-              if (disposed) return
-              await analyzeUploadedAudio()
-            } catch (err) {
-              if (disposed) return
-              console.error('Error post-processing vocal stem:', err)
-              setUiError(
-                'The vocal stem was separated, but its pitch analysis failed. Try analysing the original file.',
-              )
-            } finally {
-              cancelActiveUvr = null
-              if (!disposed) {
-                setIsSeparating(false)
-                setActiveUvrSessionId(undefined)
+      await runUvrPipeline(
+        file,
+        sessionId,
+        mode,
+        {
+          onProgress: (pct) => {
+            if (!cancelled()) setOfflineProgress(pct * 0.5) // First 50% is separation
+          },
+          onComplete: (result) => {
+            if (cancelled()) {
+              preservePitchTestingUvrCancellation(sessionId, controller.signal)
+              return
+            }
+            // Provider work is complete. From here, Cancel should stop only the
+            // Lab's local decode/analysis continuation, never delete or downgrade
+            // the completed server session.
+            const cancelPostProcessing = () => {
+              controller.abort()
+              offlineAnalysisGeneration += 1
+            }
+            const requireActivePostProcessing = () => {
+              if (cancelled()) {
+                throw new CancelledPitchTestingPostProcessing()
               }
             }
-          })()
+            cancelActiveUvr = cancelPostProcessing
+            void (async () => {
+              try {
+                await completeUvrSession(
+                  sessionId,
+                  result.outputs,
+                  result.stemMeta,
+                )
+                requireActivePostProcessing()
+
+                const s = getUvrSession(sessionId)
+                if (s) {
+                  await saveUvrSession({
+                    sessionId,
+                    status: 'completed',
+                    progress: 100,
+                    fileHash: s.fileHash,
+                    originalFileName: s.originalFile?.name ?? file.name,
+                    originalFileSize: s.originalFile?.size ?? file.size,
+                    originalFileType: s.originalFile?.mimeType ?? file.type,
+                    processingMode: mode,
+                    processingTime: s.processingTime,
+                  })
+                  requireActivePostProcessing()
+                }
+
+                // Now fetch the vocal stem back to Float32Array to continue with pitch detection
+                const vocalUrl = result.outputs?.vocal
+                if (vocalUrl !== undefined) {
+                  const context =
+                    currentAudioCtx ?? createPitchTestingAudioContext()
+                  if (currentAudioCtx === null) setAudioContext(context)
+                  const { decoded, mono } = await decodeVocalStem(
+                    vocalUrl,
+                    context,
+                    requireActivePostProcessing,
+                  )
+
+                  setAnalyzedTracks((prev) =>
+                    prev.map((t) => {
+                      if (t.id === activeId)
+                        return {
+                          ...t,
+                          waveform: mono,
+                          analysisResults: [],
+                          isVocalStem: true,
+                          audioBuffer: decoded,
+                        }
+                      return t
+                    }),
+                  )
+                }
+
+                setOfflineProgress(50)
+                // Since analyzeUploadedAudio expects fileWaveform() to be updated, yield to reactivity
+                await new Promise((r) => setTimeout(r, 0))
+                requireActivePostProcessing()
+                await analyzeUploadedAudio()
+              } catch (err) {
+                if (
+                  err instanceof CancelledPitchTestingPostProcessing ||
+                  cancelled()
+                )
+                  return
+                console.error('Error post-processing vocal stem:', err)
+                setUiError(
+                  'The vocal stem was separated, but its pitch analysis failed. Try analysing the original file.',
+                )
+              } finally {
+                if (cancelActiveUvr === cancelPostProcessing) {
+                  cancelActiveUvr = null
+                }
+                if (!disposed && activeUvrSessionId() === sessionId) {
+                  setIsSeparating(false)
+                  setActiveUvrSessionId(undefined)
+                }
+              }
+            })()
+          },
+          onError: (err) => {
+            if (cancelActiveUvr === cancelProviderRun) cancelActiveUvr = null
+            settlePitchTestingUvrError({
+              sessionId,
+              signal: controller.signal,
+              error: err,
+              disposed,
+              onReportError: (error) => {
+                setErrorUvrSession(sessionId, error)
+                console.error('Failed to separate vocals:', error)
+                setUiError(
+                  'Vocal separation failed. You can still analyse the original file.',
+                )
+              },
+              onSettleUi: () => {
+                if (activeUvrSessionId() === sessionId) {
+                  setIsSeparating(false)
+                  setActiveUvrSessionId(undefined)
+                }
+              },
+            })
+          },
         },
-        onError: (err) => {
-          cancelActiveUvr = null
-          if (disposed) return
-          setErrorUvrSession(sessionId, err)
-          if (err !== 'Cancelled') {
-            console.error('Failed to separate vocals:', err)
-            setUiError(
-              'Vocal separation failed. You can still analyse the original file.',
-            )
-          }
-          setIsSeparating(false)
-          setActiveUvrSessionId(undefined)
-        },
-      })
+        { signal: controller.signal },
+      )
+      if (cancelActiveUvr === cancelProviderRun) cancelActiveUvr = null
     } catch (err) {
+      if (disposed || generation !== uvrRunGeneration) return
       cancelActiveUvr = null
-      if (disposed) return
+      if (err instanceof Error && err.name === 'AbortError') {
+        setIsSeparating(false)
+        setActiveUvrSessionId(undefined)
+        return
+      }
       console.error('Failed to initialize separation:', err)
       setUiError(
         'Vocal separation could not start. You can still analyse the original file.',
@@ -1350,8 +1428,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     disposed = true
     cancelTest = true
     offlineAnalysisGeneration += 1
-    cancelActiveUvr?.()
-    cancelActiveUvr = null
+    cancelSeparation()
     finishWaveformResize()
     stopLiveDetection()
     // This tab holds a RAW getUserMedia stream + its own AudioContext (it
@@ -1721,12 +1798,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         <button
                           type="button"
                           class={`btn ${styles.btnDanger} ${styles.btnSm}`}
-                          onClick={() =>
-                            cancelUvrPipeline(
-                              getUvrProcessingMode(),
-                              activeUvrSessionId(),
-                            )
-                          }
+                          onClick={cancelSeparation}
                         >
                           Cancel separation
                         </button>
@@ -2635,12 +2707,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       </span>
                       <button
                         class={`btn ${styles.btnSecondary}`}
-                        onClick={() =>
-                          cancelUvrPipeline(
-                            getUvrProcessingMode(),
-                            activeUvrSessionId(),
-                          )
-                        }
+                        onClick={cancelSeparation}
                       >
                         Cancel
                       </button>

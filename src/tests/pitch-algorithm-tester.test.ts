@@ -81,11 +81,13 @@ describe('Pitch Algorithm Tester', () => {
 
   describe('Accuracy Band Names', () => {
     it('should define all required accuracy bands', () => {
-      expect(ACCURACY_BAND_NAMES[100]).toBeDefined()
-      expect(ACCURACY_BAND_NAMES[90]).toBeDefined()
-      expect(ACCURACY_BAND_NAMES[75]).toBeDefined()
-      expect(ACCURACY_BAND_NAMES[50]).toBeDefined()
-      expect(ACCURACY_BAND_NAMES[0]).toBeDefined()
+      expect(ACCURACY_BAND_NAMES).toEqual({
+        100: 'band100',
+        90: 'band90',
+        75: 'band75',
+        50: 'band50',
+        0: 'band0',
+      })
     })
 
     it('should have a distinct name per band', () => {
