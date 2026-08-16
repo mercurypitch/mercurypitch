@@ -33,6 +33,8 @@ export type HashRoute =
   /** A sign-in code scanned off a TV, to be confirmed on the phone. */
   | { type: 'device-link'; code: string }
   | { type: 'uvr-upload' }
+  /** Shazam Sing — find a song in your own library by humming it. */
+  | { type: 'uvr-sing' }
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
   | { type: 'share-short'; shortId: string }
@@ -198,6 +200,11 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'uvr-session', sessionId: uvrMatch[1] }
   }
 
+  // Match: /karaoke/sing (or /uvr/sing) — the Shazam Sing listener.
+  if (hash === '/karaoke/sing' || hash === '/uvr/sing') {
+    return { type: 'uvr-sing' }
+  }
+
   // Match: /karaoke/upload or bare /karaoke (or /uvr/...)
   if (
     hash === '/karaoke/upload' ||
@@ -354,6 +361,8 @@ export function buildHash(route: HashRoute): string {
       return `/link:${route.code}`
     case 'uvr-upload':
       return '/karaoke'
+    case 'uvr-sing':
+      return '/karaoke/sing'
     case 'uvr-session':
       return `/karaoke/session/${route.sessionId}`
     case 'uvr-session-mixer':

@@ -71,6 +71,23 @@ describe('navigation voice commands', () => {
     expect(window.location.hash).toContain('mixer')
   })
 
+  // The grammar has repaired "shazaam"/"singh" into these words since before
+  // anything listened for them; this is the command those repairs were for.
+  it('opens Shazam Sing, however the recognizer spells it', () => {
+    for (const said of [
+      'shazam sing',
+      'Shazaam sing',
+      'Shazam Singh',
+      'name that song',
+    ]) {
+      setActiveTab(TAB_HOME)
+      window.location.hash = ''
+      expect(fire(said), said).toBe('Shazam Sing')
+      expect(activeTab(), said).toBe(TAB_KARAOKE)
+      expect(window.location.hash, said).toContain('/karaoke/sing')
+    }
+  })
+
   it('reports an empty song library', () => {
     expect(fire('play random song')).toBe('No songs in your library yet')
   })

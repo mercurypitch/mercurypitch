@@ -169,6 +169,14 @@ describe('parseHash', () => {
     expect(parseHash('#/uvr/upload')).toEqual({ type: 'uvr-upload' })
   })
 
+  // The Shazam Sing listener is deep-linkable so the "shazam sing" voice
+  // command has somewhere to navigate to from any tab, and so the view
+  // survives a reload instead of dropping back to Upload.
+  it('parses the Shazam Sing route (#/karaoke/sing or #/uvr/sing)', () => {
+    expect(parseHash('#/karaoke/sing')).toEqual({ type: 'uvr-sing' })
+    expect(parseHash('#/uvr/sing')).toEqual({ type: 'uvr-sing' })
+  })
+
   it('parses UVR session route with session ID', () => {
     const result = parseHash('#/uvr/session/abc123-def')
     expect(result).toEqual({ type: 'uvr-session', sessionId: 'abc123-def' })
@@ -414,6 +422,10 @@ describe('buildHash', () => {
 
   it('builds UVR upload hash', () => {
     expect(buildHash({ type: 'uvr-upload' })).toBe('/karaoke')
+  })
+
+  it('builds the Shazam Sing hash', () => {
+    expect(buildHash({ type: 'uvr-sing' })).toBe('/karaoke/sing')
   })
 
   it('builds UVR session hash', () => {

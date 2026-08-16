@@ -11,7 +11,7 @@ import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import type { SessionExportStemType, SessionZipInspection, } from '@/db/services/session-export-service'
 import { exportAllSessions, exportGroup, importSessionsFromZip, inspectSessionLibraryExport, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
-import { getAuthToken } from '@/db/services/user-service'
+import { authVersion, getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
@@ -741,6 +741,22 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       }
     }),
   )
+
+  // A stored "server" preference this browser cannot act on is a lie the
+  // header repeats at every visit: the Server pill reads active, Browser
+  // reads off, and clicking Server only raises a sign-in toast — so the mode
+  // looks auto-selected and un-switchable at the same time. Signing out (or
+  // arriving with the preference inherited from another surface) normalises
+  // it to the mode that will actually run. Signing back in and choosing
+  // Server again is one tap, and that tap now sticks.
+  createEffect(() => {
+    authVersion()
+    const token = getAuthToken()
+    const signedOut = token === null || token === ''
+    if (signedOut && untrack(uvrProcessingMode) === 'server') {
+      setUvrProcessingMode('local')
+    }
+  })
 
   // React to initialView prop changes (from hash navigation)
   // Note: 'mixer' is excluded here because the mixer view requires stems
@@ -2162,7 +2178,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 class="header-title-group"
                 style="display: flex; align-items: center; gap: 0.5rem;"
               >
-                <h3>Shazam Sing</h3>
+                {/* The PAGE's name, not the active view's. This header sits
+                    directly above the Sing/Upload tabs, which already say
+                    which view is open — and it is shown for Processing and
+                    Results too, which have no tab of their own. It read
+                    "Shazam Sing" at every one of them, so the Upload view
+                    announced itself as the feature it is not. */}
+                <h3>Karaoke</h3>
               </div>
               <div class="uvr-view-tabs" style="margin-left: 0.5rem;">
                 <button

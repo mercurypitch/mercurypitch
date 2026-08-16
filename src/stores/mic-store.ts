@@ -27,6 +27,23 @@ export const [micWaveVisible, setMicWaveVisible] =
   createPersistedSignal<boolean>('pitchperfect_mic_wave_visible', false)
 export const [micError, setMicError] = createSignal<string | null>(null)
 
+// True while a capture is listening to the user SING — the karaoke stage's
+// pitch ribbon, and anything else that scores a voice against a melody.
+//
+// It exists for one consumer: voice control stands its recognizer down while
+// this is true. The two features want opposite things from the same audio.
+// Voice commands are welcome over a playing backing track ("stop", "next
+// song"), but the moment somebody taps the zen mic to sing, every held vowel
+// is fed to a speech recognizer that will eventually hear an instruction in
+// it. Suspending is not a preference change: `voiceControlEnabled` stays on,
+// the listener resumes by itself when the singing stops, and the user is
+// never asked to manage the overlap.
+//
+// Set it from a capture's own lifecycle and clear it on cleanup — a stuck
+// `true` silently disables voice control app-wide.
+export const [singingCaptureActive, setSingingCaptureActive] =
+  createSignal<boolean>(false)
+
 export function toggleMicWaveVisible(): void {
   setMicWaveVisible(!micWaveVisible())
 }

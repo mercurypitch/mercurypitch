@@ -48,13 +48,15 @@ vi.mock('@/stores/uvr-store', () => ({
   deleteGroupWithSessions: vi.fn(),
   getAllUvrSessionsReactive: () => store.readSessions(),
   getGroupsReactive: () => [],
-  getUvrProcessingMode: () => 'local',
   getUvrSession: vi.fn(),
   initGroupStore: vi.fn(),
   initSessionStore: vi.fn(),
   setErrorUvrSession: vi.fn(),
   setUvrProcessingMode: vi.fn(),
   startUvrSession: vi.fn(),
+  // The rail reads the SHARED preference reactively rather than copying it
+  // once at mount, so the mock is the accessor, not the getter it replaced.
+  uvrProcessingMode: () => 'local',
 }))
 vi.mock('./demo-song', () => ({ isDemoSessionId: () => false }))
 vi.mock('./funnel', () => ({ trackKaraoke: vi.fn() }))

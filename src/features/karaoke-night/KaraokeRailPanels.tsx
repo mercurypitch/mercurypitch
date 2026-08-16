@@ -13,7 +13,7 @@ import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
-import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
+import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, uvrProcessingMode, } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'
 import { isExampleSession } from './examples-library'
 import { trackKaraoke } from './funnel'
@@ -69,9 +69,12 @@ const [stagingSessionId, setStagingSessionId] = createSignal<string | null>(
 )
 
 export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
-  const [mode, setMode] = createSignal<UvrProcessingMode>(
-    getUvrProcessingMode(),
-  )
+  // The SHARED preference, read reactively — not a local copy of it. A copy
+  // seeded once from localStorage went stale the moment the in-app studio or
+  // Settings changed the mode, so the rail kept showing (and separating with)
+  // a mode the rest of the app had moved off. Coming back from the studio
+  // then looked like the toggle had stopped working.
+  const mode = uvrProcessingMode
   const [syncOpen, setSyncOpen] = createSignal(false)
   const [groupToDelete, setGroupToDelete] =
     createSignal<GroupDeleteTarget | null>(null)
@@ -98,9 +101,15 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     mode() === 'server' && serverReady() ? 'server' : 'local'
 
   const toggleMode = () => {
-    if (!signedIn()) return
     const next: UvrProcessingMode = mode() === 'server' ? 'local' : 'server'
-    setMode(next)
+    // Going back to on-device is always allowed — it is the escape hatch out
+    // of a mode this account cannot run, and refusing it is what left people
+    // stuck on "Studio quality" with nothing to click. Only the way IN needs
+    // an account, and it says so instead of swallowing the tap.
+    if (next === 'server' && !signedIn()) {
+      showNotification('Sign in to use studio-quality separation.', 'info')
+      return
+    }
     setUvrProcessingMode(next) // shared pref — stays in sync with the studio
   }
 

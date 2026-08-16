@@ -479,3 +479,49 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Phone ────────────────────────────────────────────────────
+   The guide was authored as a desktop dialog: a 440px fixed content box
+   inside a 90vh container, which on a phone means the step header, the
+   dots and the Next button get whatever is left — often nothing, and the
+   Next button ended up below the fold. Here the content box is the part
+   that gives, so the chrome around it is always reachable. */
+@media (max-width: 768px) {
+  .uvrGuideContainer {
+    /* A flex item of .guide-container, which is now a full-height sheet.
+       Without min-height:0 this refuses to shrink past its content and
+       the whole sheet scrolls instead of the content box. */
+    flex: 1;
+    min-height: 0;
+    gap: 0.6rem;
+    overflow: visible;
+  }
+
+  .guideContent {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+    padding: 0.9rem;
+  }
+
+  .guideStepHeader {
+    padding: 0.55rem 0.6rem;
+    gap: 0.4rem;
+  }
+
+  .guideStepTitle {
+    font-size: 0.82rem;
+  }
+
+  /* The longest title ("What the Karaoke tab does") plus both arrows is
+     wider than a 360px phone. The title area is what shrinks — the arrows
+     are 44px touch targets and must not. */
+  .guideStepTitleArea {
+    min-width: 0;
+  }
+
+  .guideStepArrow {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+}

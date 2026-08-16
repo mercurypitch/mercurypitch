@@ -100,6 +100,28 @@ export function createNavigationVoiceCommands(
       },
     },
     {
+      id: 'nav.shazamSing',
+      label: 'Shazam Sing',
+      // The grammar has repaired "shazaam"/"singh" into these words since
+      // before anything listened for them (command-grammar.ts) — Chrome
+      // hears the brand and the verb wrong almost every time. This is what
+      // those repairs were for.
+      phrases: [
+        'shazam sing',
+        'shazam and sing',
+        'open shazam sing',
+        'start shazam sing',
+        'name that song',
+        'find my song',
+      ],
+      available: notSuspended,
+      run: () => {
+        setActiveTab(TAB_KARAOKE)
+        navigateTo({ type: 'uvr-sing' })
+        return 'Shazam Sing'
+      },
+    },
+    {
       id: 'nav.randomSong',
       label: 'Random song',
       // The in-mixer version handles an ALREADY-running playlist; this one

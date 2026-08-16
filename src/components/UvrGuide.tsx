@@ -291,6 +291,11 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
             </div>
           </div>
           <p class={styles.guideTip}>
+            <strong>Say &ldquo;Shazam sing&rdquo;</strong> with voice control on
+            and this opens from anywhere in the app — no need to find the tab
+            first. &ldquo;Name that song&rdquo; works too.
+          </p>
+          <p class={styles.guideTip}>
             <strong>Indexing is a setting.</strong> Settings &rarr; Karaoke
             &rarr; Shazam &amp; Sing controls whether new songs are
             fingerprinted, and whether their stems are denoised first.

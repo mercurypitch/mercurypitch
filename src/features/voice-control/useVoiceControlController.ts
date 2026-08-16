@@ -14,6 +14,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
+import { singingCaptureActive } from '@/stores/mic-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
 import { voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
@@ -340,6 +341,28 @@ export function useVoiceControlController(
     activeListener = null
   }
 
+  // ── Standing down while a voice is being scored ──────────────
+  //
+  // Voice control and the karaoke stage's pitch mic want opposite things
+  // from the same audio (see mic-store's singingCaptureActive). Commands
+  // over a playing backing track are the point — "stop", "next song" — but
+  // the moment somebody taps the zen mic to SING, every held vowel goes to
+  // a speech recognizer that will eventually hear an instruction in it.
+  //
+  // So this is a pause, never a preference change: `enabled` stays on, the
+  // HUD keeps saying voice control is on, and the listener comes back by
+  // itself when the singing stops. Nothing asks the user to manage it.
+  let suspendedForSinging = false
+
+  /** Start unless a voice is being scored right now; remember either way. */
+  const startUnlessSinging = () => {
+    if (singingCaptureActive()) {
+      suspendedForSinging = true
+      return
+    }
+    startListening()
+  }
+
   const toggle = () => {
     const listener = listenerFor(voiceControlEngine())
     if (!listener.isSupported) {
@@ -353,11 +376,29 @@ export function useVoiceControlController(
     setEnabled(next)
     if (next) {
       setLastLatencyMs(null)
-      startListening()
+      startUnlessSinging()
     } else {
+      // An explicit turn-off outranks the pause: forget it, so ending the
+      // song does not quietly switch the recognizer back on.
+      suspendedForSinging = false
       stopListening()
     }
   }
+
+  createEffect(() => {
+    const singing = singingCaptureActive()
+    if (singing) {
+      if (suspendedForSinging || !untrack(enabled)) return
+      suspendedForSinging = true
+      stopListening()
+      setListenerState('idle')
+      setInterim('')
+      return
+    }
+    if (!suspendedForSinging) return
+    suspendedForSinging = false
+    if (untrack(enabled)) startListening()
+  })
 
   // Switching the engine in Settings while listening swaps listeners live.
   // Tracked by hand rather than `on(..., { defer: true })`: with defer, the
@@ -384,13 +425,19 @@ export function useVoiceControlController(
       setEnabled(false)
       return
     }
-    startListening()
+    startUnlessSinging()
   })
 
   onMount(() => {
     if (!enabled()) return
     const listener = listenerFor(voiceControlEngine())
     if (listener.isSupported) {
+      // Mounting mid-song (the zen stage remounts on a playlist advance)
+      // must not start a recognizer the singing is already meant to hold off.
+      if (untrack(singingCaptureActive)) {
+        suspendedForSinging = true
+        return
+      }
       activeListener = listener
       listener.start()
     } else {
