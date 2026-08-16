@@ -155,6 +155,15 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
+/* How many runs this drill asks for. Sits next to the minutes and reads a
+   shade louder than them: the count is the part that changed. */
+.segmentReps {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
 .segmentDur {
   font-size: 11px;
   color: var(--text-muted);
