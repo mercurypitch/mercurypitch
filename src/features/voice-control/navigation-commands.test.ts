@@ -3,7 +3,7 @@ import { TAB_HOME, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import { activeTab, hideLibrary, isLibraryModalOpen, setActiveTab, } from '@/stores/ui-store'
 import { matchVoiceCommand } from './command-grammar'
 import type { NavigationVoiceDeps } from './navigation-commands'
-import { createNavigationVoiceCommands } from './navigation-commands'
+import { createNavigationVoiceCommands, createVoiceHelpCommands, } from './navigation-commands'
 
 // The real uvr-store drags the whole separation stack into the test
 // environment; the navigation commands only need the session list.
@@ -71,23 +71,6 @@ describe('navigation voice commands', () => {
     expect(window.location.hash).toContain('mixer')
   })
 
-  // The grammar has repaired "shazaam"/"singh" into these words since before
-  // anything listened for them; this is the command those repairs were for.
-  it('opens Shazam Sing, however the recognizer spells it', () => {
-    for (const said of [
-      'shazam sing',
-      'Shazaam sing',
-      'Shazam Singh',
-      'name that song',
-    ]) {
-      setActiveTab(TAB_HOME)
-      window.location.hash = ''
-      expect(fire(said), said).toBe('Shazam Sing')
-      expect(activeTab(), said).toBe(TAB_KARAOKE)
-      expect(window.location.hash, said).toContain('/karaoke/sing')
-    }
-  })
-
   it('reports an empty song library', () => {
     expect(fire('play random song')).toBe('No songs in your library yet')
   })
@@ -98,5 +81,36 @@ describe('navigation voice commands', () => {
     expect(isLibraryModalOpen()).toBe(true)
     expect(fire('close library')).toBe('Library closed')
     expect(isLibraryModalOpen()).toBe(false)
+  })
+})
+
+// Karaoke Night registers this set on its own: the tab-navigation set never
+// loads on that page, and "what can I say" used to live inside it — so the
+// overlay existed there with no way to ask for it.
+describe('voice help, registered without the tab set', () => {
+  function fireHelp(utterance: string, deps?: NavigationVoiceDeps) {
+    const commands = createVoiceHelpCommands(deps)
+    const match = matchVoiceCommand(utterance, commands)
+    if (match === null) return undefined
+    const result = match.command.run({ n: match.n })
+    return typeof result === 'string' ? result : match.command.label
+  }
+
+  it('answers "what can i say" and opens the overlay', () => {
+    let opened = 0
+    expect(fireHelp('what can i say', { openVoiceHelp: () => opened++ })).toBe(
+      'Voice commands',
+    )
+    expect(opened).toBe(1)
+  })
+
+  it('stays available on a surface with no tabs at all', () => {
+    const [help] = createVoiceHelpCommands()
+    expect(help.available?.()).toBe(true)
+  })
+
+  it('goes quiet while an immersive surface suspends navigation', () => {
+    const [help] = createVoiceHelpCommands({ suspended: () => true })
+    expect(help.available?.()).toBe(false)
   })
 })

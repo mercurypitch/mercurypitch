@@ -54,6 +54,38 @@ const TAB_SPOKEN_NAMES: Array<{
   { tab: TAB_SETTINGS, names: ['settings', 'the settings'] },
 ]
 
+/**
+ * "What can I say" on its own, because not every surface has tabs.
+ *
+ * The standalone Karaoke Night page registers Mercury Sing and the mixer's
+ * set but never the tab set this file mostly is — so the one command whose
+ * whole job is to LIST the others was missing exactly where a singer, hands
+ * busy and phone across the room, most needs to ask.
+ */
+export function createVoiceHelpCommands(
+  deps: NavigationVoiceDeps = {},
+): VoiceCommand[] {
+  const notSuspended = () => deps.suspended?.() !== true
+  return [
+    {
+      id: 'nav.voiceHelp',
+      label: 'Voice commands',
+      phrases: [
+        'what can i say',
+        'voice help',
+        'voice commands',
+        'show voice commands',
+        'list commands',
+      ],
+      available: notSuspended,
+      run: () => {
+        deps.openVoiceHelp?.()
+        return 'Voice commands'
+      },
+    },
+  ]
+}
+
 export function createNavigationVoiceCommands(
   deps: NavigationVoiceDeps = {},
 ): VoiceCommand[] {
@@ -97,28 +129,6 @@ export function createNavigationVoiceCommands(
       run: () => {
         window.location.assign('/karaoke-night')
         return 'Karaoke Night'
-      },
-    },
-    {
-      id: 'nav.shazamSing',
-      label: 'Shazam Sing',
-      // The grammar has repaired "shazaam"/"singh" into these words since
-      // before anything listened for them (command-grammar.ts) — Chrome
-      // hears the brand and the verb wrong almost every time. This is what
-      // those repairs were for.
-      phrases: [
-        'shazam sing',
-        'shazam and sing',
-        'open shazam sing',
-        'start shazam sing',
-        'name that song',
-        'find my song',
-      ],
-      available: notSuspended,
-      run: () => {
-        setActiveTab(TAB_KARAOKE)
-        navigateTo({ type: 'uvr-sing' })
-        return 'Shazam Sing'
       },
     },
     {
@@ -173,22 +183,7 @@ export function createNavigationVoiceCommands(
         return 'Random song — starting karaoke'
       },
     },
-    {
-      id: 'nav.voiceHelp',
-      label: 'Voice commands',
-      phrases: [
-        'what can i say',
-        'voice help',
-        'voice commands',
-        'show voice commands',
-        'list commands',
-      ],
-      available: notSuspended,
-      run: () => {
-        deps.openVoiceHelp?.()
-        return 'Voice commands'
-      },
-    },
+    ...createVoiceHelpCommands(deps),
     {
       id: 'nav.libraryOpen',
       label: 'Open library',

@@ -36,7 +36,14 @@
   min-height: 2.4rem;
   padding: 0.4rem 0.4rem 0.4rem 0.5rem;
   color: var(--text-primary, #f0f6fc);
-  background: var(--bg-secondary, #161b22);
+  /* Its own surface token, deliberately not --bg-secondary alone: Karaoke
+     Night redefines that with the stage's alpha so the theatre backdrop
+     shines through its panels, and the toast — which renders inside that
+     tree — inherited it at 0.45 and became unreadable over moving art. A
+     message you cannot read is not a message. Surfaces that go translucent
+     declare an opaque --toast-surface; everywhere else this resolves to the
+     themed secondary exactly as before. */
+  background: var(--toast-surface, var(--bg-secondary, #161b22));
   border: 1px solid
     color-mix(in srgb, var(--toast-accent) 32%, var(--border, #30363d));
   border-radius: 0.6rem;

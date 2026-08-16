@@ -17,6 +17,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
 import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
 import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
+import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -88,6 +89,13 @@ export function KaraokeNightApp() {
   const [showVoiceHelp, setShowVoiceHelp] = createSignal(false)
   const mercurySingCommands = createMercurySingVoiceCommands()
   onCleanup(registerVoiceCommands(() => mercurySingCommands))
+  // The tab-navigation set never loads on this page (it belongs to the app
+  // shell), and "what can I say" lived inside it — so the overlay existed
+  // here with no way to ask for it. Registered on its own now.
+  const voiceHelpCommands = createVoiceHelpCommands({
+    openVoiceHelp: () => setShowVoiceHelp(true),
+  })
+  onCleanup(registerVoiceCommands(() => voiceHelpCommands))
   const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our
