@@ -138,16 +138,21 @@ describe('materializeRoutine', () => {
     expect(out.name).toBe('Test')
   })
 
+  // Scaling still sets the budget; the drill's minutes are then the runs that
+  // budget holds, and the session is topped up to five minutes if the runs
+  // fall short of it (see segment-reps.ts). So the warm-up and cool-down show
+  // the scaled figure and the drill shows six thirty-second vibrato runs at
+  // full length, seven when short has to reach the floor.
   it('scales durations, with a 30-second floor', () => {
     expect(
       materializeRoutine(withChallenge, 'short').segments.map(
         (s) => s.durationSec,
       ),
-    ).toEqual([60, 105, 30])
+    ).toEqual([60, 210, 30])
     expect(
       materializeRoutine(withChallenge, 'long').segments.map(
         (s) => s.durationSec,
       ),
-    ).toEqual([120, 255, 90])
+    ).toEqual([120, 180, 90])
   })
 })

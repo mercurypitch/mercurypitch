@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Routine segments carry reps, and the session has a five-minute floor.**
+  `segment-reps.ts` holds a per-drill table of what one honest run costs
+  (30s for held-note drills, 45s for pattern drills, 60s for the long ones),
+  derives `reps` from the segment's budget (capped at `MAX_REPS` 6), and makes
+  the segment's `durationSec` the reps rather than the guess. `applyReps` then
+  tops a session up to `MIN_SESSION_SEC` (300s, the streak's own daily goal),
+  always adding to the shortest drill, and only pushes a single drill past the
+  comfortable cap to `MAX_REPS_FLOOR` (8) when a focus template has nowhere
+  else to put the minutes. Both build paths use it — `buildDailySession` and
+  `materializeRoutine` — so generated days, library templates and every length
+  clear the floor. `autoAdvanceRoutineSegment` banks runs in
+  `PersistedRoutine.segmentRuns` and ticks the segment off only when it has
+  what it asked for; `completeSegment` clears the count. `reps` is optional and
+  absent reads as one, so a routine persisted or shared before this keeps the
+  finish line it started with. The Home card shows "5 x" per drill and "2 of 5"
+  for the one in progress; the exercise ribbon shows "Run 2 of 5", which is
+  also what stops auto-continue offering the next segment mid-reps.
+
 - **The Lab became a route-backed focused workspace.** The app shell maps five
   hidden Lab routes to task-led tools, removes unrelated app navigation only
   while one of those routes is active, and keeps supporter access fail-closed.

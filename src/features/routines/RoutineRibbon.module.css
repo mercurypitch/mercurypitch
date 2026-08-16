@@ -38,6 +38,16 @@
   flex-shrink: 0;
 }
 
+/* Which run of the current segment. Quieter than the segment counter beside
+   it — the segment is the plan, the run is where they are inside one step. */
+.reps {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
 /* Pushed to the far edge so it never crowds the counter. */
 .link {
   margin-left: auto;

@@ -5,6 +5,13 @@ export type SegmentKind = 'warmup' | 'exercise' | 'challenge-prep' | 'cooldown'
 export interface RoutineSegment {
   type: SegmentKind
   durationSec: number
+  /**
+   * Runs of the drill this segment asks for before it ticks off. Absent means
+   * one — which is what every routine persisted or shared before reps existed
+   * means, and moving their finish line mid-session would be worse than
+   * leaving them short. See segment-reps.ts.
+   */
+  reps?: number
   config: {
     exercise?: ExerciseType
     notes?: string[]
@@ -30,4 +37,6 @@ export interface RoutineState {
   totalElapsedMs: number
   templateId: string | null
   completedSegments: number[]
+  /** Runs banked against the current segment, cleared when it ticks off. */
+  segmentRuns: number
 }

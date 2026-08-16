@@ -179,6 +179,21 @@ export const DailyRoutinePanel: Component = () => {
                           <span class={styles.segmentVariant}>{variant()}</span>
                         )}
                       </Show>
+                      {/* Runs, not just minutes: "5 x" is the difference
+                          between practising long notes and demonstrating one,
+                          and the row is where the singer agrees to it. The
+                          one they are on says so — a segment that refuses to
+                          tick off after a good run is otherwise a bug. */}
+                      <Show when={item.reps > 1}>
+                        <span
+                          class={styles.segmentReps}
+                          data-testid="segment-reps"
+                        >
+                          {current && !done
+                            ? `${Math.min(item.runs + 1, item.reps)} of ${item.reps}`
+                            : `${item.reps} x`}
+                        </span>
+                      </Show>
                       <span class={styles.segmentDur}>
                         {Math.round(seg.durationSec / 60)}m
                       </span>

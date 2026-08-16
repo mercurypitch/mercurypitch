@@ -65,6 +65,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **The daily routine now asks for the practice it promises.** A drill in
+  today's session asks for as many runs as its minutes hold — five long notes
+  rather than one — and every session, at every length, is worth at least the
+  five minutes the daily streak counts. So following the routine to the letter
+  now earns the day. The session card and the ribbon inside a drill say which
+  run you are on.
+
 - **The Lab is now a focused research workspace.** Its five tools — Capture &
   inspect, Tune detector, Benchmark algorithms, Transcribe stem and Compare
   mappings — use one instrument-panel language and open without the unrelated

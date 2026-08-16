@@ -150,6 +150,19 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
             {Math.min(doneCount() + 1, segments().length)} of{' '}
             {segments().length}
           </span>
+          {/* Which run of this segment they are on. Without it, a drill that
+              asks for five runs looks broken on the first four: a good run
+              ends, nothing ticks, no "Next" appears. */}
+          <Show when={myIndex() !== -1 && routine.currentSegmentReps() > 1}>
+            <span class={styles.reps} data-testid="routine-ribbon-reps">
+              Run{' '}
+              {Math.min(
+                routine.currentSegmentRuns() + 1,
+                routine.currentSegmentReps(),
+              )}{' '}
+              of {routine.currentSegmentReps()}
+            </span>
+          </Show>
           <button
             type="button"
             class={styles.link}

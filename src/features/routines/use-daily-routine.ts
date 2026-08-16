@@ -9,6 +9,7 @@ import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { localDayOfYear, localDayString } from '@/lib/local-day'
 import { createPersistedSignal } from '@/lib/storage'
 import { setActiveTab, startExercise } from '@/stores/ui-store'
+import { applyReps, segmentReps } from './segment-reps'
 import type { RoutineSegment, RoutineTemplate } from './types'
 
 const STORAGE_KEY = 'mp_daily_routine'
@@ -19,6 +20,13 @@ interface PersistedRoutine {
   templateId: string
   date: string
   completedSegments: number[]
+  /**
+   * Runs banked against the segment now in progress, cleared when it ticks
+   * off. Optional: a routine persisted before reps existed has none, which
+   * reads as zero — and its segments ask for one run, so it finishes exactly
+   * as it would have.
+   */
+  segmentRuns?: number
   /**
    * The resolved routine, stored whole: generated routines can be
    * length-scaled (and shared routines aren't in the registry at all), so
@@ -179,7 +187,10 @@ export function buildDailySession(
     id: 'daily-session',
     name: "Today's Session",
     description: `Warm up, sharpen a weak spot, grow a skill, then sing ${phrase.name}.`,
-    segments: [warmup, review, grow, apply],
+    // Each drill asks for as many runs as its budget holds. Without this the
+    // whole eight-minute session was over in about two and a half — one run
+    // per segment, and most drills answer in seconds.
+    segments: applyReps([warmup, review, grow, apply]),
   }
 }
 
@@ -258,7 +269,7 @@ export function materializeRoutine(
   length: RoutineLength,
 ): RoutineTemplate {
   const factor = LENGTH_FACTOR[length]
-  const segments = template.segments
+  const scaled = template.segments
     .filter((s) => s.type !== 'challenge-prep')
     .map((s) =>
       length === 'standard'
@@ -271,7 +282,12 @@ export function materializeRoutine(
             ),
           },
     )
-  return { ...template, segments }
+  // Reps last, from the scaled budget: a short session should ask for fewer
+  // runs, not the same number in less time. Templates authored before reps
+  // existed get theirs here, which is what makes the length picker's minutes
+  // describe the practice instead of only the plan — and applyReps holds even
+  // the short one to five minutes, the length picker's own promise.
+  return { ...template, segments: applyReps(scaled) }
 }
 
 // Shared routine loaded from URL (may not be in dailyRoutines registry)
@@ -373,9 +389,22 @@ export function autoAdvanceRoutineSegment(
     segmentRunsExercise(currentSeg, exerciseType) &&
     (currentSeg.type === 'exercise' || fullWarmupRun)
   if (matches) {
+    // A run banks against the segment; the segment ticks off when it has the
+    // runs it asked for. One run still finishes a one-rep segment, which is
+    // every segment of every routine that predates this.
+    const banked = (data.segmentRuns ?? 0) + 1
+    if (banked < segmentReps(currentSeg)) {
+      setRoutineData({
+        ...data,
+        segmentRuns: banked,
+        lastActiveAt: Date.now(),
+      })
+      return
+    }
     setRoutineData({
       ...data,
       completedSegments: [...data.completedSegments, currentIdx],
+      segmentRuns: 0,
       lastActiveAt: Date.now(),
     })
   }
@@ -414,6 +443,15 @@ export function useDailyRoutine() {
     if (!t) return null
     const idx = currentSegmentIndex()
     return t.segments[idx] ?? null
+  })
+
+  /** Runs banked against the segment in progress. */
+  const currentSegmentRuns = createMemo(() => persisted()?.segmentRuns ?? 0)
+
+  /** Runs the segment in progress is asking for. One, for older routines. */
+  const currentSegmentReps = createMemo(() => {
+    const seg = currentSegment()
+    return seg === null ? 1 : segmentReps(seg)
   })
 
   const progress = createMemo(() => {
@@ -492,6 +530,10 @@ export function useDailyRoutine() {
     setPersisted({
       ...p,
       completedSegments: [...p.completedSegments, currentIdx],
+      // Ticking a segment off by hand ends it whole — banked runs belong to
+      // the segment that banked them, and carrying them into the next one
+      // would hand it a head start it did not earn.
+      segmentRuns: 0,
       lastActiveAt: Date.now(),
     })
   }
@@ -519,10 +561,14 @@ export function useDailyRoutine() {
     if (!t) return []
     const comp = completedSegments()
     const curr = currentSegmentIndex()
+    const runs = currentSegmentRuns()
     return t.segments.map((seg, i) => ({
       seg,
       done: comp.includes(i),
       current: i === curr,
+      reps: segmentReps(seg),
+      /** Runs banked. Only the segment in progress has any to show. */
+      runs: i === curr ? runs : 0,
     }))
   })
 
@@ -530,6 +576,8 @@ export function useDailyRoutine() {
     template,
     currentSegment,
     currentSegmentIndex,
+    currentSegmentRuns,
+    currentSegmentReps,
     completedSegments,
     isComplete,
     progress,

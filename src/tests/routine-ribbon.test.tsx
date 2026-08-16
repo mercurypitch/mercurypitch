@@ -301,3 +301,60 @@ describe('RoutineRibbon auto-continue', () => {
     expect(pendingDrill()).toBeNull()
   })
 })
+
+// A segment that asks for five runs looks broken on the first four unless the
+// ribbon says which run they are on: a good run ends, nothing ticks off, and
+// no "Next" appears. These are the tests that the ribbon and auto-advance
+// still tell the same story now that a segment can take more than one run.
+describe('RoutineRibbon reps', () => {
+  const REPS_TEMPLATE: RoutineTemplate = {
+    id: 'reps-routine',
+    name: "Today's Session",
+    description: 'a drill worth practising',
+    segments: [
+      { ...LONG_NOTE_SEGMENT, reps: 3 },
+      { ...SCALE_SEGMENT, reps: 2 },
+    ],
+  }
+
+  it('says nothing about runs when the segment asks for one', () => {
+    seedRoutine(TEMPLATE, [EXERCISE_WARMUP, FULL_WARMUP])
+    const { queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} />
+    ))
+    expect(queryByTestId('routine-ribbon-reps')).toBeNull()
+  })
+
+  it('counts the runs of a segment that asks for several', () => {
+    seedRoutine(REPS_TEMPLATE)
+    const { getByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} />
+    ))
+    expect(getByTestId('routine-ribbon-reps').textContent).toMatch(
+      /Run\s*1\s*of 3/,
+    )
+
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+    expect(getByTestId('routine-ribbon-reps').textContent).toMatch(
+      /Run\s*2\s*of 3/,
+    )
+  })
+
+  // The countdown launching the next segment after run one would skip the
+  // rest of the reps — the exact thing the segment is holding open for.
+  it('does not offer the next segment while runs remain', () => {
+    seedRoutine(REPS_TEMPLATE)
+    const { queryByText, queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} />
+    ))
+
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+    expect(queryByText(/^Next:/)).toBeNull()
+    expect(queryByTestId('routine-next')).toBeNull()
+
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+    expect(queryByTestId('routine-next')).toBeTruthy()
+    expect(queryByTestId('routine-ribbon-reps')).toBeNull()
+  })
+})
