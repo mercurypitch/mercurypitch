@@ -44,6 +44,11 @@ body {
   --sm-lane-label-bg: rgba(5, 8, 18, min(1, calc(var(--kn-alpha) + 0.2)));
   /* Control glyphs stay opaque-dark regardless of the glass. */
   --on-accent: #0d1117;
+  /* Toasts are the one surface the glass must not touch. They render inside
+     this tree, so they were picking up --bg-secondary's alpha and arriving
+     barely legible over the backdrop — worst on a phone, where the toast is
+     small and the art is busy. Opaque twin of the secondary above. */
+  --toast-surface: #161b22;
 
   min-height: 100vh;
   min-height: 100dvh;
