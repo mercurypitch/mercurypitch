@@ -45,6 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Four controllers fed `_setTargetPitch` a MIDI number where the contract is
+  Hz (CLAUDE-JOURNEY-005).** `use-base-exercise` records every target change
+  into the published run trace as a frequency; Sight-Singing passed
+  `sequence[idx].midi`, Long Note and Pitch Hold passed their `setTarget`
+  midi, and Mirror Melody's `setMelody` passed `baseMidi` (its per-note path
+  three lines later correctly converted). MIDI 69 stored as 69 Hz makes
+  `worstMoment` measure the singer against ~B1, so the result card reported
+  "Furthest off: ~3200 cents sharp of a note that was never a target" and the
+  green target line drew octaves below the contour. All four now convert with
+  `midiToFrequency`; one Mirror Melody pin that demanded the raw MIDI number
+  (the same tests-enforce-the-bug shape as the audio-envelope pins) is
+  flipped, a Hz pin now guards each drill, and the seam documents its unit.
+
 - **Vocal-range fitting at the launch choke points.** New
   `fitPhraseToRange` (whole-phrase octave shift, centred among fitting
   octaves, spill-centred when too wide) and `fitScaleBaseNote` (fold the

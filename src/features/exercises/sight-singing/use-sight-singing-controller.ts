@@ -3,6 +3,7 @@
 // sung pitch (with a timeout fallback), and score per note.
 // ============================================================
 
+import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { ScaleDegree } from '@/types'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
@@ -156,7 +157,9 @@ export function useSightSingingController(base: BaseExerciseController) {
       return
     }
     currentIndex = idx
-    base._setTargetPitch(sequence[idx]!.midi)
+    // The trace timeline and live tracker speak Hz - a raw MIDI number
+    // here is the ~3200-cent phantom on the result card (CLAUDE-JOURNEY-005).
+    base._setTargetPitch(midiToFrequency(sequence[idx]!.midi))
     noteStartTime = performance.now()
     noteStartMs[idx] = base._getElapsed()
     holdMs = 0

@@ -67,9 +67,10 @@ describe('useMirrorMelodyController', () => {
     const ctrl = useMirrorMelodyController(base, audioEngine)
     ctrl.setMelody(69, { min: 36, max: 84 }) // A4
 
-    // setMelody sets target pitch to baseMidi freq
+    // setMelody arms the target pitch with the base note's FREQUENCY -
+    // this pin used to demand the raw MIDI number, which is the bug.
     expect(targetCalls.length).toBe(1)
-    expect(targetCalls[0]).toBe(69) // MIDI number for A4
+    expect(targetCalls[0]).toBe(440) // A4 in Hz
   })
 
   it('stopSequence commits result and stops', () => {
@@ -111,5 +112,21 @@ describe("the melody respects the singer's range", () => {
     } finally {
       spy.mockRestore()
     }
+  })
+})
+
+describe('the trace speaks Hz', () => {
+  it('setMelody arms the first target in Hz, never as a raw MIDI number', () => {
+    const seen: Array<number | null> = []
+    const base = createMockBase({
+      _setTargetPitch: (v) => {
+        seen.push(v)
+      },
+    })
+    const ctrl = useMirrorMelodyController(base, {
+      playTone: async () => {},
+    })
+    ctrl.setMelody(69, { min: 36, max: 84 }) // A4
+    expect(seen).toEqual([440])
   })
 })

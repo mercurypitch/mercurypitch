@@ -312,6 +312,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     _updateScore: updateScore,
     _updateMetrics: updateMetrics,
     _completeWithResult: completeWithResult,
+    // `freq` is Hz, never a MIDI number. A MIDI 69 recorded as 69 Hz puts
+    // the result card's "Furthest off" thousands of cents from a note the
+    // drill never asked for — four controllers made exactly that mistake.
     _setTargetPitch: (freq: number | null) => {
       setTargetPitch(freq)
       // Record reference-tone changes on the run's elapsed epoch (running
