@@ -27,6 +27,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   finish line it started with. The Home card shows "5 x" per drill and "2 of 5"
   for the one in progress; the exercise ribbon shows "Run 2 of 5", which is
   also what stops auto-continue offering the next segment mid-reps.
+- **The warmup honors its authored count-in, audibly.** Every warmup block
+  always carried `countInBeats: 2` and no runtime read it — steps began the
+  frame the previous one ended. `warmup-lead-in.ts` adds `applyLeadIn` (the
+  challenge-stage pattern: targets shifted late, loop extended, count-in
+  consumed so it cannot double) applied at the session seam, and a pure
+  `createLeadInTicker` the component samples per pitch frame to click each
+  lead-in beat once — plus the first note's reference tone at beat zero.
+  Guide tones during the run come from `createZenNoteScheduler` wired
+  through the app AudioEngine (deliberately NOT ZenPitchStage's private
+  AudioContext, which connects to the bare destination and closes mid-tone),
+  behind a persisted mute (`pitchperfect_warmup_guide_muted`). Steps are
+  separated by `WARMUP_STEP_GAP_SECONDS` with a "next:" phase line;
+  `melodyTargets` takes an explicit quarter-beat rest instead of the
+  implicit 18% duty; the nine-note scales grew to twelve beats; and
+  `warmupTotalSeconds` prices lead-ins and gaps instead of the 0.45 s/note
+  reference-tone fiction deleted in 7a4821dc.
 
 - **The Lab became a route-backed focused workspace.** The app shell maps five
   hidden Lab routes to task-led tools, removes unrelated app navigation only

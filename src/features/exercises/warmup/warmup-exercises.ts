@@ -24,6 +24,7 @@
 // number keeps the authored file readable next to the coaching it encodes.
 
 import type { ZenExerciseDefinition, ZenExerciseTarget, } from '@/features/zen/types'
+import { leadInSeconds } from './warmup-lead-in'
 import type { WarmupPattern, WarmupStep } from './warmup-steps'
 
 /** One beat, one second. See the note above. */
@@ -62,27 +63,34 @@ const BASE = {
 } as const satisfies Partial<ZenExerciseDefinition>
 
 /**
- * Lay a melody across the loop, each note taking an equal share of it.
+ * Lay a melody across the loop, each note taking an equal share of it minus
+ * an explicit rest.
  *
- * A note stops a little short of the next one's start so the blocks read as
- * separate events rather than one long bar — the same 82% the Zen catalogue
- * uses.
+ * The rest used to be implicit — 18% of the slot, whatever that came to —
+ * and on the scales it came to 0.16 s, which the owner's testing called
+ * "near-zero rest between notes". A quarter-beat is a breath's worth at
+ * this tempo, and stating it in beats keeps the authored file readable next
+ * to the coaching it encodes.
  */
 function melodyTargets(
   offsets: readonly number[],
   cue: string,
   loopBeats: number,
+  restBeats: number,
 ): ZenExerciseTarget[] {
   const slot = loopBeats / offsets.length
   return offsets.map((semitone, index) => ({
     id: `note-${index + 1}`,
     startBeat: Number((index * slot).toFixed(4)),
-    durationBeats: Number((slot * 0.82).toFixed(4)),
+    durationBeats: Number((slot - restBeats).toFixed(4)),
     semitone,
     cue,
     showCue: index === 0,
   }))
 }
+
+/** The standing rest between sung notes — a beat's quarter, one breath. */
+const MELODY_REST_BEATS = 0.25
 
 /** Two glides that meet in the middle: up and back, or down and back. */
 function sirenTargets(
@@ -174,7 +182,7 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     instructions:
       'Hum the falling line softly — lips closed, feel the buzz on the front of the face.',
     loopBeats: 6,
-    targets: melodyTargets([7, 5, 4, 2, 0], 'Mmm', 6),
+    targets: melodyTargets([7, 5, 4, 2, 0], 'Mmm', 6, MELODY_REST_BEATS),
   },
   {
     ...BASE,
@@ -185,7 +193,7 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     goal: 'Carry the same easy buzz up a step.',
     instructions: 'Again, a step higher. Keep it light and easy.',
     loopBeats: 6,
-    targets: melodyTargets([9, 7, 5, 4, 2], 'Mmm', 6),
+    targets: melodyTargets([9, 7, 5, 4, 2], 'Mmm', 6, MELODY_REST_BEATS),
   },
   {
     ...BASE,
@@ -196,7 +204,7 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     goal: 'Let the air do the work while the lips stay loose.',
     instructions: 'Loose lips, "brrr" up to the top note and back down.',
     loopBeats: 6,
-    targets: melodyTargets([0, 7, 0], 'Brrr', 6),
+    targets: melodyTargets([0, 7, 0], 'Brrr', 6, MELODY_REST_BEATS),
   },
   {
     ...BASE,
@@ -207,7 +215,7 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     goal: 'Keep the airflow even as the pattern rises.',
     instructions: 'One step up — keep the air flowing evenly.',
     loopBeats: 6,
-    targets: melodyTargets([2, 9, 2], 'Brrr', 6),
+    targets: melodyTargets([2, 9, 2], 'Brrr', 6, MELODY_REST_BEATS),
   },
   {
     ...BASE,
@@ -241,8 +249,16 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     summary: 'Five notes up and back on an open vowel.',
     goal: 'Keep every step the same size and the same weight.',
     instructions: 'Sing "mah" up and down the five notes, nice and even.',
-    loopBeats: 8,
-    targets: melodyTargets([0, 2, 4, 5, 7, 5, 4, 2, 0], 'Mah', 8),
+    // Twelve beats, not eight: nine notes in eight seconds left 0.89 s a
+    // note and 0.16 s between them — the step the owner called "really
+    // difficult". A third more room makes it a warm-up, not a sprint.
+    loopBeats: 12,
+    targets: melodyTargets(
+      [0, 2, 4, 5, 7, 5, 4, 2, 0],
+      'Mah',
+      12,
+      MELODY_REST_BEATS,
+    ),
   },
   {
     ...BASE,
@@ -252,8 +268,13 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     summary: 'The same scale, a step higher.',
     goal: 'Stay relaxed as the pattern climbs.',
     instructions: 'Up a step — stay relaxed as it rises.',
-    loopBeats: 8,
-    targets: melodyTargets([2, 4, 6, 7, 9, 7, 6, 4, 2], 'Mah', 8),
+    loopBeats: 12,
+    targets: melodyTargets(
+      [2, 4, 6, 7, 9, 7, 6, 4, 2],
+      'Mah',
+      12,
+      MELODY_REST_BEATS,
+    ),
   },
   {
     ...BASE,
@@ -264,7 +285,7 @@ export const WARMUP_EXERCISES: readonly ZenExerciseDefinition[] = [
     goal: 'Come down gently rather than stopping mid-session.',
     instructions: 'Hum gently down the line, letting the voice settle.',
     loopBeats: 6,
-    targets: melodyTargets([7, 5, 4, 2, 0], 'Mmm', 6),
+    targets: melodyTargets([7, 5, 4, 2, 0], 'Mmm', 6, MELODY_REST_BEATS),
   },
   {
     ...BASE,
@@ -418,6 +439,7 @@ export function warmupStepFromExercise(
     kind: offsets.length > 0 ? 'sing' : 'breath',
     instruction: exercise.instructions,
     seconds: Math.round((exercise.loopBeats * 60) / exercise.bpm),
+    leadInSeconds: leadInSeconds(exercise),
     ...(offsets.length > 0 ? { offsets } : {}),
   }
 }
