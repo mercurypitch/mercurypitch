@@ -3712,8 +3712,9 @@ const AppShell: Component<AppProps> = (props) => {
                 </TabErrorBoundary>
               </Show>
 
-              {/* Hidden Lab surface — hash route only (#lab / #pitch-test /
-                  #pitch-algo); LabPage verifies supporter access. */}
+              {/* Hidden Lab surface — five hash routes (#lab / #pitch-test /
+                  #pitch-algo / #lab-transcribe / #lab-diff); LabPage verifies
+                  supporter access. */}
               <Show when={labTab() !== null}>
                 <TabErrorBoundary tabName={tabLabel(TAB_LAB)}>
                   <LabPage initialTab={labTab()!} />

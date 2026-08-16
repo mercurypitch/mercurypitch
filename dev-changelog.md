@@ -8,7 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The Lab became a route-backed focused workspace.** The app shell maps five
+  hidden Lab routes to task-led tools, removes unrelated app navigation only
+  while one of those routes is active, and keeps supporter access fail-closed.
+  The desktop tablist uses roving focus with Arrow/Home/End navigation; compact
+  layouts use a tool picker. Each tool has its own error boundary, and inactive
+  tools unmount so their audio, microphone, timers and global handlers clean up.
+
+- **All five Lab tools now share one responsive instrument vocabulary.** A
+  Lab-local palette derives every surface and accent from app theme tokens.
+  Workbench, detector, benchmark, transcription and mapping layouts now expose
+  one clear primary task, progressive detail, meaningful empty/error states and
+  short-height/tablet rules. The four previously unstyled workbench controls
+  moved from inline literals to scoped CSS modules. Pane and waveform splitters
+  gained real pointer coverage plus keyboard/ARIA semantics.
+
 ### Fixed
+
+- **Lab work no longer survives after its tool is left.** The earlier
+  keep-visited-panels-mounted approach left spectral capture, raw microphone
+  streams, transcription playback/Space handlers and detector benchmarks alive
+  behind `hidden`. Lab now mounts only the active tool. Late microphone grants,
+  workbench starts, offline analysis, UVR work and algorithm runs have disposal
+  guards so an await cannot restart work after unmount.
+
+- **The redesigned Lab's latent interaction failures are covered.** The
+  Transcription Bench now guards every canvas measurement and has empty plus
+  populated-result render tests. Pitch Detection's waveform grip now updates a
+  reactive height instead of querying an unhashed CSS-module class, restores
+  document cursor state on cleanup and works by mouse or keyboard. Algorithm
+  accuracy/performance styling uses typed semantic bands rather than missing
+  utility-class lookups.
+
+- **The Lab access gate's primary button has guaranteed contrast.** The app
+  shell does not define Karaoke Night's `--on-accent`; the gate now uses the
+  globally available `--bg-primary` against the active accent.
 
 - **A credit pack offered "Buy" to visitors who cannot check out.**
   `startCheckout` needs a real identity — the db-worker 403s an anonymous or
@@ -94,34 +130,6 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Changed
 
-- **The Lab restyled onto one shared vocabulary.** `Lab.module.css` declares a
-  private palette on `.page` — `--lab-void`/`panel`/`raised`/`line`/`ink`/
-  `muted`, the `--lab-signal`/`--lab-measured` accent pair, `--lab-bevel` and
-  `--lab-mono` — and every tab's own stylesheet inherits it through the
-  cascade, including `PitchTestingTab`'s and `PitchAlgorithmTester`'s. Unlike
-  Zen's `--studio-*` or Guitar Night's `--amber`, which hardcode hexes because
-  they are standalone Vite entries that never load `app.css`, every name here
-  derives from a global token: the Lab runs inside the app shell, where a
-  literal hex breaks 7 of the 8 themes. `signal` dresses controls the Lab owns,
-  `measured` dresses numbers a capture produced. The header gained the same
-  eyebrow, mark-chip and monospace-meta treatment the pitch-stage shell uses,
-  and the tab row became a padded pill tray with per-tab icons.
-
-- **The four Lab workbench sub-panels gained stylesheets.** `UnitConverter`,
-  `TransformRunner`, `AnnotationControls` and `MultiPaneView` had none: ~80
-  inline `style={{}}` objects carrying 122 literal colours between them, plus
-  two global class names (`unit-converter`, `transform-runner`) that no CSS
-  anywhere defined. All four now have CSS modules on the `--lab-*` palette,
-  with binary-state ternaries converted to `classList` toggles rather than
-  frozen into CSS. Canvas paint colours deliberately stayed in JS — a 2D
-  context's `fillStyle` cannot take `var()`, so resolving them would mean a
-  `getComputedStyle` pass, which is a behaviour change. The pane splitter also
-  grew a `::before` hit area larger than the 1px hairline it draws, and its
-  hover state moved from imperative `style.background` mutation to CSS.
-  `PitchTestingTab.module.css` shed ~560 lines of dead rules, including a
-  duplicated copy of the algorithm tester's, and gained its first media
-  queries.
-
 - **Mic waveform overlay defaults off.** `micWaveVisible` moved from a
   session `createSignal(true)` to a persisted signal
   (`pitchperfect_mic_wave_visible`, default `false`): the overlay is a
@@ -179,28 +187,6 @@ single-page-application` means a deleted chunk answers with index.html and a
   halves are pinned by `app-store.test.ts`.
 
 ### Fixed
-
-- **Four latent Lab bugs the restyle surfaced.** `PitchAlgorithmTester`'s
-  performance badge keyed its class map on `green`/`yellow`/`red` while
-  `getPerformanceClassification` returns `text-green-400` and friends, so every
-  lookup missed and all five bands rendered `class="perfBadge undefined"`.
-  `PitchTestingTab` passed the undefined `--border-primary` into a `border:`
-  shorthand — an undefined var invalidates the entire shorthand, so the zoom
-  buttons and the resize grip had no border at all rather than a wrong one —
-  and its `height: 100%` never resolved against the content-height Lab panel,
-  so neither rail ever got the scrollbar its `overflow-y: auto` asked for. An
-  Ensemble checkbox row lost its `display: flex` to a more specific
-  `.pitchTestingControls .controlGroup label` rule. Eleven other undefined
-  token names (`--red-dim`, `--red-rgb`, `--green-bright`, `--yellow-dim`,
-  `--bg-secondary-hover`, `--accent-lighter`, `--surface-1`/`-2`) were
-  rendering their hardcoded fallbacks on all 8 themes.
-
-- **The Lab access gate's primary button had no guaranteed contrast.**
-  `LabPage.module.css` set `color: var(--on-accent, #07101d)`, but
-  `--on-accent` is only ever defined by the Karaoke Night entry
-  (`karaoke-night.css`), so inside the app shell it always fell through to
-  that literal. Now `var(--bg-primary)`, the one colour every theme guarantees
-  reads against its own accent.
 
 - **A dismissed share sheet is not a delivery.** `shareCard`
   (`card-renderer.ts`) returns a third outcome, `'dismissed'`, when
