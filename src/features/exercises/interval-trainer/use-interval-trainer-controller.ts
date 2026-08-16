@@ -139,8 +139,9 @@ export function useIntervalTrainerController(
     }, NOTE_PLAY_DURATION_MS + GAP_BETWEEN_NOTES_MS)
   }
 
+  // Called only from a timer callback that has just checked `_cancelled` in
+  // the same synchronous frame, so it does not re-check.
   function startMatching(): void {
-    if (_cancelled) return
     // Exercise-relative clock — same epoch as pitch sample `.time` seconds.
     const responseStartSec = base._getElapsed() / 1000
     singSlot(0, responseStartSec, [])
@@ -152,12 +153,13 @@ export function useIntervalTrainerController(
    * own time range — singing the right notes in the wrong order does not
    * score, and singing them in the right order finally does.
    */
+  // Like startMatching: every caller (startMatching itself, and the slot
+  // timer below) sits behind a `_cancelled` check in the same frame.
   function singSlot(
     slotIndex: number,
     responseStartSec: number,
     slotScores: number[],
   ): void {
-    if (_cancelled) return
     const pair = intervals[roundIndex]
     if (slotIndex >= pair.length) {
       evaluateRound(slotScores)
@@ -205,8 +207,10 @@ export function useIntervalTrainerController(
 
   function evaluateRound(slotScores: number[]): void {
     const [target1, target2] = intervals[roundIndex]
-    const note1Score = slotScores[0] ?? 0
-    const note2Score = slotScores[1] ?? 0
+    // singSlot recursion hands over exactly one score per note of the pair,
+    // so both reads are always present.
+    const note1Score = slotScores[0]
+    const note2Score = slotScores[1]
     roundScores.push({ note1: note1Score, note2: note2Score })
 
     const roundAvg = (note1Score + note2Score) / 2

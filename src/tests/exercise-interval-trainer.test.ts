@@ -380,3 +380,129 @@ describe('plannedRounds', () => {
     expect(plannedRounds(10)).toBe(6)
   })
 })
+
+// ── Cancellation races and early stops ───────────────────────────────
+//
+// clearTimeout cannot un-queue a timer callback the event loop has already
+// dequeued (the HTML spec race the `_cancelled` flag exists for). These
+// cases simulate that race by making clearTimeout a no-op before disposing,
+// so every pending callback still fires — and must then do nothing.
+describe('cancellation and early stop', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  // Default difficulty timeline: note1 0-800, note2 at 1100, matching from
+  // 2500, slot two from 5000, round evaluated at 7500, next round at 8100.
+  it.each([
+    ['while note two is still queued', 500],
+    ['between the notes and the matching phase', 1500],
+    ['during a singing slot', 3000],
+    ['in the gap before the next round', 7700],
+  ])(
+    'a callback that outraces clearTimeout does nothing %s',
+    async (_label, cancelAtMs) => {
+      vi.useFakeTimers()
+      const disposers: Array<() => void> = []
+      const playTone = vi.fn().mockResolvedValue(undefined)
+      let metricUpdates = 0
+      const base = createMockBase({
+        _registerDispose: (fn: () => void) => {
+          disposers.push(fn)
+        },
+        _updateMetrics: () => {
+          metricUpdates += 1
+        },
+      })
+      const ctrl = useIntervalTrainerController(base, { playTone })
+      ctrl.setBase(60)
+      ctrl.startRounds()
+      await vi.advanceTimersByTimeAsync(cancelAtMs)
+
+      // The race: the pending callback survives clearTimeout and still runs.
+      vi.spyOn(globalThis, 'clearTimeout').mockImplementation(() => {})
+      for (const fn of disposers) fn()
+      const tonesAtCancel = playTone.mock.calls.length
+      const metricsAtCancel = metricUpdates
+
+      await vi.advanceTimersByTimeAsync(120_000)
+
+      expect(playTone.mock.calls.length).toBe(tonesAtCancel)
+      expect(metricUpdates).toBe(metricsAtCancel)
+    },
+  )
+
+  /** The in-tune singer from the happy path, packaged for reuse. */
+  function singingBase(committed: unknown[]): BaseExerciseController {
+    let lastMidi = 60
+    return createMockBase({
+      _getElapsed: () => performance.now(),
+      _completeWithResult: (r) => committed.push(r),
+      _updateMetrics: (m) => {
+        if (typeof m.currentMidi === 'number') lastMidi = m.currentMidi
+      },
+      pitchHistory: () => {
+        const nowMs = performance.now()
+        const f = midiToFreq(lastMidi)
+        return Array.from({ length: 16 }, (_unused, i) => ({
+          freq: f,
+          time: (nowMs - i * 60) / 1000,
+          cents: 0,
+          clarity: 80,
+        }))
+      },
+    })
+  }
+
+  it('stopping after one small round leaves the unplayed sizes at zero', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    // Constant 0.9 keeps the shuffle in pool order: round one is the Major
+    // 2nd (span 2, "small").
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
+    const committed: Array<{
+      metrics: Record<string, number>
+    }> = []
+    const ctrl = useIntervalTrainerController(
+      singingBase(committed as unknown[]),
+      audioEngine,
+    )
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.advanceTimersByTimeAsync(7_500)
+    ctrl.stopRounds()
+
+    const result = committed[0]
+    expect(result.metrics.roundsCompleted).toBe(1)
+    // The one round that played scored; the sizes that never played must
+    // report zero, not an invented average.
+    expect(result.metrics.smallIntervalAvg).toBeGreaterThan(0)
+    expect(result.metrics.mediumIntervalAvg).toBe(0)
+    expect(result.metrics.largeIntervalAvg).toBe(0)
+  })
+
+  it('stopping after one large round leaves small and medium at zero', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    // Constant 0.1 reverses the shuffle: round one is the Octave (span 12).
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
+    const committed: Array<{
+      metrics: Record<string, number>
+    }> = []
+    const ctrl = useIntervalTrainerController(
+      singingBase(committed as unknown[]),
+      audioEngine,
+    )
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.advanceTimersByTimeAsync(7_500)
+    ctrl.stopRounds()
+
+    const result = committed[0]
+    expect(result.metrics.roundsCompleted).toBe(1)
+    expect(result.metrics.largeIntervalAvg).toBeGreaterThan(0)
+    expect(result.metrics.smallIntervalAvg).toBe(0)
+    expect(result.metrics.mediumIntervalAvg).toBe(0)
+  })
+})
