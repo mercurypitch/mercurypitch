@@ -177,6 +177,12 @@ describe('parseHash', () => {
     expect(parseHash('#/uvr/sing')).toEqual({ type: 'uvr-sing' })
   })
 
+  // The release page: deep-linkable so the sidebar entry and the
+  // once-per-release announcement share one destination.
+  it("parses the What's New route", () => {
+    expect(parseHash('#/whats-new')).toEqual({ type: 'whats-new' })
+  })
+
   it('parses UVR session route with session ID', () => {
     const result = parseHash('#/uvr/session/abc123-def')
     expect(result).toEqual({ type: 'uvr-session', sessionId: 'abc123-def' })
@@ -426,6 +432,10 @@ describe('buildHash', () => {
 
   it('builds the Shazam Sing hash', () => {
     expect(buildHash({ type: 'uvr-sing' })).toBe('/karaoke/sing')
+  })
+
+  it("builds the What's New hash", () => {
+    expect(buildHash({ type: 'whats-new' })).toBe('/whats-new')
   })
 
   it('builds UVR session hash', () => {
