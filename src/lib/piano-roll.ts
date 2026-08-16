@@ -247,6 +247,18 @@ export function exportMelodyToMIDI(
   return midiData
 }
 
+/**
+ * Download name for a user-facing export: the app's own name plus a
+ * sortable local-time stamp. Internal storage identifiers deliberately
+ * keep their historical `pitchperfect` names (renaming them would orphan
+ * existing users' data); anything that lands in a Downloads folder says
+ * mercurypitch.
+ */
+export function exportFilename(ext: string): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  return `mercurypitch-${timestamp}.${ext}`
+}
+
 /** Trigger a browser download of a MIDI file. */
 export function downloadMIDI(
   melody: MelodyItem[],
@@ -264,7 +276,7 @@ export function downloadMIDI(
   const a = document.createElement('a')
   a.href = url
   a.download =
-    filename != null && filename !== '' ? filename : 'pitchperfect-melody.mid'
+    filename != null && filename !== '' ? filename : 'mercurypitch-melody.mid'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -3140,15 +3152,11 @@ export class PianoRollEditor {
       .querySelector('#roll-export-midi')
       ?.addEventListener('click', () => {
         const melody = this.getMelody()
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/[:.]/g, '-')
-          .slice(0, 19)
         // Drums export on MIDI channel 10 (index 9) so DAWs read a drum track
         void downloadMIDI(
           melody,
           this.bpm,
-          `pitchperfect-${timestamp}.mid`,
+          exportFilename('mid'),
           this.kind === 'drums' ? 9 : 0,
         )
       })
@@ -3165,10 +3173,6 @@ export class PianoRollEditor {
           )
           return
         }
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/[:.]/g, '-')
-          .slice(0, 19)
         const engine = (
           window as Window & { pianoRollAudioEngine?: AudioEngine }
         ).pianoRollAudioEngine
@@ -3183,7 +3187,7 @@ export class PianoRollEditor {
         void engine.downloadMelodyAsWAV(
           melody,
           this.bpm,
-          `pitchperfect-${timestamp}.wav`,
+          exportFilename('wav'),
           instrument,
           this.kind,
         )

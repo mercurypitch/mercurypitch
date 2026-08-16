@@ -110,6 +110,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   notification naming the routes. Pinned by
   `src/tests/settings-voice-help.test.tsx` (all pins fail against the
   unfixed panel).
+- **Exports were still named after a former product
+  (CLAUDE-JOURNEY-025).** Four user-facing download sites said
+  `pitchperfect-`: the Compose editor's MIDI export
+  (`useEditorController`), the piano roll's MIDI and WAV export buttons,
+  and `downloadMIDI`'s unnamed-file fallback. A shared
+  `exportFilename(ext)` helper in `piano-roll.ts` now produces
+  `mercurypitch-<sortable local timestamp>.<ext>` and all four sites use
+  it (the fallback is `mercurypitch-melody.mid`). Internal storage
+  identifiers — `pitchperfect_*` localStorage keys and the
+  `pitchperfect-models` IndexedDB — deliberately keep their names:
+  renaming them would orphan every existing user's data. Pinned by
+  `src/tests/export-filenames.test.ts`, including a source-content sweep
+  over both files (the admin-studio workflow-pin idiom) so the literal
+  cannot quietly return.
 
 - **`FirstLight` claimed `aria-modal` without trapping focus
   (CLAUDE-JOURNEY-018).** The onboarding overlay renders `role="dialog"

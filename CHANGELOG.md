@@ -199,6 +199,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   source repository. It now names the real routes (say "what can I say",
   or press Shift+V) and adds a button that opens the live command list
   right there.
+- **Melody and audio exports now carry the app's name.** Files saved from
+  the Compose editor and the piano roll were named
+  "pitchperfect-&lt;timestamp&gt;" — a product name that appears nowhere in
+  the app, so a Downloads folder full of them could not be traced back to
+  MercuryPitch. They now download as "mercurypitch-&lt;timestamp&gt;.mid"
+  and ".wav".
 
 - **The welcome dialog now holds keyboard focus.** On first launch the
   onboarding overlay announced itself as a dialog but let Tab wander into
