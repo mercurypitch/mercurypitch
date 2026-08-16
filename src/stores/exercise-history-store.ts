@@ -14,6 +14,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
+import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
@@ -106,6 +107,11 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
         durationMs,
         source: 'exercise',
         sourceRef: entry.type,
+        // Without this, no repeat of a drill ever forms a Skill Thread on
+        // the Progress page and every plain row reads "cannot be compared
+        // like for like" (CLAUDE-JOURNEY-007) — only an explicit persisted
+        // key marks two records as scored on the same ruler.
+        comparabilityKey: exerciseComparabilityKey(entry.type),
       },
       ownerId,
     )
