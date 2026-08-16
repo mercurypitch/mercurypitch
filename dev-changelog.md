@@ -45,6 +45,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Vocal-range fitting at the launch choke points.** New
+  `fitPhraseToRange` (whole-phrase octave shift, centred among fitting
+  octaves, spill-centred when too wide) and `fitScaleBaseNote` (fold the
+  base when base+12 exceeds the ceiling; presets' >= 24-semitone span is
+  pinned) in `vocal-range.ts`, applied in App's `pendingDrill` effect and
+  the deep-link slug path. `generatePhrase` (call-response) now walks
+  direction-aware within the preset range; `generateMelody`
+  (mirror-melody) clamps to the preset instead of the C2-C6 constant;
+  call-response and sight-singing honour `launchTargetNotes` (previously
+  exported with zero consumers) so the authored apply-phrase is sung as
+  written. `mountExercise` unifies the forced-remount dance so a menu or
+  deep-link launch of the already-open drill re-reads its (cleared)
+  override instead of reusing the routine's stale note. Known
+  inconsistency left alone: `VOICE_MIDI_RANGES` (analyzer) vs
+  `VOCAL_RANGES` (settings) still disagree about preset ceilings.
+
 - **The local-progress notice is bounded by the sign-in, not by the stores.**
   `exerciseHistory` and `sessionResults` are one device-wide list each with no
   owner on their rows, so a run finished after signing in landed in the list

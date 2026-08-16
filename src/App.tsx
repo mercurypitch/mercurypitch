@@ -272,7 +272,7 @@ import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
-import { pickVocalRangeMelody } from '@/lib/vocal-range'
+import { fitPhraseToRange, pickVocalRangeMelody } from '@/lib/vocal-range'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -526,11 +526,27 @@ const AppShell: Component<AppProps> = (props) => {
     // a later unrelated run must not count toward the challenge.
     clearChallengeAttempt()
   }
+  // Exercises read their launch override at mount. If the same type is
+  // already selected (it survives tab switches), the component would keep
+  // its old config — force a fresh mount so the new launch takes effect.
+  // The re-select must land AFTER the caller's writes flush: writes inside
+  // an effect coalesce, so back-to-back writes never unmount anything.
+  const mountExercise = (type: ExerciseType) => {
+    if (untrack(selectedExercise) === type) {
+      setSelectedExercise(null)
+      queueMicrotask(() => setSelectedExercise(type))
+    } else {
+      setSelectedExercise(type)
+    }
+  }
   const handleQuickStart = (type: ExerciseType, config?: ExerciseConfig) => {
     // A targeted drill carries a one-shot difficulty / target note; a normal
-    // launch passes no config, which clears any stale override.
+    // launch passes no config, which clears any stale override. The forced
+    // remount matters here too: without it, a drill note armed by an earlier
+    // routine launch stayed alive inside the still-mounted component, and a
+    // later "standalone" open of the same drill silently reused it.
     setLaunchOverride(type, config)
-    setSelectedExercise(type)
+    mountExercise(type)
     setAutoStartExercise(true)
   }
 
@@ -553,7 +569,7 @@ const AppShell: Component<AppProps> = (props) => {
     }
     // Resolve the target notes: explicit list wins, otherwise derive them from
     // the named seeded scale melody (its note names, in order).
-    const notes =
+    const authored =
       launch.notes && launch.notes.length > 0
         ? launch.notes
         : launch.scaleId !== undefined
@@ -561,8 +577,13 @@ const AppShell: Component<AppProps> = (props) => {
               .getMelody(launch.scaleId)
               ?.items.map((it) => `${it.note.name}${it.note.octave}`)
           : undefined
+    // A link's notes are authored for nobody in particular; the singer's
+    // range is set on this device, so fit them the same as a drill's.
+    const notes = authored
+      ? fitPhraseToRange(authored, vocalRangePreset())
+      : undefined
     setActiveTab(TAB_EXERCISES)
-    setSelectedExercise(launch.exercise)
+    mountExercise(launch.exercise)
     setLaunchOverride(launch.exercise, {
       type: launch.exercise,
       ...(notes && notes.length > 0
@@ -588,25 +609,19 @@ const AppShell: Component<AppProps> = (props) => {
     const drill = pendingDrill()
     if (drill && activeTab() === TAB_EXERCISES) {
       if (drill.notes.length > 0 || drill.pattern != null) {
+        // Routine phrases and challenge notes are authored in a middle
+        // register; fitted here — the one choke point every drill launch
+        // passes — so a baritone is never handed G4 to start from.
+        const notes = fitPhraseToRange(drill.notes, vocalRangePreset())
         setLaunchOverride(drill.exercise, {
           type: drill.exercise,
-          targetNote: drill.notes[0],
-          targetNotes: drill.notes.length > 0 ? drill.notes : undefined,
+          targetNote: notes[0],
+          targetNotes: notes.length > 0 ? notes : undefined,
           difficulty: drill.difficulty,
           pattern: drill.pattern,
         })
       }
-      // Exercises read their launch override at mount. If the same type is
-      // already selected (it survives tab switches), the component would keep
-      // its old config — force a fresh mount so the new drill takes effect.
-      // The re-select must land AFTER this effect flushes: writes inside an
-      // effect coalesce, so back-to-back writes never unmount anything.
-      if (untrack(selectedExercise) === drill.exercise) {
-        setSelectedExercise(null)
-        queueMicrotask(() => setSelectedExercise(drill.exercise))
-      } else {
-        setSelectedExercise(drill.exercise)
-      }
+      mountExercise(drill.exercise)
       setPendingDrill(null)
     }
   })

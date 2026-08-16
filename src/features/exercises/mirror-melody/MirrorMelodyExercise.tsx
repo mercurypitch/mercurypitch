@@ -7,7 +7,7 @@ import { updateDifficultyFromEma } from '@/features/practice-intelligence/diffic
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { getComfortableMidiRange, getDefaultNote, getNoteOptions, } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
@@ -40,7 +40,10 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
-    controller.setMelody(noteToMidi(startNote()))
+    controller.setMelody(
+      noteToMidi(startNote()),
+      getComfortableMidiRange(vocalRangePreset()),
+    )
     if (!(await base.start())) return
     controller.startSequence()
   }
