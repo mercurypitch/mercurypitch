@@ -699,6 +699,49 @@
   background: var(--bg-hover);
 }
 
+/* On a phone the guide was a desktop dialog shrunk by percentages: the
+   backdrop's 2rem padding took 64px of a 390px screen, and the container
+   still asked for 90vw (351px) inside the 326px that left — so the dialog
+   itself hung off the right edge before any of its content was measured.
+   Below the breakpoint it becomes what every other mobile surface here is:
+   a full-screen sheet with its own scroll. */
+@media (max-width: 768px) {
+  .guide-modal {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .guide-container {
+    width: 100%;
+    max-width: 100%;
+    /* dvh, not vh: mobile Safari's vh is the ADDRESS-BAR-COLLAPSED height,
+       so a 100vh sheet hides its own close button behind the browser
+       chrome on first paint. */
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    padding: 0.75rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .guide-header {
+    padding: 0.5rem 0.25rem;
+    gap: 0.5rem;
+  }
+
+  .guide-header h3 {
+    font-size: 1rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .guide-close {
+    flex-shrink: 0;
+  }
+}
+
 /* ============================================================
 // History Section
 // ============================================================ */

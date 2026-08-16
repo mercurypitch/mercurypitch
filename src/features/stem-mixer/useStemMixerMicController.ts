@@ -15,6 +15,7 @@ import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
 import { sliderToGain } from '@/lib/volume-curve'
 import { micLatencySec } from '@/stores/mic-latency-store'
+import { setSingingCaptureActive } from '@/stores/mic-store'
 import { pitchAlgorithm, pitchBufferSize, settings, } from '@/stores/settings-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -424,6 +425,15 @@ export const useStemMixerMicController = (
     }
   })
 
+  // Tell the app a voice is being scored, so voice control stands its
+  // recognizer down for as long as it is (see mic-store). Mirrored from
+  // micActive rather than set inside toggleMic: micActive is also flipped by
+  // the manager-state watcher and the sentinel's heal path, and each of
+  // those is just as much a start or an end of singing.
+  createEffect(() => {
+    setSingingCaptureActive(micActive())
+  })
+
   // Watchdog registration: the karaoke mic button + pitch ribbon read
   // micActive — a confirmed icon-on-with-no-live-track mismatch is healed
   // through the normal toggle-off path.
@@ -446,6 +456,9 @@ export const useStemMixerMicController = (
   // acquire (micActive flips true only after the acquire resolves).
   onCleanup(() => {
     disposed = true
+    // Unconditional, like the device release below: leaving this true would
+    // disable voice control app-wide with nothing left mounted to clear it.
+    setSingingCaptureActive(false)
     unsubscribeManager()
     unregisterSentinel()
     micGainNode?.disconnect()

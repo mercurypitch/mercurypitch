@@ -126,6 +126,10 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.setActiveTab(TAB_KARAOKE)
       deps.setInitialUvrView('upload')
       deps.setActiveUvrSessionId(null)
+    } else if (route.type === 'uvr-sing') {
+      deps.setActiveTab(TAB_KARAOKE)
+      deps.setInitialUvrView('shazam-listen')
+      deps.setActiveUvrSessionId(null)
     } else if (route.type === 'uvr-session') {
       deps.setActiveTab(TAB_KARAOKE)
       deps.setInitialUvrSessionId(route.sessionId)
@@ -277,6 +281,10 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       route = { type: 'uvr-session', sessionId }
     } else if (view === 'mixer' && sessionId !== null) {
       route = { type: 'uvr-session-mixer', sessionId }
+    } else if (view === 'shazam-listen') {
+      // Deep-linkable so "shazam sing" can be spoken from anywhere, and so
+      // the listener survives a reload instead of dropping back to Upload.
+      route = { type: 'uvr-sing' }
     } else {
       route = { type: 'uvr-upload' }
     }
