@@ -182,6 +182,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   tracker for the whole round, each round leaves more room to breathe, and the
   interval you hear is always the interval named — no more surprise extra
   octave.
+- **An update can no longer crash the app into a dead end.** When a deploy
+  replaced the build a page was running, its next lazy-loaded screen could
+  fail into the crash modal — and the modal's Reload button re-served the same
+  outdated app from the offline cache, so reloading never helped. That failure
+  is now recognised for what it is: the app quietly fetches the newest version
+  and reloads itself once, asking first only if a reload just failed to fix
+  it. The crash modal's Reload also escapes the offline cache now, and a
+  second update prompt no longer pops over a reload already underway.
 
 - **Challenges and badges you have not earned no longer claim a date.**
   Anything unfinished was being stamped 1 January 1970 instead of showing
