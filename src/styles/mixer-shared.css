@@ -194,7 +194,7 @@ input[type='range'] {
 .stem-mixer--focus .sm-transport .sm-sidebar-toggle--active,
 .stem-mixer--focus .sm-transport .sm-sidebar-toggle--active:hover {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .stem-mixer--focus .sm-transport .sm-col-toggle {

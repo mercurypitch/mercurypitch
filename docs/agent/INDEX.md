@@ -338,7 +338,7 @@ Grep for the symbol and read the surrounding range instead.
 
 | File | LOC |
 |---|---|
-| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.0k |
+| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.1k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/App.tsx](../../src/App.tsx) | 4.4k |
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 4.4k |

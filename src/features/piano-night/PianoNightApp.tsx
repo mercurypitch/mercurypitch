@@ -723,7 +723,7 @@ export function PianoNightApp(): JSX.Element {
 
   return (
     <div
-      class={styles.shell}
+      class={`${styles.shell} mp-dark-stage`}
       classList={{ [styles.playing]: isPlaying() }}
       data-view={view()}
       data-room={background.resolved().id}

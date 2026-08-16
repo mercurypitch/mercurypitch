@@ -1268,7 +1268,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   return (
     <div
       ref={appRoot}
-      class={styles.app}
+      class={`${styles.app} mp-dark-stage`}
       classList={{ [styles.appRoom]: isStageView() }}
       style={{ [GUITAR_NIGHT_GLASS_VAR]: String(roomGlass()) }}
       data-backdrop-treatment={background.resolved().treatment}
