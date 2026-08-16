@@ -4,13 +4,14 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type * as PitchAlgorithmTesterModule from '@/lib/pitch-algorithm-tester'
 
 const mocks = vi.hoisted(() => ({
   benchmarkAlgorithmAsync: vi.fn(),
 }))
 
 vi.mock('@/lib/pitch-algorithm-tester', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/pitch-algorithm-tester')>()),
+  ...(await importOriginal<typeof PitchAlgorithmTesterModule>()),
   benchmarkAlgorithmAsync: mocks.benchmarkAlgorithmAsync,
 }))
 
