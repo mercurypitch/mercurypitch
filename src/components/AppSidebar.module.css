@@ -67,6 +67,11 @@
   display: none;
 }
 
+/* Right-aligned back chevron, not a centred X. The X read as "close the
+   thing you were looking at" in the middle of a row of nothing, where every
+   other app puts a chevron at the edge that points the way the panel will
+   go. `align-self: flex-end` is what puts it there — the sidebar is a
+   column, so the cross axis is horizontal. */
 .sidebarCloseBtn {
   display: none;
   background: none;
@@ -164,6 +169,10 @@
   display: flex;
   justify-content: center;
   gap: 6px;
+  /* Four buttons no longer fit a phone's sidebar on one line, and the row
+     answered by scrolling sideways — a gesture nobody makes in a vertical
+     menu, so the last control was simply invisible. It wraps now. */
+  flex-wrap: wrap;
 }
 
 .walkthroughControlBtn {

@@ -244,3 +244,22 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* The "take me there" button under a Try it line. Sized as a real touch
+   target: on a phone this is the whole point of the card. */
+.goBtn {
+  align-self: flex-start;
+  min-height: var(--touch-target, 44px);
+  padding: 0 var(--spacing-xl);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--text-md);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.goBtn:hover {
+  background: var(--accent-dim);
+}

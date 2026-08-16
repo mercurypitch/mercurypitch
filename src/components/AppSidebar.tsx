@@ -82,10 +82,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         title="Close menu"
         aria-label="Close menu"
       >
-        <svg viewBox="0 0 24 24" width="18" height="18">
+        <svg viewBox="0 0 24 24" width="22" height="22">
           <path
             fill="currentColor"
-            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"
           />
         </svg>
       </button>
