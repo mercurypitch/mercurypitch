@@ -11,6 +11,7 @@ interface MixerE2EStore {
   initSessionStore: () => Promise<void>
   getUvrSession: (id: string) => unknown
   importUvrSessionDurable: (session: unknown) => Promise<boolean>
+  setTheme: (theme: 'dark' | 'light') => void
 }
 
 const SESSION_ID = 'e2e-stem-mix-controls'
@@ -312,7 +313,8 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
     theme: 'dark' | 'light',
   ): Promise<void> => {
     await page.evaluate((nextTheme) => {
-      document.documentElement.setAttribute('data-theme', nextTheme)
+      const store = window.__pp?.appStore as unknown as MixerE2EStore
+      store.setTheme(nextTheme)
     }, theme)
     await assertReadablePalette(role, theme)
   }
