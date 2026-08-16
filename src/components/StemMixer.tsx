@@ -2209,6 +2209,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               : String(stageAlpha()),
         }}
         classList={{
+          'mp-dark-stage':
+            props.preset === 'performance' ||
+            karaokeFocus() ||
+            pitchAnalysis.editMode(),
+          'stem-mixer--performance': props.preset === 'performance',
           'stem-mixer--focus': karaokeFocus(),
           'stem-mixer--mapping': lrcGenMode(),
           'stem-mixer--pitch-studio':
@@ -3023,6 +3028,27 @@ const LoopMetricsBar: Component<{
 export const StemMixerStyles: string = `
 .stem-mixer {
   --sm-stage-alpha: ${KARAOKE_STAGE_ALPHA.defaultValue};
+  --sm-canvas-bg: #0d1117;
+  --sm-stage-surface: color-mix(
+    in srgb,
+    var(--bg-secondary, #161b22) calc(var(--sm-stage-alpha) * 100%),
+    transparent
+  );
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background:
+    linear-gradient(var(--sm-stage-surface), var(--sm-stage-surface)),
+    var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
+    var(--bg-secondary, #161b22);
+  overflow: hidden;
+}
+
+/* The standalone stage keeps translucent theatre glass. Studio mode never
+   shadows app theme tokens: its header, panels and controls inherit the
+   selected app palette, while only .sm-canvas remains deliberately dark. */
+.stem-mixer--performance {
   --bg-primary: rgba(13, 17, 23, var(--sm-stage-alpha));
   --bg-secondary: rgba(22, 27, 34, var(--sm-stage-alpha));
   --bg-tertiary: rgba(
@@ -3031,24 +3057,25 @@ export const StemMixerStyles: string = `
     45,
     min(1, calc(var(--sm-stage-alpha) + 0.08))
   );
+  --bg-card: rgba(
+    28,
+    33,
+    40,
+    min(1, calc(var(--sm-stage-alpha) + 0.12))
+  );
   --sm-canvas-bg: rgba(
     13,
     17,
     23,
     min(1, calc(var(--sm-stage-alpha) + 0.12))
   );
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   background:
     linear-gradient(
       rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.08))),
       rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.18)))
     ),
     var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
-    var(--bg-secondary, #161b22);
-  overflow: hidden;
+    #161b22;
 }
 
 /* Header */
@@ -3186,7 +3213,7 @@ export const StemMixerStyles: string = `
   height: 14px;
 }
 .sm-playlist-ctrl-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
   color: var(--fg-primary, #c9d1d9);
 }
 .sm-playlist-ctrl-btn:disabled {
@@ -3259,7 +3286,7 @@ export const StemMixerStyles: string = `
 
 .sm-btn--active {
   background: var(--accent, #58a6ff) !important;
-  color: #fff !important;
+  color: var(--on-accent, #0d1117) !important;
   border-color: var(--accent, #58a6ff) !important;
 }
 
@@ -3593,7 +3620,7 @@ export const StemMixerStyles: string = `
   height: 14px;
 }
 .sm-mic-monitor-toggle--active {
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   background: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
 }
@@ -3661,7 +3688,7 @@ export const StemMixerStyles: string = `
 .pitch-canvas-toggle.active {
   background: var(--accent, #8b5cf6);
   border-color: var(--accent, #8b5cf6);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .pitch-canvas-toggle svg {
@@ -3672,16 +3699,18 @@ export const StemMixerStyles: string = `
   font-size: 0.55rem;
   padding: 0.05rem 0.3rem;
   border-radius: 0.2rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--success, #3fb950);
   text-transform: none;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
 .pitch-alignment-stats.whisper-processing {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--warning, #d29922);
   animation: sm-pulse 1.5s ease-in-out infinite;
 }
 
@@ -4213,15 +4242,17 @@ export const StemMixerStyles: string = `
   font-size: 0.55rem;
   padding: 0.05rem 0.3rem;
   border-radius: 0.2rem;
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--success, #3fb950);
   text-transform: none;
   letter-spacing: 0;
 }
 
 .sm-lyrics-source-upload {
-  background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: inset 2px 0 var(--purple, #bc8cff);
 }
 
 .sm-lyrics-loading {
@@ -5426,7 +5457,7 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-loop-badge--a {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-lyrics-loop-badge--b {
@@ -6728,7 +6759,7 @@ export const StemMixerStyles: string = `
 }
 .sm-dock-compass-btn--active {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 .sm-dock-compass-hub {
   grid-column: 2;
@@ -7147,7 +7178,7 @@ export const StemMixerStyles: string = `
   border-radius: 50%;
   font-size: 0.68rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   flex-shrink: 0;
 }
 .sm-loop-menu-dot--a { background: #58a6ff; }
@@ -7234,7 +7265,7 @@ export const StemMixerStyles: string = `
 }
 .sm-mic-grade--b {
   background: linear-gradient(135deg, #60a5fa, #3b82f6);
-  color: #fff;
+  color: #0d1117;
   box-shadow: 0 0 42px rgba(96, 165, 250, 0.4);
 }
 .sm-mic-grade--c {
@@ -7243,8 +7274,8 @@ export const StemMixerStyles: string = `
   box-shadow: 0 0 42px rgba(251, 191, 36, 0.35);
 }
 .sm-mic-grade--d {
-  background: linear-gradient(135deg, #f87171, #dc2626);
-  color: #fff;
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  color: #0d1117;
   box-shadow: 0 0 42px rgba(248, 113, 113, 0.35);
 }
 .sm-mic-score-verdict {
@@ -7305,7 +7336,7 @@ export const StemMixerStyles: string = `
 .sm-mic-score-ok-btn {
   padding: 0.7rem 2.75rem;
   background: linear-gradient(135deg, var(--accent, #58a6ff), var(--purple, #bc8cff));
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   border: none;
   border-radius: 999px;
   font-size: 1rem;
@@ -7481,13 +7512,13 @@ export const StemMixerStyles: string = `
 
 .sm-sidebar-toggle--active {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   border-color: var(--accent, #58a6ff);
 }
 
 .sm-sidebar-toggle--active:hover {
   background: var(--accent-hover, #79c0ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 /* ── Lyrics finder: LRCLIB search picker (glass) ──────────────────
@@ -7565,7 +7596,7 @@ export const StemMixerStyles: string = `
   font-size: 0.9rem;
   font-weight: 600;
   font-family: inherit;
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   background: var(--lyf-acc);
   border: none;
   border-radius: 12px;
@@ -7775,7 +7806,7 @@ export const StemMixerStyles: string = `
 }
 
 .sm-song-picker-footer-btn--primary {
-  color: #fff;
+  color: var(--on-accent, #0d1117);
   background: var(--lyf-acc);
   border-color: transparent;
 }
@@ -7828,7 +7859,7 @@ export const StemMixerStyles: string = `
 
 .sm-btn-primary {
   background: var(--accent, #58a6ff);
-  color: #fff;
+  color: var(--on-accent, #0d1117);
 }
 
 .sm-btn-primary:hover:not(:disabled) {

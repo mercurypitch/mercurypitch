@@ -42,8 +42,9 @@
 // AppSidebar.module.css).
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { createPortalSkinBridge } from '@/components/portal-skin'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './Sheet.module.css'
 
@@ -63,55 +64,17 @@ const DISMISS_DISTANCE = 90
 /** Flick speed (px/ms) that dismisses regardless of distance. */
 const DISMISS_VELOCITY = 0.55
 
-/** Resolve the caller's custom-property cascade before moving content to the
- * body portal. Browsers expose inherited custom properties on the anchor's
- * computed style; walking outward as well makes the bridge resilient in DOM
- * implementations that enumerate only properties declared on each element.
- * The nearest declaration wins, matching normal CSS inheritance. */
-function resolvedCustomProperties(anchor: Element): Record<string, string> {
-  const resolved: Record<string, string> = {}
-  let node: Element | null = anchor
-  while (node !== null) {
-    const computed = window.getComputedStyle(node)
-    for (let index = 0; index < computed.length; index += 1) {
-      const name = computed.item(index)
-      if (!name.startsWith('--') || name in resolved) continue
-      const value = computed.getPropertyValue(name).trim()
-      if (value !== '') resolved[name] = value
-    }
-    node = node.parentElement
-  }
-  return resolved
-}
-
 export const Sheet: Component<SheetProps> = (props) => {
   const [dragY, setDragY] = createSignal(0)
   const [dragging, setDragging] = createSignal(false)
-  const [skin, setSkin] = createSignal<Record<string, string>>({})
+  const portalSkin = createPortalSkinBridge(() => props.isOpen)
 
   let panelRef: HTMLDivElement | undefined
-  let anchorRef: HTMLSpanElement | undefined
   let pointerId: number | null = null
   let startY = 0
   let lastY = 0
   let lastT = 0
   let velocity = 0
-
-  // Sample the complete custom-property cascade from where the caller
-  // actually sits, on open. A fixed allowlist silently de-themes sheet
-  // children that consume feature-local tokens after they move through the
-  // portal (the Zen guide uses --zen-* and --pitch-*, for example).
-  createEffect(() => {
-    if (!props.isOpen) return
-    const anchor = anchorRef
-    if (anchor === undefined) return
-    if (
-      typeof window === 'undefined' ||
-      typeof window.getComputedStyle !== 'function'
-    )
-      return
-    setSkin(resolvedCustomProperties(anchor))
-  })
 
   useFocusTrap(() => panelRef, {
     isOpen: () => props.isOpen,
@@ -165,12 +128,16 @@ export const Sheet: Component<SheetProps> = (props) => {
     <>
       {/* Stays in the caller's tree purely so the stage's custom properties
           resolve somewhere they still cascade. Renders nothing. */}
-      <span ref={anchorRef} class={styles.anchor} aria-hidden="true" />
+      <span
+        ref={portalSkin.anchorRef}
+        class={styles.anchor}
+        aria-hidden="true"
+      />
       <Show when={props.isOpen}>
         <Portal mount={document.body}>
           <div
             class={styles.backdrop}
-            style={skin()}
+            style={portalSkin.style()}
             onClick={() => props.close()}
           >
             <div

@@ -1023,7 +1023,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   })
 
   return (
-    <div class={styles.root}>
+    <div class={`${styles.root} mp-dark-stage`}>
       <PitchStageShell
         mode={session.exercise() === null ? 'zen-monitor' : 'zen-exercise'}
         testId="zen-pitch-stage"

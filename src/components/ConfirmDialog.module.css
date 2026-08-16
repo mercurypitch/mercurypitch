@@ -87,7 +87,7 @@
   gap: 0.35rem;
   padding: 0.5rem 1rem;
   background: var(--red);
-  color: white;
+  color: var(--on-danger, var(--bg-primary, #0d1117));
   border: none;
   border-radius: 0.4rem;
   font-size: 0.85rem;

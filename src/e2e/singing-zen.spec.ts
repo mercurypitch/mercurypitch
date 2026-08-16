@@ -42,6 +42,12 @@ test.describe('Singing Zen pitch stage', () => {
     const stage = page.getByTestId('zen-pitch-stage')
     await expect(stage).toBeVisible()
     await expect(stage).toHaveAttribute('data-pitch-stage-mode', 'zen-monitor')
+    await expect(stage).toHaveCSS('color-scheme', 'dark')
+    expect(
+      await stage.evaluate((element) =>
+        element.closest('.mp-dark-stage')?.classList.contains('mp-dark-stage'),
+      ),
+    ).toBe(true)
     await expect(
       page.getByRole('heading', { name: 'Open Pitch Monitor' }),
     ).toBeVisible()

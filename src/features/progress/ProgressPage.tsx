@@ -314,7 +314,7 @@ function weekAccessibleLabel(week: ProgressWeekView): string {
 
 const LoadingSurface: Component = () => (
   <section
-    class={`${styles.page} ${styles.loadingPage}`}
+    class={`${styles.page} ${styles.loadingPage} mp-dark-stage`}
     aria-label="Progress"
     aria-busy="true"
   >
@@ -346,7 +346,7 @@ const EmptySurface: Component<{
   onAction?: (action: ProgressActionView) => void
 }> = (props) => (
   <section
-    class={`${styles.page} ${styles.emptyPage}`}
+    class={`${styles.page} ${styles.emptyPage} mp-dark-stage`}
     aria-labelledby="progress-title"
   >
     <div class={styles.pageHeader}>
@@ -396,7 +396,7 @@ const ErrorSurface: Component<{
   onRetry?: () => void
 }> = (props) => (
   <section
-    class={`${styles.page} ${styles.errorPage}`}
+    class={`${styles.page} ${styles.errorPage} mp-dark-stage`}
     aria-labelledby="progress-title"
   >
     <div class={styles.pageHeader}>
@@ -518,7 +518,7 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
         >
           {(snapshot) => (
             <section
-              class={styles.page}
+              class={`${styles.page} mp-dark-stage`}
               classList={{ [styles.hasError]: props.status === 'error' }}
               aria-labelledby="progress-title"
               data-progress-state={props.status}

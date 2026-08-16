@@ -920,7 +920,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   return (
     <div
       ref={appRoot}
-      class={styles.app}
+      class={`${styles.app} mp-dark-stage`}
       classList={{ [styles.appRoom]: isStageView() }}
       data-testid="guitar-night-shell"
     >

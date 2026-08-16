@@ -346,7 +346,7 @@ export function KaraokeNightApp() {
 
   return (
     <div
-      class="kn-app"
+      class="kn-app mp-dark-stage"
       style={{
         ...background.resolvedStyle(),
         '--kn-alpha': String(stageAlpha()),
