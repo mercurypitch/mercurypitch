@@ -13,7 +13,9 @@
 // the app, this file is wrong and should be fixed rather than reworded.
 
 import type { JSX } from 'solid-js'
-import { Cloud, DeviceSync, Guitar, PianoKeys, Trophy, Voice, } from '@/components/icons'
+import { Cloud, DeviceSync, Guitar, Mic, PianoKeys, Trophy, Voice, } from '@/components/icons'
+import { TAB_PROGRESS, TAB_SETTINGS } from '@/features/tabs/constants'
+import { setActiveTab } from '@/stores/ui-store'
 
 export interface ReleaseHighlight {
   id: string
@@ -23,6 +25,12 @@ export interface ReleaseHighlight {
   body: string
   /** The shortest real path to trying it. */
   tryIt: string
+  /**
+   * Optional: take the reader there. Reading "open the Progress tab" on a
+   * phone and then having to go find it is most of the reason a release
+   * page gets closed without anything being tried.
+   */
+  go?: { label: string; run: () => void }
 }
 
 export interface Release {
@@ -40,65 +48,88 @@ export const RELEASE_0_9_0: Release = {
   version: '0.9.0',
   date: 'August 2026',
   headline:
-    'Two new rooms, a record of your practice that outlives the tab, and a library that travels with you.',
+    'Two rooms for players, a record of your practice that outlives the tab, your library on every device, and an app you can talk to.',
   highlights: [
     {
       id: 'progress',
       title: 'A Progress tab',
       icon: () => <Trophy />,
-      body: 'Practice used to end when you closed the tab. Progress is the record it leaves: one honest moment picked out of your history, the evidence behind it, and a way straight back to the practice that can carry it forward. It reads as a map — the Resonance Atlas — and it is built from takes you have already sung, so it has something to say on the first visit rather than after a month.',
+      body: 'Practice used to end when you closed the tab. Progress is the record it leaves: one honest moment picked out of your history, the evidence behind it, and a way straight back to the practice that can carry it forward. It reads as a map rather than a wall of cards, and it is built from takes you have already sung, so it has something to say on your first visit.',
+      tryIt: 'Everything you have already sung is in there now.',
+      go: {
+        label: 'Open Progress',
+        run: () => {
+          setActiveTab(TAB_PROGRESS)
+        },
+      },
+    },
+    {
+      id: 'voice-commands',
+      title: 'Talk to the app',
+      icon: () => <Mic />,
+      body: 'Say "play", "stop", "pause", "rewind", "faster" — and the app does it, whether you are in the mixer, on the Guitar Night or Karaoke Night stage, or anywhere in the app itself. It is built for the moment your hands are on an instrument and your phone is across the room. Say "what can I say" for the full list.',
+      tryIt: 'Turn voice control on in Settings, then say "what can I say".',
+      go: {
+        label: 'Open Settings',
+        run: () => {
+          setActiveTab(TAB_SETTINGS)
+        },
+      },
+    },
+    {
+      id: 'mercury-sing',
+      title: 'Mercury Sing — find a song by singing it',
+      icon: () => <Voice />,
+      body: 'Sing it, hum the melody, or say a line of the lyrics, and the app finds that song in your own library and opens it ready to play. Say "Shazam sing" or "name that song" from anywhere. It needs a reasonably modern browser for the on-device listening, and tells you plainly when a device cannot do it.',
       tryIt:
-        'Open the Progress tab. There is a share composer on the Mercury Pressing plate when a moment is worth showing someone.',
+        'Separate a song or two first — it searches what you already have — then hum a chorus.',
     },
     {
       id: 'piano-night',
       title: 'Piano Night',
       icon: () => <PianoKeys />,
-      body: 'A room for the keyboard, the way Guitar Night is one for the guitar. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practised against. The falling notes were tuned for tablets — the screen most people actually prop up on a piano.',
+      body: 'A room for keyboard players. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practised against, with falling notes that were tuned for tablets — the screen most people actually prop up on a piano.',
       tryIt:
         'Piano Night is in the Play group. Connect a MIDI keyboard first if you have one; it is offered on arrival.',
     },
     {
       id: 'guitar-night',
-      title: 'Guitar Night has a rehearsal stage',
+      title: 'Guitar Night',
       icon: () => <Guitar />,
-      body: 'The score room is stage-first now: it sounds the written part instead of playing a drum kit over silence, on a bass voice when the stage is showing a bass. There is a selectable string highway, a Jam Doctor that belongs to the stage, and phrase review tied to what you actually played rather than to the whole song.',
+      body: 'A room for guitarists, properly finished this time. Load a score and play along on the view that suits you — a 3D stage, a flat fretboard, or written tab — with a built-in tuner, and a Jam Doctor that listens to what you actually played and tells you where it drifted, phrase by phrase rather than as one verdict on the whole song.',
       tryIt:
-        'Open Guitar Night and stage a score. Play a phrase, then open phrase review to see that phrase judged on its own.',
+        'Guitar Night is in the Play group. Tune up first, then stage a score and play a phrase.',
     },
     {
       id: 'library-travels',
-      title: 'Your library follows you between devices',
+      title: 'Your library, on every device',
       icon: () => <DeviceSync />,
-      body: 'Sign in on a phone and the songs you separated on the desktop are listed there. Only the list travels — title, length, which stems exist — never the audio, which is your own material and stays on the device that made it. Songs the phone cannot play yet are marked as such rather than quietly missing. Two devices on the same network can also send a song straight across.',
+      body: 'Sign in and your songs and playlists show up on every device on your account — phone, tablet, computer, TV. When you want the audio itself on another device, send it straight across: phone or tablet to the TV, computer to your phone, any direction you need.',
       tryIt:
-        'Sign in, open Karaoke, and look at your library. To move the audio itself, use the send-to-device door on the Karaoke Night rail.',
+        'Sign in, then use send/receive — on the Karaoke Night rail, or in the Karaoke tab beside the upload box.',
     },
     {
       id: 'drive-backup',
       title: 'Back your library up to your own Google Drive',
       icon: () => <Cloud />,
-      body: 'Songs go into a plain folder in your Drive, in a format you can read without this app. It is your storage and your copy: nothing is uploaded to us, and a backup you can open elsewhere is the only kind worth trusting.',
+      body: 'Songs go into a plain folder in your Drive, in a format you can read without this app. It is your storage and your copy, and a backup you can open elsewhere is the only kind worth trusting.',
       tryIt:
-        'Settings, then Sync. The new Sync page also reports how much storage this browser has granted and whether your library is protected from eviction.',
-    },
-    {
-      id: 'guided-voice',
-      title: 'Guided Voice analysis',
-      icon: () => <Voice />,
-      body: 'The foundation for coach-led vocal work inside the app: local assessment that runs on your device, with the safety rails a voice needs built in rather than bolted on afterwards.',
-      tryIt:
-        'It shows up where the app already listens to you — the Analysis tab, and the guided practice flows.',
+        'Settings, then Sync. That page also reports how much room this browser has given the library.',
+      go: {
+        label: 'Open Sync settings',
+        run: () => {
+          setActiveTab(TAB_SETTINGS)
+        },
+      },
     },
   ],
   alsoIn: [
-    'The tabs are grouped by what you came to do — four groups instead of one long row.',
+    'Loading a separated song shows real progress instead of counting whole stems and appearing to stall.',
     'The app adapts to televisions and slower devices, so a session on a living-room screen behaves like one.',
-    'Loading stems shows real progress instead of counting whole stems and appearing to stall.',
-    'Compose fits on a phone: the editor header no longer stacks five rows of controls above the notes.',
+    'Compose fits on a phone — the editor header no longer stacks five rows of controls above the notes.',
+    'The tabs are grouped by what you came to do, instead of one long row.',
     'The guide vocal has its own microphone control, separate from everything else that makes noise.',
     'Notifications are one plain row at half the size, and no longer call everything an "Update".',
     'The microphone is asked for once, at your first practice, instead of on arrival.',
-    'Every tab is reachable on a phone — the More sheet’s rows have labels again.',
   ],
 }

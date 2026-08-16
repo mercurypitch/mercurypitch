@@ -12,7 +12,7 @@
 // adding a release should never mean editing it.
 
 import type { Component } from 'solid-js'
-import { For, onCleanup, onMount } from 'solid-js'
+import { For, onCleanup, onMount, Show } from 'solid-js'
 import { Sparkles, X } from '@/components/icons'
 import type { Release } from './whats-new-content'
 import styles from './WhatsNewPage.module.css'
@@ -84,6 +84,26 @@ export const WhatsNewPage: Component<WhatsNewPageProps> = (props) => {
                   <span class={styles.tryItLabel}>Try it: </span>
                   {item.tryIt}
                 </p>
+                {/* Reading "open the Progress tab" and then having to go
+                    find it is most of the reason a release page gets closed
+                    without anything being tried. Closing first marks the
+                    release read, so arriving somewhere new is the end of
+                    the announcement rather than a panel to dismiss later. */}
+                <Show when={item.go}>
+                  {(go) => (
+                    <button
+                      type="button"
+                      class={styles.goBtn}
+                      data-testid={`whats-new-go-${item.id}`}
+                      onClick={() => {
+                        props.onClose()
+                        go().run()
+                      }}
+                    >
+                      {go().label}
+                    </button>
+                  )}
+                </Show>
               </section>
             )}
           </For>
