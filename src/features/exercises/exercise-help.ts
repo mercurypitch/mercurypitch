@@ -77,11 +77,11 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     ],
   },
   [EXERCISE_INTERVAL_TRAINER]: {
-    summary: 'Sing the requested interval above or below a starting note.',
+    summary: 'Hear two notes, then sing them back in order.',
     body: [
-      'An "interval" is the distance between two notes (for example, a fifth). You will be given a starting note and asked to sing a note a set distance away.',
-      'Hum the starting note first to anchor yourself, then reach for the target interval.',
-      'You are scored on how accurately you hit the requested interval.',
+      'An "interval" is the distance between two notes (for example, a fifth). Each round plays the two notes of one interval; both stay marked on the tracker.',
+      'Sing them back in order — first note first. Each note has its own singing window, shown by the draining bar, and is scored on its own.',
+      'Anchor on the first note before you leap: the second note is always the named distance above it.',
     ],
   },
   [EXERCISE_SCALE_RUNNER]: {

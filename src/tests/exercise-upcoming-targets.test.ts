@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import { useArpeggioJumperController } from '@/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller'
 import { useCallResponseController } from '@/features/exercises/call-response/use-call-response-controller'
+import { useIntervalTrainerController } from '@/features/exercises/interval-trainer/use-interval-trainer-controller'
 import { useMirrorMelodyController } from '@/features/exercises/mirror-melody/use-mirror-melody-controller'
 import { useScaleRunnerController } from '@/features/exercises/scale-runner/use-scale-runner-controller'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
@@ -127,5 +128,19 @@ describe('upcoming targets', () => {
 
     expect(upcoming.length).toBeGreaterThanOrEqual(3)
     expect(upcoming[0]).toBe(C4)
+  })
+
+  // The interval trainer follows call-response's convention: the round's whole
+  // pair stays on the ladder, because seeing the SHAPE of the leap for the
+  // full round is the point — the singer used to get one line and a memory.
+  it('interval trainer lists both notes of the pair', () => {
+    const ctrl = useIntervalTrainerController(createMockBase(), audioEngine)
+    ctrl.setBase(C4)
+    const upcoming = ctrl.getUpcomingMidi()
+
+    expect(upcoming).toHaveLength(2)
+    expect(upcoming[0]).toBe(C4)
+    expect(upcoming[1]).toBeGreaterThan(C4)
+    expect(upcoming[1]).toBeLessThanOrEqual(C4 + 12)
   })
 })

@@ -2,7 +2,7 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { scoreNoteInRange } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -24,30 +24,42 @@ export function difficultyWeightedRoundScore(
 const ROUNDS = 6
 const NOTE_PLAY_DURATION_MS = 800
 const GAP_BETWEEN_NOTES_MS = 300
-const GAP_BEFORE_MATCH_MS = 400
-const MATCH_WINDOW_MS = 3000
+const GAP_BEFORE_MATCH_MS = 600
+/** Singing time PER NOTE, scaled by difficulty in setBase. The old drill gave
+ *  3 s for both notes together — and scored both against the same window, so
+ *  a correct performance averaged ~span/2 cents of "error" per note and a
+ *  perfect Major 2nd scored 0. Per-note slots are what make the instruction
+ *  ("sing them back") scoreable at all. */
+const BASE_SLOT_MS = 2500
+const GAP_BETWEEN_ROUNDS_MS = 600
+
+const INTERVAL_POOL: ReadonlyArray<readonly [number, number]> = [
+  [0, 2], // Major 2nd
+  [0, 4], // Major 3rd
+  [0, 5], // Perfect 4th
+  [0, 7], // Perfect 5th
+  [0, 9], // Major 6th
+  [0, 12], // Octave
+]
+
+/** Rounds a run will ask for at this difficulty. The pool is the ceiling —
+ *  `slice` used to hide that, and the idle hint promised six regardless. */
+export function plannedRounds(difficulty: number): number {
+  return Math.min(
+    INTERVAL_POOL.length,
+    Math.round(ROUNDS * (2 - difficultyFactor(difficulty))),
+  )
+}
 
 function generateIntervals(
   baseMidi: number,
   rounds: number,
 ): Array<[number, number]> {
-  const intervals: Array<[number, number]> = [
-    [0, 2], // Major 2nd
-    [0, 4], // Major 3rd
-    [0, 5], // Perfect 4th
-    [0, 7], // Perfect 5th
-    [0, 9], // Major 6th
-    [0, 12], // Octave
-  ]
-  // Shuffle and pick
-  const shuffled = [...intervals].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, rounds).map(([a, b]) => {
-    const octaveShift = Math.floor(Math.random() * 2) * 12
-    return [
-      baseMidi + a,
-      baseMidi + b + (Math.random() > 0.5 ? octaveShift : 0),
-    ]
-  })
+  // Shuffle and pick. The interval named is the interval played: an earlier
+  // version added a random extra octave to note2 in a quarter of rounds, so a
+  // "Major 2nd" could silently span 14 semitones and leave the singer's range.
+  const shuffled = [...INTERVAL_POOL].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, rounds).map(([a, b]) => [baseMidi + a, baseMidi + b])
 }
 
 export function useIntervalTrainerController(
@@ -69,23 +81,24 @@ export function useIntervalTrainerController(
     // The flag makes the continuation's own guards bail instead.
     _cancelled = true
   })
-  let matchStartTime = 0
-  // Scaling-penalty per cent of pitch error; set from difficulty in setBase.
-  // 1.5 at difficulty 5 (default) reproduces the original scoring formula.
-  let centsPenalty = 1.5
+  // Per-note singing slot, scaled from difficulty in setBase. Difficulty
+  // lives in the clock (shorter slots when harder) and the round count —
+  // NOT in the scoring, which is the shared per-slot rule every echo drill
+  // uses (scoreNoteInRange, 1.5 points per cent of average deviation).
+  let slotMs = BASE_SLOT_MS
+  let allNoteScores: number[] = []
 
   function setBase(baseMidi: number): void {
     _cancelled = false
-    // Read effective difficulty at round-setup, centred so 5 == original.
+    // Read effective difficulty at round-setup, centred so 5 == default.
     const d = launchDifficulty(EXERCISE_INTERVAL_TRAINER)
-    // More rounds when harder: round(6 * (2 - factor)); == 6 at d5.
-    const rounds = Math.round(ROUNDS * (2 - difficultyFactor(d)))
-    // Harsher cents penalty when harder: 1.5 / factor; == 1.5 at d5.
-    centsPenalty = 1.5 / difficultyFactor(d)
+    const rounds = plannedRounds(d)
+    slotMs = Math.round(BASE_SLOT_MS * difficultyFactor(d))
     intervals = generateIntervals(baseMidi, rounds)
     roundIndex = 0
     roundScores = []
     intervalSpans = []
+    allNoteScores = []
     base._setTargetPitch(0)
   }
 
@@ -105,80 +118,101 @@ export function useIntervalTrainerController(
         round: roundIndex,
         totalRounds: intervals.length,
         currentMidi: note1,
+        noteIndex: 0,
         phase: 1, // listening
       })
     })
 
-    // Play note1
-    void audioEngine
-      .playTone(midiToFreq(note1), NOTE_PLAY_DURATION_MS)
-      .then(() => {
+    // The chain is paced by timers, never by playTone's promise — playTone
+    // resolves when the oscillators are SCHEDULED, not when the tone ends,
+    // so `.then` here used to flip the target to note2 within a frame and
+    // note1's line was on screen for exactly one paint.
+    void audioEngine.playTone(midiToFreq(note1), NOTE_PLAY_DURATION_MS)
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      base._updateMetrics({ currentMidi: note2, noteIndex: 1 })
+      void audioEngine.playTone(midiToFreq(note2), NOTE_PLAY_DURATION_MS)
+      phaseTimer = setTimeout(() => {
         if (_cancelled) return
-        base._updateMetrics({ currentMidi: note2 })
-        setTimeout(() => {
-          if (_cancelled) return
-          // Play note2
-          void audioEngine
-            .playTone(midiToFreq(note2), NOTE_PLAY_DURATION_MS)
-            .then(() => {
-              if (_cancelled) return
-              // Gap before user sings
-              phaseTimer = setTimeout(() => {
-                if (_cancelled) return
-                startMatching()
-              }, GAP_BEFORE_MATCH_MS)
-            })
-        }, GAP_BETWEEN_NOTES_MS)
-      })
+        startMatching()
+      }, NOTE_PLAY_DURATION_MS + GAP_BEFORE_MATCH_MS)
+    }, NOTE_PLAY_DURATION_MS + GAP_BETWEEN_NOTES_MS)
   }
 
   function startMatching(): void {
     if (_cancelled) return
-    // Use the exercise-relative clock (same epoch as pitch sample `.time`,
-    // which is `elapsed/1000`). Mixing absolute performance.now() here would
-    // make the evaluateRound() window never match any samples → always 0.
-    matchStartTime = base._getElapsed()
-    batch(() => {
-      base._updateMetrics({ phase: 2 }) // matching phase
-    })
-
-    phaseTimer = setTimeout(() => {
-      if (_cancelled) return
-      evaluateRound()
-    }, MATCH_WINDOW_MS)
+    // Exercise-relative clock — same epoch as pitch sample `.time` seconds.
+    const responseStartSec = base._getElapsed() / 1000
+    singSlot(0, responseStartSec, [])
   }
 
-  function evaluateRound(): void {
-    const [target1, target2] = intervals[roundIndex]
-    const history = base.pitchHistory()
-    const now = base._getElapsed()
-    const recentSamples = history.filter((p) => {
-      const t = p.time * 1000
-      return t >= matchStartTime - 100 && t <= now
-    })
-
-    // Score each note by the average cents deviation across the window.
-    // Averaging (rather than taking the single best sample) keeps the score
-    // stable when only a few samples land in the window.
-    function scoreNote(target: number): number {
-      const valid = recentSamples.filter((p) => p.freq > 0)
-      if (valid.length < 3) return 0
-      const deviations = valid.map((p) =>
-        Math.abs((freqToExactMidi(p.freq) - target) * 100),
-      )
-      const avg = deviations.reduce((a, b) => a + b, 0) / deviations.length
-      return Math.round(Math.max(0, 100 - avg * centsPenalty))
+  /**
+   * One singing slot per note of the interval, in order. The target line and
+   * the note label track the slot, and each slot is scored only against its
+   * own time range — singing the right notes in the wrong order does not
+   * score, and singing them in the right order finally does.
+   */
+  function singSlot(
+    slotIndex: number,
+    responseStartSec: number,
+    slotScores: number[],
+  ): void {
+    if (_cancelled) return
+    const pair = intervals[roundIndex]
+    if (slotIndex >= pair.length) {
+      evaluateRound(slotScores)
+      return
     }
+    const midi = pair[slotIndex]
+    batch(() => {
+      base._setTargetPitch(midiToFreq(midi))
+      base._updateMetrics({
+        phase: 2, // singing
+        currentMidi: midi,
+        noteIndex: slotIndex,
+        matchWindowMs: slotMs,
+        // Restamped per slot: the base only stamps phaseStartedMs when the
+        // phase CHANGES, and both slots are phase 2 — without this the
+        // response-window bar would drain once and sit empty for note two.
+        phaseStartedMs: base._getElapsed(),
+      })
+    })
+    phaseTimer = setTimeout(() => {
+      if (_cancelled) return
+      const startSec = responseStartSec + (slotIndex * slotMs) / 1000
+      const endSec = startSec + slotMs / 1000
+      const noteScore = scoreNoteInRange(
+        base.pitchHistory(),
+        midi,
+        startSec,
+        endSec,
+      )
+      allNoteScores.push(noteScore)
+      const runningAvg =
+        allNoteScores.reduce((a, b) => a + b, 0) / allNoteScores.length
+      batch(() => {
+        // Running mean, not the last round: the header score should tell the
+        // story of the run so far, the way call-response's does.
+        base._updateScore(Math.round(runningAvg))
+        base._updateMetrics({
+          lastNoteScore: noteScore,
+          notesCompleted: allNoteScores.length,
+        })
+      })
+      singSlot(slotIndex + 1, responseStartSec, [...slotScores, noteScore])
+    }, slotMs)
+  }
 
-    const note1Score = scoreNote(target1)
-    const note2Score = scoreNote(target2)
+  function evaluateRound(slotScores: number[]): void {
+    const [target1, target2] = intervals[roundIndex]
+    const note1Score = slotScores[0] ?? 0
+    const note2Score = slotScores[1] ?? 0
     roundScores.push({ note1: note1Score, note2: note2Score })
 
     const roundAvg = (note1Score + note2Score) / 2
     const span = Math.abs(target2 - target1)
     intervalSpans.push({ span, score: Math.round(roundAvg) })
     batch(() => {
-      base._updateScore(Math.round(roundAvg))
       base._updateMetrics({
         lastRoundScore: Math.round(roundAvg),
         lastNote1Score: note1Score,
@@ -191,12 +225,20 @@ export function useIntervalTrainerController(
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       playRound()
-    }, 400)
+    }, GAP_BETWEEN_ROUNDS_MS)
   }
 
   function finish(): void {
     const result = computeResult()
     base._completeWithResult(result)
+  }
+
+  /** Both notes of the round in play, for the tracker's upcoming-target
+   *  ladder — the singer sees the SHAPE of the interval the whole round,
+   *  which is the difference between remembering two notes and reading them. */
+  function getUpcomingMidi(): number[] {
+    const pair = intervals[roundIndex]
+    return pair === undefined ? [] : [...pair]
   }
 
   function computeResult(): ExerciseResult {
@@ -271,5 +313,6 @@ export function useIntervalTrainerController(
     startRounds,
     stopRounds,
     computeResult,
+    getUpcomingMidi,
   }
 }

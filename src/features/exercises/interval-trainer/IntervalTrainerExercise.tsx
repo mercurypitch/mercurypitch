@@ -4,17 +4,18 @@ import { For } from 'solid-js'
 import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
-import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
+import { launchDifficulty, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
+import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import { useIntervalTrainerController } from './use-interval-trainer-controller'
+import { plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
 
 interface IntervalTrainerExerciseProps {
   audioEngine: AudioEngine
@@ -87,6 +88,7 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
   })
 
   const phase = () => base.state().metrics.phase ?? 0
+  const noteIndex = () => base.state().metrics.noteIndex ?? 0
   const currentMidi = () => base.state().metrics.currentMidi ?? 0
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
   const totalRounds = () => base.state().metrics.totalRounds ?? 6
@@ -118,7 +120,10 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
             Hear two notes, then sing them back. Train your ear to recognize
             intervals.
           </p>
-          <span class="idle-hint">6 rounds · Major 2nd through Octave</span>
+          <span class="idle-hint">
+            {plannedRounds(launchDifficulty(EXERCISE_INTERVAL_TRAINER))} rounds
+            · Major 2nd through Octave
+          </span>
         </div>
       }
       idleSettings={
@@ -135,23 +140,24 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
+        upcomingTargets: () => controller.getUpcomingMidi(),
       }}
       activePhase={
         <div class="mirror-melody-phase">
           <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
             {phase() === 1 ? (
               <>
-                <IconMusic size={16} /> Listen to the interval...
+                <IconMusic size={16} /> Listen: note {noteIndex() + 1} of 2...
               </>
             ) : phase() === 2 ? (
               <>
-                <IconMic size={16} /> Sing both notes back!
+                <IconMic size={16} /> Sing note {noteIndex() + 1} of 2
               </>
             ) : (
               '...'
             )}
           </span>
-          {phase() === 2 && (
+          {phase() > 0 && (
             <span class="mirror-melody-current-note">
               {midiToNoteName(currentMidi())}
             </span>
@@ -160,6 +166,8 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
       }
       activeContent={
         <>
+          <ExerciseFeedback state={base.state} />
+
           <div class="mirror-melody-progress">
             <For each={Array.from({ length: totalRounds() })}>
               {(_, i) => (
