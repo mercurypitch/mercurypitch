@@ -20,7 +20,6 @@ import type { Component, JSX, ParentComponent } from 'solid-js'
 import { createEffect, createSignal, ErrorBoundary, For, lazy, on, Show, Suspense, } from 'solid-js'
 import { AlertTriangle, ChevronLeft, Cpu, FileText, Flask, Mic, Split, WaveformBars, } from '@/components/icons'
 import { SkeletonTabContent } from '@/components/Skeleton'
-import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_ANALYSIS, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_PITCH_ALGO, TAB_PITCH_TEST, } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores'
 import styles from './Lab.module.css'
@@ -59,7 +58,7 @@ interface LabTool {
   label: string
   description: string
   icon: () => JSX.Element
-  route: ActiveTab
+  route: Parameters<typeof setActiveTab>[0]
 }
 
 const TABS: LabTool[] = [

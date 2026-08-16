@@ -197,7 +197,7 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_COMPOSE]: ['singing', 'piano'],
   [TAB_ANALYSIS]: ['singing'],
   [TAB_SETTINGS]: ['singing', 'guitar', 'piano'],
-  // Dev-only sub-surfaces (not in TAB_GROUPS); scoped like Analysis.
+  // Hidden research sub-surfaces (not in TAB_GROUPS); scoped like Analysis.
   [TAB_PITCH_TEST]: ['singing'],
   [TAB_PITCH_ALGO]: ['singing'],
   [TAB_LAB]: ['singing'],

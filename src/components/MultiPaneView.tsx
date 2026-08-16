@@ -79,6 +79,36 @@ const paneIcon = (type: PaneLayerType): JSX.Element => {
   return <Icon />
 }
 
+const countedReadingSummary = (
+  values: { length: number } | null | undefined,
+  available: (count: number) => string,
+  empty: string,
+): string =>
+  values !== undefined && values !== null && values.length > 0
+    ? available(values.length)
+    : empty
+
+const optionalReadingSummary = (
+  values: { length: number } | null | undefined,
+  available: (count: number) => string,
+  empty: string,
+): string =>
+  values !== undefined && values !== null ? available(values.length) : empty
+
+const centsSummary = (cents: number | null, targetNote?: string | null) => {
+  if (cents === null) return 'No stable pitch deviation is available.'
+  const direction = cents < 0 ? 'flat' : cents > 0 ? 'sharp' : 'in tune'
+  return `${targetNote ?? 'Current pitch'} is ${Math.abs(Math.round(cents))} cents ${direction}.`
+}
+
+const vibratoSummary = (
+  rate: number | null | undefined,
+  depth: number | null | undefined,
+) =>
+  rate !== undefined && rate !== null
+    ? `Vibrato rate ${rate.toFixed(1)} hertz${depth == null ? '' : ` with ${Math.round(depth)} cents depth`}.`
+    : 'No stable vibrato measurement is available.'
+
 // ============================================================
 // Component
 // ============================================================
@@ -378,33 +408,34 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
   const paneSummary = (pane: PaneConfig): string => {
     switch (pane.layerType) {
       case 'spectrogram':
-        return props.magnitudeSpectrum !== null &&
-          props.magnitudeSpectrum.length > 0
-          ? `Magnitude spectrum available with ${props.magnitudeSpectrum.length} frequency bins.`
-          : 'No spectral reading is available yet.'
+        return countedReadingSummary(
+          props.magnitudeSpectrum,
+          (count) =>
+            `Magnitude spectrum available with ${count} frequency bins.`,
+          'No spectral reading is available yet.',
+        )
       case 'waveform':
-        return props.waveformData !== undefined && props.waveformData !== null
-          ? `Waveform available with ${props.waveformData.length} samples.`
-          : 'No waveform data is available for this capture.'
+        return optionalReadingSummary(
+          props.waveformData,
+          (count) => `Waveform available with ${count} samples.`,
+          'No waveform data is available for this capture.',
+        )
       case 'pitch-trace':
-        return props.pitchHistory.length > 0
-          ? `Pitch trace contains ${props.pitchHistory.length} measured points.`
-          : 'No pitch points have been measured yet.'
-      case 'cents-deviation': {
-        const cents = props.centsOffset
-        if (cents === null) return 'No stable pitch deviation is available.'
-        const direction = cents < 0 ? 'flat' : cents > 0 ? 'sharp' : 'in tune'
-        return `${props.targetNote ?? 'Current pitch'} is ${Math.abs(Math.round(cents))} cents ${direction}.`
-      }
+        return countedReadingSummary(
+          props.pitchHistory,
+          (count) => `Pitch trace contains ${count} measured points.`,
+          'No pitch points have been measured yet.',
+        )
+      case 'cents-deviation':
+        return centsSummary(props.centsOffset, props.targetNote)
       case 'vibrato':
-        return props.vibratoRate !== undefined && props.vibratoRate !== null
-          ? `Vibrato rate ${props.vibratoRate.toFixed(1)} hertz${props.vibratoDepth == null ? '' : ` with ${Math.round(props.vibratoDepth)} cents depth`}.`
-          : 'No stable vibrato measurement is available.'
+        return vibratoSummary(props.vibratoRate, props.vibratoDepth)
       case 'spectrum':
-        return props.magnitudeSpectrum !== null &&
-          props.magnitudeSpectrum.length > 0
-          ? `Current spectrum contains ${props.magnitudeSpectrum.length} frequency bins.`
-          : 'No current spectrum is available.'
+        return countedReadingSummary(
+          props.magnitudeSpectrum,
+          (count) => `Current spectrum contains ${count} frequency bins.`,
+          'No current spectrum is available.',
+        )
       case 'annotation':
         return `${props.annotationCount ?? 0} annotations are available.`
     }

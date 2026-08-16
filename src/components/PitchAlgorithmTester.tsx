@@ -140,6 +140,17 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown benchmark error'
 }
 
+function benchmarkCompletionStatus(
+  completedRuns: number,
+  totalRuns: number,
+  failureCount: number,
+): string {
+  const completed = `${completedRuns} of ${totalRuns} runs completed.`
+  if (failureCount === 0) return `Benchmark complete. ${completed}`
+  const noun = failureCount === 1 ? 'run' : 'runs'
+  return `Benchmark complete with ${failureCount} failed ${noun}. ${completed}`
+}
+
 export const PitchAlgorithmTester: Component<
   PitchAlgorithmTesterProps
 > = () => {
@@ -232,6 +243,25 @@ export const PitchAlgorithmTester: Component<
     )
   }
 
+  const runSingleBenchmark = async (
+    algorithm: PitchAlgorithm,
+    sample: TestSample,
+  ): Promise<AlgorithmResult | string | null> => {
+    const name = algorithmName(algorithm)
+    try {
+      const result = await benchmarkAlgorithmAsync(algorithm, sample, {
+        sampleRate: 44100,
+        bufferSize: 2048,
+        minConfidence: 0.3,
+      })
+      return disposed ? null : result
+    } catch (error) {
+      return disposed
+        ? null
+        : `${name} on ${sample.name}: ${errorMessage(error)}`
+    }
+  }
+
   const runBenchmarks = async () => {
     if (running()) return
 
@@ -249,36 +279,28 @@ export const PitchAlgorithmTester: Component<
 
     const allResults: AlgorithmResult[] = []
     const failures: string[] = []
-    const totalRuns = samplesToRun.length * algorithmsToRun.length
+    const runs = samplesToRun.flatMap((sample) =>
+      algorithmsToRun.map((algorithm) => ({ algorithm, sample })),
+    )
+    const totalRuns = runs.length
     let completedRuns = 0
 
     try {
-      for (const sample of samplesToRun) {
-        for (const algorithm of algorithmsToRun) {
-          if (disposed) return
-          const name = algorithmName(algorithm)
-          setProgressText(
-            `Testing ${name} on ${sample.name} · ${completedRuns + 1} of ${totalRuns}`,
-          )
+      for (const { algorithm, sample } of runs) {
+        if (disposed) return
+        setProgressText(
+          `Testing ${algorithmName(algorithm)} on ${sample.name} · ${completedRuns + 1} of ${totalRuns}`,
+        )
 
-          try {
-            const result = await benchmarkAlgorithmAsync(algorithm, sample, {
-              sampleRate: 44100,
-              bufferSize: 2048,
-              minConfidence: 0.3,
-            })
-            if (disposed) return
-            allResults.push(result)
-          } catch (error) {
-            if (disposed) return
-            failures.push(`${name} on ${sample.name}: ${errorMessage(error)}`)
-          }
+        const outcome = await runSingleBenchmark(algorithm, sample)
+        if (outcome === null) return
+        if (typeof outcome === 'string') failures.push(outcome)
+        else allResults.push(outcome)
 
-          completedRuns += 1
-          setProgress(Math.round((completedRuns / totalRuns) * 100))
-          await new Promise<void>((resolve) => setTimeout(resolve, 0))
-          if (disposed) return
-        }
+        completedRuns += 1
+        setProgress(Math.round((completedRuns / totalRuns) * 100))
+        await new Promise<void>((resolve) => setTimeout(resolve, 0))
+        if (disposed) return
       }
 
       setResults(allResults)
@@ -286,11 +308,12 @@ export const PitchAlgorithmTester: Component<
       setProgress(100)
       setProgressText('Benchmark complete.')
 
-      const completedMessage = `${allResults.length} of ${totalRuns} runs completed.`
       setStatusText(
-        failures.length === 0
-          ? `Benchmark complete. ${completedMessage}`
-          : `Benchmark complete with ${failures.length} failed ${failures.length === 1 ? 'run' : 'runs'}. ${completedMessage}`,
+        benchmarkCompletionStatus(
+          allResults.length,
+          totalRuns,
+          failures.length,
+        ),
       )
     } finally {
       if (!disposed) setRunning(false)
