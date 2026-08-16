@@ -1408,12 +1408,11 @@
   background: #f85149;
 }
 
-/* Tab styles */
-.app-tab svg {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 6px;
-}
+/* The old "Tab styles" block that lived here gave every `.app-tab svg` a
+   6px right margin. The nav bar owns its icon spacing now (flex `gap` in
+   AppNavTabs.module.css); the stray margin survived inside the icon-only
+   pill, where it pushed the icon 6px off centre. Do not re-add tab rules
+   to this file — src/tests/nav-tab-icon-centering.test.ts pins that. */
 
 /* ============================================================
    Community Leaderboard Styles

@@ -135,6 +135,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `mp:*` identity keys so kept database rows stay owned; the confirm box
   becomes a progress view with a blocked hint while it runs. `resetDatabase`
   (destroy + recreate + reseed right before a reload) is gone.
+- **Nav tab icons centred in icon-only mode.** A leftover `.app-tab svg
+  { margin-right: 6px }` in `vocal-analysis.css` (the "Tab styles" block
+  the class was borrowed from) survived the hidden label in
+  `tabs-icon-only` mode and pushed the icon 6px left of centre in the
+  active pill — and widened the labelled icon-name gap to 11px against the
+  authored 5px flex gap. The rule is gone; icon spacing is owned solely by
+  `AppNavTabs.module.css`, pinned by `nav-tab-icon-centering.test.ts`.
 
 - **Lab work no longer survives after its tool is left.** The earlier
   keep-visited-panels-mounted approach left spectral capture, raw microphone
