@@ -30,15 +30,10 @@ input[type='range'] {
   cursor: pointer;
 }
 
-/* Ink painted ON an accent-filled control (play button, active toggles, slider
-   knob rings). It has to read against --accent, so in the studio it tracks the
-   theme background exactly as the old `color: var(--bg-primary)` did — resolved
-   per-theme at use time. The karaoke page overrides it to an opaque dark value
-   so the stage-glass translucency (which it applies to --bg-primary) never
-   fades the control glyphs. */
-:root {
-  --on-accent: var(--bg-primary, #0d1117);
-}
+/* Ink painted on an accent fill comes from the surface that owns the palette:
+   app.css provides it for the studio, while .kn-app provides an opaque value
+   for the standalone stage's translucent glass. A feature sheet must not
+   silently define an app-wide theme token. */
 
 /* ── Karaoke Focus Mode ──────────────────────────────────────────── */
 

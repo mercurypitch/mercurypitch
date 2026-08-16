@@ -89,11 +89,9 @@
 
 .primaryAction {
   background: var(--accent, #8b8eff);
-  /* `--on-accent` is only defined by the Karaoke Night entry, so in the app
-     shell this fell through to a hardcoded near-black that ignored the theme.
-     `--bg-primary` is the one colour every theme guarantees reads against its
-     own accent — white is 2.53:1 on the default one. */
-  color: var(--bg-primary, #07101d);
+  /* The core theme contract resolves this from the preset's own background;
+     white is only 2.53:1 on the default accent. */
+  color: var(--on-accent, var(--bg-primary, #07101d));
 }
 
 .retryAction {
