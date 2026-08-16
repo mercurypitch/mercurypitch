@@ -7,7 +7,7 @@
 // itself lives in @/lib/piano-roll.ts.
 
 import type { AudioEngine } from '@/lib/audio-engine'
-import { downloadMIDI, importMelodyFromMIDI, readMidiTempoBpm, } from '@/lib/piano-roll'
+import { downloadMIDI, exportFilename, importMelodyFromMIDI, readMidiTempoBpm, } from '@/lib/piano-roll'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { generateShareURL } from '@/lib/share-url'
 import { bpm, keyName, scaleType, setBpm, showNotification } from '@/stores'
@@ -40,11 +40,7 @@ export function useEditorController(_deps: Deps): EditorController {
   const handleExportMIDI = (): void => {
     const melody = melodyStore.items()
     const bpmVal = bpm()
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, '-')
-      .slice(0, 19)
-    const result = downloadMIDI(melody, bpmVal, `pitchperfect-${timestamp}.mid`)
+    const result = downloadMIDI(melody, bpmVal, exportFilename('mid'))
     if (result !== null) {
       showNotification('MIDI file exported!', 'success')
     }
