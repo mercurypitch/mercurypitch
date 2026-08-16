@@ -7,9 +7,10 @@
 // an optional audio file, and neither needs a code change to land: an asset
 // pass fills in `frames` or `video`, a recording pass fills in `audio`.
 //
-// The cue entities are placeholder canon. The names are agreed, the art is a
-// recoloured render of the one cue object the approved Corky clip already
-// contains, and both are expected to be replaced by modelled characters.
+// Cue names and roles are stable product language. The current app cutouts are
+// explicit stand-ins until each versioned character export is ready; detailed
+// modelling and rig readiness live with the authored source packages, not in
+// runtime content that would drift away from them.
 
 import type { AssetSlot } from './assets'
 import { pullOptions } from './pulls'
@@ -54,12 +55,6 @@ export interface CueEntity {
   readonly noticeOverlay: AssetSlot
   /** Direction for the voice actor. Never shown in the interface. */
   readonly voiceNote: string
-  /**
-   * True once this creature has been modelled and approved, false while it is
-   * still the recoloured stand-in. Records production state where the art
-   * actually is, rather than in a document that drifts.
-   */
-  readonly modelled: boolean
 }
 
 export interface ContentPack {
@@ -72,6 +67,17 @@ export interface ContentPack {
 }
 
 const ART = `${import.meta.env.BASE_URL}art`
+
+/**
+ * Debug APKs from the unpublished content-spine branch may already have saved
+ * one of these technical ids. Keep compatibility private while every new cue
+ * and every user-facing string uses the neutral taxonomy.
+ */
+const LEGACY_PULL_ID_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  'alcohol-ritual': 'familiar-ritual',
+  'smoking-vaping': 'two-minute-pause',
+  takeaway: 'one-tap-convenience',
+})
 
 function corkyState(state: CharacterStateId, alt: string): AssetSlot {
   return { still: `${ART}/corky/corky-${state}-1024.webp`, alt }
@@ -93,22 +99,13 @@ function cueOverlay(id: string): AssetSlot {
   }
 }
 
-function entity(
-  id: string,
-  name: string,
-  voiceNote: string,
-  modelled?: { alt: string },
-): CueEntity {
+function entity(id: string, name: string, voiceNote: string): CueEntity {
   return {
     id,
     name,
-    token:
-      modelled === undefined
-        ? cueToken(id, name)
-        : { still: `${ART}/cues/cue-${id}-256.webp`, alt: modelled.alt },
+    token: cueToken(id, name),
     noticeOverlay: cueOverlay(id),
     voiceNote,
-    modelled: modelled !== undefined,
   }
 }
 
@@ -135,8 +132,8 @@ const corky: Character = {
   },
 }
 
-// Names are placeholder canon agreed with the founder. The voice notes are the
-// short form; the full casting brief lives outside this repository.
+// The names are the current generic cue-world cast. Voice notes describe
+// temperament, never a diagnosis or a specific substance or behaviour.
 const cueEntities: readonly CueEntity[] = [
   entity(
     'scrolling',
@@ -145,23 +142,24 @@ const cueEntities: readonly CueEntity[] = [
   ),
   entity(
     'snacking',
-    'Sugarlump',
+    'Sugar Cube',
     'Sweet and insistent. Offers, never argues.',
-    {
-      alt: 'Sugarlump, a round coral creature made of rounded sugar crystals, with wide friendly eyes and a small smile.',
-    },
   ),
   entity(
-    'alcohol-ritual',
+    'familiar-ritual',
     'The Usual',
-    'Familiar and hospitable. Knows your name, pours before you ask.',
+    'Familiar and hospitable. Knows the routine before you choose it.',
   ),
   entity(
-    'smoking-vaping',
+    'two-minute-pause',
     'Ember',
-    'Warm, close, patient. Speaks on the out-breath.',
+    'Warm, close and patient. Always suggests one more small pause.',
   ),
-  entity('takeaway', 'Dinger', 'Bright and quick. Arrives already solved.'),
+  entity(
+    'one-tap-convenience',
+    'Dinger',
+    'Bright and quick. Makes the easiest answer feel already chosen.',
+  ),
   entity(
     'avoidance',
     'The Fog',
@@ -289,40 +287,11 @@ const lines: readonly Line[] = [
     id: 'reminder.slot-is-safe',
     text: 'Your slot on the turntable is safe with me.',
   },
-
-  {
-    id: 'onboarding.welcome',
-    text: 'Two sides to every record. Let me show you yours.',
-  },
-  {
-    id: 'onboarding.cue-arrives',
-    text: 'That there is a cue. It arrives whether you asked or not.',
-  },
-  {
-    id: 'onboarding.sort-sides',
-    text: "A-side is the pull. B-side is what you'd rather. Both are yours.",
-  },
-  {
-    id: 'onboarding.stop-the-spin',
-    text: "Nothing to stop. You're just choosing which side plays.",
-  },
-  {
-    id: 'onboarding.reaction',
-    text: 'Either answer is a real one. I log both the same way.',
-  },
-  {
-    id: 'onboarding.time-dial',
-    text: 'Pick a time on the label. I only show up then.',
-  },
-  {
-    id: 'onboarding.close',
-    text: "That's the whole machine. See you at the next spin.",
-  },
 ]
 
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.1.0',
+  version: '0.2.0',
   leadCharacterId: corky.id,
   characters: [corky],
   cueEntities,
@@ -343,7 +312,8 @@ export function findCueEntity(
   if (pullId === undefined) {
     return undefined
   }
-  return pack.cueEntities.find((entity) => entity.id === pullId)
+  const canonicalId = LEGACY_PULL_ID_ALIASES[pullId] ?? pullId
+  return pack.cueEntities.find((entity) => entity.id === canonicalId)
 }
 
 export function findLine(pack: ContentPack, id: string): Line | undefined {

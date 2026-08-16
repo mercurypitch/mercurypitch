@@ -75,7 +75,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /make my first cue/iu }),
     )
-    fireEvent.click(screen.getByRole('radio', { name: /another scroll/iu }))
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
     fireEvent.click(screen.getByRole('button', { name: /choose my b-side/iu }))
     fireEvent.click(
       screen.getByRole('button', { name: /keep this beside me/iu }),
@@ -143,7 +143,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /make my first cue/iu }),
     )
-    fireEvent.click(screen.getByRole('radio', { name: /another scroll/iu }))
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
     fireEvent.click(screen.getByRole('button', { name: /choose my b-side/iu }))
     fireEvent.click(
       screen.getByRole('button', { name: /keep this beside me/iu }),
@@ -212,7 +212,7 @@ describe('Beside Cue app', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /make my first cue/iu }),
     )
-    fireEvent.click(screen.getByRole('radio', { name: /another scroll/iu }))
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
     fireEvent.click(screen.getByRole('button', { name: /choose my b-side/iu }))
     fireEvent.click(
       screen.getByRole('button', { name: /keep this beside me/iu }),

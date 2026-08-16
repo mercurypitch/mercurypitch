@@ -12,7 +12,7 @@ describe('moment engine', () => {
     expect(shown.art.still).toMatch(/corky-notice/u)
     expect(shown.caption).toBe('One cue, no argument')
     expect(shown.line.text.length).toBeGreaterThan(0)
-    expect(shown.entity?.name).toBe('Sugarlump')
+    expect(shown.entity?.name).toBe('Sugar Cube')
   })
 
   it('rotates lines deterministically', () => {

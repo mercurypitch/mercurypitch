@@ -15,13 +15,6 @@ import type { Character, CharacterStateId, ContentPack, CueEntity, Line, } from 
 import { findCharacter, findCueEntity, GENERIC_CUE_ENTITY } from './pack'
 
 export type MomentId =
-  | 'onboarding.welcome'
-  | 'onboarding.cue-arrives'
-  | 'onboarding.sort-sides'
-  | 'onboarding.stop-the-spin'
-  | 'onboarding.reaction'
-  | 'onboarding.time-dial'
-  | 'onboarding.close'
   | 'cue.open'
   | 'turn.b-side'
   | 'turn.a-side'
@@ -41,55 +34,6 @@ export interface MomentDefinition {
 }
 
 export const MOMENTS: Readonly<Record<MomentId, MomentDefinition>> = {
-  'onboarding.welcome': {
-    id: 'onboarding.welcome',
-    characterState: 'rest',
-    showsEntity: false,
-    caption: 'Two sides to every record',
-    lineIds: ['onboarding.welcome'],
-  },
-  'onboarding.cue-arrives': {
-    id: 'onboarding.cue-arrives',
-    characterState: 'notice',
-    showsEntity: true,
-    caption: 'A cue arrives on its own',
-    lineIds: ['onboarding.cue-arrives'],
-  },
-  'onboarding.sort-sides': {
-    id: 'onboarding.sort-sides',
-    characterState: 'rest',
-    showsEntity: true,
-    caption: 'Side A is the pull. Side B is the turn.',
-    lineIds: ['onboarding.sort-sides'],
-  },
-  'onboarding.stop-the-spin': {
-    id: 'onboarding.stop-the-spin',
-    characterState: 'turn',
-    showsEntity: false,
-    caption: 'Nothing to stop, only a side to choose',
-    lineIds: ['onboarding.stop-the-spin'],
-  },
-  'onboarding.reaction': {
-    id: 'onboarding.reaction',
-    characterState: 'rest',
-    showsEntity: false,
-    caption: 'Both answers are real answers',
-    lineIds: ['onboarding.reaction'],
-  },
-  'onboarding.time-dial': {
-    id: 'onboarding.time-dial',
-    characterState: 'rest',
-    showsEntity: false,
-    caption: 'Pick your time on the label',
-    lineIds: ['onboarding.time-dial'],
-  },
-  'onboarding.close': {
-    id: 'onboarding.close',
-    characterState: 'quiet',
-    showsEntity: false,
-    caption: 'See you at the next spin',
-    lineIds: ['onboarding.close'],
-  },
   'cue.open': {
     id: 'cue.open',
     characterState: 'notice',
