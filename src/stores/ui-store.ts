@@ -76,9 +76,26 @@ export type SettingsSection =
 export const [settingsSection, setSettingsSection] =
   createSignal<SettingsSection>('account')
 
-/** Jump to Settings with a specific sub-tab open. */
-export function openSettingsSection(section: SettingsSection): void {
+/**
+ * A control inside a settings section to scroll to and flag, or null.
+ *
+ * Opening the right sub-tab is only half of "take me to that setting" — the
+ * Practice tab alone is a long page, and a link that lands somebody at the
+ * top of it has handed them a search task. The panel reads this after the
+ * section renders, scrolls the matching `[data-settings-anchor]` into view,
+ * and clears it so a later visit is not yanked around.
+ */
+export const [settingsAnchor, setSettingsAnchor] = createSignal<string | null>(
+  null,
+)
+
+/** Jump to Settings with a specific sub-tab open, optionally at a control. */
+export function openSettingsSection(
+  section: SettingsSection,
+  anchor?: string,
+): void {
   setSettingsSection(section)
+  setSettingsAnchor(anchor ?? null)
   setActiveTab(TAB_SETTINGS)
 }
 

@@ -291,7 +291,7 @@ export const SyncSettings: Component = () => {
         </p>
       </div>
 
-      <div class={panel.settingsSection}>
+      <div class={panel.settingsSection} data-settings-anchor="drive-backup">
         <div class={styles.sectionHead}>
           <h3 class={panel.settingsSectionTitle}>Google Drive</h3>
           {/* The check is automatic; the arrow is the nudge for forcing

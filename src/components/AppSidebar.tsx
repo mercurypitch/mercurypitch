@@ -13,7 +13,6 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { SidebarHostProvider } from '@/features/sidebar/sidebar-host'
 import { SIDEBAR_PANELS, sidebarPanelIdsFor, } from '@/features/sidebar/sidebar-registry'
-import { navigateTo } from '@/lib/hash-router'
 import { activeTab as appActiveTab, hasPageTour, startPageTour } from '@/stores'
 import type { MelodyItem, NoteResult } from '@/types'
 import styles from './AppSidebar.module.css'
@@ -24,7 +23,6 @@ interface AppSidebarProps {
   /** Open scale builder modal */
   onOpenScaleBuilder?: () => void
   /** Open Learn walkthroughs */
-  onOpenLearn?: () => void
   /** Open Guide tours */
   onOpenGuide?: () => void
   /** Note list feed (Singing tab) */
@@ -90,21 +88,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </svg>
       </button>
 
-      {/* Learn + Guide buttons — universal, above every panel */}
+      {/* Guide + this page's tour. Learn and What's new used to sit here
+          too; four controls did not fit a phone's sidebar, and neither is
+          about the page you are on — they live in the Home header now. */}
       <div class={styles.walkthroughControlGroup} data-tour="singing.guides">
-        <button
-          class={styles.walkthroughControlBtn}
-          onClick={() => props.onOpenLearn?.()}
-          title="View MercuryPitch walkthroughs"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18">
-            <path
-              fill="currentColor"
-              d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
-            />
-          </svg>
-          <span class={styles.walkthroughControlText}>Learn</span>
-        </button>
         <button
           class={[
             styles.walkthroughControlBtn,
@@ -120,22 +107,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             />
           </svg>
           <span class={styles.walkthroughControlText}>Guide</span>
-        </button>
-        {/* The release page. It announces itself once per release and is
-            otherwise only findable if something points at it — this is the
-            pointer, beside the other two "explain the app" doors. */}
-        <button
-          class={styles.walkthroughControlBtn}
-          onClick={() => navigateTo({ type: 'whats-new' })}
-          title="What's new in this release"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18">
-            <path
-              fill="currentColor"
-              d="M12 2l2.2 5.6L20 9.2l-4.4 3.6L17 19l-5-3-5 3 1.4-6.2L4 9.2l5.8-1.6L12 2z"
-            />
-          </svg>
-          <span class={styles.walkthroughControlText}>New</span>
         </button>
         <Show when={hasPageTour(activeTab())}>
           <button

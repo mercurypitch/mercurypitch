@@ -10,7 +10,7 @@ import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { APP_VERSION } from '@/lib/defaults'
 import { navigateTo, parseHash } from '@/lib/hash-router'
-import { releaseLine, shouldAnnounce, WHATS_NEW_SEEN_KEY, } from './whats-new-release'
+import { releaseLine, routeSuppressesAnnouncement, shouldAnnounce, WHATS_NEW_SEEN_KEY, } from './whats-new-release'
 
 export interface WhatsNewController {
   open: Accessor<boolean>
@@ -79,16 +79,13 @@ export function createWhatsNewController(): WhatsNewController {
     }
 
     // Somebody who followed a link to a particular place asked for THAT
-    // place. A shared song, a jam room, a password reset — none of them are
-    // an invitation to read a release page, and the announcement keeps until
-    // they arrive at the app on their own terms.
-    // 'unknown' is the bare arrival — no hash at all, the commonest way in.
-    const bootRoute = parseHash(window.location.hash).type
-    const plainArrival =
-      bootRoute === 'unknown' ||
-      bootRoute === 'tab' ||
-      bootRoute === 'whats-new'
-    if (!plainArrival) return
+    // place, and the announcement keeps until they arrive on their own terms.
+    // The list of what counts lives next door — and is a denylist, because
+    // the first cut allowlisted 'tab' and 'unknown' and so also refused
+    // anyone the app restored into Settings or the Karaoke upload view.
+    if (routeSuppressesAnnouncement(parseHash(window.location.hash).type)) {
+      return
+    }
 
     if (
       !shouldAnnounce({ current: APP_VERSION, seen: readSeen(), returning })

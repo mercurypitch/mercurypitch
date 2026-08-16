@@ -864,3 +864,29 @@ input:checked + .settingsSlider:before {
     transition: none;
   }
 }
+
+/* Landing mark for a deep link that scrolled to one control. A scroll with
+   no mark leaves people wondering which setting they were sent to. It
+   removes itself — a flash, never a state the panel can get stuck in. */
+.settingsAnchorFlash {
+  animation: settingsAnchorFlash 1.6s ease-out;
+  border-radius: var(--radius-md, 8px);
+}
+
+@keyframes settingsAnchorFlash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  15%,
+  55% {
+    box-shadow: 0 0 0 2px var(--accent, #58a6ff);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsAnchorFlash {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent, #58a6ff);
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { releaseLine, shouldAnnounce } from './whats-new-release'
+import { releaseLine, routeSuppressesAnnouncement, shouldAnnounce, } from './whats-new-release'
 
 describe('releaseLine', () => {
   it('reduces a version to the line it belongs to', () => {
@@ -64,5 +64,38 @@ describe('shouldAnnounce', () => {
     expect(
       shouldAnnounce({ current: 'dev', seen: '0.8', returning: true }),
     ).toBe(false)
+  })
+})
+
+describe('routeSuppressesAnnouncement', () => {
+  it('holds back on a link somebody was sent', () => {
+    for (const route of [
+      'jam-room',
+      'sync-room',
+      'share-short',
+      'reset-password',
+      'uvr-session-mixer',
+      'learn-chapter',
+    ]) {
+      expect(routeSuppressesAnnouncement(route), route).toBe(true)
+    }
+  })
+
+  // The regression this list exists for: an allowlist of 'tab' and 'unknown'
+  // also refused every visitor the app restored into Settings or the Karaoke
+  // upload view, which is most of them — and that is a release nobody hears
+  // about.
+  it('announces on the ordinary ways into the app', () => {
+    for (const route of [
+      'unknown',
+      'tab',
+      'settings-section',
+      'uvr-upload',
+      'uvr-sing',
+      'whats-new',
+      'guide',
+    ]) {
+      expect(routeSuppressesAnnouncement(route), route).toBe(false)
+    }
   })
 })

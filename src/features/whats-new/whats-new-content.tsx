@@ -14,8 +14,8 @@
 
 import type { JSX } from 'solid-js'
 import { Cloud, DeviceSync, Guitar, Mic, PianoKeys, Trophy, Voice, } from '@/components/icons'
-import { TAB_PROGRESS, TAB_SETTINGS } from '@/features/tabs/constants'
-import { setActiveTab } from '@/stores/ui-store'
+import { TAB_PROGRESS } from '@/features/tabs/constants'
+import { openSettingsSection, setActiveTab } from '@/stores/ui-store'
 
 export interface ReleaseHighlight {
   id: string
@@ -67,12 +67,13 @@ export const RELEASE_0_9_0: Release = {
       id: 'voice-commands',
       title: 'Talk to the app',
       icon: () => <Mic />,
-      body: 'Say "play", "stop", "pause", "rewind", "faster" — and the app does it, whether you are in the mixer, on the Guitar Night or Karaoke Night stage, or anywhere in the app itself. It is built for the moment your hands are on an instrument and your phone is across the room. Say "what can I say" for the full list.',
-      tryIt: 'Turn voice control on in Settings, then say "what can I say".',
+      body: 'Say "play", "stop", "pause", "rewind", "faster" — and the app does it, whether you are in the mixer, on the Guitar Night or Karaoke Night stage, or anywhere in the app itself. It is built for the moment your hands are on an instrument and your phone is across the room.',
+      tryIt:
+        'Tap the mic pill in the bottom-left corner to start listening — its cog sets everything up — or press V, and Shift+V for the list of what it understands.',
       go: {
-        label: 'Open Settings',
+        label: 'Voice settings',
         run: () => {
-          setActiveTab(TAB_SETTINGS)
+          openSettingsSection('singing', 'voice-control')
         },
       },
     },
@@ -96,7 +97,7 @@ export const RELEASE_0_9_0: Release = {
       id: 'guitar-night',
       title: 'Guitar Night',
       icon: () => <Guitar />,
-      body: 'A room for guitarists, properly finished this time. Load a score and play along on the view that suits you — a 3D stage, a flat fretboard, or written tab — with a built-in tuner, and a Jam Doctor that listens to what you actually played and tells you where it drifted, phrase by phrase rather than as one verdict on the whole song.',
+      body: 'A room for guitarists. Load a score and play along on the view that suits you — a 3D stage, a flat fretboard, or written tab — with a built-in tuner, and a Jam Doctor that listens to what you actually played and tells you where it drifted, phrase by phrase rather than as one verdict on the whole song.',
       tryIt:
         'Guitar Night is in the Play group. Tune up first, then stage a score and play a phrase.',
     },
@@ -116,9 +117,9 @@ export const RELEASE_0_9_0: Release = {
       tryIt:
         'Settings, then Sync. That page also reports how much room this browser has given the library.',
       go: {
-        label: 'Open Sync settings',
+        label: 'Drive settings',
         run: () => {
-          setActiveTab(TAB_SETTINGS)
+          openSettingsSection('sync', 'drive-backup')
         },
       },
     },
