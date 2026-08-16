@@ -15,7 +15,7 @@ import { releaseLine, routeSuppressesAnnouncement, shouldAnnounce, WHATS_NEW_SEE
 export interface WhatsNewController {
   open: Accessor<boolean>
   setOpen: (open: boolean) => void
-  /** Open it deliberately (the sidebar entry, a deep link). */
+  /** Open it deliberately (the Home header entry, a deep link). */
   show: () => void
   /** Close and mark this release line as told — however it was opened. */
   close: () => void
@@ -95,7 +95,7 @@ export function createWhatsNewController(): WhatsNewController {
       if (!returning) writeSeen()
       return
     }
-    // Through the router, exactly like the sidebar entry — NOT by setting
+    // Through the router, exactly like the Home header entry — NOT by setting
     // the signal. The router owns this surface: its boot dispatch writes
     // `false` for any hash that is not /whats-new, so a signal set during
     // mount was closed again a tick later. Going through the hash also

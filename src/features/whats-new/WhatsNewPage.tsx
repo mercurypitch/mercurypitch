@@ -5,7 +5,7 @@
 // A full-screen overlay rather than a tab: it is something you read once
 // and leave, and a tab that is only interesting for a week is a tab that
 // is dead for the rest of the year. It is reachable at #/whats-new and
-// from the sidebar, so "where was that thing about Piano Night" has an
+// from the Home header, so "where was that thing about Piano Night" has an
 // answer after the announcement is gone.
 //
 // The content is data (whats-new-content.tsx). This file is the renderer;
@@ -88,8 +88,10 @@ export const WhatsNewPage: Component<WhatsNewPageProps> = (props) => {
                     release read, so arriving somewhere new ends the
                     announcement rather than leaving a panel to dismiss. */}
                 <p class={styles.tryIt}>
-                  <span class={styles.tryItLabel}>Try it: </span>
-                  {item.tryIt}
+                  <span>
+                    <span class={styles.tryItLabel}>Try it: </span>
+                    {item.tryIt}
+                  </span>
                   <Show when={item.go}>
                     {(go) => (
                       <button
@@ -129,8 +131,8 @@ export const WhatsNewPage: Component<WhatsNewPageProps> = (props) => {
             Start singing
           </button>
           <p class={styles.footNote}>
-            {props.release.date} · this page is in the sidebar whenever you want
-            it again.
+            {props.release.date} · this page is in the Home header whenever you
+            want it again.
           </p>
         </div>
       </div>

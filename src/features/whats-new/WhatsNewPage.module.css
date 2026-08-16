@@ -159,7 +159,15 @@
   line-height: 1.55;
 }
 
+/* Text, then the action on its own line. Inline, the button landed wherever
+   the sentence happened to end — after a four-line paragraph it sat halfway
+   across the chip and read as indented, and no two cards agreed. A row of its
+   own costs nothing and makes seven cards scan identically. */
 .tryIt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-md);
   margin: 0;
   padding: var(--spacing-md) var(--spacing-lg);
   border-left: 2px solid var(--accent);
@@ -245,15 +253,12 @@
   }
 }
 
-/* The action reads as part of the Try it sentence — a link with a hit area,
-   not a slab under the card. Seven cards each ending in a full-width button
-   made the page a stack of blocks; inline, the eye stays on the sentence and
-   the tap target is still there. `inline-flex` + the vertical padding keep it
-   comfortably tappable without changing the line's height. */
+/* A pill, not a slab: seven cards each ending in a full-width button made the
+   page a stack of blocks. It sits on its own row inside the chip (see .tryIt)
+   so its position is the same on every card. */
 .goLink {
   display: inline-flex;
   align-items: center;
-  margin-left: 0.4rem;
   padding: 0.15rem 0.5rem;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: var(--radius-pill, 999px);
