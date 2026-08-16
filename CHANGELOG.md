@@ -182,6 +182,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The "your earlier practice stayed here" notice now speaks grammatically
+  about a single item.** With exactly one exercise on the device it read
+  "The 1 exercise you did here are still on this device"; the verb now
+  agrees with what was counted.
+
 - **The welcome dialog now holds keyboard focus.** On first launch the
   onboarding overlay announced itself as a dialog but let Tab wander into
   the app hidden behind it, so keyboard and screen-reader users could

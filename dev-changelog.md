@@ -72,6 +72,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`LocalProgressNotice` hard-coded a plural verb (CLAUDE-JOURNEY-016).**
+  The sentence template ended "...you did here are still on this device"
+  regardless of what `describeLocalProgress` produced, so a single
+  exercise read "The 1 exercise you did here are". The verb now derives
+  from `localProgressTotal(progress()) === 1` — singular exactly when one
+  thing was counted; any compound ("1 exercise and 1 practice session")
+  or plural count keeps "are". Pinned in
+  `local-progress-notice-render.test.tsx` (singular pin fails against the
+  unfixed template; a plural pin guards against overcorrection).
+
 - **`FirstLight` claimed `aria-modal` without trapping focus
   (CLAUDE-JOURNEY-018).** The onboarding overlay renders `role="dialog"
 aria-modal="true"` but never took or fenced focus: the first Tab after

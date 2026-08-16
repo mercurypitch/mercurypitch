@@ -16,7 +16,7 @@ vi.mock('@/db/services/user-service', () => ({
 
 const { LocalProgressNotice } =
   await import('@/components/account/LocalProgressNotice')
-const { exerciseHistory, recordExerciseResult } =
+const { clearExerciseHistory, exerciseHistory, recordExerciseResult } =
   await import('@/stores/exercise-history-store')
 
 describe('LocalProgressNotice', () => {
@@ -57,6 +57,43 @@ describe('LocalProgressNotice', () => {
     expect(dialog.textContent).toContain(`${n} exercise`)
     // The reassurance is the point of the whole notice.
     expect(dialog.textContent).toContain('Nothing was deleted')
+  })
+
+  it('speaks in the singular about a single exercise', () => {
+    // CLAUDE-JOURNEY-016: the sentence was a fixed template ending in
+    // "are", so one exercise read "The 1 exercise you did here are".
+    clearExerciseHistory()
+    recordExerciseResult({
+      type: 'long-note',
+      score: 80,
+      metrics: {},
+      completedAt: 1,
+    })
+    expect(exerciseHistory().length).toBe(1)
+    const { getByTestId } = render(() => <LocalProgressNotice />)
+    const text = getByTestId('local-progress-notice').textContent ?? ''
+    expect(text).toContain('1 exercise you did here is still')
+    expect(text).not.toContain('you did here are')
+  })
+
+  it('keeps the plural for more than one thing', () => {
+    clearExerciseHistory()
+    recordExerciseResult({
+      type: 'long-note',
+      score: 80,
+      metrics: {},
+      completedAt: 1,
+    })
+    recordExerciseResult({
+      type: 'pitch-hold',
+      score: 70,
+      metrics: {},
+      completedAt: 2,
+    })
+    expect(exerciseHistory().length).toBe(2)
+    const { getByTestId } = render(() => <LocalProgressNotice />)
+    const text = getByTestId('local-progress-notice').textContent ?? ''
+    expect(text).toContain('2 exercises you did here are still')
   })
 
   it('offers a mail draft carrying both ids', () => {

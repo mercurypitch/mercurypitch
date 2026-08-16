@@ -16,7 +16,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { CheckCircle, History } from '@/components/icons'
 import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
-import { describeLocalProgress, localProgressAtSignIn, localProgressNoticeDue, markNoticeSeen, progressHandoffMailto, } from '@/features/account/local-progress-notice'
+import { describeLocalProgress, localProgressAtSignIn, localProgressNoticeDue, localProgressTotal, markNoticeSeen, progressHandoffMailto, } from '@/features/account/local-progress-notice'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './LocalProgressNotice.module.css'
 
@@ -71,8 +71,11 @@ export const LocalProgressNotice: Component = () => {
           <p class={styles.body}>
             This account was created on another device, so it starts with its
             own history. The{' '}
-            <strong>{describeLocalProgress(progress())}</strong> you did here
-            are still on this device, and still on screen.
+            <strong>{describeLocalProgress(progress())}</strong> you did here{' '}
+            {/* The phrase is singular exactly when one thing was counted
+                ("1 exercise ... is"; any compound or plural count "are"). */}
+            {localProgressTotal(progress()) === 1 ? 'is' : 'are'} still on this
+            device, and still on screen.
           </p>
 
           <p class={styles.body}>
