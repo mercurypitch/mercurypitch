@@ -97,7 +97,7 @@
   border: none;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary, #0d1117));
   cursor: pointer;
   box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 40%, transparent);
   transition:
@@ -112,6 +112,7 @@
 }
 .heroPlay {
   background: var(--green, #3fb950);
+  color: var(--on-success, var(--bg-primary, #0d1117));
   box-shadow: 0 3px 12px
     color-mix(in srgb, var(--green, #3fb950) 40%, transparent);
 }
@@ -206,7 +207,7 @@
   flex-shrink: 0;
   font-size: 0.9rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary, #0d1117));
   background: var(--accent);
   border-radius: 999px;
 }
