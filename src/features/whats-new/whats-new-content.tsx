@@ -13,7 +13,7 @@
 // the app, this file is wrong and should be fixed rather than reworded.
 
 import type { JSX } from 'solid-js'
-import { Cloud, DeviceSync, Guitar, Mic, PianoKeys, Trophy, WaveformBars, } from '@/components/icons'
+import { Cloud, DeviceSync, Guitar, MercuryPlanet, Mic, PianoKeys, Trophy, } from '@/components/icons'
 import { openMercurySing } from '@/features/mercury-sing/mercury-sing-store'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { TAB_PROGRESS } from '@/features/tabs/constants'
@@ -97,7 +97,7 @@ export const RELEASE_0_9_0: Release = {
     {
       id: 'mercury-sing',
       title: 'Mercury Sing — find a song by singing it',
-      icon: () => <WaveformBars />,
+      icon: () => <MercuryPlanet />,
       body: 'Sing it, hum the melody, or say a line of the lyrics, and the app finds that song in your own library and opens it ready to play. Say "Shazam sing" or "name that song" from anywhere. It needs a reasonably modern browser for the on-device listening, and tells you plainly when a device cannot do it.',
       tryIt:
         'Separate a song or two first — it searches what you already have — then hum a chorus.',
