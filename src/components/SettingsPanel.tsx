@@ -20,6 +20,7 @@ import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
+import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { hasAnyTag, openConsentSettings } from '@/lib/consent'
 import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
@@ -144,6 +145,20 @@ export const SettingsPanel: Component = () => {
     if (idx >= 0) {
       setBand(idx, num)
     }
+  }
+
+  /**
+   * Opens the live "what can I say" overlay through the registered
+   * nav.voiceHelp command — the same path the spoken phrase takes, so this
+   * button cannot drift from what the voice pipeline actually does.
+   */
+  const openVoiceCommandList = (): void => {
+    const help = activeVoiceCommands().find((c) => c.id === 'nav.voiceHelp')
+    if (help === undefined || help.available?.() === false) {
+      showNotification('Say "what can I say", or press Shift+V.', 'info')
+      return
+    }
+    help.run({})
   }
 
   /**
@@ -884,9 +899,20 @@ export const SettingsPanel: Component = () => {
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
               Hands-free transport: enable the mic pill (bottom-left, or press
-              V) and speak — "play", "from the top", "set a", "loop off". The
-              full phrase list lives in docs/VOICE-COMMANDS.md.
+              V) and speak — "play", "from the top", "set a", "loop off". For
+              every phrase, say "what can I say", press Shift+V, or open the
+              list here:
             </p>
+            <div class={styles.settingsActionRow}>
+              <button
+                type="button"
+                class={styles.settingsActionBtn}
+                data-testid="settings-voice-commands"
+                onClick={openVoiceCommandList}
+              >
+                Show all voice commands
+              </button>
+            </div>
 
             <div class={styles.settingsRow}>
               <label for="voice-engine-select">Recognition Engine</label>
