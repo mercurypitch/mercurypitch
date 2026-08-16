@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Achievement, BadgeDefinition, ChallengeDefinition, SessionRecord, UserAchievement, UserBadge, } from '@/db/entities'
 import type { GrantContext } from '@/db/services/grant-context'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
+import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
+import { EXERCISE_LONG_NOTE } from '@/features/exercises/types'
 import type { ProgressModelInput } from './model'
 import { buildProgressModel, challengeIdForRecord, PROGRESS_HISTORY_WEEKS, sessionComparisonKey, } from './model'
 import type { ProgressDataDependencies } from './progress-data'
@@ -162,6 +164,37 @@ describe('Progress read model', () => {
       ),
     ).toEqual(['first', 'lower', 'best'])
     expect(model.sessions.bestScore).toBe(99)
+  })
+
+  it('threads repeated runs of the same drill under the key the funnel now writes (CLAUDE-JOURNEY-007)', () => {
+    // The model always threaded records that SHARED a key; plain drill runs
+    // simply never carried one, so repeating an exercise never formed a
+    // Skill Thread. This pins the two halves together: the funnel's real
+    // key, recognised by the model as one comparable series.
+    const key = exerciseComparabilityKey(EXERCISE_LONG_NOTE)
+    const records = [
+      record('run-1', '2026-08-08T10:00:00.000Z', 61, {
+        melodyName: 'Exercise: Long Note',
+        source: 'exercise',
+        comparabilityKey: key,
+      }),
+      record('run-2', '2026-08-09T10:00:00.000Z', 74, {
+        melodyName: 'Exercise: Long Note',
+        source: 'exercise',
+        comparabilityKey: key,
+      }),
+    ]
+    const model = buildProgressModel(input({ records }), { now: NOW })
+
+    expect(model.scoreTrend.comparableSeries).toHaveLength(1)
+    expect(model.scoreTrend.comparableSeries[0]).toMatchObject({
+      comparisonKey: key,
+      source: 'exercise',
+      melodyName: 'Exercise: Long Note',
+    })
+    expect(
+      model.scoreTrend.comparableSeries[0].points.map((p) => p.recordId),
+    ).toEqual(['run-1', 'run-2'])
   })
 
   it('totals measured time only when duration and history coverage are complete', () => {

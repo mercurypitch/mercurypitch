@@ -180,6 +180,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   Melody — recorded their target for the run readback in the wrong unit, so
   the card could claim you were thousands of cents off a note that was never
   a target. The readback now hears the same notes you did.
+- **Repeating a drill now builds its Skill Thread.** The Progress page could
+  only connect attempts that carried a comparability stamp, and ordinary
+  exercise runs never got one — so practising the same drill twice showed two
+  unrelated rows, each marked as impossible to compare. Plain runs now carry
+  the stamp, and repeats of the same drill line up as one thread.
 
 - **Practice drills now land in your range.** A routine or challenge that
   handed a baritone "London Bridge" starting on G4 sang it there — and the

@@ -73,6 +73,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `midiToFrequency`; one Mirror Melody pin that demanded the raw MIDI number
   (the same tests-enforce-the-bug shape as the audio-envelope pins) is
   flipped, a Hz pin now guards each drill, and the seam documents its unit.
+- **Plain drill runs persist a `comparabilityKey`, so repeats thread on the
+  Progress page (CLAUDE-JOURNEY-007).** `sessionComparisonKey` deliberately
+  trusts only an explicitly persisted key, and only the challenge and weekly
+  paths ever wrote one — the `source: 'exercise'` branch of
+  `recordExerciseResult` saved keyless records, so `comparableSeries` never
+  grouped them, `buildSkillThreads` had nothing to build, and every plain row
+  was captioned "cannot be compared like for like". A new
+  `exerciseComparabilityKey(type)` (`voice:exercise:<type>:v<scoringVersion>`,
+  same family as the challenge keys) is now stamped on that branch. The
+  scoring-version table starts the interval trainer at v2 — its August
+  scoring redesign means old and new scores share no ruler — and every other
+  drill at v1. Pinned at three seams: the key shape, the funnel's persisted
+  payload (observed failing pre-fix), and a model test threading two
+  drill records under the funnel's real key. Pre-existing keyless rows keep
+  their honest "older attempt" caption.
 
 - **Vocal-range fitting at the launch choke points.** New
   `fitPhraseToRange` (whole-phrase octave shift, centred among fitting
