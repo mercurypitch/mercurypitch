@@ -187,6 +187,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   showed the full synced history — the strip only counted practice done on
   that device. It now reads the account's synced records, with the local
   history as a fallback when the sync is still catching up.
+- **The sync panel now offers only routes that exist.** Its library note
+  told you to "export a song here and import it there" — a control the
+  app does not have. The note now names the two real ways to move audio:
+  the Google Drive backup below it, and sending straight to another
+  device from the Karaoke tab.
 
 - **The guided warmup now means it when it says "no grades".** The card
   promises the score "just reflects that you sang along", but the number
