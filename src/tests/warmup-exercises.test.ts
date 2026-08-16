@@ -129,17 +129,17 @@ describe('what the routine can still see', () => {
   })
 
   // The estimate printed on the idle card and used to size routine segments.
-  // Merging the three breathing steps into one cycle moved no time around;
-  // these are the durations the patterns had before the move.
-  it('keeps every pattern the length it was', () => {
+  // These pins moved deliberately with the lead-in work: every step now
+  // carries its two-beat approach run, steps are separated by the announced
+  // gap, the scales grew from eight beats to twelve, and the 0.45 s-per-note
+  // term (pricing reference tones deleted in 7a4821dc) is gone. gentle =
+  // 28 s of loops + 6 s of lead-ins + 3 s of gaps; cooldown = 20 + 6 + 3.
+  it('prices the lead-ins, the gaps, and the longer scales', () => {
     const minutes = (pattern: WarmupPattern): number =>
       Math.round(warmupTotalSeconds(buildWarmupSteps(pattern)) / 60)
 
-    expect(warmupTotalSeconds(buildWarmupSteps('gentle'))).toBeCloseTo(32.5, 5)
-    expect(warmupTotalSeconds(buildWarmupSteps('cooldown'))).toBeCloseTo(
-      23.15,
-      5,
-    )
+    expect(warmupTotalSeconds(buildWarmupSteps('gentle'))).toBeCloseTo(37, 5)
+    expect(warmupTotalSeconds(buildWarmupSteps('cooldown'))).toBeCloseTo(29, 5)
     expect(minutes('full')).toBe(2)
   })
 })

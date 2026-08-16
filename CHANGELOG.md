@@ -7,6 +7,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **The guided warmup counts you in.** Every step now opens with an audible
+  two-beat count-in — clicks, plus the first note sounding so you know where
+  it lives — instead of the scale starting the instant the breathing step
+  ended. Steps are separated by a breather that announces what comes next,
+  guide notes sound as the playhead reaches them (with a mute toggle that
+  remembers your choice), the notes themselves have room to breathe between
+  them, and the scales got a third more time. The minutes on the warmup card
+  now count all of it.
+
 - **Piano Night.** A room for the keyboard, the way Guitar Night is one for the
   guitar. It plays the music already on your device, and a connected MIDI
   keyboard can be mapped and practised against. Rendering was tuned for tablets

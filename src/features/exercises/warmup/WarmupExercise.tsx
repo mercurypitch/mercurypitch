@@ -1,17 +1,20 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconFire } from '@/components/exercise-icons'
+import { Volume2, VolumeX } from '@/components/icons'
 import { NoteDial } from '@/components/NoteDial'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchPattern, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
+import { createZenNoteScheduler } from '@/features/zen/note-playback'
 import { useZenPitchSession } from '@/features/zen/useZenPitchSession'
 import type { ZenCanvasRenderModel } from '@/features/zen/zen-canvas-renderer'
 import { ZenPitchCanvas } from '@/features/zen/ZenPitchCanvas'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { noteToMidi } from '@/lib/frequency-to-note'
+import { midiToFrequency, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNote } from '@/lib/scale-data'
+import { createPersistedSignal } from '@/lib/storage'
 import { isNarrow } from '@/lib/use-viewport'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
@@ -21,8 +24,9 @@ import type { ExerciseResult } from '../types'
 import { EXERCISE_WARMUP } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { WARMUP_EXERCISES, warmupPatternExercises } from './warmup-exercises'
+import { applyLeadIn, createLeadInTicker, leadInSeconds, } from './warmup-lead-in'
 import type { WarmupPattern } from './warmup-steps'
-import { buildWarmupSteps, normalizeWarmupPattern, WARMUP_PATTERN_LABELS, warmupTotalSeconds, } from './warmup-steps'
+import { buildWarmupSteps, normalizeWarmupPattern, WARMUP_PATTERN_LABELS, WARMUP_STEP_GAP_SECONDS, warmupTotalSeconds, } from './warmup-steps'
 
 interface WarmupExerciseProps {
   audioEngine: AudioEngine
@@ -70,14 +74,29 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     },
   })
 
-  /** The authored exercises this pattern runs, in order. */
+  /** The authored exercises this pattern runs, in order — count-in intact. */
   const stepExercises = createMemo(() => warmupPatternExercises(pattern()))
   const steps = createMemo(() => buildWarmupSteps(pattern()))
 
   const [stepIndex, setStepIndex] = createSignal(0)
   const currentStep = () => steps()[stepIndex()]
+  const currentExercise = () => stepExercises()[stepIndex()]
   let scores: number[] = []
   let running = false
+
+  /** Between steps: the finished loop settles and the next name shows. */
+  const [nextStepName, setNextStepName] = createSignal<string | null>(null)
+  let stepGapTimer: ReturnType<typeof setTimeout> | undefined
+
+  /**
+   * Guide sounds: the count-in clicks, the first note's reference tone, and
+   * a tone per target as the playhead reaches it. Persisted because a mute
+   * is a room decision (headphones off, kid asleep), not a session one.
+   */
+  const [guideMuted, setGuideMuted] = createPersistedSignal<boolean>(
+    'pitchperfect_warmup_guide_muted',
+    false,
+  )
 
   // ── The Zen session ─────────────────────────────────────────
   //
@@ -91,7 +110,10 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
   // reopen cost the routine mic hold removed. So `startMic` reports what base
   // already did, and `stopMic` does nothing at all.
   const session = useZenPitchSession({
-    exerciseDefinitions: WARMUP_EXERCISES,
+    // The lead-in applied at the seam between authoring and running: same
+    // ids, every target shifted late by its count-in so each step has an
+    // approach run. See warmup-lead-in.ts.
+    exerciseDefinitions: WARMUP_EXERCISES.map(applyLeadIn),
     initialExerciseId: untrack(() => stepExercises()[0]?.id),
     subscribeFrames: (listener) => props.subscribeFrames(listener),
     micActive: () => base.state().status === 'active',
@@ -101,10 +123,93 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     onLoopLimitReached: () => advanceStep(),
   })
 
+  // ── Guide sounds ────────────────────────────────────────────
+  //
+  // Both samplers are pure (note-playback.ts, warmup-lead-in.ts) and driven
+  // off the session clock — the same clock the canvas draws from, so what
+  // sounds is what the singer sees. All tones go through the app's
+  // AudioEngine: it already owns a context, an instrument voice and the
+  // documented envelopes. (The Zen stage's private-AudioContext wiring is
+  // NOT copied here — it connects tones straight to the destination and
+  // closes the context mid-tone, both confirmed pop sources.)
+  const ticker = createLeadInTicker()
+  const guideScheduler = createZenNoteScheduler()
+
+  const leadInFor = (index: number): number => {
+    const exercise = stepExercises()[index]
+    return exercise === undefined ? 0 : leadInSeconds(exercise)
+  }
+
+  /** True while the playhead is still in the current step's approach run. */
+  const inLeadIn = (): boolean =>
+    session.status() === 'running' &&
+    session.elapsedSec() < leadInFor(stepIndex())
+
+  // Unmuting must be audible now: sound whatever window the playhead is in,
+  // and never the lap so far (the Zen stage's own rule).
+  createEffect(() => {
+    if (!guideMuted()) guideScheduler.rearm({ soundCurrent: true })
+  })
+
+  // Count-in clicks and the first note's reference tone. The ticker is
+  // sampled even while muted so a mid-lead-in unmute cannot burst the beats
+  // already passed.
+  createEffect(() => {
+    if (session.status() !== 'running') return
+    const exercise = currentExercise()
+    if (exercise === undefined) return
+    const beat = ticker.sample(
+      session.elapsedSec(),
+      leadInSeconds(exercise),
+      60 / exercise.bpm,
+    )
+    if (beat === null || guideMuted()) return
+    audioEngine.playMetronomeClick(beat === 0)
+    if (beat !== 0) return
+    // The pitch the step opens on, sounded while the playhead approaches it
+    // — the singer hears where the first note lives before it arrives.
+    const first = [...exercise.targets]
+      .filter((target) => (target.kind ?? 'pitch') === 'pitch')
+      .sort((a, b) => a.startBeat - b.startBeat)[0]
+    if (first === undefined) return
+    void audioEngine.playTone(
+      midiToFrequency(noteToMidi(comfortNote()) + first.semitone),
+      700,
+    )
+  })
+
+  // A tone per target as the playhead reaches it, crossing-based so heavy
+  // frames drop nothing. Breath and amplitude blocks stay silent — there is
+  // no pitch to guide.
+  createEffect(() => {
+    if (session.status() !== 'running') return
+    const elapsedSec = session.elapsedSec()
+    const loopIndex = session.loopsCompleted()
+    if (guideMuted()) return
+    const cues = guideScheduler.sample({
+      elapsedSec,
+      loopIndex,
+      targets: session.targets(),
+    })
+    for (const cue of cues) {
+      if ((cue.target.kind ?? 'pitch') !== 'pitch') continue
+      void audioEngine.playTone(
+        midiToFrequency(cue.target.startMidi),
+        cue.durationSec * 1000,
+      )
+    }
+  })
+
   const startStep = (index: number): void => {
     const exercise = stepExercises()[index]
     if (exercise === undefined) return
     setStepIndex(index)
+    // Fresh step, fresh audio state: beat zero may click again, and the
+    // guide scheduler must not back-fill the previous step's targets —
+    // loopsCompleted resets per start, so the seam detector cannot see the
+    // step change on its own.
+    ticker.reset()
+    guideScheduler.rearm()
     session.selectExercise(exercise.id)
     session.setRootMidi(noteToMidi(comfortNote()))
     base._updateMetrics({
@@ -128,7 +233,17 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
 
     const next = stepIndex() + 1
     if (next < stepExercises().length) {
-      startStep(next)
+      // Never straight into the next step: the finished loop settles, the
+      // next step's name is announced, and only then does its own count-in
+      // begin. This gap plus the lead-in is what un-collides the breathing
+      // step from the first sung note.
+      setNextStepName(stepExercises()[next]?.title ?? null)
+      clearTimeout(stepGapTimer)
+      stepGapTimer = setTimeout(() => {
+        if (!running) return
+        setNextStepName(null)
+        startStep(next)
+      }, WARMUP_STEP_GAP_SECONDS * 1000)
       return
     }
     finishWarmup(stepExercises().length)
@@ -160,6 +275,8 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
   const handleStart = async (): Promise<void> => {
     if (running) return
     scores = []
+    clearTimeout(stepGapTimer)
+    setNextStepName(null)
     setStepIndex(0)
     if (!(await base.start())) return
     running = true
@@ -174,6 +291,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
 
   onCleanup(() => {
     running = false
+    clearTimeout(stepGapTimer)
     session.finish()
     base.reset()
   })
@@ -288,6 +406,15 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       startLabel="Start Warmup"
       stopLabel="End Warmup"
       onStop={handleStop}
+      activePhase={
+        <Show when={nextStepName() !== null || inLeadIn()}>
+          <span class="warmup-phase-line">
+            {nextStepName() !== null
+              ? `Nice — next: ${nextStepName()}`
+              : 'Get ready\u2026'}
+          </span>
+        </Show>
+      }
       activeContent={
         <div class="warmup-stage">
           <div class="warmup-step-display">
@@ -296,6 +423,19 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
             </div>
             <h3 class="warmup-step-name">{currentStep()?.name}</h3>
             <p class="warmup-step-instruction">{currentStep()?.instruction}</p>
+            <button
+              type="button"
+              class="warmup-guide-mute"
+              data-testid="warmup-guide-mute"
+              aria-pressed={guideMuted()}
+              aria-label={
+                guideMuted() ? 'Unmute guide sounds' : 'Mute guide sounds'
+              }
+              onClick={() => setGuideMuted((muted) => !muted)}
+            >
+              {guideMuted() ? <VolumeX /> : <Volume2 />}
+              <span>{guideMuted() ? 'Guide muted' : 'Guide on'}</span>
+            </button>
           </div>
           {/* The same canvas the Zen stage draws on: targets ahead of the
               playhead, the voice trace behind it, an amber lane for blocks

@@ -31,6 +31,11 @@ export interface WarmupStep {
   offsets?: number[]
   /** Sing-back / timer window in seconds. */
   seconds: number
+  /**
+   * The approach run before the first block, from the authored count-in —
+   * time the singer spends watching the playhead come, not singing.
+   */
+  leadInSeconds?: number
 }
 
 export type WarmupPattern =
@@ -73,10 +78,21 @@ export function buildWarmupSteps(pattern: WarmupPattern): WarmupStep[] {
   return warmupPatternExercises(pattern).map(warmupStepFromExercise)
 }
 
+/**
+ * The breather between steps: the finished loop settles, the next step's
+ * name is announced, then its own lead-in begins. Together with the
+ * count-in this is what stands between the breathing step and the first
+ * sung note — the collision the owner reported.
+ */
+export const WARMUP_STEP_GAP_SECONDS = 1.5
+
 export function warmupTotalSeconds(steps: WarmupStep[]): number {
-  // Sing steps also spend ~0.45s per reference note before the sing window.
-  return steps.reduce(
-    (sum, s) => sum + s.seconds + (s.offsets?.length ?? 0) * 0.45,
+  // Loop time plus each step's lead-in, plus the gap between steps. The
+  // 0.45 s-per-note term this used to carry priced reference tones deleted
+  // in 7a4821dc; it survived two releases as pure fiction.
+  const stepSeconds = steps.reduce(
+    (sum, s) => sum + s.seconds + (s.leadInSeconds ?? 0),
     0,
   )
+  return stepSeconds + WARMUP_STEP_GAP_SECONDS * Math.max(0, steps.length - 1)
 }
