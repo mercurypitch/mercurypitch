@@ -205,11 +205,18 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     setVizReset((k) => k + 1)
     setRecordTotal(seconds)
     setRemaining(seconds)
-    // Empty this frame, full the next: the browser needs to paint the empty
-    // ring once before it has anything to transition from.
+    // TWO frames, not one. requestAnimationFrame runs BEFORE the paint of
+    // the frame that inserted the ring, so a single rAF flips the offset
+    // while the browser has still never rendered the empty state — it
+    // coalesces both values, renders the full ring, and there is nothing to
+    // transition from. Measured in Chromium: with one frame the ring is 100%
+    // filled 1.2s into a 3s take; with two it is 40%, which is the sweep.
+    // The inner rAF is what guarantees a paint has happened in between.
     setRingArmed(false)
     cancelAnimationFrame(ringFrame)
-    ringFrame = requestAnimationFrame(() => setRingArmed(true))
+    ringFrame = requestAnimationFrame(() => {
+      ringFrame = requestAnimationFrame(() => setRingArmed(true))
+    })
     clearInterval(timer)
     timer = window.setInterval(() => {
       setRemaining((r) => Math.max(0, r - 1))
