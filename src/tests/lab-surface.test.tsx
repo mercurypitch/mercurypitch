@@ -3,21 +3,26 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { onCleanup } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   detectorCrash: false,
   setActiveTab: vi.fn(),
+  workbenchCleanup: vi.fn(),
 }))
 
 vi.mock('@/stores', () => ({ setActiveTab: mocks.setActiveTab }))
 vi.mock('@/features/lab/SpectralWorkbench', () => ({
-  SpectralWorkbench: () => (
-    <label>
-      Workbench frequency
-      <input aria-label="Workbench frequency" value="440" />
-    </label>
-  ),
+  SpectralWorkbench: () => {
+    onCleanup(mocks.workbenchCleanup)
+    return (
+      <label>
+        Workbench frequency
+        <input aria-label="Workbench frequency" value="440" />
+      </label>
+    )
+  },
 }))
 vi.mock('@/components/PitchTestingTab', () => ({
   PitchTestingTab: () => {
@@ -62,7 +67,7 @@ describe('LabSurface', () => {
     expect(mocks.setActiveTab).toHaveBeenCalledWith('pitch-test')
   })
 
-  it('keeps an opened tool mounted while another tool is active', async () => {
+  it('unmounts inactive tools so their owned resources are cleaned up', async () => {
     render(() => <LabSurface />)
 
     const input = screen.getByLabelText('Workbench frequency')
@@ -70,16 +75,17 @@ describe('LabSurface', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Tune detector' }))
     expect(await screen.findByText('Detector fixture')).toBeInTheDocument()
 
-    expect(document.getElementById('lab-panel-workbench')).toHaveAttribute(
-      'hidden',
-    )
+    expect(
+      document.getElementById('lab-panel-workbench'),
+    ).not.toBeInTheDocument()
+    expect(document.body.contains(input)).toBe(false)
+    expect(mocks.workbenchCleanup).toHaveBeenCalledTimes(1)
+
     fireEvent.click(screen.getByRole('tab', { name: 'Capture & inspect' }))
 
-    expect(document.body.contains(input)).toBe(true)
-    expect(input).toHaveValue('442')
-    expect(document.getElementById('lab-panel-workbench')).not.toHaveAttribute(
-      'hidden',
-    )
+    const remountedInput = screen.getByLabelText('Workbench frequency')
+    expect(remountedInput).not.toBe(input)
+    expect(remountedInput).toHaveValue('440')
   })
 
   it('contains a tool failure without replacing the Lab shell', async () => {

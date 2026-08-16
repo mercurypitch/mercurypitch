@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Play, WaveformBars } from '@/components/icons'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
 import type { AccuracyScoreBand, AlgorithmResult, PerformanceBand, PitchResultForNote, TestSample, } from '@/lib/pitch-algorithm-tester'
@@ -157,6 +157,11 @@ export const PitchAlgorithmTester: Component<
   const [progressText, setProgressText] = createSignal('')
   const [statusText, setStatusText] = createSignal('')
   const [benchmarkErrors, setBenchmarkErrors] = createSignal<string[]>([])
+  let disposed = false
+
+  onCleanup(() => {
+    disposed = true
+  })
 
   const summaries = createMemo(() => summarizeAlgorithms(results()))
   const hasResults = createMemo(() => summaries().length > 0)
@@ -250,6 +255,7 @@ export const PitchAlgorithmTester: Component<
     try {
       for (const sample of samplesToRun) {
         for (const algorithm of algorithmsToRun) {
+          if (disposed) return
           const name = algorithmName(algorithm)
           setProgressText(
             `Testing ${name} on ${sample.name} · ${completedRuns + 1} of ${totalRuns}`,
@@ -261,14 +267,17 @@ export const PitchAlgorithmTester: Component<
               bufferSize: 2048,
               minConfidence: 0.3,
             })
+            if (disposed) return
             allResults.push(result)
           } catch (error) {
+            if (disposed) return
             failures.push(`${name} on ${sample.name}: ${errorMessage(error)}`)
           }
 
           completedRuns += 1
           setProgress(Math.round((completedRuns / totalRuns) * 100))
           await new Promise<void>((resolve) => setTimeout(resolve, 0))
+          if (disposed) return
         }
       }
 
@@ -284,7 +293,7 @@ export const PitchAlgorithmTester: Component<
           : `Benchmark complete with ${failures.length} failed ${failures.length === 1 ? 'run' : 'runs'}. ${completedMessage}`,
       )
     } finally {
-      setRunning(false)
+      if (!disposed) setRunning(false)
     }
   }
 

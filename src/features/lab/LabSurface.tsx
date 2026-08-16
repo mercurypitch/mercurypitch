@@ -2,7 +2,7 @@
 // Lab — hidden audio-research surface
 //
 // Not in TAB_GROUPS, so it never appears in the tab bar. Reached by hash
-// route (#lab and its four tool routes) after a server-held supporter grant
+// routes (five tool-specific hashes, including #lab) after a server-held grant
 // in every environment. Everything here used to sit on the user-facing
 // Analysis page. Server-backed Lab capabilities must enforce the same grant.
 //
@@ -141,29 +141,20 @@ const LabToolBoundary: ParentComponent<{
 export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
   const initial = props.initialTab ?? 'workbench'
   const [tab, setTab] = createSignal<LabTab>(initial)
-  const [visited, setVisited] = createSignal<ReadonlySet<LabTab>>(
-    new Set([initial]),
-  )
   let pageRoot: HTMLDivElement | undefined
   const tabButtons: Partial<Record<LabTab, HTMLButtonElement>> = {}
   const backToAnalysis = () => setActiveTab(TAB_ANALYSIS)
 
   const showTool = (next: LabTab, syncRoute = true): void => {
     setTab(next)
-    setVisited((current) => {
-      if (current.has(next)) return current
-      const expanded = new Set(current)
-      expanded.add(next)
-      return expanded
-    })
     if (syncRoute) {
       const entry = TABS.find((candidate) => candidate.id === next)
       if (entry !== undefined) setActiveTab(entry.route)
     }
 
-    // Previously visited tools remain mounted so their input and results do
-    // not vanish on a tab switch. Their canvases listen for resize, so notify
-    // them after the newly active panel has layout dimensions again.
+    // Each tool owns audio, microphone, timers, and global keyboard handlers.
+    // Inactive tools must unmount so their cleanup runs before another tool
+    // becomes interactive. Notify the newly mounted canvas of its dimensions.
     queueMicrotask(() => {
       pageRoot?.scrollIntoView?.({ block: 'start' })
       window.dispatchEvent(new Event('resize'))
@@ -277,14 +268,13 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
       </p>
 
       <div class={styles.panels}>
-        <Show when={visited().has('workbench')}>
+        <Show when={tab() === 'workbench'}>
           <section
             class={styles.panel}
             id="lab-panel-workbench"
             role="tabpanel"
             aria-labelledby="lab-tab-workbench"
             aria-describedby="lab-tool-description"
-            hidden={tab() !== 'workbench'}
           >
             <LabToolBoundary
               label="Capture & inspect"
@@ -294,14 +284,13 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
             </LabToolBoundary>
           </section>
         </Show>
-        <Show when={visited().has('detection')}>
+        <Show when={tab() === 'detection'}>
           <section
             class={styles.panel}
             id="lab-panel-detection"
             role="tabpanel"
             aria-labelledby="lab-tab-detection"
             aria-describedby="lab-tool-description"
-            hidden={tab() !== 'detection'}
           >
             <LabToolBoundary
               label="Tune detector"
@@ -313,14 +302,13 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
             </LabToolBoundary>
           </section>
         </Show>
-        <Show when={visited().has('algorithms')}>
+        <Show when={tab() === 'algorithms'}>
           <section
             class={styles.panel}
             id="lab-panel-algorithms"
             role="tabpanel"
             aria-labelledby="lab-tab-algorithms"
             aria-describedby="lab-tool-description"
-            hidden={tab() !== 'algorithms'}
           >
             <LabToolBoundary
               label="Benchmark algorithms"
@@ -332,14 +320,13 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
             </LabToolBoundary>
           </section>
         </Show>
-        <Show when={visited().has('transcribe')}>
+        <Show when={tab() === 'transcribe'}>
           <section
             class={styles.panel}
             id="lab-panel-transcribe"
             role="tabpanel"
             aria-labelledby="lab-tab-transcribe"
             aria-describedby="lab-tool-description"
-            hidden={tab() !== 'transcribe'}
           >
             <LabToolBoundary
               label="Transcribe stem"
@@ -351,14 +338,13 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
             </LabToolBoundary>
           </section>
         </Show>
-        <Show when={visited().has('lrc-diff')}>
+        <Show when={tab() === 'lrc-diff'}>
           <section
             class={styles.panel}
             id="lab-panel-lrc-diff"
             role="tabpanel"
             aria-labelledby="lab-tab-lrc-diff"
             aria-describedby="lab-tool-description"
-            hidden={tab() !== 'lrc-diff'}
           >
             <LabToolBoundary
               label="Compare mappings"

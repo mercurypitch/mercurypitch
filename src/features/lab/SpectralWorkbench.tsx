@@ -66,6 +66,7 @@ export const SpectralWorkbench: Component = () => {
   let onsetClient: OnsetClient | null = null
   let alignClient: AlignClient | null = null
   let workspaceFileInput!: HTMLInputElement
+  let disposed = false
 
   const sampleRate = () => engines?.audioEngine.getSampleRate() ?? 44100
   const spectra = () => capture.spectraHistory()
@@ -144,10 +145,19 @@ export const SpectralWorkbench: Component = () => {
   })
 
   onCleanup(() => {
+    disposed = true
+    capture.stop()
     window.removeEventListener('keydown', handleKeyDown)
     onsetClient?.destroy()
     alignClient?.destroy()
   })
+
+  const startCapture = async (): Promise<void> => {
+    await capture.start()
+    // Permission can resolve after this tool has been left. The controller's
+    // own cleanup ran before that resolution, so stop the late capture here.
+    if (disposed) capture.stop()
+  }
 
   const detectBeats = () => {
     if (!enoughFrames()) return
@@ -351,7 +361,7 @@ export const SpectralWorkbench: Component = () => {
                 type="button"
                 class={`${styles.toolBtn} ${styles.captureBtn}`}
                 aria-describedby="capture-status"
-                onClick={() => void capture.start()}
+                onClick={() => void startCapture()}
               >
                 <IconRecord />
                 Start capture

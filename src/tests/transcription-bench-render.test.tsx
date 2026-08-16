@@ -8,11 +8,24 @@
 // behind an empty panel.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  transcribeStem: vi.fn(),
+}))
+
+vi.mock('@/lib/transcription/stem-transcription-client', () => ({
+  transcribeStem: mocks.transcribeStem,
+}))
+
 import { TranscriptionBench } from '@/features/lab/TranscriptionBench'
 
 describe('TranscriptionBench', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+    mocks.transcribeStem.mockReset()
+  })
 
   it('mounts with a focused empty state and no premature roll', () => {
     const { container } = render(() => <TranscriptionBench />)
@@ -60,6 +73,47 @@ describe('TranscriptionBench', () => {
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
   })
 
-  // Edit-mode interaction is covered with a populated transcription fixture;
-  // the empty state deliberately withholds those controls.
+  it('mounts and resizes the editable roll after a successful transcription', async () => {
+    mocks.transcribeStem.mockResolvedValue({
+      notes: [
+        {
+          midi: 69,
+          startSeconds: 0.1,
+          durationSeconds: 0.5,
+          confidence: 0.92,
+        },
+      ],
+      coverage: 0.8,
+      analysedSeconds: 1,
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      (() => null) as typeof HTMLCanvasElement.prototype.getContext,
+    )
+
+    const { container } = render(() => <TranscriptionBench />)
+    const fileInput = container.querySelector<HTMLInputElement>(
+      'input[type="file"][accept="audio/*"]',
+    )
+    expect(fileInput).not.toBeNull()
+
+    fireEvent.change(fileInput!, {
+      target: {
+        files: [new File(['stem'], 'bass.wav', { type: 'audio/wav' })],
+      },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Transcribe' }))
+
+    const roll = await screen.findByLabelText('Transcribed notes')
+    expect(roll).toBeInstanceOf(HTMLCanvasElement)
+    expect(() => window.dispatchEvent(new Event('resize'))).not.toThrow()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit mode' }))
+    expect(screen.getByRole('button', { name: 'Editing' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: 'Fit' })),
+    ).not.toThrow()
+  })
 })
