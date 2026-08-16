@@ -89,7 +89,8 @@
 }
 
 .pillCurrent:hover {
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 /* Score badge style */

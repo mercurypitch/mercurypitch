@@ -175,19 +175,26 @@ describe('theme CSS contract', () => {
       'utf8',
     )
 
-    for (const role of [
-      '--status-success-fg',
-      '--status-warning-fg',
-      '--status-danger-fg',
+    for (const [role, fallback] of [
+      ['--status-success-fg', '--success'],
+      ['--status-warning-fg', '--warning'],
+      ['--status-danger-fg', '--danger'],
     ]) {
-      expect(sessionBrowser).toContain(`var(${role}, color-mix(`)
+      expect(sessionBrowser).toContain(
+        `var(${role}, color-mix(in srgb, var(${fallback}) 80%, var(--text-primary)))`,
+      )
     }
     expect(sessionBrowser).toContain(
       'var(--accent-text, color-mix(in srgb, var(--accent) 75%',
     )
-    expect(presetPills).toContain('--accent-text,')
-    expect(presetPills).toContain(
+    const selectedPill = cssBlock(presetPills, '.pillCurrent')
+    expect(selectedPill).toContain('background: var(--accent-dim);')
+    expect(selectedPill).toContain('--accent-text,')
+    expect(selectedPill).toContain(
       'color-mix(in srgb, var(--accent) 75%, var(--text-primary))',
+    )
+    expect(cssBlock(presetPills, '.pillCurrent:hover')).toContain(
+      'background: var(--accent-dim);',
     )
 
     for (const theme of THEMES) {
