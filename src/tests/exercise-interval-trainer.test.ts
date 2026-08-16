@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { difficultyWeightedRoundScore, useIntervalTrainerController, } from '@/features/exercises/interval-trainer/use-interval-trainer-controller'
+import { difficultyWeightedRoundScore, plannedRounds, useIntervalTrainerController, } from '@/features/exercises/interval-trainer/use-interval-trainer-controller'
 import { EXERCISE_INTERVAL_TRAINER } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
@@ -204,5 +204,179 @@ describe('useIntervalTrainerController', () => {
     // Nothing further may play, no matter how long the clock runs.
     await vi.advanceTimersByTimeAsync(120_000)
     expect(playTone.mock.calls.length).toBe(callsBefore)
+  })
+})
+
+// ── The redesign: per-note slots, honest intervals, running mean ─────
+//
+// The old round scored BOTH notes against the average deviation of one
+// shared 3-second window. A singer doing exactly what the phase line said
+// ("sing both notes back") split the window between two pitches, so each
+// target saw roughly half the samples ~span cents away — any average above
+// ~67 cents scored 0, a PERFECT Major 2nd scored 0, and the ceiling of the
+// drill as written was 50 (hold one note, ignore the other). The seven-day
+// run's 0% was a correct performance.
+describe('per-slot scoring', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  /**
+   * A singer who does what the drill asks: whenever the matching phase shows
+   * a note, they sing THAT note, in tune. The log records which note was
+   * current from which elapsed second, and pitchHistory replays it, so slot
+   * scoring sees note1 samples in slot one and note2 samples in slot two.
+   */
+  function createHonestSinger() {
+    const log: Array<{ midi: number; fromSec: number }> = []
+    let phase = 0
+    const base = createMockBase({
+      _getElapsed: () => performance.now(),
+      _updateMetrics: (m) => {
+        if (typeof m.phase === 'number') phase = m.phase
+        if (typeof m.currentMidi === 'number' && phase === 2) {
+          log.push({ midi: m.currentMidi, fromSec: performance.now() / 1000 })
+        }
+      },
+      pitchHistory: () => {
+        const nowSec = performance.now() / 1000
+        const samples: Array<{
+          freq: number
+          time: number
+          cents: number
+          clarity: number
+        }> = []
+        for (let t = 0; t < nowSec; t += 0.1) {
+          const entry = [...log].reverse().find((e) => e.fromSec <= t)
+          if (entry === undefined) continue
+          samples.push({
+            freq: midiToFreq(entry.midi),
+            time: t,
+            cents: 0,
+            clarity: 90,
+          })
+        }
+        return samples
+      },
+    })
+    return base
+  }
+
+  it('scores a correct performance as correct', async () => {
+    // The regression lock for the whole-window averaging bug: under the old
+    // evaluateRound this run scores ~0 for any span above ~1.3 semitones.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    const base = createHonestSinger()
+    const ctrl = useIntervalTrainerController(base, audioEngine)
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.runAllTimersAsync()
+
+    const result = ctrl.computeResult()
+    expect(result.metrics.roundsCompleted).toBeGreaterThan(0)
+    expect(result.metrics.avgAccuracy).toBeGreaterThan(80)
+    expect(result.score).toBeGreaterThan(80)
+  })
+
+  it('gives silence a zero, not a participation grade', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    const base = createMockBase({
+      _getElapsed: () => performance.now(),
+      pitchHistory: () => [],
+    })
+    const ctrl = useIntervalTrainerController(base, audioEngine)
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.runAllTimersAsync()
+
+    expect(ctrl.computeResult().score).toBe(0)
+  })
+
+  it('plays the interval it names — no hidden octave', async () => {
+    // A quarter of rounds used to add a random +12 to note2, so a round
+    // labelled Major 2nd could span 14 semitones and leave the singer's
+    // range. Math.random is pinned to the branch that always shifted.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
+
+    const seen: number[] = []
+    const base = createMockBase({
+      _getElapsed: () => performance.now(),
+      _updateMetrics: (m) => {
+        if (typeof m.currentMidi === 'number') seen.push(m.currentMidi)
+      },
+    })
+    const ctrl = useIntervalTrainerController(base, audioEngine)
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.runAllTimersAsync()
+
+    expect(seen.length).toBeGreaterThan(0)
+    expect(Math.max(...seen)).toBeLessThanOrEqual(72)
+    expect(Math.min(...seen)).toBeGreaterThanOrEqual(60)
+  })
+
+  it('publishes the running mean, not the last round', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    const scores: number[] = []
+    const base = createHonestSinger()
+    const orig = base._updateScore
+    base._updateScore = (v) => {
+      scores.push(v)
+      orig(v)
+    }
+    const ctrl = useIntervalTrainerController(base, audioEngine)
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.runAllTimersAsync()
+
+    // One publish per singing slot, two slots per round.
+    const rounds = ctrl.computeResult().metrics.roundsCompleted
+    expect(scores).toHaveLength(rounds * 2)
+    expect(scores.at(-1)).toBe(ctrl.computeResult().metrics.avgAccuracy)
+  })
+
+  it('offers both notes of the round to the tracker ladder', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+
+    const base = createMockBase({ _getElapsed: () => performance.now() })
+    const ctrl = useIntervalTrainerController(base, audioEngine)
+    ctrl.setBase(60)
+    ctrl.startRounds()
+
+    const pair = ctrl.getUpcomingMidi()
+    expect(pair).toHaveLength(2)
+    expect(pair[0]).toBe(60)
+    expect(pair[1]).toBeGreaterThan(60)
+    expect(pair[1]).toBeLessThanOrEqual(72)
+
+    await vi.runAllTimersAsync()
+    expect(ctrl.getUpcomingMidi()).toHaveLength(0)
+  })
+})
+
+describe('plannedRounds', () => {
+  it('asks for six at the default difficulty', () => {
+    expect(plannedRounds(5)).toBe(6)
+  })
+
+  it('asks for fewer when easier', () => {
+    expect(plannedRounds(1)).toBeLessThan(6)
+    expect(plannedRounds(1)).toBeGreaterThanOrEqual(3)
+  })
+
+  it('is capped by the interval pool, so the hint never overpromises', () => {
+    // round(6 * (2 - factor(10))) is 8; the pool holds 6, and `slice` used
+    // to hide the difference while the idle hint promised the bigger number.
+    expect(plannedRounds(10)).toBe(6)
   })
 })

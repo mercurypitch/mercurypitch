@@ -75,6 +75,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `role="radio"` + `aria-checked`, matching `SegmentedControl`, which already
   did it right. `LoopControls`' A, B and loop toggle report `aria-pressed` —
   they are independent toggles, not a group.
+- **Interval Trainer rebuilt on the echo model.** `evaluateRound` scored both
+  targets against the average deviation of one shared 3 s window, so a correct
+  performance put ~half the samples ~span cents from each target — anything
+  over ~67 cents average scored 0, a perfect Major 2nd scored 0, and the
+  drill's ceiling as written was 50. Rounds now follow arpeggio-jumper's echo
+  shape: a timer-paced listen phase (never `.then` on `playTone`, which
+  resolves at schedule time — the old chain flipped the target to note2 within
+  a frame), then one difficulty-scaled singing slot per note scored with
+  `scoreNoteInRange`. The round's pair rides the tracker's upcoming-target
+  ladder (call-response convention), `ExerciseFeedback`'s response-window bar
+  is wired up (`matchWindowMs` + per-slot `phaseStartedMs` restamp), the
+  header score is the running mean, the random +12 octave shift on note2 is
+  gone, `plannedRounds` caps at the pool so the idle hint stops promising 6
+  rounds at every difficulty, and the help copy describes the actual drill.
+  Result metric names are unchanged (weakness-analyzer reads them).
 
 - **Lab work no longer survives after its tool is left.** The earlier
   keep-visited-panels-mounted approach left spectral capture, raw microphone

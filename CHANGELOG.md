@@ -174,6 +174,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   accuracy tier, buffer size, play mode and the karaoke processing pills
   marked the current choice with a colour and nothing else, so a screen reader
   read the same thing before and after you changed it.
+- **The Interval Trainer can be won now.** It scored both notes of the
+  interval against everything you sang in one shared window, so singing the
+  two notes correctly averaged out to zero — a perfect round could score 0,
+  and the best possible strategy was ignoring half the exercise. Each note now
+  has its own singing window and its own score. Both notes stay marked on the
+  tracker for the whole round, each round leaves more room to breathe, and the
+  interval you hear is always the interval named — no more surprise extra
+  octave.
 
 - **Challenges and badges you have not earned no longer claim a date.**
   Anything unfinished was being stamped 1 January 1970 instead of showing
