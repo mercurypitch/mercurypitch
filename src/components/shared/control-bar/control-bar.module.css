@@ -239,6 +239,34 @@
   pointer-events: auto;
 }
 
+/* Landscape tablets have enough room for the value controls, but not for the
+   whole always-visible Singing toolbar. Keep More attached to the visible
+   edge of the scrollport, then reveal its controls back toward the canvas so
+   BPM, volume, and speed never open beyond the clipped side. */
+@media (min-width: 701px) and (max-width: 1180px) {
+  .singingMoreWrap {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    flex-direction: row-reverse;
+    padding: 3px 0 3px 9px;
+    background: var(--bg-card);
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, var(--bg-card) 96%, transparent) 9px
+    );
+  }
+
+  .singingMoreWrap.pinned {
+    padding-left: 12px;
+  }
+
+  .singingMoreGroup {
+    justify-content: flex-end;
+  }
+}
+
 /* ── inline value fields (icon + slider/select) ────────────── */
 .field {
   display: inline-flex;
