@@ -137,11 +137,16 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       </div>
 
       {/* Play mode (segmented) */}
-      <div class={styles.segment} role="group" aria-label="Play mode">
+      {/* A radiogroup rather than a group of plain buttons: which mode is
+          armed was carried by a tint, so nothing announced it and nothing
+          confirmed a change. */}
+      <div class={styles.segment} role="radiogroup" aria-label="Play mode">
         <button
           type="button"
           id="btn-once"
           data-testid="btn-once"
+          role="radio"
+          aria-checked={props.playMode() === PLAYBACK_MODE_ONCE}
           class={styles.segBtn}
           classList={{
             [styles.active]: props.playMode() === PLAYBACK_MODE_ONCE,
@@ -156,6 +161,8 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
           type="button"
           id="btn-repeat"
           data-testid="btn-repeat"
+          role="radio"
+          aria-checked={props.playMode() === PLAYBACK_MODE_REPEAT}
           class={styles.segBtn}
           classList={{
             [styles.active]: props.playMode() === PLAYBACK_MODE_REPEAT,

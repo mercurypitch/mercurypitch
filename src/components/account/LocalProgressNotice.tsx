@@ -16,7 +16,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { CheckCircle, History } from '@/components/icons'
 import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
-import { describeLocalProgress, localProgressNoticeDue, markNoticeSeen, progressHandoffMailto, summarizeLocalProgress, } from '@/features/account/local-progress-notice'
+import { describeLocalProgress, localProgressAtSignIn, localProgressNoticeDue, markNoticeSeen, progressHandoffMailto, } from '@/features/account/local-progress-notice'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './LocalProgressNotice.module.css'
 
@@ -34,9 +34,12 @@ export const LocalProgressNotice: Component = () => {
     return dismissedFor() !== getUserId() && localProgressNoticeDue()
   }
 
-  const progress = (): ReturnType<typeof summarizeLocalProgress> => {
+  // Counted as of the sign-in, not as of now: the local stores keep growing
+  // while the singer practises, and a notice about what was left behind must
+  // not grow with them. See local-progress-notice.ts.
+  const progress = (): ReturnType<typeof localProgressAtSignIn> => {
     authVersion()
-    return summarizeLocalProgress()
+    return localProgressAtSignIn()
   }
 
   function dismiss(): void {

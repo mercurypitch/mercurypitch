@@ -45,6 +45,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The local-progress notice is bounded by the sign-in, not by the stores.**
+  `exerciseHistory` and `sessionResults` are one device-wide list each with no
+  owner on their rows, so a run finished after signing in landed in the list
+  the notice counts. `localProgressNoticeDue()` flipped true mid-session and
+  the portalled dialog (`position: fixed`, `z-index: 3200`) painted over the
+  auto-continue row — at 390x844, over the "Stay here" button its own sentence
+  points at. A per-account first-seen stamp
+  (`mercurypitch.localProgressNotice.firstSeen.v1`) now divides the history:
+  `summarizeLocalProgress(before)` counts rows by `completedAt` and Ascent
+  days by date, excluding the seeded `ENDOWED_DAY` that nobody practised, and
+  the component reads `localProgressAtSignIn()`. The stamp is only written for
+  an account that differs from the device id, so being signed out never dates
+  the line.
+
+- **The phone header's account corner is a touch target, and sign-out
+  confirms.** Measured at 390x844: profile 26x24 and sign-out 31x24, edge to
+  edge. The mobile block now gives the account and sign-in pills a 44px
+  minimum in both axes, hides the header's sign-out (it keeps its full-size
+  home in Settings > Account), and the header reserves 96px with the pinned
+  block inset 4px — 4 + 44 fits the 50px band with nothing overhanging.
+  Re-measured after the change: 46x46 at x 292, bottom at exactly 50.
+  `HeaderAccount` now routes sign-out through `ConfirmDialog`.
+
+- **Practice-engine selectors carry ARIA state.** `TierSelector` (3),
+  `VocalRangeSelector` (6), the buffer-size pills in `SettingsPanel`, both
+  play-mode segments (`SingingControlBar`, `PianoControlBar`) and the karaoke
+  `UvrPanel` processing/stems/device pills became `role="radiogroup"` with
+  `role="radio"` + `aria-checked`, matching `SegmentedControl`, which already
+  did it right. `LoopControls`' A, B and loop toggle report `aria-pressed` —
+  they are independent toggles, not a group.
+
 - **Lab work no longer survives after its tool is left.** The earlier
   keep-visited-panels-mounted approach left spectral capture, raw microphone
   streams, transcription playback/Space handlers and detector benchmarks alive

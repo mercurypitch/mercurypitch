@@ -564,7 +564,14 @@ export const SettingsPanel: Component = () => {
             <Show when={pitchAlgorithm() === 'mpm'}>
               <div class={styles.settingsRow}>
                 <label>Buffer Size</label>
-                <div class={styles.pitchBufferPills}>
+                {/* A radiogroup, as the sidebar's own segmented controls are:
+                    the active pill was carried by a tint alone, so nothing
+                    was announced and nothing confirmed the change. */}
+                <div
+                  class={styles.pitchBufferPills}
+                  role="radiogroup"
+                  aria-label="Buffer size"
+                >
                   <For each={PITCH_BUFFER_SIZES}>
                     {(size) => (
                       <button
@@ -576,6 +583,8 @@ export const SettingsPanel: Component = () => {
                               ].join(' ')
                             : styles.pitchBufferPill
                         }
+                        role="radio"
+                        aria-checked={pitchBufferSize() === size}
                         onClick={() =>
                           setPitchBufferSize(size as PitchBufferSize)
                         }

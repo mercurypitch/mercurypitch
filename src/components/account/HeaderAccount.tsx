@@ -8,6 +8,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
@@ -15,6 +16,17 @@ import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './HeaderAccount.module.css'
+
+function SignOutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H10c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H8v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"
+      />
+    </svg>
+  )
+}
 
 function UserIcon() {
   return (
@@ -30,6 +42,9 @@ function UserIcon() {
 export const HeaderAccount: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const [me, setMe] = createSignal<MeResponse | null>(null)
+  // Sign-out is one tap from the button people press to check who they are
+  // signed in as, and it drops them out of a session mid-practice. It asks.
+  const [confirming, setConfirming] = createSignal(false)
 
   // Re-fetch on every auth transition (sign-in from Settings, Google
   // redirect return, restored session, sign-out) — a one-shot onMount left
@@ -65,6 +80,7 @@ export const HeaderAccount: Component = () => {
   }
 
   function handleLogout(): void {
+    setConfirming(false)
     logout()
     setMe(null)
     showNotification('Signed out', 'info')
@@ -97,20 +113,25 @@ export const HeaderAccount: Component = () => {
           </button>
           <button
             class={styles.logoutBtn}
-            onClick={handleLogout}
+            onClick={() => setConfirming(true)}
             title="Sign out"
             aria-label="Sign out"
             data-testid="header-logout"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M16 13v-2H7V8l-5 4 5 4v-3h9zm3-10H10c-1.1 0-2 .9-2 2v4h2V5h9v14h-9v-4H8v4c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"
-              />
-            </svg>
+            <SignOutIcon />
           </button>
         </div>
       </Show>
+
+      <ConfirmDialog
+        open={confirming()}
+        title="Sign out?"
+        message="Nothing is deleted. This device goes back to its own history, and signing in again brings the account's practice back."
+        confirmLabel="Sign out"
+        confirmIcon={<SignOutIcon />}
+        onConfirm={handleLogout}
+        onCancel={() => setConfirming(false)}
+      />
     </Show>
   )
 }

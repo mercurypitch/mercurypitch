@@ -29,8 +29,9 @@
 // without a Storage or a signed-in session.
 
 import { getDeviceId, getUserId } from '@/db/services/user-service'
-import { pathProgress } from '@/features/path/path-progress'
+import { ENDOWED_DAY, pathProgress } from '@/features/path/path-progress'
 import { CONTACT_EMAIL } from '@/lib/contact-links'
+import { localDayString } from '@/lib/local-day'
 import { storageGet, storageSet } from '@/lib/storage'
 import { exerciseHistory } from '@/stores/exercise-history-store'
 import { getSessionHistory } from '@/stores/practice-session-store'
@@ -135,6 +136,19 @@ export function progressHandoffMailto(
 
 type SeenMap = Record<string, number>
 
+/**
+ * When this device first saw each account — the line between "practice that
+ * was here before you signed in" and "practice you have done since".
+ *
+ * The local stores are one device-wide list each, with no idea who was signed
+ * in when a row was written. So a run finished AFTER signing in landed in the
+ * same list the notice counts, the notice became due mid-practice, and a modal
+ * about lost history opened over the drill result the singer was reading —
+ * including, at 390x844, over the "Stay here" button the countdown tells them
+ * to press. The cutoff is what makes "earlier" mean earlier.
+ */
+const FIRST_SEEN_KEY = 'mercurypitch.localProgressNotice.firstSeen.v1'
+
 function readSeen(): SeenMap {
   // storageGet hands back the RAW STRING when the value will not parse, so
   // the shape still has to be checked here — spreading a string into the
@@ -161,31 +175,87 @@ export function markNoticeSeen(
   storageSet(STORAGE_KEY, { ...readSeen(), [accountId]: now })
 }
 
+function readFirstSeen(): SeenMap {
+  const raw = storageGet<unknown>(FIRST_SEEN_KEY)
+  if (typeof raw !== 'object' || raw === null) return {}
+  return raw as SeenMap
+}
+
+/**
+ * When this device first saw `accountId`, stamping now if it never has.
+ *
+ * Called on the first render after a sign-in, so "now" is within a second or
+ * two of the sign-in itself — close enough to divide a history whose rows are
+ * minutes and days apart. Blocked storage means no stamp sticks and the
+ * cutoff is this moment every time, which is the same reading, just
+ * recomputed.
+ */
+export function accountFirstSeenAt(
+  accountId: string,
+  now = Date.now(),
+): number {
+  const stored = readFirstSeen()
+  const seen = stored[accountId]
+  if (typeof seen === 'number' && Number.isFinite(seen)) return seen
+  storageSet(FIRST_SEEN_KEY, { ...stored, [accountId]: now })
+  return now
+}
+
 // ── Wiring ───────────────────────────────────────────────────────
 
-/** What this device still holds, read synchronously from local stores. */
-export function summarizeLocalProgress(): LocalProgress {
+/**
+ * What this device held before `before`, read synchronously from local stores.
+ *
+ * Rows carry `completedAt` in epoch milliseconds and Ascent days are
+ * `YYYY-MM-DD`, so both compare directly against the cutoff. The Ascent's
+ * seeded `ENDOWED_DAY` is not a date and is not a day anybody practised, so it
+ * counts as nothing here — otherwise merely opening The Ascent after signing
+ * in would raise a notice about practice that never happened.
+ */
+export function summarizeLocalProgress(
+  before: number = Number.POSITIVE_INFINITY,
+): LocalProgress {
   const ascent = pathProgress()
+  const cutoffDay = Number.isFinite(before)
+    ? localDayString(new Date(before))
+    : null
   const ascentDays =
     ascent === null
       ? 0
       : Object.values(ascent.weekDays).reduce(
-          (n, days) => n + (days?.length ?? 0),
+          (n, days) =>
+            n +
+            (days ?? []).filter((day) => {
+              if (day === ENDOWED_DAY) return false
+              return cutoffDay === null || day < cutoffDay
+            }).length,
           0,
         )
   return {
-    exercises: exerciseHistory().length,
-    sessions: getSessionHistory().length,
+    exercises: exerciseHistory().filter((e) => e.completedAt < before).length,
+    sessions: getSessionHistory().filter((s) => s.completedAt < before).length,
     ascentDays,
   }
 }
 
+/** What was on the device when this account signed in here. */
+export function localProgressAtSignIn(accountId = getUserId()): LocalProgress {
+  return summarizeLocalProgress(accountFirstSeenAt(accountId))
+}
+
 export function localProgressNoticeDue(): boolean {
   const accountId = getUserId()
+  const deviceId = getDeviceId()
+  // Checked before the stamp so that being signed out — where the two ids are
+  // the same — never writes one, and signing in later still divides the
+  // history at the moment it happened.
+  if (deviceId === '' || accountId === '' || deviceId === accountId) {
+    return false
+  }
   return isNoticeDue({
-    deviceId: getDeviceId(),
+    deviceId,
     accountId,
     seen: noticeSeen(accountId),
-    progress: summarizeLocalProgress(),
+    progress: localProgressAtSignIn(accountId),
   })
 }
