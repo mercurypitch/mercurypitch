@@ -26,7 +26,7 @@
   border: none;
   border-radius: 7px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
@@ -51,7 +51,17 @@
 .sourceBtnActive,
 .sourceBtnActive:hover {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
+}
+
+.sourceBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sourceBtn:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
 }
 
 /* ── Day / night preset selects, only shown for an auto source ── */
@@ -72,7 +82,7 @@
 .autoLabel {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .autoSelect {
@@ -104,7 +114,7 @@
 }
 
 .autoHint {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -189,5 +199,5 @@
   height: 22px;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
 }

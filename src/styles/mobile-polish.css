@@ -206,6 +206,10 @@
   /* Recent scores: an in-flow strip at the top of the card instead of
      an absolute corner chip that overlapped the setup content. */
   .exercise-score-history {
+    --exercise-history-muted: var(--text-secondary);
+    --exercise-history-good: var(--exercise-score-high);
+    --exercise-history-ok: var(--exercise-score-mid);
+    --exercise-history-poor: var(--exercise-score-low);
     position: static;
     flex-direction: row;
     flex-wrap: wrap;
