@@ -53,16 +53,37 @@ const themeBodies = (): Array<[string, string]> => {
   ]
 }
 
+/**
+ * The declarations of one rule, by exact selector.
+ *
+ * `[^}]` rather than `[\s\S]`: a lazy any-character run crosses the closing
+ * brace, so a rule that had lost its `color` still matched the next rule's —
+ * reverting `.hero` alone to `color: #fff` left all of this green. The test
+ * only failed once all three were reverted at the same time, which is the one
+ * way the regression will not arrive.
+ */
+const ruleBody = (css: string, selector: string): string => {
+  const body = css.match(
+    new RegExp(`${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`),
+  )?.[1]
+  if (body === undefined) throw new Error(`Missing rule ${selector}`)
+  return body
+}
+
 describe('Singing control-bar theme contract', () => {
-  it('uses semantic foregrounds for filled transport controls', () => {
-    expect(controlBarCss).toMatch(
-      /\.hero\s*\{[\s\S]*?color:\s*var\(--on-accent,\s*var\(--bg-primary,\s*#0d1117\)\);/,
-    )
-    expect(controlBarCss).toMatch(
-      /\.heroPlay\s*\{[\s\S]*?color:\s*var\(--on-success,\s*var\(--bg-primary,\s*#0d1117\)\);/,
-    )
-    expect(controlBarCss).toMatch(
-      /\.countin\s*\{[\s\S]*?color:\s*var\(--on-accent,\s*var\(--bg-primary,\s*#0d1117\)\);/,
+  // White ink fails WCAG AA on eight of the nine palettes against both
+  // --accent and --green (dark 2.53:1, amber 2.21:1, ocean-on-green 1.82:1);
+  // only `light` passes. --bg-primary passes on all nine, which is what the
+  // fallback chain below resolves to until a semantic --on-* token exists.
+  it.each([
+    ['.hero', '--on-accent'],
+    ['.heroPlay', '--on-success'],
+    ['.countin', '--on-accent'],
+  ])('%s takes its ink from %s', (selector, expected) => {
+    expect(ruleBody(controlBarCss, selector)).toMatch(
+      new RegExp(
+        `color:\\s*var\\(${expected},\\s*var\\(--bg-primary,\\s*#0d1117\\)\\);`,
+      ),
     )
   })
 
