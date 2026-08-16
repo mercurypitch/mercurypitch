@@ -2,7 +2,7 @@
 // What's New — the v0.9.0 release, in the visitor's terms
 // ============================================================
 //
-// Content, not code. Every entry is drawn from the CHANGELOG's Unreleased
+// Content, not code. Every entry is drawn from the CHANGELOG's 0.9.0
 // section, cut down to the handful somebody would actually change their
 // evening over — a release page that lists twenty-nine bullets is a
 // changelog, and there is already one of those.

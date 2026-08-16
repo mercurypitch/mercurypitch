@@ -6,7 +6,17 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.0] - 2026-08-17
+
+### Added
+
+- **A What's New page, announced once per release LINE.** `shouldAnnounce` is a
+  pure `major.minor` comparison against `WHATS_NEW_SEEN_KEY`, so a patch never
+  interrupts; a first-ever visitor is recorded as caught up rather than
+  announced to, which makes their first announcement the next real release. The
+  page is route-backed (`#/whats-new`), so it is deep-linkable, Back closes it,
+  and the sidebar entry reopens it after it has been waved away. Content lives
+  in `whats-new-content.tsx` and is drawn from this release's changelog.
 
 ### Added
 
@@ -896,6 +906,62 @@ aria-modal="true"` but never took or fenced focus: the first Tab after
   credentials. `"r2_buckets": []` does not silence the warning — Wrangler
   compares binding names — and `RUNPOD_STEM_PREFIX` is deliberately left out,
   being read only on the RunPod path.
+
+- **The app is served from a precached shell, one build at a time.** The worker
+  (`src/sw.ts`, all rules in `src/lib/sw-runtime.ts`) treats
+  `self.__WB_MANIFEST` as an allowlist and caches under a per-build name — an
+  FNV-1a hash of the shipped URL set — copying unchanged entries forward from
+  the previous build so a deploy costs about one request per changed chunk
+  rather than the whole set. A navigation is answered from the shell only when
+  the cached HTML's `<script src>` set belongs to this build; a request for
+  build output the origin no longer serves posts `mercurypitch:stale-build` to
+  the page, which turns into an immediate update check. `install()` refuses to
+  finish if the shell is not a document or belongs to another build, but
+  tolerates storage failure, and every cache touch on the request path is
+  best-effort so a rejection degrades to the network instead of the browser's
+  network-error page. Nothing calls `skipWaiting()` on its own: the page asks,
+  and only an accepted prompt reloads. `isStaleBuildError` in the global error
+  handler and `AppErrorBoundary` classify the failed-dynamic-import and
+  HTML-parsed-as-JS shapes as "this build is gone" rather than a crash.
+
+- **`longestStreak` is maintained as a high-water mark.** The column arrived
+  `NOT NULL DEFAULT 0` with no semantic backfill, and the client that owned
+  streak writes only ever wrote `currentStreak`, so 60 production rows and 13
+  on dev stored `currentStreak > longestStreak` — a record the leaderboard
+  ranks on and the public board gates on. `0030_streak_high_water.sql`
+  backfills every row to `MAX(currentStreak, longestStreak)` and the write path
+  now raises it in step.
+
+### Security
+
+- **The anonymous credential is no longer a published identifier.**
+  `userProfiles.id` is publicly readable and every leaderboard row carries a
+  `userId`, and that id was the entire credential: `POST /api/auth/anonymous`
+  returned a session for it and `POST /api/auth/register` took the row over
+  permanently from the same value, so the board was a list of working
+  credentials. `0029_device_secret.sql` adds `users.deviceSecretHash`, the
+  client mints 256 bits per browser (`getDeviceSecret`, stored beside the
+  device id so the two are lost together rather than one without the other),
+  and `authorizeDeviceSecret` gates `/api/auth/anonymous`, `/api/auth/register`
+  and both Google paths — where an unproved deviceId is dropped, so sign-in
+  still succeeds into a fresh account instead of absorbing somebody else's. The
+  consent URL moved to `POST /api/auth/google/start` so a secret never lands in
+  history, logs or a `Referer`. Rows that predate the migration are
+  grandfathered trust-on-first-use; the window that leaves is asserted in
+  `node-tests/device-secret-integration.test.ts` and written down in
+  `docs/agent/BUGS.md` rather than hidden.
+
+- **A follow is a request until the other side accepts it.** The Friends board
+  reads a singer's streak, scores, accuracy and session count while skipping
+  the public board's opt-in gate and thresholds, and `POST /api/follows` took
+  `followedUserId` on trust — so anyone could add anyone and read their record.
+  `0028_follow_requests.sql` gives a row a status: `'pending'` grants nothing,
+  `'accepted'` requires both rows to exist and agree, and nothing a single
+  caller does reaches it. Generic CRUD writes to `follows` answer 405 and name
+  the route that owns them (`writeRoute` on the table definition — `serverCols`
+  could not express a rule about the shape of a write). Crossed requests settle
+  themselves, removal clears both directions, and the friend-code path still
+  connects both sides at once because being handed the code is the consent.
 
 ## [0.8.1] - 2026-08-08
 

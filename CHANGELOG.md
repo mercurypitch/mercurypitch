@@ -3,7 +3,7 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [Unreleased]
+## [0.9.0] - 2026-08-17
 
 ### Added
 
@@ -261,6 +261,18 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   heard notes, play the tab, click to seek, Space to start and stop — so a
   disagreement between them can be listened to rather than only read.
 
+- **The Danger Zone grew two gentler levers.** Alongside the karaoke-only
+  clear and the full factory reset there is now "Clear Settings & Practice
+  History" — which keeps your separated songs, melodies, piano projects, and
+  sign-in — and "Delete Stored Songs & Database", which does the opposite:
+  the on-device database goes, your settings and sign-in stay.
+
+- **A What's New page,** which is where you are reading this from if you did
+  not come looking. It names the handful of things worth changing an evening
+  over and how to try each one, and it shows itself once per release rather
+  than once per fix. It stays in the sidebar afterwards, so a release you
+  waved away is not a release you lost.
+
 ### Changed
 
 - **Held-note drills now run ten seconds by default, and grade the run
@@ -372,13 +384,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **The microphone is offered once, at your first practice,** instead of being
   raised again on every playback surface.
 
-### Added
-
-- **The Danger Zone grew two gentler levers.** Alongside the karaoke-only
-  clear and the full factory reset there is now "Clear Settings & Practice
-  History" — which keeps your separated songs, melodies, piano projects, and
-  sign-in — and "Delete Stored Songs & Database", which does the opposite:
-  the on-device database goes, your settings and sign-in stay.
+- **Adding a friend is a request the other person accepts.** The Friends board
+  shows a singer's streak, scores and accuracy to the people on it, so being
+  added to somebody's list is no longer something that can happen to you
+  without a word. Ask, and nothing is shared until the answer comes back;
+  redeeming a friend code still connects both sides at once, because handing
+  the code over already said yes. Removing a friend clears both directions.
 
 ### Fixed
 
@@ -562,6 +573,32 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   account" until you have one instead of failing after the click. Both it and
   the supporter tiers' button open the sign-up dialog on the spot, rather than
   sending you to the settings page you were already on.
+
+- **Your longest streak is the longest one you have had.** It was stored
+  without ever being kept up to date, so a run you were still in the middle of
+  could be longer than the record it was supposed to beat — including on the
+  leaderboard, which ranks people by it. Every account's record has been
+  corrected to the best run it can actually show.
+
+- **The app opens the version it was given.** A new release used to arrive one
+  file at a time, so a page could be left halfway between two builds and stop
+  with an error nothing on screen explained. Each release is now kept whole:
+  the app opens from what this device already has — offline included — and a
+  new one arrives as an offer to reload, once, when it is completely ready.
+
+- **More of the app fits the device it is used on.** A tablet's Singing
+  controls stay reachable, Karaoke Night explains its voice controls and its
+  messages can be read, and the Analysis take rail stops crushing its own
+  cards on a phone.
+
+### Security
+
+- **An anonymous account can no longer be claimed by anyone who saw it.** The
+  id on the public leaderboard used to be the whole credential for accounts
+  that had not signed up yet, so a stranger could have taken one and, with it,
+  the practice history behind it. Your browser now holds a separate secret and
+  the id alone proves nothing. Nobody has to do anything: the account binds
+  itself to this browser the next time you open the app.
 
 ## [0.8.1] - 2026-08-08
 
