@@ -250,6 +250,20 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     const seg = routine.currentSegment()
     return seg !== null && segmentRunsExercise(seg, props.type)
   }
+  // ── Rep-aware relaunch ──
+  // A multi-rep segment parks the singer on the result screen between runs,
+  // where "Try Again" is the wrong verb: the routine asked for five runs and
+  // this is simply the next one. Non-null exactly while banked runs remain
+  // below the segment's ask — so run one still reads "Start", and the last
+  // run's result reads "Try Again" like any finished drill.
+  const repRun = createMemo(() => {
+    if (!runsCurrentSegment()) return null
+    const reps = routine.currentSegmentReps()
+    const banked = routine.currentSegmentRuns()
+    return reps > 1 && banked > 0 && banked < reps
+      ? { next: banked + 1, reps }
+      : null
+  })
   createEffect(
     on(status, (s) => {
       if (s === 'active' && runsCurrentSegment()) holdMicForRoutine()
@@ -468,6 +482,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       <RoutineRibbon
         type={props.type}
         isRunning={() => status() === 'active' || status() === 'count-in'}
+        isComplete={isComplete}
+        onRunAgain={() => props.onTryAgain()}
       />
 
       <div
@@ -481,8 +497,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               finished run returns here with the score now in the corner chip. */}
           <div class="exercise-idle-center">
             <Show when={isComplete() && props.resultScore() !== null}>
+              {/* Between runs of a multi-rep segment the card stays compact:
+                  no contour, no pop-in. The trace is analysis, and mid-rep
+                  the singer needs pace — the full card returns on the
+                  segment's last run and everywhere outside routines. */}
               <div
                 class={`exercise-result-card grade-${gradeForScore(props.resultScore()!).toLowerCase()}`}
+                classList={{ 'mid-reps': repRun() !== null }}
               >
                 <div class="exercise-result-grade">
                   {gradeForScore(props.resultScore()!)}
@@ -513,7 +534,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     {props.resultSummary}
                   </div>
                   {/* The score says how well; the contour says where. */}
-                  <Show when={runTrace()}>
+                  <Show when={repRun() === null && runTrace()}>
                     {(trace) => <RunTraceCanvas trace={trace()} />}
                   </Show>
                 </div>
@@ -574,7 +595,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     isComplete() ? props.onTryAgain() : props.onStart()
                   }
                 >
-                  {isComplete() ? 'Try Again' : (props.startLabel ?? 'Start')}
+                  {/* Mid-reps the restart is prescribed, so the button says
+                      which run it starts; outside a multi-rep segment the
+                      Try Again / Start pair stands (e2e selectors match it). */}
+                  {isComplete()
+                    ? (repRun() === null
+                        ? 'Try Again'
+                        : `Start run ${repRun()!.next} of ${repRun()!.reps}`)
+                    : (props.startLabel ?? 'Start')}
                 </button>
               </div>
             </div>
