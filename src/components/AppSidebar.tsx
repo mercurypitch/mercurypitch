@@ -13,6 +13,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { SidebarHostProvider } from '@/features/sidebar/sidebar-host'
 import { SIDEBAR_PANELS, sidebarPanelIdsFor, } from '@/features/sidebar/sidebar-registry'
+import { navigateTo } from '@/lib/hash-router'
 import { activeTab as appActiveTab, hasPageTour, startPageTour } from '@/stores'
 import type { MelodyItem, NoteResult } from '@/types'
 import styles from './AppSidebar.module.css'
@@ -119,6 +120,22 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             />
           </svg>
           <span class={styles.walkthroughControlText}>Guide</span>
+        </button>
+        {/* The release page. It announces itself once per release and is
+            otherwise only findable if something points at it — this is the
+            pointer, beside the other two "explain the app" doors. */}
+        <button
+          class={styles.walkthroughControlBtn}
+          onClick={() => navigateTo({ type: 'whats-new' })}
+          title="What's new in this release"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path
+              fill="currentColor"
+              d="M12 2l2.2 5.6L20 9.2l-4.4 3.6L17 19l-5-3-5 3 1.4-6.2L4 9.2l5.8-1.6L12 2z"
+            />
+          </svg>
+          <span class={styles.walkthroughControlText}>New</span>
         </button>
         <Show when={hasPageTour(activeTab())}>
           <button

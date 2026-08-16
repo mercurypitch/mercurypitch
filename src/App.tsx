@@ -247,6 +247,9 @@ import { useVoiceControlController } from '@/features/voice-control/useVoiceCont
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
+import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
+import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
+import { WhatsNewPage } from '@/features/whats-new/WhatsNewPage'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -284,7 +287,7 @@ import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, welcomeSeen, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
@@ -742,6 +745,13 @@ const AppShell: Component<AppProps> = (props) => {
 
   useVoiceConstellationIsolation(voiceConstellationOpen)
 
+  // What's New: the release page. Announced once per release line to a
+  // visitor who was already here for the last one, and reachable from the
+  // sidebar afterwards. `welcomeSeen` is the returning-visitor test — a
+  // first-ever arrival is mid-onboarding and has no "new" to be shown.
+  const whatsNew = createWhatsNewController()
+  onMount(() => whatsNew.announceIfNew(welcomeSeen() !== ''))
+
   const closeVoiceConstellation = () => {
     const exit = leaveVoiceConstellation(activeTab())
     // Browser Back owns the in-app path and its hashchange closes the surface.
@@ -1072,6 +1082,8 @@ const AppShell: Component<AppProps> = (props) => {
     openOnboardingMap,
     setVoiceConstellationOpen,
     voiceConstellationOpen,
+    setWhatsNewOpen: whatsNew.setOpen,
+    whatsNewOpen: whatsNew.open,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -2724,6 +2736,7 @@ const AppShell: Component<AppProps> = (props) => {
     showShortcutHelp() ||
     showAdminContentStudio() ||
     voiceConstellationOpen() ||
+    whatsNew.open() ||
     // Never pop the survey over the sign-in modal, an already-open feedback
     // modal, or the First Light onboarding flow - all surfaces the user is
     // mid-thought in.
@@ -2932,6 +2945,12 @@ const AppShell: Component<AppProps> = (props) => {
               onReady={dropOpeningAfterHold}
             />
           </ErrorBoundary>
+        </Show>
+
+        <Show when={whatsNew.open()}>
+          <Suspense fallback={null}>
+            <WhatsNewPage release={RELEASE_0_9_0} onClose={whatsNew.close} />
+          </Suspense>
         </Show>
 
         <Show when={voiceConstellationOpen()}>

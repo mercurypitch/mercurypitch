@@ -21,6 +21,7 @@ function mountRouter(options: {
 
   const Fixture = () => {
     const [voiceConstellationOpen, setVoiceOpen] = createSignal(false)
+    const [whatsNewOpen, setWhatsNewOpen] = createSignal(false)
     useHashRouter({
       setActiveTab,
       setInitialUvrView: vi.fn(),
@@ -52,6 +53,8 @@ function mountRouter(options: {
         setVoiceConstellationOpen(open)
       },
       voiceConstellationOpen,
+      setWhatsNewOpen,
+      whatsNewOpen,
       adminContentSection: () => options.adminContentSection ?? 'exercises',
       activeTab: () => 'singing',
       activeUvrView: () => 'upload',

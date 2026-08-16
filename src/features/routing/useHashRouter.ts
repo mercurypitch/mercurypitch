@@ -72,6 +72,10 @@ export interface UseHashRouterDeps {
   setVoiceConstellationOpen: (open: boolean) => void
   /** Keep state-to-hash sync from erasing the constellation deep link. */
   voiceConstellationOpen: Accessor<boolean>
+  /** Open or close the route-backed What's New release page. */
+  setWhatsNewOpen: (open: boolean) => void
+  /** Keep state-to-hash sync from erasing the What's New deep link. */
+  whatsNewOpen: Accessor<boolean>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -118,6 +122,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     // hashchange), so opening anything before this point would stack it over
     // unsaved owner work forever.
     deps.setVoiceConstellationOpen(route.type === 'voice-constellation')
+    deps.setWhatsNewOpen(route.type === 'whats-new')
     if (route.type !== 'reset-password') deps.closeResetPassword()
     if (route.type === 'tab') {
       deps.setActiveTab(route.tab)
@@ -162,6 +167,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'voice-constellation') {
       // The state write above is the route action. The underlying tab remains
       // mounted so closing the portalled surface returns to the exact context.
+    } else if (route.type === 'whats-new') {
+      // Same shape as the constellation: the state write above IS the route
+      // action, and the tab underneath stays where the reader left it.
     } else if (route.type === 'jam-room') {
       deps.dismissWelcome()
       deps.setActiveTab(TAB_JAM)
@@ -259,7 +267,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showGuideSelection() ||
       deps.showAdminContentStudio() ||
       deps.showResetPassword() ||
-      deps.voiceConstellationOpen()
+      deps.voiceConstellationOpen() ||
+      deps.whatsNewOpen()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {
