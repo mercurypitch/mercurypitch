@@ -599,9 +599,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                       which run it starts; outside a multi-rep segment the
                       Try Again / Start pair stands (e2e selectors match it). */}
                   {isComplete()
-                    ? (repRun() === null
-                        ? 'Try Again'
-                        : `Start run ${repRun()!.next} of ${repRun()!.reps}`)
+                    ? repRun() === null
+                      ? 'Try Again'
+                      : `Start run ${repRun()!.next} of ${repRun()!.reps}`
                     : (props.startLabel ?? 'Start')}
                 </button>
               </div>
