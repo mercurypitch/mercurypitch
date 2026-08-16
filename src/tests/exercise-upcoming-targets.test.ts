@@ -102,7 +102,7 @@ describe('upcoming targets', () => {
 
   it('mirror melody drops the note being asked for', () => {
     const ctrl = useMirrorMelodyController(createMockBase(), audioEngine)
-    ctrl.setMelody(C4)
+    ctrl.setMelody(C4, { min: 36, max: 84 })
     const upcoming = ctrl.getUpcomingMidi()
 
     expect(upcoming.length).toBeGreaterThan(0)
@@ -123,7 +123,7 @@ describe('upcoming targets', () => {
   // WHOLE phrase back, so every note of it is still owed — including the first.
   it('call-response lists the entire phrase for the round', () => {
     const ctrl = useCallResponseController(createMockBase(), audioEngine)
-    ctrl.setBase(C4)
+    ctrl.setBase(C4, { min: 36, max: 84 })
     const upcoming = ctrl.getUpcomingMidi()
 
     expect(upcoming.length).toBeGreaterThanOrEqual(3)

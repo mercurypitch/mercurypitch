@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { useMirrorMelodyController } from '@/features/exercises/mirror-melody/use-mirror-melody-controller'
 import { EXERCISE_MIRROR_MELODY } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
@@ -65,7 +65,7 @@ describe('useMirrorMelodyController', () => {
     const audioEngine = { playTone: async () => {} }
 
     const ctrl = useMirrorMelodyController(base, audioEngine)
-    ctrl.setMelody(69) // A4
+    ctrl.setMelody(69, { min: 36, max: 84 }) // A4
 
     // setMelody sets target pitch to baseMidi freq
     expect(targetCalls.length).toBe(1)
@@ -80,9 +80,36 @@ describe('useMirrorMelodyController', () => {
     const audioEngine = { playTone: async () => {} }
 
     const ctrl = useMirrorMelodyController(base, audioEngine)
-    ctrl.setMelody(69)
+    ctrl.setMelody(69, { min: 36, max: 84 })
     ctrl.stopSequence()
 
     expect(committed.length).toBe(1)
+  })
+})
+
+describe("the melody respects the singer's range", () => {
+  it('clamps every generated note to the given range, not the old C2-C6 constant', () => {
+    // Force the biggest upward step (+9) every time: from A4 the old
+    // constant (84) would allow 78, 84, ... — the new clamp holds the
+    // singer's actual ceiling.
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.99)
+    try {
+      const metrics: Array<Record<string, number>> = []
+      const base = createMockBase({
+        _updateMetrics: (m) => metrics.push({ ...m }),
+      })
+      const ctrl = useMirrorMelodyController(base, { playTone: async () => {} })
+      ctrl.setMelody(69, { min: 48, max: 71 })
+      void metrics
+      // The upcoming list is the whole melody after the first note.
+      const upcoming = ctrl.getUpcomingMidi()
+      expect(upcoming.length).toBeGreaterThan(0)
+      for (const midi of upcoming) {
+        expect(midi).toBeLessThanOrEqual(71)
+        expect(midi).toBeGreaterThanOrEqual(48)
+      }
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

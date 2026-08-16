@@ -20,15 +20,38 @@ interface PhraseNote {
   durationMs: number
 }
 
-function generatePhrase(baseMidi: number, length: number): PhraseNote[] {
+/** The singer's comfortable MIDI range; phrases must not leave it. */
+export interface MidiRange {
+  min: number
+  max: number
+}
+
+/** Exported for tests: the bounded walk is a property worth pinning. */
+export function generatePhrase(
+  baseMidi: number,
+  length: number,
+  range: MidiRange,
+): PhraseNote[] {
   const notes: PhraseNote[] = [{ midi: baseMidi, durationMs: 500 }]
   for (let i = 1; i < length; i++) {
     const prev = notes[i - 1].midi
-    const dir = Math.random() > 0.5 ? 1 : -1
     const steps = [0, 2, 3, 4, 5, 7]
     const step = steps[Math.floor(Math.random() * steps.length)]
+    // The walk used to pick a direction blind, which is how a baritone
+    // started on G4 and was marched into the fifth octave. Both directions
+    // are tried; the ones that stay inside the range are the pool. A step
+    // of 7 from a note inside a two-octave range always leaves at least
+    // one side open, so the fallback (stay put) is for a base note pinned
+    // exactly on an edge by a one-note phrase.
+    const candidates = [prev + step, prev - step].filter(
+      (midi) => midi >= range.min && midi <= range.max,
+    )
+    const next =
+      candidates.length > 0
+        ? candidates[Math.floor(Math.random() * candidates.length)]
+        : prev
     notes.push({
-      midi: prev + dir * step,
+      midi: next,
       durationMs: 400 + Math.floor(Math.random() * 300),
     })
   }
@@ -59,7 +82,11 @@ export function useCallResponseController(
   let matchWindowMs = BASE_MATCH_WINDOW_MS
   let scoreCentsK = BASE_SCORE_CENTS_K
 
-  function setBase(baseMidi: number): void {
+  function setBase(
+    baseMidi: number,
+    range: MidiRange,
+    authoredMidis?: number[],
+  ): void {
     _cancelled = false
     // scale by adaptive difficulty
     const difficulty = launchDifficulty(EXERCISE_CALL_RESPONSE)
@@ -67,9 +94,18 @@ export function useCallResponseController(
     const rounds = Math.round(BASE_ROUNDS * (2 - factor))
     matchWindowMs = BASE_MATCH_WINDOW_MS * factor
     scoreCentsK = BASE_SCORE_CENTS_K / factor
-    phrases = Array.from({ length: rounds }, () =>
-      generatePhrase(baseMidi, 3 + Math.floor(Math.random() * 2)),
-    )
+    // A launch that names a phrase gets THAT phrase, every round — the
+    // routine card said "then sing London Bridge", and for as long as this
+    // took only notes[0] and random-walked from it, that was a lie. The
+    // rhythm is evened out (the authored pool carries no durations yet).
+    phrases =
+      authoredMidis !== undefined && authoredMidis.length >= 2
+        ? Array.from({ length: rounds }, () =>
+            authoredMidis.map((midi) => ({ midi, durationMs: 500 })),
+          )
+        : Array.from({ length: rounds }, () =>
+            generatePhrase(baseMidi, 3 + Math.floor(Math.random() * 2), range),
+          )
     roundIndex = 0
     roundScores = []
   }

@@ -130,6 +130,20 @@ export function useSightSingingController(base: BaseExerciseController) {
     noteStartMs = []
   }
 
+  /**
+   * Sing exactly these notes, in order. The routine's apply slot launches
+   * this drill with a named phrase ("then sing Ode to Joy"), and for as
+   * long as only `setScale` existed the drill sang a random walk on the
+   * current scale instead — the card's promise was never kept on the
+   * sight-singing days.
+   */
+  function setNotes(midis: number[]): void {
+    sequence = midis.map((midi, index) => noteFromMidi(midi, index))
+    currentIndex = 0
+    noteScores.length = 0
+    noteStartMs = []
+  }
+
   function startRounds(): void {
     if (sequence.length === 0) return
     advanceToNote(0)
@@ -267,6 +281,7 @@ export function useSightSingingController(base: BaseExerciseController) {
 
   return {
     setScale,
+    setNotes,
     startRounds,
     stopRounds,
     stopAndCompute,

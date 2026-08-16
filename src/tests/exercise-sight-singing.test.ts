@@ -231,3 +231,19 @@ describe('finalizeSightSingingScore (the 1-of-6 = 70% board fix)', () => {
     expect(finalizeSightSingingScore([70], 0).score).toBe(0)
   })
 })
+
+// The routine's apply slot promises a named phrase ("then sing Ode to
+// Joy"); setNotes is what finally lets this drill keep that promise
+// instead of quizzing on the current scale.
+describe('setNotes sings the launched phrase as written', () => {
+  it('builds the sequence from the given midis, in order, with staff names', () => {
+    const ctrl = useSightSingingController(createMockBase())
+    ctrl.setNotes([67, 69, 67, 65, 64]) // London Bridge, fitted upstream
+
+    const seq = ctrl.getSequence()
+    expect(seq.map((n) => n.midi)).toEqual([67, 69, 67, 65, 64])
+    expect(seq.map((n) => n.index)).toEqual([0, 1, 2, 3, 4])
+    expect(seq[0]).toMatchObject({ name: 'G', octave: 4 })
+    expect(ctrl.getCurrentIndex()).toBe(0)
+  })
+})

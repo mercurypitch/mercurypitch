@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useCallResponseController } from '@/features/exercises/call-response/use-call-response-controller'
+import { generatePhrase, useCallResponseController, } from '@/features/exercises/call-response/use-call-response-controller'
 import { EXERCISE_CALL_RESPONSE } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import { midiToFrequency } from '@/lib/frequency-to-note'
@@ -42,6 +42,9 @@ function createMockBase(
 
 const audioEngineMock = { playTone: async () => {} }
 
+/** A wide stand-in for the singer's comfortable range. */
+const RANGE = { min: 36, max: 84 }
+
 describe('useCallResponseController', () => {
   it('computeResult returns zero floor with real metric keys for empty history', () => {
     const base = createMockBase()
@@ -64,7 +67,7 @@ describe('useCallResponseController', () => {
       })
       const ctrl = useCallResponseController(base, audioEngineMock)
 
-      ctrl.setBase(60) // C4 key
+      ctrl.setBase(60, RANGE) // C4 key
       ctrl.startRounds()
       // Flush the initial metric burst before any note plays out.
       await vi.advanceTimersByTimeAsync(1)
@@ -113,7 +116,7 @@ describe('useCallResponseController', () => {
       })
       const ctrl = useCallResponseController(base, audioEngineMock)
 
-      ctrl.setBase(60)
+      ctrl.setBase(60, RANGE)
       ctrl.startRounds()
       await vi.advanceTimersByTimeAsync(120000)
 
@@ -136,9 +139,78 @@ describe('useCallResponseController', () => {
     })
     const ctrl = useCallResponseController(base, audioEngineMock)
 
-    ctrl.setBase(60)
+    ctrl.setBase(60, RANGE)
     ctrl.stopRounds()
 
     expect(completed.length).toBe(1)
+  })
+})
+
+// ============================================================
+// The walk stays inside the singer's range
+// ============================================================
+//
+// The owner's repro: a routine handed a baritone G4 as the base, and the
+// walk's blind coin-flip marched the phrase into the fifth octave ("goes
+// to X5 notes"). The walk now tries both directions and keeps only the
+// ones inside the range.
+
+describe('generatePhrase stays in range', () => {
+  it('never leaves the range, even from a base pinned near the ceiling', () => {
+    // Tight range, base two semitones under the top: under the old blind
+    // direction pick, ~half of all first steps overshoot immediately.
+    const range = { min: 60, max: 72 }
+    for (let run = 0; run < 300; run++) {
+      for (const note of generatePhrase(70, 4, range)) {
+        expect(note.midi).toBeGreaterThanOrEqual(range.min)
+        expect(note.midi).toBeLessThanOrEqual(range.max)
+      }
+    }
+  })
+
+  it('stays put when neither direction fits', () => {
+    // A one-note range plus a forced non-zero step: both candidates are
+    // out, so the walk holds the base rather than leaving the range.
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.99) // step 7
+    try {
+      const phrase = generatePhrase(60, 3, { min: 60, max: 60 })
+      expect(phrase.map((n) => n.midi)).toEqual([60, 60, 60])
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})
+
+describe('an authored phrase is sung as written', () => {
+  it('uses the launched notes for every round instead of a walk', async () => {
+    vi.useFakeTimers()
+    try {
+      const metrics: Array<Record<string, number>> = []
+      const base = createMockBase({
+        _updateMetrics: (m) => metrics.push({ ...m }),
+      })
+      const ctrl = useCallResponseController(base, audioEngineMock)
+
+      const authored = [64, 62, 60, 62, 64, 64, 64] // Mary Had a Little Lamb
+      ctrl.setBase(60, RANGE, authored)
+
+      // Before anything plays, the round's full phrase is the authored one.
+      expect(ctrl.getUpcomingMidi()).toEqual(authored)
+
+      ctrl.startRounds()
+      await vi.advanceTimersByTimeAsync(1)
+      const first = metrics[0] ?? {}
+      expect(first.currentMidi).toBe(64) // the phrase's first note, not the key
+      expect(first.phraseLength).toBe(authored.length)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('falls back to the walk when the launch carries fewer than two notes', () => {
+    const ctrl = useCallResponseController(createMockBase(), audioEngineMock)
+    ctrl.setBase(60, RANGE, [64])
+    // A walk always opens on the base note.
+    expect(ctrl.getUpcomingMidi()[0]).toBe(60)
   })
 })

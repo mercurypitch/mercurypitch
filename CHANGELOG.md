@@ -166,6 +166,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Practice drills now land in your range.** A routine or challenge that
+  handed a baritone "London Bridge" starting on G4 sang it there — and the
+  call-and-response walk could wander into the fifth octave on top of it.
+  Launched phrases are transposed whole into your voice type's comfortable
+  range, the generated melodies stay inside it, Scale Runner folds a start
+  note whose octave run would top out over your ceiling, and the
+  call-response and sight-singing apply slots finally sing the phrase the
+  session card names instead of a random walk or a scale quiz.
+
 - **The "your earlier practice stayed here" notice no longer opens mid-drill.**
   It counted every run on the device, including the ones done after signing
   in, so it could appear on a result screen — covering the button that keeps

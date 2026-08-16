@@ -5,8 +5,9 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconMusic } from '@/components/exercise-icons'
+import { launchTargetNotes } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { keyName, scaleType } from '@/stores/app-store'
@@ -153,10 +154,19 @@ const SightSingingExercise: Component<Props> = (props) => {
   const controller = useSightSingingController(base)
 
   const handleStart = async () => {
-    const scale = currentScale()
-    if (scale.length < 3) return
-    const range = getComfortableMidiRange(vocalRangePreset())
-    controller.setScale(scale, range.min, range.max)
+    // A routine's apply slot arms the phrase it names on the session card;
+    // the notes arrive already fitted to the singer's range (App's launch
+    // choke point). Without an armed phrase the drill quizzes on the
+    // current scale, as it always has.
+    const authored = launchTargetNotes(EXERCISE_SIGHT_SINGING)
+    if (authored !== undefined && authored.length >= 2) {
+      controller.setNotes(authored.map(noteToMidi))
+    } else {
+      const scale = currentScale()
+      if (scale.length < 3) return
+      const range = getComfortableMidiRange(vocalRangePreset())
+      controller.setScale(scale, range.min, range.max)
+    }
     if (!(await base.start())) return
     controller.startRounds()
   }

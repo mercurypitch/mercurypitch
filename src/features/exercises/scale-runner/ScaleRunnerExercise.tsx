@@ -8,7 +8,7 @@ import { launchTargetNote } from '@/features/practice-intelligence/launch-overri
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { fitScaleBaseNote, getDefaultNote, getNoteOptions, } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
@@ -38,10 +38,15 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       // A weak-pitch range drill can request a specific starting note.
       const requested = launchTargetNote(EXERCISE_SCALE_RUNNER)
       const preset = vocalRangePreset()
-      return requested !== undefined &&
-        getNoteOptions(preset).includes(requested)
-        ? requested
-        : getDefaultNote(preset)
+      // Folded so the run's top note fits the singer as well as its base
+      // (see fitScaleBaseNote). Only the launch path folds — a note picked
+      // on the dial afterwards is the singer's own choice.
+      return fitScaleBaseNote(
+        requested !== undefined && getNoteOptions(preset).includes(requested)
+          ? requested
+          : getDefaultNote(preset),
+        preset,
+      )
     }),
   )
   const [scaleType, setScaleType] = createSignal<ScaleType>('major')

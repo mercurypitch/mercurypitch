@@ -1,4 +1,4 @@
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
@@ -17,6 +17,82 @@ export function getComfortableMidiRange(preset: VocalRangePreset): {
     max: (range.maxOctave + 1) * 12 + 11, // B of maxOctave
     default: (range.defaultOctave + 1) * 12, // C of defaultOctave
   }
+}
+
+/**
+ * Transpose a phrase, whole, into the singer's comfortable range.
+ *
+ * `apply-melodies.ts` has promised since it was written that "the exercise
+ * engine … can transpose into the singer's range"; this is that transpose,
+ * finally. Octave shifts only — the contour and every pitch class survive,
+ * so London Bridge is still London Bridge, just where a baritone can sing
+ * it. When more than one octave fits, the one whose centre sits closest to
+ * the middle of the range wins; a phrase too wide to fit at all (none of
+ * ours are) is centred and allowed to spill equally rather than clamped
+ * note by note, which would flatten the melody. A phrase with any
+ * unparseable note is returned untouched — better the authored notes than
+ * a half-transposed hybrid.
+ */
+export function fitPhraseToRange(
+  notes: string[],
+  preset: VocalRangePreset,
+): string[] {
+  if (notes.length === 0) return notes
+  const midis = notes.map(noteToMidi)
+  if (midis.some(Number.isNaN)) return notes
+
+  const { min, max } = getComfortableMidiRange(preset)
+  const lo = Math.min(...midis)
+  const hi = Math.max(...midis)
+  const phraseCentre = (lo + hi) / 2
+  const rangeCentre = (min + max) / 2
+
+  // Octave shifts that keep the whole phrase inside [min, max]. The loop
+  // starts at the smallest multiple of 12 that lifts `lo` to (or past) the
+  // floor, so every shift it yields respects the bottom by construction.
+  const fits: number[] = []
+  for (
+    let shift = Math.ceil((min - lo) / 12) * 12;
+    hi + shift <= max;
+    shift += 12
+  ) {
+    fits.push(shift)
+  }
+
+  const best =
+    fits.length > 0
+      ? fits.reduce((a, b) =>
+          Math.abs(phraseCentre + b - rangeCentre) <
+          Math.abs(phraseCentre + a - rangeCentre)
+            ? b
+            : a,
+        )
+      : // Too wide to fit: centre it. Rounded to whole octaves so the
+        // pitch classes still match what the session card named.
+        Math.round((rangeCentre - phraseCentre) / 12) * 12
+
+  return best === 0 ? notes : midis.map((midi) => midiToNoteName(midi + best))
+}
+
+/**
+ * Fit a one-octave-run base note so the run's TOP fits the singer too.
+ *
+ * Scale Runner always closes on the octave, so its highest note is the base
+ * plus twelve — which means a base that is comfortably in range can still
+ * send the top note past the ceiling (the launched G4 that marched a
+ * baritone to G5). Folds the base down an octave when the top would not
+ * fit. Every preset spans at least two octaves (an invariant the tests
+ * pin), so a base high enough to need the fold is always high enough to
+ * survive it. Unparseable input is returned untouched.
+ */
+export function fitScaleBaseNote(
+  note: string,
+  preset: VocalRangePreset,
+): string {
+  const midi = noteToMidi(note)
+  if (Number.isNaN(midi)) return note
+  const { max } = getComfortableMidiRange(preset)
+  return midi + 12 > max ? midiToNoteName(midi - 12) : note
 }
 
 /**

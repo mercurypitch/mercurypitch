@@ -19,13 +19,19 @@ const SCORE_BEST_NOTE_WEIGHT = 0.15
 const SCORE_CONSISTENCY_WEIGHT = 0.25
 const SCORE_RICHNESS_WEIGHT = 0.25
 
-function generateMelody(baseMidi: number, length: number): number[] {
+function generateMelody(
+  baseMidi: number,
+  length: number,
+  range: { min: number; max: number },
+): number[] {
   const pool = [-4, -2, 0, 2, 4, 7, 9]
   const notes: number[] = [baseMidi]
   for (let i = 1; i < length; i++) {
     const prev = notes[i - 1]
     const step = pool[Math.floor(Math.random() * pool.length)]
-    notes.push(Math.max(36, Math.min(84, prev + step)))
+    // Clamped to the SINGER's range, not the old C2–C6 constant — a bass
+    // could be handed notes a fourth above anything their preset offers.
+    notes.push(Math.max(range.min, Math.min(range.max, prev + step)))
   }
   return notes
 }
@@ -52,7 +58,10 @@ export function useMirrorMelodyController(
     _cancelled = true
   })
 
-  function setMelody(baseMidi: number): void {
+  function setMelody(
+    baseMidi: number,
+    range: { min: number; max: number },
+  ): void {
     _cancelled = false
     // Read effective difficulty as the round is set up (drill override or
     // stored level). difficultyFactor(5) === 1.0 → all values below equal
@@ -65,7 +74,7 @@ export function useMirrorMelodyController(
     toneDurationMs = TONE_DURATION_MS * factor
     // More notes to mirror when harder: 2 - factor > 1 above d5.
     const length = Math.round(MELODY_LENGTH * (2 - factor))
-    melody = generateMelody(baseMidi, length)
+    melody = generateMelody(baseMidi, length, range)
     noteIndex = 0
     noteScores = []
     base._setTargetPitch(baseMidi)

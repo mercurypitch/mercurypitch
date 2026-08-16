@@ -4,11 +4,11 @@ import { For } from 'solid-js'
 import { IconMic, IconMusic, IconReply } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
-import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
+import { launchTargetNote, launchTargetNotes, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
+import { getComfortableMidiRange, getDefaultNote, getNoteOptions, } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
@@ -49,7 +49,15 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
   /* eslint-enable solid/reactivity */
 
   const handleStart = async () => {
-    controller.setBase(noteToMidi(startNote()))
+    // A routine or deep link that armed a full phrase means "sing THIS";
+    // notes are already fitted to the range at the launch choke point
+    // (App's pendingDrill effect), so they pass through unchanged here.
+    const authored = launchTargetNotes(EXERCISE_CALL_RESPONSE)
+    controller.setBase(
+      noteToMidi(startNote()),
+      getComfortableMidiRange(vocalRangePreset()),
+      authored !== undefined ? authored.map(noteToMidi) : undefined,
+    )
     if (!(await base.start())) return
     controller.startRounds()
   }
