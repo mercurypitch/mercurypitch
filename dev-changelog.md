@@ -72,6 +72,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Home's week strip counted only the device-local mirror
+  (CLAUDE-JOURNEY-009).** `weekStats` filtered `exerciseHistory()` — the
+  localStorage mirror — so a second device signed into the same account
+  reported "0 drills this week" while Progress (reading synced
+  `sessionRecords`) showed everything. A new pure seam,
+  `weekDrillStats(now, local, synced)` in
+  `src/features/home/week-drill-stats.ts`, decides the strip's source:
+  'exercise'-source session records are the drills (challenge/weekly
+  records reference a challengeId and may not be drills), and the larger
+  seven-day count wins — synced normally (every local run is also a
+  record), local when the record read fails, lags, or is still loading.
+  HomePage feeds it `loadSessionRecords(300)` via a resource. Today's
+  minutes ring stays device-local by documented design (the streak is
+  the cloud value — see practice-minutes.ts). Pinned by
+  `src/tests/week-drill-stats.test.ts`: the second-device case, the
+  loading/lag fallbacks, the source filter, the window, and a wiring pin
+  that HomePage routes through the seam.
+
 - **The warmup graded pitch accuracy while promising "no grades"
   (CLAUDE-JOURNEY-015).** `exercise-help.ts` and the idle card both
   promise "the score just reflects that you sang along", but
