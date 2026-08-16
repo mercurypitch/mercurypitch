@@ -224,6 +224,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   another open tab is what it is waiting for, and finishes the job properly:
   cached app files and the offline worker are cleared too, which the old
   reset forgot.
+- **The selected tab's icon sits centred in its pill again.** When the tab
+  bar runs out of room and shows icons alone, the highlighted tab kept a
+  6px gap where its hidden name used to be, nudging the icon off centre.
 
 - **Challenges and badges you have not earned no longer claim a date.**
   Anything unfinished was being stamped 1 January 1970 instead of showing
