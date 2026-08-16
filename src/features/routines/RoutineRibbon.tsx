@@ -392,8 +392,8 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
                 Stay here
               </button>
               <span class={styles.srOnly} aria-live="polite">
-                Starting the next run in {AUTO_CONTINUE_SECONDS} seconds.
-                Choose Stay here to cancel.
+                Starting the next run in {AUTO_CONTINUE_SECONDS} seconds. Choose
+                Stay here to cancel.
               </span>
             </Show>
 
