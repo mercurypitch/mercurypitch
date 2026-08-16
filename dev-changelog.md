@@ -152,7 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   becomes a progress view with a blocked hint while it runs. `resetDatabase`
   (destroy + recreate + reseed right before a reload) is gone.
 - **Nav tab icons centred in icon-only mode.** A leftover `.app-tab svg
-  { margin-right: 6px }` in `vocal-analysis.css` (the "Tab styles" block
+{ margin-right: 6px }` in `vocal-analysis.css` (the "Tab styles" block
   the class was borrowed from) survived the hidden label in
   `tabs-icon-only` mode and pushed the icon 6px left of centre in the
   active pill — and widened the labelled icon-name gap to 11px against the
