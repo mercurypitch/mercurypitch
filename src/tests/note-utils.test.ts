@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { midiToNoteName, midiToNoteNameOctave, noteColor, } from '@/lib/note-utils'
+import { midiToNoteName, midiToNoteNameOctave, noteArticle, noteColor, } from '@/lib/note-utils'
 
 describe('midiToNoteName', () => {
   it('converts MIDI 60 to C', () => {
@@ -21,6 +21,39 @@ describe('midiToNoteNameOctave', () => {
   it('does not produce "undefined" for negative MIDI values', () => {
     expect(midiToNoteNameOctave(-1)).toBe('B-2')
     expect(midiToNoteNameOctave(-13)).toBe('B-3')
+  })
+})
+
+// docs/specs/onboarding-first-value-copy.ears.md — NART-*
+describe('noteArticle', () => {
+  // NART-1
+  it('uses "an" for the three vowel-sound letters', () => {
+    expect(noteArticle('A3')).toBe('an')
+    expect(noteArticle('E4')).toBe('an')
+    expect(noteArticle('F2')).toBe('an')
+  })
+
+  // NART-2
+  it('uses "a" for every other note letter', () => {
+    for (const note of ['B3', 'C4', 'D3', 'G3']) {
+      expect(noteArticle(note)).toBe('a')
+    }
+  })
+
+  // NART-3
+  it('is driven by the letter, so accidentals and octaves do not matter', () => {
+    expect(noteArticle('A#2')).toBe('an')
+    expect(noteArticle('Ab2')).toBe('an')
+    expect(noteArticle('F#5')).toBe('an')
+    expect(noteArticle('a3')).toBe('an')
+    expect(noteArticle('G#-1')).toBe('a')
+    expect(noteArticle(' E2')).toBe('an')
+  })
+
+  // NART-4
+  it('falls back to "a" for anything that is not a note name', () => {
+    expect(noteArticle('')).toBe('a')
+    expect(noteArticle('   ')).toBe('a')
   })
 })
 

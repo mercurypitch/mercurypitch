@@ -37,6 +37,7 @@ import { MicTroubleshooting } from '@/components/MicTroubleshooting'
 import type { MicPermissionState } from '@/lib/jam/media-errors'
 import { micPermissionState } from '@/lib/jam/media-errors'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
+import { noteArticle } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
@@ -491,7 +492,10 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
         </span>
         <p class={styles.eyebrow}>We heard you</p>
         <h1 class={styles.headline}>
-          That's a <span class={styles.lit}>{note()?.note}</span>
+          {/* "an A3", not "a A3" — the note name is read out loud, and A,
+              E and F are all said starting on a vowel sound. */}
+          That's {noteArticle(note()?.note ?? '')}{' '}
+          <span class={styles.lit}>{note()?.note}</span>
         </h1>
         <p class={styles.readout}>
           {note()?.hz.toFixed(1)} Hz · held for{' '}
