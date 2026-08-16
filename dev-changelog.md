@@ -89,6 +89,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `src/tests/week-drill-stats.test.ts`: the second-device case, the
   loading/lag fallbacks, the source filter, the window, and a wiring pin
   that HomePage routes through the seam.
+- **SyncSettings promised a phantom export/import control
+  (CLAUDE-JOURNEY-024).** The "Your library" note ended "...or export a
+  song here and import it there", but no export-to-file or
+  import-from-file UI exists anywhere — the portable-bundle machinery
+  serves the Drive backup and the Karaoke tab's device-to-device send
+  only. The sentence now names exactly those two routes. Pinned by
+  `src/tests/sync-settings-copy.test.tsx` (fails against the old copy);
+  a practice-data export (CLAUDE-JOURNEY-023) remains a separate,
+  larger feature decision.
 
 - **The warmup graded pitch accuracy while promising "no grades"
   (CLAUDE-JOURNEY-015).** `exercise-help.ts` and the idle card both

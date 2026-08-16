@@ -286,8 +286,8 @@ export const SyncSettings: Component = () => {
         <p class={styles.note}>
           Signing in shares the <em>list</em> of your songs between devices —
           titles and sizes, never the audio. To move the audio itself, back it
-          up to your Google Drive below, send it straight to another device from
-          the Karaoke tab, or export a song here and import it there.
+          up to your Google Drive below, or send it straight to another device
+          from the Karaoke tab.
         </p>
       </div>
 
