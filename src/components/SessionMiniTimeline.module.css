@@ -20,7 +20,7 @@
   line-height: 1.4;
   background: var(--surface-2, rgba(255, 255, 255, 0.06));
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text, #ddd);
+  color: var(--text-primary, #ddd);
   white-space: nowrap;
   max-width: 200px;
   overflow: hidden;

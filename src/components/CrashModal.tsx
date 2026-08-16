@@ -222,7 +222,7 @@ export const CrashModal: Component = () => {
               <button
                 onClick={() => setShowLogs(!showLogs())}
                 class={styles.crashBtn}
-                style="background: transparent; border: 1px solid var(--border); color: var(--text);"
+                style="background: transparent; border: 1px solid var(--border); color: var(--text-primary);"
               >
                 <svg
                   viewBox="0 0 24 24"

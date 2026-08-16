@@ -179,7 +179,7 @@
 
 .toolButton:hover,
 .toolButton:focus-visible {
-  color: var(--text, #e6edf3);
+  color: var(--text-primary, #e6edf3);
   opacity: 1;
 }
 
@@ -223,7 +223,7 @@
   border: none;
   border-radius: 7px;
   background: transparent;
-  color: var(--text, #e6edf3);
+  color: var(--text-primary, #e6edf3);
   font-size: 0.8rem;
   text-align: left;
   cursor: pointer;

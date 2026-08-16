@@ -4375,31 +4375,6 @@
   border-top: 1px solid var(--border);
 }
 
-.share-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--fg-primary);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.share-btn:hover:not(:disabled) {
-  background: var(--bg-hover);
-}
-
-.share-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* ============================================================
 // Process Control Meta & Status Provider Pill
 // ============================================================ */
