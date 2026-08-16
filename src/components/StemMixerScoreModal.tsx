@@ -86,7 +86,7 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
       <div class="sm-mic-score-overlay" onClick={requestClose}>
         <div
           ref={dialogRef}
-          class="sm-mic-score-card"
+          class="sm-mic-score-card mp-dark-stage"
           role="dialog"
           aria-modal="true"
           aria-label="Karaoke score"

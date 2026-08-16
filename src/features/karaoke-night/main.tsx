@@ -7,6 +7,7 @@
 // ============================================================
 
 import { render } from 'solid-js/web'
+import '@/styles/dark-stage.css'
 import '@/styles/mixer-shared.css'
 import '@/styles/mobile-kit.css'
 import '@/styles/performance-mode.css'

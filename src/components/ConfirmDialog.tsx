@@ -10,6 +10,7 @@ import { Portal } from 'solid-js/web'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './ConfirmDialog.module.css'
 import { Trash2 } from './icons'
+import { createPortalSkinBridge } from './portal-skin'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -40,6 +41,7 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   const bodyId = createUniqueId()
   const phraseId = createUniqueId()
   const [typed, setTyped] = createSignal('')
+  const portalSkin = createPortalSkinBridge(() => props.open)
 
   // Reopening must not inherit the previous attempt's typed text, or the
   // second delete would be a single click.
@@ -66,72 +68,76 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   })
 
   return (
-    <Show when={props.open}>
-      {/* Portal to <body>: the overlay is position:fixed, and any transformed
-          ancestor (the settings panel slides in with translate) would turn
-          "fixed" into ancestor-relative and displace the whole dialog. */}
-      <Portal>
-        <div
-          class={styles.overlay}
-          data-testid="confirm-overlay"
-          onClick={cancel}
-        >
+    <>
+      <span ref={portalSkin.anchorRef} hidden aria-hidden="true" />
+      <Show when={props.open}>
+        {/* Portal to <body>: the overlay is position:fixed, and any transformed
+            ancestor (the settings panel slides in with translate) would turn
+            "fixed" into ancestor-relative and displace the whole dialog. */}
+        <Portal>
           <div
-            ref={dialogRef}
-            class={styles.dialog}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            aria-describedby={bodyId}
-            aria-busy={props.busy === true ? true : undefined}
-            onClick={(e) => e.stopPropagation()}
+            class={styles.overlay}
+            style={portalSkin.style()}
+            data-testid="confirm-overlay"
+            onClick={cancel}
           >
-            <h4 id={titleId}>{props.title}</h4>
-            <p id={bodyId}>{props.message}</p>
-            <Show when={props.confirmPhrase != null}>
-              <label class={styles.phraseLabel} for={phraseId}>
-                Type <strong>{props.confirmPhrase}</strong> to confirm
-              </label>
-              <input
-                id={phraseId}
-                class={styles.phraseInput}
-                type="text"
-                autocomplete="off"
-                autocapitalize="none"
-                spellcheck={false}
-                value={typed()}
-                disabled={props.busy}
-                data-testid="confirm-phrase"
-                onInput={(e) => setTyped(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') confirm()
-                }}
-              />
-            </Show>
-            <div class={styles.actions}>
-              <button
-                type="button"
-                class={styles.cancel}
-                data-testid="confirm-cancel"
-                disabled={props.busy}
-                onClick={cancel}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                class={styles.delete}
-                data-testid="confirm-delete"
-                disabled={props.busy === true || !phraseSatisfied()}
-                onClick={confirm}
-              >
-                {props.confirmIcon ?? <Trash2 />}{' '}
-                {props.confirmLabel ?? 'Delete'}
-              </button>
+            <div
+              ref={dialogRef}
+              class={styles.dialog}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              aria-describedby={bodyId}
+              aria-busy={props.busy === true ? true : undefined}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4 id={titleId}>{props.title}</h4>
+              <p id={bodyId}>{props.message}</p>
+              <Show when={props.confirmPhrase != null}>
+                <label class={styles.phraseLabel} for={phraseId}>
+                  Type <strong>{props.confirmPhrase}</strong> to confirm
+                </label>
+                <input
+                  id={phraseId}
+                  class={styles.phraseInput}
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="none"
+                  spellcheck={false}
+                  value={typed()}
+                  disabled={props.busy}
+                  data-testid="confirm-phrase"
+                  onInput={(e) => setTyped(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirm()
+                  }}
+                />
+              </Show>
+              <div class={styles.actions}>
+                <button
+                  type="button"
+                  class={styles.cancel}
+                  data-testid="confirm-cancel"
+                  disabled={props.busy}
+                  onClick={cancel}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class={styles.delete}
+                  data-testid="confirm-delete"
+                  disabled={props.busy === true || !phraseSatisfied()}
+                  onClick={confirm}
+                >
+                  {props.confirmIcon ?? <Trash2 />}{' '}
+                  {props.confirmLabel ?? 'Delete'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </Portal>
-    </Show>
+        </Portal>
+      </Show>
+    </>
   )
 }

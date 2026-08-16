@@ -566,7 +566,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
 
   return (
     <StageShell
-      class={styles.stage}
+      class={`${styles.stage} mp-dark-stage`}
       style={background.resolvedStyle()}
       testId="karaoke-mobile-stage"
     >

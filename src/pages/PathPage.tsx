@@ -163,7 +163,7 @@ const PathPage: Component = () => {
 
   return (
     <Show when={pathView() === 'ascent'} fallback={<PlainPathView />}>
-      <div class={`${styles.page} path-trail`} ref={pageEl}>
+      <div class={`${styles.page} path-trail mp-dark-stage`} ref={pageEl}>
         <div class={styles.backdrop} aria-hidden="true" />
         <div class={styles.viewSwitch}>
           <PathViewToggle />

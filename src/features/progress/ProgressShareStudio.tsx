@@ -245,7 +245,7 @@ export function ProgressShareStudio(
     <Show when={props.open}>
       <Portal>
         <div
-          class={styles.overlay}
+          class={`${styles.overlay} mp-dark-stage`}
           data-testid="progress-share-overlay"
           onClick={close}
         >

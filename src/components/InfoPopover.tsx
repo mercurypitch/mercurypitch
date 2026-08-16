@@ -25,6 +25,7 @@ import { createEffect, createSignal, createUniqueId, onCleanup, Show, } from 'so
 import { Portal } from 'solid-js/web'
 import { Info } from './icons'
 import styles from './InfoPopover.module.css'
+import { createPortalSkinBridge } from './portal-skin'
 
 interface InfoPopoverProps {
   /** What the panel says. */
@@ -57,6 +58,7 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
   const [open, setOpen] = createSignal(false)
   const [pos, setPos] = createSignal({ x: 0, y: 0 })
   const panelId = createUniqueId()
+  const portalSkin = createPortalSkinBridge(open)
   let trigger: HTMLButtonElement | undefined
   let panel: HTMLDivElement | undefined
 
@@ -158,7 +160,10 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
   return (
     <>
       <button
-        ref={trigger}
+        ref={(element) => {
+          trigger = element
+          portalSkin.anchorRef(element)
+        }}
         type="button"
         class={`${styles.trigger} ${
           props.triggerLabel === undefined ? '' : styles.labelledTrigger
@@ -184,7 +189,11 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
             id={panelId}
             class={`${styles.panel} ${props.panelClass ?? ''}`}
             role="tooltip"
-            style={{ left: `${pos().x}px`, top: `${pos().y}px` }}
+            style={{
+              ...portalSkin.style(),
+              left: `${pos().x}px`,
+              top: `${pos().y}px`,
+            }}
           >
             {props.children}
           </div>

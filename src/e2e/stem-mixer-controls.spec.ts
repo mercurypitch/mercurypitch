@@ -2,6 +2,7 @@
 // Stem Mixer controls — real-pointer mute, solo, and fader coherence
 // ============================================================
 
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
 import { writeToneWav } from './helpers/tone-wav'
@@ -27,6 +28,72 @@ const TONE_WAV = writeToneWav(220, 1)
 const toneDataUrl = `data:audio/wav;base64,${fs
   .readFileSync(TONE_WAV)
   .toString('base64')}`
+
+const colorLuminance = (value: string): number => {
+  const channels = value
+    .match(/[\d.]+/g)
+    ?.slice(0, 3)
+    .map(Number)
+  if (channels === undefined || channels.length !== 3) {
+    throw new Error(`Expected an RGB color, received ${value}`)
+  }
+  const [red, green, blue] = channels.map((channel) => {
+    const normalized = channel / 255
+    return normalized <= 0.04045
+      ? normalized / 12.92
+      : Math.pow((normalized + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+const renderedContrast = (foreground: string, background: string): number => {
+  const foregroundLuminance = colorLuminance(foreground)
+  const backgroundLuminance = colorLuminance(background)
+  return (
+    (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+    (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+  )
+}
+
+const setAppTheme = async (
+  page: Page,
+  theme: 'dark' | 'light',
+): Promise<void> => {
+  await page.evaluate((nextTheme) => {
+    const store = window.__pp?.appStore as unknown as {
+      setTheme: (value: 'dark' | 'light') => void
+    }
+    store.setTheme(nextTheme)
+  }, theme)
+}
+
+const expectPortalledMenuSkin = async (
+  menu: Locator,
+  expectedScheme: 'dark' | 'light',
+  expectedPrimary: string,
+): Promise<void> => {
+  await expect(menu).toBeVisible()
+  await expect(menu).toHaveCSS('color-scheme', expectedScheme)
+  const palette = await menu.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      background: style.backgroundColor,
+      outsideAppRoot:
+        document.querySelector('#root')?.contains(element) === false,
+      primary: style.getPropertyValue('--bg-primary').trim(),
+    }
+  })
+  const itemColor = await menu
+    .locator('.sm-lyrics-version-pick, .sm-lyrics-version-action')
+    .first()
+    .evaluate((element) => getComputedStyle(element).color)
+
+  expect(palette.outsideAppRoot).toBe(true)
+  expect(palette.primary).toBe(expectedPrimary)
+  expect(
+    renderedContrast(itemColor, palette.background),
+  ).toBeGreaterThanOrEqual(4.5)
+}
 
 // Cross-tab ownership is the behavior under test, not Chromium's fake-device
 // plumbing. A Web Audio stream is deterministic and still exercises the real
@@ -141,6 +208,52 @@ test.beforeEach(async ({ page }) => {
         transaction.oncomplete = () => resolve()
         transaction.onerror = () => reject(transaction.error)
         transaction.onabort = () => reject(transaction.error)
+      })
+
+      const pitchNotes = [
+        { midi: 60, noteName: 'C4', startSec: 0, endSec: 0.4 },
+        { midi: 64, noteName: 'E4', startSec: 0.5, endSec: 0.9 },
+      ]
+      const pitchHistory = pitchNotes.flatMap((note) => [
+        {
+          time: note.startSec,
+          noteName: note.noteName,
+          frequency: 440 * Math.pow(2, (note.midi - 69) / 12),
+          octave: 4,
+        },
+        {
+          time: note.endSec,
+          noteName: note.noteName,
+          frequency: 440 * Math.pow(2, (note.midi - 69) / 12),
+          octave: 4,
+        },
+      ])
+      const pitchTransaction = db.transaction(
+        ['offlinePitchAnalysis', 'uvrSessionLyrics'],
+        'readwrite',
+      )
+      pitchTransaction.objectStore('offlinePitchAnalysis').put({
+        id: 'e2e-stem-mix-controls-pitch',
+        fileHash: `session:${sessionId}`,
+        analysisResultsJson: JSON.stringify(pitchNotes),
+        lrcLinesJson: JSON.stringify(pitchHistory),
+        segmentedNotesJson: JSON.stringify(pitchNotes),
+        createdAt: now,
+        updatedAt: now,
+      })
+      pitchTransaction.objectStore('uvrSessionLyrics').put({
+        id: 'e2e-stem-mix-controls-lyrics',
+        sessionId,
+        text: '[00:00.00]Theme contract line',
+        format: 'lrc',
+        filename: 'theme-contract.lrc',
+        createdAt: now,
+        updatedAt: now,
+      })
+      await new Promise<void>((resolve, reject) => {
+        pitchTransaction.oncomplete = () => resolve()
+        pitchTransaction.onerror = () => reject(pitchTransaction.error)
+        pitchTransaction.onabort = () => reject(pitchTransaction.error)
       })
       db.close()
       localStorage.setItem('pitchperfect_mixer_strip_view', 'compact')
@@ -339,6 +452,164 @@ test('keeps the play-along role picker readable in dark and light themes @smoke'
   await expect(sessionRole).toBeEnabled({ timeout: 15_000 })
   await assertReadableTheme(sessionRole, 'dark')
   await assertReadableTheme(sessionRole, 'light')
+})
+
+test('inherits studio chrome from the app theme and owns focus mode from light @smoke', async ({
+  page,
+}) => {
+  const mixer = page.locator('.stem-mixer')
+  const header = mixer.locator('.sm-header')
+  const title = header.getByRole('heading')
+  const panel = mixer.locator('.sm-workspace-panel').first()
+  const canvas = mixer.locator('.sm-canvas').first()
+
+  const readStudioPalette = () =>
+    mixer.evaluate((element) => {
+      const mixerStyle = getComputedStyle(element)
+      const rootStyle = getComputedStyle(document.documentElement)
+      const headerElement = element.querySelector<HTMLElement>('.sm-header')
+      const titleElement = element.querySelector<HTMLElement>('.sm-header h2')
+      const panelElement = element.querySelector<HTMLElement>(
+        '.sm-workspace-panel',
+      )
+      const canvasElement = element.querySelector<HTMLElement>('.sm-canvas')
+      if (
+        headerElement === null ||
+        titleElement === null ||
+        panelElement === null ||
+        canvasElement === null
+      ) {
+        throw new Error('Representative Stem Mixer chrome is missing')
+      }
+
+      const resolveColor = (token: string): string => {
+        const probe = document.createElement('span')
+        probe.style.color = `var(${token})`
+        element.append(probe)
+        const color = getComputedStyle(probe).color
+        probe.remove()
+        return color
+      }
+
+      return {
+        canvasBackground: getComputedStyle(canvasElement).backgroundColor,
+        colorScheme: mixerStyle.colorScheme,
+        headerBackground: getComputedStyle(headerElement).backgroundColor,
+        panelBackground: getComputedStyle(panelElement).backgroundColor,
+        resolvedPrimary: resolveColor('--bg-primary'),
+        resolvedText: resolveColor('--text-primary'),
+        rootPrimary: rootStyle.getPropertyValue('--bg-primary').trim(),
+        mixerPrimary: mixerStyle.getPropertyValue('--bg-primary').trim(),
+        titleColor: getComputedStyle(titleElement).color,
+      }
+    })
+
+  for (const theme of ['dark', 'light'] as const) {
+    await setAppTheme(page, theme)
+
+    await expect(header).toBeVisible()
+    await expect(title).toBeVisible()
+    await expect(panel).toBeVisible()
+    await expect(canvas).toBeVisible()
+    await expect
+      .poll(async () => (await readStudioPalette()).colorScheme)
+      .toBe(theme)
+
+    const palette = await readStudioPalette()
+    expect(palette.mixerPrimary).toBe(palette.rootPrimary)
+    expect(palette.headerBackground).toBe(palette.resolvedPrimary)
+    expect(palette.panelBackground).toBe(palette.resolvedPrimary)
+    expect(palette.titleColor).toBe(palette.resolvedText)
+    expect(palette.canvasBackground).toBe('rgb(13, 17, 23)')
+  }
+
+  await setAppTheme(page, 'light')
+
+  const versionTrigger = mixer.locator('.sm-lyrics-version-btn').first()
+  await expect(versionTrigger).toBeVisible()
+  await versionTrigger.click()
+  await expectPortalledMenuSkin(
+    page.locator('.sm-lyrics-version-menu'),
+    'light',
+    '#f3f4f6',
+  )
+  await page
+    .locator('.sm-lyrics-version-backdrop')
+    .click({ position: { x: 2, y: 2 } })
+
+  await page.getByTitle('Karaoke focus mode').click()
+  await expect(mixer).toHaveClass(/stem-mixer--focus/)
+  await expect(mixer).toHaveClass(/mp-dark-stage/)
+  await expect(mixer).toHaveCSS('color-scheme', 'dark')
+
+  const focusPalette = await mixer.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      background: style.getPropertyValue('--bg-primary').trim(),
+      foreground: style.getPropertyValue('--text-primary').trim(),
+      onAccent: style.getPropertyValue('--on-accent').trim(),
+      rootScheme: getComputedStyle(document.documentElement).colorScheme,
+    }
+  })
+  expect(focusPalette).toEqual({
+    background: '#0d1117',
+    foreground: '#e6edf3',
+    onAccent: '#0d1117',
+    rootScheme: 'light',
+  })
+
+  await versionTrigger.click()
+  await expectPortalledMenuSkin(
+    page.locator('.sm-lyrics-version-menu'),
+    'dark',
+    '#0d1117',
+  )
+})
+
+test('activates Pitch Studio from light with complete dark ownership @smoke', async ({
+  page,
+}) => {
+  await setAppTheme(page, 'light')
+
+  const mixer = page.locator('.stem-mixer')
+  const sourceBadge = mixer.locator('.sm-lyrics-source-upload').first()
+  await expect(sourceBadge).toBeVisible({ timeout: 15_000 })
+
+  const badgePalette = await sourceBadge.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { background: style.backgroundColor, color: style.color }
+  })
+  expect(
+    renderedContrast(badgePalette.color, badgePalette.background),
+  ).toBeGreaterThanOrEqual(4.5)
+
+  await page.getByTitle('Pitch Analysis & Settings').click()
+  const editNotes = page.getByRole('button', { name: 'Edit notes' })
+  await expect(editNotes).toBeEnabled({ timeout: 15_000 })
+  await editNotes.click()
+
+  await expect(mixer).toHaveClass(/stem-mixer--pitch-studio/)
+  await expect(mixer).toHaveClass(/mp-dark-stage/)
+  await expect(mixer).toHaveCSS('color-scheme', 'dark')
+  await expect(page.getByText('Pitch Studio', { exact: true })).toBeVisible()
+
+  const palette = await mixer.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      background: style.getPropertyValue('--bg-primary').trim(),
+      foreground: style.getPropertyValue('--text-primary').trim(),
+      rootPrimary: getComputedStyle(document.documentElement)
+        .getPropertyValue('--bg-primary')
+        .trim(),
+      rootScheme: getComputedStyle(document.documentElement).colorScheme,
+    }
+  })
+  expect(palette).toEqual({
+    background: '#0d1117',
+    foreground: '#e6edf3',
+    rootPrimary: '#f3f4f6',
+    rootScheme: 'light',
+  })
 })
 
 test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
