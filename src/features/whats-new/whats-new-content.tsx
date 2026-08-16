@@ -13,9 +13,26 @@
 // the app, this file is wrong and should be fixed rather than reworded.
 
 import type { JSX } from 'solid-js'
-import { Cloud, DeviceSync, Guitar, Mic, PianoKeys, Trophy, Voice, } from '@/components/icons'
+import { Cloud, DeviceSync, Guitar, Mic, PianoKeys, Trophy, WaveformBars, } from '@/components/icons'
+import { openMercurySing } from '@/features/mercury-sing/mercury-sing-store'
+import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { TAB_PROGRESS } from '@/features/tabs/constants'
+import { navigateTo } from '@/lib/hash-router'
 import { openSettingsSection, setActiveTab } from '@/stores/ui-store'
+
+/** The standalone Guitar Night room. No constant of its own yet; the two
+ *  in-app doors to it (GuitarPage) hard-code the same path. */
+const GUITAR_NIGHT_PATH = '/guitar-night'
+
+/**
+ * The night rooms are their own pages, not tabs, so reaching one is a real
+ * navigation out of the app shell — the same thing the "karaoke night" voice
+ * command does. Worth it: the room IS the feature being announced, and a
+ * reader who has to go hunting for it mostly does not.
+ */
+function openNightRoom(path: string): void {
+  window.location.assign(path)
+}
 
 export interface ReleaseHighlight {
   id: string
@@ -80,10 +97,16 @@ export const RELEASE_0_9_0: Release = {
     {
       id: 'mercury-sing',
       title: 'Mercury Sing — find a song by singing it',
-      icon: () => <Voice />,
+      icon: () => <WaveformBars />,
       body: 'Sing it, hum the melody, or say a line of the lyrics, and the app finds that song in your own library and opens it ready to play. Say "Shazam sing" or "name that song" from anywhere. It needs a reasonably modern browser for the on-device listening, and tells you plainly when a device cannot do it.',
       tryIt:
         'Separate a song or two first — it searches what you already have — then hum a chorus.',
+      go: {
+        label: 'Find a song',
+        run: () => {
+          openMercurySing()
+        },
+      },
     },
     {
       id: 'piano-night',
@@ -91,7 +114,13 @@ export const RELEASE_0_9_0: Release = {
       icon: () => <PianoKeys />,
       body: 'A room for keyboard players. It plays the music already on your device, and a connected MIDI keyboard can be mapped and practised against, with falling notes that were tuned for tablets — the screen most people actually prop up on a piano.',
       tryIt:
-        'Piano Night is in the Play group. Connect a MIDI keyboard first if you have one; it is offered on arrival.',
+        'Connect a MIDI keyboard first if you have one — it is offered on arrival. There is a door to the room in the Piano tab too.',
+      go: {
+        label: 'Open Piano Night',
+        run: () => {
+          openNightRoom(PIANO_NIGHT_PATH)
+        },
+      },
     },
     {
       id: 'guitar-night',
@@ -99,7 +128,13 @@ export const RELEASE_0_9_0: Release = {
       icon: () => <Guitar />,
       body: 'A room for guitarists. Load a score and play along on the view that suits you — a 3D stage, a flat fretboard, or written tab — with a built-in tuner, and a Jam Doctor that listens to what you actually played and tells you where it drifted, phrase by phrase rather than as one verdict on the whole song.',
       tryIt:
-        'Guitar Night is in the Play group. Tune up first, then stage a score and play a phrase.',
+        'Tune up first, then stage a score and play a phrase. There is a door to the room in the Guitar tab too.',
+      go: {
+        label: 'Open Guitar Night',
+        run: () => {
+          openNightRoom(GUITAR_NIGHT_PATH)
+        },
+      },
     },
     {
       id: 'library-travels',
@@ -107,7 +142,13 @@ export const RELEASE_0_9_0: Release = {
       icon: () => <DeviceSync />,
       body: 'Sign in and your songs and playlists show up on every device on your account — phone, tablet, computer, TV. When you want the audio itself on another device, send it straight across: phone or tablet to the TV, computer to your phone, any direction you need.',
       tryIt:
-        'Sign in, then use send/receive — on the Karaoke Night rail, or in the Karaoke tab beside the upload box.',
+        'Sign in, then use send/receive — beside the upload box here, or on the Karaoke Night rail.',
+      go: {
+        label: 'Open Karaoke',
+        run: () => {
+          navigateTo({ type: 'uvr-upload' })
+        },
+      },
     },
     {
       id: 'drive-backup',
