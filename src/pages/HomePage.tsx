@@ -12,9 +12,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
+import { loadSessionRecords } from '@/db/services/session-service'
 import { getStreakState, MAX_FREEZES, repairStreak, STARTING_FREEZES, } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { DestinationGallery } from '@/features/home/DestinationGallery'
+import { weekDrillStats } from '@/features/home/week-drill-stats'
 import { dismissNudge, satisfyNudge, shouldShowNudge, } from '@/features/onboarding/account-nudge'
 import { AscentCard } from '@/features/path/AscentCard'
 import { manualCompletePrompt, segmentSelfReports, } from '@/features/routines/manual-complete'
@@ -78,18 +80,13 @@ const HomePage: Component = () => {
     Math.round((minutesToday / DAILY_GOAL_MIN) * 100),
   )
 
-  // Thin progress strip from local exercise history (last 7 days).
-  const weekStats = createMemo(() => {
-    const weekAgo = Date.now() - 7 * 86_400_000
-    const recent = exerciseHistory().filter((e) => e.completedAt >= weekAgo)
-    const avg =
-      recent.length > 0
-        ? Math.round(
-            recent.reduce((sum, e) => sum + e.score, 0) / recent.length,
-          )
-        : null
-    return { runs: recent.length, avgScore: avg }
-  })
+  // Thin progress strip for the trailing 7 days. The synced session records
+  // are the account's truth (a second device would otherwise report zero,
+  // CLAUDE-JOURNEY-009); the local mirror covers a lagging or failed read.
+  const [syncedWeek] = createResource(() => loadSessionRecords(300))
+  const weekStats = createMemo(() =>
+    weekDrillStats(Date.now(), exerciseHistory(), syncedWeek()),
+  )
 
   async function onRepair(): Promise<void> {
     const result = await repairStreak()

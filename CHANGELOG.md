@@ -182,6 +182,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **A second device now shows your real week on the home screen.** Signed
+  in on a new device, "drills this week" read zero while the Progress page
+  showed the full synced history — the strip only counted practice done on
+  that device. It now reads the account's synced records, with the local
+  history as a fallback when the sync is still catching up.
+
 - **The guided warmup now means it when it says "no grades".** The card
   promises the score "just reflects that you sang along", but the number
   it showed was a pitch-accuracy grade — a singer who hummed along the
