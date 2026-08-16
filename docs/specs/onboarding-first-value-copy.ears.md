@@ -21,7 +21,7 @@ Background: CLAUDE-JOURNEY-002. Beat 2 is the app's first moment of value —
 "we heard you, and here is what you sang" — and it rendered a hard-coded "a"
 in front of the note name, so a singer holding an A3 was told "That's a A3".
 The same clause repeats on beat 3. Note names are read out loud, and A, E and
-F are all *said* starting on a vowel sound, so all three need "an".
+F are all _said_ starting on a vowel sound, so all three need "an".
 
 ## Note article — `NART-*`
 
@@ -78,13 +78,13 @@ than render a dangling article. Verified by `FVC-4`.
 ### REQ-FVC-005 — Every Map card says what its room is
 
 **Ubiquitous:** Each card on the Map shall render its room's `line` — the
-sentence that says what the room *is* before what you do there. Verified by
+sentence that says what the room _is_ before what you do there. Verified by
 `FVC-5`.
 
 ### REQ-FVC-006 — The recommended card says what AND why
 
 **WHILE** a room is the picked first stop, its card shall show the room's own
-`line` *and* the personalised reason. Previously the reason replaced the line,
+`line` _and_ the personalised reason. Previously the reason replaced the line,
 so the one card the Map pushes hardest ("Your tone wavers when you hold —
 let's steady it") was the only card that never said where it was sending you.
 Verified by `FVC-6`.
@@ -92,7 +92,7 @@ Verified by `FVC-6`.
 ### REQ-FVC-007 — Lines lead with the thing, not the verb
 
 **Ubiquitous:** Every room line shall open with a noun phrase ("A library of
-fourteen short drills…", "The live singing stage — …") rather than an
+eighteen short drills…", "The live singing stage — …") rather than an
 instruction, so the card answers "what is this?" before "what do I do?".
 Verified by `FVC-7`.
 
