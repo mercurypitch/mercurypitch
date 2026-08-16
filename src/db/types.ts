@@ -43,4 +43,11 @@ export interface DatabaseAdapter {
 
   /** Delete the entire database. Used for factory reset. */
   destroy(): Promise<void>
+
+  /**
+   * Close any open connection without deleting anything. deleteDatabase
+   * blocks for as long as a connection is open, so a reset has to be able
+   * to let go first. Optional: the server adapter holds nothing open.
+   */
+  close?(): void
 }

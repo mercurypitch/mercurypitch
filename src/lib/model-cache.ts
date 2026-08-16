@@ -3,7 +3,9 @@
 // Stores ArrayBuffer keyed by model filename.
 // ============================================================
 
-const DB_NAME = 'pitchperfect-models'
+/** Exported for the factory reset, which deletes this database by name. */
+export const MODEL_CACHE_DB_NAME = 'pitchperfect-models'
+const DB_NAME = MODEL_CACHE_DB_NAME
 const DB_VERSION = 1
 const STORE_NAME = 'models'
 
@@ -64,6 +66,22 @@ export async function deleteCachedModel(key: string): Promise<void> {
     req.onsuccess = () => resolve()
     req.onerror = () => reject(req.error)
   })
+}
+
+/**
+ * Close the cached connection without deleting anything. deleteDatabase
+ * waits on open connections, so the factory reset closes this one first.
+ * The connection reopens lazily if a model is fetched again.
+ */
+export function closeModelCacheDb(): void {
+  const pending = dbPromise
+  dbPromise = null
+  void pending?.then(
+    (db) => {
+      db.close()
+    },
+    () => undefined,
+  )
 }
 
 /** Clear all cached models. */

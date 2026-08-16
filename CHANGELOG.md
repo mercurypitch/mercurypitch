@@ -156,6 +156,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **The microphone is offered once, at your first practice,** instead of being
   raised again on every playback surface.
 
+### Added
+
+- **The Danger Zone grew two gentler levers.** Alongside the karaoke-only
+  clear and the full factory reset there is now "Clear Settings & Practice
+  History" — which keeps your separated songs, melodies, piano projects, and
+  sign-in — and "Delete Stored Songs & Database", which does the opposite:
+  the on-device database goes, your settings and sign-in stay.
+
 ### Fixed
 
 - **The "your earlier practice stayed here" notice no longer opens mid-drill.**
@@ -190,6 +198,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   and reloads itself once, asking first only if a reload just failed to fix
   it. The crash modal's Reload also escapes the offline cache now, and a
   second update prompt no longer pops over a reload already underway.
+- **Resetting your data now shows its progress instead of hanging.** With a
+  library of separated songs, "Reset All Data" could sit on a blank dialog
+  for a long time — and if another tab had the app open, forever, having
+  already wiped your settings. The reset now reports each step as it runs,
+  clears settings only after the database is truly gone, tells you when
+  another open tab is what it is waiting for, and finishes the job properly:
+  cached app files and the offline worker are cleared too, which the old
+  reset forgot.
 
 - **Challenges and badges you have not earned no longer claim a date.**
   Anything unfinished was being stamped 1 January 1970 instead of showing

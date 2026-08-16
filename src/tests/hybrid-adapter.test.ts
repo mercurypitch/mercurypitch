@@ -95,6 +95,21 @@ describe('HybridAdapter', () => {
     expect(local.destroy).toHaveBeenCalledOnce()
   })
 
+  it('closes whichever adapters have a connection to close', () => {
+    // close() is optional on the contract — the server adapter holds
+    // nothing open. The hybrid must close what is there and skip the rest,
+    // because a missed close leaves the factory reset's deleteDatabase
+    // waiting on the connection forever.
+    const cloud = stubAdapter() // no close() — the server-adapter shape
+    const local = stubAdapter()
+    const localClose = vi.fn()
+    local.close = localClose
+    expect(() => {
+      new HybridAdapter(cloud, local).close()
+    }).not.toThrow()
+    expect(localClose).toHaveBeenCalledOnce()
+  })
+
   describe('signed-out guard for user-scoped entities', () => {
     function trackingAdapter(): DatabaseAdapter & { calls: string[] } {
       const calls: string[] = []

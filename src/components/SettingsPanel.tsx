@@ -26,6 +26,8 @@ import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import type { ResetScope } from '@/lib/reset-app-data'
+import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
@@ -45,10 +47,67 @@ import { setSettingsAnchor, setSettingsSection, setShowWelcome, settingsAnchor, 
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import styles from './SettingsPanel.module.css'
 
+/** One row each in the Danger Zone; 'karaoke' clears in place, the three
+ *  ResetScope actions run through resetAppData and reload. */
+type DangerAction = 'karaoke' | ResetScope
+
+/** Copy and (stable, e2e-relied-upon) test ids for the shared confirm box. */
+const DANGER_ACTIONS: Record<
+  DangerAction,
+  {
+    title: string
+    text: string
+    confirmLabel: string
+    boxTestId: string
+    cancelTestId: string
+    confirmTestId: string
+  }
+> = {
+  karaoke: {
+    title: 'Clear Karaoke Data?',
+    text: 'This permanently deletes every separated song, its stems and lyrics, and all karaoke playlists. Melodies, practice history, and settings are not affected. This cannot be undone.',
+    confirmLabel: 'Clear Karaoke Data',
+    boxTestId: 'danger-clear-uvr-box',
+    cancelTestId: 'danger-clear-uvr-cancel-btn',
+    confirmTestId: 'danger-clear-uvr-confirm-btn',
+  },
+  settings: {
+    title: 'Clear Settings & Practice?',
+    text: 'This resets every setting and clears practice history and progress on this device. Separated songs, melodies, piano projects, and your sign-in are kept. This cannot be undone.',
+    confirmLabel: 'Clear Settings',
+    boxTestId: 'danger-clear-settings-box',
+    cancelTestId: 'danger-clear-settings-cancel-btn',
+    confirmTestId: 'danger-clear-settings-confirm-btn',
+  },
+  database: {
+    title: 'Delete Stored Songs & Database?',
+    text: "This permanently deletes this device's database — separated songs and stems, melodies, piano projects, karaoke playlists, and cached models. Settings and sign-in are kept. This cannot be undone.",
+    confirmLabel: 'Delete Database',
+    boxTestId: 'danger-clear-db-box',
+    cancelTestId: 'danger-clear-db-cancel-btn',
+    confirmTestId: 'danger-clear-db-confirm-btn',
+  },
+  factory: {
+    title: 'Confirm Reset',
+    text: 'Are you sure you want to reset all data? This will clear all stored melodies, presets, sessions, karaoke files, settings, sign-in, and cached app files. This action cannot be undone.',
+    confirmLabel: 'Reset All Data',
+    boxTestId: 'danger-confirm-box',
+    cancelTestId: 'danger-cancel-btn',
+    confirmTestId: 'danger-confirm-btn',
+  },
+}
+
 export const SettingsPanel: Component = () => {
   const s = () => settings()
-  const [showResetConfirm, setShowResetConfirm] = createSignal(false)
-  const [showClearUvrConfirm, setShowClearUvrConfirm] = createSignal(false)
+  const [pendingDanger, setPendingDanger] = createSignal<DangerAction | null>(
+    null,
+  )
+  const [resetProgress, setResetProgress] = createSignal<{
+    label: string
+    index: number
+    total: number
+  } | null>(null)
+  const [resetBlocked, setResetBlocked] = createSignal(false)
   const [showFontReloadConfirm, setShowFontReloadConfirm] = createSignal(false)
   const [dangerOpen, setDangerOpen] = createSignal(false)
   const [pendingFont, setPendingFont] = createSignal<FontFamily | null>(null)
@@ -87,43 +146,46 @@ export const SettingsPanel: Component = () => {
     }
   }
 
-  const handleResetStorage = async () => {
-    // Wipe ALL client-side state. Clearing only pitchperfect_* keys used to
-    // leave behind sidebar collapse state (sidebar-*), karaoke UI prefs (km-*),
-    // the anonymous identity / auth token (mp:*), and the dev pitch-test flag —
-    // so a "factory reset" wasn't truly factory. Clear everything instead.
+  /**
+   * The scoped resets share one confirm box that becomes a progress view:
+   * deleting a stem library takes real time, and the old flow's silent await
+   * looked exactly like the hang it sometimes was (see reset-app-data.ts).
+   * On success the page reloads — in-memory stores still hold deleted state.
+   */
+  const runScopedReset = async (scope: ResetScope) => {
+    setResetBlocked(false)
     try {
-      localStorage.clear()
+      await resetAppData(scope, {
+        onStep: (step, index, total) => {
+          setResetBlocked(false)
+          setResetProgress({ label: step.label, index, total })
+        },
+        onBlocked: () => setResetBlocked(true),
+      })
+      window.location.href = '/'
     } catch {
-      /* non-critical */
+      setResetProgress(null)
+      setResetBlocked(false)
+      setPendingDanger(null)
+      showNotification(
+        'Could not finish clearing data — please try again.',
+        'error',
+      )
     }
-    try {
-      sessionStorage.clear()
-    } catch {
-      /* non-critical */
-    }
+  }
 
-    // Clear IndexedDB and model cache
-    try {
-      const { clearModelCache } = await import('@/lib/model-cache')
-      await clearModelCache()
-    } catch {
-      /* non-critical */
+  const confirmDanger = () => {
+    const action = pendingDanger()
+    if (action === null || resetProgress() !== null) return
+    if (action === 'karaoke') {
+      setPendingDanger(null)
+      void handleClearKaraokeData()
+      return
     }
-
-    try {
-      const { resetDatabase } = await import('@/db')
-      await resetDatabase()
-    } catch {
-      /* non-critical */
-    }
-
-    // Navigate back to the default URL (removing any hashes)
-    window.location.href = '/'
+    void runScopedReset(action)
   }
 
   const handleClearKaraokeData = async () => {
-    setShowClearUvrConfirm(false)
     try {
       // Sessions + their stems, fingerprints, lyrics and transcriptions.
       deleteAllUvrSessions()
@@ -1746,9 +1808,53 @@ export const SettingsPanel: Component = () => {
                 <button
                   class={styles.dangerBtn}
                   data-testid="danger-clear-uvr-btn"
-                  onClick={() => setShowClearUvrConfirm(true)}
+                  onClick={() => setPendingDanger('karaoke')}
                 >
                   Clear
+                </button>
+              </div>
+
+              {/* Settings only — the on-device database and the sign-in
+                  survive, so the karaoke library and melodies stay put. */}
+              <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
+                <div class={styles.dangerContent}>
+                  <label class={styles.dangerLabel}>
+                    Clear Settings &amp; Practice History
+                  </label>
+                  <small class={styles.dangerDesc}>
+                    Reset every setting and clear practice history and progress
+                    on this device. Separated songs, melodies, piano projects,
+                    and your sign-in are kept.
+                  </small>
+                </div>
+                <button
+                  class={styles.dangerBtn}
+                  data-testid="danger-clear-settings-btn"
+                  onClick={() => setPendingDanger('settings')}
+                >
+                  Clear
+                </button>
+              </div>
+
+              {/* The whole on-device database — karaoke AND melodies, piano
+                  projects, cached models. Settings and sign-in stay. */}
+              <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
+                <div class={styles.dangerContent}>
+                  <label class={styles.dangerLabel}>
+                    Delete Stored Songs &amp; Database
+                  </label>
+                  <small class={styles.dangerDesc}>
+                    Delete this device&apos;s database — separated songs and
+                    stems, melodies, piano projects, karaoke playlists, and
+                    cached models. Settings and sign-in are kept.
+                  </small>
+                </div>
+                <button
+                  class={styles.dangerBtn}
+                  data-testid="danger-clear-db-btn"
+                  onClick={() => setPendingDanger('database')}
+                >
+                  Delete
                 </button>
               </div>
 
@@ -1759,14 +1865,14 @@ export const SettingsPanel: Component = () => {
                   </label>
                   <small class={styles.dangerDesc}>
                     Erase everything stored on this device — melodies, sessions,
-                    karaoke files, settings, and sign-in — and reload the app
-                    with factory defaults.
+                    karaoke files, settings, sign-in, and cached app files — and
+                    reload the app with factory defaults.
                   </small>
                 </div>
                 <button
                   class={styles.dangerBtn}
                   data-testid="danger-reset-btn"
-                  onClick={() => setShowResetConfirm(true)}
+                  onClick={() => setPendingDanger('factory')}
                 >
                   Reset
                 </button>
@@ -1778,75 +1884,81 @@ export const SettingsPanel: Component = () => {
               <DeleteAccountRow />
             </Show>
 
-            {/* Clear Karaoke/UVR Confirmation Modal */}
-            <Show when={showClearUvrConfirm()}>
-              <div class={styles.dangerConfirmOverlay}>
-                <div
-                  class={styles.dangerConfirmBox}
-                  data-testid="danger-clear-uvr-box"
-                >
-                  <h4 class={styles.dangerConfirmTitle}>Clear Karaoke Data?</h4>
-                  <p class={styles.dangerConfirmText}>
-                    This permanently deletes every separated song, its stems and
-                    lyrics, and all karaoke playlists. Melodies, practice
-                    history, and settings are not affected. This cannot be
-                    undone.
-                  </p>
-                  <div class={styles.dangerConfirmActions}>
-                    <button
-                      class={styles.dangerBtnSecondary}
-                      data-testid="danger-clear-uvr-cancel-btn"
-                      onClick={() => setShowClearUvrConfirm(false)}
+            {/* One confirm box for every danger action. While a scoped
+                reset runs it turns into a progress view — deleting a stem
+                library takes real time, and a silent await is
+                indistinguishable from the hang it used to be. */}
+            <Show when={pendingDanger()} keyed>
+              {(action) => (
+                <div class={styles.dangerConfirmOverlay}>
+                  <div
+                    class={styles.dangerConfirmBox}
+                    data-testid={DANGER_ACTIONS[action].boxTestId}
+                  >
+                    <h4 class={styles.dangerConfirmTitle}>
+                      {DANGER_ACTIONS[action].title}
+                    </h4>
+                    <Show
+                      when={resetProgress()}
+                      fallback={
+                        <>
+                          <p class={styles.dangerConfirmText}>
+                            {DANGER_ACTIONS[action].text}
+                          </p>
+                          <div class={styles.dangerConfirmActions}>
+                            <button
+                              class={styles.dangerBtnSecondary}
+                              data-testid={DANGER_ACTIONS[action].cancelTestId}
+                              onClick={() => setPendingDanger(null)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              class={styles.dangerBtnPrimary}
+                              data-testid={DANGER_ACTIONS[action].confirmTestId}
+                              onClick={confirmDanger}
+                            >
+                              {DANGER_ACTIONS[action].confirmLabel}
+                            </button>
+                          </div>
+                        </>
+                      }
                     >
-                      Cancel
-                    </button>
-                    <button
-                      class={styles.dangerBtnPrimary}
-                      data-testid="danger-clear-uvr-confirm-btn"
-                      onClick={() => {
-                        void handleClearKaraokeData()
-                      }}
-                    >
-                      Clear Karaoke Data
-                    </button>
+                      {(progress) => (
+                        <div data-testid="danger-reset-progress">
+                          <p class={styles.dangerConfirmText}>
+                            {progress().label}
+                          </p>
+                          <div
+                            class={styles.dangerProgressTrack}
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={progress().total}
+                            aria-valuenow={progress().index}
+                          >
+                            <div
+                              class={styles.dangerProgressFill}
+                              style={{
+                                width: `${Math.round(((progress().index + 1) / progress().total) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <Show when={resetBlocked()}>
+                            <p
+                              class={styles.dangerBlockedHint}
+                              data-testid="danger-reset-blocked"
+                            >
+                              Waiting for other MercuryPitch tabs to close —
+                              this finishes as soon as the app is open only
+                              here.
+                            </p>
+                          </Show>
+                        </div>
+                      )}
+                    </Show>
                   </div>
                 </div>
-              </div>
-            </Show>
-
-            {/* Reset Confirmation Modal */}
-            <Show when={showResetConfirm()}>
-              <div class={styles.dangerConfirmOverlay}>
-                <div
-                  class={styles.dangerConfirmBox}
-                  data-testid="danger-confirm-box"
-                >
-                  <h4 class={styles.dangerConfirmTitle}>Confirm Reset</h4>
-                  <p class={styles.dangerConfirmText}>
-                    Are you sure you want to reset all data? This will clear all
-                    stored melodies, presets, sessions, and settings. This
-                    action cannot be undone.
-                  </p>
-                  <div class={styles.dangerConfirmActions}>
-                    <button
-                      class={styles.dangerBtnSecondary}
-                      data-testid="danger-cancel-btn"
-                      onClick={() => setShowResetConfirm(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      class={styles.dangerBtnPrimary}
-                      data-testid="danger-confirm-btn"
-                      onClick={() => {
-                        void handleResetStorage()
-                      }}
-                    >
-                      Reset All Data
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
             </Show>
           </div>
 

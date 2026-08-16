@@ -103,6 +103,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all, when offline). A session-stamped cooldown stops reload loops; the crash
   modal's Reload uses the same escape; `announce()` stays quiet once an update
   is accepted, killing the second prompt that raced the swap.
+- **The Danger Zone reset is staged, scoped, and cannot hang silently.**
+  `handleResetStorage` cleared localStorage first, then awaited
+  `indexedDB.deleteDatabase` — which waits indefinitely while any connection
+  is open. The app holds three of its own (the db singleton, local-database's
+  second adapter, and the model cache's raw connection, which unlike Dexie
+  never auto-closes on `versionchange`); another tab holds more. New
+  `src/lib/reset-app-data.ts` runs scoped step lists (`settings` |
+  `database` | `factory`), closes every owned connection before deleting
+  (`close()` added down the adapter stack, `closeDatabase`,
+  `closeLocalDatabase`, `closeModelCacheDb`), clears storage only after the
+  deletes succeed, relays `onblocked` so the UI can name the other-tab cause,
+  and — for factory — also clears CacheStorage and unregisters the service
+  worker, which the old reset missed entirely. The `settings` scope preserves
+  the `mp:*` identity keys so kept database rows stay owned; the confirm box
+  becomes a progress view with a blocked hint while it runs. `resetDatabase`
+  (destroy + recreate + reseed right before a reload) is gone.
 
 - **Lab work no longer survives after its tool is left.** The earlier
   keep-visited-panels-mounted approach left spectral capture, raw microphone
