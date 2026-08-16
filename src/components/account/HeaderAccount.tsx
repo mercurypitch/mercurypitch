@@ -126,7 +126,7 @@ export const HeaderAccount: Component = () => {
       <ConfirmDialog
         open={confirming()}
         title="Sign out?"
-        message="Nothing is deleted. This device goes back to its own history, and signing in again brings the account's practice back."
+        message="Your practice stays on this device. While signed out you keep practising with the device's own history; sign in again any time to see your account's history and sync."
         confirmLabel="Sign out"
         confirmIcon={<SignOutIcon />}
         onConfirm={handleLogout}
