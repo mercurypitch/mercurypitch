@@ -34,7 +34,14 @@ export function scheduleAnnotationTones(
 
     osc.type = 'sine'
     osc.frequency.value = freq
-    gainNode.gain.setValueAtTime(gain, startTime)
+    // Attack from the exponential floor, not a zero-length jump to full
+    // gain — an instant step at tone start is a click on every cue
+    // (docs/agent/MISTAKES.md, pop-free audio).
+    gainNode.gain.setValueAtTime(0.0001, startTime)
+    gainNode.gain.exponentialRampToValueAtTime(
+      gain,
+      startTime + Math.min(0.02, duration * 0.2),
+    )
     gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
 
     osc.connect(gainNode)
@@ -49,9 +56,21 @@ export function scheduleAnnotationTones(
 
   return {
     stop: () => {
+      // Ramp every gain down before the sources cut: a bare stop() at
+      // sounding gain is a full-scale discontinuity.
+      const now = ctx.currentTime
+      for (const g of gains) {
+        try {
+          g.gain.cancelScheduledValues(now)
+          g.gain.setValueAtTime(g.gain.value, now)
+          g.gain.setTargetAtTime(0, now, 0.006)
+        } catch {
+          /* already disconnected */
+        }
+      }
       for (const osc of oscillators) {
         try {
-          osc.stop()
+          osc.stop(now + 0.05)
         } catch {
           /* already stopped */
         }

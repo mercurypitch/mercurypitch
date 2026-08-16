@@ -103,15 +103,48 @@ global.AudioContext = vi.fn().mockImplementation(function (this: object) {
       connect: vi.fn(),
       disconnect: vi.fn(),
     }),
-    createBuffer: vi.fn().mockImplementation(() => ({
-      numberOfChannels: 1,
-      sampleRate: 44100,
-      getChannelData: vi.fn().mockReturnValue(new Float32Array(44100)),
-      length: 44100,
-      copyToChannel: vi.fn(),
-    })),
+    createBuffer: vi
+      .fn()
+      .mockImplementation((channels: number = 1, length: number = 44100) => {
+        // Honour the requested length: the pluck synth renders waveforms
+        // longer than a second and writes them with set().
+        const data = new Float32Array(length)
+        return {
+          numberOfChannels: channels,
+          sampleRate: 44100,
+          getChannelData: vi.fn().mockReturnValue(data),
+          length,
+          copyToChannel: vi.fn(),
+        }
+      }),
     createConvolver: vi.fn().mockImplementation(() => ({
       buffer: null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    // The plucked instruments (guitar/bass) strike noise-burst buffers
+    // through filters and a drive stage rather than oscillators.
+    createBufferSource: vi.fn().mockImplementation(() => ({
+      buffer: null,
+      playbackRate: createAudioParamMock(1),
+      detune: createAudioParamMock(0),
+      onended: null,
+      start: vi.fn(),
+      stop: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createBiquadFilter: vi.fn().mockImplementation(() => ({
+      type: 'lowpass' as const,
+      frequency: createAudioParamMock(1000),
+      Q: createAudioParamMock(0.5),
+      gain: createAudioParamMock(0),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createWaveShaper: vi.fn().mockImplementation(() => ({
+      curve: null,
+      oversample: 'none',
       connect: vi.fn(),
       disconnect: vi.fn(),
     })),
@@ -424,11 +457,20 @@ describe('AudioEngine', () => {
         )
 
         expect(timedEvents.length).toBeGreaterThan(2)
+        // Every event is scheduled inside the note (the release STARTS
+        // before note end; its asymptotic tail is buried by the stop
+        // slack playTone adds to the source's stop time).
         expect(timedEvents.every((event) => event.args[1] <= 0.05)).toBe(true)
-        expect(timedEvents.at(-1)).toEqual({
-          method: 'linearRampToValueAtTime',
-          args: [0, 0.05],
-        })
+        // The release is the documented shape: setTargetAtTime toward
+        // zero with a positive time constant — NOT linearRampToValueAtTime,
+        // whose perceived loudness drop packs into its last milliseconds
+        // and reads as a "squeezed" pop at the note boundary. This pin
+        // used to enforce the linear ramp, which is how the pop kept
+        // coming back: every correct fix turned the suite red.
+        const release = timedEvents.at(-1)!
+        expect(release.method).toBe('setTargetAtTime')
+        expect(release.args[0]).toBe(0)
+        expect(release.args[2]).toBeGreaterThan(0)
       },
     )
 
@@ -456,13 +498,24 @@ describe('AudioEngine', () => {
 
       expect(engine.getActiveVoices()).not.toContain(noteId)
       expect(voice.gains[0].gain.cancelAndHoldAtTime).toHaveBeenCalledOnce()
-      expect(
-        voice.gains[0].gain.linearRampToValueAtTime,
-      ).toHaveBeenLastCalledWith(0, 0.075)
+      // The documented release: asymptotic decay (setTargetAtTime, tau =
+      // release / 5), with the source stopped only after the nominal
+      // release plus slack. The 75 ms LINEAR ramp this pin used to demand
+      // was the NoteDial pop itself — commit c6371ba8 fixed it once, the
+      // fix regressed, and this test then locked the regression in.
+      const gainMock = voice.gains[0].gain as unknown as {
+        setTargetAtTime: ReturnType<typeof vi.fn>
+        linearRampToValueAtTime: ReturnType<typeof vi.fn>
+      }
+      expect(gainMock.setTargetAtTime).toHaveBeenLastCalledWith(0, 0, 0.075 / 5)
+      expect(gainMock.linearRampToValueAtTime).not.toHaveBeenCalledWith(
+        0,
+        0.075,
+      )
       expect(voice.oscillators[0].stop).toHaveBeenCalledTimes(
         oscillatorStopsBefore + 1,
       )
-      expect(voice.oscillators[0].stop).toHaveBeenLastCalledWith(0.075)
+      expect(voice.oscillators[0].stop).toHaveBeenLastCalledWith(0.075 + 0.06)
     })
 
     it('cancels a note still awaiting AudioContext resume on stop', async () => {
@@ -1323,5 +1376,288 @@ describe('AudioEngine without init', () => {
     engine.setVolume(0.5)
 
     expect(engine.getVolume()).toBeCloseTo(0.5)
+  })
+})
+
+// ============================================================
+// No source stops while its gain is still audible
+// ============================================================
+//
+// The pop this engine keeps regressing into is mechanical: a release curve
+// that has not reached silence when the source's scheduled stop() cuts it.
+// releaseCurrentTone used to decay with tau = release/3 and stop the
+// oscillator at exactly 3 tau — a -26 dB truncation, a tick on every note
+// change — and jsdom cannot render audio to hear it. So these tests render
+// the ENVELOPE: they replay the recorded automation events against the
+// WebAudio spec's curve definitions and assert the gain at the moment of
+// stop() sits below audibility (-40 dB; releases are sized as five time
+// constants plus stop slack). A future re-tightening of a stop time fails
+// on arithmetic instead of on a listening test with a PA.
+
+interface ReplayEvent {
+  method: string
+  args: number[]
+}
+
+/**
+ * Evaluate the param's value at `t` from its automation events.
+ * `initial` stands in for the live value cancelAndHoldAtTime anchors
+ * (the mock records the call; the held value is the param's .value).
+ */
+function gainAt(events: ReplayEvent[], t: number, initial = 0): number {
+  let value = initial
+  let valueTime = 0
+  let target: { start: number; to: number; tau: number } | null = null
+
+  const settle = (until: number): void => {
+    if (target !== null && until > target.start) {
+      value =
+        target.to +
+        (value - target.to) * Math.exp(-(until - target.start) / target.tau)
+      valueTime = until
+      target = { ...target, start: until }
+    }
+  }
+
+  // Honour cancels first: drop events scheduled at/after the cancel time.
+  const timeline: ReplayEvent[] = []
+  for (const event of events) {
+    if (
+      event.method === 'cancelScheduledValues' ||
+      event.method === 'cancelAndHoldAtTime'
+    ) {
+      const cancelAt = event.args[0]!
+      for (let i = timeline.length - 1; i >= 0; i--) {
+        if (timeline[i]!.args[1]! >= cancelAt) timeline.splice(i, 1)
+      }
+      continue
+    }
+    timeline.push(event)
+  }
+
+  for (const event of timeline) {
+    const [to, at, tau] = event.args as [number, number, number?]
+    if (at > t) break
+    if (event.method === 'setValueAtTime') {
+      settle(at)
+      value = to
+      valueTime = at
+      target = null
+    } else if (
+      event.method === 'linearRampToValueAtTime' ||
+      event.method === 'exponentialRampToValueAtTime'
+    ) {
+      value = to
+      valueTime = at
+      target = null
+    } else if (event.method === 'setTargetAtTime') {
+      settle(at)
+      target = { start: at, to, tau: Math.max(1e-9, tau!) }
+    }
+  }
+  // A ramp whose end lies beyond t: interpolate from the previous point.
+  const pending = timeline.find(
+    (event) =>
+      (event.method === 'linearRampToValueAtTime' ||
+        event.method === 'exponentialRampToValueAtTime') &&
+      event.args[1]! > t,
+  )
+  if (pending !== undefined && target === null) {
+    const [to, end] = pending.args as [number, number]
+    const progress = (t - valueTime) / Math.max(1e-9, end - valueTime)
+    return pending.method === 'linearRampToValueAtTime'
+      ? value + (to - value) * progress
+      : Math.max(1e-9, value) * (to / Math.max(1e-9, value)) ** progress
+  }
+  settle(t)
+  return value
+}
+
+const AUDIBLE = 0.01 // -40 dB
+
+describe('every scheduled stop lands below audibility', () => {
+  let engine: AudioEngine
+
+  beforeEachFn(async () => {
+    engine = new AudioEngine()
+    await engine.init()
+  })
+
+  afterEach(() => {
+    engine.destroy()
+    vi.clearAllMocks()
+  })
+
+  const lastStop = (osc: { stop: ReturnType<typeof vi.fn> }): number =>
+    osc.stop.mock.calls.at(-1)![0] as number
+
+  it('stopNote stops the oscillator only after its release has died away', async () => {
+    const noteId = await engine.playNote(440, 5000)
+    const internals = engine as unknown as {
+      _activeVoices: Map<
+        number,
+        {
+          gains: { gain: { events: ReplayEvent[] } }[]
+          oscillators: { stop: ReturnType<typeof vi.fn> }[]
+        }
+      >
+    }
+    const voice = internals._activeVoices.get(noteId!)!
+    const before = voice.gains[0]!.gain.events.length
+
+    engine.stopNote(noteId!)
+
+    // Replay only the release (from the stop call on), anchored at full
+    // level — the worst case: the voice sounding at peak when cut.
+    const releaseEvents = voice.gains[0]!.gain.events.slice(before)
+    const stopAt = lastStop(voice.oscillators[0]!)
+    expect(stopAt).toBeGreaterThan(0)
+    expect(gainAt(releaseEvents, stopAt, 1)).toBeLessThan(AUDIBLE)
+  })
+
+  it('stopTone stops the oscillator only after its release has died away', async () => {
+    await engine.playTone(440)
+    const internals = engine as unknown as {
+      toneOscillator: { stop: ReturnType<typeof vi.fn> } | null
+      toneGain: { gain: { events: ReplayEvent[] } } | null
+    }
+    const gain = internals.toneGain!
+    const osc = internals.toneOscillator!
+    const before = gain.gain.events.length
+
+    engine.stopTone()
+
+    const releaseEvents = gain.gain.events.slice(before)
+    expect(gainAt(releaseEvents, lastStop(osc), 1)).toBeLessThan(AUDIBLE)
+  })
+
+  it('a timed playTone is inaudible by the time its source stops', async () => {
+    await engine.playTone(440, 500)
+    const internals = engine as unknown as {
+      toneOscillator: { stop: ReturnType<typeof vi.fn> } | null
+    }
+    const osc = internals.toneOscillator!
+    // toneGain is the user-volume node; the note's ENVELOPE lives on the
+    // voice's internal gain. Find it among the context's created gains:
+    // it is the one whose automation decays toward zero.
+    const ctx = engine.getAudioContext() as unknown as {
+      createGain: ReturnType<typeof vi.fn>
+    }
+    const envelopes = ctx.createGain.mock.results
+      .map((r) => (r.value as { gain: { events: ReplayEvent[] } }).gain)
+      .filter((g) =>
+        g.events.some(
+          (e) =>
+            (e.method === 'setTargetAtTime' ||
+              e.method === 'linearRampToValueAtTime' ||
+              e.method === 'exponentialRampToValueAtTime') &&
+            e.args[0] === 0,
+        ),
+      )
+    expect(envelopes.length).toBeGreaterThan(0)
+    const stopAt = lastStop(osc)
+    for (const envelope of envelopes) {
+      expect(gainAt(envelope.events, stopAt)).toBeLessThan(AUDIBLE)
+    }
+  })
+})
+
+// ============================================================
+// Bus ramps and release fallbacks — the arms around the primitives
+// ============================================================
+//
+// setVolume/setMetronomeVolume/setReverbWetness step a LIVE bus if they
+// write param.value directly (a zipper click at speaker volume), and the
+// release fallback for engines without cancelAndHoldAtTime must anchor the
+// value read BEFORE the cancel — cancelScheduledValues may step the param,
+// and anchoring the stepped value is itself the click.
+
+describe('bus ramps and release fallbacks', () => {
+  let engine: AudioEngine
+
+  beforeEachFn(async () => {
+    engine = new AudioEngine()
+    await engine.init()
+  })
+
+  afterEach(() => {
+    engine.destroy()
+    vi.clearAllMocks()
+  })
+
+  it('anchors the pre-cancel value on engines without cancelAndHoldAtTime', () => {
+    const param = createAudioParamMock(0.7)
+    // Strip the modern API, and make the cancel STEP the param the way a
+    // real engine can — the fallback must anchor 0.7, not the stepped 0.
+    ;(param as { cancelAndHoldAtTime?: unknown }).cancelAndHoldAtTime =
+      undefined
+    param.cancelScheduledValues = vi.fn((...args: number[]) => {
+      param.events.push({ method: 'cancelScheduledValues', args })
+      param.value = 0
+    })
+    const internals = engine as unknown as {
+      _releaseParam: (
+        param: unknown,
+        now: number,
+        releaseSeconds: number,
+      ) => number
+    }
+    const stopAt = internals._releaseParam(param, 2, 0.075)
+    expect(param.events[0]!.method).toBe('cancelScheduledValues')
+    expect(param.events[1]).toEqual({
+      method: 'setValueAtTime',
+      args: [0.7, 2],
+    })
+    expect(param.events[2]).toEqual({
+      method: 'setTargetAtTime',
+      args: [0, 2, 0.075 / 5],
+    })
+    expect(stopAt).toBeCloseTo(2 + 0.075 + 0.06)
+  })
+
+  it('writes the raw value when there is no context yet', () => {
+    const cold = new AudioEngine()
+    const param = createAudioParamMock(0)
+    ;(
+      cold as unknown as {
+        _rampBusLevel: (param: unknown, value: number) => void
+      }
+    )._rampBusLevel(param, 0.5)
+    expect(param.value).toBe(0.5)
+    expect(param.events).toHaveLength(0)
+  })
+
+  it('falls back to the raw write when the param rejects automation', () => {
+    const param = createAudioParamMock(0)
+    param.cancelScheduledValues = vi.fn(() => {
+      throw new DOMException('detached')
+    })
+    ;(
+      engine as unknown as {
+        _rampBusLevel: (param: unknown, value: number) => void
+      }
+    )._rampBusLevel(param, 0.4)
+    expect(param.value).toBe(0.4)
+  })
+
+  it('reports the stored metronome volume, clamped, not the lagging param', () => {
+    engine.setMetronomeVolume(2)
+    expect(engine.getMetronomeVolume()).toBe(1)
+    engine.setMetronomeVolume(-1)
+    expect(engine.getMetronomeVolume()).toBe(0)
+    engine.setMetronomeVolume(0.35)
+    expect(engine.getMetronomeVolume()).toBe(0.35)
+  })
+
+  it('gives plucked voices their full ring-out before the source stops', async () => {
+    engine.setInstrument('guitar-acoustic')
+    await engine.playTone(440, 500)
+    const context = engine.getAudioContext()!
+    // A pluck's source is a noise-burst buffer, not an oscillator.
+    const source = vi
+      .mocked((context as unknown as AudioContext).createBufferSource)
+      .mock.results.at(-1)!.value as { stop: ReturnType<typeof vi.fn> }
+    // 0.5s note + the 1.2s pluck tail — not the sustained voices' 60ms slack.
+    expect(source.stop).toHaveBeenLastCalledWith(1.7)
   })
 })

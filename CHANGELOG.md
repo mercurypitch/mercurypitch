@@ -189,6 +189,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   note whose octave run would top out over your ceiling, and the
   call-response and sight-singing apply slots finally sing the phrase the
   session card names instead of a random walk or a scale quiz.
+- **Notes start and end clean.** Every tone the app plays — exercise notes,
+  the note dial's preview, the guitar backing, the zen guide tones — now opens
+  and closes with an envelope shape that stays silent on real speakers, so
+  changing notes or stopping playback no longer pops or crackles. Spinning the
+  note dial plays discrete clean notes instead of a flutter, the dial pulses
+  on the note it is sounding, and its white outline now appears only when you
+  reach it with the keyboard.
 
 - **The "your earlier practice stayed here" notice no longer opens mid-drill.**
   It counted every run on the device, including the ones done after signing

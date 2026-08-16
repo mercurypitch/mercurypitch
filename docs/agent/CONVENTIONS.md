@@ -130,6 +130,19 @@ focused button's own Space activation (Enter still works for keyboard users).
 The main-app tab shell already routes Space via
 `useKeyboardShortcuts` — this rule is for standalone entries and new surfaces.
 
+## 5b. Audible envelopes
+
+Anything audible — every start, stop, pause, seek, and live volume write —
+follows [.claude/memory/audio-pop-free-playback.md](../../.claude/memory/audio-pop-free-playback.md):
+exponential attack from the 1e-4 floor, release via
+`setTargetAtTime(0, now, len/5)` with the source stopped only after
+`len + slack`, linear dips only inside continuous material (seeks). Use the
+existing implementations — `createPreviewPlayer` for media elements, the
+audio-engine release/bus primitives for synth voices, the stem-mixer
+transport for multi-track buffers — rather than hand-rolling a shape. This
+pop has shipped, and been re-fixed, more than once; the full history is in
+[MISTAKES.md](MISTAKES.md#release-audio-with-settargetattime-and-stop-after-the-tail--never-a-linear-ramp-to-zero).
+
 ## 6. Tests
 
 | Kind              | Location                                            | Runner             |

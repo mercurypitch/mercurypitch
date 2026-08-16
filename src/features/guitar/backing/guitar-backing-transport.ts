@@ -179,6 +179,26 @@ function rampGain(
   parameter.linearRampToValueAtTime(value, now + fadeSeconds)
 }
 
+/** Nominal close length; treated as five time constants of the decay. */
+const CLOSE_SECONDS = 0.06
+/** Slack after the close before a source may stop (tail below -40 dB). */
+const CLOSE_STOP_SLACK_SECONDS = 0.02
+
+/**
+ * The documented pause/stop shape (docs/agent/MISTAKES.md, pop-free audio):
+ * asymptotic decay, with the transport stopped only after the nominal close
+ * plus slack. A linear ramp to zero at a silence boundary packs its
+ * perceived drop into the last milliseconds — the "squeezed pop"
+ * (user-confirmed on a PA); a bare stop() at open gain is a full cut.
+ * Returns the earliest time the sources may stop.
+ */
+function closeBus(parameter: AudioParam, now: number): number {
+  parameter.cancelScheduledValues(now)
+  parameter.setValueAtTime(parameter.value, now)
+  parameter.setTargetAtTime(0, now, CLOSE_SECONDS / 5)
+  return now + CLOSE_SECONDS + CLOSE_STOP_SLACK_SECONDS
+}
+
 export function createGuitarBackingTransport(
   options: GuitarBackingTransportOptions = {},
 ): GuitarBackingTransport {
@@ -248,13 +268,47 @@ export function createGuitarBackingTransport(
     const voices = activeVoices
     activeVoices = []
     for (const voice of voices) {
-      voice.source.onended = null
+      if (atTime === undefined) {
+        voice.source.onended = null
+        try {
+          voice.source.stop()
+        } catch {
+          // One-shot sources can already have ended; their graph is still safe to drop.
+        }
+        voice.source.disconnect()
+        continue
+      }
+      // A scheduled stop keeps the graph wired until it fires: disconnect()
+      // is immediate, so disconnecting here would cut the material at open
+      // gain — the exact pop the bus close (which picked atTime) exists to
+      // prevent. The completion callback is still silenced; only the
+      // teardown rides onended.
+      voice.source.onended = () => voice.source.disconnect()
       try {
         voice.source.stop(atTime)
       } catch {
-        // One-shot sources can already have ended; their graph is still safe to drop.
+        voice.source.disconnect()
       }
-      voice.source.disconnect()
+    }
+  }
+
+  /**
+   * Halt everything audible. While the transport is playing over a live
+   * graph, the stems bus closes with the documented release and the
+   * sources/stream outlast its tail — a bare source.stop() at open gain is
+   * a full-scale waveform cut into a PA (the exact case the pop-free doc
+   * names). From any silent state it is the plain, immediate halt.
+   */
+  const haltAudible = (): void => {
+    const bus = audioGraph?.buses.stems ?? null
+    if (status === 'playing' && context !== null && bus !== null) {
+      const now = context.currentTime
+      const stopAt = closeBus(bus.gain, now)
+      stopVoices(stopAt)
+      streamEngine?.pause((stopAt - now) * 1000 + 8)
+    } else {
+      stopVoices()
+      streamEngine?.pause()
     }
   }
 
@@ -485,8 +539,10 @@ export function createGuitarBackingTransport(
 
     const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
     setStatus('loading')
-    currentStemsBus.gain.cancelScheduledValues(currentContext.currentTime)
-    currentStemsBus.gain.setValueAtTime(0, currentContext.currentTime)
+    // A 15 ms linear dip, not an instant zero: short LINEAR dips are fine
+    // inside continuous material (the program masks them) — an instant
+    // step is a click at any point.
+    rampGain(currentStemsBus.gain, 0, currentContext.currentTime, 0.015)
     const started = await currentStreamEngine.play(safeOffset, targetTrackGain)
     if (disposed || requestGeneration !== generation) {
       currentStreamEngine.pause()
@@ -534,8 +590,8 @@ export function createGuitarBackingTransport(
     let endingSource: AudioBufferSourceNode | null = null
     let longestRemaining = -1
 
-    currentStemsBus.gain.cancelScheduledValues(currentContext.currentTime)
-    currentStemsBus.gain.setValueAtTime(0, currentContext.currentTime)
+    // Dip (not cut) the bus while the voices swap, then reopen.
+    rampGain(currentStemsBus.gain, 0, currentContext.currentTime, 0.012)
     currentStemsBus.gain.linearRampToValueAtTime(
       STEMS_BUS_OPEN_GAIN,
       when + fadeSeconds,
@@ -721,24 +777,7 @@ export function createGuitarBackingTransport(
       }
       if (status !== 'playing') return
       parkedOffset = currentTime()
-      const currentContext = context
-      const currentStemsBus = audioGraph?.buses.stems ?? null
-      if (currentContext !== null && currentStemsBus !== null) {
-        rampGain(
-          currentStemsBus.gain,
-          0,
-          currentContext.currentTime,
-          fadeSeconds,
-        )
-        if (loadMode === 'streamed') {
-          streamEngine?.pause(fadeSeconds * 1000 + 8)
-        } else {
-          stopVoices(currentContext.currentTime + fadeSeconds)
-        }
-      } else {
-        stopVoices()
-        streamEngine?.pause()
-      }
+      haltAudible()
       setStatus('paused')
     },
 
@@ -749,8 +788,7 @@ export function createGuitarBackingTransport(
         loadAbort = null
       }
       parkedOffset = 0
-      stopVoices()
-      streamEngine?.pause()
+      haltAudible()
       streamEngine?.seek(0)
       if (session === null) setStatus('idle')
       else
@@ -772,8 +810,7 @@ export function createGuitarBackingTransport(
         return
       }
       if (target >= duration) {
-        stopVoices()
-        streamEngine?.pause()
+        haltAudible()
         setStatus('complete')
         return
       }
@@ -781,8 +818,8 @@ export function createGuitarBackingTransport(
         const currentContext = context
         const currentStemsBus = audioGraph?.buses.stems ?? null
         if (currentContext !== null && currentStemsBus !== null) {
-          currentStemsBus.gain.cancelScheduledValues(currentContext.currentTime)
-          currentStemsBus.gain.setValueAtTime(0, currentContext.currentTime)
+          // Seek dip: linear, short, inside continuous material.
+          rampGain(currentStemsBus.gain, 0, currentContext.currentTime, 0.015)
           streamEngine?.seek(target)
           startedOffset = target
           startedAtContextTime = currentContext.currentTime

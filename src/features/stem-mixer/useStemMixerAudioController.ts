@@ -219,6 +219,30 @@ export interface StemMixerAudioController {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
 const FADE_OUT_MS = 50
+/** Slack after the fade before a source may stop (tail below -40 dB). */
+export const STEM_STOP_SLACK_SECS = 0.03
+
+/**
+ * Close one stem's gain with the documented release shape
+ * (docs/agent/MISTAKES.md, pop-free audio): anchor, then asymptotic decay —
+ * the 50 ms LINEAR fade this replaced is the "squeezed pop" at a silence
+ * boundary. Tolerates nodes whose context is already gone. Exported for
+ * tests: jsdom cannot host the whole controller, and this arithmetic is
+ * what regressions attack.
+ */
+export function closeStemGain(
+  gain: AudioParam,
+  now: number,
+  fadeOutSecs: number,
+): void {
+  try {
+    gain.cancelScheduledValues(now)
+    gain.setValueAtTime(gain.value, now)
+    gain.setTargetAtTime(0, now, fadeOutSecs / 5)
+  } catch (_) {
+    /* already disconnected */
+  }
+}
 /** Ceiling for pitch detection and scoring. The device tier lowers it. */
 const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
 const PERFORMANCE_LOG_INTERVAL_MS = 2000
@@ -824,16 +848,10 @@ export const useStemMixerAudioController = (
     if (ctx) {
       const now = ctx.currentTime
       const fadeOutSecs = FADE_OUT_MS / 1000
-      const stopTime = now + fadeOutSecs + 0.01
+      const stopTime = now + fadeOutSecs + STEM_STOP_SLACK_SECS
       for (const nodes of nodesToDisconnect) {
         if (nodes.gainNode) {
-          try {
-            nodes.gainNode.gain.cancelScheduledValues(now)
-            nodes.gainNode.gain.setValueAtTime(nodes.gainNode.gain.value, now)
-            nodes.gainNode.gain.linearRampToValueAtTime(0, now + fadeOutSecs)
-          } catch (_) {
-            /* already disconnected */
-          }
+          closeStemGain(nodes.gainNode.gain, now, fadeOutSecs)
         }
         if (nodes.sourceNode) {
           try {
@@ -890,7 +908,7 @@ export const useStemMixerAudioController = (
           /* */
         }
       }
-    }, FADE_OUT_MS + 20)
+    }, FADE_OUT_MS + 50)
   }
 
   // ── Speed ────────────────────────────────────────────────────

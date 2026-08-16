@@ -129,6 +129,7 @@ export class AudioEngine {
   private isPlaying = false
   private callbacks: AudioEngineCallbacks = {}
   private volume = 0.8
+  private metronomeVolume = 0.8
   private currentInstrument: InstrumentType = 'sine'
   private bufferSize = 2048
   private characterSoundsEnabled = false
@@ -147,6 +148,17 @@ export class AudioEngine {
   private static readonly MAX_POLY_VOICES = 24
   /** Manual pause/stop release. Long enough to avoid a step, short enough to feel immediate. */
   private static readonly NOTE_RELEASE_SECONDS = 0.075
+  /**
+   * Slack between a release's nominal end and the source's stop. A release
+   * scheduled with setTargetAtTime only approaches zero; stopping the source
+   * exactly at the nominal end cuts the tail at around -26 dB, which is the
+   * truncation pop this engine kept regressing into. releaseSeconds is
+   * treated as five time constants, so by stop time the tail sits below
+   * -40 dB and the extra slack buries it for good.
+   */
+  private static readonly RELEASE_STOP_SLACK_SECONDS = 0.06
+  /** Exponential ramps cannot reach zero; this is the house floor. */
+  private static readonly ENVELOPE_FLOOR = 0.0001
 
   // BPM state (used for timing calculations)
   private _bpm = 120
@@ -409,10 +421,33 @@ export class AudioEngine {
   // Volume
   // ============================================================
 
+  /**
+   * Write a live bus level as a short ramp, not an instantaneous jump. A
+   * direct `.value =` write on a bus carrying signal is a step in the
+   * waveform — a click that tracks the volume slider. 15 ms linear is the
+   * seek-dip length from the pop-free doc: inside continuous material a
+   * short LINEAR dip is fine (the program masks it) — it is only the
+   * silence boundary where shape must be asymptotic.
+   */
+  private _rampBusLevel(param: AudioParam, value: number): void {
+    if (!this.audioCtx) {
+      param.value = value
+      return
+    }
+    const now = this.audioCtx.currentTime
+    try {
+      param.cancelScheduledValues(now)
+      param.setValueAtTime(param.value, now)
+      param.linearRampToValueAtTime(value, now + 0.015)
+    } catch {
+      param.value = value
+    }
+  }
+
   setVolume(value: number): void {
     this.volume = Math.max(0, Math.min(1, value))
     if (this.mainGain) {
-      this.mainGain.gain.value = this.volume
+      this._rampBusLevel(this.mainGain.gain, this.volume)
     }
   }
 
@@ -427,13 +462,16 @@ export class AudioEngine {
   /** Set metronome/precount click volume (0-1), independent of note volume */
   setMetronomeVolume(value: number): void {
     const clamped = Math.max(0, Math.min(1, value))
+    this.metronomeVolume = clamped
     if (this.metronomeGain !== null) {
-      this.metronomeGain.gain.value = clamped
+      this._rampBusLevel(this.metronomeGain.gain, clamped)
     }
   }
 
   getMetronomeVolume(): number {
-    return this.metronomeGain?.gain.value ?? 0.8
+    // The stored value, not gain.value: a ramped write means the live
+    // param lags the setting by up to 15 ms.
+    return this.metronomeVolume
   }
 
   // ============================================================
@@ -447,8 +485,8 @@ export class AudioEngine {
   setReverbWetness(wetness: number): void {
     this.currentReverbWetness = Math.max(0, Math.min(100, wetness)) / 100
     if (this.reverbSendGain && this.reverbReturnGain) {
-      this.reverbSendGain.gain.value = this.currentReverbWetness
-      this.reverbReturnGain.gain.value = this.currentReverbWetness
+      this._rampBusLevel(this.reverbSendGain.gain, this.currentReverbWetness)
+      this._rampBusLevel(this.reverbReturnGain.gain, this.currentReverbWetness)
     }
   }
 
@@ -1173,8 +1211,12 @@ export class AudioEngine {
     if (duration !== undefined) {
       const durationSeconds = Math.max(0.001, duration / 1000)
       // Plucked voices release via their gain envelope — stop the source
-      // late enough that the ring-out isn't audibly truncated.
-      const tailSeconds = this._isPluckedInstrument() ? 1.2 : 0
+      // late enough that the ring-out isn't audibly truncated. Everything
+      // else still needs the release-tail slack: the envelope only
+      // approaches zero, and stopping exactly at note end cuts it audibly.
+      const tailSeconds = this._isPluckedInstrument()
+        ? 1.2
+        : AudioEngine.RELEASE_STOP_SLACK_SECONDS
       const stopTime = startTime + durationSeconds + tailSeconds
       for (const osc of voice.allOscillators) {
         try {
@@ -1200,6 +1242,33 @@ export class AudioEngine {
     this.releaseCurrentTone(releaseMs)
   }
 
+  /**
+   * The house release (docs/agent/MISTAKES.md, "Pop-free audio"): anchor the
+   * param at its CURRENT value, then decay asymptotically with
+   * setTargetAtTime. Shape matters as much as length — loudness is
+   * logarithmic, so a linear ramp packs its perceived drop into its last
+   * milliseconds and reads as a "squeezed" pop at a silence boundary
+   * (user-confirmed on a PA, 2026-07-30). Returns the earliest time the
+   * source may stop: nominal release plus the stop slack.
+   */
+  private _releaseParam(
+    param: AudioParam,
+    now: number,
+    releaseSeconds: number,
+  ): number {
+    // Read the anchor BEFORE cancelling: cancelScheduledValues may step the
+    // param, and anchoring the stepped value is itself a click.
+    const held = param.value
+    if (typeof param.cancelAndHoldAtTime === 'function') {
+      param.cancelAndHoldAtTime(now)
+    } else {
+      param.cancelScheduledValues(now)
+      param.setValueAtTime(held, now)
+    }
+    param.setTargetAtTime(0, now, releaseSeconds / 5)
+    return now + releaseSeconds + AudioEngine.RELEASE_STOP_SLACK_SECONDS
+  }
+
   /** Release an active tone without cancelling a newer pending playTone call. */
   private releaseCurrentTone(releaseMs: number): void {
     if (!this.audioCtx || !this.toneGain || !this.toneOscillator) return
@@ -1214,23 +1283,15 @@ export class AudioEngine {
       this.toneCleanupTimer = null
     }
 
-    // Apply release envelope to fade out smoothly
+    // Apply release envelope to fade out smoothly. The old τ = len/3 decay
+    // was hard-stopped at exactly len — a -26 dB truncation on every tone
+    // end, audible as a tick on every note change.
+    let stopTime = now + releaseSeconds + AudioEngine.RELEASE_STOP_SLACK_SECONDS
     try {
-      if (typeof gain.gain.cancelAndHoldAtTime === 'function') {
-        gain.gain.cancelAndHoldAtTime(now)
-      } else {
-        gain.gain.cancelScheduledValues(now)
-        gain.gain.setValueAtTime(gain.gain.value, now)
-      }
-      // Use setTargetAtTime for a smooth asymptotic decay curve instead of a hard linear ramp,
-      // which eliminates clicking much more effectively.
-      gain.gain.setTargetAtTime(0, now, releaseSeconds / 3)
+      stopTime = this._releaseParam(gain.gain, now, releaseSeconds)
     } catch {
       // Gain may already be disconnected or at zero
     }
-
-    // Schedule the oscillator stop after release
-    const stopTime = now + releaseSeconds
     try {
       oscillator.stop(stopTime)
     } catch {
@@ -1259,7 +1320,7 @@ export class AudioEngine {
         }
         this.toneCleanupTimer = null
       },
-      Math.ceil(releaseSeconds * 1000) + 30,
+      Math.ceil((stopTime - now) * 1000) + 30,
     )
     this.isPlaying = false
   }
@@ -1744,7 +1805,10 @@ export class AudioEngine {
       mainGain.gain.setValueAtTime(0, now)
       mainGain.gain.linearRampToValueAtTime(0.7, now + 0.005)
       mainGain.gain.setValueAtTime(0.7, now + shortDur)
-      mainGain.gain.linearRampToValueAtTime(0, now + shortDur + 0.03)
+      // Asymptotic release (30 ms nominal): the linear-to-zero tail this
+      // replaces is the squeezed-pop shape. The source stops at full note
+      // duration, well past this tail.
+      mainGain.gain.setTargetAtTime(0, now + shortDur, 0.03 / 5)
       hasCustomEnvelope = true
     }
 
@@ -1788,14 +1852,18 @@ export class AudioEngine {
     )
     const attackEnd = now + attackDuration
     const releaseStart = now + safeDuration - releaseDuration
-    const noteEnd = now + safeDuration
 
-    param.setValueAtTime(0, now)
-    param.linearRampToValueAtTime(options.peak, attackEnd)
+    // Attack rises exponentially from the floor: even the perceived
+    // loudness growth a linear ramp lacks. Release decays asymptotically —
+    // the linear-to-zero ramp this replaces put most of its audible drop
+    // in its last milliseconds, a tick at every note end. The source stops
+    // at noteEnd + slack (playTone adds it), so the tail is buried.
+    param.setValueAtTime(AudioEngine.ENVELOPE_FLOOR, now)
+    param.exponentialRampToValueAtTime(options.peak, attackEnd)
     if (releaseStart > attackEnd) {
       param.setValueAtTime(options.peak, releaseStart)
     }
-    param.linearRampToValueAtTime(0, noteEnd)
+    param.setTargetAtTime(0, releaseStart, releaseDuration / 5)
   }
 
   /**
@@ -1817,7 +1885,6 @@ export class AudioEngine {
       Math.max(0, releaseStart - attackEnd),
     )
     const decayEnd = attackEnd + decayDuration
-    const noteEnd = now + safeDuration
 
     param.setValueAtTime(0, now)
     param.linearRampToValueAtTime(0.8, attackEnd)
@@ -1827,7 +1894,8 @@ export class AudioEngine {
     if (releaseStart > decayEnd) {
       param.linearRampToValueAtTime(0.3, releaseStart)
     }
-    param.linearRampToValueAtTime(0, noteEnd)
+    // Asymptotic release, not linear-to-zero (the squeezed-pop shape).
+    param.setTargetAtTime(0, releaseStart, releaseDuration / 5)
   }
 
   /**
@@ -2007,19 +2075,25 @@ export class AudioEngine {
     if (!ctx) return
 
     const now = ctx.currentTime
-    const stopTime = now + AudioEngine.NOTE_RELEASE_SECONDS
+    let stopTime =
+      now +
+      AudioEngine.NOTE_RELEASE_SECONDS +
+      AudioEngine.RELEASE_STOP_SLACK_SECONDS
 
-    // Release envelope (GH #130 fix: guard for voices with no/null gains, e.g. metronome)
+    // Release envelope (GH #130 fix: guard for voices with no/null gains,
+    // e.g. metronome). The 75 ms LINEAR ramp that lived here was the
+    // NoteDial pop: a preview spin retriggers ~30x/s and every voice was
+    // cut with the exact "squeezed" shape the pop-free doc forbids. Commit
+    // c6371ba8 had prescribed setTargetAtTime; it regressed to linear —
+    // and the old test pinned the regression as correct.
     const firstGain = voice.gains[0]
     if (firstGain != null) {
       try {
-        if (typeof firstGain.gain.cancelAndHoldAtTime === 'function') {
-          firstGain.gain.cancelAndHoldAtTime(now)
-        } else {
-          firstGain.gain.cancelScheduledValues(now)
-          firstGain.gain.setValueAtTime(firstGain.gain.value, now)
-        }
-        firstGain.gain.linearRampToValueAtTime(0, stopTime)
+        stopTime = this._releaseParam(
+          firstGain.gain,
+          now,
+          AudioEngine.NOTE_RELEASE_SECONDS,
+        )
       } catch {
         /* gain may be disconnected */
       }

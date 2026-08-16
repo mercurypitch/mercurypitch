@@ -29,11 +29,65 @@ function pianoWave(audioContext: AudioContext): PeriodicWave {
   return wave
 }
 
+/**
+ * A shared bus for guide tones: gain → limiter → destination.
+ *
+ * Callers that can fire several tones in one frame (the Zen guide) must not
+ * connect them to the raw destination — at 0.32 peak each their sum clips.
+ * The limiter is insurance for exactly that pile-up; the 0.8 trim keeps the
+ * normal case comfortably under it.
+ */
+export function createGuideToneBus(audioContext: AudioContext): GainNode {
+  const limiter = audioContext.createDynamicsCompressor()
+  limiter.threshold.value = -12
+  limiter.knee.value = 20
+  limiter.ratio.value = 12
+  limiter.attack.value = 0.002
+  limiter.release.value = 0.15
+  limiter.connect(audioContext.destination)
+  const bus = audioContext.createGain()
+  bus.gain.value = 0.8
+  bus.connect(limiter)
+  return bus
+}
+
+/**
+ * Close a guide-tone bus and then its context, in that order, with a gap.
+ *
+ * Never `close()` mid-tone: the context dies at whatever sample it is on — a
+ * full-scale cut into a PA (a confirmed pop source). The bus closes with the
+ * documented release shape and the context follows only after the longest
+ * tone tail (durationSec ≤ 1.2 s + release) has rung out.
+ */
+export function closeGuideToneBus(
+  audioContext: AudioContext,
+  bus: GainNode | null,
+  closeDelayMs = 1600,
+): void {
+  try {
+    if (bus !== null) {
+      const now = audioContext.currentTime
+      bus.gain.cancelScheduledValues(now)
+      bus.gain.setValueAtTime(bus.gain.value, now)
+      bus.gain.setTargetAtTime(0, now, 0.03)
+    }
+  } catch {
+    /* context may already be closed */
+  }
+  setTimeout(() => {
+    void audioContext.close().catch(() => undefined)
+  }, closeDelayMs)
+}
+
 /** Play a soft, piano-like reference tone and resolve when it has decayed. */
 export function playReferenceTone(
   audioContext: AudioContext,
   midi: number,
   durationSec = 1,
+  // Callers that fire several tones per frame (the Zen guide) route them
+  // through a shared bus + limiter; a raw-destination connect lets
+  // simultaneous cues sum past full scale and clip.
+  destination?: AudioNode,
 ): Promise<void> {
   // iOS can auto-suspend the context between tasks; a suspended context
   // would never fire osc.onended and the guided flow would hang on it.
@@ -75,7 +129,7 @@ export function playReferenceTone(
 
     osc.connect(filter)
     filter.connect(gain)
-    gain.connect(audioContext.destination)
+    gain.connect(destination ?? audioContext.destination)
     osc.onended = () => {
       clearTimeout(fallback)
       osc.disconnect()
