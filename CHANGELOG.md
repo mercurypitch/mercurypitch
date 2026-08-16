@@ -65,6 +65,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **The Lab is now a focused research workspace.** Its five tools — Capture &
+  inspect, Tune detector, Benchmark algorithms, Transcribe stem and Compare
+  mappings — use one instrument-panel language and open without the unrelated
+  practice navigation competing for space. The tools have direct links,
+  keyboard tab navigation, a compact tablet picker, clearer setup and result
+  states, and local recovery when one tool fails. Leaving a tool also stops its
+  microphone, audio and benchmark work instead of letting it continue hidden.
+
 - **The app adapts to televisions and slower devices.** A session on a Google
   TV turned up stuttering playback in Guitar Night, Piano Night and the karaoke
   mixer, file pickers that did nothing, loop buttons rendered grey instead of
@@ -222,14 +230,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   as before.
 
 ### Changed
-
-- **The Lab looks like the rest of the app.** The supporter research surface —
-  spectral workbench, pitch detection, the algorithm bench and the mapping
-  differ — was still wearing the old utilitarian styling while the rest of the
-  app moved on. Every tab now shares one instrument-panel look: tools gathered
-  into groups instead of a long row of identical buttons, readouts whose digits
-  hold their place as the numbers change, and empty panels that say what to do
-  first rather than sitting blank. What the Lab does is unchanged.
 
 - **The account settings tab reads top-down by risk.** Install as an app now
   sits above the Danger Zone, and the Danger Zone ships collapsed — its
