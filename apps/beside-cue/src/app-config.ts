@@ -1,5 +1,7 @@
 import type { PullOption } from './content'
 import { bSideAcknowledgements, cuePhrases, notNowAcknowledgements, pullOptions, } from './content'
+import type { CinematicOnboardingMediaManifest } from './onboarding'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_2 } from './onboarding'
 
 export interface DailyCuePreset {
   readonly id: string
@@ -21,8 +23,24 @@ export interface DailyCueConfig {
   }
 }
 
+export type CinematicOnboardingConfig =
+  | {
+      /** Architecture is present, but Welcome remains the first-run surface. */
+      readonly delivery: 'welcome-only'
+      readonly revision: string
+      readonly contractVersion: '0.2.0'
+    }
+  | {
+      /** Phase 5 may select this only with a complete packaged media manifest. */
+      readonly delivery: 'cinematic-first-run'
+      readonly revision: string
+      readonly contractVersion: '0.2.0'
+      readonly media: CinematicOnboardingMediaManifest
+    }
+
 export interface BesideCueAppConfig {
   readonly mascotSetId: string
+  readonly onboarding: CinematicOnboardingConfig
   readonly pullOptions: readonly PullOption[]
   readonly cuePhrases: readonly string[]
   readonly bSideAcknowledgements: readonly string[]
@@ -37,6 +55,11 @@ export interface BesideCueAppConfig {
  */
 export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
   mascotSetId: 'corktop-v1',
+  onboarding: Object.freeze({
+    delivery: 'welcome-only',
+    revision: 'cinematic-onboarding-v0.2-architecture',
+    contractVersion: CINEMATIC_ONBOARDING_TIMELINE_V0_2.version,
+  }),
   pullOptions,
   cuePhrases,
   bSideAcknowledgements,

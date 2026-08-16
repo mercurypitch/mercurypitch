@@ -58,7 +58,6 @@ describe('content pack', () => {
           token: { still: '/x.webp', alt: '' },
           noticeOverlay: { still: '/y.webp', alt: '' },
           voiceNote: '',
-          modelled: false,
         },
       ],
       lines: [
@@ -105,19 +104,39 @@ describe('content pack', () => {
     expect(slots.length).toBeGreaterThan(0)
   })
 
-  it('records which cue entities are modelled and which are stand-ins', () => {
-    // Production state belongs where the art is, not in a document that drifts
-    // away from it.
-    const modelled = DEFAULT_CONTENT_PACK.cueEntities.filter(
-      (cueEntity) => cueEntity.modelled,
-    )
-
-    expect(modelled.map((cueEntity) => cueEntity.id)).toEqual(['snacking'])
-    for (const cueEntity of modelled) {
-      // A modelled creature earns a real description; a stand-in gets the
-      // generic one and must not claim to be a character.
-      expect(cueEntity.token.alt).not.toMatch(/standing in/u)
+  it('keeps runtime art honest while authored readiness stays with its source', () => {
+    for (const cueEntity of DEFAULT_CONTENT_PACK.cueEntities) {
+      expect(cueEntity.token.alt).toMatch(/standing in/iu)
     }
+  })
+
+  it('keeps every user-facing cue description broad and neutral', () => {
+    const publicCopy = [
+      ...pullOptions.flatMap((option) => [
+        option.label,
+        option.moment,
+        ...option.suggestions,
+      ]),
+      ...DEFAULT_CONTENT_PACK.cueEntities.flatMap((entity) => [
+        entity.name,
+        entity.token.alt,
+        entity.voiceNote,
+      ]),
+    ].join('\n')
+
+    expect(publicCopy).not.toMatch(/alcohol|smok|vap|takeaway/iu)
+  })
+
+  it('maps unpublished legacy pull ids to the neutral cast', () => {
+    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'alcohol-ritual')?.id).toBe(
+      'familiar-ritual',
+    )
+    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'smoking-vaping')?.id).toBe(
+      'two-minute-pause',
+    )
+    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'takeaway')?.id).toBe(
+      'one-tap-convenience',
+    )
   })
 
   it('keeps a spoken line free of the pull it belongs to', () => {

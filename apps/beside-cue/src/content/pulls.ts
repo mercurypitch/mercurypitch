@@ -8,7 +8,7 @@ export interface PullOption {
 export const pullOptions: readonly PullOption[] = [
   {
     id: 'scrolling',
-    label: 'Another scroll',
+    label: 'Endless scrolling',
     moment: 'When the feed keeps going after you meant to leave.',
     suggestions: [
       'Put the phone in another room.',
@@ -27,38 +27,38 @@ export const pullOptions: readonly PullOption[] = [
     ],
   },
   {
-    id: 'alcohol-ritual',
-    label: 'The familiar drink ritual',
+    id: 'familiar-ritual',
+    label: 'The familiar ritual',
     moment: 'When the usual time or place starts the routine.',
     suggestions: [
-      'Pour something alcohol-free.',
-      'Pick up the guitar for one riff.',
+      'Pour a glass of water.',
+      'Put on one song you like.',
       'Take a short walk around the block.',
     ],
   },
   {
-    id: 'smoking-vaping',
-    label: 'The smoking or vaping moment',
-    moment: 'When your hands begin the familiar sequence.',
+    id: 'two-minute-pause',
+    label: 'The two-minute pause',
+    moment: 'When you reach for a familiar pause before choosing it.',
     suggestions: [
-      'Hold a cold glass of water.',
-      'Walk one block.',
+      'Take six slow breaths.',
+      'Stand by an open window for two minutes.',
       'Send one message to someone you like.',
     ],
   },
   {
-    id: 'takeaway',
-    label: 'The automatic takeaway',
-    moment: 'When ordering feels easier than making one small thing.',
+    id: 'one-tap-convenience',
+    label: 'One-tap convenience',
+    moment: 'When one tap starts to feel like the easiest answer.',
     suggestions: [
-      'Prepare one meal component.',
-      'Open the fridge and choose one ingredient.',
-      'Fill a glass of water first.',
+      'Wait five minutes before opening checkout.',
+      'Write down what you were about to order.',
+      'Move it to a later list first.',
     ],
   },
   {
     id: 'avoidance',
-    label: 'Putting the thing off',
+    label: 'Putting it off',
     moment: 'When circling the task takes over from beginning it.',
     suggestions: [
       'Open the file and write one line.',
