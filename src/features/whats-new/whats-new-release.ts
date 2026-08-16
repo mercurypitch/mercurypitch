@@ -24,6 +24,40 @@ export function releaseLine(version: string): string | null {
   return `${match[1]}.${match[2]}`
 }
 
+/**
+ * Routes that mean "somebody sent me here for THIS" — a shared song, a
+ * scanned code, a password reset, one chapter of the guide. Arriving on one
+ * is a request for that thing, and opening a release page over it is the
+ * same rudeness whatever the page says.
+ *
+ * A denylist rather than an allowlist, because the ordinary ways in are the
+ * long tail: a bare URL, a tab, the Karaoke upload view, and — the one that
+ * cost a release its announcement — `settings-section`, which is simply what
+ * the hash says when the app restores somebody who was last in Settings.
+ * An allowlist of 'tab' and 'unknown' silently excluded all of those.
+ */
+export const DEEP_LINK_ROUTE_TYPES: readonly string[] = [
+  'jam-room',
+  'sync-room',
+  'device-link',
+  'share-short',
+  'share-load',
+  'share-fallback',
+  'reset-password',
+  'uvr-session',
+  'uvr-session-mixer',
+  'learn-chapter',
+  'guide-start',
+  'onboarding-map',
+  'voice-constellation',
+  'admin',
+]
+
+/** True when arriving on this route should hold the announcement back. */
+export function routeSuppressesAnnouncement(routeType: string): boolean {
+  return DEEP_LINK_ROUTE_TYPES.includes(routeType)
+}
+
 export interface AnnounceInput {
   /** The running app version, e.g. package.json's `0.9.0`. */
   current: string

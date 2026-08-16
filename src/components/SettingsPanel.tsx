@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { PricingPanel } from '@/components/billing/PricingPanel'
@@ -41,7 +41,7 @@ import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily,
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setSwipeNavEnabled, setUiMode, swipeNavEnabled, uiMode, } from '@/stores/settings-store'
-import { setSettingsSection, setShowWelcome, settingsSection, } from '@/stores/ui-store'
+import { setSettingsAnchor, setSettingsSection, setShowWelcome, settingsAnchor, settingsSection, } from '@/stores/ui-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import styles from './SettingsPanel.module.css'
 
@@ -147,6 +147,35 @@ export const SettingsPanel: Component = () => {
   // in-app jumps (openSettingsSection — e.g. "Get credits" toasts).
   const activeTab = settingsSection
   const setActiveTab = setSettingsSection
+
+  // "Take me to that setting" is only half-done by opening the right sub-tab:
+  // Practice alone is a long page, and landing somebody at the top of it has
+  // handed them a search task. Whoever set the anchor (the What's New page,
+  // an action toast) also picked the sub-tab, so by the time this runs the
+  // control is in the DOM — one frame later, after Solid has rendered it.
+  createEffect(() => {
+    const anchor = settingsAnchor()
+    if (anchor === null) return
+    // Read the section too, so switching tabs by hand cannot leave a stale
+    // anchor waiting to yank the page on some later render.
+    settingsSection()
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-settings-anchor="${anchor}"]`,
+      )
+      setSettingsAnchor(null)
+      if (el === null) return
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      // A scroll with no landing mark leaves people wondering which control
+      // they were sent to. The class removes itself; it is a flash, not a
+      // state the panel can get stuck in.
+      el.classList.add(styles.settingsAnchorFlash)
+      window.setTimeout(
+        () => el.classList.remove(styles.settingsAnchorFlash),
+        1600,
+      )
+    })
+  })
 
   return (
     <div class={styles.settingsPanel}>
@@ -776,7 +805,10 @@ export const SettingsPanel: Component = () => {
           </div>
 
           {/* Voice Control Section */}
-          <div class={styles.settingsSection}>
+          <div
+            class={styles.settingsSection}
+            data-settings-anchor="voice-control"
+          >
             <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>

@@ -245,21 +245,39 @@
   }
 }
 
-/* The "take me there" button under a Try it line. Sized as a real touch
-   target: on a phone this is the whole point of the card. */
-.goBtn {
-  align-self: flex-start;
-  min-height: var(--touch-target, 44px);
-  padding: 0 var(--spacing-xl);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--accent);
+/* The action reads as part of the Try it sentence — a link with a hit area,
+   not a slab under the card. Seven cards each ending in a full-width button
+   made the page a stack of blocks; inline, the eye stays on the sentence and
+   the tap target is still there. `inline-flex` + the vertical padding keep it
+   comfortably tappable without changing the line's height. */
+.goLink {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-pill, 999px);
   background: transparent;
   color: var(--accent);
-  font-size: var(--text-md);
+  font-size: inherit;
   font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.goBtn:hover {
+.goLink > span {
+  /* The chevron needs its own gap — a leading space inside the span
+     collapses in flex layout and the glyph sits against the last letter. */
+  margin-left: 0.3rem;
+}
+
+.goLink:hover {
   background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.goLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

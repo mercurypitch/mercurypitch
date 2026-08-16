@@ -22,7 +22,9 @@ import { exerciseLabel, segmentVariantLabel, } from '@/features/routines/segment
 import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { navigateTo } from '@/lib/hash-router'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
+import { openLearningWalkthrough } from '@/stores/app-store'
 import { exerciseHistory } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -136,14 +138,38 @@ const HomePage: Component = () => {
       {/* A <div>, not <header>: the global app-bar CSS targets header and
           adds padding plus a doubled safe-area inset on phones. */}
       <div class={styles.head}>
-        <h1 class={styles.greeting}>{greeting()}</h1>
-        <p class={styles.date}>
-          {new Date().toLocaleDateString(undefined, {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </p>
+        <div class={styles.headText}>
+          <h1 class={styles.greeting}>{greeting()}</h1>
+          <p class={styles.date}>
+            {new Date().toLocaleDateString(undefined, {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+        </div>
+        {/* Learn and What's new sat in the sidebar, where four controls no
+            longer fit a phone and neither had anything to do with the page
+            you were on. Home is where you arrive, which is where "what is
+            this" and "what changed" belong. */}
+        <div class={styles.headActions}>
+          <button
+            type="button"
+            class={styles.headAction}
+            onClick={() => openLearningWalkthrough()}
+            data-testid="home-learn"
+          >
+            Learn
+          </button>
+          <button
+            type="button"
+            class={`${styles.headAction} ${styles.headActionAccent}`}
+            onClick={() => navigateTo({ type: 'whats-new' })}
+            data-testid="home-whats-new"
+          >
+            What's new
+          </button>
+        </div>
       </div>
 
       <div class={styles.grid}>

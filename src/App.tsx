@@ -3128,7 +3128,6 @@ const AppShell: Component<AppProps> = (props) => {
                 class={sidebarOpen() === true ? 'open' : ''}
                 onOctaveShift={handleOctaveShift}
                 onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-                onOpenLearn={openLearningWalkthrough}
                 onOpenGuide={openGuideSelection}
                 melody={() => melodyStore.items()}
                 currentNoteIndex={currentNoteIndex}

@@ -7,8 +7,52 @@
   flex-shrink: 0;
 }
 
+/* Greeting left, the two "explain the app" doors right. They wrap under the
+   greeting on a narrow phone rather than squeezing it — a date and a name
+   are the point of this row, the buttons are the guests. */
 .head {
   margin-bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.headText {
+  min-width: 0;
+}
+
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.headAction {
+  display: inline-flex;
+  align-items: center;
+  /* A real target on a phone without looking like a primary action. */
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.headAction:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.headActionAccent {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
 }
 .greeting {
   font-size: 1.6rem;

@@ -80,30 +80,33 @@ export const WhatsNewPage: Component<WhatsNewPageProps> = (props) => {
                   <h2 class={styles.highlightTitle}>{item.title}</h2>
                 </div>
                 <p class={styles.highlightBody}>{item.body}</p>
+                {/* The action sits INSIDE the sentence rather than under it
+                    as a slab: reading "open the Progress tab" and then having
+                    to go find it is most of the reason a release page gets
+                    closed with nothing tried, but a full-width button per card
+                    turns seven cards into seven slabs. Closing first marks the
+                    release read, so arriving somewhere new ends the
+                    announcement rather than leaving a panel to dismiss. */}
                 <p class={styles.tryIt}>
                   <span class={styles.tryItLabel}>Try it: </span>
                   {item.tryIt}
+                  <Show when={item.go}>
+                    {(go) => (
+                      <button
+                        type="button"
+                        class={styles.goLink}
+                        data-testid={`whats-new-go-${item.id}`}
+                        onClick={() => {
+                          props.onClose()
+                          go().run()
+                        }}
+                      >
+                        {go().label}
+                        <span aria-hidden="true"> &rsaquo;</span>
+                      </button>
+                    )}
+                  </Show>
                 </p>
-                {/* Reading "open the Progress tab" and then having to go
-                    find it is most of the reason a release page gets closed
-                    without anything being tried. Closing first marks the
-                    release read, so arriving somewhere new is the end of
-                    the announcement rather than a panel to dismiss later. */}
-                <Show when={item.go}>
-                  {(go) => (
-                    <button
-                      type="button"
-                      class={styles.goBtn}
-                      data-testid={`whats-new-go-${item.id}`}
-                      onClick={() => {
-                        props.onClose()
-                        go().run()
-                      }}
-                    >
-                      {go().label}
-                    </button>
-                  )}
-                </Show>
               </section>
             )}
           </For>
