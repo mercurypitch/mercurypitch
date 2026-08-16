@@ -80,13 +80,16 @@ export const WhatsNewPage: Component<WhatsNewPageProps> = (props) => {
                   <h2 class={styles.highlightTitle}>{item.title}</h2>
                 </div>
                 <p class={styles.highlightBody}>{item.body}</p>
-                {/* The action sits INSIDE the sentence rather than under it
-                    as a slab: reading "open the Progress tab" and then having
-                    to go find it is most of the reason a release page gets
-                    closed with nothing tried, but a full-width button per card
-                    turns seven cards into seven slabs. Closing first marks the
-                    release read, so arriving somewhere new ends the
-                    announcement rather than leaving a panel to dismiss. */}
+                {/* Reading "open the Progress tab" and then having to go find
+                    it is most of the reason a release page gets closed with
+                    nothing tried, so every highlight that can be acted on
+                    carries the way there. It is a pill on its own row inside
+                    the chip (see .tryIt) — inline it landed wherever the
+                    sentence happened to end and no two cards agreed, and a
+                    full-width button per card made seven of them a stack of
+                    slabs. Closing first marks the release read, so arriving
+                    somewhere new ends the announcement rather than leaving a
+                    panel to dismiss later. */}
                 <p class={styles.tryIt}>
                   <span>
                     <span class={styles.tryItLabel}>Try it: </span>
