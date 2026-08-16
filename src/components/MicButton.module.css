@@ -16,7 +16,11 @@
   color: var(--text-primary);
   font-size: 0.78rem;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.12s ease;
   white-space: nowrap;
   line-height: 1;
   /* The mic button is a fixed icon control — never let a tight control bar
@@ -44,7 +48,7 @@
 }
 
 .ctrlBtn:hover:not(:disabled) {
-  background: var(--border-light);
+  background: var(--bg-hover);
   border-color: var(--accent);
 }
 

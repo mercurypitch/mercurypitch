@@ -16,10 +16,10 @@ interface SessionBrowserProps {
 }
 
 const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
-  beginner: 'var(--accent-success)',
-  intermediate: 'var(--accent-warning)',
-  advanced: 'var(--accent-danger)',
-  expert: 'var(--accent-info)',
+  beginner: 'var(--success)',
+  intermediate: 'var(--warning)',
+  advanced: 'var(--danger)',
+  expert: 'var(--accent)',
 }
 
 const CATEGORY_LABELS: Partial<Record<SessionCategory, string>> = {

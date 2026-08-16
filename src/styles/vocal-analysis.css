@@ -50,12 +50,12 @@
   gap: 12px;
 }
 
-.share-btn {
+.community-share-tab .share-btn {
   padding: 10px 20px;
   background: var(--accent);
   border: none;
   border-radius: 8px;
-  color: white;
+  color: var(--on-accent, var(--bg-primary, #0d1117));
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -64,12 +64,12 @@
   transition: all 0.2s ease;
 }
 
-.share-btn:hover {
+.community-share-tab .share-btn:hover {
   background: var(--accent);
   opacity: 0.9;
 }
 
-.share-btn-labeled .icon-svg {
+.community-share-tab .share-btn-labeled .icon-svg {
   width: 16px;
   height: 16px;
 }
