@@ -337,8 +337,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.8k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
+| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.3k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
-| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.2k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
