@@ -26,7 +26,7 @@
 }
 .countdown {
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 2px 8px;
@@ -74,13 +74,22 @@
   border: none;
   border-radius: 9px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   font-weight: 650;
   font-size: 0.85rem;
   cursor: pointer;
 }
-.singBtn:hover {
-  filter: brightness(1.05);
+.singBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.singBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.singBtn:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.55);
+  opacity: 0.55;
 }
 .hearBtn {
   padding: 8px 16px;
@@ -105,7 +114,7 @@
 }
 .boardStat {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 .rankList {
@@ -130,7 +139,7 @@
 .rankNum {
   width: 16px;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .rankName {
   flex: 1;
@@ -156,7 +165,7 @@
   margin-top: 8px;
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   cursor: pointer;
   padding: 0;
@@ -168,5 +177,5 @@
   margin: 6px 0 0;
   font-size: 0.7rem;
   line-height: 1.4;
-  color: var(--text-muted, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
 }

@@ -62,7 +62,7 @@
 }
 .date {
   margin: 2px 0 0;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -112,7 +112,7 @@
 }
 .streakLabel {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .freezes {
   margin-left: auto;
@@ -142,7 +142,7 @@
   font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 /* Holding any at all is worth reading from across the room. */
 .freezeCountHas {
@@ -218,7 +218,7 @@
 .goalText {
   display: block;
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 .streakMeta {
   display: flex;
@@ -304,7 +304,7 @@
 }
 .sessionTime {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .sessionEmpty {
@@ -333,13 +333,15 @@
   border: none;
   border-radius: 10px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   font-weight: 650;
   font-size: 0.9rem;
   cursor: pointer;
 }
-.primaryBtn:hover {
-  filter: brightness(1.05);
+.primaryBtn:hover:not(:disabled),
+.segStart:hover:not(:disabled),
+.accountNudgeCta:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 /* One quiet line above the bar. It explains the focus ring sitting on Resume,
@@ -406,7 +408,7 @@
   color: var(--text-primary);
 }
 .segExercise {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 400;
 }
 /* Carries the mode chip as well as the length now, so it is a row. */
@@ -415,7 +417,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 /* Which of an exercise's modes this segment runs — "Sirens", "Lip trills".
@@ -435,7 +437,7 @@
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   font-weight: 600;
   font-size: 0.82rem;
   cursor: pointer;
@@ -449,14 +451,14 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 .segStep {
   width: 22px;
   text-align: center;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .sessionActions {
@@ -465,7 +467,7 @@
 .linkBtn {
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.82rem;
   cursor: pointer;
   padding: 0;
@@ -574,7 +576,7 @@
 }
 .statLabel {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 @media (max-width: 640px) {
@@ -615,13 +617,24 @@
   padding: 6px 12px;
   font-size: 0.74rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   background: var(--accent);
   cursor: pointer;
 }
 
-.accountNudgeCta:hover {
-  background: var(--accent-hover);
+.primaryBtn:focus-visible,
+.segStart:focus-visible,
+.accountNudgeCta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.primaryBtn:disabled,
+.segStart:disabled,
+.accountNudgeCta:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.55);
+  opacity: 0.55;
 }
 
 .accountNudgeSkip {
