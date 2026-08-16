@@ -67,6 +67,29 @@ export function createWhatsNewController(): WhatsNewController {
   }
 
   const announceIfNew = (returning: boolean) => {
+    // Automated runs get no ambient surfaces. Every spec seeds
+    // `pitchperfect_welcome_version` to skip onboarding, which makes every
+    // spec a returning visitor — so without this the release page opens over
+    // whatever the test was driving and swallows its clicks. Same seam the
+    // UVR panel uses to skip model pre-init.
+    if (
+      (window as unknown as Record<string, unknown>)['E2E_TEST_MODE'] === true
+    ) {
+      return
+    }
+
+    // Somebody who followed a link to a particular place asked for THAT
+    // place. A shared song, a jam room, a password reset — none of them are
+    // an invitation to read a release page, and the announcement keeps until
+    // they arrive at the app on their own terms.
+    // 'unknown' is the bare arrival — no hash at all, the commonest way in.
+    const bootRoute = parseHash(window.location.hash).type
+    const plainArrival =
+      bootRoute === 'unknown' ||
+      bootRoute === 'tab' ||
+      bootRoute === 'whats-new'
+    if (!plainArrival) return
+
     if (
       !shouldAnnounce({ current: APP_VERSION, seen: readSeen(), returning })
     ) {

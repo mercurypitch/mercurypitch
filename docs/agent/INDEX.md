@@ -107,9 +107,9 @@ These are the rules that break things when ignored.
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 500 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 450 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
+| `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 400 | What's New — the v0.9.0 release, in the visitor's terms Content, not code. |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 350 | ── Tab ID constants Use these everywhere instead of raw strings. |
-| `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 350 | What's New — the v0.9.0 release, in the visitor's terms Content, not code. |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 300 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
