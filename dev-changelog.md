@@ -87,6 +87,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through a full pattern via the session's loop-limit callback — live
   score, final result and metrics all speak coverage; both fail with the
   seam flipped back to `total`).
+- **Verified fixed and pinned: the toast stack no longer swallows taps
+  (CLAUDE-JOURNEY-012).** The finding predates the 7e10ac84..6946bc56
+  toast series; on current main the fixed container computes
+  `pointer-events: none` (taps inside the stack region fall through to
+  the page) while each toast body is `pointer-events: auto` (its dismiss
+  and action buttons work). Re-verified live in Chromium at 390x844: a
+  tap inside the container box below the last of three stacked toasts
+  lands on page content. The contract is now pinned by
+  `src/tests/notifications-hit-through.test.ts` so a stylesheet rework
+  cannot silently reintroduce the swallow.
 
 - **`LocalProgressNotice` hard-coded a plural verb (CLAUDE-JOURNEY-016).**
   The sentence template ended "...you did here are still on this device"
