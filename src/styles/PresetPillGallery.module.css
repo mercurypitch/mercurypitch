@@ -82,7 +82,10 @@
 .pillCurrent {
   background: var(--accent-dim);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(
+    --accent-text,
+    color-mix(in srgb, var(--accent) 75%, var(--text-primary))
+  );
 }
 
 .pillCurrent:hover {

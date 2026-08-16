@@ -16,10 +16,14 @@ interface SessionBrowserProps {
 }
 
 const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
-  beginner: 'var(--success)',
-  intermediate: 'var(--warning)',
-  advanced: 'var(--danger)',
-  expert: 'var(--accent)',
+  beginner:
+    'var(--status-success-fg, color-mix(in srgb, var(--success) 80%, var(--text-primary)))',
+  intermediate:
+    'var(--status-warning-fg, color-mix(in srgb, var(--warning) 80%, var(--text-primary)))',
+  advanced:
+    'var(--status-danger-fg, color-mix(in srgb, var(--danger) 80%, var(--text-primary)))',
+  expert:
+    'var(--accent-text, color-mix(in srgb, var(--accent) 75%, var(--text-primary)))',
 }
 
 const CATEGORY_LABELS: Partial<Record<SessionCategory, string>> = {
