@@ -130,14 +130,14 @@ entry. The line says what the room **is** before what you do in it — a title
 alone names a noun the visitor has no picture of (`ROOMS` in
 `src/features/onboarding/rooms.ts` is the source of truth):
 
-| Room           | Line                                                                                  | Target          |
-| -------------- | ------------------------------------------------------------------------------------- | --------------- |
-| **Practice**   | The live singing stage — every note you sing, drawn and scored as it happens          | `TAB_SINGING`   |
-| **Exercises**  | A library of eighteen short drills for range, agility, intervals and control          | `TAB_EXERCISES` |
-| **The Ascent** | A seven-week guided course — one themed week at a time, in order                      | `TAB_PATH`      |
-| **Karaoke**    | Your own songs turned into karaoke — the vocal split out, with lyrics and scoring     | `/karaoke`      |
-| **Jam**        | A shared room for singing together in real time — send someone the code               | `TAB_JAM`       |
-| **Analysis**   | A read-out of your voice — pitch traces, harmonics and consistency, in plain language | `TAB_ANALYSIS`  |
+| Room           | Line                                                                                                               | Target          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ | --------------- |
+| **Practice**   | The live singing stage — every note you sing, drawn and scored as it happens                                       | `TAB_SINGING`   |
+| **Exercises**  | A library of eighteen short drills for range, agility, intervals and control                                       | `TAB_EXERCISES` |
+| **The Ascent** | A seven-week guided course — one themed week at a time                                                             | `TAB_PATH`      |
+| **Karaoke**    | Your own songs turned into karaoke — the vocal split out, with lyrics and scoring                                  | `/karaoke`      |
+| **Jam**        | A shared room for singing together in real time — send someone the code                                            | `TAB_JAM`       |
+| **Analysis**   | A plain-language read of your voice — where your pitch went, how steady you held it, and what your tone is made of | `TAB_ANALYSIS`  |
 
 Plus one "and also" strip: Challenges, Leaderboard, Community, Compose, Guitar,
 Piano, Voice Mirror, Glass.

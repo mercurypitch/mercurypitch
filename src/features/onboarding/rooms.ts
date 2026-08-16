@@ -9,9 +9,10 @@
 //
 // The line is the whole point, and it has one job: say what the room IS
 // before saying what you do in it. A title alone ("Analysis") names a
-// noun the visitor has no picture of; "A read-out of your voice — pitch
-// traces, harmonics and consistency" gives them the picture first and
-// the activity second. Write every line that way round.
+// noun the visitor has no picture of; "A plain-language read of your
+// voice — where your pitch went, how steady you held it" gives them the
+// picture first and the activity second. Write every line that way round,
+// and in words a first-timer already owns: no "harmonics", no "orbs".
 
 import type { DestinationVisual } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -77,7 +78,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'ascent',
     title: 'The Ascent',
-    line: 'A seven-week guided course — one themed week at a time, in order.',
+    line: 'A seven-week guided course — one themed week at a time.',
     target: { kind: 'tab', tab: TAB_PATH },
     tourTab: TAB_PATH,
     visual: 'ascent',
@@ -100,7 +101,7 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'analysis',
     title: 'Analysis',
-    line: 'A read-out of your voice — pitch traces, harmonics and consistency, in plain language.',
+    line: 'A plain-language read of your voice — where your pitch went, how steady you held it, and what your tone is made of.',
     target: { kind: 'tab', tab: TAB_ANALYSIS },
     tourTab: TAB_ANALYSIS,
     visual: 'analysis',
