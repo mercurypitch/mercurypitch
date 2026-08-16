@@ -45,3 +45,45 @@ test('Lab pane separator resizes adjacent views with a real mouse @smoke', async
     .poll(async () => Number(await separator.getAttribute('aria-valuenow')))
     .toBeGreaterThan(before)
 })
+
+test('Pitch detector timeline resize grip changes its height with a real mouse @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+    window.localStorage.setItem('pitch_test_mode', 'generate')
+  })
+  await page.setViewportSize({ width: 1180, height: 720 })
+  await page.goto('/#/pitch-test')
+  await dismissOverlays(page)
+
+  await page.getByRole('button', { name: 'Start tone detection' }).click()
+
+  const separator = page.getByRole('separator', {
+    name: 'Resize detection timeline',
+  })
+  await separator.scrollIntoViewIfNeeded()
+  await expect(separator).toBeVisible()
+
+  const before = await separator.evaluate(
+    (element) => element.parentElement?.getBoundingClientRect().height,
+  )
+  const box = await separator.boundingBox()
+  expect(before).toBeDefined()
+  expect(box).not.toBeNull()
+
+  const x = box!.x + box!.width / 2
+  const y = box!.y + box!.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y + 60, { steps: 8 })
+  await page.mouse.up()
+
+  await expect
+    .poll(() =>
+      separator.evaluate(
+        (element) => element.parentElement?.getBoundingClientRect().height,
+      ),
+    )
+    .toBeGreaterThan(before!)
+})

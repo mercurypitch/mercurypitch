@@ -316,6 +316,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     string | undefined
   >()
   const [offlineProgress, setOfflineProgress] = createSignal(0)
+  let disposed = false
+  let micRequestGeneration = 0
+  let offlineAnalysisGeneration = 0
+  let cancelActiveUvr: (() => void) | null = null
 
   // Microphone state
   const [audioContext, setAudioContext] = createSignal<AudioContext | null>(
@@ -478,18 +482,37 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   let cancelTest = false
   let audioFileInput: HTMLInputElement | undefined
 
-  // Resize state
-  let waveformHeight = 280
+  // Waveform resize state. Keep the height reactive: CSS modules hash the
+  // canvas class, so querying a literal class name cannot update this view.
+  const [waveformHeight, setWaveformHeight] = createSignal(280)
   let isResizing = false
   let resizeStartY = 0
   let resizeStartHeight = 0
+  let previousBodyCursor = ''
+  let previousBodyUserSelect = ''
+
+  const clampWaveformHeight = (height: number): number =>
+    Math.max(150, Math.min(600, height))
+
+  const finishWaveformResize = () => {
+    if (!isResizing) return
+    isResizing = false
+    document.removeEventListener('mousemove', onResizeMouseMove)
+    document.removeEventListener('mouseup', finishWaveformResize)
+    document.body.style.cursor = previousBodyCursor
+    document.body.style.userSelect = previousBodyUserSelect
+  }
 
   const onResizeMouseDown = (e: MouseEvent) => {
+    if (e.button !== 0 || isResizing) return
+    e.preventDefault()
     isResizing = true
     resizeStartY = e.clientY
-    resizeStartHeight = waveformHeight
+    resizeStartHeight = waveformHeight()
+    previousBodyCursor = document.body.style.cursor
+    previousBodyUserSelect = document.body.style.userSelect
     document.addEventListener('mousemove', onResizeMouseMove)
-    document.addEventListener('mouseup', onResizeMouseUp)
+    document.addEventListener('mouseup', finishWaveformResize)
     document.body.style.cursor = 'ns-resize'
     document.body.style.userSelect = 'none'
   }
@@ -497,17 +520,19 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const onResizeMouseMove = (e: MouseEvent) => {
     if (!isResizing) return
     const delta = e.clientY - resizeStartY
-    waveformHeight = Math.max(150, Math.min(600, resizeStartHeight + delta))
-    const el = document.querySelector('.waveform-canvas') as HTMLElement | null
-    if (el) el.style.height = `${waveformHeight}px`
+    setWaveformHeight(clampWaveformHeight(resizeStartHeight + delta))
   }
 
-  const onResizeMouseUp = () => {
-    isResizing = false
-    document.removeEventListener('mousemove', onResizeMouseMove)
-    document.removeEventListener('mouseup', onResizeMouseUp)
-    document.body.style.cursor = ''
-    document.body.style.userSelect = ''
+  const onResizeKeyDown = (e: KeyboardEvent) => {
+    let nextHeight: number | null = null
+    if (e.key === 'ArrowUp') nextHeight = waveformHeight() - 20
+    else if (e.key === 'ArrowDown') nextHeight = waveformHeight() + 20
+    else if (e.key === 'Home') nextHeight = 150
+    else if (e.key === 'End') nextHeight = 600
+    if (nextHeight === null) return
+
+    e.preventDefault()
+    setWaveformHeight(clampWaveformHeight(nextHeight))
   }
 
   const zoomIn = () => {
@@ -660,123 +685,139 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const analyzeUploadedAudio = async () => {
     const samples = fileWaveform()
     const activeId = activeTrackId()
-    if (!samples || isAnalyzingOffline() || activeId == null || activeId === '')
+    if (
+      disposed ||
+      !samples ||
+      isAnalyzingOffline() ||
+      activeId == null ||
+      activeId === ''
+    )
       return
 
+    const generation = ++offlineAnalysisGeneration
+    const cancelled = (): boolean =>
+      disposed || generation !== offlineAnalysisGeneration
     setIsAnalyzingOffline(true)
     setOfflineProgress(0)
 
-    // Determine algorithms to run
-    const activeAlgosArr = Array.from(
-      ensembleMode() ? ensembleAlgorithms() : [selectedAlgorithm()],
-    )
-
-    const results: {
-      algorithm: AlgorithmId
-      pitches: TimeStampedPitchSample[]
-    }[] = activeAlgosArr.map((algo) => ({
-      algorithm: algo as AlgorithmId,
-      pitches: [],
-    }))
-
-    const sampleRate = audioContext()?.sampleRate ?? 44100
-    const windowSize = 2048 // 2048 samples per chunk
-    const stepSize = 1024 // 1024 samples hop size
-    const totalSteps = Math.floor((samples.length - windowSize) / stepSize)
-
-    // Using existing detectors which might have state.
-    // For a cleaner offline run, we could instantiate new ones, but this is fine for debug.
-    const currentDetectors = detectors()
-
-    for (let i = 0; i < totalSteps; i++) {
-      const startIndex = i * stepSize
-      const chunk = samples.slice(startIndex, startIndex + windowSize)
-      const timestamp = (startIndex + windowSize / 2) / sampleRate
-
-      for (let j = 0; j < activeAlgosArr.length; j++) {
-        const algoId = activeAlgosArr[j] as AlgorithmId
-        const detector = currentDetectors.find((d) => d.algorithm === algoId)
-        if (detector) {
-          let res: PitchDetectionResult | null = null
-          if (
-            'detectAsync' in detector &&
-            typeof detector.detectAsync === 'function'
-          ) {
-            res = await (
-              detector as {
-                detectAsync: (
-                  chunk: Float32Array,
-                ) => Promise<PitchDetectionResult | null>
-              }
-            ).detectAsync(chunk)
-          } else {
-            res = detector.detect(chunk)
-          }
-          if (res && res.clarity >= minConfidence() && res.frequency > 0) {
-            results[j]?.pitches.push({
-              freq: res.frequency,
-              clarity: res.clarity ?? 1.0,
-              time: timestamp,
-              noteName: res.noteName ?? null,
-            })
-          }
-        }
-      }
-
-      if (i % 50 === 0) {
-        setOfflineProgress((i / totalSteps) * 100)
-        await new Promise((r) => setTimeout(r, 0)) // yield to UI
-      }
-    }
-
-    const currentResults = [...offlineAnalysisResults()]
-    for (const res of results) {
-      const existingIdx = currentResults.findIndex(
-        (r) => r.algorithm === res.algorithm,
+    try {
+      // Determine algorithms to run
+      const activeAlgosArr = Array.from(
+        ensembleMode() ? ensembleAlgorithms() : [selectedAlgorithm()],
       )
-      if (existingIdx !== -1) {
-        currentResults[existingIdx] = res
-      } else {
-        currentResults.push(res)
-      }
-    }
 
-    setAnalyzedTracks((prev) =>
-      prev.map((t) => {
-        if (t.id === activeId) {
-          // Automatically segment pitches from the primary (first) algorithm
-          const primaryPitches =
-            currentResults.length > 0 ? currentResults[0].pitches : []
-          const newSegmentedNotes = segmentPitchesToNotes(primaryPitches, {
-            minClarity: 0.7,
-          })
+      const results: {
+        algorithm: AlgorithmId
+        pitches: TimeStampedPitchSample[]
+      }[] = activeAlgosArr.map((algo) => ({
+        algorithm: algo as AlgorithmId,
+        pitches: [],
+      }))
 
-          // Re-map lyrics if they exist
-          if (t.lrcLines) {
-            mapLyricsToMelody(newSegmentedNotes, t.lrcLines)
+      const sampleRate = audioContext()?.sampleRate ?? 44100
+      const windowSize = 2048 // 2048 samples per chunk
+      const stepSize = 1024 // 1024 samples hop size
+      const totalSteps = Math.floor((samples.length - windowSize) / stepSize)
+
+      // Using existing detectors which might have state.
+      // For a cleaner offline run, we could instantiate new ones, but this is fine for debug.
+      const currentDetectors = detectors()
+
+      for (let i = 0; i < totalSteps; i++) {
+        if (cancelled()) return
+        const startIndex = i * stepSize
+        const chunk = samples.slice(startIndex, startIndex + windowSize)
+        const timestamp = (startIndex + windowSize / 2) / sampleRate
+
+        for (let j = 0; j < activeAlgosArr.length; j++) {
+          const algoId = activeAlgosArr[j] as AlgorithmId
+          const detector = currentDetectors.find((d) => d.algorithm === algoId)
+          if (detector) {
+            let res: PitchDetectionResult | null = null
+            if (
+              'detectAsync' in detector &&
+              typeof detector.detectAsync === 'function'
+            ) {
+              res = await (
+                detector as {
+                  detectAsync: (
+                    chunk: Float32Array,
+                  ) => Promise<PitchDetectionResult | null>
+                }
+              ).detectAsync(chunk)
+              if (cancelled()) return
+            } else {
+              res = detector.detect(chunk)
+            }
+            if (res && res.clarity >= minConfidence() && res.frequency > 0) {
+              results[j]?.pitches.push({
+                freq: res.frequency,
+                clarity: res.clarity ?? 1.0,
+                time: timestamp,
+                noteName: res.noteName ?? null,
+              })
+            }
           }
-
-          const updatedTrack = {
-            ...t,
-            analysisResults: currentResults,
-            segmentedNotes: newSegmentedNotes,
-          }
-          if (updatedTrack.fileHash !== undefined) {
-            saveOfflineAnalysis(
-              updatedTrack.fileHash,
-              updatedTrack.analysisResults,
-              updatedTrack.lrcLines,
-              updatedTrack.segmentedNotes,
-            ).catch(console.error)
-          }
-
-          return updatedTrack
         }
-        return t
-      }),
-    )
-    setOfflineProgress(100)
-    setIsAnalyzingOffline(false)
+
+        if (i % 50 === 0) {
+          setOfflineProgress((i / totalSteps) * 100)
+          await new Promise((r) => setTimeout(r, 0)) // yield to UI
+          if (cancelled()) return
+        }
+      }
+
+      if (cancelled()) return
+      const currentResults = [...offlineAnalysisResults()]
+      for (const res of results) {
+        const existingIdx = currentResults.findIndex(
+          (r) => r.algorithm === res.algorithm,
+        )
+        if (existingIdx !== -1) {
+          currentResults[existingIdx] = res
+        } else {
+          currentResults.push(res)
+        }
+      }
+
+      setAnalyzedTracks((prev) =>
+        prev.map((t) => {
+          if (t.id === activeId) {
+            // Automatically segment pitches from the primary (first) algorithm
+            const primaryPitches =
+              currentResults.length > 0 ? currentResults[0].pitches : []
+            const newSegmentedNotes = segmentPitchesToNotes(primaryPitches, {
+              minClarity: 0.7,
+            })
+
+            // Re-map lyrics if they exist
+            if (t.lrcLines) {
+              mapLyricsToMelody(newSegmentedNotes, t.lrcLines)
+            }
+
+            const updatedTrack = {
+              ...t,
+              analysisResults: currentResults,
+              segmentedNotes: newSegmentedNotes,
+            }
+            if (updatedTrack.fileHash !== undefined) {
+              saveOfflineAnalysis(
+                updatedTrack.fileHash,
+                updatedTrack.analysisResults,
+                updatedTrack.lrcLines,
+                updatedTrack.segmentedNotes,
+              ).catch(console.error)
+            }
+
+            return updatedTrack
+          }
+          return t
+        }),
+      )
+      setOfflineProgress(100)
+    } finally {
+      if (!cancelled()) setIsAnalyzingOffline(false)
+    }
   }
 
   const separateVocalsFirst = async () => {
@@ -787,6 +828,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const currentAudioCtx = audioContext()
 
     if (
+      disposed ||
       !samples ||
       isAnalyzingOffline() ||
       isSeparating() ||
@@ -808,6 +850,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     try {
       const file = track.file
       const hash = await computeFileHash(file)
+      if (disposed) return
       const mode = getUvrProcessingMode()
       const sessionId = startUvrSession(
         file.name,
@@ -817,6 +860,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         mode,
         hash,
       )
+      setActiveUvrSessionId(sessionId)
+      cancelActiveUvr = () => cancelUvrPipeline(mode, sessionId)
 
       const sessions = getAllUvrSessions()
       const session = sessions.find((s) => s.sessionId === sessionId)
@@ -828,9 +873,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
       await runUvrPipeline(file, sessionId, mode, {
         onProgress: (pct) => {
-          setOfflineProgress(pct * 0.5) // First 50% is separation
+          if (!disposed) setOfflineProgress(pct * 0.5) // First 50% is separation
         },
         onComplete: (result) => {
+          if (disposed) return
           void (async () => {
             try {
               await completeUvrSession(
@@ -838,6 +884,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 result.outputs,
                 result.stemMeta,
               )
+              if (disposed) return
 
               const s = getUvrSession(sessionId)
               if (s) {
@@ -852,6 +899,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   processingMode: mode,
                   processingTime: s.processingTime,
                 })
+                if (disposed) return
               }
 
               // Now fetch the vocal stem back to Float32Array to continue with pitch detection
@@ -861,6 +909,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               ) {
                 const resp = await fetch(result.outputs.vocal)
                 const ab = await resp.arrayBuffer()
+                if (disposed) return
                 let ctx = currentAudioCtx
                 if (!ctx) {
                   ctx = new (
@@ -875,6 +924,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   setAudioContext(ctx)
                 }
                 const decoded = await ctx.decodeAudioData(ab)
+                if (disposed) return
 
                 const mono = new Float32Array(decoded.length)
                 if (decoded.numberOfChannels > 1) {
@@ -905,19 +955,26 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               setOfflineProgress(50)
               // Since analyzeUploadedAudio expects fileWaveform() to be updated, yield to reactivity
               await new Promise((r) => setTimeout(r, 0))
+              if (disposed) return
               await analyzeUploadedAudio()
             } catch (err) {
+              if (disposed) return
               console.error('Error post-processing vocal stem:', err)
               setUiError(
                 'The vocal stem was separated, but its pitch analysis failed. Try analysing the original file.',
               )
             } finally {
-              setIsSeparating(false)
-              setActiveUvrSessionId(undefined)
+              cancelActiveUvr = null
+              if (!disposed) {
+                setIsSeparating(false)
+                setActiveUvrSessionId(undefined)
+              }
             }
           })()
         },
         onError: (err) => {
+          cancelActiveUvr = null
+          if (disposed) return
           setErrorUvrSession(sessionId, err)
           if (err !== 'Cancelled') {
             console.error('Failed to separate vocals:', err)
@@ -930,6 +987,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         },
       })
     } catch (err) {
+      cancelActiveUvr = null
+      if (disposed) return
       console.error('Failed to initialize separation:', err)
       setUiError(
         'Vocal separation could not start. You can still analyse the original file.',
@@ -940,13 +999,22 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Start microphone input (only sets up, doesn't start detection loop)
   const startMicrophoneInput = async () => {
+    const requestGeneration = ++micRequestGeneration
     setUiError(null)
+    let ctx: AudioContext | null = null
+    let stream: MediaStream | null = null
     try {
-      const ctx = new AudioContext({ sampleRate: 44100 })
-      setAudioContext(ctx)
+      ctx = new AudioContext({ sampleRate: 44100 })
       await ctx.resume()
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (disposed || requestGeneration !== micRequestGeneration) {
+        stream.getTracks().forEach((track) => track.stop())
+        void ctx.close()
+        return
+      }
+
+      setAudioContext(ctx)
       setMediaStream(stream)
 
       const source = ctx.createMediaStreamSource(stream)
@@ -960,6 +1028,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       source.connect(analyserNode)
       setIsMicStartedByUser(true)
     } catch (error) {
+      stream?.getTracks().forEach((track) => track.stop())
+      void ctx?.close()
+      if (disposed || requestGeneration !== micRequestGeneration) return
       console.error('Error accessing microphone:', error)
       if (detectionTimerId !== null) {
         clearInterval(detectionTimerId)
@@ -967,7 +1038,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       }
       setIsDetecting(false)
       setIsMicStartedByUser(false)
-      void audioContext()?.close()
       setAudioContext(null)
       setUiError(
         'Microphone access failed. Check the browser permission and input device, then try again.',
@@ -977,12 +1047,18 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Dedicated cleanup for microphone resources (no reactivity)
   const cleanupMicrophoneResources = () => {
+    micRequestGeneration += 1
     mediaStream()
       ?.getTracks()
       .forEach((track) => track.stop())
     setMediaStream(null)
     sourceNode()?.disconnect()
     setSourceNode(null)
+    const analyserNode = analyser()
+    if (typeof analyserNode?.disconnect === 'function') {
+      analyserNode.disconnect()
+    }
+    setAnalyser(null)
     void audioContext()?.close()
     setAudioContext(null)
     setIsMicStartedByUser(false)
@@ -1203,6 +1279,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           }
           if (asyncDetector.detectAsync) {
             result = await asyncDetector.detectAsync(wave)
+            if (cancelTest || disposed) break
           } else {
             result = detector!.detect(wave)
           }
@@ -1239,8 +1316,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
         // Yield to UI between notes so progress updates render
         await new Promise<void>((r) => setTimeout(r, 20))
+        if (cancelTest || disposed) break
       }
-      setIsRunningTest(false)
+      if (!disposed) setIsRunningTest(false)
     }
     void runAll()
   }
@@ -1269,6 +1347,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   }
 
   onCleanup(() => {
+    disposed = true
+    cancelTest = true
+    offlineAnalysisGeneration += 1
+    cancelActiveUvr?.()
+    cancelActiveUvr = null
+    finishWaveformResize()
     stopLiveDetection()
     // This tab holds a RAW getUserMedia stream + its own AudioContext (it
     // bypasses the shared MicManager on purpose, to test detectors against
@@ -2146,7 +2230,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </div>
                 <div
                   class={styles.waveformCanvas}
-                  style={{ height: `${waveformHeight}px` }}
+                  style={{ height: `${waveformHeight()}px` }}
                 >
                   <div class={styles.waveformCanvasInner}>
                     <PitchOverTimeCanvas
@@ -2160,7 +2244,15 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </div>
                   <div
                     class={styles.resizeHandle}
+                    role="separator"
+                    tabindex="0"
+                    aria-label="Resize detection timeline"
+                    aria-orientation="horizontal"
+                    aria-valuemin="150"
+                    aria-valuemax="600"
+                    aria-valuenow={waveformHeight()}
                     onMouseDown={onResizeMouseDown}
+                    onKeyDown={onResizeKeyDown}
                   >
                     <div class={styles.resizeGrip}>
                       <span class={styles.gripDash} />
@@ -2368,7 +2460,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </div>
                   <div
                     class={styles.waveformCanvas}
-                    style={{ height: `${waveformHeight}px` }}
+                    style={{ height: `${waveformHeight()}px` }}
                   >
                     <div class={styles.waveformCanvasInner}>
                       <OfflinePitchCanvas
@@ -2384,7 +2476,15 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     </div>
                     <div
                       class={styles.resizeHandle}
+                      role="separator"
+                      tabindex="0"
+                      aria-label="Resize detection timeline"
+                      aria-orientation="horizontal"
+                      aria-valuemin="150"
+                      aria-valuemax="600"
+                      aria-valuenow={waveformHeight()}
                       onMouseDown={onResizeMouseDown}
+                      onKeyDown={onResizeKeyDown}
                     >
                       <div class={styles.resizeGrip}>
                         <span class={styles.gripDash} />
