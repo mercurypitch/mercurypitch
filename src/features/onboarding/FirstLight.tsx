@@ -21,6 +21,7 @@ import { openVoiceConstellation } from '@/features/voice-constellation/navigatio
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { startPageTour } from '@/stores/app-store'
 import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingBeads, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
@@ -258,8 +259,18 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     window.location.href = target.href
   }
 
+  // aria-modal is a claim; holding focus is what makes it true. Without
+  // the trap the overlay never took focus, so the first Tab landed in the
+  // obscured app behind it (CLAUDE-JOURNEY-018). Same shared trap as every
+  // other modal: focus in on open, Tab cycles inside, focus restored on
+  // unmount. No onClose — Escape must not skip onboarding; leaving is a
+  // deliberate choice the beats themselves offer.
+  let overlayRef: HTMLDivElement | undefined
+  useFocusTrap(() => overlayRef, { isOpen: () => true })
+
   return (
     <div
+      ref={overlayRef}
       class={styles.overlay}
       role="dialog"
       aria-modal="true"
