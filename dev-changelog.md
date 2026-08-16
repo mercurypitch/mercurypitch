@@ -90,6 +90,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gone, `plannedRounds` caps at the pool so the idle hint stops promising 6
   rounds at every difficulty, and the help copy describes the actual drill.
   Result metric names are unchanged (weakness-analyzer reads them).
+- **Stale-build crashes now recover instead of looping.** A lazy import
+  failing during render lands in Solid's `ErrorBoundary`, not the window
+  listeners, so the stale-build filters in `global-error-handler.ts` never ran
+  and a routine deploy showed the CrashModal — whose plain `location.reload()`
+  the controlling service worker answered from its own precache, reproducing
+  the identical crash on every click (seen on dev: adopting a stale waiting
+  worker while the origin had moved on). The boundary now routes stale-chunk
+  errors to `StaleBuildRecovery`, which reloads once automatically through the
+  new `reloadToLatest()`: adopt the waiting worker if one exists, otherwise
+  unregister and reload so the shell comes from the origin (kept, cache and
+  all, when offline). A session-stamped cooldown stops reload loops; the crash
+  modal's Reload uses the same escape; `announce()` stays quiet once an update
+  is accepted, killing the second prompt that raced the swap.
 
 - **Lab work no longer survives after its tool is left.** The earlier
   keep-visited-panels-mounted approach left spectral capture, raw microphone

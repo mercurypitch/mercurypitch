@@ -44,6 +44,7 @@ class FakeRegistration extends EventTarget {
   installing: FakeWorker | null = null
   waiting: FakeWorker | null = null
   readonly update = vi.fn(async () => Promise.resolve(undefined))
+  readonly unregister = vi.fn(async () => Promise.resolve(true))
 
   /** What the browser does when a new worker finishes installing. */
   announceInstalled(worker: FakeWorker): void {
@@ -58,6 +59,15 @@ class FakeContainer extends EventTarget {
   controller: FakeWorker | null = null
   readonly registration = new FakeRegistration()
   readonly register = vi.fn(async () => Promise.resolve(this.registration))
+  readonly getRegistration = vi.fn(
+    async (): Promise<FakeRegistration | undefined> =>
+      Promise.resolve(this.registration),
+  )
+}
+
+/** The cast every call site needs; the fakes cover what the module touches. */
+function asContainer(container: FakeContainer): ServiceWorkerContainer {
+  return container as unknown as ServiceWorkerContainer
 }
 
 interface Setup {
@@ -630,6 +640,220 @@ describe('the foreground re-check', () => {
       expect(registration.update).toHaveBeenCalledTimes(1)
     } finally {
       vi.useRealTimers()
+    }
+  })
+})
+
+// The dev incident of 2026-08-16: a stale build's chunks 404 into the SPA
+// fallback, the app crashes, and the crash screen's plain location.reload()
+// re-serves the very same dead shell from the worker's precache — forever.
+// reloadToLatest is the reload that cannot get stuck like that.
+describe('reloadToLatest — the reload that escapes the worker cache', () => {
+  it('adopts a waiting worker and reloads once it takes control', async () => {
+    const module = await freshModule()
+    const container = new FakeContainer()
+    const waiting = new FakeWorker()
+    container.registration.waiting = waiting
+    const reload = vi.fn()
+
+    const done = module.reloadToLatest({
+      container: asContainer(container),
+      reload,
+    })
+    await settle()
+
+    expect(waiting.received).toContainEqual({ type: SKIP_WAITING_MESSAGE })
+    // Not yet: the reload must wait for the matching HTML and chunk map.
+    expect(reload).not.toHaveBeenCalled()
+
+    container.dispatchEvent(new Event('controllerchange'))
+    await done
+
+    expect(reload).toHaveBeenCalledTimes(1)
+    // The graceful path keeps the registration — nothing needed unregistering.
+    expect(container.registration.unregister).not.toHaveBeenCalled()
+  })
+
+  it('unregisters before reloading when there is nothing newer to adopt', async () => {
+    const module = await freshModule()
+    const container = new FakeContainer()
+    const reload = vi.fn()
+
+    await module.reloadToLatest({
+      container: asContainer(container),
+      reload,
+    })
+
+    // Order matters: unregister first, so the next navigation is not claimed
+    // by the worker whose cache is the problem.
+    expect(container.registration.unregister).toHaveBeenCalledTimes(1)
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the registration when offline — the cache is all there is', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+    })
+    try {
+      const module = await freshModule()
+      const container = new FakeContainer()
+      const reload = vi.fn()
+
+      await module.reloadToLatest({
+        container: asContainer(container),
+        reload,
+      })
+
+      expect(container.registration.unregister).not.toHaveBeenCalled()
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      Reflect.deleteProperty(navigator, 'onLine')
+    }
+  })
+
+  it('falls back to unregistering when the adopted worker never takes over', async () => {
+    vi.useFakeTimers()
+    try {
+      const module = await freshModule()
+      const container = new FakeContainer()
+      container.registration.waiting = new FakeWorker()
+      const reload = vi.fn()
+
+      const done = module.reloadToLatest({
+        container: asContainer(container),
+        reload,
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await done
+
+      expect(container.registration.unregister).toHaveBeenCalledTimes(1)
+      expect(reload).toHaveBeenCalledTimes(1)
+
+      // The worker taking over late must not fire a second reload.
+      container.dispatchEvent(new Event('controllerchange'))
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reloads plainly when nothing is registered', async () => {
+    const module = await freshModule()
+    const container = new FakeContainer()
+    container.getRegistration.mockResolvedValueOnce(undefined)
+    const reload = vi.fn()
+
+    await module.reloadToLatest({ container: asContainer(container), reload })
+
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('reloads plainly when the container cannot be asked', async () => {
+    const module = await freshModule()
+    const container = new FakeContainer()
+    container.getRegistration.mockRejectedValueOnce(new Error('gone'))
+    const reload = vi.fn()
+
+    await module.reloadToLatest({ container: asContainer(container), reload })
+
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('still reloads when unregistering itself fails', async () => {
+    const module = await freshModule()
+    const container = new FakeContainer()
+    container.registration.unregister.mockRejectedValueOnce(new Error('no'))
+    const reload = vi.fn()
+
+    await module.reloadToLatest({
+      container: asContainer(container),
+      reload,
+    })
+
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('never reloads twice, however often it is asked', async () => {
+    const module = await freshModule()
+    const container = new FakeContainer()
+    const reload = vi.fn()
+
+    await module.reloadToLatest({
+      container: asContainer(container),
+      reload,
+    })
+    await module.reloadToLatest({
+      container: asContainer(container),
+      reload,
+    })
+
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('after the update is accepted', () => {
+  it('does not raise a second prompt while the swap is in flight', async () => {
+    // Seen on dev 2026-08-16: a second deploy's worker finished installing in
+    // the moment between clicking Reload and the page actually reloading, and
+    // a fresh prompt popped over the swap it was about to interrupt.
+    const { registration, onUpdateReady, applyUpdate } = await register({
+      waiting: new FakeWorker('99f00d1'),
+    })
+    await settle()
+    expect(onUpdateReady).toHaveBeenCalledTimes(1)
+
+    applyUpdate()
+    registration.announceInstalled(new FakeWorker('beef002'))
+    await settle()
+
+    expect(onUpdateReady).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('reloadToLatest with no seams', () => {
+  it('falls back to a real reload when the browser has no worker support', async () => {
+    const reload = vi.fn()
+    const location = Object.getOwnPropertyDescriptor(window, 'location')
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, reload },
+      configurable: true,
+    })
+    try {
+      const module = await freshModule()
+      // jsdom has no navigator.serviceWorker: the container default resolves
+      // to undefined and the plain-reload rung is all that is left.
+      await module.reloadToLatest()
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      if (location !== undefined)
+        Object.defineProperty(window, 'location', location)
+    }
+  })
+
+  it('finds the browser\u2019s own container when none is passed in', async () => {
+    const reload = vi.fn()
+    const location = Object.getOwnPropertyDescriptor(window, 'location')
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, reload },
+      configurable: true,
+    })
+    const container = new FakeContainer()
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: container,
+      configurable: true,
+    })
+    try {
+      const module = await freshModule()
+      await module.reloadToLatest()
+
+      expect(container.getRegistration).toHaveBeenCalledTimes(1)
+      expect(container.registration.unregister).toHaveBeenCalledTimes(1)
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      Reflect.deleteProperty(navigator, 'serviceWorker')
+      if (location !== undefined)
+        Object.defineProperty(window, 'location', location)
     }
   })
 })

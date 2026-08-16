@@ -1,0 +1,83 @@
+/* StaleBuildRecovery — calm full-screen notice while the app moves to the
+   current build. Same glass language as the CrashModal, minus the alarm red:
+   this is an update, not a failure. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(8, 10, 15, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(20, 24, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 40px 32px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  color: var(--accent);
+  animation: stale-recovery-spin 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon {
+    animation: none;
+  }
+}
+
+@keyframes stale-recovery-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+.detail {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.reloadBtn {
+  margin-top: 8px;
+  padding: 0.55rem 1.4rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg-primary, #0b0e14);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.reloadBtn:hover {
+  filter: brightness(1.1);
+}

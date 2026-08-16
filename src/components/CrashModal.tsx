@@ -8,6 +8,7 @@ import { ConsoleLog } from '@/components/ConsoleLog'
 import { GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { APP_VERSION } from '@/lib/defaults'
 import { replaceHash } from '@/lib/hash-router'
+import { reloadToLatest } from '@/lib/pwa-service-worker'
 import { appError } from '@/stores'
 import styles from './CrashModal.module.css'
 
@@ -22,7 +23,11 @@ export const CrashModal: Component = () => {
 
   const handleReload = (): void => {
     replaceHash({ type: 'tab', tab: 'singing' })
-    window.location.reload()
+    // Not location.reload(): the controlling service worker answers that from
+    // its own precache, so a crash caused by a replaced build reloads into the
+    // exact same crash (seen on dev, 2026-08-16). reloadToLatest escapes the
+    // cache — and for an ordinary crash it degrades to the same plain reload.
+    void reloadToLatest()
   }
 
   const handleCopy = async (): Promise<void> => {

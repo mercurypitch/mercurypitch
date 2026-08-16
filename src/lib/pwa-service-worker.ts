@@ -44,6 +44,14 @@ const STALE_BUILD_CHECK_INTERVAL_MS = 10_000
 /** How long the waiting worker gets to answer before it is treated as unknown. */
 const BUILD_ID_TIMEOUT_MS = 2_000
 
+/**
+ * How long `reloadToLatest` waits for an adopted worker to take control before
+ * giving up on the graceful path and unregistering instead. Generous — the
+ * swap is normally near-instant — but bounded, because the whole point of that
+ * function is that it always ends in a reload.
+ */
+const CONTROLLER_CHANGE_TIMEOUT_MS = 4_000
+
 export interface RegisterServiceWorkerOptions {
   /**
    * Called when a new worker is installed, waiting, and built from a different
@@ -146,6 +154,108 @@ export function requestUpdateCheck(): void {
   checkForUpdate('stale')
 }
 
+export interface ReloadToLatestOptions {
+  /** Test seam: defaults to `navigator.serviceWorker`. */
+  container?: ServiceWorkerContainer
+  /** Test seam: defaults to a full page reload. */
+  reload?: () => void
+}
+
+/**
+ * Reload in a way that is guaranteed to land on the newest build the origin
+ * serves — unlike `location.reload()`, which the controlling worker answers
+ * from its own precache. That difference is the trap this function exists for:
+ * when the running build's chunks are gone from the origin (a deploy landed,
+ * or a stale waiting worker was adopted), a plain reload re-serves the same
+ * dead shell and the app crashes identically, forever. Seen on dev 2026-08-16.
+ *
+ * The escape ladder:
+ *   1. a waiting worker exists — adopt it (SKIP_WAITING) and reload when it
+ *      takes control; that is the newest build already downloaded.
+ *   2. no waiting worker, and the network is reachable — unregister, then
+ *      reload: an unregistered worker does not claim the next navigation, so
+ *      the shell comes from the origin and the current build reinstalls clean.
+ *   3. offline, or no worker at all — plain reload; the cache is all there is.
+ *
+ * Rung 1 falls through to rung 2 if the adopted worker never takes control.
+ * Every path ends in exactly one reload, shared with the update flow's guard.
+ */
+export async function reloadToLatest(
+  options: ReloadToLatestOptions = {},
+): Promise<void> {
+  if (reloading) return
+  const reload =
+    options.reload ??
+    (() => {
+      window.location.reload()
+    })
+  const doReload = (): void => {
+    if (reloading) return
+    reloading = true
+    reload()
+  }
+  // Unlike registerServiceWorker this only ever runs inside a page — from a
+  // recovery screen or the crash modal — so `navigator` itself always exists.
+  const container =
+    options.container ??
+    ('serviceWorker' in navigator ? navigator.serviceWorker : undefined)
+  if (container === undefined) {
+    doReload()
+    return
+  }
+
+  let registration: ServiceWorkerRegistration | undefined
+  try {
+    registration = await container.getRegistration()
+  } catch {
+    registration = undefined
+  }
+  if (registration === undefined) {
+    doReload()
+    return
+  }
+  const finalRegistration = registration
+
+  const unregisterAndReload = async (): Promise<void> => {
+    if (navigator.onLine !== false) {
+      // Offline, the worker's cache is the only copy of the app — deleting the
+      // registration would trade a broken build for no build at all.
+      try {
+        await finalRegistration.unregister()
+      } catch {
+        // The reload still happens; it just may hit the cache again.
+      }
+    }
+    doReload()
+  }
+
+  const waiting = finalRegistration.waiting
+  if (waiting === null) {
+    await unregisterAndReload()
+    return
+  }
+
+  // Same contract as applyUpdate: this tab has decided to move, so the
+  // update-flow's own controllerchange listener may reload too — harmless,
+  // both share the `reloading` guard.
+  updateAccepted = true
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      void unregisterAndReload().then(resolve)
+    }, CONTROLLER_CHANGE_TIMEOUT_MS)
+    container.addEventListener(
+      'controllerchange',
+      () => {
+        clearTimeout(timer)
+        doReload()
+        resolve()
+      },
+      { once: true },
+    )
+    waiting.postMessage({ type: SKIP_WAITING_MESSAGE })
+  })
+}
+
 function watchForUpdate(
   registration: ServiceWorkerRegistration,
   container: ServiceWorkerContainer,
@@ -185,6 +295,11 @@ function watchForUpdate(
   let announcedFor: ServiceWorker | null = null
 
   const announce = (): void => {
+    // Once this tab has accepted an update it is on its way to a reload; a
+    // second prompt racing the swap is noise (and was seen on dev popping over
+    // the reload it was about to interrupt). The fresh page re-announces if
+    // there really is a newer build.
+    if (updateAccepted || reloading) return
     // With no controller this is the first install on this origin: the page is
     // already running the only version there is.
     if (container.controller === null) return

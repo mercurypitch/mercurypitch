@@ -9,6 +9,7 @@ import { isNetworkError, isStaleBuildError } from '@/lib/global-error-handler'
 import { exposeForE2E } from '@/lib/test-utils'
 import { setAppError as setAppErrorSignal } from '@/stores/app-store'
 import { CrashModal } from './CrashModal'
+import { StaleBuildRecovery } from './StaleBuildRecovery'
 
 interface AppErrorBoundaryProps {
   children: JSX.Element
@@ -96,6 +97,15 @@ export const AppErrorBoundary: ParentComponent<AppErrorBoundaryProps> = (
     <ErrorBoundary
       fallback={(err) => {
         const errorObj = err instanceof Error ? err : new Error(String(err))
+        // A lazy() import failing during render lands HERE, not in the window
+        // listeners above — so the stale-build check has to be repeated a
+        // third time or a routine deploy shows up as an app crash whose
+        // "Reload App" cannot fix it (a plain reload re-serves the same dead
+        // build from the worker's precache).
+        if (isStaleBuildError(errorObj)) {
+          console.warn('[pwa] this build is no longer served:', errorObj)
+          return <StaleBuildRecovery />
+        }
         // We set it in a microtask so we don't trigger SolidJS warnings about
         // setting signals during the render phase.
         queueMicrotask(() => {
