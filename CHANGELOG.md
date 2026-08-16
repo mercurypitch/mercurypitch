@@ -186,6 +186,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   about a single item.** With exactly one exercise on the device it read
   "The 1 exercise you did here are still on this device"; the verb now
   agrees with what was counted.
+- **Settings no longer sends you to a file you cannot open for the voice
+  commands.** The Voice Control section used to end with "the full phrase
+  list lives in docs/VOICE-COMMANDS.md" — a path that only exists in the
+  source repository. It now names the real routes (say "what can I say",
+  or press Shift+V) and adds a button that opens the live command list
+  right there.
 
 - **The welcome dialog now holds keyboard focus.** On first launch the
   onboarding overlay announced itself as a dialog but let Tab wander into

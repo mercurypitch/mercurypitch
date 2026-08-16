@@ -81,6 +81,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or plural count keeps "are". Pinned in
   `local-progress-notice-render.test.tsx` (singular pin fails against the
   unfixed template; a plural pin guards against overcorrection).
+- **Settings pointed at a repository path for the voice-command list
+  (CLAUDE-JOURNEY-021).** `SettingsPanel`'s Voice Control description
+  referenced `docs/VOICE-COMMANDS.md`, unreachable from the app — and
+  ignored that the app has a live command center
+  (`VoiceCommandsOverlay`, generated from the registry). The copy now
+  names the spoken and keyboard routes, and a "Show all voice commands"
+  button runs the registered `nav.voiceHelp` command through
+  `activeVoiceCommands()` — the same path the spoken phrase takes, so
+  the button cannot drift from the voice pipeline. When no command is
+  registered (panel rendered outside App), it falls back to a
+  notification naming the routes. Pinned by
+  `src/tests/settings-voice-help.test.tsx` (all pins fail against the
+  unfixed panel).
 
 - **`FirstLight` claimed `aria-modal` without trapping focus
   (CLAUDE-JOURNEY-018).** The onboarding overlay renders `role="dialog"
