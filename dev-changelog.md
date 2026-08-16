@@ -924,6 +924,22 @@ aria-modal="true"` but never took or fenced focus: the first Tab after
   handler and `AppErrorBoundary` classify the failed-dynamic-import and
   HTML-parsed-as-JS shapes as "this build is gone" rather than a crash.
 
+- **The stage-glass slider reaches the canvas-painted lane labels.** The lane
+  rails (Vocal, Instrumental, the MONITORING badge) are painted into the
+  canvas, so CSS cannot fade them; the canvas controller reads
+  `--sm-lane-label-bg` on each redraw instead. Only `karaoke-night.css`
+  defined it, so the studio — same slider — held a fixed plate. The token
+  moved to `.stem-mixer`, which both hosts inherit (the performance preset
+  resolves `--sm-stage-alpha` from `--kn-alpha`), and the studio's slider now
+  dispatches `karaoke:stage-glass` so the canvases actually repaint.
+
+- **Two walkthrough steps pointed into Compose's closed phone drawer.** When
+  the Compose header became one row, the control bar moved inside the "more"
+  sheet; `compose.kind` got the `reveal` that opens it and `#record-btn` and
+  `compose.share` did not, so both missed on the mobile release walk. Their
+  guard reads the selectors out of `ComposeControlBar` rather than listing
+  them, scoped to Compose steps — all four control bars declare `#bpm-input`.
+
 - **`longestStreak` is maintained as a high-water mark.** The column arrived
   `NOT NULL DEFAULT 0` with no semantic backfill, and the client that owned
   streak writes only ever wrote `currentStreak`, so 60 production rows and 13

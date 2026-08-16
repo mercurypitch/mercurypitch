@@ -591,6 +591,17 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   messages can be read, and the Analysis take rail stops crushing its own
   cards on a phone.
 
+- **The stage transparency slider now reaches the lane names.** The Vocal and
+  Instrumental plates beside each waveform are drawn onto the canvas, so they
+  used to sit at a fixed near-solid colour while everything around them faded.
+  They follow the slider now, in the in-app mixer as well as on the Karaoke
+  Night stage.
+
+- **On a phone, the guided tour opens Compose's controls before pointing at
+  them.** Two steps — Record, and Share your melody — spotlighted nothing,
+  because the control bar had moved into the "more" sheet and the tour did not
+  know to open it.
+
 ### Security
 
 - **An anonymous account can no longer be claimed by anyone who saw it.** The
