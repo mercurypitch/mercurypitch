@@ -347,7 +347,10 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
       {/* Expand group — secondary controls (click the toggle to reveal).
           The sliders button lights up (.active) while the group is open, so
           it doubles as the open/closed indicator — no separate chevron. */}
-      <div class={styles.moreWrap} classList={{ [styles.pinned]: pinned() }}>
+      <div
+        class={`${styles.moreWrap} ${styles.singingMoreWrap}`}
+        classList={{ [styles.pinned]: pinned() }}
+      >
         <button
           type="button"
           class={styles.btn}
@@ -361,7 +364,7 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
           <SlidersHorizontal />
         </button>
 
-        <div class={styles.moreGroup}>
+        <div class={`${styles.moreGroup} ${styles.singingMoreGroup}`}>
           {/* Tempo (keeps the BPM number box + slider) */}
           <div class={styles.field} data-testid="tempo-group">
             <IconClock />
