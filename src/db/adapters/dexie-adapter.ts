@@ -35,12 +35,16 @@ const STORE_SCHEMAS: Record<string, string> = {
 
 // ── DexieDatabase class ─────────────────────────────────────────
 
+/** The one on-device database name — shared with the factory reset, which
+ *  deletes it by name after closing every connection. */
+export const MERCURY_PITCH_DB_NAME = 'MercuryPitchDB'
+
 class DexieDatabase extends DexieDB {
   // Dynamic table access — tables are created via schema definition
   // and accessed through the base Dexie.table() method.
 
   constructor() {
-    super('MercuryPitchDB')
+    super(MERCURY_PITCH_DB_NAME)
     this.version(1).stores(STORE_SCHEMAS)
     // v2: follows (Friends leaderboard). Incremental — existing local
     // DBs upgrade in place.
@@ -388,6 +392,13 @@ export class DexieAdapter implements DatabaseAdapter {
   async destroy(): Promise<void> {
     this.repositories.clear()
     await this.db.delete()
+  }
+
+  close(): void {
+    this.repositories.clear()
+    // Dexie's close is synchronous and idempotent; the connection reopens
+    // lazily if the adapter is used again.
+    this.db.close()
   }
 }
 

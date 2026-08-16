@@ -226,4 +226,10 @@ export class HybridAdapter implements DatabaseAdapter {
     await this.cloud.destroy()
     await this.local.destroy()
   }
+
+  close(): void {
+    this.guarded.clear()
+    this.cloud.close?.()
+    this.local.close?.()
+  }
 }

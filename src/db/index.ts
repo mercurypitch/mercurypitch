@@ -90,15 +90,29 @@ export async function getDb(): Promise<DatabaseAdapter> {
   return dbPromise
 }
 
-/** Destroy the current database, reset the singleton, and create a fresh one. */
-export async function resetDatabase(): Promise<DatabaseAdapter> {
-  if (dbPromise) {
-    const db = await dbPromise
-    await db.destroy()
-  }
+/**
+ * Close the singleton's connection and forget it, deleting nothing.
+ *
+ * The factory reset deletes the database by name, and deleteDatabase waits
+ * for every open connection to close first — with this one still open it
+ * waited forever, which is exactly the hang the reset button used to be.
+ */
+export async function closeDatabase(): Promise<void> {
+  if (dbPromise === null) return
+  const pending = dbPromise
   dbPromise = null
-  return createDatabase()
+  try {
+    const db = await pending
+    db.close?.()
+  } catch {
+    // A database that failed to open holds no connection to close.
+  }
 }
+
+// resetDatabase (destroy + recreate in place) is gone: its only caller was
+// the factory reset, which now closes connections and deletes the database
+// by name (src/lib/reset-app-data.ts) — recreating right before a reload
+// only reopened the connection the delete had just fought to close.
 
 export { ensurePersistentStorage } from './persistent-storage'
 

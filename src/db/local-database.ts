@@ -10,3 +10,13 @@ export function getLocalDatabase(): DexieAdapter {
   localDatabase ??= new DexieAdapter()
   return localDatabase
 }
+
+/**
+ * Close this second connection to the same on-device database. Piano Night
+ * and the karaoke read path open it; left open, it kept deleteDatabase
+ * waiting forever during a factory reset.
+ */
+export function closeLocalDatabase(): void {
+  localDatabase?.close()
+  localDatabase = null
+}
