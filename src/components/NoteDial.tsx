@@ -22,7 +22,7 @@
 // now a unit test rather than something to notice by eye.
 
 import type { Component } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { midiToFrequency, noteToMidi } from '@/lib/frequency-to-note'
 import { useNotePreview } from '@/lib/use-note-preview'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
@@ -60,8 +60,30 @@ const TOP = -Math.PI / 2
  */
 const MAX_RIM_OCTAVES = 6
 
+/** How long the seat pulse rides the preview tone. Matches the CSS animation. */
+const PULSE_MS = 500
+
 export const NoteDial: Component<NoteDialProps> = (props) => {
-  const preview = useNotePreview(() => props.previewSound !== false)
+  // The dial SOUNDS on every pick; the pulse is that same event made
+  // visible on the seat. Keyed to the preview's onPlay (post-throttle),
+  // not to the pointer, so it never claims a tone the throttle held back.
+  // A fresh object per play lets the keyed <Show> recreate the node, which
+  // is what restarts the CSS animation on a same-seat re-tap.
+  const [pulse, setPulse] = createSignal<{ pitchClass: string } | null>(null)
+  let pulseTimer: ReturnType<typeof setTimeout> | undefined
+  const preview = useNotePreview(
+    () => props.previewSound !== false,
+    (note) => {
+      const parts = splitNote(note)
+      if (parts === null) return
+      if (pulseTimer !== undefined) clearTimeout(pulseTimer)
+      setPulse({ pitchClass: parts.pitchClass })
+      pulseTimer = setTimeout(() => setPulse(null), PULSE_MS)
+    },
+  )
+  onCleanup(() => {
+    if (pulseTimer !== undefined) clearTimeout(pulseTimer)
+  })
   const seats = dialSeats()
 
   const selectable = createMemo(() => {
@@ -292,6 +314,23 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
               )
             }}
           </For>
+
+          <Show when={pulse()} keyed>
+            {(p) => {
+              const seat = seats.find((s) => s.pitchClass === p.pitchClass)
+              if (seat === undefined) return null
+              const sp = seatPoint(seat)
+              return (
+                <circle
+                  class={styles.seatPulse}
+                  data-testid="dial-preview-pulse"
+                  cx={HUB + sp.x * R}
+                  cy={HUB + sp.y * R}
+                  r={seat.sharp ? 11 : 14}
+                />
+              )
+            }}
+          </Show>
 
           <circle class={styles.hub} cx={HUB} cy={HUB} r={R * HUB_RADIUS} />
           <text class={styles.hubNote} x={HUB} y={HUB - 7}>

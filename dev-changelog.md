@@ -89,6 +89,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   override instead of reusing the routine's stale note. Known
   inconsistency left alone: `VOICE_MIDI_RANGES` (analyzer) vs
   `VOCAL_RANGES` (settings) still disagree about preset ceilings.
+- **Every audible release follows the pop-free envelope doc, and the tests now
+  defend it instead of the bug.** The engine's `stopNote` used a 75 ms LINEAR
+  ramp to zero (the documented "squeezed pop" shape) and
+  `releaseCurrentTone`/`stopTone` hard-stopped the oscillator at 3τ — a −26 dB
+  truncation on every tone end — with both shapes PINNED by
+  `audio-engine.test.ts`, which is why each earlier fix regressed. A shared
+  `_releaseParam` now anchors the held value BEFORE `cancelScheduledValues`,
+  releases via `setTargetAtTime(0, now, len/5)`, and stops the source only at
+  `len + 60 ms` slack; sustain/piano/staccato envelopes close the same way, and
+  `_rampBusLevel` ramps `setVolume`/`setMetronomeVolume`/`setReverbWetness`
+  over 15 ms instead of stepping a live bus. The flipped pins plus a new
+  envelope-evaluator net ("every scheduled stop lands below audibility") replay
+  the recorded automation per the WebAudio spec and fail any truncation above
+  −40 dB. Callers fixed through the same discipline: guitar-backing
+  pause/stop/seek-past-end close the bus before stopping voices via one shared
+  `haltAudible` (seeks keep their masked 15 ms dips) — and `stopVoices` no
+  longer disconnects a scheduled-stop source immediately, which had been
+  cutting the material at open gain and silently defeating every fade the
+  pause path ever had; `synth-annotation-playback` gains a real attack and
+  release, the zen guide tones get a gain bus + limiter and the context now
+  outlives the release tail, and the stem-mixer fade-out stops sources after
+  the tail rather than at it. The NoteDial preview is throttled to one
+  retrigger per 80 ms with a trailing timer (the settled-on note always
+  sounds), the dial pulses the seat whose preview is ringing (keyed to the
+  post-throttle play, `prefers-reduced-motion` aware), and the face's focus
+  ring is suppressed for pointer focus (`:focus:not(:focus-visible)`) — it was
+  a keyboard affordance leaking into every click. The rule doc is un-orphaned:
+  MISTAKES.md and CONVENTIONS.md 5b now carry it, naming the primitives.
 
 - **The local-progress notice is bounded by the sign-in, not by the stores.**
   `exerciseHistory` and `sessionResults` are one device-wide list each with no

@@ -69,6 +69,14 @@
   outline-offset: 3px;
 }
 
+/* The ring is a keyboard affordance. Chromium grants focus on pointer
+   down for a tabindexed SVG and can paint the ring with it; pointer
+   users already watch the seat move (and now the pulse), so pointer
+   focus stays quiet and Tab keeps the full ring. */
+.face:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Drawn only when there is a single octave; otherwise the octave segments
    below ARE the rim. */
 .rim {
@@ -187,6 +195,41 @@
    legible — white on this accent measures about 2.5:1. */
 .seatLabelOn {
   fill: var(--bg-primary);
+}
+
+/* ── Preview pulse ───────────────────────────────────────────
+   A ring breathing out from the seat while its preview tone rings — the
+   sound made visible. The node is recreated per play (keyed <Show>), so a
+   same-seat re-tap restarts the animation; its 0.5s lifetime is PULSE_MS
+   in NoteDial.tsx. */
+.seatPulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: seat-pulse 0.5s ease-out forwards;
+}
+
+@keyframes seat-pulse {
+  from {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The selected seat already shows the pick; the pulse is pure motion,
+     so under reduced motion it simply stays away. */
+  .seatPulse {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .hub {

@@ -154,6 +154,21 @@ than remembered cache history.
 **See:** `src/features/piano-night/usePianoNightController.ts`,
 `src/features/piano/instrument/piano-sampled-instrument.ts`
 
+### Release audio with setTargetAtTime and stop after the tail — never a linear ramp to zero
+
+**Symptom:** pops and crackles on note changes and tone stops, re-fixed and
+re-regressed repeatedly.
+**Cause:** loudness is logarithmic — a linear ramp to zero packs its perceived
+change into the last milliseconds ("squeezed pop", user-confirmed on a PA).
+The old tests PINNED that wrong shape, so each correct fix turned them red and
+got reverted; and the rule doc was referenced from no agent entry point.
+**Rule:** follow [.claude/memory/audio-pop-free-playback.md](../../.claude/memory/audio-pop-free-playback.md)
+to the letter: exponential attack from the 1e-4 floor; release = anchor, then
+`setTargetAtTime(0, now, len/5)`, source stopped only at `len + slack`. The
+tail net in `audio-engine.test.ts` ("every scheduled stop lands below
+audibility") replays the automation and fails any truncation — never weaken it.
+**See:** `src/lib/audio-engine.ts` (`_releaseParam`), `src/lib/preview-player.ts`
+
 ## Framework
 
 ### Do not destructure props

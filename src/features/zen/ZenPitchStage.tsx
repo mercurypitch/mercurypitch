@@ -5,7 +5,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { deleteZenTake, listZenTakes, saveZenTake, } from '@/db/services/zen-take-service'
-import { playReferenceTone } from '@/features/mirror/tone-player'
+import { closeGuideToneBus, createGuideToneBus, playReferenceTone, } from '@/features/mirror/tone-player'
 import type { PracticeFrame, PracticeFrameListener, } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import { createPreviewPlayer } from '@/lib/preview-player'
@@ -227,6 +227,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   // way any of it can be tested. This end owns the gate and the tone.
   const [notesMuted, setNotesMuted] = createSignal(false)
   let toneCtx: AudioContext | null = null
+  let toneBus: GainNode | null = null
   const noteScheduler = createZenNoteScheduler()
   const notePlaybackActive = (): boolean =>
     !notesMuted() &&
@@ -268,14 +269,23 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     // A context created outside a click can start suspended
     // (autoplay policy) — resume before scheduling or nothing sounds.
     if (toneCtx.state === 'suspended') void toneCtx.resume()
+    toneBus ??= createGuideToneBus(toneCtx)
     for (const cue of cues) {
-      void playReferenceTone(toneCtx, cue.target.startMidi, cue.durationSec)
+      void playReferenceTone(
+        toneCtx,
+        cue.target.startMidi,
+        cue.durationSec,
+        toneBus,
+      )
     }
   })
 
   onCleanup(() => {
-    void toneCtx?.close().catch(() => undefined)
+    const ctx = toneCtx
+    const bus = toneBus
     toneCtx = null
+    toneBus = null
+    if (ctx !== null) closeGuideToneBus(ctx, bus)
   })
 
   const title = (): string => session.exercise()?.title ?? 'Open Pitch Monitor'

@@ -381,10 +381,13 @@ describe('createGuitarBackingTransport', () => {
     harness.context.currentTime = 12
     harness.transport.pause()
 
+    // The documented pause shape: asymptotic decay (setTargetAtTime), not
+    // a linear ramp to zero — linear at a silence boundary is the
+    // "squeezed pop". This pin used to demand the linear shape.
     expect(stems.gain.operations).toEqual([
       { kind: 'cancel', when: 12 },
       { kind: 'set', value: 1, when: 12 },
-      { kind: 'linear', value: 0, when: 12.05 },
+      { kind: 'target', value: 0, when: 12, timeConstant: 0.012 },
     ])
     expect(stems.gain.value).toBe(0)
     expect(master.gain.value).toBe(masterGain)
@@ -449,9 +452,13 @@ describe('createGuitarBackingTransport', () => {
 
     harness.transport.seek(7.25)
 
+    // Seek dip: a short LINEAR dip is correct inside continuous material
+    // (the program masks it) — what must never happen is the instant
+    // setValueAtTime(0) cut this replaced.
     expect(stems.gain.operations).toEqual([
       { kind: 'cancel', when: 14 },
-      { kind: 'set', value: 0, when: 14 },
+      { kind: 'set', value: 1, when: 14 },
+      { kind: 'linear', value: 0, when: 14.015 },
       { kind: 'linear', value: 1, when: 14.05 },
     ])
     expect(master.gain.value).toBe(masterGain)
@@ -641,5 +648,124 @@ describe('createGuitarBackingTransport', () => {
     expect(source.stop).toHaveBeenCalledOnce()
     expect(source.disconnect).toHaveBeenCalledOnce()
     expect(harness.context.close).toHaveBeenCalledOnce()
+  })
+})
+
+describe('haltAudible — every stop path closes the bus first', () => {
+  const closeOps = (when: number): ParameterOperation[] => [
+    { kind: 'cancel', when },
+    { kind: 'set', value: 1, when },
+    { kind: 'target', value: 0, when, timeConstant: 0.012 },
+  ]
+
+  it('keeps a pausing voice wired until its scheduled stop fires', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(session('deferred', [track('drums')]))
+    await harness.transport.play()
+    const source = harness.context.sources[0]!
+    harness.context.currentTime = 13
+
+    harness.transport.pause()
+
+    // The stop is scheduled past the bus close…
+    expect(source.stop).toHaveBeenLastCalledWith(13.08)
+    // …and disconnect() is immediate, so it must NOT happen now — that
+    // would cut the material at open gain, the pop the close prevents.
+    expect(source.disconnect).not.toHaveBeenCalled()
+    source.onended?.()
+    expect(source.disconnect).toHaveBeenCalled()
+  })
+
+  it('closes the stems bus before a streamed pause and holds the element for the tail', async () => {
+    vi.useFakeTimers()
+    try {
+      const harness = audioHarness({ memoryBudgetBytes: 1 })
+      harness.transport.configure(session('streamed-pause'))
+      await expect(harness.transport.play()).resolves.toBe(true)
+      expect(harness.transport.getLoadMode()).toBe('streamed')
+      const stems = harness.transport.getAudioGraph()!.buses
+        .stems as unknown as FakeGainNode
+      stems.gain.operations.length = 0
+      harness.context.currentTime = 12
+      // Element pauses during arming don't count; only the one after ours.
+      const pausesBefore = harness.mediaElements[0]!.pause.mock.calls.length
+
+      harness.transport.pause()
+
+      expect(stems.gain.operations).toEqual(closeOps(12))
+      // The element keeps feeding the closing bus until the tail is silent.
+      expect(harness.mediaElements[0]!.pause.mock.calls.length).toBe(
+        pausesBefore,
+      )
+      vi.advanceTimersByTime(100)
+      expect(harness.mediaElements[0]!.pause.mock.calls.length).toBe(
+        pausesBefore + 1,
+      )
+      expect(harness.transport.getStatus()).toBe('paused')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stop() mid-play closes the bus; from silence it halts immediately', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(session('full-stop', [track('drums')]))
+    await harness.transport.play()
+    const stems = harness.transport.getAudioGraph()!.buses
+      .stems as unknown as FakeGainNode
+    const source = harness.context.sources[0]!
+    stems.gain.operations.length = 0
+    harness.context.currentTime = 15
+
+    harness.transport.stop()
+
+    expect(stems.gain.operations).toEqual(closeOps(15))
+    expect(source.stop).toHaveBeenLastCalledWith(15.08)
+
+    // A second stop from the silent state has nothing to close.
+    stems.gain.operations.length = 0
+    harness.transport.stop()
+    expect(stems.gain.operations).toEqual([])
+  })
+
+  it('disconnects immediately when a scheduled stop cannot be taken', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(session('stubborn', [track('drums')]))
+    await harness.transport.play()
+    const source = harness.context.sources[0]!
+    source.stop.mockImplementation(() => {
+      throw new DOMException('already ended')
+    })
+
+    harness.transport.pause()
+
+    // No onended will ever fire for a source that refused the stop; the
+    // teardown must not leak on that path.
+    expect(source.disconnect).toHaveBeenCalled()
+  })
+
+  it('halts bare when stopped before any graph exists', () => {
+    const harness = audioHarness()
+    harness.transport.configure(session('never-played', [track('drums')]))
+    harness.transport.stop()
+    expect(harness.transport.getStatus()).toBe('armed')
+    expect(harness.context.gains).toHaveLength(0)
+  })
+
+  it('a seek past the end closes the bus before completing', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(session('seek-end', [track('drums')]))
+    await harness.transport.play()
+    const stems = harness.transport.getAudioGraph()!.buses
+      .stems as unknown as FakeGainNode
+    const source = harness.context.sources[0]!
+    stems.gain.operations.length = 0
+    harness.context.currentTime = 16
+
+    harness.transport.seek(9999)
+
+    expect(stems.gain.operations).toEqual(closeOps(16))
+    expect(source.stop).toHaveBeenLastCalledWith(16.08)
+    expect(harness.transport.getStatus()).toBe('complete')
   })
 })
