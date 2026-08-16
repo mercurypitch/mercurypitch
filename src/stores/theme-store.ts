@@ -2,9 +2,9 @@
 // Theme Store — the nine colour presets and how one gets picked
 // ============================================================
 //
-// Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple,
-// a `THEME_INFO` entry, and the matching `body[data-theme='...']` token block
-// in src/styles/app.css. Miss the CSS and the theme silently renders as dark.
+// Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`,
+// `THEME_CHROME_COLORS`, the matching src/styles/app.css token block and the
+// tiny index.html prepaint palette in lockstep. Contract tests fail on drift.
 //
 // `theme()` is always the preset currently on the DOM, whoever chose it. The
 // *chooser* is `themeSource()`: 'manual' means the user picked from the grid,
@@ -93,6 +93,19 @@ export const THEME_INFO: Record<ThemeMode, ThemeInfo> = {
   },
 }
 
+/** Browser-chrome colour for each preset, kept in lockstep with --bg-primary. */
+export const THEME_CHROME_COLORS: Record<ThemeMode, string> = {
+  dark: '#0d1117',
+  light: '#f3f4f6',
+  midnight: '#0d1117',
+  forest: '#1b2a1b',
+  ocean: '#0b1a2c',
+  cyberpunk: '#0e0e14',
+  rose: '#1a1418',
+  amber: '#1a1510',
+  slate: '#141a22',
+}
+
 /** Where the active preset comes from. */
 export const THEME_SOURCES = ['manual', 'system', 'time'] as const
 
@@ -140,23 +153,26 @@ const isPreset = (v: unknown): v is ThemeMode =>
 export const [theme, setThemeInternal] = createPersistedSignal<ThemeMode>(
   THEME_KEY,
   'dark',
-  { validator: isPreset },
+  { validator: isPreset, onExternalApply: reconcileExternalTheme },
 )
 
 export const [themeSource, setThemeSourceInternal] =
   createPersistedSignal<ThemeSource>(THEME_SOURCE_KEY, 'manual', {
     validator: (v): v is ThemeSource =>
       THEME_SOURCES.includes(v as ThemeSource),
+    onExternalApply: reconcileExternalTheme,
   })
 
 export const [autoDayTheme, setAutoDayThemeInternal] =
   createPersistedSignal<ThemeMode>(AUTO_DAY_KEY, 'light', {
     validator: isPreset,
+    onExternalApply: reconcileExternalTheme,
   })
 
 export const [autoNightTheme, setAutoNightThemeInternal] =
   createPersistedSignal<ThemeMode>(AUTO_NIGHT_KEY, 'dark', {
     validator: isPreset,
+    onExternalApply: reconcileExternalTheme,
   })
 
 /** The dark-mode media query, or null on a host without matchMedia. */
@@ -169,6 +185,16 @@ function darkMediaQuery(): MediaQueryList | null {
 /** True when the device asks for dark. A host that cannot answer counts as light. */
 function prefersDark(): boolean {
   return darkMediaQuery()?.matches ?? false
+}
+
+/** Keep CSS, native controls and mobile browser chrome on the same preset. */
+function applyThemeToDocument(mode: ThemeMode): void {
+  const root = document.documentElement
+  root.setAttribute('data-theme', mode)
+  root.style.colorScheme = mode === 'light' ? 'light' : 'dark'
+  document
+    .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    ?.setAttribute('content', THEME_CHROME_COLORS[mode])
 }
 
 /** True inside the local day window. Exported for tests, which cannot move the clock. */
@@ -189,7 +215,7 @@ export function resolveThemeForSource(source: ThemeSource): ThemeMode {
 
 function applyTheme(mode: ThemeMode): void {
   setThemeInternal(mode)
-  document.documentElement.setAttribute('data-theme', mode)
+  applyThemeToDocument(mode)
 }
 
 /** Re-resolve the auto source and apply it only when the preset actually changes. */
@@ -221,6 +247,19 @@ function startAutoWatch(): void {
     timeTimer = setInterval(syncAutoTheme, TIME_TICK_MS)
   }
   syncAutoTheme()
+}
+
+/** Reconcile DOM state and watchers after cloud sync hydrates any theme key. */
+function reconcileExternalTheme(): void {
+  // Always publish the hydrated preset first. startAutoWatch only writes when
+  // its resolved value differs, so without this step an unchanged auto preset
+  // can leave a deliberately cleared/new document attribute unset.
+  applyThemeToDocument(theme())
+  if (themeSource() === 'manual') {
+    stopAutoWatch()
+    return
+  }
+  startAutoWatch()
 }
 
 /** Pick a preset by hand. Always an override — it drops the source to 'manual'. */
@@ -262,8 +301,7 @@ export function initTheme(): void {
   // attribute to startAutoWatch meant nothing was written at all in that
   // case, so :root's dark defaults won and an auto user on a light preset
   // loaded dark every time.
-  document.documentElement.setAttribute('data-theme', theme())
-  if (themeSource() !== 'manual') startAutoWatch()
+  reconcileExternalTheme()
 }
 
 /** Test-only teardown: drops the media-query listener and the clock timer. */

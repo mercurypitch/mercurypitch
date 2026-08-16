@@ -28,10 +28,13 @@
   --bg-secondary: #161b22;
   --bg-tertiary: #21262d;
   --bg-card: #1c2128;
+  --border-subtle: #252c35;
   --border: #30363d;
+  --border-strong: #6e7681;
   --text-primary: #e6edf3;
   --text-secondary: #a8b3bf;
-  --text-muted: #6e7681;
+  --text-muted: #868f9a;
+  --text-disabled: #6e7681;
   --surface: var(--bg-tertiary);
   --accent: #58a6ff;
   --accent-dim: rgba(88, 166, 255, 0.15);
@@ -48,6 +51,34 @@
   --bg-inverse: #f6f8fa;
   --text-inverse: #1f2328;
 
+  /* ── Semantic colour roles ──
+     Base colours preserve each preset's identity; these roles describe how
+     a colour is used. Supporting copy must remain readable, while disabled
+     copy is allowed to recede. Filled controls always consume their matching
+     on-fill token instead of assuming white will contrast. */
+  --accent-text: var(--accent);
+  --accent-surface: var(--accent-dim);
+  --accent-fill: var(--accent);
+  --accent-fill-hover: var(--accent-hover);
+  --on-accent: var(--bg-primary);
+
+  --status-success-fg: var(--green);
+  --status-success-bg: var(--green-dim);
+  --status-success-fill: var(--green);
+  --status-success-on-fill: var(--bg-primary);
+  --status-warning-fg: var(--yellow);
+  --status-warning-bg: color-mix(in srgb, var(--yellow) 15%, transparent);
+  --status-warning-fill: var(--yellow);
+  --status-warning-on-fill: var(--bg-primary);
+  --status-danger-fg: #f96f68;
+  --status-danger-bg: color-mix(in srgb, var(--red) 15%, transparent);
+  --status-danger-fill: var(--red);
+  --status-danger-on-fill: var(--bg-primary);
+  --status-info-fg: var(--accent-text);
+  --status-info-bg: var(--accent-surface);
+  --status-info-fill: var(--accent-fill);
+  --status-info-on-fill: var(--on-accent);
+
   /* ── Compat aliases ──
      exercises.css (and friends) reference these names without fallbacks.
      They were never defined, so e.g. `border: 1px solid var(--border-color)`
@@ -55,9 +86,16 @@
      rendered as bare text. Aliased to theme tokens so they follow the
      active theme; --accent-hover follows the light theme below. */
   --border-color: var(--border);
+  --border-light: var(--border-subtle);
+  --border-mid: var(--border);
   --accent-color: var(--accent);
   --accent-hover: #79b8ff;
-  --bg-accent: rgba(99, 102, 241, 0.12);
+  --bg-accent: var(--accent-surface);
+  --text-accent: var(--accent-text);
+  --on-success: var(--status-success-on-fill);
+  --on-warning: var(--status-warning-on-fill);
+  --on-danger: var(--status-danger-on-fill);
+  --on-info: var(--status-info-on-fill);
   /* uvr.css / stem-mixer text tokens (used ~150x, never defined — text fell
      back to inherited colors wherever the per-rule fallback was missing). */
   --fg-primary: var(--text-primary);
@@ -106,7 +144,6 @@
   --hover-bg: var(--bg-hover);
   --surface-hover: var(--bg-hover);
   --text-tertiary: var(--text-muted);
-  --border-subtle: var(--border);
 }
 
 /* Mobile-kit tokens live in mobile-kit.css — imported by EVERY entry that
@@ -121,14 +158,18 @@
   --bg-secondary: #e8eaed;
   --bg-tertiary: #dde1e6;
   --bg-card: #eff0f3;
+  --border-subtle: #d8dce1;
   --border: #c9cdd3;
+  --border-strong: #737b85;
   --text-primary: #1f2328;
   --text-secondary: #525960;
-  --text-muted: #7d8590;
+  --text-muted: #5c636b;
+  --text-disabled: #7d8590;
   --accent: #0969da;
   --accent-dim: rgba(9, 105, 218, 0.12);
   --accent-glow: rgba(9, 105, 218, 0.25);
   --accent-hover: #0a5bc4;
+  --accent-text: #0f57ad;
   --green: #1a7f37;
   --green-dim: rgba(26, 127, 55, 0.12);
   --green-glow: rgba(26, 127, 55, 0.25);
@@ -140,6 +181,12 @@
   --note-active: #0969da;
   --bg-inverse: #1f2328;
   --text-inverse: #e6edf3;
+  --status-success-fg: #1b6633;
+  --status-success-on-fill: #ffffff;
+  --status-warning-fg: #73510d;
+  --status-warning-on-fill: #ffffff;
+  --status-danger-fg: #a0222c;
+  --status-danger-on-fill: #ffffff;
   color-scheme: light;
 }
 
@@ -149,14 +196,18 @@
   --bg-secondary: #131820;
   --bg-tertiary: #161b22;
   --bg-card: #1a1f28;
+  --border-subtle: #252b33;
   --border: #30363d;
+  --border-strong: #6e7681;
   --text-primary: #c9d1d9;
   --text-secondary: #8b949e;
-  --text-muted: #6e7681;
+  --text-muted: #808893;
+  --text-disabled: #6e7681;
   --accent: #e07070;
   --accent-dim: rgba(224, 112, 112, 0.12);
   --accent-glow: rgba(224, 112, 112, 0.25);
   --accent-hover: #e08080;
+  --accent-text: #e27878;
   --green: #3fb950;
   --green-dim: rgba(63, 185, 80, 0.12);
   --green-glow: rgba(63, 185, 80, 0.25);
@@ -168,6 +219,7 @@
   --note-active: #e07070;
   --bg-inverse: #ffffff;
   --text-inverse: #0d1117;
+  --status-danger-fg: #e27878;
   color-scheme: dark;
 }
 
@@ -177,10 +229,13 @@
   --bg-secondary: #1e301e;
   --bg-tertiary: #142414;
   --bg-card: #182a18;
+  --border-subtle: #2c4d2c;
   --border: #3d6b3d;
+  --border-strong: #5a8058;
   --text-primary: #a8d5a2;
   --text-secondary: #7ca87a;
-  --text-muted: #5a8058;
+  --text-muted: #749f72;
+  --text-disabled: #5a8058;
   --accent: #7cb871;
   --accent-dim: rgba(124, 184, 113, 0.12);
   --accent-glow: rgba(124, 184, 113, 0.25);
@@ -196,6 +251,8 @@
   --note-active: #7cb871;
   --bg-inverse: #f0faf0;
   --text-inverse: #1b2a1b;
+  --status-warning-fg: #cba549;
+  --status-danger-fg: #e68c7f;
   color-scheme: dark;
 }
 
@@ -205,10 +262,13 @@
   --bg-secondary: #0e2034;
   --bg-tertiary: #091422;
   --bg-card: #0c1828;
+  --border-subtle: #183c59;
   --border: #1e5074;
+  --border-strong: #38708a;
   --text-primary: #64d2ff;
   --text-secondary: #4a9ec0;
-  --text-muted: #38708a;
+  --text-muted: #4590b0;
+  --text-disabled: #38708a;
   --accent: #4facfe;
   --accent-dim: rgba(79, 172, 254, 0.12);
   --accent-glow: rgba(79, 172, 254, 0.25);
@@ -224,6 +284,7 @@
   --note-active: #4facfe;
   --bg-inverse: #f0f8ff;
   --text-inverse: #0b1a2c;
+  --status-danger-fg: #f16a6a;
   color-scheme: dark;
 }
 
@@ -233,10 +294,13 @@
   --bg-secondary: #12101a;
   --bg-tertiary: #16141e;
   --bg-card: #131118;
+  --border-subtle: #3d2954;
   --border: #6e4090;
+  --border-strong: #586a76;
   --text-primary: #a0e8f0;
   --text-secondary: #78949e;
-  --text-muted: #586a76;
+  --text-muted: #6c848e;
+  --text-disabled: #586a76;
   --accent: #c070e0;
   --accent-dim: rgba(192, 112, 224, 0.12);
   --accent-glow: rgba(192, 112, 224, 0.25);
@@ -252,6 +316,7 @@
   --note-active: #c070e0;
   --bg-inverse: #f0f0f8;
   --text-inverse: #0e0e14;
+  --status-danger-fg: #e16767;
   color-scheme: dark;
 }
 
@@ -261,14 +326,18 @@
   --bg-secondary: #221a20;
   --bg-tertiary: #1f181e;
   --bg-card: #1e1a1c;
+  --border-subtle: #30252d;
   --border: #3a2c36;
+  --border-strong: #86707c;
   --text-primary: #f0e4ec;
   --text-secondary: #b0a0aa;
-  --text-muted: #86707c;
+  --text-muted: #94808b;
+  --text-disabled: #86707c;
   --accent: #d07888;
   --accent-dim: rgba(208, 120, 136, 0.12);
   --accent-glow: rgba(208, 120, 136, 0.25);
   --accent-hover: #e08898;
+  --accent-text: #d07989;
   --green: #50d878;
   --green-dim: rgba(80, 216, 120, 0.12);
   --green-glow: rgba(80, 216, 120, 0.25);
@@ -280,6 +349,7 @@
   --note-active: #d07888;
   --bg-inverse: #f6f0f4;
   --text-inverse: #1a1418;
+  --status-danger-fg: #e37474;
   color-scheme: dark;
 }
 
@@ -289,10 +359,13 @@
   --bg-secondary: #221c14;
   --bg-tertiary: #1e1810;
   --bg-card: #1c1a14;
+  --border-subtle: #312a20;
   --border: #3d3528;
+  --border-strong: #8a7a60;
   --text-primary: #f5e8d4;
   --text-secondary: #b8a88c;
-  --text-muted: #8a7a60;
+  --text-muted: #948469;
+  --text-disabled: #8a7a60;
   --accent: #e8a030;
   --accent-dim: rgba(232, 160, 48, 0.12);
   --accent-glow: rgba(232, 160, 48, 0.25);
@@ -308,6 +381,7 @@
   --note-active: #e8a030;
   --bg-inverse: #f8f4ec;
   --text-inverse: #1a1510;
+  --status-danger-fg: #f16a6a;
   color-scheme: dark;
 }
 
@@ -317,10 +391,13 @@
   --bg-secondary: #1a2028;
   --bg-tertiary: #181e26;
   --bg-card: #1c222a;
+  --border-subtle: #26313d;
   --border: #2e3a48;
+  --border-strong: #607080;
   --text-primary: #d8e0e8;
   --text-secondary: #90a0b0;
-  --text-muted: #607080;
+  --text-muted: #7c8c9c;
+  --text-disabled: #607080;
   --accent: #60a0f0;
   --accent-dim: rgba(96, 160, 240, 0.12);
   --accent-glow: rgba(96, 160, 240, 0.25);
@@ -336,6 +413,7 @@
   --note-active: #60a0f0;
   --bg-inverse: #f0f4f8;
   --text-inverse: #141a22;
+  --status-danger-fg: #f17070;
   color-scheme: dark;
 }
 
