@@ -963,7 +963,11 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
         name: 'Open the current Piano workspace',
       })
       if (viewport.width <= 900) {
-        await expect(currentPianoLink).toHaveCount(0)
+        // The phone rail carries the way out now. It used to exist only inside
+        // the Music drawer, which is to say: not findable, and Piano Night had
+        // no exit on a phone.
+        await expect(currentPianoLink).toHaveCount(1)
+        await expect(currentPianoLink).toBeVisible()
         await page
           .getByRole('button', { name: 'Choose music for Piano Night' })
           .click()
