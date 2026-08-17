@@ -13,6 +13,7 @@ import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exerc
 import { InfoPopover } from '@/components/InfoPopover'
 import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
 import { getStreakState, MAX_FREEZES, repairStreak, STARTING_FREEZES, } from '@/db/services/streak-service'
+import { authVersion } from '@/db/services/user-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { createDailyGoalProgress, DAILY_GOAL_MIN, } from '@/features/home/daily-goal'
 import { DestinationGallery } from '@/features/home/DestinationGallery'
@@ -70,8 +71,11 @@ const HomePage: Component = () => {
   // Keyed on the record version so a run finished while Home stays mounted
   // moves the card — the page used to read once per mount and lean on tab
   // switches to look fresh.
+  // ...and on the auth version: sign-out swaps whose streak and records
+  // these are, and the page used to keep showing the previous account's
+  // numbers until the user navigated away (owner report, 2026-08-17).
   const [streak, { refetch: refetchStreak }] = createResource(
-    sessionRecordVersion,
+    () => [sessionRecordVersion(), authVersion()],
     getStreakState,
   )
   const goal = createDailyGoalProgress()
@@ -79,7 +83,10 @@ const HomePage: Component = () => {
   // Thin progress strip for the trailing 7 days. The synced session records
   // are the account's truth (a second device would otherwise report zero,
   // CLAUDE-JOURNEY-009); the local mirror covers a lagging or failed read.
-  const [syncedWeek] = createResource(() => loadSessionRecords(300))
+  const [syncedWeek] = createResource(
+    () => [sessionRecordVersion(), authVersion()],
+    () => loadSessionRecords(300),
+  )
   const weekStats = createMemo(() =>
     weekDrillStats(Date.now(), exerciseHistory(), syncedWeek()),
   )

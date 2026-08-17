@@ -49,6 +49,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   line (and could wedge the sheet mid-gesture when the page tried to
   scroll). The sweep now follows the finger exactly like the mouse, and
   scrolling still works normally whenever no singer is armed.
+- **Home notices sign-out (and sign-in) immediately.** The streak card,
+  the daily-goal bar and the week strip kept showing the previous
+  account's numbers until you navigated away; they now refresh the moment
+  the signed-in account changes.
 
 ### Changed
 

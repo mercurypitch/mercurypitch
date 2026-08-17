@@ -13,6 +13,7 @@ import type { Accessor } from 'solid-js'
 import { createMemo } from 'solid-js'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
 import { sessionRecordVersion } from '@/db/services/session-service'
+import { authVersion } from '@/db/services/user-service'
 
 export const DAILY_GOAL_MIN = Math.round(DAILY_GOAL_MS / 60_000)
 
@@ -29,6 +30,10 @@ export interface DailyGoalProgress {
 export function createDailyGoalProgress(): Accessor<DailyGoalProgress> {
   const progress = createMemo(() => {
     sessionRecordVersion()
+    // Minutes are stored per owner, so a sign-in/out changes whose day
+    // this is — without this subscription the bar kept the old account's
+    // number until the next navigation (owner report, 2026-08-17).
+    authVersion()
     const minutes = getTodayScoredMinutes()
     return {
       minutes,
