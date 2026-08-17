@@ -6,7 +6,30 @@
  * Reload once so the tab receives the current entry bundle and chunk map.
  * The session-scoped cooldown deliberately lets a second failure surface to
  * the normal error boundary instead of trapping the user in a reload loop.
+ *
+ * This handler must NOT call `event.preventDefault()`. Vite's helper is
+ * `baseModule().catch(handlePreloadError)`, and `handlePreloadError` rethrows
+ * only when the event was left un-prevented:
+ *
+ *   if (!e.defaultPrevented) { throw err }
+ *
+ * Preventing it therefore makes the import promise RESOLVE, with `undefined`.
+ * A reload does not stop JavaScript, so in the ~100ms before the navigation
+ * commits, every `lazy(() => import(x).then((m) => ({ default: m.Thing })))`
+ * in the app — all 39 of them — dereferences that `undefined` and throws
+ * `TypeError: Cannot read properties of undefined`. That message does not
+ * match `isStaleBuildError`, so `TabErrorBoundary` classified a routine
+ * deployment as an application crash and showed the crash modal, moments
+ * before the reload it had already scheduled. Reported on a tablet opening
+ * Progress, dev 2026-08-17: crash modal first, update second.
+ *
+ * Left un-prevented, Vite rethrows the true "Failed to fetch dynamically
+ * imported module", `isStaleBuildError` matches it, and the boundary renders
+ * `StaleBuildRecovery` — which is the honest thing to show while the new
+ * build is fetched.
  */
+
+import { reloadToLatest } from './pwa-service-worker'
 
 export const CHUNK_RELOAD_STORAGE_KEY = 'mercurypitch:chunk-reload-at'
 export const CHUNK_RELOAD_COOLDOWN_MS = 60_000
@@ -73,14 +96,19 @@ export function installChunkLoadRecovery(
         return undefined
       }
     })()
+  // `location.reload()` is answered by the controlling worker from its own
+  // precache — the exact trap `reloadToLatest` documents: when the running
+  // build's chunks are gone from the origin, a plain reload re-serves the
+  // same dead shell and fails identically, forever. The one situation this
+  // handler fires in IS that situation.
   const reload =
     options.reload ??
     (() => {
-      browserWindow?.location.reload()
+      void reloadToLatest()
     })
   const now = options.now ?? Date.now
 
-  const handlePreloadError: EventListener = (event) => {
+  const handlePreloadError: EventListener = () => {
     const timestamp = now()
     const lastReload = readLastReload(storage)
     if (!lastReload.available) return
@@ -90,7 +118,6 @@ export function installChunkLoadRecovery(
     }
 
     if (!recordReload(storage, timestamp)) return
-    event.preventDefault()
     reload()
   }
 
