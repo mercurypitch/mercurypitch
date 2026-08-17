@@ -14,7 +14,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
-import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
+import { exerciseComparabilityKey, exerciseScoringVersion, } from '@/features/exercises/exercise-comparability'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
@@ -46,6 +46,38 @@ const [history, setHistory] = createPersistedSignal<ExerciseHistoryEntry[]>(
 
 export function exerciseHistory(): ExerciseHistoryEntry[] {
   return history()
+}
+
+/**
+ * The exact record a plain drill run persists. Exported so a test can hold
+ * it against the worker's own `validateWrite`: a payload the server rejects
+ * is not a failed feature but a silent one — the 400 is swallowed, no
+ * session row is written, and practice minutes, streak and badges all skip
+ * a run the singer finished.
+ */
+export function exerciseSessionPayload(
+  entry: ExerciseHistoryEntry,
+  durationMs: number | undefined,
+): Parameters<typeof saveSessionRecord>[0] {
+  return {
+    melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
+    score: entry.score,
+    accuracy: entry.score,
+    notesHit: 0,
+    notesTotal: 0,
+    durationMs,
+    source: 'exercise',
+    sourceRef: entry.type,
+    // Without this, no repeat of a drill ever forms a Skill Thread on
+    // the Progress page and every plain row reads "cannot be compared
+    // like for like" (CLAUDE-JOURNEY-007) — only an explicit persisted
+    // key marks two records as scored on the same ruler.
+    comparabilityKey: exerciseComparabilityKey(entry.type),
+    // The server's evidence rule refuses a comparabilityKey without the
+    // scoring version as its own column; omitting it turned every plain
+    // drill save into a silent 400 and uncredited the run entirely.
+    sourceVersion: exerciseScoringVersion(entry.type),
+  }
 }
 
 export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
@@ -98,21 +130,7 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
     if (consumedChallenge || consumedWeekly) return
 
     const savedSession = await saveSessionRecord(
-      {
-        melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
-        score: entry.score,
-        accuracy: entry.score,
-        notesHit: 0,
-        notesTotal: 0,
-        durationMs,
-        source: 'exercise',
-        sourceRef: entry.type,
-        // Without this, no repeat of a drill ever forms a Skill Thread on
-        // the Progress page and every plain row reads "cannot be compared
-        // like for like" (CLAUDE-JOURNEY-007) — only an explicit persisted
-        // key marks two records as scored on the same ruler.
-        comparabilityKey: exerciseComparabilityKey(entry.type),
-      },
+      exerciseSessionPayload(entry, durationMs),
       ownerId,
     )
     if (savedSession === null || getUserId() !== ownerId) return

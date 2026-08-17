@@ -72,6 +72,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Plain-exercise session writes sent `comparabilityKey` without
+  `sourceVersion`**, tripping the worker's evidence rule ("comparabilityKey
+  requires sourceRef and sourceVersion"): `repo.create` came back 400,
+  `saveSessionRecord` swallowed it by design and returned null, and
+  `addScoredMs`, `updatePracticeStreak` and `checkAndGrantBadges` never ran
+  — signed-in drills credited nothing since the Skill-Threads fix landed.
+  The payload is now built by an exported `exerciseSessionPayload` stamped
+  with `exerciseScoringVersion`, and `exercise-record-payload.test.ts`
+  holds that production payload against the worker's own `validateWrite` —
+  closing the gap that let this ship green (every prior test mocked
+  `saveSessionRecord`).
+
 - **Home's week strip counted only the device-local mirror
   (CLAUDE-JOURNEY-009).** `weekStats` filtered `exerciseHistory()` — the
   localStorage mirror — so a second device signed into the same account
