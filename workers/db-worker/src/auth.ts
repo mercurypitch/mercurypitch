@@ -1451,6 +1451,10 @@ async function handleGoogle(
 
 const STATE_TTL_MS = 10 * 60 * 1000
 
+/** Matches EXPIRED_STATE_CODE in src/db/services/auth-service.ts, which
+ *  turns it into the sentence the singer reads. */
+const EXPIRED_STATE_CODE = 'expired_state'
+
 const DEFAULT_APP_ORIGINS = [
   'https://mercurypitch.com',
   'https://dev.mercurypitch.com',
@@ -1517,14 +1521,17 @@ async function verifyState(
 ): Promise<OAuthState | null> {
   const [body, sig] = raw.split('.')
   if (!body || !sig) return null
-  const valid = await crypto.subtle.verify(
-    'HMAC',
-    await hmacKey(secret),
-    b64urlDecode(sig),
-    encoder.encode(body),
-  )
-  if (!valid) return null
+  // Inside the try: a truncated or mangled `state` fails b64urlDecode by
+  // throwing, and an unverifiable state is a 400 the caller can recover
+  // from, not a 500 that reads to the singer as "the site is broken".
   try {
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      await hmacKey(secret),
+      b64urlDecode(sig),
+      encoder.encode(body),
+    )
+    if (!valid) return null
     const state = JSON.parse(
       new TextDecoder().decode(b64urlDecode(body)),
     ) as OAuthState
@@ -1663,7 +1670,19 @@ async function handleGoogleCallback(
     env.JWT_SECRET as string,
   )
   if (!state || !isAllowedReturnTo(state.returnTo, env)) {
-    return respond({ error: 'Invalid or expired state' }, { status: 400 })
+    // Every other failure in this handler redirects the singer back into the
+    // app, where it surfaces as a toast. This one used to render
+    // `{"error":"Invalid or expired state"}` as a page on the API origin,
+    // with no way back (owner report, 2026-08-17) — because `state` is what
+    // carries the return address, and an unusable state leaves the handler
+    // without one. The environment's own app origin is that missing address;
+    // handleVerifyEmail has answered the identical question this way since
+    // it shipped. The state's ten-minute TTL makes this the ordinary
+    // consequence of walking away mid-consent, not an exotic error.
+    // Trailing slash so the singer lands on the app's home route, the
+    // same shape handleVerifyEmail uses — an origin alone leaves the URL
+    // without a path.
+    return redirectWithError(`${fallbackAppOrigin(env)}/`, EXPIRED_STATE_CODE)
   }
 
   const oauthError = url.searchParams.get('error')

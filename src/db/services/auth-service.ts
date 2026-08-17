@@ -154,6 +154,14 @@ class AuthHttpError extends Error {
   }
 }
 
+/** The worker's answer when the OAuth state is unusable — almost always
+ *  because its ten-minute life ran out while the consent screen sat open in
+ *  a tab the singer walked away from. It arrives as a code rather than a
+ *  sentence so the wording lives here, next to the rest of the copy. */
+const EXPIRED_STATE_CODE = 'expired_state'
+const EXPIRED_STATE_MESSAGE =
+  'that sign-in link expired. Please try signing in again.'
+
 const ACCOUNT_SUSPENDED_CODE = 'account_suspended'
 const ACCOUNT_SUSPENDED_MESSAGE =
   'This account is suspended. Contact support if you believe this is a mistake.'
@@ -501,6 +509,15 @@ export async function googleSignInUrl(): Promise<string> {
  * from. Runs at app startup, before the router boots and before any other
  * auth call.
  */
+/** Codes the worker sends deliberately get a sentence; anything else is
+ *  passed through, because an unrecognised code is still more use to a bug
+ *  report than a swallowed one. */
+function googleErrorMessage(code: string): string {
+  if (code === ACCOUNT_SUSPENDED_CODE) return ACCOUNT_SUSPENDED_MESSAGE
+  if (code === EXPIRED_STATE_CODE) return EXPIRED_STATE_MESSAGE
+  return code
+}
+
 export function consumeGoogleRedirect(): void {
   const hash = window.location.hash
   // `#gdrive` as well as `#gauth`: a connect-Drive pass is NOT a sign-in.
@@ -550,8 +567,7 @@ export function consumeGoogleRedirect(): void {
     }
     googleRedirectResult = {
       ok: false,
-      error:
-        error === ACCOUNT_SUSPENDED_CODE ? ACCOUNT_SUSPENDED_MESSAGE : error,
+      error: googleErrorMessage(error),
     }
   }
   const returnHash = localStorage.getItem(RETURN_HASH_KEY) ?? ''

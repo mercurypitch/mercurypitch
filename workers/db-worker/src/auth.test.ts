@@ -850,6 +850,86 @@ describe('suspended account authentication', () => {
     )
   })
 
+  // ── The state that ran out of time ──────────────────────────
+  //
+  // The state is a signed value with a ten-minute life, not a stored
+  // record: walk away from Google's consent screen and finish it later and
+  // the callback arrives with a state nothing can verify. That used to
+  // render `{"error":"Invalid or expired state"}` as a page on the API
+  // origin — the one failure in this handler that answered with a body
+  // instead of sending the singer home (owner report, 2026-08-17).
+
+  const expiredState = async (env: Env): Promise<string> => {
+    const start = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/start' +
+          '?returnTo=https%3A%2F%2Fapp.test%2Faccount',
+      ),
+      env,
+      '/api/auth/google/start',
+      respond,
+    )
+    const state = new URL(
+      start!.headers.get('Location') as string,
+    ).searchParams.get('state') as string
+    // Push the clock past the ten-minute TTL rather than hand-forging a
+    // state: this is the real expiry path, signature and all.
+    vi.setSystemTime(new Date(Date.now() + 11 * 60 * 1000))
+    return state
+  }
+
+  it('sends an expired state home instead of rendering JSON at the API', async () => {
+    const env = makeEnv(new AuthDatabase())
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+    env.APP_FALLBACK_ORIGIN = 'https://dev.test'
+    vi.useFakeTimers()
+    try {
+      const state = await expiredState(env)
+
+      const callback = await handleAuth(
+        new Request(
+          `https://api.test/api/auth/google/callback?code=valid&state=${encodeURIComponent(state)}`,
+        ),
+        env,
+        '/api/auth/google/callback',
+        respond,
+      )
+
+      expect(callback?.status).toBe(302)
+      // The environment's own app origin, never production from the dev
+      // worker: the state that carried the return address is what failed.
+      expect(callback?.headers.get('Location')).toBe(
+        'https://dev.test/#gauth_error=expired_state',
+      )
+      expect(await callback!.text()).toBe('')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('rejects a mangled state as a redirect, not a 500', async () => {
+    // The signature half was decoded outside the try, so a state that is not
+    // valid base64url threw straight past the 400 into the 500 handler.
+    const env = makeEnv(new AuthDatabase())
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_FALLBACK_ORIGIN = 'https://dev.test'
+
+    const callback = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/callback?code=valid&state=body.!!!not-base64!!!',
+      ),
+      env,
+      '/api/auth/google/callback',
+      respond,
+    )
+
+    expect(callback?.status).toBe(302)
+    expect(callback?.headers.get('Location')).toBe(
+      'https://dev.test/#gauth_error=expired_state',
+    )
+  })
+
   it('still issues a session through a successful Google redirect', async () => {
     const db = new AuthDatabase()
     const env = makeEnv(db)

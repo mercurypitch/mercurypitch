@@ -58,6 +58,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (sibling order, toggle's container, no shell phase row); the 1280x800 fold
   e2e gained the same assertions, and the reachability e2e now accepts either
   announcement shape.
+- **An expired Google sign-in state comes home instead of rendering JSON**
+  (`workers/db-worker/src/auth.ts`, `auth-service.ts`; owner report
+  2026-08-17): the OAuth state is a signed value with a ten-minute life, so
+  leaving the consent screen open and finishing it later arrives at the
+  callback with a state nothing can verify. That was the ONE failure in the
+  handler that answered with a body — `{"error":"Invalid or expired state"}`
+  rendered as a page on the API origin, with no way back — because the state
+  is what carries the return address. It now redirects to the environment's
+  own app origin with `#gauth_error=expired_state`, the shape
+  `handleVerifyEmail` has always used for the identical problem, and the app
+  maps that code to "that sign-in link expired. Please try signing in again."
+  Unrecognised codes still pass through verbatim. Fixed alongside: `verifyState`
+  decoded the signature outside its try, so a mangled `state` threw past the
+  400 into the 500 handler (BUGS.md:917).
 
 - **Detector reconstruction keeps the runtime config** (`practice-engine.ts`):
   both places that rebuild the `PitchDetector` — `startMic()` when the real
