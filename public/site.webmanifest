@@ -5,6 +5,7 @@
   "description": "Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.",
   "start_url": "/",
   "scope": "/",
+  "launch_handler": { "client_mode": "navigate-existing" },
   "display": "standalone",
   "orientation": "any",
   "categories": ["music", "education", "entertainment"],

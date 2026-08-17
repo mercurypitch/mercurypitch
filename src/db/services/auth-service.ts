@@ -459,13 +459,18 @@ let googleRedirectResult: GoogleRedirectResult | null = null
  * the worker hands the JWT back as its own fragment (`#gauth=…`), and a
  * second `#` would corrupt it. So the current route is stashed here and
  * restored by consumeGoogleRedirect() when the user lands back.
+ *
+ * localStorage, not sessionStorage: on Android the redirect can land in
+ * the installed PWA — a different browsing context with an empty
+ * sessionStorage — and the route would be lost exactly when the context
+ * switch already disoriented the user. Consumed one-shot on return.
  */
 const RETURN_HASH_KEY = 'mp:gauthReturnHash'
 
 /** URL that starts the Google sign-in redirect for this device. Also
  *  stashes the current hash route so the user returns to the same page. */
 export async function googleSignInUrl(): Promise<string> {
-  sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
+  localStorage.setItem(RETURN_HASH_KEY, window.location.hash)
   const returnTo =
     window.location.origin + window.location.pathname + window.location.search
   // POST, not a query string: signing in with a deviceId hands that anonymous
@@ -549,8 +554,8 @@ export function consumeGoogleRedirect(): void {
         error === ACCOUNT_SUSPENDED_CODE ? ACCOUNT_SUSPENDED_MESSAGE : error,
     }
   }
-  const returnHash = sessionStorage.getItem(RETURN_HASH_KEY) ?? ''
-  sessionStorage.removeItem(RETURN_HASH_KEY)
+  const returnHash = localStorage.getItem(RETURN_HASH_KEY) ?? ''
+  localStorage.removeItem(RETURN_HASH_KEY)
   history.replaceState(
     null,
     '',
@@ -624,7 +629,7 @@ export async function startDriveConnect(): Promise<{
   }
   // Only now, once there is somewhere to go: stashing the hash and then
   // failing would restore a route on the next unrelated redirect.
-  sessionStorage.setItem(RETURN_HASH_KEY, window.location.hash)
+  localStorage.setItem(RETURN_HASH_KEY, window.location.hash)
   window.location.href = data.url
   return { ok: true }
 }

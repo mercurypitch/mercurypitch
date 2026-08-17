@@ -37,6 +37,20 @@ export function isFirstRun(): boolean {
   return onboardingDone() !== '1'
 }
 
+const RESUME_KEY = 'pitchperfect_onboarding_resume'
+
+/**
+ * The beat a sign-in redirect left from, '' when none is pending. Google
+ * sign-in is a full-page navigation (COOP severs the GIS popup), and on
+ * Android the redirect can land in the installed PWA — a different
+ * browsing context — so this lives in localStorage, the one store both
+ * contexts share. Consumed one-shot by `startOrResumeOnboarding`.
+ */
+const [authResumeBeat, setAuthResumeBeat] = createPersistedSignal<string>(
+  RESUME_KEY,
+  '',
+)
+
 // ── Live flow state ─────────────────────────────────────────────
 
 const [flowOpen, setFlowOpen] = createSignal(false)
@@ -130,6 +144,32 @@ export function openBeat(beat: Beat): void {
   setFlowOpen(true)
 }
 
+/**
+ * Remember where the flow stands before a sign-in navigation leaves the
+ * page. A no-op outside the flow: the other sign-in surfaces (Settings,
+ * Karaoke) restore their route through the auth return-hash instead.
+ */
+export function armOnboardingResume(): void {
+  if (!flowOpen()) return
+  setAuthResumeBeat(currentBeat())
+}
+
+/**
+ * Open the flow where a sign-in redirect left it, or from the top. Only
+ * the map resumes — it is the one beat that rebuilds itself entirely from
+ * persisted data (the saved voiceprints); a capture beat re-entered cold
+ * would strand the visitor mid-take, so anything else restarts honestly.
+ */
+export function startOrResumeOnboarding(): void {
+  const resume = authResumeBeat()
+  setAuthResumeBeat('')
+  if (resume === 'map') {
+    openBeat('map')
+    return
+  }
+  startOnboarding()
+}
+
 export function chooseTrack(next: OnboardingTrack): void {
   setTrack(next)
 }
@@ -186,6 +226,9 @@ export function finishOnboarding(): void {
   batch(() => {
     setFlowOpen(false)
     setOnboardingDone('1')
+    // A finished flow has nothing to resume; a leftover marker would
+    // otherwise sit in localStorage until some later replayed boot.
+    setAuthResumeBeat('')
     // Spend the welcome flag too. It is the "this visitor has not been
     // offered the flow yet" flag, and leaving it unspent left the flow
     // permanently due.
@@ -204,6 +247,7 @@ export function closeOnboarding(): void {
 /** Test/e2e hook: forget the flow so the next load runs it again. */
 export function resetOnboarding(): void {
   setOnboardingDone('')
+  setAuthResumeBeat('')
   setTrack(null)
   setVoiceprint(null)
   setMicDenied(false)
