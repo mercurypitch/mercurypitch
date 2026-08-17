@@ -1231,3 +1231,91 @@ test('uses touch navigation on a coarse-pointer tablet @smoke', async ({
     await context.close()
   }
 })
+
+test('keeps room artwork inside the card it belongs to @smoke', async ({
+  browser,
+}) => {
+  // Scrolling the settings drawer on an iPhone slid the room images out of
+  // their cards to float over the panel, while the card text — which clips
+  // itself — stayed put. The cause is paintable here even though the visual
+  // break is Safari's: `.artwork` clips with `overflow: hidden` but is only
+  // `position: relative` with `z-index: auto`, so it is NOT a stacking
+  // context, and its `z-index: 2` image painted into the drawer's context
+  // instead. One element clipped it, a different one painted it.
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+    await page
+      .getByRole('button', { name: 'Open Piano Night settings' })
+      .filter({ visible: true })
+      .click()
+    await page.getByRole('tab', { name: 'Room' }).click()
+
+    const artwork = page.locator('[aria-label="Available backgrounds"] img')
+    await expect(artwork.first()).toBeVisible()
+
+    /**
+     * The nearest ancestor of each room image that actually creates a
+     * stacking context. It has to be the image's own frame: anything higher
+     * means the frame clips a box it does not paint.
+     */
+    const paintRoots = await artwork.evaluateAll((images) =>
+      images.map((image) => {
+        const makesContext = (element: Element): boolean => {
+          const style = getComputedStyle(element)
+          if (style.isolation === 'isolate') return true
+          if (style.position !== 'static' && style.zIndex !== 'auto') {
+            return true
+          }
+          if (style.position === 'fixed' || style.position === 'sticky') {
+            return true
+          }
+          if (style.transform !== 'none' || style.filter !== 'none') return true
+          if (style.willChange !== 'auto') return true
+          if (Number(style.opacity) < 1) return true
+          return style.contain.includes('paint') || style.contain === 'strict'
+        }
+        let node = image.parentElement
+        while (node !== null && !makesContext(node)) node = node.parentElement
+        return node?.className ?? null
+      }),
+    )
+    expect(paintRoots.length).toBeGreaterThan(0)
+    for (const root of paintRoots) {
+      expect(root, 'the image must paint inside its own frame').toMatch(
+        /artwork/,
+      )
+    }
+
+    // And the frame really does hold it, before and after a scroll.
+    const contained = async (): Promise<boolean[]> =>
+      artwork.evaluateAll((images) =>
+        images.map((image) => {
+          const frame = image.parentElement
+          if (frame === null) return false
+          const inner = image.getBoundingClientRect()
+          const outer = frame.getBoundingClientRect()
+          return (
+            inner.left >= outer.left - 1 &&
+            inner.right <= outer.right + 1 &&
+            inner.top >= outer.top - 1 &&
+            inner.bottom <= outer.bottom + 1
+          )
+        }),
+      )
+    expect((await contained()).every(Boolean)).toBe(true)
+
+    await page
+      .getByRole('button', { name: /Morning Conservatory/ })
+      .scrollIntoViewIfNeeded()
+    expect((await contained()).every(Boolean)).toBe(true)
+  } finally {
+    await context.close()
+  }
+})

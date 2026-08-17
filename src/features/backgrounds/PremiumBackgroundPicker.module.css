@@ -235,6 +235,15 @@
 
 .artwork {
   position: relative;
+  /* The frame has to be a stacking context, not merely a clipping box.
+     `position: relative` with `z-index: auto` does NOT create one, so the
+     `z-index: 2` image below was painting into the nearest ancestor that does
+     — Piano Night's settings drawer, which is `transform`ed and `z-index: 90`.
+     The artwork was clipped by one element and painted by another, and on iOS
+     that split showed: scrolling the drawer let the images slide out of their
+     cards and float over the panel while the card text, which clips itself,
+     stayed put. Isolating puts the image back inside the box that clips it. */
+  isolation: isolate;
   display: block;
   min-height: 78px;
   overflow: hidden;
