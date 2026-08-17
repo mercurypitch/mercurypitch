@@ -48,6 +48,17 @@ currentStreak >= 2` (parity with `hasPendingBreak`), and
 
 ### Changed
 
+- **Voice Control settings copy + button** (owner feedback, 2026-08-17):
+  SettingsPanel's section description rewritten (no "Hands-free
+  transport"; both discovery routes — Shift+V and the spoken "what can I
+  say" — kept, which settings-voice-help.test.tsx pins), the action
+  button is now `FileText` icon + "Command list", and
+  `.settingsActionRow` gained `margin-bottom: 18px` so it no longer welds
+  to the Recognition Engine dropdown. New pin: button text/icon and the
+  jargon's absence.
+
+### Changed
+
 - **Stop is one corner icon button at every viewport** (owner report,
   2026-08-17, Tab S9+ landscape ~800px height): `.exercise-btn-stop` is a
   48px round icon-only button (aria-label + title carry the label) anchored

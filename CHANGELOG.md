@@ -15,6 +15,16 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **The voice-control settings read like English.** The section now says
+  what it does — control playback with your voice — instead of opening
+  with "Hands-free transport", and the overloaded second sentence was
+  untangled: press Shift+V or ask aloud "what can I say" for every
+  phrase. The long "Show all voice commands" button is now a compact
+  "Command list" button with an icon, with breathing room before the
+  engine dropdown below it.
+
+### Changed
+
 - **The Stop button got out of the way.** While a run is active, Stop is now
   a small round icon button in the card's corner at every screen size — it
   used to be a labelled full-width pill on a rail of its own, which on a

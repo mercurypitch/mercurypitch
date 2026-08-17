@@ -9,6 +9,7 @@ import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
+import { FileText } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { SyncSettings } from '@/components/SyncSettings'
@@ -898,10 +899,10 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              Hands-free transport: enable the mic pill (bottom-left, or press
-              V) and speak — "play", "from the top", "set a", "loop off". For
-              every phrase, say "what can I say", press Shift+V, or open the
-              list here:
+              Control playback with your voice: turn on the mic pill
+              (bottom-left, or press V), then speak a command — "play", "pause",
+              "from the top", "loop off". To see every phrase, press Shift+V or
+              ask aloud: "what can I say".
             </p>
             <div class={styles.settingsActionRow}>
               <button
@@ -910,7 +911,8 @@ export const SettingsPanel: Component = () => {
                 data-testid="settings-voice-commands"
                 onClick={openVoiceCommandList}
               >
-                Show all voice commands
+                <FileText size={16} />
+                Command list
               </button>
             </div>
 
