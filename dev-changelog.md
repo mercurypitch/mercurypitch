@@ -36,6 +36,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `pointercancel` abandons the sweep without committing. Pinned by
   jam-lyrics-touch-sweep.test.tsx (capture-retargeted move grows the
   range; cancel wedges nothing; CSS rule).
+- **TabErrorBoundary recognises stale-build errors** (owner repro,
+  2026-08-17: crash modal on Progress,
+  `Failed to fetch dynamically imported module: .../ProgressRoute-*.js`):
+  every tab renders inside TabErrorBoundary, so a lazy route rejecting
+  after a deploy hit it BEFORE AppErrorBoundary's `isStaleBuildError`
+  branch (38c6d2bb) and fell into the crash modal. The tab boundary now
+  makes the same check and renders `StaleBuildRecovery` (auto
+  `reloadToLatest`, cooldown-guarded). Pinned by
+  tab-error-boundary-stale.test.tsx (stale -> recovery + auto reload;
+  ordinary crash -> crash modal untouched).
+- **CrashModal "Reset App Data" is a hard reset**: it cleared storage but
+  left the service worker registered and its precache intact, so the
+  follow-up `location.reload()` was answered from the crashing build's
+  own cache. New `hardResetAppData` (CrashModal.tsx, injectable seams)
+  also deletes every Cache Storage entry and unregisters all service
+  workers before reloading; teardown failure still reloads. Pinned in
+  CrashModal.test.tsx.
 
 ### Fixed
 

@@ -7,6 +7,17 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **A new release no longer crashes the tab you were on.** When a deploy
+  replaced the app's files mid-session, opening a tab (Progress was the
+  reported one) could show the crash screen instead of the "new version"
+  recovery — the per-tab safety net didn't recognise a vanished file as
+  an update. It now recovers exactly like the rest of the app. And the
+  crash screen's "Reset App Data" is a true hard reset: it also removes
+  the offline copy and the update worker, so the next load always comes
+  fresh from the server.
+
+### Fixed
+
 - **No more "signed out" flash.** On a slow connection, Settings → Account
   said "You are signed out" for a few seconds before flipping to your real
   signed-in state, and the header pill offered "Sign in" the same way.
