@@ -1209,7 +1209,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               fallback={
                 <button
                   type="button"
-                  class={`${styles.stageSetup} ${styles.stageViewTrigger}`}
+                  class={styles.stageViewTrigger}
                   aria-label={
                     mode() === 'flow'
                       ? `Camera, ${cameraLabel()}`

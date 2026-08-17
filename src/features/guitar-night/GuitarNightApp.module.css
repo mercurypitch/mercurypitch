@@ -3411,7 +3411,8 @@
   pointer-events: auto;
 }
 
-.stageSetup summary {
+.stageSetup summary,
+.stageViewTrigger {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5103,14 +5104,16 @@
      the card (z-index 5) painting over the header (z-index 4). Vacating the
      left half is what lets the card keep its size AND leaves Camera and the
      view switch visible. */
+  /* Sized by content and pinned to the corner, but still allowed to wrap: a
+     single forced row overflowed off the left edge of a 320px phone at 200%
+     text, taking the Camera button out of the viewport with it. */
   .stageHeaderTools {
     position: relative;
     grid-row: 1;
     grid-column: 1;
-    display: grid;
-    grid-auto-flow: column;
-    grid-template-columns: none;
-    justify-content: end;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     justify-self: end;
     align-items: start;
     gap: 0.35rem;
@@ -5150,7 +5153,8 @@
     font-size: inherit;
   }
 
-  .stageSetup summary {
+  .stageSetup summary,
+  .stageViewTrigger {
     padding-inline: 0.55rem;
   }
 
@@ -5842,11 +5846,14 @@
   font: inherit;
 }
 
-/* The narrow-screen trigger for the stage view picker. It replaces a
-   `<details><summary>` with a plain button that opens the mobile sheet, so it
-   has to look identical to the summary it stands in for. */
+/* The narrow-screen trigger for the stage view picker replaces a
+   `<details><summary>` with a plain button, so it wears the summary's chrome
+   — including its touch target, which is why it is named in that rule rather
+   than styled apart from it. */
 .stageViewTrigger {
-  cursor: pointer;
+  position: relative;
+  flex: none;
+  pointer-events: auto;
 }
 
 /* The sheet renders the picker at full width in a portal, so the popup's own
