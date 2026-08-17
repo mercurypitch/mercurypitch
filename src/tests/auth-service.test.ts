@@ -368,6 +368,39 @@ describe('Google redirect signup tracking', () => {
     expect(showNotificationMock).not.toHaveBeenCalled()
     expect(window.location.hash).toBe('#/mirror')
   })
+
+  it('reads an expired sign-in link as a sentence, not a code', () => {
+    // Leave the consent screen open past the state's ten-minute life and
+    // the worker sends you home with this code. It used to be a raw JSON
+    // page on the API origin; now it has to arrive as something a singer
+    // can act on (owner report, 2026-08-17).
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(null, '', '/#gauth_error=expired_state')
+
+    consumeGoogleRedirect()
+
+    const expected = 'that sign-in link expired. Please try signing in again.'
+    expect(takeGoogleRedirectResult()).toEqual({ ok: false, error: expected })
+    // Reads as one sentence where App.tsx prefixes it.
+    expect(`Google sign-in failed: ${expected}`).toBe(
+      'Google sign-in failed: that sign-in link expired. Please try signing in again.',
+    )
+    expect(window.location.hash).toBe('#/mirror')
+  })
+
+  it('passes an unrecognised code through rather than swallowing it', () => {
+    // An unmapped code is still worth more in a bug report than a generic
+    // "something went wrong".
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(null, '', '/#gauth_error=some_new_worker_code')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleRedirectResult()).toEqual({
+      ok: false,
+      error: 'some_new_worker_code',
+    })
+  })
 })
 
 // A connect-Drive pass is not a sign-in: the worker returns from it before

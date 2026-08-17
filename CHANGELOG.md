@@ -23,6 +23,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **More room in the guided warmup on short screens.** The "next up" line and
   the guide-sound toggle now share a single strip just above the visual,
   instead of taking a row each at opposite ends of the screen.
+- **A stale Google sign-in sends you back to MercuryPitch.** Leaving the
+  Google consent screen open for more than ten minutes and then finishing it
+  used to dump you on a blank page showing raw error text, with no way back.
+  You now land on the app with a plain message asking you to try again.
 
 - **A new release no longer crashes the tab you were on.** When a deploy
   replaced the app's files mid-session, opening a tab (Progress was the
