@@ -61,6 +61,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   above the app header, clipped. `position: relative` on `.bar` gives it the
   containing block it was written for. Same badge, same bug, on both the
   Singing and Piano mobile stages.
+- **Piano Night's phone rail carried no state and had no exit.** The bottom
+  rail buttons opened their surface and nothing else: a second press reopened
+  the same panel instead of closing it, and nothing on the rail showed which
+  surface was open — on a phone that rail is the only chrome on screen, so
+  there was nothing else to press. `openSettings`/`openMusic`/`openCoach`
+  became toggles, `aria-expanded` on Settings stopped claiming the drawer while
+  the Music panel owned it, and both rails draw a marker for the pressed
+  button. The exit link to the Piano workspace existed only on the side rail,
+  which a phone never renders, so Piano Night had no way back to the studio at
+  all; the phone rail carries its own copy now (five columns). On a wide screen
+  the coach is always visible and has no hidden state, so its rail button
+  looked dead — it now moves focus to the coach and marks it for a moment.
 
 - **Piano Night's falling notes were measured against a different keyboard
   than the one on screen.** `PianoKeyHorizon` lays keys out by WHITE-KEY index

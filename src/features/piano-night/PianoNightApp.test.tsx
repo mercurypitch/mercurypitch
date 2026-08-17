@@ -843,11 +843,13 @@ describe('PianoNightApp', () => {
     expect(
       screen.queryByRole('button', { name: 'Room' }),
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('link', {
-        name: 'Open the current Piano workspace',
-      }),
-    ).toHaveAttribute('href', '/#/piano')
+    // The way out, one per layout — the phone rail is the only chrome on
+    // screen there, so without its own copy Piano Night had no exit.
+    const exits = screen.getAllByRole('link', {
+      name: 'Open the current Piano workspace',
+    })
+    expect(exits).toHaveLength(2)
+    for (const exit of exits) expect(exit).toHaveAttribute('href', '/#/piano')
   })
 
   it('uses purpose-specific icons for the score, music library, and Piano workspace', () => {
@@ -865,7 +867,7 @@ describe('PianoNightApp', () => {
     ).toBeInTheDocument()
     expect(
       screen
-        .getByRole('link', { name: 'Open the current Piano workspace' })
+        .getAllByRole('link', { name: 'Open the current Piano workspace' })[0]
         .querySelector('[data-icon="piano-workspace"]'),
     ).toBeInTheDocument()
   })
@@ -1156,5 +1158,72 @@ describe('PianoNightApp', () => {
       'piano-morning-conservatory',
     )
     expectSilentBrowserBoundary()
+  })
+
+  // The rail is the only chrome on a phone. A button that opens a surface has
+  // to close it too, and has to say which one is open — pressing Settings and
+  // getting Settings again is a dead end with nothing else to press.
+  it('closes the surface a rail button opened when it is pressed again', () => {
+    render(() => <PianoNightApp />)
+
+    const settings = screen.getAllByRole('button', {
+      name: 'Open Piano Night settings',
+    })
+    const music = screen.getAllByRole('button', {
+      name: 'Choose music for Piano Night',
+    })
+
+    for (const button of settings) {
+      expect(button).toHaveAttribute('aria-expanded', 'false')
+    }
+
+    fireEvent.click(settings[0]!)
+    for (const button of settings) {
+      expect(button).toHaveAttribute('aria-expanded', 'true')
+    }
+    // Only the button that opened it claims to have opened it.
+    for (const button of music) {
+      expect(button).toHaveAttribute('aria-expanded', 'false')
+    }
+
+    fireEvent.click(settings[0]!)
+    for (const button of settings) {
+      expect(button).toHaveAttribute('aria-expanded', 'false')
+    }
+  })
+
+  it('hands the drawer over when the other rail button is pressed', () => {
+    render(() => <PianoNightApp />)
+
+    const settings = screen.getAllByRole('button', {
+      name: 'Open Piano Night settings',
+    })
+    const music = screen.getAllByRole('button', {
+      name: 'Choose music for Piano Night',
+    })
+
+    fireEvent.click(settings[0]!)
+    fireEvent.click(music[0]!)
+    expect(music[0]).toHaveAttribute('aria-expanded', 'true')
+    expect(settings[0]).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(music[0]!)
+    expect(music[0]).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('marks the coach when the press cannot open it', async () => {
+    render(() => <PianoNightApp />)
+
+    const coach = document.querySelector<HTMLElement>('#piano-night-coach')
+    expect(coach).not.toBeNull()
+    const before = coach?.className ?? ''
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Coach/ })[0]!)
+
+    // On a wide screen the coach is already visible and has no hidden state,
+    // so the press moves focus to it and says so. Without that it read as a
+    // button that does nothing.
+    await waitFor(() => expect(coach).toHaveFocus())
+    expect(coach?.className).not.toBe(before)
   })
 })
