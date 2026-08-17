@@ -14,6 +14,16 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   step instructions also use the width a tablet has, so the breath step's
   full text and the "Sssss" cue fit on screen together.
 
+### Fixed
+
+- **"Restore streak" no longer resurrects months-old breaks.** The repair
+  offer is meant for a streak lost within the last 72 hours, but the break
+  was only dated when it was noticed — on your next practice — so coming
+  back after a long absence made any old break look fresh and "restoring"
+  it glued a long-gone practice day onto today. Repair now measures the
+  break itself, and one-day runs are no longer offered a repair that would
+  invent a second day.
+
 ### Added
 
 - **The guided warmup counts you in.** Every step now opens with an audible

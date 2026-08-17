@@ -251,11 +251,21 @@ function advanceStreakFrom(fields: StreakFields, today: string): StreakFields {
     }
   }
 
-  // Not enough freezes — reset, snapshotting the old streak for repair.
+  // Not enough freezes — reset. The snapshot for repair is taken only when
+  // the break itself is still inside the repair window: this branch runs
+  // lazily, on the NEXT practice, which can be months after the lapse, and
+  // stamping `streakResetDate = today` unconditionally made every break
+  // look freshly broken to `hasRecordedReset` no matter how old it was
+  // (owner repro: one practice day in June, one in August, and "restore
+  // streak" glued them into a streak of 2). The bounds mirror
+  // `hasPendingBreak`, which is the same question asked pre-practice: the
+  // gap fits the window, and the dying run was longer than the single day
+  // the reset already grants.
+  const repairable = missedDays <= REPAIR_WINDOW_DAYS && f.currentStreak >= 2
   return {
     ...f,
-    previousStreak: f.currentStreak,
-    streakResetDate: today,
+    previousStreak: repairable ? f.currentStreak : 0,
+    streakResetDate: repairable ? today : null,
     currentStreak: 1,
     lastPracticeDate: today,
   }
@@ -299,8 +309,13 @@ export function computeStreakState(
     f.lastRepairDate === '' ||
     daysBetween(f.lastRepairDate, today) >= REPAIR_COOLDOWN_DAYS
 
+  // `previousStreak >= 2` for parity with `hasPendingBreak` below — the
+  // reset branch no longer snapshots 1-day runs or out-of-window breaks,
+  // but rows written before that guard existed can still carry a stale
+  // `previousStreak: 1`, and a "repair" of those counts a day that was
+  // never practised.
   const hasRecordedReset =
-    f.previousStreak > 0 &&
+    f.previousStreak >= 2 &&
     f.streakResetDate !== null &&
     f.streakResetDate !== '' &&
     daysBetween(f.streakResetDate, today) <= REPAIR_WINDOW_DAYS
