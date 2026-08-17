@@ -295,7 +295,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
-import { closeOnboarding, flowOpen, openBeat, startOnboarding, } from '@/stores/onboarding-store'
+import { closeOnboarding, flowOpen, openBeat, startOrResumeOnboarding, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
@@ -776,7 +776,10 @@ const AppShell: Component<AppProps> = (props) => {
 
   const startFirstLight = () => {
     setOnboardingReplay(false)
-    startOnboarding()
+    // Not plain startOnboarding: a Google sign-in mid-flow is a full-page
+    // redirect, and this reopens the flow where it left (the map with the
+    // measured voiceprint) instead of restarting the visitor at beat one.
+    startOrResumeOnboarding()
   }
 
   // The welcome door is gone. It was beat 1 twice: the same greeting,

@@ -93,6 +93,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reachability e2e tests (warmup + interval trainer at 1280x740 and
   1280x660) asserting nothing inside `.exercise-active-stage` sits above
   its start edge — the warmup pair failed pre-fix.
+- **Onboarding state did not survive the Google OAuth round-trip.** The
+  flow's beats are memory-only signals and the welcome flag is written
+  only by `finishOnboarding`, so the full-page redirect rebooted into
+  `startOnboarding()` at beat one. `armOnboardingResume()` (called by
+  AuthModal's Google button, a no-op outside the flow) persists the beat
+  in localStorage — sessionStorage is empty when Android lands the
+  redirect in the installed PWA — and `startOrResumeOnboarding()`
+  consumes it one-shot, resuming only into the map (the one beat that
+  rebuilds from persisted data). The auth return-hash stash
+  (`mp:gauthReturnHash`) moved to localStorage for the same
+  context-switch reason, and `site.webmanifest` gains
+  `launch_handler: navigate-existing` so the WebAPK reuses a window
+  instead of spawning a second instance.
 
 - **Home's week strip counted only the device-local mirror
   (CLAUDE-JOURNEY-009).** `weekStats` filtered `exerciseHistory()` — the

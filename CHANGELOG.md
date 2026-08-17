@@ -195,6 +195,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   step name and instruction — the text above the guide-sounds toggle —
   could sit beyond the top of the screen with no way to scroll to them.
   Whatever does not fit now stays reachable by scrolling, in every drill.
+- **Signing in with Google mid-onboarding no longer restarts the flow.**
+  The sign-in leaves the page, and every step of the welcome flow lived
+  only in memory — so the app came back to the first beat instead of the
+  voice map it left. It now returns to the map, with the voiceprint it
+  just measured. On Android, where the return can open the installed app
+  instead of the browser tab, the app now asks the system to continue in
+  an existing window, and the "come back where you were" route survives
+  the switch either way.
 
 - **A second device now shows your real week on the home screen.** Signed
   in on a new device, "drills this week" read zero while the Progress page

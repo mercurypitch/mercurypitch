@@ -19,6 +19,7 @@ import { startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
+import { armOnboardingResume } from '@/stores/onboarding-store'
 import { authModalMode, closeAuthModal } from '@/stores/ui-store'
 import styles from './AuthModal.module.css'
 import { GoogleMark } from './GoogleMark'
@@ -120,6 +121,10 @@ export const AuthModal: Component = () => {
   /** Shows the failure inline, next to the form the singer is already
    *  looking at. Starting the redirect is shared — see lib/google-sign-in. */
   async function onGoogleSignIn(): Promise<void> {
+    // The redirect is a full page load; if this modal was opened from the
+    // onboarding flow, remember where it stood (a no-op on every other
+    // surface, where the auth return-hash restores the route instead).
+    armOnboardingResume()
     const failure = await startGoogleSignIn()
     if (failure !== null) setError(failure)
   }

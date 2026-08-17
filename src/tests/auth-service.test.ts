@@ -14,7 +14,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeDriveConnectResult, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -340,7 +340,7 @@ describe('suspension response recognition', () => {
 
 describe('Google redirect signup tracking', () => {
   it('REQ-SFA-004 fires signup exactly once when gauth_new=1 is present', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
     history.replaceState(
       null,
       '',
@@ -356,7 +356,7 @@ describe('Google redirect signup tracking', () => {
   })
 
   it('shows a human suspension result without exposing the internal error code', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
     history.replaceState(null, '', '/#gauth_error=account_suspended')
 
     consumeGoogleRedirect()
@@ -377,9 +377,25 @@ describe('Google redirect signup tracking', () => {
 // dropped every Drive return on the floor.
 //
 // Requirements: docs/specs/drive-connect-redirect.ears.md (REQ-DRV-*).
+describe('startDriveConnect', () => {
+  it('stashes the return route in localStorage before leaving the page', async () => {
+    // Same context-switch hazard as sign-in: the Drive consent redirect can
+    // come back into the installed app, where sessionStorage is blank.
+    setAuthToken(makeToken(3600))
+    window.location.hash = '#/settings/sync'
+    mockFetchOnce(200, { url: 'https://accounts.google.com/drive-consent' })
+
+    const result = await startDriveConnect()
+    expect(result.ok).toBe(true)
+    expect(localStorage.getItem('mp:gauthReturnHash')).toBe('#/settings/sync')
+    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBeNull()
+    window.location.hash = ''
+  })
+})
+
 describe('Drive connect redirect', () => {
   it('REQ-DRV-001/002: records a refusal reason from a #gdrive-only return', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive_error=declined')
 
     consumeGoogleRedirect()
@@ -388,7 +404,7 @@ describe('Drive connect redirect', () => {
   })
 
   it('REQ-DRV-001/002: records success from a #gdrive-only return', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive=1')
 
     consumeGoogleRedirect()
@@ -397,17 +413,17 @@ describe('Drive connect redirect', () => {
   })
 
   // The stash is one-shot. Left unconsumed it does not merely lose this
-  // route -- it waits in sessionStorage and hijacks the NEXT unrelated
+  // route -- it waits in storage and hijacks the NEXT unrelated
   // Google sign-in, which is the hazard startDriveConnect's late stash
   // exists to avoid.
   it('REQ-DRV-005: restores the stashed route and clears the stash', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive=1')
 
     consumeGoogleRedirect()
 
     expect(window.location.hash).toBe('#/settings/sync')
-    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBeNull()
+    expect(localStorage.getItem('mp:gauthReturnHash')).toBeNull()
   })
 
   // A Drive return must not be mistaken for a sign-in.
@@ -424,14 +440,14 @@ describe('Drive connect redirect', () => {
   })
 
   it('REQ-DRV-006: leaves an unrelated fragment alone', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#/karaoke')
 
     consumeGoogleRedirect()
 
     expect(takeDriveConnectResult()).toBeNull()
     expect(window.location.hash).toBe('#/karaoke')
-    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBe('#/settings/sync')
+    expect(localStorage.getItem('mp:gauthReturnHash')).toBe('#/settings/sync')
   })
 
   // The restore lives in the shared tail of consumeGoogleRedirect, so a
@@ -439,13 +455,13 @@ describe('Drive connect redirect', () => {
   // there. A declined connect that skipped the restore would strand the
   // person on a URL reading #gdrive_error=declined with their route lost.
   it('REQ-DRV-005: a refusal also restores the route and clears the stash', () => {
-    sessionStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
     history.replaceState(null, '', '/#gdrive_error=declined')
 
     consumeGoogleRedirect()
 
     expect(window.location.hash).toBe('#/settings/sync')
-    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBeNull()
+    expect(localStorage.getItem('mp:gauthReturnHash')).toBeNull()
     takeDriveConnectResult() // drain the one-shot
   })
 

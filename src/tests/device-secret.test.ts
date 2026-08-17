@@ -143,6 +143,18 @@ describe('googleSignInUrl', () => {
     vi.unstubAllGlobals()
   })
 
+  it('stashes the return route where a fresh context can read it', async () => {
+    // On Android the redirect can land in the installed PWA — a different
+    // browsing context whose sessionStorage starts empty. Only localStorage
+    // crosses that boundary, so the route stash must live there.
+    window.location.hash = '#/settings/sync'
+    stubStart(200, { url: 'https://accounts.google.com/o/oauth2/v2/auth' })
+    await googleSignInUrl()
+    expect(localStorage.getItem('mp:gauthReturnHash')).toBe('#/settings/sync')
+    expect(sessionStorage.getItem('mp:gauthReturnHash')).toBeNull()
+    window.location.hash = ''
+  })
+
   it('posts the secret in a body and returns the worker’s url', async () => {
     const fetchMock = stubStart(200, {
       url: 'https://accounts.google.com/o/oauth2/v2/auth?state=signed',
