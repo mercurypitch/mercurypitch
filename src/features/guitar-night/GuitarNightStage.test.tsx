@@ -563,3 +563,89 @@ describe('GuitarNightStage views', () => {
     ).toBeVisible()
   })
 })
+
+// The camera popup is a child of `.stageHeader`, which is `position: absolute`
+// with a z-index — a stacking context. On the owner's iPhone that meant the
+// popup painted UNDER the LEARN card and overflowed the header's top corner:
+// partly visible, partly unreachable, and no z-index on the popup could have
+// helped. The narrow-screen branch hands it to `Sheet`, which portals out of
+// the trap entirely.
+describe('GuitarNightStage view picker on a phone', () => {
+  const persistedKeys = [
+    GUITAR_NIGHT_FLOW_PRESENTATION_KEY,
+    GUITAR_NIGHT_CAMERA_PRESET_KEY,
+    GUITAR_NIGHT_HANDEDNESS_KEY,
+    GUITAR_NIGHT_EFFECTS_KEY,
+  ] as const
+
+  const stubViewport = (narrow: boolean) => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: narrow && query === '(max-width: 720px)',
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+  }
+
+  beforeEach(() => {
+    for (const key of persistedKeys) localStorage.removeItem(key)
+  })
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+    for (const key of persistedKeys) localStorage.removeItem(key)
+  })
+
+  it('opens the picker in a portalled sheet, outside the stage header', async () => {
+    stubViewport(true)
+    render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
+    await screen.findByTestId('shared-3d-stage')
+
+    const trigger = screen.getByLabelText('Camera, Runway')
+    expect(trigger.tagName).toBe('BUTTON')
+    expect(trigger.closest('details')).toBeNull()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(trigger)
+
+    const sheet = await screen.findByRole('dialog', {
+      name: 'Camera and display settings',
+    })
+    // Portalled: nothing in the stage's own subtree can clip or stack over it.
+    expect(sheet.closest('[data-testid="guitar-night-stage"]')).toBeNull()
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('applies a camera choice from the sheet and closes it', async () => {
+    stubViewport(true)
+    render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
+    const sharedStage = await screen.findByTestId('shared-3d-stage')
+
+    fireEvent.click(screen.getByLabelText('Camera, Runway'))
+    const sheet = await screen.findByRole('dialog', {
+      name: 'Camera and display settings',
+    })
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /Phrase follow/ }),
+    )
+
+    expect(sharedStage).toHaveAttribute('data-camera-following', 'true')
+    expect(localStorage.getItem(GUITAR_NIGHT_CAMERA_PRESET_KEY)).toBe(
+      'phrase-focus',
+    )
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('dialog', { name: 'Camera and display settings' }),
+      ).toBeNull()
+    })
+  })
+
+  it('keeps the in-place disclosure on a screen with room for it', async () => {
+    stubViewport(false)
+    render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
+    await screen.findByTestId('shared-3d-stage')
+
+    const trigger = screen.getByLabelText('Camera, Runway')
+    expect(trigger.tagName).toBe('SUMMARY')
+    expect(trigger.closest('details')).not.toBeNull()
+  })
+})

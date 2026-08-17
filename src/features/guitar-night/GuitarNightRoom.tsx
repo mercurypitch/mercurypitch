@@ -496,10 +496,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                           props.transport.setTrackMuted(track.id, !track.muted)
                         }
                       >
+                        <strong>{track.label}</strong>
                         <span aria-hidden="true">
                           {track.muted ? <VolumeX /> : <Volume2 />}
                         </span>
-                        <strong>{track.label}</strong>
                         <small>{track.muted ? 'Muted' : 'In mix'}</small>
                       </button>
                     )}

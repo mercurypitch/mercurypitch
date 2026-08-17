@@ -256,3 +256,35 @@
   margin: 0.3rem 0.2rem;
   background: var(--border, #30363d);
 }
+
+/* ── Docked: the host places the pill in its own chrome ───────────
+   Guitar Night has no tab bar, so the floating pill's
+   `bottom: calc(var(--tabbar-total) + …)` reserved space for chrome that
+   was not there and painted the pill (z-index 380) straight onto the
+   first-win deck's "Start count-in" button. Docked in the header rail it
+   is out of the play area entirely. */
+.docked {
+  position: static;
+  z-index: auto;
+  margin-left: auto;
+  opacity: 1;
+  box-shadow: none;
+}
+
+/* The floating pill's menu opens upward, because it lives at the bottom of
+   the screen. From a header rail, that would open off the top. */
+.docked .menu {
+  top: calc(100% + 0.5rem);
+  bottom: auto;
+  left: auto;
+  right: 0;
+}
+
+@media (max-width: 768px) {
+  /* Undo the tab-bar clearance the floating pill needs; a docked pill is in
+     the flow of the host's own bar. */
+  .docked,
+  .docked.raised {
+    bottom: auto;
+  }
+}

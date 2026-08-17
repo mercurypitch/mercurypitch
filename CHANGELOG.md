@@ -35,6 +35,17 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Room pictures stay in their cards.** Scrolling the Piano Night room
   chooser on a phone could send the preview images sliding out of the list to
   float over the panel. They stay put now.
+- **Guitar Night fits a phone now.** The voice-command microphone moved into
+  the header rail, off the play button it was sitting on. The camera and view
+  controls open in the same drawer the rest of the app uses on a phone,
+  instead of a popup that appeared behind the lesson card with half of it off
+  the screen. The song's speed and volume controls share the bottom row evenly
+  rather than one crowding out the other, and the Vocals and Backing cards
+  keep their names inside their own edges.
+- **The take review is a button, not a banner.** On a phone, and when you turn
+  the phone sideways, the "Take ready" card is now just its ear icon in the
+  corner. Tapping it opens the same review. Sideways, the MercuryPitch
+  wordmark and the room name step aside too, so the fretboard gets the height.
 
 - **A new version no longer looks like a crash.** Opening a tab after a
   deployment could show the "Application Error" dialog for a moment

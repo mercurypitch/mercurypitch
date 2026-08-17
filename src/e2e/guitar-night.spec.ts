@@ -2111,3 +2111,136 @@ test('keeps a full band inside the room across tablet and phone widths @smoke', 
     await context.close()
   }
 })
+
+test('keeps the phone chrome to one row and splits the transport evenly @smoke', async ({
+  browser,
+}) => {
+  // Every finding here is geometry, so it needs a real layout engine: on the
+  // owner's iPhone 13 Pro the header wrapped to two rows, the speed control
+  // swallowed the transport while volume was squeezed against the edge, and
+  // in landscape the wordmark plus room name cost the fretboard a whole row.
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+
+  try {
+    const sessionId = `guitar-night-mobile-chrome-${Date.now()}`
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await instrumentMicrophoneRequests(page)
+    await instrumentAudioContext(page)
+    await initializeGuitarNightDatabase(page)
+    await seedCompletedTwoStemSong(page, sessionId)
+    await page.goto(`/guitar-night?session=${encodeURIComponent(sessionId)}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await page.getByRole('button', { name: 'Enter room', exact: true }).click()
+    await expect(page.getByTestId('guitar-night-room')).toBeVisible()
+
+    /**
+     * The header's visible children share one band when the lowest top still
+     * sits above the highest bottom. Counting distinct tops would not do: the
+     * voice pill is shorter than the brand and centres itself inside the row.
+     */
+    const headerBand = () =>
+      page.getByTestId('guitar-night-topbar').evaluate((bar) => {
+        const boxes = [...bar.children]
+          .map((child) => child.getBoundingClientRect())
+          .filter((box) => box.width > 0 && box.height > 0)
+        return {
+          singleRow:
+            Math.max(...boxes.map((box) => box.top)) <
+            Math.min(...boxes.map((box) => box.bottom)),
+          height: bar.getBoundingClientRect().height,
+        }
+      })
+
+    const portraitHeader = await headerBand()
+    expect(portraitHeader.singleRow).toBe(true)
+    expect(portraitHeader.height).toBeLessThanOrEqual(72)
+
+    // The voice pill belongs to the rail now. As a floating overlay it cleared
+    // `--tabbar-total` for a tab bar this screen does not have and landed on
+    // the primary action button.
+    const pill = page.getByTestId('voice-control-pill')
+    await expect(pill).toHaveAttribute('data-placement', 'docked')
+    expect(
+      await pill.evaluate((element) => {
+        const bar = element.closest('[data-testid="guitar-night-topbar"]')
+        if (bar === null) return false
+        const pillBox = element.getBoundingClientRect()
+        const barBox = bar.getBoundingClientRect()
+        return (
+          pillBox.top >= barBox.top - 1 && pillBox.bottom <= barBox.bottom + 1
+        )
+      }),
+    ).toBe(true)
+
+    /** Speed and volume widths, as laid out. */
+    const transportHalves = () =>
+      page.evaluate(() => {
+        const speed = document.querySelector('[aria-label="Playback speed"]')
+        const volume = document
+          .querySelector('input[aria-label="Backing volume"]')
+          ?.closest('label')
+        return {
+          speed: speed?.getBoundingClientRect().width ?? 0,
+          volume: volume?.getBoundingClientRect().width ?? 0,
+        }
+      })
+
+    const portrait = await transportHalves()
+    expect(portrait.speed).toBeGreaterThan(0)
+    expect(portrait.volume).toBeGreaterThan(0)
+    // "half half seems like it should be nice for space" — before this, speed
+    // took roughly three times the width volume did.
+    expect(Math.abs(portrait.speed - portrait.volume)).toBeLessThanOrEqual(
+      portrait.speed * 0.12,
+    )
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }))
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 2)
+
+    await page.setViewportSize({ width: 844, height: 390 })
+    const landscapeHeader = await headerBand()
+    expect(landscapeHeader.singleRow).toBe(true)
+    // 390px of height, most of it owed to the fretboard.
+    expect(landscapeHeader.height).toBeLessThanOrEqual(64)
+
+    const landscape = await transportHalves()
+    expect(Math.abs(landscape.speed - landscape.volume)).toBeLessThanOrEqual(
+      landscape.speed * 0.12,
+    )
+
+    // A landscape phone escapes every max-width rule, which is why the app
+    // name and the room name were still there taking a second row.
+    const chrome = await page
+      .getByTestId('guitar-night-topbar')
+      .evaluate((bar) => {
+        const shown = (element: Element | null | undefined): boolean =>
+          element !== null &&
+          element !== undefined &&
+          element.getBoundingClientRect().height > 0
+        const brand = bar.querySelector('a[aria-label="MercuryPitch home"]')
+        const spans = [...bar.querySelectorAll('span')]
+        return {
+          mark: shown(brand),
+          wordmark: shown(brand?.querySelector('span')),
+          appName: shown(
+            spans.find((span) => span.textContent?.trim() === 'Guitar Night'),
+          ),
+        }
+      })
+    // "keep the icon only in left corner" — the mark stays, the words go.
+    expect(chrome.mark).toBe(true)
+    expect(chrome.wordmark).toBe(false)
+    expect(chrome.appName).toBe(false)
+  } finally {
+    await context.close()
+  }
+})

@@ -22,36 +22,40 @@ interface GuitarNightLoopControlsProps {
 export function GuitarNightLoopControls(props: GuitarNightLoopControlsProps) {
   return (
     <div class={styles.loopControls} role="group" aria-label="Section loop">
-      <span class={styles.loopIcon} aria-hidden="true">
-        <Repeat />
+      {/* A and B set the two ends of one span, so they read as one segmented
+          control rather than two loose boxes with a decorative icon between
+          them. Both rooms already title this section and say what A and B do,
+          which is why the idle caption here is silence. */}
+      <span class={styles.loopMarks}>
+        <button
+          type="button"
+          classList={{ [styles.loopMarkSet]: props.hasStart }}
+          aria-pressed={props.hasStart}
+          title="Start the loop where the playhead is"
+          onClick={() => props.onMarkStart()}
+        >
+          A
+        </button>
+        <button
+          type="button"
+          classList={{ [styles.loopMarkSet]: props.hasEnd }}
+          aria-pressed={props.hasEnd}
+          title="End the loop where the playhead is"
+          onClick={() => props.onMarkEnd()}
+        >
+          B
+        </button>
       </span>
-      <button
-        type="button"
-        classList={{ [styles.loopMarkSet]: props.hasStart }}
-        aria-pressed={props.hasStart}
-        title="Start the loop where the playhead is"
-        onClick={() => props.onMarkStart()}
-      >
-        A
-      </button>
-      <button
-        type="button"
-        classList={{ [styles.loopMarkSet]: props.hasEnd }}
-        aria-pressed={props.hasEnd}
-        title="End the loop where the playhead is"
-        onClick={() => props.onMarkEnd()}
-      >
-        B
-      </button>
       <output aria-live="polite">
         <Show
           when={props.span}
-          fallback={
-            props.pending ? 'Mark the other end' : 'Loop a section: A then B'
-          }
+          fallback={props.pending ? 'Mark the other end' : null}
         >
           {(span) => (
             <>
+              <span class={styles.loopSpanIcon} aria-hidden="true">
+                <Repeat />
+              </span>
               {props.format(span().start)} – {props.format(span().end)}
             </>
           )}

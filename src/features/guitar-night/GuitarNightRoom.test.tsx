@@ -330,4 +330,39 @@ describe('GuitarNightRoom', () => {
     expect(listening.clearTake).toHaveBeenCalledOnce()
     expect(listening.start).toHaveBeenCalledOnce()
   })
+
+  // "Backing" — an eight-letter word — ran past the right edge of its own
+  // card on the owner's iPhone, because the speaker icon, the name and the
+  // state all shared one line. The name now owns the first line and the icon
+  // plus its state read as a caption underneath.
+  it('gives each stem card its name on the first line', () => {
+    const transport = createTransport()
+    transport.tracks = () => [
+      { id: 'vocal', label: 'Vocals', muted: false, available: true, level: 1 },
+      {
+        id: 'instrumental',
+        label: 'Backing',
+        muted: true,
+        available: true,
+        level: 1,
+      },
+    ]
+
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const backing = screen.getByRole('button', { name: 'Backing muted' })
+    const parts = [...backing.children].map((child) => child.tagName)
+    expect(parts).toEqual(['STRONG', 'SPAN', 'SMALL'])
+    expect(backing.querySelector('strong')).toHaveTextContent('Backing')
+    expect(backing.querySelector('small')).toHaveTextContent('Muted')
+
+    const vocals = screen.getByRole('button', { name: 'Vocals on' })
+    expect(vocals.querySelector('small')).toHaveTextContent('In mix')
+  })
 })
