@@ -406,15 +406,6 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       startLabel="Start Warmup"
       stopLabel="End Warmup"
       onStop={handleStop}
-      activePhase={
-        <Show when={nextStepName() !== null || inLeadIn()}>
-          <span class="warmup-phase-line">
-            {nextStepName() !== null
-              ? `Nice — next: ${nextStepName()}`
-              : 'Get ready\u2026'}
-          </span>
-        </Show>
-      }
       activeContent={
         <div class="warmup-stage">
           <div class="warmup-step-display">
@@ -423,6 +414,22 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
             </div>
             <h3 class="warmup-step-name">{currentStep()?.name}</h3>
             <p class="warmup-step-instruction">{currentStep()?.instruction}</p>
+          </div>
+          {/* One row, directly above the canvas, doing the work two rows
+              used to do: the approach-run announcement centred in it and
+              the guide toggle parked in a corner. The announcement is
+              transient, so the row keeps its height whether or not it has
+              text — a line that appears between steps must not shove the
+              canvas down, and on a short screen the two rows it replaces
+              were the difference between the step fitting and not. */}
+          <div class="warmup-caption-row">
+            <Show when={nextStepName() !== null || inLeadIn()}>
+              <span class="warmup-phase-line">
+                {nextStepName() !== null
+                  ? `Nice — next: ${nextStepName()}`
+                  : 'Get ready\u2026'}
+              </span>
+            </Show>
             <button
               type="button"
               class="warmup-guide-mute"

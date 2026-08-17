@@ -175,7 +175,13 @@ test.describe('a running exercise keeps every element reachable', () => {
         const reach = await page.evaluate(() => {
           const area = document.querySelector('.exercise-canvas-area')
           const stage = document.querySelector('.exercise-active-stage')
-          const phase = document.querySelector('.exercise-active-phase')
+          // Two shapes of the same announcement: most drills put it in the
+          // shell's phase slot above the scroller; the warmup carries it in
+          // its own caption row directly above the canvas, so that one row
+          // can also host the guide toggle instead of stacking another.
+          const phase =
+            document.querySelector('.exercise-active-phase') ??
+            document.querySelector('.warmup-caption-row')
           if (area === null || stage === null) return null
           // Scroll to the very start: whatever still sits above the stage's
           // top edge can never be scrolled into view.
@@ -199,8 +205,9 @@ test.describe('a running exercise keeps every element reachable', () => {
         expect(reach).not.toBeNull()
         // Nothing inside the scroller may sit above its start edge.
         expect(reach!.offenders).toEqual([])
-        // The instruction line lives outside the scroller by design, so it
-        // has no second chance: it must simply be on screen.
+        // The announcement must be on screen either way — outside the
+        // scroller it has no second chance, and inside it the row is what
+        // the canvas hangs from.
         expect(reach!.phaseTop).not.toBeNull()
         expect(reach!.phaseTop!).toBeGreaterThanOrEqual(0)
 
@@ -255,6 +262,8 @@ test.describe('the warmup breath step fits the fold', () => {
       area.scrollTop = 0
       const areaRect = area.getBoundingClientRect()
       const stopRect = stopBtn.getBoundingClientRect()
+      const caption = document.querySelector('.warmup-caption-row')
+      const toggle = document.querySelector('[data-testid="warmup-guide-mute"]')
       return {
         overflow: area.scrollHeight - area.clientHeight,
         instructionHeight: instruction.getBoundingClientRect().height,
@@ -262,6 +271,13 @@ test.describe('the warmup breath step fits the fold', () => {
         areaBottom: areaRect.bottom,
         stopWidth: stopRect.width,
         stopHeight: stopRect.height,
+        captionBottom: caption?.getBoundingClientRect().bottom ?? null,
+        canvasTop: canvas.getBoundingClientRect().top,
+        toggleInCaption: toggle?.closest('.warmup-caption-row') !== null,
+        // The strip at the top of the runner: warmup must not also pay for
+        // one, or the row it just merged comes straight back.
+        hasShellPhaseRow:
+          document.querySelector('.exercise-active-phase') !== null,
       }
     })
     expect(fit).not.toBeNull()
@@ -276,6 +292,12 @@ test.describe('the warmup breath step fits the fold', () => {
     expect(fit!.stopWidth).toBeGreaterThanOrEqual(40)
     expect(fit!.stopWidth).toBeLessThanOrEqual(56)
     expect(Math.abs(fit!.stopWidth - fit!.stopHeight)).toBeLessThanOrEqual(1)
+    // One caption strip, immediately above the canvas, carrying the guide
+    // toggle — and no second strip at the top of the runner.
+    expect(fit!.captionBottom).not.toBeNull()
+    expect(fit!.captionBottom!).toBeLessThanOrEqual(fit!.canvasTop + 1)
+    expect(fit!.toggleInCaption).toBe(true)
+    expect(fit!.hasShellPhaseRow).toBe(false)
 
     await page.screenshot({
       path: 'test-results/warmup-breath-fold-1280x800.png',

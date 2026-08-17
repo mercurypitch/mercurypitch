@@ -43,6 +43,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing above the bottom two octaves changes, and the release tail still
   lands under -40 dBFS by the time the source stops. Applies to the default
   sine voice only — piano, organ, strings and synth already have partials.
+- **The warmup's run view spends one row where it spent two**
+  (`WarmupExercise.tsx`, `exercises.css`): the approach-run announcement
+  ("Nice — next: Humming") travelled in the shell's `activePhase` slot at the
+  very top of the runner, and the guide-sound toggle was stacked as a fourth
+  child of the step column — roughly 70px of a landscape tablet's height for
+  two short lines, and the announcement appearing between steps shoved the
+  canvas down as it came and went. Both now live in one `.warmup-caption-row`
+  immediately above the canvas: the announcement centred, the toggle absolutely
+  parked in the right corner, and a `min-height` so the row does not collapse
+  when the announcement is absent. Under 760px the toggle keeps its icon and
+  accessible name and drops its visible label. Warmup no longer passes
+  `activePhase` at all. `warmup-caption-row.test.tsx` pins the arrangement
+  (sibling order, toggle's container, no shell phase row); the 1280x800 fold
+  e2e gained the same assertions, and the reachability e2e now accepts either
+  announcement shape.
 
 - **Detector reconstruction keeps the runtime config** (`practice-engine.ts`):
   both places that rebuild the `PitchDetector` — `startMic()` when the real
