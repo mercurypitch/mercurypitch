@@ -36,6 +36,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   built-in session template credited nothing at all — no session in your
   history, no practice minutes, no streak, no badges — and gave no sign
   anything had gone wrong. The finished run is now recorded.
+- **Exercises read properly on a phone.** The microphone and level
+  readout stay in the top-right corner instead of being pushed onto a
+  second row by a long drill name, Start is a button rather than a
+  banner, and Sight-Singing's staff now fits on screen so you can see
+  the notes without scrolling.
 - **Very low notes are audible again.** Notes around the second octave (C2 to
   around E2) were technically sounding but almost impossible to hear on
   laptop and phone speakers. They now get a small level lift and a

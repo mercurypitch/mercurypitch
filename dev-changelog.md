@@ -88,6 +88,28 @@ properties of undefined`. `isStaleBuildError` does not match a
   the payload moved into an exported `practiceSessionPayload` builder held
   against the production validator, mirroring `exercise-record-payload`
   (CLAUDE-JOURNEY-007), which had pinned only the plain-drill half.
+- **Exercise chrome at 390px: header wrap, Start size, staff overflow.**
+  (a) `mobile-polish.css` gave `flex: 1 1 0; min-width: 0` to
+  `.exercise-title`, which stopped being the flex child when ec9b3f67
+  wrapped the `h2` in `.exercise-header-title` to hang an icon beside
+  it. With no `flex` of its own the wrapper claimed max-content width,
+  and flex line-breaking uses the hypothetical size, so a long name
+  pushed `.exercise-header-right` to a second row. Rule moved to the
+  wrapper and the row is `flex-wrap: nowrap`.
+  (b) `.exercise-idle-start` carried `padding-bottom: calc(13px +
+var(--safe-bottom))` — a gap _under_ the button paid inside its own
+  box, so on a notched phone the label sat 13px from the top and 47px
+  from the bottom. Now `margin-bottom`, plus a 260px `max-width` so it
+  no longer inherits the launch column's full 340px.
+  (c) `.sight-singing-staff` is an SVG whose width/height attributes
+  equal its viewBox, pinning it to 180px tall and overflowing the run
+  column; a CSS `height: clamp(88px, 16vh, 132px)` with `width: auto`
+  and `min-width: 0` scales the drawing uniformly. The viewBox is left
+  uncropped on purpose — content reaches y=167 of 180 (a note a
+  seventh below the staff plus ledger lines), so cropping would clip
+  exactly the low notes involved.
+  Pinned by `src/e2e/exercise-mobile-chrome.spec.ts`, which measures
+  geometry rather than asserting classes.
 - **The walkthrough e2e spec was clicking the wrong button** (`walkthrough.spec.ts`):
   Learn and What's new moved from the sidebar to Home's header, but the spec
   still clicked the first `.walkthroughControlBtn` — which after the move is
