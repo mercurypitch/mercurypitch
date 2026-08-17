@@ -12,6 +12,7 @@ import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { describe, expect, it, vi } from 'vitest'
 import { BusyButton } from '@/components/shared/BusyButton'
 import { BusyLink } from '@/components/shared/BusyLink'
+import { Spinner } from '@/components/shared/Spinner'
 
 function leftClick(): MouseEvent {
   return new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })
@@ -96,6 +97,42 @@ describe('BusyLink', () => {
     expect(onClick).toHaveBeenCalledOnce()
   })
 
+  it('stays quiet when the click was already called off', () => {
+    render(() => (
+      <BusyLink
+        href="/guitar-night"
+        onClick={(event: MouseEvent) => event.preventDefault()}
+      >
+        Guitar Night
+      </BusyLink>
+    ))
+    const link = screen.getByRole('link', { name: 'Guitar Night' })
+
+    // A router, an unsaved-changes guard or a disabled state can cancel the
+    // navigation from the same click. Nothing is loading, so nothing spins.
+    link.dispatchEvent(leftClick())
+
+    expect(link).not.toHaveAttribute('aria-busy')
+  })
+
+  it('still runs a handler given in Solid\u2019s bound form', () => {
+    const onClick = vi.fn()
+    render(() => (
+      <BusyLink href="/mirror" onClick={[onClick, 'mirror'] as const}>
+        Mirror
+      </BusyLink>
+    ))
+    const link = screen.getByRole('link', { name: 'Mirror' })
+
+    link.dispatchEvent(leftClick())
+
+    // `onClick={[handler, data]}` is a first-class Solid idiom; dropping it
+    // would silently swallow the caller's handler.
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(onClick.mock.calls[0][0]).toBe('mirror')
+    expect(link).toHaveAttribute('aria-busy', 'true')
+  })
+
   it('gives up spinning when the page comes back from the back button', async () => {
     render(() => <BusyLink href="/mirror">Mirror</BusyLink>)
     const link = screen.getByRole('link', { name: 'Mirror' })
@@ -178,6 +215,34 @@ describe('BusyButton', () => {
     expect(onClick).toHaveBeenCalledOnce()
   })
 
+  it('refuses a second press that arrives in the same tick as the first', () => {
+    // `disabled` only lands once the render flushes; two taps of an impatient
+    // finger (or a double-click) can both be dispatched before it does. The
+    // guard, not the attribute, is what makes the second press a no-op.
+    const onClick = vi.fn(() => new Promise<void>(() => {}))
+    render(() => <BusyButton onClick={onClick}>Go</BusyButton>)
+    const button = screen.getByRole('button', { name: /Go/ })
+
+    button.dispatchEvent(leftClick())
+    button.dispatchEvent(leftClick())
+
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+
+  it('does not spin for a handler with nothing to wait for', () => {
+    const onClick = vi.fn()
+    render(() => <BusyButton onClick={onClick}>Mute</BusyButton>)
+    const button = screen.getByRole('button', { name: /Mute/ })
+
+    // Most buttons do their work synchronously. A spinner here would flash
+    // and, worse, disable the control for a beat for no reason.
+    fireEvent.click(button)
+
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(button).not.toHaveAttribute('aria-busy')
+    expect(button).not.toBeDisabled()
+  })
+
   it('can be told it is busy by whoever owns the work', () => {
     render(() => <BusyButton busy>Go</BusyButton>)
 
@@ -192,5 +257,33 @@ describe('BusyButton', () => {
     // The default label is generic on purpose; what must never happen is an
     // aria-hidden spinner with no announcement at all on a disabled control.
     expect(screen.getByRole('status')).toHaveTextContent('Working…')
+  })
+})
+
+describe('Spinner', () => {
+  it('takes its diameter as a number of pixels or as a length', () => {
+    render(() => <Spinner size={28} label="Loading" />)
+    expect(screen.getByTestId('spinner')).toHaveStyle({
+      '--spinner-size': '28px',
+    })
+  })
+
+  it('passes a length through untouched', () => {
+    render(() => <Spinner size="2rem" label="Loading" />)
+    expect(screen.getByTestId('spinner')).toHaveStyle({
+      '--spinner-size': '2rem',
+    })
+  })
+
+  it('stays silent when it has nothing of its own to say', () => {
+    render(() => <Spinner />)
+
+    // Inside a control that already announces itself, a second live region
+    // repeating the same thing is noise; the spinner becomes decoration.
+    const spinner = screen.getByTestId('spinner')
+    expect(spinner).toHaveAttribute('aria-hidden', 'true')
+    expect(spinner).not.toHaveAttribute('role')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(spinner).toHaveStyle({ '--spinner-size': '1em' })
   })
 })

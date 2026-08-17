@@ -20,9 +20,15 @@ import type { GuitarBackingTrack } from './guitar-backing-transport'
 
 const SYNC_MS = 400
 const TOLERANCE = 0.06
+/** Mirrors the engine's own settle window; the tests step past it on purpose. */
+const SEEK_SETTLE_MS = 700
 
 class FakeStemElement extends EventTarget {
   duration = 240
+  /** Listeners still attached, by type — teardown has to give them back. */
+  readonly listeners = new Map<string, number>()
+  /** Report a clock the engine cannot use, the way a torn-down element does. */
+  broken = false
   paused = true
   playbackRate = 1
   preservesPitch = false
@@ -42,7 +48,17 @@ class FakeStemElement extends EventTarget {
   }
 
   get currentTime(): number {
-    return this.position
+    return this.broken ? Number.NaN : this.position
+  }
+
+  override addEventListener(type: string, listener: EventListener): void {
+    this.listeners.set(type, (this.listeners.get(type) ?? 0) + 1)
+    super.addEventListener(type, listener)
+  }
+
+  override removeEventListener(type: string, listener: EventListener): void {
+    this.listeners.set(type, Math.max(0, (this.listeners.get(type) ?? 0) - 1))
+    super.removeEventListener(type, listener)
   }
 
   set currentTime(value: number) {
@@ -123,12 +139,16 @@ interface Rig {
   interrupted: ReturnType<typeof vi.fn>
   /** Advance both the elements and the engine's timers, in that order. */
   run(totalMs: number, stepMs?: number): void
+  /** Move only the engine's wall clock — nothing else makes progress. */
+  skipClock(ms: number): void
 }
 
 function rig(trackIds: readonly string[] = ['vocal', 'instrumental']): Rig {
   const elements: FakeStemElement[] = []
   const interrupted = vi.fn()
+  let clockMs = 0
   const engine = createGuitarBackingStreamEngine({
+    now: () => clockMs,
     createMediaElement: () => {
       const element = new FakeStemElement()
       elements.push(element)
@@ -153,9 +173,13 @@ function rig(trackIds: readonly string[] = ['vocal', 'instrumental']): Rig {
     interrupted,
     run(totalMs, stepMs = 50) {
       for (let elapsed = 0; elapsed < totalMs; elapsed += stepMs) {
+        clockMs += stepMs
         for (const element of elements) element.advance(stepMs)
         vi.advanceTimersByTime(stepMs)
       }
+    },
+    skipClock(ms) {
+      clockMs += ms
     },
   }
 }
@@ -249,6 +273,41 @@ describe('holding two stems together', () => {
     }
   })
 
+  it('holds off for a seek that outlasts the settle window', async () => {
+    // The settle window is a guess at how long a seek takes; a cold stem on a
+    // phone can take longer. Past the window the elements' own `seeking` flag
+    // is the only thing standing between a slow seek and a hard correction to
+    // a clock that means nothing yet.
+    const harness = await playing()
+    const [, follower] = harness.elements
+    harness.run(1000)
+    follower.seekLatencyMs = 5000
+
+    void harness.engine.seek(30)
+    follower.seeks.length = 0
+    // The window expires with the seek still in flight.
+    harness.skipClock(SEEK_SETTLE_MS * 2)
+    harness.run(1200, 100)
+
+    // The master landed on 30 while the follower is still stuck near 1s — a
+    // drift a hard seek would have "fixed", restarting the stall.
+    expect(follower.seeks).toEqual([])
+  })
+
+  it('ignores a stem whose clock stops being a number', async () => {
+    const harness = await playing()
+    const [, follower] = harness.elements
+    harness.run(1000)
+
+    // A detached or errored element reads back NaN; every comparison against
+    // it is false, so an unguarded servo would fall through to a rate trim.
+    follower.broken = true
+    harness.run(2000)
+
+    expect(follower.seeks).toEqual([])
+    expect(follower.playbackRate).toBe(1)
+  })
+
   it('waits for every element before reporting a seek complete', async () => {
     const harness = await playing()
     harness.elements[0].seekLatencyMs = 100
@@ -302,6 +361,22 @@ describe('holding two stems together', () => {
     harness.elements[1].pause()
 
     expect(harness.interrupted).not.toHaveBeenCalled()
+  })
+
+  it('lets go of every element it took', async () => {
+    // Four listeners go on each element; a reload that leaves any of them
+    // attached leaves a dead engine reacting to a live one's events.
+    const harness = await playing()
+    harness.run(1000)
+
+    harness.engine.dispose()
+
+    for (const element of harness.elements) {
+      for (const [type, count] of element.listeners) {
+        expect(`${type}:${count}`).toBe(`${type}:0`)
+      }
+      expect(element.listeners.size).toBeGreaterThan(0)
+    }
   })
 
   it('drops every trim when the player changes speed', async () => {
