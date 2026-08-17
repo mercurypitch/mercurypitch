@@ -37,15 +37,17 @@ export function MicSensitivitySlider(props: {
   /** Bar and ticks only — for the narrow sidebar panel. */
   compact?: boolean
 }): JSX.Element {
-  const [passShare, setPassShare] = createSignal<number | null>(null)
+  const [passShare, setPassShare] = createSignal(0)
+  /** False until the window holds enough frames to quote a share honestly. */
+  const [measured, setMeasured] = createSignal(false)
 
   onMount(() => {
     const timer = setInterval(() => {
       const snapshot = readSignalQuality()
       const total = snapshot.acceptedFrames + snapshot.rejectedFrames
-      setPassShare(
-        total < MIN_FRAMES_FOR_SHARE ? null : snapshot.acceptedFrames / total,
-      )
+      const enough = total >= MIN_FRAMES_FOR_SHARE
+      setMeasured(enough)
+      if (enough) setPassShare(snapshot.acceptedFrames / total)
     }, MONITOR_POLL_MS)
     onCleanup(() => clearInterval(timer))
   })
@@ -105,7 +107,7 @@ export function MicSensitivitySlider(props: {
           />
           <p class={styles.passLine}>
             <Show
-              when={passShare() !== null}
+              when={measured()}
               fallback={
                 <span class={styles.passMuted}>
                   Sing to see how much gets through
@@ -114,9 +116,9 @@ export function MicSensitivitySlider(props: {
             >
               <span
                 class={styles.passValue}
-                classList={{ [styles.passLow!]: (passShare() ?? 1) < 0.25 }}
+                classList={{ [styles.passLow!]: passShare() < 0.25 }}
               >
-                {Math.round((passShare() ?? 0) * 100)}%
+                {Math.round(passShare() * 100)}%
               </span>{' '}
               <span class={styles.passMuted}>
                 of the last 10s cleared the gate

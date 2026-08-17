@@ -7,6 +7,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **A microphone slider, not just three presets.** The room setting is now
+  a slider from Quiet to Noisy — the named rooms are still one tap away on
+  its ticks, but you can now sit between them when neither is right.
+  Underneath, a meter and a live "how much of the last 10s cleared the
+  gate" reading show the effect of a choice while you make it. The same
+  control appears in the sidebar mic panel and in Settings.
+- **Advice you can take without leaving the page.** The noisy-room toast
+  now points at the mic panel in the sidebar — opening it on a phone —
+  instead of sending you to the Settings tab and back.
 - **MercuryPitch now notices a noisy room.** When background noise keeps
   triggering false notes during practice, a toast suggests the High Noise
   environment setting (or a quieter spot) and jumps you straight to the
@@ -19,6 +28,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   deployment could show the "Application Error" dialog for a moment
   before the app updated itself. It now goes straight to the "a new
   version is ready" screen, which is what was actually happening.
+- **Settings tabs scroll to the one you picked.** Following a link into a
+  settings section (the header heart opens Credits) left the tab strip
+  scrolled wherever it was, so on a phone the selected tab was off
+  screen.
 - **Finishing a guided practice session now counts.** Completing any
   built-in session template credited nothing at all — no session in your
   history, no practice minutes, no streak, no badges — and gave no sign
