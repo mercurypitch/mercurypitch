@@ -68,3 +68,35 @@ describe('ExerciseShell auto-timer', () => {
     expect(onElapse).not.toHaveBeenCalled()
   })
 })
+
+describe('ExerciseShell stop control', () => {
+  // The Stop control is icon-only at every viewport (the labelled pill ate
+  // a full-width rail on tablets); the label must survive as aria-label and
+  // title or the button is a mystery square to assistive tech and hover.
+  it('renders icon-only with the label on aria-label and title', () => {
+    const { container } = render(() => (
+      <ExerciseShell
+        type={EXERCISE_LONG_NOTE}
+        title="Test"
+        status={() => 'active'}
+        currentScore={() => 0}
+        resultScore={() => null}
+        onBack={() => {}}
+        onStart={() => {}}
+        activeContent={<div>active</div>}
+        onStop={() => {}}
+        resultSummary={<>summary</>}
+        onTryAgain={() => {}}
+        onChangeTarget={() => {}}
+        stopLabel="End Warmup"
+      />
+    ))
+
+    const stop = container.querySelector('.exercise-btn-stop')
+    expect(stop).not.toBeNull()
+    expect(stop!.getAttribute('aria-label')).toBe('End Warmup')
+    expect(stop!.getAttribute('title')).toBe('End Warmup')
+    expect(stop!.textContent).toBe('')
+    expect(stop!.querySelector('svg')).not.toBeNull()
+  })
+})

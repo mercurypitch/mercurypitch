@@ -42,39 +42,8 @@
     flex-shrink: 0;
   }
 
-  /* Stop becomes a round icon button in the bottom-right corner, and the card
-     reserves a strip so an exercise's metrics row never renders behind it. The
-     centred full-width pill sat right on top of that row. */
-  .exercise-canvas-area.is-active {
-    padding-bottom: 76px;
-  }
-
-  .exercise-active-controls {
-    left: auto;
-    right: 14px;
-    bottom: 14px;
-    transform: none;
-    gap: 8px;
-  }
-
-  .exercise-btn-stop {
-    width: 54px;
-    height: 54px;
-    padding: 0;
-    border-radius: 50%;
-    justify-content: center;
-    gap: 0;
-    box-shadow: 0 6px 20px rgba(248, 81, 73, 0.35);
-  }
-
-  .exercise-btn-stop svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .exercise-btn-stop-label {
-    display: none;
-  }
+  /* Stop is a corner icon button at every size now (exercises.css); the
+     base 64px strip it reserves is enough here too, so no override. */
 
   /* The card's 320px floor is taller than the space left after the header, the
      routine ribbon and the score history, which pushed the whole card past the
