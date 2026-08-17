@@ -11,11 +11,12 @@
 // It recommends and deep-links; it never changes the preset itself. The
 // quiet-as-default rationale in settings-store.ts stands.
 
+import { revealSidebarPanel } from '@/features/sidebar/reveal-panel'
 import { classifySignalQuality, readSignalQuality, resetSignalQuality, } from '@/lib/signal-quality'
 import { removeNotification, showActionNotification, } from '@/stores/notifications-store'
 import type { SensitivityPreset } from '@/stores/settings-store'
 import { sensitivityPreset } from '@/stores/settings-store'
-import { openSettingsSection } from '@/stores/ui-store'
+import { openSettingsSection, setSidebarOpen } from '@/stores/ui-store'
 
 export const ADVISOR_POLL_MS = 500
 /** The window must have been filling this long before a verdict counts. */
@@ -35,6 +36,11 @@ export interface SignalAdvisorEnv {
   notify?: typeof showActionNotification
   dismiss?: typeof removeNotification
   openSettings?: typeof openSettingsSection
+  /**
+   * Reveals a sidebar panel, returning false when it is not on the page.
+   * Seam so the toast's action can be asserted without a live sidebar.
+   */
+  revealPanel?: (id: 'mic') => boolean
   preset?: () => SensitivityPreset
   storage?: Pick<Storage, 'getItem' | 'setItem'>
 }
@@ -51,6 +57,9 @@ export function createSignalQualityAdvisor(
   const notify = env.notify ?? showActionNotification
   const dismiss = env.dismiss ?? removeNotification
   const openSettings = env.openSettings ?? openSettingsSection
+  const revealPanel =
+    env.revealPanel ??
+    ((id: 'mic') => revealSidebarPanel(id, { openSidebar: setSidebarOpen }))
   const preset = env.preset ?? sensitivityPreset
   const storage = env.storage ?? localStorage
 
@@ -93,7 +102,13 @@ export function createSignalQualityAdvisor(
         label: 'Open mic settings',
         onClick: () => {
           dismiss(id)
-          openSettings('singing', 'sensitivity-presets')
+          // The mic panel is a universal sidebar panel, so the control this
+          // toast is about is usually already on screen. Point at it rather
+          // than send the singer to the Settings tab and back — the whole
+          // cost of taking the advice, on a phone especially.
+          if (!revealPanel('mic')) {
+            openSettings('singing', 'sensitivity-presets')
+          }
         },
       },
       { channel: 'signal-quality', title: 'Microphone', durationMs: 15_000 },

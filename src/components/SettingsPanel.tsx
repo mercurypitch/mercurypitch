@@ -31,7 +31,7 @@ import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
-import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
+import { adsr, gridLinesVisible, playbackSpeed, reverbConfig, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
@@ -47,6 +47,7 @@ import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pit
 import { practiceScope, setPracticeScope, setSwipeNavEnabled, setUiMode, swipeNavEnabled, uiMode, } from '@/stores/settings-store'
 import { setSettingsAnchor, setSettingsSection, setShowWelcome, settingsAnchor, settingsSection, } from '@/stores/ui-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
+import { MicSensitivitySlider } from './MicSensitivitySlider'
 import styles from './SettingsPanel.module.css'
 
 /** One row each in the Danger Zone; 'karaoke' clears in place, the three
@@ -226,6 +227,27 @@ export const SettingsPanel: Component = () => {
   const activeTab = settingsSection
   const setActiveTab = setSettingsSection
 
+  /**
+   * The sub-tab strip scrolls horizontally on a phone, and arriving by deep
+   * link left it wherever it happened to be. Tapping the header heart opens
+   * Credits — the LAST tab — and the strip still showed General, so the
+   * selected tab was off screen entirely and nothing looked like it had
+   * happened. Same fix, same shape, as the main tab bar in AppNavTabs.
+   */
+  let tabStripRef: HTMLDivElement | undefined
+  createEffect(() => {
+    activeTab() // track
+    requestAnimationFrame(() => {
+      tabStripRef
+        ?.querySelector(`.${styles.settingsTabActive}`)
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        })
+    })
+  })
+
   // "Take me to that setting" is only half-done by opening the right sub-tab:
   // Practice alone is a long page, and landing somebody at the top of it has
   // handed them a search task. Whoever set the anchor (the What's New page,
@@ -262,7 +284,7 @@ export const SettingsPanel: Component = () => {
           Settings
         </h2>
 
-        <div class={styles.settingsTabs} role="tablist">
+        <div class={styles.settingsTabs} role="tablist" ref={tabStripRef}>
           <button
             type="button"
             role="tab"
@@ -485,25 +507,16 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Sensitivity Presets</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              Quick presets for different environments.
+              How much of the room to ignore. Drag between the named rooms when
+              neither one is quite right, and watch the meter to see what is
+              reaching us.
             </p>
 
-            <div class={styles.settingsRow}>
-              <label for="preset-select">Environment</label>
-              <SafeSelect
-                id="preset-select"
-                value={sensitivityPreset()}
-                onChange={(e) => {
-                  applySensitivityPreset(
-                    e.currentTarget.value as 'quiet' | 'home' | 'noisy',
-                  )
-                }}
-              >
-                <option value="quiet">Quiet Room (Studio)</option>
-                <option value="home">Some Noise (At Home)</option>
-                <option value="noisy">High Noise (Outside)</option>
-              </SafeSelect>
-            </div>
+            {/* The same control the sidebar mic panel shows. Both surfaces
+                mount one component so a change made in either reads correctly
+                in the other — they used to be a segmented control and a select
+                that only happened to agree. */}
+            <MicSensitivitySlider />
           </div>
 
           {/* Vocal Range Preset Section */}

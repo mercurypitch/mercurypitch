@@ -451,3 +451,32 @@
     display: revert;
   }
 }
+
+/* ── Revealed panel highlight ─────────────────────────────────
+   In-app advice (the noisy-room toast) points at a sidebar panel instead of
+   navigating to Settings, so the panel has to say "here". Global, not a CSS
+   module class: reveal-panel.ts adds it by name to a DOM node it looked up,
+   and a hashed class cannot be applied from outside the module.
+   Mirrors .settingsAnchorFlash in SettingsPanel.module.css. */
+:global(.sidebar-panel-flash) {
+  animation: sidebarPanelFlash 1.6s ease-out;
+  border-radius: var(--radius-md, 8px);
+}
+
+@keyframes sidebarPanelFlash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  15%,
+  55% {
+    box-shadow: 0 0 0 2px var(--accent, #58a6ff);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(.sidebar-panel-flash) {
+    animation: none;
+    outline: 2px solid var(--accent, #58a6ff);
+  }
+}

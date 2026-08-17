@@ -142,7 +142,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <For each={[...sidebarPanelIdsFor(activeTab())]}>
           {(id) => {
             const Panel = SIDEBAR_PANELS[id]
-            return <Panel />
+            // Addressable so in-app advice can point AT a panel rather than
+            // navigate away from it — see features/sidebar/reveal-panel.ts.
+            return (
+              <div data-sidebar-panel={id}>
+                <Panel />
+              </div>
+            )
           }}
         </For>
       </SidebarHostProvider>
