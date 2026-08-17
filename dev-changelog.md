@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`sensitivity-scale.ts`: the room presets become stops on a 0-100 line.**
+  `sensitivityConfigAt(position)` interpolates piecewise between Quiet (0),
+  Home (50) and Noisy (100), returning each preset's own object untouched
+  at its stop — piecewise because `sensitivity` runs 7 -> 5 -> 9 and a
+  single end-to-end line would read ~7.7 at Home. `SENSITIVITY_PRESETS`
+  moved here so the dependency runs one way (the store imports this at
+  runtime; this imports the store types only) and is re-exported from
+  `settings-store` for existing callers.
+  New `applySensitivityPosition` is the single writer of the position, the
+  four thresholds and the preset label; `applySensitivityPreset` routes
+  through it. `pitchperfect_sensitivity_position` is seeded from the
+  persisted thresholds via `sensitivityPositionForConfig`, so an existing
+  Noisy user opens at Noisy rather than having their gate rewritten.
+- **`MicSensitivitySlider`** replaces the sidebar's segmented Room control
+  and the Settings page's `SafeSelect`, which were separate markup that
+  only happened to agree. Live half reads `readSignalQuality()` (the
+  advisor's existing detector telemetry) at 500ms and reports
+  accepted/(accepted+rejected) over the 10s window, suppressed below 12
+  frames.
+- **`revealSidebarPanel`** + `data-sidebar-panel` on each rendered panel:
+  the signal-quality advisor's toast action now reveals the sidebar mic
+  panel (opening the mobile drawer when it is closed) and only falls back
+  to `openSettings('singing','sensitivity-presets')` when the panel is not
+  on the page.
 - **Signal-quality advisor** (owner request, 2026-08-17: an "intelligence
   layer" that notices noise-induced pitch blips): `PitchDetector` gains a
   `telemetry: 'live' | 'off'` option (default off); the practice engine's
@@ -48,6 +72,11 @@ properties of undefined`. `isStaleBuildError` does not match a
   worker from the precache of the build whose chunks are gone.
   Pinned by a test that transcribes Vite's helper and asserts the value
   the boundary ends up classifying.
+- **Settings sub-tab strip never scrolled the active tab into view.** The
+  strip is `overflow-x: auto` and deep links (`#/settings/credits` from the
+  header heart) set the section without moving it, so the selected tab sat
+  off screen on a phone. Same `createEffect` + `scrollIntoView({ inline:
+'center' })` shape `AppNavTabs` already uses for the main tab bar.
 - **`sessionRecords` write for multi-item sessions rejected by the worker.**
   `practice-session-store.endPracticeSession` banked one `PracticeResult`
   per item-_repeat_ but set `notesTotal` from `session.items.length`, so

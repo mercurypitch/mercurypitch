@@ -115,8 +115,8 @@ export function sensitivityConfigAt(position: number): SensitivityConfig {
     }
   }
 
-  const span = upper.position - lower.position
-  const t = span === 0 ? 0 : (at - lower.position) / span
+  // No two stops share a position, so the span is never zero.
+  const t = (at - lower.position) / (upper.position - lower.position)
   const from = SENSITIVITY_PRESETS[lower.preset]
   const to = SENSITIVITY_PRESETS[upper.preset]
 
@@ -206,12 +206,10 @@ export function describeSensitivityPosition(position: number): string {
   const exact = SENSITIVITY_STOPS.find((stop) => stop.position === at)
   if (exact !== undefined) return PRESET_LABELS[exact.preset]
 
-  for (let i = 0; i < SENSITIVITY_STOPS.length - 1; i += 1) {
-    const lower = SENSITIVITY_STOPS[i]!
-    const upper = SENSITIVITY_STOPS[i + 1]!
-    if (at > lower.position && at < upper.position) {
-      return `Between ${PRESET_LABELS[lower.preset]} and ${PRESET_LABELS[upper.preset]}`
-    }
-  }
-  return PRESET_LABELS[nearestSensitivityPreset(at)]
+  // Clamped into the stops' own range and equal to none of them, so it lies
+  // strictly inside exactly one gap — no fallback branch to leave untested.
+  const upperIndex = SENSITIVITY_STOPS.findIndex((stop) => stop.position > at)
+  const lower = SENSITIVITY_STOPS[upperIndex - 1]!
+  const upper = SENSITIVITY_STOPS[upperIndex]!
+  return `Between ${PRESET_LABELS[lower.preset]} and ${PRESET_LABELS[upper.preset]}`
 }

@@ -33,6 +33,13 @@ describe('the named stops are untouched', () => {
     expect(sensitivityPositionOf('home')).toBe(50)
     expect(sensitivityPositionOf('noisy')).toBe(100)
   })
+
+  it('falls back to the quietest end for a preset with no stop', () => {
+    // Unreachable through the type today. Pinned so that adding a fourth
+    // preset without giving it a stop fails toward the open microphone
+    // rather than toward a silent one.
+    expect(sensitivityPositionOf('studio' as unknown as 'quiet')).toBe(0)
+  })
 })
 
 describe('the space between the stops', () => {
