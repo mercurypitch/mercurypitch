@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`Spinner`, `BusyLink` and `BusyButton` in `components/shared`.** One
+  spinner replaces the `.icon-spin` class, the ad-hoc `Loader2` imports and
+  the hand-rolled arcs, and the two wrappers make "this is going to take a
+  moment" a property of the control. `BusyLink` arms only for the click that
+  actually replaces this document (a modified click or `target="_blank"`
+  leaves the page alone, so a spinner armed there would never clear), and
+  releases on `pageshow` — a back/forward-cache restore hands back a DOM that
+  still has the spinner in it — or after 20 s if the navigation never lands.
+  `BusyButton` waits for exactly the promise its handler returns, refuses a
+  second press meanwhile, and lets go when the work fails. Applied to Guitar
+  Night, Karaoke Night, Piano Night, Voice Mirror and Glass entry points,
+  plus Settings' "Replay the intro" (timed to the lazily loaded chunk).
+
 - **`sensitivity-scale.ts`: the room presets become stops on a 0-100 line.**
   `sensitivityConfigAt(position)` interpolates piecewise between Quiet (0),
   Home (50) and Noisy (100), returning each preset's own object untouched
@@ -53,6 +66,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   karaoke, mirror): `docs/plans/signal-quality-advisor.md`.
 
 ### Fixed
+
+- **Guitar Night streamed playback: the drift servo could never converge.**
+  A phone's 192 MiB decode budget puts any full-length song on media elements,
+  and `guitar-backing-stream` corrected any stem more than 60 ms from the
+  master by assigning `currentTime`. Setting `currentTime` on a PLAYING
+  element stalls its output while the pipeline re-primes, so the correction
+  landed the stem the seek latency behind where it aimed — more than the
+  tolerance — and the next 400 ms tick corrected it again, forever, each one
+  an audible hole. Small drift is now closed with a `playbackRate` trim
+  (±4% full scale, released back to the base rate inside the tolerance);
+  a seek is kept for genuine interruptions past 750 ms.
+- **Guitar Night: a seek re-primes the stems instead of seeking them live.**
+  `transport.seek` dipped the stems bus for 15 ms and reopened it 18 ms later
+  while the elements were still seeking, then let the servo pile corrections
+  on clocks that had not settled — the reported "stutters when I seek, then
+  works once it loads". A playing streamed seek now runs the same
+  pause-seek-play sequence that starts playback, awaits it, and reopens the
+  bus anchored at the moment the stems are actually running. Scrubber drags
+  are coalesced so one re-prime runs at a time and lands on the last position
+  asked for, the playhead follows the finger rather than the stalled element,
+  and a pause pressed mid-re-prime outranks the seek already in the air.
+- **Guitar Night: an interrupted stem stops the room.** Each stem is its own
+  media element and so its own OS media session; iOS's Now Playing control
+  paused the one it attached to and left the others playing under a transport
+  that still reported `playing`. `onInterrupted` parks the room at the
+  stopped stem's position.
+- **Guitar Night: the stems bus reopened by interpolating from a past event.**
+  `linearRampToValueAtTime` chained onto a dip that had already finished, so
+  after a re-prime the gain stepped straight to near-open instead of ramping.
+  Anchored at the current time.
+- **Guitar Night touch targets on the transport sliders.** The row reserved a
+  full touch target of height, but the thumb — the part that answers a drag —
+  was 16px on a 3px rail. Coarse pointers get a 1.5rem thumb on an 8px rail.
 
 - **The octave chrome sat on the keys and stayed there.** On a phone keybed the
   range label and the two octave arrows have nowhere to go but on top of the

@@ -11,6 +11,7 @@ import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { FileText } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
+import { BusyButton, BusyLink } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { SyncSettings } from '@/components/SyncSettings'
 import { ThemePicker } from '@/components/ThemePicker'
@@ -388,19 +389,35 @@ export const SettingsPanel: Component = () => {
               intro). Every voiceprint stacks in your history above.
             </p>
             <div class={styles.settingsActionRow}>
-              <button
-                type="button"
+              {/* The intro is a lazily loaded chunk, so the wait here is
+                  exactly its fetch — which is what the spinner is timed to.
+                  The import is the same module specifier App.tsx lazy-loads,
+                  so this resolves against the same chunk rather than adding
+                  one. */}
+              <BusyButton
                 class={styles.settingsActionBtn}
-                onClick={() => setShowWelcome(true)}
+                busyLabel="Loading the intro…"
+                onClick={() => {
+                  setShowWelcome(true)
+                  return import('@/features/onboarding/FirstLight')
+                }}
               >
                 Replay the intro
-              </button>
-              <a href="/mirror" class={styles.settingsActionBtn}>
+              </BusyButton>
+              <BusyLink
+                href="/mirror"
+                class={styles.settingsActionBtn}
+                busyLabel="Opening the Voice Mirror…"
+              >
                 Create another voiceprint
-              </a>
-              <a href="/glass" class={styles.settingsActionBtn}>
+              </BusyLink>
+              <BusyLink
+                href="/glass"
+                class={styles.settingsActionBtn}
+                busyLabel="Opening Glass…"
+              >
                 Open Glass
-              </a>
+              </BusyLink>
             </div>
           </div>
 

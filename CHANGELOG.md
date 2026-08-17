@@ -7,6 +7,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Buttons that admit they heard you.** Opening Guitar Night, Karaoke Night,
+  Piano Night, the Voice Mirror or Glass loads a whole separate page, and on
+  a slow connection nothing on screen changed until it arrived. Those buttons
+  — and "Replay the intro" and "Create another voiceprint" — now show a
+  spinner from the moment you press them.
+
 - **A microphone slider, not just three presets.** The room setting is now
   a slider from Quiet to Noisy — the named rooms are still one tap away on
   its ticks, but you can now sit between them when neither is right.
@@ -23,6 +29,20 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   itself.
 
 ### Fixed
+
+- **Guitar Night no longer stutters its way through a song.** On a phone a
+  full-length song plays from its files rather than being decoded whole, and
+  the two parts were kept together by yanking one back onto the other's clock
+  four times a second — a correction that cost more time than the gap it was
+  closing, so it never caught up and you heard a hole every time it tried.
+  They are now held together by running one a fraction fast or slow, which is
+  inaudible. Seeking is fixed the same way: the room stops the parts, moves
+  them, and starts them together, instead of dragging them while they play.
+- **Pausing from the phone's lock screen stops the whole song.** Each part is
+  its own track as far as iOS is concerned, so its Now Playing control paused
+  one and left the rest running.
+- **The Guitar Night volume and position sliders are usable with a thumb.**
+  Bigger grips and a thicker rail on touch screens; unchanged for a mouse.
 
 - **The octave controls stop crowding the piano keys.** On a phone the two
   arrows are smaller and quieter, and the octave label appears when you change

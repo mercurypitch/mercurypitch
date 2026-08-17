@@ -79,9 +79,10 @@ async function initializeGuitarNightDatabase(
 async function seedCompletedTwoStemSong(
   page: import('@playwright/test').Page,
   sessionId: string,
+  durationSeconds = TEST_SONG_DURATION_SECONDS,
 ): Promise<void> {
-  const vocalWav = createTestWav(330)
-  const instrumentalWav = createTestWav(110)
+  const vocalWav = createTestWav(330, durationSeconds)
+  const instrumentalWav = createTestWav(110, durationSeconds)
 
   await page.evaluate(
     async ({
@@ -177,7 +178,7 @@ async function seedCompletedTwoStemSong(
       })
     },
     {
-      durationSeconds: TEST_SONG_DURATION_SECONDS,
+      durationSeconds,
       instrumentalBase64: instrumentalWav.toString('base64'),
       sessionId,
       vocalBase64: vocalWav.toString('base64'),
@@ -2244,6 +2245,145 @@ test('keeps the phone chrome to one row and splits the transport evenly @smoke',
     expect(chrome.mark).toBe(true)
     expect(chrome.wordmark).toBe(false)
     expect(chrome.appName).toBe(false)
+  } finally {
+    await context.close()
+  }
+})
+
+/**
+ * A phone's decode budget is 192 MiB, so a real song plays through media
+ * elements rather than decoded PCM. Long enough to land there: two stems
+ * cost `duration * 768 KB` of estimated PCM between them.
+ */
+const STREAMED_SONG_SECONDS = 270
+
+test('seeks a streamed room without a correction storm @smoke', async ({
+  browser,
+}) => {
+  // Reported from an iPhone: "it stutters when I seek in advance on the song,
+  // then when it seems to load the next few seconds it works, then if I seek
+  // to another time it stutters again". Seeking a PLAYING media element
+  // stalls it while its pipeline re-primes; the room used to reopen the bus
+  // 18 ms later and then let the drift servo seek the stems again, and again,
+  // against clocks that were still settling. Every one of those is a hole in
+  // the audio. This counts them.
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+  const sessionId = `guitar-night-streamed-${Date.now()}`
+
+  try {
+    await page.addInitScript(() => {
+      const tracked = window as unknown as {
+        __stemSeeks: number[]
+        __stemRestarts: number
+      }
+      tracked.__stemSeeks = []
+      tracked.__stemRestarts = 0
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLMediaElement.prototype,
+        'currentTime',
+      )
+      if (descriptor?.set !== undefined) {
+        Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
+          ...descriptor,
+          set(value: number) {
+            tracked.__stemSeeks.push(value)
+            descriptor.set?.call(this, value)
+          },
+        })
+      }
+      const play = HTMLMediaElement.prototype.play
+      HTMLMediaElement.prototype.play = function replay(
+        this: HTMLMediaElement,
+      ) {
+        tracked.__stemRestarts += 1
+        return play.call(this)
+      }
+    })
+
+    await initializeGuitarNightDatabase(page)
+    await seedCompletedTwoStemSong(page, sessionId, STREAMED_SONG_SECONDS)
+    await page.goto(`/guitar-night?session=${encodeURIComponent(sessionId)}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await page.getByRole('button', { name: 'Enter room', exact: true }).click()
+
+    const room = page.getByTestId('guitar-night-room')
+    await expect(room).toBeVisible()
+    await room
+      .getByRole('button', { name: 'Play backing', exact: true })
+      .click()
+    // The path under test: two <audio> elements on one servo.
+    await expect(room).toHaveAttribute('data-playback-mode', 'streamed')
+
+    // Steady state. Two independently clocked elements must be held together
+    // without seeking either of them — the old servo seeked one every 400 ms
+    // and never converged, because each correction cost more latency than the
+    // tolerance it was correcting to.
+    //
+    // Measure only once the room is genuinely running: starting a stem
+    // legitimately aligns it to the offset, and the load mode is published
+    // before that alignment finishes.
+    const positionSlider = room.getByLabel('Song position')
+    await expect
+      .poll(
+        () =>
+          positionSlider.evaluate((element) =>
+            Number((element as HTMLInputElement).value),
+          ),
+        { timeout: 8000 },
+      )
+      .toBeGreaterThan(1)
+    await page.evaluate(() => {
+      const tracked = window as unknown as {
+        __stemSeeks: number[]
+        __stemRestarts: number
+      }
+      tracked.__stemSeeks.length = 0
+      tracked.__stemRestarts = 0
+    })
+    await page.waitForTimeout(3000)
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __stemSeeks: number[] }).__stemSeeks,
+      ),
+    ).toEqual([])
+
+    // Now the seek the owner does: drag the song timeline well forward.
+    const target = Math.round(STREAMED_SONG_SECONDS * 0.4)
+    await positionSlider.evaluate((element, value) => {
+      const input = element as HTMLInputElement
+      input.value = String(value)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    }, target)
+    await page.waitForTimeout(3000)
+
+    const after = await page.evaluate(() => {
+      const tracked = window as unknown as {
+        __stemSeeks: number[]
+        __stemRestarts: number
+      }
+      return { seeks: tracked.__stemSeeks, restarts: tracked.__stemRestarts }
+    })
+    // One landing per stem, and nothing piled on top of it afterwards.
+    expect(after.seeks.length).toBeGreaterThanOrEqual(2)
+    expect(after.seeks.length).toBeLessThanOrEqual(4)
+    for (const seek of after.seeks) expect(seek).toBeCloseTo(target, 0)
+    // And each stem was moved while stopped and started again, rather than
+    // seeked mid-flight — the sequence the fix is. A browser fast enough to
+    // hide the stall (this one) still shows the difference here.
+    expect(after.restarts).toBeGreaterThanOrEqual(2)
+
+    // And it is still playing, from where it was asked to play.
+    await expect(room).toHaveAttribute('data-playback-mode', 'streamed')
+    const position = await positionSlider.evaluate((element) =>
+      Number((element as HTMLInputElement).value),
+    )
+    expect(position).toBeGreaterThan(target)
   } finally {
     await context.close()
   }

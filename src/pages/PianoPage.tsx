@@ -6,6 +6,7 @@ import { MicInsightHint } from '@/components/MicInsightHint'
 import { PianoMobileStage } from '@/components/mobile/PianoMobileStage'
 import { PianoControlBar } from '@/components/piano/PianoControlBar'
 import { PracticeViewToolbar } from '@/components/PracticeViewToolbar'
+import { BusyLink } from '@/components/shared'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatusBar'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
@@ -263,18 +264,19 @@ export function PianoPage(props: PianoPageProps) {
           onMoveLoopA={props.onMoveLoopA}
           onMoveLoopB={props.onMoveLoopB}
           extraActions={
-            <a
+            <BusyLink
               class={`${barStyles.chipBtn} ${launchStyles.desktopLink}`}
               href={PIANO_NIGHT_PATH}
               title="Open Piano Night — the new Performance Horizon room"
               data-tour="piano-night-launch"
               data-testid="open-piano-night"
+              busyLabel="Opening Piano Night…"
             >
               <span class={launchStyles.nightGlyph} aria-hidden="true">
                 <PianoKeys />
               </span>
               <span class={barStyles.chipLabel}>Piano Night</span>
-            </a>
+            </BusyLink>
           }
         />
         <PracticeViewToolbar

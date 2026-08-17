@@ -8,6 +8,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { BusyLink } from '@/components/shared'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { KARAOKE_NIGHT_PATH } from '@/lib/karaoke-night-link'
 import { isNarrow } from '@/lib/use-viewport'
@@ -98,19 +99,28 @@ export const TakePicker: Component<TakePickerProps> = (props) => {
               processing controls and a wide session table. Karaoke Night
               uploads and separates too, and is the one shaped for a phone,
               so that is where a phone is sent. */}
-          <button
-            type="button"
-            class={styles.ghostBtn}
-            onClick={() => {
-              if (isNarrow()) {
-                window.location.href = KARAOKE_NIGHT_PATH
-                return
-              }
-              setActiveTab(TAB_KARAOKE)
-            }}
+          <Show
+            when={isNarrow()}
+            fallback={
+              <button
+                type="button"
+                class={styles.ghostBtn}
+                onClick={() => setActiveTab(TAB_KARAOKE)}
+              >
+                Open Karaoke
+              </button>
+            }
           >
-            {isNarrow() ? 'Open Karaoke Night' : 'Open Karaoke'}
-          </button>
+            {/* A whole other document on the slowest device we ship to, so
+                it says so while it loads. */}
+            <BusyLink
+              class={styles.ghostBtn}
+              href={KARAOKE_NIGHT_PATH}
+              busyLabel="Opening Karaoke Night…"
+            >
+              Open Karaoke Night
+            </BusyLink>
+          </Show>
         </p>
       </Show>
     </section>

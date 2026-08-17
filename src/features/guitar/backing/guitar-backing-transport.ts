@@ -262,6 +262,21 @@ export function createGuitarBackingTransport(
   let voiceGeneration = 0
   let loadAbort: AbortController | null = null
   let disposed = false
+  /**
+   * Where a streamed re-prime is heading, and where the next one should head
+   * once it lands. Dragging the scrubber emits an `input` per pixel; starting
+   * a fresh pause-seek-play for each of them would be its own stutter, and on
+   * iOS the worst kind. Only one runs at a time, and it finishes on the last
+   * position the player actually asked for.
+   */
+  let streamedSeekTarget: number | null = null
+  let queuedStreamedSeek: number | null = null
+  /**
+   * Bumped whenever the player decides the room should stop. A re-prime takes
+   * real time, so a pause pressed during one has to outrank it — otherwise
+   * the seek lands afterwards and starts the song back up.
+   */
+  let playIntentEpoch = 0
 
   const emit = (): void => {
     for (const listener of listeners) listener()
@@ -400,6 +415,21 @@ export function createGuitarBackingTransport(
         streamEngine?.pause()
         parkedOffset = duration
         setStatus('complete')
+      },
+      onInterrupted: (_trackId, elementTime) => {
+        // Each stem is its own media element and so its own OS media session.
+        // iOS's Now Playing control pauses whichever one it attached to and
+        // leaves the others running — the room went half-silent while the
+        // transport still said it was playing. One stem stopping stops all
+        // of them, at the position the stopped one reached.
+        if (disposed || status !== 'playing') return
+        parkedOffset = clamp(
+          Number.isFinite(elementTime) ? elementTime : currentTime(),
+          0,
+          duration,
+        )
+        haltAudible()
+        setStatus('paused')
       },
       onTrackError: (trackId, streamState) => {
         const state = trackState(trackId)
@@ -548,6 +578,13 @@ export function createGuitarBackingTransport(
   const startStreamedAt = async (
     offset: number,
     requestGeneration: number,
+    /**
+     * A seek keeps the room playing. Publishing 'loading' for the length of
+     * the re-prime would disable the transport controls and drop the room's
+     * frame clock for a beat, both for something the player experiences as
+     * one continuous playback.
+     */
+    announceLoading = true,
   ): Promise<boolean> => {
     const currentContext = context
     const currentStemsBus = audioGraph?.buses.stems ?? null
@@ -561,7 +598,7 @@ export function createGuitarBackingTransport(
     }
 
     const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
-    setStatus('loading')
+    if (announceLoading) setStatus('loading')
     // A 15 ms linear dip, not an instant zero: short LINEAR dips are fine
     // inside continuous material (the program masks them) — an instant
     // step is a click at any point.
@@ -585,9 +622,14 @@ export function createGuitarBackingTransport(
     startedOffset = safeOffset
     parkedOffset = safeOffset
     startedAtContextTime = currentContext.currentTime
-    currentStemsBus.gain.linearRampToValueAtTime(
+    // Anchored at now, not chained onto the dip: the elements took real time
+    // to re-prime, and a bare ramp would interpolate from where the dip ended
+    // — which is long past, so the bus would step straight to near-open.
+    rampGain(
+      currentStemsBus.gain,
       STEMS_BUS_OPEN_GAIN,
-      currentContext.currentTime + fadeSeconds,
+      currentContext.currentTime,
+      fadeSeconds,
     )
     setStatus('playing')
     return true
@@ -655,9 +697,46 @@ export function createGuitarBackingTransport(
     return true
   }
 
+  /**
+   * Move a playing streamed room to `target`, one re-prime at a time. A drag
+   * that arrives mid-flight replaces the destination rather than starting a
+   * second one, so the room lands exactly once, where the finger stopped.
+   */
+  const seekStreamed = async (
+    target: number,
+    requestGeneration: number,
+  ): Promise<void> => {
+    if (streamedSeekTarget !== null) {
+      queuedStreamedSeek = target
+      return
+    }
+    const epoch = playIntentEpoch
+    let next: number | null = target
+    while (next !== null) {
+      streamedSeekTarget = next
+      queuedStreamedSeek = null
+      emit()
+      await startStreamedAt(next, requestGeneration, false)
+      if (disposed || requestGeneration !== generation) break
+      if (playIntentEpoch !== epoch) {
+        parkedOffset = clamp(next, 0, duration)
+        haltAudible()
+        setStatus('paused')
+        break
+      }
+      next = queuedStreamedSeek
+    }
+    streamedSeekTarget = null
+    queuedStreamedSeek = null
+  }
+
   const currentTime = (): number => {
     if (status !== 'playing' || context === null) return parkedOffset
     if (loadMode === 'streamed' && streamEngine !== null) {
+      // While a re-prime is in flight the elements still report the old
+      // position, and the room's scrubber is bound to this. Reading it then
+      // would drag the playhead back out from under the finger that moved it.
+      if (streamedSeekTarget !== null) return streamedSeekTarget
       const mediaTime = streamEngine.getCurrentTime()
       if (mediaTime !== null && Number.isFinite(mediaTime)) {
         return clamp(mediaTime, 0, duration)
@@ -785,6 +864,7 @@ export function createGuitarBackingTransport(
     },
 
     pause() {
+      playIntentEpoch += 1
       if (status === 'loading') {
         generation += 1
         loadAbort?.abort()
@@ -805,6 +885,7 @@ export function createGuitarBackingTransport(
     },
 
     stop() {
+      playIntentEpoch += 1
       if (status === 'loading') {
         generation += 1
         loadAbort?.abort()
@@ -838,20 +919,14 @@ export function createGuitarBackingTransport(
         return
       }
       if (loadMode === 'streamed') {
-        const currentContext = context
-        const currentStemsBus = audioGraph?.buses.stems ?? null
-        if (currentContext !== null && currentStemsBus !== null) {
-          // Seek dip: linear, short, inside continuous material.
-          rampGain(currentStemsBus.gain, 0, currentContext.currentTime, 0.015)
-          streamEngine?.seek(target)
-          startedOffset = target
-          startedAtContextTime = currentContext.currentTime
-          currentStemsBus.gain.linearRampToValueAtTime(
-            STEMS_BUS_OPEN_GAIN,
-            currentContext.currentTime + fadeSeconds,
-          )
-          emit()
-        }
+        // Seeking a PLAYING media element is the one thing this path must not
+        // do. The element stalls for as long as its pipeline needs — far
+        // longer than the 18 ms this used to hold the bus shut — so the room
+        // reopened onto elements that were still seeking, at clocks that
+        // disagreed by seconds, and the drift servo then piled corrections on
+        // top of that. Re-priming from the new offset is the same sequence
+        // that starts playback, and it is the only one that waits for them.
+        void seekStreamed(target, generation)
         return
       }
       startAt(target)
