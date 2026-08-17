@@ -241,6 +241,11 @@
 .painting {
   cursor: crosshair;
   user-select: none;
+  /* And keep the browser from taking a touch drag as a scroll pan: the
+     pan cancelled the pointer mid-sweep on tablets, leaving the sheet
+     stuck on the first line. Scrolling stays available whenever no
+     singer is armed — this class only exists while the brush is. */
+  touch-action: none;
 }
 
 /* What WILL be painted when the pointer comes up. Deliberately louder

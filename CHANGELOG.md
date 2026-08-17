@@ -28,6 +28,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   landed as a soft thump. Envelopes now stretch to whole cycles of the
   note being played — low notes fade over their own wavelength, higher
   notes keep the same quick response as before.
+- **Assigning lyrics by touch works in jam rooms.** With a singer armed,
+  dragging a finger across lyric lines on a tablet stuck on the first
+  line (and could wedge the sheet mid-gesture when the page tried to
+  scroll). The sweep now follows the finger exactly like the mouse, and
+  scrolling still works normally whenever no singer is armed.
 
 ### Changed
 

@@ -122,14 +122,42 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
 
   // A pointer released anywhere ends the sweep, including outside the
   // list -- otherwise letting go over the pitch lanes leaves the sheet
-  // stuck mid-drag.
+  // stuck mid-drag. A CANCELLED pointer (the browser reclaiming a touch
+  // for scrolling) abandons it instead: committing a cancelled gesture
+  // would paint a range the finger never chose, and leaving the anchor
+  // set was the "stuck" half of the owner's tablet report.
   onMount(() => {
     const onUp = () => {
       if (paintFrom() !== null) commitPaint()
     }
+    const onCancel = () => {
+      setPaintFrom(null)
+      setPaintTo(null)
+    }
     document.addEventListener('pointerup', onUp)
-    onCleanup(() => document.removeEventListener('pointerup', onUp))
+    document.addEventListener('pointercancel', onCancel)
+    onCleanup(() => {
+      document.removeEventListener('pointerup', onUp)
+      document.removeEventListener('pointercancel', onCancel)
+    })
   })
+
+  /**
+   * Grow the sweep from a pointer position rather than from enter events.
+   *
+   * Touch pointers are implicitly CAPTURED by the row the finger lands on,
+   * so no other row ever fires pointerenter and a drag stayed pinned to
+   * its first line (the other half of the tablet report). Hit-testing the
+   * coordinates instead works for every pointer type — the same
+   * elementFromPoint pattern Piano Night's glissando uses.
+   */
+  const sweepToPoint = (x: number, y: number): void => {
+    if (paintFrom() === null) return
+    const row = document.elementFromPoint(x, y)?.closest('[data-line]')
+    if (!(row instanceof HTMLElement)) return
+    const idx = Number(row.dataset.line)
+    if (Number.isInteger(idx)) setPaintTo(idx)
+  }
 
   const blocks = createMemo(() =>
     groupLinesBySinger(props.lines, jamSongParts()),
@@ -261,6 +289,7 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                 onPointerEnter={() => {
                   if (paintFrom() !== null) setPaintTo(i())
                 }}
+                onPointerMove={(e) => sweepToPoint(e.clientX, e.clientY)}
                 onClick={() => {
                   // While a singer is armed the row belongs to the brush;
                   // the sweep has already handled it on pointer up.
