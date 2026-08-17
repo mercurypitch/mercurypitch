@@ -106,10 +106,15 @@ export class PracticeEngine {
     this.sensitivity = options.sensitivity ?? 5
     this.sampleRate = options.sampleRate ?? 44100
     this.bufferSize = options.bufferSize ?? 2048
+    // telemetry 'live' on every detector this engine builds: the practice
+    // engine is by definition a real-time microphone listener, and the
+    // signal-quality advisor reads the published stream to notice a noisy
+    // room. Offline detectors construct PitchDetector directly and stay off.
     this.detector = new PitchDetector({
       sampleRate: this.sampleRate,
       bufferSize: this.bufferSize,
       sensitivity: this.sensitivity,
+      telemetry: 'live',
     })
     // The OS can kill the mic under us (unplugged, taken by another app,
     // device switch). The engine resets itself and tells us here — emit so
@@ -161,6 +166,7 @@ export class PracticeEngine {
         // preset until the next settings change.
         minConfidence: this.detector.getSettings().minConfidence,
         minAmplitude: this.detector.getSettings().minAmplitude,
+        telemetry: 'live',
       })
     }
     if (config.sensitivity !== undefined) {
@@ -244,6 +250,7 @@ export class PracticeEngine {
           algorithm: this.detector.getAlgorithm(),
           minConfidence: this.detector.getSettings().minConfidence,
           minAmplitude: this.detector.getSettings().minAmplitude,
+          telemetry: 'live',
         })
       }
 

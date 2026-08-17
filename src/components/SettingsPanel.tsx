@@ -478,7 +478,10 @@ export const SettingsPanel: Component = () => {
 
         <Show when={activeTab() === 'singing'}>
           {/* Sensitivity Presets Section */}
-          <div class={styles.settingsSection}>
+          <div
+            class={styles.settingsSection}
+            data-settings-anchor="sensitivity-presets"
+          >
             <h3 class={styles.settingsSectionTitle}>Sensitivity Presets</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>

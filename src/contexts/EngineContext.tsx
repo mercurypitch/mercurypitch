@@ -1,5 +1,6 @@
 import type { JSX } from 'solid-js'
 import { createContext, createEffect, createSignal, onCleanup, useContext, } from 'solid-js'
+import { createSignalQualityAdvisor } from '@/features/mic-feedback/signal-quality-advisor'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
 import { installAudioUnlock } from '@/lib/audio-unlock'
@@ -42,6 +43,11 @@ export function EngineProvider(props: { children: JSX.Element }) {
   })
 
   const practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
+
+  // The engine's detector publishes live frame stats; this is the one
+  // listener that turns them into advice ("your room is triggering false
+  // notes") — app-level so no surface has to remember to host it.
+  const disposeSignalAdvisor = createSignalQualityAdvisor()
 
   // Sync BPM (effective BPM = melody BPM × user's playback speed multiplier).
   // The runtime's tick loop computes beat duration as `60000 / audioEngine.getBpm()`,
@@ -119,6 +125,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
   setReady(true)
 
   onCleanup(() => {
+    disposeSignalAdvisor()
     uninstallAudioUnlock()
     playbackRuntime.destroy()
     practiceEngine.destroy()

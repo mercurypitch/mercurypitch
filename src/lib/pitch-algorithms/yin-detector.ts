@@ -137,6 +137,9 @@ export class YINDetector implements IPitchDetector {
       minConfidence: options.minConfidence ?? 0.3,
       minAmplitude: options.minAmplitude ?? 0.02,
       algorithm: 'yin',
+      // This wrapper is driven by offline analysis paths; live surfaces opt
+      // into the signal-quality seam through PracticeEngine instead.
+      telemetry: 'off',
     }
   }
 

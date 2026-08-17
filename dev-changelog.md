@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Signal-quality advisor** (owner request, 2026-08-17: an "intelligence
+  layer" that notices noise-induced pitch blips): `PitchDetector` gains a
+  `telemetry: 'live' | 'off'` option (default off); the practice engine's
+  detectors publish per-frame stats (RMS, pre-gate confidence, verdict) to a
+  new framework-free seam, `src/lib/signal-quality.ts`, modeled on
+  `mic-level.ts` — ten one-second buckets, no per-frame allocation. A pure
+  classifier calls a window noisy when short accepted runs (blips), a
+  rejected-frame RMS floor crowding the gate, and barely-clearing clarity
+  line up — speech and silence stay below the bar by construction. One
+  app-level advisor (`signal-quality-advisor.ts`, started in EngineContext)
+  fires at most one action toast per 10 minutes (two per session):
+  "Background noise is triggering false notes", deep-linking to the newly
+  anchored Sensitivity Presets control (`data-settings-anchor=
+"sensitivity-presets"`). It recommends, never switches the preset itself.
+  Offline detector loops (transcription, fingerprinting, benchmarks) stay
+  off the seam by default. Plan and phase-2 rollout map (jam, tuner,
+  karaoke, mirror): `docs/plans/signal-quality-advisor.md`.
+
 ### Fixed
 
 - **Detector reconstruction keeps the runtime config** (`practice-engine.ts`):
