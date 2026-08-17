@@ -30,6 +30,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`vite:preloadError` prevention turned a deploy into a `TypeError`.**
+  `installChunkLoadRecovery` called `event.preventDefault()`. Vite's
+  helper is `baseModule().catch(handlePreloadError)` and rethrows only
+  `if (!e.defaultPrevented)`, so preventing it RESOLVED the import with
+  `undefined`. `location.reload()` does not halt JS, so in the ~100ms
+  before navigation committed, the `lazy(() => import(x).then((m) =>
+({ default: m.Thing })))` shape used by all 39 lazy routes
+  dereferenced that `undefined` and threw `TypeError: Cannot read
+properties of undefined`. `isStaleBuildError` does not match a
+  TypeError, so `TabErrorBoundary` rendered `CrashModal` instead of
+  `StaleBuildRecovery` — the tablet/Progress report of 2026-08-17,
+  crash modal first and auto-update second. PR #583 fixed the adjacent
+  cooldown branch; this is the branch that still fired.
+  The handler's own reload also moves from `location.reload()` to
+  `reloadToLatest()`: a plain reload is answered by the controlling
+  worker from the precache of the build whose chunks are gone.
+  Pinned by a test that transcribes Vite's helper and asserts the value
+  the boundary ends up classifying.
 - **`sessionRecords` write for multi-item sessions rejected by the worker.**
   `practice-session-store.endPracticeSession` banked one `PracticeResult`
   per item-_repeat_ but set `notesTotal` from `session.items.length`, so

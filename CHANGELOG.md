@@ -15,6 +15,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **A new version no longer looks like a crash.** Opening a tab after a
+  deployment could show the "Application Error" dialog for a moment
+  before the app updated itself. It now goes straight to the "a new
+  version is ready" screen, which is what was actually happening.
 - **Finishing a guided practice session now counts.** Completing any
   built-in session template credited nothing at all — no session in your
   history, no practice minutes, no streak, no badges — and gave no sign
