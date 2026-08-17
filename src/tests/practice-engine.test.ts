@@ -668,3 +668,73 @@ describe('PracticeEngine callback subscriptions', () => {
     expect(removed).toEqual([true])
   })
 })
+
+describe('PracticeEngine keeps detector config across reconstruction', () => {
+  // Both reconstruction sites build a fresh PitchDetector; any option left
+  // out reverts to DEFAULT_OPTIONS. Until 2026-08-17 that silently discarded
+  // the user's mic-environment preset (minConfidence / minAmplitude) and
+  // algorithm — on Android-style devices, on every single mic start.
+  const settingsOf = (
+    engine: PracticeEngine,
+  ): { minConfidence: number; minAmplitude: number } & {
+    getAlgorithm: () => string
+  } => {
+    const detector = (
+      engine as unknown as {
+        detector: {
+          getSettings: () => { minConfidence: number; minAmplitude: number }
+          getAlgorithm: () => string
+        }
+      }
+    ).detector
+    return {
+      ...detector.getSettings(),
+      getAlgorithm: detector.getAlgorithm.bind(detector),
+    }
+  }
+
+  it('startMic on a device with a different sample rate keeps the mic preset', async () => {
+    const at48k = {
+      init: () => Promise.resolve(),
+      resume: () => Promise.resolve(),
+      getSampleRate: () => 48000,
+      getBufferSize: () => 2048,
+      startMic: () => Promise.resolve(true),
+      stopMic: () => {},
+      isMicActive: () => true,
+      onMicLost: () => () => {},
+      getTimeData: () => new Float32Array(2048),
+    } as unknown as AudioEngine
+    const engine = new PracticeEngine(at48k)
+    // A hand-tuned profile: strict confidence floor, quiet-room RMS gate
+    // (1 on the 1-10 scale -> 0.005), non-default algorithm. Every value
+    // differs from DEFAULT_OPTIONS so a dropped field is a failed assert.
+    engine.syncSettings({
+      minConfidence: 0.7,
+      minAmplitude: 1,
+      algorithm: 'mpm',
+    })
+
+    await engine.startMic()
+
+    const after = settingsOf(engine)
+    expect(after.minConfidence).toBe(0.7)
+    expect(after.minAmplitude).toBeCloseTo(0.005)
+    expect(after.getAlgorithm()).toBe('mpm')
+  })
+
+  it('a buffer-size change alone does not reset the gates', () => {
+    const engine = new PracticeEngine({
+      onMicLost: () => () => {},
+    } as unknown as AudioEngine)
+    engine.syncSettings({ minConfidence: 0.7, minAmplitude: 1 })
+
+    // The settings effect always sends the full config, but nothing forces a
+    // future caller to — the reconstruction itself must not lose state.
+    engine.syncSettings({ bufferSize: 4096 })
+
+    const after = settingsOf(engine)
+    expect(after.minConfidence).toBe(0.7)
+    expect(after.minAmplitude).toBeCloseTo(0.005)
+  })
+})
