@@ -9,6 +9,8 @@ import type { Accessor, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { PianoPerformanceNote } from '@/features/piano/runtime/piano-performance-contract'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { PianoKeyWindow } from './piano-key-window'
+import { keyCenterPercent } from './piano-key-window'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallWindow, } from './piano-night-fall-geometry'
 import styles from './PianoNightApp.module.css'
@@ -26,6 +28,14 @@ interface PianoNightStageViewsProps {
   isPlaying: Accessor<boolean>
   phrase: Accessor<PianoNightPhrase>
   activeMidis: Accessor<ReadonlySet<number>>
+  /**
+   * The keys currently on screen. The fall stage shares its horizontal box
+   * with the keybed, so a note's x has to come from the same geometry the
+   * keys do — otherwise a phone's two-octave window leaves every note about
+   * a key to the left of the one it names, and the octave arrows move the
+   * keys while the notes stay put.
+   */
+  keyWindow: Accessor<PianoKeyWindow>
   reducedMotion: Accessor<boolean>
 }
 
@@ -40,8 +50,19 @@ function displayNote(midi: number): string {
     .replace('A#', 'B♭')
 }
 
-function noteX(midi: number): number {
-  return clamp(((midi - 21) / 87) * 100, 1, 99)
+/**
+ * Where a note belongs, and whether the window can hold it. A note outside
+ * the window has no key to sit over: it is pinned to the edge it fell off and
+ * marked, so it reads as "there is music that way" rather than as a note
+ * pointing at the wrong key.
+ */
+function notePlacement(
+  midi: number,
+  window: PianoKeyWindow,
+): { x: number; offWindow: boolean } {
+  const centre = keyCenterPercent(midi, window)
+  if (centre !== null) return { x: clamp(centre, 1, 99), offWindow: false }
+  return { x: midi < window.startMidi ? 1 : 99, offWindow: true }
 }
 
 function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
@@ -101,20 +122,26 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
                   props.playheadBeat(),
                 ).striking,
             )
+            const placement = createMemo(() =>
+              notePlacement(note.midi, props.keyWindow()),
+            )
             return (
               <i
                 classList={{
                   [styles.fallNote]: true,
                   [styles.leftNote]: note.midi < 60,
                   [styles.rightNote]: note.midi >= 60,
+                  [styles.fallNoteOffWindow]: placement().offWindow,
                 }}
                 data-note-id={note.id}
+                data-note-midi={note.midi}
                 data-striking={striking()}
+                data-off-window={placement().offWindow}
                 data-register={note.midi < 60 ? 'lower' : 'upper'}
                 data-start-beat={note.startBeat}
                 data-duration-beats={note.duration}
                 style={{
-                  left: `${noteX(note.midi)}%`,
+                  left: `${placement().x}%`,
                   bottom: `${pianoNightFallStaticBottomPercent(
                     note.startBeat,
                     anchorBeat(),

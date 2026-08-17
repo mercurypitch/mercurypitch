@@ -24,6 +24,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Piano Night's falling notes land on the right keys.** On a phone the notes
+  were drawn against the whole 88-key piano while the keyboard below showed
+  only two octaves, so a note could sit a whole key away from the one it was
+  for — and moving the octave arrows moved the keys but not the notes. They
+  line up now, and the arrows move both. Notes outside the octaves you are
+  looking at are shown small and faint at the edge instead of landing on the
+  wrong key.
+
 - **Room pictures stay in their cards.** Scrolling the Piano Night room
   chooser on a phone could send the preview images sliding out of the list to
   float over the panel. They stay put now.

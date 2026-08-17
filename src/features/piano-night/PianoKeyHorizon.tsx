@@ -6,17 +6,19 @@
 // instrument but expose a two-octave touch window with explicit range steps.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createSignal, For, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, For } from 'solid-js'
 import { ChevronLeft } from '@/components/icons'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { PianoKey, PianoKeyWindowController } from './piano-key-window'
+import { isInKeyWindow, keyCenterPercent, PIANO_KEYS } from './piano-key-window'
 import styles from './PianoNightApp.module.css'
 
-interface KeyboardKey {
-  midi: number
-  whiteIndex: number
-}
-
 interface PianoKeyHorizonProps {
+  /**
+   * The visible span, owned outside this component because the fall stage has
+   * to draw its notes over exactly these keys.
+   */
+  keyWindow: PianoKeyWindowController
   activeMidis: Accessor<ReadonlySet<number>>
   onPointerDown: (event: PointerEvent, midi: number) => void
   onPointerMove: (event: PointerEvent) => void
@@ -24,55 +26,22 @@ interface PianoKeyHorizonProps {
   onKeyboardActivate: (midi: number) => void
 }
 
-const BLACK_PITCH_CLASSES = new Set([1, 3, 6, 8, 10])
-
-function buildKeyboard(): {
-  white: readonly KeyboardKey[]
-  black: readonly KeyboardKey[]
-} {
-  const white: KeyboardKey[] = []
-  const black: KeyboardKey[] = []
-  let whiteIndex = 0
-  for (let midi = 21; midi <= 108; midi += 1) {
-    if (BLACK_PITCH_CLASSES.has(midi % 12)) {
-      black.push({ midi, whiteIndex })
-    } else {
-      white.push({ midi, whiteIndex })
-      whiteIndex += 1
-    }
-  }
-  return { white, black }
-}
-
-const KEYBOARD = buildKeyboard()
-const ORDERED_KEYS = [...KEYBOARD.white, ...KEYBOARD.black].sort(
-  (left, right) => left.midi - right.midi,
-)
-const MOBILE_RANGE_STARTS = [36, 48, 60, 72] as const
-const COMPACT_KEYBOARD_MEDIA_QUERY =
-  '(max-width: 680px), (max-width: 900px) and (max-height: 500px), (max-width: 1180px) and (hover: none) and (pointer: coarse)'
+const WHITE_KEYS = PIANO_KEYS.filter((key) => !key.black)
+const BLACK_KEYS = PIANO_KEYS.filter((key) => key.black)
 
 export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
-  const [mobile, setMobile] = createSignal(false)
-  const [rangeIndex, setRangeIndex] = createSignal(1)
   const [focusedMidi, setFocusedMidi] = createSignal(60)
   let keyboardElement: HTMLDivElement | undefined
 
-  const rangeStart = (): number => MOBILE_RANGE_STARTS[rangeIndex()]
-  const rangeEnd = (): number => rangeStart() + 24
-  const inRange = (midi: number): boolean =>
-    !mobile() || (midi >= rangeStart() && midi <= rangeEnd())
-  const visibleWhiteKeys = (): readonly KeyboardKey[] =>
-    KEYBOARD.white.filter((key) => inRange(key.midi))
-  const keyLeft = (key: KeyboardKey): string => {
-    if (!mobile()) return `${(key.whiteIndex / 52) * 100}%`
-    const firstWhite = visibleWhiteKeys()[0]?.whiteIndex ?? 0
-    const whiteCount = Math.max(1, visibleWhiteKeys().length)
-    return `${((key.whiteIndex - firstWhite) / whiteCount) * 100}%`
-  }
+  const window = () => props.keyWindow.window()
+  const rangeStart = (): number => window().startMidi
+  const rangeEnd = (): number => window().endMidi
+  const inRange = (midi: number): boolean => isInKeyWindow(midi, window())
+  const keyLeft = (key: PianoKey): string =>
+    `${keyCenterPercent(key.midi, window()) ?? 0}%`
 
   const visibleMidis = (): readonly number[] =>
-    ORDERED_KEYS.filter((key) => inRange(key.midi)).map((key) => key.midi)
+    PIANO_KEYS.filter((key) => inRange(key.midi)).map((key) => key.midi)
 
   const focusKey = (midi: number): void => {
     queueMicrotask(() =>
@@ -102,40 +71,17 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
     }
   }
 
-  onMount(() => {
-    const media =
-      typeof window.matchMedia === 'function'
-        ? window.matchMedia(COMPACT_KEYBOARD_MEDIA_QUERY)
-        : null
-    const sync = (): void => {
-      const nextMobile = media?.matches ?? false
-      if (
-        nextMobile &&
-        (focusedMidi() < rangeStart() || focusedMidi() > rangeEnd())
-      ) {
-        const nextMidi = rangeStart() + 12
-        const keyboardHadFocus =
-          keyboardElement?.contains(document.activeElement) === true
-        setFocusedMidi(nextMidi)
-        if (keyboardHadFocus) focusKey(nextMidi)
-      }
-      setMobile(nextMobile)
-    }
-    sync()
-    media?.addEventListener?.('change', sync)
-    onCleanup(() => media?.removeEventListener?.('change', sync))
+  // Roving focus has to stay on a key that is on screen. This covers both
+  // ways the window can move under it: the media query flipping to the
+  // compact keyboard, and the arrows stepping the range.
+  createEffect(() => {
+    if (inRange(focusedMidi())) return
+    const nextMidi = rangeStart() + 12
+    const keyboardHadFocus =
+      keyboardElement?.contains(document.activeElement) === true
+    setFocusedMidi(nextMidi)
+    if (keyboardHadFocus) focusKey(nextMidi)
   })
-
-  const stepRange = (direction: -1 | 1): void => {
-    setRangeIndex((current) => {
-      const next = Math.min(
-        MOBILE_RANGE_STARTS.length - 1,
-        Math.max(0, current + direction),
-      )
-      setFocusedMidi(MOBILE_RANGE_STARTS[next] + 12)
-      return next
-    })
-  }
 
   return (
     <div class={styles.keybed}>
@@ -153,7 +99,7 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
         onLostPointerCapture={(event) => props.onPointerRelease(event)}
       >
         <div class={styles.whiteKeys}>
-          <For each={KEYBOARD.white}>
+          <For each={WHITE_KEYS}>
             {(key) => (
               <button
                 type="button"
@@ -176,7 +122,7 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
           </For>
         </div>
         <div class={styles.blackKeys}>
-          <For each={KEYBOARD.black}>
+          <For each={BLACK_KEYS}>
             {(key) => (
               <button
                 type="button"
@@ -207,8 +153,8 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
       <div class={styles.keyboardRange} aria-label="Touch keyboard range">
         <button
           type="button"
-          onClick={() => stepRange(-1)}
-          disabled={rangeIndex() === 0}
+          onClick={() => props.keyWindow.step(-1)}
+          disabled={!props.keyWindow.canStep(-1)}
           aria-label="Move touch keyboard down one octave"
         >
           <ChevronLeft />
@@ -219,8 +165,8 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
         </span>
         <button
           type="button"
-          onClick={() => stepRange(1)}
-          disabled={rangeIndex() === MOBILE_RANGE_STARTS.length - 1}
+          onClick={() => props.keyWindow.step(1)}
+          disabled={!props.keyWindow.canStep(1)}
           aria-label="Move touch keyboard up one octave"
         >
           <ChevronLeft />

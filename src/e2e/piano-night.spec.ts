@@ -1319,3 +1319,90 @@ test('keeps room artwork inside the card it belongs to @smoke', async ({
     await context.close()
   }
 })
+
+test('lands every falling note on the key it names @smoke', async ({
+  browser,
+}) => {
+  // "when I do change that octave with those arrows, the falling notes still
+  // show the same locations". They did. The keybed narrowed to a two-octave
+  // touch window while the fall stage still divided MIDI across all 88 keys,
+  // so a note sat about a key left of its own key and the arrows moved
+  // nothing. Both read one geometry now, and this measures it.
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('piano-night-fall-track')).toBeVisible()
+    await expect(page.getByLabel('Touch keyboard range')).toBeVisible()
+
+    /**
+     * Every on-window note, with how far its centre sits from the centre of
+     * the key it names, in pixels.
+     */
+    const misalignment = () =>
+      page.evaluate(() => {
+        const notes = [
+          ...document.querySelectorAll<HTMLElement>(
+            '[data-testid="piano-night-fall-track"] [data-note-midi]',
+          ),
+        ].filter((note) => note.dataset.offWindow !== 'true')
+        return notes.map((note) => {
+          const midi = note.dataset.noteMidi
+          const key = document.querySelector<HTMLElement>(
+            `[data-testid="piano-night-keyboard"] button[data-midi="${midi}"]`,
+          )
+          if (key === null) return { midi, drift: Number.POSITIVE_INFINITY }
+          const noteBox = note.getBoundingClientRect()
+          const keyBox = key.getBoundingClientRect()
+          return {
+            midi,
+            drift: Math.abs(
+              noteBox.left +
+                noteBox.width / 2 -
+                (keyBox.left + keyBox.width / 2),
+            ),
+            keyWidth: keyBox.width,
+          }
+        })
+      })
+
+    const before = await misalignment()
+    expect(before.length).toBeGreaterThan(0)
+    for (const note of before) {
+      // Within half a key: the note is over the key it names, not its
+      // neighbour. Before this the drift ran past a whole key width.
+      expect(note.drift, `note ${note.midi} is off its key`).toBeLessThan(
+        (note.keyWidth ?? 0) / 2,
+      )
+    }
+
+    const positions = () =>
+      page.evaluate(() =>
+        [
+          ...document.querySelectorAll<HTMLElement>(
+            '[data-testid="piano-night-fall-track"] [data-note-midi]',
+          ),
+        ].map((note) => note.style.left),
+      )
+
+    const settled = await positions()
+    await page
+      .getByRole('button', { name: 'Move touch keyboard up one octave' })
+      .click()
+    // The arrows move the window, so they must move the notes with it.
+    expect(await positions()).not.toEqual(settled)
+
+    for (const note of await misalignment()) {
+      expect(note.drift, `note ${note.midi} is off its key`).toBeLessThan(
+        (note.keyWidth ?? 0) / 2,
+      )
+    }
+  } finally {
+    await context.close()
+  }
+})
