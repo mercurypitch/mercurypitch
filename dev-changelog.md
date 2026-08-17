@@ -64,6 +64,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their button and swap the label to "Opening Google…".
   google-sign-in.test.ts pins the signal lifecycle, the double-click
   swallow, and the three wirings.
+- **Home data keys on authVersion** (owner report, 2026-08-17): the
+  streak resource and `createDailyGoalProgress` were keyed on
+  `sessionRecordVersion` only, and the `syncedWeek` resource had NO
+  reactive source (one fetch per mount) — sign-out changed the owner
+  behind `mp_practice_ms_<owner>_<day>` and the records API without any
+  of them re-running. Streak and week resources now source
+  `() => [sessionRecordVersion(), authVersion()]`; the goal memo
+  subscribes to `authVersion()` too. Pinned in home-daily-goal.test.ts
+  (owner-swap memo case + both wiring regexes).
 
 ### Fixed
 
