@@ -5,8 +5,10 @@
 
 import type { JSX, ParentComponent } from 'solid-js'
 import { ErrorBoundary } from 'solid-js/web'
+import { isStaleBuildError } from '@/lib/global-error-handler'
 import { setAppError } from '@/stores/app-store'
 import { CrashModal } from './CrashModal'
+import { StaleBuildRecovery } from './StaleBuildRecovery'
 
 interface TabErrorBoundaryProps {
   children: JSX.Element
@@ -34,6 +36,19 @@ export const TabErrorBoundary: ParentComponent<TabErrorBoundaryProps> = (
         // of a freshly constructed Error, so this assignment is safe in a
         // way the last one was not.
         const cause = err instanceof Error ? err : new Error(String(err))
+
+        // A tab whose lazy chunk no longer exists on the origin is not a
+        // crash in the tab — the BUILD is gone (a deploy replaced the
+        // hashed assets). AppErrorBoundary has made this distinction since
+        // 38c6d2bb, but every tab renders inside THIS boundary, which
+        // caught the rejection first and showed the crash modal instead of
+        // recovering (owner repro: Progress tab, ProgressRoute-*.js,
+        // 2026-08-17). Same check, same recovery, one boundary earlier.
+        if (isStaleBuildError(cause)) {
+          console.warn('[pwa] this build is no longer served:', cause)
+          return <StaleBuildRecovery />
+        }
+
         const errorObj = new Error(`[Tab: ${props.tabName}] ${cause.message}`, {
           cause,
         })

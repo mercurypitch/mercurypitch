@@ -12,6 +12,53 @@ import { reloadToLatest } from '@/lib/pwa-service-worker'
 import { appError } from '@/stores'
 import styles from './CrashModal.module.css'
 
+/** Test seams for {@link hardResetAppData} — the defaults are the page's. */
+export interface HardResetEnv {
+  cacheStorage?: CacheStorage
+  swContainer?: ServiceWorkerContainer
+  reload?: () => void
+}
+
+/**
+ * The "Reset App Data" action, and why it is more than clearing storage:
+ * the reset is only as hard as what it deletes. Leaving the service worker
+ * registered and its precache intact meant the follow-up reload was
+ * answered from the cache of the very build that was crashing — the
+ * owner's "regular reload doesn't work when the app crashes like that"
+ * (2026-08-17). Tearing down the worker and every cache forces the next
+ * load to come from the origin.
+ */
+export async function hardResetAppData(env: HardResetEnv = {}): Promise<void> {
+  try {
+    localStorage.clear()
+    if (window.indexedDB !== undefined) {
+      window.indexedDB.deleteDatabase('pitchperfect')
+    }
+    const cacheStorage =
+      env.cacheStorage ?? ('caches' in window ? window.caches : undefined)
+    if (cacheStorage !== undefined) {
+      const names = await cacheStorage.keys()
+      await Promise.all(names.map((name) => cacheStorage.delete(name)))
+    }
+    const container =
+      env.swContainer ??
+      ('serviceWorker' in navigator ? navigator.serviceWorker : undefined)
+    if (container !== undefined) {
+      const registrations = await container.getRegistrations()
+      await Promise.all(registrations.map((r) => r.unregister()))
+    }
+  } catch (e) {
+    console.error('Failed to clear storage:', e)
+    // Fall through: a reload is still better than a dead modal.
+  }
+  const reload =
+    env.reload ??
+    (() => {
+      window.location.reload()
+    })
+  reload()
+}
+
 /**
  * App crashed modal shown when an unhandled error occurs.
  * Displays error info, version, and provides recovery options.
@@ -77,17 +124,7 @@ export const CrashModal: Component = () => {
   }
 
   const handleClearStorage = (): void => {
-    try {
-      localStorage.clear()
-      if (window.indexedDB !== undefined) {
-        window.indexedDB.deleteDatabase('pitchperfect')
-      }
-      window.location.reload()
-    } catch (e) {
-      console.error('Failed to clear storage:', e)
-      // Try at least a reload even if storage fails
-      window.location.reload()
-    }
+    void hardResetAppData()
   }
 
   const [showLogs, setShowLogs] = createSignal(false)
@@ -287,7 +324,7 @@ export const CrashModal: Component = () => {
                 </a>
                 <span class={styles.crashActionDivider}>•</span>
                 <button
-                  onClick={handleClearStorage}
+                  onClick={() => void handleClearStorage()}
                   class={styles.crashDangerLink}
                 >
                   <svg
