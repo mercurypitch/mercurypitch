@@ -24,6 +24,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Room pictures stay in their cards.** Scrolling the Piano Night room
+  chooser on a phone could send the preview images sliding out of the list to
+  float over the panel. They stay put now.
+
 - **A new version no longer looks like a crash.** Opening a tab after a
   deployment could show the "Application Error" dialog for a moment
   before the app updated itself. It now goes straight to the "a new
