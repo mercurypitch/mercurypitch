@@ -8,6 +8,7 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Defaults from '@/lib/defaults'
+import { resetGoogleSignInPending } from '@/lib/google-sign-in'
 
 // Spread the real module rather than replacing it: only API_BASE_URL needs
 // faking, and a bare object breaks the moment the component pulls in anything
@@ -78,6 +79,7 @@ const passwordMe = {
 }
 
 beforeEach(() => {
+  resetGoogleSignInPending()
   vi.clearAllMocks()
 })
 

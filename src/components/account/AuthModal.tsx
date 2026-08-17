@@ -15,7 +15,7 @@ import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
 import { loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
-import { startGoogleSignIn } from '@/lib/google-sign-in'
+import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -285,9 +285,12 @@ export const AuthModal: Component = () => {
                   class={styles.googleButton}
                   onClick={() => void onGoogleSignIn()}
                   data-testid="auth-google"
+                  disabled={googleSignInPending()}
                 >
                   <GoogleMark />
-                  Continue with Google
+                  {googleSignInPending()
+                    ? 'Opening Google\u2026'
+                    : 'Continue with Google'}
                 </button>
                 <Show when={pane() === 'login'}>
                   <button

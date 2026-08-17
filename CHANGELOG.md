@@ -15,6 +15,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   crash screen's "Reset App Data" is a true hard reset: it also removes
   the offline copy and the update worker, so the next load always comes
   fresh from the server.
+- **"Continue with Google" responds the moment you press it.** On a slow
+  connection the redirect takes a few seconds to start; the button used to
+  give no sign it had been pressed. All three Google buttons now disable
+  themselves and read "Opening Google…" until the redirect starts, and a
+  second press can no longer fire a second redirect.
 
 ### Fixed
 

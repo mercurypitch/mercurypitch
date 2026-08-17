@@ -7,7 +7,7 @@ import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
 import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
-import { startGoogleSignIn } from '@/lib/google-sign-in'
+import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { account, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
 import { showNotification } from '@/stores/notifications-store'
@@ -235,8 +235,11 @@ export function KaraokeAccount() {
             <button
               class="kn-modal-google"
               onClick={() => void onGoogleSignIn()}
+              disabled={googleSignInPending()}
             >
-              Continue with Google
+              {googleSignInPending()
+                ? 'Opening Google\u2026'
+                : 'Continue with Google'}
             </button>
             <button
               class="kn-modal-switch"
