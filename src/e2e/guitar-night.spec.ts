@@ -1608,8 +1608,12 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
 
     const camera = room.getByLabel('Camera, Runway', { exact: true })
     await camera.click()
-    const panel = room.getByRole('group', {
-      name: 'Stage view and display settings',
+    // A narrow phone gets the portalled sheet, not the in-place popup: the
+    // popup was a child of `.stageHeader`, a stacking context, so it painted
+    // under the LEARN card and ran off the header's top corner. The sheet is
+    // its own scroller, which is what these metrics are about.
+    const panel = page.getByRole('dialog', {
+      name: 'Camera and display settings',
       exact: true,
     })
     await expect(panel).toBeVisible()
