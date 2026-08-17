@@ -1,6 +1,11 @@
 /* TransportBar — stage footer row (skin via --transport-* props). */
 
 .bar {
+  /* The containing block for anything a stage positions against this row —
+     the count-in badge sits at `top: -10px; left: 50%`, and without this it
+     resolved against an ancestor near the top of the page and rendered
+     clipped behind the app header instead of above the transport. */
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
