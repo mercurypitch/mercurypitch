@@ -277,6 +277,14 @@ export function createGuitarBackingTransport(
    * the seek lands afterwards and starts the song back up.
    */
   let playIntentEpoch = 0
+  /**
+   * The status that decision settled on. Captured through `setStatus` because
+   * pause() and stop() each have several exits, and a re-prime landing later
+   * has to restore what the player actually chose — stop parks at zero and
+   * reports 'ready', pause parks where it was and reports 'paused'.
+   */
+  let playIntentStatus: GuitarBackingTransportStatus = 'idle'
+  let playIntentPending = false
 
   const emit = (): void => {
     for (const listener of listeners) listener()
@@ -288,6 +296,10 @@ export function createGuitarBackingTransport(
   ): void => {
     status = nextStatus
     error = nextError
+    if (playIntentPending) {
+      playIntentStatus = nextStatus
+      playIntentPending = false
+    }
     emit()
   }
 
@@ -719,9 +731,10 @@ export function createGuitarBackingTransport(
       await startStreamedAt(next, requestGeneration, false)
       if (disposed || requestGeneration !== generation) break
       if (playIntentEpoch !== epoch) {
-        parkedOffset = clamp(next, 0, duration)
+        // Pause or stop already parked the room where it wanted; undo only
+        // the sound this re-prime just started.
         haltAudible()
-        setStatus('paused')
+        setStatus(playIntentStatus)
         break
       }
       next = queuedStreamedSeek
@@ -736,7 +749,8 @@ export function createGuitarBackingTransport(
       // While a re-prime is in flight the elements still report the old
       // position, and the room's scrubber is bound to this. Reading it then
       // would drag the playhead back out from under the finger that moved it.
-      if (streamedSeekTarget !== null) return streamedSeekTarget
+      const seekingTo = queuedStreamedSeek ?? streamedSeekTarget
+      if (seekingTo !== null) return seekingTo
       const mediaTime = streamEngine.getCurrentTime()
       if (mediaTime !== null && Number.isFinite(mediaTime)) {
         return clamp(mediaTime, 0, duration)
@@ -865,6 +879,7 @@ export function createGuitarBackingTransport(
 
     pause() {
       playIntentEpoch += 1
+      playIntentPending = true
       if (status === 'loading') {
         generation += 1
         loadAbort?.abort()
@@ -886,6 +901,7 @@ export function createGuitarBackingTransport(
 
     stop() {
       playIntentEpoch += 1
+      playIntentPending = true
       if (status === 'loading') {
         generation += 1
         loadAbort?.abort()
@@ -907,7 +923,7 @@ export function createGuitarBackingTransport(
       const wasPlaying = status === 'playing'
       parkedOffset = target
       if (!wasPlaying) {
-        streamEngine?.seek(target)
+        void streamEngine?.seek(target)
         if (target >= duration && duration > 0) setStatus('complete')
         else if (status === 'complete') setStatus('paused')
         else emit()

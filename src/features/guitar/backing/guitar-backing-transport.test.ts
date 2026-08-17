@@ -535,8 +535,9 @@ describe('createGuitarBackingTransport', () => {
     harness.transport.seek(2)
     harness.transport.seek(4)
     harness.transport.seek(6.5)
-    // The playhead follows the finger immediately, not the stems.
-    expect(harness.transport.getCurrentTime()).toBeCloseTo(2)
+    // The playhead reports where the finger is, not where the in-flight
+    // re-prime is heading and not where the stalled element still reads.
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(6.5)
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     for (const element of harness.mediaElements) {
@@ -556,8 +557,28 @@ describe('createGuitarBackingTransport', () => {
     harness.transport.pause()
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    // The re-prime finishes after the pause; the room must not come back up.
+    // The re-prime finishes after the pause; the room must not come back up,
+    // and it stays parked where the player left it — at the seek they had
+    // already asked for, which is what the playhead was showing.
     expect(harness.transport.getStatus()).toBe('paused')
+    expect(harness.mediaElements[0].paused).toBe(true)
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(5)
+  })
+
+  it('lets a stop outrank a seek, and stop means the top', async () => {
+    // Stop parks at zero and reports 'ready'. A re-prime landing afterwards
+    // used to force 'paused' at the seek target instead — the player's own
+    // decision overwritten by one that was already in the air.
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('stop-wins'))
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    harness.transport.seek(5)
+    harness.transport.stop()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(harness.transport.getStatus()).toBe('ready')
+    expect(harness.transport.getCurrentTime()).toBe(0)
     expect(harness.mediaElements[0].paused).toBe(true)
   })
 

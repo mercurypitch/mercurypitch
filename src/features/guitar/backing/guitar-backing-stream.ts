@@ -12,7 +12,6 @@ interface StreamedTrack {
   trim: number
   onEnded: () => void
   onError: () => void
-  onSeeking: () => void
   onSeeked: () => void
   onPause: () => void
 }
@@ -135,7 +134,6 @@ export function createGuitarBackingStreamEngine(
   let generation = 0
   let playbackRate = 1
   let disposed = false
-  let seeking = 0
   let settleUntilMs = 0
   /**
    * Whether this engine believes the room should be sounding. A `pause` event
@@ -197,8 +195,11 @@ export function createGuitarBackingStreamEngine(
       const primary = master
       if (primary === null || primary.element.paused) return
       // Mid-seek the element clocks are meaningless, and correcting against
-      // them is what turned one seek into seconds of stutter.
-      if (seeking > 0 || now() < settleUntilMs) return
+      // them is what turned one seek into seconds of stutter. Read the
+      // elements' own live flag rather than counting events: a `seeking` whose
+      // `seeked` never arrives would otherwise disable the servo for good.
+      if (now() < settleUntilMs) return
+      if (streamedTracks.some((candidate) => candidate.element.seeking)) return
       const primaryTime = primary.element.currentTime
       if (!Number.isFinite(primaryTime)) return
       for (const streamed of streamedTracks) {
@@ -232,12 +233,10 @@ export function createGuitarBackingStreamEngine(
     clearTimers()
     pauseNow()
     master = null
-    seeking = 0
     playableIds.clear()
     for (const streamed of streamedTracks) {
       streamed.element.removeEventListener('ended', streamed.onEnded)
       streamed.element.removeEventListener('error', streamed.onError)
-      streamed.element.removeEventListener('seeking', streamed.onSeeking)
       streamed.element.removeEventListener('seeked', streamed.onSeeked)
       streamed.element.removeEventListener('pause', streamed.onPause)
       streamed.element.removeAttribute('src')
@@ -286,17 +285,7 @@ export function createGuitarBackingStreamEngine(
               currentTime: currentTime() ?? element.currentTime ?? 0,
             })
           }
-          let settled: (() => void) | null = null
-          const onSeeking = (): void => {
-            if (settled !== null) return
-            seeking += 1
-            settled = () => {
-              seeking = Math.max(0, seeking - 1)
-              settled = null
-            }
-          }
           const onSeeked = (): void => {
-            settled?.()
             settleUntilMs = now() + SEEK_SETTLE_MS
           }
           const onPause = (): void => {
@@ -315,13 +304,11 @@ export function createGuitarBackingStreamEngine(
             trim: 0,
             onEnded,
             onError,
-            onSeeking,
             onSeeked,
             onPause,
           }
           element.addEventListener('ended', onEnded)
           element.addEventListener('error', onError)
-          element.addEventListener('seeking', onSeeking)
           element.addEventListener('seeked', onSeeked)
           element.addEventListener('pause', onPause)
           gain.gain.value = targetGain(track.id)
