@@ -23,6 +23,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Your mic environment setting survives every mic start.** On some devices
+  (Android in particular), starting the microphone quietly reset the
+  Quiet room / Home / Noisy room calibration back to defaults until you next
+  touched a setting. It sticks now.
+
 - **No more "signed out" flash.** On a slow connection, Settings → Account
   said "You are signed out" for a few seconds before flipping to your real
   signed-in state, and the header pill offered "Sign in" the same way.

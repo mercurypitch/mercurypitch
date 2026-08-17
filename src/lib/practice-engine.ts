@@ -155,6 +155,12 @@ export class PracticeEngine {
         bufferSize: this.bufferSize,
         sensitivity: this.sensitivity,
         algorithm: config.algorithm ?? this.detector.getAlgorithm(),
+        // A reconstruction must carry the whole runtime config, not just the
+        // fields this call happens to change — anything left out reverts to
+        // DEFAULT_OPTIONS, silently discarding the user's mic-environment
+        // preset until the next settings change.
+        minConfidence: this.detector.getSettings().minConfidence,
+        minAmplitude: this.detector.getSettings().minAmplitude,
       })
     }
     if (config.sensitivity !== undefined) {
@@ -230,6 +236,14 @@ export class PracticeEngine {
           sampleRate: this.sampleRate,
           bufferSize: this.bufferSize,
           sensitivity: this.sensitivity,
+          // Carry the runtime config over — on every device that lands in
+          // this branch (Android's 48 kHz contexts), rebuilding with defaults
+          // threw away the user's mic-environment preset and algorithm on
+          // every mic start, and nothing re-applied them until the user next
+          // touched a setting.
+          algorithm: this.detector.getAlgorithm(),
+          minConfidence: this.detector.getSettings().minConfidence,
+          minAmplitude: this.detector.getSettings().minAmplitude,
         })
       }
 

@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Detector reconstruction keeps the runtime config** (`practice-engine.ts`):
+  both places that rebuild the `PitchDetector` — `startMic()` when the real
+  AudioContext sample rate or buffer size differs from the assumed one
+  (Android's 48 kHz contexts), and `syncSettings()` on a buffer-size change —
+  passed only a subset of options, so `minConfidence`, `minAmplitude` and (in
+  the mic path) `algorithm` reverted to `DEFAULT_OPTIONS`. On affected devices
+  the user's mic-environment preset (Quiet/Home/Noisy) was silently discarded
+  on every mic start, and nothing re-applied it until the next settings
+  change. Both sites now carry the previous detector's algorithm and gates
+  over; `practice-engine.test.ts` pins both paths.
+
 - **Frequency-aware envelope floors in audio-engine** (owner report,
   2026-08-17: "bassey sort of pop" on dial notes in octaves 2-3): the
   75 ms stopNote release (tau 15 ms) and the sustain envelope's 15 ms
