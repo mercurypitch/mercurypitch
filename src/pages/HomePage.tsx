@@ -11,10 +11,10 @@ import { createMemo, createResource, createSignal, For, onMount, Show, } from 's
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
-import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
-import { loadSessionRecords } from '@/db/services/session-service'
+import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
 import { getStreakState, MAX_FREEZES, repairStreak, STARTING_FREEZES, } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
+import { createDailyGoalProgress, DAILY_GOAL_MIN, } from '@/features/home/daily-goal'
 import { DestinationGallery } from '@/features/home/DestinationGallery'
 import { weekDrillStats } from '@/features/home/week-drill-stats'
 import { dismissNudge, satisfyNudge, shouldShowNudge, } from '@/features/onboarding/account-nudge'
@@ -31,8 +31,6 @@ import { exerciseHistory } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './HomePage.module.css'
-
-const DAILY_GOAL_MIN = Math.round(DAILY_GOAL_MS / 60_000)
 
 function IconSnowflake(props: { size?: number }): JSX.Element {
   const s = () => props.size ?? 14
@@ -69,16 +67,14 @@ function greeting(): string {
 
 const HomePage: Component = () => {
   const routine = useDailyRoutine()
-  const [streak, { refetch: refetchStreak }] = createResource(getStreakState)
-
-  // Read once per mount; the page remounts on every tab switch, so returning
-  // to Home after practising picks up fresh minutes/streak.
-  const minutesToday = getTodayScoredMinutes()
-  const goalMet = minutesToday >= DAILY_GOAL_MIN
-  const goalPct = Math.min(
-    100,
-    Math.round((minutesToday / DAILY_GOAL_MIN) * 100),
+  // Keyed on the record version so a run finished while Home stays mounted
+  // moves the card — the page used to read once per mount and lean on tab
+  // switches to look fresh.
+  const [streak, { refetch: refetchStreak }] = createResource(
+    sessionRecordVersion,
+    getStreakState,
   )
+  const goal = createDailyGoalProgress()
 
   // Thin progress strip for the trailing 7 days. The synced session records
   // are the account's truth (a second device would otherwise report zero,
@@ -174,7 +170,7 @@ const HomePage: Component = () => {
         <section class={`${styles.card} home-streak-card`}>
           <div class={styles.streakTop}>
             <span
-              class={`${styles.flame} ${goalMet ? styles.flameLit : ''}`}
+              class={`${styles.flame} ${goal().met ? styles.flameLit : ''}`}
               aria-hidden="true"
             >
               <IconFire size={28} />
@@ -229,13 +225,16 @@ const HomePage: Component = () => {
 
           <div class={styles.goalRow}>
             <div class={styles.goalBar}>
-              <div class={styles.goalFill} style={{ width: `${goalPct}%` }} />
+              <div
+                class={styles.goalFill}
+                style={{ width: `${goal().pct}%` }}
+              />
             </div>
             <div class={styles.goalTextRow}>
               <span class={styles.goalText}>
-                {goalMet
+                {goal().met
                   ? `Today counts — ${DAILY_GOAL_MIN} min sung`
-                  : `${minutesToday} of ${DAILY_GOAL_MIN} min today keeps the streak`}
+                  : `${goal().minutes} of ${DAILY_GOAL_MIN} min today keeps the streak`}
               </span>
               {/* Both forgiveness paths, in the order a singer meets them.
                   It used to describe freezes only, while the repair button sat
