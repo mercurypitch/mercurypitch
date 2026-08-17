@@ -15,6 +15,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Finishing a guided practice session now counts.** Completing any
+  built-in session template credited nothing at all — no session in your
+  history, no practice minutes, no streak, no badges — and gave no sign
+  anything had gone wrong. The finished run is now recorded.
 - **Very low notes are audible again.** Notes around the second octave (C2 to
   around E2) were technically sounding but almost impossible to hear on
   laptop and phone speakers. They now get a small level lift and a
