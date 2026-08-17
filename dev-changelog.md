@@ -30,6 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`sessionRecords` write for multi-item sessions rejected by the worker.**
+  `practice-session-store.endPracticeSession` banked one `PracticeResult`
+  per item-_repeat_ but set `notesTotal` from `session.items.length`, so
+  every built-in template posted `notesHit > notesTotal` (warmup-2min: 24
+  against 5). `validateWrite` rejects that, the create returned 400, and
+  `saveSessionRecord` swallows a failed create by design (evidence before
+  credit) — so the record, practice minutes, streak and badge pass were all
+  silently skipped. The denominator now counts repeats and skips rests, and
+  the payload moved into an exported `practiceSessionPayload` builder held
+  against the production validator, mirroring `exercise-record-payload`
+  (CLAUDE-JOURNEY-007), which had pinned only the plain-drill half.
 - **The walkthrough e2e spec was clicking the wrong button** (`walkthrough.spec.ts`):
   Learn and What's new moved from the sidebar to Home's header, but the spec
   still clicked the first `.walkthroughControlBtn` — which after the move is
