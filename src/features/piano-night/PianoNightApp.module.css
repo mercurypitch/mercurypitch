@@ -155,9 +155,25 @@
 
 .railButton:hover,
 .railButton:focus-visible,
+.railButton[aria-expanded='true'],
 .railActive {
   color: var(--brass-soft);
   background: rgb(181 138 80 / 11%);
+}
+
+/* A pressed rail button says which surface it opened. Without this the drawer
+   could be open with nothing on the rail to show which button did it, and
+   nothing to press to put it away. */
+.railButton[aria-expanded='true']::before {
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--brass-soft);
+  content: '';
+  transform: translateY(-50%);
 }
 
 .railButton:hover > span,
@@ -2132,6 +2148,22 @@
     bottom: calc(var(--keybed-height) + var(--fallboard-height));
   }
 
+  /* A press on the always-visible desktop coach has to land somewhere. */
+  .coachFlash {
+    animation: coachFlash 1.2s ease-out;
+  }
+
+  @keyframes coachFlash {
+    0%,
+    100% {
+      box-shadow: none;
+    }
+    15%,
+    60% {
+      box-shadow: 0 0 0 2px var(--brass-soft);
+    }
+  }
+
   .coachOpen {
     opacity: 1;
     pointer-events: auto;
@@ -2218,7 +2250,7 @@
     left: 0;
     display: grid;
     height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid rgb(181 138 80 / 24%);
     background: rgb(4 6 8 / 97%);
@@ -2247,8 +2279,27 @@
     height: 20px;
   }
 
-  .mobileNav .mobileActive {
+  .mobileNav .mobileActive,
+  .mobileNav button[aria-expanded='true'] {
     color: var(--brass-soft);
+  }
+
+  /* The rail is the only chrome on a phone, so it has to carry the state:
+     which surface is open, and that pressing again puts it away. */
+  .mobileNav button[aria-expanded='true'] {
+    position: relative;
+  }
+
+  .mobileNav button[aria-expanded='true']::before {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 20px;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: var(--brass-soft);
+    content: '';
+    transform: translateX(-50%);
   }
 
   .coach {

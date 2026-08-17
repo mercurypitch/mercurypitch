@@ -34,6 +34,9 @@ const PianoNightMusicPanel = lazy(async () =>
   })),
 )
 
+/** How long the coach stays marked after a rail press that cannot open it. */
+const COACH_FLASH_MS = 1200
+
 type SettingsSection = 'session' | 'sound' | 'room'
 type DrawerSection = SettingsSection | 'music'
 
@@ -329,6 +332,7 @@ export function PianoNightApp(): JSX.Element {
   const [lastSettingsSection, setLastSettingsSection] =
     createSignal<SettingsSection>('session')
   const [coachOpen, setCoachOpen] = createSignal(false)
+  const [coachFlashing, setCoachFlashing] = createSignal(false)
   const [compactSheets, setCompactSheets] = createSignal(false)
   const [announcement, setAnnouncement] = createSignal('')
 
@@ -556,6 +560,15 @@ export function PianoNightApp(): JSX.Element {
     if (compactSheets()) restoreCompactSurfaceFocus()
   }
 
+  /** Mark the coach for a moment so a press on an always-visible panel lands. */
+  let coachFlashTimer: ReturnType<typeof setTimeout> | undefined
+  const flashCoach = (): void => {
+    clearTimeout(coachFlashTimer)
+    setCoachFlashing(true)
+    coachFlashTimer = setTimeout(() => setCoachFlashing(false), COACH_FLASH_MS)
+  }
+  onCleanup(() => clearTimeout(coachFlashTimer))
+
   const closeCoach = (): void => {
     setCoachOpen(false)
     if (compactSheets()) restoreCompactSurfaceFocus()
@@ -571,17 +584,42 @@ export function PianoNightApp(): JSX.Element {
     }
   }
 
-  const openSettings = (): void => {
+  /** True while the drawer is showing anything other than the music panel. */
+  const settingsShowing = (): boolean =>
+    drawerOpen() && drawerSection() !== 'music'
+  const musicShowing = (): boolean =>
+    drawerOpen() && drawerSection() === 'music'
+
+  // A rail button that opens a surface closes it too. Pressing Settings twice
+  // reopening Settings is a dead end on a phone, where the rail is the only
+  // chrome on screen and there is nothing else to press.
+  const toggleSettings = (): void => {
+    if (settingsShowing()) {
+      closeDrawer()
+      return
+    }
     openDrawer(lastSettingsSection())
   }
 
-  const openMusic = (): void => {
+  const toggleMusic = (): void => {
+    if (musicShowing()) {
+      closeDrawer()
+      return
+    }
     openDrawer('music')
   }
 
-  const openCoach = (): void => {
+  const toggleCoach = (): void => {
     if (!compactSheets()) {
+      // The coach is already on screen here and has no hidden state to
+      // toggle, so the press moves to it and says so — without that, pressing
+      // Coach on a desktop looked like a button that does nothing.
       coachElement?.focus()
+      flashCoach()
+      return
+    }
+    if (coachOpen()) {
+      closeCoach()
       return
     }
     setDrawerOpen(false)
@@ -685,16 +723,21 @@ export function PianoNightApp(): JSX.Element {
           <button
             class={styles.railButton}
             type="button"
-            onClick={openMusic}
+            onClick={toggleMusic}
             aria-label="Choose music for Piano Night"
             aria-haspopup="dialog"
-            aria-expanded={drawerOpen() && drawerSection() === 'music'}
+            aria-expanded={musicShowing()}
             aria-controls="piano-night-settings"
           >
             <MusicLibrary />
             <span>Music</span>
           </button>
-          <button class={styles.railButton} type="button" onClick={openCoach}>
+          <button
+            class={styles.railButton}
+            type="button"
+            onClick={toggleCoach}
+            aria-controls="piano-night-coach"
+          >
             <WaveformBars />
             <span>Coach</span>
           </button>
@@ -703,10 +746,10 @@ export function PianoNightApp(): JSX.Element {
         <button
           class={styles.railButton}
           type="button"
-          onClick={openSettings}
+          onClick={toggleSettings}
           aria-label="Open Piano Night settings"
           aria-haspopup="dialog"
-          aria-expanded={drawerOpen()}
+          aria-expanded={settingsShowing()}
           aria-controls="piano-night-settings"
         >
           <Settings />
@@ -986,8 +1029,12 @@ export function PianoNightApp(): JSX.Element {
 
       <aside
         ref={coachElement}
+        id="piano-night-coach"
         class={styles.coach}
-        classList={{ [styles.coachOpen]: coachOpen() }}
+        classList={{
+          [styles.coachOpen]: coachOpen(),
+          [styles.coachFlash]: coachFlashing(),
+        }}
         role={compactSheets() ? 'region' : undefined}
         aria-label="Phrase practice prompt"
         aria-hidden={
@@ -1032,30 +1079,45 @@ export function PianoNightApp(): JSX.Element {
         </button>
         <button
           type="button"
-          onClick={openMusic}
+          onClick={toggleMusic}
           aria-label="Choose music for Piano Night"
           aria-haspopup="dialog"
-          aria-expanded={drawerOpen() && drawerSection() === 'music'}
+          aria-expanded={musicShowing()}
           aria-controls="piano-night-settings"
         >
           <MusicLibrary />
           <span>Music</span>
         </button>
-        <button type="button" onClick={openCoach} aria-expanded={coachOpen()}>
+        <button
+          type="button"
+          onClick={toggleCoach}
+          aria-expanded={coachOpen()}
+          aria-controls="piano-night-coach"
+        >
           <WaveformBars />
           <span>Coach</span>
         </button>
         <button
           type="button"
-          onClick={openSettings}
+          onClick={toggleSettings}
           aria-label="Open Piano Night settings"
           aria-haspopup="dialog"
-          aria-expanded={drawerOpen()}
+          aria-expanded={settingsShowing()}
           aria-controls="piano-night-settings"
         >
           <Settings />
           <span>Settings</span>
         </button>
+        {/* The way out. The side rail has carried this since the room shipped;
+            on a phone that rail is gone and the bottom row is the only chrome
+            there is, so without it Piano Night had no exit. */}
+        <a
+          href={LEGACY_PIANO_PATH}
+          aria-label="Open the current Piano workspace"
+        >
+          <PianoWorkspace />
+          <span>Studio</span>
+        </a>
       </nav>
 
       <Show when={blockingModal()}>

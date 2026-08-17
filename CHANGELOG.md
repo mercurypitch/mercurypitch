@@ -27,6 +27,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **The count-in number is where you can read it.** On a phone it appeared at
   the very top of the screen, half cut off behind the header. It sits just
   above the transport controls now.
+- **Piano Night's bottom bar behaves like a bottom bar.** The button you
+  pressed now stays lit while its panel is open, and pressing it again closes
+  the panel. There is also a way back to the full studio from a phone, which
+  there was not before, and pressing Coach on a larger screen now takes you to
+  the coach instead of appearing to do nothing.
 
 - **Piano Night's falling notes land on the right keys.** On a phone the notes
   were drawn against the whole 88-key piano while the keyboard below showed

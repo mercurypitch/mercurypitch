@@ -1406,3 +1406,66 @@ test('lands every falling note on the key it names @smoke', async ({
     await context.close()
   }
 })
+
+test('gives the phone rail state, a way back, and a second press @smoke', async ({
+  browser,
+}) => {
+  // On a phone the bottom rail is the only chrome on screen. Pressing Settings
+  // opened the drawer with nothing on the rail to show which button did it,
+  // pressing it again did nothing, and there was no way out of Piano Night at
+  // all — the exit link only existed on the side rail, which a phone does not
+  // get.
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+    const rail = page.getByLabel('Piano Night mobile navigation')
+    await expect(rail).toBeVisible()
+
+    const items = rail.locator('button, a')
+    await expect(items).toHaveCount(5)
+    for (let index = 0; index < 5; index += 1) {
+      const box = await items.nth(index).boundingBox()
+      expect(box?.width).toBeGreaterThanOrEqual(44)
+      expect(box?.height).toBeGreaterThanOrEqual(44)
+    }
+
+    const exit = rail.getByRole('link', {
+      name: 'Open the current Piano workspace',
+    })
+    await expect(exit).toBeVisible()
+    await expect(exit).toHaveAttribute('href', '/#/piano')
+
+    const settings = rail.getByRole('button', {
+      name: 'Open Piano Night settings',
+    })
+    await expect(settings).toHaveAttribute('aria-expanded', 'false')
+
+    await settings.click()
+    await expect(settings).toHaveAttribute('aria-expanded', 'true')
+    // The pressed state is drawn, not just announced.
+    expect(
+      await settings.evaluate(
+        (element) =>
+          getComputedStyle(element, '::before').content !== 'none' &&
+          getComputedStyle(element, '::before').backgroundColor !==
+            'rgba(0, 0, 0, 0)',
+      ),
+    ).toBe(true)
+
+    await settings.click()
+    await expect(settings).toHaveAttribute('aria-expanded', 'false')
+    await expect(
+      page.getByRole('heading', {
+        name: 'Choose the light around the instrument.',
+      }),
+    ).toBeHidden()
+  } finally {
+    await context.close()
+  }
+})
