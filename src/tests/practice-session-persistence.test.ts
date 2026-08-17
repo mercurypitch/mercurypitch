@@ -4,6 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PlaybackSession, PracticeResult } from '@/types'
+import { validateWrite } from '../../workers/db-worker/src/validation'
 
 const mocks = vi.hoisted(() => ({
   ownerId: 'singer-1',
@@ -100,6 +101,49 @@ describe('endPracticeSession grant routing', () => {
       expect.any(Object),
       'singer-1',
     )
+    expect(mocks.checkAndGrantBadges).not.toHaveBeenCalled()
+  })
+})
+
+describe('the record endPracticeSession actually posts', () => {
+  it('survives the worker gate for a session of repeated items', async () => {
+    // The builder being right is not enough — this is the wiring. A session
+    // of 8 + 8 repeats used to post notesHit 16 against notesTotal 2, which
+    // the worker rejected, losing the run's record, minutes, streak and
+    // badges without a word.
+    setPracticeSession({
+      ...session,
+      items: [
+        { ...session.items[0], id: 'a', repeat: 8 },
+        { ...session.items[0], id: 'b', repeat: 8 },
+      ],
+    })
+    setSessionActive(true)
+    setPracticeResults(Array.from({ length: 16 }, () => result))
+
+    expect(endPracticeSession()).not.toBeNull()
+    await flush()
+
+    const [payload] = mocks.saveSessionRecord.mock.calls[0] as unknown as [
+      Record<string, unknown>,
+    ]
+    expect(payload.notesHit).toBe(16)
+    expect(payload.notesTotal).toBe(16)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+    expect(mocks.checkAndGrantBadges).toHaveBeenCalled()
+  })
+
+  it('posts nothing at all for a run that never scored', async () => {
+    // The other half of the contract: play-then-stop used to persist score-0
+    // rows that dragged the profile average and the leaderboard to 0%.
+    setPracticeSession(session)
+    setSessionActive(true)
+    setPracticeResults([])
+
+    expect(endPracticeSession()).toBeNull()
+    await flush()
+
+    expect(mocks.saveSessionRecord).not.toHaveBeenCalled()
     expect(mocks.checkAndGrantBadges).not.toHaveBeenCalled()
   })
 })
