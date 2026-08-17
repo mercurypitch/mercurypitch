@@ -1798,3 +1798,124 @@ describe('bus ramps and release fallbacks', () => {
     expect(source.stop).toHaveBeenLastCalledWith(1.7)
   })
 })
+
+// ============================================================
+// The bottom octave carries
+// ============================================================
+//
+// Owner report, 2026-08-17: "octave 2, notes D2 up to E2 ... are really low
+// notes, and barely hearable". A bare sine at 73 Hz puts all of its energy
+// below what a laptop or phone speaker can move, and the ear wants ~15 dB
+// more there than at 440 Hz for the same loudness — more than the bus has.
+// So the fix is two-part and both parts must hold: a modest level lift AND
+// an octave-up partial, which is the half that actually reaches the speaker.
+//
+// The pins that matter are the ones at the top of the range: everything at
+// C3 and above must come out bit-for-bit as it did before.
+
+describe('low notes carry on a small speaker', () => {
+  let engine: AudioEngine
+
+  beforeEachFn(async () => {
+    engine = new AudioEngine()
+    await engine.init()
+  })
+
+  afterEach(() => {
+    engine.destroy()
+    vi.clearAllMocks()
+  })
+
+  const D2 = 73.42
+  const C3 = 130.81
+  const A4 = 440
+
+  interface VoiceMock {
+    gains: { gain: { events: ReplayEvent[] } }[]
+    oscillators: { frequency: { value: number }; stop: ReturnType<typeof vi.fn> }[] // prettier-ignore
+  }
+  const voiceOf = (noteId: number): VoiceMock =>
+    (
+      engine as unknown as { _activeVoices: Map<number, VoiceMock> }
+    )._activeVoices.get(noteId)!
+
+  /** The peak the attack ramp climbs to. */
+  const peakOf = (voice: VoiceMock): number => {
+    const ramp = voice.gains[0]!.gain.events.find(
+      (e) => e.method === 'exponentialRampToValueAtTime',
+    )
+    return ramp!.args[0]!
+  }
+
+  it('gives D2 an octave partial the speaker can actually move', async () => {
+    const noteId = await engine.playNote(D2, 800)
+    const voice = voiceOf(noteId!)
+
+    const freqs = voice.oscillators.map((o) => o.frequency.value)
+    expect(freqs).toContain(D2)
+    // The octave, not a fifth or a detune: the ear reconstructs the pitch of
+    // the fundamental from it, so the note reads louder, not higher.
+    expect(freqs.some((f) => Math.abs(f - D2 * 2) < 0.01)).toBe(true)
+  })
+
+  it('lifts the level of a low note without touching a high one', async () => {
+    const lowId = await engine.playNote(D2, 800)
+    const lowPeak = peakOf(voiceOf(lowId!))
+    engine.stopAllNotes()
+
+    const highId = await engine.playNote(A4, 800)
+    const highPeak = peakOf(voiceOf(highId!))
+
+    expect(highPeak).toBeCloseTo(0.7, 5)
+    expect(lowPeak).toBeGreaterThan(highPeak)
+    // A lift, not a shout — the bus still has to hold a chord of these.
+    expect(lowPeak).toBeLessThanOrEqual(0.7 * 1.3)
+  })
+
+  it('changes nothing at C3 and above', async () => {
+    const noteId = await engine.playNote(C3, 800)
+    const voice = voiceOf(noteId!)
+
+    expect(peakOf(voice)).toBeCloseTo(0.7, 5)
+    // One oscillator, as before: the reinforcement has fully faded out here,
+    // and an inaudible partial is still a partial that costs a node.
+    expect(voice.oscillators).toHaveLength(1)
+  })
+
+  it('fades in across the span instead of switching on', async () => {
+    const engineInternals = AudioEngine as unknown as {
+      lowNotePeakBoostFor: (f: number | undefined) => number
+      lowNoteOctaveLevelFor: (f: number | undefined) => number
+    }
+    const boost = engineInternals.lowNotePeakBoostFor.bind(AudioEngine)
+    const octave = engineInternals.lowNoteOctaveLevelFor.bind(AudioEngine)
+
+    // Monotone across the fade, and clamped at both ends.
+    expect(boost(C3)).toBe(1)
+    expect(boost(200)).toBe(1)
+    expect(boost(100)).toBeGreaterThan(1)
+    expect(boost(D2)).toBeGreaterThan(boost(100))
+    expect(boost(30)).toBeCloseTo(1.3, 5)
+    expect(octave(C3)).toBe(0)
+    expect(octave(D2)).toBeGreaterThan(0)
+    expect(octave(30)).toBeCloseTo(0.5, 5)
+    // A missing or nonsense frequency must not silently scale anything.
+    expect(boost(undefined)).toBe(1)
+    expect(boost(0)).toBe(1)
+    expect(octave(undefined)).toBe(0)
+  })
+
+  it('still lands below audibility when a boosted low note stops', async () => {
+    // The lift scales the release tail with it; the whole point of the
+    // envelope work that preceded this is that the tail is buried by the
+    // time the source stops, and a louder note must not dig it back up.
+    const noteId = await engine.playNote(D2, 800)
+    const voice = voiceOf(noteId!)
+    const before = voice.gains[0]!.gain.events.length
+    engine.stopNote(noteId!)
+
+    const stopAt = voice.oscillators[0]!.stop.mock.calls.at(-1)![0] as number
+    const releaseEvents = voice.gains[0]!.gain.events.slice(before)
+    expect(gainAt(releaseEvents, stopAt, peakOf(voice))).toBeLessThan(AUDIBLE)
+  })
+})

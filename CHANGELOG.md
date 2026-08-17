@@ -15,6 +15,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Very low notes are audible again.** Notes around the second octave (C2 to
+  around E2) were technically sounding but almost impossible to hear on
+  laptop and phone speakers. They now get a small level lift and a
+  reinforcing overtone, which is what carries a low note on a small speaker —
+  the pitch is unchanged, and nothing from C3 upward sounds different.
+
 - **A new release no longer crashes the tab you were on.** When a deploy
   replaced the app's files mid-session, opening a tab (Progress was the
   reported one) could show the crash screen instead of the "new version"

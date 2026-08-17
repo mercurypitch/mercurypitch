@@ -148,7 +148,7 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k | Piano Roll Editor — Canvas-based note editor |
-| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.5k | Audio Engine — Web Audio API playback and microphone input |
+| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.6k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
 | [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 950 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 850 | UVR API Client - Frontend Integration |
@@ -336,7 +336,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.8k |
-| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.5k |
+| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.6k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.3k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |
