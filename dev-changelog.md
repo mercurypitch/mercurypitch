@@ -54,6 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The count-in number rendered off the top of the screen.** `TransportBar`
+  set no `position`, so the count badge — authored as
+  `position: absolute; top: -10px; left: 50%` against that row — resolved
+  against a positioned ancestor near the top of the page and painted half
+  above the app header, clipped. `position: relative` on `.bar` gives it the
+  containing block it was written for. Same badge, same bug, on both the
+  Singing and Piano mobile stages.
+
 - **Piano Night's falling notes were measured against a different keyboard
   than the one on screen.** `PianoKeyHorizon` lays keys out by WHITE-KEY index
   and narrows to a two-octave touch window on a phone; `PianoNightStageViews`

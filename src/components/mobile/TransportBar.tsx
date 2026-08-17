@@ -17,5 +17,10 @@ interface TransportBarProps {
 }
 
 export const TransportBar: Component<TransportBarProps> = (props) => (
-  <div class={`${styles.bar} ${props.class ?? ''}`}>{props.children}</div>
+  <div
+    class={`${styles.bar} ${props.class ?? ''}`}
+    data-testid="mobile-transport-bar"
+  >
+    {props.children}
+  </div>
 )

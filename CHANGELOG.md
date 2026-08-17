@@ -24,6 +24,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The count-in number is where you can read it.** On a phone it appeared at
+  the very top of the screen, half cut off behind the header. It sits just
+  above the transport controls now.
+
 - **Piano Night's falling notes land on the right keys.** On a phone the notes
   were drawn against the whole 88-key piano while the keyboard below showed
   only two octaves, so a note could sit a whole key away from the one it was
