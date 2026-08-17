@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Home gallery: Piano Night and Guitar Night covers.** Two `page`-target
+  destinations between Karaoke and Exercises, on their own `span 6` row so
+  the existing 7/5 rhythm is untouched. First photographic covers in the
+  gallery; both images are free backdrops already shipped by the rooms
+  (`piano-afterglow`, `velvet-rehearsal`), and `home-destinations.test.tsx`
+  derives the permitted source set from `BACKGROUND_CATALOG` plus
+  `GUITAR_NIGHT_BACKDROPS` rather than restating it. Every page-target cover
+  now arms `createPendingAction` on a same-page click and swaps its arrow
+  for a `Spinner`.
+
 - **A What's New page, announced once per release LINE.** `shouldAnnounce` is a
   pure `major.minor` comparison against `WHATS_NEW_SEEN_KEY`, so a patch never
   interrupts; a first-ever visitor is recorded as caught up rather than
@@ -172,6 +182,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gained real pointer coverage plus keyboard/ARIA semantics.
 
 ### Fixed
+
+- **Walkthrough progress readout: unconditional, and ahead of the marks.**
+  Dropped `COUNT_FROM = 9`, moved `.walkthroughDotCount` in front of
+  `.walkthroughDots`, marked it `aria-hidden` and moved the long form onto
+  the marks group's `aria-label` ("Tour steps: step N of M"). The mark
+  budget in `walkthrough-progress.test.ts` already reserved the readout's
+  width unconditionally, so it is unchanged.
 
 - **Guitar Night streamed playback: the drift servo could never converge.**
   A phone's 192 MiB decode budget puts any full-length song on media elements,

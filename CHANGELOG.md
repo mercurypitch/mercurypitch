@@ -7,6 +7,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **The two new rooms have a door on the Home page.** Piano Night and
+  Guitar Night now sit in "Choose your next room" alongside Karaoke and the
+  rest, each on a picture of the room itself.
+
 - **Buttons that admit they heard you.** Opening Guitar Night, Karaoke Night,
   Piano Night, the Voice Mirror or Glass loads a whole separate page, and on
   a slow connection nothing on screen changed until it arrived. Those buttons
@@ -254,6 +258,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   the code over already said yes. Removing a friend clears both directions.
 
 ### Fixed
+
+- **Every guided tour shows where you are in it.** The step count used to
+  appear only on longer tours, and when it did it sat among the step marks
+  where it read as one more mark. It now leads them, on every tour, so the
+  same tour opened from a tutorial and from a notification looks the same.
 
 - **Guitar Night no longer stutters its way through a song.** On a phone a
   full-length song plays from its files rather than being decoded whole, and
