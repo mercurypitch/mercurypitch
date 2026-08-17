@@ -30,6 +30,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The bottom octave carries** (`audio-engine.ts`, owner report 2026-08-17:
+  "D2 up to E2 ... really low notes, and barely hearable"): the default voice
+  is a bare sine, so at 73 Hz all of its energy sits below what a laptop or
+  phone speaker can move, and equal-loudness alone would want ~15 dB more
+  there than at 440 Hz — far more than the bus has. Two knobs now fade in
+  together below C3 and reach full value at B1: the envelope peak lifts by up
+  to 1.3x, and an octave-up sine partial (up to 0.5 relative) joins the voice
+  under the same envelope. The octave is the half that reaches the speaker;
+  the ear reconstructs the fundamental's pitch from it, so the note reads
+  louder rather than higher. Both are exactly 1 and 0 at C3 upward, so
+  nothing above the bottom two octaves changes, and the release tail still
+  lands under -40 dBFS by the time the source stops. Applies to the default
+  sine voice only — piano, organ, strings and synth already have partials.
+
 - **Detector reconstruction keeps the runtime config** (`practice-engine.ts`):
   both places that rebuild the `PitchDetector` — `startMic()` when the real
   AudioContext sample rate or buffer size differs from the assumed one
