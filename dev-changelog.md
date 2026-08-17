@@ -30,6 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The walkthrough e2e spec was clicking the wrong button** (`walkthrough.spec.ts`):
+  Learn and What's new moved from the sidebar to Home's header, but the spec
+  still clicked the first `.walkthroughControlBtn` — which after the move is
+  the **Guide** button — and then waited for a selection overlay nobody had
+  opened. Six of its seven tests failed on every push to `main` from
+  `46ed37c4` onward. It went unnoticed because PR branches run
+  `test:e2e --grep @smoke` while the full suite runs only on pushes to main,
+  so the red gate was never in front of a PR. The spec now drives
+  `data-testid="home-learn"`, and a new case pins that the sidebar button is
+  Guide and does NOT open the walkthrough — the distinction that was missed.
+
 - **The bottom octave carries** (`audio-engine.ts`, owner report 2026-08-17:
   "D2 up to E2 ... really low notes, and barely hearable"): the default voice
   is a bare sine, so at 73 Hz all of its energy sits below what a laptop or
