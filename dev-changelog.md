@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Stop is one corner icon button at every viewport** (owner report,
+  2026-08-17, Tab S9+ landscape ~800px height): `.exercise-btn-stop` is a
+  48px round icon-only button (aria-label + title carry the label) anchored
+  bottom-right by `.exercise-active-controls`; the labelled centre pill and
+  the two duplicate 54px FAB blocks in short-viewport.css /
+  mobile-polish.css are gone, and their 76px reserved strip is the base
+  64px everywhere. `.warmup-step-instruction` max-width 420 → 640px so the
+  breath step wraps to two rows instead of four — the rows plus the rail
+  were what scrolled the "Sssss" cue off a 1280x800 tablet. Pinned by
+  "the warmup breath step fits the fold" (exercise-tablet-active.spec.ts:
+  no overflow at 1280x800, compact square Stop, two-row instruction) and
+  the icon-only contract in exercise-shell-timer.test.tsx.
+
 - **Held-note run length and duration grading** (owner call, 2026-08-17):
   `DEFAULT_PREFERENCE.mode` 5 → 10 in timer-preference.ts (persisted
   choices untouched). Long-note's duration term is now

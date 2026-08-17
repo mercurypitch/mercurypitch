@@ -666,20 +666,18 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             <button
               class="exercise-btn exercise-btn-stop"
               aria-label={props.stopLabel ?? 'Stop & Score'}
+              title={props.stopLabel ?? 'Stop & Score'}
               onClick={() => props.onStop()}
             >
               <svg
-                width="14"
-                height="14"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"
               >
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
-              <span class="exercise-btn-stop-label">
-                {props.stopLabel ?? 'Stop & Score'}
-              </span>
             </button>
           </div>
         </Show>

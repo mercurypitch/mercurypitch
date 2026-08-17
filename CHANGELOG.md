@@ -5,6 +5,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **The Stop button got out of the way.** While a run is active, Stop is now
+  a small round icon button in the card's corner at every screen size — it
+  used to be a labelled full-width pill on a rail of its own, which on a
+  landscape tablet pushed the warmup canvas behind a scrollbar. The warmup's
+  step instructions also use the width a tablet has, so the breath step's
+  full text and the "Sssss" cue fit on screen together.
+
 ### Added
 
 - **The guided warmup counts you in.** Every step now opens with an audible

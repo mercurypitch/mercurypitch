@@ -281,33 +281,8 @@
     flex-shrink: 0;
   }
 
-  /* Stop → a round icon-only action button in the bottom-right corner,
-     out of the way of the centred content (was a centred full-width
-     pill). The text label is dropped in favour of the square icon; the
-     button keeps an aria-label so it still reads as "Stop & Score". */
-  .exercise-active-controls {
-    left: auto;
-    right: 14px;
-    bottom: 14px;
-    transform: none;
-    gap: 8px;
-  }
-  .exercise-btn-stop {
-    width: 54px;
-    height: 54px;
-    padding: 0;
-    border-radius: 50%;
-    justify-content: center;
-    gap: 0;
-    box-shadow: 0 6px 20px rgba(248, 81, 73, 0.35);
-  }
-  .exercise-btn-stop svg {
-    width: 20px;
-    height: 20px;
-  }
-  .exercise-btn-stop-label {
-    display: none;
-  }
+  /* Stop is a corner icon button at every size now (exercises.css); only
+     the safe-area offsets below are phone-specific. */
 
   /* Slide's ladder asks for 200px, which on a phone is 15px more than the
      column has once the tracker, the metrics row and Stop's strip have taken
@@ -347,7 +322,7 @@
     padding-bottom: calc(13px + var(--safe-bottom));
   }
   .exercise-canvas-area.is-active {
-    padding-bottom: calc(76px + var(--safe-bottom));
+    padding-bottom: calc(64px + var(--safe-bottom));
   }
   .exercise-active-controls {
     right: calc(14px + var(--safe-right));

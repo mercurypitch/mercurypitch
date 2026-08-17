@@ -210,3 +210,75 @@ test.describe('a running exercise keeps every element reachable', () => {
       })
     }
 })
+
+// The other half of the owner's Tab S9+ report: at ~800px of height (the
+// device's landscape viewport once browser chrome is subtracted) the warmup's
+// breath step SCROLLED — the bulky labelled Stop pill reserved a rail at the
+// bottom while the four-row instruction pushed the canvas past the fold, so
+// the "Sssss" cue at the canvas bottom sat behind a scroll. With the corner
+// icon Stop and the two-row instruction the whole step must simply fit.
+test.describe('the warmup breath step fits the fold', () => {
+  test.use({ viewport: { width: 1280, height: 800 } })
+
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('pitchperfect_advanced_features', 'true')
+    })
+  })
+
+  test('no scroll at 1280x800, Stop is a compact corner icon', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await waitForNav(page)
+    await dismissOverlays(page)
+
+    await openNavTab(page, 'tab-exercises')
+    await page.locator('.exercise-card', { hasText: 'Guided Warmup' }).first().click() // prettier-ignore
+
+    const start = page.locator('.exercise-btn-primary:has-text("Start")')
+    await expect(start).toBeVisible({ timeout: 10000 })
+    await start.scrollIntoViewIfNeeded()
+    await start.click()
+
+    const stop = page.locator('.exercise-btn-stop')
+    await expect(stop).toBeVisible({ timeout: 15000 })
+    await page.waitForTimeout(1500)
+
+    const fit = await page.evaluate(() => {
+      const area = document.querySelector('.exercise-canvas-area')
+      const instruction = document.querySelector('.warmup-step-instruction')
+      const canvas = document.querySelector('.warmup-canvas')
+      const stopBtn = document.querySelector('.exercise-btn-stop')
+      if (area === null || instruction === null || canvas === null || stopBtn === null) return null // prettier-ignore
+      area.scrollTop = 0
+      const areaRect = area.getBoundingClientRect()
+      const stopRect = stopBtn.getBoundingClientRect()
+      return {
+        overflow: area.scrollHeight - area.clientHeight,
+        instructionHeight: instruction.getBoundingClientRect().height,
+        canvasBottom: canvas.getBoundingClientRect().bottom,
+        areaBottom: areaRect.bottom,
+        stopWidth: stopRect.width,
+        stopHeight: stopRect.height,
+      }
+    })
+    expect(fit).not.toBeNull()
+
+    // The step must fit whole — a scrollbar here IS the bug.
+    expect(fit!.overflow).toBeLessThanOrEqual(1)
+    // The canvas (whose bottom carries the "Sssss" cue) ends on screen.
+    expect(fit!.canvasBottom).toBeLessThanOrEqual(fit!.areaBottom + 1)
+    // The widened instruction wraps to at most two rows of ~20px.
+    expect(fit!.instructionHeight).toBeLessThanOrEqual(46)
+    // Stop is the compact icon button, not a labelled pill or a 54px FAB.
+    expect(fit!.stopWidth).toBeGreaterThanOrEqual(40)
+    expect(fit!.stopWidth).toBeLessThanOrEqual(56)
+    expect(Math.abs(fit!.stopWidth - fit!.stopHeight)).toBeLessThanOrEqual(1)
+
+    await page.screenshot({
+      path: 'test-results/warmup-breath-fold-1280x800.png',
+    })
+  })
+})
