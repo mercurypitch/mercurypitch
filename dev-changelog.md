@@ -54,6 +54,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Room artwork was clipped by one element and painted by another.**
+  `.artwork` in `PremiumBackgroundPicker` sets `overflow: hidden` but is only
+  `position: relative` with `z-index: auto`, which does NOT create a stacking
+  context. Its `z-index: 2` image resolved into the nearest ancestor that does
+  — Piano Night's settings drawer, `transform`ed and `z-index: 90`. On iOS,
+  scrolling the drawer let the images slide out of their cards and float over
+  the panel while the card copy, which clips itself, stayed put.
+  `isolation: isolate` puts the image back inside the box that clips it. The
+  e2e walks each image up to its real paint root, which resolved to
+  `drawer drawerOpen` before this.
+
 - **`vite:preloadError` prevention turned a deploy into a `TypeError`.**
   `installChunkLoadRecovery` called `event.preventDefault()`. Vite's
   helper is `baseModule().catch(handlePreloadError)` and rethrows only
