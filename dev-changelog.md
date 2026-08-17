@@ -6,7 +6,7 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.0] - 2026-08-17
+## [0.9.0] - 2026-08-18
 
 ### Added
 
@@ -17,8 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   page is route-backed (`#/whats-new`), so it is deep-linkable, Back closes it,
   and the sidebar entry reopens it after it has been waved away. Content lives
   in `whats-new-content.tsx` and is drawn from this release's changelog.
-
-### Added
 
 - **`Spinner`, `BusyLink` and `BusyButton` in `components/shared`.** One
   spinner replaces the `.icon-spin` class, the ad-hoc `Loader2` imports and
@@ -74,6 +72,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Offline detector loops (transcription, fingerprinting, benchmarks) stay
   off the seam by default. Plan and phase-2 rollout map (jam, tuner,
   karaoke, mirror): `docs/plans/signal-quality-advisor.md`.
+
+### Changed
+
+- **Voice Control settings copy + button** (owner feedback, 2026-08-17):
+  SettingsPanel's section description rewritten (no "Hands-free
+  transport"; both discovery routes — Shift+V and the spoken "what can I
+  say" — kept, which settings-voice-help.test.tsx pins), the action
+  button is now `FileText` icon + "Command list", and
+  `.settingsActionRow` gained `margin-bottom: 18px` so it no longer welds
+  to the Recognition Engine dropdown. New pin: button text/icon and the
+  jargon's absence.
+
+- **Stop is one corner icon button at every viewport** (owner report,
+  2026-08-17, Tab S9+ landscape ~800px height): `.exercise-btn-stop` is a
+  48px round icon-only button (aria-label + title carry the label) anchored
+  bottom-right by `.exercise-active-controls`; the labelled centre pill and
+  the two duplicate 54px FAB blocks in short-viewport.css /
+  mobile-polish.css are gone, and their 76px reserved strip is the base
+  64px everywhere. `.warmup-step-instruction` max-width 420 → 640px so the
+  breath step wraps to two rows instead of four — the rows plus the rail
+  were what scrolled the "Sssss" cue off a 1280x800 tablet. Pinned by
+  "the warmup breath step fits the fold" (exercise-tablet-active.spec.ts:
+  no overflow at 1280x800, compact square Stop, two-row instruction) and
+  the icon-only contract in exercise-shell-timer.test.tsx.
+
+- **Held-note run length and duration grading** (owner call, 2026-08-17):
+  `DEFAULT_PREFERENCE.mode` 5 → 10 in timer-preference.ts (persisted
+  choices untouched). Long-note's duration term is now
+  `voicedSeconds(history) / (activeTimerSeconds() ?? difficulty target)`
+  — `voicedSeconds` (exercise-scoring-utils.ts) sums inter-sample gaps
+  ≤ 0.25 s, so pre-onset settling and mid-run silence cost coverage only;
+  pitch-quality terms never saw silence (history records voiced frames
+  only). Pitch-hold's term uses its post-phonation frame counter
+  (`totalFrames / SCORE_UPDATE_HZ`) against the same goal, keeping its
+  documented leading-silence forgiveness. A perfect timed run now scores
+  100 (was capped ~90 long-note / ~63 pitch-hold). Pinned in
+  exercise-long-note.test.ts, exercise-pitch-hold.test.ts,
+  timer-preference.test.ts; mutation-checked both ways.
+
+- **Rep-run flow: the shell and ribbon close the multi-rep gap.**
+  `ExerciseShell` derives `repRun` from `useDailyRoutine` (current segment
+  runs this drill, banked > 0, banked < reps) to relabel the dual-purpose
+  button and compact the result card (no `RunTraceCanvas`, no `tier-pop`
+  re-animation via `.mid-reps`). `RoutineRibbon` gains `isComplete`/
+  `onRunAgain` props and reduces its countdown to a single
+  `countdownTarget` memo — segment | 'run' | 'cancel' | null — restarting
+  the clock whenever the destination changes, so the interval can never
+  fire a stale closure (the prior shape kept a live countdown aimed at a
+  target that no longer existed when the last run banked mid-count).
+
+- **Routine segments carry reps, and the session has a five-minute floor.**
+  `segment-reps.ts` holds a per-drill table of what one honest run costs
+  (30s for held-note drills, 45s for pattern drills, 60s for the long ones),
+  derives `reps` from the segment's budget (capped at `MAX_REPS` 6), and makes
+  the segment's `durationSec` the reps rather than the guess. `applyReps` then
+  tops a session up to `MIN_SESSION_SEC` (300s, the streak's own daily goal),
+  always adding to the shortest drill, and only pushes a single drill past the
+  comfortable cap to `MAX_REPS_FLOOR` (8) when a focus template has nowhere
+  else to put the minutes. Both build paths use it — `buildDailySession` and
+  `materializeRoutine` — so generated days, library templates and every length
+  clear the floor. `autoAdvanceRoutineSegment` banks runs in
+  `PersistedRoutine.segmentRuns` and ticks the segment off only when it has
+  what it asked for; `completeSegment` clears the count. `reps` is optional and
+  absent reads as one, so a routine persisted or shared before this keeps the
+  finish line it started with. The Home card shows "5 x" per drill and "2 of 5"
+  for the one in progress; the exercise ribbon shows "Run 2 of 5", which is
+  also what stops auto-continue offering the next segment mid-reps.
+- **The warmup honors its authored count-in, audibly.** Every warmup block
+  always carried `countInBeats: 2` and no runtime read it — steps began the
+  frame the previous one ended. `warmup-lead-in.ts` adds `applyLeadIn` (the
+  challenge-stage pattern: targets shifted late, loop extended, count-in
+  consumed so it cannot double) applied at the session seam, and a pure
+  `createLeadInTicker` the component samples per pitch frame to click each
+  lead-in beat once — plus the first note's reference tone at beat zero.
+  Guide tones during the run come from `createZenNoteScheduler` wired
+  through the app AudioEngine (deliberately NOT ZenPitchStage's private
+  AudioContext, which connects to the bare destination and closes mid-tone),
+  behind a persisted mute (`pitchperfect_warmup_guide_muted`). Steps are
+  separated by `WARMUP_STEP_GAP_SECONDS` with a "next:" phase line;
+  `melodyTargets` takes an explicit quarter-beat rest instead of the
+  implicit 18% duty; the nine-note scales grew to twelve beats; and
+  `warmupTotalSeconds` prices lead-ins and gaps instead of the 0.45 s/note
+  reference-tone fiction deleted in 7a4821dc.
+
+- **The Lab became a route-backed focused workspace.** The app shell maps five
+  hidden Lab routes to task-led tools, removes unrelated app navigation only
+  while one of those routes is active, and keeps supporter access fail-closed.
+  The desktop tablist uses roving focus with Arrow/Home/End navigation; compact
+  layouts use a tool picker. Each tool has its own error boundary, and inactive
+  tools unmount so their audio, microphone, timers and global handlers clean up.
+
+- **All five Lab tools now share one responsive instrument vocabulary.** A
+  Lab-local palette derives every surface and accent from app theme tokens.
+  Workbench, detector, benchmark, transcription and mapping layouts now expose
+  one clear primary task, progressive detail, meaningful empty/error states and
+  short-height/tablet rules. The four previously unstyled workbench controls
+  moved from inline literals to scoped CSS modules. Pane and waveform splitters
+  gained real pointer coverage plus keyboard/ARIA semantics.
 
 ### Fixed
 
@@ -399,8 +495,6 @@ var(--safe-bottom))` — a gap _under_ the button paid inside its own
   subscribes to `authVersion()` too. Pinned in home-daily-goal.test.ts
   (owner-swap memo case + both wiring regexes).
 
-### Fixed
-
 - **Streak repair window bounds the break, not its detection** (owner
   repro, 2026-08-17): `advanceStreakFrom`'s reset branch stamped
   `streakResetDate = today` and snapshotted `previousStreak`
@@ -436,108 +530,6 @@ currentStreak >= 2` (parity with `hasPendingBreak`), and
   fetches still resolve to the signed-out card rather than spinning.
   Pinned by auth-state-probe.test.tsx (4 cases: probe-then-signed-in,
   probe-then-signed-out, both components).
-
-### Changed
-
-- **Voice Control settings copy + button** (owner feedback, 2026-08-17):
-  SettingsPanel's section description rewritten (no "Hands-free
-  transport"; both discovery routes — Shift+V and the spoken "what can I
-  say" — kept, which settings-voice-help.test.tsx pins), the action
-  button is now `FileText` icon + "Command list", and
-  `.settingsActionRow` gained `margin-bottom: 18px` so it no longer welds
-  to the Recognition Engine dropdown. New pin: button text/icon and the
-  jargon's absence.
-
-### Changed
-
-- **Stop is one corner icon button at every viewport** (owner report,
-  2026-08-17, Tab S9+ landscape ~800px height): `.exercise-btn-stop` is a
-  48px round icon-only button (aria-label + title carry the label) anchored
-  bottom-right by `.exercise-active-controls`; the labelled centre pill and
-  the two duplicate 54px FAB blocks in short-viewport.css /
-  mobile-polish.css are gone, and their 76px reserved strip is the base
-  64px everywhere. `.warmup-step-instruction` max-width 420 → 640px so the
-  breath step wraps to two rows instead of four — the rows plus the rail
-  were what scrolled the "Sssss" cue off a 1280x800 tablet. Pinned by
-  "the warmup breath step fits the fold" (exercise-tablet-active.spec.ts:
-  no overflow at 1280x800, compact square Stop, two-row instruction) and
-  the icon-only contract in exercise-shell-timer.test.tsx.
-
-- **Held-note run length and duration grading** (owner call, 2026-08-17):
-  `DEFAULT_PREFERENCE.mode` 5 → 10 in timer-preference.ts (persisted
-  choices untouched). Long-note's duration term is now
-  `voicedSeconds(history) / (activeTimerSeconds() ?? difficulty target)`
-  — `voicedSeconds` (exercise-scoring-utils.ts) sums inter-sample gaps
-  ≤ 0.25 s, so pre-onset settling and mid-run silence cost coverage only;
-  pitch-quality terms never saw silence (history records voiced frames
-  only). Pitch-hold's term uses its post-phonation frame counter
-  (`totalFrames / SCORE_UPDATE_HZ`) against the same goal, keeping its
-  documented leading-silence forgiveness. A perfect timed run now scores
-  100 (was capped ~90 long-note / ~63 pitch-hold). Pinned in
-  exercise-long-note.test.ts, exercise-pitch-hold.test.ts,
-  timer-preference.test.ts; mutation-checked both ways.
-
-- **Rep-run flow: the shell and ribbon close the multi-rep gap.**
-  `ExerciseShell` derives `repRun` from `useDailyRoutine` (current segment
-  runs this drill, banked > 0, banked < reps) to relabel the dual-purpose
-  button and compact the result card (no `RunTraceCanvas`, no `tier-pop`
-  re-animation via `.mid-reps`). `RoutineRibbon` gains `isComplete`/
-  `onRunAgain` props and reduces its countdown to a single
-  `countdownTarget` memo — segment | 'run' | 'cancel' | null — restarting
-  the clock whenever the destination changes, so the interval can never
-  fire a stale closure (the prior shape kept a live countdown aimed at a
-  target that no longer existed when the last run banked mid-count).
-
-- **Routine segments carry reps, and the session has a five-minute floor.**
-  `segment-reps.ts` holds a per-drill table of what one honest run costs
-  (30s for held-note drills, 45s for pattern drills, 60s for the long ones),
-  derives `reps` from the segment's budget (capped at `MAX_REPS` 6), and makes
-  the segment's `durationSec` the reps rather than the guess. `applyReps` then
-  tops a session up to `MIN_SESSION_SEC` (300s, the streak's own daily goal),
-  always adding to the shortest drill, and only pushes a single drill past the
-  comfortable cap to `MAX_REPS_FLOOR` (8) when a focus template has nowhere
-  else to put the minutes. Both build paths use it — `buildDailySession` and
-  `materializeRoutine` — so generated days, library templates and every length
-  clear the floor. `autoAdvanceRoutineSegment` banks runs in
-  `PersistedRoutine.segmentRuns` and ticks the segment off only when it has
-  what it asked for; `completeSegment` clears the count. `reps` is optional and
-  absent reads as one, so a routine persisted or shared before this keeps the
-  finish line it started with. The Home card shows "5 x" per drill and "2 of 5"
-  for the one in progress; the exercise ribbon shows "Run 2 of 5", which is
-  also what stops auto-continue offering the next segment mid-reps.
-- **The warmup honors its authored count-in, audibly.** Every warmup block
-  always carried `countInBeats: 2` and no runtime read it — steps began the
-  frame the previous one ended. `warmup-lead-in.ts` adds `applyLeadIn` (the
-  challenge-stage pattern: targets shifted late, loop extended, count-in
-  consumed so it cannot double) applied at the session seam, and a pure
-  `createLeadInTicker` the component samples per pitch frame to click each
-  lead-in beat once — plus the first note's reference tone at beat zero.
-  Guide tones during the run come from `createZenNoteScheduler` wired
-  through the app AudioEngine (deliberately NOT ZenPitchStage's private
-  AudioContext, which connects to the bare destination and closes mid-tone),
-  behind a persisted mute (`pitchperfect_warmup_guide_muted`). Steps are
-  separated by `WARMUP_STEP_GAP_SECONDS` with a "next:" phase line;
-  `melodyTargets` takes an explicit quarter-beat rest instead of the
-  implicit 18% duty; the nine-note scales grew to twelve beats; and
-  `warmupTotalSeconds` prices lead-ins and gaps instead of the 0.45 s/note
-  reference-tone fiction deleted in 7a4821dc.
-
-- **The Lab became a route-backed focused workspace.** The app shell maps five
-  hidden Lab routes to task-led tools, removes unrelated app navigation only
-  while one of those routes is active, and keeps supporter access fail-closed.
-  The desktop tablist uses roving focus with Arrow/Home/End navigation; compact
-  layouts use a tool picker. Each tool has its own error boundary, and inactive
-  tools unmount so their audio, microphone, timers and global handlers clean up.
-
-- **All five Lab tools now share one responsive instrument vocabulary.** A
-  Lab-local palette derives every surface and accent from app theme tokens.
-  Workbench, detector, benchmark, transcription and mapping layouts now expose
-  one clear primary task, progressive detail, meaningful empty/error states and
-  short-height/tablet rules. The four previously unstyled workbench controls
-  moved from inline literals to scoped CSS modules. Pane and waveform splitters
-  gained real pointer coverage plus keyboard/ARIA semantics.
-
-### Fixed
 
 - **HomePage's daily-goal readout was non-reactive**: `getTodayScoredMinutes`
   read once per mount and the streak `createResource` had no dependency on
