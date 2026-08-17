@@ -53,6 +53,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   also deletes every Cache Storage entry and unregisters all service
   workers before reloading; teardown failure still reloads. Pinned in
   CrashModal.test.tsx.
+- **Google sign-in buttons show pending state** (owner report,
+  2026-08-17, slow connection): `startGoogleSignIn` FETCHES the consent
+  URL (device secret rides in a POST body), and that round trip gave no
+  feedback. `google-sign-in.ts` now exports a shared
+  `googleSignInPending` signal — set before the fetch, kept true after a
+  successful start (the page is unloading; re-enabling invites a double
+  redirect), cleared on failure; a second call while pending is a no-op.
+  All three surfaces (AuthModal, AccountSection, KaraokeAccount) disable
+  their button and swap the label to "Opening Google…".
+  google-sign-in.test.ts pins the signal lifecycle, the double-click
+  swallow, and the three wirings.
 
 ### Fixed
 

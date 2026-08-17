@@ -18,11 +18,39 @@
 // show it stays with the component, and deciding *when there is something to
 // show* stops being copied.
 
+import { createSignal } from 'solid-js'
 import { googleSignInUrl } from '@/db/services/auth-service'
 
 /** Shown when the consent URL could not be fetched. */
 export const GOOGLE_SIGN_IN_UNREACHABLE =
   'Could not reach Google sign-in. Try again.'
+
+// The consent URL is FETCHED (see below), and on a slow connection that
+// round trip took visible seconds during which the button gave no sign it
+// had been pressed — so people pressed it again (owner report, 2026-08-17).
+// One shared pending signal, because there are three buttons: each shows
+// its own busy state, and a second press anywhere is ignored while the
+// first is in flight. It stays true after a successful start on purpose —
+// the page is about to unload, and re-enabling the button for that last
+// instant invites the double-redirect this exists to prevent.
+const [pending, setPending] = createSignal(false)
+export const googleSignInPending = pending
+
+/** Test seam: in production the page unloads after a successful start. */
+export function resetGoogleSignInPending(): void {
+  setPending(false)
+}
+
+// The one production path where the page does NOT unload after a
+// successful start: the singer reaches Google's consent screen and
+// presses Back, and the browser restores this page from the back-forward
+// cache — JavaScript state intact, pending stuck true, button dead.
+// pageshow with `persisted` is exactly that restoration.
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) setPending(false)
+  })
+}
 
 /**
  * Send the browser to Google's consent screen.
@@ -38,10 +66,13 @@ export const GOOGLE_SIGN_IN_UNREACHABLE =
  * looking dead.
  */
 export async function startGoogleSignIn(): Promise<string | null> {
+  if (pending()) return null
+  setPending(true)
   try {
     window.location.assign(await googleSignInUrl())
     return null
   } catch {
+    setPending(false)
     return GOOGLE_SIGN_IN_UNREACHABLE
   }
 }

@@ -16,10 +16,11 @@ vi.mock('@/db/services/auth-service', () => ({
   googleSignInUrl: mocks.googleSignInUrl,
 }))
 
-import { GOOGLE_SIGN_IN_UNREACHABLE, startGoogleSignIn, } from '@/lib/google-sign-in'
+import { GOOGLE_SIGN_IN_UNREACHABLE, googleSignInPending, resetGoogleSignInPending, startGoogleSignIn, } from '@/lib/google-sign-in'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  resetGoogleSignInPending()
   mocks.googleSignInUrl.mockResolvedValue(
     'https://accounts.google.com/consent?x=1',
   )
@@ -57,5 +58,49 @@ describe('startGoogleSignIn', () => {
     mocks.googleSignInUrl.mockRejectedValue(new Error('500'))
 
     await expect(startGoogleSignIn()).resolves.not.toThrow()
+  })
+
+  it('is pending while the consent url is in flight, and eats the double click', async () => {
+    // On a slow connection the fetch takes visible seconds; the buttons
+    // read this signal to disable themselves and show progress, and a
+    // second press must not start a second redirect (owner report,
+    // 2026-08-17).
+    let release: (url: string) => void = () => {}
+    mocks.googleSignInUrl.mockReturnValue(
+      new Promise<string>((resolve) => {
+        release = resolve
+      }),
+    )
+
+    const first = startGoogleSignIn()
+    expect(googleSignInPending()).toBe(true)
+    await expect(startGoogleSignIn()).resolves.toBeNull() // the double click
+    release('https://accounts.google.com/consent?x=2')
+    await first
+
+    expect(mocks.googleSignInUrl).toHaveBeenCalledTimes(1)
+    expect(mocks.assign).toHaveBeenCalledTimes(1)
+    // Still pending after success: the page is about to unload, and
+    // re-enabling for that instant invites the double redirect.
+    expect(googleSignInPending()).toBe(true)
+  })
+
+  it('clears pending after a failure so the button works again', async () => {
+    mocks.googleSignInUrl.mockRejectedValue(new Error('offline'))
+    await startGoogleSignIn()
+    expect(googleSignInPending()).toBe(false)
+  })
+
+  it('every Google button is wired to the shared pending state', async () => {
+    const { readFileSync } = await import('node:fs')
+    for (const file of [
+      'src/components/account/AuthModal.tsx',
+      'src/components/account/AccountSection.tsx',
+      'src/features/karaoke-night/KaraokeAccount.tsx',
+    ]) {
+      const source = readFileSync(file, 'utf8')
+      expect(source, file).toContain('disabled={googleSignInPending()}')
+      expect(source, file).toContain("'Opening Google\\u2026'")
+    }
   })
 })

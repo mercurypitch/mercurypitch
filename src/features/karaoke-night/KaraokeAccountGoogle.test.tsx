@@ -21,6 +21,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetGoogleSignInPending } from '@/lib/google-sign-in'
 
 const mocks = vi.hoisted(() => ({
   googleSignInUrl: vi.fn(async () => 'https://accounts.google.com/consent?x=1'),
@@ -48,6 +49,7 @@ vi.mock('@/stores/notifications-store', () => ({ showNotification: vi.fn() }))
 import { KaraokeAccount } from '@/features/karaoke-night/KaraokeAccount'
 
 beforeEach(() => {
+  resetGoogleSignInPending()
   vi.clearAllMocks()
   mocks.googleSignInUrl.mockResolvedValue(
     'https://accounts.google.com/consent?x=1',

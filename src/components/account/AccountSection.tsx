@@ -22,7 +22,7 @@ import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/ser
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
-import { startGoogleSignIn } from '@/lib/google-sign-in'
+import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
@@ -373,9 +373,12 @@ export const AccountSection: Component = () => {
                   class={styles.googleButton}
                   onClick={() => void onGoogleSignIn()}
                   data-testid="google-signin"
+                  disabled={googleSignInPending()}
                 >
                   <GoogleMark />
-                  Sign in with Google
+                  {googleSignInPending()
+                    ? 'Opening Google\u2026'
+                    : 'Sign in with Google'}
                 </button>
               </div>
             </div>

@@ -6,6 +6,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetGoogleSignInPending } from '@/lib/google-sign-in'
 
 const mocks = vi.hoisted(() => ({
   loginWithPassword: vi.fn(),
@@ -20,6 +21,7 @@ import { closeAuthModal, openAuthModal } from '@/stores/ui-store'
 import { AuthModal } from '../account/AuthModal'
 
 beforeEach(() => {
+  resetGoogleSignInPending()
   vi.clearAllMocks()
   closeAuthModal()
 })
