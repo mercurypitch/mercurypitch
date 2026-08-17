@@ -544,6 +544,14 @@
   filter: brightness(1.08);
 }
 
+/* A note the touch window does not reach has no key to sit over. It is pinned
+   to the edge it fell off and narrowed, so it reads as "there is music that
+   way, step the octave" instead of as a note pointing at the wrong key. */
+.fallNoteOffWindow {
+  width: 9px;
+  opacity: 0.3;
+}
+
 .strikeGuide {
   position: absolute;
   right: 0;

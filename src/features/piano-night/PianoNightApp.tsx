@@ -14,6 +14,7 @@ import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import { createPianoKeyWindowController } from './piano-key-window'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
 import type { PianoNightPracticeRange } from './piano-night-practice-loop'
@@ -315,6 +316,10 @@ function formatClock(elapsedSeconds: number): string {
 
 export function PianoNightApp(): JSX.Element {
   const controller = usePianoNightController()
+  // Owned here so the keybed and the fall stage cannot disagree about which
+  // keys are on screen — the bug that put every falling note a key to the
+  // left of its own key on a phone.
+  const keyWindow = createPianoKeyWindowController()
   const background = useBackgroundSurfaceController('piano')
   const [view, setView] = createSignal<PianoNightPerformanceView>('fall')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
@@ -836,10 +841,12 @@ export function PianoNightApp(): JSX.Element {
           isPlaying={isPlaying}
           phrase={phrase}
           activeMidis={controller.activeMidis}
+          keyWindow={keyWindow.window}
           reducedMotion={controller.reducedMotion}
         />
 
         <PianoKeyHorizon
+          keyWindow={keyWindow}
           activeMidis={controller.activeMidis}
           onPointerDown={controller.pressTouchKey}
           onPointerMove={controller.moveTouchKey}

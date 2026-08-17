@@ -54,6 +54,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Piano Night's falling notes were measured against a different keyboard
+  than the one on screen.** `PianoKeyHorizon` lays keys out by WHITE-KEY index
+  and narrows to a two-octave touch window on a phone; `PianoNightStageViews`
+  mapped MIDI linearly across all 88 keys (`(midi - 21) / 87`) and read no
+  window at all. On a desktop the two agreed to within half a percent. On a
+  phone the keybed showed fifteen white keys across the full width while notes
+  were still divided by 87 semitones — measured at 390px, a note drifted
+  **103px** from its key — and the octave arrows moved the keys while every
+  note stayed exactly where it was. New `piano-key-window.ts` owns the window
+  as a value and `keyCenterPercent` as the one geometry both sides read;
+  `createPianoKeyWindowController` owns it once, in `PianoNightApp`. Notes the
+  window cannot reach are pinned to the edge they fell off and marked
+  `data-off-window`, so they read as "there is music that way" instead of
+  pointing at a key that is not theirs. **The arrows change only which keys
+  are on screen — they never transposed anything, and still do not.**
+
 - **Room artwork was clipped by one element and painted by another.**
   `.artwork` in `PremiumBackgroundPicker` sets `overflow: hidden` but is only
   `position: relative` with `z-index: auto`, which does NOT create a stacking
