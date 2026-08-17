@@ -83,6 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   holds that production payload against the worker's own `validateWrite` —
   closing the gap that let this ship green (every prior test mocked
   `saveSessionRecord`).
+- **The running exercise view used plain (unsafe) `center` in three places
+  a scroller cannot recover from** — `.exercise-active-content` (stacked
+  path) and the short-viewport row layout's stage cross-axis and content
+  column. Content overflowing a flex container's START edge is unreachable
+  by any scrolling; from ~740px of viewport height the warmup's step text
+  left the screen (step name gone by 660). All three are now `safe center`,
+  the same cure `.is-idle` received earlier. Pinned by four new
+  reachability e2e tests (warmup + interval trainer at 1280x740 and
+  1280x660) asserting nothing inside `.exercise-active-stage` sits above
+  its start edge — the warmup pair failed pre-fix.
 
 - **Home's week strip counted only the device-local mirror
   (CLAUDE-JOURNEY-009).** `weekStats` filtered `exerciseHistory()` — the
