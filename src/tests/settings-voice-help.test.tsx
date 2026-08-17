@@ -75,4 +75,17 @@ describe('Settings voice-control help', () => {
     expect(text).toContain('what can I say')
     expect(text).toContain('Shift+V')
   })
+
+  it('names the button plainly, with an icon, and no transport jargon', () => {
+    // Owner feedback (2026-08-17): "Hands-free transport" read as noise,
+    // and the long button label was glued to the engine dropdown below.
+    const container = openSingingTab()
+    const button = container.querySelector<HTMLButtonElement>(
+      '[data-testid="settings-voice-commands"]',
+    )
+    expect(button).not.toBeNull()
+    expect(button!.textContent).toContain('Command list')
+    expect(button!.querySelector('svg')).not.toBeNull()
+    expect(container.textContent).not.toContain('Hands-free transport')
+  })
 })

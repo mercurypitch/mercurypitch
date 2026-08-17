@@ -803,6 +803,9 @@ input:checked + .settingsSlider:before {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 4px;
+  /* Breathing room before whatever row follows — the voice-commands
+     button sat welded to the engine dropdown beneath it. */
+  margin-bottom: 18px;
 }
 
 .settingsActionBtn {
