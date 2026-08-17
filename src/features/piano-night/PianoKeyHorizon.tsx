@@ -6,7 +6,7 @@
 // instrument but expose a two-octave touch window with explicit range steps.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createEffect, createSignal, For } from 'solid-js'
+import { createEffect, createSignal, For, on, onCleanup } from 'solid-js'
 import { ChevronLeft } from '@/components/icons'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PianoKey, PianoKeyWindowController } from './piano-key-window'
@@ -29,8 +29,12 @@ interface PianoKeyHorizonProps {
 const WHITE_KEYS = PIANO_KEYS.filter((key) => !key.black)
 const BLACK_KEYS = PIANO_KEYS.filter((key) => key.black)
 
+/** How long the range reads out after it changes, before fading back. */
+const RANGE_READOUT_MS = 1800
+
 export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
   const [focusedMidi, setFocusedMidi] = createSignal(60)
+  const [rangeReadout, setRangeReadout] = createSignal(false)
   let keyboardElement: HTMLDivElement | undefined
 
   const window = () => props.keyWindow.window()
@@ -70,6 +74,27 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
       moveKeyboardFocus(midi, 1)
     }
   }
+
+  // The readout names the two octaves on screen, which only matters at the
+  // moment they change — the rest of the time it is a label sitting on the
+  // keys. It shows itself when the window moves and fades back out. Focus
+  // keeps it up too, since a keyboard user cannot see the arrows light up.
+  let readoutTimer: ReturnType<typeof setTimeout> | undefined
+  createEffect(
+    on(
+      () => props.keyWindow.window(),
+      () => {
+        clearTimeout(readoutTimer)
+        setRangeReadout(true)
+        readoutTimer = setTimeout(
+          () => setRangeReadout(false),
+          RANGE_READOUT_MS,
+        )
+      },
+      { defer: true },
+    ),
+  )
+  onCleanup(() => clearTimeout(readoutTimer))
 
   // Roving focus has to stay on a key that is on screen. This covers both
   // ways the window can move under it: the media query flipping to the
@@ -150,7 +175,11 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
         Use the arrow keys to move between piano keys and Enter to play the
         focused key.
       </p>
-      <div class={styles.keyboardRange} aria-label="Touch keyboard range">
+      <div
+        class={styles.keyboardRange}
+        aria-label="Touch keyboard range"
+        data-reading={rangeReadout()}
+      >
         <button
           type="button"
           onClick={() => props.keyWindow.step(-1)}

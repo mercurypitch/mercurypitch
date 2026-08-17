@@ -1180,18 +1180,40 @@
   pointer-events: none;
 }
 
+/* The touch target stays 44px; the drawn circle does not. These sit on top of
+   the outermost white keys with nowhere else to go, so the button keeps its
+   full hit area as transparent padding and only the inner disc is painted. */
 .keyboardRange button {
+  position: relative;
   display: grid;
   width: 44px;
   height: 44px;
-  padding: 0;
+  padding: 6px;
   place-items: center;
-  border: 1px solid rgb(224 207 180 / 32%);
-  border-radius: 50%;
+  border: 0;
   color: var(--ivory-strong);
-  background: rgb(5 7 9 / 82%);
-  box-shadow: 0 8px 18px rgb(0 0 0 / 24%);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.62;
   pointer-events: auto;
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.keyboardRange button::before {
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgb(224 207 180 / 28%);
+  border-radius: 50%;
+  background: rgb(5 7 9 / 74%);
+  content: '';
+}
+
+.keyboardRange button:active,
+.keyboardRange button:focus-visible,
+.keyboardRange[data-reading='true'] button {
+  opacity: 1;
 }
 
 .keyboardRange button:last-child svg {
@@ -1203,8 +1225,21 @@
 }
 
 .keyboardRange svg {
-  width: 18px;
-  height: 18px;
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+/* The readout names what is on screen, which is only news when it changes.
+   It fades back out rather than sitting on the keys for the whole session. */
+.keyboardRange span {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.keyboardRange[data-reading='true'] span,
+.keyboardRange:has(button:focus-visible) span {
+  opacity: 1;
 }
 
 .keyboardRange span {

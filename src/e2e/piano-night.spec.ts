@@ -1473,3 +1473,62 @@ test('gives the phone rail state, a way back, and a second press @smoke', async 
     await context.close()
   }
 })
+
+test('keeps the octave chrome off the keys until it has something to say @smoke', async ({
+  browser,
+}) => {
+  // The range label and the two arrows sit on top of the outermost white keys,
+  // because on a phone keybed there is nowhere else for them. They do not have
+  // to be loud about it: the label names what is on screen, which is only news
+  // when it changes, and the arrows keep their full 44px target while drawing
+  // a smaller disc.
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+
+  try {
+    await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+    const range = page.getByLabel('Touch keyboard range')
+    await expect(range).toBeVisible()
+
+    const label = range.locator('span')
+    const opacity = () =>
+      label.evaluate((element) => Number(getComputedStyle(element).opacity))
+
+    // The compact keyboard introduces itself when it first appears, then the
+    // readout settles out of the way.
+    await expect.poll(opacity, { timeout: 6000 }).toBe(0)
+
+    const up = page.getByRole('button', {
+      name: 'Move touch keyboard up one octave',
+    })
+    await up.click()
+    // It says which two octaves you landed on, then gets out of the way.
+    await expect(label).toHaveText(/C4–C6/)
+    // The fade in is a transition, so poll rather than sampling mid-flight.
+    await expect.poll(opacity, { timeout: 2000 }).toBe(1)
+    await expect.poll(opacity, { timeout: 6000 }).toBe(0)
+
+    // The target never shrinks, whatever the disc does.
+    for (const arrow of [
+      up,
+      page.getByRole('button', {
+        name: 'Move touch keyboard down one octave',
+      }),
+    ]) {
+      const box = await arrow.boundingBox()
+      expect(box?.width).toBeGreaterThanOrEqual(44)
+      expect(box?.height).toBeGreaterThanOrEqual(44)
+      // The painted disc is smaller than the target it answers for.
+      const disc = await arrow.evaluate(
+        (element) => getComputedStyle(element, '::before').width,
+      )
+      expect(Number.parseFloat(disc)).toBeLessThan(44)
+    }
+  } finally {
+    await context.close()
+  }
+})

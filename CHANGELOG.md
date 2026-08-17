@@ -24,6 +24,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The octave controls stop crowding the piano keys.** On a phone the two
+  arrows are smaller and quieter, and the octave label appears when you change
+  octave and then fades, rather than sitting on the keys the whole time.
+
 - **The count-in number is where you can read it.** On a phone it appeared at
   the very top of the screen, half cut off behind the header. It sits just
   above the transport controls now.
