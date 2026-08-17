@@ -22,6 +22,18 @@ currentStreak >= 2` (parity with `hasPendingBreak`), and
   `hasRecordedReset` requires `previousStreak >= 2` against legacy rows.
   Pinned by the "repair window bounds the break" describe in
   streak-service.test.ts, including the owner's exact row.
+- **AdminContentStudio owns a Suspense boundary for its section body**
+  (owner report, 2026-08-17): AdminWeeklyPage is the only section that
+  reads a resource during render (`rows` -> `listAllWeekly`), and the
+  nearest boundary above it was App.tsx's fallback-less Suspense around
+  the whole lazy studio — Solid detached the entire overlay (the visible
+  "panel closes and reopens") until `/api/weekly/all` resolved. The
+  studio now wraps its section `<Switch>` in
+  `<Suspense fallback={sectionLoading spinner}>`, so the chrome stays and
+  only the workspace shows the wait. Pinned by
+  admin-studio-weekly-suspense.test.tsx (outer boundary never triggers,
+  chrome heading stays, `role="status"` announces the load, resolves
+  clean).
 
 ### Changed
 

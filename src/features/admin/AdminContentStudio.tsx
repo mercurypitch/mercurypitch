@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js'
-import { createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { createSignal, For, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { X } from '@/components/icons'
 import { AdminWeeklyPage } from '@/features/challenges/AdminWeeklyPage'
@@ -398,48 +398,67 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                   </div>
                 </div>
 
-                <Switch>
-                  <Match when={props.section === 'weekly'}>
-                    <AdminWeeklyPage
-                      embedded
-                      class={styles.weeklyAdmin}
-                      adminKey={verifiedKey()}
-                      onDirtyChange={setContentDirty}
-                    />
-                  </Match>
-                  <Match when={props.section === 'ascent'}>
-                    <AdminAscentPage
-                      adminKey={verifiedKey()}
-                      onAssignmentsChanged={refreshRuntimeContent}
-                      onDirtyChange={setContentDirty}
-                    />
-                  </Match>
-                  <Match when={props.section === 'exercises'}>
-                    <AdminExercisesPage
-                      adminKey={verifiedKey()}
-                      onPublished={refreshRuntimeContent}
-                      onDirtyChange={setContentDirty}
-                    />
-                  </Match>
-                  <Match when={props.section === 'achievements'}>
-                    <AdminAchievementsPage
-                      adminKey={verifiedKey()}
-                      onDirtyChange={setContentDirty}
-                    />
-                  </Match>
-                  <Match when={props.section === 'demo-song'}>
-                    <AdminDemoSongPage
-                      adminKey={verifiedKey()}
-                      onDirtyChange={setContentDirty}
-                    />
-                  </Match>
-                  <Match when={props.section === 'premium-perks'}>
-                    <AdminPremiumPerksPage
-                      adminKey={verifiedKey()}
-                      onDirtyChange={setContentDirty}
-                    />
-                  </Match>
-                </Switch>
+                {/* The studio's OWN Suspense boundary. The nearest one above
+                    is App's, wrapping the whole lazy studio with no fallback
+                    — so a section that suspends mid-session (Weekly reads a
+                    rows resource during render) detached the entire overlay
+                    and the panel visibly "closed and reopened" on a slow
+                    link. Caught here, the chrome stays and only the section
+                    body shows the wait. */}
+                <Suspense
+                  fallback={
+                    <div class={styles.sectionLoading} role="status">
+                      <span
+                        class={styles.sectionLoadingSpinner}
+                        aria-hidden="true"
+                      />
+                      Loading {currentSection().label}…
+                    </div>
+                  }
+                >
+                  <Switch>
+                    <Match when={props.section === 'weekly'}>
+                      <AdminWeeklyPage
+                        embedded
+                        class={styles.weeklyAdmin}
+                        adminKey={verifiedKey()}
+                        onDirtyChange={setContentDirty}
+                      />
+                    </Match>
+                    <Match when={props.section === 'ascent'}>
+                      <AdminAscentPage
+                        adminKey={verifiedKey()}
+                        onAssignmentsChanged={refreshRuntimeContent}
+                        onDirtyChange={setContentDirty}
+                      />
+                    </Match>
+                    <Match when={props.section === 'exercises'}>
+                      <AdminExercisesPage
+                        adminKey={verifiedKey()}
+                        onPublished={refreshRuntimeContent}
+                        onDirtyChange={setContentDirty}
+                      />
+                    </Match>
+                    <Match when={props.section === 'achievements'}>
+                      <AdminAchievementsPage
+                        adminKey={verifiedKey()}
+                        onDirtyChange={setContentDirty}
+                      />
+                    </Match>
+                    <Match when={props.section === 'demo-song'}>
+                      <AdminDemoSongPage
+                        adminKey={verifiedKey()}
+                        onDirtyChange={setContentDirty}
+                      />
+                    </Match>
+                    <Match when={props.section === 'premium-perks'}>
+                      <AdminPremiumPerksPage
+                        adminKey={verifiedKey()}
+                        onDirtyChange={setContentDirty}
+                      />
+                    </Match>
+                  </Switch>
+                </Suspense>
               </div>
             </Show>
           </main>
