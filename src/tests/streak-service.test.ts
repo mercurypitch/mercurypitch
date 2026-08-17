@@ -478,12 +478,15 @@ describe('the high-water invariant', () => {
     // The other non-raising branch. Practise once, break it, practise once —
     // which is what 59 of the 60 production rows had been doing — and the
     // reset drops `currentStreak` to 1 without ever touching the record.
+    // The break is 42 days old and the dying run was a single day, so the
+    // reset snapshots nothing for repair (see "the repair window bounds the
+    // break" below).
     const next = advanceStreak(
       legacy({ lastPracticeDate: '2026-06-01', streakFreezes: 0 }),
       '2026-07-14',
     )
     expect(next.currentStreak).toBe(1)
-    expect(next.previousStreak).toBe(1)
+    expect(next.previousStreak).toBe(0)
     expect(next.longestStreak).toBe(1)
   })
 
@@ -542,5 +545,122 @@ describe('the high-water invariant', () => {
     )
     expect(state.currentStreak).toBe(0)
     expect(state.longestStreak).toBe(2)
+  })
+})
+
+// ============================================================
+// The repair window bounds the BREAK, not its detection
+// ============================================================
+//
+// The reset branch runs lazily, on the next practice — which can be months
+// after the lapse. It used to stamp `streakResetDate = today` and snapshot
+// `previousStreak` unconditionally, so `hasRecordedReset`'s 72-hour window
+// measured how quickly the reset was NOTICED, never how old the break was.
+// Owner repro (2026-08-17, dev account): one practice day on 2026-06-14,
+// the next on 2026-08-17 — a 63-day break — and the card offered "restore
+// streak", gluing the June day onto August for a streak of 2.
+describe('the repair window bounds the break', () => {
+  it('a months-old break is not repairable after the reset records it', () => {
+    // The owner's exact row, walked through the 5-minute crossing.
+    const afterPractice = advanceStreak(
+      f({
+        currentStreak: 1,
+        longestStreak: 1,
+        lastPracticeDate: '2026-06-14',
+      }),
+      '2026-08-17',
+    )
+    expect(afterPractice.currentStreak).toBe(1)
+    expect(afterPractice.previousStreak).toBe(0)
+    expect(afterPractice.streakResetDate).toBeNull()
+
+    const state = computeStreakState(afterPractice, '2026-08-17')
+    expect(state.canRepair).toBe(false)
+    expect(state.repairableStreak).toBe(0)
+    expect(state.currentStreak).toBe(1)
+  })
+
+  it('a long streak lost to a stale break is equally gone', () => {
+    // The window is about the break's age, not the streak's worth: a
+    // 30-day run abandoned for two months is not restorable either.
+    const afterPractice = advanceStreak(
+      f({
+        currentStreak: 30,
+        longestStreak: 30,
+        lastPracticeDate: '2026-06-14',
+        streakFreezes: 0,
+      }),
+      '2026-08-17',
+    )
+    expect(afterPractice.previousStreak).toBe(0)
+    expect(afterPractice.streakResetDate).toBeNull()
+    expect(computeStreakState(afterPractice, '2026-08-17').canRepair).toBe(
+      false,
+    )
+  })
+
+  it('a fresh break inside the window still records and repairs', () => {
+    // gap 3 → 2 missed days, no freezes: the legitimate path is untouched.
+    const afterPractice = advanceStreak(
+      f({
+        currentStreak: 5,
+        longestStreak: 5,
+        lastPracticeDate: '2026-07-11',
+        streakFreezes: 0,
+      }),
+      '2026-07-14',
+    )
+    expect(afterPractice.currentStreak).toBe(1)
+    expect(afterPractice.previousStreak).toBe(5)
+    expect(afterPractice.streakResetDate).toBe('2026-07-14')
+
+    const state = computeStreakState(afterPractice, '2026-07-14')
+    expect(state.canRepair).toBe(true)
+    expect(state.repairableStreak).toBe(6)
+    expect(applyRepair(afterPractice, '2026-07-14').currentStreak).toBe(6)
+  })
+
+  it('a break of exactly the window is still inside it', () => {
+    // missedDays === REPAIR_WINDOW_DAYS (3): inclusive, the same `<=` the
+    // pending-break predicate uses.
+    const afterPractice = advanceStreak(
+      f({
+        currentStreak: 4,
+        longestStreak: 4,
+        lastPracticeDate: '2026-07-10',
+        streakFreezes: 0,
+      }),
+      '2026-07-14',
+    )
+    expect(afterPractice.previousStreak).toBe(4)
+    expect(computeStreakState(afterPractice, '2026-07-14').canRepair).toBe(true)
+  })
+
+  it('a one-day run does not become repairable even inside the window', () => {
+    // Parity with hasPendingBreak's `currentStreak >= 2`: "repairing" a
+    // 1-day run manufactures a streak of 2 out of one practised day.
+    const afterPractice = advanceStreak(
+      f({ currentStreak: 1, longestStreak: 1, lastPracticeDate: '2026-07-11' }),
+      '2026-07-14',
+    )
+    expect(afterPractice.previousStreak).toBe(0)
+    expect(computeStreakState(afterPractice, '2026-07-14').canRepair).toBe(
+      false,
+    )
+  })
+
+  it('a legacy row holding a snapshotted 1-day run is not offered repair', () => {
+    // Rows written before the reset branch guarded its snapshot can still
+    // carry `previousStreak: 1` with a fresh-looking reset date.
+    const state = computeStreakState(
+      f({
+        currentStreak: 1,
+        previousStreak: 1,
+        streakResetDate: '2026-07-14',
+        lastPracticeDate: '2026-07-14',
+      }),
+      '2026-07-14',
+    )
+    expect(state.canRepair).toBe(false)
   })
 })

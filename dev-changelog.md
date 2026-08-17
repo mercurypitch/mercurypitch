@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Streak repair window bounds the break, not its detection** (owner
+  repro, 2026-08-17): `advanceStreakFrom`'s reset branch stamped
+  `streakResetDate = today` and snapshotted `previousStreak`
+  unconditionally, so `hasRecordedReset`'s 72h check
+  (`daysBetween(streakResetDate, today)`) always measured 0 on the
+  detection day — a 63-day-old break (one practice 2026-06-14, next
+  2026-08-17) offered "restore streak" and manufactured a streak of 2.
+  The reset now snapshots only when `missedDays <= REPAIR_WINDOW_DAYS &&
+currentStreak >= 2` (parity with `hasPendingBreak`), and
+  `hasRecordedReset` requires `previousStreak >= 2` against legacy rows.
+  Pinned by the "repair window bounds the break" describe in
+  streak-service.test.ts, including the owner's exact row.
+
 ### Changed
 
 - **Stop is one corner icon button at every viewport** (owner report,
