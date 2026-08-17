@@ -72,6 +72,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **HomePage's daily-goal readout was non-reactive**: `getTodayScoredMinutes`
+  read once per mount and the streak `createResource` had no dependency on
+  `sessionRecordVersion`, so nothing moved until a tab switch remounted the
+  page. The readout is now `createDailyGoalProgress()`
+  (src/features/home/daily-goal.ts), a memo keyed on the version signal the
+  services bump per persisted run, and the streak resource refetches on the
+  same key — mirroring what ProgressRoute already did. Pinned by
+  home-daily-goal.test.ts (reactivity both ways plus HomePage wiring).
+
 - **Plain-exercise session writes sent `comparabilityKey` without
   `sourceVersion`**, tripping the worker's evidence rule ("comparabilityKey
   requires sourceRef and sourceVersion"): `repo.create` came back 400,

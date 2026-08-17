@@ -182,6 +182,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The "N of 5 min" card moves while you practice.** Home read the day's
+  minutes once when it appeared and only looked fresh again after a tab
+  switch; the goal bar and streak card now update the moment a finished
+  run is credited.
+
 - **A finished drill counts again when you are signed in.** The change that
   let repeated drills form Skill Threads stamped each run's record with a
   comparability key but not the scoring version the server requires beside
