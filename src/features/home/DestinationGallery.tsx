@@ -11,6 +11,8 @@
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, For, Match, Show, Switch } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
+import { clickNavigatesThisPage, createPendingAction, } from '@/components/shared/pending-action'
+import { Spinner } from '@/components/shared/Spinner'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -20,6 +22,8 @@ import styles from './DestinationGallery.module.css'
 export type DestinationVisual =
   | 'practice'
   | 'karaoke'
+  | 'pianoNight'
+  | 'guitarNight'
   | 'exercises'
   | 'analysis'
   | 'jam'
@@ -60,6 +64,24 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     description:
       'Load a song, separate the vocal, and perform with lyrics and scoring.',
     action: 'Enter Karaoke',
+  },
+  {
+    target: { kind: 'page', href: '/piano-night' },
+    visual: 'pianoNight',
+    eyebrow: 'New room',
+    title: 'Piano Night',
+    description:
+      'A room for keyboard players: your own music, a connected MIDI keyboard, and falling notes sized for the screen propped on the piano.',
+    action: 'Enter Piano Night',
+  },
+  {
+    target: { kind: 'page', href: '/guitar-night' },
+    visual: 'guitarNight',
+    eyebrow: 'New room',
+    title: 'Guitar Night',
+    description:
+      'A room for guitarists: play along on a 3D stage, a flat fretboard or written tab, with a tuner and a Jam Doctor that listens phrase by phrase.',
+    action: 'Enter Guitar Night',
   },
   {
     target: { kind: 'tab', tab: TAB_EXERCISES },
@@ -384,6 +406,56 @@ function KaraokeVisual(): JSX.Element {
   )
 }
 
+/**
+ * The two night rooms are the only covers drawn from a photograph rather
+ * than from vector art: they are rooms, and the room is the point. Both
+ * pictures already ship as free backdrops inside those rooms — the ones a
+ * supporter pays for stay behind that door.
+ */
+function RoomPhoto(props: {
+  src: string
+  className: string
+  nugget: string
+}): JSX.Element {
+  return (
+    <div
+      class={`${styles.roomPhotoVisual} ${props.className}`}
+      aria-hidden="true"
+    >
+      <img
+        class={styles.roomPhoto}
+        src={props.src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <span class={`${styles.visualNugget} ${styles.roomPhotoNugget}`}>
+        {props.nugget}
+      </span>
+    </div>
+  )
+}
+
+function PianoNightVisual(): JSX.Element {
+  return (
+    <RoomPhoto
+      src="/piano-night/afterglow-studio-landscape.webp"
+      className={styles.pianoNightVisual}
+      nugget="MIDI ready · falling notes"
+    />
+  )
+}
+
+function GuitarNightVisual(): JSX.Element {
+  return (
+    <RoomPhoto
+      src="/guitar-night/velvet-rehearsal.webp"
+      className={styles.guitarNightVisual}
+      nugget="Tuner · tab · Jam Doctor"
+    />
+  )
+}
+
 function ExercisesVisual(): JSX.Element {
   return (
     <div class={styles.exercisesVisual} aria-hidden="true">
@@ -609,6 +681,12 @@ export function DestinationArtwork(props: {
         <Match when={props.visual === 'karaoke'}>
           <KaraokeVisual />
         </Match>
+        <Match when={props.visual === 'pianoNight'}>
+          <PianoNightVisual />
+        </Match>
+        <Match when={props.visual === 'guitarNight'}>
+          <GuitarNightVisual />
+        </Match>
         <Match when={props.visual === 'exercises'}>
           <ExercisesVisual />
         </Match>
@@ -676,6 +754,11 @@ function MysteryCover(): JSX.Element {
 function DestinationCover(props: {
   destination: HomeDestination
 }): JSX.Element {
+  // Karaoke and the two night rooms are separate documents, so opening one is
+  // a full page load — seconds on a slow connection with nothing on screen
+  // admitting the tap landed. The arrow becomes a spinner for that wait.
+  const navigation = createPendingAction()
+
   const content = () => (
     <>
       <DestinationArtwork visual={props.destination.visual} />
@@ -688,7 +771,9 @@ function DestinationCover(props: {
         </span>
         <span class={styles.coverAction}>
           {props.destination.action}
-          <Arrow />
+          <Show when={navigation.pending()} fallback={<Arrow />}>
+            <Spinner size={18} label={`Opening ${props.destination.title}…`} />
+          </Show>
         </span>
       </span>
     </>
@@ -720,7 +805,11 @@ function DestinationCover(props: {
         }
         class={`${styles.cover} ${styles[props.destination.visual]}`}
         data-destination={props.destination.visual}
+        aria-busy={navigation.pending() ? 'true' : undefined}
         aria-label={`${props.destination.action}: ${props.destination.title}`}
+        onClick={(event) => {
+          if (clickNavigatesThisPage(event)) navigation.begin()
+        }}
       >
         {content()}
       </a>
