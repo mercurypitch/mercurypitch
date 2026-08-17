@@ -119,3 +119,22 @@ function scoreSamples(samples: PitchSample[], targetMidi: number): number {
   const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
   return Math.round(Math.max(0, 100 - avgDeviation * 1.5))
 }
+
+/**
+ * Seconds actually sung, from a voiced-only sample series: sums the gaps
+ * between consecutive samples, skipping any gap wider than `maxGapSec` —
+ * that is silence (settling before the first note, a breath, a dropout),
+ * not singing. Pitch history records only voiced frames, so silence shows
+ * up exactly as those wide gaps.
+ */
+export function voicedSeconds(
+  history: ReadonlyArray<{ time: number }>,
+  maxGapSec = 0.25,
+): number {
+  let sung = 0
+  for (let i = 1; i < history.length; i++) {
+    const dt = history[i]!.time - history[i - 1]!.time
+    if (dt > 0 && dt <= maxGapSec) sung += dt
+  }
+  return sung
+}

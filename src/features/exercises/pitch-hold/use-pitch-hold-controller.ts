@@ -3,6 +3,7 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { freqToExactMidi } from '../exercise-scoring-utils'
+import { activeTimerSeconds } from '../timer-preference'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -114,7 +115,14 @@ export function usePitchHoldController(base: BaseExerciseController) {
     // scale by adaptive difficulty: longer required hold when harder
     const targetDurationSec =
       TARGET_DURATION_SEC * (2 - difficultyFactor(difficulty))
-    const durationScore = Math.min(100, (durationSec / targetDurationSec) * 100)
+    // Held time against the run the singer was given, not the wall clock
+    // against a fixed 60 s aspiration (which capped a perfect timed ten-
+    // second hold near 63). totalFrames starts at first phonation, so the
+    // settling silence this controller already forgives stays forgiven;
+    // silence after the start keeps diluting, exactly as documented above.
+    const heldSec = totalFrames / SCORE_UPDATE_HZ
+    const goalSec = activeTimerSeconds() ?? targetDurationSec
+    const durationScore = Math.min(100, (heldSec / goalSec) * 100)
     const score = Math.round(
       zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT,
     )

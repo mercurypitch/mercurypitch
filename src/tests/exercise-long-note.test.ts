@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useLongNoteController } from '@/features/exercises/long-note/use-long-note-controller'
+import { resetTimerPreference, setTimerMode, } from '@/features/exercises/timer-preference'
 import { EXERCISE_LONG_NOTE } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
@@ -183,5 +184,76 @@ describe('the trace speaks Hz', () => {
     // the result card octaves off a note that was never a target
     // (CLAUDE-JOURNEY-005's sibling in this drill).
     expect(seen).toEqual([440])
+  })
+})
+
+// ── The run length the singer was given is the run length graded ──
+//
+// The duration term used to grade the wall clock against a fixed 30-second
+// aspiration, so a timed run could never reach 100 (a perfect 10-second run
+// capped near 90) — and the clock included the seconds of settling before
+// the first note, crediting silence. It now grades SUNG seconds against the
+// chosen timer: sing the whole run and the term is full; settle first and
+// only the coverage shrinks, never the pitch-quality terms (owner call,
+// 2026-08-17).
+
+function perfectHistory(
+  fromSec: number,
+  toSec: number,
+): Array<{ freq: number; time: number; cents: number }> {
+  const samples: Array<{ freq: number; time: number; cents: number }> = []
+  for (let t = fromSec; t <= toSec + 1e-9; t += 0.05) {
+    samples.push({ freq: 440, time: Math.round(t * 100) / 100, cents: 0 })
+  }
+  return samples
+}
+
+describe('long note grades the run it asked for', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    resetTimerPreference()
+  })
+
+  it('a perfect run through the whole timer reaches 100', () => {
+    setTimerMode(10)
+    const base = createMockBase({
+      pitchHistory: () => perfectHistory(0, 10),
+      _getElapsed: () => 10_000,
+    })
+    const ctrl = useLongNoteController(base)
+    ctrl.setTarget(freqToMidi(440))
+    expect(ctrl.computeResult().score).toBe(100)
+  })
+
+  it('settling before the first note costs coverage, not pitch quality', () => {
+    // Two seconds of preparation, then eight perfect seconds: stability,
+    // drift and steadiness stay at 100; only the sung share of the run
+    // (8 of 10) trims the duration term. 35 + 20 + 30 + 0.15 * 80 = 97.
+    setTimerMode(10)
+    const base = createMockBase({
+      pitchHistory: () => perfectHistory(2, 10),
+      _getElapsed: () => 10_000,
+    })
+    const ctrl = useLongNoteController(base)
+    ctrl.setTarget(freqToMidi(440))
+    const result = ctrl.computeResult()
+    expect(result.score).toBe(97)
+    expect(result.metrics.sungSec).toBe(8)
+    expect(result.metrics.pitchStabilityCents).toBe(0)
+    expect(result.metrics.steadyZonePct).toBe(100)
+  })
+
+  it('a manual run keeps the long aspiration', () => {
+    // No timer chosen means no chosen length to grade against; the
+    // difficulty-scaled 30-second aspiration stays the yardstick.
+    setTimerMode('manual')
+    const base = createMockBase({
+      pitchHistory: () => perfectHistory(0, 10),
+      _getElapsed: () => 10_000,
+    })
+    const ctrl = useLongNoteController(base)
+    ctrl.setTarget(freqToMidi(440))
+    // 85 + 0.15 * (10 / 30) * 100 = 90
+    expect(ctrl.computeResult().score).toBe(90)
   })
 })

@@ -74,6 +74,17 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **Held-note drills now run ten seconds by default, and grade the run
+  they asked for.** Five seconds was over before a steady tone settled —
+  by the time you hit the note, half the run was gone. And the score's
+  duration term graded the wall clock against a long fixed aspiration, so
+  a timed run could never reach 100 and the silent settling before your
+  first note was counted as if it were singing. Now: sing (or hold)
+  through the whole run and the duration term is full; settle first and
+  only your coverage of the window shrinks — never your pitch quality. A
+  run you chose to time yourself still measures against the long
+  aspiration. Devices that already picked a length keep their choice.
+
 - **A routine's repeat runs carry themselves.** When a segment asks for
   several runs, the result screen's button now says "Start run 2 of 5"
   instead of "Try Again", the session bar counts the next run in with the

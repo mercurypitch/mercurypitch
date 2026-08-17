@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Held-note run length and duration grading** (owner call, 2026-08-17):
+  `DEFAULT_PREFERENCE.mode` 5 → 10 in timer-preference.ts (persisted
+  choices untouched). Long-note's duration term is now
+  `voicedSeconds(history) / (activeTimerSeconds() ?? difficulty target)`
+  — `voicedSeconds` (exercise-scoring-utils.ts) sums inter-sample gaps
+  ≤ 0.25 s, so pre-onset settling and mid-run silence cost coverage only;
+  pitch-quality terms never saw silence (history records voiced frames
+  only). Pitch-hold's term uses its post-phonation frame counter
+  (`totalFrames / SCORE_UPDATE_HZ`) against the same goal, keeping its
+  documented leading-silence forgiveness. A perfect timed run now scores
+  100 (was capped ~90 long-note / ~63 pitch-hold). Pinned in
+  exercise-long-note.test.ts, exercise-pitch-hold.test.ts,
+  timer-preference.test.ts; mutation-checked both ways.
+
 - **Rep-run flow: the shell and ribbon close the multi-rep gap.**
   `ExerciseShell` derives `repRun` from `useDailyRoutine` (current segment
   runs this drill, banked > 0, banked < reps) to relabel the dual-purpose

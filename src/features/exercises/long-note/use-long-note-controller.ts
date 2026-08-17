@@ -2,7 +2,8 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency } from '@/lib/frequency-to-note'
-import { freqToExactMidi } from '../exercise-scoring-utils'
+import { freqToExactMidi, voicedSeconds } from '../exercise-scoring-utils'
+import { activeTimerSeconds } from '../timer-preference'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_LONG_NOTE } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -151,10 +152,16 @@ export function useLongNoteController(base: BaseExerciseController) {
     const stabilityScore = Math.max(0, 100 - stabilityCents * 2) // 0¢ = 100, 50¢ = 0
     const driftScore = Math.max(0, 100 - maxDrift * 1.5) // 0¢ = 100, ~67¢ = 0
     const steadyScore = steadyPct // already 0-100
-    const durationScore = Math.min(
-      100,
-      (durationSec / targetDurationSec) * 100, // scaled by adaptive difficulty
-    )
+    // Sung seconds against the run the singer was given. Grading the wall
+    // clock against a fixed 30 s aspiration meant a timed run could never
+    // reach 100, and the clock credited the silent settling before the
+    // first note. Settling now costs only coverage of the chosen window;
+    // the pitch-quality terms above never saw silence to begin with. A
+    // manual run keeps the difficulty-scaled aspiration — nobody chose a
+    // length to grade against.
+    const sungSec = voicedSeconds(history)
+    const goalSec = activeTimerSeconds() ?? targetDurationSec
+    const durationScore = Math.min(100, (sungSec / goalSec) * 100)
 
     const score = Math.round(
       stabilityScore * SCORE_STABILITY_WEIGHT +
@@ -194,6 +201,7 @@ export function useLongNoteController(base: BaseExerciseController) {
       score,
       metrics: {
         durationSec: Math.round(durationSec * 10) / 10,
+        sungSec: Math.round(sungSec * 10) / 10,
         pitchStabilityCents: Math.round(stabilityCents),
         maxDriftCents: Math.round(maxDrift),
         steadyZonePct: Math.round(steadyPct),
