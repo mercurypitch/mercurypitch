@@ -27,11 +27,21 @@ const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
 }
 
 /**
+ * The scoring version a drill's records are stamped with. The server's
+ * evidence rule requires it wherever a comparabilityKey is sent — a key
+ * without it is a 400 the client swallows, which silently uncredits the
+ * whole run (session row, minutes, streak, badges).
+ */
+export function exerciseScoringVersion(type: ExerciseType): number {
+  return SCORING_VERSION[type] ?? 1
+}
+
+/**
  * The persisted key that lets two plain runs of the same drill compare
  * like for like. Same shape family as the challenge/weekly keys
  * (`voice:challenge:<id>:v<n>:<sig>`), scoped by drill type and its
  * scoring version.
  */
 export function exerciseComparabilityKey(type: ExerciseType): string {
-  return `voice:exercise:${type}:v${SCORING_VERSION[type] ?? 1}`
+  return `voice:exercise:${type}:v${exerciseScoringVersion(type)}`
 }

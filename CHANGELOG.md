@@ -182,6 +182,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **A finished drill counts again when you are signed in.** The change that
+  let repeated drills form Skill Threads stamped each run's record with a
+  comparability key but not the scoring version the server requires beside
+  it, so every plain drill save was silently rejected: no session row, no
+  practice minutes, no streak, no badges — and a completed daily routine
+  left "0 of 5 min" untouched. The record now carries both halves, and a
+  test holds the exact payload against the server's own validation so the
+  two cannot drift apart again.
+
 - **A second device now shows your real week on the home screen.** Signed
   in on a new device, "drills this week" read zero while the Progress page
   showed the full synced history — the strip only counted practice done on
