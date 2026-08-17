@@ -3,6 +3,7 @@
 
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock } from '@/lib/audio-unlock'
+import { recordAnimationFrame } from '@/lib/device-tier'
 import type { GuitarBackingLoadMode, GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
 import { createGuitarBackingTransport } from './guitar-backing-transport'
 
@@ -45,7 +46,13 @@ export function useGuitarBackingTransportController(
     frame = null
   }
 
-  const updateClock = (): void => {
+  // This is the room's only continuous animation frame while a song plays, so
+  // it is the one place that can tell a phone it is struggling. Nothing in
+  // Guitar Night fed the frame-health sampler before, which meant a room that
+  // was visibly stuttering could never demote itself and never unlocked the
+  // savings in performance-mode.css. One subtraction per frame.
+  const updateClock = (timestampMs: number): void => {
+    recordAnimationFrame(timestampMs)
     setPositionSeconds(transport.getCurrentTime())
     if (transport.getStatus() !== 'playing') {
       frame = null

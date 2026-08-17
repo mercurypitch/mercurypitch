@@ -111,6 +111,14 @@ export class Canvas2dTabRenderer implements TabRenderer {
   private ctx: CanvasRenderingContext2D | null = null
   private cssWidth = 0
   private cssHeight = 0
+  // Both of these are rebuilt only when their inputs move. A CanvasGradient is
+  // an allocation, and these two were being made fresh on every frame — one
+  // spanning the whole canvas — which on a phone is steady GC pressure for a
+  // fill that almost never changes.
+  private backgroundGradient: CanvasGradient | null = null
+  private backgroundGradientKey = ''
+  private runwayGradient: CanvasGradient | null = null
+  private runwayGradientKey = ''
   private vp: Float32Array = new Float32Array(16)
   private vpW = 0
   private vpH = 0
@@ -142,6 +150,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
   resize(width: number, height: number, dpr: number): void {
     this.cssWidth = width
     this.cssHeight = height
+    // A resize replaces the drawing surface, and a gradient belongs to the
+    // context that made it.
+    this.backgroundGradient = null
+    this.runwayGradient = null
     if (this.canvas === null || this.ctx === null) return
     const effectiveDpr = Math.max(1, Math.min(2, dpr))
     this.canvas.width = Math.max(1, Math.round(width * effectiveDpr))
@@ -356,18 +368,26 @@ export class Canvas2dTabRenderer implements TabRenderer {
     const W = this.cssWidth
     const H = this.cssHeight
     ctx.clearRect(0, 0, W, H)
-    const grad = ctx.createLinearGradient(0, 0, 0, H)
-    if (scene.display.theme === 'velvet') {
-      // The room owns the photographic world. Keep the highway legible while
-      // allowing that environment to breathe through the canvas.
-      grad.addColorStop(0, 'rgba(9, 8, 6, 0.18)')
-      grad.addColorStop(0.62, 'rgba(23, 17, 13, 0.3)')
-      grad.addColorStop(1, 'rgba(13, 11, 9, 0.5)')
-    } else {
-      grad.addColorStop(0, '#05050a')
-      grad.addColorStop(1, '#0e0e17')
+    const key = `${H}|${scene.display.theme}`
+    if (
+      this.backgroundGradient === null ||
+      this.backgroundGradientKey !== key
+    ) {
+      const grad = ctx.createLinearGradient(0, 0, 0, H)
+      if (scene.display.theme === 'velvet') {
+        // The room owns the photographic world. Keep the highway legible while
+        // allowing that environment to breathe through the canvas.
+        grad.addColorStop(0, 'rgba(9, 8, 6, 0.18)')
+        grad.addColorStop(0.62, 'rgba(23, 17, 13, 0.3)')
+        grad.addColorStop(1, 'rgba(13, 11, 9, 0.5)')
+      } else {
+        grad.addColorStop(0, '#05050a')
+        grad.addColorStop(1, '#0e0e17')
+      }
+      this.backgroundGradient = grad
+      this.backgroundGradientKey = key
     }
-    ctx.fillStyle = grad
+    ctx.fillStyle = this.backgroundGradient
     ctx.fillRect(0, 0, W, H)
   }
 
@@ -407,12 +427,27 @@ export class Canvas2dTabRenderer implements TabRenderer {
           (point) => point.w > NEAR,
         )
       ) {
-        const runway = this.reducedEffects(scene)
-          ? 'rgba(31, 24, 19, 0.34)'
-          : ctx.createLinearGradient(0, farLeft.y, 0, nearLeft.y)
-        if (typeof runway !== 'string') {
-          runway.addColorStop(0, 'rgba(26, 22, 18, 0.08)')
-          runway.addColorStop(1, 'rgba(31, 24, 19, 0.54)')
+        let runway: string | CanvasGradient = 'rgba(31, 24, 19, 0.34)'
+        if (!this.reducedEffects(scene)) {
+          // Keyed on the two ends it is drawn between, so a still camera
+          // reuses one gradient across the whole passage.
+          const runwayKey = `${farLeft.y}|${nearLeft.y}`
+          if (
+            this.runwayGradient === null ||
+            this.runwayGradientKey !== runwayKey
+          ) {
+            const gradient = ctx.createLinearGradient(
+              0,
+              farLeft.y,
+              0,
+              nearLeft.y,
+            )
+            gradient.addColorStop(0, 'rgba(26, 22, 18, 0.08)')
+            gradient.addColorStop(1, 'rgba(31, 24, 19, 0.54)')
+            this.runwayGradient = gradient
+            this.runwayGradientKey = runwayKey
+          }
+          runway = this.runwayGradient
         }
         ctx.beginPath()
         ctx.moveTo(nearLeft.x, nearLeft.y)

@@ -32,6 +32,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   the panel. There is also a way back to the full studio from a phone, which
   there was not before, and pressing Coach on a larger screen now takes you to
   the coach instead of appearing to do nothing.
+- **Guitar Night plays more smoothly on a phone.** The fretboard view now
+  draws at a rate the device can keep up with instead of asking for every
+  frame, stops rebuilding artwork it already has, and no longer rebuilds the
+  track controls while you drag the seek bar or the volume. A phone that is
+  struggling can also now say so, which switches the room to its lighter
+  settings automatically.
 
 - **Piano Night's falling notes land on the right keys.** On a phone the notes
   were drawn against the whole 88-key piano while the keyboard below showed

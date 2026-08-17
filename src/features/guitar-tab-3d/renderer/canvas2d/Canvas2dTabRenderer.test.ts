@@ -68,6 +68,7 @@ function fakeCanvas() {
   return {
     canvas,
     compositeWrites,
+    context,
     fillText,
     quadraticCurveTo,
     setLineDash,
@@ -160,5 +161,54 @@ describe('Canvas2dTabRenderer notation', () => {
     expect(slideMarkLabel('out-up')).toBe('SL')
     expect(slideMarkLabel('pick-slide-up')).toBe('P.S.')
     expect(slideMarkLabel('pick-slide-down')).toBe('P.S.')
+  })
+})
+
+// A CanvasGradient is an allocation, and two of them were being built on every
+// frame — one spanning the whole canvas — for a fill that almost never
+// changes. On a phone that is steady GC pressure inside the frame budget.
+describe('Canvas2dTabRenderer allocation', () => {
+  function sceneAt(playheadBeat: number) {
+    return buildTabScene({
+      notes: [note('a'), note('b', { fret: 7, midi: 66, startBeat: 3 })],
+      playheadBeat,
+      visibleBeatWindow: 8,
+      showNoteLabels: true,
+      showFretboard: true,
+      display: VELVET_DISPLAY,
+    })
+  }
+
+  it('builds its gradients once and keeps them across frames', () => {
+    const fake = fakeCanvas()
+    const renderer = new Canvas2dTabRenderer()
+    renderer.mount(fake.canvas)
+    renderer.resize(960, 600, 2)
+    const createLinearGradient = fake.context
+      .createLinearGradient as unknown as ReturnType<typeof vi.fn>
+
+    renderer.render(sceneAt(0))
+    const afterFirst = createLinearGradient.mock.calls.length
+    expect(afterFirst).toBeGreaterThan(0)
+
+    // The playhead moves every frame; the canvas size and the camera do not.
+    for (const beat of [0.25, 0.5, 0.75, 1]) renderer.render(sceneAt(beat))
+    expect(createLinearGradient.mock.calls.length).toBe(afterFirst)
+  })
+
+  it('rebuilds them when the surface it drew them on is replaced', () => {
+    const fake = fakeCanvas()
+    const renderer = new Canvas2dTabRenderer()
+    renderer.mount(fake.canvas)
+    renderer.resize(960, 600, 2)
+    const createLinearGradient = fake.context
+      .createLinearGradient as unknown as ReturnType<typeof vi.fn>
+
+    renderer.render(sceneAt(0))
+    const afterFirst = createLinearGradient.mock.calls.length
+
+    renderer.resize(640, 480, 2)
+    renderer.render(sceneAt(0))
+    expect(createLinearGradient.mock.calls.length).toBeGreaterThan(afterFirst)
   })
 })
