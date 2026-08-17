@@ -190,6 +190,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   left "0 of 5 min" untouched. The record now carries both halves, and a
   test holds the exact payload against the server's own validation so the
   two cannot drift apart again.
+- **A running drill no longer hides its own instructions on a landscape
+  tablet.** On screens like a Tab S9+ held sideways, the guided warmup's
+  step name and instruction — the text above the guide-sounds toggle —
+  could sit beyond the top of the screen with no way to scroll to them.
+  Whatever does not fit now stays reachable by scrolling, in every drill.
 
 - **A second device now shows your real week on the home screen.** Signed
   in on a new device, "drills this week" read zero while the Progress page
