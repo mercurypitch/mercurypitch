@@ -42,6 +42,10 @@ function UserIcon() {
 export const HeaderAccount: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const [me, setMe] = createSignal<MeResponse | null>(null)
+  // Until the first restore+fetch lands, "Sign in" would be a guess — on a
+  // slow connection the pill said it for seconds to people who were signed
+  // in. A neutral probe pill holds the slot instead.
+  const [authResolved, setAuthResolved] = createSignal(false)
   // Sign-out is one tap from the button people press to check who they are
   // signed in as, and it drops them out of a session mid-practice. It asks.
   const [confirming, setConfirming] = createSignal(false)
@@ -53,10 +57,14 @@ export const HeaderAccount: Component = () => {
     authVersion()
     if (!cloudConfigured) return
     void (async () => {
-      // Restore only — rendering the header must never provision an
-      // identity, or every page load would create an account again.
-      await restoreAuth()
-      setMe(await fetchMe())
+      try {
+        // Restore only — rendering the header must never provision an
+        // identity, or every page load would create an account again.
+        await restoreAuth()
+        setMe(await fetchMe())
+      } finally {
+        setAuthResolved(true)
+      }
     })()
   })
 
@@ -89,38 +97,52 @@ export const HeaderAccount: Component = () => {
   return (
     <Show when={cloudConfigured}>
       <Show
-        when={isUpgraded()}
+        when={authResolved()}
         fallback={
-          <button
-            class={styles.signInPill}
-            onClick={openSignIn}
-            title="Sign in"
-            data-testid="header-signin"
+          <div
+            class={styles.probePill}
+            role="status"
+            aria-label="Checking sign-in status"
+            data-testid="header-auth-probe"
           >
-            <UserIcon />
-            <span>Sign in</span>
-          </button>
+            <span class={styles.probeSpinner} aria-hidden="true" />
+          </div>
         }
       >
-        <div class={styles.pill} data-testid="header-account">
-          <button
-            class={styles.nameBtn}
-            onClick={openAccount}
-            title="Account settings"
-          >
-            <UserIcon />
-            <span class={styles.name}>{name()}</span>
-          </button>
-          <button
-            class={styles.logoutBtn}
-            onClick={() => setConfirming(true)}
-            title="Sign out"
-            aria-label="Sign out"
-            data-testid="header-logout"
-          >
-            <SignOutIcon />
-          </button>
-        </div>
+        <Show
+          when={isUpgraded()}
+          fallback={
+            <button
+              class={styles.signInPill}
+              onClick={openSignIn}
+              title="Sign in"
+              data-testid="header-signin"
+            >
+              <UserIcon />
+              <span>Sign in</span>
+            </button>
+          }
+        >
+          <div class={styles.pill} data-testid="header-account">
+            <button
+              class={styles.nameBtn}
+              onClick={openAccount}
+              title="Account settings"
+            >
+              <UserIcon />
+              <span class={styles.name}>{name()}</span>
+            </button>
+            <button
+              class={styles.logoutBtn}
+              onClick={() => setConfirming(true)}
+              title="Sign out"
+              aria-label="Sign out"
+              data-testid="header-logout"
+            >
+              <SignOutIcon />
+            </button>
+          </div>
+        </Show>
       </Show>
 
       <ConfirmDialog

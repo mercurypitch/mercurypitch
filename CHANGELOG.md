@@ -5,6 +5,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **No more "signed out" flash.** On a slow connection, Settings → Account
+  said "You are signed out" for a few seconds before flipping to your real
+  signed-in state, and the header pill offered "Sign in" the same way.
+  Both now show a small progress spinner until your session is actually
+  known, then the correct state — never the wrong one.
+
 ### Changed
 
 - **The Stop button got out of the way.** While a run is active, Stop is now

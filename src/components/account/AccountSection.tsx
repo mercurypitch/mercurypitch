@@ -38,6 +38,12 @@ export const AccountSection: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
 
   const [me, setMe] = createSignal<MeResponse | null>(null)
+  // `me` is null both while the session is still being restored and when
+  // the user really is signed out — and on a slow connection the two look
+  // identical for seconds. Until the first resolution lands, the section
+  // shows a probe spinner instead of asserting "signed out" and then
+  // flipping (owner report, 2026-08-17).
+  const [authResolved, setAuthResolved] = createSignal(false)
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
@@ -140,10 +146,16 @@ export const AccountSection: Component = () => {
     authVersion()
     if (!cloudConfigured) return
     void (async () => {
-      // Restore only: opening Settings → Account is not an action worth
-      // an account. With no session this shows the signed-out state.
-      await restoreAuth()
-      await refreshMe()
+      try {
+        // Restore only: opening Settings → Account is not an action worth
+        // an account. With no session this shows the signed-out state.
+        await restoreAuth()
+        await refreshMe()
+      } finally {
+        // Even a failed fetch is a resolution — the section then shows
+        // the signed-out card rather than spinning forever.
+        setAuthResolved(true)
+      }
     })()
   })
 
@@ -188,6 +200,13 @@ export const AccountSection: Component = () => {
         }
       >
         <Switch>
+          {/* Auth state not yet known — neither card would be honest. */}
+          <Match when={!authResolved()}>
+            <div class={styles.authProbe} role="status">
+              <span class={styles.authProbeSpinner} aria-hidden="true" />
+              Checking your sign-in status…
+            </div>
+          </Match>
           {/* Signed in with a real account */}
           <Match when={me() != null && isUpgraded()}>
             <div class={styles.accountCard}>

@@ -418,3 +418,35 @@
   color: var(--text-primary, #eee);
   border-color: var(--accent, #5b8def);
 }
+
+/* Auth state still resolving — shown instead of either account card so a
+   slow connection never flashes "signed out" at a signed-in user. */
+.authProbe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 4px;
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.9rem;
+}
+
+.authProbeSpinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-top-color: var(--accent, #6f73ff);
+  animation: auth-probe-spin 0.8s linear infinite;
+}
+
+@keyframes auth-probe-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authProbeSpinner {
+    animation: none;
+  }
+}
