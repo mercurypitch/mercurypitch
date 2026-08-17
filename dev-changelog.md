@@ -54,6 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The octave chrome sat on the keys and stayed there.** On a phone keybed the
+  range label and the two octave arrows have nowhere to go but on top of the
+  outermost white keys, so they have to be quiet about it. The label names the
+  two octaves on screen, which is only news when it changes: it shows itself on
+  a window change (and when an arrow takes keyboard focus) and fades back out
+  after 1.8s. The arrows keep their full 44px target as transparent padding and
+  paint a 32px disc inside it at 62% opacity, going full on press or focus.
+
 - **The count-in number rendered off the top of the screen.** `TransportBar`
   set no `position`, so the count badge — authored as
   `position: absolute; top: -10px; left: 50%` against that row — resolved
