@@ -5,6 +5,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Added
+
+- **MercuryPitch now notices a noisy room.** When background noise keeps
+  triggering false notes during practice, a toast suggests the High Noise
+  environment setting (or a quieter spot) and jumps you straight to the
+  control. It fires at most twice a session, and never changes anything by
+  itself.
+
 ### Fixed
 
 - **A new release no longer crashes the tab you were on.** When a deploy

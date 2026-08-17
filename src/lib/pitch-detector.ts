@@ -6,6 +6,7 @@ import type ort from 'onnxruntime-web'
 import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
 import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 import { freqToNote } from './scale-data'
+import { publishDetectionFrame } from './signal-quality'
 import type { MockOnnxModule } from './swift-f0-detector'
 import { SwiftF0Detector } from './swift-f0-detector'
 
@@ -53,6 +54,16 @@ export interface PitchDetectorOptions {
    * with the median deletes that note. Turn it off there.
    */
   stabilize?: boolean
+  /**
+   * Publish per-frame stats to the signal-quality seam (default: 'off').
+   *
+   * 'live' is for detectors listening to a microphone in real time — the
+   * signal-quality advisor reads the stream to notice a noisy room. It must
+   * stay 'off' for offline chunk loops (transcription, fingerprinting,
+   * benchmarks): those hammer detect() far faster than real time and would
+   * flood the window with meaningless "frames".
+   */
+  telemetry?: 'live' | 'off'
 }
 
 const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
@@ -66,6 +77,7 @@ const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   minAmplitude: 0.02,
   algorithm: 'yin',
   stabilize: true,
+  telemetry: 'off',
 }
 
 export class PitchDetector {
@@ -79,6 +91,7 @@ export class PitchDetector {
   private minAmplitude: number
   private algorithm: PitchAlgorithm
   private readonly stabilize: boolean
+  private readonly telemetry: 'live' | 'off'
   private readonly yinBuffer: Float32Array
   private pitchHistory: number[] = []
   private readonly maxHistory = 5
@@ -98,7 +111,33 @@ export class PitchDetector {
     this.minAmplitude = opts.minAmplitude
     this.algorithm = opts.algorithm
     this.stabilize = opts.stabilize
+    this.telemetry = opts.telemetry
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
+  }
+
+  /**
+   * One publish per detect() call, only for live-mic detectors. This is the
+   * single point where the RMS, the pre-gate confidence and the rejection
+   * verdict all exist at once — downstream a rejected frame is an all-zero
+   * DetectedPitch, indistinguishable from silence.
+   */
+  private publishLiveFrame(
+    rms: number,
+    clarity: number,
+    accepted: boolean,
+    frequency: number,
+    confidenceFloor: number,
+  ): void {
+    if (this.telemetry !== 'live') return
+    publishDetectionFrame({
+      rms,
+      clarity,
+      accepted,
+      frequency,
+      gateRms: this.minAmplitude,
+      confidenceFloor,
+      atMs: performance.now(),
+    })
   }
 
   /** Initialize SwiftF0 detector (async, called once when algorithm is set to 'swift') */
@@ -157,6 +196,7 @@ export class PitchDetector {
     }
     rms = Math.sqrt(rms / timeDomainBuffer.length)
     if (rms < this.minAmplitude) {
+      this.publishLiveFrame(rms, 0, false, 0, this.minConfidence)
       return {
         frequency: 0,
         clarity: 0,
@@ -171,7 +211,15 @@ export class PitchDetector {
       // Convert time-domain to frequency-domain using FFT approximation
       const freqData = this.fftToFrequencyData(timeDomainBuffer)
       // Always use DSP fallback for synchronous detection
-      return this.detectFromFreqDataFallback(freqData)
+      const swiftPitch = this.detectFromFreqDataFallback(freqData)
+      this.publishLiveFrame(
+        rms,
+        swiftPitch.clarity,
+        swiftPitch.frequency > 0,
+        swiftPitch.frequency,
+        this.minConfidence,
+      )
+      return swiftPitch
     }
 
     // Dispatch to YIN or MPM
@@ -189,6 +237,7 @@ export class PitchDetector {
         : Math.max(adjustedThreshold(this.sensitivity), this.minConfidence)
 
     if (result.confidence < confFloor) {
+      this.publishLiveFrame(rms, result.confidence, false, 0, confFloor)
       return {
         frequency: 0,
         clarity: 0,
@@ -198,6 +247,13 @@ export class PitchDetector {
       }
     }
 
+    this.publishLiveFrame(
+      rms,
+      result.confidence,
+      true,
+      result.frequency,
+      confFloor,
+    )
     const { name, octave, cents } = freqToNote(result.frequency)
     return {
       frequency: result.frequency,
