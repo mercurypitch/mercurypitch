@@ -17,6 +17,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { BusyLink } from '@/components/shared/BusyLink'
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
 import type { DemoSound } from '@/lib/demo-audio'
@@ -1592,15 +1593,23 @@ export const GlassApp: Component = () => {
         <span class="glass-foot-sep" aria-hidden="true">
           ·
         </span>
-        <a class="glass-foot-link" href="/mirror">
+        <BusyLink
+          class="glass-foot-link"
+          href="/mirror"
+          busyLabel="Opening the Voice Mirror…"
+        >
           Voice Mirror
-        </a>
+        </BusyLink>
         <span class="glass-foot-sep" aria-hidden="true">
           ·
         </span>
-        <a class="glass-foot-link" href="/karaoke-night">
+        <BusyLink
+          class="glass-foot-link"
+          href="/karaoke-night"
+          busyLabel="Opening Karaoke Night…"
+        >
           Karaoke Night
-        </a>
+        </BusyLink>
       </footer>
     </div>
   )

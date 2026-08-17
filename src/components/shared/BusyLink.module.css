@@ -1,0 +1,9 @@
+.busyLink {
+  /* The spinner joins the row it belongs to rather than displacing it. */
+  align-items: center;
+  gap: 0.4em;
+}
+
+.spinner {
+  margin-inline-start: 0.15em;
+}

@@ -4084,6 +4084,39 @@
   box-shadow: 0 0 0.9rem rgba(224, 164, 93, 0.3);
 }
 
+/*
+ * A finger is not a mouse pointer. The row already reserves a full touch
+ * target of height, but the part that actually answers a drag is the thumb,
+ * and a 16px thumb on a 3px rail asks for precision nobody has one-handed —
+ * reported as "it needs pinicky precision to move". Coarse pointers get a
+ * rail thick enough to see and a thumb the size of a fingertip's contact
+ * patch. A mouse keeps the fine geometry, which it can use.
+ */
+@media (hover: none) and (pointer: coarse) {
+  .timeRail input::-webkit-slider-runnable-track,
+  .masterVolume input::-webkit-slider-runnable-track,
+  .timeRail input::-moz-range-track,
+  .masterVolume input::-moz-range-track,
+  .timeRail input::-moz-range-progress,
+  .masterVolume input::-moz-range-progress {
+    height: 8px;
+  }
+
+  .timeRail input::-webkit-slider-thumb,
+  .masterVolume input::-webkit-slider-thumb {
+    width: 1.5rem;
+    height: 1.5rem;
+    /* Centres the thumb on the thicker track: -(thumb - track) / 2. */
+    margin-top: -0.5rem;
+  }
+
+  .timeRail input::-moz-range-thumb,
+  .masterVolume input::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
 .transportControls {
   grid-area: controls;
   display: grid;

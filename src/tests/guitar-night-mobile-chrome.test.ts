@@ -145,3 +145,32 @@ describe('the stem card stacks its name above its state', () => {
     )
   })
 })
+
+describe('the sliders answer a finger', () => {
+  const coarse = mediaBlock('@media (hover: none) and (pointer: coarse)')
+
+  it('gives the thumb a fingertip to aim at, not a mouse pointer', () => {
+    // The row already reserves a full touch target of HEIGHT, but the part
+    // that answers a drag is the thumb — 16px of it, on a 3px rail. Reported
+    // as needing "pinicky precision to move".
+    expect(coarse).toMatch(
+      /\.masterVolume input::-webkit-slider-thumb\s*\{[^}]*width:\s*1\.5rem/,
+    )
+    expect(coarse).toMatch(
+      /\.masterVolume input::-moz-range-thumb\s*\{[^}]*width:\s*1\.25rem/,
+    )
+  })
+
+  it('thickens the rail under it so the thumb has somewhere to sit', () => {
+    expect(coarse).toMatch(
+      /::-webkit-slider-runnable-track[^{]*\{[^}]*height:\s*8px/,
+    )
+  })
+
+  it('leaves the fine geometry to the pointer that can use it', () => {
+    // Outside the coarse-pointer block the original 1rem thumb stands.
+    expect(css).toMatch(
+      /\.masterVolume input::-webkit-slider-thumb\s*\{[^}]*width:\s*1rem/,
+    )
+  })
+})

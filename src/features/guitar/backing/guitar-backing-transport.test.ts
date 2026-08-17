@@ -470,13 +470,20 @@ describe('createGuitarBackingTransport', () => {
     expect(harness.transport.getStatus()).toBe('playing')
   })
 
-  it('gates streamed seeks on the stems bus without changing the master', async () => {
+  it('re-primes streamed stems on a seek instead of seeking them live', async () => {
+    // Setting currentTime on a PLAYING element stalls it for as long as its
+    // pipeline needs. This used to reopen the bus 18 ms later, onto elements
+    // that were still seeking — the stutter the player heard after every
+    // seek. The stems are paused, moved, and started again, and the bus stays
+    // shut for all of it.
     const harness = audioHarness({
       fadeSeconds: 0.05,
       memoryBudgetBytes: 1,
     })
     harness.transport.setMasterVolume(0.31)
-    harness.transport.configure(session('streamed-seek'))
+    harness.transport.configure(
+      session('streamed-seek', [track('drums'), track('guitar')]),
+    )
     await expect(harness.transport.play()).resolves.toBe(true)
     expect(harness.transport.getLoadMode()).toBe('streamed')
 
@@ -484,24 +491,201 @@ describe('createGuitarBackingTransport', () => {
     const master = graph.master as unknown as FakeGainNode
     const stems = graph.buses.stems as unknown as FakeGainNode
     const masterGain = master.gain.value
+    for (const element of harness.mediaElements) element.pause.mockClear()
     master.gain.operations.length = 0
     stems.gain.operations.length = 0
     harness.context.currentTime = 14
 
     harness.transport.seek(7.25)
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    // Seek dip: a short LINEAR dip is correct inside continuous material
-    // (the program masks it) — what must never happen is the instant
-    // setValueAtTime(0) cut this replaced.
     expect(stems.gain.operations).toEqual([
+      // Down, and it stays down across the re-prime...
       { kind: 'cancel', when: 14 },
       { kind: 'set', value: 1, when: 14 },
       { kind: 'linear', value: 0, when: 14.015 },
+      // ...then up, anchored at the moment the stems are actually running
+      // again rather than chained onto a dip that has long since finished.
+      { kind: 'cancel', when: 14 },
+      { kind: 'set', value: 0, when: 14 },
       { kind: 'linear', value: 1, when: 14.05 },
     ])
+    for (const element of harness.mediaElements) {
+      expect(element.pause).toHaveBeenCalled()
+      expect(element.currentTime).toBe(7.25)
+    }
     expect(master.gain.value).toBe(masterGain)
     expect(master.gain.operations).toEqual([])
-    expect(harness.mediaElements[0].currentTime).toBe(7.25)
+    // A seek is not a load: the transport controls stay live throughout.
+    expect(harness.transport.getStatus()).toBe('playing')
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(7.25)
+  })
+
+  it('lands a scrubber drag once, where the finger stopped', async () => {
+    // A range input emits an `input` per pixel. Each one used to be its own
+    // pause-seek-play of every stem — a drag's worth of re-primes, which is
+    // the same stutter by another route.
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(
+      session('drag', [track('drums'), track('guitar')]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    for (const element of harness.mediaElements) element.play.mockClear()
+
+    harness.transport.seek(2)
+    harness.transport.seek(4)
+    harness.transport.seek(6.5)
+    // The playhead reports where the finger is, not where the in-flight
+    // re-prime is heading and not where the stalled element still reads.
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(6.5)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    for (const element of harness.mediaElements) {
+      // Two re-primes, not three: the first, and the last position asked for.
+      expect(element.play).toHaveBeenCalledTimes(2)
+      expect(element.currentTime).toBe(6.5)
+    }
+    expect(harness.transport.getStatus()).toBe('playing')
+  })
+
+  it('lets a pause outrank a seek that is still in the air', async () => {
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('pause-wins'))
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    harness.transport.seek(5)
+    harness.transport.pause()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    // The re-prime finishes after the pause; the room must not come back up,
+    // and it stays parked where the player left it — at the seek they had
+    // already asked for, which is what the playhead was showing.
+    expect(harness.transport.getStatus()).toBe('paused')
+    expect(harness.mediaElements[0].paused).toBe(true)
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(5)
+  })
+
+  it('lets a stop outrank a seek, and stop means the top', async () => {
+    // Stop parks at zero and reports 'ready'. A re-prime landing afterwards
+    // used to force 'paused' at the seek target instead — the player's own
+    // decision overwritten by one that was already in the air.
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('stop-wins'))
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    harness.transport.seek(5)
+    harness.transport.stop()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(harness.transport.getStatus()).toBe('ready')
+    expect(harness.transport.getCurrentTime()).toBe(0)
+    expect(harness.mediaElements[0].paused).toBe(true)
+  })
+
+  it('moves a paused streamed room to where it will resume from', async () => {
+    // Scrubbing while paused is how a player lines up the bar they want to
+    // work on. Nothing is audible, so there is no re-prime — but the elements
+    // still have to be sitting on the target, or the first frame after Play
+    // comes from wherever they were left and then jumps.
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(
+      session('paused-seek', [track('drums'), track('guitar')]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.transport.getLoadMode()).toBe('streamed')
+    harness.transport.pause()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    for (const element of harness.mediaElements) element.play.mockClear()
+
+    harness.transport.seek(9)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    for (const element of harness.mediaElements) {
+      expect(element.currentTime).toBe(9)
+      // Silent means silent: a seek while paused starts nothing.
+      expect(element.play).not.toHaveBeenCalled()
+    }
+    expect(harness.transport.getStatus()).toBe('paused')
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(9)
+  })
+
+  it('drops a re-prime whose song has already been replaced', async () => {
+    // Seek, then pick another song before the stems have come back up. The
+    // in-flight re-prime belongs to a session that no longer exists; carrying
+    // on would start the old stems under the new one's transport.
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('first-song', [track('drums')]))
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    const stale = harness.mediaElements[0]
+    harness.transport.seek(5)
+    // A second seek queues behind the first, so the loop still has work
+    // pending when the song is swapped out from under it.
+    harness.transport.seek(7)
+    stale.play.mockClear()
+    harness.transport.configure(session('second-song', [track('guitar')]))
+    const reported: number[] = []
+    const unsubscribe = harness.transport.subscribe(() => {
+      reported.push(harness.transport.getCurrentTime())
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    unsubscribe()
+
+    // Never the old song's playhead: the new room starts at its own zero.
+    expect(reported.filter((value) => value !== 0)).toEqual([])
+
+    // A freshly armed session, not the old one's re-prime landing on top of
+    // it: nothing playing, nothing to resume from.
+    expect(harness.transport.getStatus()).toBe('armed')
+    expect(harness.transport.getCurrentTime()).toBe(0)
+    expect(stale.play).not.toHaveBeenCalled()
+  })
+
+  it('parks the whole room when one stem is stopped from outside', async () => {
+    // Each stem is its own media element and so its own OS media session. On
+    // iOS the Now Playing control pauses the one it attached to; the rest
+    // used to keep playing under a transport that still said "playing".
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(
+      session('interrupted', [track('drums'), track('guitar')]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.transport.getStatus()).toBe('playing')
+
+    harness.mediaElements[1].currentTime = 6.5
+    harness.mediaElements[1].dispatchEvent(new Event('pause'))
+
+    expect(harness.transport.getStatus()).toBe('paused')
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(6.5)
+  })
+
+  it('parks at the song position when the stopped stem has no clock to give', async () => {
+    // A stem torn down by the OS can read back NaN. Parking there would put
+    // the playhead — and the resume point — at "not a number".
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(
+      session('interrupted-nan', [track('drums'), track('guitar')]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    harness.context.currentTime += 3
+
+    harness.mediaElements[1].currentTime = Number.NaN
+    harness.mediaElements[1].dispatchEvent(new Event('pause'))
+
+    expect(harness.transport.getStatus()).toBe('paused')
+    expect(Number.isFinite(harness.transport.getCurrentTime())).toBe(true)
+    expect(harness.transport.getCurrentTime()).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps playing when it is the transport doing the pausing', async () => {
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('own-pause'))
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    harness.transport.pause()
+    harness.mediaElements[0].dispatchEvent(new Event('pause'))
+
+    expect(harness.transport.getStatus()).toBe('paused')
   })
 
   it('rejects an unsafe decoded-size estimate before fetching or decoding', async () => {

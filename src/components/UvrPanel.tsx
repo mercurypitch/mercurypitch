@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { batch, createEffect, createResource, createSignal, For, lazy, on, onCleanup, Show, Suspense, untrack, } from 'solid-js'
 import { OptionsSheet } from '@/components/mobile/OptionsSheet'
-import { FancyDivider } from '@/components/shared'
+import { BusyLink, FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import type { SessionExportStemType, SessionZipInspection, } from '@/db/services/session-export-service'
@@ -2142,7 +2142,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         </Show>
       </div>
       <div class="uvr-view-tabs">
-        <a
+        <BusyLink
           class="view-tab"
           href={
             mixerSessionId() !== ''
@@ -2152,10 +2152,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 : KARAOKE_NIGHT_PATH
           }
           title="Open Karaoke Night — the theatre stage for singing your songs and playlists"
+          busyLabel="Opening Karaoke Night…"
         >
           <StageCurtains />
           <span>Karaoke Night</span>
-        </a>
+        </BusyLink>
         <button
           class="view-tab"
           classList={{ active: showGuide() }}
@@ -2341,10 +2342,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     To actually sing one, Karaoke Night is the full-screen stage
                     — and it is the surface built for a phone.
                   </p>
-                  <a class="uvr-stage-note-link" href={KARAOKE_NIGHT_PATH}>
+                  <BusyLink
+                    class="uvr-stage-note-link"
+                    href={KARAOKE_NIGHT_PATH}
+                    busyLabel="Opening Karaoke Night…"
+                  >
                     <StageCurtains />
                     Open Karaoke Night
-                  </a>
+                  </BusyLink>
                 </div>
               </Show>
 

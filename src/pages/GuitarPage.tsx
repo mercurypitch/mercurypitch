@@ -14,6 +14,7 @@ import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
 import { Guitar } from '@/components/icons'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
+import { BusyLink } from '@/components/shared'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
 import { SegmentedControl } from '@/components/shared/SegmentedControl'
 import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatusBar'
@@ -378,16 +379,17 @@ export function GuitarPage(props: GuitarPageProps) {
               value={guitarView}
               onChange={setGuitarView}
             />
-            <a
+            <BusyLink
               class={barStyles.chipBtn}
               href="/guitar-night"
               title="Open Guitar Night — the Velvet Rehearsal play-along room"
+              busyLabel="Opening Guitar Night…"
             >
               <span class={barStyles.chipIcon} aria-hidden="true">
                 <Guitar />
               </span>
               <span class={barStyles.chipLabel}>Guitar Night</span>
-            </a>
+            </BusyLink>
             <button
               class={barStyles.chipBtn}
               onClick={() => gpFileInput?.click()}
@@ -449,9 +451,13 @@ export function GuitarPage(props: GuitarPageProps) {
           </OptionSection>
           <OptionSection label="More">
             <OptionRow label="Guitar Night">
-              <a class={barStyles.chipBtn} href="/guitar-night">
+              <BusyLink
+                class={barStyles.chipBtn}
+                href="/guitar-night"
+                busyLabel="Opening Guitar Night…"
+              >
                 Open
-              </a>
+              </BusyLink>
             </OptionRow>
             <OptionRow label="Guitar Pro tab">
               <button

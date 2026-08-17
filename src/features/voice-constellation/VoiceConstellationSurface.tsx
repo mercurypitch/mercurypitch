@@ -11,6 +11,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, For, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { Sparkles, Voice, X } from '@/components/icons'
+import { BusyLink } from '@/components/shared'
 import { authVersion } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { legendArt, legendTierSrc } from '@/features/mirror/LegendCaricature'
@@ -303,7 +304,9 @@ const LegendDetailDialog: Component<{
                   Next
                 </button>
               </div>
-              <a href="/mirror">Make another voiceprint</a>
+              <BusyLink href="/mirror" busyLabel="Opening the Voice Mirror…">
+                Make another voiceprint
+              </BusyLink>
             </div>
           </div>
         </div>
