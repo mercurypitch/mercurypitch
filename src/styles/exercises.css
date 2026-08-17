@@ -2124,20 +2124,45 @@
    canvas, where a playhead crossing the blocks says the same thing and says
    it about the shape of the step rather than about the clock. */
 
+/* The caption row: one strip immediately above the canvas carrying the
+   approach-run announcement and the guide toggle. Both used to cost a row
+   of their own — the announcement in the shell's phase slot at the very top
+   of the runner, the toggle stacked under the step instruction — which on a
+   landscape tablet was ~70px of height spent on two short lines.
+
+   `min-height` rather than content height: the announcement only exists
+   between steps and during a count-in, and a row that collapses when it
+   empties would bounce the canvas up and down through every step change. */
+.warmup-caption-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 12px;
+}
+
 /* The approach-run announcement: "Get ready" during a step's count-in, the
    next step's name during the gap between steps. */
 .warmup-phase-line {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--accent);
+  text-align: center;
 }
 
-/* Guide-sound mute — a room decision, kept small beside the instruction. */
+/* Guide-sound mute — a room decision, parked in the row's right corner so
+   the announcement stays centred on the canvas regardless of the toggle's
+   width, which changes with its own label ("Guide on" / "Guide muted"). */
 .warmup-guide-mute {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
   padding: 0.28rem 0.7rem;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -2183,6 +2208,16 @@
 @media (max-width: 760px) {
   .warmup-canvas {
     height: clamp(200px, 34vh, 300px);
+  }
+
+  /* Too narrow to seat a labelled pill beside a sentence: the toggle keeps
+     its icon (and its accessible name) and drops the visible label. */
+  .warmup-guide-mute span {
+    display: none;
+  }
+
+  .warmup-guide-mute {
+    padding: 0.28rem 0.4rem;
   }
 }
 

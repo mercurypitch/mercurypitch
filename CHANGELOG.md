@@ -20,6 +20,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   laptop and phone speakers. They now get a small level lift and a
   reinforcing overtone, which is what carries a low note on a small speaker —
   the pitch is unchanged, and nothing from C3 upward sounds different.
+- **More room in the guided warmup on short screens.** The "next up" line and
+  the guide-sound toggle now share a single strip just above the visual,
+  instead of taking a row each at opposite ends of the screen.
 
 - **A new release no longer crashes the tab you were on.** When a deploy
   replaced the app's files mid-session, opening a tab (Progress was the
