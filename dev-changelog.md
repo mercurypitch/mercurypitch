@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release+60 ms slack — a -70 dBFS hard step, now scheduled after the
   stop. Pinned by the "low notes get whole-cycle envelopes" describe
   (6 tests incl. fake-timer teardown ordering and the 440 Hz guard).
+- **Jam lyric sweep survives touch** (owner report, 2026-08-17):
+  JamSongLyrics grew its range only via per-row `pointerenter`, but a
+  touch pointer is implicitly captured by its first row so enter never
+  fires elsewhere — the range pinned to line one; with no `touch-action`
+  the UA reclaimed the drag as a pan and the unhandled `pointercancel`
+  left the anchor wedged. Now: `sweepToPoint` on `pointermove` hit-tests
+  `document.elementFromPoint(...).closest('[data-line]')` (Piano Night
+  glissando pattern), `.painting` sets `touch-action: none` (armed rows
+  only — scrolling is untouched otherwise), and a document
+  `pointercancel` abandons the sweep without committing. Pinned by
+  jam-lyrics-touch-sweep.test.tsx (capture-retargeted move grows the
+  range; cancel wedges nothing; CSS rule).
 
 ### Fixed
 
