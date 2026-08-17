@@ -112,20 +112,30 @@
      it something to take. Measured at 390px: the header goes from 66px to
      34px and the title gets 129px, which fits every drill name but
      "Staccato Precision" (144px) — that one ellipsises and keeps its full
-     text in the title attribute. */
+     text in the title attribute.
+     Wrapping was the escape hatch that let a long name push the mic and
+     level readout onto a second line instead; with the title able to shrink
+     there is nothing left to escape from, and the controls stay in the
+     top-right corner where they belong. */
   .exercise-runner-header {
-    flex-wrap: wrap;
-    row-gap: 10px;
+    flex-wrap: nowrap;
     gap: 10px;
     margin-bottom: 10px;
   }
   /* `flex: 1 1 0`, not `1 1 auto`: with an auto basis a long name claims
      its full content width and the control groups shrink to make room —
      "Staccato Precision" ate the level chip. Basis zero means the title
-     only ever gets what is left over, and ellipsises inside it. */
-  .exercise-title {
+     only ever gets what is left over, and ellipsises inside it.
+     This must sit on `.exercise-header-title`, the wrapper that IS the flex
+     child. It used to sit on the `h2` — correct until ec9b3f67 wrapped the
+     h2 to hang an icon beside it, after which the rule described an element
+     one level too deep and the row silently went back to two lines on every
+     drill with a long name. */
+  .exercise-header-title {
     flex: 1 1 0;
     min-width: 0;
+  }
+  .exercise-title {
     font-size: 1rem;
     line-height: 1.2;
     overflow: hidden;
@@ -250,8 +260,12 @@
      change — see the exercise refactor. Until then the two heaviest setups
      (Arpeggio Jumper, Vibrato) scroll on a phone; every other drill and
      every wider screen fits without one. */
+  /* Wide enough to be an easy thumb target, not so wide it reads as a
+     banner. `width: 100%` alone handed Start the launch column's full
+     340px, edge-to-edge on a 390px screen. */
   .exercise-idle-start {
     width: 100%;
+    max-width: 260px;
     min-width: 0;
     padding: 13px;
     font-size: 0.95rem;
@@ -317,9 +331,13 @@
   }
 
   /* Exercises: Start ends the scrolling panel and the Stop FAB sits at the
-     very bottom edge — keep both above the home indicator. */
+     very bottom edge — keep both above the home indicator.
+     The inset is a *gap under* the button, so it belongs in the margin. As
+     padding it grew the button's own box instead: 13px above the label and
+     47px below it on a notched phone, which is the squat, off-centre Start
+     the owner photographed, not a button clear of the home indicator. */
   .exercise-idle-start {
-    padding-bottom: calc(13px + var(--safe-bottom));
+    margin-bottom: var(--safe-bottom);
   }
   .exercise-canvas-area.is-active {
     padding-bottom: calc(64px + var(--safe-bottom));
@@ -400,5 +418,40 @@
     color: var(--text-muted);
     font-size: 1.1rem;
     line-height: 1;
+  }
+}
+
+/* ============================================================
+   Sight-Singing: the staff has to fit the phone, not scroll it
+   ============================================================
+   The SVG carries width/height attributes equal to its viewBox, so it
+   renders at a permanent 1:1 — 180px tall on top of a 148px pitch tracker,
+   a hold bar and a progress bar, inside a card that also reserves room for
+   the Stop button. The column overflowed, `justify-content: safe center`
+   degraded to flex-start, and the notes — the one thing the drill is about
+   — sat below the fold behind a vertical scroll.
+
+   Giving the element a CSS height with `width: auto` lets the viewBox's
+   own aspect ratio scale the whole drawing down uniformly (author CSS beats
+   the presentation attributes, and preserveAspectRatio defaults to meet).
+   Same idea as `.warmup-canvas`'s clamp — CSS owns the layout size.
+
+   `min-width: 0` is load-bearing: the 300px floor in exercises.css would
+   letterbox the shrunken drawing instead of tightening around it.
+
+   The viewBox is NOT cropped to gain more zoom. Drawn content reaches
+   y≈167 of the 180 box — a note a seventh below the staff (E3) plus its
+   ledger lines — so the apparent dead space at the bottom is where low
+   notes live. Cropping it would clip the very notes being complained about.
+   ============================================================ */
+@media (max-width: 768px) {
+  .sight-singing-staff {
+    height: clamp(88px, 16vh, 132px);
+    width: auto;
+    min-width: 0;
+  }
+  .sight-singing-staff-container {
+    padding: 6px;
+    margin-bottom: 8px;
   }
 }
