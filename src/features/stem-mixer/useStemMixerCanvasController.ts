@@ -247,10 +247,11 @@ export const useStemMixerCanvasController = (
    *
    * These are painted onto the canvas, so the stage-glass slider — which works
    * by fading CSS variables — cannot reach them, and the names sat on opaque
-   * plates while every surface around them turned translucent. Karaoke Night
-   * derives `--sm-lane-label-bg` from the same `--kn-alpha` the slider writes;
-   * resolved once per redraw rather than per lane, and the studio (which does
-   * not define it) keeps the fixed backdrop it has always had.
+   * plates while every surface around them turned translucent. `.stem-mixer`
+   * derives `--sm-lane-label-bg` from the `--sm-stage-alpha` its host resolves
+   * — Karaoke Night from `--kn-alpha`, the studio from its own slider —
+   * resolved once per redraw rather than per lane, with the fixed backdrop
+   * only as a fallback when the property cannot be read at all.
    */
   const LANE_LABEL_BACKDROP = 'rgba(5, 8, 18, 0.82)'
   let laneLabelBackdrop = LANE_LABEL_BACKDROP
