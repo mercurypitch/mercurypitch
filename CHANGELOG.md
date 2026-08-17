@@ -259,6 +259,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The Settings tour points at the room control again.** It still described
+  choosing one of three microphone presets, and highlighted a dropdown that
+  became a slider earlier in this release.
+
 - **Every guided tour shows where you are in it.** The step count used to
   appear only on longer tours, and when it did it sat among the step marks
   where it read as one more mark. It now leads them, on every tour, so the

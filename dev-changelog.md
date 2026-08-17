@@ -183,6 +183,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Settings tour target: `#preset-select` -> `[data-tour="settings.room-slider"]`.**
+  The environment `<select>` became `MicSensitivitySlider`; the walkthrough
+  step, its copy, the `walkthrough.ts` tutorial step and three
+  `settings.spec.ts` e2e tests all still named the dead id. The e2e ones are
+  outside the smoke set, so only the release-time tour walk caught it. New
+  `tour-selectors-exist.test.ts` asserts every hook named by
+  `WALKTHROUGH_STEPS`, `PAGE_TOURS`, `STEM_MIXER_TOUR_STEPS` and
+  `PRACTICE_MODES_TOUR_STEPS` is written somewhere outside the definition
+  files; template-built hooks are allowlisted by name.
+
 - **Walkthrough progress readout: unconditional, and ahead of the marks.**
   Dropped `COUNT_FROM = 9`, moved `.walkthroughDotCount` in front of
   `.walkthroughDots`, marked it `aria-hidden` and moved the long form onto
