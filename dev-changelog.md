@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Frequency-aware envelope floors in audio-engine** (owner report,
+  2026-08-17: "bassey sort of pop" on dial notes in octaves 2-3): the
+  75 ms stopNote release (tau 15 ms) and the sustain envelope's 15 ms
+  attack / 50 ms release have sub-period taus below ~C3 (period 15.3 ms
+  at C2), moving gain ~63% inside one cycle. New
+  `MIN_ENVELOPE_CYCLES = 2` + `releaseSecondsFor(frequency, base)`:
+  stopNote (via `ActiveVoice.frequency`) and `_scheduleSustainEnvelope`
+  (all four instrument call sites pass `frequency`) stretch attack and
+  release to at least two periods of the fundamental; 440 Hz keeps the
+  house constants. Also fixes the teardown-before-stop step: the
+  disconnect timer fired at release+25 ms while sources stopped at
+  release+60 ms slack — a -70 dBFS hard step, now scheduled after the
+  stop. Pinned by the "low notes get whole-cycle envelopes" describe
+  (6 tests incl. fake-timer teardown ordering and the 440 Hz guard).
+
+### Fixed
+
 - **Streak repair window bounds the break, not its detection** (owner
   repro, 2026-08-17): `advanceStreakFrom`'s reset branch stamped
   `streakResetDate = today` and snapshotted `previousStreak`
