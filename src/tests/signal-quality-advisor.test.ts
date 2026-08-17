@@ -48,14 +48,20 @@ interface Harness {
   notify: ReturnType<typeof vi.fn>
   dismiss: ReturnType<typeof vi.fn>
   openSettings: ReturnType<typeof vi.fn>
+  revealPanel: ReturnType<typeof vi.fn>
   storage: Map<string, string>
   dispose: () => void
 }
 
-const start = (preset: 'quiet' | 'home' | 'noisy' = 'quiet'): Harness => {
+const start = (
+  preset: 'quiet' | 'home' | 'noisy' = 'quiet',
+  /** Whether the sidebar mic panel is reachable on the current screen. */
+  panelOnScreen = false,
+): Harness => {
   const notify = vi.fn(() => 42)
   const dismiss = vi.fn()
   const openSettings = vi.fn()
+  const revealPanel = vi.fn(() => panelOnScreen)
   const storage = new Map<string, string>()
   const dispose = createSignalQualityAdvisor({
     now: () => wallT,
@@ -63,13 +69,14 @@ const start = (preset: 'quiet' | 'home' | 'noisy' = 'quiet'): Harness => {
     notify: notify as never,
     dismiss: dismiss as never,
     openSettings: openSettings as never,
+    revealPanel: revealPanel as never,
     preset: () => preset,
     storage: {
       getItem: (k: string) => storage.get(k) ?? null,
       setItem: (k: string, v: string) => void storage.set(k, v),
     },
   })
-  return { notify, dismiss, openSettings, storage, dispose }
+  return { notify, dismiss, openSettings, revealPanel, storage, dispose }
 }
 
 const tick = (): void => {
@@ -210,5 +217,50 @@ describe('wiring pins', () => {
   it('the practice engine opts its detectors into live telemetry', () => {
     const source = readFileSync('src/lib/practice-engine.ts', 'utf8')
     expect(source.match(/telemetry: 'live'/g)).toHaveLength(3)
+  })
+})
+
+describe('taking the advice without leaving the screen', () => {
+  it('points at the sidebar mic panel when it is already there', () => {
+    // The mic panel is a universal sidebar panel, so on most screens the
+    // control this toast is about is a few pixels away. Sending the singer to
+    // the Settings tab and back is the entire cost of taking the advice —
+    // on a phone especially.
+    harness = start('quiet', true)
+    feedNoisy(6_000)
+    tick()
+
+    const action = (
+      harness.notify.mock.calls[0] as unknown as [
+        string,
+        string,
+        { onClick: () => void },
+      ]
+    )[2]
+    action.onClick()
+
+    expect(harness.revealPanel).toHaveBeenCalledWith('mic')
+    expect(harness.openSettings).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the Settings page when the panel is not on the page', () => {
+    harness = start('quiet', false)
+    feedNoisy(6_000)
+    tick()
+
+    const action = (
+      harness.notify.mock.calls[0] as unknown as [
+        string,
+        string,
+        { onClick: () => void },
+      ]
+    )[2]
+    action.onClick()
+
+    expect(harness.revealPanel).toHaveBeenCalledWith('mic')
+    expect(harness.openSettings).toHaveBeenCalledWith(
+      'singing',
+      'sensitivity-presets',
+    )
   })
 })

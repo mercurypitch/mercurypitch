@@ -30,3 +30,37 @@ describe('SettingsPanel tabs', () => {
     expect(screen.queryByText('Sensitivity Presets')).not.toBeInTheDocument()
   })
 })
+
+describe('the sub-tab strip on a narrow screen', () => {
+  it('scrolls the selected tab into view when one is chosen for you', async () => {
+    // The strip scrolls horizontally on a phone. Tapping the header heart
+    // deep-links to Credits — the last tab — and the strip used to stay
+    // wherever it was, so the tab that had just been selected was off screen
+    // and the jump looked like it had failed.
+    const scrolls: Element[] = []
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function scrollIntoView(this: Element) {
+      scrolls.push(this)
+    }
+
+    const frames: FrameRequestCallback[] = []
+    const originalRaf = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      frames.push(cb)
+      return 0
+    }) as typeof globalThis.requestAnimationFrame
+
+    try {
+      render(() => <SettingsPanel />)
+      fireEvent.click(screen.getByTestId('settings-tab-credits'))
+      for (const frame of frames.splice(0)) frame(0)
+
+      const scrolled = scrolls.at(-1)
+      expect(scrolled).toBeDefined()
+      expect(scrolled?.getAttribute('data-testid')).toBe('settings-tab-credits')
+    } finally {
+      Element.prototype.scrollIntoView = original
+      globalThis.requestAnimationFrame = originalRaf
+    }
+  })
+})

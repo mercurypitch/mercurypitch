@@ -15,9 +15,11 @@ import { IS_DEV } from '@/lib/defaults'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import type { ScoreMode } from '@/lib/score-window'
 import { isScoreMode } from '@/lib/score-window'
+import { nearestSensitivityPreset, SENSITIVITY_PRESETS, sensitivityConfigAt, sensitivityPositionForConfig, sensitivityPositionOf, } from '@/lib/sensitivity-scale'
 import { createPersistedSignal } from '@/lib/storage'
 
 export type { PitchAlgorithm }
+export { SENSITIVITY_PRESETS }
 
 export type PitchBufferSize = 512 | 1024 | 2048 | 4096
 export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
@@ -84,30 +86,6 @@ export type ReverbType = 'off' | 'room' | 'hall' | 'cathedral'
 export interface ReverbConfig {
   wetness: number
   type: ReverbType
-}
-
-export const SENSITIVITY_PRESETS: Record<
-  SensitivityPreset,
-  Omit<SettingsConfig, 'bands' | 'tonicAnchor'>
-> = {
-  quiet: {
-    detectionThreshold: 0.05,
-    sensitivity: 7,
-    minConfidence: 0.3,
-    minAmplitude: 1,
-  },
-  home: {
-    detectionThreshold: 0.1,
-    sensitivity: 5,
-    minConfidence: 0.5,
-    minAmplitude: 2,
-  },
-  noisy: {
-    detectionThreshold: 0.2,
-    sensitivity: 9,
-    minConfidence: 0.7,
-    minAmplitude: 4,
-  },
 }
 
 const ACCURACY_PRESETS: Record<
@@ -203,6 +181,20 @@ export const [settings, setSettings] = createPersistedSignal<SettingsConfig>(
   { deserializer: (item) => healBands(JSON.parse(item) as SettingsConfig) },
 )
 
+/**
+ * Where the room slider sits, 0 (Quiet) to 100 (Noisy).
+ *
+ * Seeded from the thresholds already persisted rather than from a constant,
+ * so a singer who set Noisy two releases ago opens the slider at Noisy
+ * instead of watching it read Quiet and silently rewrite their gate. Declared
+ * after `settings` because it reads it.
+ */
+export const [sensitivityPosition, _setSensitivityPosition] =
+  createPersistedSignal<number>(
+    'pitchperfect_sensitivity_position',
+    sensitivityPositionForConfig(settings()),
+  )
+
 export const [adsr, setAdsr] = createPersistedSignal<ADSRConfig>(
   'pitchperfect_adsr',
   DEFAULT_ADSR,
@@ -249,9 +241,26 @@ export function setSensitivityPresetValue(value: SensitivityPreset): void {
 }
 
 export function applySensitivityPreset(preset: SensitivityPreset): void {
-  const config = SENSITIVITY_PRESETS[preset]
+  applySensitivityPosition(sensitivityPositionOf(preset))
+}
+
+/**
+ * Move to any point on the room scale, named stop or not.
+ *
+ * This is the ONLY writer of the three halves of one choice — the slider
+ * position, the thresholds, and the preset label. `applySensitivityPreset`
+ * routes through it for the same reason: two writers is how the label ends up
+ * describing numbers it does not reflect, which the comment on
+ * `sensitivityPreset` above has been warning about for two settings.
+ *
+ * At a stop the interpolation returns that preset's own numbers, so the
+ * three-button path behaves exactly as it did before the slider existed.
+ */
+export function applySensitivityPosition(position: number): void {
+  const config = sensitivityConfigAt(position)
   setSettings((s) => ({ ...s, ...config }))
-  _setSensitivityPreset(preset)
+  _setSensitivityPosition(position)
+  _setSensitivityPreset(nearestSensitivityPreset(position))
 }
 
 export function setDetectionThreshold(value: number): void {

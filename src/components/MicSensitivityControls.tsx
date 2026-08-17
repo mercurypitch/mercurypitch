@@ -1,22 +1,15 @@
 import type { JSX } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createSignal } from 'solid-js'
 import { SegmentedControl } from '@/components/shared/SegmentedControl'
-import { micActive } from '@/stores/mic-store'
-import type { AccuracyTier, SensitivityPreset } from '@/stores/settings-store'
-import { accuracyTier, applyAccuracyTier, applySensitivityPreset, sensitivityPreset, } from '@/stores/settings-store'
-import { MicLevelMeter } from './MicLevelMeter'
+import type { AccuracyTier } from '@/stores/settings-store'
+import { accuracyTier, applyAccuracyTier } from '@/stores/settings-store'
 import styles from './MicSensitivityControls.module.css'
+import { MicSensitivitySlider } from './MicSensitivitySlider'
 
 const TIERS: Array<{ value: AccuracyTier; label: string }> = [
   { value: 'learning', label: 'Learning' },
   { value: 'singer', label: 'Singer' },
   { value: 'professional', label: 'Professional' },
-]
-
-const ROOMS: Array<{ value: SensitivityPreset; label: string }> = [
-  { value: 'quiet', label: 'Quiet' },
-  { value: 'home', label: 'Home' },
-  { value: 'noisy', label: 'Noisy' },
 ]
 
 /**
@@ -44,13 +37,6 @@ export function MicSensitivityControls(props: {
       class="mic-sensitivity-controls"
       style={{ display: 'flex', 'flex-direction': 'column', gap: '0.5rem' }}
     >
-      {/* Armed on purpose. Nobody opens this panel by accident — they open it
-          because the mic is misbehaving, and "we are hearing nothing at all"
-          is the answer they came for. */}
-      <Show when={micActive()}>
-        <MicLevelMeter label="Input" armed />
-      </Show>
-
       <div
         style={{ display: 'flex', 'flex-direction': 'column', gap: '0.2rem' }}
       >
@@ -66,18 +52,10 @@ export function MicSensitivityControls(props: {
         />
       </div>
 
-      <div
-        style={{ display: 'flex', 'flex-direction': 'column', gap: '0.2rem' }}
-      >
-        <span style={{ 'font-size': '0.7rem', opacity: '0.7' }}>Room</span>
-        <SegmentedControl
-          options={ROOMS}
-          value={sensitivityPreset}
-          onChange={applySensitivityPreset}
-          ariaLabel="Room noise"
-          grow
-        />
-      </div>
+      {/* The slider replaces the three-way Room control: the named rooms are
+          still one tap away on its ticks, and the space between them — the
+          setting the owner needed in a noisy room — is now reachable. */}
+      <MicSensitivitySlider compact />
 
       <button
         type="button"
