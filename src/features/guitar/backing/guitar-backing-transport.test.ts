@@ -297,6 +297,44 @@ describe('createGuitarBackingTransport', () => {
     expect(harness.transport.getDuration()).toBe(12)
   })
 
+  // The room renders these through a `<For>`, so a fresh object per call meant
+  // the whole channel strip was destroyed and rebuilt on every transport
+  // event — including every `input` of a seek or a volume drag, which is
+  // exactly when new DOM is most visible as jank.
+  it('hands out the same track state until that track changes', async () => {
+    const harness = audioHarness({ fadeSeconds: 0.05 })
+    harness.transport.configure(
+      session('stable-identity', [track('drums'), track('guitar')]),
+    )
+    await harness.transport.play()
+
+    const first = harness.transport.getTrackStates()
+    expect(harness.transport.getTrackStates()[0]).toBe(first[0])
+    expect(harness.transport.getTrackStates()[1]).toBe(first[1])
+
+    harness.transport.setTrackMuted('guitar', true)
+    const afterMute = harness.transport.getTrackStates()
+
+    // Only the track that changed is a new object.
+    expect(afterMute[0]).toBe(first[0])
+    expect(afterMute[1]).not.toBe(first[1])
+    expect(afterMute[1].muted).toBe(true)
+  })
+
+  it('never hands out the array it mutates', async () => {
+    const harness = audioHarness({ fadeSeconds: 0.05 })
+    harness.transport.configure(
+      session('copy-out', [track('drums', { muted: true })]),
+    )
+    await harness.transport.play()
+
+    const states = harness.transport.getTrackStates()
+    ;(states[0] as { muted: boolean }).muted = false
+
+    harness.transport.setTrackMuted('drums', true)
+    expect(harness.transport.getTrackStates()[0].muted).toBe(true)
+  })
+
   it('starts a guitar channel muted and ramps it in without rebuilding the graph', async () => {
     const harness = audioHarness({ fadeSeconds: 0.05 })
     harness.transport.configure(

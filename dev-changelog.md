@@ -73,6 +73,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all; the phone rail carries its own copy now (five columns). On a wide screen
   the coach is always visible and has no hidden state, so its rail button
   looked dead — it now moves focus to the coach and marks it for a moment.
+- **Guitar Night could not tell anyone it was struggling, and repainted
+  without a budget.** Four findings from a playback audit, after a report of
+  stuttering on an iPhone 13 Pro.
+  `recordAnimationFrame` — the sampler that demotes a device which only looks
+  capable, and the only thing that unlocks `performance-mode.css` — was fed
+  from nowhere in this room. It is fed from the transport clock now, which is
+  the room's one continuous animation frame while a song plays; a loop that
+  runs sporadically would report its own idle gaps as missed frames.
+  `GuitarTab3DView` repainted once per invalidation, which during playback is
+  every display frame, with a full-canvas gradient, `lighter` compositing and a
+  `shadowBlur` per near note and no cap at all. `requestPaint` now runs through
+  `createAdaptiveFrameRateLimiter(presentationFps)`, so it follows the live
+  tier and a mid-song demotion takes effect without rebuilding anything; a
+  skipped frame re-requests rather than dropping the paint it owed.
+  `Canvas2dTabRenderer` built two `CanvasGradient`s per frame — one spanning
+  the whole canvas — for fills that almost never change; both are cached and
+  invalidated on resize (and, for the runway, on the camera ends it is drawn
+  between).
+  `getTrackStates` copied every track on every call, so the room's `<For>`
+  destroyed and rebuilt the whole channel strip on each transport event —
+  including every `input` of a seek or volume drag, which is where new DOM is
+  most visible as jank. Copies are still handed out; a track that did not
+  change hands out the same copy.
 
 - **Piano Night's falling notes were measured against a different keyboard
   than the one on screen.** `PianoKeyHorizon` lays keys out by WHITE-KEY index

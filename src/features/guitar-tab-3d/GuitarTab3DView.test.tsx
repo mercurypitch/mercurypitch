@@ -23,6 +23,13 @@ vi.mock('./renderer/TabRenderer', async (importOriginal) => {
   return { ...actual, createTabRenderer: () => renderer }
 })
 
+const tier = vi.hoisted(() => ({ fps: Number.POSITIVE_INFINITY }))
+
+vi.mock('@/lib/device-tier', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return { ...actual, presentationFps: () => tier.fps }
+})
+
 function renderView(showGizmo = false) {
   return render(() => (
     <GuitarTab3DView
@@ -405,5 +412,89 @@ describe('GuitarTab3DView keyboard camera', () => {
     expect(canvas).toHaveAttribute('data-camera-yaw', initialYaw)
     expect(canvas).toHaveAttribute('data-camera-radius', initialRadius)
     expect(renderer.mount).toHaveBeenCalledTimes(1)
+  })
+})
+
+// The canvas repaints per invalidation, which during playback is every display
+// frame — a full-canvas gradient, `lighter` compositing, and a shadow blur per
+// near note. On a phone that is the frame budget gone, and nothing capped it.
+describe('GuitarTab3DView paint budget', () => {
+  afterEach(() => {
+    tier.fps = Number.POSITIVE_INFINITY
+  })
+
+  function queueFrames() {
+    const queued: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      queued.push(callback)
+      return queued.length
+    })
+    return queued
+  }
+
+  it('coalesces repaints into the tier cap without losing the last one', () => {
+    tier.fps = 30
+    const queued = queueFrames()
+    const [playheadBeat, setPlayheadBeat] = createSignal(0)
+    render(() => (
+      <>
+        <button type="button" onClick={() => setPlayheadBeat((b) => b + 1)}>
+          Advance
+        </button>
+        <GuitarTab3DView
+          fallingNotes={() => []}
+          playheadBeat={playheadBeat}
+          visibleBeatWindow={() => 8}
+          showNoteLabels={() => true}
+          showFretboard={() => true}
+          isActive={() => true}
+          showGizmo={() => false}
+        />
+      </>
+    ))
+
+    queued.shift()?.(0)
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+
+    // 16ms later is inside a 30fps budget: no paint, but the frame is still
+    // owed, so the view asks again rather than dropping it.
+    fireEvent.click(screen.getByRole('button', { name: 'Advance' }))
+    queued.shift()?.(16)
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+    expect(queued).toHaveLength(1)
+
+    // Past the budget, the owed paint lands — carrying the newest state, not
+    // the state it was queued with.
+    queued.shift()?.(40)
+    expect(renderer.render).toHaveBeenCalledTimes(2)
+    expect(renderer.render.mock.calls[1]?.[0]).toMatchObject({
+      playheadBeat: 1,
+    })
+  })
+
+  it('follows the display when the tier does not cap it', () => {
+    const queued = queueFrames()
+    const [playheadBeat, setPlayheadBeat] = createSignal(0)
+    render(() => (
+      <>
+        <button type="button" onClick={() => setPlayheadBeat((b) => b + 1)}>
+          Advance
+        </button>
+        <GuitarTab3DView
+          fallingNotes={() => []}
+          playheadBeat={playheadBeat}
+          visibleBeatWindow={() => 8}
+          showNoteLabels={() => true}
+          showFretboard={() => true}
+          isActive={() => true}
+          showGizmo={() => false}
+        />
+      </>
+    ))
+
+    queued.shift()?.(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Advance' }))
+    queued.shift()?.(1)
+    expect(renderer.render).toHaveBeenCalledTimes(2)
   })
 })

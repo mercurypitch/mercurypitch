@@ -223,6 +223,29 @@ export function createGuitarBackingTransport(
   let error: string | null = null
   let session: GuitarBackingSession | null = null
   let trackStates: GuitarBackingTrackState[] = []
+  // A copy per call kept the internal array unreachable, but it also handed
+  // every consumer new object identities on every transport event. The room's
+  // `<For>` over these rebuilt the whole channel strip on each `input` of a
+  // seek or volume drag — new DOM in the middle of a gesture, which is where
+  // jank shows most. Copies are still handed out; a track that did not change
+  // hands out the same copy it did last time.
+  const trackStateCopies = new Map<string, GuitarBackingTrackState>()
+  const trackStatesView = (): readonly GuitarBackingTrackState[] =>
+    trackStates.map((state) => {
+      const previous = trackStateCopies.get(state.id)
+      if (
+        previous !== undefined &&
+        previous.label === state.label &&
+        previous.muted === state.muted &&
+        previous.level === state.level &&
+        previous.available === state.available
+      ) {
+        return previous
+      }
+      const copy = { ...state }
+      trackStateCopies.set(state.id, copy)
+      return copy
+    })
   let decodedTracks: DecodedTrack[] = []
   let streamEngine: GuitarBackingStreamEngine | null = null
   let activeVoices: ActiveVoice[] = []
@@ -870,7 +893,7 @@ export function createGuitarBackingTransport(
     getDuration: () => duration,
     getPlaybackRate: () => playbackRate,
     getMasterVolume: () => masterPosition,
-    getTrackStates: () => trackStates.map((state) => ({ ...state })),
+    getTrackStates: trackStatesView,
     getError: () => error,
     subscribe(listener) {
       listeners.add(listener)

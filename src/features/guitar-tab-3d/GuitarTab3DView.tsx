@@ -10,7 +10,8 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, on, onCleanup, onMount, Show, } from 'solid-js'
-import { renderScale } from '@/lib/device-tier'
+import { presentationFps, renderScale } from '@/lib/device-tier'
+import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
@@ -381,9 +382,20 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       r.resize(width, height, dpr)
       requestPaint()
     }
-    const renderFrame = () => {
+    // The canvas repaints per invalidation, which during playback means every
+    // display frame — with a full-canvas gradient, `lighter` compositing and a
+    // shadow blur per near note. On a phone that is the frame budget gone. The
+    // limiter follows the live tier, so a demotion mid-song takes effect
+    // without rebuilding anything.
+    const paintLimiter = createAdaptiveFrameRateLimiter(presentationFps)
+    const renderFrame = (timestampMs: number) => {
       rafId = 0
       if (!props.isActive()) return
+      if (!paintLimiter.shouldRun(timestampMs / 1000)) {
+        // A paint is still owed: come back next frame without drawing one.
+        requestPaint()
+        return
+      }
       const nextCamera = camera()
       if (lastCamera !== nextCamera) {
         r.setCamera(nextCamera)
