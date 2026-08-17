@@ -22,6 +22,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   phrase. The long "Show all voice commands" button is now a compact
   "Command list" button with an icon, with breathing room before the
   engine dropdown below it.
+- **The note dial's low octaves lost their bassy pop.** Note releases used
+  fixed times that are clean at higher pitches but shorter than a single
+  waveform cycle down in the second and third octave, where each note edge
+  landed as a soft thump. Envelopes now stretch to whole cycles of the
+  note being played — low notes fade over their own wavelength, higher
+  notes keep the same quick response as before.
 
 ### Changed
 

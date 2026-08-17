@@ -89,6 +89,8 @@ export const CHARACTER_PROFILES: Record<
 interface ActiveVoice {
   oscillators: (OscillatorNode | AudioBufferSourceNode)[]
   gains: GainNode[]
+  /** Fundamental (Hz) — release lengths scale to whole cycles of it. */
+  frequency?: number
   stopTime: number
   lfos?: OscillatorNode[]
   lfoGains?: GainNode[]
@@ -159,6 +161,24 @@ export class AudioEngine {
   private static readonly RELEASE_STOP_SLACK_SECONDS = 0.06
   /** Exponential ramps cannot reach zero; this is the house floor. */
   private static readonly ENVELOPE_FLOOR = 0.0001
+  /**
+   * Envelope times must span whole waveform cycles: a time constant
+   * shorter than one period moves the gain ~63% inside a single cycle,
+   * which below ~C3 reads as a bassy thump on every note edge even though
+   * the same numbers are clean at 440 Hz (period 2.3 ms vs 15.3 ms at
+   * C2). Two cycles is the floor; higher pitches keep the short house
+   * constants because their periods already fit many times over.
+   */
+  private static readonly MIN_ENVELOPE_CYCLES = 2
+
+  /** Lengthen `base` so its tau (base/5) spans MIN_ENVELOPE_CYCLES periods. */
+  private static releaseSecondsFor(
+    frequency: number | undefined,
+    base: number,
+  ): number {
+    if (frequency === undefined || !(frequency > 0)) return base
+    return Math.max(base, (AudioEngine.MIN_ENVELOPE_CYCLES * 5) / frequency)
+  }
 
   // BPM state (used for timing calculations)
   private _bpm = 120
@@ -1441,6 +1461,7 @@ export class AudioEngine {
     const voice: ActiveVoice = {
       oscillators: allOscillators,
       gains: [mainGain, voiceVolumeGain],
+      frequency,
       stopTime: now + durationMs / 1000,
       lfos,
       lfoGains,
@@ -1633,6 +1654,7 @@ export class AudioEngine {
           allOscillators.push(osc)
         })
         this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          frequency: freq,
           peak: 0.7,
           attack: 0.015,
           release: 0.1,
@@ -1657,6 +1679,7 @@ export class AudioEngine {
           allOscillators.push(osc)
         })
         this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          frequency: freq,
           peak: 0.6,
           attack: 0.1,
           release: 0.1,
@@ -1686,6 +1709,7 @@ export class AudioEngine {
         oscillatorsToStart.push(osc2)
         allOscillators.push(osc2)
         this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          frequency: freq,
           peak: 1,
           attack: 0.015,
           release: 0.1,
@@ -1726,6 +1750,7 @@ export class AudioEngine {
         oscillatorsToStart.push(osc)
         allOscillators.push(osc)
         this._scheduleSustainEnvelope(mainGain.gain, now, dur, {
+          frequency: freq,
           peak: 0.7,
           attack: 0.015,
           release: 0.05,
@@ -1842,12 +1867,28 @@ export class AudioEngine {
     param: AudioParam,
     now: number,
     duration: number,
-    options: { peak: number; attack: number; release: number },
+    options: {
+      peak: number
+      attack: number
+      release: number
+      /** When given, attack and release stretch to whole cycles of it. */
+      frequency?: number
+    },
   ): void {
     const safeDuration = Math.max(0.001, duration)
-    const releaseDuration = Math.min(options.release, safeDuration * 0.4)
+    // Whole-cycle floors (see MIN_ENVELOPE_CYCLES); the duration clamps
+    // below still win on very short notes so release can never overlap
+    // attack.
+    const minSpan =
+      options.frequency !== undefined && options.frequency > 0
+        ? AudioEngine.MIN_ENVELOPE_CYCLES / options.frequency
+        : 0
+    const releaseDuration = Math.min(
+      Math.max(options.release, minSpan * 5),
+      safeDuration * 0.4,
+    )
     const attackDuration = Math.min(
-      options.attack,
+      Math.max(options.attack, minSpan),
       safeDuration - releaseDuration,
     )
     const attackEnd = now + attackDuration
@@ -2075,10 +2116,14 @@ export class AudioEngine {
     if (!ctx) return
 
     const now = ctx.currentTime
-    let stopTime =
-      now +
-      AudioEngine.NOTE_RELEASE_SECONDS +
-      AudioEngine.RELEASE_STOP_SLACK_SECONDS
+    // At 65-260 Hz the 75 ms house release has a tau of one period or
+    // less — the "bassy pop" the dial kept at low octaves. Stretch it to
+    // whole cycles of the voice's fundamental; 440 Hz+ is unchanged.
+    const releaseSeconds = AudioEngine.releaseSecondsFor(
+      voice.frequency,
+      AudioEngine.NOTE_RELEASE_SECONDS,
+    )
+    let stopTime = now + releaseSeconds + AudioEngine.RELEASE_STOP_SLACK_SECONDS
 
     // Release envelope (GH #130 fix: guard for voices with no/null gains,
     // e.g. metronome). The 75 ms LINEAR ramp that lived here was the
@@ -2089,11 +2134,7 @@ export class AudioEngine {
     const firstGain = voice.gains[0]
     if (firstGain != null) {
       try {
-        stopTime = this._releaseParam(
-          firstGain.gain,
-          now,
-          AudioEngine.NOTE_RELEASE_SECONDS,
-        )
+        stopTime = this._releaseParam(firstGain.gain, now, releaseSeconds)
       } catch {
         /* gain may be disconnected */
       }
@@ -2151,7 +2192,13 @@ export class AudioEngine {
           }
         }
       },
-      Math.ceil(AudioEngine.NOTE_RELEASE_SECONDS * 1000) + 25,
+      // AFTER the scheduled osc.stop, never before: this timer used to
+      // fire at release+25 ms while the sources stopped at release+slack,
+      // so the graph was disconnected 35 ms early — a hard step at
+      // -70 dBFS, inaudible at 440 Hz but a full-period cut at bass.
+      Math.ceil(
+        (releaseSeconds + AudioEngine.RELEASE_STOP_SLACK_SECONDS) * 1000,
+      ) + 25,
     )
   }
 

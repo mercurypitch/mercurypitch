@@ -1563,6 +1563,143 @@ describe('every scheduled stop lands below audibility', () => {
 })
 
 // ============================================================
+// Low notes get whole-cycle envelopes
+// ============================================================
+//
+// The constants above are clean at 440 Hz and were pinned there — but a
+// time constant shorter than one waveform period moves the gain ~63%
+// inside a single cycle, and at 65-260 Hz (the dial's second and third
+// octaves) that read as a "bassy pop" on every note edge while the same
+// numbers passed every 440 Hz test. Owner-reported 2026-08-17. These pin
+// the cure: envelope times stretch to at least MIN_ENVELOPE_CYCLES (2)
+// periods of the voice's fundamental, higher pitches keep the short house
+// constants, and the graph teardown waits for the scheduled stop instead
+// of disconnecting 35 ms before it.
+
+describe('low notes get whole-cycle envelopes', () => {
+  let engine: AudioEngine
+
+  beforeEachFn(async () => {
+    engine = new AudioEngine()
+    await engine.init()
+  })
+
+  afterEach(() => {
+    engine.destroy()
+    vi.clearAllMocks()
+    vi.useRealTimers()
+  })
+
+  const C2 = 65.41
+  const TWO_CYCLES = 2 / C2 // ≈ 30.6 ms
+
+  interface VoiceMock {
+    gains: { gain: { events: ReplayEvent[] }; disconnect: ReturnType<typeof vi.fn> }[] // prettier-ignore
+    oscillators: { stop: ReturnType<typeof vi.fn> }[]
+  }
+  const voiceOf = (noteId: number): VoiceMock =>
+    (
+      engine as unknown as { _activeVoices: Map<number, VoiceMock> }
+    )._activeVoices.get(noteId)!
+
+  const lastStop = (osc: { stop: ReturnType<typeof vi.fn> }): number =>
+    osc.stop.mock.calls.at(-1)![0] as number
+
+  it('stopNote at C2 releases over at least two waveform cycles', async () => {
+    const noteId = await engine.playNote(C2, 5000)
+    const voice = voiceOf(noteId!)
+    const before = voice.gains[0]!.gain.events.length
+
+    engine.stopNote(noteId!)
+
+    const releaseEvents = voice.gains[0]!.gain.events.slice(before)
+    const release = releaseEvents.find(
+      (e) => e.method === 'setTargetAtTime' && e.args[0] === 0,
+    )
+    expect(release).toBeDefined()
+    // tau spans two periods of the fundamental...
+    expect(release!.args[2]!).toBeGreaterThanOrEqual(TWO_CYCLES - 1e-9)
+    // ...and the stop still lands below audibility.
+    expect(
+      gainAt(releaseEvents, lastStop(voice.oscillators[0]!), 1),
+    ).toBeLessThan(AUDIBLE)
+  })
+
+  it('stopNote at 440 Hz keeps the short house release', async () => {
+    const noteId = await engine.playNote(440, 5000)
+    const voice = voiceOf(noteId!)
+    const before = voice.gains[0]!.gain.events.length
+
+    engine.stopNote(noteId!)
+
+    const release = voice.gains[0]!.gain.events.slice(before).find(
+      (e) => e.method === 'setTargetAtTime' && e.args[0] === 0,
+    )
+    // 75 ms house release, five time constants: tau stays 15 ms.
+    expect(release!.args[2]!).toBeCloseTo(0.015, 5)
+  })
+
+  it("a low note's natural end rises and decays over whole cycles", async () => {
+    const noteId = await engine.playNote(C2, 2000)
+    const voice = voiceOf(noteId!)
+    const events = voice.gains[0]!.gain.events
+
+    const attack = events.find(
+      (e) => e.method === 'exponentialRampToValueAtTime',
+    )
+    const floorAnchor = events.find((e) => e.method === 'setValueAtTime')
+    expect(attack).toBeDefined()
+    expect(floorAnchor).toBeDefined()
+    // Attack duration = ramp end - floor anchor time.
+    expect(attack!.args[1]! - floorAnchor!.args[1]!).toBeGreaterThanOrEqual(
+      TWO_CYCLES - 1e-9,
+    )
+
+    const release = events.find(
+      (e) => e.method === 'setTargetAtTime' && e.args[0] === 0,
+    )
+    expect(release).toBeDefined()
+    expect(release!.args[2]!).toBeGreaterThanOrEqual(TWO_CYCLES - 1e-9)
+  })
+
+  it('the organ voice inherits the whole-cycle floor too', async () => {
+    engine.setInstrument('organ')
+    const noteId = await engine.playNote(C2, 2000)
+    const release = voiceOf(noteId!).gains[0]!.gain.events.find(
+      (e) => e.method === 'setTargetAtTime' && e.args[0] === 0,
+    )
+    expect(release!.args[2]!).toBeGreaterThanOrEqual(TWO_CYCLES - 1e-9)
+  })
+
+  it('an absent or zero frequency falls back to the base release', () => {
+    const helper = AudioEngine as unknown as {
+      releaseSecondsFor: (frequency: number | undefined, base: number) => number
+    }
+    expect(helper.releaseSecondsFor(undefined, 0.075)).toBe(0.075)
+    expect(helper.releaseSecondsFor(0, 0.075)).toBe(0.075)
+  })
+
+  it('tears the graph down only after the scheduled stop', async () => {
+    const noteId = await engine.playNote(440, 5000)
+    const voice = voiceOf(noteId!)
+
+    vi.useFakeTimers()
+    engine.stopNote(noteId!)
+
+    const stopAt = lastStop(voice.oscillators[0]!) // audio-clock seconds
+    // The old timer fired at release + 25 ms = 100 ms — 35 ms BEFORE the
+    // 135 ms scheduled stop, a hard step at -70 dBFS. Advance to just past
+    // the old firing point: the graph must still be connected.
+    vi.advanceTimersByTime(110)
+    expect(voice.gains[0]!.disconnect).not.toHaveBeenCalled()
+
+    // By the scheduled stop (plus the timer's 25 ms margin) it may go.
+    vi.advanceTimersByTime(Math.ceil(stopAt * 1000))
+    expect(voice.gains[0]!.disconnect).toHaveBeenCalled()
+  })
+})
+
+// ============================================================
 // Bus ramps and release fallbacks — the arms around the primitives
 // ============================================================
 //
