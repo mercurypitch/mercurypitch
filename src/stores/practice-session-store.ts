@@ -104,6 +104,53 @@ export function recordSessionItemResult(result: PracticeResult): void {
   })
 }
 
+/**
+ * The sessionRecords payload for a finished multi-item session.
+ *
+ * One result is banked per item-*repeat*, so the denominator has to count
+ * repeats too. Counting `items.length` instead made notesHit exceed
+ * notesTotal for every built-in template (warmup-2min: 24 against 5), the
+ * worker's evidence rule rejected the create, and `saveSessionRecord`
+ * swallows that by design — so the whole session silently banked nothing:
+ * no record, no minutes, no streak, no badges. Same shape as the plain-drill
+ * loss in CLAUDE-JOURNEY-007; see exercise-record-payload.test.ts.
+ *
+ * Exported so the payload can be held against the production validator
+ * without driving the whole store.
+ */
+export function practiceSessionPayload(
+  session: PlaybackSession,
+  results: PracticeResult[],
+): {
+  melodyName: string
+  score: number
+  accuracy: number
+  notesHit: number
+  notesTotal: number
+  source: 'practice'
+} {
+  const avgScore = Math.round(
+    results.reduce((sum, r) => sum + r.score, 0) / results.length,
+  )
+  // Rests bank no PracticeResult (useSessionSequencer only records one when
+  // a live score exists), so counting them would understate a finished run.
+  const scheduledRuns = session.items.reduce(
+    (total, item) => total + (item.type === 'rest' ? 0 : (item.repeat ?? 1)),
+    0,
+  )
+  return {
+    melodyName: session.name,
+    score: avgScore,
+    accuracy: avgScore,
+    notesHit: results.length,
+    // A walk that somehow outran its own schedule must not resurrect the
+    // 400 — the run happened either way, and the evidence is worth more
+    // than the tally.
+    notesTotal: Math.max(scheduledRuns, results.length),
+    source: 'practice',
+  }
+}
+
 export function endPracticeSession(): SessionResult | null {
   const session = practiceSession()
   if (!session) return null
@@ -146,17 +193,7 @@ export function endPracticeSession(): SessionResult | null {
   // badge engine and streaks, but never publicly ranked — the difficulty is
   // whatever the singer picked, so the scores compare nothing.
   const ownerId = getUserId()
-  void saveSessionRecord(
-    {
-      melodyName: session.name,
-      score: avgScore,
-      accuracy: avgScore,
-      notesHit: results.length,
-      notesTotal: session.items.length,
-      source: 'practice',
-    },
-    ownerId,
-  )
+  void saveSessionRecord(practiceSessionPayload(session, results), ownerId)
     .then((savedSession) => {
       if (savedSession === null || getUserId() !== ownerId) return
       return checkAndGrantBadges(ownerId)
