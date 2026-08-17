@@ -741,10 +741,10 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   // ── Settings · Practice Section ──
   {
-    title: 'Quick presets',
-    targetSelector: '#preset-select',
+    title: 'How much of the room to ignore',
+    targetSelector: '[data-tour="settings.room-slider"]',
     description:
-      'Start here on the Practice tab: pick the preset that matches your room — quiet, home, or noisy — to calibrate the mic in one click.',
+      'Start here on the Practice tab: drag between Quiet and Noisy until the meter shows your voice getting through and the room does not. The named rooms are still one tap away on the ticks.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,

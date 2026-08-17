@@ -33,23 +33,37 @@ test.describe('Settings Panel', () => {
       await switchSettingsTab(page, 'singing')
     })
 
-    test('Sensitivity preset select is visible', async ({ page }) => {
-      const presetSelect = page.locator('#preset-select')
-      await expect(presetSelect).toBeVisible()
+    test('Room slider is visible', async ({ page }) => {
+      // Scoped to the Settings section: the sidebar mic panel mounts the
+      // same control, so an unscoped slider lookup matches two.
+      const roomSlider = page.locator(
+        '[data-tour="settings.room-slider"] input[type="range"]',
+      )
+      await expect(roomSlider).toBeVisible()
     })
 
-    test('Sensitivity preset has multiple options', async ({ page }) => {
-      const presetSelect = page.locator('#preset-select')
-      const count = await presetSelect.locator('option').count()
-      expect(count).toBeGreaterThan(1)
+    test('Room slider still offers the named rooms', async ({ page }) => {
+      // The presets became ticks on the slider rather than a list to choose
+      // from; the named rooms are still one tap away, which is the promise.
+      const ticks = page
+        .locator('[data-tour="settings.room-slider"] button')
+        .filter({ hasText: /Quiet|Home|Noisy/ })
+      expect(await ticks.count()).toBeGreaterThan(1)
     })
 
-    test('Selecting a preset updates detection threshold', async ({ page }) => {
-      const presetSelect = page.locator('#preset-select')
-      await presetSelect.selectOption({ index: 2 })
+    test('Moving the room slider updates detection threshold', async ({
+      page,
+    }) => {
+      const thresholdBefore = await page.locator('#set-threshold').inputValue()
+      await page
+        .locator('[data-tour="settings.room-slider"] button')
+        .filter({ hasText: 'Noisy' })
+        .first()
+        .click()
       await page.waitForTimeout(200)
       const thresholdAfter = await page.locator('#set-threshold').inputValue()
       expect(thresholdAfter).toBeTruthy()
+      expect(thresholdAfter).not.toBe(thresholdBefore)
     })
 
     test('Pitch algorithm select is visible', async ({ page }) => {
