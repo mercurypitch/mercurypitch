@@ -34,6 +34,17 @@ currentStreak >= 2` (parity with `hasPendingBreak`), and
   admin-studio-weekly-suspense.test.tsx (outer boundary never triggers,
   chrome heading stays, `role="status"` announces the load, resolves
   clean).
+- **Auth surfaces wait for the first session resolution** (owner report,
+  2026-08-17): `me` is null both mid-restore and when truly signed out, so
+  AccountSection's `<Match when={true}>` fallback and HeaderAccount's
+  `isUpgraded()` fallback asserted "signed out"/"Sign in" during the
+  restore round-trip. Both components now hold an `authResolved` signal
+  set in a `finally` after `restoreAuth()+fetchMe()`, rendering a
+  `role="status"` probe spinner (AccountSection) / neutral probe pill
+  (HeaderAccount, `data-testid="header-auth-probe"`) until then. Failed
+  fetches still resolve to the signed-out card rather than spinning.
+  Pinned by auth-state-probe.test.tsx (4 cases: probe-then-signed-in,
+  probe-then-signed-out, both components).
 
 ### Changed
 
