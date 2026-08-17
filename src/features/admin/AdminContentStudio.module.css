@@ -566,3 +566,38 @@
     animation: none;
   }
 }
+
+/* Section body while an async section resolves. This is the boundary that
+   keeps a slow fetch from blanking the whole studio: App wraps the lazy
+   studio in a Suspense with NO fallback, so without a boundary of our own
+   a suspending section (Weekly's rows resource) detaches the entire
+   overlay until the request lands. */
+.sectionLoading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 4px;
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.9rem;
+}
+
+.sectionLoadingSpinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-top-color: var(--accent, #6f73ff);
+  animation: section-spin 0.8s linear infinite;
+}
+
+@keyframes section-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sectionLoadingSpinner {
+    animation: none;
+  }
+}

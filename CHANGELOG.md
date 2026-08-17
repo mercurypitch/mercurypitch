@@ -24,6 +24,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   break itself, and one-day runs are no longer offered a repair that would
   invent a second day.
 
+### Fixed
+
+- **The admin studio no longer blinks away while Weekly loads.** Opening
+  the Weekly Challenges section on a slow connection made the whole studio
+  disappear and reappear; the panel now stays put and shows a loading
+  spinner inside the workspace until the section's data arrives.
+
 ### Added
 
 - **The guided warmup counts you in.** Every step now opens with an audible
