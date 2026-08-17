@@ -189,8 +189,9 @@ async function seedCompletedTwoStemSong(
 async function seedCompletedFullBandSong(
   page: import('@playwright/test').Page,
   sessionId: string,
+  durationSeconds = TEST_SONG_DURATION_SECONDS,
 ): Promise<void> {
-  const stemWav = createTestWav(165)
+  const stemWav = createTestWav(165, durationSeconds)
 
   await page.evaluate(
     async ({ durationSeconds, sessionId: seededSessionId, stemBase64 }) => {
@@ -268,7 +269,7 @@ async function seedCompletedFullBandSong(
       })
     },
     {
-      durationSeconds: TEST_SONG_DURATION_SECONDS,
+      durationSeconds,
       sessionId,
       stemBase64: stemWav.toString('base64'),
     },
@@ -2252,10 +2253,14 @@ test('keeps the phone chrome to one row and splits the transport evenly @smoke',
 
 /**
  * A phone's decode budget is 192 MiB, so a real song plays through media
- * elements rather than decoded PCM. Long enough to land there: two stems
- * cost `duration * 768 KB` of estimated PCM between them.
+ * elements rather than decoded PCM. The estimate is computed against the
+ * AudioContext's OWN sample rate, which is the machine's, not ours — CI runs
+ * at 44.1 kHz where this first landed in buffered mode at a length that
+ * streamed locally at 48 kHz. Six stems at three minutes clears the budget
+ * from 32 kHz upwards, so the path under test is the one that runs.
  */
-const STREAMED_SONG_SECONDS = 270
+const STREAMED_SONG_SECONDS = 180
+const STREAMED_SONG_STEMS = 6
 
 test('seeks a streamed room without a correction storm @smoke', async ({
   browser,
@@ -2306,7 +2311,7 @@ test('seeks a streamed room without a correction storm @smoke', async ({
     })
 
     await initializeGuitarNightDatabase(page)
-    await seedCompletedTwoStemSong(page, sessionId, STREAMED_SONG_SECONDS)
+    await seedCompletedFullBandSong(page, sessionId, STREAMED_SONG_SECONDS)
     await page.goto(`/guitar-night?session=${encodeURIComponent(sessionId)}`, {
       waitUntil: 'domcontentloaded',
     })
@@ -2370,13 +2375,13 @@ test('seeks a streamed room without a correction storm @smoke', async ({
       return { seeks: tracked.__stemSeeks, restarts: tracked.__stemRestarts }
     })
     // One landing per stem, and nothing piled on top of it afterwards.
-    expect(after.seeks.length).toBeGreaterThanOrEqual(2)
-    expect(after.seeks.length).toBeLessThanOrEqual(4)
+    expect(after.seeks.length).toBeGreaterThanOrEqual(STREAMED_SONG_STEMS)
+    expect(after.seeks.length).toBeLessThanOrEqual(STREAMED_SONG_STEMS * 2)
     for (const seek of after.seeks) expect(seek).toBeCloseTo(target, 0)
     // And each stem was moved while stopped and started again, rather than
     // seeked mid-flight — the sequence the fix is. A browser fast enough to
     // hide the stall (this one) still shows the difference here.
-    expect(after.restarts).toBeGreaterThanOrEqual(2)
+    expect(after.restarts).toBeGreaterThanOrEqual(STREAMED_SONG_STEMS)
 
     // And it is still playing, from where it was asked to play.
     await expect(room).toHaveAttribute('data-playback-mode', 'streamed')
