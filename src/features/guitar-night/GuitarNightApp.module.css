@@ -3163,7 +3163,7 @@
 
 .stageHeader {
   position: absolute;
-  z-index: 4;
+  z-index: 6;
   top: 0.75rem;
   right: max(0.85rem, var(--safe-right));
   left: max(0.85rem, var(--safe-left));
@@ -4239,22 +4239,22 @@
   margin-top: 0.3rem;
 }
 
-.loopIcon {
+.loopMarks {
   display: inline-flex;
-  color: rgba(244, 234, 219, 0.4);
+  overflow: hidden;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 0.45rem;
 }
 
-.loopIcon svg {
-  width: 0.85rem;
-  height: 0.85rem;
+.loopMarks button + button {
+  border-left: 1px solid rgba(216, 200, 175, 0.18);
 }
 
 .loopControls button {
   min-width: var(--touch-target);
   min-height: var(--touch-target);
   padding: 0.1rem 0.45rem;
-  border: 1px solid rgba(216, 200, 175, 0.18);
-  border-radius: 0.4rem;
+  border: 0;
   color: rgba(244, 234, 219, 0.62);
   background: rgba(7, 6, 5, 0.5);
   font: inherit;
@@ -4264,17 +4264,19 @@
 }
 
 .loopControls button:hover {
-  border-color: rgba(224, 164, 93, 0.44);
   color: #fdf3e4;
+  background: rgba(224, 164, 93, 0.12);
 }
 
 .loopControls .loopMarkSet {
-  border-color: rgba(224, 164, 93, 0.5);
   color: #fdf3e4;
   background: rgba(224, 164, 93, 0.18);
 }
 
 .loopControls output {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   min-width: 0;
   overflow: hidden;
   color: rgba(244, 234, 219, 0.5);
@@ -4284,7 +4286,22 @@
   white-space: nowrap;
 }
 
+.loopSpanIcon {
+  display: inline-flex;
+  flex: none;
+  color: rgba(224, 164, 93, 0.72);
+}
+
+.loopSpanIcon svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
 .loopControls .loopClear {
+  min-width: 0;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 0.4rem;
   font-weight: 500;
 }
 
@@ -4325,12 +4342,13 @@
 
 .channelStrip button {
   display: grid;
-  grid-template-columns: 1rem auto;
+  grid-template-columns: 1rem minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-items: center;
-  gap: 0.05rem 0.45rem;
-  min-width: 7rem;
-  padding: 0.5rem 0.7rem;
+  gap: 0.1rem 0.4rem;
+  flex: 1 1 0;
+  min-width: 6rem;
+  padding: 0.45rem 0.6rem;
   border: 1px solid rgba(106, 202, 189, 0.2);
   border-radius: 0.48rem;
   color: #e7f4f1;
@@ -4338,12 +4356,15 @@
   text-align: left;
 }
 
-.channelStrip button > span {
-  grid-row: 1 / 3;
-}
-
+/* The stem name owns the first line and the icon plus its state read as one
+   caption underneath. Side by side, a name as ordinary as "Backing" already
+   ran past the card's right edge on a phone. */
 .channelStrip strong {
+  grid-column: 1 / -1;
+  overflow: hidden;
   font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .channelStrip small {
@@ -4632,6 +4653,15 @@
   .brand img {
     width: 1.45rem;
     height: 1.45rem;
+  }
+
+  /* Icon only. The wordmark, the "Guitar Night" label and the room name are
+     three pieces of chrome naming a screen the singer is already looking at,
+     and between them they cost the header a second row that the fretboard
+     needs. The link keeps its aria-label, so the icon is still "MercuryPitch
+     home" to a screen reader. */
+  .brand span {
+    display: none;
   }
 
   .topbarDivider,
@@ -5065,16 +5095,27 @@
     max-width: calc(100vw - 0.9rem);
   }
 
+  /* Right-aligned, auto-width — the way desktop already lays this header out
+     (`justify-content: space-between`, tools on the right). Stretched across
+     the full width in two rows, the tools occupied ~93px of the top-left
+     corner starting at 0.42rem, while the first-win LEARN card starts at
+     4.35rem in the same coordinate space: ~24px of guaranteed overlap, with
+     the card (z-index 5) painting over the header (z-index 4). Vacating the
+     left half is what lets the card keep its size AND leaves Camera and the
+     view switch visible. */
   .stageHeaderTools {
     position: relative;
     grid-row: 1;
     grid-column: 1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: stretch;
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    justify-content: end;
+    justify-self: end;
     align-items: start;
     gap: 0.35rem;
-    width: 100%;
+    width: auto;
+    max-width: 100%;
   }
 
   .stageHeaderTools > .stageSetup {
@@ -5098,10 +5139,8 @@
   }
 
   .stageModes {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(auto-fit, minmax(5em, 1fr));
-    justify-self: stretch;
-    width: 100%;
+    justify-self: end;
+    width: auto;
     font-size: 0.68rem;
   }
 
@@ -5232,13 +5271,25 @@
       max(0.22rem, var(--safe-bottom)) max(0.45rem, var(--safe-left));
   }
 
+  /* Speed and volume are peers. Sizing speed by its content let it swallow
+     the row and pinned volume into a 3rem stub against the right edge, so
+     both now take an equal share of whatever the two round buttons leave. */
   [data-room-kind='backing'] .transportControls {
     grid-template-columns:
       var(--touch-target)
       minmax(3.25rem, 3.55rem)
-      minmax(6.8rem, 1fr)
-      minmax(3rem, 4rem);
+      minmax(0, 1fr)
+      minmax(0, 1fr);
     gap: clamp(0.18rem, 1.25vw, 0.38rem);
+    width: 100%;
+  }
+
+  /* The readout is the only part of the speed group that may shrink: the
+     minus and plus keep their touch target. */
+  [data-room-kind='backing'] .playbackSpeed {
+    grid-template-columns:
+      var(--touch-target) minmax(0, 1fr)
+      var(--touch-target);
     width: 100%;
   }
 
@@ -5249,6 +5300,8 @@
 
   [data-room-kind='backing'] .masterVolume {
     grid-template-columns: 0.9rem minmax(0, 1fr);
+    gap: 0.35rem;
+    justify-self: stretch;
     width: 100%;
   }
 
@@ -5549,6 +5602,30 @@
     padding-bottom: 0.25rem;
   }
 
+  /* A phone in landscape is WIDE and short, so none of the `max-width: 720px`
+     slimming above reaches it — and height is the axis that is actually
+     scarce there. Left as it was, the header spent one row on the wordmark,
+     "Guitar Night" and the room name, and overflowed the account and Learn
+     controls onto a second row: two rows of naming above a fretboard with
+     roughly a fifth of the screen to draw in. */
+  .brand span,
+  .topbarDivider,
+  .topbarTitle,
+  .roomName {
+    display: none;
+  }
+
+  /* One row, not two. Without this the actions wrap the moment the account
+     pill is wide, which is the second row in the report. */
+  .topbar {
+    flex-wrap: nowrap;
+  }
+
+  .topbarActions {
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
   .roomHeadingRow {
     min-height: 2.85rem;
     padding-block: 0.18rem;
@@ -5618,12 +5695,15 @@
     padding-block: 0.15rem;
   }
 
+  /* The deck sizes this column to content in landscape, where two equal fr
+     tracks settle on the wider of the two — which is the point: speed and
+     volume come out the same size instead of one crushing the other. */
   [data-room-kind='backing'] .transportControls {
     grid-template-columns:
       var(--touch-target)
       3.25rem
-      minmax(6.6rem, 7.2rem)
-      minmax(3rem, 3.8rem);
+      minmax(0, 1fr)
+      minmax(0, 1fr);
     width: auto;
   }
 
@@ -5760,4 +5840,46 @@
   color: inherit;
   cursor: pointer;
   font: inherit;
+}
+
+/* The narrow-screen trigger for the stage view picker. It replaces a
+   `<details><summary>` with a plain button that opens the mobile sheet, so it
+   has to look identical to the summary it stands in for. */
+.stageViewTrigger {
+  cursor: pointer;
+}
+
+/* The sheet renders the picker at full width in a portal, so the popup's own
+   panel sizing must not follow it in. */
+.app {
+  --sheet-bg: #14110e;
+  --sheet-border: rgba(244, 234, 219, 0.14);
+  --sheet-backdrop: rgba(6, 5, 4, 0.62);
+}
+
+/* On a phone, and in landscape where the fretboard has no height to spare,
+   the take cue is a badge rather than a banner. The full card covered the
+   stage and carried no dismiss of its own; the icon opens the same dialog,
+   and the button's aria-label still reads the whole sentence aloud. */
+@media (max-width: 720px), (max-height: 540px) {
+  .doctorCue {
+    right: auto;
+    bottom: max(0.55rem, var(--safe-bottom));
+    left: max(0.55rem, var(--safe-left));
+    width: auto;
+  }
+
+  .doctorCue > button {
+    grid-template-columns: auto;
+    gap: 0;
+    width: auto;
+    min-height: 0;
+    padding: 0.32rem;
+    border-radius: 50%;
+  }
+
+  .doctorCue > button > b,
+  .doctorCueCopy {
+    display: none;
+  }
 }

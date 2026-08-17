@@ -3,6 +3,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { children, createEffect, createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { Sheet } from '@/components/mobile/Sheet'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import type { TabCameraPresetId } from '@/features/guitar-tab-3d/renderer/camera-presets'
@@ -710,6 +711,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const [narrowViewport, setNarrowViewport] = createSignal(
     matchesNarrowViewport(),
   )
+  const [viewSheetOpen, setViewSheetOpen] = createSignal(false)
   const [systemReducedMotion, setSystemReducedMotion] = createSignal(false)
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
@@ -1194,35 +1196,92 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 />
               </details>
             </Show>
-            <details
-              ref={viewDetails}
-              class={`${styles.stageSetup} ${styles.stageViewMenu}`}
-              onToggle={(event) => openStageDisclosure(event.currentTarget)}
-            >
-              <summary
-                ref={viewSummary}
-                aria-label={
-                  mode() === 'flow'
-                    ? `Camera, ${cameraLabel()}`
-                    : 'Display settings'
-                }
-                onClick={() => {
-                  if (
-                    viewDetails?.open !== true &&
-                    instrumentDetails !== undefined
-                  ) {
-                    instrumentDetails.open = false
+            {/* Narrow screens get the mobile sheet instead of an in-place
+                popup. The popup is a child of `.stageHeader`, which is
+                `position: absolute; z-index: 6` — a stacking context — so the
+                popup's own z-index only ordered it WITHIN that context and it
+                was painted under the LEARN card and the bottom deck: partly
+                visible, partly unreachable. `Sheet` portals to document.body,
+                so it cannot be trapped by an ancestor at all. Same shape as
+                JamPanel's picker. */}
+            <Show
+              when={!narrowViewport()}
+              fallback={
+                <button
+                  type="button"
+                  class={`${styles.stageSetup} ${styles.stageViewTrigger}`}
+                  aria-label={
+                    mode() === 'flow'
+                      ? `Camera, ${cameraLabel()}`
+                      : 'Display settings'
                   }
-                }}
+                  aria-haspopup="dialog"
+                  aria-expanded={viewSheetOpen()}
+                  onClick={() => setViewSheetOpen(true)}
+                >
+                  {mode() === 'flow' ? 'Camera' : 'Display'}
+                  <Show when={mode() === 'flow'}>
+                    <span class={styles.stageSetupContext}>
+                      {' '}
+                      · {cameraLabel()}
+                    </span>
+                  </Show>
+                </button>
+              }
+            >
+              <details
+                ref={viewDetails}
+                class={`${styles.stageSetup} ${styles.stageViewMenu}`}
+                onToggle={(event) => openStageDisclosure(event.currentTarget)}
               >
-                {mode() === 'flow' ? 'Camera' : 'Display'}
-                <Show when={mode() === 'flow'}>
-                  <span class={styles.stageSetupContext}>
-                    {' '}
-                    · {cameraLabel()}
-                  </span>
-                </Show>
-              </summary>
+                <summary
+                  ref={viewSummary}
+                  aria-label={
+                    mode() === 'flow'
+                      ? `Camera, ${cameraLabel()}`
+                      : 'Display settings'
+                  }
+                  onClick={() => {
+                    if (
+                      viewDetails?.open !== true &&
+                      instrumentDetails !== undefined
+                    ) {
+                      instrumentDetails.open = false
+                    }
+                  }}
+                >
+                  {mode() === 'flow' ? 'Camera' : 'Display'}
+                  <Show when={mode() === 'flow'}>
+                    <span class={styles.stageSetupContext}>
+                      {' '}
+                      · {cameraLabel()}
+                    </span>
+                  </Show>
+                </summary>
+                <StageViewPicker
+                  showCameraChoices={mode() === 'flow'}
+                  cameraPreset={cameraPresetId()}
+                  handedness={handedness()}
+                  effects={effects()}
+                  onCameraPreset={(preset) => {
+                    setCameraPresetId(preset)
+                    if (viewDetails !== undefined) viewDetails.open = false
+                    queueMicrotask(() => viewSummary?.focus())
+                  }}
+                  onHandedness={setHandedness}
+                  onEffects={setEffects}
+                />
+              </details>
+            </Show>
+            <Sheet
+              isOpen={viewSheetOpen() && narrowViewport()}
+              close={() => setViewSheetOpen(false)}
+              ariaLabel={
+                mode() === 'flow'
+                  ? 'Camera and display settings'
+                  : 'Display settings'
+              }
+            >
               <StageViewPicker
                 showCameraChoices={mode() === 'flow'}
                 cameraPreset={cameraPresetId()}
@@ -1230,13 +1289,12 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 effects={effects()}
                 onCameraPreset={(preset) => {
                   setCameraPresetId(preset)
-                  if (viewDetails !== undefined) viewDetails.open = false
-                  queueMicrotask(() => viewSummary?.focus())
+                  setViewSheetOpen(false)
                 }}
                 onHandedness={setHandedness}
                 onEffects={setEffects}
               />
-            </details>
+            </Sheet>
             <Show when={availableViews().length > 1}>
               <div
                 class={styles.stageModes}

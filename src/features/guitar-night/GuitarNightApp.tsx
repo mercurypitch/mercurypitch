@@ -939,6 +939,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
       <div
         class={styles.topbar}
+        data-testid="guitar-night-topbar"
         inert={view() === 'tuner' || learnOpen()}
         aria-hidden={view() === 'tuner' || learnOpen() ? 'true' : undefined}
       >
@@ -949,6 +950,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         <span class={styles.topbarDivider} aria-hidden="true" />
         <span class={styles.topbarTitle}>Guitar Night</span>
         <span class={styles.roomName}>{backdrop().name}</span>
+
+        {/* The rail is where this belongs on a phone. As a fixed corner
+            overlay it cleared `--tabbar-total` for a tab bar Guitar Night
+            does not have, and landed squarely on the first-win deck's
+            action buttons — "Start count-in" was unusable under it. The
+            rail already reserves this gap: the title and room name are
+            hidden on a phone, so the middle of the bar is empty. */}
+        <VoiceControlHud
+          controller={voiceControl}
+          onShowCommands={() => setShowVoiceHelp(true)}
+          placement="docked"
+        />
 
         <div ref={venueMenuContainer} class={styles.topbarActions}>
           <button
@@ -1847,10 +1860,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       </main>
 
       <Notifications />
-      <VoiceControlHud
-        controller={voiceControl}
-        onShowCommands={() => setShowVoiceHelp(true)}
-      />
       <Show when={showVoiceHelp()}>
         <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
       </Show>

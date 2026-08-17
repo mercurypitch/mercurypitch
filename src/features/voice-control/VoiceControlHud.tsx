@@ -20,6 +20,18 @@ interface VoiceControlHudProps {
   controller: VoiceControlController
   /** Opens the spoken-command list — the same panel "what can I say" opens. */
   onShowCommands?: () => void
+  /**
+   * Where the pill sits. 'floating' (default) is the fixed bottom-left
+   * overlay, which assumes a tab bar beneath it. 'docked' lets a host place
+   * the pill in its own chrome — Guitar Night puts it in the header rail,
+   * because as a floating overlay it cleared `--tabbar-total` for a tab bar
+   * that screen does not have and landed on the primary action button.
+   *
+   * A variant rather than a bare class: the engine menu opens UPWARD for the
+   * floating pill, and from a header it has to open downward. That belongs
+   * with the component's own CSS, not with each host's.
+   */
+  placement?: 'floating' | 'docked'
 }
 
 /**
@@ -100,8 +112,10 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
       classList={{
         [styles.raised]: practiceTimerVisible(),
         [styles.expanded]: props.controller.enabled(),
+        [styles.docked]: props.placement === 'docked',
       }}
       data-testid="voice-control-pill"
+      data-placement={props.placement ?? 'floating'}
     >
       <button
         type="button"

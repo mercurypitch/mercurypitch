@@ -80,6 +80,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `isolation: isolate` puts the image back inside the box that clips it. The
   e2e walks each image up to its real paint root, which resolved to
   `drawer drawerOpen` before this.
+- **Guitar Night's phone chrome cost the fretboard its height.** Six layout
+  findings from an iPhone 13 Pro, portrait and landscape. The voice pill was
+  the floating `VoiceControlHud`, which clears `--tabbar-total` for a tab bar
+  Guitar Night does not have and so landed on "Start count-in"; it takes a
+  `placement="docked"` variant now and lives in the header rail, with its
+  engine menu opening downward instead of up. The Camera picker is a child of
+  `.stageHeader`, which is `position: absolute` with a `z-index` — a stacking
+  context — so the popup's own `z-index` only ordered it WITHIN that context
+  and it painted under the LEARN card while overflowing the header's top
+  corner. Narrow viewports get `Sheet` instead, which portals to
+  `document.body` and cannot be trapped by an ancestor at all; the in-place
+  `<details>` stays wherever there is room for it. `.channelStrip` cards put
+  the stem name on its own line above the icon and state, because "Backing"
+  alone overflowed a one-line card. `GuitarNightLoopControls` drops the
+  decorative repeat icon and the caption that repeated the heading above it,
+  and joins A and B into one segmented control; the icon reappears only when
+  it has a real span to label. The backing transport's speed and volume both
+  take `minmax(0, 1fr)` — speed was sized by content and ran 132px wider than
+  volume at 390px, measured. Landscape phones are 844x390: wide enough to
+  escape every `max-width` rule, which is why the wordmark, "Guitar Night" and
+  the room name still took a second header row there.
+- **The take cue was a banner with no dismiss.** `GuitarNightDoctorCue`
+  rendered a full-width card over the stage — "the jam doctor thing that
+  cannot really be closed". On a phone, and in landscape, it is now the icon
+  alone; the button's `aria-label` still carries the whole sentence, and it
+  opens the same dialog.
 
 - **`vite:preloadError` prevention turned a deploy into a `TypeError`.**
   `installChunkLoadRecovery` called `event.preventDefault()`. Vite's
