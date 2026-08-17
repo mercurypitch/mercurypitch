@@ -24,9 +24,12 @@ describe('run-length preference', () => {
     resetTimerPreference()
   })
 
-  it('opens on a duration rather than on Manual', () => {
-    expect(timerMode()).toBe(5)
-    expect(activeTimerSeconds()).toBe(5)
+  it('opens on ten seconds rather than on Manual', () => {
+    // Five was over before a steady tone settled — the singer's own words:
+    // by the time they hit the note, half the run was gone. Ten gives the
+    // held-note drills a real run and the daily routine real minutes.
+    expect(timerMode()).toBe(10)
+    expect(activeTimerSeconds()).toBe(10)
   })
 
   it('stores under a key the settings sync will actually carry', () => {

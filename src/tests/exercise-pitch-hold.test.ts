@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePitchHoldController } from '@/features/exercises/pitch-hold/use-pitch-hold-controller'
+import { resetTimerPreference, setTimerMode, } from '@/features/exercises/timer-preference'
 import { EXERCISE_PITCH_HOLD } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 
@@ -170,5 +171,40 @@ describe('the trace speaks Hz', () => {
     const ctrl = usePitchHoldController(base)
     ctrl.setTarget(69) // A4
     expect(seen).toEqual([440])
+  })
+})
+
+describe('pitch hold grades the run it asked for', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // The duration term graded the wall clock against a 60-second aspiration,
+  // so a perfect timed 10-second hold capped near 63 of 100. It now grades
+  // the held time (the frames after first phonation the controller already
+  // counts) against the chosen timer — hold through the run and the term is
+  // full (owner call, 2026-08-17).
+  it('a perfect hold through the whole timer reaches 100', () => {
+    localStorage.clear()
+    resetTimerPreference()
+    setTimerMode(10)
+    const base = createMockBase({
+      pitchHistory: () => [{ freq: 440, time: 5.0, cents: 0, clarity: 0.8 }],
+      _getElapsed: () => 5000,
+      _isRunning: () => true,
+    })
+    const ctrl = usePitchHoldController(base)
+    ctrl.setTarget(69)
+
+    ctrl.startLoop()
+    // 10 seconds of ticking at 10 Hz — a full held run for a 10 s timer.
+    vi.advanceTimersByTime(10_000)
+    const result = ctrl.stopAndCompute()
+    expect(result.metrics.zonePct).toBe(100)
+    expect(result.score).toBe(100)
+    resetTimerPreference()
   })
 })

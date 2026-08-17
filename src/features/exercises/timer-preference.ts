@@ -36,7 +36,12 @@ interface TimerPreference {
   customSec: number
 }
 
-const DEFAULT_PREFERENCE: TimerPreference = { mode: 5, customSec: 45 }
+// Ten, not five: by the time a singer settles onto the note, half of a
+// five-second run is already gone — and a routine of five-second runs
+// cannot reach the daily five sung minutes it plans (owner call,
+// 2026-08-17). Existing devices keep whatever they chose; only a fresh
+// preference opens on ten.
+const DEFAULT_PREFERENCE: TimerPreference = { mode: 10, customSec: 45 }
 
 const clampCustom = (seconds: number): number =>
   Math.min(
