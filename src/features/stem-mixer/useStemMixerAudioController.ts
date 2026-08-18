@@ -18,7 +18,9 @@ import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
 import { createOctaveCorrector } from '@/lib/pitch-pipeline/octave-corrector'
 import { createRunningMedian } from '@/lib/pitch-pipeline/running-median'
 import { getPitchWindowResumeState } from '@/lib/pitch-window'
+import { platform } from '@/lib/platform'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
+import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
@@ -554,6 +556,24 @@ export const useStemMixerAudioController = (
     }
 
     const loadOne = async (url: string): Promise<AudioBuffer> => {
+      // A stem the visitor has already downloaded once. R2 serves these
+      // with no Cache-Control at all, so the browser re-fetched all six
+      // megabytes on every open — the whole wait, paid again, for a song
+      // that had not changed. A hit still reports its bytes so the bar
+      // reads as finished rather than as never having started.
+      const kept = await readCachedSongAudio(url)
+      if (kept !== null) {
+        byUrl.set(url, {
+          received: kept.byteLength,
+          total: kept.byteLength,
+          fraction: 1,
+        })
+        publish()
+        const cachedBuf = await ctx.decodeAudioData(kept)
+        loadedCount++
+        return cachedBuf
+      }
+
       inFlight++
       let arrayBuf: ArrayBuffer
       try {
@@ -567,6 +587,13 @@ export const useStemMixerAudioController = (
         inFlight--
       }
       publish()
+      // Kept before the decode, because decodeAudioData detaches the
+      // buffer it is given. The copy is taken synchronously inside the
+      // call, so this does not have to be awaited here.
+      // Opaque on purpose: nothing reads the type back — the bytes go
+      // straight to decodeAudioData, which sniffs the container itself —
+      // and the stems are variously m4a and mp3 depending on the song.
+      void writeCachedSongAudio(url, arrayBuf, 'application/octet-stream')
       const buf = await ctx.decodeAudioData(arrayBuf)
       // Counted after the decode, not after the download. The guard below
       // treats `loadedCount === 0` as "nothing usable arrived", and a stem that
@@ -578,6 +605,14 @@ export const useStemMixerAudioController = (
       return buf
     }
 
+    // A phone locking its screen is how this download dies: the OS freezes
+    // the page, the fetch is torn down, and the visitor comes back to
+    // "audio data may have been lost". The lock is best effort — refused on
+    // a hidden page or a low battery, and absent on older WebKit — so it
+    // narrows the window rather than closing it. Held for the download and
+    // released with it, and the count in platform.keepAwake is what stops
+    // this release from dropping a Drive backup's lock at the same time.
+    void platform.keepAwake.enable()
     try {
       const results = await Promise.allSettled([
         deps.stems.vocal !== undefined
@@ -678,6 +713,7 @@ export const useStemMixerAudioController = (
       deps.showNotification(`Stem loading failed: ${msg}`, 'error')
     } finally {
       setLoading(false)
+      void platform.keepAwake.disable()
     }
   }
 

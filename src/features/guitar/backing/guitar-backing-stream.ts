@@ -259,6 +259,12 @@ export function createGuitarBackingStreamEngine(
         try {
           const element = options.createMediaElement()
           element.preload = 'auto'
+          // Set before `src`, and unconditionally: a cross-origin stem
+          // (the remote demo song) that is not requested with CORS taints
+          // the element, and a tainted element feeds a
+          // MediaElementAudioSourceNode nothing but silence. Same-origin
+          // and blob: sources are unaffected by the attribute.
+          element.crossOrigin = 'anonymous'
           element.src = track.url
           applyPlaybackRate(element)
           const source = nextContext.createMediaElementSource(element)

@@ -751,6 +751,40 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Overlay actions ─────────────────────────────────────────
+   The overlay itself stays `pointer-events: none` so it never swallows a
+   tap meant for the stage behind it. These opt back in one control at a
+   time — the veil is not a dialog, it just has a door in it. */
+
+.stateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.2rem;
+}
+
+.stateAction {
+  pointer-events: auto;
+  /* A phone control the user reaches for when something already went
+     wrong — it gets the full touch target, not a text link's. */
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 236, 255, 0.28);
+  background: rgba(20, 9, 33, 0.55);
+  color: rgba(244, 236, 255, 0.9);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stateActionPrimary {
+  border-color: transparent;
+  background: linear-gradient(90deg, #ffd9a0, #ff9ad5);
+  color: #23122f;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .loadFill {
     transition: none;

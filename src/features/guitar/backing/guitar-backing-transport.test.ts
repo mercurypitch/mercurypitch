@@ -2,7 +2,7 @@
 // Guitar backing transport tests protect one-clock playback, safe replacement, and bounded decoding
 // ============================================================
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingSession, GuitarBackingTrack, } from './guitar-backing-transport'
 import { createGuitarBackingTransport, estimateGuitarBackingPcmBytes, } from './guitar-backing-transport'
 
@@ -989,5 +989,110 @@ describe('haltAudible — every stop path closes the bus first', () => {
     expect(stems.gain.operations).toEqual(closeOps(16))
     expect(source.stop).toHaveBeenLastCalledWith(16.08)
     expect(harness.transport.getStatus()).toBe('complete')
+  })
+})
+
+// ============================================================
+// The stem download the transport does for itself
+// ============================================================
+//
+// Every test above injects `fetchArrayBuffer`, so the default — the one
+// that actually runs in the room — was never exercised. It matters now:
+// the remote demo song is served with no Cache-Control at all, and
+// without a copy of its own the room re-downloads the whole thing on
+// every open.
+
+class FakeCache {
+  readonly entries = new Map<string, Response>()
+
+  async match(key: RequestInfo | URL): Promise<Response | undefined> {
+    return Promise.resolve(this.entries.get(String(key))?.clone())
+  }
+
+  async put(key: RequestInfo | URL, value: Response): Promise<void> {
+    this.entries.set(String(key), value)
+    return Promise.resolve()
+  }
+
+  async keys(): Promise<Request[]> {
+    return Promise.resolve(
+      [...this.entries.keys()].map((url) => ({ url }) as unknown as Request),
+    )
+  }
+
+  async delete(): Promise<boolean> {
+    return Promise.resolve(true)
+  }
+}
+
+const REMOTE = 'https://cdn.example/demo/goodbye-to-spring/instrumental.m4a'
+
+function downloadingHarness(response: () => Response) {
+  const cache = new FakeCache()
+  Object.defineProperty(globalThis, 'caches', {
+    value: { open: async () => Promise.resolve(cache) },
+    configurable: true,
+    writable: true,
+  })
+  const fetchStub = vi.fn(async () => Promise.resolve(response()))
+  vi.stubGlobal('fetch', fetchStub)
+
+  const context = new FakeAudioContext()
+  const transport = createGuitarBackingTransport({
+    contextFactory: () => context as unknown as AudioContext,
+    activateContext: async (audioContext) => {
+      await audioContext.resume()
+    },
+    mediaElementFactory: () =>
+      new FakeMediaElement() as unknown as HTMLAudioElement,
+    fadeSeconds: 0,
+    scheduleLeadSeconds: 0.012,
+  })
+  return { cache, context, fetchStub, transport }
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(globalThis as unknown as object, 'caches')
+  vi.unstubAllGlobals()
+})
+
+describe('the transport downloads a remote stem once', () => {
+  it('keeps a copy the first time and reads it the second', async () => {
+    const harness = downloadingHarness(() => new Response(new Uint8Array(2048)))
+    harness.transport.configure(
+      session('demo', [track('drums', { url: REMOTE })]),
+    )
+
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.fetchStub).toHaveBeenCalledTimes(1)
+    expect(harness.cache.entries.has(REMOTE)).toBe(true)
+
+    // A second open of the same song — the whole point of the copy.
+    harness.transport.configure(
+      session('demo-again', [track('drums', { url: REMOTE })]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.fetchStub).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a stem the server would not give', async () => {
+    const harness = downloadingHarness(() => new Response('', { status: 404 }))
+    harness.transport.configure(
+      session('missing', [track('drums', { url: REMOTE })]),
+    )
+
+    await expect(harness.transport.play()).resolves.toBe(false)
+    expect(harness.transport.getStatus()).toBe('error')
+    expect(harness.cache.entries.size).toBe(0)
+  })
+
+  it('keeps no copy of a stem that was already on the device', async () => {
+    const harness = downloadingHarness(() => new Response(new Uint8Array(2048)))
+    // blob: stems are IndexedDB audio the app already holds, and their URLs
+    // stop resolving the moment the lease is released.
+    harness.transport.configure(session('local', [track('drums')]))
+
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.cache.entries.size).toBe(0)
   })
 })

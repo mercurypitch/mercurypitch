@@ -177,6 +177,11 @@ export interface KaraokeMobileStageProps {
   loadPhase?: () => StemLoadPhase
   loadedBytes?: () => number
   totalBytes?: () => number | null
+  /** Start the download over. A phone that locked its screen mid-load comes
+      back to a dead session and a message about it; without this the only
+      way on is the browser's own reload. Omit where a retry is meaningless
+      (stems that were never remote in the first place). */
+  onRetryLoad?: () => void
 }
 
 const DEFAULT_VOCAL_VOLUME = 0.8
@@ -916,7 +921,11 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           are minutes, and a screen that says nothing for two of them reads
           as broken. Same byte-based numbers the mixer shows, same honesty
           about what cannot be measured. */}
-      <Show when={props.loading()}>
+      {/* The error wins: `loadStems` sets it and then carries on with the
+          MIDI pass before clearing `loading`, so both used to be true at
+          once and the phone stacked two blurred veils, the failure behind
+          the curtain that had already failed. */}
+      <Show when={props.loading() && props.loadError() === ''}>
         <div class={styles.stateOverlay}>
           <div class={styles.loadCard}>
             <p>{loadHeadline()}</p>
@@ -936,12 +945,50 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               />
             </div>
             <p class={styles.loadDetail}>{loadDetail()}</p>
+            {/* The way out, while it is still working. The header's back
+                chevron is behind this overlay's blur, which on a download
+                that runs for minutes reads as no way out at all. */}
+            <Show when={props.onBack}>
+              <div class={styles.stateActions}>
+                <button
+                  type="button"
+                  class={styles.stateAction}
+                  onClick={() => props.onBack?.()}
+                >
+                  Go back
+                </button>
+              </div>
+            </Show>
           </div>
         </div>
       </Show>
       <Show when={props.loadError() !== ''}>
         <div class={styles.stateOverlay}>
-          <p>{props.loadError()}</p>
+          <div class={styles.loadCard} role="alert">
+            <p>{props.loadError()}</p>
+            <Show when={props.onRetryLoad ?? props.onBack}>
+              <div class={styles.stateActions}>
+                <Show when={props.onRetryLoad}>
+                  <button
+                    type="button"
+                    class={`${styles.stateAction} ${styles.stateActionPrimary}`}
+                    onClick={() => props.onRetryLoad?.()}
+                  >
+                    Try again
+                  </button>
+                </Show>
+                <Show when={props.onBack}>
+                  <button
+                    type="button"
+                    class={styles.stateAction}
+                    onClick={() => props.onBack?.()}
+                  >
+                    Go back
+                  </button>
+                </Show>
+              </div>
+            </Show>
+          </div>
         </div>
       </Show>
 

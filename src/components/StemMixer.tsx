@@ -2157,6 +2157,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           loadPhase={audio.loadPhase}
           loadedBytes={audio.loadedBytes}
           totalBytes={audio.totalBytes}
+          // The same retry the desktop card has carried all along. On a
+          // phone this stage IS the mixer, so without it a failed load had
+          // no door but the browser's reload button.
+          onRetryLoad={() => {
+            void audio.loadStems()
+          }}
           elapsed={audio.elapsed}
           lyricsElapsed={audio.audibleElapsed}
           duration={audio.duration}

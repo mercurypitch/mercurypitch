@@ -23,9 +23,13 @@ export interface HapticsService {
 }
 
 export interface KeepAwakeService {
-  /** Keep the screen on (during an active practice run). */
+  /**
+   * Keep the screen on (an active practice run, a backup, a download that
+   * is minutes long). Reference counted: two callers may hold it at once
+   * and neither one's release drops the other's.
+   */
   enable(): Promise<void>
-  /** Release the screen lock; safe to call when not held. */
+  /** Release this caller's hold; safe to call when not held. */
   disable(): Promise<void>
 }
 
@@ -58,7 +62,46 @@ const vibrate = (pattern: number | number[]): void => {
   }
 }
 
+// ── Screen wake lock ─────────────────────────────────────────
+//
+// Two things about the web lock shape this. It is reference counted
+// because callers overlap — a Drive backup and a stem download can be
+// running at the same time, and whichever finished first used to release
+// the other's lock out from under it. And it is re-taken on
+// `visibilitychange` because the platform revokes a screen lock the
+// moment the page is hidden and never gives it back: a phone that locked
+// itself mid-download is exactly the case the lock exists for, so coming
+// back to a page that still wants it has to re-acquire.
 let wakeSentinel: WakeLockSentinel | null = null
+let wakeHolders = 0
+let wakeVisibilityBound = false
+
+async function acquireWakeLock(): Promise<void> {
+  if (wakeSentinel !== null || wakeHolders === 0) return
+  if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return
+  try {
+    const sentinel = await navigator.wakeLock.request('screen')
+    // The last holder may have let go while the request was in flight.
+    if (wakeHolders === 0) {
+      void sentinel.release().catch(() => undefined)
+      return
+    }
+    wakeSentinel = sentinel
+    sentinel.addEventListener('release', () => {
+      if (wakeSentinel === sentinel) wakeSentinel = null
+    })
+  } catch {
+    /* denied (low battery, page not visible) — the work runs without it */
+  }
+}
+
+function bindWakeVisibility(): void {
+  if (wakeVisibilityBound || typeof document === 'undefined') return
+  wakeVisibilityBound = true
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void acquireWakeLock()
+  })
+}
 
 export const platform: PlatformServices = {
   haptics: {
@@ -69,18 +112,16 @@ export const platform: PlatformServices = {
 
   keepAwake: {
     async enable() {
-      if (wakeSentinel || typeof navigator === 'undefined') return
-      if (!('wakeLock' in navigator)) return
-      try {
-        wakeSentinel = await navigator.wakeLock.request('screen')
-        wakeSentinel.addEventListener('release', () => {
-          wakeSentinel = null
-        })
-      } catch {
-        /* denied (low battery, not visible) — practice works without it */
-      }
+      wakeHolders += 1
+      bindWakeVisibility()
+      await acquireWakeLock()
     },
     async disable() {
+      // An unmatched release must not take the count negative, or the next
+      // real holder's enable() lands on a count that is still zero.
+      if (wakeHolders === 0) return
+      wakeHolders -= 1
+      if (wakeHolders > 0) return
       const sentinel = wakeSentinel
       wakeSentinel = null
       try {

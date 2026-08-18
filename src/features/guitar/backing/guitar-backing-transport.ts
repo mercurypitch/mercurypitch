@@ -3,6 +3,7 @@
 
 import { clampRate } from '@/features/guitar-practice/practice-rate'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarBackingStreamEngine } from './guitar-backing-stream'
 import { createGuitarBackingStreamEngine } from './guitar-backing-stream'
@@ -148,9 +149,17 @@ async function defaultFetchArrayBuffer(
   url: string,
   signal: AbortSignal,
 ): Promise<ArrayBuffer> {
+  // Locally separated stems arrive as blob: URLs and are refused by the
+  // cache, so this is a no-op for them. It is the remote demo song that
+  // pays for a re-download otherwise.
+  const kept = await readCachedSongAudio(url)
+  if (kept !== null) return kept
+
   const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(`Stem request failed (${response.status})`)
-  return response.arrayBuffer()
+  const encoded = await response.arrayBuffer()
+  void writeCachedSongAudio(url, encoded, 'application/octet-stream')
+  return encoded
 }
 
 function defaultMediaElementFactory(): HTMLAudioElement {
