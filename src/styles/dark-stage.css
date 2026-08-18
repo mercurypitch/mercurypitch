@@ -1,0 +1,93 @@
+/* ============================================================
+   Dark stage contract — complete theme ownership for immersive surfaces
+   ============================================================
+
+   Performance worlds opt into this class at their own root. Keeping the
+   contract scoped prevents a light app theme from leaking dark ink into a
+   stage, while ordinary app pages and the studio mixer continue to inherit
+   the active theme. Local art-direction tokens may refine this palette, but
+   native controls and shared components always receive a complete base. */
+
+.mp-dark-stage {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --bg-card: #1c2128;
+  --bg-input: #0d1117;
+  --surface: var(--bg-tertiary);
+  --surface-raised: var(--bg-card);
+
+  /* Ink */
+  --text-primary: #e6edf3;
+  --text-secondary: #a8b3bf;
+  --text-muted: #8b949e;
+  --text-tertiary: var(--text-muted);
+  --fg-primary: var(--text-primary);
+  --fg-secondary: var(--text-secondary);
+  --fg-tertiary: var(--text-muted);
+  --fg-muted: var(--text-muted);
+
+  /* Boundaries */
+  --border: #6e7681;
+  --border-color: var(--border);
+  --border-primary: var(--border);
+  --border-secondary: #768390;
+  --border-subtle: #30363d;
+  --border-light: var(--border);
+  --border-mid: var(--border-secondary);
+
+  /* Accent and the ink painted on it */
+  --accent: #58a6ff;
+  --accent-color: var(--accent);
+  --accent-primary: var(--accent);
+  --accent-hover: #79b8ff;
+  --accent-lighter: #79c0ff;
+  --accent-dim: rgba(88, 166, 255, 0.15);
+  --accent-glow: rgba(88, 166, 255, 0.3);
+  --on-accent: #0d1117;
+  --blue: var(--accent);
+  --note-active: var(--accent);
+
+  /* Status pairs */
+  --green: #56d364;
+  --green-dim: rgba(86, 211, 100, 0.15);
+  --green-glow: rgba(86, 211, 100, 0.3);
+  --success: var(--green);
+  --success-dim: var(--green-dim);
+  --on-success: #0d1117;
+  --ok-green: var(--success);
+  --accent-success: var(--success);
+
+  --yellow: #e3b341;
+  --warning: var(--yellow);
+  --warning-dim: rgba(227, 179, 65, 0.15);
+  --on-warning: #0d1117;
+  --accent-warning: var(--warning);
+
+  --red: #ff7b72;
+  --error: var(--red);
+  --danger: var(--red);
+  --error-red: var(--red);
+  --danger-dim: rgba(255, 123, 114, 0.15);
+  --on-danger: #0d1117;
+  --accent-danger: var(--danger);
+
+  --info: var(--accent);
+  --info-dim: var(--accent-dim);
+  --on-info: var(--on-accent);
+  --accent-info: var(--info);
+
+  --orange: #f0883e;
+  --purple: #d2a8ff;
+  --teal: #39c5cf;
+
+  /* Shared interaction aliases */
+  --bg-hover: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  --hover-bg: var(--bg-hover);
+  --surface-hover: var(--bg-hover);
+  --bg-inverse: #f0f6fc;
+  --text-inverse: #0d1117;
+}

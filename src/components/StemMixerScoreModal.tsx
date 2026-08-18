@@ -46,7 +46,10 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   return (
     <Show when={props.showScore() && props.score()}>
       <div class="sm-mic-score-overlay" onClick={() => props.onClose()}>
-        <div class="sm-mic-score-card" onClick={(e) => e.stopPropagation()}>
+        <div
+          class="sm-mic-score-card mp-dark-stage"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             class="sm-mic-score-close"
             onClick={() => props.onClose()}
