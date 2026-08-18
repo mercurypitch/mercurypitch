@@ -9,12 +9,12 @@
 // "your local library could not be opened" and "the demo could not be
 // reached" are not the same news.
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { ASSUMED_DEMO_SECONDS, createDemoGuitarNightSongPort, } from './demo-song-port'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, GuitarNightSongSummary, } from './song-port'
-import { composeGuitarNightSongPorts } from './song-port'
+import { composeGuitarNightSongPorts, DEMO_CATALOG_WAIT_MS } from './song-port'
 
 function manifest(over: Partial<DemoSongManifest> = {}): DemoSongManifest {
   return {
@@ -212,6 +212,10 @@ function song(sessionId: string): GuitarNightSongSummary {
   return { sessionId, title: sessionId, createdAt: 1 }
 }
 
+afterEach(() => {
+  vi.useRealTimers()
+})
+
 describe('the device library and the demo together', () => {
   it('lists the visitor’s own songs first', () => {
     const composed = composeGuitarNightSongPorts(
@@ -251,6 +255,46 @@ describe('the device library and the demo together', () => {
 
     await expect(composed.initialize()).resolves.toBeUndefined()
     expect(composed.completedSongs()).toHaveLength(1)
+  })
+
+  it('opens the shelf without waiting out a demo that never answers', async () => {
+    vi.useFakeTimers()
+    try {
+      const composed = composeGuitarNightSongPorts(
+        stubPort({ completedSongs: () => [song('mine')] }),
+        // A dead connection: the manifest fetch simply never settles.
+        stubPort({ initialize: () => new Promise(() => undefined) }),
+      )
+
+      let opened = false
+      void composed.initialize().then(() => {
+        opened = true
+      })
+      await vi.advanceTimersByTimeAsync(DEMO_CATALOG_WAIT_MS - 1)
+      expect(opened).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(1)
+      // The visitor's own songs live on this device and must not be held
+      // shut behind a network the demo lives on.
+      expect(opened).toBe(true)
+      expect(composed.completedSongs()).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not sit on the timer once the demo has answered', async () => {
+    vi.useFakeTimers()
+    try {
+      const composed = composeGuitarNightSongPorts(stubPort(), stubPort())
+      await composed.initialize()
+
+      // Nothing left pending: a wait that outlived its answer would keep a
+      // timer alive for four seconds after every library open.
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('asks the demo only for a session the device does not have', async () => {

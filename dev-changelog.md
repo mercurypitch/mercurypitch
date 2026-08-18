@@ -26,7 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `onSeparateGuitar`: that path calls `refreshUvrSessionFromDb` before
   billing a GPU split, and a demo has no durable record to reconnect to.
   Undeclared durations resolve to `ASSUMED_DEMO_SECONDS` so the transport's
-  decode budget errs toward streaming.
+  decode budget errs toward streaming. The composition also bounds the wait:
+  the device library opens after `DEMO_CATALOG_WAIT_MS` whether or not the
+  demo manifest has answered, so a dead connection cannot hold the visitor's
+  own songs shut.
 
 - **`src/lib/song-audio-cache.ts` — a bounded Cache Storage cache for remote
   song audio.** R2 serves the demo stems with an ETag, a Last-Modified and no

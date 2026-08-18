@@ -151,6 +151,27 @@ export function resolveGuitarNightDefaultMix(
 }
 
 /**
+ * How long the shelf waits on the demo catalog before opening without it.
+ *
+ * Generous for a few hundred bytes of manifest, and short enough not to
+ * read as a hang. It exists because the demo lives on the network and the
+ * rest of the library lives on the device: a visitor on a dead connection
+ * must still get their own songs.
+ */
+export const DEMO_CATALOG_WAIT_MS = 4000
+
+/** Resolve when `work` settles, or when `ms` is up — whichever is first. */
+function settleWithin(work: Promise<unknown>, ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms)
+    void work.then(() => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+/**
  * One library out of two sources: the songs this device has separated,
  * and the demo the app offers to anyone who has separated nothing yet.
  *
@@ -158,7 +179,8 @@ export function resolveGuitarNightDefaultMix(
  * cannot be opened is the visitor's own problem to see and retry — it is
  * what "Your local library could not be opened" means — so that failure
  * still propagates. A demo that cannot be reached is a network the room
- * has no claim on, so it costs the demo and nothing else.
+ * has no claim on, so it costs the demo and nothing else — including the
+ * time it would otherwise spend holding the shelf shut.
  */
 export function composeGuitarNightSongPorts(
   device: GuitarNightSongPort,
@@ -168,7 +190,7 @@ export function composeGuitarNightSongPorts(
     initialize: async () => {
       const demoReady = demo.initialize().catch(() => undefined)
       await device.initialize()
-      await demoReady
+      await settleWithin(demoReady, DEMO_CATALOG_WAIT_MS)
     },
 
     completedSongs: () => [
