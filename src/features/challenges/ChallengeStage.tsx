@@ -1,5 +1,5 @@
 // ============================================================
-// ChallengeStage — the weekly Legend performed on the zen canvas
+// ChallengeStage — the Legend Attempt performed on the zen canvas
 // ============================================================
 //
 // "Sing it" no longer runs the plain sight-singing drill: the challenge's

@@ -41,6 +41,8 @@ import { saveMidiSong } from '@/stores/saved-midi-songs-store'
 import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
 
+/** Original tab fingering (Guitar Pro imports) is preserved through load. */
+
 /**
  * What the collapsed mode HUD calls itself on a phone.
  *
@@ -57,8 +59,6 @@ const GUITAR_MODE_HUD_LABELS: Record<string, string> = {
   singToFretboard: 'Sing to fretboard',
   transcriptionTrainer: 'Transcription',
 }
-
-/** Original tab fingering (Guitar Pro imports) is preserved through load. */
 interface GuitarSongLoadData {
   midi: number
   noteName?: string

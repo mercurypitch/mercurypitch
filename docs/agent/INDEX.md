@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar-night` | [guitar-night-voice-commands.ts](../../src/features/guitar-night/guitar-night-voice-commands.ts) | 18.3k | Guitar Night voice commands — the room's spoken transport Registered by GuitarNightRoom for the room's lifetime, over the SAME GuitarBack... |
-| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.2k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
+| `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.3k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.7k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 6.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
@@ -84,11 +84,11 @@ These are the rules that break things when ignored.
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
+| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 4.1k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.1k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 3.6k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 3.6k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.5k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
-| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.4k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.9k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 2.9k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
@@ -217,7 +217,7 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.2k | Original tab fingering (Guitar Pro imports) is preserved through load. |
+| [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k | Original tab fingering (Guitar Pro imports) is preserved through load. |
 | [HomePage.tsx](../../src/pages/HomePage.tsx) | 600 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
@@ -359,6 +359,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.5k |
 | [src/features/guitar-night/useGuitarListeningController.ts](../../src/features/guitar-night/useGuitarListeningController.ts) | 1.5k |
 | [src/features/piano-night/usePianoNightController.ts](../../src/features/piano-night/usePianoNightController.ts) | 1.5k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
@@ -366,10 +367,10 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts](../../src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts) | 1.4k |
 | [src/features/piano/instrument/piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 1.4k |
 | [src/features/progress/ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 1.4k |
-| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.4k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
+| [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
 | [src/features/progress/model.ts](../../src/features/progress/model.ts) | 1.2k |
