@@ -6,7 +6,7 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.1] - 2026-08-19
 
 ### Added
 
@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   full-screen overlays are deliberately excluded: a dropdown you can read the
   room through is the failure this fixes, not a feature of it. Measured in
   Chromium: the entry panel goes from `blur(18px)` over `rgba(22,17,14,0.94)`
-  at 0 to `blur(3.6px)` over `rgba(22,17,14,0.424)` at 1.
+  at 0, through `blur(8.9px)` over `rgba(22,17,14,0.60)` at the shipped
+  default, to `blur(1.4px)` over `rgba(22,17,14,0.33)` at 1.
 - **The slider lives in the Room menu, not the top bar.** Karaoke Night's
   equivalent sits in its top bar and is `display: none` under 900px, so on
   the phone the report came from there is no way to reach it. Guitar Night's
@@ -261,6 +262,96 @@ removed, the queue leaving a gap, a reflow wired into the drop handler, and a
 drop that ignores direction. The reflow-on-drop mutation initially passed —
 the drag path had no test at all, only the keyboard buttons — which is why
 there are now three drag tests.
+
+### The music level moved to the surface that needs it
+
+Shipped first in the mixer's header, and the report came straight back: "the
+slider is basically only visible on desktop in top of the stem mixer, and is
+ugly as hell. So the one place it is needed, can't see it, since stem mixer
+isn't visible on mobile small screens, only the zen mode."
+
+Both halves are correct. Under `isNarrow()` `StemMixer` renders
+`KaraokeMobileStage` INSTEAD of the mixer — the header the slider lived in is
+not on the page at all — and the platform behaviour that turns the backing
+track down (iOS switching the page to `playAndRecord` and engaging its own
+noise cancelling when a mic opens) is a phone behaviour. The control is now a
+`MusicLevelIcon` button in the zen transport's right slot, mirroring the mic
+in the left slot, opening a glass sheet with the slider, a percentage read out
+against the shipped 0.7 as 100%, and one line saying why it exists. The
+desktop header slider is gone; desktop reaches the same control through Zen.
+
+The three props (`musicLevel`, `onMusicLevel`, `musicLevelRange`) are optional
+together, so a host that cannot offer a level simply renders no button and the
+transport stays symmetrical. The mic hint is gated on `zenStage()` for the
+same reason — telling a desktop mixer user about a button that is not on their
+screen would also burn the once-ever flag doing it.
+
+The hint's wording was wrong as well: it said the backing track was lost.
+Nothing is lost and nothing is muted, so it now names noise cancelling and
+points at the button.
+
+Validation: `KaraokeMobileStage.musicLevel.test.tsx` 14 render tests over the
+button, the sheet and the slider; `StemMixerZenMusicLevel.test.tsx` 6 tests
+that mount the whole mixer at phone width — the exact configuration that was
+broken — click the mic and read the note back; `mixer-music-level.test.ts`
+rewritten to the new wiring. Mutations red: `hasMusicLevel` checking only the
+value, the slider reporting the raw input string, the readout using raw gain,
+the sheet ignoring its open state, the hint firing off the zen stage, the old
+wording, and the props dropped from the stage.
+
+`MockAnalyser` in `src/tests/setup.ts` gained `connect`/`disconnect`. An
+`AnalyserNode` is an `AudioNode`, and the mic controller tears its graph down
+with `micAnalyserNode?.disconnect()`; without them the double threw on every
+unmount that had opened a mic, which is why no test had ever opened one.
+
+### The room doors say they heard you
+
+Reported: "guitar night and piano night buttons that also go to another page,
+I didn't see it showing the spinner for long loading and it was loading
+multiple seconds."
+
+Measured first, in a real browser at 390px, before changing anything: a
+trusted click DOES set `data-busy` and mount the spinner. The wiring was never
+the problem. A 12px ring appended to a chip in the status row at the top of
+the screen was, while the eye was on the middle of the screen waiting for a
+page. jsdom cannot see any of that — it has no layout, and `fireEvent.click`
+on an anchor is not a navigation.
+
+So the acknowledgement is now the size of the thing that was touched:
+`.busyLink[data-busy='true']` dims the whole control, and an iconified
+`.chipBtn` swaps its glyph for the spinner rather than growing beside it. The
+options-sheet door into Piano Night was still a plain `<a>` with no busy state
+at all; it is a `BusyLink` now.
+
+Validation: `src/e2e/room-chip-busy.spec.ts`, 4 Playwright tests. Holding the
+navigation still is the hard part — the rooms are separate documents, so a
+click takes the evidence with it. `route.abort()` swaps in an error page and
+`route.fulfill` with a delay makes Playwright's own actionability waits block
+on the navigation; `204 No Content` leaves the document exactly as it was,
+mid-tap. Mutations red: the dim removed, the icon left beside the ring, and
+the options-sheet door reverted to an anchor.
+
+### Admin queue arrows: one SVG cannot be in two places
+
+The move-up/move-down buttons in the challenge queue drew empty circles on
+every row but the last. `AdminWeeklyPage` held its glyphs as module-level JSX
+values — `const arrowUp = (<svg/>)` — and in Solid that is ONE DOM node.
+Rendering it in a `<For>` does not copy it, it MOVES it, so the last row wins
+and every earlier row keeps the button's border and loses its arrow. All five
+glyphs are functions now.
+
+Validation: two tests in `admin-challenge-window.test.tsx` — that an arrow is
+drawn on every row rather than just the last, and that all four stepper
+buttons have one. Both red against the shared-value form.
+
+### Guitar Night glass opens further, and starts mid-slider
+
+"the max setting should be a bit more, and around middle by defualt". The
+range stayed 0..1 — a clean clarity scale — and the curve got steeper:
+`--gn-surface-scale` 0.55 -> 0.65, `--gn-blur-scale` 0.8 -> 0.92,
+`--gn-veil-scale` 0.5 -> 0.6, with the default moving 0.35 -> 0.55. The
+faceplate carried 12.96px of blur at the old default and carries 8.9px now.
+Zero is still the room exactly as it shipped.
 
 ## [0.9.0] - 2026-08-18
 
