@@ -17,8 +17,13 @@ import type { WeeklyAdminRow } from './weekly-service'
 import { createWeekly, deleteWeekly, getAdminKey, listAllWeekly, melodyItemsToNotes, notesToMelodyItems, plusOneWeekIso, setAdminKey, thisMondayUtcIso, updateWeekly, } from './weekly-service'
 
 // Inline rather than from the icon set: the admin console does not import it,
-// and two 12px chevrons are not worth a new dependency edge.
-const arrowLeft = (
+// and a few 14px chevrons are not worth a new dependency edge.
+//
+// Functions, NOT shared JSX values. A module-level `const x = (<svg/>)` is one
+// DOM node: rendering it twice does not copy it, it MOVES it — so inside a
+// `<For>` only the last row kept its glyph and every earlier row rendered an
+// empty circle. Each call has to build its own element.
+const arrowLeft = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
     <path
       fill="none"
@@ -31,7 +36,7 @@ const arrowLeft = (
   </svg>
 )
 
-const arrowUp = (
+const arrowUp = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
     <path
       fill="none"
@@ -44,7 +49,7 @@ const arrowUp = (
   </svg>
 )
 
-const arrowDown = (
+const arrowDown = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
     <path
       fill="none"
@@ -57,7 +62,7 @@ const arrowDown = (
   </svg>
 )
 
-const gripGlyph = (
+const gripGlyph = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
     <path
       fill="currentColor"
@@ -66,7 +71,7 @@ const gripGlyph = (
   </svg>
 )
 
-const arrowRight = (
+const arrowRight = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
     <path
       fill="none"
@@ -575,7 +580,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                             onDrop={() => dropOn(row.id)}
                           >
                             <span class={styles.queueGrip} aria-hidden="true">
-                              {gripGlyph}
+                              {gripGlyph()}
                             </span>
                             <span class={styles.queuePos}>{index() + 1}</span>
                             <span class={styles.queueTitle}>{row.title}</span>
@@ -601,7 +606,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                                   )
                                 }
                               >
-                                {arrowUp}
+                                {arrowUp()}
                               </button>
                               <button
                                 type="button"
@@ -620,7 +625,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                                   )
                                 }
                               >
-                                {arrowDown}
+                                {arrowDown()}
                               </button>
                             </span>
                           </li>
@@ -824,7 +829,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                     data-testid="window-start-back"
                     onClick={() => nudgeStart(-1)}
                   >
-                    {arrowLeft}
+                    {arrowLeft()}
                   </button>
                   <span class={styles.week} data-testid="window-start-week">
                     {formatIsoWeek(form()!.startsAt)}
@@ -836,7 +841,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                     data-testid="window-start-forward"
                     onClick={() => nudgeStart(1)}
                   >
-                    {arrowRight}
+                    {arrowRight()}
                   </button>
                   <span class={styles.windowDate}>
                     {form()!.startsAt.slice(0, 10)}
@@ -852,7 +857,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                     data-testid="window-end-back"
                     onClick={() => nudgeEnd(-1)}
                   >
-                    {arrowLeft}
+                    {arrowLeft()}
                   </button>
                   <span class={styles.week} data-testid="window-end-week">
                     {formatIsoWeek(form()!.endsAt)}
@@ -864,7 +869,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
                     data-testid="window-end-forward"
                     onClick={() => nudgeEnd(1)}
                   >
-                    {arrowRight}
+                    {arrowRight()}
                   </button>
                   <span class={styles.windowDate}>
                     {form()!.endsAt.slice(0, 10)}

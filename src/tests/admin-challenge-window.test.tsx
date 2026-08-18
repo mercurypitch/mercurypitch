@@ -172,6 +172,24 @@ describe('the week stepper', () => {
     expect(screen.getByTestId('window-end-week').textContent).toBe('W38 · 2026')
   })
 
+  it('draws an arrow in all four stepper buttons', async () => {
+    // Same shared-node trap: `arrowLeft` and `arrowRight` appear twice each
+    // — the opening row and the closing row — so only the second row's
+    // buttons kept their glyph.
+    await openForm()
+    for (const id of [
+      'window-start-back',
+      'window-start-forward',
+      'window-end-back',
+      'window-end-forward',
+    ]) {
+      expect(
+        screen.getByTestId(id).querySelector('svg'),
+        `${id} has no glyph`,
+      ).toBeTruthy()
+    }
+  })
+
   it('keeps the raw ISO fields for anything the stepper cannot say', async () => {
     await openForm()
     expect(screen.getByText('Opens (ISO)')).toBeTruthy()
@@ -191,6 +209,29 @@ describe('the queue', () => {
     expect(titles[2]).toContain('Last')
     // The live one is not in the queue — it is what the queue runs after.
     expect(titles.join(' ')).not.toContain('The live one')
+  })
+
+  it('draws the move arrows on every row, not just the last', async () => {
+    // Reported: "only one of the next items has this circles for up/down,
+    // but they are missing the arrows inside circles".
+    //
+    // The glyphs were module-level JSX VALUES — `const arrowUp = (<svg/>)`.
+    // That is one DOM node, and rendering it twice does not copy it, it MOVES
+    // it. Inside a `<For>` the last row won and every earlier row rendered an
+    // empty button. Nothing about it is visible in a diff.
+    render(() => <AdminWeeklyPage />)
+    await waitFor(() => screen.getByTestId('challenge-queue'))
+
+    for (const id of ['q1', 'q2', 'q3']) {
+      expect(
+        screen.getByTestId(`queue-up-${id}`).querySelector('svg'),
+        `queue-up-${id} has no glyph`,
+      ).toBeTruthy()
+      expect(
+        screen.getByTestId(`queue-down-${id}`).querySelector('svg'),
+        `queue-down-${id} has no glyph`,
+      ).toBeTruthy()
+    }
   })
 
   it('writes nothing when the order is merely changed', async () => {
