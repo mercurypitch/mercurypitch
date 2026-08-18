@@ -5165,7 +5165,7 @@
   }
 
   /* The card's actions wrap rather than stack.
-     
+
      Stacking was a fix for an earlier bug — grouping these BUTTONS into
      the panel-header rule sent every action to column + stretch, which
      pinned a 12px icon in the corner of a huge padded block with its
@@ -5174,7 +5174,7 @@
      controls fit a phone row comfortably at ~168px each, and a third
      wraps on its own, which is what the base rule's `flex-wrap` was
      always for.
-     
+
      This is a third of the card's height back: the row was 84px of a
      386px card, and a card that tall means one and a bit fit a phone. */
   .session-result-actions {
