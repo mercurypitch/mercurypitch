@@ -1,5 +1,5 @@
 // ============================================================
-// ChallengeStage — the weekly Legend performed on the zen canvas
+// ChallengeStage — the Legend Attempt performed on the zen canvas
 // ============================================================
 //
 // "Sing it" no longer runs the plain sight-singing drill: the challenge's
@@ -471,12 +471,12 @@ export function ChallengeStage(props: ChallengeStageProps) {
         ariaLabel={
           launch.mode === 'practice'
             ? 'Past challenge practice stage'
-            : 'Weekly challenge performance stage'
+            : 'Legend Attempt performance stage'
         }
         eyebrow={
           launch.mode === 'practice'
             ? 'Past Legend · practice'
-            : "This Week's Legend"
+            : 'Legend Attempt'
         }
         title={launch.title}
         icon={<Trophy />}

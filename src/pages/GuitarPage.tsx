@@ -1,5 +1,5 @@
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createSignal, For, on, Show, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, Show, untrack, } from 'solid-js'
 import { AudioDeviceSettings } from '@/components/guitar/AudioDeviceSettings'
 import { ChordSelector } from '@/components/guitar/ChordSelector'
 import { DrumMachinePanel } from '@/components/guitar/DrumMachinePanel'
@@ -11,7 +11,7 @@ import { GuitarSignalFlow } from '@/components/guitar/GuitarSignalFlow'
 import { GuitarTuner } from '@/components/guitar/GuitarTuner'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
-import { Guitar } from '@/components/icons'
+import { ChevronDown, Guitar } from '@/components/icons'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
 import { BusyLink } from '@/components/shared'
@@ -42,6 +42,23 @@ import { recordActivity } from '@/stores/usage-store'
 import type { MelodyItem } from '@/types'
 
 /** Original tab fingering (Guitar Pro imports) is preserved through load. */
+
+/**
+ * What the collapsed mode HUD calls itself on a phone.
+ *
+ * Keyed by fretboard mode; anything unlisted falls back to a generic label,
+ * so adding a mode cannot break the row — it just gets a plainer name.
+ */
+const GUITAR_MODE_HUD_LABELS: Record<string, string> = {
+  noteQuiz: 'Note quiz',
+  earTraining: 'Ear training',
+  melodyTranscription: 'Melody transcription',
+  callResponse: 'Call and response',
+  cagedTrainer: 'CAGED shapes',
+  chordProgression: 'Chord progression',
+  singToFretboard: 'Sing to fretboard',
+  transcriptionTrainer: 'Transcription',
+}
 interface GuitarSongLoadData {
   midi: number
   noteName?: string
@@ -251,6 +268,14 @@ export function GuitarPage(props: GuitarPageProps) {
     riffTracker,
   } = ctx.modes
 
+  // The mode HUDs collapse on a phone. Closed by default: the fretboard is
+  // what somebody opened this page for, and eight rows of practice controls
+  // above it is how it ends up below the fold.
+  const [modeHudOpen, setModeHudOpen] = createSignal(false)
+  const modeHudLabel = createMemo(
+    () => GUITAR_MODE_HUD_LABELS[fretboardMode()] ?? 'Practice controls',
+  )
+
   const picker = useMidiSongPicker<GuitarSongLoadData>({
     currentSong: () => guitar.currentSong(),
     fromMelodyItems: melodyToGuitarItems,
@@ -328,41 +353,62 @@ export function GuitarPage(props: GuitarPageProps) {
           <Show
             when={!isNarrow()}
             fallback={
-              <button
-                class={barStyles.chipBtn}
-                data-tour="guitar.options"
-                onClick={() => setGuitarOptionsOpen(true)}
-                title="Sound, view, import & devices"
-                aria-label="Guitar options"
-              >
-                <span class={barStyles.chipIcon} aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  >
-                    <line x1="4" y1="8" x2="20" y2="8" />
-                    <line x1="4" y1="16" x2="20" y2="16" />
-                    <circle
-                      cx="9"
-                      cy="8"
-                      r="2.4"
-                      fill="currentColor"
-                      stroke="none"
-                    />
-                    <circle
-                      cx="15"
-                      cy="16"
-                      r="2.4"
-                      fill="currentColor"
-                      stroke="none"
-                    />
-                  </svg>
-                </span>
-                <span class={barStyles.chipLabel}>Options</span>
-              </button>
+              <>
+                {/* The room door, in the bar rather than two levels down the
+                    options sheet — the same move Piano's chip row got. It
+                    stays in the sheet as well: that is where somebody who
+                    already found it will look. Icon only, because the phone
+                    bar has one row to give. */}
+                <BusyLink
+                  class={barStyles.chipBtn}
+                  href="/guitar-night"
+                  title="Open Guitar Night — the Velvet Rehearsal play-along room"
+                  aria-label="Open Guitar Night"
+                  data-testid="guitar-room-chip"
+                  data-tour="guitar-room-chip"
+                  busyLabel="Opening Guitar Night…"
+                  spinnerSize={14}
+                >
+                  <span class={barStyles.chipIcon} aria-hidden="true">
+                    <Guitar />
+                  </span>
+                </BusyLink>
+                <button
+                  class={barStyles.chipBtn}
+                  data-tour="guitar.options"
+                  onClick={() => setGuitarOptionsOpen(true)}
+                  title="Sound, view, import & devices"
+                  aria-label="Guitar options"
+                >
+                  <span class={barStyles.chipIcon} aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    >
+                      <line x1="4" y1="8" x2="20" y2="8" />
+                      <line x1="4" y1="16" x2="20" y2="16" />
+                      <circle
+                        cx="9"
+                        cy="8"
+                        r="2.4"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                      <circle
+                        cx="15"
+                        cy="16"
+                        r="2.4"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                    </svg>
+                  </span>
+                  <span class={barStyles.chipLabel}>Options</span>
+                </button>
+              </>
             }
           >
             <SegmentedControl
@@ -527,350 +573,388 @@ export function GuitarPage(props: GuitarPageProps) {
             />
           </Show>
         </KeyScaleSelector>
-        <Show when={fretboardMode() === 'noteQuiz'}>
-          <div class="gp-quiz-hud">
-            <div class="gp-quiz-target">
-              Find all{' '}
-              <span
-                style={{
-                  color: 'var(--accent)',
-                  'font-weight': '700',
-                }}
-              >
-                {NOTE_NAMES[noteQuiz.targetMidiClass()]}
-              </span>{' '}
-              on the neck
-            </div>
-            <div class="gp-quiz-stats">
-              <span class="gp-quiz-timer">
-                {noteQuiz.roundActive() ? `${noteQuiz.timeLeft()}s` : '--'}
-              </span>
-              <span class="gp-quiz-progress">
-                {noteQuiz.foundMidis().size}/
-                {(() => {
-                  const target = noteQuiz.targetMidiClass()
-                  const openMidi = [40, 45, 50, 55, 59, 64]
-                  let count = 0
-                  for (let s = 0; s < 6; s++)
-                    for (let f = 0; f <= 15; f++) {
-                      if ((openMidi[s] + f) % 12 === target) count++
-                    }
-                  return count
-                })()}{' '}
-                found
-              </span>
-              <span class="gp-quiz-score">Score: {noteQuiz.score()}</span>
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'earTraining'}>
-          <div class="gp-ear-panel">
-            <div class="gp-ear-difficulty">
-              <span class="gp-key-scale-label">Difficulty</span>
-              <select
-                class="gp-key-scale-select"
-                value={earTraining.difficulty()}
-                onChange={(e) =>
-                  earTraining.setDifficulty(
-                    e.currentTarget.value as 'easy' | 'medium' | 'hard',
-                  )
-                }
-              >
-                <option value="easy">Easy (frets 0-3)</option>
-                <option value="medium">Medium (frets 0-7)</option>
-                <option value="hard">Hard (full neck)</option>
-              </select>
-            </div>
-            <div class="gp-ear-hud">
-              <span class="gp-ear-label">What note is this?</span>
-              <span class="gp-ear-streak">Streak: {earTraining.streak()}</span>
-              <span class="gp-ear-accuracy">
-                {Math.round(earTraining.accuracy() * 100)}%
-              </span>
-              {earTraining.feedback() && (
-                <span
-                  class="gp-ear-feedback"
-                  classList={{
-                    'gp-ear-correct': earTraining.feedback() === 'correct',
-                    'gp-ear-wrong': earTraining.feedback() === 'wrong',
-                  }}
-                >
-                  {earTraining.feedback() === 'correct'
-                    ? 'Correct!'
-                    : 'Try again'}
-                </span>
-              )}
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'melodyTranscription'}>
-          <div class="gp-transcription-hud">
-            <div class="gp-transcription-left">
-              <span class="gp-transcription-label">
-                {melodyTranscription.phase() === 'playing'
-                  ? 'Listen...'
-                  : melodyTranscription.phase() === 'listening'
-                    ? 'Your turn! Play the melody'
-                    : melodyTranscription.phase() === 'feedback'
-                      ? 'Feedback'
-                      : 'Ready'}
-              </span>
-              <span class="gp-transcription-progress">
-                Note {melodyTranscription.currentNoteIndex() + 1}/
-                {melodyTranscription.phraseLength()}
-              </span>
-            </div>
-            <div class="gp-transcription-right">
-              <span class="gp-transcription-score">
-                Score: {melodyTranscription.score()}
-              </span>
-              <div class="gp-transcription-length">
-                <span class="gp-key-scale-label">Length</span>
-                <select
-                  class="gp-key-scale-select"
-                  value={melodyTranscription.phraseLength()}
-                  onChange={(e) =>
-                    melodyTranscription.setPhraseLength(
-                      Number(e.currentTarget.value),
-                    )
-                  }
-                >
-                  <option value={2}>2 notes</option>
-                  <option value={3}>3 notes</option>
-                  <option value={4}>4 notes</option>
-                  <option value={5}>5 notes</option>
-                </select>
-              </div>
-              <button
-                class="gp-btn"
-                onClick={() => melodyTranscription.startNewPhrase()}
-              >
-                New Phrase
-              </button>
-              <button
-                class="gp-btn"
-                onClick={() => melodyTranscription.skipPhrase()}
-              >
-                Skip
-              </button>
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'callResponse'}>
-          <div class="gp-callresponse-hud">
-            <div class="gp-callresponse-left">
-              <span class="gp-callresponse-label">
-                {callResponse.phase() === 'callPlaying'
-                  ? 'Listen to the call...'
-                  : callResponse.phase() === 'callEcho'
-                    ? 'Your turn! Echo the call'
-                    : callResponse.phase() === 'responsePlaying'
-                      ? 'Listen to the response...'
-                      : callResponse.phase() === 'responseImprov'
-                        ? 'Improvise your reply!'
-                        : callResponse.phase() === 'feedback'
-                          ? 'Round feedback'
-                          : 'Ready'}
-              </span>
-              <span class="gp-callresponse-phase-indicator">
-                {callResponse.phase() === 'callEcho'
-                  ? `Echo: ${callResponse.userEchoNotes().length}/${callResponse.callNotes().length}`
-                  : callResponse.phase() === 'responseImprov'
-                    ? `Notes: ${callResponse.userImprovNotes().length}`
-                    : ''}
-              </span>
-            </div>
-            <div class="gp-callresponse-right">
-              <span class="gp-callresponse-score">
-                Score: {callResponse.totalScore()}
-              </span>
-              <Show when={callResponse.phase() === 'callEcho'}>
-                <button
-                  class="gp-btn"
-                  onClick={() => callResponse.finishEcho()}
-                >
-                  Echo Done
-                </button>
-              </Show>
-              <Show when={callResponse.phase() === 'responseImprov'}>
-                <button
-                  class="gp-btn"
-                  onClick={() => callResponse.finishImprov()}
-                >
-                  Improv Done
-                </button>
-              </Show>
-              <Show
-                when={
-                  callResponse.phase() === 'callPlaying' ||
-                  callResponse.phase() === 'responsePlaying'
-                }
-              >
-                <button class="gp-btn" onClick={() => callResponse.skipRound()}>
-                  Skip
-                </button>
-              </Show>
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'cagedTrainer'}>
-          <div class="gp-caged-hud">
-            <div class="gp-caged-left">
-              <span class="gp-caged-label">
-                {cagedTrainer.activeShape()} Position
-              </span>
-              <span class="gp-caged-chord">
-                Chord: {cagedTrainer.activeChord()}
-              </span>
-            </div>
-            <div class="gp-caged-right">
-              <button class="gp-btn" onClick={() => cagedTrainer.prevShape()}>
-                Prev
-              </button>
-              <button class="gp-btn" onClick={() => cagedTrainer.nextShape()}>
-                Next
-              </button>
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'chordProgression'}>
-          <div class="gp-chordprog-hud">
-            <div class="gp-chordprog-left">
-              <span class="gp-chordprog-progression">
-                {chordProgression.progressionName()}
-              </span>
-              <span class="gp-chordprog-chord">
-                {chordProgression.currentChordName()}
-              </span>
-            </div>
-            <div class="gp-chordprog-controls">
-              <button
-                class="gp-btn gp-btn-sm"
-                onClick={() => chordProgression.prevProgression()}
-              >
-                Prev
-              </button>
-              <button
-                class="gp-btn gp-btn-sm"
-                onClick={() => chordProgression.toggle()}
-              >
-                {chordProgression.playing() ? 'Stop' : 'Start'}
-              </button>
-              <button
-                class="gp-btn gp-btn-sm"
-                onClick={() => chordProgression.nextProgression()}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'singToFretboard'}>
-          <div class="gp-singtofret-hud">
-            <div class="gp-singtofret-left">
-              <span class="gp-singtofret-phase">
-                {singToFretboard.phase() === 'listening'
-                  ? 'Sing a note...'
-                  : singToFretboard.phase() === 'locked'
-                    ? `Find ${singToFretboard.targetNoteName()}`
-                    : 'Found!'}
-              </span>
-            </div>
-            <div class="gp-singtofret-right">
-              <span class="gp-singtofret-streak">
-                Streak: {singToFretboard.streak()}
-              </span>
-              <span class="gp-singtofret-total">
-                Found: {singToFretboard.totalFound()}
-              </span>
-            </div>
-          </div>
-        </Show>
-        <Show when={fretboardMode() === 'transcriptionTrainer'}>
-          <div class="gp-tt-hud">
-            <div class="gp-tt-left">
-              <span class="gp-tt-label">Transcribe</span>
-              <span class="gp-tt-progress">
-                {transcriptionTrainer.phase() === 'idle'
-                  ? 'Load audio to start'
-                  : transcriptionTrainer.phase() === 'loaded'
-                    ? 'Ready — press Play'
-                    : `${transcriptionTrainer.currentTime().toFixed(1)}s / ${transcriptionTrainer.duration().toFixed(1)}s`}
-              </span>
-            </div>
-            <div class="gp-tt-right">
-              <span class="gp-tt-score">
-                Notes: {transcriptionTrainer.foundNotes().length}
-              </span>
-              <Show when={transcriptionTrainer.phase() === 'idle'}>
-                <label class="gp-tt-load-btn">
-                  Load Audio
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    style="display:none"
-                    onChange={(e) => {
-                      const file = e.currentTarget.files?.[0]
-                      if (file) transcriptionTrainer.loadAudio(file)
+        {/* ── Mode HUDs ──────────────────────────────────────────
+            Eight practice modes each hang their own controls here. On a
+            desktop they sit above the fretboard and there is room. On a
+            phone they stack and push the fretboard off the screen, so the
+            whole set collapses to one row that opens on tap. Desktop is
+            unchanged: the toggle is display:none and the body always shows.
+
+            These go away entirely once Guitar Night reaches parity — hence
+            a wrapper and a media query rather than a rebuild. */}
+        <div
+          class="gp-mode-hud-dock"
+          classList={{ 'gp-mode-hud-dock--open': modeHudOpen() }}
+        >
+          <button
+            type="button"
+            class="gp-mode-hud-toggle"
+            aria-expanded={modeHudOpen()}
+            aria-controls="gp-mode-hud-body"
+            data-testid="guitar-mode-hud-toggle"
+            onClick={() => setModeHudOpen((open) => !open)}
+          >
+            <span>{modeHudLabel()}</span>
+            <ChevronDown size={16} />
+          </button>
+          <div class="gp-mode-hud-body" id="gp-mode-hud-body">
+            <Show when={fretboardMode() === 'noteQuiz'}>
+              <div class="gp-quiz-hud">
+                <div class="gp-quiz-target">
+                  Find all{' '}
+                  <span
+                    style={{
+                      color: 'var(--accent)',
+                      'font-weight': '700',
                     }}
-                  />
-                </label>
-              </Show>
+                  >
+                    {NOTE_NAMES[noteQuiz.targetMidiClass()]}
+                  </span>{' '}
+                  on the neck
+                </div>
+                <div class="gp-quiz-stats">
+                  <span class="gp-quiz-timer">
+                    {noteQuiz.roundActive() ? `${noteQuiz.timeLeft()}s` : '--'}
+                  </span>
+                  <span class="gp-quiz-progress">
+                    {noteQuiz.foundMidis().size}/
+                    {(() => {
+                      const target = noteQuiz.targetMidiClass()
+                      const openMidi = [40, 45, 50, 55, 59, 64]
+                      let count = 0
+                      for (let s = 0; s < 6; s++)
+                        for (let f = 0; f <= 15; f++) {
+                          if ((openMidi[s] + f) % 12 === target) count++
+                        }
+                      return count
+                    })()}{' '}
+                    found
+                  </span>
+                  <span class="gp-quiz-score">Score: {noteQuiz.score()}</span>
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'earTraining'}>
+              <div class="gp-ear-panel">
+                <div class="gp-ear-difficulty">
+                  <span class="gp-key-scale-label">Difficulty</span>
+                  <select
+                    class="gp-key-scale-select"
+                    value={earTraining.difficulty()}
+                    onChange={(e) =>
+                      earTraining.setDifficulty(
+                        e.currentTarget.value as 'easy' | 'medium' | 'hard',
+                      )
+                    }
+                  >
+                    <option value="easy">Easy (frets 0-3)</option>
+                    <option value="medium">Medium (frets 0-7)</option>
+                    <option value="hard">Hard (full neck)</option>
+                  </select>
+                </div>
+                <div class="gp-ear-hud">
+                  <span class="gp-ear-label">What note is this?</span>
+                  <span class="gp-ear-streak">
+                    Streak: {earTraining.streak()}
+                  </span>
+                  <span class="gp-ear-accuracy">
+                    {Math.round(earTraining.accuracy() * 100)}%
+                  </span>
+                  {earTraining.feedback() && (
+                    <span
+                      class="gp-ear-feedback"
+                      classList={{
+                        'gp-ear-correct': earTraining.feedback() === 'correct',
+                        'gp-ear-wrong': earTraining.feedback() === 'wrong',
+                      }}
+                    >
+                      {earTraining.feedback() === 'correct'
+                        ? 'Correct!'
+                        : 'Try again'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'melodyTranscription'}>
+              <div class="gp-transcription-hud">
+                <div class="gp-transcription-left">
+                  <span class="gp-transcription-label">
+                    {melodyTranscription.phase() === 'playing'
+                      ? 'Listen...'
+                      : melodyTranscription.phase() === 'listening'
+                        ? 'Your turn! Play the melody'
+                        : melodyTranscription.phase() === 'feedback'
+                          ? 'Feedback'
+                          : 'Ready'}
+                  </span>
+                  <span class="gp-transcription-progress">
+                    Note {melodyTranscription.currentNoteIndex() + 1}/
+                    {melodyTranscription.phraseLength()}
+                  </span>
+                </div>
+                <div class="gp-transcription-right">
+                  <span class="gp-transcription-score">
+                    Score: {melodyTranscription.score()}
+                  </span>
+                  <div class="gp-transcription-length">
+                    <span class="gp-key-scale-label">Length</span>
+                    <select
+                      class="gp-key-scale-select"
+                      value={melodyTranscription.phraseLength()}
+                      onChange={(e) =>
+                        melodyTranscription.setPhraseLength(
+                          Number(e.currentTarget.value),
+                        )
+                      }
+                    >
+                      <option value={2}>2 notes</option>
+                      <option value={3}>3 notes</option>
+                      <option value={4}>4 notes</option>
+                      <option value={5}>5 notes</option>
+                    </select>
+                  </div>
+                  <button
+                    class="gp-btn"
+                    onClick={() => melodyTranscription.startNewPhrase()}
+                  >
+                    New Phrase
+                  </button>
+                  <button
+                    class="gp-btn"
+                    onClick={() => melodyTranscription.skipPhrase()}
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'callResponse'}>
+              <div class="gp-callresponse-hud">
+                <div class="gp-callresponse-left">
+                  <span class="gp-callresponse-label">
+                    {callResponse.phase() === 'callPlaying'
+                      ? 'Listen to the call...'
+                      : callResponse.phase() === 'callEcho'
+                        ? 'Your turn! Echo the call'
+                        : callResponse.phase() === 'responsePlaying'
+                          ? 'Listen to the response...'
+                          : callResponse.phase() === 'responseImprov'
+                            ? 'Improvise your reply!'
+                            : callResponse.phase() === 'feedback'
+                              ? 'Round feedback'
+                              : 'Ready'}
+                  </span>
+                  <span class="gp-callresponse-phase-indicator">
+                    {callResponse.phase() === 'callEcho'
+                      ? `Echo: ${callResponse.userEchoNotes().length}/${callResponse.callNotes().length}`
+                      : callResponse.phase() === 'responseImprov'
+                        ? `Notes: ${callResponse.userImprovNotes().length}`
+                        : ''}
+                  </span>
+                </div>
+                <div class="gp-callresponse-right">
+                  <span class="gp-callresponse-score">
+                    Score: {callResponse.totalScore()}
+                  </span>
+                  <Show when={callResponse.phase() === 'callEcho'}>
+                    <button
+                      class="gp-btn"
+                      onClick={() => callResponse.finishEcho()}
+                    >
+                      Echo Done
+                    </button>
+                  </Show>
+                  <Show when={callResponse.phase() === 'responseImprov'}>
+                    <button
+                      class="gp-btn"
+                      onClick={() => callResponse.finishImprov()}
+                    >
+                      Improv Done
+                    </button>
+                  </Show>
+                  <Show
+                    when={
+                      callResponse.phase() === 'callPlaying' ||
+                      callResponse.phase() === 'responsePlaying'
+                    }
+                  >
+                    <button
+                      class="gp-btn"
+                      onClick={() => callResponse.skipRound()}
+                    >
+                      Skip
+                    </button>
+                  </Show>
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'cagedTrainer'}>
+              <div class="gp-caged-hud">
+                <div class="gp-caged-left">
+                  <span class="gp-caged-label">
+                    {cagedTrainer.activeShape()} Position
+                  </span>
+                  <span class="gp-caged-chord">
+                    Chord: {cagedTrainer.activeChord()}
+                  </span>
+                </div>
+                <div class="gp-caged-right">
+                  <button
+                    class="gp-btn"
+                    onClick={() => cagedTrainer.prevShape()}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    class="gp-btn"
+                    onClick={() => cagedTrainer.nextShape()}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'chordProgression'}>
+              <div class="gp-chordprog-hud">
+                <div class="gp-chordprog-left">
+                  <span class="gp-chordprog-progression">
+                    {chordProgression.progressionName()}
+                  </span>
+                  <span class="gp-chordprog-chord">
+                    {chordProgression.currentChordName()}
+                  </span>
+                </div>
+                <div class="gp-chordprog-controls">
+                  <button
+                    class="gp-btn gp-btn-sm"
+                    onClick={() => chordProgression.prevProgression()}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    class="gp-btn gp-btn-sm"
+                    onClick={() => chordProgression.toggle()}
+                  >
+                    {chordProgression.playing() ? 'Stop' : 'Start'}
+                  </button>
+                  <button
+                    class="gp-btn gp-btn-sm"
+                    onClick={() => chordProgression.nextProgression()}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'singToFretboard'}>
+              <div class="gp-singtofret-hud">
+                <div class="gp-singtofret-left">
+                  <span class="gp-singtofret-phase">
+                    {singToFretboard.phase() === 'listening'
+                      ? 'Sing a note...'
+                      : singToFretboard.phase() === 'locked'
+                        ? `Find ${singToFretboard.targetNoteName()}`
+                        : 'Found!'}
+                  </span>
+                </div>
+                <div class="gp-singtofret-right">
+                  <span class="gp-singtofret-streak">
+                    Streak: {singToFretboard.streak()}
+                  </span>
+                  <span class="gp-singtofret-total">
+                    Found: {singToFretboard.totalFound()}
+                  </span>
+                </div>
+              </div>
+            </Show>
+            <Show when={fretboardMode() === 'transcriptionTrainer'}>
+              <div class="gp-tt-hud">
+                <div class="gp-tt-left">
+                  <span class="gp-tt-label">Transcribe</span>
+                  <span class="gp-tt-progress">
+                    {transcriptionTrainer.phase() === 'idle'
+                      ? 'Load audio to start'
+                      : transcriptionTrainer.phase() === 'loaded'
+                        ? 'Ready — press Play'
+                        : `${transcriptionTrainer.currentTime().toFixed(1)}s / ${transcriptionTrainer.duration().toFixed(1)}s`}
+                  </span>
+                </div>
+                <div class="gp-tt-right">
+                  <span class="gp-tt-score">
+                    Notes: {transcriptionTrainer.foundNotes().length}
+                  </span>
+                  <Show when={transcriptionTrainer.phase() === 'idle'}>
+                    <label class="gp-tt-load-btn">
+                      Load Audio
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        style="display:none"
+                        onChange={(e) => {
+                          const file = e.currentTarget.files?.[0]
+                          if (file) transcriptionTrainer.loadAudio(file)
+                        }}
+                      />
+                    </label>
+                  </Show>
+                  <Show when={transcriptionTrainer.phase() !== 'idle'}>
+                    <button
+                      class="gp-btn gp-btn-sm"
+                      onClick={() => transcriptionTrainer.play()}
+                    >
+                      Play
+                    </button>
+                    <button
+                      class="gp-btn gp-btn-sm"
+                      onClick={() => transcriptionTrainer.pause()}
+                    >
+                      Pause
+                    </button>
+                    <button
+                      class="gp-btn gp-btn-sm"
+                      onClick={() => transcriptionTrainer.stop()}
+                    >
+                      Stop
+                    </button>
+                    <button
+                      class="gp-btn gp-btn-sm"
+                      onClick={() => transcriptionTrainer.toggleLoop()}
+                    >
+                      {transcriptionTrainer.loopEnabled() ? 'Loop' : 'No Loop'}
+                    </button>
+                  </Show>
+                </div>
+              </div>
               <Show when={transcriptionTrainer.phase() !== 'idle'}>
-                <button
-                  class="gp-btn gp-btn-sm"
-                  onClick={() => transcriptionTrainer.play()}
-                >
-                  Play
-                </button>
-                <button
-                  class="gp-btn gp-btn-sm"
-                  onClick={() => transcriptionTrainer.pause()}
-                >
-                  Pause
-                </button>
-                <button
-                  class="gp-btn gp-btn-sm"
-                  onClick={() => transcriptionTrainer.stop()}
-                >
-                  Stop
-                </button>
-                <button
-                  class="gp-btn gp-btn-sm"
-                  onClick={() => transcriptionTrainer.toggleLoop()}
-                >
-                  {transcriptionTrainer.loopEnabled() ? 'Loop' : 'No Loop'}
-                </button>
+                <div class="gp-tt-controls">
+                  <span class="gp-tt-speed-label">
+                    Speed: {transcriptionTrainer.playbackRate().toFixed(2)}x
+                  </span>
+                  <input
+                    type="range"
+                    class="gp-tt-speed-slider"
+                    min="0.25"
+                    max="2"
+                    step="0.05"
+                    value={transcriptionTrainer.playbackRate()}
+                    onInput={(e) =>
+                      transcriptionTrainer.setPlaybackRate(
+                        Number(e.currentTarget.value),
+                      )
+                    }
+                  />
+                  <button
+                    class="gp-btn gp-btn-sm"
+                    onClick={() => transcriptionTrainer.clearFoundNotes()}
+                  >
+                    Clear Notes
+                  </button>
+                </div>
               </Show>
-            </div>
+            </Show>
           </div>
-          <Show when={transcriptionTrainer.phase() !== 'idle'}>
-            <div class="gp-tt-controls">
-              <span class="gp-tt-speed-label">
-                Speed: {transcriptionTrainer.playbackRate().toFixed(2)}x
-              </span>
-              <input
-                type="range"
-                class="gp-tt-speed-slider"
-                min="0.25"
-                max="2"
-                step="0.05"
-                value={transcriptionTrainer.playbackRate()}
-                onInput={(e) =>
-                  transcriptionTrainer.setPlaybackRate(
-                    Number(e.currentTarget.value),
-                  )
-                }
-              />
-              <button
-                class="gp-btn gp-btn-sm"
-                onClick={() => transcriptionTrainer.clearFoundNotes()}
-              >
-                Clear Notes
-              </button>
-            </div>
-          </Show>
-        </Show>
+        </div>
       </Show>
       <Show when={fretboardMode() === 'adaptiveJam'}>
         <div class="gp-aj-hud">

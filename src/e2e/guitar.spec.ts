@@ -63,6 +63,48 @@ test.describe('Guitar tab', () => {
     await expect(page.locator(panel)).toBeVisible()
   })
 
+  test('reaches Guitar Night from the phone bar @smoke', async ({ page }) => {
+    // The room used to be three taps down the options sheet — "Options >
+    // More > Guitar Night > Open" — while the Singing page put its room-ish
+    // door straight in the bar. One tap now, and still in the sheet.
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(page.locator(panel)).toBeVisible()
+
+    const chip = page.getByTestId('guitar-room-chip')
+    await expect(chip).toBeVisible()
+    await expect(chip).toHaveAttribute('href', '/guitar-night')
+
+    const options = page.locator('[data-tour="guitar.options"]')
+    await expect(options).toBeVisible()
+
+    // Same row as the options button, not stacked below it.
+    const [chipBox, optionsBox] = await Promise.all([
+      chip.boundingBox(),
+      options.boundingBox(),
+    ])
+    expect(chipBox).not.toBeNull()
+    expect(optionsBox).not.toBeNull()
+    expect(
+      Math.abs((chipBox?.y ?? 0) - (optionsBox?.y ?? 0)),
+    ).toBeLessThanOrEqual(2)
+
+    // A thumb, not a 25px sliver — both chips, since they share the rule.
+    expect(chipBox?.height ?? 0).toBeGreaterThanOrEqual(34)
+    expect(chipBox?.width ?? 0).toBeGreaterThanOrEqual(34)
+    expect(optionsBox?.height ?? 0).toBeGreaterThanOrEqual(34)
+
+    // And the taller chips must not have pushed the bar off the screen.
+    const sideways = await page.evaluate(() => {
+      const doc = document.scrollingElement
+      return doc === null ? 0 : doc.scrollWidth - doc.clientWidth
+    })
+    expect(sideways).toBe(0)
+
+    // The drawer keeps its own entry.
+    await options.click()
+    await expect(page.getByRole('link', { name: /Open/ }).first()).toBeVisible()
+  })
+
   test('opens on the Practice (hero) view with the fretboard + toolbar', async ({
     page,
   }) => {
@@ -96,6 +138,50 @@ test.describe('Guitar tab', () => {
       await select.selectOption(mode)
       await expect(page.locator(hud)).toBeVisible()
     }
+  })
+
+  // ============================================================
+  // On a phone the fretboard comes first
+  // ============================================================
+  //
+  // Each mode hangs its own controls above the fretboard. At 390px that
+  // stack pushed the fretboard off the bottom of the screen — the thing the
+  // page exists for. The controls collapse to one row now.
+  //
+  // The desktop case is the test right above this one: every HUD still
+  // renders, because the collapse is a media query and nothing else.
+
+  test('collapses the mode controls on a phone @smoke', async ({ page }) => {
+    // Reach the view at full width first: the view toggle itself lives in the
+    // desktop toolbar, which is a separate gap and not what this covers.
+    await page.locator(fretboardBtn()).click()
+    await modeSelect(page).selectOption('noteQuiz')
+    await expect(page.locator('.gp-quiz-hud')).toBeVisible()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    const toggle = page.getByTestId('guitar-mode-hud-toggle')
+    await expect(toggle).toBeVisible()
+    await expect(page.locator('.gp-quiz-hud')).toBeHidden()
+
+    // It names the mode it is holding, so it is not a mystery drawer.
+    await expect(toggle).toContainText('Note quiz')
+
+    // A thumb-sized target: it is the only way back to the controls.
+    const box = await toggle.boundingBox()
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(40)
+
+    // The point of all this: the fretboard is on screen.
+    const fretboard = page.locator('#guitar-fretboard-container')
+    const top = await fretboard.evaluate(
+      (element) => element.getBoundingClientRect().top,
+    )
+    expect(top).toBeLessThan(844)
+
+    // And the controls are one tap away, not gone.
+    await toggle.click()
+    await expect(page.locator('.gp-quiz-hud')).toBeVisible()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('instrument selector toggles the active sound', async ({ page }) => {

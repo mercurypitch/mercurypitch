@@ -14,7 +14,13 @@
 // Any icon without art falls back to the SVG glyph, so seeding a new
 // badge is never blocked on generating a picture for it.
 
-/** Icons with a drawn medallion in public/badges/. */
+/**
+ * Icons with a drawn medallion in `public/badges/`.
+ *
+ * Sixteen badges plus twenty-seven achievement icons. Achievements share
+ * icons — the 27 here cover all 46 achievements that had none — so this list
+ * is shorter than the seed's row count and always will be.
+ */
 const BADGE_ART_ICONS = new Set([
   'leaf',
   'rocket',
@@ -32,6 +38,37 @@ const BADGE_ART_ICONS = new Set([
   'sparkle',
   'crown',
   'chart',
+
+  // Achievements. Drawn later and to the same recipe, but with no tier —
+  // the seed gives achievements no tier at all, so every one of these is
+  // gold where a badge would vary its metal.
+  'calendarcheck',
+  'century',
+  'checkbadge',
+  'coffee',
+  'diamond',
+  'dumbbell',
+  'eagle',
+  'flag',
+  'flame2',
+  'handshake',
+  'layersplit',
+  'listmusic',
+  'medal',
+  'microstand',
+  'moon',
+  'moonstars',
+  'mountain',
+  'notecluster',
+  'paper',
+  'quill',
+  'share',
+  'shelf',
+  'stack',
+  'sun',
+  'sunrise',
+  'trophy',
+  'waveform',
 ])
 
 /**

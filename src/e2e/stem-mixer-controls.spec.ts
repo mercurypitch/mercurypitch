@@ -632,3 +632,53 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
     // against the whole canvas would include the rail and clamp to the end.
     .toBeCloseTo(0.45, 1)
 })
+
+// ============================================================
+// The music level is reachable, and moving it does not break the mix
+// ============================================================
+//
+// Reported: the backing track drops the moment the mic goes live and there is
+// no way to bring it back. The app does no ducking of its own — the master was
+// simply pinned at 0.7 with no control anywhere in the UI, so there was
+// nothing to reach for. It is a stored slider now, up to 2.0.
+//
+// The clipper maths is pinned in
+// `src/features/stem-mixer/master-headroom.test.ts` and the wiring in
+// `src/tests/mixer-music-level.test.ts`. This is the half that needs a real
+// browser: that the control is on screen, that it sticks, and — the actual
+// risk of inserting a node into the master bus — that audio still flows
+// through it afterwards.
+
+test('keeps a reachable music level that survives a reload @smoke', async ({
+  page,
+}) => {
+  const level = page.getByTestId('mixer-music-level')
+  await expect(level).toBeVisible()
+
+  const box = await level.boundingBox()
+  if (box === null) throw new Error('Music level slider has no bounding box')
+  expect(box.width).toBeGreaterThan(40)
+
+  // Its bounds come from the store, not the markup — so reading them back off
+  // the element is a check that the two have not drifted apart.
+  await expect(level).toHaveAttribute('min', '0.35')
+  await expect(level).toHaveAttribute('max', '2')
+  // The historic fixed master, so nobody's mix moved on upgrade.
+  expect(Number(await level.inputValue())).toBe(0.7)
+
+  await level.fill('1.6')
+  await level.dispatchEvent('input')
+  expect(Number(await level.inputValue())).toBe(1.6)
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        localStorage.getItem('pitchperfect_mixer_music_level'),
+      ),
+    )
+    .toBe('1.6')
+
+  await page.reload()
+  await dismissOverlays(page)
+  await expect(page.getByTestId('mixer-music-level')).toHaveValue('1.6')
+})

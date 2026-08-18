@@ -3,6 +3,66 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [Unreleased]
+
+### Added
+
+- **Guitar Night has a room visibility slider.** Four rooms ship as
+  photographs, and on the darker ones — Velvet Rehearsal especially — almost
+  none of the picture reached you: the backdrop veiled itself with two dark
+  gradients, and the panels floating over it were up to 94% opaque behind
+  18px of blur. The Room menu now carries a slider that opens all three of
+  those at once, and it is in the menu rather than the top bar so a phone can
+  reach it too. All the way down is the room exactly as it was.
+- **Challenges no longer tell you how long they are in their name.** The Home
+  card says "Legend Attempt" rather than "This Week's Legend", so a challenge
+  can run for a week, four weeks, or anything else without the wording going
+  stale. The countdown still tells you the days left, which was always the
+  useful part.
+- **The challenge admin counts weeks for you.** Arrows step the opening and
+  closing weeks one at a time, labelled with ISO week numbers, and one press
+  sets a one, two, four or eight week run. Setting a challenge from week 34 to
+  week 38 is four clicks instead of two hand-typed timestamps.
+- **The challenge queue re-dates itself.** Drag the pending challenges into
+  the order you want and press Recompute: they line up back to back after the
+  live one, with no gap and no overlap. Nothing is written until you press it.
+- **Piano Night has a share card.** It was the one room whose link unfurled
+  as a bare URL in a chat — no picture, no title, no description. It gets the
+  same designed 1200x630 card the other rooms have.
+- **A music level for the mixer, and a ceiling so it is safe to use.** Singing
+  along on a phone quietly drops the backing track, and there was nothing to
+  turn back up: the master was pinned at a fixed level with no control anywhere
+  in the app. It is a slider now, up to about nine decibels above where it used
+  to sit, and it goes down as well as up. Nothing changes until you move it.
+- **Every achievement has its medallion.** Forty-six of the fifty-nine were
+  showing an empty dark disc, which reads as "locked" for something you have
+  already won. Twenty-seven new enamel medallions cover all of them, drawn to
+  match the badges that were already there.
+- **A shared Jam room link shows the Jam card.** The room's copy button built
+  a link off the site root, so an invite pasted into a chat unfurled with the
+  generic site image even though Jam has had its own card all along.
+- **The Guitar fretboard is on screen on a phone again.** Each practice mode
+  hangs its own controls above the fretboard, and on a phone that stack pushed
+  the fretboard itself below the fold. The controls collapse into one row you
+  can tap open, named for whichever mode you are in. Desktop is unchanged.
+- **The Karaoke session list scrolls in one place on a phone.** The page and
+  the list inside it both scrolled, so reaching the bottom handed your finger
+  to a second box that was hard to catch. The cards are shorter too — two fit
+  a phone screen where one and a sliver used to.
+- **Piano Night and Guitar Night have a door in the phone bar.** Both rooms
+  were three taps down an options sheet while Singing put its room right in
+  the chip row. They are one tap now, and still in the sheet for anyone who
+  already knows where it is.
+- **The golden rail under Milestones runs the whole shelf.** It stopped after
+  the first three badges and slid away as you scrolled, so most of the list
+  sat over bare background.
+- **The "updating MercuryPitch" spinner is a spinner.** It — and the two
+  Google Drive check buttons — were rotating a refresh arrow, whose arrowhead
+  the eye follows round; it read as something tumbling rather than something
+  working. All three use the app's normal spinner now.
+- **Closing the guided tour stops it looking for the next step.** It kept
+  polling the page for up to a second after it was dismissed.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

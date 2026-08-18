@@ -18,6 +18,7 @@ import { MicSparkleIcon } from '@/components/mobile/icons'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { TransportBar } from '@/components/mobile/TransportBar'
+import { BusyLink } from '@/components/shared/BusyLink'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
@@ -121,6 +122,22 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
         >
           ♪ {songLabel()}
         </button>
+        {/* The room door belongs in the row, not two levels down an options
+            sheet — Singing puts Zen here for the same reason. It stays in the
+            sheet as well: the two are the same door, and somebody who learnt
+            one place should not lose it. A BusyLink because this is a whole
+            document load, and on a slow link nothing changes until it lands. */}
+        <BusyLink
+          class={`${stageStyles.chip} ${stageStyles.roomChip}`}
+          href={PIANO_NIGHT_PATH}
+          aria-label="Open Piano Night performance room"
+          data-testid="piano-room-chip"
+          data-tour="piano-room-chip"
+          busyLabel="Opening Piano Night…"
+          spinnerSize={12}
+        >
+          Piano Room
+        </BusyLink>
       </div>
 
       {/* ── Progress strip ───────────────────────────────── */}

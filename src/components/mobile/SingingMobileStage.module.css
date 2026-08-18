@@ -55,6 +55,24 @@
   background: rgba(245, 158, 11, 0.1);
 }
 
+/*
+ * The door to a performance room — Piano Night, Guitar Night.
+ *
+ * Distinct from `.zenChip` on purpose: Zen is a mode of this page, a room is
+ * a different page entirely, and the two should not look interchangeable.
+ * It is an anchor rather than a button, so the chip's own layout has to be
+ * restated — `.chip` assumes a button.
+ */
+.roomChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #a8b8ff;
+  border-color: rgba(129, 140, 248, 0.42);
+  background: rgba(129, 140, 248, 0.12);
+  text-decoration: none;
+}
+
 .progress {
   margin: 0 12px;
   flex-shrink: 0;

@@ -43,6 +43,7 @@ import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './
 import { measuredReferenceForBacking } from './reference-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort, GuitarNightSongSummary } from './song-port'
+import { GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
 import { guitarNightBandPreparationMessage, loadDefaultGuitarNightBandPreparationPort, useGuitarNightBandPreparationController, } from './useGuitarNightBandPreparationController'
 import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
@@ -215,6 +216,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     { validator: isBackdropId },
   )
   const backdrop = createMemo(() => resolveBackdrop(backdropId()))
+  // How much of the chosen room actually reaches the eye. Not
+  // `createPersistedSignal`: the value is clamped to the slider's own bounds
+  // on the way out, which the generic helper has no opinion about.
+  const [roomGlass, setRoomGlass] = createSignal(loadGuitarNightGlass())
+  const updateRoomGlass = (value: number): void => {
+    setRoomGlass(persistGuitarNightGlass(value))
+  }
   const [venueMenuOpen, setVenueMenuOpen] = createSignal(false)
   const initialSessionId = readGuitarNightSession()
   const [view, setView] = createSignal<EntryView>(
@@ -970,6 +978,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       ref={appRoot}
       class={styles.app}
       classList={{ [styles.appRoom]: isStageView() }}
+      style={{ [GUITAR_NIGHT_GLASS_VAR]: String(roomGlass()) }}
       data-testid="guitar-night-shell"
     >
       <a class={styles.skipLink} href="#guitar-night-main">
@@ -1045,6 +1054,38 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   )}
                 </For>
               </select>
+            </label>
+            {/* Right below the room it acts on. The topbar itself is full —
+                brand, title, room name, voice HUD, account — and this is a
+                room setting, not a transport control. Karaoke Night's twin
+                lives in its topbar and is hidden under 900px as a result;
+                here the menu carries it at every width. */}
+            <label class={styles.roomGlass} title="How much of the room shows">
+              <span class={styles.visuallyHidden}>Room visibility</span>
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
+                />
+              </svg>
+              <input
+                type="range"
+                class={styles.roomGlassSlider}
+                min={GUITAR_NIGHT_GLASS.min}
+                max={GUITAR_NIGHT_GLASS.max}
+                step={GUITAR_NIGHT_GLASS.step}
+                value={roomGlass()}
+                aria-label="Room visibility"
+                data-testid="guitar-night-room-glass"
+                onInput={(event) =>
+                  updateRoomGlass(Number(event.currentTarget.value))
+                }
+              />
             </label>
             <button
               type="button"

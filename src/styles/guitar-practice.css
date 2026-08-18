@@ -1976,3 +1976,78 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   Mode HUD dock — eight practice modes, one row on a phone
+   ============================================================
+
+   Each fretboard mode hangs its own controls above the fretboard. On a
+   desktop there is room and nothing here applies: the toggle is hidden and
+   the body is always laid out, so the markup is inert.
+
+   On a phone the same controls stack and push the fretboard below the fold,
+   which is the whole reason somebody opened the page. The set collapses to
+   one tappable row instead.
+
+   Deliberately in flow rather than fixed to the viewport: the page already
+   docks a control bar at the bottom on a phone, and a second fixed layer is
+   how two things end up on top of each other. */
+
+.gp-mode-hud-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .gp-mode-hud-dock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.35rem 0;
+  }
+
+  .gp-mode-hud-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    /* A thumb, not a hairline — this is the only way back to the controls. */
+    min-height: 40px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 10px;
+    background: rgb(255 255 255 / 4%);
+    color: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .gp-mode-hud-toggle svg {
+    flex: 0 0 auto;
+    transition: transform 0.18s ease;
+  }
+
+  .gp-mode-hud-dock--open .gp-mode-hud-toggle svg {
+    transform: rotate(180deg);
+  }
+
+  .gp-mode-hud-body {
+    display: none;
+  }
+
+  .gp-mode-hud-dock--open .gp-mode-hud-body {
+    display: block;
+    /* Tall HUDs (transcription, call-and-response) would otherwise take the
+       fretboard's place rather than sharing with it. */
+    max-height: 45vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-mode-hud-toggle svg {
+    transition: none;
+  }
+}

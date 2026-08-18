@@ -32,23 +32,10 @@
   gap: 12px;
 }
 
+/* Size and turn come from the shared Spinner (which slows under reduced
+   motion rather than freezing); all this rule owes it is the accent. */
 .icon {
-  width: 32px;
-  height: 32px;
   color: var(--accent);
-  animation: stale-recovery-spin 1.4s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .icon {
-    animation: none;
-  }
-}
-
-@keyframes stale-recovery-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .title {

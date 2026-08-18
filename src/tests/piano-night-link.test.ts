@@ -23,4 +23,52 @@ describe('Piano Night launchers', () => {
     expect(mobile).toContain('aria-label="Open Piano Night performance room"')
     expect(mobile).toContain('data-testid="open-piano-night"')
   })
+
+  // ============================================================
+  // The room door is in the chip row as well as the drawer
+  // ============================================================
+  //
+  // Singing puts Zen straight in the chip row; Piano Night sat two levels
+  // down an options sheet, under "Piano Night > Performance room > Open
+  // room". Both places now, deliberately: the drawer entry is the one people
+  // already know, and taking it away to add the chip would trade one
+  // complaint for another.
+
+  it('offers Piano Night from the chip row, not only the drawer', () => {
+    const mobile = repoFile('src/components/mobile/PianoMobileStage.tsx')
+    const chipRow = mobile.slice(
+      mobile.indexOf('data-tour="piano-mobile-chips"'),
+      mobile.indexOf('{/* ── Progress strip'),
+    )
+
+    expect(chipRow).toContain('data-testid="piano-room-chip"')
+    expect(chipRow).toContain('href={PIANO_NIGHT_PATH}')
+    expect(chipRow).toContain('Piano Room')
+  })
+
+  it('keeps the drawer entry too', () => {
+    const mobile = repoFile('src/components/mobile/PianoMobileStage.tsx')
+    const sheet = mobile.slice(mobile.indexOf('<OptionsSheet'))
+    expect(sheet).toContain('data-testid="open-piano-night"')
+  })
+
+  it('spins the chip while the room loads', () => {
+    // A room is a whole document load. Without this the chip looks ignored
+    // for as long as the next page takes to arrive.
+    const mobile = repoFile('src/components/mobile/PianoMobileStage.tsx')
+    expect(mobile).toContain('<BusyLink')
+    expect(mobile).toContain('busyLabel="Opening Piano Night…"')
+  })
+
+  it('does not dress the room chip as Zen', () => {
+    // Zen is a mode of this page; a room is a different page. Two doors that
+    // look identical and behave differently is the confusion to avoid.
+    const stage = repoFile(
+      'src/components/mobile/SingingMobileStage.module.css',
+    )
+    expect(stage).toContain('.roomChip {')
+    const mobile = repoFile('src/components/mobile/PianoMobileStage.tsx')
+    expect(mobile).toContain('stageStyles.roomChip')
+    expect(mobile).not.toContain('stageStyles.zenChip')
+  })
 })

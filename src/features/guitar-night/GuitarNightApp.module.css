@@ -36,8 +36,29 @@
 }
 
 .app {
+  /* Room glass. See `stage-glass.ts`: 0 is the room exactly as it shipped,
+     1 is as open as it goes, and the Room menu's slider writes it inline.
+     Three quantities hang off it, because three separate things were hiding
+     the photograph and turning only one of them down does nothing:
+
+       --gn-surface-scale  multiplies the alpha of the chrome that floats
+                           over the room, so panels thin out
+       --gn-blur-scale     multiplies every blur RADIUS on that chrome —
+                           the half Karaoke Night's slider does not do, and
+                           the half that was asked for by name
+       --gn-veil-scale     multiplies the two dark gradients the backdrop
+                           lays over its own photograph
+
+     Blur bottoms out at a fifth rather than zero: some diffusion is what
+     keeps small ivory type legible over a busy, high-contrast photo, and
+     Daylight Loft is bright enough to prove it. */
+  --gn-glass: 0.35;
+  --gn-surface-scale: calc(1 - var(--gn-glass) * 0.55);
+  --gn-blur-scale: calc(1 - var(--gn-glass) * 0.8);
+  --gn-veil-scale: calc(1 - var(--gn-glass) * 0.5);
+
   --night: #0d0b09;
-  --faceplate: rgba(22, 17, 14, 0.94);
+  --faceplate: rgb(22 17 14 / calc(0.94 * var(--gn-surface-scale)));
   --ivory: #f4eadb;
   --muted: #baac99;
   --amber: #e0a45d;
@@ -76,18 +97,21 @@
   position: absolute;
   z-index: -4;
   inset: 0;
+  /* The room is a photograph, and these two gradients are what stops it
+     being one. They stay — the topbar and the stage chrome need something
+     darker than a lit amp to sit on — but they ease off with the glass. */
   background:
     linear-gradient(
       90deg,
-      rgba(7, 6, 5, 0.72) 0%,
-      rgba(7, 6, 5, 0.24) 58%,
-      rgba(7, 6, 5, 0.46) 100%
+      rgb(7 6 5 / calc(0.72 * var(--gn-veil-scale))) 0%,
+      rgb(7 6 5 / calc(0.24 * var(--gn-veil-scale))) 58%,
+      rgb(7 6 5 / calc(0.46 * var(--gn-veil-scale))) 100%
     ),
     linear-gradient(
       180deg,
-      rgba(8, 6, 5, 0.55) 0%,
+      rgb(8 6 5 / calc(0.55 * var(--gn-veil-scale))) 0%,
       transparent 34%,
-      rgba(8, 6, 5, 0.74) 100%
+      rgb(8 6 5 / calc(0.74 * var(--gn-veil-scale))) 100%
     ),
     var(--room-backdrop, url('/guitar-night/velvet-rehearsal.webp')) center /
       cover no-repeat;
@@ -211,6 +235,27 @@
   align-items: center;
 }
 
+/* Wears the room select's pill so the two read as one setting, not as a
+   control that wandered in from a mixer. */
+.roomGlass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.7rem;
+  color: rgba(244, 234, 219, 0.7);
+}
+
+.roomGlass svg {
+  flex: none;
+}
+
+.roomGlassSlider {
+  width: 5.5rem;
+  min-width: 0;
+  accent-color: var(--amber);
+  cursor: pointer;
+}
+
 .roomSelect select,
 .studioLink,
 .accountChip {
@@ -329,8 +374,9 @@
   box-shadow:
     0 1.8rem 6rem rgba(0, 0, 0, 0.48),
     inset 0 1px rgba(255, 255, 255, 0.045);
-  -webkit-backdrop-filter: blur(18px) saturate(1.08);
-  backdrop-filter: blur(18px) saturate(1.08);
+  -webkit-backdrop-filter: blur(calc(18px * var(--gn-blur-scale)))
+    saturate(1.08);
+  backdrop-filter: blur(calc(18px * var(--gn-blur-scale))) saturate(1.08);
   animation: panelArrive 500ms 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -744,10 +790,11 @@
   border-radius: 0.72rem;
   background:
     linear-gradient(135deg, rgba(224, 164, 93, 0.08), transparent 46%),
-    rgba(9, 7, 6, 0.76);
+    rgb(9 7 6 / calc(0.76 * var(--gn-surface-scale)));
   box-shadow: 0 1rem 3.2rem rgba(0, 0, 0, 0.28);
-  -webkit-backdrop-filter: blur(14px) saturate(1.05);
-  backdrop-filter: blur(14px) saturate(1.05);
+  -webkit-backdrop-filter: blur(calc(14px * var(--gn-blur-scale)))
+    saturate(1.05);
+  backdrop-filter: blur(calc(14px * var(--gn-blur-scale))) saturate(1.05);
   pointer-events: none;
 }
 
@@ -3194,10 +3241,10 @@
   padding: 0.45rem 0.65rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
   border-radius: 0.5rem;
-  background: rgba(7, 6, 5, 0.72);
+  background: rgb(7 6 5 / calc(0.72 * var(--gn-surface-scale)));
   box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
 }
 
 .stageSignalWithAccessory {
@@ -3242,10 +3289,10 @@
   padding: 0.2rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
   border-radius: 0.5rem;
-  background: rgba(7, 6, 5, 0.72);
+  background: rgb(7 6 5 / calc(0.72 * var(--gn-surface-scale)));
   box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
   pointer-events: auto;
 }
 
@@ -3349,12 +3396,12 @@
   border: 1px solid rgba(244, 234, 219, 0.1);
   border-radius: 0.65rem;
   color: rgba(244, 234, 219, 0.7);
-  background: rgba(7, 6, 5, 0.62);
+  background: rgb(7 6 5 / calc(0.62 * var(--gn-surface-scale)));
   box-shadow: 0 0.8rem 2.5rem rgba(0, 0, 0, 0.22);
   text-align: left;
   pointer-events: none;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
 }
 
 .stageInvitation span {
@@ -3430,10 +3477,10 @@
   border: 1px solid rgba(244, 234, 219, 0.09);
   border-radius: 0.5rem;
   color: rgba(244, 234, 219, 0.7);
-  background: rgba(7, 6, 5, 0.72);
+  background: rgb(7 6 5 / calc(0.72 * var(--gn-surface-scale)));
   box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
   font-size: 0.66rem;
   font-weight: 700;
   cursor: pointer;
@@ -3568,10 +3615,10 @@
   padding: 0.25rem 0.4rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
   border-radius: 0.5rem;
-  background: rgba(7, 6, 5, 0.72);
+  background: rgb(7 6 5 / calc(0.72 * var(--gn-surface-scale)));
   box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
   pointer-events: auto;
 }
 
@@ -4622,9 +4669,9 @@
   padding: 0.55rem 0.75rem;
   border: 1px solid rgba(244, 234, 219, 0.11);
   border-radius: 0.45rem;
-  background: rgba(12, 10, 9, 0.72);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: rgb(12 10 9 / calc(0.72 * var(--gn-surface-scale)));
+  -webkit-backdrop-filter: blur(calc(10px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(10px * var(--gn-blur-scale)));
 }
 
 .roomStatus > span {
@@ -4826,10 +4873,24 @@
 
   .venueMenu .roomSelect,
   .venueMenu .roomSelect select,
+  .venueMenu .roomGlass,
   .venueMenu .studioLink,
   .venueMenu .accountChip,
   .venueMenu .accountChipWrap {
     width: 100%;
+  }
+
+  /* In the collapsed menu the slider is a row like any other, so it gets the
+     same touch target and stretches to the drawer instead of keeping the
+     topbar's fixed 5.5rem. */
+  .venueMenu .roomGlass {
+    min-height: var(--touch-target);
+    padding: 0 0.55rem;
+  }
+
+  .venueMenu .roomGlassSlider {
+    width: auto;
+    flex: 1 1 auto;
   }
 
   .venueMenu .roomSelect select,

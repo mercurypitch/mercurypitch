@@ -595,7 +595,7 @@ const HomePage: Component = () => {
           </Show>
         </section>
 
-        {/* ── This Week's Legend ─────────────────────────────── */}
+        {/* ── Legend Attempt ─────────────────────────────────── */}
         <WeeklyLegendHero />
 
         {/* ── The Ascent (guided path bridge) ────────────────── */}

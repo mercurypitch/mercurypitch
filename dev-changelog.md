@@ -6,6 +6,262 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`--gn-glass`, one token for how much of the Guitar Night room shows.**
+  The room art was buried under three separate things and turning any one of
+  them down did nothing, so the slider drives all three:
+  `--gn-surface-scale` multiplies the alpha of the chrome that floats over
+  the room, `--gn-blur-scale` multiplies every `backdrop-filter` radius on
+  it, and `--gn-veil-scale` multiplies the two dark gradients `.backdrop`
+  lays over its own photograph. Every scale is `1 - glass * k`, so at zero
+  each resolves to exactly 1 and every value reduces to the literal it
+  replaced — the old room stays reachable, exactly. Menus, scrims and
+  full-screen overlays are deliberately excluded: a dropdown you can read the
+  room through is the failure this fixes, not a feature of it. Measured in
+  Chromium: the entry panel goes from `blur(18px)` over `rgba(22,17,14,0.94)`
+  at 0 to `blur(3.6px)` over `rgba(22,17,14,0.424)` at 1.
+- **The slider lives in the Room menu, not the top bar.** Karaoke Night's
+  equivalent sits in its top bar and is `display: none` under 900px, so on
+  the phone the report came from there is no way to reach it. Guitar Night's
+  Room menu is the collapsed drawer at that width, so this one survives.
+
+- **`ProgressMilestoneView` carries the seed's `icon`, and the shelf falls
+  back to `iconByName(...)` instead of a blank `<span>`.** `badgeArtSrc` only
+  knows the sixteen BADGE icons, each with a `public/badges/<icon>.webp`; the
+  59 seeded achievements draw from a much larger vocabulary, so **46 of them**
+  resolved to `artUrl: undefined` and rendered as a nameless dark disc. The
+  shelf lists only EARNED milestones (`model.ts` skips `unlocked !== true`),
+  so that disc never meant "locked" — it meant missing art. `badge-art.ts`
+  already promised this fallback in its own header and `ProfileView` and
+  `VocalChallenges` honoured it; the Progress shelf did not. No art needed:
+  `iconByName` resolves every seeded name, with `IconBadge` as the floor.
+  Drawn medallions for the 27 uncovered icons are a separate, optional
+  upgrade — prompts are written and waiting.
+
+### Fixed
+
+- **The milestones rail is drawn on a new `.shelfRail` wrapper rather than on
+  `.milestoneShelf` itself.** An absolutely positioned child of a scroll
+  container resolves `left`/`right` against the padding box — the scrollport
+  — not the scrollable content, so the rail was exactly one screenful wide
+  and, being inside the scroller, slid away with the badges it was under. On
+  the wrapper it spans the visible shelf and stays put while the objects
+  slide over it. The scrollbar gutter is a `--shelf-scrollbar` custom
+  property, zeroed at the phone breakpoint where the scrollbar is hidden.
+  `src/e2e/progress.spec.ts` pins the contract in one line: the element that
+  owns the rail must not be the element that scrolls.
+- **`StaleBuildRecovery` and both `SyncSettings` check buttons use
+  `shared/Spinner`.** All three rotated the `RotateCcw` glyph — the Drive one
+  at `-360deg`, deliberately, "because the arrow points counter-clockwise".
+  An arrow has an arrowhead, and an arrowhead is a landmark the eye tracks, so
+  the whole thing read as a tumbling object. The idle Drive buttons keep the
+  arrow: it is correct as an _action_ icon, and only the busy state changed.
+  The banner also gains reduced-motion behaviour it did not have — it used to
+  set `animation: none`, leaving a motionless refresh arrow on screen for the
+  entire reload.
+- **`Walkthrough`'s `waitForTarget` poll is cancelled on unmount.** It retried
+  `document.querySelector` twenty times at 50ms with nothing tracking the
+  timers, so dismissing the guide left up to a second of work scheduled
+  against a page on its way out. Pre-existing, and invisible in the app; under
+  vitest it surfaced once the suite passed 775 files as an unhandled
+  `ReferenceError: document is not defined` thrown after the jsdom environment
+  was torn down — every test green and the run still exit 1. Measured: 17
+  stray `querySelector` calls after unmount before the fix, none after.
+
+### Changed
+
+- **`createStageGlassPreference` (`src/lib/stage-glass-preference.ts`) now
+  holds the clamping and storage handling both rooms need**, and Karaoke
+  Night's `stage-transparency.ts` is thirteen lines of numbers on top of it.
+  It also fixes a latent bug the shared version exposed: `Number(null)` and
+  `Number('')` are both 0, so the old read would have taken an absent
+  preference as a deliberate zero for any room whose minimum is 0 — Guitar
+  Night's is, because zero has to mean "the room as it shipped". The raw
+  string is checked before `Number()` sees it.
+
+### Mixer master headroom + soft clipper
+
+`src/features/stem-mixer/master-headroom.ts` (new). Reported: the backing
+track drops when the mic goes live and cannot be turned back up.
+
+Audit result: **the app does no ducking.** No compressor, no sidechain, no
+gain move tied to `micActive` anywhere. The attenuation is iOS switching the
+page to `playAndRecord`, and jam's `TRANSMIT_CONSTRAINTS` echo cancellation.
+Neither is ours to switch off, so the fix is headroom rather than a bug fix.
+
+- `mainGain` was `0.7` hardcoded at two sites with no UI. It is now
+  `MUSIC_LEVEL`, a `createClampedPreference` over
+  `pitchperfect_mixer_music_level`, default **0.7** (byte-identical to the old
+  behaviour on upgrade), range 0.35..2.0 step 0.05. +9.1 dB of headroom over
+  the old fixed value, and it goes down as well as up.
+- Setting it ramps over 50 ms rather than writing — a step on a live bus is a
+  click, and this bus is carrying the song.
+- The master now ends in a `WaveShaperNode`, not the raw destination:
+  identity below 0.8, `tanh`-shaped above, asymptotic to 1.0, continuous in
+  value and slope at the knee. A two-stem mix at 2.0 is 4x full scale and
+  would otherwise break up.
+- **A shaper, not a `DynamicsCompressorNode`, on purpose.** Chromium's
+  compressor carries an internal lookahead; the mixer scores mic pitch against
+  reference pitch frame by frame, so added output latency is a silent scoring
+  error. A shaper is a per-sample function — `oversample: 'none'`, zero
+  latency.
+- `src/lib/stage-glass-preference.ts` renamed to `clamped-preference.ts`
+  (`createClampedPreference`). A third unrelated consumer made the old name a
+  lie; every consumer was still inside the unmerged PR.
+- Both `AudioContext` doubles (`src/tests/setup.ts` and the load spec's local
+  fake) gained `createWaveShaper` — without it the mixer's load path throws.
+- One-shot note when the mic first goes live, pointing at the slider. It says
+  phones, not "the app is ducking you", because the app is not.
+
+Validation: `master-headroom.test.ts` 18 tests (100% stmts/branches/funcs/
+lines), `src/tests/mixer-music-level.test.ts` 11 wiring tests, and a Chromium
+e2e that the control is reachable, bounded by the store and survives a reload.
+Six mutations checked red (master pinned back to 0.7, shaper bypassed,
+threshold removed, once-ever guard dropped, control moved behind the stage-
+settings gate, ramp turned into a step); removing the control entirely turns
+the e2e red, which is the original complaint reproduced. Whole
+`stem-mixer-controls.spec.ts` 8/8 in Chromium — the real graph still carries
+audio.
+
+### Achievement medallions — 27 drawn, and a geometry guard
+
+`public/badges/` goes from 16 files to 43; the 27 new icons are registered in
+`BADGE_ART_ICONS`. Art is keyed by the seed's `icon`, not the row id, and
+achievements share icons — so 27 files light up all 46 achievements that had
+none. Achievements carry no tier (`tier: null` on all 59), so all 27 are gold
+where a badge would vary its metal.
+
+**The delivered art did not fit the app, and the diff would never have shown
+it.** `ProgressPage.module.css` draws badge art at 132px under
+`clip-path: circle(39% at 50% 50%)` — 39% of the _width_, so only the central
+78% is ever seen. The batch arrived frame-filling with the rim's outer edge at
+r = 0.92; every ring would have been sliced off. Rescaled to r ≈ 0.69, which
+is where the existing 16 sit, and composited onto each medallion's own enamel
+colour so the annulus between rim and clip edge has no seam.
+
+`src/tests/badge-art-geometry.test.ts` (new) decodes every file with `sharp`
+and measures the rim against the file's OWN field luminance — metal-agnostic,
+because badges come in bronze and silver too, and two legacy ones sit on a
+warm field that a "looks golden" test mistakes for the rim. Asserts 192px,
+opaque to the corner, nothing past r = 0.82, and the 27 recipe icons inside a
+tight band. Mutation: drop the unscaled `trophy.png` back in → 2 tests red.
+
+Noted and deliberately left: `fire` (0.81) and `rocket` (0.80) already
+overflow the clip by a few pixels of outer glow. They are lossy 192px files
+with no original, so re-encoding to win 4% of a radius costs more than it buys.
+
+`milestone-art.test.tsx` asserted "most achievements have no medallion" and
+that `10 Notes` falls back — both were statements of the bug and are now
+false. Rewritten to the new truth, with the fallback still covered so the next
+seeded achievement cannot reopen it.
+
+### Guitar fretboard modes collapse on a phone
+
+Eight modes each hang a HUD above the fretboard (`GuitarPage.tsx` 551-894, one
+contiguous block). At 390px the stack pushed the fretboard below the fold.
+
+One wrapper and a media query — deliberately not a rebuild, since these go
+away when Guitar Night reaches parity. `.gp-mode-hud-dock` collapses under
+768px to a 40px labelled row (`GUITAR_MODE_HUD_LABELS` names the active mode);
+desktop hides the toggle and never hides the body, so the existing "every
+interactive mode renders its HUD" e2e is unchanged and still passes.
+
+In flow rather than fixed to the viewport: the page already docks a control
+bar at the bottom on a phone, and a second fixed layer is how two things end
+up on top of each other. Open state caps at 45vh with its own scroll.
+
+Validation: `src/tests/guitar-mode-hud-dock.test.ts` 11 tests, 4 mutations red
+(starts open, body hidden outside the media query, a HUD drifting out of the
+dock, touch target shrunk). e2e `guitar.spec.ts` 10/10 including a new
+390x844 test that the toggle is thumb-sized, names the mode, and that the
+fretboard is on screen with the controls one tap away.
+
+### Open Graph: the room nobody could share, and the link that missed its card
+
+Two findings from one question — "do we have an OG image for piano-night, and
+for jam rooms?"
+
+**Piano Night had no Open Graph tags at all.** Not a missing image: no
+`og:title`, no `og:description`, no `og:image`, no Twitter card. Every other
+entry page (`index`, `karaoke`, `jam`, `guitar-night`, `mirror`, `glass`) had
+a full block. `scripts/generate-piano-night-og.mjs` (new) follows the three
+existing generators — Afterglow Studio inlined as a data URI, the brand
+lockup, the room list restaged as a panel — in Piano Night's own brass/cyan
+palette off `PianoNightApp.module.css`, and in Outfit rather than Guitar
+Night's serif, because the room is set in Avenir Next / Inter.
+
+**A shared Jam room link never reached the Jam card.** `jam-og.png` has
+existed since the card set was built and `jam.html` wires it correctly, but
+`JamPanel`'s copy button produced `${origin}/#/jam:ROOMID` — the ROOT path
+with a hash. A fragment is never sent to a server, so every invite was
+fetched as `/`, served `index.html`, and unfurled with the generic site
+image. Now `${origin}/jam#/jam:ROOMID`: same fragment, so the router is
+untouched and links already in chat histories still work, but `/jam` is a
+path `vite.config.ts` maps to `jam.html`. `replaceState` deliberately left
+alone — the address bar is internal and changing it is routing risk for no
+share benefit.
+
+`src/tests/entry-page-og.test.ts` (new) enumerates every root `.html`, and
+asserts a complete OG + Twitter block, that the declared 1200x630 is what the
+tags claim, that `twitter:image` has not drifted from `og:image`, and that the
+file each one points at exists on disk. Plus a generator-per-room check, so a
+card nobody can regenerate is also a failure. Mutations red: the original
+Piano Night state (block deleted), a missing image file, a drifted
+`twitter:image`, and the old jam link shape.
+
+### Challenges: period-neutral, and an admin that does the arithmetic
+
+**The assessment first, because it decided the shape: moving from weekly to
+monthly needs no schema change and no migration.** There is no period field
+anywhere in the model — `weekly-service.ts` stores `startsAt` and `endsAt` and
+nothing else, and "live" is `startsAt <= now < endsAt`. A month-long challenge
+is two dates four weeks apart. The only thing that would have gone stale was
+the copy.
+
+So the copy stopped saying it. "Legend Attempt" replaces "This Week's Legend"
+on the Home card, the challenge stage and its aria-label, and the guided tour
+step no longer promises one "every week" — the card's countdown already says
+how many days are left, which is the honest answer whatever the period is.
+Internal names are deliberately untouched: `WeeklyLegendHero.tsx`,
+`weekly-service.ts`, `weekly_attempt`/`weekly_join`, the table. Renaming those
+is wide, invisible, and ends in a migration.
+
+`src/features/challenges/challenge-window.ts` (new, 100% coverage) is the
+arithmetic: `mondayOf`, ISO `isoWeekNumber`/`isoWeekYear` (the real rule —
+the week containing the year's first Thursday — so 2025-12-29 is W1 of 2026
+and 2027-01-01 is W53 of 2026), `shiftWeeks`, `weeksBetween`, `windowFrom`,
+and `reflowQueue`/`reflowChanges`/`reorder`.
+
+Admin form: the two raw ISO inputs gained a stepper above them — arrows on the
+opening week (which carries the closing week with it, so stepping the start is
+"run this later", not "make it shorter"), arrows on the closing week (which
+change the length, floored at one week — a window that closes before it opens
+passes `now < endsAt` the wrong way and is live forever), and one-press
+one/two/four/eight week periods. The ISO fields stay for anything the stepper
+cannot express.
+
+Admin queue: a new panel lists everything behind the live challenge, drag-
+reorderable, with keyboard up/down as well — a drag handle alone is
+unreachable without a pointer. "Recompute dates" re-dates them back to back
+from the live one's close. **Manual on purpose**: an automatic reflow would
+move a live challenge out from under whoever is attempting it, and would make
+a mis-drag destructive. `reflowChanges` diffs against what is stored so
+unmoved rows are not rewritten, and a partial failure keeps going rather than
+leaving a gap mid-queue.
+
+Validation: `challenge-window.test.ts` 30 tests including an 800-day sweep
+that no week falls outside 1..53; `admin-challenge-window.test.tsx` 16
+render tests over the stepper and the queue; `challenge-period-neutral.test.ts`
+9 tests that scan user-facing strings in the challenge surfaces for a period
+word. Mutations red: start-step dropping its carry, the closing-week floor
+removed, the queue leaving a gap, a reflow wired into the drop handler, and a
+drop that ignores direction. The reflow-on-drop mutation initially passed —
+the drag path had no test at all, only the keyboard buttons — which is why
+there are now three drag tests.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

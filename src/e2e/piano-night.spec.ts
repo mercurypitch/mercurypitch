@@ -768,6 +768,44 @@ test('opens from the current desktop Piano tab @smoke', async ({ page }) => {
   await expect(page.getByTestId('piano-night-shell')).toBeVisible()
 })
 
+test('opens from the phone Piano chip row @smoke', async ({ page }) => {
+  // The room door used to live two levels down the options sheet — "Piano
+  // Night > Performance room > Open room" — while Singing put Zen straight in
+  // the chip row. It is in the row now, and still in the drawer.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE: boolean }).E2E_TEST_MODE = true
+    localStorage.setItem('pitchperfect_onboarding_done', '1')
+    localStorage.setItem('pitchperfect_focus_mode', 'false')
+  })
+
+  await page.goto('/#/piano')
+  await dismissOverlays(page)
+  await expect(page.getByTestId('piano-mobile-stage')).toBeVisible()
+
+  const chip = page.getByTestId('piano-room-chip')
+  await expect(chip).toBeVisible()
+  await expect(chip).toHaveAttribute('href', '/piano-night')
+
+  // In the row itself, beside the song chip — not somewhere else on the page.
+  const inRow = await chip.evaluate((element) =>
+    element.parentElement?.matches('[data-tour="piano-mobile-chips"]'),
+  )
+  expect(inRow).toBe(true)
+
+  // A phone tap target, not a link squeezed into a status line.
+  const box = await chip.boundingBox()
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(30)
+
+  await chip.click()
+  await expect(page).toHaveURL(/\/piano-night$/)
+  // A whole document load of a heavy page, cold on the first run after a
+  // build — which is exactly why the chip spins while it happens.
+  await expect(page.getByTestId('piano-night-shell')).toBeVisible({
+    timeout: 30_000,
+  })
+})
+
 test('imports and persists a canonical Piano project in the browser @smoke', async ({
   page,
 }) => {
