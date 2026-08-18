@@ -229,6 +229,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   holders, an in-flight grant that outlives its last holder is released, and
   an unmatched `disable()` cannot take the count negative.
 
+- **A load nobody is waiting on stays quiet.** Leaving mid-download is a
+  normal thing to do now that the phone's overlay has a Go back button, and
+  the fetch already on the wire still lands — by which time StemMixer's
+  cleanup has closed the audio context, so the decode throws, `loadedCount`
+  is 0 and the visitor got a warning toast about a song they had walked away
+  from, on a page with no mixer on it. `loadStems` checks a disposed flag
+  before setting the error or notifying, on both its failure paths.
+
 - **KaraokeMobileStage load and error overlays have actions.** The phone zen
   stage is the whole product — the mixer's card is not behind it — so a
   failed load was a message with no retry and a back chevron buried under

@@ -416,7 +416,15 @@ export const useStemMixerAudioController = (
     return snapshot
   }
 
+  // Leaving mid-download is a normal thing to do now that the phone's load
+  // overlay has a Go back button. The fetch already in flight still lands,
+  // by which time the context is closed and the decode throws — so without
+  // this the visitor gets a toast about a song they walked away from, on a
+  // page that no longer has a mixer on it.
+  let disposed = false
+
   onCleanup(() => {
+    disposed = true
     if (performanceLogTimer !== null) clearInterval(performanceLogTimer)
   })
 
@@ -663,7 +671,7 @@ export const useStemMixerAudioController = (
         })
       }
 
-      if (total > 0 && loadedCount === 0) {
+      if (total > 0 && loadedCount === 0 && !disposed) {
         const msg =
           'Stems could not be loaded. Audio data may have been lost after a page reload.'
         setLoadErrorLocal(msg)
@@ -708,9 +716,11 @@ export const useStemMixerAudioController = (
         }
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to load stems'
-      setLoadErrorLocal(msg)
-      deps.showNotification(`Stem loading failed: ${msg}`, 'error')
+      if (!disposed) {
+        const msg = e instanceof Error ? e.message : 'Failed to load stems'
+        setLoadErrorLocal(msg)
+        deps.showNotification(`Stem loading failed: ${msg}`, 'error')
+      }
     } finally {
       setLoading(false)
       void platform.keepAwake.disable()

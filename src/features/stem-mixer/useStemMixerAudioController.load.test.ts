@@ -18,6 +18,7 @@
 // is let go — are all in the ordering rather than in any one line.
 
 import { createRoot, createSignal } from 'solid-js'
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SONG_AUDIO_CACHE_NAME } from '@/lib/song-audio-cache'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
@@ -69,13 +70,20 @@ function fakeAudioContext() {
     setTargetAtTime: vi.fn(),
     cancelScheduledValues: vi.fn(),
   })
+  let closed = false
   return {
     state: 'running',
     currentTime: 0,
     sampleRate: 48_000,
     destination: {},
     resume: vi.fn(async () => Promise.resolve()),
-    close: vi.fn(async () => Promise.resolve()),
+    // A closed context refuses to decode, which is the whole reason a
+    // walked-away load ends in an error at all: the download that was
+    // already on the wire lands with nowhere to go.
+    close: vi.fn(async () => {
+      closed = true
+      return Promise.resolve()
+    }),
     createGain: vi.fn(() => ({
       gain: param(),
       connect: vi.fn(),
@@ -95,6 +103,9 @@ function fakeAudioContext() {
     // nothing at all.
     decodeAudioData: vi.fn(async (encoded: ArrayBuffer) => {
       structuredClone(encoded, { transfer: [encoded] })
+      if (closed) {
+        throw new DOMException('context is closed', 'InvalidStateError')
+      }
       return Promise.resolve(fakeBuffer(180))
     }),
   }
@@ -186,18 +197,30 @@ interface Harness {
 function harness(over: Partial<StemMixerAudioDeps> = {}): Harness {
   const { deps, notifications } = makeDeps(over)
   let controller!: ReturnType<typeof useStemMixerAudioController>
-  const dispose = createRoot((disposeRoot) => {
+  const disposeRoot = createRoot((dispose) => {
     controller = useStemMixerAudioController(deps)
-    return disposeRoot
+    return dispose
   })
-  return { controller, notifications, dispose }
+  return {
+    controller,
+    notifications,
+    // StemMixer closes the audio context in its own cleanup, so leaving
+    // the room really does take the decoder with it.
+    dispose: () => {
+      disposeRoot()
+      void audioContexts.at(-1)?.close()
+    },
+  }
 }
 
 // ── Environment ────────────────────────────────────────────────
 
 let cache: FakeCache
+let audioContexts: ReturnType<typeof fakeAudioContext>[]
 let openedCaches: string[]
-let fetchStub: ReturnType<typeof vi.fn>
+// Spelled out rather than inferred: an untyped mock's implementation is
+// `() => void`, and every `mockImplementation` here returns a promise.
+let fetchStub: Mock<(...args: unknown[]) => Promise<Response>>
 let wakeRequests: number
 let wakeReleases: number
 
@@ -236,8 +259,11 @@ beforeEach(() => {
   // `new AudioContext()` — a constructor, so an arrow-shaped mock cannot
   // stand in for it. A constructor that returns an object hands back that
   // object, which is exactly the seam wanted here.
+  audioContexts = []
   vi.stubGlobal('AudioContext', function AudioContextStub(): unknown {
-    return fakeAudioContext()
+    const context = fakeAudioContext()
+    audioContexts.push(context)
+    return context
   })
 
   wakeRequests = 0
@@ -345,13 +371,110 @@ describe('the stems download once', () => {
   })
 })
 
+describe('a load the visitor walked away from', () => {
+  /**
+   * Hold every stem's request open until told to let go.
+   *
+   * Two things this has to get right. Both stems are in flight, so a
+   * single shared resolver leaves one pending and `Promise.allSettled`
+   * never settles. And the requests are not issued until `loadStems` has
+   * already returned to its caller — the cache read comes first — so
+   * `onTheWire` waits for them rather than assuming them.
+   */
+  function heldDownloads(count: number): {
+    onTheWire: () => Promise<void>
+    land: () => void
+  } {
+    const pending: ((value: Response) => void)[] = []
+    fetchStub.mockImplementation(
+      async () =>
+        new Promise<Response>((resolve) => {
+          pending.push(resolve)
+        }),
+    )
+    return {
+      onTheWire: async () => {
+        await vi.waitFor(() => expect(pending).toHaveLength(count))
+      },
+      // A Response body reads once, so each caller gets its own.
+      land: () => pending.forEach((resolve) => resolve(respondWith(2048))),
+    }
+  }
+
+  it('says nothing once the mixer is gone', async () => {
+    const downloads = heldDownloads(2)
+    const left = harness()
+    const loading = left.controller.loadStems()
+    await downloads.onTheWire()
+
+    // Go back, mid-download. The context closes, and the fetch that was
+    // already on the wire lands afterwards with nowhere to decode into.
+    left.dispose()
+    downloads.land()
+    await loading
+
+    expect(left.notifications).toEqual([])
+    expect(left.controller.loadError()).toBe('')
+  })
+
+  it('still reports a failure the load itself could not absorb', async () => {
+    // Anything thrown outside the per-stem settle — here, the store
+    // refusing the decoded buffer — reaches the outer handler, and that is
+    // a real failure the visitor is still there to see.
+    const broken = harness({
+      setVocal: (() => {
+        throw new Error('store is gone')
+      }) as unknown as StemMixerAudioDeps['setVocal'],
+    })
+    await broken.controller.loadStems()
+
+    expect(broken.controller.loadError()).toBe('store is gone')
+    expect(broken.notifications.join(' ')).toContain(
+      'Stem loading failed: store is gone',
+    )
+    broken.dispose()
+  })
+
+  it('keeps even that quiet once the mixer is gone', async () => {
+    const downloads = heldDownloads(2)
+    const broken = harness({
+      setVocal: (() => {
+        throw new Error('store is gone')
+      }) as unknown as StemMixerAudioDeps['setVocal'],
+    })
+    const loading = broken.controller.loadStems()
+    await downloads.onTheWire()
+    broken.dispose()
+    downloads.land()
+    await loading
+
+    expect(broken.notifications).toEqual([])
+    expect(broken.controller.loadError()).toBe('')
+  })
+
+  it('lets the lock go even for a load nobody is waiting on', async () => {
+    const downloads = heldDownloads(2)
+    const left = harness()
+    const before = wakeRequests
+    const loading = left.controller.loadStems()
+    await downloads.onTheWire()
+    left.dispose()
+    downloads.land()
+    await loading
+
+    expect(wakeRequests).toBeGreaterThan(before)
+    expect(wakeReleases).toBe(wakeRequests)
+  })
+})
+
 describe('the screen stays awake for the download', () => {
   it('holds a lock for the length of the load and lets it go after', async () => {
     const held = harness()
+    const before = wakeRequests
     await held.controller.loadStems()
 
-    expect(wakeRequests).toBe(1)
-    expect(wakeReleases).toBe(1)
+    expect(wakeRequests).toBe(before + 1)
+    expect(wakeReleases).toBe(wakeRequests)
     held.dispose()
   })
 
