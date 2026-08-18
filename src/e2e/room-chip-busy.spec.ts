@@ -74,7 +74,9 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize(PHONE)
 })
 
-test('the Piano Room chip spins where a thumb can see it', async ({ page }) => {
+test('the Piano Room chip spins where a thumb can see it @smoke', async ({
+  page,
+}) => {
   await page.goto('/#/piano')
   await dismissOverlays(page)
   await expect(page.getByTestId('piano-mobile-stage')).toBeVisible()
