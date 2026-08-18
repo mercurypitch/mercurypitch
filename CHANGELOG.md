@@ -289,6 +289,22 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   and the guided warmup's Guide toggle was pushed hard against the right
   edge. Both have their margin back.
 
+- **The play button says how much of the song has arrived.** Pressing Play on
+  a song your device has not downloaded yet starts an eight-megabyte fetch.
+  Guitar Night only dimmed the button, which is also what a broken button
+  looks like. It now shows a ring filling as the song arrives, the
+  percentage inside it, and megabytes counted underneath.
+
+- **The stem results screen was rebuilt for a phone.** The Karaoke header
+  now keeps its title and the Sing / Upload / Options controls on one line;
+  "Back to Upload" is a back arrow at the start of the song's own line; the
+  Stems heading shares a line with its actions; and an action menu that only
+  ever held one item is now that item's button.
+
+- **Playing a stem on the results screen works for the example songs.**
+  Their audio is served from another origin, and the preview was asking for
+  it in a way that let the browser hand back silence.
+
 - **The stem list on a phone fits the phone.** Opening a separated song's
   stems could scroll the whole page sideways when the song's name was
   long, taking "Back to Upload" off the edge with it. On a phone the

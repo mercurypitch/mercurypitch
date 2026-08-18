@@ -219,6 +219,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The backing transport publishes `getLoadProgress()`.** `defaultFetch-
+ArrayBuffer` reads the body through `body.getReader()` instead of
+  `arrayBuffer()`, so a slow link has something to show for itself before the
+  last byte; a response with no streaming body falls back to the whole-buffer
+  read. Progress is throttled to whole percents — a chunked read fires
+  hundreds of times per stem and every emit re-renders the deck — and cleared
+  by `setStatus` on any exit from `loading`, so a later spinner cannot inherit
+  the last download's number. `totalBytes` is 0 when the server declared no
+  `content-length`, and the room turns an indeterminate ring for that rather
+  than inventing a percentage.
+
+- **`preview-player` asks for CORS on a cross-origin source.** Every preview
+  is routed through a `MediaElementAudioSourceNode`, and a cross-origin
+  element without `crossOrigin` is tainted — which feeds that node silence.
+  The seeded example rows' `outputs` ARE the R2 URLs. Same-origin and `blob:`
+  sources are left alone deliberately: the attribute buys nothing there, and a
+  host that sends no `Access-Control-Allow-Origin` would go from silence to a
+  failed load.
+
+- **`UvrSessionActions` collapses a one-row menu into a button.** On a
+  cloud-separated session `canDownloadOriginal()` and `canRerunHq()` are both
+  false, leaving `export-zip` alone behind a `...`. `soleItem()` renders the
+  row directly, keeping `data-testid="session-more"` and dropping
+  `aria-haspopup`; two or more rows keep `OverflowMenu`.
+
+- **The Karaoke panel header and `.rv-header` stop stacking under their
+  breakpoints.** `.panel-header` stays `flex-direction: row` at 600px with the
+  title on `min-width: 0`, and a 380px block drops the three controls' labels.
+  `.rv-header` does the same at 720px. The results heading is now
+  `.section-header-results`: a `.section-back-btn` chevron, the filename pill,
+  and a `.section-header-suffix`, left-anchored, replacing the right-aligned
+  `.back-btn` whose `ImportFile` glyph read as a download.
+
 - **`composeGuitarNightSongPorts` dedupes the shelf and falls through on any
   device failure.** Karaoke Night's examples seeder writes every demo into
   the session store as an ordinary "Examples" row, under the same id
