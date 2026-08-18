@@ -88,7 +88,15 @@ function fakeAudioContext() {
       disconnect: vi.fn(),
       getFloatTimeDomainData: vi.fn(),
     })),
-    decodeAudioData: vi.fn(async () => Promise.resolve(fakeBuffer(180))),
+    // The real decodeAudioData DETACHES the buffer it is handed, which is
+    // the whole reason the cache write has to take its copy before it
+    // yields. Detaching here is what makes that ordering testable: a write
+    // that ran a microtask later would be handed a dead buffer and store
+    // nothing at all.
+    decodeAudioData: vi.fn(async (encoded: ArrayBuffer) => {
+      structuredClone(encoded, { transfer: [encoded] })
+      return Promise.resolve(fakeBuffer(180))
+    }),
   }
 }
 

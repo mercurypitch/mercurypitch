@@ -154,6 +154,9 @@ export async function writeCachedSongAudio(
   const store = cacheStorage(env)
   if (store === null) return false
 
+  // Built here, before the first await, and never after it: the caller
+  // hands its buffer straight to `decodeAudioData` the moment this call
+  // yields, and that detaches it.
   const body = new Response(bytes, {
     headers: {
       'content-type': contentType,
