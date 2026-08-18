@@ -24,7 +24,7 @@ import { createClampedPreference } from '@/lib/clamped-preference'
 
 const preference = createClampedPreference({
   storageKey: 'pitchperfect_gn_room_glass',
-  defaultValue: 0.35,
+  defaultValue: 0.55,
   min: 0,
   max: 1,
   step: 0.05,

@@ -14,8 +14,8 @@ describe('the Guitar Night room glass preference', () => {
     // The complaint was about the DEFAULT being too heavy, so a room nobody
     // has touched is already partway open. Dropping this back to 0 would ship
     // the exact state that was reported.
-    expect(GUITAR_NIGHT_GLASS.defaultValue).toBe(0.35)
-    expect(loadGuitarNightGlass()).toBe(0.35)
+    expect(GUITAR_NIGHT_GLASS.defaultValue).toBe(0.55)
+    expect(loadGuitarNightGlass()).toBe(0.55)
   })
 
   it('lets the slider reach zero, because zero is the room as it shipped', () => {
