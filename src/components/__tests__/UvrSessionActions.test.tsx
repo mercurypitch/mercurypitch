@@ -100,12 +100,63 @@ describe('UvrSessionActions', () => {
       />
     ))
 
-    openMenu()
     // A server-processed session with no stored original can be neither
-    // downloaded nor re-run, so neither row is offered at all.
-    expect(screen.queryByTestId('overflow-original')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('overflow-hq-same')).not.toBeInTheDocument()
+    // downloaded nor re-run, so neither row is offered at all — which
+    // leaves the export alone, and a menu of one is just a button.
+    const sole = screen.getByTestId('session-more')
+    expect(sole).not.toHaveAttribute('aria-haspopup')
+    expect(sole).toHaveAccessibleName('Export session ZIP')
+  })
+
+  // ------------------------------------------------------------
+  // A menu of one
+  // ------------------------------------------------------------
+
+  it('runs the only action directly instead of opening onto it', async () => {
+    mocks.listSessionExportStems.mockResolvedValue(['vocal', 'instrumental'])
+    render(() => (
+      <UvrSessionActions
+        sessionId="session-123"
+        session={completedSession({
+          processingMode: 'server',
+          originalFile: undefined,
+        })}
+      />
+    ))
+
+    fireEvent.click(screen.getByTestId('session-more'))
+    await waitFor(() =>
+      expect(mocks.exportSession).toHaveBeenCalledWith(
+        'session-123',
+        expect.any(Function),
+        ['vocal', 'instrumental'],
+      ),
+    )
+  })
+
+  it('keeps the menu the moment there is a second thing to say', () => {
+    render(() => (
+      <UvrSessionActions
+        sessionId="session-123"
+        session={completedSession({
+          processingMode: 'server',
+          originalFile: undefined,
+        })}
+        extraItems={[
+          {
+            key: 'delete',
+            label: 'Delete this song',
+            onSelect: vi.fn(),
+          },
+        ]}
+      />
+    ))
+
+    const trigger = screen.getByTestId('session-more')
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    openMenu()
     expect(screen.getByTestId('overflow-export-zip')).toBeInTheDocument()
+    expect(screen.getByTestId('overflow-delete')).toBeInTheDocument()
   })
 
   it('exports a core-only session immediately', async () => {

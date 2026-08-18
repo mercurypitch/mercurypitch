@@ -11,7 +11,7 @@
 // per card rather than two competing ones.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import type { SessionExportStemType } from '@/db/services/session-export-service'
 import { exportSession, listSessionExportStems, } from '@/db/services/session-export-service'
 import { getOriginalFileBlob } from '@/db/services/uvr-service'
@@ -327,18 +327,51 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
     return rows
   })
 
+  /**
+   * The only row, when there is only one.
+   *
+   * A menu that opens to reveal a single item is two taps for one thing,
+   * and on a server-separated song that is exactly what this was: no
+   * original file stored, no local re-run to offer, so "Export session
+   * ZIP" sat alone behind a "...". One row becomes one button; two or
+   * more keep the menu.
+   */
+  const soleItem = createMemo(() => {
+    const rows = items()
+    return rows.length === 1 ? rows[0] : null
+  })
+
   return (
     <>
       {/* One trigger for the whole card. Rendered even when the only rows
           are the parent's, because a card with no menu and a card with a
           menu in a different place is a list that does not scan. */}
-      <OverflowMenu
-        label="More actions for this song"
-        testId="session-more"
-        triggerClass="session-result-more"
-        items={items()}
-        disabled={props.disabled}
-      />
+      <Show
+        when={soleItem()}
+        fallback={
+          <OverflowMenu
+            label="More actions for this song"
+            testId="session-more"
+            triggerClass="session-result-more"
+            items={items()}
+            disabled={props.disabled}
+          />
+        }
+      >
+        {(row) => (
+          <button
+            type="button"
+            class="session-result-more session-result-sole"
+            data-testid="session-more"
+            aria-label={row().label}
+            title={row().label}
+            disabled={props.disabled === true || row().disabled === true}
+            onClick={() => row().onSelect()}
+          >
+            {row().icon?.() ?? <Download />}
+          </button>
+        )}
+      </Show>
       <SessionExportDialog
         open={archiveDialogOpen()}
         available={archiveAvailable()}

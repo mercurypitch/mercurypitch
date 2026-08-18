@@ -75,6 +75,11 @@ class FakeAudio {
   currentTime = 0
   duration = 200
   paused = true
+  /** Empty string is what a real element reports with no attribute set. */
+  crossOrigin = ''
+  removeAttribute = vi.fn((name: string) => {
+    if (name === 'crossorigin') this.crossOrigin = ''
+  })
   onended: (() => void) | null = null
   play = vi.fn(() => {
     this.paused = false
@@ -285,5 +290,47 @@ describe('createPreviewPlayer', () => {
     element.src = ''
     expect(await player.play('blob:two')).toBe(true)
     expect(element.src).toBe('blob:two')
+  })
+
+  // ------------------------------------------------------------
+  // A stem that lives on another origin
+  // ------------------------------------------------------------
+  //
+  // Every preview is routed through a MediaElementAudioSourceNode, and a
+  // cross-origin element loaded without CORS is tainted — which feeds
+  // that node silence. The seeded example songs' stems ARE the remote
+  // URLs, so their previews were the ones that played nothing.
+
+  it('asks for a cross-origin stem with CORS', async () => {
+    const player = createPreviewPlayer()
+    await player.play('https://cdn.example/demo/vocal.m4a')
+
+    expect(lastElement().crossOrigin).toBe('anonymous')
+  })
+
+  it('leaves a local stem alone', async () => {
+    const player = createPreviewPlayer()
+    await player.play('blob:http://localhost/abc')
+
+    // A visitor's own separation is an object URL. Asking for CORS there
+    // buys nothing, and asking a host that sends no
+    // Access-Control-Allow-Origin turns silence into a failed load.
+    expect(lastElement().crossOrigin).toBe('')
+  })
+
+  it('leaves a same-origin stem alone', async () => {
+    const player = createPreviewPlayer()
+    await player.play(`${window.location.origin}/stems/vocal.wav`)
+
+    expect(lastElement().crossOrigin).toBe('')
+  })
+
+  it('drops the attribute when the next source is local', async () => {
+    const player = createPreviewPlayer()
+    await player.play('https://cdn.example/demo/vocal.m4a')
+    expect(lastElement().crossOrigin).toBe('anonymous')
+
+    await player.play('blob:http://localhost/abc')
+    expect(lastElement().crossOrigin).toBe('')
   })
 })

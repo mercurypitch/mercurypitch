@@ -129,6 +129,39 @@ export interface PreviewPlayer {
 // tab kill (2026-07-31: a leaked preview looped through an HMR-heavy
 // session). When this module is hot-replaced, every surviving player is
 // hard-stopped before the new module takes over.
+/**
+ * Ask for a cross-origin source with CORS, so the Web Audio graph can
+ * actually hear it.
+ *
+ * A media element loaded from another origin without `crossOrigin` is
+ * *tainted*, and a tainted element feeds a MediaElementAudioSourceNode
+ * nothing but silence — every stem preview on this player is routed
+ * through one. Same-origin sources and `blob:` object URLs (which is what
+ * a visitor's own separation produces) are untouched: setting the
+ * attribute on them changes nothing, and leaving it off keeps a host that
+ * sends no `Access-Control-Allow-Origin` failing loudly rather than
+ * silently.
+ *
+ * The remote case is the seeded example songs, whose stems are the R2
+ * URLs themselves.
+ */
+function applyCrossOrigin(element: HTMLAudioElement, url: string): void {
+  if (!/^https?:/i.test(url)) {
+    element.removeAttribute('crossorigin')
+    return
+  }
+  try {
+    if (new URL(url, window.location.href).origin === window.location.origin) {
+      element.removeAttribute('crossorigin')
+      return
+    }
+  } catch {
+    // An unparseable URL is not one we can reason about; leave it alone.
+    return
+  }
+  element.crossOrigin = 'anonymous'
+}
+
 const livePlayers = new Set<() => void>()
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
@@ -227,6 +260,7 @@ export function createPreviewPlayer(
         gain.gain.cancelScheduledValues(ctx.currentTime)
         gain.gain.value = 0
       }
+      applyCrossOrigin(element, url)
       element.src = url
       currentUrl = url
     }

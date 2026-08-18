@@ -54,8 +54,14 @@ test.beforeEach(async ({ page }) => {
           sessionId,
           status: 'completed',
           progress: 100,
-          originalFile: { name, size: 1, mimeType: 'audio/wav' },
+          // Shaped like a seeded Examples row, which is the case that
+          // produced every complaint on this screen: the longest name a
+          // visitor will have, no stored original, separated in the
+          // cloud. That also leaves exactly one session action.
+          originalFile: { name, size: 0, mimeType: 'audio/mpeg' },
           outputs: { vocal: audioUrl, instrumental: audioUrl },
+          processingMode: 'server',
+          provider: 'examples',
           createdAt: Date.now(),
         })
       }
@@ -149,5 +155,49 @@ test.describe('the stem results view on a phone', () => {
         `${row.label} actions are glued`,
       ).toBeGreaterThanOrEqual(4)
     }
+  })
+
+  test('keeps the whole screen chrome to three short rows', async ({
+    page,
+  }) => {
+    const rows = await page.evaluate(() => {
+      const box = (selector: string) => {
+        const node = document.querySelector(selector)
+        if (node === null) return null
+        const rect = node.getBoundingClientRect()
+        return {
+          top: Math.round(rect.top),
+          bottom: Math.round(rect.bottom),
+          height: Math.round(rect.height),
+        }
+      }
+      return {
+        panel: box('.panel-header'),
+        results: box('.section-header-results'),
+        stems: box('.rv-header'),
+        back: box('.section-back-btn'),
+        firstStem: box('.rv-stem-card'),
+      }
+    })
+
+    // Every one of these is a single line of controls, not a stack.
+    expect(rows.panel?.height ?? 999).toBeLessThanOrEqual(64)
+    expect(rows.results?.height ?? 999).toBeLessThanOrEqual(56)
+    expect(rows.stems?.height ?? 999).toBeLessThanOrEqual(56)
+    // The back control is on the results line, ahead of the song name.
+    expect(rows.back).not.toBeNull()
+    // And the stem list starts high enough to be the point of the page.
+    expect(rows.firstStem?.top ?? 9999).toBeLessThan(340)
+  })
+
+  test('offers the one session action as a button, not a menu', async ({
+    page,
+  }) => {
+    // A server-separated song has no stored original and no local re-run
+    // to offer, so the "..." opened onto a single row.
+    const trigger = page.getByTestId('session-more')
+    await expect(trigger).toHaveCount(1)
+    await expect(trigger).not.toHaveAttribute('aria-haspopup', 'menu')
+    await expect(trigger).toHaveAttribute('aria-label', 'Export session ZIP')
   })
 })

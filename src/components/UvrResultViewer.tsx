@@ -690,8 +690,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               void handleShare()
             }}
             title="Copy share link"
+            aria-label="Copy share link"
           >
-            <Share /> Share
+            <Share /> <span class="rv-share-label">Share</span>
           </button>
           <Show when={props.onClose}>
             <button

@@ -91,8 +91,12 @@ describe('UvrResultViewer Component', () => {
       render(() => (
         <UvrResultViewer {...defaultProps} sessionId="session-123" />
       ))
-      openViewerMenu()
+      // Nothing to download and nothing to re-run leaves the export
+      // alone, and a menu of one row is offered as the row itself.
       expect(screen.queryByTestId('overflow-original')).not.toBeInTheDocument()
+      expect(screen.getByTestId('session-more')).toHaveAccessibleName(
+        'Export session ZIP',
+      )
     })
   })
 
