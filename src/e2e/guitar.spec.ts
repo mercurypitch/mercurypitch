@@ -63,6 +63,48 @@ test.describe('Guitar tab', () => {
     await expect(page.locator(panel)).toBeVisible()
   })
 
+  test('reaches Guitar Night from the phone bar @smoke', async ({ page }) => {
+    // The room used to be three taps down the options sheet — "Options >
+    // More > Guitar Night > Open" — while the Singing page put its room-ish
+    // door straight in the bar. One tap now, and still in the sheet.
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(page.locator(panel)).toBeVisible()
+
+    const chip = page.getByTestId('guitar-room-chip')
+    await expect(chip).toBeVisible()
+    await expect(chip).toHaveAttribute('href', '/guitar-night')
+
+    const options = page.locator('[data-tour="guitar.options"]')
+    await expect(options).toBeVisible()
+
+    // Same row as the options button, not stacked below it.
+    const [chipBox, optionsBox] = await Promise.all([
+      chip.boundingBox(),
+      options.boundingBox(),
+    ])
+    expect(chipBox).not.toBeNull()
+    expect(optionsBox).not.toBeNull()
+    expect(
+      Math.abs((chipBox?.y ?? 0) - (optionsBox?.y ?? 0)),
+    ).toBeLessThanOrEqual(2)
+
+    // A thumb, not a 25px sliver — both chips, since they share the rule.
+    expect(chipBox?.height ?? 0).toBeGreaterThanOrEqual(34)
+    expect(chipBox?.width ?? 0).toBeGreaterThanOrEqual(34)
+    expect(optionsBox?.height ?? 0).toBeGreaterThanOrEqual(34)
+
+    // And the taller chips must not have pushed the bar off the screen.
+    const sideways = await page.evaluate(() => {
+      const doc = document.scrollingElement
+      return doc === null ? 0 : doc.scrollWidth - doc.clientWidth
+    })
+    expect(sideways).toBe(0)
+
+    // The drawer keeps its own entry.
+    await options.click()
+    await expect(page.getByRole('link', { name: /Open/ }).first()).toBeVisible()
+  })
+
   test('opens on the Practice (hero) view with the fretboard + toolbar', async ({
     page,
   }) => {

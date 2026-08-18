@@ -5131,8 +5131,26 @@
     padding-inline: 0.75rem;
   }
 
+  /*
+   * One scroller on a phone: the page.
+   *
+   * The list is `overflow-y: auto` with a `100vh - 200px` cap, and it sits
+   * inside `.panel-content`, which is `overflow-y: auto` too. So the page
+   * scrolled, then the inner box did, and getting a finger onto the inner
+   * one was luck — reported as "sometimes its hard to get that inner
+   * container scroll". Neither box is short of room here; the nesting was
+   * only ever load-bearing for the three-column desktop grid.
+   */
   .history-list {
     grid-template-columns: minmax(0, 1fr);
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .history-list.history-list-inline {
+    flex: none;
+    min-height: 0;
+    overflow-y: visible;
   }
 
   /* One row on a phone: "Karaoke", then Sing / Upload / Options. The
@@ -5146,14 +5164,30 @@
     padding: 0.6rem 0.75rem;
   }
 
-  /* Stack the card's actions; each button stays an icon-beside-label
-     row. Grouping the BUTTONS into the panel-header rule above was the
-     bug: every action went column + stretch, which pinned a 12px icon
-     in the top-left corner of a huge padded block with its label
-     floating loose beneath it. */
+  /* The card's actions wrap rather than stack.
+     
+     Stacking was a fix for an earlier bug — grouping these BUTTONS into
+     the panel-header rule sent every action to column + stretch, which
+     pinned a 12px icon in the corner of a huge padded block with its
+     label floating loose beneath. `align-items: stretch` is what that
+     needed; the forced column was the part that cost height. Two
+     controls fit a phone row comfortably at ~168px each, and a third
+     wraps on its own, which is what the base rule's `flex-wrap` was
+     always for.
+     
+     This is a third of the card's height back: the row was 84px of a
+     386px card, and a card that tall means one and a bit fit a phone. */
   .session-result-actions {
-    flex-direction: column;
     align-items: stretch;
+  }
+
+  .session-result-actions > * {
+    min-width: 8.5rem;
+  }
+
+  /* 12.8px between six stacked sections is 64px of a card spent on air. */
+  .uvr-session-result {
+    gap: 0.5rem;
   }
 
   .uvr-header-left {

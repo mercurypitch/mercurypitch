@@ -611,4 +611,14 @@
   .chipLabel {
     display: none;
   }
+
+  /* Iconified chips were 25px tall — a quarter of the row's height and well
+     under a thumb. Nothing else moves: they were already the shortest thing
+     in the bar, so the row height is unchanged. */
+  .chipBtn {
+    min-width: 34px;
+    min-height: 34px;
+    justify-content: center;
+    padding: 4px 8px;
+  }
 }

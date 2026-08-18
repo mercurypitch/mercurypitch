@@ -328,41 +328,62 @@ export function GuitarPage(props: GuitarPageProps) {
           <Show
             when={!isNarrow()}
             fallback={
-              <button
-                class={barStyles.chipBtn}
-                data-tour="guitar.options"
-                onClick={() => setGuitarOptionsOpen(true)}
-                title="Sound, view, import & devices"
-                aria-label="Guitar options"
-              >
-                <span class={barStyles.chipIcon} aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  >
-                    <line x1="4" y1="8" x2="20" y2="8" />
-                    <line x1="4" y1="16" x2="20" y2="16" />
-                    <circle
-                      cx="9"
-                      cy="8"
-                      r="2.4"
-                      fill="currentColor"
-                      stroke="none"
-                    />
-                    <circle
-                      cx="15"
-                      cy="16"
-                      r="2.4"
-                      fill="currentColor"
-                      stroke="none"
-                    />
-                  </svg>
-                </span>
-                <span class={barStyles.chipLabel}>Options</span>
-              </button>
+              <>
+                {/* The room door, in the bar rather than two levels down the
+                    options sheet — the same move Piano's chip row got. It
+                    stays in the sheet as well: that is where somebody who
+                    already found it will look. Icon only, because the phone
+                    bar has one row to give. */}
+                <BusyLink
+                  class={barStyles.chipBtn}
+                  href="/guitar-night"
+                  title="Open Guitar Night — the Velvet Rehearsal play-along room"
+                  aria-label="Open Guitar Night"
+                  data-testid="guitar-room-chip"
+                  data-tour="guitar-room-chip"
+                  busyLabel="Opening Guitar Night…"
+                  spinnerSize={14}
+                >
+                  <span class={barStyles.chipIcon} aria-hidden="true">
+                    <Guitar />
+                  </span>
+                </BusyLink>
+                <button
+                  class={barStyles.chipBtn}
+                  data-tour="guitar.options"
+                  onClick={() => setGuitarOptionsOpen(true)}
+                  title="Sound, view, import & devices"
+                  aria-label="Guitar options"
+                >
+                  <span class={barStyles.chipIcon} aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    >
+                      <line x1="4" y1="8" x2="20" y2="8" />
+                      <line x1="4" y1="16" x2="20" y2="16" />
+                      <circle
+                        cx="9"
+                        cy="8"
+                        r="2.4"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                      <circle
+                        cx="15"
+                        cy="16"
+                        r="2.4"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                    </svg>
+                  </span>
+                  <span class={barStyles.chipLabel}>Options</span>
+                </button>
+              </>
             }
           >
             <SegmentedControl
