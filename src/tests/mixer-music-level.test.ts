@@ -90,36 +90,66 @@ describe('the ceiling', () => {
 })
 
 describe('the control', () => {
-  it("is on screen, bound to the store's own bounds", () => {
-    expect(mixer).toContain('data-testid="mixer-music-level"')
-    expect(mixer).toContain('aria-label="Music level"')
+  const stage = mixer.slice(
+    mixer.indexOf('<KaraokeMobileStage'),
+    mixer.indexOf('ribbonNotes={pitchAnalysis.editableNotes}'),
+  )
+
+  it('is handed to the zen stage, where the phone can reach it', () => {
+    // Under `isNarrow()` StemMixer renders KaraokeMobileStage INSTEAD of the
+    // mixer, so a control in the mixer header is not on the page at all on a
+    // phone — which is the one place iOS turns the backing track down.
+    expect(stage).toContain('musicLevel={audio.musicLevel}')
+    expect(stage).toContain('onMusicLevel={audio.setMusicLevel}')
     // Bounds come from the preference, not retyped in the markup — retyped
     // bounds are how a slider ends up able to set a value the store rejects.
-    expect(mixer).toContain('min={audio.musicLevelRange.min}')
-    expect(mixer).toContain('max={audio.musicLevelRange.max}')
-    expect(mixer).toContain('step={audio.musicLevelRange.step}')
+    expect(stage).toContain('musicLevelRange={audio.musicLevelRange}')
   })
 
-  it('survives the stage settings being hidden', () => {
-    // The moment this matters most is a scored performance run, and that is
-    // exactly the preset that hides `showStageSettings`. Being inside that
-    // Show would put the control behind the very mode that needs it.
+  it('is not left behind in the mixer header as well', () => {
+    // Reported on the first cut: "the slider is basically only visible on
+    // desktop in top of the stem mixer, and is ugly as hell." Two controls
+    // for one value is also two places for the styling to rot.
     const header = mixer.slice(
       mixer.indexOf('data-tour="mixer.header"'),
       mixer.indexOf('<PremiumBackgroundPicker'),
     )
-    const control = header.indexOf('data-testid="mixer-music-level"')
-    const gate = header.indexOf('props.showStageSettings !== false')
-    expect(control).toBeGreaterThan(-1)
-    expect(gate).toBeGreaterThan(-1)
-    expect(control).toBeLessThan(gate)
+    expect(header).not.toContain('mixer-music-level')
+    expect(header).not.toContain('sm-music-level-slider')
+    expect(mixer).not.toContain('class="sm-music-level"')
+  })
+
+  it('travels beside the mic it exists because of', () => {
+    // Adjacency in the props is the cheap proxy for adjacency on the bar;
+    // the rendered pairing is asserted in
+    // `src/components/__tests__/KaraokeMobileStage.musicLevel.test.tsx`.
+    expect(stage.indexOf('onToggleMic=')).toBeLessThan(
+      stage.indexOf('musicLevel='),
+    )
+  })
+
+  it('is passed straight through, never behind a condition', () => {
+    // The moment this matters most is a scored performance run, which hides
+    // the stage settings. A `showStageSettings && ...` guard here would put
+    // the control behind the very mode that needs it — the first cut of this
+    // control had exactly that shape in the mixer header, deliberately not.
+    // What the stage then does with it is asserted by rendering, in
+    // `KaraokeMobileStage.musicLevel.test.tsx`.
+    for (const prop of ['musicLevel', 'onMusicLevel', 'musicLevelRange']) {
+      const line = stage
+        .split('\n')
+        .find((row) => row.trimStart().startsWith(`${prop}=`))
+      expect(line, `${prop} is not passed`).toBeDefined()
+      expect(line).not.toContain('?')
+      expect(line).not.toContain('&&')
+    }
   })
 })
 
 describe('the note when the mic goes on', () => {
   const effect = mixer.slice(
-    mixer.indexOf('sm-music-level-hint-seen') - 400,
-    mixer.indexOf('sm-music-level-hint-seen') + 700,
+    mixer.indexOf('sm-music-level-hint-seen') - 900,
+    mixer.indexOf('sm-music-level-hint-seen') + 900,
   )
 
   it('fires on the mic, not on playback', () => {
@@ -128,15 +158,34 @@ describe('the note when the mic goes on', () => {
 
   it('says it once and never again', () => {
     // A notification every time the mic opens is noise, and the singer only
-    // needs telling where the slider is once.
+    // needs telling where the control is once.
     expect(effect).toContain('createPersistedSignal')
-    expect(effect).toMatch(/if \(!micOn \|\| musicLevelHintSeen\(\)\) return/)
     expect(effect).toContain('setMusicLevelHintSeen(true)')
   })
 
-  it('points at the control rather than blaming the app', () => {
-    // The app does not duck. Wording that implied it did would send people
-    // hunting for a setting that does not exist.
-    expect(effect).toMatch(/music level slider/)
+  it('holds its peace until the control is on screen', () => {
+    // The button lives on the zen stage. Telling a desktop mixer user about
+    // a button that is not on their screen is worse than saying nothing —
+    // and it would burn the once-ever flag doing it.
+    expect(effect).toMatch(
+      /if \(!micOn \|\| !zenStage\(\) \|\| musicLevelHintSeen\(\)\) return/,
+    )
+  })
+
+  it('describes noise cancelling, not a lost backing track', () => {
+    // Reported on the first wording: "it currently says that we lose a
+    // backing track or whatever, but its not what happens, the volume is
+    // just reduced in a typical noise cancelling scenario". Nothing is lost
+    // and nothing is muted — the platform is simply quieter.
+    expect(effect).toMatch(/noise cancelling/)
+    expect(effect).toMatch(/turns the backing track down/)
+    expect(effect).not.toMatch(/drops the backing track/)
+  })
+
+  it('points at the button, not at a slider up top', () => {
+    // The old wording said "up top", which was true of the mixer header and
+    // has never been true of the stage the phone actually shows.
+    expect(effect).toContain('music button next to the mic')
+    expect(effect).not.toMatch(/up top/)
   })
 })

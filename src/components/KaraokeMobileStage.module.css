@@ -648,6 +648,90 @@
   box-shadow: 0 0 14px rgba(201, 162, 255, 0.45);
 }
 
+/* The backing level, opposite the mic. Same glass circle as .micBtn — the
+   pair reads as "what goes out" and "what comes in", which is exactly the
+   pairing iOS breaks: opening a mic switches the page to playAndRecord and
+   the whole output drops. Lit, not filled, when the sheet is open: this is
+   a disclosure, not a state you leave on. */
+.levelBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: rgba(244, 236, 255, 0.7);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.levelBtn:active {
+  transform: scale(0.92);
+}
+
+.levelBtnOn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #f4ecff;
+  box-shadow: inset 0 0 0 1px rgba(201, 162, 255, 0.55);
+}
+
+/* The sheet itself — one glass row above the transport, never a modal. The
+   song keeps playing and the lyrics keep scrolling behind it, because the
+   only way to judge the level is to hear it while you move the slider. */
+.levelSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.levelLabel {
+  font-size: 0.74rem;
+  color: rgba(244, 236, 255, 0.62);
+  letter-spacing: 0.02em;
+}
+
+.levelSlider {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  accent-color: rgb(201, 162, 255);
+  cursor: pointer;
+}
+
+.levelValue {
+  min-width: 3.1rem;
+  text-align: right;
+  font-size: 0.78rem;
+  color: rgba(244, 236, 255, 0.88);
+  font-variant-numeric: tabular-nums;
+}
+
+.levelHint {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: rgba(244, 236, 255, 0.5);
+}
+
 .playBtn {
   display: inline-flex;
   align-items: center;

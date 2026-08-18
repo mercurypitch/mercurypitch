@@ -113,6 +113,12 @@ class MockOscillator {
 }
 
 class MockAnalyser {
+  // An AnalyserNode IS an AudioNode, and the mic controller tears its graph
+  // down with `micAnalyserNode?.disconnect()`. Without these the double threw
+  // on every unmount that had opened a mic, which is why no test had ever
+  // opened one.
+  connect() {}
+  disconnect() {}
   fftSize = 2048
   smoothingTimeConstant = 0.1
   frequencyBinCount = 1024
