@@ -219,6 +219,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`composeGuitarNightSongPorts` dedupes the shelf and falls through on any
+  device failure.** Karaoke Night's examples seeder writes every demo into
+  the session store as an ordinary "Examples" row, under the same id
+  `demoSessionId()` gives the demo port — carrying the R2 URLs and no local
+  stem blobs. So the composed library listed each demo twice, and neither
+  copy opened: the UVR port found the record, read an empty stem manifest
+  and answered `missing-local-audio`, which the composition treated as the
+  device's answer to keep. `completedSongs()` now drops a device row the
+  demo also claims, and `openSession` retries the demo on anything but
+  `ok`/`aborted`, keeping the device's own failure code when the demo has
+  never heard of the song. The device still wins outright when it can
+  deliver — a band-split example has real local part stems for that id.
+
+- **The stem results view has three places to give on a phone.** Measured
+  against the built app at 390px and 320px (`karaoke-results-mobile.spec.ts`):
+  `.section-header h4` had no `min-width: 0`, so the flex row's floor was the
+  filename pill's min-content width and `.back-btn` (`flex-shrink: 0`) was
+  pushed past the viewport — a seeded example's name does it every time. The
+  pill needed its own `min-width: 0` before `text-overflow: ellipsis` could
+  do anything. `.rv-stem-card-top`/`.rv-stem-info` got the same, so a stem
+  name ellipsizes instead of shoving the actions out. Under the viewer's
+  existing 720px breakpoint `.rv-stem-btn-label` is `display: none` and each
+  action becomes a centred 2.5rem square at `gap: 0.5rem`; the labels move
+  to `aria-label` on the Play and Download buttons, and Replace keeps its
+  `title`. `.rv-parts-header` wraps, which is what hung off 320px last.
+
 - **`platform.keepAwake` is reference counted and re-taken on
   `visibilitychange`; `loadStems` holds it.** One screen lock per page meant
   whichever holder finished first released the other's — a Drive backup and a

@@ -289,6 +289,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   and the guided warmup's Guide toggle was pushed hard against the right
   edge. Both have their margin back.
 
+- **The stem list on a phone fits the phone.** Opening a separated song's
+  stems could scroll the whole page sideways when the song's name was
+  long, taking "Back to Upload" off the edge with it. On a phone the
+  per-stem Play, Download and Replace buttons — which used to touch each
+  other, with Replace clipped off the card — are now plain icon buttons
+  with room between them.
+
 - **The Settings tour points at the room control again.** It still described
   choosing one of three microphone presets, and highlighted a dropdown that
   became a slider earlier in this release.
