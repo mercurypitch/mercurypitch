@@ -2157,7 +2157,11 @@
    width, which changes with its own label ("Guide on" / "Guide muted"). */
 .warmup-guide-mute {
   position: absolute;
-  right: 0;
+  /* The caption row is the containing block, and an absolutely positioned
+     child resolves `right` against that block's PADDING box — so `right: 0`
+     looked through the row's 12px gutter and parked the pill hard on the
+     screen edge. Matching the gutter puts it back inside the row. */
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;

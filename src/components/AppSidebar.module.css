@@ -45,7 +45,15 @@
        sit permanently under the bar and can't be tapped. */
     padding-top: var(--safe-top);
     padding-bottom: calc(var(--tabbar-total) + 16px);
-    padding-left: var(--safe-left);
+    /* Gutter. The base rule's `padding: 14px` is a shorthand, so naming
+       padding-left here replaced it outright — and in portrait, which is
+       every phone that has no notch on its left edge, `--safe-left` is 0.
+       The drawer's contents therefore started at pixel zero, hard against
+       the screen. The inset is ADDED to the gutter now instead of standing
+       in for it, and the right side is spelled out beside it so the pair
+       cannot drift apart again. */
+    padding-left: calc(var(--safe-left) + 14px);
+    padding-right: 14px;
   }
   :global(.app-sidebar.open) {
     left: 0;
