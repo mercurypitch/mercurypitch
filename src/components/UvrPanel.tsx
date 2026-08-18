@@ -49,7 +49,7 @@ import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrLibraryElsewhere, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
-import { CheckCircle, ChevronDown, ChevronUp, Cpu, DeviceSync, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
+import { CheckCircle, ChevronDown, ChevronLeft, ChevronUp, Cpu, DeviceSync, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
 import type { ExtraStemInput } from './StemMixer'
@@ -2735,28 +2735,29 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
           <Show when={currentView() === 'results'}>
             <div class="view-section results-section">
-              <div class="section-header">
-                <h4
-                  style={{
-                    display: 'flex',
-                    'align-items': 'center',
-                    'flex-wrap': 'wrap',
-                  }}
+              {/* One left-anchored line: back, then the song, then what
+                  this view of it is. The old row put "Back to Upload"
+                  on the right behind an import-file glyph that reads as
+                  a download, and on a phone the song name shoved it off
+                  the screen entirely. */}
+              <div class="section-header section-header-results">
+                <button
+                  class="section-back-btn"
+                  onClick={() => setCurrentView('upload')}
+                  aria-label="Back to Upload"
+                  title="Back to Upload"
                 >
+                  <ChevronLeft />
+                </button>
+                <h4>
                   <span
                     class="process-filename-pill"
                     title={session()?.originalFile?.name ?? 'audio'}
                   >
                     {session()?.originalFile?.name ?? 'audio'}
                   </span>
-                  <span>results</span>
+                  <span class="section-header-suffix">results</span>
                 </h4>
-                <button
-                  class="back-btn"
-                  onClick={() => setCurrentView('upload')}
-                >
-                  <ImportFile /> Back to Upload
-                </button>
               </div>
               <Show when={session()}>
                 {(sess) => (

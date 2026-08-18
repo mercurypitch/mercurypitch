@@ -603,13 +603,6 @@ export const Walkthrough: Component = () => {
     return { current: walkthroughStep() + 1, total: steps().length }
   })
 
-  // Above this many steps, counting the marks to find out where you are stops
-  // working, so the position gets spelled out beside them. The marks stay the
-  // same either way — sections of the full walkthrough run 5 to 15 steps and
-  // the Stem mixer tour is 14, so a long tour is the common case here, not an
-  // edge one, and it does not deserve a different-looking control.
-  const COUNT_FROM = 9
-
   // Jump straight to a step by clicking its progress dot. Dots are
   // section-scoped (full walkthrough), so map the dot index back to the step's
   // overall position; the prepare effect re-runs nav/reveal for the new step.
@@ -668,10 +661,20 @@ export const Walkthrough: Component = () => {
                 that reliably fit. A fifteen-step section wrapped into a
                 three-row block of specks. Click any step to jump to it. */}
             <div class={styles.walkthroughProgress}>
+              {/* The position, ahead of the marks. It used to appear only
+                  past nine steps and sat after the last mark, so the same
+                  tour offered from Learn showed a bare "2/11" tucked among
+                  the dashes while the one offered from a notification showed
+                  nothing — the number read as another mark rather than as a
+                  count of them. Every tour reads the same way now, and the
+                  readout leads the strip it is counting. */}
+              <span class={styles.walkthroughDotCount} aria-hidden="true">
+                {dotProgress().current}/{dotProgress().total}
+              </span>
               <div
                 class={styles.walkthroughDots}
                 role="group"
-                aria-label="Tour steps"
+                aria-label={`Tour steps: step ${dotProgress().current} of ${dotProgress().total}`}
               >
                 <Index each={Array.from({ length: dotProgress().total })}>
                   {(_, i) => (
@@ -694,11 +697,6 @@ export const Walkthrough: Component = () => {
                   )}
                 </Index>
               </div>
-              <Show when={dotProgress().total >= COUNT_FROM}>
-                <span class={styles.walkthroughDotCount}>
-                  {dotProgress().current}/{dotProgress().total}
-                </span>
-              </Show>
             </div>
 
             {/* Icon-only controls: back · skip section · next/finish */}

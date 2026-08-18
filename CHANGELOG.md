@@ -3,9 +3,20 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [Unreleased]
+## [0.9.0] - 2026-08-18
 
 ### Added
+
+- **Guitar Night has something to play before you have separated anything.**
+  The demo song Karaoke Night offers now appears in the Guitar Night
+  library too, under your own prepared songs — so an empty shelf is no
+  longer the whole room. It plays like any other song; the paid
+  "Separate guitar" upgrade is the one thing it does not offer, because
+  there is nothing of yours to split.
+
+- **The two new rooms have a door on the Home page.** Piano Night and
+  Guitar Night now sit in "Choose your next room" alongside Karaoke and the
+  rest, each on a picture of the room itself.
 
 - **Buttons that admit they heard you.** Opening Guitar Night, Karaoke Night,
   Piano Night, the Voice Mirror or Glass loads a whole separate page, and on
@@ -27,174 +38,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   environment setting (or a quieter spot) and jumps you straight to the
   control. It fires at most twice a session, and never changes anything by
   itself.
-
-### Fixed
-
-- **Guitar Night no longer stutters its way through a song.** On a phone a
-  full-length song plays from its files rather than being decoded whole, and
-  the two parts were kept together by yanking one back onto the other's clock
-  four times a second — a correction that cost more time than the gap it was
-  closing, so it never caught up and you heard a hole every time it tried.
-  They are now held together by running one a fraction fast or slow, which is
-  inaudible. Seeking is fixed the same way: the room stops the parts, moves
-  them, and starts them together, instead of dragging them while they play.
-- **Pausing from the phone's lock screen stops the whole song.** Each part is
-  its own track as far as iOS is concerned, so its Now Playing control paused
-  one and left the rest running.
-- **The Guitar Night volume and position sliders are usable with a thumb.**
-  Bigger grips and a thicker rail on touch screens; unchanged for a mouse.
-
-- **The octave controls stop crowding the piano keys.** On a phone the two
-  arrows are smaller and quieter, and the octave label appears when you change
-  octave and then fades, rather than sitting on the keys the whole time.
-
-- **The count-in number is where you can read it.** On a phone it appeared at
-  the very top of the screen, half cut off behind the header. It sits just
-  above the transport controls now.
-- **Piano Night's bottom bar behaves like a bottom bar.** The button you
-  pressed now stays lit while its panel is open, and pressing it again closes
-  the panel. There is also a way back to the full studio from a phone, which
-  there was not before, and pressing Coach on a larger screen now takes you to
-  the coach instead of appearing to do nothing.
-- **Guitar Night plays more smoothly on a phone.** The fretboard view now
-  draws at a rate the device can keep up with instead of asking for every
-  frame, stops rebuilding artwork it already has, and no longer rebuilds the
-  track controls while you drag the seek bar or the volume. A phone that is
-  struggling can also now say so, which switches the room to its lighter
-  settings automatically.
-
-- **Piano Night's falling notes land on the right keys.** On a phone the notes
-  were drawn against the whole 88-key piano while the keyboard below showed
-  only two octaves, so a note could sit a whole key away from the one it was
-  for — and moving the octave arrows moved the keys but not the notes. They
-  line up now, and the arrows move both. Notes outside the octaves you are
-  looking at are shown small and faint at the edge instead of landing on the
-  wrong key.
-
-- **Room pictures stay in their cards.** Scrolling the Piano Night room
-  chooser on a phone could send the preview images sliding out of the list to
-  float over the panel. They stay put now.
-- **Guitar Night fits a phone now.** The voice-command microphone moved into
-  the header rail, off the play button it was sitting on. The camera and view
-  controls open in the same drawer the rest of the app uses on a phone,
-  instead of a popup that appeared behind the lesson card with half of it off
-  the screen. The song's speed and volume controls share the bottom row evenly
-  rather than one crowding out the other, and the Vocals and Backing cards
-  keep their names inside their own edges.
-- **The take review is a button, not a banner.** On a phone, and when you turn
-  the phone sideways, the "Take ready" card is now just its ear icon in the
-  corner. Tapping it opens the same review. Sideways, the MercuryPitch
-  wordmark and the room name step aside too, so the fretboard gets the height.
-
-- **A new version no longer looks like a crash.** Opening a tab after a
-  deployment could show the "Application Error" dialog for a moment
-  before the app updated itself. It now goes straight to the "a new
-  version is ready" screen, which is what was actually happening.
-- **Settings tabs scroll to the one you picked.** Following a link into a
-  settings section (the header heart opens Credits) left the tab strip
-  scrolled wherever it was, so on a phone the selected tab was off
-  screen.
-- **Finishing a guided practice session now counts.** Completing any
-  built-in session template credited nothing at all — no session in your
-  history, no practice minutes, no streak, no badges — and gave no sign
-  anything had gone wrong. The finished run is now recorded.
-- **Exercises read properly on a phone.** The microphone and level
-  readout stay in the top-right corner instead of being pushed onto a
-  second row by a long drill name, Start is a button rather than a
-  banner, and Sight-Singing's staff now fits on screen so you can see
-  the notes without scrolling.
-- **Very low notes are audible again.** Notes around the second octave (C2 to
-  around E2) were technically sounding but almost impossible to hear on
-  laptop and phone speakers. They now get a small level lift and a
-  reinforcing overtone, which is what carries a low note on a small speaker —
-  the pitch is unchanged, and nothing from C3 upward sounds different.
-- **More room in the guided warmup on short screens.** The "next up" line and
-  the guide-sound toggle now share a single strip just above the visual,
-  instead of taking a row each at opposite ends of the screen.
-- **A stale Google sign-in sends you back to MercuryPitch.** Leaving the
-  Google consent screen open for more than ten minutes and then finishing it
-  used to dump you on a blank page showing raw error text, with no way back.
-  You now land on the app with a plain message asking you to try again.
-
-- **A new release no longer crashes the tab you were on.** When a deploy
-  replaced the app's files mid-session, opening a tab (Progress was the
-  reported one) could show the crash screen instead of the "new version"
-  recovery — the per-tab safety net didn't recognise a vanished file as
-  an update. It now recovers exactly like the rest of the app. And the
-  crash screen's "Reset App Data" is a true hard reset: it also removes
-  the offline copy and the update worker, so the next load always comes
-  fresh from the server.
-- **"Continue with Google" responds the moment you press it.** On a slow
-  connection the redirect takes a few seconds to start; the button used to
-  give no sign it had been pressed. All three Google buttons now disable
-  themselves and read "Opening Google…" until the redirect starts, and a
-  second press can no longer fire a second redirect.
-
-### Fixed
-
-- **Your mic environment setting survives every mic start.** On some devices
-  (Android in particular), starting the microphone quietly reset the
-  Quiet room / Home / Noisy room calibration back to defaults until you next
-  touched a setting. It sticks now.
-
-- **No more "signed out" flash.** On a slow connection, Settings → Account
-  said "You are signed out" for a few seconds before flipping to your real
-  signed-in state, and the header pill offered "Sign in" the same way.
-  Both now show a small progress spinner until your session is actually
-  known, then the correct state — never the wrong one.
-
-### Changed
-
-- **The voice-control settings read like English.** The section now says
-  what it does — control playback with your voice — instead of opening
-  with "Hands-free transport", and the overloaded second sentence was
-  untangled: press Shift+V or ask aloud "what can I say" for every
-  phrase. The long "Show all voice commands" button is now a compact
-  "Command list" button with an icon, with breathing room before the
-  engine dropdown below it.
-- **The note dial's low octaves lost their bassy pop.** Note releases used
-  fixed times that are clean at higher pitches but shorter than a single
-  waveform cycle down in the second and third octave, where each note edge
-  landed as a soft thump. Envelopes now stretch to whole cycles of the
-  note being played — low notes fade over their own wavelength, higher
-  notes keep the same quick response as before.
-- **Assigning lyrics by touch works in jam rooms.** With a singer armed,
-  dragging a finger across lyric lines on a tablet stuck on the first
-  line (and could wedge the sheet mid-gesture when the page tried to
-  scroll). The sweep now follows the finger exactly like the mouse, and
-  scrolling still works normally whenever no singer is armed.
-- **Home notices sign-out (and sign-in) immediately.** The streak card,
-  the daily-goal bar and the week strip kept showing the previous
-  account's numbers until you navigated away; they now refresh the moment
-  the signed-in account changes.
-
-### Changed
-
-- **The Stop button got out of the way.** While a run is active, Stop is now
-  a small round icon button in the card's corner at every screen size — it
-  used to be a labelled full-width pill on a rail of its own, which on a
-  landscape tablet pushed the warmup canvas behind a scrollbar. The warmup's
-  step instructions also use the width a tablet has, so the breath step's
-  full text and the "Sssss" cue fit on screen together.
-
-### Fixed
-
-- **"Restore streak" no longer resurrects months-old breaks.** The repair
-  offer is meant for a streak lost within the last 72 hours, but the break
-  was only dated when it was noticed — on your next practice — so coming
-  back after a long absence made any old break look fresh and "restoring"
-  it glued a long-gone practice day onto today. Repair now measures the
-  break itself, and one-day runs are no longer offered a repair that would
-  invent a second day.
-
-### Fixed
-
-- **The admin studio no longer blinks away while Weekly loads.** Opening
-  the Weekly Challenges section on a slow connection made the whole studio
-  disappear and reappear; the panel now stays put and shows a loading
-  spinner inside the workspace until the section's data arrives.
-
-### Added
 
 - **The guided warmup counts you in.** Every step now opens with an audible
   two-beat count-in — clicks, plus the first note sounding so you know where
@@ -261,7 +104,49 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   heard notes, play the tab, click to seek, Space to start and stop — so a
   disagreement between them can be listened to rather than only read.
 
+- **The Danger Zone grew two gentler levers.** Alongside the karaoke-only
+  clear and the full factory reset there is now "Clear Settings & Practice
+  History" — which keeps your separated songs, melodies, piano projects, and
+  sign-in — and "Delete Stored Songs & Database", which does the opposite:
+  the on-device database goes, your settings and sign-in stay.
+
+- **A What's New page,** which is where you are reading this from if you did
+  not come looking. It names the handful of things worth changing an evening
+  over and how to try each one, and it shows itself once per release rather
+  than once per fix. It stays in the sidebar afterwards, so a release you
+  waved away is not a release you lost.
+
 ### Changed
+
+- **The voice-control settings read like English.** The section now says
+  what it does — control playback with your voice — instead of opening
+  with "Hands-free transport", and the overloaded second sentence was
+  untangled: press Shift+V or ask aloud "what can I say" for every
+  phrase. The long "Show all voice commands" button is now a compact
+  "Command list" button with an icon, with breathing room before the
+  engine dropdown below it.
+- **The note dial's low octaves lost their bassy pop.** Note releases used
+  fixed times that are clean at higher pitches but shorter than a single
+  waveform cycle down in the second and third octave, where each note edge
+  landed as a soft thump. Envelopes now stretch to whole cycles of the
+  note being played — low notes fade over their own wavelength, higher
+  notes keep the same quick response as before.
+- **Assigning lyrics by touch works in jam rooms.** With a singer armed,
+  dragging a finger across lyric lines on a tablet stuck on the first
+  line (and could wedge the sheet mid-gesture when the page tried to
+  scroll). The sweep now follows the finger exactly like the mouse, and
+  scrolling still works normally whenever no singer is armed.
+- **Home notices sign-out (and sign-in) immediately.** The streak card,
+  the daily-goal bar and the week strip kept showing the previous
+  account's numbers until you navigated away; they now refresh the moment
+  the signed-in account changes.
+
+- **The Stop button got out of the way.** While a run is active, Stop is now
+  a small round icon button in the card's corner at every screen size — it
+  used to be a labelled full-width pill on a rail of its own, which on a
+  landscape tablet pushed the warmup canvas behind a scrollbar. The warmup's
+  step instructions also use the width a tablet has, so the breath step's
+  full text and the "Sssss" cue fit on screen together.
 
 - **Held-note drills now run ten seconds by default, and grade the run
   they asked for.** Five seconds was over before a steady tone settled —
@@ -372,15 +257,193 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **The microphone is offered once, at your first practice,** instead of being
   raised again on every playback surface.
 
-### Added
-
-- **The Danger Zone grew two gentler levers.** Alongside the karaoke-only
-  clear and the full factory reset there is now "Clear Settings & Practice
-  History" — which keeps your separated songs, melodies, piano projects, and
-  sign-in — and "Delete Stored Songs & Database", which does the opposite:
-  the on-device database goes, your settings and sign-in stay.
+- **Adding a friend is a request the other person accepts.** The Friends board
+  shows a singer's streak, scores and accuracy to the people on it, so being
+  added to somebody's list is no longer something that can happen to you
+  without a word. Ask, and nothing is shared until the answer comes back;
+  redeeming a friend code still connects both sides at once, because handing
+  the code over already said yes. Removing a friend clears both directions.
 
 ### Fixed
+
+- **A song you have already downloaded does not download again.**
+  Karaoke Night's demo song fetched all of its audio on every single open,
+  because the server it comes from says nothing about how long a browser
+  may keep it. The app now keeps its own copy of the last few songs it has
+  played, so the second evening with a song starts immediately. Songs you
+  separated yourself were always on the device and are unaffected.
+
+- **A phone no longer falls asleep in the middle of a download.** The
+  screen is kept awake while a song's audio is arriving. On a slow
+  connection that download can run for minutes, and a phone that locked
+  itself came back to a torn-off download and a song that would not play.
+
+- **A download that fails leaves you somewhere you can leave.** The
+  full-screen song view on a phone showed the failure and nothing else —
+  no retry, and its back arrow was behind the blur. It now offers Try
+  again and Go back, and Go back is there while the download is still
+  running too.
+
+- **Two controls sat on the screen's own edge.** The sidebar's contents
+  on a phone began at the very edge of the screen with nothing between,
+  and the guided warmup's Guide toggle was pushed hard against the right
+  edge. Both have their margin back.
+
+- **The play button says how much of the song has arrived.** Pressing Play on
+  a song your device has not downloaded yet starts an eight-megabyte fetch.
+  Guitar Night only dimmed the button, which is also what a broken button
+  looks like. It now shows a ring filling as the song arrives, the
+  percentage inside it, and megabytes counted underneath.
+
+- **The stem results screen was rebuilt for a phone.** The Karaoke header
+  now keeps its title and the Sing / Upload / Options controls on one line;
+  "Back to Upload" is a back arrow at the start of the song's own line; the
+  Stems heading shares a line with its actions; and an action menu that only
+  ever held one item is now that item's button.
+
+- **Playing a stem on the results screen works for the example songs.**
+  Their audio is served from another origin, and the preview was asking for
+  it in a way that let the browser hand back silence.
+
+- **The stem list on a phone fits the phone.** Opening a separated song's
+  stems could scroll the whole page sideways when the song's name was
+  long, taking "Back to Upload" off the edge with it. On a phone the
+  per-stem Play, Download and Replace buttons — which used to touch each
+  other, with Replace clipped off the card — are now plain icon buttons
+  with room between them.
+
+- **The Settings tour points at the room control again.** It still described
+  choosing one of three microphone presets, and highlighted a dropdown that
+  became a slider earlier in this release.
+
+- **Every guided tour shows where you are in it.** The step count used to
+  appear only on longer tours, and when it did it sat among the step marks
+  where it read as one more mark. It now leads them, on every tour, so the
+  same tour opened from a tutorial and from a notification looks the same.
+
+- **Guitar Night no longer stutters its way through a song.** On a phone a
+  full-length song plays from its files rather than being decoded whole, and
+  the two parts were kept together by yanking one back onto the other's clock
+  four times a second — a correction that cost more time than the gap it was
+  closing, so it never caught up and you heard a hole every time it tried.
+  They are now held together by running one a fraction fast or slow, which is
+  inaudible. Seeking is fixed the same way: the room stops the parts, moves
+  them, and starts them together, instead of dragging them while they play.
+- **Pausing from the phone's lock screen stops the whole song.** Each part is
+  its own track as far as iOS is concerned, so its Now Playing control paused
+  one and left the rest running.
+- **The Guitar Night volume and position sliders are usable with a thumb.**
+  Bigger grips and a thicker rail on touch screens; unchanged for a mouse.
+
+- **The octave controls stop crowding the piano keys.** On a phone the two
+  arrows are smaller and quieter, and the octave label appears when you change
+  octave and then fades, rather than sitting on the keys the whole time.
+
+- **The count-in number is where you can read it.** On a phone it appeared at
+  the very top of the screen, half cut off behind the header. It sits just
+  above the transport controls now.
+- **Piano Night's bottom bar behaves like a bottom bar.** The button you
+  pressed now stays lit while its panel is open, and pressing it again closes
+  the panel. There is also a way back to the full studio from a phone, which
+  there was not before, and pressing Coach on a larger screen now takes you to
+  the coach instead of appearing to do nothing.
+- **Guitar Night plays more smoothly on a phone.** The fretboard view now
+  draws at a rate the device can keep up with instead of asking for every
+  frame, stops rebuilding artwork it already has, and no longer rebuilds the
+  track controls while you drag the seek bar or the volume. A phone that is
+  struggling can also now say so, which switches the room to its lighter
+  settings automatically.
+
+- **Piano Night's falling notes land on the right keys.** On a phone the notes
+  were drawn against the whole 88-key piano while the keyboard below showed
+  only two octaves, so a note could sit a whole key away from the one it was
+  for — and moving the octave arrows moved the keys but not the notes. They
+  line up now, and the arrows move both. Notes outside the octaves you are
+  looking at are shown small and faint at the edge instead of landing on the
+  wrong key.
+
+- **Room pictures stay in their cards.** Scrolling the Piano Night room
+  chooser on a phone could send the preview images sliding out of the list to
+  float over the panel. They stay put now.
+- **Guitar Night fits a phone now.** The voice-command microphone moved into
+  the header rail, off the play button it was sitting on. The camera and view
+  controls open in the same drawer the rest of the app uses on a phone,
+  instead of a popup that appeared behind the lesson card with half of it off
+  the screen. The song's speed and volume controls share the bottom row evenly
+  rather than one crowding out the other, and the Vocals and Backing cards
+  keep their names inside their own edges.
+- **The take review is a button, not a banner.** On a phone, and when you turn
+  the phone sideways, the "Take ready" card is now just its ear icon in the
+  corner. Tapping it opens the same review. Sideways, the MercuryPitch
+  wordmark and the room name step aside too, so the fretboard gets the height.
+
+- **A new version no longer looks like a crash.** Opening a tab after a
+  deployment could show the "Application Error" dialog for a moment
+  before the app updated itself. It now goes straight to the "a new
+  version is ready" screen, which is what was actually happening.
+- **Settings tabs scroll to the one you picked.** Following a link into a
+  settings section (the header heart opens Credits) left the tab strip
+  scrolled wherever it was, so on a phone the selected tab was off
+  screen.
+- **Finishing a guided practice session now counts.** Completing any
+  built-in session template credited nothing at all — no session in your
+  history, no practice minutes, no streak, no badges — and gave no sign
+  anything had gone wrong. The finished run is now recorded.
+- **Exercises read properly on a phone.** The microphone and level
+  readout stay in the top-right corner instead of being pushed onto a
+  second row by a long drill name, Start is a button rather than a
+  banner, and Sight-Singing's staff now fits on screen so you can see
+  the notes without scrolling.
+- **Very low notes are audible again.** Notes around the second octave (C2 to
+  around E2) were technically sounding but almost impossible to hear on
+  laptop and phone speakers. They now get a small level lift and a
+  reinforcing overtone, which is what carries a low note on a small speaker —
+  the pitch is unchanged, and nothing from C3 upward sounds different.
+- **More room in the guided warmup on short screens.** The "next up" line and
+  the guide-sound toggle now share a single strip just above the visual,
+  instead of taking a row each at opposite ends of the screen.
+- **A stale Google sign-in sends you back to MercuryPitch.** Leaving the
+  Google consent screen open for more than ten minutes and then finishing it
+  used to dump you on a blank page showing raw error text, with no way back.
+  You now land on the app with a plain message asking you to try again.
+
+- **A new release no longer crashes the tab you were on.** When a deploy
+  replaced the app's files mid-session, opening a tab (Progress was the
+  reported one) could show the crash screen instead of the "new version"
+  recovery — the per-tab safety net didn't recognise a vanished file as
+  an update. It now recovers exactly like the rest of the app. And the
+  crash screen's "Reset App Data" is a true hard reset: it also removes
+  the offline copy and the update worker, so the next load always comes
+  fresh from the server.
+- **"Continue with Google" responds the moment you press it.** On a slow
+  connection the redirect takes a few seconds to start; the button used to
+  give no sign it had been pressed. All three Google buttons now disable
+  themselves and read "Opening Google…" until the redirect starts, and a
+  second press can no longer fire a second redirect.
+
+- **Your mic environment setting survives every mic start.** On some devices
+  (Android in particular), starting the microphone quietly reset the
+  Quiet room / Home / Noisy room calibration back to defaults until you next
+  touched a setting. It sticks now.
+
+- **No more "signed out" flash.** On a slow connection, Settings → Account
+  said "You are signed out" for a few seconds before flipping to your real
+  signed-in state, and the header pill offered "Sign in" the same way.
+  Both now show a small progress spinner until your session is actually
+  known, then the correct state — never the wrong one.
+
+- **"Restore streak" no longer resurrects months-old breaks.** The repair
+  offer is meant for a streak lost within the last 72 hours, but the break
+  was only dated when it was noticed — on your next practice — so coming
+  back after a long absence made any old break look fresh and "restoring"
+  it glued a long-gone practice day onto today. Repair now measures the
+  break itself, and one-day runs are no longer offered a repair that would
+  invent a second day.
+
+- **The admin studio no longer blinks away while Weekly loads.** Opening
+  the Weekly Challenges section on a slow connection made the whole studio
+  disappear and reappear; the panel now stays put and shows a loading
+  spinner inside the workspace until the section's data arrives.
 
 - **The "N of 5 min" card moves while you practice.** Home read the day's
   minutes once when it appeared and only looked fresh again after a tab
@@ -562,6 +625,43 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   account" until you have one instead of failing after the click. Both it and
   the supporter tiers' button open the sign-up dialog on the spot, rather than
   sending you to the settings page you were already on.
+
+- **Your longest streak is the longest one you have had.** It was stored
+  without ever being kept up to date, so a run you were still in the middle of
+  could be longer than the record it was supposed to beat — including on the
+  leaderboard, which ranks people by it. Every account's record has been
+  corrected to the best run it can actually show.
+
+- **The app opens the version it was given.** A new release used to arrive one
+  file at a time, so a page could be left halfway between two builds and stop
+  with an error nothing on screen explained. Each release is now kept whole:
+  the app opens from what this device already has — offline included — and a
+  new one arrives as an offer to reload, once, when it is completely ready.
+
+- **More of the app fits the device it is used on.** A tablet's Singing
+  controls stay reachable, Karaoke Night explains its voice controls and its
+  messages can be read, and the Analysis take rail stops crushing its own
+  cards on a phone.
+
+- **The stage transparency slider now reaches the lane names.** The Vocal and
+  Instrumental plates beside each waveform are drawn onto the canvas, so they
+  used to sit at a fixed near-solid colour while everything around them faded.
+  They follow the slider now, in the in-app mixer as well as on the Karaoke
+  Night stage.
+
+- **On a phone, the guided tour opens Compose's controls before pointing at
+  them.** Two steps — Record, and Share your melody — spotlighted nothing,
+  because the control bar had moved into the "more" sheet and the tour did not
+  know to open it.
+
+### Security
+
+- **An anonymous account can no longer be claimed by anyone who saw it.** The
+  id on the public leaderboard used to be the whole credential for accounts
+  that had not signed up yet, so a stranger could have taken one and, with it,
+  the practice history behind it. Your browser now holds a separate secret and
+  the id alone proves nothing. Nobody has to do anything: the account binds
+  itself to this browser the next time you open the app.
 
 ## [0.8.1] - 2026-08-08
 

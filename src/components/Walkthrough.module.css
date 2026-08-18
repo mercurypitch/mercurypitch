@@ -262,6 +262,9 @@
   background-color: var(--accent);
 }
 
+/* Leads the marks rather than trailing them, so it reads as a count of the
+   strip and not as one more mark in it. `tabular-nums` keeps the marks from
+   sliding sideways as the step number ticks over. */
 .walkthroughDotCount {
   flex: none;
   font-size: 11px;

@@ -2,7 +2,7 @@
 // Guitar backing transport tests protect one-clock playback, safe replacement, and bounded decoding
 // ============================================================
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingSession, GuitarBackingTrack, } from './guitar-backing-transport'
 import { createGuitarBackingTransport, estimateGuitarBackingPcmBytes, } from './guitar-backing-transport'
 
@@ -989,5 +989,245 @@ describe('haltAudible — every stop path closes the bus first', () => {
     expect(stems.gain.operations).toEqual(closeOps(16))
     expect(source.stop).toHaveBeenLastCalledWith(16.08)
     expect(harness.transport.getStatus()).toBe('complete')
+  })
+})
+
+// ============================================================
+// The stem download the transport does for itself
+// ============================================================
+//
+// Every test above injects `fetchArrayBuffer`, so the default — the one
+// that actually runs in the room — was never exercised. It matters now:
+// the remote demo song is served with no Cache-Control at all, and
+// without a copy of its own the room re-downloads the whole thing on
+// every open.
+
+class FakeCache {
+  readonly entries = new Map<string, Response>()
+
+  async match(key: RequestInfo | URL): Promise<Response | undefined> {
+    return Promise.resolve(this.entries.get(String(key))?.clone())
+  }
+
+  async put(key: RequestInfo | URL, value: Response): Promise<void> {
+    this.entries.set(String(key), value)
+    return Promise.resolve()
+  }
+
+  async keys(): Promise<Request[]> {
+    return Promise.resolve(
+      [...this.entries.keys()].map((url) => ({ url }) as unknown as Request),
+    )
+  }
+
+  async delete(): Promise<boolean> {
+    return Promise.resolve(true)
+  }
+}
+
+const REMOTE = 'https://cdn.example/demo/goodbye-to-spring/instrumental.m4a'
+
+function downloadingHarness(response: () => Response) {
+  const cache = new FakeCache()
+  Object.defineProperty(globalThis, 'caches', {
+    value: { open: async () => Promise.resolve(cache) },
+    configurable: true,
+    writable: true,
+  })
+  const fetchStub = vi.fn(async () => Promise.resolve(response()))
+  vi.stubGlobal('fetch', fetchStub)
+
+  const context = new FakeAudioContext()
+  const transport = createGuitarBackingTransport({
+    contextFactory: () => context as unknown as AudioContext,
+    activateContext: async (audioContext) => {
+      await audioContext.resume()
+    },
+    mediaElementFactory: () =>
+      new FakeMediaElement() as unknown as HTMLAudioElement,
+    fadeSeconds: 0,
+    scheduleLeadSeconds: 0.012,
+  })
+  return { cache, context, fetchStub, transport }
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(globalThis as unknown as object, 'caches')
+  vi.unstubAllGlobals()
+})
+
+describe('the transport downloads a remote stem once', () => {
+  it('keeps a copy the first time and reads it the second', async () => {
+    const harness = downloadingHarness(() => new Response(new Uint8Array(2048)))
+    harness.transport.configure(
+      session('demo', [track('drums', { url: REMOTE })]),
+    )
+
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.fetchStub).toHaveBeenCalledTimes(1)
+    expect(harness.cache.entries.has(REMOTE)).toBe(true)
+
+    // A second open of the same song — the whole point of the copy.
+    harness.transport.configure(
+      session('demo-again', [track('drums', { url: REMOTE })]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.fetchStub).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a stem the server would not give', async () => {
+    const harness = downloadingHarness(() => new Response('', { status: 404 }))
+    harness.transport.configure(
+      session('missing', [track('drums', { url: REMOTE })]),
+    )
+
+    await expect(harness.transport.play()).resolves.toBe(false)
+    expect(harness.transport.getStatus()).toBe('error')
+    expect(harness.cache.entries.size).toBe(0)
+  })
+
+  it('keeps no copy of a stem that was already on the device', async () => {
+    const harness = downloadingHarness(() => new Response(new Uint8Array(2048)))
+    // blob: stems are IndexedDB audio the app already holds, and their URLs
+    // stop resolving the moment the lease is released.
+    harness.transport.configure(session('local', [track('drums')]))
+
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.cache.entries.size).toBe(0)
+  })
+})
+
+// ============================================================
+// What the room can show while a song is still arriving
+// ============================================================
+//
+// An uncached demo song is eight megabytes over whatever connection the
+// player has, and the room's only sign of it was a dimmed Play button —
+// which is what a broken button looks like too. The transport now reads
+// the body a chunk at a time and publishes what has landed.
+
+/** A response whose body arrives in `parts`, released one at a time. */
+function chunkedResponse(
+  parts: readonly Uint8Array[],
+  options: { declareLength?: boolean } = {},
+): { response: Response; releaseNext: () => void; sent: () => number } {
+  let index = 0
+  let release: (() => void) | null = null
+  const gate = (): Promise<void> =>
+    new Promise((resolve) => {
+      release = resolve
+    })
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      if (index >= parts.length) {
+        controller.close()
+        return
+      }
+      await gate()
+      controller.enqueue(parts[index])
+      index += 1
+    },
+  })
+  const total = parts.reduce((sum, part) => sum + part.byteLength, 0)
+  return {
+    response: new Response(stream, {
+      headers:
+        options.declareLength === false
+          ? {}
+          : { 'content-length': String(total) },
+    }),
+    releaseNext: () => {
+      const pending = release
+      release = null
+      pending?.()
+    },
+    sent: () => index,
+  }
+}
+
+describe('a download the room can watch', () => {
+  it('publishes bytes as they land and clears them when the song is ready', async () => {
+    const parts = [new Uint8Array(1024), new Uint8Array(1024)]
+    const body = chunkedResponse(parts)
+    const harness = downloadingHarness(() => body.response)
+    const seen: (number | null)[] = []
+    harness.transport.subscribe(() => {
+      seen.push(harness.transport.getLoadProgress()?.fraction ?? null)
+    })
+    harness.transport.configure(
+      session('demo', [track('drums', { url: REMOTE })]),
+    )
+
+    const playing = harness.transport.play()
+    // One chunk at a time, so the published figure has to be the running
+    // one rather than the final one.
+    await vi.waitFor(() => {
+      body.releaseNext()
+      expect(body.sent()).toBe(1)
+    })
+    await vi.waitFor(() => {
+      body.releaseNext()
+      expect(body.sent()).toBe(2)
+    })
+    body.releaseNext()
+    await expect(playing).resolves.toBe(true)
+
+    // Half the declared length, published while the other half was still
+    // on the wire. Reporting only on completion would never produce this.
+    expect(seen).toContain(0.5)
+    // And the load owns its own progress: once ready there is none.
+    expect(harness.transport.getLoadProgress()).toBeNull()
+  })
+
+  it('counts the bytes it has when the server declares no length', async () => {
+    const body = chunkedResponse([new Uint8Array(2048)], {
+      declareLength: false,
+    })
+    const harness = downloadingHarness(() => body.response)
+    const declared: number[] = []
+    harness.transport.subscribe(() => {
+      const progress = harness.transport.getLoadProgress()
+      if (progress !== null) declared.push(progress.totalBytes)
+    })
+    harness.transport.configure(
+      session('demo', [track('drums', { url: REMOTE })]),
+    )
+
+    const playing = harness.transport.play()
+    await vi.waitFor(() => {
+      body.releaseNext()
+      expect(body.sent()).toBeGreaterThan(0)
+    })
+    body.releaseNext()
+    await expect(playing).resolves.toBe(true)
+
+    // A total nobody stated is 0, never a guess — the room shows a turning
+    // ring for this case instead of a percentage it would have invented.
+    expect(declared.some((total) => total === 0)).toBe(true)
+  })
+
+  it('still loads a response with no streaming body at all', async () => {
+    // A test double, or a browser without ReadableStream on Response.
+    const harness = downloadingHarness(() => {
+      const response = new Response(new Uint8Array(2048))
+      Object.defineProperty(response, 'body', { value: null })
+      return response
+    })
+    harness.transport.configure(
+      session('demo', [track('drums', { url: REMOTE })]),
+    )
+
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.cache.entries.has(REMOTE)).toBe(true)
+  })
+
+  it('carries no progress into the next load', async () => {
+    const harness = downloadingHarness(() => new Response(new Uint8Array(2048)))
+    harness.transport.configure(
+      session('demo', [track('drums', { url: REMOTE })]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    expect(harness.transport.getLoadProgress()).toBeNull()
   })
 })

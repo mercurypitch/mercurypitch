@@ -14,6 +14,19 @@ export interface GuitarNightSongSummary {
   sessionId: string
   title: string
   createdAt: number
+  /**
+   * Where the song came from. `device` is a separation this visitor
+   * prepared and the room counts as "on this device"; `demo` is the
+   * shared song the app offers, which lives on the network and belongs to
+   * nobody's library. Absent means device, which is what every caller
+   * before the demo existed meant.
+   */
+  source?: 'device' | 'demo'
+  /**
+   * Shown under the title in place of the prepared date. A demo has no
+   * prepared date to show — it was never prepared here.
+   */
+  subtitle?: string
 }
 
 export interface GuitarNightStemAsset {
@@ -40,6 +53,13 @@ export interface GuitarNightBackingLease {
   title: string
   stems: readonly GuitarNightStemAsset[]
   defaultMix: GuitarNightDefaultMix
+  /**
+   * Same meaning as on the summary, and read for the same reason: a demo
+   * is not a separation session, so the room must not offer it the
+   * band-split upgrade — that path reconnects to a durable UVR record
+   * this song has never had. Absent means device.
+   */
+  source?: 'device' | 'demo'
   release(): void
 }
 
@@ -127,5 +147,85 @@ export function resolveGuitarNightDefaultMix(
         kind === 'vocal' || kind === 'instrumental',
     ),
     muted: [],
+  }
+}
+
+/**
+ * How long the shelf waits on the demo catalog before opening without it.
+ *
+ * Generous for a few hundred bytes of manifest, and short enough not to
+ * read as a hang. It exists because the demo lives on the network and the
+ * rest of the library lives on the device: a visitor on a dead connection
+ * must still get their own songs.
+ */
+export const DEMO_CATALOG_WAIT_MS = 4000
+
+/**
+ * Resolve when `work` settles, or when `ms` is up — whichever is first.
+ * `work` must already be caught: this only ever waits, never handles.
+ */
+function settleWithin(work: Promise<unknown>, ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms)
+    void work.then(() => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
+/**
+ * One library out of two sources: the songs this device has separated,
+ * and the demo the app offers to anyone who has separated nothing yet.
+ *
+ * The two fail differently, and the split matters. A device library that
+ * cannot be opened is the visitor's own problem to see and retry — it is
+ * what "Your local library could not be opened" means — so that failure
+ * still propagates. A demo that cannot be reached is a network the room
+ * has no claim on, so it costs the demo and nothing else — including the
+ * time it would otherwise spend holding the shelf shut.
+ */
+export function composeGuitarNightSongPorts(
+  device: GuitarNightSongPort,
+  demo: GuitarNightSongPort,
+): GuitarNightSongPort {
+  return {
+    initialize: async () => {
+      const demoReady = demo.initialize().catch(() => undefined)
+      await device.initialize()
+      await settleWithin(demoReady, DEMO_CATALOG_WAIT_MS)
+    },
+
+    // One row per song, and the demo's is the one that survives a
+    // collision. Karaoke Night seeds every demo into the session store as
+    // an ordinary "Examples" row under this same id, carrying the R2 URLs
+    // and no local blobs — so without this the shelf listed each demo
+    // twice, and the device's copy of it could never be opened.
+    completedSongs: () => {
+      const fromDemo = demo.completedSongs()
+      const claimed = new Set(fromDemo.map((song) => song.sessionId))
+      return [
+        ...device
+          .completedSongs()
+          .filter((song) => !claimed.has(song.sessionId)),
+        ...fromDemo,
+      ]
+    },
+
+    openSession: async (sessionId, signal) => {
+      const fromDevice = await device.openSession(sessionId, signal)
+      // The device wins whenever it can actually deliver: a visitor who ran
+      // the band split on an example has real local part stems for this id,
+      // and those beat the demo's two remote ones.
+      if (fromDevice.ok || fromDevice.code === 'aborted') return fromDevice
+      if (signal.aborted) return { ok: false, code: 'aborted' }
+
+      const fromDemo = await demo.openSession(sessionId, signal)
+      if (fromDemo.ok) return fromDemo
+      // The demo has nothing to add, so the device's own answer is the
+      // useful news: a prepared song whose audio has gone must not be
+      // reported as the demo failing to load.
+      return fromDevice.code === 'not-found' ? fromDemo : fromDevice
+    },
   }
 }

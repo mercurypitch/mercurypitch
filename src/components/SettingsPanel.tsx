@@ -520,6 +520,7 @@ export const SettingsPanel: Component = () => {
           <div
             class={styles.settingsSection}
             data-settings-anchor="sensitivity-presets"
+            data-tour="settings.room-slider"
           >
             <h3 class={styles.settingsSectionTitle}>Sensitivity Presets</h3>
             <div class={styles.settingsDivider} />

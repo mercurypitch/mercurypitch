@@ -18,7 +18,7 @@
 //   card              min(340px, 100vw - 24px) = 296px, border-box
 //   padding           12px 14px below 360px       -> 266px of line
 //   mark              10px dash + 2px padding either side = 14px
-//   count readout     ~28px plus an 8px gap, shown from COUNT_FROM steps
+//   count readout     ~28px plus an 8px gap, shown on every tour
 //
 //   (266 - 36) / 14 = 16 marks
 //

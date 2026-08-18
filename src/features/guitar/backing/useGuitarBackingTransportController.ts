@@ -4,7 +4,7 @@
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { recordAnimationFrame } from '@/lib/device-tier'
-import type { GuitarBackingLoadMode, GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
+import type { GuitarBackingLoadMode, GuitarBackingLoadProgress, GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
 import { createGuitarBackingTransport } from './guitar-backing-transport'
 
 interface GuitarBackingTransportControllerOptions {
@@ -22,6 +22,8 @@ export function useGuitarBackingTransportController(
   const [loadMode, setLoadMode] = createSignal<GuitarBackingLoadMode | null>(
     transport.getLoadMode(),
   )
+  const [loadProgress, setLoadProgress] =
+    createSignal<GuitarBackingLoadProgress | null>(transport.getLoadProgress())
   const [positionSeconds, setPositionSeconds] = createSignal(
     transport.getCurrentTime(),
   )
@@ -65,6 +67,7 @@ export function useGuitarBackingTransportController(
     const nextStatus = transport.getStatus()
     setStatus(nextStatus)
     setLoadMode(transport.getLoadMode())
+    setLoadProgress(transport.getLoadProgress())
     setPositionSeconds(transport.getCurrentTime())
     setDurationSeconds(transport.getDuration())
     setPlaybackRateSignal(transport.getPlaybackRate())
@@ -143,6 +146,7 @@ export function useGuitarBackingTransportController(
   return {
     status,
     loadMode,
+    loadProgress,
     positionSeconds,
     durationSeconds,
     playbackRate,

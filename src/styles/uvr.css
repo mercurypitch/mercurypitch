@@ -375,10 +375,65 @@
   margin-bottom: 0.75rem;
 }
 
+/* Back, song, view — one left-anchored line, in that reading order. */
+.section-header-results {
+  justify-content: flex-start;
+  gap: 0.4rem;
+}
+
+.section-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.section-back-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--fg-primary);
+}
+
+.section-back-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.section-header-results h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  /* The song name is the only part that can give, and it gives by
+     ellipsis rather than by pushing anything off the screen. */
+  min-width: 0;
+  overflow: hidden;
+}
+
+.section-header-suffix {
+  flex: none;
+  color: var(--fg-secondary);
+  font-weight: 500;
+}
+
 .section-header h4 {
   margin: 0;
   font-size: 1.1rem;
   color: var(--fg-primary);
+  /* The heading and the Back button share this row, and the filename is
+     the only part of it that can give. Without this the h4 refuses to
+     shrink below its widest child -- the filename pill -- and shoves Back
+     clean off the right edge of a phone, taking the whole page sideways
+     with it. A seeded example's name is long enough to do it every time. */
+  min-width: 0;
 }
 
 /* Add / replace stems on a session card */
@@ -2582,6 +2637,9 @@
   align-items: center;
   vertical-align: middle;
   max-width: 35ch;
+  /* Paired with the heading's `min-width: 0`: 35ch is the cap on a wide
+     screen, and this is what lets the ellipsis do its job below it. */
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2951,6 +3009,44 @@
 /* The card's one menu trigger, top right in the header. Sized to the
    other header furniture rather than to the menu's own default, which is
    a 44px thumb target and too tall for this row on a desktop. */
+/* The stand-in for a "..." that would only ever open onto one row.
+   Matches OverflowMenu's own trigger, because it stands in the same
+   place beside the same siblings — a different shape there would read as
+   a different kind of control. */
+.session-result-sole {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  color: var(--text-secondary, var(--fg-secondary));
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.session-result-sole:hover:not(:disabled) {
+  color: var(--text-primary, var(--fg-primary));
+  background: var(--bg-tertiary);
+  border-color: var(--border-color, var(--border));
+}
+
+.session-result-sole:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.session-result-sole svg {
+  width: 18px;
+  height: 18px;
+}
+
 .session-header-actions .session-result-more {
   min-width: 2rem;
   min-height: 2rem;
@@ -3756,29 +3852,66 @@
 }
 
 @media (max-width: 720px) {
+  /* "Stems" and its actions share one line. They used to stack, which
+     spent a second row of a phone's screen on a three-word heading and
+     pushed the stem list itself further down the page. */
   .rv-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.65rem;
+    align-items: center;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .rv-header-left {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .rv-header-right {
-    width: 100%;
-    flex-wrap: wrap;
+    flex: none;
+    gap: 0.35rem;
   }
 
   .rv-header-right .session-result-btn,
   .rv-share-btn {
-    min-height: 2.75rem;
-    padding-inline: 0.65rem;
+    min-height: 2.5rem;
+    padding-inline: 0.55rem;
+  }
+
+  /* Icons only: three labelled controls plus a heading is more than the
+     line has, and each keeps its tooltip and accessible name. */
+  .rv-share-btn span,
+  .rv-share-label {
+    display: none;
   }
 
   .rv-close-btn {
-    min-height: 2.75rem;
+    min-height: 2.5rem;
   }
 
-  .rv-close-btn {
-    margin-left: auto;
+  /* ── Stem rows on a phone ──────────────────────────────────────
+     Three labelled buttons and a stem name do not fit 390px: the
+     labels ran into each other and Replace was clipped off the card's
+     right edge. So the labels go and the icons stay -- each button is
+     a plain square with a thumb-sized target and a gap to miss into.
+     The names live on in `aria-label`, which is why they can go. */
+  .rv-stem-card-actions {
+    gap: 0.5rem;
+  }
+
+  .rv-stem-btn-label {
+    display: none;
+  }
+
+  .rv-stem-card-actions .rv-stem-btn {
+    justify-content: center;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.4rem;
+  }
+
+  .rv-stem-card-actions .rv-stem-btn svg {
+    width: 1.05rem;
+    height: 1.05rem;
   }
 }
 
@@ -3845,6 +3978,8 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  /* The actions never shrink, so the name is what has to. */
+  min-width: 0;
 }
 
 .rv-stem-icon {
@@ -3867,12 +4002,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .rv-stem-name {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rv-stem-meta {
@@ -4063,6 +4202,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  /* "Instrument parts" plus a split button plus its sign-in offer is more
+     than a 320px phone has. Let the offer drop to its own line rather
+     than hang off the right edge. */
+  flex-wrap: wrap;
 }
 
 .rv-parts-title {
@@ -4992,11 +5135,15 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* One row on a phone: "Karaoke", then Sing / Upload / Options. The
+     column stack spent a whole row of screen height on a header, above
+     a view that has not started yet — and this is the page people
+     scroll the most. */
   .panel-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 0.75rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
   }
 
   /* Stack the card's actions; each button stays an icon-beside-label
@@ -5010,8 +5157,26 @@
   }
 
   .uvr-header-left {
-    justify-content: space-between;
-    width: 100%;
+    gap: 0.4rem;
+    /* The title yields before the tabs do — they are the navigation. */
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .uvr-header-left h3 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .panel-header .uvr-view-tabs {
+    flex: none;
+    margin-left: 0 !important;
+  }
+
+  .panel-header .view-tab {
+    min-height: 2.3rem;
+    padding-inline: 0.55rem;
   }
 
   .header-actions {
@@ -5029,14 +5194,32 @@
 
   /* One button now, so it has no sideways run left to make. */
   .header-actions {
+    align-items: center;
     justify-content: flex-end;
     overflow-x: visible;
+    width: auto;
+    flex: none;
   }
 
   .uvr-more-btn {
     flex: 0 0 auto;
     min-height: 38px;
     padding-inline: 12px;
+  }
+}
+
+/* Below this the three controls will not fit beside the title with their
+   words on, and a header that scrolls sideways is worse than one that
+   trusts its icons. Sing, Upload and Options all keep a tooltip. */
+@media (max-width: 380px) {
+  .panel-header .view-tab span,
+  .panel-header .uvr-more-btn span {
+    display: none;
+  }
+
+  .panel-header .view-tab,
+  .panel-header .uvr-more-btn {
+    padding-inline: 0.6rem;
   }
 }
 

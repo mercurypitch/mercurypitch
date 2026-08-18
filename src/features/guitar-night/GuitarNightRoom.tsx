@@ -92,7 +92,10 @@ function playLabel(status: GuitarBackingTransportStatus): string {
 
 function statusCopy(status: GuitarBackingTransportStatus): string {
   if (status === 'playing') return 'Backing is playing'
-  if (status === 'loading') return 'Opening the local stems'
+  // Not always local: the demo song's stems come off the network, and
+  // saying otherwise while eight megabytes arrive is how a slow download
+  // came to look like a broken button.
+  if (status === 'loading') return 'Getting the song ready'
   if (status === 'paused') return 'Backing paused'
   if (status === 'complete') return 'Song complete'
   if (status === 'error') return 'Playback needs attention'
@@ -130,6 +133,40 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
   const isCalibrating = createMemo(() => listening.status() === 'calibrating')
+  const isLoading = createMemo(() => props.transport.status() === 'loading')
+
+  /** 0..1 across the whole song, 0 before the first byte lands. */
+  const loadFraction = createMemo(() => {
+    const progress = props.transport.loadProgress()
+    return progress === null ? 0 : Math.min(1, Math.max(0, progress.fraction))
+  })
+
+  /**
+   * Whole percent, or null when nothing declared a size — a streamed room
+   * and a server with no `content-length` both land here, and a number
+   * invented for them would be a lie the ring has to keep telling.
+   */
+  const loadPercent = createMemo(() => {
+    const progress = props.transport.loadProgress()
+    if (progress === null || progress.totalBytes <= 0) return null
+    return Math.round(loadFraction() * 100)
+  })
+
+  const loadingDetail = createMemo(() => {
+    const progress = props.transport.loadProgress()
+    if (progress === null) return 'Opening the audio'
+    const megabytes = progress.receivedBytes / 1_048_576
+    if (progress.totalBytes > 0) {
+      return `${megabytes.toFixed(1)} MB of ${(progress.totalBytes / 1_048_576).toFixed(1)} MB`
+    }
+    if (progress.totalTracks > 1) {
+      const current = Math.min(progress.loadedTracks + 1, progress.totalTracks)
+      return `Stem ${current} of ${progress.totalTracks}`
+    }
+    return megabytes > 0
+      ? `${megabytes.toFixed(1)} MB so far`
+      : 'Opening the audio'
+  })
 
   // ── Voice commands (room-owned) ────────────────────────────
   // The same transport controller the room's buttons drive; registered for
@@ -623,13 +660,37 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           </button>
           <button
             class={styles.playControl}
+            classList={{ [styles.playControlLoading]: isLoading() }}
             type="button"
             aria-label={playLabel(props.transport.status())}
             title={playLabel(props.transport.status())}
             disabled={props.transport.status() === 'loading' || isCalibrating()}
+            data-loading-percent={loadPercent() ?? ''}
             onClick={togglePlayback}
           >
-            <span aria-hidden="true">{isPlaying() ? <Pause /> : <Play />}</span>
+            <Show
+              when={isLoading()}
+              fallback={
+                <span aria-hidden="true">
+                  {isPlaying() ? <Pause /> : <Play />}
+                </span>
+              }
+            >
+              {/* The button IS the progress meter while a song arrives:
+                  a ring around the rim, and the percentage in the middle
+                  once the server has said how much there is. */}
+              <span
+                aria-hidden="true"
+                class={styles.playControlRing}
+                classList={{
+                  [styles.playControlRingSpinning]: loadPercent() === null,
+                }}
+                style={{ '--load-fraction': String(loadFraction()) }}
+              />
+              <span aria-hidden="true" class={styles.playControlPercent}>
+                {loadPercent() === null ? '' : `${loadPercent()}%`}
+              </span>
+            </Show>
           </button>
           <div
             class={styles.playbackSpeed}
@@ -698,7 +759,9 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           <small>
             {props.transport.status() === 'armed'
               ? 'Press Play or Space to start audio'
-              : `${formatTime(position())} of ${formatTime(duration())}`}
+              : isLoading()
+                ? loadingDetail()
+                : `${formatTime(position())} of ${formatTime(duration())}`}
           </small>
         </p>
       </div>

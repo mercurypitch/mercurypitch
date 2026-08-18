@@ -466,10 +466,10 @@ Controls how each note sounds during playback:
       `,
       steps: [
         {
-          title: 'Select Environment',
-          description: 'Choose preset for your room conditions',
-          action: 'Select environment preset',
-          target: '#preset-select',
+          title: 'Set the room',
+          description: 'Drag between Quiet and Noisy for your room conditions',
+          action: 'Move the room slider',
+          target: '[data-tour="settings.room-slider"]',
         },
         {
           title: 'Adjust Sensitivity',

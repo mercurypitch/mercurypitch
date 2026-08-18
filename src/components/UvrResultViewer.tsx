@@ -690,8 +690,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               void handleShare()
             }}
             title="Copy share link"
+            aria-label="Copy share link"
           >
-            <Share /> Share
+            <Share /> <span class="rv-share-label">Share</span>
           </button>
           <Show when={props.onClose}>
             <button
@@ -829,6 +830,14 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                 >
                   <button
                     class="rv-stem-btn rv-stem-btn-play"
+                    // The labels are hidden on a phone, where three
+                    // labelled buttons do not fit a stem row, so the
+                    // name has to live somewhere that survives that.
+                    aria-label={
+                      previewKey() === stem.key && previewPlaying()
+                        ? `Pause ${stem.label}`
+                        : `Play ${stem.label}`
+                    }
                     onClick={() => {
                       // Audio stems preview inline; MIDI (generated on
                       // demand, no URL) still opens the practice view.
@@ -843,15 +852,16 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                       when={previewKey() === stem.key && previewPlaying()}
                       fallback={
                         <>
-                          <Play /> Play
+                          <Play /> <span class="rv-stem-btn-label">Play</span>
                         </>
                       }
                     >
-                      <Pause /> Pause
+                      <Pause /> <span class="rv-stem-btn-label">Pause</span>
                     </Show>
                   </button>
                   <button
                     class="rv-stem-btn rv-stem-btn-download"
+                    aria-label={`Download ${stem.label}`}
                     onClick={() => {
                       void handleDownload(
                         stem.url,
@@ -911,7 +921,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                       }}
                       title="Replace this stem with a new file"
                     >
-                      <Repeat /> Replace
+                      <Repeat /> <span class="rv-stem-btn-label">Replace</span>
                       <input
                         type="file"
                         accept="audio/*"

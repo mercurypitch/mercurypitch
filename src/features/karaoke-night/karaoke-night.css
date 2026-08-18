@@ -36,12 +36,11 @@ body {
   /* Canvas backdrops follow the glass too (user asked for translucent live
      waveform / pitch lane) — but a touch more opaque so the ink stays legible. */
   --sm-canvas-bg: rgba(13, 17, 23, min(1, calc(var(--kn-alpha) + 0.12)));
-  /* The lane names (Vocal, Instrumental, …) and the MONITORING badge are
-     painted onto the canvas, so CSS cannot fade them — the canvas controller
-     reads this variable each redraw instead. Carries more weight than the
-     glass itself: small mono type over a moving waveform needs the contrast,
-     and at the slider's floor a matching alpha would erase the names. */
-  --sm-lane-label-bg: rgba(5, 8, 18, min(1, calc(var(--kn-alpha) + 0.2)));
+  /* --sm-lane-label-bg (the canvas-painted lane names) is NOT set here. It
+     belongs to `.stem-mixer`, which derives it from --sm-stage-alpha — and
+     this preset resolves that from --kn-alpha below, so the stage slider
+     still reaches it. One definition, so the studio cannot drift from the
+     stage the way it did while only this file had the token. */
   /* Control glyphs stay opaque-dark regardless of the glass. */
   --on-accent: #0d1117;
   /* Toasts are the one surface the glass must not touch. They render inside

@@ -1749,6 +1749,15 @@
   font-weight: 700;
 }
 
+/* The demo's own heading. It answers the empty state directly above it,
+   so it reads as an offer rather than as a second library. */
+.songDemoKicker {
+  margin: 0.7rem 0 0.4rem;
+  color: rgba(244, 234, 219, 0.55);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
 .songListMore {
   width: 100%;
   min-height: var(--touch-target);
@@ -4198,6 +4207,72 @@
 .playControl svg {
   width: 1.4rem;
   height: 1.4rem;
+}
+
+/* ── The play button while the song is still arriving ──────────────
+   A dimmed button and nothing else was indistinguishable from a button
+   that had stopped working, and an uncached demo song is eight megabytes
+   over whatever connection the player happens to have. So the button
+   becomes the meter: a ring around its rim, the percentage inside it. */
+.playControlLoading {
+  position: relative;
+  cursor: progress;
+  opacity: 1;
+}
+
+.playControlRing {
+  position: absolute;
+  inset: -0.28rem;
+  border-radius: 999px;
+  background: conic-gradient(
+    from -90deg,
+    var(--amber-bright) calc(var(--load-fraction, 0) * 360deg),
+    rgba(244, 234, 219, 0.22) 0
+  );
+  /* Ring, not disc: mask out everything but the rim, so the percentage
+     underneath stays readable. */
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 0.24rem),
+    #000 calc(100% - 0.22rem)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 0.24rem),
+    #000 calc(100% - 0.22rem)
+  );
+}
+
+/* Nothing declared a size — a streamed room, or a server that sent no
+   content-length. A turning arc says "working" without inventing a
+   number it would then have to keep. */
+.playControlRingSpinning {
+  background: conic-gradient(
+    from -90deg,
+    rgba(244, 234, 219, 0.16) 0 72%,
+    var(--amber-bright) 0 100%
+  );
+  animation: guitarNightLoadSpin 1.05s linear infinite;
+}
+
+@keyframes guitarNightLoadSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.playControlPercent {
+  position: relative;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playControlRingSpinning {
+    animation: none;
+  }
 }
 
 .playbackSpeed {

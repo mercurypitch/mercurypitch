@@ -15,7 +15,8 @@
 //   connecting / decoding        ->  no number, because there isn't one
 //   downloading, no Content-Length -> no number, but a climbing byte count
 
-import { cleanup, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
@@ -149,5 +150,105 @@ describe('KaraokeMobileStage load overlay', () => {
     expect(
       screen.queryByRole('progressbar', { name: 'Loading the song' }),
     ).toBeNull()
+  })
+})
+
+// ============================================================
+// The way out
+// ============================================================
+//
+// A phone that locks its screen mid-download comes back to a torn-down
+// fetch and "Stems could not be loaded. Audio data may have been lost
+// after a page reload." Until now that message was the entire screen: the
+// header's back chevron sits UNDER this overlay's blur, so the only doors
+// left were the browser's reload and its system back gesture. The desktop
+// mixer has had a Retry button beside the same message all along; this is
+// the phone half of it.
+
+describe('KaraokeMobileStage load overlay — the way out', () => {
+  it('offers a way back while the download is still running', () => {
+    const onBack = vi.fn()
+    render(() => KaraokeMobileStage(makeProps({ onBack })))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Go back' }))
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers a retry and a way back once the load has failed', () => {
+    const onBack = vi.fn()
+    const onRetryLoad = vi.fn()
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          loading: () => false,
+          loadError: () => 'Stems could not be loaded.',
+          onBack,
+          onRetryLoad,
+        }),
+      ),
+    )
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Stems could not be loaded.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(onRetryLoad).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Go back' }))
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the failure alone rather than stacking it behind the curtain', () => {
+    // loadStems sets the error and only clears `loading` in its finally, so
+    // both are true together. Two blurred veils on top of each other read
+    // as a screen that has stopped responding.
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          loading: () => true,
+          loadError: () => 'Stems could not be loaded.',
+        }),
+      ),
+    )
+
+    expect(
+      screen.queryByRole('progressbar', { name: 'Loading the song' }),
+    ).toBeNull()
+    expect(screen.getByRole('alert')).toBeTruthy()
+  })
+
+  it('offers no dead controls to a host that can neither retry nor go back', () => {
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          loading: () => false,
+          loadError: () => 'Stems could not be loaded.',
+        }),
+      ),
+    )
+
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Go back' })).toBeNull()
+  })
+
+  it('keeps the actions tappable through an overlay that takes no taps', () => {
+    // jsdom has no hit testing, so the one thing that decides whether these
+    // buttons can be pressed at all is read off the stylesheet. The overlay
+    // must stay transparent to pointers — it covers the whole stage — and
+    // the actions have to opt back in one at a time.
+    const css = readFileSync(
+      'src/components/KaraokeMobileStage.module.css',
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\//g, '')
+    const rule = (selector: string): string => {
+      const start = css.indexOf(`${selector} {`)
+      expect(start, `missing ${selector}`).toBeGreaterThan(-1)
+      return css.slice(start, css.indexOf('}', start))
+    }
+
+    expect(rule('.stateOverlay')).toMatch(/pointer-events:\s*none/)
+    expect(rule('.stateAction')).toMatch(/pointer-events:\s*auto/)
+    // Something the user reaches for after a failure, on a phone, with one
+    // thumb — it gets a real touch target.
+    expect(rule('.stateAction')).toMatch(/min-height:\s*44px/)
   })
 })

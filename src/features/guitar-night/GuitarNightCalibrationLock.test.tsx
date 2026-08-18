@@ -222,6 +222,7 @@ function createTransport(): GuitarBackingTransportController {
   return {
     status: () => 'armed',
     loadMode: () => null,
+    loadProgress: () => null,
     positionSeconds: () => 0,
     durationSeconds: () => 60,
     playbackRate: () => 1,

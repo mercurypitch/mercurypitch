@@ -38,8 +38,11 @@ of pushing — a bad tag is a prod deploy.
 3b. **Walk the guided tours** (release gate — per AGENTS.md this full walk
 runs at release time, not per PR):
 
-- Run the `/tour-check` skill (`pnpm run build`, serve `dist` on :3005,
-  then `pnpm run test:tours` and `MOBILE=1 pnpm run test:tours`).
+- Run the `/tour-check` skill (`pnpm run build:tours`, serve `dist` on
+  :3005, then `pnpm run test:tours` and `MOBILE=1 pnpm run test:tours`).
+  It must be `build:tours`, never a plain `pnpm run build` — that one bakes
+  in `api.mercurypitch.com` and every walk creates junk anonymous users in
+  the prod database.
 - Compare misses against the known pre-existing list; any NEW `MISS`
   is a release blocker — **stop and report** instead of tagging.
 
@@ -51,12 +54,52 @@ runs at release time, not per PR):
 5. **Push the tag** (this triggers the prod deploy):
    - `git push origin vX.Y.Z`
 
-6. **Report.**
+6. **Put the Google OAuth secret** — the one manual step the tag cannot do.
+
+   `workers/db-worker/wrangler.jsonc` carries the verified-branding
+   `GOOGLE_CLIENT_ID` in the prod vars, and it only reaches the running Worker
+   on a deploy. The id and the secret work only as a pair, so prod's Google
+   sign-in is down for the gap between the two halves landing — keep the gap
+   short by putting the secret the moment the deploy job finishes, not before
+   it starts:
+   - Watch the **Prod Jam + DB migrations + worker** job
+     (`gh run watch --exit-status`). Wait for it to succeed.
+   - Then, from the Proton Pass item `mp-oauth-client-secret` (the same secret
+     every environment uses):
+
+     ```sh
+     pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET \
+       --config workers/db-worker/wrangler.jsonc --env prod
+     ```
+
+   - Verify: sign in with Google on prod. A mismatched pair fails at Google's
+     consent screen with `invalid_client`, so this is visible immediately.
+
+   Do **not** run the put before pushing the tag. That breaks the pair the
+   other way round — new secret against the still-deployed old id — for the
+   whole build, which is several minutes rather than one.
+
+7. **Check the app moved.** The Worker registers with `updateViaCache: 'none'`
+   and Cloudflare serves `/sw.js` as `max-age=0, must-revalidate`, so a client
+   revalidates the worker script on the next navigation or tab focus rather
+   than waiting out the browser's 24-hour ceiling. To see the new build
+   yourself right away: open prod, and the reload prompt appears once the new
+   worker has installed — accept it. If it does not appear, the page is already
+   on the new build (the worker answers a build-id handshake and adopts a
+   same-commit worker silently). DevTools > Application > Service Workers >
+   Update forces the check.
+
+8. **Report.**
    - State the tag, the commit SHA it points at, and the deploy run that started
      (`gh run list -L 3` or the Actions URL) so the user can watch it.
-   - If a DB migration is pending for this release (check project memory, e.g.
-     the prod-db-migration note), surface it now — a tag deploy ships code, not
-     schema.
+   - Say which migrations the deploy applied. This read-only query answers it,
+     before and after:
+
+     ```sh
+     pnpm exec wrangler d1 execute mercurypitch-db --remote \
+       --config workers/db-worker/wrangler.jsonc --env prod \
+       --command "SELECT name FROM d1_migrations ORDER BY id DESC LIMIT 5"
+     ```
 
 ## Notes
 

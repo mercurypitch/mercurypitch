@@ -6,9 +6,63 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.0] - 2026-08-18
 
 ### Added
+
+- **Guitar Night demo song port.** `createDemoGuitarNightSongPort` reads the
+  same `loadDemoSongs()` manifest list Karaoke Night uses and hands its two
+  remote stems back as a lease, so a Content Studio swap changes both rooms
+  at once and a parked demo disappears from both. Composed with the UVR port
+  by `composeGuitarNightSongPorts`, which keeps the two failure modes apart:
+  a device library that will not open still rejects (the room's "Your local
+  library could not be opened" + Try again is built on that), while an
+  unreachable demo costs only the demo. Because it is a port, staging, deep
+  links, history, aborts and lease release are unchanged. The list renders
+  demos as their own group outside the `Switch` — the empty-library branch is
+  the one they exist for — excluded from the "on this device" count and never
+  paginated; a `subtitle` stands in for the prepared date, since `createdAt`
+  is 0. `GuitarNightBackingLease.source === 'demo'` withholds
+  `onSeparateGuitar`: that path calls `refreshUvrSessionFromDb` before
+  billing a GPU split, and a demo has no durable record to reconnect to.
+  Undeclared durations resolve to `ASSUMED_DEMO_SECONDS` so the transport's
+  decode budget errs toward streaming. The composition also bounds the wait:
+  the device library opens after `DEMO_CATALOG_WAIT_MS` whether or not the
+  demo manifest has answered, so a dead connection cannot hold the visitor's
+  own songs shut.
+
+- **`src/lib/song-audio-cache.ts` — a bounded Cache Storage cache for remote
+  song audio.** R2 serves the demo stems with an ETag, a Last-Modified and no
+  `Cache-Control`, so Safari re-fetched ~8 MB on every open. Cache-first, 96
+  MiB budget, 32 MiB per-entry cap, FIFO eviction sized from a written
+  `x-mp-cached-bytes` header (recency would mean rewriting a multi-megabyte
+  entry per hit). Every failure — no Cache Storage, a refused open, a full
+  quota, a truncated entry — resolves to a miss rather than an error. Only
+  `http(s)` URLs are eligible: `blob:` stems are IndexedDB audio already on
+  the device whose URLs stop resolving with their lease. Wired into
+  `loadOne` in the stem-mixer controller (a hit publishes its byte count so
+  the bar reads as finished rather than as never started) and into
+  `defaultFetchArrayBuffer` in the guitar backing transport. The URL is the
+  whole key with no revalidation — re-author a demo by pointing at a new
+  object, never by replacing bytes under a live URL.
+
+- **Home gallery: Piano Night and Guitar Night covers.** Two `page`-target
+  destinations between Karaoke and Exercises, on their own `span 6` row so
+  the existing 7/5 rhythm is untouched. First photographic covers in the
+  gallery; both images are free backdrops already shipped by the rooms
+  (`piano-afterglow`, `velvet-rehearsal`), and `home-destinations.test.tsx`
+  derives the permitted source set from `BACKGROUND_CATALOG` plus
+  `GUITAR_NIGHT_BACKDROPS` rather than restating it. Every page-target cover
+  now arms `createPendingAction` on a same-page click and swaps its arrow
+  for a `Spinner`.
+
+- **A What's New page, announced once per release LINE.** `shouldAnnounce` is a
+  pure `major.minor` comparison against `WHATS_NEW_SEEN_KEY`, so a patch never
+  interrupts; a first-ever visitor is recorded as caught up rather than
+  announced to, which makes their first announcement the next real release. The
+  page is route-backed (`#/whats-new`), so it is deep-linkable, Back closes it,
+  and the sidebar entry reopens it after it has been waved away. Content lives
+  in `whats-new-content.tsx` and is drawn from this release's changelog.
 
 - **`Spinner`, `BusyLink` and `BusyButton` in `components/shared`.** One
   spinner replaces the `.icon-spin` class, the ad-hoc `Loader2` imports and
@@ -65,7 +119,227 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   off the seam by default. Plan and phase-2 rollout map (jam, tuner,
   karaoke, mirror): `docs/plans/signal-quality-advisor.md`.
 
+### Changed
+
+- **Voice Control settings copy + button** (owner feedback, 2026-08-17):
+  SettingsPanel's section description rewritten (no "Hands-free
+  transport"; both discovery routes — Shift+V and the spoken "what can I
+  say" — kept, which settings-voice-help.test.tsx pins), the action
+  button is now `FileText` icon + "Command list", and
+  `.settingsActionRow` gained `margin-bottom: 18px` so it no longer welds
+  to the Recognition Engine dropdown. New pin: button text/icon and the
+  jargon's absence.
+
+- **Stop is one corner icon button at every viewport** (owner report,
+  2026-08-17, Tab S9+ landscape ~800px height): `.exercise-btn-stop` is a
+  48px round icon-only button (aria-label + title carry the label) anchored
+  bottom-right by `.exercise-active-controls`; the labelled centre pill and
+  the two duplicate 54px FAB blocks in short-viewport.css /
+  mobile-polish.css are gone, and their 76px reserved strip is the base
+  64px everywhere. `.warmup-step-instruction` max-width 420 → 640px so the
+  breath step wraps to two rows instead of four — the rows plus the rail
+  were what scrolled the "Sssss" cue off a 1280x800 tablet. Pinned by
+  "the warmup breath step fits the fold" (exercise-tablet-active.spec.ts:
+  no overflow at 1280x800, compact square Stop, two-row instruction) and
+  the icon-only contract in exercise-shell-timer.test.tsx.
+
+- **Held-note run length and duration grading** (owner call, 2026-08-17):
+  `DEFAULT_PREFERENCE.mode` 5 → 10 in timer-preference.ts (persisted
+  choices untouched). Long-note's duration term is now
+  `voicedSeconds(history) / (activeTimerSeconds() ?? difficulty target)`
+  — `voicedSeconds` (exercise-scoring-utils.ts) sums inter-sample gaps
+  ≤ 0.25 s, so pre-onset settling and mid-run silence cost coverage only;
+  pitch-quality terms never saw silence (history records voiced frames
+  only). Pitch-hold's term uses its post-phonation frame counter
+  (`totalFrames / SCORE_UPDATE_HZ`) against the same goal, keeping its
+  documented leading-silence forgiveness. A perfect timed run now scores
+  100 (was capped ~90 long-note / ~63 pitch-hold). Pinned in
+  exercise-long-note.test.ts, exercise-pitch-hold.test.ts,
+  timer-preference.test.ts; mutation-checked both ways.
+
+- **Rep-run flow: the shell and ribbon close the multi-rep gap.**
+  `ExerciseShell` derives `repRun` from `useDailyRoutine` (current segment
+  runs this drill, banked > 0, banked < reps) to relabel the dual-purpose
+  button and compact the result card (no `RunTraceCanvas`, no `tier-pop`
+  re-animation via `.mid-reps`). `RoutineRibbon` gains `isComplete`/
+  `onRunAgain` props and reduces its countdown to a single
+  `countdownTarget` memo — segment | 'run' | 'cancel' | null — restarting
+  the clock whenever the destination changes, so the interval can never
+  fire a stale closure (the prior shape kept a live countdown aimed at a
+  target that no longer existed when the last run banked mid-count).
+
+- **Routine segments carry reps, and the session has a five-minute floor.**
+  `segment-reps.ts` holds a per-drill table of what one honest run costs
+  (30s for held-note drills, 45s for pattern drills, 60s for the long ones),
+  derives `reps` from the segment's budget (capped at `MAX_REPS` 6), and makes
+  the segment's `durationSec` the reps rather than the guess. `applyReps` then
+  tops a session up to `MIN_SESSION_SEC` (300s, the streak's own daily goal),
+  always adding to the shortest drill, and only pushes a single drill past the
+  comfortable cap to `MAX_REPS_FLOOR` (8) when a focus template has nowhere
+  else to put the minutes. Both build paths use it — `buildDailySession` and
+  `materializeRoutine` — so generated days, library templates and every length
+  clear the floor. `autoAdvanceRoutineSegment` banks runs in
+  `PersistedRoutine.segmentRuns` and ticks the segment off only when it has
+  what it asked for; `completeSegment` clears the count. `reps` is optional and
+  absent reads as one, so a routine persisted or shared before this keeps the
+  finish line it started with. The Home card shows "5 x" per drill and "2 of 5"
+  for the one in progress; the exercise ribbon shows "Run 2 of 5", which is
+  also what stops auto-continue offering the next segment mid-reps.
+- **The warmup honors its authored count-in, audibly.** Every warmup block
+  always carried `countInBeats: 2` and no runtime read it — steps began the
+  frame the previous one ended. `warmup-lead-in.ts` adds `applyLeadIn` (the
+  challenge-stage pattern: targets shifted late, loop extended, count-in
+  consumed so it cannot double) applied at the session seam, and a pure
+  `createLeadInTicker` the component samples per pitch frame to click each
+  lead-in beat once — plus the first note's reference tone at beat zero.
+  Guide tones during the run come from `createZenNoteScheduler` wired
+  through the app AudioEngine (deliberately NOT ZenPitchStage's private
+  AudioContext, which connects to the bare destination and closes mid-tone),
+  behind a persisted mute (`pitchperfect_warmup_guide_muted`). Steps are
+  separated by `WARMUP_STEP_GAP_SECONDS` with a "next:" phase line;
+  `melodyTargets` takes an explicit quarter-beat rest instead of the
+  implicit 18% duty; the nine-note scales grew to twelve beats; and
+  `warmupTotalSeconds` prices lead-ins and gaps instead of the 0.45 s/note
+  reference-tone fiction deleted in 7a4821dc.
+
+- **The Lab became a route-backed focused workspace.** The app shell maps five
+  hidden Lab routes to task-led tools, removes unrelated app navigation only
+  while one of those routes is active, and keeps supporter access fail-closed.
+  The desktop tablist uses roving focus with Arrow/Home/End navigation; compact
+  layouts use a tool picker. Each tool has its own error boundary, and inactive
+  tools unmount so their audio, microphone, timers and global handlers clean up.
+
+- **All five Lab tools now share one responsive instrument vocabulary.** A
+  Lab-local palette derives every surface and accent from app theme tokens.
+  Workbench, detector, benchmark, transcription and mapping layouts now expose
+  one clear primary task, progressive detail, meaningful empty/error states and
+  short-height/tablet rules. The four previously unstyled workbench controls
+  moved from inline literals to scoped CSS modules. Pane and waveform splitters
+  gained real pointer coverage plus keyboard/ARIA semantics.
+
 ### Fixed
+
+- **The backing transport publishes `getLoadProgress()`.** `defaultFetch-
+ArrayBuffer` reads the body through `body.getReader()` instead of
+  `arrayBuffer()`, so a slow link has something to show for itself before the
+  last byte; a response with no streaming body falls back to the whole-buffer
+  read. Progress is throttled to whole percents — a chunked read fires
+  hundreds of times per stem and every emit re-renders the deck — and cleared
+  by `setStatus` on any exit from `loading`, so a later spinner cannot inherit
+  the last download's number. `totalBytes` is 0 when the server declared no
+  `content-length`, and the room turns an indeterminate ring for that rather
+  than inventing a percentage.
+
+- **`preview-player` asks for CORS on a cross-origin source.** Every preview
+  is routed through a `MediaElementAudioSourceNode`, and a cross-origin
+  element without `crossOrigin` is tainted — which feeds that node silence.
+  The seeded example rows' `outputs` ARE the R2 URLs. Same-origin and `blob:`
+  sources are left alone deliberately: the attribute buys nothing there, and a
+  host that sends no `Access-Control-Allow-Origin` would go from silence to a
+  failed load.
+
+- **`UvrSessionActions` collapses a one-row menu into a button.** On a
+  cloud-separated session `canDownloadOriginal()` and `canRerunHq()` are both
+  false, leaving `export-zip` alone behind a `...`. `soleItem()` renders the
+  row directly, keeping `data-testid="session-more"` and dropping
+  `aria-haspopup`; two or more rows keep `OverflowMenu`.
+
+- **The Karaoke panel header and `.rv-header` stop stacking under their
+  breakpoints.** `.panel-header` stays `flex-direction: row` at 600px with the
+  title on `min-width: 0`, and a 380px block drops the three controls' labels.
+  `.rv-header` does the same at 720px. The results heading is now
+  `.section-header-results`: a `.section-back-btn` chevron, the filename pill,
+  and a `.section-header-suffix`, left-anchored, replacing the right-aligned
+  `.back-btn` whose `ImportFile` glyph read as a download.
+
+- **`composeGuitarNightSongPorts` dedupes the shelf and falls through on any
+  device failure.** Karaoke Night's examples seeder writes every demo into
+  the session store as an ordinary "Examples" row, under the same id
+  `demoSessionId()` gives the demo port — carrying the R2 URLs and no local
+  stem blobs. So the composed library listed each demo twice, and neither
+  copy opened: the UVR port found the record, read an empty stem manifest
+  and answered `missing-local-audio`, which the composition treated as the
+  device's answer to keep. `completedSongs()` now drops a device row the
+  demo also claims, and `openSession` retries the demo on anything but
+  `ok`/`aborted`, keeping the device's own failure code when the demo has
+  never heard of the song. The device still wins outright when it can
+  deliver — a band-split example has real local part stems for that id.
+
+- **The stem results view has three places to give on a phone.** Measured
+  against the built app at 390px and 320px (`karaoke-results-mobile.spec.ts`):
+  `.section-header h4` had no `min-width: 0`, so the flex row's floor was the
+  filename pill's min-content width and `.back-btn` (`flex-shrink: 0`) was
+  pushed past the viewport — a seeded example's name does it every time. The
+  pill needed its own `min-width: 0` before `text-overflow: ellipsis` could
+  do anything. `.rv-stem-card-top`/`.rv-stem-info` got the same, so a stem
+  name ellipsizes instead of shoving the actions out. Under the viewer's
+  existing 720px breakpoint `.rv-stem-btn-label` is `display: none` and each
+  action becomes a centred 2.5rem square at `gap: 0.5rem`; the labels move
+  to `aria-label` on the Play and Download buttons, and Replace keeps its
+  `title`. `.rv-parts-header` wraps, which is what hung off 320px last.
+
+- **`platform.keepAwake` is reference counted and re-taken on
+  `visibilitychange`; `loadStems` holds it.** One screen lock per page meant
+  whichever holder finished first released the other's — a Drive backup and a
+  stem download overlap in exactly that way. The platform also revokes a
+  screen lock the instant the page is hidden and never returns it, which is
+  the case the lock exists for: a phone that locks mid-download comes back to
+  a torn-down fetch and `loadedCount === 0`. `enable()`/`disable()` now count
+  holders, an in-flight grant that outlives its last holder is released, and
+  an unmatched `disable()` cannot take the count negative.
+
+- **A load nobody is waiting on stays quiet.** Leaving mid-download is a
+  normal thing to do now that the phone's overlay has a Go back button, and
+  the fetch already on the wire still lands — by which time StemMixer's
+  cleanup has closed the audio context, so the decode throws, `loadedCount`
+  is 0 and the visitor got a warning toast about a song they had walked away
+  from, on a page with no mixer on it. `loadStems` checks a disposed flag
+  before setting the error or notifying, on both its failure paths.
+
+- **KaraokeMobileStage load and error overlays have actions.** The phone zen
+  stage is the whole product — the mixer's card is not behind it — so a
+  failed load was a message with no retry and a back chevron buried under
+  the overlay's `backdrop-filter`. The error state now carries Try again
+  (wired to `loadStems`, the same call the desktop card's Retry makes) and
+  Go back; the running download carries Go back. `.stateOverlay` stays
+  `pointer-events: none` and the actions opt back in individually, so the
+  veil never swallows a tap meant for the stage. The load overlay is also
+  gated on `loadError() === ''`: `loadStems` sets the error and clears
+  `loading` only in its `finally`, so both were true at once and the phone
+  stacked two blurred veils.
+
+- **Streamed backing stems set `crossOrigin` before `src`.** A cross-origin
+  element that does not is tainted, and a tainted element feeds a
+  `MediaElementAudioSourceNode` silence. No effect on `blob:` or same-origin
+  sources; required for the remote demo song's streamed path.
+
+- **Two gutters that resolved to zero.** The phone drawer named
+  `padding-left` inside its media block, replacing the base rule's
+  `padding: 14px` shorthand outright and leaving `env(safe-area-inset-left)`
+  — 0 in portrait — as the whole gutter. The warmup guide toggle is
+  absolutely positioned, and `right` on an absolutely positioned child
+  resolves against the containing block's PADDING box, so `right: 0` looked
+  through the caption row's 12px gutter to the screen edge.
+  `mobile-edge-gutters.test.ts` reads both off the stylesheets and asserts
+  the pill's offset equals the row's gutter rather than pinning either
+  number.
+
+- **Settings tour target: `#preset-select` -> `[data-tour="settings.room-slider"]`.**
+  The environment `<select>` became `MicSensitivitySlider`; the walkthrough
+  step, its copy, the `walkthrough.ts` tutorial step and three
+  `settings.spec.ts` e2e tests all still named the dead id. The e2e ones are
+  outside the smoke set, so only the release-time tour walk caught it. New
+  `tour-selectors-exist.test.ts` asserts every hook named by
+  `WALKTHROUGH_STEPS`, `PAGE_TOURS`, `STEM_MIXER_TOUR_STEPS` and
+  `PRACTICE_MODES_TOUR_STEPS` is written somewhere outside the definition
+  files; template-built hooks are allowlisted by name.
+
+- **Walkthrough progress readout: unconditional, and ahead of the marks.**
+  Dropped `COUNT_FROM = 9`, moved `.walkthroughDotCount` in front of
+  `.walkthroughDots`, marked it `aria-hidden` and moved the long form onto
+  the marks group's `aria-label` ("Tour steps: step N of M"). The mark
+  budget in `walkthrough-progress.test.ts` already reserved the readout's
+  width unconditionally, so it is unchanged.
 
 - **Guitar Night streamed playback: the drift servo could never converge.**
   A phone's 192 MiB decode budget puts any full-length song on media elements,
@@ -389,8 +663,6 @@ var(--safe-bottom))` — a gap _under_ the button paid inside its own
   subscribes to `authVersion()` too. Pinned in home-daily-goal.test.ts
   (owner-swap memo case + both wiring regexes).
 
-### Fixed
-
 - **Streak repair window bounds the break, not its detection** (owner
   repro, 2026-08-17): `advanceStreakFrom`'s reset branch stamped
   `streakResetDate = today` and snapshotted `previousStreak`
@@ -426,108 +698,6 @@ currentStreak >= 2` (parity with `hasPendingBreak`), and
   fetches still resolve to the signed-out card rather than spinning.
   Pinned by auth-state-probe.test.tsx (4 cases: probe-then-signed-in,
   probe-then-signed-out, both components).
-
-### Changed
-
-- **Voice Control settings copy + button** (owner feedback, 2026-08-17):
-  SettingsPanel's section description rewritten (no "Hands-free
-  transport"; both discovery routes — Shift+V and the spoken "what can I
-  say" — kept, which settings-voice-help.test.tsx pins), the action
-  button is now `FileText` icon + "Command list", and
-  `.settingsActionRow` gained `margin-bottom: 18px` so it no longer welds
-  to the Recognition Engine dropdown. New pin: button text/icon and the
-  jargon's absence.
-
-### Changed
-
-- **Stop is one corner icon button at every viewport** (owner report,
-  2026-08-17, Tab S9+ landscape ~800px height): `.exercise-btn-stop` is a
-  48px round icon-only button (aria-label + title carry the label) anchored
-  bottom-right by `.exercise-active-controls`; the labelled centre pill and
-  the two duplicate 54px FAB blocks in short-viewport.css /
-  mobile-polish.css are gone, and their 76px reserved strip is the base
-  64px everywhere. `.warmup-step-instruction` max-width 420 → 640px so the
-  breath step wraps to two rows instead of four — the rows plus the rail
-  were what scrolled the "Sssss" cue off a 1280x800 tablet. Pinned by
-  "the warmup breath step fits the fold" (exercise-tablet-active.spec.ts:
-  no overflow at 1280x800, compact square Stop, two-row instruction) and
-  the icon-only contract in exercise-shell-timer.test.tsx.
-
-- **Held-note run length and duration grading** (owner call, 2026-08-17):
-  `DEFAULT_PREFERENCE.mode` 5 → 10 in timer-preference.ts (persisted
-  choices untouched). Long-note's duration term is now
-  `voicedSeconds(history) / (activeTimerSeconds() ?? difficulty target)`
-  — `voicedSeconds` (exercise-scoring-utils.ts) sums inter-sample gaps
-  ≤ 0.25 s, so pre-onset settling and mid-run silence cost coverage only;
-  pitch-quality terms never saw silence (history records voiced frames
-  only). Pitch-hold's term uses its post-phonation frame counter
-  (`totalFrames / SCORE_UPDATE_HZ`) against the same goal, keeping its
-  documented leading-silence forgiveness. A perfect timed run now scores
-  100 (was capped ~90 long-note / ~63 pitch-hold). Pinned in
-  exercise-long-note.test.ts, exercise-pitch-hold.test.ts,
-  timer-preference.test.ts; mutation-checked both ways.
-
-- **Rep-run flow: the shell and ribbon close the multi-rep gap.**
-  `ExerciseShell` derives `repRun` from `useDailyRoutine` (current segment
-  runs this drill, banked > 0, banked < reps) to relabel the dual-purpose
-  button and compact the result card (no `RunTraceCanvas`, no `tier-pop`
-  re-animation via `.mid-reps`). `RoutineRibbon` gains `isComplete`/
-  `onRunAgain` props and reduces its countdown to a single
-  `countdownTarget` memo — segment | 'run' | 'cancel' | null — restarting
-  the clock whenever the destination changes, so the interval can never
-  fire a stale closure (the prior shape kept a live countdown aimed at a
-  target that no longer existed when the last run banked mid-count).
-
-- **Routine segments carry reps, and the session has a five-minute floor.**
-  `segment-reps.ts` holds a per-drill table of what one honest run costs
-  (30s for held-note drills, 45s for pattern drills, 60s for the long ones),
-  derives `reps` from the segment's budget (capped at `MAX_REPS` 6), and makes
-  the segment's `durationSec` the reps rather than the guess. `applyReps` then
-  tops a session up to `MIN_SESSION_SEC` (300s, the streak's own daily goal),
-  always adding to the shortest drill, and only pushes a single drill past the
-  comfortable cap to `MAX_REPS_FLOOR` (8) when a focus template has nowhere
-  else to put the minutes. Both build paths use it — `buildDailySession` and
-  `materializeRoutine` — so generated days, library templates and every length
-  clear the floor. `autoAdvanceRoutineSegment` banks runs in
-  `PersistedRoutine.segmentRuns` and ticks the segment off only when it has
-  what it asked for; `completeSegment` clears the count. `reps` is optional and
-  absent reads as one, so a routine persisted or shared before this keeps the
-  finish line it started with. The Home card shows "5 x" per drill and "2 of 5"
-  for the one in progress; the exercise ribbon shows "Run 2 of 5", which is
-  also what stops auto-continue offering the next segment mid-reps.
-- **The warmup honors its authored count-in, audibly.** Every warmup block
-  always carried `countInBeats: 2` and no runtime read it — steps began the
-  frame the previous one ended. `warmup-lead-in.ts` adds `applyLeadIn` (the
-  challenge-stage pattern: targets shifted late, loop extended, count-in
-  consumed so it cannot double) applied at the session seam, and a pure
-  `createLeadInTicker` the component samples per pitch frame to click each
-  lead-in beat once — plus the first note's reference tone at beat zero.
-  Guide tones during the run come from `createZenNoteScheduler` wired
-  through the app AudioEngine (deliberately NOT ZenPitchStage's private
-  AudioContext, which connects to the bare destination and closes mid-tone),
-  behind a persisted mute (`pitchperfect_warmup_guide_muted`). Steps are
-  separated by `WARMUP_STEP_GAP_SECONDS` with a "next:" phase line;
-  `melodyTargets` takes an explicit quarter-beat rest instead of the
-  implicit 18% duty; the nine-note scales grew to twelve beats; and
-  `warmupTotalSeconds` prices lead-ins and gaps instead of the 0.45 s/note
-  reference-tone fiction deleted in 7a4821dc.
-
-- **The Lab became a route-backed focused workspace.** The app shell maps five
-  hidden Lab routes to task-led tools, removes unrelated app navigation only
-  while one of those routes is active, and keeps supporter access fail-closed.
-  The desktop tablist uses roving focus with Arrow/Home/End navigation; compact
-  layouts use a tool picker. Each tool has its own error boundary, and inactive
-  tools unmount so their audio, microphone, timers and global handlers clean up.
-
-- **All five Lab tools now share one responsive instrument vocabulary.** A
-  Lab-local palette derives every surface and accent from app theme tokens.
-  Workbench, detector, benchmark, transcription and mapping layouts now expose
-  one clear primary task, progressive detail, meaningful empty/error states and
-  short-height/tablet rules. The four previously unstyled workbench controls
-  moved from inline literals to scoped CSS modules. Pane and waveform splitters
-  gained real pointer coverage plus keyboard/ARIA semantics.
-
-### Fixed
 
 - **HomePage's daily-goal readout was non-reactive**: `getTodayScoredMinutes`
   read once per mount and the streak `createResource` had no dependency on
@@ -896,6 +1066,78 @@ aria-modal="true"` but never took or fenced focus: the first Tab after
   credentials. `"r2_buckets": []` does not silence the warning — Wrangler
   compares binding names — and `RUNPOD_STEM_PREFIX` is deliberately left out,
   being read only on the RunPod path.
+
+- **The app is served from a precached shell, one build at a time.** The worker
+  (`src/sw.ts`, all rules in `src/lib/sw-runtime.ts`) treats
+  `self.__WB_MANIFEST` as an allowlist and caches under a per-build name — an
+  FNV-1a hash of the shipped URL set — copying unchanged entries forward from
+  the previous build so a deploy costs about one request per changed chunk
+  rather than the whole set. A navigation is answered from the shell only when
+  the cached HTML's `<script src>` set belongs to this build; a request for
+  build output the origin no longer serves posts `mercurypitch:stale-build` to
+  the page, which turns into an immediate update check. `install()` refuses to
+  finish if the shell is not a document or belongs to another build, but
+  tolerates storage failure, and every cache touch on the request path is
+  best-effort so a rejection degrades to the network instead of the browser's
+  network-error page. Nothing calls `skipWaiting()` on its own: the page asks,
+  and only an accepted prompt reloads. `isStaleBuildError` in the global error
+  handler and `AppErrorBoundary` classify the failed-dynamic-import and
+  HTML-parsed-as-JS shapes as "this build is gone" rather than a crash.
+
+- **The stage-glass slider reaches the canvas-painted lane labels.** The lane
+  rails (Vocal, Instrumental, the MONITORING badge) are painted into the
+  canvas, so CSS cannot fade them; the canvas controller reads
+  `--sm-lane-label-bg` on each redraw instead. Only `karaoke-night.css`
+  defined it, so the studio — same slider — held a fixed plate. The token
+  moved to `.stem-mixer`, which both hosts inherit (the performance preset
+  resolves `--sm-stage-alpha` from `--kn-alpha`), and the studio's slider now
+  dispatches `karaoke:stage-glass` so the canvases actually repaint.
+
+- **Two walkthrough steps pointed into Compose's closed phone drawer.** When
+  the Compose header became one row, the control bar moved inside the "more"
+  sheet; `compose.kind` got the `reveal` that opens it and `#record-btn` and
+  `compose.share` did not, so both missed on the mobile release walk. Their
+  guard reads the selectors out of `ComposeControlBar` rather than listing
+  them, scoped to Compose steps — all four control bars declare `#bpm-input`.
+
+- **`longestStreak` is maintained as a high-water mark.** The column arrived
+  `NOT NULL DEFAULT 0` with no semantic backfill, and the client that owned
+  streak writes only ever wrote `currentStreak`, so 60 production rows and 13
+  on dev stored `currentStreak > longestStreak` — a record the leaderboard
+  ranks on and the public board gates on. `0030_streak_high_water.sql`
+  backfills every row to `MAX(currentStreak, longestStreak)` and the write path
+  now raises it in step.
+
+### Security
+
+- **The anonymous credential is no longer a published identifier.**
+  `userProfiles.id` is publicly readable and every leaderboard row carries a
+  `userId`, and that id was the entire credential: `POST /api/auth/anonymous`
+  returned a session for it and `POST /api/auth/register` took the row over
+  permanently from the same value, so the board was a list of working
+  credentials. `0029_device_secret.sql` adds `users.deviceSecretHash`, the
+  client mints 256 bits per browser (`getDeviceSecret`, stored beside the
+  device id so the two are lost together rather than one without the other),
+  and `authorizeDeviceSecret` gates `/api/auth/anonymous`, `/api/auth/register`
+  and both Google paths — where an unproved deviceId is dropped, so sign-in
+  still succeeds into a fresh account instead of absorbing somebody else's. The
+  consent URL moved to `POST /api/auth/google/start` so a secret never lands in
+  history, logs or a `Referer`. Rows that predate the migration are
+  grandfathered trust-on-first-use; the window that leaves is asserted in
+  `node-tests/device-secret-integration.test.ts` and written down in
+  `docs/agent/BUGS.md` rather than hidden.
+
+- **A follow is a request until the other side accepts it.** The Friends board
+  reads a singer's streak, scores, accuracy and session count while skipping
+  the public board's opt-in gate and thresholds, and `POST /api/follows` took
+  `followedUserId` on trust — so anyone could add anyone and read their record.
+  `0028_follow_requests.sql` gives a row a status: `'pending'` grants nothing,
+  `'accepted'` requires both rows to exist and agree, and nothing a single
+  caller does reaches it. Generic CRUD writes to `follows` answer 405 and name
+  the route that owns them (`writeRoute` on the table definition — `serverCols`
+  could not express a rule about the shape of a write). Crossed requests settle
+  themselves, removal clears both directions, and the friend-code path still
+  connects both sides at once because being handed the code is the consent.
 
 ## [0.8.1] - 2026-08-08
 

@@ -42,7 +42,7 @@ import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking } from './reference-port'
 import { readGuitarNightSession } from './session-link'
-import type { GuitarNightSongPort } from './song-port'
+import type { GuitarNightSongPort, GuitarNightSongSummary } from './song-port'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
 import { guitarNightBandPreparationMessage, loadDefaultGuitarNightBandPreparationPort, useGuitarNightBandPreparationController, } from './useGuitarNightBandPreparationController'
 import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
@@ -487,10 +487,21 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     }
   })
 
+  // The catalog is two libraries in one list. Only the device half is
+  // "on this device", only the device half is worth paginating, and the
+  // demo has to stay visible even when the device half is empty — which
+  // is exactly the visitor it exists for.
+  const deviceSongs = createMemo(() =>
+    songController.songs().filter((song) => song.source !== 'demo'),
+  )
+  const demoSongs = createMemo(() =>
+    songController.songs().filter((song) => song.source === 'demo'),
+  )
+
   const [visibleSongLimit, setVisibleSongLimit] =
     createSignal(INITIAL_LIBRARY_PAGE)
   const songsWithinLimit = (limit: number) => {
-    const all = songController.songs()
+    const all = deviceSongs()
     if (all.length <= limit) return all
     const head = all.slice(0, limit)
     // The routed song stays reachable even when it sits below the fold —
@@ -508,7 +519,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
   const visibleSongs = createMemo(() => songsWithinLimit(visibleSongLimit()))
   const hiddenSongCount = createMemo(() =>
-    Math.max(0, songController.songs().length - visibleSongs().length),
+    Math.max(0, deviceSongs().length - visibleSongs().length),
   )
   // Count what the next press actually reveals: a pinned routed song is
   // already on screen, so a plain page step would overstate the reveal.
@@ -915,6 +926,43 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       title: 'Room ready',
       detail: 'No audio or listening has started',
     }
+  }
+
+  /**
+   * One row of the library, wherever the song came from. The device list
+   * and the demo list render the same control — a demo that looked or
+   * behaved differently would be a second way to open a song, and there
+   * is only one.
+   */
+  const songChoice = (song: GuitarNightSongSummary) => {
+    const isActive = () => activeBacking()?.sessionId === song.sessionId
+    return (
+      <li>
+        <button
+          type="button"
+          classList={{ [styles.songChoiceActive]: isActive() }}
+          aria-current={isActive() ? 'true' : undefined}
+          disabled={
+            preparationController.isPreparing() ||
+            bandPreparationController.isPreparing() ||
+            songController.selectionState().kind === 'loading'
+          }
+          onClick={() => stagePreparedSong(song.sessionId)}
+        >
+          <span>
+            <strong>{song.title}</strong>
+            <small>{song.subtitle ?? formatPreparedDate(song.createdAt)}</small>
+          </span>
+          <i aria-hidden="true">
+            {isActive()
+              ? visitedRoomSessionId() === song.sessionId
+                ? 'Resume'
+                : 'Selected'
+              : 'Open'}
+          </i>
+        </button>
+      </li>
+    )
   }
 
   return (
@@ -1334,8 +1382,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   <Show when={songController.libraryState() === 'ready'}>
                     <span>
                       {hiddenSongCount() > 0
-                        ? `${visibleSongs().length} of ${songController.songs().length} on this device`
-                        : `${songController.songs().length} on this device`}
+                        ? `${visibleSongs().length} of ${deviceSongs().length} on this device`
+                        : `${deviceSongs().length} on this device`}
                     </span>
                   </Show>
                 </div>
@@ -1373,54 +1421,16 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   <Match
                     when={
                       songController.libraryState() === 'ready' &&
-                      songController.songs().length === 0
+                      deviceSongs().length === 0
                     }
                   >
                     <p class={styles.songMessage}>
                       No prepared songs on this device yet.
                     </p>
                   </Match>
-                  <Match when={songController.songs().length > 0}>
+                  <Match when={deviceSongs().length > 0}>
                     <ul class={styles.songList}>
-                      <For each={visibleSongs()}>
-                        {(song) => (
-                          <li>
-                            <button
-                              type="button"
-                              classList={{
-                                [styles.songChoiceActive]:
-                                  activeBacking()?.sessionId === song.sessionId,
-                              }}
-                              aria-current={
-                                activeBacking()?.sessionId === song.sessionId
-                                  ? 'true'
-                                  : undefined
-                              }
-                              disabled={
-                                preparationController.isPreparing() ||
-                                bandPreparationController.isPreparing() ||
-                                songController.selectionState().kind ===
-                                  'loading'
-                              }
-                              onClick={() => stagePreparedSong(song.sessionId)}
-                            >
-                              <span>
-                                <strong>{song.title}</strong>
-                                <small>
-                                  {formatPreparedDate(song.createdAt)}
-                                </small>
-                              </span>
-                              <i aria-hidden="true">
-                                {activeBacking()?.sessionId === song.sessionId
-                                  ? visitedRoomSessionId() === song.sessionId
-                                    ? 'Resume'
-                                    : 'Selected'
-                                  : 'Open'}
-                              </i>
-                            </button>
-                          </li>
-                        )}
-                      </For>
+                      <For each={visibleSongs()}>{songChoice}</For>
                     </ul>
                     <Show when={hiddenSongCount() > 0}>
                       <button
@@ -1437,6 +1447,24 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     </Show>
                   </Match>
                 </Switch>
+
+                {/* The demo sits outside the Switch on purpose: the room
+                    it is for is the one with an empty library, and inside
+                    the Switch that is the branch it would never render
+                    in. It is never paginated away either — one row. */}
+                <Show when={demoSongs().length > 0}>
+                  <p
+                    class={styles.songDemoKicker}
+                    data-testid="guitar-night-demo-kicker"
+                  >
+                    {deviceSongs().length === 0
+                      ? 'Nothing separated yet? Play along with the demo.'
+                      : 'Or play along with the demo.'}
+                  </p>
+                  <ul class={styles.songList}>
+                    <For each={demoSongs()}>{songChoice}</For>
+                  </ul>
+                </Show>
               </section>
 
               <section
@@ -1797,7 +1825,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 onTuning={referenceController.setTuning}
                 suspended={learnOpen}
                 onSongs={returnToSongs}
-                onSeparateGuitar={prepareGuitarFreeBand}
+                // Withheld for the demo. "Separate guitar" reconnects to a
+                // durable separation record and then bills a cloud GPU
+                // split against it; the demo has never had one, so the
+                // button could only ever fail — and it names a price.
+                onSeparateGuitar={
+                  activeBacking()?.source === 'demo'
+                    ? undefined
+                    : prepareGuitarFreeBand
+                }
               />
             </Match>
 

@@ -504,6 +504,11 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Record to Piano Roll',
     targetSelector: '#record-btn',
+    // The whole control bar moved into Compose's "more" drawer on a phone
+    // when the header became one row, so the button is in the DOM but behind
+    // a closed sheet. Same reveal as the preset toggle below; a no-op on
+    // desktop, where the trigger does not exist.
+    reveal: '[data-testid="compose-mobile-more"]',
     description:
       'Hit Record, sing into your mic, and your pitch gets captured as notes on the piano roll. When you stop, a review slider lets you keep it raw or clean it up.',
     placement: 'bottom',
@@ -543,6 +548,8 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Share your melody',
     targetSelector: '[data-tour="compose.share"]',
+    // Also in the control bar, so also behind the phone's "more" drawer.
+    reveal: '[data-testid="compose-mobile-more"]',
     description:
       'Copy a shareable link to your melody — anyone who opens it can listen and load it straight into their own editor.',
     placement: 'bottom',
@@ -734,10 +741,10 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   // ── Settings · Practice Section ──
   {
-    title: 'Quick presets',
-    targetSelector: '#preset-select',
+    title: 'How much of the room to ignore',
+    targetSelector: '[data-tour="settings.room-slider"]',
     description:
-      'Start here on the Practice tab: pick the preset that matches your room — quiet, home, or noisy — to calibrate the mic in one click.',
+      'Start here on the Practice tab: drag between Quiet and Noisy until the meter shows your voice getting through and the room does not. The named rooms are still one tap away on the ticks.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,

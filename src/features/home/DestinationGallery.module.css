@@ -112,6 +112,13 @@
   grid-column: span 7;
 }
 
+/* The two night rooms make a row of their own, so adding them does not
+   restripe the 7/5 rhythm the other covers are laid out on. */
+.pianoNight,
+.guitarNight {
+  grid-column: span 6;
+}
+
 .karaoke,
 .exercises,
 .mystery {
@@ -205,11 +212,66 @@
 .exercisesVisual,
 .analysisVisual,
 .jamVisual,
-.ascentVisual {
+.ascentVisual,
+.roomPhotoVisual {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
+}
+
+/* The only photographic covers. `object-fit: cover` with a bias towards the
+   upper half: both rooms put the instrument there and the floor below it,
+   and the card's own copy sits over the bottom third anyway. */
+.roomPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 38%;
+  transition: transform 420ms ease;
+}
+
+.cover:hover .roomPhoto {
+  transform: scale(1.04);
+}
+
+.roomPhotoNugget {
+  top: 18px;
+  left: 20px;
+}
+
+/* A wash in the room's own light, so the photo sits in the same family as
+   the drawn covers instead of reading as a pasted-in picture. */
+.pianoNightVisual::after,
+.guitarNightVisual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: soft-light;
+}
+
+.pianoNightVisual::after {
+  background: radial-gradient(
+    72% 60% at 50% 22%,
+    rgba(88, 166, 255, 0.34),
+    transparent 70%
+  );
+}
+
+.guitarNightVisual::after {
+  background: radial-gradient(
+    72% 60% at 50% 22%,
+    rgba(255, 176, 92, 0.3),
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roomPhoto,
+  .cover:hover .roomPhoto {
+    transition: none;
+    transform: none;
+  }
 }
 
 .practiceVisual::after {
@@ -775,6 +837,8 @@
 
   .practice,
   .karaoke,
+  .pianoNight,
+  .guitarNight,
   .exercises,
   .analysis,
   .jam,
