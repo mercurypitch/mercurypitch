@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at `-360deg`, deliberately, "because the arrow points counter-clockwise".
   An arrow has an arrowhead, and an arrowhead is a landmark the eye tracks, so
   the whole thing read as a tumbling object. The idle Drive buttons keep the
-  arrow: it is correct as an *action* icon, and only the busy state changed.
+  arrow: it is correct as an _action_ icon, and only the busy state changed.
   The banner also gains reduced-motion behaviour it did not have — it used to
   set `animation: none`, leaving a motionless refresh arrow on screen for the
   entire reload.
@@ -136,7 +136,7 @@ where a badge would vary its metal.
 
 **The delivered art did not fit the app, and the diff would never have shown
 it.** `ProgressPage.module.css` draws badge art at 132px under
-`clip-path: circle(39% at 50% 50%)` — 39% of the *width*, so only the central
+`clip-path: circle(39% at 50% 50%)` — 39% of the _width_, so only the central
 78% is ever seen. The batch arrived frame-filling with the rim's outer edge at
 r = 0.92; every ring would have been sliced off. Rescaled to r ≈ 0.69, which
 is where the existing 16 sit, and composited onto each medallion's own enamel
