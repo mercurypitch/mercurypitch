@@ -6,6 +6,39 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`--gn-glass`, one token for how much of the Guitar Night room shows.**
+  The room art was buried under three separate things and turning any one of
+  them down did nothing, so the slider drives all three:
+  `--gn-surface-scale` multiplies the alpha of the chrome that floats over
+  the room, `--gn-blur-scale` multiplies every `backdrop-filter` radius on
+  it, and `--gn-veil-scale` multiplies the two dark gradients `.backdrop`
+  lays over its own photograph. Every scale is `1 - glass * k`, so at zero
+  each resolves to exactly 1 and every value reduces to the literal it
+  replaced — the old room stays reachable, exactly. Menus, scrims and
+  full-screen overlays are deliberately excluded: a dropdown you can read the
+  room through is the failure this fixes, not a feature of it. Measured in
+  Chromium: the entry panel goes from `blur(18px)` over `rgba(22,17,14,0.94)`
+  at 0 to `blur(3.6px)` over `rgba(22,17,14,0.424)` at 1.
+- **The slider lives in the Room menu, not the top bar.** Karaoke Night's
+  equivalent sits in its top bar and is `display: none` under 900px, so on
+  the phone the report came from there is no way to reach it. Guitar Night's
+  Room menu is the collapsed drawer at that width, so this one survives.
+
+### Changed
+
+- **`createStageGlassPreference` (`src/lib/stage-glass-preference.ts`) now
+  holds the clamping and storage handling both rooms need**, and Karaoke
+  Night's `stage-transparency.ts` is thirteen lines of numbers on top of it.
+  It also fixes a latent bug the shared version exposed: `Number(null)` and
+  `Number('')` are both 0, so the old read would have taken an absent
+  preference as a deliberate zero for any room whose minimum is 0 — Guitar
+  Night's is, because zero has to mean "the room as it shipped". The raw
+  string is checked before `Number()` sees it.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

@@ -3,6 +3,18 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [Unreleased]
+
+### Added
+
+- **Guitar Night has a room visibility slider.** Four rooms ship as
+  photographs, and on the darker ones — Velvet Rehearsal especially — almost
+  none of the picture reached you: the backdrop veiled itself with two dark
+  gradients, and the panels floating over it were up to 94% opaque behind
+  18px of blur. The Room menu now carries a slider that opens all three of
+  those at once, and it is in the menu rather than the top bar so a phone can
+  reach it too. All the way down is the room exactly as it was.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added
