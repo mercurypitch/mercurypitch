@@ -5,12 +5,12 @@
 // The standalone stage and the in-app Stem Mixer deliberately share this
 // preference, so moving between them does not unexpectedly reset the glass.
 //
-// The clamping and storage handling live in `createStageGlassPreference`,
+// The clamping and storage handling live in `createClampedPreference`,
 // shared with Guitar Night's room glass. Only the numbers are ours.
 
-import { createStageGlassPreference } from '@/lib/stage-glass-preference'
+import { createClampedPreference } from '@/lib/clamped-preference'
 
-const preference = createStageGlassPreference({
+const preference = createClampedPreference({
   storageKey: 'pitchperfect_kn_stage_alpha',
   defaultValue: 0.45,
   min: 0.05,

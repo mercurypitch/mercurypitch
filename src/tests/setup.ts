@@ -35,6 +35,9 @@ class MockAudioContext {
   createDynamicsCompressor() {
     return new MockDynamicsCompressorNode()
   }
+  createWaveShaper() {
+    return new MockWaveShaperNode()
+  }
   // tone-player builds a piano-ish PeriodicWave per context and caches it in
   // a WeakMap keyed by the context, so this only has to be a distinct object.
   createPeriodicWave(_real?: Float32Array, _imag?: Float32Array) {
@@ -61,6 +64,18 @@ class MockGainNode {
     cancelScheduledValues: () => {},
   }
   /** Recorded downstream nodes so tests can assert the audio graph. */
+  connectedTo: unknown[] = []
+  connect(target?: unknown) {
+    this.connectedTo.push(target)
+  }
+  disconnect() {}
+}
+
+class MockWaveShaperNode {
+  // The mixer's master soft clipper. `curve` and `oversample` are plain
+  // properties in the spec, so the double only has to hold them.
+  curve: Float32Array | null = null
+  oversample: 'none' | '2x' | '4x' = 'none'
   connectedTo: unknown[] = []
   connect(target?: unknown) {
     this.connectedTo.push(target)

@@ -9,8 +9,8 @@
 
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
-import type { StageGlassStorage } from './stage-glass-preference'
-import { createStageGlassPreference } from './stage-glass-preference'
+import type { ClampedPreferenceStorage } from './clamped-preference'
+import { createClampedPreference } from './clamped-preference'
 
 const SPEC = {
   storageKey: 'test_glass',
@@ -20,7 +20,7 @@ const SPEC = {
   step: 0.05,
 }
 
-interface SpyStorage extends StageGlassStorage {
+interface SpyStorage extends ClampedPreferenceStorage {
   setItem: Mock<(key: string, value: string) => void>
 }
 
@@ -30,16 +30,16 @@ function storageOf(value: string | null): SpyStorage {
 
 describe('the shared stage glass preference', () => {
   it('hands back the spec it was given, for the slider to size itself', () => {
-    expect(createStageGlassPreference(SPEC).spec).toEqual(SPEC)
+    expect(createClampedPreference(SPEC).spec).toEqual(SPEC)
   })
 
   it('restores a stored in-range value', () => {
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     expect(preference.load(storageOf('0.62'))).toBe(0.62)
   })
 
   it('falls back to the default for anything unusable', () => {
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     for (const stored of [null, '', '   ', 'not-a-number', 'Infinity']) {
       expect(preference.load(storageOf(stored))).toBe(SPEC.defaultValue)
     }
@@ -48,13 +48,13 @@ describe('the shared stage glass preference', () => {
   it('treats an out-of-range value as unusable rather than clamping it', () => {
     // Only a build with different bounds can write one, and quietly dragging
     // it to the nearest edge hands somebody a room they never chose.
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     expect(preference.load(storageOf('0.01'))).toBe(SPEC.defaultValue)
     expect(preference.load(storageOf('4'))).toBe(SPEC.defaultValue)
   })
 
   it('accepts a value sitting exactly on either bound', () => {
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     expect(preference.load(storageOf(String(SPEC.min)))).toBe(SPEC.min)
     expect(preference.load(storageOf(String(SPEC.max)))).toBe(SPEC.max)
   })
@@ -68,7 +68,7 @@ describe('the shared stage glass preference', () => {
    * and never once show its own default.
    */
   it('still finds its default when the minimum is zero and nothing is stored', () => {
-    const preference = createStageGlassPreference({
+    const preference = createClampedPreference({
       storageKey: 'zero_floor',
       defaultValue: 0.35,
       min: 0,
@@ -82,14 +82,14 @@ describe('the shared stage glass preference', () => {
   })
 
   it('writes the chosen value and returns it', () => {
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     const storage = storageOf(null)
     expect(preference.persist(0.5, storage)).toBe(0.5)
     expect(storage.setItem).toHaveBeenCalledWith(SPEC.storageKey, '0.5')
   })
 
   it('clamps a write to the slider bounds', () => {
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     const storage = storageOf(null)
 
     expect(preference.persist(9, storage)).toBe(SPEC.max)
@@ -106,7 +106,7 @@ describe('the shared stage glass preference', () => {
   })
 
   it('writes the default rather than NaN', () => {
-    const preference = createStageGlassPreference(SPEC)
+    const preference = createClampedPreference(SPEC)
     const storage = storageOf(null)
     expect(preference.persist(Number.NaN, storage)).toBe(SPEC.defaultValue)
     expect(storage.setItem).toHaveBeenLastCalledWith(
@@ -116,8 +116,8 @@ describe('the shared stage glass preference', () => {
   })
 
   it('survives storage that throws, and storage that is not there at all', () => {
-    const preference = createStageGlassPreference(SPEC)
-    const blocked: StageGlassStorage = {
+    const preference = createClampedPreference(SPEC)
+    const blocked: ClampedPreferenceStorage = {
       getItem: () => {
         throw new Error('blocked')
       },
@@ -135,7 +135,7 @@ describe('the shared stage glass preference', () => {
   })
 
   it('reaches real localStorage when no storage is passed', () => {
-    const preference = createStageGlassPreference({
+    const preference = createClampedPreference({
       ...SPEC,
       storageKey: 'default_storage_glass',
     })
@@ -162,7 +162,7 @@ describe('the shared stage glass preference', () => {
       },
     })
     try {
-      const preference = createStageGlassPreference(SPEC)
+      const preference = createClampedPreference(SPEC)
       expect(preference.load()).toBe(SPEC.defaultValue)
       expect(preference.persist(0.6)).toBe(0.6)
     } finally {

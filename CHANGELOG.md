@@ -14,6 +14,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   18px of blur. The Room menu now carries a slider that opens all three of
   those at once, and it is in the menu rather than the top bar so a phone can
   reach it too. All the way down is the room exactly as it was.
+- **A music level for the mixer, and a ceiling so it is safe to use.** Singing
+  along on a phone quietly drops the backing track, and there was nothing to
+  turn back up: the master was pinned at a fixed level with no control anywhere
+  in the app. It is a slider now, up to about nine decibels above where it used
+  to sit, and it goes down as well as up. Nothing changes until you move it.
 - **The Progress tab's achievements have their pictures back.** An earned
   achievement with no drawn medallion — most of them — was showing an empty
   dark disc, which reads as "locked" for something you have already won. It
@@ -21,6 +26,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **The Karaoke session list scrolls in one place on a phone.** The page and
+  the list inside it both scrolled, so reaching the bottom handed your finger
+  to a second box that was hard to catch. The cards are shorter too — two fit
+  a phone screen where one and a sliver used to.
+- **Piano Night and Guitar Night have a door in the phone bar.** Both rooms
+  were three taps down an options sheet while Singing put its room right in
+  the chip row. They are one tap now, and still in the sheet for anyone who
+  already knows where it is.
 - **The golden rail under Milestones runs the whole shelf.** It stopped after
   the first three badges and slid away as you scrolled, so most of the list
   sat over bare background.

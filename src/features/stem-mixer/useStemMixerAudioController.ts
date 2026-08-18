@@ -23,6 +23,7 @@ import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
+import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import { stemTrackIsAudible } from './stem-mix-state'
@@ -167,6 +168,18 @@ export interface StemMixerAudioController {
   windowDuration: Accessor<number>
   setWindowDuration: Setter<number>
 
+  /** How loud the mix runs, 0.35..2. Persisted; 0.7 is the historic fixed value. */
+  musicLevel: Accessor<number>
+  /** Sets and stores the music level, ramping the live bus. Returns what stuck. */
+  setMusicLevel: (value: number) => number
+  /** The slider's own bounds, so the control cannot disagree with the store. */
+  musicLevelRange: {
+    min: number
+    max: number
+    step: number
+    defaultValue: number
+  }
+
   // Audio engine
   ensureAudioCtx: () => AudioContext
   disconnectSources: () => void
@@ -294,6 +307,29 @@ export const useStemMixerAudioController = (
   const [windowStart, setWindowStart] = createSignal(0)
   const [windowDuration, setWindowDuration] = createSignal(30)
   const [speed, setSpeedLocal] = createSignal(1.0)
+
+  // ── Music level ─────────────────────────────────────────────
+  // The master used to be a hardcoded 0.7 with no way to reach it. On iOS a
+  // live mic drops the whole page's output and nothing in the app can undo
+  // that; this is the singer's way to take the level back.
+  const [musicLevel, setMusicLevelLocal] = createSignal(loadMusicLevel())
+
+  const setMusicLevel = (value: number): number => {
+    const stored = persistMusicLevel(value)
+    setMusicLevelLocal(stored)
+    if (mainGain && audioCtx) {
+      const now = audioCtx.currentTime
+      try {
+        mainGain.gain.cancelScheduledValues(now)
+        mainGain.gain.setValueAtTime(mainGain.gain.value, now)
+        // A ramp, not a write: a step on a live bus is a click.
+        mainGain.gain.linearRampToValueAtTime(stored, now + 0.05)
+      } catch {
+        mainGain.gain.value = stored
+      }
+    }
+    return stored
+  }
 
   // ── Loop signals ────────────────────────────────────────────
   const [loopEnabled, setLoopEnabled] = createSignal(false)
@@ -486,8 +522,15 @@ export const useStemMixerAudioController = (
     if (!audioCtx) {
       audioCtx = new AudioContext()
       mainGain = audioCtx.createGain()
-      mainGain.gain.value = 0.7
-      mainGain.connect(audioCtx.destination)
+      mainGain.gain.value = musicLevel()
+      // The master ends in a soft clipper, not the raw destination: the music
+      // level goes well past unity now, and a two-stem mix at 2.0 would break
+      // up without it. Identity below 0.8, so an untouched slider is bit-exact.
+      const softClip = audioCtx.createWaveShaper()
+      softClip.curve = buildSoftClipCurve()
+      softClip.oversample = 'none'
+      mainGain.connect(softClip)
+      softClip.connect(audioCtx.destination)
       vocalAnalyser = audioCtx.createAnalyser()
       vocalAnalyser.fftSize = PITCH_FFT_SIZE
       vocalAnalyser.smoothingTimeConstant = 0.3
@@ -788,9 +831,9 @@ export const useStemMixerAudioController = (
       try {
         mainGain.gain.cancelScheduledValues(now)
         mainGain.gain.setValueAtTime(mainGain.gain.value, now)
-        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.01)
+        mainGain.gain.linearRampToValueAtTime(musicLevel(), now + 0.01)
       } catch (_) {
-        mainGain.gain.value = 0.7
+        mainGain.gain.value = musicLevel()
       }
     }
 
@@ -1378,6 +1421,9 @@ export const useStemMixerAudioController = (
     setLoopCount(0)
   }
   return {
+    musicLevel,
+    setMusicLevel,
+    musicLevelRange: MUSIC_LEVEL.spec,
     loading,
     loadError,
     loadProgress,

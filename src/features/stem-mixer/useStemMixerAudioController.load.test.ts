@@ -89,6 +89,14 @@ function fakeAudioContext() {
       connect: vi.fn(),
       disconnect: vi.fn(),
     })),
+    // The master's soft clipper. `curve` and `oversample` are plain
+    // properties in the spec, so the double only has to hold them.
+    createWaveShaper: vi.fn(() => ({
+      curve: null as Float32Array | null,
+      oversample: 'none' as OverSampleType,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
     createAnalyser: vi.fn(() => ({
       fftSize: 2048,
       smoothingTimeConstant: 0,

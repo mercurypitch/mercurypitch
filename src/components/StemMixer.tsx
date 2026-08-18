@@ -537,6 +537,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     isDetecting: () => (mic.micPitch()?.frequency ?? 0) > 0,
   })
 
+  // ── "Where did the music go?" ────────────────────────────────
+  // Opening a mic makes iOS switch the whole page to `playAndRecord`, which
+  // drops output level; jam's echo cancellation attenuates for its own
+  // reasons. The app does no ducking of its own — audited — and cannot undo
+  // either of those, so the honest answer is to point at the control that
+  // takes the level back. Once ever, not once a session.
+  const [musicLevelHintSeen, setMusicLevelHintSeen] = createPersistedSignal(
+    'sm-music-level-hint-seen',
+    false,
+  )
+  createEffect(
+    on(mic.micActive, (micOn) => {
+      if (!micOn || musicLevelHintSeen()) return
+      setMusicLevelHintSeen(true)
+      showNotification(
+        'Singing drops the backing track on some phones — the music level slider up top brings it back.',
+        'info',
+      )
+    }),
+  )
+
   // Each karaoke playback counts as real app usage (gates the survey).
   // Edge-triggered via on() so the effect depends only on the playing flag.
   createEffect(
@@ -2304,6 +2325,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               style={{ display: 'flex', gap: '0.5rem' }}
               data-tour="mixer.header"
             >
+              {/* Music level. Not gated on `showStageSettings` — the moment it
+                  matters most is a scored performance run, where the stage
+                  settings are hidden. See `master-headroom.ts`. */}
+              <label class="sm-music-level" title="Music level">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"
+                  />
+                </svg>
+                <input
+                  type="range"
+                  class="sm-music-level-slider"
+                  data-testid="mixer-music-level"
+                  min={audio.musicLevelRange.min}
+                  max={audio.musicLevelRange.max}
+                  step={audio.musicLevelRange.step}
+                  value={audio.musicLevel()}
+                  aria-label="Music level"
+                  onInput={(event) =>
+                    audio.setMusicLevel(Number(event.currentTarget.value))
+                  }
+                />
+              </label>
               <Show when={props.showStageSettings !== false}>
                 <Show when={props.preset !== 'performance'}>
                   <label class="sm-stage-glass" title="Stage transparency">

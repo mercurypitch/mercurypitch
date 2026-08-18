@@ -82,6 +82,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Night's is, because zero has to mean "the room as it shipped". The raw
   string is checked before `Number()` sees it.
 
+### Mixer master headroom + soft clipper
+
+`src/features/stem-mixer/master-headroom.ts` (new). Reported: the backing
+track drops when the mic goes live and cannot be turned back up.
+
+Audit result: **the app does no ducking.** No compressor, no sidechain, no
+gain move tied to `micActive` anywhere. The attenuation is iOS switching the
+page to `playAndRecord`, and jam's `TRANSMIT_CONSTRAINTS` echo cancellation.
+Neither is ours to switch off, so the fix is headroom rather than a bug fix.
+
+- `mainGain` was `0.7` hardcoded at two sites with no UI. It is now
+  `MUSIC_LEVEL`, a `createClampedPreference` over
+  `pitchperfect_mixer_music_level`, default **0.7** (byte-identical to the old
+  behaviour on upgrade), range 0.35..2.0 step 0.05. +9.1 dB of headroom over
+  the old fixed value, and it goes down as well as up.
+- Setting it ramps over 50 ms rather than writing — a step on a live bus is a
+  click, and this bus is carrying the song.
+- The master now ends in a `WaveShaperNode`, not the raw destination:
+  identity below 0.8, `tanh`-shaped above, asymptotic to 1.0, continuous in
+  value and slope at the knee. A two-stem mix at 2.0 is 4x full scale and
+  would otherwise break up.
+- **A shaper, not a `DynamicsCompressorNode`, on purpose.** Chromium's
+  compressor carries an internal lookahead; the mixer scores mic pitch against
+  reference pitch frame by frame, so added output latency is a silent scoring
+  error. A shaper is a per-sample function — `oversample: 'none'`, zero
+  latency.
+- `src/lib/stage-glass-preference.ts` renamed to `clamped-preference.ts`
+  (`createClampedPreference`). A third unrelated consumer made the old name a
+  lie; every consumer was still inside the unmerged PR.
+- Both `AudioContext` doubles (`src/tests/setup.ts` and the load spec's local
+  fake) gained `createWaveShaper` — without it the mixer's load path throws.
+- One-shot note when the mic first goes live, pointing at the slider. It says
+  phones, not "the app is ducking you", because the app is not.
+
+Validation: `master-headroom.test.ts` 18 tests (100% stmts/branches/funcs/
+lines), `src/tests/mixer-music-level.test.ts` 11 wiring tests, and a Chromium
+e2e that the control is reachable, bounded by the store and survives a reload.
+Six mutations checked red (master pinned back to 0.7, shaper bypassed,
+threshold removed, once-ever guard dropped, control moved behind the stage-
+settings gate, ramp turned into a step); removing the control entirely turns
+the e2e red, which is the original complaint reproduced. Whole
+`stem-mixer-controls.spec.ts` 8/8 in Chromium — the real graph still carries
+audio.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

@@ -20,9 +20,9 @@
 // about the *default* being too heavy, so a first visit gets a room already
 // partway open; the slider is for taste from there.
 
-import { createStageGlassPreference } from '@/lib/stage-glass-preference'
+import { createClampedPreference } from '@/lib/clamped-preference'
 
-const preference = createStageGlassPreference({
+const preference = createClampedPreference({
   storageKey: 'pitchperfect_gn_room_glass',
   defaultValue: 0.35,
   min: 0,

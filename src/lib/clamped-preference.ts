@@ -1,18 +1,16 @@
 // ============================================================
-// Stage glass — one clamped, storage-tolerant slider preference
+// One clamped, storage-tolerant slider preference
 // ============================================================
 //
-// Karaoke Night has had a "how much of the room shows through" slider since
-// the stage got its backdrop, and Guitar Night now wants the same control.
-// The two rooms disagree about what the number *means* — Karaoke's is a
-// surface alpha, Guitar Night's is a clarity where zero is the old look — so
-// they cannot share a constant. What they do share is the fiddly half: read a
-// string out of storage that may be absent, unparseable, out of range or
-// throw outright, and write one back clamped to the slider's own bounds.
+// Three sliders wanted the same fiddly half: read a number out of storage
+// that may be absent, unparseable, out of range or throw outright, and write
+// one back clamped to the slider's own bounds. Karaoke Night's stage alpha,
+// Guitar Night's room clarity and the mixer's music level all disagree about
+// what the number *means*, so they cannot share a constant — only this.
 //
-// That half lives here once. Two copies of a clamp is how two rooms drift.
+// Two copies of a clamp is how two sliders drift.
 
-export interface StageGlassSpec {
+export interface ClampedPreferenceSpec {
   /** Where the chosen value survives a reload. */
   storageKey: string
   /** What a first visit — or any unusable stored value — gets. */
@@ -22,14 +20,14 @@ export interface StageGlassSpec {
   step: number
 }
 
-export interface StageGlassStorage {
+export interface ClampedPreferenceStorage {
   getItem: (key: string) => string | null
   setItem: (key: string, value: string) => void
 }
 
-export interface StageGlassPreference {
+export interface ClampedPreference {
   /** The slider's own bounds, for the `<input type="range">` that drives it. */
-  readonly spec: StageGlassSpec
+  readonly spec: ClampedPreferenceSpec
   /**
    * The stored value, or the default.
    *
@@ -37,12 +35,12 @@ export interface StageGlassPreference {
    * only come from a build whose bounds were different, and silently dragging
    * it to the nearest edge would hand somebody a room they never chose.
    */
-  load: (storage?: StageGlassStorage | null) => number
+  load: (storage?: ClampedPreferenceStorage | null) => number
   /** Writes the value clamped into range, and returns what was written. */
-  persist: (value: number, storage?: StageGlassStorage | null) => number
+  persist: (value: number, storage?: ClampedPreferenceStorage | null) => number
 }
 
-function browserStorage(): StageGlassStorage | null {
+function browserStorage(): ClampedPreferenceStorage | null {
   try {
     return localStorage
   } catch {
@@ -52,11 +50,11 @@ function browserStorage(): StageGlassStorage | null {
   }
 }
 
-export function createStageGlassPreference(
-  spec: StageGlassSpec,
-): StageGlassPreference {
+export function createClampedPreference(
+  spec: ClampedPreferenceSpec,
+): ClampedPreference {
   const load = (
-    storage: StageGlassStorage | null = browserStorage(),
+    storage: ClampedPreferenceStorage | null = browserStorage(),
   ): number => {
     try {
       // Read the raw string first. `Number(null)` and `Number('')` are both
@@ -78,7 +76,7 @@ export function createStageGlassPreference(
 
   const persist = (
     value: number,
-    storage: StageGlassStorage | null = browserStorage(),
+    storage: ClampedPreferenceStorage | null = browserStorage(),
   ): number => {
     const normalized = Number.isFinite(value)
       ? Math.min(spec.max, Math.max(spec.min, value))
