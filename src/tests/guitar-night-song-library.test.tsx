@@ -960,9 +960,9 @@ describe('GuitarNightApp prepared songs', () => {
     expect(
       screen.getByRole('button', { name: /Demo Song 1/ }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText('Nothing separated yet? Play along with the demo.'),
-    ).toBeInTheDocument()
+    expect(screen.getByTestId('guitar-night-demo-kicker')).toHaveTextContent(
+      'Nothing separated yet? Play along with the demo.',
+    )
   })
 
   it('shows a demo’s own line instead of a prepared date', async () => {
@@ -999,6 +999,10 @@ describe('GuitarNightApp prepared songs', () => {
     expect(
       screen.getByRole('button', { name: /Demo Song 1/ }),
     ).toBeInTheDocument()
+    // "Nothing separated yet?" would be a lie to somebody with twelve.
+    expect(screen.getByTestId('guitar-night-demo-kicker')).toHaveTextContent(
+      'Or play along with the demo.',
+    )
   })
 
   it('opens the demo exactly the way a prepared song opens', async () => {
@@ -1089,9 +1093,7 @@ describe('GuitarNightApp prepared songs', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
     expect(await screen.findByText('2 on this device')).toBeInTheDocument()
-    expect(
-      screen.queryByText('Nothing separated yet? Play along with the demo.'),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('guitar-night-demo-kicker')).toBeNull()
   })
 
   it('announces asynchronous library loading and failure', async () => {

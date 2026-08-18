@@ -1453,8 +1453,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     the Switch that is the branch it would never render
                     in. It is never paginated away either — one row. */}
                 <Show when={demoSongs().length > 0}>
-                  <p class={styles.songDemoKicker}>
-                    Nothing separated yet? Play along with the demo.
+                  <p
+                    class={styles.songDemoKicker}
+                    data-testid="guitar-night-demo-kicker"
+                  >
+                    {deviceSongs().length === 0
+                      ? 'Nothing separated yet? Play along with the demo.'
+                      : 'Or play along with the demo.'}
                   </p>
                   <ul class={styles.songList}>
                     <For each={demoSongs()}>{songChoice}</For>
