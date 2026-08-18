@@ -14,6 +14,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   18px of blur. The Room menu now carries a slider that opens all three of
   those at once, and it is in the menu rather than the top bar so a phone can
   reach it too. All the way down is the room exactly as it was.
+- **Piano Night has a share card.** It was the one room whose link unfurled
+  as a bare URL in a chat — no picture, no title, no description. It gets the
+  same designed 1200x630 card the other rooms have.
 - **A music level for the mixer, and a ceiling so it is safe to use.** Singing
   along on a phone quietly drops the backing track, and there was nothing to
   turn back up: the master was pinned at a fixed level with no control anywhere
@@ -23,6 +26,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   showing an empty dark disc, which reads as "locked" for something you have
   already won. Twenty-seven new enamel medallions cover all of them, drawn to
   match the badges that were already there.
+- **A shared Jam room link shows the Jam card.** The room's copy button built
+  a link off the site root, so an invite pasted into a chat unfurled with the
+  generic site image even though Jam has had its own card all along.
 - **The Guitar fretboard is on screen on a phone again.** Each practice mode
   hangs its own controls above the fretboard, and on a phone that stack pushed
   the fretboard itself below the fold. The controls collapse into one row you

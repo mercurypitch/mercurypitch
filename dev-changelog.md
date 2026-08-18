@@ -179,6 +179,39 @@ dock, touch target shrunk). e2e `guitar.spec.ts` 10/10 including a new
 390x844 test that the toggle is thumb-sized, names the mode, and that the
 fretboard is on screen with the controls one tap away.
 
+### Open Graph: the room nobody could share, and the link that missed its card
+
+Two findings from one question — "do we have an OG image for piano-night, and
+for jam rooms?"
+
+**Piano Night had no Open Graph tags at all.** Not a missing image: no
+`og:title`, no `og:description`, no `og:image`, no Twitter card. Every other
+entry page (`index`, `karaoke`, `jam`, `guitar-night`, `mirror`, `glass`) had
+a full block. `scripts/generate-piano-night-og.mjs` (new) follows the three
+existing generators — Afterglow Studio inlined as a data URI, the brand
+lockup, the room list restaged as a panel — in Piano Night's own brass/cyan
+palette off `PianoNightApp.module.css`, and in Outfit rather than Guitar
+Night's serif, because the room is set in Avenir Next / Inter.
+
+**A shared Jam room link never reached the Jam card.** `jam-og.png` has
+existed since the card set was built and `jam.html` wires it correctly, but
+`JamPanel`'s copy button produced `${origin}/#/jam:ROOMID` — the ROOT path
+with a hash. A fragment is never sent to a server, so every invite was
+fetched as `/`, served `index.html`, and unfurled with the generic site
+image. Now `${origin}/jam#/jam:ROOMID`: same fragment, so the router is
+untouched and links already in chat histories still work, but `/jam` is a
+path `vite.config.ts` maps to `jam.html`. `replaceState` deliberately left
+alone — the address bar is internal and changing it is routing risk for no
+share benefit.
+
+`src/tests/entry-page-og.test.ts` (new) enumerates every root `.html`, and
+asserts a complete OG + Twitter block, that the declared 1200x630 is what the
+tags claim, that `twitter:image` has not drifted from `og:image`, and that the
+file each one points at exists on disk. Plus a generator-per-room check, so a
+card nobody can regenerate is also a failure. Mutations red: the original
+Piano Night state (block deleted), a missing image file, a drifted
+`twitter:image`, and the old jam link shape.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

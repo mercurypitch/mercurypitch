@@ -146,8 +146,13 @@ export const JamPanel: Component = () => {
     isDetecting: () => (jamLocalPitch()?.frequency ?? 0) > 0,
   })
 
+  // `/jam#...`, not `/#/jam:...`. The hash is identical and the router reads
+  // it the same way, but the PATH is what the server sees — and `/jam` is the
+  // one that serves jam.html, with the Jam card in its Open Graph tags. A
+  // link off `/` unfurls with the generic site image instead, which is what
+  // every invite pasted into a chat used to do.
   const roomLink = createMemo(
-    () => `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`,
+    () => `${window.location.origin}/jam#/jam:${jamRoomId() ?? ''}`,
   )
 
   createEffect(() => {
