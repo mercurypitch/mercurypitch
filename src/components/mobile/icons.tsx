@@ -193,6 +193,28 @@ export const NoteGlyphIcon: Component<IconProps> = (props) => (
   </svg>
 )
 
+/** Music level — a speaker with two arcs. Deliberately a speaker rather than
+ *  a note: it sits beside the mic, and the pair has to read as "in" and
+ *  "out" at a glance. */
+export const MusicLevelIcon: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={props.size ?? 18}
+    height={props.size ?? 18}
+    class={props.class}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4z" />
+    <path d="M16 9.4a3.6 3.6 0 010 5.2" />
+    <path d="M18.6 6.6a7.2 7.2 0 010 10.8" />
+  </svg>
+)
+
 /** Text size — a small and a large "A" (cycle the lyrics size presets). */
 export const TextSizeIcon: Component<IconProps> = (props) => (
   <svg

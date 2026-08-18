@@ -24,7 +24,7 @@ import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
 import { GuideVocalMic } from '@/components/mobile/GuideVocalMic'
-import { AutoplayIcon, ChevronLeftIcon, MicIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import { AutoplayIcon, ChevronLeftIcon, MicIcon, MusicLevelIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -150,6 +150,22 @@ export interface KaraokeMobileStageProps {
   // simply don't get the button.
   micActive?: () => boolean
   onToggleMic?: () => void
+
+  /** How loud the backing runs, and how to change it.
+   *
+   *  This sits beside the mic on purpose. Opening a mic on iOS switches the
+   *  page to `playAndRecord` and the whole output drops — a platform
+   *  behaviour the app cannot turn off — so the control that gets the level
+   *  back belongs at the moment and the place the level goes. All three are
+   *  optional together; a host without them simply has no button. */
+  musicLevel?: () => number
+  onMusicLevel?: (value: number) => void
+  musicLevelRange?: {
+    min: number
+    max: number
+    step: number
+    defaultValue: number
+  }
   micPitch?: () => DetectedPitch | null
   ribbonNotes?: () => RibbonNote[]
 
@@ -471,6 +487,15 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const micOn = (): boolean => props.micActive?.() === true
   const ribbonVisible = (): boolean =>
     micOn() && (props.ribbonNotes?.() ?? []).length > 0
+  // The slider is behind a tap rather than always on the bar: the bar is
+  // four controls wide on a 360px phone already, and the level is something
+  // you set once when the mic drops it, not something you ride.
+  const [levelOpen, setLevelOpen] = createSignal(false)
+  const hasMusicLevel = (): boolean =>
+    props.musicLevel !== undefined &&
+    props.onMusicLevel !== undefined &&
+    props.musicLevelRange !== undefined
+
   const toggleMic = (): void => {
     // Turning the mic on with no analyzed notes yet: the ribbon needs
     // targets, so kick off the same denoised analysis the glyphs use.
@@ -856,6 +881,41 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <span>{formatTime(scrub() ?? props.elapsed())}</span>
           <span>-{formatTime(remaining())}</span>
         </div>
+        <Show when={hasMusicLevel() && levelOpen()}>
+          <div
+            class={styles.levelSheet}
+            id="karaoke-music-level"
+            data-testid="mobile-music-level-sheet"
+          >
+            <label class={styles.levelRow}>
+              <span class={styles.levelLabel}>Music</span>
+              <input
+                type="range"
+                class={styles.levelSlider}
+                data-testid="mobile-music-level"
+                min={props.musicLevelRange!.min}
+                max={props.musicLevelRange!.max}
+                step={props.musicLevelRange!.step}
+                value={props.musicLevel!()}
+                aria-label="Music level"
+                onInput={(event) =>
+                  props.onMusicLevel!(Number(event.currentTarget.value))
+                }
+              />
+              <span class={styles.levelValue}>
+                {Math.round(
+                  (props.musicLevel!() / props.musicLevelRange!.defaultValue) *
+                    100,
+                )}
+                %
+              </span>
+            </label>
+            <p class={styles.levelHint}>
+              Some phones quieten the backing track while your mic is on. This
+              turns it back up.
+            </p>
+          </div>
+        </Show>
         <div class={styles.transport}>
           {/* Left slot: your mic. Lives in the bar with the other
               performance controls — never floating over the lyrics. */}
@@ -909,8 +969,28 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               <NextIcon />
             </button>
           </div>
-          {/* Right slot mirrors the left so play stays dead centre. */}
-          <div class={styles.transportSide} aria-hidden="true" />
+          {/* Right slot: the backing level, mirroring the mic so play stays
+              dead centre. Empty and aria-hidden when the host cannot offer
+              it, which keeps the transport symmetrical either way. */}
+          <div
+            class={styles.transportSide}
+            aria-hidden={hasMusicLevel() ? undefined : 'true'}
+          >
+            <Show when={hasMusicLevel()}>
+              <button
+                class={styles.levelBtn}
+                classList={{ [styles.levelBtnOn]: levelOpen() }}
+                onClick={() => setLevelOpen((open) => !open)}
+                aria-expanded={levelOpen()}
+                aria-controls="karaoke-music-level"
+                data-testid="mobile-music-level-toggle"
+                title="How loud the backing track runs"
+                aria-label="Music level"
+              >
+                <MusicLevelIcon />
+              </button>
+            </Show>
+          </div>
         </div>
       </div>
 
