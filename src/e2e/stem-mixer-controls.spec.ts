@@ -634,7 +634,7 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
 })
 
 // ============================================================
-// The music level is reachable, and moving it does not break the mix
+// The music level is reachable on the phone, and it sticks
 // ============================================================
 //
 // Reported: the backing track drops the moment the mic goes live and there is
@@ -642,17 +642,34 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
 // simply pinned at 0.7 with no control anywhere in the UI, so there was
 // nothing to reach for. It is a stored slider now, up to 2.0.
 //
+// It shipped in this mixer's header, and the second report was that the one
+// surface that needs it cannot see it: under `isNarrow()` StemMixer renders
+// KaraokeMobileStage INSTEAD of the mixer, so on a phone the header is not on
+// the page at all. The control lives on the zen transport now, beside the mic
+// that makes it necessary, and the header no longer carries one.
+//
 // The clipper maths is pinned in
 // `src/features/stem-mixer/master-headroom.test.ts` and the wiring in
 // `src/tests/mixer-music-level.test.ts`. This is the half that needs a real
-// browser: that the control is on screen, that it sticks, and — the actual
-// risk of inserting a node into the master bus — that audio still flows
-// through it afterwards.
+// browser: the presentation swap on resize, and that the value survives a
+// whole reload rather than only a re-render.
 
 test('keeps a reachable music level that survives a reload @smoke', async ({
   page,
 }) => {
-  const level = page.getByTestId('mixer-music-level')
+  // The mixer is on screen from the shared setup. Narrowing swaps the
+  // presentation without a reload — the audio engine lives in setup, not in
+  // either JSX tree — which is the behaviour the zen stage was built on.
+  await expect(page.locator('.stem-mixer')).toBeVisible()
+  await expect(page.getByTestId('mixer-music-level')).toHaveCount(0)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+
+  const toggle = page.getByTestId('mobile-music-level-toggle')
+  await expect(toggle).toBeVisible()
+  await toggle.click()
+
+  const level = page.getByTestId('mobile-music-level')
   await expect(level).toBeVisible()
 
   const box = await level.boundingBox()
@@ -680,5 +697,10 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
 
   await page.reload()
   await dismissOverlays(page)
-  await expect(page.getByTestId('mixer-music-level')).toHaveValue('1.6')
+
+  // The sheet is a disclosure, not a state — it comes back closed, and the
+  // level it reopens on is the stored one rather than the default.
+  await expect(page.getByTestId('mobile-music-level')).toHaveCount(0)
+  await page.getByTestId('mobile-music-level-toggle').click()
+  await expect(page.getByTestId('mobile-music-level')).toHaveValue('1.6')
 })
