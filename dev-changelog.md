@@ -10,6 +10,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Guitar Night demo song port.** `createDemoGuitarNightSongPort` reads the
+  same `loadDemoSongs()` manifest list Karaoke Night uses and hands its two
+  remote stems back as a lease, so a Content Studio swap changes both rooms
+  at once and a parked demo disappears from both. Composed with the UVR port
+  by `composeGuitarNightSongPorts`, which keeps the two failure modes apart:
+  a device library that will not open still rejects (the room's "Your local
+  library could not be opened" + Try again is built on that), while an
+  unreachable demo costs only the demo. Because it is a port, staging, deep
+  links, history, aborts and lease release are unchanged. The list renders
+  demos as their own group outside the `Switch` — the empty-library branch is
+  the one they exist for — excluded from the "on this device" count and never
+  paginated; a `subtitle` stands in for the prepared date, since `createdAt`
+  is 0. `GuitarNightBackingLease.source === 'demo'` withholds
+  `onSeparateGuitar`: that path calls `refreshUvrSessionFromDb` before
+  billing a GPU split, and a demo has no durable record to reconnect to.
+  Undeclared durations resolve to `ASSUMED_DEMO_SECONDS` so the transport's
+  decode budget errs toward streaming.
+
+- **`src/lib/song-audio-cache.ts` — a bounded Cache Storage cache for remote
+  song audio.** R2 serves the demo stems with an ETag, a Last-Modified and no
+  `Cache-Control`, so Safari re-fetched ~8 MB on every open. Cache-first, 96
+  MiB budget, 32 MiB per-entry cap, FIFO eviction sized from a written
+  `x-mp-cached-bytes` header (recency would mean rewriting a multi-megabyte
+  entry per hit). Every failure — no Cache Storage, a refused open, a full
+  quota, a truncated entry — resolves to a miss rather than an error. Only
+  `http(s)` URLs are eligible: `blob:` stems are IndexedDB audio already on
+  the device whose URLs stop resolving with their lease. Wired into
+  `loadOne` in the stem-mixer controller (a hit publishes its byte count so
+  the bar reads as finished rather than as never started) and into
+  `defaultFetchArrayBuffer` in the guitar backing transport. The URL is the
+  whole key with no revalidation — re-author a demo by pointing at a new
+  object, never by replacing bytes under a live URL.
+
 - **Home gallery: Piano Night and Guitar Night covers.** Two `page`-target
   destinations between Karaoke and Exercises, on their own `span 6` row so
   the existing 7/5 rhythm is untouched. First photographic covers in the
@@ -182,6 +215,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gained real pointer coverage plus keyboard/ARIA semantics.
 
 ### Fixed
+
+- **`platform.keepAwake` is reference counted and re-taken on
+  `visibilitychange`; `loadStems` holds it.** One screen lock per page meant
+  whichever holder finished first released the other's — a Drive backup and a
+  stem download overlap in exactly that way. The platform also revokes a
+  screen lock the instant the page is hidden and never returns it, which is
+  the case the lock exists for: a phone that locks mid-download comes back to
+  a torn-down fetch and `loadedCount === 0`. `enable()`/`disable()` now count
+  holders, an in-flight grant that outlives its last holder is released, and
+  an unmatched `disable()` cannot take the count negative.
+
+- **KaraokeMobileStage load and error overlays have actions.** The phone zen
+  stage is the whole product — the mixer's card is not behind it — so a
+  failed load was a message with no retry and a back chevron buried under
+  the overlay's `backdrop-filter`. The error state now carries Try again
+  (wired to `loadStems`, the same call the desktop card's Retry makes) and
+  Go back; the running download carries Go back. `.stateOverlay` stays
+  `pointer-events: none` and the actions opt back in individually, so the
+  veil never swallows a tap meant for the stage. The load overlay is also
+  gated on `loadError() === ''`: `loadStems` sets the error and clears
+  `loading` only in its `finally`, so both were true at once and the phone
+  stacked two blurred veils.
+
+- **Streamed backing stems set `crossOrigin` before `src`.** A cross-origin
+  element that does not is tainted, and a tainted element feeds a
+  `MediaElementAudioSourceNode` silence. No effect on `blob:` or same-origin
+  sources; required for the remote demo song's streamed path.
+
+- **Two gutters that resolved to zero.** The phone drawer named
+  `padding-left` inside its media block, replacing the base rule's
+  `padding: 14px` shorthand outright and leaving `env(safe-area-inset-left)`
+  — 0 in portrait — as the whole gutter. The warmup guide toggle is
+  absolutely positioned, and `right` on an absolutely positioned child
+  resolves against the containing block's PADDING box, so `right: 0` looked
+  through the caption row's 12px gutter to the screen edge.
+  `mobile-edge-gutters.test.ts` reads both off the stylesheets and asserts
+  the pill's offset equals the row's gutter rather than pinning either
+  number.
 
 - **Settings tour target: `#preset-select` -> `[data-tour="settings.room-slider"]`.**
   The environment `<select>` became `MicSensitivitySlider`; the walkthrough

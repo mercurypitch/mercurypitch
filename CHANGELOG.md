@@ -7,6 +7,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Guitar Night has something to play before you have separated anything.**
+  The demo song Karaoke Night offers now appears in the Guitar Night
+  library too, under your own prepared songs — so an empty shelf is no
+  longer the whole room. It plays like any other song; the paid
+  "Separate guitar" upgrade is the one thing it does not offer, because
+  there is nothing of yours to split.
+
 - **The two new rooms have a door on the Home page.** Piano Night and
   Guitar Night now sit in "Choose your next room" alongside Karaoke and the
   rest, each on a picture of the room itself.
@@ -258,6 +265,29 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   the code over already said yes. Removing a friend clears both directions.
 
 ### Fixed
+
+- **A song you have already downloaded does not download again.**
+  Karaoke Night's demo song fetched all of its audio on every single open,
+  because the server it comes from says nothing about how long a browser
+  may keep it. The app now keeps its own copy of the last few songs it has
+  played, so the second evening with a song starts immediately. Songs you
+  separated yourself were always on the device and are unaffected.
+
+- **A phone no longer falls asleep in the middle of a download.** The
+  screen is kept awake while a song's audio is arriving. On a slow
+  connection that download can run for minutes, and a phone that locked
+  itself came back to a torn-off download and a song that would not play.
+
+- **A download that fails leaves you somewhere you can leave.** The
+  full-screen song view on a phone showed the failure and nothing else —
+  no retry, and its back arrow was behind the blur. It now offers Try
+  again and Go back, and Go back is there while the download is still
+  running too.
+
+- **Two controls sat on the screen's own edge.** The sidebar's contents
+  on a phone began at the very edge of the screen with nothing between,
+  and the guided warmup's Guide toggle was pushed hard against the right
+  edge. Both have their margin back.
 
 - **The Settings tour points at the room control again.** It still described
   choosing one of three microphone presets, and highlighted a dropdown that
