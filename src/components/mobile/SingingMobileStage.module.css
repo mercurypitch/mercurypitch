@@ -67,6 +67,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  /* This is the one chip in the row that GROWS when tapped — a spinner joins
+     it while the next document loads — and `.chip` carries `overflow: hidden`,
+     whose automatic minimum size is therefore zero, so a squeezed one really
+     can be clipped. Measured at 390px: without this the busy chip overflows
+     its own box by about 3px, which is most of the ring. The song chip beside
+     it ellipsises for a living, so it is the right one to give way. */
+  flex: none;
   color: #a8b8ff;
   border-color: rgba(129, 140, 248, 0.42);
   background: rgba(129, 140, 248, 0.12);
