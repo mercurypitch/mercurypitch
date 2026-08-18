@@ -196,19 +196,36 @@ export function composeGuitarNightSongPorts(
       await settleWithin(demoReady, DEMO_CATALOG_WAIT_MS)
     },
 
-    completedSongs: () => [
-      ...device.completedSongs(),
-      ...demo.completedSongs(),
-    ],
+    // One row per song, and the demo's is the one that survives a
+    // collision. Karaoke Night seeds every demo into the session store as
+    // an ordinary "Examples" row under this same id, carrying the R2 URLs
+    // and no local blobs — so without this the shelf listed each demo
+    // twice, and the device's copy of it could never be opened.
+    completedSongs: () => {
+      const fromDemo = demo.completedSongs()
+      const claimed = new Set(fromDemo.map((song) => song.sessionId))
+      return [
+        ...device
+          .completedSongs()
+          .filter((song) => !claimed.has(song.sessionId)),
+        ...fromDemo,
+      ]
+    },
 
     openSession: async (sessionId, signal) => {
       const fromDevice = await device.openSession(sessionId, signal)
-      // Anything but "no such session" is the device's answer to keep: a
-      // prepared song whose audio has gone must not be reported as the
-      // demo failing to load.
-      if (fromDevice.ok || fromDevice.code !== 'not-found') return fromDevice
+      // The device wins whenever it can actually deliver: a visitor who ran
+      // the band split on an example has real local part stems for this id,
+      // and those beat the demo's two remote ones.
+      if (fromDevice.ok || fromDevice.code === 'aborted') return fromDevice
       if (signal.aborted) return { ok: false, code: 'aborted' }
-      return demo.openSession(sessionId, signal)
+
+      const fromDemo = await demo.openSession(sessionId, signal)
+      if (fromDemo.ok) return fromDemo
+      // The demo has nothing to add, so the device's own answer is the
+      // useful news: a prepared song whose audio has gone must not be
+      // reported as the demo failing to load.
+      return fromDevice.code === 'not-found' ? fromDemo : fromDevice
     },
   }
 }

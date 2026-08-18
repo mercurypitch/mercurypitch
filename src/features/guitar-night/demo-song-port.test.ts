@@ -320,8 +320,7 @@ describe('the device library and the demo together', () => {
     expect(demoOpen).toHaveBeenCalledOnce()
   })
 
-  it('never asks the demo about a song the device already answered for', async () => {
-    const demoOpen = vi.fn()
+  it('keeps the device\u2019s own failure when the demo has never heard of the song', async () => {
     const composed = composeGuitarNightSongPorts(
       stubPort({
         openSession: async () =>
@@ -330,15 +329,91 @@ describe('the device library and the demo together', () => {
             code: 'missing-local-audio',
           }),
       }),
-      stubPort({ openSession: demoOpen }),
+      stubPort(),
     )
 
-    // A prepared song whose audio has gone must not be reported as the
-    // demo failing to load.
+    // A prepared song whose audio has gone must be reported as exactly
+    // that, not as the demo failing to load.
     expect(await composed.openSession('mine', live())).toEqual({
       ok: false,
       code: 'missing-local-audio',
     })
+  })
+
+  // ------------------------------------------------------------
+  // The one song both libraries claim
+  // ------------------------------------------------------------
+  //
+  // Karaoke Night seeds every demo into the session store as an ordinary
+  // "Examples" row, under the same id `demoSessionId()` gives the demo
+  // port. Those rows carry the R2 URLs and no local blobs at all \u2014 so
+  // the device library lists the demo, and then cannot open it.
+
+  it('lists a song both libraries claim exactly once', () => {
+    const shared = { ...song(DEMO_SESSION_ID), title: 'Goodbye to Spring' }
+    const composed = composeGuitarNightSongPorts(
+      stubPort({ completedSongs: () => [song('mine'), shared] }),
+      stubPort({
+        completedSongs: () => [{ ...shared, source: 'demo' as const }],
+      }),
+    )
+
+    expect(composed.completedSongs()).toEqual([
+      song('mine'),
+      { ...shared, source: 'demo' },
+    ])
+  })
+
+  it('opens the demo when the device has the row but not its audio', async () => {
+    const demoLease = {
+      sessionId: DEMO_SESSION_ID,
+      title: 'Goodbye to Spring',
+      stems: [],
+      defaultMix: { kind: 'mixed-instrumental', audible: [], muted: [] },
+      source: 'demo',
+      release: () => undefined,
+    } as unknown as Extract<GuitarNightOpenBackingResult, { ok: true }>['lease']
+    const composed = composeGuitarNightSongPorts(
+      stubPort({
+        // What a seeded Examples row answers: the record is there, the
+        // stem blobs never were.
+        openSession: async () =>
+          Promise.resolve<GuitarNightOpenBackingResult>({
+            ok: false,
+            code: 'missing-local-audio',
+          }),
+      }),
+      stubPort({
+        openSession: async () =>
+          Promise.resolve({ ok: true, lease: demoLease } as const),
+      }),
+    )
+
+    const result = await composed.openSession(DEMO_SESSION_ID, live())
+    expect(result.ok && result.lease).toBe(demoLease)
+  })
+
+  it('prefers the device when it can really open the shared song', async () => {
+    // A visitor who ran the band split on an example has real local part
+    // stems for that id, and those beat the two remote ones.
+    const deviceLease = {
+      sessionId: DEMO_SESSION_ID,
+      title: 'Goodbye to Spring',
+      stems: [],
+      defaultMix: { kind: 'parts', audible: [], muted: [] },
+      release: () => undefined,
+    } as unknown as Extract<GuitarNightOpenBackingResult, { ok: true }>['lease']
+    const demoOpen = vi.fn()
+    const composed = composeGuitarNightSongPorts(
+      stubPort({
+        openSession: async () =>
+          Promise.resolve({ ok: true, lease: deviceLease } as const),
+      }),
+      stubPort({ openSession: demoOpen }),
+    )
+
+    const result = await composed.openSession(DEMO_SESSION_ID, live())
+    expect(result.ok && result.lease).toBe(deviceLease)
     expect(demoOpen).not.toHaveBeenCalled()
   })
 
