@@ -140,6 +140,50 @@ test.describe('Guitar tab', () => {
     }
   })
 
+  // ============================================================
+  // On a phone the fretboard comes first
+  // ============================================================
+  //
+  // Each mode hangs its own controls above the fretboard. At 390px that
+  // stack pushed the fretboard off the bottom of the screen — the thing the
+  // page exists for. The controls collapse to one row now.
+  //
+  // The desktop case is the test right above this one: every HUD still
+  // renders, because the collapse is a media query and nothing else.
+
+  test('collapses the mode controls on a phone @smoke', async ({ page }) => {
+    // Reach the view at full width first: the view toggle itself lives in the
+    // desktop toolbar, which is a separate gap and not what this covers.
+    await page.locator(fretboardBtn()).click()
+    await modeSelect(page).selectOption('noteQuiz')
+    await expect(page.locator('.gp-quiz-hud')).toBeVisible()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    const toggle = page.getByTestId('guitar-mode-hud-toggle')
+    await expect(toggle).toBeVisible()
+    await expect(page.locator('.gp-quiz-hud')).toBeHidden()
+
+    // It names the mode it is holding, so it is not a mystery drawer.
+    await expect(toggle).toContainText('Note quiz')
+
+    // A thumb-sized target: it is the only way back to the controls.
+    const box = await toggle.boundingBox()
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(40)
+
+    // The point of all this: the fretboard is on screen.
+    const fretboard = page.locator('#guitar-fretboard-container')
+    const top = await fretboard.evaluate(
+      (element) => element.getBoundingClientRect().top,
+    )
+    expect(top).toBeLessThan(844)
+
+    // And the controls are one tap away, not gone.
+    await toggle.click()
+    await expect(page.locator('.gp-quiz-hud')).toBeVisible()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  })
+
   test('instrument selector toggles the active sound', async ({ page }) => {
     // Sound is a SegmentedControl (role=radiogroup) in the status bar.
     const electric = page.locator(

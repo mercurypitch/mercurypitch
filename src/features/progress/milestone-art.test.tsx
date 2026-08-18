@@ -12,6 +12,11 @@
 // larger vocabulary, so most of them resolve to no art at all and were
 // rendering as a nameless dark disc.
 //
+// Two fixes, in that order: the shelf now falls back to the glyph, and the
+// 27 missing medallions were drawn, so nothing falls back in practice any
+// more. Both are covered below — the fallback because it is what keeps the
+// next seeded achievement from reopening this.
+//
 // `badge-art.ts` already promises the way out in its own header — "Any icon
 // without art falls back to the SVG glyph, so seeding a new badge is never
 // blocked on generating a picture for it" — and `ProfileView` and
@@ -36,19 +41,27 @@ const achievements = (seed as { achievementDefinitions: SeedDefinition[] })
   .achievementDefinitions
 
 describe('the seeded achievements against the badge art set', () => {
-  it('mostly have no medallion, which is why the fallback matters', () => {
+  it('all have a medallion now', () => {
+    // They did not when this file was written — 46 of the 59 resolved to no
+    // art and rendered as a nameless dark disc, which is the bug above. The
+    // 27 drawn medallions cover every one of them.
     const withoutArt = achievements.filter(
       (row) => badgeArtSrc(row.icon) === undefined,
     )
-    // Not a threshold to chase — a statement of the situation this fixes.
-    // If art is drawn for these later the number drops and the test says so.
-    expect(withoutArt.length).toBeGreaterThan(achievements.length / 2)
+    expect(withoutArt).toEqual([])
   })
 
-  it('names "10 Notes" as one of them, which is the reported case', () => {
+  it('draws "10 Notes" — the reported case — as a medallion', () => {
     const tenNotes = achievements.find((row) => row.name === '10 Notes')
     expect(tenNotes).toBeDefined()
-    expect(badgeArtSrc(tenNotes?.icon)).toBeUndefined()
+    expect(tenNotes?.icon).toBe('paper')
+    expect(badgeArtSrc(tenNotes?.icon)).toBe('/badges/paper.webp')
+  })
+
+  it('still falls back for an icon nobody has drawn', () => {
+    // The fallback is what stops the next seeded achievement reopening this
+    // bug, so it stays covered even though nothing needs it today.
+    expect(badgeArtSrc('an-icon-nobody-drew')).toBeUndefined()
   })
 
   it('every one of them still resolves to a real glyph', () => {

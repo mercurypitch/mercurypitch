@@ -19,13 +19,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   turn back up: the master was pinned at a fixed level with no control anywhere
   in the app. It is a slider now, up to about nine decibels above where it used
   to sit, and it goes down as well as up. Nothing changes until you move it.
-- **The Progress tab's achievements have their pictures back.** An earned
-  achievement with no drawn medallion — most of them — was showing an empty
-  dark disc, which reads as "locked" for something you have already won. It
-  shows the achievement's own symbol now.
-
-### Fixed
-
+- **Every achievement has its medallion.** Forty-six of the fifty-nine were
+  showing an empty dark disc, which reads as "locked" for something you have
+  already won. Twenty-seven new enamel medallions cover all of them, drawn to
+  match the badges that were already there.
+- **The Guitar fretboard is on screen on a phone again.** Each practice mode
+  hangs its own controls above the fretboard, and on a phone that stack pushed
+  the fretboard itself below the fold. The controls collapse into one row you
+  can tap open, named for whichever mode you are in. Desktop is unchanged.
 - **The Karaoke session list scrolls in one place on a phone.** The page and
   the list inside it both scrolled, so reaching the bottom handed your finger
   to a second box that was hard to catch. The cards are shorter too — two fit

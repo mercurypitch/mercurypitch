@@ -126,6 +126,59 @@ the e2e red, which is the original complaint reproduced. Whole
 `stem-mixer-controls.spec.ts` 8/8 in Chromium — the real graph still carries
 audio.
 
+### Achievement medallions — 27 drawn, and a geometry guard
+
+`public/badges/` goes from 16 files to 43; the 27 new icons are registered in
+`BADGE_ART_ICONS`. Art is keyed by the seed's `icon`, not the row id, and
+achievements share icons — so 27 files light up all 46 achievements that had
+none. Achievements carry no tier (`tier: null` on all 59), so all 27 are gold
+where a badge would vary its metal.
+
+**The delivered art did not fit the app, and the diff would never have shown
+it.** `ProgressPage.module.css` draws badge art at 132px under
+`clip-path: circle(39% at 50% 50%)` — 39% of the *width*, so only the central
+78% is ever seen. The batch arrived frame-filling with the rim's outer edge at
+r = 0.92; every ring would have been sliced off. Rescaled to r ≈ 0.69, which
+is where the existing 16 sit, and composited onto each medallion's own enamel
+colour so the annulus between rim and clip edge has no seam.
+
+`src/tests/badge-art-geometry.test.ts` (new) decodes every file with `sharp`
+and measures the rim against the file's OWN field luminance — metal-agnostic,
+because badges come in bronze and silver too, and two legacy ones sit on a
+warm field that a "looks golden" test mistakes for the rim. Asserts 192px,
+opaque to the corner, nothing past r = 0.82, and the 27 recipe icons inside a
+tight band. Mutation: drop the unscaled `trophy.png` back in → 2 tests red.
+
+Noted and deliberately left: `fire` (0.81) and `rocket` (0.80) already
+overflow the clip by a few pixels of outer glow. They are lossy 192px files
+with no original, so re-encoding to win 4% of a radius costs more than it buys.
+
+`milestone-art.test.tsx` asserted "most achievements have no medallion" and
+that `10 Notes` falls back — both were statements of the bug and are now
+false. Rewritten to the new truth, with the fallback still covered so the next
+seeded achievement cannot reopen it.
+
+### Guitar fretboard modes collapse on a phone
+
+Eight modes each hang a HUD above the fretboard (`GuitarPage.tsx` 551-894, one
+contiguous block). At 390px the stack pushed the fretboard below the fold.
+
+One wrapper and a media query — deliberately not a rebuild, since these go
+away when Guitar Night reaches parity. `.gp-mode-hud-dock` collapses under
+768px to a 40px labelled row (`GUITAR_MODE_HUD_LABELS` names the active mode);
+desktop hides the toggle and never hides the body, so the existing "every
+interactive mode renders its HUD" e2e is unchanged and still passes.
+
+In flow rather than fixed to the viewport: the page already docks a control
+bar at the bottom on a phone, and a second fixed layer is how two things end
+up on top of each other. Open state caps at 45vh with its own scroll.
+
+Validation: `src/tests/guitar-mode-hud-dock.test.ts` 11 tests, 4 mutations red
+(starts open, body hidden outside the media query, a HUD drifting out of the
+dock, touch target shrunk). e2e `guitar.spec.ts` 10/10 including a new
+390x844 test that the toggle is thumb-sized, names the mode, and that the
+fretboard is on screen with the controls one tap away.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

@@ -11,7 +11,7 @@
 // it can break. This test is what turns that into a red suite rather
 // than a badge that quietly reverts to a toolbar glyph.
 
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { badgeArtIcons, badgeArtSrc } from '@/features/challenges/badge-art'
@@ -20,8 +20,28 @@ const publicPath = (src: string): string =>
   resolve(__dirname, '../../public', src.replace(/^\//, ''))
 
 describe('badge medallions', () => {
-  it('covers all sixteen seeded badge icons', () => {
-    expect(badgeArtIcons()).toHaveLength(16)
+  it('covers every seeded icon that has art', () => {
+    // Sixteen badges plus twenty-seven achievement icons. The achievement
+    // count is icons, not rows: they share icons, and these 27 light up all
+    // 46 achievements that used to fall back to a glyph.
+    expect(badgeArtIcons()).toHaveLength(43)
+  })
+
+  it('leaves no seeded achievement without a medallion', () => {
+    // The regression this catches: seeding a new achievement with a fresh
+    // icon name and no picture, which renders as a glyph among medallions.
+    const seed = JSON.parse(
+      readFileSync(resolve(__dirname, '../db/seed-data.json'), 'utf8'),
+    ) as { achievementDefinitions: Array<{ icon: string; name: string }> }
+    const drawn = new Set(badgeArtIcons())
+    const bare = [
+      ...new Set(
+        seed.achievementDefinitions
+          .filter((row) => !drawn.has(row.icon))
+          .map((row) => row.icon),
+      ),
+    ]
+    expect(bare).toEqual([])
   })
 
   it('has a file on disk for every icon it claims', () => {
