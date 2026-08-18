@@ -22,6 +22,33 @@ export type GuitarBackingTransportStatus =
 
 export type GuitarBackingLoadMode = 'buffered' | 'streamed'
 
+/**
+ * What a song has fetched so far, while it is still fetching.
+ *
+ * The room needs this because a stem that lives on the network is not a
+ * stem that lives on the device: pressing Play on an uncached demo starts
+ * an eight-megabyte download, and a dimmed button with no other sign was
+ * indistinguishable from a button that had simply stopped working.
+ *
+ * `totalBytes` is 0 whenever the server declared no length, which is also
+ * the streamed case -- the element loads what it needs and never says how
+ * much that will be. `fraction` still advances then, one whole step per
+ * finished stem, so the room always has something honest to show.
+ */
+export interface GuitarBackingLoadProgress {
+  loadedTracks: number
+  totalTracks: number
+  receivedBytes: number
+  totalBytes: number
+  fraction: number
+}
+
+/** Reports bytes as they land. `total` is 0 when the server declared none. */
+export type GuitarBackingFetchProgress = (
+  receivedBytes: number,
+  totalBytes: number,
+) => void
+
 export interface GuitarBackingTrack {
   id: string
   label: string
@@ -60,6 +87,7 @@ export interface GuitarBackingTransport {
   getAudioContext(): AudioContext | null
   getAudioGraph(): GuitarSessionAudioGraph | null
   getLoadMode(): GuitarBackingLoadMode | null
+  getLoadProgress(): GuitarBackingLoadProgress | null
   getStatus(): GuitarBackingTransportStatus
   getCurrentTime(): number
   getDuration(): number
@@ -85,7 +113,11 @@ interface ActiveVoice {
 interface GuitarBackingTransportOptions {
   contextFactory?: () => AudioContext
   activateContext?: (context: AudioContext) => Promise<void>
-  fetchArrayBuffer?: (url: string, signal: AbortSignal) => Promise<ArrayBuffer>
+  fetchArrayBuffer?: (
+    url: string,
+    signal: AbortSignal,
+    onProgress?: GuitarBackingFetchProgress,
+  ) => Promise<ArrayBuffer>
   mediaElementFactory?: () => HTMLAudioElement
   memoryBudgetBytes?: number
   streamingFallback?: boolean
@@ -145,21 +177,63 @@ export function estimateGuitarBackingPcmBytes(
   }, 0)
 }
 
+function declaredLength(response: Response): number {
+  const header = Number(response.headers.get('content-length') ?? '')
+  return Number.isFinite(header) && header > 0 ? header : 0
+}
+
 async function defaultFetchArrayBuffer(
   url: string,
   signal: AbortSignal,
+  onProgress?: GuitarBackingFetchProgress,
 ): Promise<ArrayBuffer> {
   // Locally separated stems arrive as blob: URLs and are refused by the
   // cache, so this is a no-op for them. It is the remote demo song that
   // pays for a re-download otherwise.
   const kept = await readCachedSongAudio(url)
-  if (kept !== null) return kept
+  if (kept !== null) {
+    onProgress?.(kept.byteLength, kept.byteLength)
+    return kept
+  }
 
   const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(`Stem request failed (${response.status})`)
-  const encoded = await response.arrayBuffer()
-  void writeCachedSongAudio(url, encoded, 'application/octet-stream')
-  return encoded
+  const total = declaredLength(response)
+  const body = response.body
+
+  // Read the body a chunk at a time, so a slow link has something to show
+  // for itself. `arrayBuffer()` reports nothing until the last byte, which
+  // on a phone is the difference between "downloading" and "broken".
+  // Anything without a streaming body (a test double, an old browser)
+  // falls back to the whole-buffer read.
+  if (body === null) {
+    const whole = await response.arrayBuffer()
+    onProgress?.(whole.byteLength, whole.byteLength)
+    void writeCachedSongAudio(url, whole, 'application/octet-stream')
+    return whole
+  }
+
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let received = 0
+  onProgress?.(0, total)
+  for (;;) {
+    const step = await reader.read()
+    if (step.done) break
+    chunks.push(step.value)
+    received += step.value.byteLength
+    onProgress?.(received, total)
+  }
+
+  const encoded = new Uint8Array(received)
+  let offset = 0
+  for (const chunk of chunks) {
+    encoded.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  onProgress?.(received, received)
+  void writeCachedSongAudio(url, encoded.buffer, 'application/octet-stream')
+  return encoded.buffer
 }
 
 function defaultMediaElementFactory(): HTMLAudioElement {
@@ -299,12 +373,40 @@ export function createGuitarBackingTransport(
     for (const listener of listeners) listener()
   }
 
+  /**
+   * Download progress, and the last fraction the room was told about.
+   *
+   * A chunked read fires per chunk -- hundreds of times for one stem -- and
+   * every emit is a re-render of the whole deck. The room cannot show more
+   * than whole percents, so that is the resolution the listeners are woken
+   * at. Track completion always emits regardless.
+   */
+  let loadProgress: GuitarBackingLoadProgress | null = null
+  let announcedFraction = -1
+
+  const publishProgress = (next: GuitarBackingLoadProgress): void => {
+    loadProgress = next
+    const step = Math.floor(next.fraction * 100)
+    if (step === announcedFraction) return
+    announcedFraction = step
+    emit()
+  }
+
+  const clearProgress = (): void => {
+    loadProgress = null
+    announcedFraction = -1
+  }
+
   const setStatus = (
     nextStatus: GuitarBackingTransportStatus,
     nextError: string | null = null,
   ): void => {
     status = nextStatus
     error = nextError
+    // Progress belongs to one load. Leaving 'loading' by any exit -- ready,
+    // error, or a fallback to streaming -- ends it, so a later spinner can
+    // never inherit the last download's percentage.
+    if (nextStatus !== 'loading') clearProgress()
     if (playIntentPending) {
       playIntentStatus = nextStatus
       playIntentPending = false
@@ -529,13 +631,49 @@ export function createGuitarBackingTransport(
     const abort = new AbortController()
     loadAbort?.abort()
     loadAbort = abort
+    const totalTracks = currentSession.tracks.length
+    let finishedTracks = 0
+    let bytesBeforeThisTrack = 0
+    clearProgress()
+    publishProgress({
+      loadedTracks: 0,
+      totalTracks,
+      receivedBytes: 0,
+      totalBytes: 0,
+      fraction: 0,
+    })
     setStatus('loading')
     const loaded: DecodedTrack[] = []
     let decodedBytes = 0
 
     for (const track of currentSession.tracks) {
       try {
-        const encoded = await fetchArrayBuffer(track.url, abort.signal)
+        const encoded = await fetchArrayBuffer(
+          track.url,
+          abort.signal,
+          (received, total) => {
+            // One stem's share of the whole song is 1/totalTracks, and
+            // within it the byte count if the server declared one. A stem
+            // that declares nothing still moves the bar when it finishes.
+            const withinTrack = total > 0 ? Math.min(1, received / total) : 0
+            publishProgress({
+              loadedTracks: finishedTracks,
+              totalTracks,
+              receivedBytes: bytesBeforeThisTrack + received,
+              totalBytes: total > 0 ? bytesBeforeThisTrack + total : 0,
+              fraction: (finishedTracks + withinTrack) / totalTracks,
+            })
+          },
+        )
+        finishedTracks += 1
+        bytesBeforeThisTrack += encoded.byteLength
+        publishProgress({
+          loadedTracks: finishedTracks,
+          totalTracks,
+          receivedBytes: bytesBeforeThisTrack,
+          totalBytes: bytesBeforeThisTrack,
+          fraction: finishedTracks / totalTracks,
+        })
         if (
           abort.signal.aborted ||
           disposed ||
@@ -988,6 +1126,7 @@ export function createGuitarBackingTransport(
     getAudioContext: () => context,
     getAudioGraph: () => audioGraph,
     getLoadMode: () => loadMode,
+    getLoadProgress: () => loadProgress,
     getStatus: () => status,
     getCurrentTime: currentTime,
     getDuration: () => duration,

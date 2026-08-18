@@ -141,6 +141,7 @@ function createTransport(): GuitarBackingTransportController {
   return {
     status: () => 'armed',
     loadMode: () => null,
+    loadProgress: () => null,
     positionSeconds: () => 0,
     durationSeconds: () => 60,
     playbackRate: () => 1,
@@ -364,5 +365,85 @@ describe('GuitarNightRoom', () => {
 
     const vocals = screen.getByRole('button', { name: 'Vocals on' })
     expect(vocals.querySelector('small')).toHaveTextContent('In mix')
+  })
+
+  // ------------------------------------------------------------
+  // The song that is still arriving
+  // ------------------------------------------------------------
+  //
+  // Pressing Play on an uncached demo starts an eight-megabyte download.
+  // All the room did was dim the button, which is also what a button that
+  // has stopped working looks like.
+
+  it('turns the play button into the download meter', () => {
+    const transport = createTransport()
+    transport.status = () => 'loading'
+    transport.loadProgress = () => ({
+      loadedTracks: 0,
+      totalTracks: 2,
+      receivedBytes: 2_097_152,
+      totalBytes: 8_388_608,
+      fraction: 0.25,
+    })
+
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const play = screen.getByRole('button', { name: 'Starting backing' })
+    expect(play).toBeDisabled()
+    expect(play).toHaveAttribute('data-loading-percent', '25')
+    expect(play).toHaveTextContent('25%')
+    // And the footer says what the wait is for, in megabytes.
+    expect(screen.getByText('2.0 MB of 8.0 MB')).toBeInTheDocument()
+    expect(screen.getByText('Getting the song ready')).toBeInTheDocument()
+  })
+
+  it('shows a turning ring rather than a percentage nobody stated', () => {
+    const transport = createTransport()
+    transport.status = () => 'loading'
+    // A streamed room, or a server that sent no content-length.
+    transport.loadProgress = () => ({
+      loadedTracks: 0,
+      totalTracks: 2,
+      receivedBytes: 0,
+      totalBytes: 0,
+      fraction: 0,
+    })
+
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const play = screen.getByRole('button', { name: 'Starting backing' })
+    expect(play).toHaveAttribute('data-loading-percent', '')
+    expect(play).not.toHaveTextContent('%')
+    expect(screen.getByText('Stem 1 of 2')).toBeInTheDocument()
+  })
+
+  it('shows the play icon again the moment the song is ready', () => {
+    const transport = createTransport()
+    transport.status = () => 'ready'
+
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const play = screen.getByRole('button', { name: 'Play backing' })
+    expect(play).toBeEnabled()
+    expect(play).not.toHaveAttribute('data-loading-percent', '0')
+    expect(play.querySelector('svg')).not.toBeNull()
   })
 })

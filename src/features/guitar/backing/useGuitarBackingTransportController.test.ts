@@ -49,6 +49,7 @@ function fakeTransport(): {
     getAudioContext: () => null,
     getAudioGraph: () => null,
     getLoadMode: () => null,
+    getLoadProgress: () => null,
     getStatus: () => status,
     getCurrentTime: () => 0,
     getDuration: () => 60,
