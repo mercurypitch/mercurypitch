@@ -94,3 +94,41 @@ describe('StaleBuildRecovery', () => {
     expect(reload).toHaveBeenCalledTimes(1)
   })
 })
+
+// ============================================================
+// The banner says "working on it", so it uses the one spinner
+// ============================================================
+//
+// It used to rotate the RotateCcw glyph — a circular arrow with an arrowhead
+// and a gap — a full turn every 1.4s. The arrowhead is a landmark, so the eye
+// tracks it going round and reads a tumbling object rather than progress;
+// reported as "nauseating, spinning weirdly, not a proper spinner". A real
+// indicator sweeps an arc with nothing to track on it.
+
+describe('StaleBuildRecovery progress indicator', () => {
+  afterEach(() => {
+    cleanup()
+    vi.clearAllMocks()
+  })
+
+  function mount(): HTMLElement {
+    const { container } = render(() => (
+      <StaleBuildRecovery
+        reload={vi.fn(async () => Promise.resolve())}
+        storage={fakeStorage()}
+        now={() => NOW}
+      />
+    ))
+    return container
+  }
+
+  it('shows the shared spinner', () => {
+    expect(mount().querySelector('[data-testid="spinner"]')).not.toBeNull()
+  })
+
+  it('no longer rotates a refresh arrow', () => {
+    // The arrowhead is the whole problem, and it is the one shape the
+    // shared spinner does not draw.
+    expect(mount().querySelector('polyline')).toBeNull()
+  })
+})

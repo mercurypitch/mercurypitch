@@ -856,6 +856,9 @@ function buildMilestones(model: ProgressModel): ProgressMilestoneView[] {
           : `Earned ${formatDate(milestone.occurredAt)}`,
       detail: milestone.description,
       artUrl: badgeArtSrc(milestone.icon),
+      // Carried even when `artUrl` resolves: the view picks one or the
+      // other, and a badge whose .webp 404s still has a glyph to fall to.
+      icon: milestone.icon,
     }))
 }
 

@@ -208,6 +208,19 @@ export const Walkthrough: Component = () => {
   // Checks immediately first (0 delay) to resolve instantly if already rendered
   // Retries up to `maxAttempts` times with `intervalMs` between attempts
   // (default budget ~1s — enough for lazy tab content and reveal animations).
+  // Every pending retry, so unmounting stops the poll instead of leaving up
+  // to a second of `document.querySelector` scheduled against a page that is
+  // going away. Under vitest that landed as an unhandled
+  // `ReferenceError: document is not defined` after the environment was torn
+  // down — the same leak, just loud enough to see.
+  const pendingRetries = new Set<ReturnType<typeof setTimeout>>()
+  let disposed = false
+  onCleanup(() => {
+    disposed = true
+    for (const timer of pendingRetries) clearTimeout(timer)
+    pendingRetries.clear()
+  })
+
   const waitForTarget = (
     selector: string,
     maxAttempts = 20,
@@ -216,13 +229,21 @@ export const Walkthrough: Component = () => {
     new Promise((resolve) => {
       let attempts = 0
       const tryOnce = () => {
+        if (disposed) {
+          resolve(false)
+          return
+        }
         if (queryVisible(selector) !== null) {
           resolve(true)
           return
         }
         attempts++
         if (attempts < maxAttempts) {
-          setTimeout(tryOnce, intervalMs)
+          const timer = setTimeout(() => {
+            pendingRetries.delete(timer)
+            tryOnce()
+          }, intervalMs)
+          pendingRetries.add(timer)
         } else {
           resolve(false)
         }

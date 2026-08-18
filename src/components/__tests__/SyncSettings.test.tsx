@@ -52,6 +52,7 @@ const drive = vi.hoisted(() => ({
   scan: null as unknown,
   job: null as unknown,
   stopping: false,
+  busy: false,
   refreshDriveStatus: vi.fn(() => Promise.resolve()),
   restoreFromDrive: vi.fn(() => Promise.resolve()),
   scanDrive: vi.fn(() => Promise.resolve(null)),
@@ -61,7 +62,7 @@ vi.mock('@/stores/drive-sync-store', () => ({
   backUpToDrive: vi.fn(),
   connectDrive: vi.fn(),
   disconnectDriveSync: vi.fn(),
-  driveBusy: () => false,
+  driveBusy: () => drive.busy,
   driveEmail: () => null,
   driveError: () => null,
   driveFolderId: () => null,
@@ -89,6 +90,7 @@ beforeEach(() => {
   drive.scan = null
   drive.job = null
   drive.stopping = false
+  drive.busy = false
   drive.refreshDriveStatus.mockClear()
   drive.restoreFromDrive.mockClear()
   drive.scanDrive.mockClear()
@@ -215,5 +217,43 @@ describe('the Drive section', () => {
     const button = screen.getByText('Restore 1 song') as HTMLButtonElement
     fireEvent.click(button)
     expect(drive.restoreFromDrive).toHaveBeenCalledWith(['h-2'])
+  })
+})
+
+// ============================================================
+// The busy state uses the one spinner, not a rotating refresh arrow
+// ============================================================
+//
+// Both nudge buttons kept their RotateCcw glyph and spun it — the Drive one
+// counter-clockwise, deliberately, because "the arrow points that way". An
+// arrow with an arrowhead is a landmark the eye tracks, which is why this read
+// as tumbling rather than working. The idle button keeps the arrow, because
+// as an *action* icon it is right; only the busy state changes.
+
+describe('the Drive check button', () => {
+  it('spins the shared spinner while a scan is in flight', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    drive.busy = true
+    render(() => <SyncSettings />)
+
+    const button = await screen.findByRole('button', {
+      name: 'Check Drive again',
+    })
+    expect(button.querySelector('[data-testid="spinner"]')).not.toBeNull()
+    expect(button.querySelector('polyline')).toBeNull()
+  })
+
+  it('keeps the refresh arrow when idle, because that is the action', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    drive.busy = false
+    render(() => <SyncSettings />)
+
+    const button = await screen.findByRole('button', {
+      name: 'Check Drive again',
+    })
+    expect(button.querySelector('polyline')).not.toBeNull()
+    expect(button.querySelector('[data-testid="spinner"]')).toBeNull()
   })
 })

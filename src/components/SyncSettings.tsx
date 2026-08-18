@@ -33,6 +33,7 @@ import { getAllUvrSessions, whenSessionStoreReady } from '@/stores/uvr-store'
 import { LinkChain, RotateCcw } from './icons'
 import { InstallAppButton } from './InstallAppButton'
 import panel from './SettingsPanel.module.css'
+import { Spinner } from './shared/Spinner'
 import styles from './SyncSettings.module.css'
 
 /** Why a connect attempt came back without a grant. */
@@ -259,13 +260,18 @@ export const SyncSettings: Component = () => {
           <h3 class={panel.settingsSectionTitle}>Your library</h3>
           <button
             type="button"
-            class={`${panel.settingsActionBtn} ${styles.iconAction} ${busy() ? styles.spinning : ''}`}
+            class={`${panel.settingsActionBtn} ${styles.iconAction}`}
             disabled={busy()}
             onClick={() => void refresh()}
             aria-label="Check again"
             title="Check again"
           >
-            <RotateCcw size={16} />
+            {/* The arrow is right as the ACTION; it was only ever wrong as
+                the progress indicator, where its arrowhead gave the eye a
+                landmark to follow round. */}
+            <Show when={busy()} fallback={<RotateCcw size={16} />}>
+              <Spinner size={16} />
+            </Show>
           </button>
         </div>
         <div class={panel.settingsDivider} />
@@ -300,13 +306,18 @@ export const SyncSettings: Component = () => {
           <Show when={accountHeld() && driveState() === 'connected'}>
             <button
               type="button"
-              class={`${panel.settingsActionBtn} ${styles.iconAction} ${driveBusy() && driveJob() === null ? styles.spinning : ''}`}
+              class={`${panel.settingsActionBtn} ${styles.iconAction}`}
               disabled={driveBusy()}
               onClick={() => void scanDrive()}
               aria-label="Check Drive again"
               title="Check Drive again"
             >
-              <RotateCcw size={16} />
+              <Show
+                when={driveBusy() && driveJob() === null}
+                fallback={<RotateCcw size={16} />}
+              >
+                <Spinner size={16} />
+              </Show>
             </button>
           </Show>
         </div>

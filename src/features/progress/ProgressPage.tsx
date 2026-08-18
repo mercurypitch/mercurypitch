@@ -16,6 +16,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { iconByName, renderIcon } from '@/components/hidden-features-icons'
 import { AlertTriangle, History, Repeat, RotateCcw, Share, Trophy, Voice, } from '@/components/icons'
 import { InfoPopover } from '@/components/InfoPopover'
 import styles from './ProgressPage.module.css'
@@ -141,6 +142,15 @@ export interface ProgressMilestoneView {
   earnedAtLabel: string
   detail: string
   artUrl?: string
+  /**
+   * The seed's icon name, for when there is no drawn medallion.
+   *
+   * Only the sixteen BADGE icons have art in `public/badges/`, and the
+   * achievements draw from a much larger vocabulary — 46 of the 59 seeded
+   * ones resolve to no `artUrl` at all. They were rendering as a nameless
+   * empty disc, which reads as "locked" for something you have earned.
+   */
+  icon?: string
 }
 
 export interface ProgressLeagueView {
@@ -1192,72 +1202,85 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                         snapshot().league !== undefined,
                     }}
                   >
-                    <ul
-                      class={styles.milestoneShelf}
-                      tabindex="0"
-                      aria-label="Earned milestones. Swipe or scroll horizontally to browse."
-                    >
-                      <Show when={snapshot().milestonesAvailable !== false}>
-                        <For each={snapshot().milestones}>
-                          {(milestone) => (
-                            <li>
-                              <div class={styles.milestoneObject}>
-                                <Show
-                                  when={milestone.artUrl}
-                                  fallback={<span aria-hidden="true" />}
-                                >
-                                  {(src) => (
-                                    <img
-                                      src={src()}
-                                      width="96"
-                                      height="96"
-                                      loading="lazy"
-                                      decoding="async"
-                                      alt=""
-                                    />
-                                  )}
-                                </Show>
-                              </div>
-                              <span>{milestone.kindLabel}</span>
-                              <strong>{milestone.title}</strong>
-                              <p>{milestone.detail}</p>
-                              <small>{milestone.earnedAtLabel}</small>
-                            </li>
-                          )}
-                        </For>
-                      </Show>
-                      <Show
-                        when={
-                          snapshot().milestonesAvailable !== false &&
-                          snapshot().milestones.length === 0
-                        }
+                    {/* The golden rail is drawn on this wrapper, not on the
+                        shelf. An absolutely positioned child of a scroll
+                        container measures the SCROLLPORT, so the rail was
+                        exactly one screen wide and stopped under the third
+                        badge however far the list ran. */}
+                    <div class={styles.shelfRail}>
+                      <ul
+                        class={styles.milestoneShelf}
+                        tabindex="0"
+                        aria-label="Earned milestones. Swipe or scroll horizontally to browse."
                       >
-                        <li class={styles.emptyShelf}>
-                          <div class={styles.milestoneObject}>
-                            <span aria-hidden="true" />
-                          </div>
-                          <strong>
-                            Your first earned mark will rest here.
-                          </strong>
-                          <p>
-                            Milestones appear only after their real requirement
-                            is met.
-                          </p>
-                        </li>
-                      </Show>
-                      <Show when={snapshot().milestonesAvailable === false}>
-                        <li class={styles.emptyShelf}>
-                          <div class={styles.milestoneObject}>
-                            <span aria-hidden="true" />
-                          </div>
-                          <strong>Earned marks are unavailable.</strong>
-                          <p>
-                            Reconnect to load your saved badges and
-                            achievements. Nothing has been removed.
-                          </p>
-                        </li>
-                      </Show>
-                    </ul>
+                        <Show when={snapshot().milestonesAvailable !== false}>
+                          <For each={snapshot().milestones}>
+                            {(milestone) => (
+                              <li>
+                                <div class={styles.milestoneObject}>
+                                  <Show
+                                    when={milestone.artUrl}
+                                    fallback={
+                                      <span aria-hidden="true">
+                                        {renderIcon(
+                                          iconByName(milestone.icon ?? ''),
+                                        )}
+                                      </span>
+                                    }
+                                  >
+                                    {(src) => (
+                                      <img
+                                        src={src()}
+                                        width="96"
+                                        height="96"
+                                        loading="lazy"
+                                        decoding="async"
+                                        alt=""
+                                      />
+                                    )}
+                                  </Show>
+                                </div>
+                                <span>{milestone.kindLabel}</span>
+                                <strong>{milestone.title}</strong>
+                                <p>{milestone.detail}</p>
+                                <small>{milestone.earnedAtLabel}</small>
+                              </li>
+                            )}
+                          </For>
+                        </Show>
+                        <Show
+                          when={
+                            snapshot().milestonesAvailable !== false &&
+                            snapshot().milestones.length === 0
+                          }
+                        >
+                          <li class={styles.emptyShelf}>
+                            <div class={styles.milestoneObject}>
+                              <span aria-hidden="true" />
+                            </div>
+                            <strong>
+                              Your first earned mark will rest here.
+                            </strong>
+                            <p>
+                              Milestones appear only after their real
+                              requirement is met.
+                            </p>
+                          </li>
+                        </Show>
+                        <Show when={snapshot().milestonesAvailable === false}>
+                          <li class={styles.emptyShelf}>
+                            <div class={styles.milestoneObject}>
+                              <span aria-hidden="true" />
+                            </div>
+                            <strong>Earned marks are unavailable.</strong>
+                            <p>
+                              Reconnect to load your saved badges and
+                              achievements. Nothing has been removed.
+                            </p>
+                          </li>
+                        </Show>
+                      </ul>
+                    </div>
 
                     <Show when={snapshot().league}>
                       {(league) => (

@@ -16,6 +16,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, onMount, Show } from 'solid-js'
 import { reloadToLatest, requestUpdateCheck } from '@/lib/pwa-service-worker'
+import { Spinner } from './shared/Spinner'
 import styles from './StaleBuildRecovery.module.css'
 
 /** Session-scoped stamp of the last automatic recovery attempt. */
@@ -79,18 +80,10 @@ export const StaleBuildRecovery: Component<StaleBuildRecoveryProps> = (
   return (
     <div class={styles.overlay} role="alert" aria-live="assertive">
       <div class={styles.card}>
-        <svg
-          class={styles.icon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="1 4 1 10 7 10"></polyline>
-          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-        </svg>
+        {/* The one spinner. This used to rotate the refresh glyph, whose
+            arrowhead the eye tracks all the way round — it read as a
+            tumbling object, not as progress. */}
+        <Spinner class={styles.icon} size={32} />
         <h2 class={styles.title}>A new version of MercuryPitch is ready</h2>
         <Show
           when={auto()}

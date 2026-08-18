@@ -118,18 +118,6 @@
   border-radius: 50%;
 }
 
-.spinning svg {
-  animation: syncSpin 1s linear infinite;
-}
-
-/* The arrow on the icon points counter-clockwise; spinning it the other
-   way reads as rewinding. */
-@keyframes syncSpin {
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
 /* The restore picker: what Drive holds that this device does not, one
    choosable row per song, scrolling past a screenful -- a hundred-song
    Drive must not mean all-or-nothing. */

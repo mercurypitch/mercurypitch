@@ -14,6 +14,22 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   18px of blur. The Room menu now carries a slider that opens all three of
   those at once, and it is in the menu rather than the top bar so a phone can
   reach it too. All the way down is the room exactly as it was.
+- **The Progress tab's achievements have their pictures back.** An earned
+  achievement with no drawn medallion — most of them — was showing an empty
+  dark disc, which reads as "locked" for something you have already won. It
+  shows the achievement's own symbol now.
+
+### Fixed
+
+- **The golden rail under Milestones runs the whole shelf.** It stopped after
+  the first three badges and slid away as you scrolled, so most of the list
+  sat over bare background.
+- **The "updating MercuryPitch" spinner is a spinner.** It — and the two
+  Google Drive check buttons — were rotating a refresh arrow, whose arrowhead
+  the eye follows round; it read as something tumbling rather than something
+  working. All three use the app's normal spinner now.
+- **Closing the guided tour stops it looking for the next step.** It kept
+  polling the page for up to a second after it was dismissed.
 
 ## [0.9.0] - 2026-08-18
 

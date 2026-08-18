@@ -1521,11 +1521,32 @@
   background: rgb(216 187 121 / 36%);
 }
 
-.milestoneShelf::after {
+/*
+ * The shelf edge, drawn on the wrapper rather than on the shelf.
+ *
+ * It used to be `.milestoneShelf::after`. An absolutely positioned child of
+ * a scroll container resolves `left`/`right` against the PADDING BOX — the
+ * scrollport — not against the scrollable content, so the rail was exactly
+ * one screenful wide: it ran under the first three badges and stopped, while
+ * the rest of the list scrolled over bare background.
+ *
+ * On the wrapper it spans the visible shelf and stays put while the objects
+ * slide across it, which is what a shelf edge should do anyway.
+ */
+.shelfRail {
+  /* The scrollbar lives in the scroller's own bottom gutter, and the rail
+     goes above it — the wrapper has no scrollbar of its own to sit over. */
+  --shelf-scrollbar: 4px;
+
+  position: relative;
+  min-width: 0;
+}
+
+.shelfRail::after {
   content: '';
   position: absolute;
   right: 0;
-  bottom: 0;
+  bottom: var(--shelf-scrollbar);
   left: 0;
   height: 12px;
   border-top: 1px solid rgb(216 187 121 / 42%);
@@ -2454,6 +2475,11 @@
 
   .milestoneShelf::-webkit-scrollbar {
     display: none;
+  }
+
+  /* No scrollbar to clear, so the rail drops to the wrapper's own edge. */
+  .shelfRail {
+    --shelf-scrollbar: 0px;
   }
 
   .leagueObject {

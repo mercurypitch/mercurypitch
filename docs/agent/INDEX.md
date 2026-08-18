@@ -80,7 +80,7 @@ These are the rules that break things when ignored.
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 6.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 6.2k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 5.8k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
+| `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 6.0k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |

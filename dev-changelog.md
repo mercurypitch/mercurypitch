@@ -28,6 +28,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the phone the report came from there is no way to reach it. Guitar Night's
   Room menu is the collapsed drawer at that width, so this one survives.
 
+- **`ProgressMilestoneView` carries the seed's `icon`, and the shelf falls
+  back to `iconByName(...)` instead of a blank `<span>`.** `badgeArtSrc` only
+  knows the sixteen BADGE icons, each with a `public/badges/<icon>.webp`; the
+  59 seeded achievements draw from a much larger vocabulary, so **46 of them**
+  resolved to `artUrl: undefined` and rendered as a nameless dark disc. The
+  shelf lists only EARNED milestones (`model.ts` skips `unlocked !== true`),
+  so that disc never meant "locked" — it meant missing art. `badge-art.ts`
+  already promised this fallback in its own header and `ProfileView` and
+  `VocalChallenges` honoured it; the Progress shelf did not. No art needed:
+  `iconByName` resolves every seeded name, with `IconBadge` as the floor.
+  Drawn medallions for the 27 uncovered icons are a separate, optional
+  upgrade — prompts are written and waiting.
+
+### Fixed
+
+- **The milestones rail is drawn on a new `.shelfRail` wrapper rather than on
+  `.milestoneShelf` itself.** An absolutely positioned child of a scroll
+  container resolves `left`/`right` against the padding box — the scrollport
+  — not the scrollable content, so the rail was exactly one screenful wide
+  and, being inside the scroller, slid away with the badges it was under. On
+  the wrapper it spans the visible shelf and stays put while the objects
+  slide over it. The scrollbar gutter is a `--shelf-scrollbar` custom
+  property, zeroed at the phone breakpoint where the scrollbar is hidden.
+  `src/e2e/progress.spec.ts` pins the contract in one line: the element that
+  owns the rail must not be the element that scrolls.
+- **`StaleBuildRecovery` and both `SyncSettings` check buttons use
+  `shared/Spinner`.** All three rotated the `RotateCcw` glyph — the Drive one
+  at `-360deg`, deliberately, "because the arrow points counter-clockwise".
+  An arrow has an arrowhead, and an arrowhead is a landmark the eye tracks, so
+  the whole thing read as a tumbling object. The idle Drive buttons keep the
+  arrow: it is correct as an *action* icon, and only the busy state changed.
+  The banner also gains reduced-motion behaviour it did not have — it used to
+  set `animation: none`, leaving a motionless refresh arrow on screen for the
+  entire reload.
+- **`Walkthrough`'s `waitForTarget` poll is cancelled on unmount.** It retried
+  `document.querySelector` twenty times at 50ms with nothing tracking the
+  timers, so dismissing the guide left up to a second of work scheduled
+  against a page on its way out. Pre-existing, and invisible in the app; under
+  vitest it surfaced once the suite passed 775 files as an unhandled
+  `ReferenceError: document is not defined` thrown after the jsdom environment
+  was torn down — every test green and the run still exit 1. Measured: 17
+  stray `querySelector` calls after unmount before the fix, none after.
+
 ### Changed
 
 - **`createStageGlassPreference` (`src/lib/stage-glass-preference.ts`) now

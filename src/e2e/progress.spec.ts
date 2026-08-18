@@ -302,4 +302,76 @@ test.describe('Progress dashboard', () => {
     expect(actionColors.label).toBe(actionColors.control)
     expect(actionColors.label).toBe('rgb(7, 17, 24)')
   })
+
+  test('the golden rail runs the whole shelf, not one screenful @smoke', async ({
+    page,
+  }) => {
+    // Reported: the rail "is only extending to fill that initial view, 3
+    // first badges, but not through the full list when I drag and scroll".
+    // It was `.milestoneShelf::after` — an absolutely positioned child of a
+    // scroll container, so it measured the scrollport and slid away with the
+    // content it was meant to sit under.
+    await page.addInitScript((userId) => {
+      ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('mp:userId', userId)
+    }, USER_ID)
+
+    await page.goto('/')
+    await page.waitForSelector('#app-tabs, [data-tour="mobile-tabbar"]', {
+      timeout: 10_000,
+    })
+    await dismissOverlays(page)
+    await ensureLocalDb(page)
+    await seedProgressEvidence(page)
+
+    await page.goto('/#/progress')
+    await dismissOverlays(page)
+
+    const shelf = page.getByRole('list', {
+      name: 'Earned milestones. Swipe or scroll horizontally to browse.',
+    })
+    await expect(shelf).toBeVisible()
+    await shelf.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        shelf.evaluate((element) => element.scrollWidth > element.clientWidth),
+      )
+      .toBe(true)
+
+    // Scroll past the first screenful, which is exactly where the rail used
+    // to end.
+    await shelf.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth - element.clientWidth
+    })
+
+    const rail = await shelf.evaluate((element) => {
+      const owner = element.parentElement
+      if (owner === null) return null
+      const drawnOn = (node: Element): boolean =>
+        getComputedStyle(node, '::after').content !== 'none'
+      return {
+        onOwner: drawnOn(owner),
+        onScroller: drawnOn(element),
+        ownerScrolls: owner.scrollWidth > owner.clientWidth,
+        ownerWidth: Math.round(owner.getBoundingClientRect().width),
+        scrollerWidth: Math.round(element.getBoundingClientRect().width),
+        railWidth: Math.round(
+          Number.parseFloat(getComputedStyle(owner, '::after').width),
+        ),
+      }
+    })
+    if (rail === null) throw new Error('Milestones shelf has no wrapper')
+
+    // The contract in one line: whatever owns the rail must not be the thing
+    // that scrolls, or the rail scrolls away with the badges.
+    expect(rail.onOwner).toBe(true)
+    expect(rail.onScroller).toBe(false)
+    expect(rail.ownerScrolls).toBe(false)
+
+    // And it spans the shelf it sits under, at the far end of the scroll.
+    expect(Math.abs(rail.railWidth - rail.ownerWidth)).toBeLessThanOrEqual(1)
+    expect(Math.abs(rail.ownerWidth - rail.scrollerWidth)).toBeLessThanOrEqual(
+      1,
+    )
+  })
 })
