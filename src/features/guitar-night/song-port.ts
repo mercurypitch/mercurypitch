@@ -160,7 +160,10 @@ export function resolveGuitarNightDefaultMix(
  */
 export const DEMO_CATALOG_WAIT_MS = 4000
 
-/** Resolve when `work` settles, or when `ms` is up — whichever is first. */
+/**
+ * Resolve when `work` settles, or when `ms` is up — whichever is first.
+ * `work` must already be caught: this only ever waits, never handles.
+ */
 function settleWithin(work: Promise<unknown>, ms: number): Promise<void> {
   return new Promise((resolve) => {
     const timer = setTimeout(resolve, ms)
