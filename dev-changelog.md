@@ -212,6 +212,56 @@ card nobody can regenerate is also a failure. Mutations red: the original
 Piano Night state (block deleted), a missing image file, a drifted
 `twitter:image`, and the old jam link shape.
 
+### Challenges: period-neutral, and an admin that does the arithmetic
+
+**The assessment first, because it decided the shape: moving from weekly to
+monthly needs no schema change and no migration.** There is no period field
+anywhere in the model — `weekly-service.ts` stores `startsAt` and `endsAt` and
+nothing else, and "live" is `startsAt <= now < endsAt`. A month-long challenge
+is two dates four weeks apart. The only thing that would have gone stale was
+the copy.
+
+So the copy stopped saying it. "Legend Attempt" replaces "This Week's Legend"
+on the Home card, the challenge stage and its aria-label, and the guided tour
+step no longer promises one "every week" — the card's countdown already says
+how many days are left, which is the honest answer whatever the period is.
+Internal names are deliberately untouched: `WeeklyLegendHero.tsx`,
+`weekly-service.ts`, `weekly_attempt`/`weekly_join`, the table. Renaming those
+is wide, invisible, and ends in a migration.
+
+`src/features/challenges/challenge-window.ts` (new, 100% coverage) is the
+arithmetic: `mondayOf`, ISO `isoWeekNumber`/`isoWeekYear` (the real rule —
+the week containing the year's first Thursday — so 2025-12-29 is W1 of 2026
+and 2027-01-01 is W53 of 2026), `shiftWeeks`, `weeksBetween`, `windowFrom`,
+and `reflowQueue`/`reflowChanges`/`reorder`.
+
+Admin form: the two raw ISO inputs gained a stepper above them — arrows on the
+opening week (which carries the closing week with it, so stepping the start is
+"run this later", not "make it shorter"), arrows on the closing week (which
+change the length, floored at one week — a window that closes before it opens
+passes `now < endsAt` the wrong way and is live forever), and one-press
+one/two/four/eight week periods. The ISO fields stay for anything the stepper
+cannot express.
+
+Admin queue: a new panel lists everything behind the live challenge, drag-
+reorderable, with keyboard up/down as well — a drag handle alone is
+unreachable without a pointer. "Recompute dates" re-dates them back to back
+from the live one's close. **Manual on purpose**: an automatic reflow would
+move a live challenge out from under whoever is attempting it, and would make
+a mis-drag destructive. `reflowChanges` diffs against what is stored so
+unmoved rows are not rewritten, and a partial failure keeps going rather than
+leaving a gap mid-queue.
+
+Validation: `challenge-window.test.ts` 30 tests including an 800-day sweep
+that no week falls outside 1..53; `admin-challenge-window.test.tsx` 16
+render tests over the stepper and the queue; `challenge-period-neutral.test.ts`
+9 tests that scan user-facing strings in the challenge surfaces for a period
+word. Mutations red: start-step dropping its carry, the closing-week floor
+removed, the queue leaving a gap, a reflow wired into the drop handler, and a
+drop that ignores direction. The reflow-on-drop mutation initially passed —
+the drag path had no test at all, only the keyboard buttons — which is why
+there are now three drag tests.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

@@ -1597,9 +1597,9 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_HOME,
   },
   {
-    title: 'This week’s Legend',
+    title: 'Legend Attempt',
     description:
-      'A fresh community vocal challenge drops here every week — keep an eye out and take on the feat.',
+      'A community vocal challenge lands here — the card counts down the days it has left. Keep an eye out and take on the feat.',
     targetSelector: '.home-legend-card',
     placement: 'bottom',
     requiredTab: TAB_HOME,

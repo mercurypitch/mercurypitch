@@ -262,3 +262,205 @@
   cursor: pointer;
   font-size: 0.8rem;
 }
+
+/* ============================================================
+   The run window, counted in weeks
+   ============================================================
+   Two ISO strings are still the only stored truth. These controls just do
+   the arithmetic that was otherwise done in somebody's head — which is why
+   the raw ISO fields are still there underneath, for the case the stepper
+   cannot express. */
+
+.window {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 3%);
+}
+
+.windowRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.windowLabel {
+  min-width: 5.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A real target: this is the control being clicked over and over while
+     skimming a schedule week by week. */
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 6%);
+  color: inherit;
+  cursor: pointer;
+}
+
+.step:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+.week {
+  min-width: 6.5rem;
+  padding: 0 0.35rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+}
+
+.windowDate {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.period {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.periodOn {
+  border-color: transparent;
+  background: rgb(216 187 121 / 85%);
+  color: #17130d;
+  font-weight: 700;
+}
+
+/* ============================================================
+   The queue
+   ============================================================
+   Drag to reorder, then press the button. Nothing writes until then. */
+
+.queue {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 3%);
+}
+
+.queueHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.queueHead h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.queueList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.queueItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 4%);
+  cursor: grab;
+}
+
+.queueDragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.queueGrip {
+  display: inline-flex;
+  opacity: 0.5;
+}
+
+.queuePos {
+  min-width: 1.4rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.queueTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueWindow {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+}
+
+.queueMove {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.queueMove button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.queueMove button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.queueActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .queueWindow {
+    display: none;
+  }
+
+  .windowLabel {
+    min-width: 100%;
+  }
+}

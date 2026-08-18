@@ -14,6 +14,18 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   18px of blur. The Room menu now carries a slider that opens all three of
   those at once, and it is in the menu rather than the top bar so a phone can
   reach it too. All the way down is the room exactly as it was.
+- **Challenges no longer tell you how long they are in their name.** The Home
+  card says "Legend Attempt" rather than "This Week's Legend", so a challenge
+  can run for a week, four weeks, or anything else without the wording going
+  stale. The countdown still tells you the days left, which was always the
+  useful part.
+- **The challenge admin counts weeks for you.** Arrows step the opening and
+  closing weeks one at a time, labelled with ISO week numbers, and one press
+  sets a one, two, four or eight week run. Setting a challenge from week 34 to
+  week 38 is four clicks instead of two hand-typed timestamps.
+- **The challenge queue re-dates itself.** Drag the pending challenges into
+  the order you want and press Recompute: they line up back to back after the
+  live one, with no gap and no overlap. Nothing is written until you press it.
 - **Piano Night has a share card.** It was the one room whose link unfurled
   as a bare URL in a chat — no picture, no title, no description. It gets the
   same designed 1200x630 card the other rooms have.

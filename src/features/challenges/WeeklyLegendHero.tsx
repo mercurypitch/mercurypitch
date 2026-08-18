@@ -1,5 +1,11 @@
 // ============================================================
-// WeeklyLegendHero — the "This Week's Legend" card (Home)
+// WeeklyLegendHero — the "Legend Attempt" card (Home)
+//
+// The file keeps its name: renaming it, its stylesheet, the service, the DB
+// table and the two attempt kinds would be a wide rename for no user-visible
+// gain. What people read is period-neutral now, which is the point — the run
+// length is a pair of dates in the admin form and nothing else, so it can be
+// a week, four weeks, or anything else without the copy going stale.
 // ============================================================
 // Shows the active weekly challenge: feat framing, countdown, a "Hear it"
 // link (official upload), a "Sing it" attempt that performs the line on the
@@ -67,7 +73,7 @@ export const WeeklyLegendHero: Component = () => {
   return (
     <section class={`${styles.card} home-legend-card`}>
       <div class={styles.eyebrowRow}>
-        <span class={styles.eyebrow}>This Week's Legend</span>
+        <span class={styles.eyebrow}>Legend Attempt</span>
         <Show when={challenge()}>
           <span class={styles.countdown}>
             {countdownLabel(challenge()!.endsAt)}
