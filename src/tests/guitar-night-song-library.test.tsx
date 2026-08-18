@@ -7,7 +7,7 @@ import type { GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransp
 import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
 import type { GuitarNightPreparationPort, GuitarNightPreparationResult, } from '@/features/guitar-night/preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from '@/features/guitar-night/reference-port'
-import type { GuitarNightOpenBackingResult, GuitarNightSongPort, } from '@/features/guitar-night/song-port'
+import type { GuitarNightOpenBackingResult, GuitarNightSongPort, GuitarNightSongSummary, } from '@/features/guitar-night/song-port'
 
 function deferred<T>(): {
   promise: Promise<T>
@@ -53,16 +53,42 @@ function mixedBackingResult(
   }
 }
 
-/** A device whose library is long enough to page: newest song first. */
-function libraryPort(count: number): GuitarNightSongPort {
-  const songs = Array.from({ length: count }, (_, index) => {
-    const ordinal = String(index + 1).padStart(2, '0')
-    return {
-      sessionId: `session-${ordinal}`,
-      title: `Song ${ordinal}.wav`,
-      createdAt: Date.UTC(2026, 7, 6) - index * 86_400_000,
-    }
-  })
+/** The same two-stem lease, but marked as the app's demo rather than a
+ *  separation this device holds. */
+function demoBackingResult(sessionId: string): GuitarNightOpenBackingResult {
+  const base = mixedBackingResult(sessionId)
+  if (!base.ok) return base
+  return { ok: true, lease: { ...base.lease, source: 'demo' } }
+}
+
+/**
+ * A device whose library is long enough to page: newest song first.
+ *
+ * `demos` are appended the way the composed port appends them — a
+ * separate source that shares one list and is told apart by `source`.
+ */
+function libraryPort(count: number, demos = 0): GuitarNightSongPort {
+  const songs: GuitarNightSongSummary[] = Array.from(
+    { length: count },
+    (_, index) => {
+      const ordinal = String(index + 1).padStart(2, '0')
+      return {
+        sessionId: `session-${ordinal}`,
+        title: `Song ${ordinal}.wav`,
+        createdAt: Date.UTC(2026, 7, 6) - index * 86_400_000,
+      }
+    },
+  )
+  for (let index = 0; index < demos; index++) {
+    songs.push({
+      sessionId:
+        index === 0 ? 'karaoke-night-demo' : `karaoke-night-demo:${index}`,
+      title: `Demo Song ${index + 1}`,
+      createdAt: 0,
+      source: 'demo',
+      subtitle: 'Demo song · Josh Woodward',
+    })
+  }
   return {
     initialize: vi.fn(async () => undefined),
     completedSongs: () => songs,
@@ -910,6 +936,162 @@ describe('GuitarNightApp prepared songs', () => {
     expect(
       screen.getByRole('button', { name: 'Show 5 more' }),
     ).toBeInTheDocument()
+  })
+
+  // ── The demo song ────────────────────────────────────────────
+  //
+  // The room's library is this device's own separations, so a guitarist
+  // who has never run one used to open it to an empty shelf and no way to
+  // hear what the room does.
+
+  it('offers the demo to a device that has separated nothing', async () => {
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(0, 1))} />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+
+    // The empty shelf is still the truth about this device…
+    expect(
+      await screen.findByText('No prepared songs on this device yet.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('0 on this device')).toBeInTheDocument()
+    // …and the demo is right underneath it, which is the whole point.
+    expect(
+      screen.getByRole('button', { name: /Demo Song 1/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Nothing separated yet? Play along with the demo.'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows a demo’s own line instead of a prepared date', async () => {
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(0, 1))} />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    const row = await screen.findByRole('button', { name: /Demo Song 1/ })
+
+    // It was never prepared here, so a prepared date would be a fiction —
+    // and `createdAt: 0` would print 1970.
+    expect(row).toHaveTextContent('Demo song · Josh Woodward')
+    expect(row).not.toHaveTextContent('1970')
+  })
+
+  it('keeps the demo visible behind a library that has to page', async () => {
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(libraryPort(12, 1))}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+
+    // Twelve, not thirteen: the demo is not on this device and is not
+    // paginated away with the songs that are.
+    expect(
+      await screen.findByText('5 of 12 on this device'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Song 06\.wav/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Demo Song 1/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('opens the demo exactly the way a prepared song opens', async () => {
+    const port = libraryPort(1, 1)
+    render(() => <GuitarNightApp loadSongPort={() => Promise.resolve(port)} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    const rows = await screen.findAllByRole('button', { name: /Demo Song 1/ })
+    // Exactly one row: the demo belongs to the demo group, and a device
+    // list that also carried it would offer the same song twice.
+    expect(rows).toHaveLength(1)
+    fireEvent.click(rows[0]!)
+
+    await waitFor(() =>
+      expect(port.openSession).toHaveBeenCalledWith(
+        'karaoke-night-demo',
+        expect.anything(),
+      ),
+    )
+    expect(window.location.search).toBe('?session=karaoke-night-demo')
+  })
+
+  it('withholds the paid band split from the demo', async () => {
+    const backingTransport = fakeBackingTransport()
+    const port: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [
+        {
+          sessionId: 'karaoke-night-demo',
+          title: 'Demo Song 1',
+          createdAt: 0,
+          source: 'demo',
+          subtitle: 'Demo song · Josh Woodward',
+        },
+      ],
+      openSession: vi.fn(async () => demoBackingResult('karaoke-night-demo')),
+    }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(port)}
+        createBackingTransport={() => backingTransport.transport}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Demo Song 1/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Enter room' }))
+
+    // The mix is two-stem, which is exactly what normally offers the
+    // upgrade — but "Separate guitar" reconnects to a durable separation
+    // record the demo has never had, and then names a price in credits.
+    expect(screen.queryByRole('button', { name: /Separate guitar/ })).toBeNull()
+  })
+
+  it('still offers the band split for a two-stem song of the visitor’s own', async () => {
+    const backingTransport = fakeBackingTransport()
+    const port: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [
+        {
+          sessionId: 'session-mixed',
+          title: 'Mine.wav',
+          createdAt: Date.UTC(2026, 7, 6),
+        },
+      ],
+      openSession: vi.fn(async () => mixedBackingResult('session-mixed')),
+    }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(port)}
+        createBackingTransport={() => backingTransport.transport}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Mine\.wav/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Enter room' }))
+
+    expect(
+      screen.getByRole('button', { name: /Separate guitar/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('says nothing about a demo when the app is offering none', async () => {
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(2))} />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    expect(await screen.findByText('2 on this device')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Nothing separated yet? Play along with the demo.'),
+    ).not.toBeInTheDocument()
   })
 
   it('announces asynchronous library loading and failure', async () => {

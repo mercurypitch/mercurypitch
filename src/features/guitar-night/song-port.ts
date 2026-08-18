@@ -14,6 +14,19 @@ export interface GuitarNightSongSummary {
   sessionId: string
   title: string
   createdAt: number
+  /**
+   * Where the song came from. `device` is a separation this visitor
+   * prepared and the room counts as "on this device"; `demo` is the
+   * shared song the app offers, which lives on the network and belongs to
+   * nobody's library. Absent means device, which is what every caller
+   * before the demo existed meant.
+   */
+  source?: 'device' | 'demo'
+  /**
+   * Shown under the title in place of the prepared date. A demo has no
+   * prepared date to show — it was never prepared here.
+   */
+  subtitle?: string
 }
 
 export interface GuitarNightStemAsset {
@@ -40,6 +53,13 @@ export interface GuitarNightBackingLease {
   title: string
   stems: readonly GuitarNightStemAsset[]
   defaultMix: GuitarNightDefaultMix
+  /**
+   * Same meaning as on the summary, and read for the same reason: a demo
+   * is not a separation session, so the room must not offer it the
+   * band-split upgrade — that path reconnects to a durable UVR record
+   * this song has never had. Absent means device.
+   */
+  source?: 'device' | 'demo'
   release(): void
 }
 
@@ -127,5 +147,43 @@ export function resolveGuitarNightDefaultMix(
         kind === 'vocal' || kind === 'instrumental',
     ),
     muted: [],
+  }
+}
+
+/**
+ * One library out of two sources: the songs this device has separated,
+ * and the demo the app offers to anyone who has separated nothing yet.
+ *
+ * The two fail differently, and the split matters. A device library that
+ * cannot be opened is the visitor's own problem to see and retry — it is
+ * what "Your local library could not be opened" means — so that failure
+ * still propagates. A demo that cannot be reached is a network the room
+ * has no claim on, so it costs the demo and nothing else.
+ */
+export function composeGuitarNightSongPorts(
+  device: GuitarNightSongPort,
+  demo: GuitarNightSongPort,
+): GuitarNightSongPort {
+  return {
+    initialize: async () => {
+      const demoReady = demo.initialize().catch(() => undefined)
+      await device.initialize()
+      await demoReady
+    },
+
+    completedSongs: () => [
+      ...device.completedSongs(),
+      ...demo.completedSongs(),
+    ],
+
+    openSession: async (sessionId, signal) => {
+      const fromDevice = await device.openSession(sessionId, signal)
+      // Anything but "no such session" is the device's answer to keep: a
+      // prepared song whose audio has gone must not be reported as the
+      // demo failing to load.
+      if (fromDevice.ok || fromDevice.code !== 'not-found') return fromDevice
+      if (signal.aborted) return { ok: false, code: 'aborted' }
+      return demo.openSession(sessionId, signal)
+    },
   }
 }

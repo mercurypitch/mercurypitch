@@ -30,8 +30,18 @@ interface GuitarNightSongControllerOptions {
 type HistoryMode = 'push' | 'replace' | 'none'
 
 export async function loadDefaultGuitarNightSongPort(): Promise<GuitarNightSongPort> {
-  const module = await import('./uvr-song-port')
-  return module.createUvrGuitarNightSongPort()
+  // The device library and the demo, as one catalog. Both are lazy: this
+  // whole module is off the room's first-paint path, and neither import
+  // pulls the other's dependencies in.
+  const [device, demo, ports] = await Promise.all([
+    import('./uvr-song-port'),
+    import('./demo-song-port'),
+    import('./song-port'),
+  ])
+  return ports.composeGuitarNightSongPorts(
+    device.createUvrGuitarNightSongPort(),
+    demo.createDemoGuitarNightSongPort(),
+  )
 }
 
 function writeSessionToHistory(

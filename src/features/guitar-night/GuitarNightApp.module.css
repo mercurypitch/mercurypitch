@@ -1749,6 +1749,15 @@
   font-weight: 700;
 }
 
+/* The demo's own heading. It answers the empty state directly above it,
+   so it reads as an offer rather than as a second library. */
+.songDemoKicker {
+  margin: 0.7rem 0 0.4rem;
+  color: rgba(244, 234, 219, 0.55);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
 .songListMore {
   width: 100%;
   min-height: var(--touch-target);
