@@ -49,13 +49,23 @@
        --gn-veil-scale     multiplies the two dark gradients the backdrop
                            lays over its own photograph
 
-     Blur bottoms out at a fifth rather than zero: some diffusion is what
-     keeps small ivory type legible over a busy, high-contrast photo, and
-     Daylight Loft is bright enough to prove it. */
-  --gn-glass: 0.35;
-  --gn-surface-scale: calc(1 - var(--gn-glass) * 0.55);
-  --gn-blur-scale: calc(1 - var(--gn-glass) * 0.8);
-  --gn-veil-scale: calc(1 - var(--gn-glass) * 0.5);
+     Measured on the 18px faceplate blur and its 0.94 alpha:
+
+       0     blur 18px    alpha 0.94   the room exactly as it shipped
+       0.55  blur 8.9px   alpha 0.60   the default
+       1     blur 1.4px   alpha 0.33   as open as it goes
+
+     The default sits mid-slider rather than low, because the first thing
+     said about the shipped look was that it was too blurry — starting at a
+     quarter turn just meant everyone had to reach for the slider.
+
+     Blur never quite reaches zero: a little diffusion is what keeps small
+     ivory type legible over a busy, high-contrast photo, and Daylight Loft
+     is bright enough to prove it. */
+  --gn-glass: 0.55;
+  --gn-surface-scale: calc(1 - var(--gn-glass) * 0.65);
+  --gn-blur-scale: calc(1 - var(--gn-glass) * 0.92);
+  --gn-veil-scale: calc(1 - var(--gn-glass) * 0.6);
 
   --night: #0d0b09;
   --faceplate: rgb(22 17 14 / calc(0.94 * var(--gn-surface-scale)));
