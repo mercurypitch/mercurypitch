@@ -3,7 +3,7 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [Unreleased]
+## [0.9.1] - 2026-08-19
 
 ### Added
 
@@ -29,11 +29,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Piano Night has a share card.** It was the one room whose link unfurled
   as a bare URL in a chat — no picture, no title, no description. It gets the
   same designed 1200x630 card the other rooms have.
-- **A music level for the mixer, and a ceiling so it is safe to use.** Singing
-  along on a phone quietly drops the backing track, and there was nothing to
-  turn back up: the master was pinned at a fixed level with no control anywhere
-  in the app. It is a slider now, up to about nine decibels above where it used
-  to sit, and it goes down as well as up. Nothing changes until you move it.
+- **A music level, next to the mic that makes you need it.** Opening a mic on
+  a phone makes it turn the backing track down — that is the phone's noise
+  cancelling, not the app — and there was nothing to turn back up: the master
+  was pinned at a fixed level with no control anywhere. There is a button
+  beside the mic on the full-screen lyrics stage now; tap it and the slider
+  opens. It goes up to about nine decibels above where it used to sit, and
+  down as well as up, and nothing changes until you move it. The first time
+  you turn the mic on, a note says so once.
 - **Every achievement has its medallion.** Forty-six of the fifty-nine were
   showing an empty dark disc, which reads as "locked" for something you have
   already won. Twenty-seven new enamel medallions cover all of them, drawn to
@@ -62,6 +65,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   working. All three use the app's normal spinner now.
 - **Closing the guided tour stops it looking for the next step.** It kept
   polling the page for up to a second after it was dismissed.
+- **The challenge admin's move arrows are drawn on every row.** The queue's
+  up and down buttons showed empty circles on every row but the last.
+- **The Guitar Night room slider opens further, and starts halfway.** It was
+  set a quarter turn up, which was still blurrier than most people wanted, and
+  the top of the range did not go far enough. Same slider, more room.
+- **A tap on a room door looks answered.** Piano Night and Guitar Night are
+  whole separate pages, and on a slow link there were several seconds where
+  nothing on screen had changed. The button dims and spins while the room
+  loads — including the one in the options sheet, which had no spinner at all.
 
 ## [0.9.0] - 2026-08-18
 
