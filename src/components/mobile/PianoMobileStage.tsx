@@ -134,7 +134,7 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
           data-testid="piano-room-chip"
           data-tour="piano-room-chip"
           busyLabel="Opening Piano Night…"
-          spinnerSize={12}
+          spinnerSize={14}
         >
           Piano Room
         </BusyLink>
@@ -243,15 +243,20 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
       >
         <OptionSection label="Piano Night">
           <OptionRow label="Performance room">
-            <a
+            {/* The same door as the chip above, and it was the one that
+                still opened in silence: a plain anchor into a whole other
+                document. */}
+            <BusyLink
               class={launchStyles.mobileLink}
               href={PIANO_NIGHT_PATH}
               aria-label="Open Piano Night performance room"
               data-testid="open-piano-night"
+              busyLabel="Opening Piano Night…"
+              spinnerSize={14}
             >
               <PianoKeys />
               Open room
-            </a>
+            </BusyLink>
           </OptionRow>
         </OptionSection>
 

@@ -7,3 +7,20 @@
 .spinner {
   margin-inline-start: 0.15em;
 }
+
+/*
+ * Reported after using it on a phone: "guitar night and piano night buttons
+ * that also go to another page, I didn't see it showing the spinner for long
+ * loading and it was loading multiple seconds."
+ *
+ * The spinner was arming — a trusted click sets `data-busy` and mounts it,
+ * measured in `src/e2e/room-chip-busy.spec.ts`. It was just a 12px ring in a
+ * status row at the top of the screen, while the eye was on the middle of the
+ * screen waiting for a page. So the control itself changes too: the
+ * acknowledgement is now the size of the thing that was touched, not the size
+ * of the spinner inside it.
+ */
+.busyLink[data-busy='true'] {
+  opacity: 0.55;
+  cursor: progress;
+}

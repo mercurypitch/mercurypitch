@@ -612,6 +612,14 @@
     display: none;
   }
 
+  /* An iconified chip has one glyph of room. While the next document loads,
+     the spinner takes the glyph's place instead of squeezing in beside it —
+     a 34px target that swaps its icon reads at arm's length; the same target
+     grown by 14px of ring does not. */
+  .chipBtn[data-busy='true'] .chipIcon {
+    display: none;
+  }
+
   /* Iconified chips were 25px tall — a quarter of the row's height and well
      under a thumb. Nothing else moves: they were already the shortest thing
      in the bar, so the row height is unchanged. */
