@@ -1,8 +1,13 @@
 name: PR Gate
 
 on:
+  # No `branches:` filter on purpose. It used to read `[main]`, which meant a
+  # PR into a release branch got no gate at all — and that is not a rare
+  # shape, it is how every release is assembled. PR 606 merged into
+  # `chore/release-0.9.1` on 2026-08-19 with a broken `typecheck:db`, and the
+  # first thing to notice was the dev deploy, after the merge. The gate has to
+  # follow the pull request, not the destination.
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]

@@ -39,7 +39,14 @@ rules (`memory`).
 3. **Do not commit, push, or open a PR unless asked.** Write the code, report
    what changed, stop. The user tests first and says when to commit.
 4. **Never merge a PR** without an explicit go-ahead in the current
-   conversation. Report CI green and stop.
+   conversation, and never while a check is queued, running, or failed.
+   "Report CI green" means every check on the PR has _finished_ and passed —
+   read `gh pr checks <n>` and confirm no row is pending. A go-ahead given
+   while checks are still in flight is a go-ahead to merge _when they pass_:
+   use `gh pr merge <n> --auto ...`, which queues the merge, rather than
+   plain `--rebase`, which lands immediately. `main` enforces this with a
+   required status check; a branch you can push to directly cannot, so there
+   the rule is yours to keep.
 5. **No Claude attribution anywhere** — no `Co-Authored-By`, no "Generated
    with", in commits, PR bodies, or any other artifact. The user is the sole
    author. Verify `git log --format='%an|%ae'` before merging; cloud sessions
