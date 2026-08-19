@@ -665,6 +665,24 @@
   gap: 0.4rem;
 }
 
+/* The part, and whether the sheet draws it: two decisions, two targets. */
+/* The sheet fills the stage the way the neck does, and scrolls inside itself
+   rather than growing the page it sits on. */
+.stageSheet {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  min-height: 18rem;
+}
+
+.sessionTrackRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
 .sessionTracks button {
   display: grid;
   gap: 0.1rem;
@@ -682,6 +700,27 @@
 .sessionTracks button:focus-visible {
   border-color: rgba(224, 164, 93, 0.4);
   background: rgba(224, 164, 93, 0.08);
+}
+
+.sessionTrackVisibility {
+  place-items: center;
+  width: 44px;
+  padding: 0 !important;
+  color: var(--muted-readable) !important;
+}
+
+.sessionTrackVisibility[aria-pressed='true'] {
+  color: var(--amber) !important;
+}
+
+.sessionTrackVisibility:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.sessionTrackVisibility svg {
+  width: 18px;
+  height: 18px;
 }
 
 .sessionTrackActive {

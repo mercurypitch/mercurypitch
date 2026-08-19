@@ -14,7 +14,7 @@
 
 import type { Accessor } from 'solid-js'
 import { For, onCleanup, onMount, Show } from 'solid-js'
-import { X } from '@/components/icons'
+import { Eye, EyeOff, X } from '@/components/icons'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarNightReference } from './reference-port'
 
@@ -22,6 +22,12 @@ interface GuitarNightSessionPanelProps {
   reference: Accessor<GuitarNightReference>
   onSelectTrack(trackId: string): void
   onClose(): void
+  /**
+   * Parts the sheet draws. Omitted when the room has no sheet to draw them on,
+   * which is what keeps this panel usable before a score is attached.
+   */
+  visibleTrackIds?: Accessor<readonly string[]>
+  onToggleTrackVisible?(trackId: string): void
 }
 
 export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
@@ -103,23 +109,56 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
           <For each={tracks()}>
             {(track) => {
               const isScored = () => track.id === props.reference().trackId
+              // A part you are graded on is a part you can see. The toggle for
+              // the scored row is shown but held, rather than hidden, so the
+              // rule is visible instead of just enforced.
+              const isVisible = () =>
+                isScored() ||
+                (props.visibleTrackIds?.().includes(track.id) ?? false)
               return (
-                <button
-                  type="button"
-                  classList={{ [styles.sessionTrackActive]: isScored() }}
-                  aria-pressed={isScored()}
-                  onClick={() => props.onSelectTrack(track.id)}
-                >
-                  <span>{track.name}</span>
-                  <small>
-                    {track.noteCount === 1
-                      ? '1 note'
-                      : `${track.noteCount} notes`}
-                    {/* Said outright rather than implied by the highlight:
-                        this is the part your playing is graded against. */}
-                    <Show when={isScored()}> · scored</Show>
-                  </small>
-                </button>
+                <div class={styles.sessionTrackRow}>
+                  <button
+                    type="button"
+                    classList={{ [styles.sessionTrackActive]: isScored() }}
+                    aria-pressed={isScored()}
+                    onClick={() => props.onSelectTrack(track.id)}
+                  >
+                    <span>{track.name}</span>
+                    <small>
+                      {track.noteCount === 1
+                        ? '1 note'
+                        : `${track.noteCount} notes`}
+                      {/* Said outright rather than implied by the highlight:
+                          this is the part your playing is graded against. */}
+                      <Show when={isScored()}> · scored</Show>
+                    </small>
+                  </button>
+                  <Show when={props.onToggleTrackVisible !== undefined}>
+                    <button
+                      type="button"
+                      class={styles.sessionTrackVisibility}
+                      aria-pressed={isVisible()}
+                      disabled={isScored()}
+                      title={
+                        isScored()
+                          ? `${track.name} is scored, so it always shows on the sheet`
+                          : isVisible()
+                            ? `Hide ${track.name} on the sheet`
+                            : `Show ${track.name} on the sheet`
+                      }
+                      aria-label={
+                        isVisible()
+                          ? `Hide ${track.name} on the sheet`
+                          : `Show ${track.name} on the sheet`
+                      }
+                      onClick={() => props.onToggleTrackVisible?.(track.id)}
+                    >
+                      <Show when={isVisible()} fallback={<EyeOff />}>
+                        <Eye />
+                      </Show>
+                    </button>
+                  </Show>
+                </div>
               )
             }}
           </For>

@@ -108,6 +108,12 @@ export interface GuitarNightReferencePort {
     instrument: StringedInstrument
     sourceTuning?: InstrumentTuning
   } | null
+  /**
+   * The whole score, for surfaces that read more than the scored part. The
+   * sheet stacks every part against one set of bar lines and cannot do that
+   * from a reference, which only ever carries one track's notes.
+   */
+  readSource(songId: string): GuitarNightReferenceSource | null
   /** Persist which track this source is scored against, for later opens. */
   rememberTrack(songId: string, trackId: string): void
   importReference(file: File): Promise<GuitarNightReferenceSummary>

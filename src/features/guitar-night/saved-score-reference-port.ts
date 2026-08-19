@@ -45,6 +45,8 @@ export function createSavedScoreGuitarNightReferencePort(): GuitarNightReference
       return openGuitarNightReference(song, trackId, tuning)
     },
 
+    readSource: (songId: string) => getMidiSong(songId) ?? null,
+
     suggestInstrument: (songId: string, trackId?: string) => {
       const song = getMidiSong(songId)
       if (song === undefined) return null

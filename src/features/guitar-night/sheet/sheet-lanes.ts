@@ -5,7 +5,7 @@
 
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import type { GuitarNightReferenceSource, GuitarNightReferenceSourceTrack, } from '../reference-port'
+import type { GuitarNightReference, GuitarNightReferenceSource, GuitarNightReferenceSourceTrack, } from '../reference-port'
 import { placeReferenceTrack, suggestReferenceInstrument, } from '../reference-port'
 import type { SheetLane } from './sheet-model'
 
@@ -83,4 +83,24 @@ function selectVisibleTracks(
   const scored = shown.find((track) => track.id === selection.scoredTrackId)
   if (scored === undefined) return shown
   return [scored, ...shown.filter((track) => track !== scored)]
+}
+
+/**
+ * The one lane a reference can supply on its own. A stem line transcribed from
+ * a recording has no library score behind it, and runs on the recording's clock
+ * rather than a written one — so it reads as a sheet of exactly one part, never
+ * stacked under a tab that counts its bars differently.
+ */
+export function sheetLaneFromReference(
+  reference: GuitarNightReference,
+): SheetLane {
+  return {
+    trackId: reference.trackId,
+    trackName: reference.trackName,
+    kind: reference.kind,
+    instrument: reference.tuning.instrument,
+    tuning: reference.tuning,
+    notes: reference.notes,
+    outOfRangeNotes: reference.outOfRangeNotes,
+  }
 }
