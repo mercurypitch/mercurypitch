@@ -525,6 +525,133 @@ describe('GuitarNightApp prepared songs', () => {
     ).toBeInTheDocument()
   })
 
+  it('offers the guitar stem on the same terms as the bass', async () => {
+    // Bass was the only stem offered, on the grounds that it is effectively
+    // monophonic and monophonic is what pitch detection handles. Guitar is
+    // offered now on the same terms: the reader is the same reader, and a
+    // stem it cannot make sense of already reports that and leaves the stage
+    // in free play. Nothing downstream needed changing — `followStem` has
+    // always tuned the stage from `stemKind`.
+    const songPort: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [
+        {
+          sessionId: 'session-band',
+          title: 'Full Band.wav',
+          createdAt: Date.UTC(2026, 7, 6),
+        },
+      ],
+      openSession: vi.fn(
+        async (sessionId: string): Promise<GuitarNightOpenBackingResult> => ({
+          ok: true,
+          lease: {
+            sessionId,
+            title: `${sessionId}.wav`,
+            stems: [
+              { kind: 'drums', url: `blob:${sessionId}:drums`, sizeBytes: 100 },
+              { kind: 'bass', url: `blob:${sessionId}:bass`, sizeBytes: 100 },
+              {
+                kind: 'guitar',
+                url: `blob:${sessionId}:guitar`,
+                sizeBytes: 100,
+              },
+            ],
+            defaultMix: { kind: 'parts', audible: ['drums'], muted: [] },
+            release: vi.fn(),
+          },
+        }),
+      ),
+    }
+    const referencePort: GuitarNightReferencePort = {
+      listReferences: () => [],
+      openReference: () => ({ ok: false, code: 'not-found' }),
+      suggestInstrument: () => null,
+      rememberTrack: vi.fn(),
+      importReference: vi.fn(async () => {
+        throw new Error('Not used in this test')
+      }),
+    }
+    const reading = deferred<{
+      coverage: number
+      analysedSeconds: number
+      notes: {
+        midi: number
+        noteName: string
+        startSeconds: number
+        durationSeconds: number
+        confidence: number
+      }[]
+    }>()
+    const transcribeStem = vi.fn(async () => reading.promise)
+    const transcriptionPort: GuitarNightTranscriptionPort = { transcribeStem }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(songPort)}
+        loadReferencePort={() => Promise.resolve(referencePort)}
+        loadTranscriptionPort={() => Promise.resolve(transcriptionPort)}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Full Band\.wav/ }),
+    )
+
+    // Both are on offer, guitar first: this is Guitar Night.
+    const guitar = await screen.findByRole('button', {
+      name: 'Transcribe the guitar line',
+    })
+    const bass = screen.getByRole('button', {
+      name: 'Transcribe the bass line',
+    })
+    expect(
+      guitar.compareDocumentPosition(bass) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    fireEvent.click(guitar)
+
+    // The guitar stem's own audio, not the bass's.
+    await waitFor(() =>
+      expect(transcribeStem).toHaveBeenCalledWith(
+        'blob:session-band:guitar',
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    )
+
+    // One reader at a time: while guitar runs, bass cannot be started, and it
+    // says so rather than silently doing nothing.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /Reading the guitar notes/ }),
+      ).toBeInTheDocument(),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Transcribe the bass line' }),
+    ).toBeDisabled()
+
+    reading.resolve({
+      coverage: 0.9,
+      analysedSeconds: 1,
+      notes: [
+        {
+          midi: 64,
+          noteName: 'E4',
+          startSeconds: 0,
+          durationSeconds: 0.5,
+          confidence: 0.9,
+        },
+      ],
+    })
+
+    expect(
+      await screen.findByText('Guitar line transcribed from this recording'),
+    ).toBeInTheDocument()
+    // And the offer comes back for both once the reader is free.
+    expect(
+      screen.getByRole('button', { name: 'Transcribe the bass line' }),
+    ).toBeEnabled()
+  })
+
   it('prepares chosen audio, reports progress, and auto-stages without playback', async () => {
     const preparation = deferred<GuitarNightPreparationResult>()
     const prepare = vi.fn<GuitarNightPreparationPort['prepare']>(

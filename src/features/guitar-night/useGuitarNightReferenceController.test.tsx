@@ -351,6 +351,76 @@ describe('useGuitarNightReferenceController', () => {
     expect(window.location.search).toBe('?session=session-room')
   })
 
+  it('names the stem it is reading, so two offers cannot share one progress', async () => {
+    // With only bass on offer, `transcribeProgress` alone was enough to drive
+    // the surface. Guitar is offered alongside it now, and a lone progress
+    // number would make both buttons claim to be running.
+    // Declared with a body rather than as `| null`: control-flow analysis does
+    // not see the executor's assignment, so a nullable would narrow to `null`
+    // and refuse the call below.
+    let release: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { port } = fakePort()
+    const controller = mountWithTranscription(port, async () => {
+      await held
+      return {
+        coverage: 0.6,
+        analysedSeconds: 30,
+        notes: [
+          {
+            midi: 52,
+            noteName: 'E3',
+            startSeconds: 0,
+            durationSeconds: 0.5,
+            confidence: 0.8,
+          },
+        ],
+      }
+    })
+
+    expect(controller.transcribingStem()).toBeNull()
+    const running = controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'guitar',
+      stemLabel: 'Guitar',
+      stemUrl: 'blob:guitar',
+    })
+    await waitFor(() =>
+      expect(controller.transcribingStem()).toEqual({
+        sessionId: 'session-room',
+        stemKind: 'guitar',
+      }),
+    )
+
+    release()
+    await running
+    expect(controller.transcribingStem()).toBeNull()
+  })
+
+  it('forgets the stem it was reading when the reading is cancelled', async () => {
+    const { port } = fakePort()
+    const controller = mountWithTranscription(
+      port,
+      () => new Promise(() => undefined),
+    )
+
+    void controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'guitar',
+      stemLabel: 'Guitar',
+      stemUrl: 'blob:guitar',
+    })
+    await waitFor(() =>
+      expect(controller.transcribingStem()?.stemKind).toBe('guitar'),
+    )
+
+    controller.cancelFollowStem()
+    expect(controller.transcribingStem()).toBeNull()
+    expect(controller.transcribeProgress()).toBeNull()
+  })
+
   it('says a silent stem produced nothing instead of showing an empty guide', async () => {
     const { port } = fakePort()
     const controller = mountWithTranscription(port, async () => ({
