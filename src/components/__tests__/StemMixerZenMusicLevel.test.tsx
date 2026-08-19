@@ -97,27 +97,33 @@ describe('the mixer at phone width', () => {
   })
 
   it('opens a slider carrying the stored bounds', () => {
+    // The slider speaks percentages of the shipped level; the store speaks
+    // gain. Both bounds are the store's own, divided by its default, so a
+    // ceiling raised in the store shows up here without a second edit.
     mountPhone()
     fireEvent.click(screen.getByTestId('mobile-music-level-toggle'))
     const slider = screen.getByTestId('mobile-music-level') as HTMLInputElement
-    expect(slider.min).toBe(String(MUSIC_LEVEL.spec.min))
-    expect(slider.max).toBe(String(MUSIC_LEVEL.spec.max))
-    expect(slider.value).toBe(String(MUSIC_LEVEL.spec.defaultValue))
+    const percent = (value: number): string =>
+      String(Math.round((value / MUSIC_LEVEL.spec.defaultValue) * 100))
+    expect(slider.min).toBe(percent(MUSIC_LEVEL.spec.min))
+    expect(slider.max).toBe(percent(MUSIC_LEVEL.spec.max))
+    expect(slider.value).toBe('100')
   })
 
   it('writes the moved level through to storage', () => {
     // End to end: the slider is bound to the audio controller's setter, which
     // clamps and persists. A control wired to a local signal would look
-    // identical on screen and forget the value on the next song.
+    // identical on screen and forget the value on the next song. The stored
+    // number is gain — 150% of the shipped 0.7 — not the percentage.
     mountPhone()
     fireEvent.click(screen.getByTestId('mobile-music-level-toggle'))
     fireEvent.input(screen.getByTestId('mobile-music-level'), {
-      target: { value: '1.5' },
+      target: { value: '150' },
     })
-    expect(localStorage.getItem(MUSIC_LEVEL.spec.storageKey)).toBe('1.5')
+    expect(localStorage.getItem(MUSIC_LEVEL.spec.storageKey)).toBe('1.05')
     expect(
       (screen.getByTestId('mobile-music-level') as HTMLInputElement).value,
-    ).toBe('1.5')
+    ).toBe('150')
   })
 })
 

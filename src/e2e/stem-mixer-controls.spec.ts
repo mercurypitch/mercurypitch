@@ -672,20 +672,23 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
   const level = page.getByTestId('mobile-music-level')
   await expect(level).toBeVisible()
 
+  // Upright, and that is not decoration: the horizontal one had to be as
+  // wide as the bar, which is what made it a row inside the bar.
   const box = await level.boundingBox()
   if (box === null) throw new Error('Music level slider has no bounding box')
-  expect(box.width).toBeGreaterThan(40)
+  expect(box.height).toBeGreaterThan(box.width * 2)
 
   // Its bounds come from the store, not the markup — so reading them back off
-  // the element is a check that the two have not drifted apart.
-  await expect(level).toHaveAttribute('min', '0.35')
-  await expect(level).toHaveAttribute('max', '2')
-  // The historic fixed master, so nobody's mix moved on upgrade.
-  expect(Number(await level.inputValue())).toBe(0.7)
+  // the element is a check that the two have not drifted apart. They are
+  // percentages of the level the app has always played at, which is what
+  // makes 100% the default and anything above it the answer to iOS ducking.
+  await expect(level).toHaveAttribute('min', '50')
+  await expect(level).toHaveAttribute('max', '300')
+  expect(Number(await level.inputValue())).toBe(100)
 
-  await level.fill('1.6')
+  await level.fill('160')
   await level.dispatchEvent('input')
-  expect(Number(await level.inputValue())).toBe(1.6)
+  expect(Number(await level.inputValue())).toBe(160)
 
   await expect
     .poll(() =>
@@ -693,14 +696,132 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
         localStorage.getItem('pitchperfect_mixer_music_level'),
       ),
     )
-    .toBe('1.6')
+    // 160% of the shipped 0.7.
+    .toBe('1.12')
 
   await page.reload()
   await dismissOverlays(page)
 
-  // The sheet is a disclosure, not a state — it comes back closed, and the
+  // The panel is a disclosure, not a state — it comes back closed, and the
   // level it reopens on is the stored one rather than the default.
   await expect(page.getByTestId('mobile-music-level')).toHaveCount(0)
   await page.getByTestId('mobile-music-level-toggle').click()
-  await expect(page.getByTestId('mobile-music-level')).toHaveValue('1.6')
+  await expect(page.getByTestId('mobile-music-level')).toHaveValue('160')
+})
+
+// ============================================================
+// Opening the music level costs the transport nothing
+// ============================================================
+//
+// The second report on this control, from a tablet: "once I open it up, it
+// conceals all playback commands, and none are reachable, not even the
+// speaker toggle that opened it to close it", and from an iPhone: "it moves
+// the playback control down".
+//
+// Both come from the same decision. The first cut put the slider in a row
+// INSIDE the bottom bar, so the bar grew by the height of that row — 69px on
+// a tablet, 83px on a phone, measured. Whatever cannot absorb that height
+// pushes the transport towards, or past, the bottom of the screen, and the
+// button that closes the panel goes with it.
+//
+// So the invariant is geometric, not visual: the bar and the transport must
+// measure exactly the same open and closed. A slider that rises over the
+// lyrics cannot fail it; any future one that takes a row in the bar will.
+const ZEN_VIEWPORTS = [
+  // A phone, where the stage renders because the viewport is narrow.
+  { width: 390, height: 844, label: 'phone' },
+  // A phone with barely any height — a landscape phone, or a resized window.
+  // This is where a bar that grows has nothing left to take the height from.
+  { width: 390, height: 420, label: 'short phone' },
+  // A tablet in portrait, the device the report came from.
+  { width: 768, height: 1024, label: 'tablet' },
+] as const
+
+test('opens the music level without moving the transport @smoke', async ({
+  page,
+}) => {
+  for (const viewport of ZEN_VIEWPORTS) {
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    })
+
+    const toggle = page.getByTestId('mobile-music-level-toggle')
+    await expect(toggle).toBeVisible()
+
+    const measure = async (): Promise<{
+      bar: number
+      play: number
+      toggle: number
+    }> =>
+      page.evaluate(() => {
+        const height = (selector: string): number =>
+          document.querySelector(selector)?.getBoundingClientRect().height ?? -1
+        const top = (selector: string): number =>
+          document.querySelector(selector)?.getBoundingClientRect().top ?? -1
+        return {
+          bar: height('[class*="bottomBar"]'),
+          play: top('[aria-label="Play"], [aria-label="Pause"]'),
+          toggle: top('[data-testid="mobile-music-level-toggle"]'),
+        }
+      })
+
+    const closed = await measure()
+    await toggle.click()
+    await expect(page.getByTestId('mobile-music-level')).toBeVisible()
+    const open = await measure()
+
+    expect(open.bar, `${viewport.label}: bottom bar height`).toBeCloseTo(
+      closed.bar,
+      1,
+    )
+    expect(open.play, `${viewport.label}: play button top`).toBeCloseTo(
+      closed.play,
+      1,
+    )
+    expect(open.toggle, `${viewport.label}: level button top`).toBeCloseTo(
+      closed.toggle,
+      1,
+    )
+
+    // Reachability is the half the geometry does not prove: both the play
+    // button and the button that closes the panel must still answer a real
+    // tap while the panel is open.
+    const hits = await page.evaluate(() => {
+      const hit = (selector: string): boolean => {
+        const element = document.querySelector(selector)
+        if (element === null) return false
+        const rect = element.getBoundingClientRect()
+        if (rect.bottom > innerHeight || rect.top < 0) return false
+        const at = document.elementFromPoint(
+          rect.x + rect.width / 2,
+          rect.y + rect.height / 2,
+        )
+        return at !== null && element.contains(at)
+      }
+      return {
+        play: hit('[aria-label="Play"], [aria-label="Pause"]'),
+        toggle: hit('[data-testid="mobile-music-level-toggle"]'),
+      }
+    })
+    expect(hits.play, `${viewport.label}: play button reachable`).toBe(true)
+    expect(hits.toggle, `${viewport.label}: level button reachable`).toBe(true)
+
+    // It rises over the lyrics rather than sitting in the bar with them.
+    const panel = await page
+      .getByTestId('mobile-music-level-sheet')
+      .boundingBox()
+    const button = await toggle.boundingBox()
+    if (panel === null || button === null) {
+      throw new Error('Music level panel or button has no bounding box')
+    }
+    expect(
+      panel.y + panel.height,
+      `${viewport.label}: panel sits above`,
+    ).toBeLessThanOrEqual(button.y)
+
+    // And a tap anywhere else closes it — the way out the first cut lacked.
+    await page.mouse.click(viewport.width / 2, 40)
+    await expect(page.getByTestId('mobile-music-level')).toHaveCount(0)
+  }
 })

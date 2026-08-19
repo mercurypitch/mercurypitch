@@ -496,6 +496,53 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     props.onMusicLevel !== undefined &&
     props.musicLevelRange !== undefined
 
+  // The control speaks percentages of the shipped level, not raw gain. 0.7 is
+  // what every mix sounded like before the control existed, so it is the only
+  // honest 100%; the store's own bounds are round multiples of it, which is
+  // why these divisions land on 50 / 300 / 5 rather than on a remainder.
+  const levelPercent = (): number =>
+    Math.round(
+      (props.musicLevel!() / props.musicLevelRange!.defaultValue) * 100,
+    )
+  const percentOf = (value: number): number =>
+    Math.round((value / props.musicLevelRange!.defaultValue) * 100)
+  const setLevelPercent = (percent: number): void => {
+    // Rounded to a thousandth: the raw product carries a float tail — 160% of
+    // 0.7 is 1.1200000000000001 — and that tail is what would be written to
+    // storage, read back, and shown to the next slider as a percentage.
+    props.onMusicLevel!(
+      Math.round((percent / 100) * props.musicLevelRange!.defaultValue * 1000) /
+        1000,
+    )
+  }
+
+  // Anything outside the control closes it, the way every popover on the
+  // platform does. The first cut could only be closed by the button that
+  // opened it, and on a tablet that button was the one thing reported as
+  // unreachable — so a tap anywhere and Escape both close it now.
+  let levelAnchor: HTMLDivElement | undefined
+  createEffect(() => {
+    if (!levelOpen()) return
+    const closeOnOutside = (event: Event): void => {
+      const target = event.target
+      if (target instanceof Node && levelAnchor?.contains(target) === true) {
+        return
+      }
+      setLevelOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setLevelOpen(false)
+    }
+    // Capture: a stage that stops propagation on its own pointer handlers
+    // must not be able to trap the popover open.
+    document.addEventListener('pointerdown', closeOnOutside, true)
+    document.addEventListener('keydown', closeOnEscape)
+    onCleanup(() => {
+      document.removeEventListener('pointerdown', closeOnOutside, true)
+      document.removeEventListener('keydown', closeOnEscape)
+    })
+  })
+
   const toggleMic = (): void => {
     // Turning the mic on with no analyzed notes yet: the ribbon needs
     // targets, so kick off the same denoised analysis the glyphs use.
@@ -881,41 +928,6 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <span>{formatTime(scrub() ?? props.elapsed())}</span>
           <span>-{formatTime(remaining())}</span>
         </div>
-        <Show when={hasMusicLevel() && levelOpen()}>
-          <div
-            class={styles.levelSheet}
-            id="karaoke-music-level"
-            data-testid="mobile-music-level-sheet"
-          >
-            <label class={styles.levelRow}>
-              <span class={styles.levelLabel}>Music</span>
-              <input
-                type="range"
-                class={styles.levelSlider}
-                data-testid="mobile-music-level"
-                min={props.musicLevelRange!.min}
-                max={props.musicLevelRange!.max}
-                step={props.musicLevelRange!.step}
-                value={props.musicLevel!()}
-                aria-label="Music level"
-                onInput={(event) =>
-                  props.onMusicLevel!(Number(event.currentTarget.value))
-                }
-              />
-              <span class={styles.levelValue}>
-                {Math.round(
-                  (props.musicLevel!() / props.musicLevelRange!.defaultValue) *
-                    100,
-                )}
-                %
-              </span>
-            </label>
-            <p class={styles.levelHint}>
-              Some phones quieten the backing track while your mic is on. This
-              turns it back up.
-            </p>
-          </div>
-        </Show>
         <div class={styles.transport}>
           {/* Left slot: your mic. Lives in the bar with the other
               performance controls — never floating over the lyrics. */}
@@ -973,10 +985,40 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               dead centre. Empty and aria-hidden when the host cannot offer
               it, which keeps the transport symmetrical either way. */}
           <div
-            class={styles.transportSide}
+            ref={levelAnchor}
+            class={`${styles.transportSide} ${styles.levelAnchor}`}
             aria-hidden={hasMusicLevel() ? undefined : 'true'}
           >
             <Show when={hasMusicLevel()}>
+              {/* Absolutely positioned, and that is the fix rather than a
+                  detail: the first cut opened a full-width row INSIDE the
+                  bottom bar, so the bar grew by the height of the row and
+                  every device that could not spare it pushed the transport
+                  out of reach. This one rises over the lyrics instead — the
+                  bar measures the same open or closed. */}
+              <Show when={levelOpen()}>
+                <div
+                  class={styles.levelPopover}
+                  id="karaoke-music-level"
+                  data-testid="mobile-music-level-sheet"
+                >
+                  <span class={styles.levelValue}>{levelPercent()}%</span>
+                  <input
+                    type="range"
+                    class={styles.levelSlider}
+                    data-testid="mobile-music-level"
+                    min={percentOf(props.musicLevelRange!.min)}
+                    max={percentOf(props.musicLevelRange!.max)}
+                    step={Math.max(1, percentOf(props.musicLevelRange!.step))}
+                    value={levelPercent()}
+                    aria-label="Music level"
+                    aria-valuetext={`${levelPercent()} percent`}
+                    onInput={(event) =>
+                      setLevelPercent(Number(event.currentTarget.value))
+                    }
+                  />
+                </div>
+              </Show>
               <button
                 class={styles.levelBtn}
                 classList={{ [styles.levelBtnOn]: levelOpen() }}
@@ -984,7 +1026,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                 aria-expanded={levelOpen()}
                 aria-controls="karaoke-music-level"
                 data-testid="mobile-music-level-toggle"
-                title="How loud the backing track runs"
+                title="Music level — turn the backing track back up if your phone quietened it"
                 aria-label="Music level"
               >
                 <MusicLevelIcon />
