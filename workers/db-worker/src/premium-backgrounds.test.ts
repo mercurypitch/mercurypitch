@@ -8,7 +8,7 @@
 // one allowlisted object key.
 
 import { describe, expect, it } from 'vitest'
-import type { BackgroundPerkId } from '../../../src/lib/backgrounds/background-catalog'
+import type { BackgroundPerkId, BackgroundSurface, } from '../../../src/lib/backgrounds/background-catalog'
 import { BACKGROUND_PERK_IDS, getBackgroundDefinition, } from '../../../src/lib/backgrounds/background-catalog'
 import type { AuthUser, Env } from './auth'
 import { BACKGROUND_CAPABILITY_TTL_SECONDS, mintBackgroundCapability, } from './background-capabilities'
@@ -217,7 +217,10 @@ interface FakeAsset {
   id: string
   revisionId: string
   status: 'active' | 'retired'
-  surface: 'jam' | 'karaoke' | 'piano'
+  // The catalog's own union, not a copy of it. Spelling the three
+  // surfaces out here meant a fourth one (guitar) broke `typecheck:db`
+  // rather than the fake simply carrying it.
+  surface: BackgroundSurface
   variants: Map<string, FakeVariant>
   version: number
 }

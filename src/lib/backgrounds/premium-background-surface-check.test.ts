@@ -13,10 +13,17 @@
 // tripwire, in the only form that does not need a live D1: read the newest
 // definition of the column out of the migrations and compare it against the
 // surfaces the shared catalog declares.
+//
+// It lives under `src/` rather than beside the worker because it reads the
+// migration files off disk. `workers/db-worker/tsconfig.json` declares
+// `types: ["@cloudflare/workers-types"]` deliberately — the worker has no Node
+// runtime — so `node:fs` does not resolve there and `pnpm typecheck:db` fails
+// on the import alone. The migrations path is resolved from the workspace
+// root, which is where vitest runs from in either project.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { BACKGROUND_CATALOG } from '../../../src/lib/backgrounds/background-catalog'
+import { BACKGROUND_CATALOG } from './background-catalog'
 
 // Repo-relative: vitest runs from the workspace root, and `import.meta.url`
 // is not a file URL under its transform.
