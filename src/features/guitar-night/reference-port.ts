@@ -262,20 +262,43 @@ export function toStageNotes(
 }
 
 /** Adapt one saved score into stage notes. Beats stay in the source's terms. */
-export function openGuitarNightReference(
-  source: GuitarNightReferenceSource,
-  requestedTrackId?: string,
-  tuning?: InstrumentTuning,
-): GuitarNightOpenReferenceResult {
-  const track = resolveReferenceTrack(source, requestedTrackId)
-  if (track === null) return { ok: false, code: 'no-playable-notes' }
+/** One track's notes, already placed on the rows they will be drawn on. */
+export interface PlacedReferenceTrack {
+  trackId: string
+  trackName: string
+  instrument: StringedInstrument
+  /** The rows the notes were placed on. */
+  tuning: InstrumentTuning
+  /** The source-authored setup, when the file named one. */
+  sourceTuning?: InstrumentTuning
+  notes: readonly GuitarNote[]
+  outOfRangeNotes: number
+}
 
+export interface PlaceReferenceTrackOptions {
+  /** Rows to place on. Defaults to the track's own authored setup. */
+  tuning?: InstrumentTuning
+  /** Rows to use when the source named no setup at all. */
+  fallbackTuning?: InstrumentTuning
+}
+
+/**
+ * Put one track's notes on a neck. The stage's single-track reference and the
+ * sheet's stacked lanes both come through here, so the same note is never
+ * placed two different ways depending on which surface asked for it.
+ */
+export function placeReferenceTrack(
+  track: GuitarNightReferenceSourceTrack,
+  options: PlaceReferenceTrackOptions = {},
+): PlacedReferenceTrack {
   const instrument = sourceTrackInstrument(track)
   const sourceTuning = sourceTuningForTrack(track, instrument)
-  const stageTuning = tuning ?? sourceTuning ?? DEFAULT_GUITAR_TUNING
+  const stageTuning =
+    options.tuning ??
+    sourceTuning ??
+    options.fallbackTuning ??
+    DEFAULT_GUITAR_TUNING
 
-  const tempoBpm =
-    Number.isFinite(source.bpm) && source.bpm > 0 ? source.bpm : 120
   const placed = toStageNotes(
     track.notes.map((note, index) => ({
       id: note.id ?? `${track.id}-${index}-${note.startBeat}`,
@@ -292,19 +315,44 @@ export function openGuitarNightReference(
   )
 
   return {
+    trackId: track.id,
+    trackName: track.name,
+    instrument,
+    tuning: stageTuning,
+    ...(sourceTuning === undefined ? {} : { sourceTuning }),
+    notes: placed.notes,
+    outOfRangeNotes: placed.outOfRange,
+  }
+}
+
+export function openGuitarNightReference(
+  source: GuitarNightReferenceSource,
+  requestedTrackId?: string,
+  tuning?: InstrumentTuning,
+): GuitarNightOpenReferenceResult {
+  const track = resolveReferenceTrack(source, requestedTrackId)
+  if (track === null) return { ok: false, code: 'no-playable-notes' }
+
+  const placed = placeReferenceTrack(track, { tuning })
+  const tempoBpm =
+    Number.isFinite(source.bpm) && source.bpm > 0 ? source.bpm : 120
+
+  return {
     ok: true,
     reference: {
       kind: 'authored',
       songId: source.id,
       title: source.name,
-      trackId: track.id,
-      trackName: track.name,
+      trackId: placed.trackId,
+      trackName: placed.trackName,
       tempoBpm,
       tempoChanges: source.tempoChanges,
-      tuning: stageTuning,
-      ...(sourceTuning === undefined ? {} : { sourceTuning }),
+      tuning: placed.tuning,
+      ...(placed.sourceTuning === undefined
+        ? {}
+        : { sourceTuning: placed.sourceTuning }),
       notes: placed.notes,
-      outOfRangeNotes: placed.outOfRange,
+      outOfRangeNotes: placed.outOfRangeNotes,
       tracks: referenceTrackSummaries(source),
     },
   }
