@@ -744,6 +744,108 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
 })
 
 // ============================================================
+// The zen stage lines up
+// ============================================================
+//
+// Two reports, both about placement rather than behaviour. The level was
+// across the transport from the mic — "should it not be next to the mic icon,
+// so users easily connect the dots" — and it hung above the row it belonged
+// to: its slot held nothing but an absolutely-placed capsule, so the slot
+// measured 0px tall and `bottom: 0` landed on the row's centre line, leaving
+// the capsule 22px high at every width. And on a wide screen the header's
+// buttons sat mid-column, because desktop zen stops the title from growing
+// and nothing else pushed them right.
+//
+// None of it is visible to jsdom: no layout, no computed geometry. This is
+// the test that can actually see it.
+
+const ZEN_LAYOUTS = [
+  { width: 390, height: 844, label: 'phone', zenToggle: false },
+  { width: 768, height: 1024, label: 'tablet', zenToggle: false },
+  { width: 1024, height: 768, label: 'desktop zen', zenToggle: true },
+] as const
+
+test('lines the level up with the mic, and the header up with its column @smoke', async ({
+  page,
+}) => {
+  for (const layout of ZEN_LAYOUTS) {
+    await page.setViewportSize({ width: layout.width, height: layout.height })
+    if (layout.zenToggle) {
+      const zen = page.getByRole('button', { name: 'Zen' })
+      if ((await zen.count()) > 0 && (await zen.isVisible())) await zen.click()
+    }
+    await expect(page.getByTestId('mobile-music-level')).toBeVisible()
+
+    const geometry = await page.evaluate(() => {
+      const rect = (selector: string): DOMRect | null =>
+        document.querySelector(selector)?.getBoundingClientRect() ?? null
+      const mic = rect('[aria-label="Toggle your microphone"]')
+      const play = rect('[aria-label="Play"], [aria-label="Pause"]')
+      const level = rect('[data-testid="mobile-music-level"]')
+      const bar = rect('[class*="bottomBar"]')
+      const actionsElement = document.querySelector('[class*="headerActions"]')
+      const actions = actionsElement?.getBoundingClientRect() ?? null
+      const header =
+        actionsElement?.parentElement?.getBoundingClientRect() ?? null
+      const headerPadding =
+        actionsElement?.parentElement === undefined ||
+        actionsElement?.parentElement === null
+          ? 0
+          : Number.parseFloat(
+              getComputedStyle(actionsElement.parentElement).paddingRight,
+            )
+      return {
+        micCentreY: mic === null ? -1 : mic.y + mic.height / 2,
+        playCentreY: play === null ? -1 : play.y + play.height / 2,
+        levelCentreY: level === null ? -1 : level.y + level.height / 2,
+        micRight: mic?.right ?? -1,
+        levelLeft: level?.x ?? -1,
+        playCentreX: play === null ? -1 : play.x + play.width / 2,
+        barCentreX: bar === null ? -1 : bar.x + bar.width / 2,
+        actionsRight: actions?.right ?? -1,
+        headerContentRight: header === null ? -1 : header.right - headerPadding,
+      }
+    })
+
+    // One row: the mic, the level and the play button share a centre line.
+    expect(
+      geometry.levelCentreY,
+      `${layout.label}: level centred with the mic`,
+    ).toBeCloseTo(geometry.micCentreY, 0)
+    expect(
+      geometry.levelCentreY,
+      `${layout.label}: level centred with play`,
+    ).toBeCloseTo(geometry.playCentreY, 0)
+
+    // Beside the mic, not across the transport from it.
+    expect(
+      geometry.levelLeft - geometry.micRight,
+      `${layout.label}: level sits next to the mic`,
+    ).toBeGreaterThan(0)
+    expect(
+      geometry.levelLeft - geometry.micRight,
+      `${layout.label}: level sits next to the mic`,
+    ).toBeLessThanOrEqual(16)
+
+    // Play stays centred where there is room for the empty slot to mirror
+    // the pair. On a phone there is not: two 44px controls plus a 226px
+    // transport want 498px of a 354px bar, so the pair keeps its natural
+    // width and play lands a little right of centre — no further right than
+    // it already sat with one control in the slot.
+    const drift = Math.abs(geometry.playCentreX - geometry.barCentreX)
+    expect(drift, `${layout.label}: play centred`).toBeLessThanOrEqual(
+      layout.width < 560 ? 24 : 1,
+    )
+
+    // The header group is flush with the right edge of its own column.
+    expect(
+      geometry.actionsRight,
+      `${layout.label}: header actions at the right edge`,
+    ).toBeCloseTo(geometry.headerContentRight, 0)
+  }
+})
+
+// ============================================================
 // Opening the music level costs the transport nothing
 // ============================================================
 //

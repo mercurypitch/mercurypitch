@@ -941,7 +941,11 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <span>-{formatTime(remaining())}</span>
         </div>
         <div class={styles.transport}>
-          {/* Left slot: your mic. Lives in the bar with the other
+          {/* Left slot: what you put in and what you get back — your mic,
+              and the backing level beside it. They are a pair on purpose:
+              the level exists because turning the mic on is what makes the
+              phone quieten the music, and a control for that on the far side
+              of the transport was a puzzle. Lives in the bar with the other
               performance controls — never floating over the lyrics. */}
           <div class={styles.transportSide}>
             <Show when={props.onToggleMic}>
@@ -959,6 +963,36 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               >
                 <MicIcon />
               </button>
+            </Show>
+            <Show when={hasMusicLevel()}>
+              {/* A real 44px box in the flow, with the capsule absolutely
+                  placed inside it. Both halves matter: in the flow the box
+                  lines the capsule up with the mic at any row height, and
+                  out of the flow the capsule can grow upward when it opens
+                  without making the bottom bar taller — which is what put
+                  the transport out of reach on a tablet once already. */}
+              <div class={styles.levelAnchor}>
+                <PillControl
+                  class={styles.levelPill}
+                  testId="mobile-music-level"
+                  level={levelFill()}
+                  off={false}
+                  onTap={toggleNormalLevel}
+                  onLevel={setLevelFromFill}
+                  valueLabel={`${levelPercent()}%`}
+                  valueText={`${levelPercent()} percent`}
+                  keyStep={
+                    Math.max(1, percentOf(props.musicLevelRange!.step)) /
+                    (percentOf(props.musicLevelRange!.max) -
+                      percentOf(props.musicLevelRange!.min))
+                  }
+                  dragRange={120}
+                  ariaLabel="Music level"
+                  title="Music level — drag to turn the backing track back up if your phone quietened it"
+                >
+                  <MusicLevelIcon />
+                </PillControl>
+              </div>
             </Show>
           </div>
           <div class={styles.transportMain}>
@@ -993,42 +1027,12 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               <NextIcon />
             </button>
           </div>
-          {/* Right slot: the backing level, mirroring the mic so play stays
-              dead centre. Empty and aria-hidden when the host cannot offer
-              it, which keeps the transport symmetrical either way. */}
+          {/* Right slot: empty, and that is its job — it mirrors the left
+              one's width so the play button stays dead centre. */}
           <div
-            class={`${styles.transportSide} ${styles.levelAnchor}`}
-            aria-hidden={hasMusicLevel() ? undefined : 'true'}
-          >
-            <Show when={hasMusicLevel()}>
-              {/* Absolutely placed inside the slot, and that is the fix
-                  rather than a detail: the capsule grows upward when it
-                  opens, and in the flow that growth would make the whole
-                  bottom bar taller and push the transport off a short
-                  screen. Out of the flow it rises over the lyrics instead —
-                  the bar measures the same open or closed. */}
-              <PillControl
-                class={styles.levelPill}
-                testId="mobile-music-level"
-                level={levelFill()}
-                off={false}
-                onTap={toggleNormalLevel}
-                onLevel={setLevelFromFill}
-                valueLabel={`${levelPercent()}%`}
-                valueText={`${levelPercent()} percent`}
-                keyStep={
-                  Math.max(1, percentOf(props.musicLevelRange!.step)) /
-                  (percentOf(props.musicLevelRange!.max) -
-                    percentOf(props.musicLevelRange!.min))
-                }
-                dragRange={120}
-                ariaLabel="Music level"
-                title="Music level — drag to turn the backing track back up if your phone quietened it"
-              >
-                <MusicLevelIcon />
-              </PillControl>
-            </Show>
-          </div>
+            class={`${styles.transportSide} ${styles.transportSpacer}`}
+            aria-hidden="true"
+          />
         </div>
       </div>
 
