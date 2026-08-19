@@ -3,6 +3,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { children, createEffect, createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { X } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
@@ -58,6 +59,8 @@ export const GUITAR_NIGHT_FLOW_PRESENTATION_KEY =
 export const GUITAR_NIGHT_CAMERA_PRESET_KEY = 'guitar-night-camera-preset-v1'
 export const GUITAR_NIGHT_HANDEDNESS_KEY = 'guitar-night-handedness-v1'
 export const GUITAR_NIGHT_EFFECTS_KEY = 'guitar-night-effects-v1'
+/** Dismissing the free-play note has to outlive the visit that dismissed it. */
+export const GUITAR_NIGHT_FREE_PLAY_NOTE_KEY = 'guitar-night-free-play-note-v1'
 
 interface GuitarNightStageProps {
   source: GuitarPerformanceStageSource
@@ -91,6 +94,15 @@ interface GuitarNightStageProps {
   showHeader?: Accessor<boolean>
   /** Host-owned cues and sheets sit over the instrument without entering layout. */
   overlay?: JSX.Element
+  /**
+   * Free-play note: a host-owned line in place of the generic hint. The room
+   * knows things the stage cannot — that a tab is attached, and that it plays
+   * somewhere else — and a note that tells a player to attach what they have
+   * already attached is worse than no note.
+   */
+  invitationNote?: Accessor<string>
+  /** Free-play note: the host's own way out of it, e.g. attaching a tab. */
+  invitationAction?: JSX.Element
 }
 
 type GuitarNightHandedness = 'right' | 'left'
@@ -746,6 +758,14 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           value === 'right' || value === 'left',
       },
     )
+  // "that note needs to be closeable, especially on the mobile. Its hiding
+  // half the screen." It is a hint, and a hint that cannot be got rid of is
+  // furniture — so the dismissal persists rather than returning next visit.
+  const [freePlayNoteDismissed, setFreePlayNoteDismissed] =
+    createPersistedSignal<boolean>(GUITAR_NIGHT_FREE_PLAY_NOTE_KEY, false, {
+      validator: (value): value is boolean => typeof value === 'boolean',
+    })
+
   const [effects, setEffects] = createPersistedSignal<GuitarNightEffects>(
     GUITAR_NIGHT_EFFECTS_KEY,
     'full',
@@ -1362,13 +1382,28 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             <p class={styles.stageGestureHint}>
               Drag / arrows to orbit · scroll / + − to zoom · R resets
             </p>
-            <Show when={!hasGuide() && !isListening()}>
-              <div class={styles.stageInvitation}>
+            <Show
+              when={!hasGuide() && !isListening() && !freePlayNoteDismissed()}
+            >
+              <div
+                class={styles.stageInvitation}
+                data-testid="guitar-night-free-play-note"
+              >
+                <button
+                  class={styles.stageInvitationClose}
+                  type="button"
+                  aria-label="Dismiss the free play note"
+                  onClick={() => setFreePlayNoteDismissed(true)}
+                >
+                  <X />
+                </button>
                 <span>Free play</span>
                 <strong>The room is yours.</strong>
                 <small>
-                  Attach a tab or turn on Listening whenever you want a target.
+                  {props.invitationNote?.() ??
+                    'Attach a tab or turn on Listening whenever you want a target.'}
                 </small>
+                {props.invitationAction}
               </div>
             </Show>
           </div>

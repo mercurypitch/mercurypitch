@@ -6,7 +6,10 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
+import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { GuitarNightRoom } from './GuitarNightRoom'
+import { GUITAR_NIGHT_FREE_PLAY_NOTE_KEY } from './GuitarNightStage'
+import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease } from './song-port'
 
 const listening = vi.hoisted(() => ({
@@ -70,6 +73,31 @@ const BACKING: GuitarNightBackingLease = {
     muted: [],
   },
   release: vi.fn(),
+}
+
+/** A tab brought in from a file: its own tempo, not this recording's. */
+const AUTHORED_TAB: GuitarNightReference = {
+  kind: 'authored',
+  songId: 'velvet-study',
+  title: 'Velvet pointer study',
+  trackId: 'track-lead',
+  trackName: 'Lead guitar',
+  tempoBpm: 120,
+  tuning: standardTuning('guitar', 6),
+  notes: [
+    {
+      id: 'velvet-note-1',
+      midi: 64,
+      noteName: 'E4',
+      targetFreq: 329.63,
+      startBeat: 0,
+      duration: 1,
+      stringIndex: 0,
+      fret: 0,
+    },
+  ],
+  tracks: [{ id: 'track-lead', name: 'Lead guitar', noteCount: 1 }],
+  outOfRangeNotes: 0,
 }
 
 const COMPLETED_FREE_PLAY_TAKE: GuitarTakeSnapshot = {
@@ -166,6 +194,9 @@ function createTransport(): GuitarBackingTransportController {
 describe('GuitarNightRoom', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // The free-play note persists its dismissal, so without this the tests
+    // after the dismissal one would pass because nothing rendered at all.
+    localStorage.clear()
     listening.status.mockReturnValue('off')
     listening.error.mockReturnValue(null)
     listening.notice.mockReturnValue(null)
@@ -445,5 +476,123 @@ describe('GuitarNightRoom', () => {
     expect(play).toBeEnabled()
     expect(play).not.toHaveAttribute('data-loading-percent', '0')
     expect(play.querySelector('svg')).not.toBeNull()
+  })
+
+  // ============================================================
+  // The free-play note
+  // ============================================================
+  //
+  // Reported together: "in the room itself, it says, attach tab to play
+  // along, but I don't have any option to attach it afterwards" — from a
+  // player who HAD attached one — and "that note needs to be closeable,
+  // especially on the mobile. Its hiding half the screen."
+
+  it('names the attached tab instead of asking for one again', () => {
+    // The play-along room guides only with a line measured from the
+    // recording, so an authored tab really cannot drive it. What was wrong is
+    // that the note asked for a tab that was already there and said nothing
+    // about where it does play.
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        authoredReference={() => AUTHORED_TAB}
+        onRehearseTab={vi.fn()}
+      />
+    ))
+
+    const note = screen.getByTestId('guitar-night-free-play-note')
+    expect(note.textContent).toContain('Velvet pointer study')
+    expect(note.textContent).toContain('keeps its own tempo')
+    expect(note.textContent).not.toContain('Attach a tab or turn on Listening')
+  })
+
+  it('sends the attached tab to the room that can play it', () => {
+    const onRehearseTab = vi.fn()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        authoredReference={() => AUTHORED_TAB}
+        onRehearseTab={onRehearseTab}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rehearse the tab' }))
+    expect(onRehearseTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers to go and get a tab when none is attached', () => {
+    const onAttachTab = vi.fn()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        onAttachTab={onAttachTab}
+      />
+    ))
+
+    const note = screen.getByTestId('guitar-night-free-play-note')
+    expect(note.textContent).toContain('Attach a tab or turn on Listening')
+    expect(
+      screen.queryByRole('button', { name: 'Rehearse the tab' }),
+    ).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Attach a tab' }))
+    expect(onAttachTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes the note, and remembers that it was closed', () => {
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        onAttachTab={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Dismiss the free play note' }),
+    )
+    expect(screen.queryByTestId('guitar-night-free-play-note')).toBeNull()
+    // Persisted, not merely hidden: a hint that returns on the next visit is
+    // the same complaint again.
+    expect(localStorage.getItem(GUITAR_NIGHT_FREE_PLAY_NOTE_KEY)).toContain(
+      'true',
+    )
+
+    cleanup()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        onAttachTab={vi.fn()}
+      />
+    ))
+    expect(screen.queryByTestId('guitar-night-free-play-note')).toBeNull()
+  })
+
+  it('leaves the note alone while a guide is already up', () => {
+    // A measured reference guides the room, so there is nothing to invite.
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        reference={() => ({
+          ...AUTHORED_TAB,
+          kind: 'measured',
+          backingSessionId: BACKING.sessionId,
+        })}
+        onAttachTab={vi.fn()}
+      />
+    ))
+
+    expect(screen.queryByTestId('guitar-night-free-play-note')).toBeNull()
   })
 })
