@@ -58,17 +58,20 @@ describe('background catalog', () => {
   it('lists only shipped choices unless future entries are requested', () => {
     expect(
       listBackgrounds('karaoke').map((background) => background.id),
-    ).toEqual(['karaoke-theatre'])
+    ).toEqual(['karaoke-theatre', 'karaoke-tokyo-cyber'])
     expect(
       listBackgrounds('karaoke', { includeUnshipped: true }).map(
         (background) => background.id,
       ),
     ).toEqual([
       'karaoke-theatre',
+      'karaoke-tokyo-cyber',
       'golden-hour-stage',
       'aurora-stage',
       'neon-velvet-stage',
       'midnight-rain-stage',
+      'karaoke-floating-orb',
+      'karaoke-nordic-amphitheatre',
     ])
     expect(listBackgrounds('piano').map((background) => background.id)).toEqual(
       [
@@ -77,6 +80,7 @@ describe('background catalog', () => {
         'piano-nocturne-studio',
         'piano-brick-practice-loft',
         'piano-quiet-music-library',
+        'piano-ambient-led-studio',
       ],
     )
     expect(
@@ -89,6 +93,7 @@ describe('background catalog', () => {
       'piano-nocturne-studio',
       'piano-brick-practice-loft',
       'piano-quiet-music-library',
+      'piano-ambient-led-studio',
       'piano-velvet-recital',
       'piano-aurora-loft',
       'piano-midnight-rain',
@@ -99,6 +104,8 @@ describe('background catalog', () => {
       'piano-desert-modern-salon',
       'piano-moonlit-gallery',
       'piano-coastal-fog-pavilion',
+      'piano-manor-library',
+      'piano-parisian-salon',
     ])
   })
 

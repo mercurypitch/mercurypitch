@@ -154,6 +154,22 @@ function descriptionFor(background: BackgroundDefinition): string {
       return 'Silver-blue architecture after midnight'
     case 'coastal-fog-pavilion':
       return 'Soft coastal light through the morning fog'
+    case 'floating-orb':
+      return 'A slow-turning orb of light over a dark room'
+    case 'nordic-amphitheatre':
+      return 'Pale stone tiers under an open northern sky'
+    case 'skyline-penthouse':
+      return 'Glass, city lights, and room to spread out'
+    case 'nordic-wood':
+      return 'Bright timber and daylight, built for a full band'
+    case 'manor-library':
+      return 'Shelves to the ceiling and one lamp lit'
+    case 'parisian-salon':
+      return 'Tall windows, gilt mouldings, afternoon light'
+    case 'british-rock':
+      return 'Stacked cabs in a low, dark rehearsal room'
+    case 'venice-beach':
+      return 'Sun, salt air and an open garage door'
   }
 }
 
