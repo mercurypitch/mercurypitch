@@ -617,6 +617,12 @@
   gap: 38px;
 }
 
+/* The right slot doubles as the positioning context for the level popover,
+   so the popover is anchored to the button and not to the stage. */
+.levelAnchor {
+  position: relative;
+}
+
 /* Your mic — the same glass circle as the header toggles, transport-sized.
    On: filled with the stage's purple accent, matching .autoplayBtnOn. */
 .micBtn {
@@ -682,54 +688,61 @@
   box-shadow: inset 0 0 0 1px rgba(201, 162, 255, 0.55);
 }
 
-/* The sheet itself — one glass row above the transport, never a modal. The
-   song keeps playing and the lyrics keep scrolling behind it, because the
-   only way to judge the level is to hear it while you move the slider. */
-.levelSheet {
+/* The level itself — a vertical slider that rises OVER the lyrics from the
+   button that opened it, the way a volume popover behaves everywhere else.
+
+   The first cut was a full-width row inside the bottom bar. It read as a
+   modal on a tablet and, worse, it was layout: the bar grew by its height,
+   and on the devices that had no room to give the transport went out of
+   reach. Absolute positioning is what makes that impossible — open or closed,
+   the bar is the same height, so the play button cannot move. */
+.levelPopover {
+  position: absolute;
+  /* Anchored to the button below it, centred on the button rather than the
+     slot, which is a flex third and much wider than what it holds. */
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  /* Over the sing pill (z-index 3): while it is open it is the control you
+     are using, and it is gone the moment you tap away. */
+  z-index: 6;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 14px 12px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.1);
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px 14px;
+  border-radius: 22px;
+  /* Near-solid stage plum, not glass: the lyrics scroll behind it, and a
+     transparent panel over moving text reads as a rendering fault (the same
+     reason .singPill overrides --pill-bg). */
+  background: rgba(24, 12, 40, 0.92);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.levelRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.levelLabel {
-  font-size: 0.74rem;
-  color: rgba(244, 236, 255, 0.62);
-  letter-spacing: 0.02em;
+  box-shadow:
+    inset 0 0 0 1px rgba(238, 228, 255, 0.16),
+    0 12px 34px rgba(0, 0, 0, 0.45);
 }
 
 .levelSlider {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
+  /* A real range input, turned upright: the vertical writing mode is the
+     standards-based way (Safari 17.4+, Chrome 121+), and the WebKit
+     appearance keyword is the fallback older iOS still answers to. Keeping a
+     native input is what keeps arrow keys, VoiceOver and a draggable thumb
+     for free — a div with a pointer handler would have none of them. */
+  -webkit-appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 28px;
+  height: 132px;
   accent-color: rgb(201, 162, 255);
   cursor: pointer;
+  touch-action: none;
 }
 
 .levelValue {
-  min-width: 3.1rem;
-  text-align: right;
   font-size: 0.78rem;
   color: rgba(244, 236, 255, 0.88);
   font-variant-numeric: tabular-nums;
-}
-
-.levelHint {
-  margin: 0;
-  font-size: 0.68rem;
-  line-height: 1.35;
-  color: rgba(244, 236, 255, 0.5);
 }
 
 .playBtn {

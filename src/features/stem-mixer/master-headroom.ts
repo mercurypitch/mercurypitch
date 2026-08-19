@@ -65,18 +65,28 @@ export function buildSoftClipCurve(
  * How loud the mix runs into the soft clipper.
  *
  * The default is 0.7 exactly — the constant the master was pinned at before
- * this control existed — so nobody's mix changes until they move the slider.
- * The ceiling of 2.0 is +9.1 dB, chosen to cover the worst attenuation an
- * iOS `playAndRecord` switch has been observed to apply; the floor of 0.35 is
- * there because the other half of singing along is wanting the backing
- * quieter, which was equally impossible.
+ * this control existed — so nobody's mix changes until they move the slider,
+ * and it is the only honest 100% for the readout: it is what every mix has
+ * always sounded like.
+ *
+ * Everything else is a round multiple of it, because the control shows
+ * percentages and a scale that stopped at 286% read as a bug rather than a
+ * ceiling. The floor is half the shipped level (50%) — the other half of
+ * singing along is wanting the backing quieter, which was equally impossible
+ * — and the ceiling is triple it (300%, +9.5 dB), which covers the worst
+ * attenuation an iOS `playAndRecord` switch has been observed to apply. The
+ * step is a twentieth of the shipped level, so the slider moves in 5% clicks.
+ *
+ * Above 100% is the entire point, not an excess: iOS turns the output down
+ * the moment a page opens a mic, so "back to normal" for the singer is a
+ * number above the one the app plays at.
  */
 export const MUSIC_LEVEL = createClampedPreference({
   storageKey: 'pitchperfect_mixer_music_level',
   defaultValue: 0.7,
   min: 0.35,
-  max: 2,
-  step: 0.05,
+  max: 2.1,
+  step: 0.035,
 })
 
 export const loadMusicLevel = (): number => MUSIC_LEVEL.load()

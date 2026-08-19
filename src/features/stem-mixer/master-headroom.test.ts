@@ -114,8 +114,8 @@ describe('the music level', () => {
   })
 
   it('reaches far enough up to answer the complaint', () => {
-    // 2.0 over 0.7 is +9.1 dB — the headroom the iOS drop needs.
-    expect(MUSIC_LEVEL.spec.max).toBe(2)
+    // 2.1 over 0.7 is +9.5 dB — the headroom the iOS drop needs.
+    expect(MUSIC_LEVEL.spec.max).toBe(2.1)
     const dB =
       20 * Math.log10(MUSIC_LEVEL.spec.max / MUSIC_LEVEL.spec.defaultValue)
     expect(dB).toBeGreaterThan(9)
@@ -128,6 +128,18 @@ describe('the music level', () => {
     expect(MUSIC_LEVEL.spec.min).toBeGreaterThan(0)
   })
 
+  it('is a round multiple of the shipped level at every bound', () => {
+    // The control reads out as a percentage of the default, and a ceiling
+    // that landed on 286% was reported as looking like a bug rather than a
+    // limit. Every bound is now a round number of percent by construction:
+    // half, triple, and a twentieth for the step.
+    const percent = (value: number): number =>
+      Math.round((value / MUSIC_LEVEL.spec.defaultValue) * 100)
+    expect(percent(MUSIC_LEVEL.spec.min)).toBe(50)
+    expect(percent(MUSIC_LEVEL.spec.max)).toBe(300)
+    expect(percent(MUSIC_LEVEL.spec.step)).toBe(5)
+  })
+
   it('stores under its own key', () => {
     expect(MUSIC_LEVEL.spec.storageKey).toBe('pitchperfect_mixer_music_level')
   })
@@ -138,7 +150,7 @@ describe('the music level', () => {
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => void store.set(k, v),
     }
-    expect(MUSIC_LEVEL.persist(99, storage)).toBe(2)
+    expect(MUSIC_LEVEL.persist(99, storage)).toBe(2.1)
     expect(MUSIC_LEVEL.persist(0, storage)).toBe(0.35)
   })
 })
@@ -148,7 +160,7 @@ describe('the two together', () => {
     // The case that made the clipper necessary: two stems each peaking at 1.0
     // summed and multiplied by the new maximum master.
     const worstCase = 2 * 1 * MUSIC_LEVEL.spec.max
-    expect(worstCase).toBe(4) // four times full scale, raw
+    expect(worstCase).toBeCloseTo(4.2, 6) // over four times full scale, raw
     expect(Math.abs(softClipSample(worstCase))).toBeLessThan(1)
   })
 
