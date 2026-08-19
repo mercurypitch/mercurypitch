@@ -173,12 +173,15 @@ export function readSheetTheme(element: Element | null): SheetTheme {
   }
 
   return {
-    staffLine: read('--sheet-staff-line', fallback.staffLine),
-    barLine: read('--sheet-bar-line', fallback.barLine),
-    laneLabel: read('--sheet-lane-label', fallback.laneLabel),
-    noteText: read('--sheet-note-text', fallback.noteText),
-    noteBackdrop: read('--sheet-note-backdrop', fallback.noteBackdrop),
-    scoredAccent: read('--sheet-scored-accent', fallback.scoredAccent),
-    mutedNoteText: read('--sheet-muted-note-text', fallback.mutedNoteText),
+    staffLine: read('--score-sheet-staff-line', fallback.staffLine),
+    barLine: read('--score-sheet-bar-line', fallback.barLine),
+    laneLabel: read('--score-sheet-lane-label', fallback.laneLabel),
+    noteText: read('--score-sheet-note-text', fallback.noteText),
+    noteBackdrop: read('--score-sheet-note-backdrop', fallback.noteBackdrop),
+    scoredAccent: read('--score-sheet-scored-accent', fallback.scoredAccent),
+    mutedNoteText: read(
+      '--score-sheet-muted-note-text',
+      fallback.mutedNoteText,
+    ),
   }
 }

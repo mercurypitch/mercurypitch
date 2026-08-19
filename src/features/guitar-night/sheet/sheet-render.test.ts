@@ -159,7 +159,7 @@ describe('readSheetTheme', () => {
     const element = document.createElement('div')
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({
       getPropertyValue: (name: string) =>
-        name === '--sheet-scored-accent' ? ' #ff0000 ' : '',
+        name === '--score-sheet-scored-accent' ? ' #ff0000 ' : '',
     } as unknown as CSSStyleDeclaration)
 
     const theme = readSheetTheme(element)

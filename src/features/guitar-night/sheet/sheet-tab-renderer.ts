@@ -2,6 +2,10 @@
 // numbers sitting on the line with the line broken behind them. It paints a
 // whole system in one pass and holds no state, so the page can call it for any
 // system in any order.
+//
+// Part names are not painted here. They are buttons on the page above the
+// canvas, because a name you can tap to score that part has to be focusable,
+// and a texture on a canvas never is.
 
 import type { GuitarSlideType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -50,7 +54,6 @@ function paintLane(
   const lines = Math.max(1, lane.tuning.stringCount)
   const staffBottom = staffTop + (lines - 1) * metrics.rowHeight
 
-  paintLaneName(ctx, laneLayout, metrics, theme)
   paintStaff(ctx, {
     lines,
     staffTop,
@@ -91,22 +94,6 @@ function paintLane(
       system: args.system,
     })
   }
-}
-
-function paintLaneName(
-  ctx: CanvasRenderingContext2D,
-  laneLayout: SheetLaneLayout,
-  metrics: SheetMetrics,
-  theme: SheetTheme,
-): void {
-  ctx.textAlign = 'left'
-  ctx.fillStyle = laneLayout.scored ? theme.scoredAccent : theme.laneLabel
-  ctx.font = `${Math.max(10, metrics.labelHeight - 8)}px system-ui, sans-serif`
-  ctx.fillText(
-    laneLayout.lane.trackName,
-    0,
-    laneLayout.top + metrics.labelHeight / 2,
-  )
 }
 
 function paintStaff(

@@ -259,20 +259,18 @@ describe('tabSheetRenderer.paintSystem', () => {
     expect(byLabel('3')?.fillStyle).toBe(theme.mutedNoteText)
   })
 
-  it('names each part, marking the one being scored', () => {
+  it('leaves part names to the page, which can make them tappable', () => {
     const ops = paint(
       [lane(), lane({ trackId: 'track-2', trackName: 'Bass' })],
       'track-2',
     )
-    const names = ops.filter(
-      (entry) =>
-        entry.op === 'fillText' &&
-        (entry.args[0] === 'Lead guitar' || entry.args[0] === 'Bass'),
-    )
-    expect(names.map((entry) => entry.fillStyle)).toEqual([
-      theme.laneLabel,
-      theme.scoredAccent,
-    ])
+    expect(
+      ops.filter(
+        (entry) =>
+          entry.op === 'fillText' &&
+          (entry.args[0] === 'Lead guitar' || entry.args[0] === 'Bass'),
+      ),
+    ).toHaveLength(0)
   })
 
   it('labels the strings in the gutter', () => {
