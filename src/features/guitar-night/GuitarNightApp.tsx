@@ -308,7 +308,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       return
     }
     queueMicrotask(() => {
-      if (appRoot !== undefined) appRoot.scrollTop = 0
+      // Not the shell. It is `overflow: clip` and was never the scroller
+      // anyway — before that it only ever held the 17px of scaled backdrop,
+      // so this reset has been a no-op for as long as it has existed. The
+      // offset lives on the page box on a phone and in `.main` from tablet
+      // width up, so clear both.
+      const region = appRoot?.querySelector('main') ?? null
+      if (region !== null) region.scrollTop = 0
+      // `document.scrollingElement` rather than `window.scrollTo`: same
+      // effect, and it neither needs a smooth-scroll implementation nor
+      // trips jsdom's "not implemented" path under test.
+      const page = document.scrollingElement ?? null
+      if (page !== null) page.scrollTop = 0
     })
   })
 
