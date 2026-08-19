@@ -563,6 +563,15 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+
+  /* Only where it can actually scroll. `scrollbar-gutter` reserves its space
+     on any scroll container, and `overflow: hidden` makes one — so on
+     `.appRoom`, where `.main` is a full-bleed photograph that never scrolls,
+     a stable gutter quietly took 10px off the stage. Measured: 1430 wide in
+     a 1440 window. */
+  .app:not(.appRoom) .main {
+    scrollbar-gutter: stable;
+  }
 }
 
 /* The scrollbar has to look like the app's.
@@ -576,7 +585,7 @@
 
    Importing `app.css` here would pull a whole application's stylesheet into a
    page that wants none of the rest of it, so the treatment is restated for
-   the two boxes that scroll, in this room's amber rather than the app's grey
+   the boxes that scroll, in this room's amber rather than the app's grey
    — the same colour `.songList` already uses a few rules down.
 
    `scrollbar-gutter: stable` is not cosmetic: without it the bar appearing
@@ -588,10 +597,6 @@
 .app {
   scrollbar-width: thin;
   scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
-}
-
-.main {
-  scrollbar-gutter: stable;
 }
 
 .main::-webkit-scrollbar,
