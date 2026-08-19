@@ -9,7 +9,9 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
+import { X } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
@@ -19,17 +21,17 @@ import { useVoiceControlController } from '@/features/voice-control/useVoiceCont
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
 import { accountReady, credits, refreshAccount, signedIn, } from '@/lib/standalone-account'
-import { createPersistedSignal } from '@/lib/storage'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import { cloudSplitBlocker, cloudSplitBlockerHeading, } from '@/lib/uvr-cloud-preflight'
-import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBackdropId, resolveBackdrop, } from './backdrops'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } from './first-win-config'
 import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR, GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR, guitarNightImportValidationError, } from './guitar-night-import'
+import { guitarRoomLabel } from './guitar-rooms'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightFileDrop } from './GuitarNightFileDrop'
 import { GuitarNightFirstWin } from './GuitarNightFirstWin'
@@ -210,12 +212,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       tempoBpm: firstWinController.tempoBpm,
     },
   }
-  const [backdropId, setBackdropId] = createPersistedSignal<string>(
-    BACKDROP_STORAGE_KEY,
-    DEFAULT_BACKDROP_ID,
-    { validator: isBackdropId },
-  )
-  const backdrop = createMemo(() => resolveBackdrop(backdropId()))
+  // The rooms come from the shared background catalog, the same one Karaoke
+  // Night, Jam and Piano Night draw from. Guitar Night used to keep its own
+  // four-image module with its own storage key, which is exactly why it could
+  // not be given a supporter room or be touched from the admin panel.
+  const background = useBackgroundSurfaceController('guitar')
+  const roomLabel = (): string => guitarRoomLabel(background.resolved().id)
   // How much of the chosen room actually reaches the eye. Not
   // `createPersistedSignal`: the value is clamped to the slider's own bounds
   // on the way out, which the generic helper has no opinion about.
@@ -266,8 +268,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
   let venueMenuContainer: HTMLDivElement | undefined
   let venueMenuButton: HTMLButtonElement | undefined
+  // The panel is a sibling of the top rail now, not a child of it: a drawer
+  // that lived inside the rail could not slide in from the screen edge.
+  // Outside-clicks therefore have to spare both boxes, not just the rail.
+  let venueMenu: HTMLElement | undefined
   let tunerReturnFocus: HTMLElement | undefined
-  let learnReturnFocus: HTMLElement | undefined
 
   const referenceController = useGuitarNightReferenceController({
     loadReferencePort: () => {
@@ -312,24 +317,33 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     queueMicrotask(() => venueMenuButton?.focus())
   }
 
+  /**
+   * Was this the button that opened something, from inside the room drawer?
+   *
+   * Learn and Tune are opened from inside the drawer, and opening either
+   * closes it. A closed drawer keeps its buttons in the document — it slides
+   * off the edge rather than being unmounted — so "focus whatever opened
+   * this" would put focus on an off-screen, inert control and effectively
+   * lose it. For those triggers the way back is the button that opens the
+   * drawer, which is the same thing the collapsed dropdown used to do by
+   * virtue of being `display: none`.
+   */
+  const openedFromRoomDrawer = (element: HTMLElement | undefined): boolean =>
+    element !== undefined && venueMenu?.contains(element) === true
+
   const closeLearnShelf = (): void => {
     setLearnOpen(false)
-    queueMicrotask(() => {
-      if (
-        learnReturnFocus?.isConnected === true &&
-        learnReturnFocus.getClientRects().length > 0
-      ) {
-        learnReturnFocus.focus()
-        return
-      }
-      venueMenuButton?.focus()
-    })
+    // Learn is opened from inside the room drawer and nowhere else, and
+    // opening it closes the drawer, so the way back is always the button that
+    // opens the drawer. Handing focus to the trigger instead would put it on
+    // a button that is still in the document but has slid off the edge with
+    // the drawer — connected, boxed, inert, and impossible to see.
+    queueMicrotask(() => venueMenuButton?.focus())
   }
 
-  const openLearnShelf = (trigger?: HTMLElement): void => {
+  const openLearnShelf = (): void => {
     if (view() === 'tuner') return
     const currentView = view()
-    learnReturnFocus = trigger ?? venueMenuButton
     setLearnInitialFocus(
       isLearnActivityView(currentView) ? currentView : 'first-steps',
     )
@@ -669,9 +683,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const returnView = tunerReturnView()
     setView(returnView)
     queueMicrotask(() => {
-      const triggerWasInsideRoomMenu =
-        tunerReturnFocus !== undefined &&
-        venueMenuContainer?.contains(tunerReturnFocus) === true
+      const triggerWasInsideRoomMenu = openedFromRoomDrawer(tunerReturnFocus)
       if (triggerWasInsideRoomMenu && venueMenuButton?.isConnected === true) {
         venueMenuButton.focus()
         return
@@ -883,7 +895,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       if (
         !venueMenuOpen() ||
         !(target instanceof Node) ||
-        venueMenuContainer?.contains(target) === true
+        venueMenuContainer?.contains(target) === true ||
+        venueMenu?.contains(target) === true
       ) {
         return
       }
@@ -988,8 +1001,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       <div
         class={styles.backdrop}
         data-testid="guitar-night-backdrop"
-        data-backdrop={backdrop().id}
-        style={{ '--room-backdrop': `url('${backdrop().url}')` }}
+        data-backdrop={background.resolved().id}
+        style={{ '--room-backdrop': `url('${background.resolved().url}')` }}
         aria-hidden="true"
       />
       <div class={styles.roomGlow} aria-hidden="true" />
@@ -1006,7 +1019,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         </a>
         <span class={styles.topbarDivider} aria-hidden="true" />
         <span class={styles.topbarTitle}>Guitar Night</span>
-        <span class={styles.roomName}>{backdrop().name}</span>
+        <span class={styles.roomName}>{roomLabel()}</span>
 
         {/* The rail is where this belongs on a phone. As a fixed corner
             overlay it cleared `--tabbar-total` for a tab bar Guitar Night
@@ -1027,71 +1040,96 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             class={styles.venueMenuButton}
             aria-expanded={venueMenuOpen()}
             aria-controls="guitar-night-venue-menu"
+            aria-haspopup="dialog"
             onClick={() => setVenueMenuOpen((open) => !open)}
           >
             Room
           </button>
-          <div
-            id="guitar-night-venue-menu"
-            class={styles.venueMenu}
-            classList={{ [styles.venueMenuOpen]: venueMenuOpen() }}
+        </div>
+      </div>
+
+      {/* ── Room and settings ──────────────────────────────────
+          One panel that slides in from the right, the way Piano Night's
+          does. It replaces a native <select> that sat in the top rail on a
+          desktop and turned into a cramped dropdown on a phone: a room is
+          picked by looking at it, which a text list cannot offer, and the
+          supporter rooms it now has to show do not fit in an <option>. */}
+      <Show when={venueMenuOpen()}>
+        <button
+          type="button"
+          class={styles.roomScrim}
+          data-testid="guitar-night-room-scrim"
+          aria-label="Close room settings"
+          onClick={closeVenueMenuAndRestoreFocus}
+        />
+      </Show>
+      <aside
+        id="guitar-night-venue-menu"
+        ref={venueMenu}
+        class={styles.venueMenu}
+        classList={{ [styles.venueMenuOpen]: venueMenuOpen() }}
+        data-testid="guitar-night-room-drawer"
+        role="dialog"
+        aria-modal={venueMenuOpen() ? 'true' : undefined}
+        aria-label="Guitar Night room and settings"
+        aria-hidden={venueMenuOpen() ? undefined : 'true'}
+        inert={!venueMenuOpen()}
+        tabindex="-1"
+      >
+        <div class={styles.drawerTopline}>
+          <div>
+            <span>Guitar Night</span>
+            <strong>Room</strong>
+          </div>
+          <button
+            type="button"
+            class={styles.drawerClose}
+            aria-label="Close room settings"
+            onClick={closeVenueMenuAndRestoreFocus}
           >
-            <label class={styles.roomSelect}>
-              <span class={styles.visuallyHidden}>Room</span>
-              <select
-                value={backdrop().id}
-                title={backdrop().detail}
-                onChange={(event) => {
-                  setBackdropId(event.currentTarget.value)
-                  closeVenueMenuAndRestoreFocus()
-                }}
-              >
-                <For each={GUITAR_NIGHT_BACKDROPS}>
-                  {(room) => (
-                    <option value={room.id} title={room.detail}>
-                      {room.name}
-                    </option>
-                  )}
-                </For>
-              </select>
-            </label>
-            {/* Right below the room it acts on. The topbar itself is full —
-                brand, title, room name, voice HUD, account — and this is a
-                room setting, not a transport control. Karaoke Night's twin
-                lives in its topbar and is hidden under 900px as a result;
-                here the menu carries it at every width. */}
-            <label class={styles.roomGlass} title="How much of the room shows">
-              <span class={styles.visuallyHidden}>Room visibility</span>
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                aria-hidden="true"
-              >
-                <path
-                  fill="currentColor"
-                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
-                />
-              </svg>
-              <input
-                type="range"
-                class={styles.roomGlassSlider}
-                min={GUITAR_NIGHT_GLASS.min}
-                max={GUITAR_NIGHT_GLASS.max}
-                step={GUITAR_NIGHT_GLASS.step}
-                value={roomGlass()}
-                aria-label="Room visibility"
-                data-testid="guitar-night-room-glass"
-                onInput={(event) =>
-                  updateRoomGlass(Number(event.currentTarget.value))
-                }
-              />
-            </label>
+            <X />
+          </button>
+        </div>
+
+        <section class={styles.drawerPanel} aria-label="Rooms">
+          <h2 class={styles.drawerHeading}>Pick the light you play in.</h2>
+          <p class={styles.drawerCopy}>
+            Room art is visual only — it never touches your tone, tuning or
+            timing. Your choice stays on this device.
+          </p>
+          <PremiumBackgroundPicker
+            class={styles.roomPicker}
+            controller={background}
+            embedded
+            onSelect={(option) => background.select(option.id)}
+          />
+
+          <label class={styles.roomGlass} title="How much of the room shows">
+            <span class={styles.roomGlassLabel}>Room visibility</span>
+            <input
+              type="range"
+              class={styles.roomGlassSlider}
+              min={GUITAR_NIGHT_GLASS.min}
+              max={GUITAR_NIGHT_GLASS.max}
+              step={GUITAR_NIGHT_GLASS.step}
+              value={roomGlass()}
+              aria-label="Room visibility"
+              data-testid="guitar-night-room-glass"
+              onInput={(event) =>
+                updateRoomGlass(Number(event.currentTarget.value))
+              }
+            />
+          </label>
+        </section>
+
+        <section class={styles.drawerPanel} aria-label="Studio">
+          <h2 class={styles.drawerHeading}>Studio</h2>
+          <div class={styles.drawerLinks}>
             <button
               type="button"
               class={styles.studioLink}
               data-room-action="learn"
-              onClick={(event) => openLearnShelf(event.currentTarget)}
+              onClick={() => openLearnShelf()}
             >
               Learn
             </button>
@@ -1111,15 +1149,24 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               <GuitarNightAccount />
             </Suspense>
           </div>
-        </div>
-      </div>
+        </section>
+      </aside>
 
+      {/* The drawer joins the tuner and the Learn shelf here: while any of
+          the three is open the room behind it is inert, so a Tab out of the
+          panel cannot land on something the scrim is covering. The topbar is
+          deliberately NOT inert for the drawer — the button that closes it
+          lives there. */}
       <main
         class={styles.main}
         classList={{ [styles.mainRoom]: isStageView() }}
         id="guitar-night-main"
-        inert={view() === 'tuner' || learnOpen()}
-        aria-hidden={view() === 'tuner' || learnOpen() ? 'true' : undefined}
+        inert={view() === 'tuner' || learnOpen() || venueMenuOpen()}
+        aria-hidden={
+          view() === 'tuner' || learnOpen() || venueMenuOpen()
+            ? 'true'
+            : undefined
+        }
       >
         <div
           class={styles.entryPanel}

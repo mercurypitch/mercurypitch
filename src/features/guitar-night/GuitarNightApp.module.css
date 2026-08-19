@@ -230,43 +230,202 @@
   margin-left: auto;
 }
 
-.venueMenu {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+/* ── Room drawer ──────────────────────────────────────────
+   The venue used to be a native <select> living in this rail, with the
+   glass slider and the studio links beside it — and on a phone the whole
+   row collapsed into a dropdown under the button. Rooms are pictures, so
+   the list was the wrong instrument for the job twice over: it could not
+   show the room, and it had nowhere to put a supporter room's lock. This
+   is the same right-hand drawer Piano Night uses, at every width. */
 
 .venueMenuButton {
-  display: none;
-}
-
-.roomSelect {
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Wears the room select's pill so the two read as one setting, not as a
-   control that wandered in from a mixer. */
-.roomGlass {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0 0.7rem;
+  min-height: var(--touch-target);
+  padding: 0.3rem 0.9rem;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.78);
+  background: rgba(7, 6, 5, 0.5);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.venueMenuButton:hover {
+  border-color: rgba(224, 164, 93, 0.44);
+  color: #fdf3e4;
+}
+
+.roomScrim {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(4, 3, 2, 0.62);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.venueMenu {
+  position: fixed;
+  z-index: 61;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(27rem, calc(100vw - 1.5rem));
+  overflow-y: auto;
+  padding-bottom: max(1.5rem, var(--safe-bottom));
+  border-left: 1px solid rgba(216, 200, 175, 0.16);
+  color: rgba(244, 234, 219, 0.86);
+  background: #0b0908;
+  box-shadow: -1.4rem 0 3.6rem rgba(0, 0, 0, 0.5);
+  /* Closed is closed: `visibility` is what takes the panel out of hit
+     testing, out of the tab order and out of "is this on screen?" for
+     anything that asks. Opacity and a transform alone leave a full-size box
+     sitting off the right edge that still answers yes. It is delayed by the
+     length of the slide so the panel can be seen leaving. */
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(102%);
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease-out,
+    visibility 0s linear 320ms;
+}
+
+.venueMenuOpen {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .venueMenu {
+    transition: none;
+  }
+}
+
+.drawerTopline {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(0.9rem, var(--safe-top)) 0.9rem 0.9rem 1.3rem;
+  border-bottom: 1px solid rgba(216, 200, 175, 0.14);
+  background: #0b0908;
+}
+
+.drawerTopline > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.drawerTopline span {
+  color: rgba(224, 164, 93, 0.78);
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.drawerTopline strong {
+  color: #fdf3e4;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.drawerClose {
+  display: grid;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: 0;
+  border-radius: 50%;
+  color: rgba(244, 234, 219, 0.7);
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.drawerClose:hover {
+  color: #fdf3e4;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.drawerPanel {
+  padding: 1.4rem 1.3rem 0.4rem;
+}
+
+.drawerPanel + .drawerPanel {
+  margin-top: 0.8rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid rgba(216, 200, 175, 0.12);
+}
+
+.drawerHeading {
+  margin: 0 0 0.5rem;
+  color: #fdf3e4;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.drawerCopy {
+  max-width: 46ch;
+  margin: 0 0 1rem;
+  color: rgba(244, 234, 219, 0.6);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.roomPicker {
+  display: block;
+}
+
+.drawerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.6rem;
+}
+
+/* The glass slider is a room setting, so it sits under the rooms it acts
+   on rather than in the rail where it used to compete with the transport. */
+.roomGlass {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: var(--touch-target);
+  margin-top: 1rem;
+  padding: 0.2rem 0.1rem;
   color: rgba(244, 234, 219, 0.7);
 }
 
-.roomGlass svg {
+.roomGlassLabel {
   flex: none;
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
 }
 
 .roomGlassSlider {
-  width: 5.5rem;
+  flex: 1 1 auto;
   min-width: 0;
   accent-color: var(--amber);
   cursor: pointer;
 }
 
-.roomSelect select,
 .studioLink,
 .accountChip {
   min-height: var(--touch-target);
@@ -281,7 +440,6 @@
   cursor: pointer;
 }
 
-.roomSelect select:hover,
 .studioLink:hover,
 .accountChip:hover {
   border-color: rgba(224, 164, 93, 0.44);
@@ -4848,67 +5006,17 @@
   }
 
   .venueMenuButton {
-    display: grid;
-    place-items: center;
-    min-width: var(--touch-target);
-    min-height: var(--touch-target);
     padding: 0.35rem 0.75rem;
-    border: 1px solid rgba(216, 200, 175, 0.18);
-    border-radius: 999px;
-    color: rgba(244, 234, 219, 0.78);
-    background: rgba(7, 6, 5, 0.58);
-    font: inherit;
     font-size: 0.68rem;
     font-weight: 700;
   }
 
+  /* Full-bleed on a phone: a 27rem panel on a 360px screen would be a
+     letterbox with a strip of unusable room behind it. */
   .venueMenu {
-    position: absolute;
-    z-index: 12;
-    top: calc(100% + 0.4rem);
-    right: 0;
-    display: none;
-    grid-template-columns: 1fr;
-    min-width: 11rem;
-    padding: 0.45rem;
-    border: 1px solid rgba(244, 234, 219, 0.12);
-    border-radius: 0.7rem;
-    background: rgba(10, 8, 7, 0.96);
-    box-shadow: 0 0.9rem 2.8rem rgba(0, 0, 0, 0.38);
-  }
-
-  .venueMenuOpen {
-    display: grid;
-  }
-
-  .venueMenu .roomSelect,
-  .venueMenu .roomSelect select,
-  .venueMenu .roomGlass,
-  .venueMenu .studioLink,
-  .venueMenu .accountChip,
-  .venueMenu .accountChipWrap {
-    width: 100%;
-  }
-
-  /* In the collapsed menu the slider is a row like any other, so it gets the
-     same touch target and stretches to the drawer instead of keeping the
-     topbar's fixed 5.5rem. */
-  .venueMenu .roomGlass {
-    min-height: var(--touch-target);
-    padding: 0 0.55rem;
-  }
-
-  .venueMenu .roomGlassSlider {
-    width: auto;
-    flex: 1 1 auto;
-  }
-
-  .venueMenu .roomSelect select,
-  .venueMenu .studioLink,
-  .venueMenu .accountChip {
-    justify-content: flex-start;
-    min-height: var(--touch-target);
-    border-radius: 0.48rem;
+    width: min(27rem, 100vw);
+    padding-left: max(0, var(--safe-left));
+    padding-right: max(0, var(--safe-right));
   }
 
   .learnScrim {
@@ -5626,20 +5734,10 @@
     flex: none;
   }
 
+  /* The drawer already owns the edge it slides from; here it simply takes
+     the whole width, and keeps its own scroll rather than the page's. */
   .venueMenu {
-    position: fixed;
-    top: max(68px, calc(var(--safe-top) + 60px));
-    right: max(10px, var(--safe-right));
-    left: max(10px, var(--safe-left));
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    max-height: calc(
-      100dvh - max(68px, calc(var(--safe-top) + 60px)) -
-        max(8px, var(--safe-bottom))
-    );
-    overflow-x: hidden;
-    overflow-y: auto;
+    width: 100vw;
     overscroll-behavior: contain;
   }
 
