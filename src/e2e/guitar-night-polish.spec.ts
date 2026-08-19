@@ -262,4 +262,28 @@ test('dresses its own scrollbar instead of the platform one @smoke', async ({
   // Not cosmetic: a bar that appears must not narrow the content, or the
   // content can shorten, drop the bar, and start the loop again.
   expect(skin?.gutter).toBe('stable')
+
+  // ...but only where it can scroll. `scrollbar-gutter` reserves space on any
+  // scroll container, and `overflow: hidden` makes one, so a blanket rule
+  // took 10px off the room's full-bleed stage — 1430 in a 1440 window.
+  await page.getByRole('button', { name: 'Enter room', exact: true }).click()
+  await expect(page.getByTestId('guitar-night-room')).toBeVisible()
+  const room = await page.evaluate(() => {
+    const main = document.querySelector<HTMLElement>('main')
+    const stage = document.querySelector<HTMLElement>(
+      '[data-testid="guitar-night-stage"]',
+    )
+    if (main === null) return null
+    return {
+      gutter: getComputedStyle(main)
+        .getPropertyValue('scrollbar-gutter')
+        .trim(),
+      mainClientWidth: main.clientWidth,
+      stageWidth:
+        stage === null ? null : Math.round(stage.getBoundingClientRect().width),
+    }
+  })
+  expect(room?.gutter).not.toBe('stable')
+  expect(room?.mainClientWidth).toBe(DESKTOP.width)
+  expect(room?.stageWidth).toBe(DESKTOP.width)
 })
