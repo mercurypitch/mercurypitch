@@ -1913,6 +1913,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 onTuning={referenceController.setTuning}
                 suspended={learnOpen}
                 onSongs={returnToSongs}
+                authoredReference={authoredReference}
+                onRehearseTab={enterScoreRoom}
+                onAttachTab={returnToSongs}
                 // Withheld for the demo. "Separate guitar" reconnects to a
                 // durable separation record and then bills a cloud GPU
                 // split against it; the demo has never had one, so the

@@ -44,6 +44,18 @@ interface GuitarNightRoomProps {
   suspended?: Accessor<boolean>
   onSongs(): void
   onSeparateGuitar?(): void
+  /**
+   * A tab attached in the lobby. It cannot guide THIS room — an authored tab
+   * carries its own nominal tempo and nothing has aligned it to the
+   * recording — but the room has to say so. Reported as: "in the room itself,
+   * it says, attach tab to play along, but I don't have any option to attach
+   * it afterwards", by a player who had already attached one.
+   */
+  authoredReference?: Accessor<GuitarNightReference | null>
+  /** Open the tab room, where an authored tab does play. */
+  onRehearseTab?(): void
+  /** Go back for a tab; the lobby owns the picker and the file drop. */
+  onAttachTab?(): void
 }
 
 const STEM_LABELS: Record<GuitarNightStemKind, string> = {
@@ -587,6 +599,43 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             ? `${attached.title} · ${attached.trackName}`
             : attached.title
         }}
+        invitationNote={() => {
+          const authored = props.authoredReference?.() ?? null
+          if (authored === null) {
+            return 'Attach a tab or turn on Listening whenever you want a target.'
+          }
+          return `${authored.title} is attached, but it keeps its own tempo — it plays in the tab room, not against this recording.`
+        }}
+        invitationAction={
+          <>
+            <Show when={props.authoredReference?.() ?? null}>
+              <Show when={props.onRehearseTab}>
+                {(rehearse) => (
+                  <button
+                    class={styles.stageInvitationAction}
+                    type="button"
+                    onClick={() => rehearse()()}
+                  >
+                    Rehearse the tab
+                  </button>
+                )}
+              </Show>
+            </Show>
+            <Show when={(props.authoredReference?.() ?? null) === null}>
+              <Show when={props.onAttachTab}>
+                {(attach) => (
+                  <button
+                    class={styles.stageInvitationAction}
+                    type="button"
+                    onClick={() => attach()()}
+                  >
+                    Attach a tab
+                  </button>
+                )}
+              </Show>
+            </Show>
+          </>
+        }
         active={() => true}
         listening={isListening}
         heardNote={listening.currentNote}

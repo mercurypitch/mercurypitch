@@ -84,15 +84,23 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  /* `minmax(0, 1fr)` rather than `1fr`: a `1fr` row refuses to go below its
+     content's min-content height, so a tall song column pushed the shell
+     past the viewport and the page scrolled. This row may shrink, and the
+     scrolling moves inside `.main` where it belongs. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   /* Without this the column takes its min-content width from the widest row,
      and one long topbar would lay the whole page out wider than the phone. */
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow: hidden;
-  overflow-y: auto;
+  /* `clip`, not `hidden`. `.backdrop` sits at `inset: 0` and is then
+     `transform: scale(1.015)`, and a scaled box overflows like any other —
+     so `overflow-y: auto` gave the shell a scrollbar of its own, beside the
+     page's, for 17px of decorative bleed nobody can scroll to. `clip` cuts
+     the bleed without ever becoming a scroll container. */
+  overflow: clip;
   color: var(--ivory);
   background: var(--night);
 }
@@ -524,9 +532,57 @@
 .main {
   z-index: 1;
   display: flex;
-  align-items: center;
+  /* `safe` matters: a centred flex child that outgrows its container has its
+     overflow split above and below, and the half above a plain `center` is
+     unreachable by scrolling. `safe center` gives that case start alignment. */
+  align-items: safe center;
   min-height: 0;
   padding: clamp(1.5rem, 4vw, 4rem) max(1.5rem, 7vw);
+}
+
+/* One screen, one lobby.
+   ============================================================
+   The room already pins itself to the viewport (`.appRoom`). From tablet
+   width up the entry views do the same, and any column too tall for the
+   screen scrolls inside `.main` instead of growing the page box. Reported
+   as "the guitar night page on desktop itself scrolls, and twice" — the
+   second bar was the shell's, fixed above; this is the first one.
+
+   Phones are deliberately left out: down there the page scroll is the only
+   sane answer to a column that is honestly taller than the screen. */
+@media (min-width: 721px) {
+  .app {
+    height: 100dvh;
+  }
+
+  .main {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Laptop heights: fit by taking the air back, not by shrinking the words.
+   The panel sits in a gutter of up to 4rem top and bottom and carries up to
+   2.6rem of its own padding — nearly 190px of spacing on a screen with none
+   to spare. The display face gives up a little too, because at 4.5rem a
+   three-word heading alone is a seventh of the viewport. */
+@media (min-width: 721px) and (max-height: 940px) {
+  .main {
+    padding-block: clamp(0.9rem, 2.4vh, 2rem);
+  }
+
+  .entryPanel {
+    padding: clamp(1.15rem, 2.2vw, 1.9rem);
+  }
+
+  .entryPanel h1 {
+    font-size: clamp(2.1rem, 4vw, 3.1rem);
+  }
+
+  .detailCopy {
+    margin-top: 0.8rem;
+    line-height: 1.5;
+  }
 }
 
 .entryPanel {
@@ -3567,9 +3623,107 @@
   background: rgb(7 6 5 / calc(0.62 * var(--gn-surface-scale)));
   box-shadow: 0 0.8rem 2.5rem rgba(0, 0, 0, 0.22);
   text-align: left;
+  /* The note floats over the fretboard, so the note itself stays
+     untouchable — only its controls take the pointer back. */
   pointer-events: none;
   -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
   backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
+}
+
+.stageInvitation button {
+  pointer-events: auto;
+}
+
+.stageInvitationClose {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.66);
+  background: transparent;
+  cursor: pointer;
+}
+
+.stageInvitationClose svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.stageInvitationClose:hover,
+.stageInvitationClose:focus-visible {
+  color: #f4eadb;
+  background: rgba(244, 234, 219, 0.1);
+}
+
+/* Room-supplied way out of the note — "Rehearse the tab" when one is
+   attached, "Attach a tab" when none is. */
+.stageInvitationAction {
+  margin-top: 0.4rem;
+  padding: 0.32rem 0.6rem;
+  border: 1px solid rgba(224, 164, 93, 0.4);
+  border-radius: 0.45rem;
+  color: var(--amber-bright);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  background: rgba(224, 164, 93, 0.1);
+  cursor: pointer;
+}
+
+.stageInvitationAction:hover,
+.stageInvitationAction:focus-visible {
+  color: #f7e2c4;
+  background: rgba(224, 164, 93, 0.18);
+}
+
+/* The close button needs its own corner. */
+.stageInvitation span,
+.stageInvitation strong {
+  padding-right: 1.6rem;
+}
+
+/* Reported on a phone: "Its hiding half the screen." Dismissing it is the
+   real answer, but it should not be that large to begin with down here.
+
+   Both controls go to 44px here and not a pixel less: every visible button in
+   this room is held to a 44x44 touch target, asserted per-control by
+   `keeps the prepared-song room controls touchable without phone overflow`.
+   The close button keeps its small glyph and spends the difference on
+   transparent hit area, which is why the heading clears 2.9rem rather than
+   the 1.6rem that suits a mouse. */
+@media (max-width: 720px) {
+  .stageInvitation {
+    width: min(17rem, calc(100% - 1.7rem));
+    padding: 0.45rem 0.55rem;
+  }
+
+  .stageInvitation small {
+    font-size: 0.55rem;
+  }
+
+  .stageInvitation span,
+  .stageInvitation strong {
+    padding-right: 2.9rem;
+  }
+
+  .stageInvitationClose {
+    top: 0.1rem;
+    right: 0.1rem;
+    width: 44px;
+    height: 44px;
+  }
+
+  .stageInvitationAction {
+    min-height: 44px;
+    padding-inline: 0.85rem;
+    font-size: 0.72rem;
+  }
 }
 
 .stageInvitation span {
