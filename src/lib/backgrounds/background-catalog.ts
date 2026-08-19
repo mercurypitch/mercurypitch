@@ -37,6 +37,13 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   'valve-corner',
   'blue-hour-roof',
   'daylight-loft',
+  // Mercury Rooms, the first pack authored for all four surfaces at once.
+  // One free room each, so every surface has something new to look at
+  // without a supporter account.
+  'karaoke-tokyo-cyber',
+  'jam-velvet-lounge',
+  'piano-ambient-led-studio',
+  'guitar-midnight-canyon',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -76,10 +83,30 @@ export const NEW_EDITION_BACKGROUND_IDS = [
   ...PIANO_PREMIUM_BACKGROUND_IDS,
 ] as const
 
+/**
+ * Mercury Rooms — two supporter rooms per surface, one dark and one bright.
+ *
+ * The first pack with art for Guitar Night, which had no supporter room at
+ * all until its rooms joined this catalog. The bright half is deliberate: a
+ * daylit room is the case where the foreground treatment has to earn its
+ * keep, and there was nothing in the library to test it against.
+ */
+export const MERCURY_ROOMS_BACKGROUND_IDS = [
+  'karaoke-floating-orb',
+  'karaoke-nordic-amphitheatre',
+  'jam-skyline-penthouse',
+  'jam-nordic-wood',
+  'piano-manor-library',
+  'piano-parisian-salon',
+  'guitar-british-rock',
+  'guitar-venice-beach',
+] as const
+
 /** Every supporter background may also be granted permanently by this id. */
 export const BACKGROUND_PERK_IDS = [
   ...EXISTING_PREMIUM_BACKGROUND_IDS,
   ...NEW_EDITION_BACKGROUND_IDS,
+  ...MERCURY_ROOMS_BACKGROUND_IDS,
 ] as const
 
 export type FreeBackgroundId = (typeof CURRENT_FREE_BACKGROUND_IDS)[number]
@@ -102,6 +129,14 @@ export type BackgroundEdition =
   | 'desert-modern-salon'
   | 'moonlit-gallery'
   | 'coastal-fog-pavilion'
+  | 'floating-orb'
+  | 'nordic-amphitheatre'
+  | 'skyline-penthouse'
+  | 'nordic-wood'
+  | 'manor-library'
+  | 'parisian-salon'
+  | 'british-rock'
+  | 'venice-beach'
 
 export interface PublicBackgroundSource {
   kind: 'public'
@@ -358,6 +393,66 @@ export const BACKGROUND_CATALOG = [
     treatment: 'light',
   },
   {
+    id: 'karaoke-tokyo-cyber',
+    surface: 'karaoke',
+    label: 'Tokyo Cyber',
+    description: 'Rain-slick neon, three floors up',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/karaoke-night/tokyo-cyber-landscape.webp',
+      undefined,
+      '/karaoke-night/tokyo-cyber-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-velvet-lounge',
+    surface: 'jam',
+    label: 'Velvet Lounge',
+    description: 'Low light, deep red, room for the band',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/jam/velvet-lounge-landscape.webp',
+      undefined,
+      '/jam/velvet-lounge-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-ambient-led-studio',
+    surface: 'piano',
+    label: 'Ambient LED Studio',
+    description: 'A dark studio washed in slow colour',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/piano-night/ambient-led-studio-landscape.webp',
+      undefined,
+      '/piano-night/ambient-led-studio-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-midnight-canyon',
+    surface: 'guitar',
+    label: 'Midnight Canyon',
+    description: 'Desert rock, one amp, and the night sky',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/guitar-night/midnight-canyon-landscape.webp',
+      undefined,
+      '/guitar-night/midnight-canyon-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
     id: 'golden-stage',
     surface: 'jam',
     label: 'Golden Stage',
@@ -565,6 +660,98 @@ export const BACKGROUND_CATALOG = [
     access: supporterAccess('piano-coastal-fog-pavilion'),
     assetSource: protectedSource('piano', 'piano-coastal-fog-pavilion'),
     focalPoint: { x: 0.5, y: 0.46 },
+    treatment: 'light',
+  },
+  {
+    id: 'karaoke-floating-orb',
+    surface: 'karaoke',
+    label: 'Floating Orb',
+    description: 'A slow-turning orb of light over a dark room',
+    edition: 'floating-orb',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-floating-orb'),
+    assetSource: protectedSource('karaoke', 'karaoke-floating-orb'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-nordic-amphitheatre',
+    surface: 'karaoke',
+    label: 'Nordic Amphitheatre',
+    description: 'Pale stone tiers under an open northern sky',
+    edition: 'nordic-amphitheatre',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-nordic-amphitheatre'),
+    assetSource: protectedSource('karaoke', 'karaoke-nordic-amphitheatre'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
+    id: 'jam-skyline-penthouse',
+    surface: 'jam',
+    label: 'Skyline Penthouse',
+    description: 'Glass, city lights, and room to spread out',
+    edition: 'skyline-penthouse',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-skyline-penthouse'),
+    assetSource: protectedSource('jam', 'jam-skyline-penthouse'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-nordic-wood',
+    surface: 'jam',
+    label: 'Nordic Wood',
+    description: 'Bright timber and daylight, built for a full band',
+    edition: 'nordic-wood',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-nordic-wood'),
+    assetSource: protectedSource('jam', 'jam-nordic-wood'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
+    id: 'piano-manor-library',
+    surface: 'piano',
+    label: 'Manor Library',
+    description: 'Shelves to the ceiling and one lamp lit',
+    edition: 'manor-library',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-manor-library'),
+    assetSource: protectedSource('piano', 'piano-manor-library'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-parisian-salon',
+    surface: 'piano',
+    label: 'Parisian Salon',
+    description: 'Tall windows, gilt mouldings, afternoon light',
+    edition: 'parisian-salon',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-parisian-salon'),
+    assetSource: protectedSource('piano', 'piano-parisian-salon'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
+    id: 'guitar-british-rock',
+    surface: 'guitar',
+    label: 'British Rock',
+    description: 'Stacked cabs in a low, dark rehearsal room',
+    edition: 'british-rock',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-british-rock'),
+    assetSource: protectedSource('guitar', 'guitar-british-rock'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-venice-beach',
+    surface: 'guitar',
+    label: 'Venice Beach',
+    description: 'Sun, salt air and an open garage door',
+    edition: 'venice-beach',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-venice-beach'),
+    assetSource: protectedSource('guitar', 'guitar-venice-beach'),
+    focalPoint: { x: 0.5, y: 0.5 },
     treatment: 'light',
   },
 ] as const satisfies readonly BackgroundDefinition[]

@@ -393,6 +393,92 @@
     linear-gradient(145deg, #6f8988, #27373b 72%);
 }
 
+/* ── Mercury Rooms ───────────────────────────────────────────────────
+   Placeholder washes for the pack that first gave Guitar Night a supporter
+   room. Each pair is sampled from its own artwork rather than invented, so
+   the tile a thumbnail loads into is already the right colour and the swap
+   is not a flash of something else. */
+
+.edition_floating-orb {
+  background:
+    radial-gradient(
+      circle at 52% 34%,
+      rgba(131, 156, 170, 0.45),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #3f5261, #0e1721 70%);
+}
+
+.edition_nordic-amphitheatre {
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(215, 198, 178, 0.52),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #b69573, #36281d 70%);
+}
+
+.edition_skyline-penthouse {
+  background:
+    radial-gradient(
+      circle at 66% 30%,
+      rgba(137, 134, 138, 0.4),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #494c5e, #111725 70%);
+}
+
+.edition_nordic-wood {
+  background:
+    radial-gradient(
+      circle at 58% 26%,
+      rgba(218, 202, 176, 0.55),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #ceb393, #7d673e 70%);
+}
+
+.edition_manor-library {
+  background:
+    radial-gradient(
+      circle at 44% 36%,
+      rgba(189, 113, 44, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #744822, #1e0e06 70%);
+}
+
+.edition_parisian-salon {
+  background:
+    radial-gradient(
+      circle at 62% 26%,
+      rgba(230, 228, 220, 0.58),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #c9bdad, #a28b72 70%);
+}
+
+.edition_british-rock {
+  background:
+    radial-gradient(
+      circle at 48% 32%,
+      rgba(164, 101, 61, 0.44),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #4e434b, #1a1618 70%);
+}
+
+.edition_venice-beach {
+  background:
+    radial-gradient(
+      circle at 60% 28%,
+      rgba(225, 209, 186, 0.55),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #c09663, #563920 70%);
+}
+
 .lockMark {
   position: absolute;
   z-index: 3;

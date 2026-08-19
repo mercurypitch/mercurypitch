@@ -32,11 +32,12 @@ describe('the guitar surface', () => {
     expect(isBackgroundSurface('guitar')).toBe(true)
   })
 
-  it('carries the four rooms that used to live in backdrops.ts', () => {
+  it('still leads with the four rooms that used to live in backdrops.ts', () => {
     // The identifiers are deliberately unchanged: they are what is already in
     // people's browsers, so keeping them is what makes the migration a
-    // storage-key change rather than a reset to the default room.
-    expect(guitarRooms.map((room) => room.id)).toEqual([
+    // storage-key change rather than a reset to the default room. Rooms added
+    // since follow them; these four have to stay, and stay first.
+    expect(guitarRooms.slice(0, 4).map((room) => room.id)).toEqual([
       'velvet-rehearsal',
       'valve-corner',
       'blue-hour-roof',

@@ -22,6 +22,7 @@ import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-l
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
+import { listBackgrounds } from '@/lib/backgrounds/background-catalog'
 import { BACKGROUND_SELECTION_KEYS } from '@/lib/backgrounds/background-selection'
 import { GuitarNightApp } from './GuitarNightApp'
 import type { GuitarNightSongPort } from './song-port'
@@ -157,7 +158,12 @@ describe('the drawer', () => {
           .some((button) => button.textContent?.includes(label)),
       ).toBe(true)
     }
-    expect(screen.getAllByText('Included').length).toBe(4)
+    // Counted from the catalog rather than written down, so a room added to
+    // the surface does not fail this for the wrong reason.
+    expect(screen.getAllByText('Included').length).toBe(
+      listBackgrounds('guitar').filter((room) => room.access.kind === 'free')
+        .length,
+    )
   })
 
   it('keeps the studio actions, which used to be in the rail', () => {
