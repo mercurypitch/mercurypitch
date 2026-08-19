@@ -21,6 +21,7 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
+import { dragPill, tapPill } from '@/tests/helpers/pill-drag'
 
 window.matchMedia = ((query: string) => ({
   matches: false,
@@ -79,11 +80,13 @@ function mountPhone(): void {
 }
 
 describe('the mixer at phone width', () => {
+  const pill = (): HTMLElement => screen.getByTestId('mobile-music-level')
+
   it('shows the zen stage, and the music level on it', () => {
     // THE REGRESSION. Pre-fix the only music-level control was in the mixer
     // header, and the header is not rendered at all down here.
     mountPhone()
-    expect(screen.getByTestId('mobile-music-level-toggle')).toBeTruthy()
+    expect(pill()).toBeTruthy()
   })
 
   it('offers exactly one of them, not two', () => {
@@ -96,34 +99,46 @@ describe('the mixer at phone width', () => {
     expect(screen.queryByTestId('mixer-music-level')).toBeNull()
   })
 
-  it('opens a slider carrying the stored bounds', () => {
-    // The slider speaks percentages of the shipped level; the store speaks
-    // gain. Both bounds are the store's own, divided by its default, so a
-    // ceiling raised in the store shows up here without a second edit.
+  it('carries the stored bounds, in percentages of the shipped level', () => {
+    // The control speaks percentages; the store speaks gain. Both bounds are
+    // the store's own, divided by its default, so a ceiling raised in the
+    // store shows up here without a second edit.
     mountPhone()
-    fireEvent.click(screen.getByTestId('mobile-music-level-toggle'))
-    const slider = screen.getByTestId('mobile-music-level') as HTMLInputElement
-    const percent = (value: number): string =>
-      String(Math.round((value / MUSIC_LEVEL.spec.defaultValue) * 100))
-    expect(slider.min).toBe(percent(MUSIC_LEVEL.spec.min))
-    expect(slider.max).toBe(percent(MUSIC_LEVEL.spec.max))
-    expect(slider.value).toBe('100')
+    tapPill(pill())
+    const percent = (value: number): number =>
+      Math.round((value / MUSIC_LEVEL.spec.defaultValue) * 100)
+    expect(pill().textContent).toContain('100%')
+
+    fireEvent.keyDown(pill(), { key: 'End' })
+    expect(pill().textContent).toContain(`${percent(MUSIC_LEVEL.spec.max)}%`)
+    fireEvent.keyDown(pill(), { key: 'Home' })
+    expect(pill().textContent).toContain(`${percent(MUSIC_LEVEL.spec.min)}%`)
   })
 
   it('writes the moved level through to storage', () => {
-    // End to end: the slider is bound to the audio controller's setter, which
+    // End to end: the pill is bound to the audio controller's setter, which
     // clamps and persists. A control wired to a local signal would look
     // identical on screen and forget the value on the next song. The stored
-    // number is gain — 150% of the shipped 0.7 — not the percentage.
+    // number is gain — 150% of the shipped 0.7 — not the percentage. 24px of
+    // the pill's 120px travel is a fifth of a 0.35..2.1 range, from a resting
+    // fifth: 0.4 of the way up, which is 1.05.
     mountPhone()
-    fireEvent.click(screen.getByTestId('mobile-music-level-toggle'))
-    fireEvent.input(screen.getByTestId('mobile-music-level'), {
-      target: { value: '150' },
-    })
+    dragPill(pill(), 200, 176)
     expect(localStorage.getItem(MUSIC_LEVEL.spec.storageKey)).toBe('1.05')
-    expect(
-      (screen.getByTestId('mobile-music-level') as HTMLInputElement).value,
-    ).toBe('150')
+    expect(pill().textContent).toContain('150%')
+  })
+
+  it('leaves the transport where it was when the level opens', () => {
+    // The report that sent this control back: "on my tablet it conceals all
+    // playback commands, and none are reachable". jsdom has no layout to
+    // measure, so the guarantee is structural — the pill is positioned out of
+    // the flow, and the bar cannot grow to fit something that is not in it.
+    mountPhone()
+    const bar = screen.getByLabelText('Toggle your microphone').parentElement
+      ?.parentElement as HTMLElement
+    expect(bar.contains(pill())).toBe(true)
+    expect(pill().className).toMatch(/levelPill/)
+    expect(pill().parentElement?.className).toMatch(/levelAnchor/)
   })
 })
 

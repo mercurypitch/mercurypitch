@@ -15,15 +15,18 @@
 // behind a tap: the mic is the trigger, and the level is something you set
 // when it drops, not something you ride.
 //
-// The second report was about the shape of it. The first cut opened a
+// Two reports came back about the shape of it. The first cut opened a
 // full-width row inside the bottom bar: "it opens a full modal, with a huge
 // slider… on my tablet it conceals all playback commands, and none are
-// reachable, not even the speaker toggle that opened it". Two faults in one.
-// The row was LAYOUT — the bar grew by its height, and a device with no room
-// to give pushed the transport out of reach — and the only way to close it
-// was the button it had just made unreachable. It is a vertical slider that
-// rises over the lyrics now, anchored to its button, closed by a tap
-// anywhere or Escape.
+// reachable". That row was LAYOUT — the bar grew by its height, and a screen
+// with no room to give pushed the transport out of reach.
+//
+// The second was about the replacement, and it was the better question: "why
+// make up this new slider? just reuse the component we already have for our
+// mic vocal stem volume control". There was no reason. The stage already had
+// a capsule that opens a vertical track under your thumb — PillControl, the
+// guide-vocal pill — so this is that, pointed at the backing level, with the
+// percentage drawn over the fill.
 //
 // The maths of the level and its ceiling is pinned in
 // `src/features/stem-mixer/master-headroom.test.ts`; the wiring from the
@@ -32,10 +35,12 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
 import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
+import { dragPill } from '@/tests/helpers/pill-drag'
 
 beforeAll(() => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -109,338 +114,301 @@ function mountWithLevel(over: Partial<KaraokeMobileStageProps> = {}): {
   return { onMusicLevel }
 }
 
-const toggle = (): HTMLElement =>
-  screen.getByTestId('mobile-music-level-toggle')
-const slider = (): HTMLInputElement =>
-  screen.getByTestId('mobile-music-level') as HTMLInputElement
+const pill = (): HTMLElement => screen.getByTestId('mobile-music-level')
+const fill = (): HTMLElement =>
+  pill().querySelector('[class*="fill"]') as HTMLElement
 
-describe('the button', () => {
+/** Press, slide, lift — screen coordinates, so up the range is a smaller y. */
+function drag(from: number, to: number): void {
+  dragPill(pill(), from, to)
+}
+
+describe('the control', () => {
+  it('is the pill the stage already had, not a second kind of slider', () => {
+    // Asked for by name. The vocals pill and this one are the same component
+    // with different skins, so a fix to the touch handling lands on both.
+    const source = readFileSync('src/components/KaraokeMobileStage.tsx', 'utf8')
+    expect(source).toContain('<PillControl')
+    expect(source).not.toContain('type="range"')
+    expect(source).not.toContain('mobile-music-level-toggle')
+  })
+
   it('is there, beside the mic, when the host offers a level', () => {
     mountWithLevel()
-    expect(toggle()).toBeTruthy()
-    expect(toggle().getAttribute('aria-label')).toBe('Music level')
+    expect(pill().getAttribute('aria-label')).toBe('Music level')
   })
 
   it('shares the transport row with the mic', () => {
-    // The pairing is the whole idea: one button for what goes in, one for
-    // what comes out, on the bar you already have your thumb on. A control
-    // that drifted into the header would be the bug this fixes, again.
+    // The pairing is the whole idea: one control for what goes in, one for
+    // what comes out, on the bar you already have your thumb on.
     mountWithLevel()
     const mic = screen.getByLabelText('Toggle your microphone')
     const row = mic.parentElement?.parentElement
     expect(row).not.toBeNull()
-    expect(row?.contains(toggle())).toBe(true)
+    expect(row?.contains(pill())).toBe(true)
+  })
+
+  it('is placed out of the flow, so opening it cannot move the transport', () => {
+    // The fault behind the first report, in one assertion. The capsule grows
+    // upward when it opens; in the flow that growth is the bottom bar's.
+    const css = readFileSync(
+      'src/components/KaraokeMobileStage.module.css',
+      'utf8',
+    )
+    const rule = css.slice(
+      css.indexOf('.levelPill {'),
+      css.indexOf('}', css.indexOf('.levelPill {')),
+    )
+    expect(rule).toContain('position: absolute')
+    expect(rule).toContain('bottom: 0')
+    expect(css).toMatch(/\.levelAnchor \{\s*position: relative;/)
   })
 
   it('survives the stage settings being hidden', () => {
     // The moment this matters most is a scored performance run, and that is
-    // exactly the preset that passes `showStageSettings: false`. Sharing a
-    // gate with the settings sheet would hide the control from the one mode
-    // that needs it.
+    // exactly the preset that passes `showStageSettings: false`.
     mountWithLevel({ showStageSettings: false })
-    expect(toggle()).toBeTruthy()
+    expect(pill()).toBeTruthy()
+  })
+
+  it('is absent when the host cannot offer one', () => {
+    render(() => KaraokeMobileStage(makeProps({ onToggleMic: vi.fn() })))
+    expect(screen.queryByTestId('mobile-music-level')).toBeNull()
+  })
+
+  it('needs all three props, not just the value', () => {
+    render(() => KaraokeMobileStage(makeProps({ musicLevel: () => 0.7 })))
+    expect(screen.queryByTestId('mobile-music-level')).toBeNull()
   })
 
   it('leaves the transport symmetrical either way', () => {
-    // The slot is a flex third whether or not it holds anything, so play
-    // stays dead centre. Empty, it must also be invisible to a screen
-    // reader — an announced blank third is worse than no third.
     mountWithLevel()
-    const withLevel = toggle().parentElement
-    expect(withLevel?.getAttribute('aria-hidden')).toBeNull()
+    expect(pill().parentElement?.getAttribute('aria-hidden')).toBeNull()
 
     cleanup()
     render(() => KaraokeMobileStage(makeProps({ onToggleMic: vi.fn() })))
     const mic = screen.getByLabelText('Toggle your microphone')
-    const row = mic.parentElement?.parentElement
-    const emptySlot = row?.lastElementChild
+    const emptySlot = mic.parentElement?.parentElement?.lastElementChild
     expect(emptySlot?.getAttribute('aria-hidden')).toBe('true')
   })
-
-  it('is absent when the host cannot offer one', () => {
-    // The three props travel together and are optional together, so the
-    // singing stage and the tests that predate them still mount.
-    render(() => KaraokeMobileStage(makeProps({ onToggleMic: vi.fn() })))
-    expect(screen.queryByTestId('mobile-music-level-toggle')).toBeNull()
-    expect(screen.queryByTestId('mobile-music-level-sheet')).toBeNull()
-  })
-
-  it('needs all three, not just the value', () => {
-    // A half-wired host would render a button that opens a sheet whose
-    // slider has no bounds and goes nowhere.
-    render(() => KaraokeMobileStage(makeProps({ musicLevel: () => 0.7 })))
-    expect(screen.queryByTestId('mobile-music-level-toggle')).toBeNull()
-  })
 })
 
-describe('the popover', () => {
-  it('starts closed — the bar stays a transport', () => {
+describe('the fill', () => {
+  it('shows where the level sits in its own range', () => {
+    // 0.7 of a 0.35..2.1 range is a fifth of the way up, and that is honest:
+    // most of this control's travel is above normal, because above normal is
+    // what it exists for.
     mountWithLevel()
-    expect(screen.queryByTestId('mobile-music-level-sheet')).toBeNull()
-    expect(toggle().getAttribute('aria-expanded')).toBe('false')
+    expect(fill().style.height).toBe('20%')
+
+    cleanup()
+    mountWithLevel({ musicLevel: () => 2.1 })
+    expect(fill().style.height).toBe('100%')
   })
 
-  it('opens on a tap and closes on the next one', () => {
+  it('carries the percentage over it once the pill is open', () => {
+    // Asked for: "we can additionally show the percent info, on top of the
+    // white slider fill, nicely integrated". Closed, the capsule is a button
+    // like the mic opposite it and says nothing.
     mountWithLevel()
-    fireEvent.click(toggle())
-    expect(screen.getByTestId('mobile-music-level-sheet')).toBeTruthy()
-    expect(toggle().getAttribute('aria-expanded')).toBe('true')
+    expect(pill().textContent).not.toContain('%')
 
-    fireEvent.click(toggle())
-    expect(screen.queryByTestId('mobile-music-level-sheet')).toBeNull()
-    expect(toggle().getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('names the region it opens', () => {
-    mountWithLevel()
-    fireEvent.click(toggle())
-    expect(toggle().getAttribute('aria-controls')).toBe('karaoke-music-level')
-    expect(screen.getByTestId('mobile-music-level-sheet').id).toBe(
-      'karaoke-music-level',
-    )
-  })
-
-  it('leaves the song playing behind it', () => {
-    // Deliberately not a modal: the only way to judge a level is to hear it
-    // while you move the slider. Opening it must not pause anything.
-    const onPause = vi.fn()
-    mountWithLevel({ playing: () => true, onPause })
-    fireEvent.click(toggle())
-    expect(onPause).not.toHaveBeenCalled()
-  })
-
-  it('hangs off the button, not off the bar', () => {
-    // The reported fault in one assertion: the panel used to be a sibling of
-    // the transport inside the bottom bar, so opening it made the bar taller
-    // and moved the transport. Living inside the button's own slot is what
-    // lets it be positioned over the lyrics instead.
-    mountWithLevel()
-    fireEvent.click(toggle())
-    const panel = screen.getByTestId('mobile-music-level-sheet')
-    const slot = toggle().parentElement
-    expect(slot).not.toBeNull()
-    expect(slot?.contains(panel)).toBe(true)
-  })
-
-  it('is positioned out of the flow, above its own button', () => {
-    // Structure alone does not keep the bar from growing — the positioning
-    // does, and it is the whole fix. Asserted against the stylesheet because
-    // jsdom applies no CSS module rules.
-    const css = readFileSync(
-      'src/components/KaraokeMobileStage.module.css',
-      'utf8',
-    )
-    const rule = css.slice(
-      css.indexOf('.levelPopover {'),
-      css.indexOf('}', css.indexOf('.levelPopover {')),
-    )
-    expect(rule).toContain('position: absolute')
-    expect(rule).toContain('bottom: calc(100% + 10px)')
-    expect(css).toMatch(/\.levelAnchor \{\s*position: relative;/)
-  })
-
-  it('closes on a tap anywhere outside it', () => {
-    // The tablet report: the panel covered the transport and the only way
-    // out was the button it covered. Any tap outside is a way out now.
-    mountWithLevel()
-    fireEvent.click(toggle())
-    expect(screen.getByTestId('mobile-music-level-sheet')).toBeTruthy()
-
-    fireEvent.pointerDown(document.body)
-    expect(screen.queryByTestId('mobile-music-level-sheet')).toBeNull()
-    expect(toggle().getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('stays open while you are dragging the slider itself', () => {
-    // The outside-tap close must not fire on the control it belongs to, or
-    // the panel would shut the instant a thumb landed on the thumb.
-    mountWithLevel()
-    fireEvent.click(toggle())
-    fireEvent.pointerDown(slider())
-    expect(screen.getByTestId('mobile-music-level-sheet')).toBeTruthy()
-  })
-
-  it('closes on Escape', () => {
-    mountWithLevel()
-    fireEvent.click(toggle())
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.queryByTestId('mobile-music-level-sheet')).toBeNull()
-  })
-
-  it('ignores every other key', () => {
-    // The listener is on `document` while the panel is open, so a handler
-    // that closed on anything would eat the stage's own typing.
-    mountWithLevel()
-    fireEvent.click(toggle())
-    fireEvent.keyDown(document, { key: 'ArrowUp' })
-    fireEvent.keyDown(document, { key: 'e' })
-    expect(screen.getByTestId('mobile-music-level-sheet')).toBeTruthy()
-  })
-
-  it('leaves no listeners behind once it closes', () => {
-    // The close paths live on `document`, so an effect that forgot to clean
-    // up would keep closing a panel that no longer exists on every stray tap.
-    const removed: string[] = []
-    const spy = vi
-      .spyOn(document, 'removeEventListener')
-      .mockImplementation(function (this: Document, ...args: unknown[]) {
-        removed.push(args[0] as string)
-      } as typeof document.removeEventListener)
-    try {
-      mountWithLevel()
-      fireEvent.click(toggle())
-      fireEvent.click(toggle())
-      expect(removed).toContain('pointerdown')
-      expect(removed).toContain('keydown')
-    } finally {
-      spy.mockRestore()
-    }
-  })
-})
-
-describe('the slider', () => {
-  it('is upright, the way a volume control is', () => {
-    // Asked for by name: "like in apple music". A horizontal slider is what
-    // forced the full-width row that broke the bar in the first place.
-    const css = readFileSync(
-      'src/components/KaraokeMobileStage.module.css',
-      'utf8',
-    )
-    const rule = css.slice(
-      css.indexOf('.levelSlider {'),
-      css.indexOf('}', css.indexOf('.levelSlider {')),
-    )
-    expect(rule).toContain('writing-mode: vertical-lr')
-    expect(rule).toContain('direction: rtl')
-    // The keyword older iOS still needs; the writing mode covers the rest.
-    expect(rule).toContain('-webkit-appearance: slider-vertical')
-  })
-
-  it('is a real range input, so keys and VoiceOver work', () => {
-    mountWithLevel()
-    fireEvent.click(toggle())
-    expect(slider().tagName).toBe('INPUT')
-    expect(slider().type).toBe('range')
-    expect(slider().getAttribute('aria-label')).toBe('Music level')
-  })
-
-  it('carries the store bounds, converted to percent', () => {
-    // Retyped bounds are how a slider ends up able to set a value the store
-    // clamps away. These are the store's own, divided by the shipped level.
-    mountWithLevel()
-    fireEvent.click(toggle())
-    const asPercent = (value: number): string =>
-      String(Math.round((value / MUSIC_LEVEL.spec.defaultValue) * 100))
-    expect(slider().min).toBe(asPercent(MUSIC_LEVEL.spec.min))
-    expect(slider().max).toBe(asPercent(MUSIC_LEVEL.spec.max))
-    expect(slider().step).toBe(asPercent(MUSIC_LEVEL.spec.step))
-    // And those divisions land on round numbers, which is why the readout
-    // can be trusted as a scale: half, triple, in twentieths.
-    expect(slider().min).toBe('50')
-    expect(slider().max).toBe('300')
-    expect(slider().step).toBe('5')
-  })
-
-  it('never lets the step round down to nothing', () => {
-    // A host whose step is a hair under half a percent would otherwise hand
-    // the input step="0", which Chromium reads as "any" and Safari ignores.
-    mountWithLevel({
-      musicLevelRange: { min: 0.35, max: 2.1, step: 0.001, defaultValue: 0.7 },
-    })
-    fireEvent.click(toggle())
-    expect(slider().step).toBe('1')
-  })
-
-  it('shows where the level actually is', () => {
-    mountWithLevel({ musicLevel: () => 1.4 })
-    fireEvent.click(toggle())
-    expect(slider().value).toBe('200')
-  })
-
-  it('converts the percent back to gain before reporting it', () => {
-    // The store speaks gain and the audio graph multiplies by it. Reporting
-    // the percent straight through would put the master at 125x.
-    const { onMusicLevel } = mountWithLevel()
-    fireEvent.click(toggle())
-    fireEvent.input(slider(), { target: { value: '125' } })
-    expect(onMusicLevel).toHaveBeenCalledTimes(1)
-    expect(onMusicLevel.mock.calls[0][0]).toBeCloseTo(0.875, 10)
-  })
-
-  it('round-trips the ceiling without overshooting the store', () => {
-    // 300% of 0.7 must land on the store's maximum, not past it — a value
-    // the store would clamp is a slider that lies about where it stopped.
-    const { onMusicLevel } = mountWithLevel()
-    fireEvent.click(toggle())
-    fireEvent.input(slider(), { target: { value: '300' } })
-    expect(onMusicLevel.mock.calls[0][0]).toBeLessThanOrEqual(
-      MUSIC_LEVEL.spec.max,
-    )
-    expect(onMusicLevel.mock.calls[0][0]).toBeCloseTo(MUSIC_LEVEL.spec.max, 10)
-  })
-
-  it('writes a level with no float tail on it', () => {
-    // 160% of 0.7 is 1.1200000000000001 in doubles, and the store writes what
-    // it is given straight to localStorage. Caught by the browser test that
-    // reads the stored string back.
-    const { onMusicLevel } = mountWithLevel()
-    fireEvent.click(toggle())
-    fireEvent.input(slider(), { target: { value: '160' } })
-    expect(String(onMusicLevel.mock.calls[0][0])).toBe('1.12')
-  })
-
-  it('round-trips every step of the scale', () => {
-    // The readout and the slider position are both computed back OUT of the
-    // gain, so a conversion that lost a step would make the thumb jump under
-    // the finger, or the percentage disagree with where it sits.
-    const { onMusicLevel } = mountWithLevel()
-    fireEvent.click(toggle())
-    const back: number[] = []
-    for (let percent = 50; percent <= 300; percent += 5) {
-      onMusicLevel.mockClear()
-      fireEvent.input(slider(), { target: { value: String(percent) } })
-      const gain = onMusicLevel.mock.calls[0][0] as number
-      expect(gain).toBeGreaterThanOrEqual(MUSIC_LEVEL.spec.min)
-      expect(gain).toBeLessThanOrEqual(MUSIC_LEVEL.spec.max)
-      back.push(Math.round((gain / MUSIC_LEVEL.spec.defaultValue) * 100))
-    }
-    expect(back).toEqual(
-      Array.from({ length: 51 }, (_unused, index) => 50 + index * 5),
-    )
+    drag(100, 100)
+    expect(pill().textContent).toContain('100%')
   })
 
   it('reads out as a percentage of the shipped level', () => {
     // 0.7 is what every mix sounded like before there was a control, so it
     // is the only honest 100%. Reading out raw gain would make the default
     // look like something was already turned down.
-    mountWithLevel()
-    fireEvent.click(toggle())
-    expect(
-      screen.getByTestId('mobile-music-level-sheet').textContent,
-    ).toContain('100%')
-
-    cleanup()
     mountWithLevel({ musicLevel: () => 1.4 })
-    fireEvent.click(toggle())
-    expect(
-      screen.getByTestId('mobile-music-level-sheet').textContent,
-    ).toContain('200%')
+    drag(100, 100)
+    expect(pill().textContent).toContain('200%')
+  })
+})
+
+describe('the gesture', () => {
+  it('sets the level by dragging up the capsule', () => {
+    const { onMusicLevel } = mountWithLevel()
+    drag(200, 140)
+    expect(onMusicLevel).toHaveBeenCalled()
+    const last = onMusicLevel.mock.calls.at(-1)?.[0] as number
+    expect(last).toBeGreaterThan(0.7)
+    expect(last).toBeLessThanOrEqual(MUSIC_LEVEL.spec.max)
   })
 
-  it('announces the percentage to a screen reader too', () => {
-    // The input's own value is 200; without this a screen reader would read
-    // "200" against a control labelled "Music level" and mean nothing by it.
-    mountWithLevel({ musicLevel: () => 1.4 })
-    fireEvent.click(toggle())
-    expect(slider().getAttribute('aria-valuetext')).toBe('200 percent')
+  it('drags down as well as up', () => {
+    const { onMusicLevel } = mountWithLevel({ musicLevel: () => 1.4 })
+    drag(200, 260)
+    const last = onMusicLevel.mock.calls.at(-1)?.[0] as number
+    expect(last).toBeLessThan(1.4)
+    expect(last).toBeGreaterThanOrEqual(MUSIC_LEVEL.spec.min)
+  })
+
+  it("snaps to the store's own step, so the readout is a number it can hold", () => {
+    const { onMusicLevel } = mountWithLevel()
+    drag(200, 173)
+    for (const call of onMusicLevel.mock.calls) {
+      const percent = Math.round(
+        ((call[0] as number) / MUSIC_LEVEL.spec.defaultValue) * 100,
+      )
+      expect(percent % 5).toBe(0)
+    }
+  })
+
+  it('never reports a level the store would clamp away', () => {
+    const { onMusicLevel } = mountWithLevel()
+    drag(200, -400)
+    drag(200, 900)
+    for (const call of onMusicLevel.mock.calls) {
+      expect(call[0]).toBeGreaterThanOrEqual(MUSIC_LEVEL.spec.min)
+      expect(call[0]).toBeLessThanOrEqual(MUSIC_LEVEL.spec.max)
+    }
+  })
+
+  it('stays inside bounds the step does not divide evenly', () => {
+    // The snap rounds to the nearest step, and rounding goes both ways: a
+    // ceiling that is not a whole number of steps above the floor can be
+    // rounded PAST. The store would clamp it back, and the pill would then
+    // read out a percentage it is not actually set to.
+    const onMusicLevel = vi.fn()
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          micActive: () => false,
+          onToggleMic: vi.fn(),
+          musicLevel: () => 0.7,
+          onMusicLevel,
+          // 298% of 0.7, which is not a multiple of the 5% step.
+          musicLevelRange: { ...MUSIC_LEVEL.spec, max: 2.086 },
+        }),
+      ),
+    )
+
+    drag(400, 0)
+    const last = onMusicLevel.mock.calls.at(-1)?.[0] as number
+    expect(last).toBeLessThanOrEqual(2.086)
+    expect(last).toBe(2.086)
+  })
+
+  it('writes a level with no float tail on it', () => {
+    // 160% of 0.7 is 1.1200000000000001 in doubles, and the store writes what
+    // it is given straight to localStorage.
+    const { onMusicLevel } = mountWithLevel()
+    drag(200, 160)
+    for (const call of onMusicLevel.mock.calls) {
+      expect(
+        String(call[0]).replace('-', '').split('.')[1]?.length ?? 0,
+      ).toBeLessThanOrEqual(3)
+    }
+  })
+
+  it('leaves the song playing behind it', () => {
+    // The only way to judge a level is to hear it while you move it.
+    const onPause = vi.fn()
+    mountWithLevel({ playing: () => true, onPause })
+    drag(200, 150)
+    expect(onPause).not.toHaveBeenCalled()
+  })
+})
+
+describe('the tap', () => {
+  it('drops a boosted level back to normal', () => {
+    const { onMusicLevel } = mountWithLevel({ musicLevel: () => 1.4 })
+    drag(100, 100)
+    expect(onMusicLevel).toHaveBeenCalledWith(MUSIC_LEVEL.spec.defaultValue)
+  })
+
+  it('puts the boost back on a second tap', () => {
+    // The pill beside it toggles the vocals; this one toggles the boost. Once
+    // you have found the level that beats your phone's ducking, comparing it
+    // against normal should not mean finding it again.
+    // A live signal, not a fixed accessor: the toggle has to see the level it
+    // set a moment ago. Asserted through the setter so the test never reads a
+    // signal outside a tracked scope.
+    const [level, setLevel] = createSignal(0.7)
+    const onMusicLevel = vi.fn((value: number) => setLevel(value))
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          micActive: () => false,
+          onToggleMic: vi.fn(),
+          musicLevel: level,
+          onMusicLevel,
+          musicLevelRange: MUSIC_LEVEL.spec,
+        }),
+      ),
+    )
+
+    drag(200, 176)
+    expect(onMusicLevel).toHaveBeenLastCalledWith(1.05)
+    drag(100, 100)
+    expect(onMusicLevel).toHaveBeenLastCalledWith(MUSIC_LEVEL.spec.defaultValue)
+    drag(100, 100)
+    expect(onMusicLevel).toHaveBeenLastCalledWith(1.05)
+  })
+
+  it('does nothing at normal with nothing to go back to', () => {
+    // A first tap is how you look at the level; it must not move it.
+    const { onMusicLevel } = mountWithLevel()
+    drag(100, 100)
+    expect(onMusicLevel).not.toHaveBeenCalled()
+  })
+})
+
+describe('the keyboard', () => {
+  it('is a real slider, not a button with a drag on it', () => {
+    // The vocals pill can be a toggle for assistive tech because toggling is
+    // what it does. Here the value IS the control, so it has to be reachable
+    // without a pointer.
+    mountWithLevel()
+    expect(pill().getAttribute('role')).toBe('slider')
+    expect(pill().getAttribute('aria-valuemin')).toBe('0')
+    expect(pill().getAttribute('aria-valuemax')).toBe('100')
+    expect(pill().getAttribute('aria-valuenow')).toBe('20')
+    expect(pill().getAttribute('aria-valuetext')).toBe('100 percent')
+    expect(pill().getAttribute('aria-pressed')).toBeNull()
+  })
+
+  it('moves a step per arrow key', () => {
+    const { onMusicLevel } = mountWithLevel()
+    fireEvent.keyDown(pill(), { key: 'ArrowUp' })
+    expect(onMusicLevel).toHaveBeenLastCalledWith(0.735)
+
+    cleanup()
+    const down = mountWithLevel()
+    fireEvent.keyDown(pill(), { key: 'ArrowDown' })
+    expect(down.onMusicLevel).toHaveBeenLastCalledWith(0.665)
+  })
+
+  it('reaches both ends with Home and End', () => {
+    const { onMusicLevel } = mountWithLevel()
+    fireEvent.keyDown(pill(), { key: 'End' })
+    expect(onMusicLevel).toHaveBeenLastCalledWith(MUSIC_LEVEL.spec.max)
+
+    fireEvent.keyDown(pill(), { key: 'Home' })
+    expect(onMusicLevel).toHaveBeenLastCalledWith(MUSIC_LEVEL.spec.min)
+  })
+
+  it('opens the track so a keyboard user sees what moved', () => {
+    mountWithLevel()
+    expect(pill().textContent).not.toContain('%')
+    fireEvent.keyDown(pill(), { key: 'ArrowUp' })
+    expect(pill().textContent).toContain('%')
+  })
+
+  it("ignores keys that are not the slider's", () => {
+    const { onMusicLevel } = mountWithLevel()
+    fireEvent.keyDown(pill(), { key: 'a' })
+    fireEvent.keyDown(pill(), { key: 'Escape' })
+    expect(onMusicLevel).not.toHaveBeenCalled()
   })
 
   it('says why it exists on the button, without blaming the app', () => {
     // The app does no ducking — audited. Wording that implied it did would
-    // send people hunting for a setting that does not exist. The panel is
-    // too small for prose, so the sentence lives on the button.
+    // send people hunting for a setting that does not exist.
     mountWithLevel()
-    expect(toggle().getAttribute('title')).toMatch(
+    expect(pill().getAttribute('title')).toMatch(
       /turn the backing track back up if your phone quietened it/i,
     )
   })

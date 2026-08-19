@@ -43,6 +43,24 @@
   background: var(--pill-fill, rgba(255, 255, 255, 0.92));
 }
 
+/* The readout sits over the track, not beside it — there is no beside on a
+   46px capsule. `difference` is what makes one colour work over both halves
+   of a moving fill: black where the fill has reached, white where it has
+   not, with no second element to keep in sync. */
+.value {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.35rem;
+  color: #ffffff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  text-align: center;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
 .base {
   flex: none;
   height: var(--pill-base-size, 44px);
