@@ -12,9 +12,18 @@
 //
 // Placement and skin are the consumer's: pass a `class` that positions the
 // pill and overrides --pill-* custom properties (convention #8).
+//
+// Two optional halves on top of that, added for the mixer's music level and
+// unused by the vocals pill it was extracted from:
+//
+//  - `valueLabel` draws a readout over the track while the pill is open, so
+//    a level with units (a percentage, a decibel) can say what it is.
+//  - `keyStep` turns the capsule into a real slider for assistive tech and
+//    the keyboard. A tap-to-toggle button is enough for "mute the vocals";
+//    it is not enough for a control whose whole purpose is the value.
 
 import type { Component, JSX } from 'solid-js'
-import { createSignal, onCleanup } from 'solid-js'
+import { createSignal, onCleanup, Show } from 'solid-js'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import styles from './PillControl.module.css'
@@ -36,6 +45,19 @@ interface PillControlProps {
   /** Finger travel (px) that maps to the full 0..1 range. Fixed so the
       maths stay stable while the expand animation runs. */
   dragRange?: number
+  /** Readout drawn over the track while the pill is open, e.g. "160%". */
+  valueLabel?: string
+  /** The level in the consumer's own units, for assistive technology. */
+  valueText?: string
+  /**
+   * How far one arrow key moves the level, as a fraction of the range.
+   *
+   * Passing it makes the capsule announce itself as a slider and answer the
+   * keyboard. Without it the pill stays a toggle that happens to accept a
+   * drag, which is all the vocals pill ever needed.
+   */
+  keyStep?: number
+  testId?: string
 }
 
 const DRAG_THRESHOLD_PX = 7
@@ -82,6 +104,35 @@ export const PillControl: Component<PillControlProps> = (props) => {
     if (e.detail === 0) props.onTap()
   }
 
+  const isSlider = (): boolean => props.keyStep !== undefined
+  const clamp = (value: number): number => Math.max(0, Math.min(1, value))
+
+  const onKeyDown = (event: KeyboardEvent): void => {
+    const step = props.keyStep
+    if (step === undefined) return
+    const move: Record<string, number> = {
+      ArrowUp: step,
+      ArrowRight: step,
+      ArrowDown: -step,
+      ArrowLeft: -step,
+      PageUp: step * 2,
+      PageDown: -step * 2,
+    }
+    const delta = move[event.key]
+    if (delta !== undefined) {
+      event.preventDefault()
+      setExpanded(true)
+      scheduleCollapse()
+      props.onLevel(clamp(props.level + delta))
+      return
+    }
+    if (event.key !== 'Home' && event.key !== 'End') return
+    event.preventDefault()
+    setExpanded(true)
+    scheduleCollapse()
+    props.onLevel(event.key === 'Home' ? 0 : 1)
+  }
+
   return (
     <button
       ref={(element) => dragGesture(element, () => pillDrag)}
@@ -92,15 +143,29 @@ export const PillControl: Component<PillControlProps> = (props) => {
         [props.class ?? '']: props.class !== undefined,
       }}
       onClick={onClick}
+      onKeyDown={onKeyDown}
+      data-testid={props.testId}
       title={props.title}
       aria-label={props.ariaLabel}
-      aria-pressed={props.off}
+      // A slider must not also claim to be a pressed toggle: the two roles
+      // answer different keys and screen readers announce only one of them.
+      role={isSlider() ? 'slider' : undefined}
+      aria-pressed={isSlider() ? undefined : props.off}
+      aria-valuemin={isSlider() ? 0 : undefined}
+      aria-valuemax={isSlider() ? 100 : undefined}
+      aria-valuenow={isSlider() ? Math.round(props.level * 100) : undefined}
+      aria-valuetext={props.valueText}
     >
       <div class={styles.track}>
         <div
           class={styles.fill}
           style={{ height: `${Math.round(props.level * 100)}%` }}
         />
+        <Show when={props.valueLabel !== undefined && expanded()}>
+          <span class={styles.value} aria-hidden="true">
+            {props.valueLabel}
+          </span>
+        </Show>
       </div>
       <div class={styles.base}>{props.children}</div>
     </button>

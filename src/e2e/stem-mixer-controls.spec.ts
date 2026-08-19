@@ -640,7 +640,7 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
 // Reported: the backing track drops the moment the mic goes live and there is
 // no way to bring it back. The app does no ducking of its own — the master was
 // simply pinned at 0.7 with no control anywhere in the UI, so there was
-// nothing to reach for. It is a stored slider now, up to 2.0.
+// nothing to reach for. It is a stored, boostable level now.
 //
 // It shipped in this mixer's header, and the second report was that the one
 // surface that needs it cannot see it: under `isNarrow()` StemMixer renders
@@ -651,8 +651,28 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
 // The clipper maths is pinned in
 // `src/features/stem-mixer/master-headroom.test.ts` and the wiring in
 // `src/tests/mixer-music-level.test.ts`. This is the half that needs a real
-// browser: the presentation swap on resize, and that the value survives a
-// whole reload rather than only a re-render.
+// browser: the presentation swap on resize, a real pointer on a capsule that
+// resizes under the finger, and that the value survives a whole reload rather
+// than only a re-render.
+
+/** Press the capsule and slide `by` pixels up (negative slides down). */
+async function dragLevel(
+  page: import('@playwright/test').Page,
+  by: number,
+): Promise<void> {
+  const box = await page.getByTestId('mobile-music-level').boundingBox()
+  if (box === null) throw new Error('Music level pill has no bounding box')
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  // In steps, because the capsule grows under the pointer as it opens: the
+  // gesture has to keep reading its own start point, not the live geometry.
+  for (let step = 1; step <= 6; step += 1) {
+    await page.mouse.move(x, y - (by * step) / 6)
+  }
+  await page.mouse.up()
+}
 
 test('keeps a reachable music level that survives a reload @smoke', async ({
   page,
@@ -665,30 +685,38 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
 
   await page.setViewportSize({ width: 390, height: 844 })
 
-  const toggle = page.getByTestId('mobile-music-level-toggle')
-  await expect(toggle).toBeVisible()
-  await toggle.click()
-
   const level = page.getByTestId('mobile-music-level')
   await expect(level).toBeVisible()
 
-  // Upright, and that is not decoration: the horizontal one had to be as
-  // wide as the bar, which is what made it a row inside the bar.
-  const box = await level.boundingBox()
-  if (box === null) throw new Error('Music level slider has no bounding box')
-  expect(box.height).toBeGreaterThan(box.width * 2)
+  // It is the same capsule as the guide-vocal pill, so it answers to the same
+  // things: a value for assistive tech, and a track that opens on touch.
+  await expect(level).toHaveAttribute('role', 'slider')
+  await expect(level).toHaveAttribute('aria-valuetext', '100 percent')
+  await expect(level).not.toContainText('%')
 
-  // Its bounds come from the store, not the markup — so reading them back off
-  // the element is a check that the two have not drifted apart. They are
-  // percentages of the level the app has always played at, which is what
-  // makes 100% the default and anything above it the answer to iOS ducking.
-  await expect(level).toHaveAttribute('min', '50')
-  await expect(level).toHaveAttribute('max', '300')
-  expect(Number(await level.inputValue())).toBe(100)
+  const closed = await level.boundingBox()
+  if (closed === null) throw new Error('Music level pill has no bounding box')
 
-  await level.fill('160')
-  await level.dispatchEvent('input')
-  expect(Number(await level.inputValue())).toBe(160)
+  // A real pointer, because that is the gesture: press, slide, lift. 24px of
+  // the 120px travel is a fifth of the range, and the readout appears over
+  // the fill while the finger is down.
+  await dragLevel(page, 24)
+  await expect(level).toContainText('150%')
+  await expect(level).toHaveAttribute('aria-valuetext', '150 percent')
+
+  const open = await level.boundingBox()
+  if (open === null) throw new Error('Music level pill has no bounding box')
+  // Upright, and that is not decoration: a horizontal one had to be as wide
+  // as the bar, which is what made the first cut a row inside the bar.
+  expect(open.height).toBeGreaterThan(open.width * 2)
+  expect(open.height).toBeGreaterThan(closed.height)
+
+  // The keyboard reaches it too, and the store's own step is what one press
+  // moves — 5% of the level the app has always played at.
+  await level.focus()
+  await page.keyboard.press('ArrowUp')
+  await page.keyboard.press('ArrowUp')
+  await expect(level).toContainText('160%')
 
   await expect
     .poll(() =>
@@ -696,17 +724,23 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
         localStorage.getItem('pitchperfect_mixer_music_level'),
       ),
     )
-    // 160% of the shipped 0.7.
+    // 160% of the shipped 0.7, and no float tail: the store writes what it is
+    // given straight to localStorage, and 1.12 in doubles is 1.1200000000000001.
     .toBe('1.12')
 
   await page.reload()
   await dismissOverlays(page)
 
-  // The panel is a disclosure, not a state — it comes back closed, and the
-  // level it reopens on is the stored one rather than the default.
-  await expect(page.getByTestId('mobile-music-level')).toHaveCount(0)
-  await page.getByTestId('mobile-music-level-toggle').click()
-  await expect(page.getByTestId('mobile-music-level')).toHaveValue('160')
+  // The track is a gesture, not a state — it comes back closed, on the stored
+  // level rather than the default.
+  const reloaded = page.getByTestId('mobile-music-level')
+  await expect(reloaded).not.toContainText('%')
+  await expect(reloaded).toHaveAttribute('aria-valuetext', '160 percent')
+
+  // And a tap on the capsule puts it back to the level the app ships at, so
+  // there is a way home that does not need the value on screen.
+  await dragLevel(page, 0)
+  await expect(reloaded).toHaveAttribute('aria-valuetext', '100 percent')
 })
 
 // ============================================================
@@ -725,8 +759,9 @@ test('keeps a reachable music level that survives a reload @smoke', async ({
 // button that closes the panel goes with it.
 //
 // So the invariant is geometric, not visual: the bar and the transport must
-// measure exactly the same open and closed. A slider that rises over the
-// lyrics cannot fail it; any future one that takes a row in the bar will.
+// measure exactly the same open and closed. A capsule that grows upward out
+// of the flow cannot fail it; any future control that takes a row in the bar
+// will.
 const ZEN_VIEWPORTS = [
   // A phone, where the stage renders because the viewport is narrow.
   { width: 390, height: 844, label: 'phone' },
@@ -740,35 +775,52 @@ const ZEN_VIEWPORTS = [
 test('opens the music level without moving the transport @smoke', async ({
   page,
 }) => {
+  const level = page.getByTestId('mobile-music-level')
+
   for (const viewport of ZEN_VIEWPORTS) {
     await page.setViewportSize({
       width: viewport.width,
       height: viewport.height,
     })
-
-    const toggle = page.getByTestId('mobile-music-level-toggle')
-    await expect(toggle).toBeVisible()
+    await expect(level).toBeVisible()
 
     const measure = async (): Promise<{
       bar: number
       play: number
-      toggle: number
+      pillBottom: number
+      pillHeight: number
+      pillTop: number
     }> =>
       page.evaluate(() => {
-        const height = (selector: string): number =>
-          document.querySelector(selector)?.getBoundingClientRect().height ?? -1
-        const top = (selector: string): number =>
-          document.querySelector(selector)?.getBoundingClientRect().top ?? -1
+        const rect = (selector: string): DOMRect | undefined =>
+          document.querySelector(selector)?.getBoundingClientRect()
+        const play = rect('[aria-label="Play"], [aria-label="Pause"]')
+        const pill = rect('[data-testid="mobile-music-level"]')
         return {
-          bar: height('[class*="bottomBar"]'),
-          play: top('[aria-label="Play"], [aria-label="Pause"]'),
-          toggle: top('[data-testid="mobile-music-level-toggle"]'),
+          bar: rect('[class*="bottomBar"]')?.height ?? -1,
+          play: play?.top ?? -1,
+          pillBottom: pill?.bottom ?? -1,
+          pillHeight: pill?.height ?? -1,
+          pillTop: pill?.top ?? -1,
         }
       })
 
     const closed = await measure()
-    await toggle.click()
-    await expect(page.getByTestId('mobile-music-level')).toBeVisible()
+
+    // Hold it open. Under the threshold, so this is a press, not a drag: the
+    // level must not move for the geometry to be comparable.
+    const box = await level.boundingBox()
+    if (box === null) throw new Error('Music level pill has no bounding box')
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await expect(level).toContainText('%')
+
+    // The capsule grows on a transition, so the readout appearing is not the
+    // same moment as the geometry settling. Measure once it has stopped.
+    await expect
+      .poll(async () => (await measure()).pillHeight, { timeout: 4000 })
+      .toBeGreaterThan(closed.pillHeight * 2)
+
     const open = await measure()
 
     expect(open.bar, `${viewport.label}: bottom bar height`).toBeCloseTo(
@@ -779,14 +831,19 @@ test('opens the music level without moving the transport @smoke', async ({
       closed.play,
       1,
     )
-    expect(open.toggle, `${viewport.label}: level button top`).toBeCloseTo(
-      closed.toggle,
+    // It grows upward out of the flow: the capsule stays exactly where your
+    // thumb left it, and the track appears above it.
+    expect(open.pillBottom, `${viewport.label}: capsule bottom`).toBeCloseTo(
+      closed.pillBottom,
       1,
     )
+    expect(open.pillTop, `${viewport.label}: track rises`).toBeLessThan(
+      closed.pillTop,
+    )
 
-    // Reachability is the half the geometry does not prove: both the play
-    // button and the button that closes the panel must still answer a real
-    // tap while the panel is open.
+    // Reachability is the half the geometry does not prove: the play button
+    // must still answer a real tap while the level is open, and so must the
+    // capsule itself.
     const hits = await page.evaluate(() => {
       const hit = (selector: string): boolean => {
         const element = document.querySelector(selector)
@@ -801,27 +858,17 @@ test('opens the music level without moving the transport @smoke', async ({
       }
       return {
         play: hit('[aria-label="Play"], [aria-label="Pause"]'),
-        toggle: hit('[data-testid="mobile-music-level-toggle"]'),
+        level: hit('[data-testid="mobile-music-level"]'),
       }
     })
     expect(hits.play, `${viewport.label}: play button reachable`).toBe(true)
-    expect(hits.toggle, `${viewport.label}: level button reachable`).toBe(true)
+    expect(hits.level, `${viewport.label}: level reachable`).toBe(true)
 
-    // It rises over the lyrics rather than sitting in the bar with them.
-    const panel = await page
-      .getByTestId('mobile-music-level-sheet')
-      .boundingBox()
-    const button = await toggle.boundingBox()
-    if (panel === null || button === null) {
-      throw new Error('Music level panel or button has no bounding box')
-    }
-    expect(
-      panel.y + panel.height,
-      `${viewport.label}: panel sits above`,
-    ).toBeLessThanOrEqual(button.y)
+    await page.mouse.up()
 
-    // And a tap anywhere else closes it — the way out the first cut lacked.
-    await page.mouse.click(viewport.width / 2, 40)
-    await expect(page.getByTestId('mobile-music-level')).toHaveCount(0)
+    // Nothing to close, which is the point: it puts itself away a beat after
+    // the finger lifts, and the level it was set to stays.
+    await expect(level).not.toContainText('%', { timeout: 4000 })
+    await expect(level).toHaveAttribute('aria-valuetext', '100 percent')
   }
 })

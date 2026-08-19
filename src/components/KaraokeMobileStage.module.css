@@ -654,95 +654,37 @@
   box-shadow: 0 0 14px rgba(201, 162, 255, 0.45);
 }
 
-/* The backing level, opposite the mic. Same glass circle as .micBtn — the
-   pair reads as "what goes out" and "what comes in", which is exactly the
-   pairing iOS breaks: opening a mic switches the page to playAndRecord and
-   the whole output drops. Lit, not filled, when the sheet is open: this is
-   a disclosure, not a state you leave on. */
-.levelBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  color: rgba(244, 236, 255, 0.7);
-  cursor: pointer;
-  transition:
-    background 0.14s ease,
-    color 0.14s ease,
-    box-shadow 0.14s ease;
-}
+/* The backing level — the same capsule as the guide-vocal pill, in the
+   transport's right slot rather than floating over the lyrics.
 
-.levelBtn:active {
-  transform: scale(0.92);
-}
-
-.levelBtnOn {
-  background: rgba(255, 255, 255, 0.2);
-  color: #f4ecff;
-  box-shadow: inset 0 0 0 1px rgba(201, 162, 255, 0.55);
-}
-
-/* The level itself — a vertical slider that rises OVER the lyrics from the
-   button that opened it, the way a volume popover behaves everywhere else.
-
-   The first cut was a full-width row inside the bottom bar. It read as a
-   modal on a tablet and, worse, it was layout: the bar grew by its height,
-   and on the devices that had no room to give the transport went out of
-   reach. Absolute positioning is what makes that impossible — open or closed,
-   the bar is the same height, so the play button cannot move. */
-.levelPopover {
+   It was a panel with a horizontal range input in it for one release, which
+   was both a new control nobody asked for and, worse, layout: the panel sat
+   in the bottom bar, the bar grew by its height, and on a screen with no room
+   to give the transport went out of reach. Absolute placement is what makes
+   that impossible — open or closed, the bar is the same height. */
+.levelPill {
   position: absolute;
-  /* Anchored to the button below it, centred on the button rather than the
-     slot, which is a flex third and much wider than what it holds. */
-  bottom: calc(100% + 10px);
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  /* Over the sing pill (z-index 3): while it is open it is the control you
-     are using, and it is gone the moment you tap away. */
+  /* Over the sing pill (z-index 3) while it is open, which is the only time
+     the two can overlap at all. */
   z-index: 6;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 8px 14px;
-  border-radius: 22px;
-  /* Near-solid stage plum, not glass: the lyrics scroll behind it, and a
-     transparent panel over moving text reads as a rendering fault (the same
-     reason .singPill overrides --pill-bg). */
-  background: rgba(24, 12, 40, 0.92);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow:
-    inset 0 0 0 1px rgba(238, 228, 255, 0.16),
-    0 12px 34px rgba(0, 0, 0, 0.45);
-}
 
-.levelSlider {
-  /* A real range input, turned upright: the vertical writing mode is the
-     standards-based way (Safari 17.4+, Chrome 121+), and the WebKit
-     appearance keyword is the fallback older iOS still answers to. Keeping a
-     native input is what keeps arrow keys, VoiceOver and a draggable thumb
-     for free — a div with a pointer handler would have none of them. */
-  -webkit-appearance: slider-vertical;
-  writing-mode: vertical-lr;
-  direction: rtl;
-  width: 28px;
-  height: 132px;
-  accent-color: rgb(201, 162, 255);
-  cursor: pointer;
-  touch-action: none;
-}
+  /* Sized to the mic button opposite it: closed, the pair reads as one row
+     of round glass buttons. */
+  --pill-width: 44px;
+  --pill-size: 44px;
+  --pill-base-size: 44px;
+  --pill-radius: 22px;
+  --pill-expanded: 150px;
 
-.levelValue {
-  font-size: 0.78rem;
-  color: rgba(244, 236, 255, 0.88);
-  font-variant-numeric: tabular-nums;
+  /* Same near-solid stage plum as .singPill: the expanded track rises over
+     moving lyrics, and on the default glass skin the text shone through it. */
+  --pill-bg: rgba(24, 12, 40, 0.86);
+  --pill-border: rgba(238, 228, 255, 0.22);
+  --pill-base-bg: rgba(255, 255, 255, 0.12);
+  --pill-base-color: rgba(244, 236, 255, 0.72);
 }
 
 .playBtn {

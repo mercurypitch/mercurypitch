@@ -487,19 +487,20 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const micOn = (): boolean => props.micActive?.() === true
   const ribbonVisible = (): boolean =>
     micOn() && (props.ribbonNotes?.() ?? []).length > 0
-  // The slider is behind a tap rather than always on the bar: the bar is
-  // four controls wide on a 360px phone already, and the level is something
-  // you set once when the mic drops it, not something you ride.
-  const [levelOpen, setLevelOpen] = createSignal(false)
+  // The level is the same capsule the guide-vocal pill is: press it and a
+  // vertical track slides out of the top, drag to set. It was a panel with a
+  // range input in it for one release, and the report was blunt — "why make
+  // up this new slider?" There was no reason. This is the control the stage
+  // already had, pointed at a different number.
   const hasMusicLevel = (): boolean =>
     props.musicLevel !== undefined &&
     props.onMusicLevel !== undefined &&
     props.musicLevelRange !== undefined
 
-  // The control speaks percentages of the shipped level, not raw gain. 0.7 is
-  // what every mix sounded like before the control existed, so it is the only
-  // honest 100%; the store's own bounds are round multiples of it, which is
-  // why these divisions land on 50 / 300 / 5 rather than on a remainder.
+  // Everything the pill shows is a percentage of the level the app has always
+  // played at. 0.7 is what every mix sounded like before there was a control,
+  // so it is the only honest 100%, and the store's bounds are round multiples
+  // of it — half and triple — which is why these land on 50 and 300.
   const levelPercent = (): number =>
     Math.round(
       (props.musicLevel!() / props.musicLevelRange!.defaultValue) * 100,
@@ -507,41 +508,52 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const percentOf = (value: number): number =>
     Math.round((value / props.musicLevelRange!.defaultValue) * 100)
   const setLevelPercent = (percent: number): void => {
+    const range = props.musicLevelRange!
+    const bounded = Math.max(
+      percentOf(range.min),
+      Math.min(percentOf(range.max), percent),
+    )
     // Rounded to a thousandth: the raw product carries a float tail — 160% of
     // 0.7 is 1.1200000000000001 — and that tail is what would be written to
-    // storage, read back, and shown to the next slider as a percentage.
+    // storage, read back, and shown to the next pill as a percentage.
     props.onMusicLevel!(
-      Math.round((percent / 100) * props.musicLevelRange!.defaultValue * 1000) /
-        1000,
+      Math.round((bounded / 100) * range.defaultValue * 1000) / 1000,
     )
   }
 
-  // Anything outside the control closes it, the way every popover on the
-  // platform does. The first cut could only be closed by the button that
-  // opened it, and on a tablet that button was the one thing reported as
-  // unreachable — so a tap anywhere and Escape both close it now.
-  let levelAnchor: HTMLDivElement | undefined
-  createEffect(() => {
-    if (!levelOpen()) return
-    const closeOnOutside = (event: Event): void => {
-      const target = event.target
-      if (target instanceof Node && levelAnchor?.contains(target) === true) {
-        return
-      }
-      setLevelOpen(false)
+  /** Where the level sits in its own range, 0..1, which is what fills the pill. */
+  const levelFill = (): number => {
+    const range = props.musicLevelRange!
+    return (props.musicLevel!() - range.min) / (range.max - range.min)
+  }
+  const setLevelFromFill = (fill: number): void => {
+    const range = props.musicLevelRange!
+    const step = Math.max(1, percentOf(range.step))
+    const span = percentOf(range.max) - percentOf(range.min)
+    const raw = percentOf(range.min) + fill * span
+    // Snapped to the store's own step, so the readout never shows a number
+    // the slider could not have been left on.
+    setLevelPercent(Math.round(raw / step) * step)
+  }
+
+  // Tap toggles back to normal and back again, the way the pill beside it
+  // toggles the vocals. Nothing to return to on a first tap: the track still
+  // slides out, which is the other half of what a tap is for here.
+  const [levelBeforeNormal, setLevelBeforeNormal] = createSignal<number | null>(
+    null,
+  )
+  const toggleNormalLevel = (): void => {
+    const range = props.musicLevelRange!
+    if (levelPercent() !== 100) {
+      setLevelBeforeNormal(props.musicLevel!())
+      props.onMusicLevel!(range.defaultValue)
+      return
     }
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setLevelOpen(false)
-    }
-    // Capture: a stage that stops propagation on its own pointer handlers
-    // must not be able to trap the popover open.
-    document.addEventListener('pointerdown', closeOnOutside, true)
-    document.addEventListener('keydown', closeOnEscape)
-    onCleanup(() => {
-      document.removeEventListener('pointerdown', closeOnOutside, true)
-      document.removeEventListener('keydown', closeOnEscape)
-    })
-  })
+    const previous = levelBeforeNormal()
+    if (previous === null) return
+    setLevelBeforeNormal(null)
+    props.onMusicLevel!(previous)
+  }
 
   const toggleMic = (): void => {
     // Turning the mic on with no analyzed notes yet: the ribbon needs
@@ -985,52 +997,36 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               dead centre. Empty and aria-hidden when the host cannot offer
               it, which keeps the transport symmetrical either way. */}
           <div
-            ref={levelAnchor}
             class={`${styles.transportSide} ${styles.levelAnchor}`}
             aria-hidden={hasMusicLevel() ? undefined : 'true'}
           >
             <Show when={hasMusicLevel()}>
-              {/* Absolutely positioned, and that is the fix rather than a
-                  detail: the first cut opened a full-width row INSIDE the
-                  bottom bar, so the bar grew by the height of the row and
-                  every device that could not spare it pushed the transport
-                  out of reach. This one rises over the lyrics instead — the
-                  bar measures the same open or closed. */}
-              <Show when={levelOpen()}>
-                <div
-                  class={styles.levelPopover}
-                  id="karaoke-music-level"
-                  data-testid="mobile-music-level-sheet"
-                >
-                  <span class={styles.levelValue}>{levelPercent()}%</span>
-                  <input
-                    type="range"
-                    class={styles.levelSlider}
-                    data-testid="mobile-music-level"
-                    min={percentOf(props.musicLevelRange!.min)}
-                    max={percentOf(props.musicLevelRange!.max)}
-                    step={Math.max(1, percentOf(props.musicLevelRange!.step))}
-                    value={levelPercent()}
-                    aria-label="Music level"
-                    aria-valuetext={`${levelPercent()} percent`}
-                    onInput={(event) =>
-                      setLevelPercent(Number(event.currentTarget.value))
-                    }
-                  />
-                </div>
-              </Show>
-              <button
-                class={styles.levelBtn}
-                classList={{ [styles.levelBtnOn]: levelOpen() }}
-                onClick={() => setLevelOpen((open) => !open)}
-                aria-expanded={levelOpen()}
-                aria-controls="karaoke-music-level"
-                data-testid="mobile-music-level-toggle"
-                title="Music level — turn the backing track back up if your phone quietened it"
-                aria-label="Music level"
+              {/* Absolutely placed inside the slot, and that is the fix
+                  rather than a detail: the capsule grows upward when it
+                  opens, and in the flow that growth would make the whole
+                  bottom bar taller and push the transport off a short
+                  screen. Out of the flow it rises over the lyrics instead —
+                  the bar measures the same open or closed. */}
+              <PillControl
+                class={styles.levelPill}
+                testId="mobile-music-level"
+                level={levelFill()}
+                off={false}
+                onTap={toggleNormalLevel}
+                onLevel={setLevelFromFill}
+                valueLabel={`${levelPercent()}%`}
+                valueText={`${levelPercent()} percent`}
+                keyStep={
+                  Math.max(1, percentOf(props.musicLevelRange!.step)) /
+                  (percentOf(props.musicLevelRange!.max) -
+                    percentOf(props.musicLevelRange!.min))
+                }
+                dragRange={120}
+                ariaLabel="Music level"
+                title="Music level — drag to turn the backing track back up if your phone quietened it"
               >
                 <MusicLevelIcon />
-              </button>
+              </PillControl>
             </Show>
           </div>
         </div>
