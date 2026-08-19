@@ -31,7 +31,9 @@ function currentSurfaceCheck(): string {
   for (const file of files) {
     const sql = readFileSync(`${MIGRATIONS}/${file}`, 'utf8')
     const matches = [
-      ...sql.matchAll(/surface TEXT NOT NULL\s*CHECK \(surface IN \(([^)]*)\)/g),
+      ...sql.matchAll(
+        /surface TEXT NOT NULL\s*CHECK \(surface IN \(([^)]*)\)/g,
+      ),
     ]
     const last = matches.at(-1)
     if (last !== undefined) latest = last[1]
