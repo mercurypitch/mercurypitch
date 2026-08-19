@@ -1998,6 +1998,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     onTuning={referenceController.setTuning}
                     suspended={learnOpen}
                     onSongs={returnToSongs}
+                    onSelectTrack={(trackId) =>
+                      void referenceController.selectTrack(trackId)
+                    }
                   />
                 </Suspense>
               )}

@@ -24,6 +24,7 @@ import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLiveScore } from './GuitarNightLiveScore'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
+import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
@@ -44,6 +45,11 @@ interface GuitarNightScoreRoomProps {
   /** A room-level sheet parks every side effect while preserving room state. */
   suspended?: Accessor<boolean>
   onSongs(): void
+  /**
+   * Read a different part of the loaded file without leaving the room. Absent
+   * keeps the session panel read-only, which is what a single-part file wants.
+   */
+  onSelectTrack?(trackId: string): void
 }
 
 function formatTime(seconds: number): string {
@@ -143,6 +149,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   let doctorTrigger: HTMLButtonElement | undefined
   let tunerTrigger: HTMLButtonElement | undefined
   let disposed = false
+  const [sessionPanelOpen, setSessionPanelOpen] = createSignal(false)
   const [doctorOpen, setDoctorOpen] = createSignal(false)
   const [tunerOpen, setTunerOpen] = createSignal(false)
   const [doctorRecoveryActive, setDoctorRecoveryActive] = createSignal(false)
@@ -675,7 +682,14 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               <ChevronLeft />
             </span>
           </button>
-          <div>
+          <button
+            type="button"
+            class={styles.roomIdentityTrigger}
+            aria-haspopup="dialog"
+            aria-expanded={sessionPanelOpen()}
+            data-testid="guitar-night-session-trigger"
+            onClick={() => setSessionPanelOpen(true)}
+          >
             <p class={styles.eyebrow}>
               Tab rehearsal ·{' '}
               {displayedReference().tracks.length > 1
@@ -689,7 +703,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             >
               {displayedReference().title}
             </h1>
-          </div>
+          </button>
         </div>
         <div class={styles.roomHeadingMeta}>
           <span class={styles.trackCount}>
@@ -1030,6 +1044,26 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             {message()}
           </p>
         )}
+      </Show>
+
+      <Show when={sessionPanelOpen()}>
+        <GuitarNightSessionPanel
+          reference={displayedReference}
+          onSelectTrack={(trackId) => {
+            props.onSelectTrack?.(trackId)
+            setSessionPanelOpen(false)
+          }}
+          onClose={() => {
+            setSessionPanelOpen(false)
+            queueMicrotask(() =>
+              document
+                .querySelector<HTMLButtonElement>(
+                  '[data-testid="guitar-night-session-trigger"]',
+                )
+                ?.focus(),
+            )
+          }}
+        />
       </Show>
 
       <div class={styles.transportDeck} data-testid="guitar-night-score-deck">

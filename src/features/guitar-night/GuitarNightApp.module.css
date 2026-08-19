@@ -574,6 +574,149 @@
   }
 }
 
+/* The session panel — phase 1 of multi-track reading.
+   ============================================================
+   Opened from the room's own identity block, which is the "loaded tab/midi
+   session info" a player already looks at to see what is in the room. */
+.sessionScrim {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.sessionScrimButton {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(6 5 4 / 0.62);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.sessionPanel {
+  position: relative;
+  display: grid;
+  gap: 0.9rem;
+  width: min(26rem, 100%);
+  max-height: min(32rem, calc(100dvh - 2rem));
+  padding: 1.1rem;
+  overflow-y: auto;
+  border: 1px solid rgba(224, 164, 93, 0.26);
+  border-radius: 0.9rem;
+  color: var(--ivory);
+  background: var(--faceplate);
+  box-shadow: 0 1.6rem 5rem rgba(0, 0, 0, 0.5);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
+}
+
+.sessionHeader {
+  display: flex;
+  gap: 0.75rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.sessionHeader strong {
+  display: block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.sessionHeader small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.sessionClose {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  color: rgba(244, 234, 219, 0.7);
+  background: transparent;
+  cursor: pointer;
+}
+
+.sessionClose svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.sessionClose:hover,
+.sessionClose:focus-visible {
+  color: #f4eadb;
+  background: rgba(244, 234, 219, 0.1);
+}
+
+.sessionTracks {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.sessionTracks button {
+  display: grid;
+  gap: 0.1rem;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.55rem;
+  color: var(--ivory);
+  text-align: left;
+  background: rgba(244, 234, 219, 0.03);
+  cursor: pointer;
+}
+
+.sessionTracks button:hover,
+.sessionTracks button:focus-visible {
+  border-color: rgba(224, 164, 93, 0.4);
+  background: rgba(224, 164, 93, 0.08);
+}
+
+.sessionTrackActive {
+  border-color: rgba(224, 164, 93, 0.62) !important;
+  background: rgba(224, 164, 93, 0.14) !important;
+}
+
+.sessionTracks small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.sessionNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+/* The room identity opens it, so it has to read as a control. */
+.roomIdentityTrigger {
+  display: block;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.roomIdentityTrigger:hover h1,
+.roomIdentityTrigger:focus-visible h1 {
+  color: var(--amber-bright);
+}
+
 /* The scrollbar has to look like the app's.
    ============================================================
    `src/styles/app.css` carries the shared treatment — 5px, transparent track,

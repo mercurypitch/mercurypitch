@@ -1,0 +1,137 @@
+// ============================================================
+// The session panel — what is loaded, and which part is being read
+// ============================================================
+//
+// Reported 2026-08-19: "the guitar night room, doesn't seem to have a easy way
+// to change what is being scored against? what track?" It was changeable, but
+// only from the lobby — `GuitarNightApp` renders a "Visible part" group beside
+// the attached score and nothing in the room offers it. So a player who picked
+// the wrong part had to leave the room to fix it.
+//
+// This is the first phase of `docs/plans/guitar-night-multi-track-reading.md`,
+// and it is deliberately the panel that later phases fill in: the main and
+// secondary view assignment, and the scoring override, both land here.
+
+import type { Accessor } from 'solid-js'
+import { For, onCleanup, onMount, Show } from 'solid-js'
+import { X } from '@/components/icons'
+import styles from './GuitarNightApp.module.css'
+import type { GuitarNightReference } from './reference-port'
+
+interface GuitarNightSessionPanelProps {
+  reference: Accessor<GuitarNightReference>
+  onSelectTrack(trackId: string): void
+  onClose(): void
+}
+
+export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
+  let dialog!: HTMLDivElement
+  let closeButton!: HTMLButtonElement
+
+  onMount(() => {
+    closeButton.focus({ preventScroll: true })
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        props.onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>('button:not(:disabled)'),
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown, true)
+    onCleanup(() =>
+      document.removeEventListener('keydown', handleKeyDown, true),
+    )
+  })
+
+  const tracks = () => props.reference().tracks
+
+  return (
+    <div class={styles.sessionScrim} data-testid="guitar-night-session-panel">
+      <button
+        type="button"
+        class={styles.sessionScrimButton}
+        aria-label="Close the session details"
+        onClick={() => props.onClose()}
+      />
+      <div
+        ref={dialog}
+        class={styles.sessionPanel}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Loaded score"
+      >
+        <div class={styles.sessionHeader}>
+          <div>
+            <p class={styles.eyebrow}>Loaded score</p>
+            <strong>{props.reference().title}</strong>
+            <small>
+              {props.reference().tempoBpm} BPM ·{' '}
+              {tracks().length === 1 ? '1 part' : `${tracks().length} parts`}
+            </small>
+          </div>
+          <button
+            ref={closeButton}
+            type="button"
+            class={styles.sessionClose}
+            aria-label="Close the session details"
+            onClick={() => props.onClose()}
+          >
+            <X />
+          </button>
+        </div>
+
+        <div
+          class={styles.sessionTracks}
+          role="group"
+          aria-label="Part to read and score"
+        >
+          <For each={tracks()}>
+            {(track) => {
+              const isScored = () => track.id === props.reference().trackId
+              return (
+                <button
+                  type="button"
+                  classList={{ [styles.sessionTrackActive]: isScored() }}
+                  aria-pressed={isScored()}
+                  onClick={() => props.onSelectTrack(track.id)}
+                >
+                  <span>{track.name}</span>
+                  <small>
+                    {track.noteCount === 1
+                      ? '1 note'
+                      : `${track.noteCount} notes`}
+                    {/* Said outright rather than implied by the highlight:
+                        this is the part your playing is graded against. */}
+                    <Show when={isScored()}> · scored</Show>
+                  </small>
+                </button>
+              )
+            }}
+          </For>
+        </div>
+
+        <Show when={tracks().length === 1}>
+          <p class={styles.sessionNote}>
+            This file carries one part. A Guitar Pro file with several will list
+            them all here.
+          </p>
+        </Show>
+      </div>
+    </div>
+  )
+}
