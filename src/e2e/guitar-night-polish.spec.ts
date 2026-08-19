@@ -233,3 +233,33 @@ test('with no tab attached the note offers to get one @smoke', async ({
     page.getByRole('heading', { name: 'Score to follow', exact: true }),
   ).toBeVisible()
 })
+
+test('dresses its own scrollbar instead of the platform one @smoke', async ({
+  page,
+}) => {
+  // Guitar Night is a standalone entry and never loads `src/styles/app.css`,
+  // which is where the shared `::-webkit-scrollbar` treatment lives. So the
+  // one scroll the lobby has came up as the raw platform scrollbar against a
+  // lamplit room: "its ugly, instead of our nice app scrolls".
+  await page.setViewportSize(DESKTOP)
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await openDemoSong(page)
+
+  const skin = await page.evaluate(() => {
+    const main = document.querySelector('main')
+    if (main === null) return null
+    const style = getComputedStyle(main)
+    return {
+      width: style.getPropertyValue('scrollbar-width').trim(),
+      color: style.getPropertyValue('scrollbar-color').trim(),
+      gutter: style.getPropertyValue('scrollbar-gutter').trim(),
+    }
+  })
+  expect(skin?.width).toBe('thin')
+  expect(skin?.color).not.toBe('auto')
+  expect(skin?.color).toContain('224')
+  // Not cosmetic: a bar that appears must not narrow the content, or the
+  // content can shorten, drop the bar, and start the loop again.
+  expect(skin?.gutter).toBe('stable')
+})

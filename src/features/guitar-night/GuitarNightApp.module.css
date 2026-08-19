@@ -565,6 +565,61 @@
   }
 }
 
+/* The scrollbar has to look like the app's.
+   ============================================================
+   `src/styles/app.css` carries the shared treatment — 5px, transparent track,
+   a thumb on `--border` — but Guitar Night is a standalone entry and imports
+   only `mobile-kit.css` and `performance-mode.css`. It never loaded that
+   file, so the one scroll it does have came up as the raw platform scrollbar
+   against a lamplit room. Reported as "its ugly, instead of our nice app
+   scrolls and other components scroll."
+
+   Importing `app.css` here would pull a whole application's stylesheet into a
+   page that wants none of the rest of it, so the treatment is restated for
+   the two boxes that scroll, in this room's amber rather than the app's grey
+   — the same colour `.songList` already uses a few rules down.
+
+   `scrollbar-gutter: stable` is not cosmetic: without it the bar appearing
+   narrows the content, which can shorten it, which can remove the bar. That
+   loop resizes everything inside it, and a canvas that resizes is a canvas
+   that clears. */
+.main,
+.songList,
+.app {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
+}
+
+.main {
+  scrollbar-gutter: stable;
+}
+
+.main::-webkit-scrollbar,
+.songList::-webkit-scrollbar,
+.app::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.main::-webkit-scrollbar-track,
+.songList::-webkit-scrollbar-track,
+.app::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main::-webkit-scrollbar-thumb,
+.songList::-webkit-scrollbar-thumb,
+.app::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(224, 164, 93, 0.42);
+}
+
+.main::-webkit-scrollbar-thumb:hover,
+.songList::-webkit-scrollbar-thumb:hover,
+.app::-webkit-scrollbar-thumb:hover {
+  background: rgba(224, 164, 93, 0.68);
+}
+
 /* Laptop heights: fit by taking the air back, not by shrinking the words.
    The panel sits in a gutter of up to 4rem top and bottom and carries up to
    2.6rem of its own padding — nearly 190px of spacing on a screen with none
