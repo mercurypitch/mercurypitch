@@ -138,30 +138,48 @@ describe('the control', () => {
     expect(pill().getAttribute('aria-label')).toBe('Music level')
   })
 
-  it('shares the transport row with the mic', () => {
-    // The pairing is the whole idea: one control for what goes in, one for
-    // what comes out, on the bar you already have your thumb on.
+  it('sits in the same slot as the mic, right beside it', () => {
+    // The pairing is the whole idea and it was reported missing: "should it
+    // not be next to the mic icon, so users easily connect the dots". Across
+    // the transport from it, the level read as an unrelated control.
     mountWithLevel()
     const mic = screen.getByLabelText('Toggle your microphone')
-    const row = mic.parentElement?.parentElement
-    expect(row).not.toBeNull()
-    expect(row?.contains(pill())).toBe(true)
+    const slot = mic.parentElement
+    expect(slot).not.toBeNull()
+    expect(slot?.contains(pill())).toBe(true)
+    // Mic first, then the level: cause, then the thing that answers it.
+    expect(mic.compareDocumentPosition(pill())).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 
-  it('is placed out of the flow, so opening it cannot move the transport', () => {
-    // The fault behind the first report, in one assertion. The capsule grows
-    // upward when it opens; in the flow that growth is the bottom bar's.
+  it('is boxed in the flow and drawn out of it', () => {
+    // Both halves of the placement, and each fixes a different report. The
+    // anchor is a real mic-sized box, so the slot's own centring lines the
+    // capsule up with the mic — a zero-height slot left it hanging 22px high
+    // at every width. The capsule inside is absolute, so opening it cannot
+    // make the bottom bar taller and push the transport off a short screen.
     const css = readFileSync(
       'src/components/KaraokeMobileStage.module.css',
       'utf8',
     )
-    const rule = css.slice(
-      css.indexOf('.levelPill {'),
-      css.indexOf('}', css.indexOf('.levelPill {')),
-    )
-    expect(rule).toContain('position: absolute')
-    expect(rule).toContain('bottom: 0')
-    expect(css).toMatch(/\.levelAnchor \{\s*position: relative;/)
+    const rule = (selector: string): string =>
+      css.slice(
+        css.indexOf(`${selector} {`),
+        css.indexOf('}', css.indexOf(`${selector} {`)),
+      )
+
+    expect(rule('.levelPill')).toContain('position: absolute')
+    expect(rule('.levelPill')).toContain('inset: auto 0 0')
+
+    const anchor = rule('.levelAnchor')
+    expect(anchor).toContain('position: relative')
+    expect(anchor).toContain('width: 44px')
+    expect(anchor).toContain('height: 44px')
+
+    // What actually does the aligning, and what the mic is sized to.
+    expect(rule('.transportSide')).toContain('align-items: center')
+    expect(rule('.micBtn')).toContain('height: 44px')
   })
 
   it('survives the stage settings being hidden', () => {
@@ -181,15 +199,17 @@ describe('the control', () => {
     expect(screen.queryByTestId('mobile-music-level')).toBeNull()
   })
 
-  it('leaves the transport symmetrical either way', () => {
+  it('keeps an empty slot opposite it so play stays centred', () => {
+    // Both controls live on the left now, so the right slot is pure spacing.
+    // It has to be there — without it the transport slides left — and it has
+    // to be silent, because there is nothing in it to announce.
     mountWithLevel()
-    expect(pill().parentElement?.getAttribute('aria-hidden')).toBeNull()
-
-    cleanup()
-    render(() => KaraokeMobileStage(makeProps({ onToggleMic: vi.fn() })))
-    const mic = screen.getByLabelText('Toggle your microphone')
-    const emptySlot = mic.parentElement?.parentElement?.lastElementChild
-    expect(emptySlot?.getAttribute('aria-hidden')).toBe('true')
+    const row = screen.getByLabelText('Toggle your microphone').parentElement
+      ?.parentElement
+    const spacer = row?.lastElementChild
+    expect(spacer?.getAttribute('aria-hidden')).toBe('true')
+    expect(spacer?.childElementCount).toBe(0)
+    expect(spacer?.contains(pill())).toBe(false)
   })
 })
 

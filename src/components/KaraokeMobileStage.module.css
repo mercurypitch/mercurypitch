@@ -84,15 +84,20 @@
   transform: scale(0.94);
 }
 
+/* Header toggles stay in one compact group, pinned to the right edge of the
+   column. On a phone the title's own `flex-grow` already did that; on desktop
+   zen the title stops growing (it is capped at 58% so a long one truncates
+   instead of crowding the buttons), which left the group stranded mid-header
+   with a third of the column empty beside it. `margin-left: auto` is the half
+   that does not depend on the title's width. */
 .headerActions {
   display: flex;
   align-items: center;
   gap: 10px;
   flex: none;
+  margin-left: auto;
 }
 
-/* Header toggles stay in one compact group. The title owns any flexible space
-   on phones; desktop Zen lets the group follow the title from the left. */
 .autoplayBtn {
   display: inline-flex;
   align-items: center;
@@ -603,12 +608,14 @@
   transform: none;
 }
 
-/* Mirrored side slots keep play dead centre; the left one holds the mic. */
+/* Mirrored side slots keep play dead centre; the left one holds the mic and
+   the backing level, the right one is an empty box of the same width. */
 .transportSide {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
 }
 
 .transportMain {
@@ -617,10 +624,16 @@
   gap: 38px;
 }
 
-/* The right slot doubles as the positioning context for the level popover,
-   so the popover is anchored to the button and not to the stage. */
+/* The level's box in the flow: a mic-sized square that the capsule is placed
+   inside. `align-items: center` on the slot then lines the two controls up at
+   any row height, which a zero-height slot could not do — the capsule used to
+   hang 22px above the mic at every width because its only content was
+   absolutely positioned and the slot measured nothing. */
 .levelAnchor {
   position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
 }
 
 /* Your mic — the same glass circle as the header toggles, transport-sized.
@@ -654,8 +667,10 @@
   box-shadow: 0 0 14px rgba(201, 162, 255, 0.45);
 }
 
-/* The backing level — the same capsule as the guide-vocal pill, in the
-   transport's right slot rather than floating over the lyrics.
+/* The backing level — the same capsule as the guide-vocal pill, sitting next
+   to the mic rather than across the transport from it. The pairing is the
+   point: the mic is what makes a phone quieten the music, so the fix for that
+   belongs beside the cause.
 
    It was a panel with a horizontal range input in it for one release, which
    was both a new control nobody asked for and, worse, layout: the panel sat
@@ -664,9 +679,7 @@
    that impossible — open or closed, the bar is the same height. */
 .levelPill {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  inset: auto 0 0;
   /* Over the sing pill (z-index 3) while it is open, which is the only time
      the two can overlap at all. */
   z-index: 6;
@@ -685,6 +698,31 @@
   --pill-border: rgba(238, 228, 255, 0.22);
   --pill-base-bg: rgba(255, 255, 255, 0.12);
   --pill-base-color: rgba(244, 236, 255, 0.72);
+}
+
+/* Below about 560px the mirrored layout stops being possible: two 44px
+   controls on each side plus the 226px transport needs 498px of the bar's
+   354px. So the pair keeps its natural width, the empty slot absorbs what is
+   left, and the transport's own gaps tighten to buy back the difference —
+   with these numbers play lands within ~20px of centre on a 390px phone,
+   which is where it already sat with one control in the slot. */
+@media (max-width: 560px) {
+  .transport {
+    gap: 6px;
+  }
+
+  .transportMain {
+    gap: 18px;
+  }
+
+  .transportSide {
+    flex: 0 1 auto;
+  }
+
+  .transportSpacer {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }
 
 .playBtn {
