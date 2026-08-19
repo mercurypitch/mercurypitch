@@ -556,6 +556,28 @@ async function handleCreate(
     return respond({ error: 'Profile already exists' }, { status: 409 })
   }
 
+  if (
+    entity === 'sessionRecords' &&
+    Array.isArray(body.results) &&
+    body.results.length > 0 &&
+    env.PRACTICE_RESULTS_BUCKET
+  ) {
+    try {
+      const resultsKey = `analytics/${body.userId}/${id}.json`
+      await env.PRACTICE_RESULTS_BUCKET.put(
+        resultsKey,
+        JSON.stringify(body.results),
+        {
+          httpMetadata: { contentType: 'application/json' },
+        },
+      )
+      // Save space in D1 by stripping the large payload
+      body.results = []
+    } catch (e) {
+      console.error('[create] Failed to upload results to R2', e)
+    }
+  }
+
   const cols: string[] = ['id', 'createdAt', 'updatedAt']
   const binds: SqlValue[] = [id, now, now]
   for (const [col, val] of Object.entries(body)) {
@@ -628,6 +650,28 @@ async function handleUpdate(
   delete body.userId // ownership is immutable
   for (const col of def.serverCols ?? []) delete body[col]
   if (entity === 'userProfiles') clampStreakHighWater(body, row)
+
+  if (
+    entity === 'sessionRecords' &&
+    Array.isArray(body.results) &&
+    body.results.length > 0 &&
+    env.PRACTICE_RESULTS_BUCKET
+  ) {
+    try {
+      const resultsKey = `analytics/${row.userId}/${id}.json`
+      await env.PRACTICE_RESULTS_BUCKET.put(
+        resultsKey,
+        JSON.stringify(body.results),
+        {
+          httpMetadata: { contentType: 'application/json' },
+        },
+      )
+      // Save space in D1 by stripping the large payload
+      body.results = []
+    } catch (e) {
+      console.error('[update] Failed to upload results to R2', e)
+    }
+  }
 
   const sets: string[] = ['"updatedAt" = ?']
   const binds: SqlValue[] = [new Date().toISOString()]
@@ -1989,6 +2033,44 @@ async function handleRequest(
   if (url.pathname === '/api/me/grant-context' && request.method === 'GET') {
     if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
     return handleGrantContext(auth, env, respond)
+  }
+
+  // Fetch heavy analytics JSON from R2
+  const analyticsMatch = url.pathname.match(
+    /^\/api\/sessionRecords\/([^/]+)\/analytics$/,
+  )
+  if (analyticsMatch && request.method === 'GET') {
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    if (!env.PRACTICE_RESULTS_BUCKET) {
+      return respond(
+        { error: 'Analytics storage unconfigured' },
+        { status: 501 },
+      )
+    }
+    const recordId = analyticsMatch[1]
+    const row = await env.DB.prepare(
+      'SELECT "userId" FROM "sessionRecords" WHERE "id" = ?',
+    )
+      .bind(recordId)
+      .first<{ userId: string }>()
+    if (!row) return respond({ error: 'Not found' }, { status: 404 })
+    if (row.userId !== auth.userId && !(await isAdmin(request, env))) {
+      return respond({ error: 'Forbidden' }, { status: 403 })
+    }
+    const resultsKey = `analytics/${row.userId}/${recordId}.json`
+    const obj = await env.PRACTICE_RESULTS_BUCKET.get(resultsKey)
+    if (!obj) {
+      // 404 could mean it was cleaned up (retention policy) or never uploaded
+      return respond(
+        { error: 'Analytics not found or expired' },
+        { status: 404 },
+      )
+    }
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      ...CORS,
+    })
+    return new Response(obj.body, { headers })
   }
 
   // Every changed achievement row in one request. Must be matched before the
