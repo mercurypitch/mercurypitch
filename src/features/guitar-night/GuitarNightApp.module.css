@@ -534,7 +534,11 @@
   display: flex;
   /* `safe` matters: a centred flex child that outgrows its container has its
      overflow split above and below, and the half above a plain `center` is
-     unreachable by scrolling. `safe center` gives that case start alignment. */
+     unreachable by scrolling. `safe center` gives that case start alignment.
+     Declared twice on purpose — a browser that does not know the keyword
+     drops the whole declaration, and the fallback there is `center`, not the
+     `stretch` a missing `align-items` would give. */
+  align-items: center;
   align-items: safe center;
   min-height: 0;
   padding: clamp(1.5rem, 4vw, 4rem) max(1.5rem, 7vw);

@@ -65,7 +65,10 @@ export function GuitarNightLearnShelf(props: GuitarNightLearnShelfProps) {
     const shell = dialog.closest<HTMLElement>(
       '[data-testid="guitar-night-shell"]',
     )
-    const shellScrollTop = shell?.scrollTop ?? 0
+    // `.main` holds the offset, not the shell: the shell is `overflow: clip`.
+    // Reading the shell here preserved a scroll position that was always 0.
+    const scroller = shell?.querySelector<HTMLElement>('main') ?? null
+    const scrollerTop = scroller?.scrollTop ?? 0
     const shellOverflow = shell?.style.overflow ?? ''
     const bodyOverflow = document.body.style.overflow
     if (shell !== null && shell !== undefined) shell.style.overflow = 'hidden'
@@ -106,7 +109,9 @@ export function GuitarNightLearnShelf(props: GuitarNightLearnShelfProps) {
       document.body.style.overflow = bodyOverflow
       if (shell !== null && shell !== undefined) {
         shell.style.overflow = shellOverflow
-        shell.scrollTop = shellScrollTop
+      }
+      if (scroller !== null) {
+        scroller.scrollTop = scrollerTop
       }
     })
   })

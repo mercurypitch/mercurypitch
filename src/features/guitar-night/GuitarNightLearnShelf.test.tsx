@@ -2,6 +2,7 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal, Show } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarFirstWinProgressV1 } from './first-win-progress'
 import { GuitarNightLearnShelf } from './GuitarNightLearnShelf'
@@ -86,6 +87,54 @@ describe('GuitarNightLearnShelf', () => {
     result.unmount()
     expect(document.body.style.overflow).toBe('clip')
     expect(shell.style.overflow).toBe('auto')
+    document.body.style.overflow = ''
+  })
+
+  it('puts the reading back where the reader left it', () => {
+    // The shelf used to save and restore `shell.scrollTop`, and the shell has
+    // never been the scroller — it is `overflow: clip`, and before that it
+    // only ever held the scaled backdrop's bleed, so the position it
+    // preserved was always 0. `.main` is the box that actually moves.
+    //
+    // jsdom does no layout and reports `scrollTop` as 0 forever, so the
+    // property is replaced with a plain writable one: what is under test is
+    // the snapshot-and-restore, not the browser's scrolling.
+    const [open, setOpen] = createSignal(false)
+    render(() => (
+      <div data-testid="guitar-night-shell">
+        <main>
+          <Show when={open()}>
+            <GuitarNightLearnShelf
+              firstWinProgress={PROGRESS}
+              tuningLabel="6-string guitar"
+              onFirstSteps={vi.fn()}
+              onActivity={vi.fn()}
+              onClose={vi.fn()}
+            />
+          </Show>
+        </main>
+      </div>
+    ))
+    const region = screen
+      .getByTestId('guitar-night-shell')
+      .querySelector('main')
+    expect(region).not.toBeNull()
+    Object.defineProperty(region, 'scrollTop', {
+      configurable: true,
+      value: 0,
+      writable: true,
+    })
+
+    // The reader is 240px down the column when they open Learn.
+    region!.scrollTop = 240
+    setOpen(true)
+    expect(screen.getByTestId('guitar-night-learn-shelf')).toBeTruthy()
+
+    // Something moves it while the shelf owns the screen.
+    region!.scrollTop = 0
+
+    setOpen(false)
+    expect(region?.scrollTop).toBe(240)
     document.body.style.overflow = ''
   })
 
