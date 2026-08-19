@@ -6,12 +6,17 @@
 // shared runtime resolves those keys through the authenticated background
 // endpoint and exposes only a short-lived object URL to the renderer.
 
-export type BackgroundSurface = 'karaoke' | 'jam' | 'piano'
+export type BackgroundSurface = 'karaoke' | 'jam' | 'piano' | 'guitar'
 
 export function isBackgroundSurface(
   value: unknown,
 ): value is BackgroundSurface {
-  return value === 'karaoke' || value === 'jam' || value === 'piano'
+  return (
+    value === 'karaoke' ||
+    value === 'jam' ||
+    value === 'piano' ||
+    value === 'guitar'
+  )
 }
 
 export const CURRENT_FREE_BACKGROUND_IDS = [
@@ -25,6 +30,13 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   'piano-nocturne-studio',
   'piano-brick-practice-loft',
   'piano-quiet-music-library',
+  // Guitar Night's four shipped rooms. They predate this catalog and lived in
+  // their own module with their own storage key and their own <select>, which
+  // is why Guitar Night could not offer a supporter room at all.
+  'velvet-rehearsal',
+  'valve-corner',
+  'blue-hour-roof',
+  'daylight-loft',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -301,6 +313,51 @@ export const BACKGROUND_CATALOG = [
     focalPoint: { x: 0.5, y: 0.48 },
   },
   {
+    id: 'velvet-rehearsal',
+    surface: 'guitar',
+    label: 'Velvet Rehearsal',
+    description: 'Amber lamps, curtains drawn.',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource('/guitar-night/velvet-rehearsal.webp'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'valve-corner',
+    surface: 'guitar',
+    label: 'Valve Corner',
+    description: 'Warm glass, stacked cabinets.',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource('/guitar-night/valve-corner.webp'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'blue-hour-roof',
+    surface: 'guitar',
+    label: 'Blue-hour Roof',
+    description: 'City dusk, open air.',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource('/guitar-night/blue-hour-roof.webp'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'daylight-loft',
+    surface: 'guitar',
+    label: 'Daylight Loft',
+    description: 'Bright windows, bare floor.',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource('/guitar-night/daylight-loft.webp'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
     id: 'golden-stage',
     surface: 'jam',
     label: 'Golden Stage',
@@ -516,6 +573,7 @@ export const DEFAULT_BACKGROUND_IDS = {
   karaoke: 'karaoke-theatre',
   jam: 'room-stage',
   piano: 'piano-afterglow',
+  guitar: 'velvet-rehearsal',
 } as const satisfies Record<BackgroundSurface, FreeBackgroundId>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(

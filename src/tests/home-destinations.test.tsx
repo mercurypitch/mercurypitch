@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
-import { GUITAR_NIGHT_BACKDROPS } from '@/features/guitar-night/backdrops'
 import { DestinationGallery, HOME_DESTINATIONS, } from '@/features/home/DestinationGallery'
 import { TAB_ANALYSIS, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
 import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
@@ -8,9 +7,9 @@ import { activeTab, setActiveTab } from '@/stores/ui-store'
 
 /**
  * Every picture the app already gives away: the free half of the background
- * catalogue plus the Guitar Night backdrops, which are all free. Derived
- * rather than listed, so a cover that later points at a supporter picture
- * fails here instead of shipping one.
+ * catalogue, which now includes the Guitar Night rooms that used to live in
+ * their own module. Derived rather than listed, so a cover that later points
+ * at a supporter picture fails here instead of shipping one.
  */
 const FREE_IMAGE_SOURCES = new Set<string>([
   ...BACKGROUND_CATALOG.filter(
@@ -27,7 +26,6 @@ const FREE_IMAGE_SOURCES = new Set<string>([
         ].filter((source): source is string => source !== undefined)
       : [],
   ),
-  ...GUITAR_NIGHT_BACKDROPS.map((backdrop) => backdrop.url),
 ])
 
 afterEach(() => {

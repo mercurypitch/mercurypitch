@@ -64,6 +64,16 @@ function mountRoom(): void {
   ))
 }
 
+/**
+ * The rooms and this slider live in the right-hand drawer now, which is
+ * `inert` and `aria-hidden` until it is opened. Everything an assistive
+ * technology can reach is therefore behind this one tap — which is the point
+ * of asserting it, rather than reaching past it to the input.
+ */
+function openRoomDrawer(): void {
+  fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+}
+
 const slider = (): HTMLInputElement =>
   screen.getByTestId('guitar-night-room-glass') as HTMLInputElement
 
@@ -93,7 +103,8 @@ describe('the Guitar Night room visibility slider', () => {
 
   it('names itself for anyone who cannot see the room change', () => {
     mountRoom()
-    // The visible part is an icon, so the whole control depends on this.
+    openRoomDrawer()
+    // The visible part is a bare track, so the whole control depends on this.
     expect(screen.getByRole('slider', { name: 'Room visibility' })).toBe(
       slider(),
     )
@@ -137,10 +148,23 @@ describe('the Guitar Night room visibility slider', () => {
     expect(shellGlass()).toBe(String(GUITAR_NIGHT_GLASS.max))
   })
 
-  it('sits in the Room menu, beside the room it acts on', () => {
+  it('sits in the Room drawer, beside the rooms it acts on', () => {
     mountRoom()
     const menu = document.getElementById('guitar-night-venue-menu')
     expect(menu).not.toBeNull()
     expect(menu?.contains(slider())).toBe(true)
+  })
+
+  it('is inert until the drawer is opened, and reachable after', () => {
+    // The drawer is a dialog: closed, nothing inside it may be focusable or
+    // announced, or a swipe through the page would land in a hidden panel.
+    mountRoom()
+    const menu = document.getElementById('guitar-night-venue-menu')
+    expect(menu?.getAttribute('aria-hidden')).toBe('true')
+    expect(screen.queryByRole('slider', { name: 'Room visibility' })).toBeNull()
+
+    openRoomDrawer()
+    expect(menu?.getAttribute('aria-hidden')).toBeNull()
+    expect(screen.getByRole('slider', { name: 'Room visibility' })).toBeTruthy()
   })
 })

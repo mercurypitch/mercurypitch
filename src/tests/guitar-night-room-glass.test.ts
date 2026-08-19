@@ -166,15 +166,19 @@ describe('zero means the room exactly as it shipped', () => {
 })
 
 describe('the control is reachable at every width', () => {
-  it('sits in the Room menu, which the phone keeps', () => {
+  it('lives in the room drawer, which every width keeps', () => {
     // Karaoke Night's slider lives in its topbar and is display:none under
-    // 900px, so the phone — where this was reported — cannot reach it. The
-    // Room menu is the collapsed drawer on a phone, so this one survives.
-    expect(css).toContain('.venueMenu .roomGlass')
+    // 900px, so the phone — where this was reported — cannot reach it. This
+    // one is inside the Room drawer, which is the same panel at every width,
+    // so there is no breakpoint that can hide it.
     expect(ruleBody('.roomGlass')).not.toContain('display: none')
+    expect(css).not.toMatch(/\.roomGlass \{[^}]*display: none/)
   })
 
-  it('stretches to the drawer instead of keeping the topbar width', () => {
-    expect(css).toMatch(/\.venueMenu \.roomGlassSlider \{[^}]*flex: 1 1 auto/)
+  it('stretches to the drawer instead of keeping a topbar width', () => {
+    // It used to be 5.5rem wide because it sat in the rail between two
+    // pills. In a 27rem drawer a fixed width is just a short slider.
+    expect(ruleBody('.roomGlassSlider')).toContain('flex: 1 1 auto')
+    expect(ruleBody('.roomGlassSlider')).not.toContain('width: 5.5rem')
   })
 })

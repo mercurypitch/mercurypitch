@@ -797,7 +797,14 @@ test('opens Learn and marks exact Note Hunt positions with a real pointer @smoke
     const returnedShelf = page.getByTestId('guitar-night-learn-shelf')
     await expect(returnedShelf.getByRole('dialog')).toBeVisible()
     await returnedShelf.getByRole('button', { name: 'Close' }).click()
-    await expect(page.locator('[data-room-action="learn"]')).toBeFocused()
+    // Learn is opened from inside the room drawer, and opening it closes the
+    // drawer. Its trigger is still in the document — the drawer slides off
+    // the edge rather than unmounting — so handing focus back to it would
+    // put focus on something off-screen and inert. The way back is the
+    // button that opens the drawer.
+    await expect(
+      page.getByRole('button', { name: 'Room', exact: true }),
+    ).toBeFocused()
   } finally {
     await context.close()
   }
@@ -1057,11 +1064,17 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
     )
 
     const roomMenu = page.getByRole('button', { name: 'Room', exact: true })
+    // The rooms are a picker in a drawer now, not a <select> in the rail.
+    // Escape has to close the drawer and put focus back where it came from,
+    // which is the one thing a phone user cannot recover on their own.
     await roomMenu.click()
     await expect(roomMenu).toHaveAttribute('aria-expanded', 'true')
-    await page
-      .getByRole('combobox', { name: 'Room', exact: true })
-      .press('Escape')
+    await expect(
+      page.getByTestId('guitar-night-room-drawer').getByRole('button', {
+        name: /^Velvet Rehearsal/,
+      }),
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
     await expect(roomMenu).toHaveAttribute('aria-expanded', 'false')
     await expect(roomMenu).toBeFocused()
 

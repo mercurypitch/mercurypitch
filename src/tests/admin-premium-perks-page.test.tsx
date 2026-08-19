@@ -2,6 +2,22 @@ import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/t
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminPremiumPerksPage } from '@/features/admin/AdminPremiumPerksPage'
 import type { AdminPremiumBackground, AdminPremiumCapability, PremiumPerksSnapshot, SupporterGroup, } from '@/features/admin/premium-perks-admin-service'
+import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
+import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
+
+/** Derived, so a new surface arrives here without anyone remembering to. */
+const BACKGROUND_SURFACES = [
+  ...new Set(BACKGROUND_CATALOG.map((background) => background.surface)),
+]
+
+const surfaceButtonName = (surface: BackgroundSurface): string =>
+  surface === 'piano'
+    ? 'Piano Night'
+    : surface === 'guitar'
+      ? 'Guitar Night'
+      : surface === 'karaoke'
+        ? 'Karaoke'
+        : 'Jam'
 
 const serviceMocks = vi.hoisted(() => ({
   loadPremiumPerks: vi.fn(),
@@ -277,6 +293,16 @@ describe('AdminPremiumPerksPage', () => {
     expect(
       within(filters).getByRole('button', { name: /^Jam\b/ }),
     ).toBeInTheDocument()
+    // Every surface the catalog knows has to be reachable here, or a whole
+    // room family becomes invisible to whoever has to retire or assign it —
+    // which is exactly the state Guitar Night was in before it joined.
+    for (const surface of BACKGROUND_SURFACES) {
+      expect(
+        within(filters).getByRole('button', {
+          name: new RegExp(`^${surfaceButtonName(surface)}\\b`),
+        }),
+      ).toBeInTheDocument()
+    }
 
     fireEvent.click(
       within(filters).getByRole('button', { name: /^Piano Night\b/ }),
@@ -310,6 +336,18 @@ describe('AdminPremiumPerksPage', () => {
     expect(
       within(library).getByRole('button', { name: /^Aurora Stage\b/ }),
     ).toBeInTheDocument()
+
+    // Guitar Night has a filter and an empty shelf: the surface exists, and
+    // the supporter art for it does not yet. An empty shelf that says so is
+    // the honest state — the four rooms Guitar Night ships are free, and
+    // this library only ever holds supporter identities.
+    fireEvent.click(
+      within(filters).getByRole('button', { name: /^Guitar Night\b/ }),
+    )
+    expect(
+      within(library).queryByRole('button', { name: /^Golden Stage\b/ }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('No Guitar Night backgrounds')).toBeInTheDocument()
   })
 
   it('confirms before a surface filter discards staged uploads', async () => {
