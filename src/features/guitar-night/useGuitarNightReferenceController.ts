@@ -7,6 +7,7 @@ import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/g
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
+import type { GuitarNightStemKind } from './song-port'
 
 export type GuitarNightReferenceLibraryState =
   | 'idle'
@@ -333,6 +334,16 @@ export function useGuitarNightReferenceController(
   const [transcribeProgress, setTranscribeProgress] = createSignal<
     number | null
   >(null)
+  /**
+   * Which stem the running transcription is reading. One run at a time is a
+   * hard rule below, and with more than one stem on offer the surface has to
+   * be able to say which of them is busy — otherwise every button reports the
+   * same progress.
+   */
+  const [transcribingStem, setTranscribingStem] = createSignal<{
+    sessionId: string
+    stemKind: GuitarNightStemKind
+  } | null>(null)
   let transcribeAbort: AbortController | null = null
 
   /**
@@ -366,6 +377,10 @@ export function useGuitarNightReferenceController(
     transcribeAbort = abort
     setImportStatus(null)
     setTranscribeProgress(0)
+    setTranscribingStem({
+      sessionId: input.sessionId,
+      stemKind: input.stemKind,
+    })
 
     try {
       const transcription = await loaded.transcribeStem(input.stemUrl, {
@@ -415,7 +430,10 @@ export function useGuitarNightReferenceController(
       // duplicate measurement to start on top of it.
       if (transcribeAbort === abort) {
         transcribeAbort = null
-        if (!disposed) setTranscribeProgress(null)
+        if (!disposed) {
+          setTranscribeProgress(null)
+          setTranscribingStem(null)
+        }
       }
     }
   }
@@ -424,6 +442,7 @@ export function useGuitarNightReferenceController(
     transcribeAbort?.abort()
     transcribeAbort = null
     setTranscribeProgress(null)
+    setTranscribingStem(null)
   }
 
   onMount(() => {
@@ -458,6 +477,7 @@ export function useGuitarNightReferenceController(
     importStatus,
     importPendingFileName,
     transcribeProgress,
+    transcribingStem,
     instrument,
     stringCount,
     tuning,

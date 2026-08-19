@@ -44,6 +44,7 @@ import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking } from './reference-port'
 import { readGuitarNightSession } from './session-link'
+import type { GuitarNightStemKind } from './song-port'
 import type { GuitarNightSongPort, GuitarNightSongSummary } from './song-port'
 import { GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
@@ -504,20 +505,37 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
   })
-  // Only the bass stem is offered: it is effectively monophonic, which is the
-  // case pitch detection actually handles. The guitar stem holds however many
-  // guitars the mix had and is often chordal, so it is not claimed here.
-  const transcribableStem = createMemo(() => {
+  // Bass was offered alone at first, because it is effectively monophonic and
+  // monophonic is the case pitch detection actually handles. Guitar is offered
+  // now on the same terms and with no special pleading: the reader is the same
+  // reader, and a stem holding two guitars and a chord will come back thin or
+  // come back with nothing — in which case `followStem` already says so and
+  // leaves the stage in free play. Nothing downstream needed changing;
+  // `followStem` has always tuned the stage by `stemKind`.
+  //
+  // Guitar leads the list because this is Guitar Night.
+  const TRANSCRIBABLE_STEMS: readonly {
+    kind: GuitarNightStemKind
+    label: string
+  }[] = [
+    { kind: 'guitar', label: 'Guitar' },
+    { kind: 'bass', label: 'Bass' },
+  ]
+  const transcribableStems = createMemo(() => {
     const backing = activeBacking()
-    if (backing === null) return null
-    const bass = backing.stems.find((stem) => stem.kind === 'bass')
-    if (bass === undefined) return null
-    return {
-      sessionId: backing.sessionId,
-      kind: bass.kind,
-      label: 'Bass',
-      url: bass.url,
-    }
+    if (backing === null) return []
+    return TRANSCRIBABLE_STEMS.flatMap((candidate) => {
+      const stem = backing.stems.find((each) => each.kind === candidate.kind)
+      if (stem === undefined) return []
+      return [
+        {
+          sessionId: backing.sessionId,
+          kind: stem.kind,
+          label: candidate.label,
+          url: stem.url,
+        },
+      ]
+    })
   })
 
   // The catalog is two libraries in one list. Only the device half is
@@ -1728,47 +1746,67 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   )}
                 </Show>
 
-                <Show when={transcribableStem()}>
-                  {(stem) => (
-                    <div class={styles.referenceActions}>
-                      <Switch>
-                        <Match
-                          when={
-                            referenceController.transcribeProgress() !== null
-                          }
-                        >
-                          <button
-                            type="button"
-                            class={styles.songListMore}
-                            onClick={referenceController.cancelFollowStem}
-                          >
-                            Reading the {stem().label.toLowerCase()} notes…{' '}
-                            {Math.round(
-                              (referenceController.transcribeProgress() ?? 0) *
-                                100,
-                            )}
-                            % · Stop
-                          </button>
-                        </Match>
-                        <Match when={true}>
-                          <button
-                            type="button"
-                            class={styles.songListMore}
-                            onClick={() =>
-                              void referenceController.followStem({
-                                sessionId: stem().sessionId,
-                                stemKind: stem().kind,
-                                stemLabel: stem().label,
-                                stemUrl: stem().url,
-                              })
+                <Show when={transcribableStems().length > 0}>
+                  <div class={styles.referenceActions}>
+                    <For each={transcribableStems()}>
+                      {(stem) => (
+                        <Switch>
+                          <Match
+                            when={
+                              referenceController.transcribingStem()
+                                ?.stemKind === stem.kind
                             }
                           >
-                            Transcribe the {stem().label.toLowerCase()} line
-                          </button>
-                        </Match>
-                      </Switch>
-                    </div>
-                  )}
+                            <button
+                              type="button"
+                              class={styles.songListMore}
+                              onClick={referenceController.cancelFollowStem}
+                            >
+                              Reading the {stem.label.toLowerCase()} notes…{' '}
+                              {Math.round(
+                                (referenceController.transcribeProgress() ??
+                                  0) * 100,
+                              )}
+                              % · Stop
+                            </button>
+                          </Match>
+                          <Match
+                            when={
+                              referenceController.transcribeProgress() !== null
+                            }
+                          >
+                            {/* One reader, one stem at a time — `followStem`
+                                returns early on a second call, and a button
+                                that silently does nothing is worse than one
+                                that says it cannot. */}
+                            <button
+                              type="button"
+                              class={styles.songListMore}
+                              disabled
+                            >
+                              Transcribe the {stem.label.toLowerCase()} line
+                            </button>
+                          </Match>
+                          <Match when={true}>
+                            <button
+                              type="button"
+                              class={styles.songListMore}
+                              onClick={() =>
+                                void referenceController.followStem({
+                                  sessionId: stem.sessionId,
+                                  stemKind: stem.kind,
+                                  stemLabel: stem.label,
+                                  stemUrl: stem.url,
+                                })
+                              }
+                            >
+                              Transcribe the {stem.label.toLowerCase()} line
+                            </button>
+                          </Match>
+                        </Switch>
+                      )}
+                    </For>
+                  </div>
                 </Show>
               </section>
 
