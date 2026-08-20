@@ -665,6 +665,32 @@
   gap: 0.4rem;
 }
 
+/* Ending a take sits beside Play, because it is the only way back to a room
+   whose setup a take has pinned. */
+.stopControl {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 50%;
+  color: var(--muted-readable);
+  background: rgba(244, 234, 219, 0.04);
+  cursor: pointer;
+}
+
+.stopControl:hover,
+.stopControl:focus-visible {
+  color: var(--ivory);
+  border-color: rgba(224, 164, 93, 0.45);
+  background: rgba(224, 164, 93, 0.1);
+}
+
+.stopControl svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* The part, and whether the sheet draws it: two decisions, two targets. */
 /* The sheet fills the stage the way the neck does, and scrolls inside itself
    rather than growing the page it sits on. */
@@ -678,7 +704,7 @@
 
 .sessionTrackRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0.4rem;
   align-items: stretch;
 }

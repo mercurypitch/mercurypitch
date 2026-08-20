@@ -42,6 +42,17 @@ interface GuitarNightScoreRoomControllerOptions {
   loop?: Accessor<LoopSpan | null>
   /** Which instrument the stage is showing, so the score sounds like it. */
   instrument?: Accessor<StringedInstrument>
+  /**
+   * The rest of the band: notes from every other part the player chose to
+   * hear, each already carrying its own timbre.
+   */
+  backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
+  /**
+   * Whether the scored part sounds when the player has not said either way.
+   * A tab with a band behind it hands that part to the player; a tab with one
+   * part keeps playing itself.
+   */
+  defaultHearScore?: Accessor<boolean>
   createBand?: () => GuitarRoomBand
   requestFrame?: (callback: () => void) => number
   cancelFrame?: (handle: number) => void
@@ -65,6 +76,8 @@ interface GuitarNightScoreRoomRunConfiguration {
   loop: LoopSpan | null
   hearScore: boolean
   melody: readonly GuitarRoomBandNote[]
+  /** Every other audible part, merged and already carrying its own timbre. */
+  backingMelody: readonly GuitarRoomBandNote[]
   melodyVariant: 'electric' | 'bass'
   exercisePulse: boolean
 }
@@ -200,7 +213,35 @@ export function useGuitarNightScoreRoomController(
     options.cancelFrame ?? ((handle: number) => cancelAnimationFrame(handle))
 
   const band = options.createBand?.() ?? createGuitarRoomBand()
-  const [configuredHearScore, setHearScore] = createSignal(true)
+  // Held against the part it was chosen for, so scoring a different part gets
+  // the default that suits it rather than the last part's answer.
+  const [hearScoreOverride, setHearScoreOverride] = createSignal<{
+    key: string
+    value: boolean
+  } | null>(null)
+  const referenceKey = createMemo(() => {
+    const current = options.reference()
+    return current === null ? '' : `${current.songId}:${current.trackId}`
+  })
+  const configuredHearScore = createMemo(() => {
+    const override = hearScoreOverride()
+    if (override !== null && override.key === referenceKey()) {
+      return override.value
+    }
+    return options.defaultHearScore?.() ?? true
+  })
+  const setHearScore = (
+    next: boolean | ((previous: boolean) => boolean),
+  ): void => {
+    const value =
+      typeof next === 'function' ? next(configuredHearScore()) : next
+    setHearScoreOverride({ key: referenceKey(), value })
+  }
+  /**
+   * The click. It used to run whenever the room did, with no way to quiet it —
+   * reported as "it plays in background and cannot be adjusted, muted etc."
+   */
+  const [hearClick, setHearClick] = createSignal(true)
   // A bass part played through a guitar voice reads as the wrong instrument
   // even when every note is right, so the tuning the room is already showing
   // decides the voice.
@@ -261,6 +302,10 @@ export function useGuitarNightScoreRoomController(
     () =>
       runningTake()?.durationBeats ?? scoreDurationBeats(options.reference()),
   )
+  // Deliberately not guarded by `takePinsSetup`: a completed take is reviewed
+  // against the score it actually sounded, not against whatever is loaded now.
+  // Reading a different part ends the take instead — see `stop` — which is what
+  // returns this to the live reference.
   const displayReference = createMemo(
     () => runningTake()?.reference ?? options.reference(),
   )
@@ -415,9 +460,16 @@ export function useGuitarNightScoreRoomController(
         mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
           ? scoreToBandMelody(reference)
           : [],
+      // The band follows the same rule as the score: never sounded into an
+      // open microphone, where the room's own playback becomes player evidence.
+      backingMelody:
+        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
+          ? [...(options.backingMelody?.() ?? [])]
+          : [],
       melodyVariant: configuredMelodyVariant(),
       exercisePulse:
-        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide),
+        (mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)) &&
+        hearClick(),
     }
   }
 
@@ -457,7 +509,7 @@ export function useGuitarNightScoreRoomController(
         // A tab room rehearses a written part, so it ticks rather than
         // grooving, and it sounds the part rather than something under it.
         feel: 'click',
-        melody: run.hearScore ? run.melody : [],
+        melody: [...(run.hearScore ? run.melody : []), ...run.backingMelody],
         melodyVariant: run.melodyVariant,
         exercisePulse: run.exercisePulse,
         onExerciseStart: (exerciseStartBeat, scheduledAtSeconds) => {
@@ -749,5 +801,8 @@ export function useGuitarNightScoreRoomController(
     /** Whether the room sounds the score. Takes effect on the next take. */
     hearScore,
     setHearScore,
+    /** Whether the click runs under the take. */
+    hearClick,
+    setHearClick,
   }
 }

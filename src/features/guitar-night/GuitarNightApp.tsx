@@ -2006,6 +2006,16 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       referenceController.sheetVisibleTrackIds
                     }
                     onToggleSheetTrack={referenceController.toggleSheetTrack}
+                    backingMelody={referenceController.backingMelodyNotes}
+                    defaultHearScore={
+                      referenceController.scoredPartDefaultsAudible
+                    }
+                    audibleBackingTrackIds={
+                      referenceController.audibleBackingTrackIds
+                    }
+                    onToggleBackingTrack={
+                      referenceController.toggleBackingTrack
+                    }
                   />
                 </Suspense>
               )}

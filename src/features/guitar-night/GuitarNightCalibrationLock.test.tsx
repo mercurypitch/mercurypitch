@@ -67,6 +67,7 @@ const scoreRoom = vi.hoisted(() => ({
   tempoBpm: vi.fn(() => 90),
   countInBeats: vi.fn(() => 4),
   hearScore: vi.fn(() => true),
+  hearClick: vi.fn(() => true),
   displayReference: vi.fn(() => REFERENCE),
   runningLoop: vi.fn(() => null),
   error: vi.fn(() => null),
@@ -77,6 +78,7 @@ const scoreRoom = vi.hoisted(() => ({
   setTempoBpm: vi.fn(),
   setCountInBeats: vi.fn(),
   setHearScore: vi.fn(),
+  setHearClick: vi.fn(),
   startAssessment: vi.fn<
     (range: {
       start: number
