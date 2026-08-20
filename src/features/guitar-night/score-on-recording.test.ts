@@ -5,9 +5,10 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BASS_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
+import { createScoreToAudioClock } from '@/lib/transcription/score-alignment'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
 import type { GuitarNightReferenceSource } from './reference-port'
-import { ALIGNMENT_TOLERANCE_SECONDS, alignScoreToRecording, scorableNotesFromTrack, scorableNotesFromTranscription, scoreOnRecording, } from './score-on-recording'
+import { ALIGNMENT_TOLERANCE_SECONDS, alignmentFromMarks, alignScoreToRecording, scorableNotesFromTrack, scorableNotesFromTranscription, scoreOnRecording, scoreSpanSeconds, } from './score-on-recording'
 
 /** A bass line: one note a beat, so a second at 60 BPM. */
 function bassSource(
@@ -419,5 +420,103 @@ describe('a written score and its own recording', () => {
         ALIGNMENT_TOLERANCE_SECONDS * 3,
       )
     }
+  })
+})
+
+describe('scoreSpanSeconds', () => {
+  it('finds where the part starts and ends on the score s clock', () => {
+    expect(scoreSpanSeconds(bassSource(), 'track-bass')).toEqual({
+      firstSeconds: 0,
+      lastSeconds: 39,
+    })
+  })
+
+  it('reads the span through the score s tempo map', () => {
+    const source = bassSource(120)
+    expect(scoreSpanSeconds(source, 'track-bass')?.lastSeconds).toBeCloseTo(
+      19.5,
+      6,
+    )
+  })
+
+  it('has no span for a track the score does not have', () => {
+    expect(scoreSpanSeconds(bassSource(), 'track-nope')).toBeNull()
+  })
+
+  it('has no span for a part with nothing in it', () => {
+    const source = bassSource()
+    const empty: GuitarNightReferenceSource = {
+      ...source,
+      tracks: [{ ...source.tracks[0], noteCount: 0, notes: [] }],
+    }
+    expect(scoreSpanSeconds(empty, 'track-bass')).toBeNull()
+  })
+})
+
+describe('alignmentFromMarks', () => {
+  const span = { firstSeconds: 0, lastSeconds: 40 }
+
+  it('has nothing to say before anything is marked', () => {
+    expect(alignmentFromMarks(span, {})).toBeNull()
+  })
+
+  it('ignores a mark that is not a number', () => {
+    expect(
+      alignmentFromMarks(span, { firstAudioSeconds: Number.NaN }),
+    ).toBeNull()
+  })
+
+  it('shifts the part when only its first note is marked', () => {
+    const alignment = alignmentFromMarks(span, { firstAudioSeconds: 3 })
+    expect(alignment?.anchors).toEqual([{ audioSeconds: 3, scoreSeconds: 0 }])
+    expect(
+      createScoreToAudioClock(alignment as ScoreAlignment)(10),
+    ).toBeCloseTo(13, 6)
+  })
+
+  it('pins from the other end when only the last note is marked', () => {
+    const alignment = alignmentFromMarks(span, { lastAudioSeconds: 44 })
+    expect(alignment?.anchors).toEqual([{ audioSeconds: 44, scoreSeconds: 40 }])
+  })
+
+  it('fixes the rate as well when both ends are marked', () => {
+    // The part is written across 40 seconds but takes 44 in the recording.
+    const alignment = alignmentFromMarks(span, {
+      firstAudioSeconds: 2,
+      lastAudioSeconds: 46,
+    })
+    const toAudio = createScoreToAudioClock(alignment as ScoreAlignment)
+    expect(toAudio(0)).toBeCloseTo(2, 6)
+    expect(toAudio(20)).toBeCloseTo(24, 6)
+    expect(toAudio(40)).toBeCloseTo(46, 6)
+  })
+
+  it('keeps the shift rather than stretching across two taps at once', () => {
+    const alignment = alignmentFromMarks(span, {
+      firstAudioSeconds: 3,
+      lastAudioSeconds: 3.4,
+    })
+    expect(alignment?.anchors).toHaveLength(1)
+  })
+
+  it('keeps the shift when the part itself is too short to rate', () => {
+    const alignment = alignmentFromMarks(
+      { firstSeconds: 0, lastSeconds: 0.5 },
+      { firstAudioSeconds: 3, lastAudioSeconds: 40 },
+    )
+    expect(alignment?.anchors).toHaveLength(1)
+  })
+
+  it('marks the result as somebody s decision, never a measurement', () => {
+    expect(alignmentFromMarks(span, { firstAudioSeconds: 1 })?.source).toBe(
+      'manual',
+    )
+    expect(alignmentFromMarks(span, { lastAudioSeconds: 1 })?.source).toBe(
+      'manual',
+    )
+    expect(
+      alignmentFromMarks(span, { firstAudioSeconds: 1, lastAudioSeconds: 41 })
+        ?.source,
+    ).toBe('manual')
   })
 })

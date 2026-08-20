@@ -229,3 +229,100 @@ export function scoreOnRecording(
     })),
   }
 }
+
+// ── Placing the anchors by hand ──────────────────────────────
+//
+// Phase 3. The matcher needs a transcription of this recording, and there is
+// not always one: a live version, a cover, a song whose stems were never
+// separated. A reader can still hang the part themselves, and the data shape
+// does not change — a marked moment is an anchor.
+//
+// Two marks rather than a scrub-and-drag surface, because two marks need no
+// new interaction: play to the part's first note and say so, play to its last
+// note and say so. That is the same gesture the room already uses to set a
+// loop's A and B, and it is enough to fix both the offset and the rate.
+
+/** Where a part's first and last notes fall on the score's own clock. */
+export interface ScoreSpanSeconds {
+  firstSeconds: number
+  lastSeconds: number
+}
+
+/** Moments in the recording a reader has marked, either or both. */
+export interface RecordingMarks {
+  firstAudioSeconds?: number
+  lastAudioSeconds?: number
+}
+
+/**
+ * Two marks closer together than this cannot fix a rate.
+ *
+ * They can still fix an offset, so the near-coincident case falls back to the
+ * first mark alone rather than being refused: a reader who taps twice by
+ * accident gets the shift they asked for, not an error and not a tab stretched
+ * across a rounding difference.
+ */
+const MIN_MARK_SPREAD_SECONDS = 1
+
+export function scoreSpanSeconds(
+  source: GuitarNightReferenceSource,
+  trackId: string,
+): ScoreSpanSeconds | null {
+  const track = source.tracks.find((candidate) => candidate.id === trackId)
+  if (track === undefined) return null
+  const notes = scorableNotesFromTrack(source, track)
+  const first = notes[0]
+  const last = notes[notes.length - 1]
+  if (first === undefined || last === undefined) return null
+  return { firstSeconds: first.startSeconds, lastSeconds: last.startSeconds }
+}
+
+/**
+ * An alignment from the moments a reader marked.
+ *
+ * One mark is a constant shift, which is all one point can claim. Two marks
+ * far enough apart give a rate as well, which is what a tab that drifts needs
+ * — and drift is the usual reason somebody is doing this by hand.
+ */
+export function alignmentFromMarks(
+  span: ScoreSpanSeconds,
+  marks: RecordingMarks,
+): ScoreAlignment | null {
+  const first = marks.firstAudioSeconds
+  const last = marks.lastAudioSeconds
+  const usableFirst = first !== undefined && Number.isFinite(first)
+  const usableLast = last !== undefined && Number.isFinite(last)
+  if (!usableFirst && !usableLast) return null
+
+  // A lone end mark still pins the part, just from the other end.
+  if (!usableFirst) {
+    return {
+      source: 'manual',
+      anchors: [
+        { audioSeconds: last as number, scoreSeconds: span.lastSeconds },
+      ],
+    }
+  }
+  const startAnchor = {
+    audioSeconds: first as number,
+    scoreSeconds: span.firstSeconds,
+  }
+  if (!usableLast) return { source: 'manual', anchors: [startAnchor] }
+
+  const spreadInRecording = (last as number) - (first as number)
+  const spreadInScore = span.lastSeconds - span.firstSeconds
+  if (
+    spreadInRecording < MIN_MARK_SPREAD_SECONDS ||
+    spreadInScore < MIN_MARK_SPREAD_SECONDS
+  ) {
+    return { source: 'manual', anchors: [startAnchor] }
+  }
+
+  return {
+    source: 'manual',
+    anchors: [
+      startAnchor,
+      { audioSeconds: last as number, scoreSeconds: span.lastSeconds },
+    ],
+  }
+}

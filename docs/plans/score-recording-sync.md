@@ -1,6 +1,6 @@
 # Hanging a tab on the record
 
-**Status:** phases 1 and 2 shipped. Phase 3 is designed, not built.
+**Status:** all three phases shipped.
 
 Asked for 2026-08-20:
 
@@ -118,16 +118,65 @@ one recording's alignment is not a property of the score, and two recordings of
 the same song would fight over it. Persisting it across sessions is a small,
 separate change and is worth doing only once a reader asks for it twice.
 
-## 4. Phase 3 (later) — anchors a person can place
+## 4. Phase 3 — anchors a person can place — **shipped**
 
-Per-measure anchors that a reader can drag, for recordings the matcher cannot
-measure: a live version, a cover, a song with no separated stems. The data
-shape does not change — a dragged anchor is an anchor — so this is a surface,
-not a rebuild.
+The matcher needs a transcription of this recording, and there is not always
+one: a live version, a cover, a song whose stems were never separated. Before
+this, an attached tab in the play-along room could only say out loud that it
+"keeps its own BPM" and could not follow the record. That note is what phase 3
+replaces.
+
+**The gesture is the loop's gesture,** because the room already taught it: play
+to a moment and say "here". Two moments — the part's first note and its last —
+fix both where the part starts and how fast the recording runs against it. One
+mark alone is a constant shift, which is all one point can honestly claim.
+
+**A nudge, once it is placed.** Sliding something that is not there yet means
+nothing, so the nudge appears only after the part is on the recording. It moves
+every anchor together, so a measured drift survives rather than being flattened
+by it — and the result is marked as hand-placed, because it is now somebody's
+decision.
+
+**No made-up confidence.** A hand placement has no share of the part confirmed
+by anything, and the type says so: `placedBy: 'measured'` carries a
+`matchedFraction`, `placedBy: 'hand'` has no such field. The copy cannot
+quietly print 0% for a part the reader placed themselves.
+
+**Two ways in.** The offer stands next to an attached tab whenever a recording
+is staged, which is the case the room's own copy admitted was broken. It also
+appears as a fallback the moment the matcher refuses a score, naming the score
+already chosen rather than making the reader choose again.
+
+**Coming back means going back to what you had.** A part hung over a stem
+measurement returns to the line the transcriber heard; one hung by hand on an
+attached tab returns to that tab, on its own clock.
+
+**What landed where**
+
+| Piece                                         | File                                             |
+| --------------------------------------------- | ------------------------------------------------ |
+| The span of a part, and marks into anchors    | `score-on-recording.ts`                          |
+| Claim a part, mark, clear, nudge              | `useGuitarNightReferenceController.ts`           |
+| The controls, in the room that owns the clock | `GuitarNightHandSync.tsx`, `GuitarNightRoom.tsx` |
+| The offer, and the fallback after a refusal   | `GuitarNightOnRecording.tsx`                     |
+
+**Still to come:** per-measure anchors rather than two ends. The data shape does
+not change — a dragged anchor is an anchor — so it stays a surface question,
+and two ends is enough to fix both the offset and the rate.
 
 ## 5. Testing
 
-`score-alignment.test.ts` covers the module at 100% of statements, branches,
-functions and lines, including round-tripping an instant through both clocks,
-the backwards-anchor drop, and that a nudge preserves measured drift. The Lab
-rewiring is covered by the existing bench tests, which pass unchanged.
+`score-alignment.test.ts` covers the alignment module at 100% of statements,
+branches, functions and lines, including round-tripping an instant through both
+clocks, the backwards-anchor drop, and that a nudge preserves measured drift.
+The Lab rewiring is covered by the existing bench tests, which pass unchanged.
+
+`score-on-recording.test.ts` covers measuring and placing at 100%, including a
+round trip: measure a written line against a recording of itself that runs 2%
+fast and starts 1.5s late, place it, and assert every placed note lands within
+tolerance of the note actually heard at that moment.
+
+`GuitarNightHandSync.test.tsx` and `GuitarNightOnRecording.test.tsx` cover both
+surfaces at 100%, and `guitar-night-hand-sync.spec.ts` walks the whole thing in
+a browser: attach a tab, stage a recording, claim the part, mark it, nudge it,
+clear it.

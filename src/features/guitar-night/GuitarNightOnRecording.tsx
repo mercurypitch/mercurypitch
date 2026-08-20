@@ -15,11 +15,16 @@ import { For, Show } from 'solid-js'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarNightReferenceSummary } from './reference-port'
 
-/** What was hung, and how well it fit. */
-export interface OnRecordingReading {
-  matchedFraction: number
-  driftSeconds: number
-}
+/**
+ * What was hung, and how well it fit.
+ *
+ * A union rather than a nullable share, because a hand-placed alignment has no
+ * such number at all. Making the two shapes distinct means the copy can never
+ * quietly print a made-up 0% for a part the reader placed themselves.
+ */
+export type OnRecordingReading =
+  | { placedBy: 'measured'; matchedFraction: number; driftSeconds: number }
+  | { placedBy: 'hand'; driftSeconds: number }
 
 export interface GuitarNightOnRecordingProps {
   /** The scores that could be hung on this recording. */
@@ -29,7 +34,12 @@ export interface GuitarNightOnRecordingProps {
   /** Whether a recording is being read at all — an authored tab is not one. */
   offer: boolean
   status: string | null
+  /** The score the matcher refused, offered for hand placement instead. */
+  fallback: { songId: string; title: string } | null
+  /** True once a part has been claimed for hand placement but not yet marked. */
+  placingByHand: boolean
   onRead(songId: string): void
+  onPlaceByHand(songId: string): void
   onStop(): void
 }
 
@@ -40,6 +50,19 @@ export interface GuitarNightOnRecordingProps {
  */
 const DRIFT_WORTH_SAYING_SECONDS = 1
 
+/** What was hung and how, in one line. */
+function placementLine(reading: OnRecordingReading): string {
+  const placed =
+    reading.placedBy === 'hand'
+      ? 'Written part, placed on this recording by hand'
+      : `Written part, placed on this recording · ${Math.round(reading.matchedFraction * 100)}% of it was heard here`
+  const drift =
+    reading.driftSeconds >= DRIFT_WORTH_SAYING_SECONDS
+      ? `, and the two drift ${reading.driftSeconds.toFixed(1)}s apart end to end`
+      : ''
+  return `${placed}${drift}.`
+}
+
 export const GuitarNightOnRecording: Component<GuitarNightOnRecordingProps> = (
   props,
 ) => (
@@ -47,14 +70,7 @@ export const GuitarNightOnRecording: Component<GuitarNightOnRecordingProps> = (
     <Show when={props.reading}>
       {(reading) => (
         <div class={styles.referenceOnRecording}>
-          <small>
-            Written part, placed on this recording ·{' '}
-            {Math.round(reading().matchedFraction * 100)}% of it was heard here
-            {reading().driftSeconds >= DRIFT_WORTH_SAYING_SECONDS
-              ? `, and the two drift ${reading().driftSeconds.toFixed(1)}s apart end to end`
-              : ''}
-            .
-          </small>
+          <small>{placementLine(reading())}</small>
           <button
             type="button"
             class={styles.referenceOnRecordingBack}
@@ -97,6 +113,24 @@ export const GuitarNightOnRecording: Component<GuitarNightOnRecordingProps> = (
       {(status) => (
         <small class={styles.referenceOnRecordingProblem}>{status()}</small>
       )}
+    </Show>
+
+    <Show when={props.fallback}>
+      {(fallback) => (
+        <button
+          type="button"
+          class={styles.referenceOnRecordingButton}
+          onClick={() => props.onPlaceByHand(fallback().songId)}
+        >
+          Place {fallback().title} by hand instead
+        </button>
+      )}
+    </Show>
+
+    <Show when={props.placingByHand}>
+      <small>
+        Enter the room and mark the part’s first note against the recording.
+      </small>
     </Show>
   </>
 )

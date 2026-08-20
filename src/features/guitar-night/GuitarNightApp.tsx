@@ -39,6 +39,7 @@ import type { GuitarNightLearnActivityId } from './GuitarNightLearnActivity'
 import { guitarNightLearnTuningLabel } from './GuitarNightLearnActivity'
 import { GuitarNightLearnShelf } from './GuitarNightLearnShelf'
 import { GuitarNightOnRecording } from './GuitarNightOnRecording'
+import type { GuitarNightRoomHandSync } from './GuitarNightRoom'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
 import type { GuitarNightPreparationPort } from './preparation-port'
@@ -289,6 +290,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         ? loadDefaultGuitarNightTranscriptionPort()
         : configuredLoader()
     },
+    // `activeBacking` is declared below and this only ever runs from a reader's
+    // gesture, long after setup, so the closure is safe.
+    backingSessionId: () => activeBacking()?.sessionId ?? null,
   })
   // A focused Learn activity owns one immutable tuning snapshot. Returning to
   // the room is the only point where a later tab, tuner, or instrument change
@@ -502,6 +506,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       activeBacking()?.sessionId ?? null,
     ),
   )
+  /**
+   * The room's half of hanging a part by hand.
+   *
+   * Only the room has the recording's clock, so only the room can turn "here"
+   * into a moment. Absent until a reader claims a part to place.
+   */
+  const handSync = createMemo<GuitarNightRoomHandSync | null>(() => {
+    const placing = referenceController.handPlacement()
+    if (placing === null) return null
+    const reading = referenceController.readingOnRecording()
+    return {
+      partName: placing.trackName,
+      firstMarkSeconds: placing.marks.firstAudioSeconds ?? null,
+      lastMarkSeconds: placing.marks.lastAudioSeconds ?? null,
+      placed: reading !== null && reading.placedBy === 'hand',
+      onMark: referenceController.markScoreOnRecording,
+      onClear: referenceController.clearHandPlacement,
+      onNudge: referenceController.nudgeScoreOnRecording,
+    }
+  })
   const unavailableSelection = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
@@ -1636,15 +1660,34 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           <small>
                             This tab keeps its own {attached().tempoBpm} BPM, so
                             it rehearses in the tab room rather than over the
-                            backing. Measure a stem of this recording and the
-                            written part can be hung on it.
+                            backing — until it is hung on this recording.
                           </small>
+                          <button
+                            type="button"
+                            class={styles.referenceOnRecordingButton}
+                            onClick={() =>
+                              void referenceController.placeScoreByHand(
+                                attached().songId,
+                                attached().trackId,
+                              )
+                            }
+                          >
+                            Place it on this recording by hand
+                          </button>
                         </Show>
                         <GuitarNightOnRecording
                           scores={referenceController.alignableScores()}
                           reading={referenceController.readingOnRecording()}
                           offer={attached().kind === 'measured'}
                           status={referenceController.alignStatus()}
+                          fallback={referenceController.handFallback()}
+                          placingByHand={
+                            referenceController.handPlacement() !== null &&
+                            referenceController.readingOnRecording() === null
+                          }
+                          onPlaceByHand={(songId) =>
+                            void referenceController.placeScoreByHand(songId)
+                          }
                           onRead={(songId) =>
                             void referenceController.readScoreOnRecording(
                               songId,
@@ -1981,6 +2024,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 authoredReference={authoredReference}
                 onRehearseTab={enterScoreRoom}
                 onAttachTab={returnToSongs}
+                handSync={handSync}
                 // Withheld for the demo. "Separate guitar" reconnects to a
                 // durable separation record and then bills a cloud GPU
                 // split against it; the demo has never had one, so the

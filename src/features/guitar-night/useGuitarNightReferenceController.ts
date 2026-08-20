@@ -6,10 +6,12 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
+import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
 import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
-import { alignScoreToRecording, scoreOnRecording } from './score-on-recording'
+import type { RecordingMarks } from './score-on-recording'
+import { alignmentFromMarks, alignScoreToRecording, scoreOnRecording, scoreSpanSeconds, } from './score-on-recording'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
 import { playableSheetTracks, sheetLaneFromReference, sheetLanesFromSource, } from './sheet/sheet-lanes'
 import type { SheetLane } from './sheet/sheet-model'
@@ -44,18 +46,41 @@ const ALIGN_FAILURE_COPY: Record<string, string> = {
     'Too little of that part was heard in this recording to place it honestly.',
 }
 
-/** A written score hung on a recording, and the evidence for the fit. */
-interface ReadingOnRecording {
+/**
+ * A written score hung on a recording, and the evidence for the fit.
+ *
+ * The share of the part the recording confirmed exists only where something
+ * measured it. A hand placement has no such number, and the union says so
+ * rather than carrying a null that every reader of it has to defend against.
+ */
+type ReadingOnRecording = {
   songId: string
   trackId: string
   alignment: ScoreAlignment
-  matchedFraction: number
   driftSeconds: number
+} & ({ placedBy: 'measured'; matchedFraction: number } | { placedBy: 'hand' })
+
+/** A part being hung by hand, and the moments marked in the recording so far. */
+export interface HandPlacement {
+  songId: string
+  trackId: string
+  /** Named so the room can say which part the marks belong to. */
+  trackName: string
+  marks: RecordingMarks
 }
 
 interface GuitarNightReferenceControllerOptions {
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
   loadTranscriptionPort?: () => Promise<GuitarNightTranscriptionPort>
+  /**
+   * The recording staged right now, when one is.
+   *
+   * A part hung on a recording has to name the recording it was hung on, or
+   * the room drops it the moment a different song is staged. A measurement
+   * carries its own session; a hand placement has no measurement to carry one,
+   * so it takes it from here.
+   */
+  backingSessionId?: () => string | null
 }
 
 export async function loadDefaultGuitarNightTranscriptionPort(): Promise<GuitarNightTranscriptionPort> {
@@ -306,6 +331,19 @@ export function useGuitarNightReferenceController(
   const [readingOnRecording, setReadingOnRecording] =
     createSignal<ReadingOnRecording | null>(null)
   const [alignStatus, setAlignStatus] = createSignal<string | null>(null)
+  const [handPlacement, setHandPlacement] = createSignal<HandPlacement | null>(
+    null,
+  )
+  /**
+   * The score a reader tried to hang and the matcher refused.
+   *
+   * Offered as a hand placement at exactly the moment they need it, naming the
+   * score they already chose rather than making them choose again.
+   */
+  const [handFallback, setHandFallback] = createSignal<{
+    songId: string
+    title: string
+  } | null>(null)
 
   /** Scores in the library that could be hung on the recording being read. */
   const alignableScores = createMemo<readonly GuitarNightReferenceSummary[]>(
@@ -413,6 +451,7 @@ export function useGuitarNightReferenceController(
 
     if (result.ok) {
       lastMeasured = null
+      setMeasuredForAlignment(null)
       // Remember the visible track so the same part returns next time, in
       // Guitar Night and in the legacy tab that shares this library.
       loadedPort.rememberTrack(normalizedSongId, result.reference.trackId)
@@ -457,6 +496,8 @@ export function useGuitarNightReferenceController(
     lastMeasured = null
     setMeasuredForAlignment(null)
     setReadingOnRecording(null)
+    setHandPlacement(null)
+    setHandFallback(null)
     setAlignStatus(null)
     tunedForTrack = null
     setSourceTuning(null)
@@ -479,12 +520,16 @@ export function useGuitarNightReferenceController(
     nextTuning: InstrumentTuning,
   ): GuitarNightReference | null => {
     const source = port()?.readSource(written.songId) ?? null
+    if (source === null) return null
     const measured = measuredForAlignment()
-    if (source === null || measured === null) return null
+    const sessionId =
+      measured?.sessionId ?? options.backingSessionId?.() ?? null
     return scoreOnRecording(source, written.trackId, written.alignment, {
       tuning: nextTuning,
-      backingSessionId: measured.sessionId,
-      recordingLabel: `this ${measured.stemLabel.toLowerCase()}`,
+      ...(sessionId === null ? {} : { backingSessionId: sessionId }),
+      ...(measured === null
+        ? {}
+        : { recordingLabel: `this ${measured.stemLabel.toLowerCase()}` }),
     })
   }
 
@@ -518,6 +563,7 @@ export function useGuitarNightReferenceController(
     const result = alignScoreToRecording(source, part, measured.transcription)
     if (!result.ok) {
       setAlignStatus(ALIGN_FAILURE_COPY[result.code])
+      setHandFallback({ songId, title: source.name })
       return
     }
 
@@ -527,27 +573,156 @@ export function useGuitarNightReferenceController(
       alignment: result.fit.alignment,
       matchedFraction: result.fit.matchedFraction,
       driftSeconds: result.fit.driftSeconds,
+      placedBy: 'measured',
     }
+    if (!showWrittenOnRecording(written)) return
+    setHandPlacement(null)
+    setHandFallback(null)
+  }
+
+  /**
+   * Place the reference for a reading, or say why it could not be placed.
+   *
+   * Every path that changes the alignment goes through here — measuring,
+   * marking, nudging — so a reader always sees the tab move the moment they
+   * change anything, and a failure to place never leaves a stale tab claiming
+   * to be somewhere it is not.
+   */
+  const showWrittenOnRecording = (written: ReadingOnRecording): boolean => {
     const placed = placeWrittenOnRecording(written, tuning())
     if (placed === null) {
       setAlignStatus('That part could not be placed on this instrument.')
-      return
+      return false
     }
     setReadingOnRecording(written)
     setAlignStatus(null)
     setState({ kind: 'ready', reference: placed })
+    return true
   }
 
-  /** Back to the line the transcriber heard, rather than the one written. */
+  /**
+   * Start hanging a part by hand, for a recording nothing measured.
+   *
+   * Nothing moves yet: the reader has claimed a part but has not said where it
+   * goes, and guessing here would put a tab on screen that nobody placed.
+   */
+  const placeScoreByHand = async (
+    songId: string,
+    trackId?: string,
+  ): Promise<void> => {
+    const loaded = await ensurePort()
+    if (loaded === null || disposed) return
+    const source = loaded.readSource(songId)
+    if (source === null) {
+      setAlignStatus('That score is no longer in the library.')
+      return
+    }
+    const part = trackId ?? source.scoreTrackId
+    if (scoreSpanSeconds(source, part) === null) {
+      setAlignStatus('That part has no notes to place.')
+      return
+    }
+    setHandPlacement({
+      songId,
+      trackId: part,
+      trackName:
+        source.tracks.find((candidate) => candidate.id === part)?.name ?? part,
+      marks: {},
+    })
+    setHandFallback(null)
+    setAlignStatus(null)
+  }
+
+  /**
+   * Pin a written moment to the moment of the recording now playing.
+   *
+   * One mark shifts the part; a second, far enough from the first, fixes its
+   * rate as well — which is the usual reason somebody is doing this by hand.
+   */
+  const markScoreOnRecording = (
+    end: 'first' | 'last',
+    audioSeconds: number,
+  ): void => {
+    const placing = handPlacement()
+    if (placing === null) return
+    const source = port()?.readSource(placing.songId) ?? null
+    const span =
+      source === null ? null : scoreSpanSeconds(source, placing.trackId)
+    if (span === null) {
+      setAlignStatus('That score is no longer in the library.')
+      return
+    }
+
+    const marks: RecordingMarks = {
+      ...placing.marks,
+      ...(end === 'first'
+        ? { firstAudioSeconds: audioSeconds }
+        : { lastAudioSeconds: audioSeconds }),
+    }
+    setHandPlacement({ ...placing, marks })
+
+    const alignment = alignmentFromMarks(span, marks)
+    if (alignment === null) return
+    showWrittenOnRecording({
+      songId: placing.songId,
+      trackId: placing.trackId,
+      alignment,
+      driftSeconds: alignmentDriftSeconds(alignment),
+      placedBy: 'hand',
+    })
+  }
+
+  /** Forget the marks, and the tab they placed. */
+  const clearHandPlacement = (): void => {
+    const placing = handPlacement()
+    if (placing === null) return
+    setHandPlacement({ ...placing, marks: {} })
+    if (readingOnRecording()?.placedBy === 'hand') stopReadingOnRecording()
+  }
+
+  /**
+   * Slide the whole tab along the recording.
+   *
+   * The knob for "right, but late". A measured drift survives the nudge rather
+   * than being flattened by it, and the result is marked as hand-placed
+   * because it is now somebody's decision.
+   */
+  const nudgeScoreOnRecording = (deltaSeconds: number): void => {
+    const written = readingOnRecording()
+    if (written === null) return
+    const alignment = nudgeAlignment(written.alignment, deltaSeconds)
+    // Built rather than spread: a nudged reading is hand-placed, and spreading
+    // would carry the measured share along as if it still described this.
+    showWrittenOnRecording({
+      songId: written.songId,
+      trackId: written.trackId,
+      alignment,
+      driftSeconds: alignmentDriftSeconds(alignment),
+      placedBy: 'hand',
+    })
+  }
+
+  /**
+   * Take the written part back off the recording.
+   *
+   * Where it goes depends on what was there first. A part hung over a stem
+   * measurement goes back to the line the transcriber heard; one hung by hand
+   * on an attached tab goes back to that tab, on its own clock. Both are a
+   * return to what the reader had, which is the only thing "back" can mean.
+   */
   const stopReadingOnRecording = (): void => {
-    const measured = measuredForAlignment()
-    if (measured === null) return
+    const written = readingOnRecording()
     setReadingOnRecording(null)
     setAlignStatus(null)
-    setState({
-      kind: 'ready',
-      reference: measuredReferenceFromTranscription(measured, tuning()),
-    })
+    const measured = measuredForAlignment()
+    if (measured !== null) {
+      setState({
+        kind: 'ready',
+        reference: measuredReferenceFromTranscription(measured, tuning()),
+      })
+      return
+    }
+    if (written !== null) void attach(written.songId, written.trackId, 'none')
   }
 
   const replaceOnCurrentInstrument = (nextTuning: InstrumentTuning): void => {
@@ -710,6 +885,8 @@ export function useGuitarNightReferenceController(
       // so the library is loaded now rather than when the reader goes looking.
       void ensurePort()
       setReadingOnRecording(null)
+      setHandPlacement(null)
+      setHandFallback(null)
       setAlignStatus(null)
       // The stem names the instrument outright, so no guessing is needed.
       tunedForTrack = `${input.sessionId}:${input.stemKind}`
@@ -789,6 +966,12 @@ export function useGuitarNightReferenceController(
     alignStatus,
     readScoreOnRecording,
     stopReadingOnRecording,
+    handPlacement,
+    handFallback,
+    placeScoreByHand,
+    markScoreOnRecording,
+    clearHandPlacement,
+    nudgeScoreOnRecording,
     sheetVisibleTrackIds,
     toggleSheetTrack,
     secondaryLane,
