@@ -114,6 +114,8 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/guitar-night.html',
   '/piano-night',
   '/piano-night.html',
+  '/drum-night',
+  '/drum-night.html',
   // Jam is the one entry that boots the SHARED studio rather than a mini-app,
   // so the shell would at least be the right product. It still belongs here:
   // the shell is cached under '/', which carries no '#/jam', so the visitor

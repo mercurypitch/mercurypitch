@@ -90,12 +90,17 @@ describe('standalone entry routing', () => {
     }
   })
 
-  it('leaves Piano Night document paths unchanged for Cloudflare Assets', async () => {
-    // Piano Night needs no Worker rewrite: Cloudflare Assets resolves the
+  it('leaves standalone instrument-night paths unchanged for Cloudflare Assets', async () => {
+    // Instrument Nights need no Worker rewrite: Cloudflare Assets resolves the
     // clean path through html_handling and serves the emitted HTML file
     // directly. If either request reaches the Worker anyway, preserving its
     // path and query is what keeps the asset layer authoritative.
-    for (const path of ['/piano-night', '/piano-night.html']) {
+    for (const path of [
+      '/piano-night',
+      '/piano-night.html',
+      '/drum-night',
+      '/drum-night.html',
+    ]) {
       const { env, fetch } = entryEnv()
       const response = await worker.fetch(
         new Request(
