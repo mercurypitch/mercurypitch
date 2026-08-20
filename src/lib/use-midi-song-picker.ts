@@ -8,7 +8,7 @@
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { MidiSongNote } from '@/lib/midi-song'
-import { defaultScoreTrack, parseMidiSong } from '@/lib/midi-song'
+import { defaultScoreTrack, isPitchedMidiSongTrack, parseMidiSong, } from '@/lib/midi-song'
 import { getAllMelodies } from '@/stores/melody-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { deleteMidiSong, savedMidiSongs, saveMidiSong, updateMidiSongSelection, } from '@/stores/saved-midi-songs-store'
@@ -149,11 +149,21 @@ export function useMidiSongPicker<T>(
   }
 
   const loadSavedSong = (song: SavedMidiSong, isTrackChange = false) => {
-    const scoreTrack =
-      song.tracks.find((t) => t.id === song.scoreTrackId) ?? song.tracks[0]
+    const remembered = song.tracks.find(
+      (track) =>
+        track.id === song.scoreTrackId && isPitchedMidiSongTrack(track),
+    )
+    const scoreTrack = remembered ?? defaultScoreTrack(song)
+    if (scoreTrack === null) {
+      setSelectedId(opts.currentSong()?.id ?? null)
+      setImportStatus(
+        `Imported: ${song.name} — drum parts are preserved, but this pitch view cannot play them`,
+      )
+      return
+    }
     const backing: T[] = []
     for (const t of song.tracks) {
-      if (t.id === scoreTrack.id) continue
+      if (t.id === scoreTrack.id || !isPitchedMidiSongTrack(t)) continue
       backing.push(...opts.fromBackingNotes(t.notes, t.id))
     }
     const mutedIds = song.tracks
@@ -188,7 +198,7 @@ export function useMidiSongPicker<T>(
   }
 
   const openTrackModal = (song: SavedMidiSong) => {
-    setPendingScoreId(song.scoreTrackId)
+    setPendingScoreId(song.scoreTrackId ?? '')
     setPendingBackingIds(new Set(song.backingTrackIds))
     setTrackModalSong(song)
   }
@@ -212,6 +222,13 @@ export function useMidiSongPicker<T>(
     const song = trackModalSong()
     if (!song) return
     const scoreId = pendingScoreId()
+    const scoreTrack = song.tracks.find(
+      (track) => track.id === scoreId && isPitchedMidiSongTrack(track),
+    )
+    if (scoreTrack === undefined) {
+      setImportStatus('Choose a pitched track to score before loading')
+      return
+    }
     const backingIds = [...pendingBackingIds()].filter((id) => id !== scoreId)
     const updated: SavedMidiSong = {
       ...song,
@@ -227,10 +244,17 @@ export function useMidiSongPicker<T>(
   const selectScoreTrack = (trackId: string) => {
     const song = opts.currentSong()
     if (!song || song.scoreTrackId === trackId) return
+    const nextScore = song.tracks.find(
+      (track) => track.id === trackId && isPitchedMidiSongTrack(track),
+    )
+    if (nextScore === undefined) {
+      setImportStatus('Drum parts cannot be scored on a pitch lane')
+      return
+    }
 
     const oldScoreId = song.scoreTrackId
     const newBacking = new Set(song.backingTrackIds)
-    newBacking.add(oldScoreId)
+    if (oldScoreId !== null) newBacking.add(oldScoreId)
     newBacking.delete(trackId)
 
     const backingTrackIds = [...newBacking]
@@ -284,9 +308,9 @@ export function useMidiSongPicker<T>(
         const name = file.name.replace(/\.(mid|midi)$/i, '')
         const score = defaultScoreTrack(song)
         const backingIds = song.tracks
-          .filter((t) => t.id !== score.id)
+          .filter((t) => t.id !== score?.id)
           .map((t) => t.id)
-        saved = saveMidiSong(name, song, score.id, backingIds)
+        saved = saveMidiSong(name, song, score?.id ?? null, backingIds)
       }
 
       if (!isCurrentInjectedImport()) return
@@ -295,7 +319,9 @@ export function useMidiSongPicker<T>(
         return
       }
 
-      if (saved.tracks.length > 1) {
+      if (saved.scoreTrackId === null) {
+        loadSavedSong(saved)
+      } else if (saved.tracks.length > 1) {
         // Let the user pick which track to practice before loading
         openTrackModal(saved)
       } else {

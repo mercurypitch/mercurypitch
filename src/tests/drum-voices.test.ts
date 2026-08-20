@@ -279,9 +279,13 @@ describe('DRUM_LANES', () => {
   })
 
   it('drumVoiceForMidi resolves lanes and returns null for unknown numbers', () => {
+    expect(drumVoiceForMidi(35)).toBe('kick')
     expect(drumVoiceForMidi(36)).toBe('kick')
+    expect(drumVoiceForMidi(40)).toBe('snare')
+    expect(drumVoiceForMidi(43)).toBe('tom-low')
+    expect(drumVoiceForMidi(53)).toBe('ride')
     expect(drumVoiceForMidi(51)).toBe('ride')
-    expect(drumVoiceForMidi(40)).toBeNull()
+    expect(drumVoiceForMidi(54)).toBeNull()
     expect(drumVoiceForMidi(0)).toBeNull()
     expect(DRUM_LANE_BY_MIDI.get(42)?.label).toBe('Closed Hat')
   })

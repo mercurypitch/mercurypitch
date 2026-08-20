@@ -2,6 +2,7 @@
 // ============================================================
 
 import { activateAudioPlayback } from '@/lib/audio-unlock'
+import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { triggerDrumVoice } from '@/lib/drum-voices'
 import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
@@ -40,6 +41,17 @@ export interface GuitarRoomBandNote {
    * one list; one variant for the lot would play the guitars on a bass.
    */
   variant?: GuitarVariant
+}
+
+/** One authored drum attack, kept separate from pitched score notes. */
+export interface GuitarRoomBandPercussionHit {
+  /** Source track identity retained so one part can be muted on the live bus. */
+  trackId: string
+  /** Bounded General MIDI percussion identity, never a sounding pitch. */
+  gmKey: number
+  startBeat: number
+  /** Authored attack intensity, 1–127. */
+  velocity: number
 }
 
 /** One exercise pulse exposed while it is inside the Web Audio look-ahead. */
@@ -110,6 +122,10 @@ export interface GuitarRoomBandStartOptions {
    * rehearsing a part.
    */
   melody?: readonly GuitarRoomBandNote[]
+  /** Authored one-shot drums, scheduled on the same score clock as melody. */
+  percussion?: readonly GuitarRoomBandPercussionHit[]
+  /** Initial live-bus state. Omitted means every supplied drum track sounds. */
+  audiblePercussionTrackIds?: readonly string[]
   melodyVariant?: GuitarVariant
   /** `scheduledAtSeconds` is the authoritative time on this band's context. */
   onBeat?(
@@ -133,6 +149,8 @@ export interface GuitarRoomBandStartResult {
 
 export interface GuitarRoomBand {
   start(options: GuitarRoomBandStartOptions): Promise<GuitarRoomBandStartResult>
+  /** Change one authored drum part's run-scoped gate without restarting time. */
+  setPercussionTrackAudible(trackId: string, audible: boolean): void
   /**
    * Bring the audio graph up without scheduling a beat. A room that offers
    * microphone input before the click starts needs a live context to analyse
@@ -166,6 +184,21 @@ export function groupNotesByBeat(
     const bucket = byBeat.get(beat)
     if (bucket === undefined) byBeat.set(beat, [note])
     else bucket.push(note)
+  }
+  return byBeat
+}
+
+/** Drum attacks bucketed independently so they can never enter pitch voices. */
+export function groupPercussionHitsByBeat(
+  percussion: readonly GuitarRoomBandPercussionHit[],
+): Map<number, GuitarRoomBandPercussionHit[]> {
+  const byBeat = new Map<number, GuitarRoomBandPercussionHit[]>()
+  for (const hit of percussion) {
+    if (!Number.isFinite(hit.startBeat) || hit.startBeat < 0) continue
+    const beat = Math.floor(hit.startBeat)
+    const bucket = byBeat.get(beat)
+    if (bucket === undefined) byBeat.set(beat, [hit])
+    else bucket.push(hit)
   }
   return byBeat
 }
@@ -280,7 +313,11 @@ export function createGuitarRoomBand(
   let graph: GuitarSessionAudioGraph | null = null
   let interval: number | null = null
   let generation = 0
-  let runOutput: { guide: GainNode; drums: GainNode } | null = null
+  let runOutput: {
+    guide: GainNode
+    drums: GainNode
+    percussionTracks: Map<string, GainNode>
+  } | null = null
   const callbackTimers = new Set<number>()
 
   const ensureGraph = (): GuitarSessionAudioGraph => {
@@ -313,12 +350,22 @@ export function createGuitarRoomBand(
       const now = context?.currentTime ?? 0
       output.guide.gain.setValueAtTime(0, now)
       output.drums.gain.setValueAtTime(0, now)
+      for (const trackOutput of output.percussionTracks.values()) {
+        trackOutput.gain.setValueAtTime(0, now)
+        trackOutput.disconnect()
+      }
       output.guide.disconnect()
       output.drums.disconnect()
     }
   }
 
   return {
+    setPercussionTrackAudible(trackId, audible) {
+      const trackOutput = runOutput?.percussionTracks.get(trackId)
+      if (trackOutput === undefined || context === null) return
+      trackOutput.gain.setValueAtTime(audible ? 1 : 0, context.currentTime)
+    },
+
     async activate() {
       const currentGraph = ensureGraph()
       try {
@@ -348,7 +395,26 @@ export function createGuitarRoomBand(
       drumsOutput.gain.value = 1
       guideOutput.connect(currentGraph.buses.guide)
       drumsOutput.connect(currentGraph.buses.drums)
-      runOutput = { guide: guideOutput, drums: drumsOutput }
+      const percussionTrackOutputs = new Map<string, GainNode>()
+      const initiallyAudibleTracks = startOptions.audiblePercussionTrackIds
+      for (const hit of startOptions.percussion ?? []) {
+        if (hit.trackId === '' || percussionTrackOutputs.has(hit.trackId)) {
+          continue
+        }
+        const trackOutput = currentGraph.context.createGain()
+        trackOutput.gain.value =
+          initiallyAudibleTracks === undefined ||
+          initiallyAudibleTracks.includes(hit.trackId)
+            ? 1
+            : 0
+        trackOutput.connect(drumsOutput)
+        percussionTrackOutputs.set(hit.trackId, trackOutput)
+      }
+      runOutput = {
+        guide: guideOutput,
+        drums: drumsOutput,
+        percussionTracks: percussionTrackOutputs,
+      }
 
       const tempoBpm = resolveGuitarRoomBandTempoBpm(startOptions.tempoBpm)
       const openingBeatSeconds = 60 / tempoBpm
@@ -384,6 +450,9 @@ export function createGuitarRoomBand(
         inputTimingWindowSeconds + 0.03,
       )
       const notesByBeat = groupNotesByBeat(startOptions.melody ?? [])
+      const percussionByBeat = groupPercussionHitsByBeat(
+        startOptions.percussion ?? [],
+      )
       const melodyVariant = startOptions.melodyVariant ?? 'electric'
       const firstBeatAt = currentGraph.context.currentTime + 0.09
       const firstExerciseAt = firstBeatAt + countInBeats * openingBeatSeconds
@@ -468,6 +537,39 @@ export function createGuitarRoomBand(
         }
       }
 
+      const soundPercussionBucket = (
+        exerciseIndex: number,
+        at: number,
+        earliestStartBeat = exerciseIndex,
+      ): void => {
+        for (const hit of percussionByBeat.get(Math.floor(exerciseIndex)) ??
+          []) {
+          if (
+            hit.startBeat < earliestStartBeat ||
+            (loop === null && hit.startBeat >= durationBeats) ||
+            !Number.isInteger(hit.gmKey) ||
+            !Number.isInteger(hit.velocity) ||
+            hit.velocity < 1 ||
+            hit.velocity > 127
+          ) {
+            continue
+          }
+          const voice = drumVoiceForMidi(hit.gmKey)
+          if (voice === null) continue
+          const trackOutput = percussionTrackOutputs.get(hit.trackId)
+          if (trackOutput === undefined) continue
+          const hitAt =
+            at + beatToSeconds(hit.startBeat) - beatToSeconds(exerciseIndex)
+          triggerDrumVoice(
+            voice,
+            currentGraph.context,
+            hitAt,
+            hit.velocity / 127,
+            trackOutput,
+          )
+        }
+      }
+
       const soundRhythmBeat = (
         preset: GuitarRoomRhythmPreset,
         exerciseIndex: number,
@@ -536,6 +638,7 @@ export function createGuitarRoomBand(
         ) {
           partialNotesScheduled = true
           soundBucket(startBeat, firstExerciseAt, startBeat)
+          soundPercussionBucket(startBeat, firstExerciseAt, startBeat)
         }
 
         while (
@@ -607,6 +710,7 @@ export function createGuitarRoomBand(
           }
 
           soundBucket(exerciseIndex, at)
+          soundPercussionBucket(exerciseIndex, at)
           startOptions.onExerciseBeatScheduled?.({
             beatIndex: exerciseIndex,
             iteration: loopIteration,

@@ -7,8 +7,9 @@
 // tracks by default. Same-pitch overlaps pair FIFO instead of overwriting one
 // another.
 
-import type { MidiSong, MidiSongNote, MidiSongTrack } from '@/lib/midi-song'
+import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongPitchedTrack, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
+import { generalMidiPercussionName, normalizeGeneralMidiPercussionKey, } from '@/lib/percussion'
 import type { PianoProject, PianoProjectChannelEvent, PianoProjectTrack, } from './piano-project'
 import { pianoProjectTicksPerQuarter } from './piano-project'
 
@@ -17,9 +18,16 @@ export interface ProjectedMidiSongNote extends MidiSongNote {
   releaseVelocity: number
 }
 
-export interface ProjectedMidiSongTrack extends Omit<MidiSongTrack, 'notes'> {
+export interface ProjectedMidiSongPitchedTrack extends Omit<
+  MidiSongPitchedTrack,
+  'notes'
+> {
   notes: ProjectedMidiSongNote[]
 }
+
+export type ProjectedMidiSongTrack =
+  | ProjectedMidiSongPitchedTrack
+  | MidiSongPercussionTrack
 
 export interface ProjectedMidiSong extends Omit<MidiSong, 'tracks'> {
   tracks: ProjectedMidiSongTrack[]
@@ -80,6 +88,46 @@ function pairTrackNotes(
   return paired.map(({ sourceOrder: _sourceOrder, ...note }) => note)
 }
 
+function projectPercussionTrack(
+  track: PianoProjectTrack,
+  ticksPerQuarter: number,
+): MidiSongPercussionTrack | null {
+  const hits: MidiSongPercussionHit[] = []
+  let droppedHitCount = 0
+  for (const event of track.events) {
+    if (event.type !== 'note-on' || event.velocity <= 0) continue
+    const gmKey = normalizeGeneralMidiPercussionKey(event.note)
+    if (gmKey === null) {
+      droppedHitCount += 1
+      continue
+    }
+    hits.push({
+      id: `midi-t${track.sourceTrackIndex}-e${event.order}`,
+      gmKey,
+      startBeat: event.tick / ticksPerQuarter,
+      velocity: event.velocity,
+      source: {
+        format: 'midi',
+        channel: event.channel,
+        midiKey: event.note,
+        label: generalMidiPercussionName(gmKey),
+      },
+    })
+  }
+  if (hits.length === 0 && droppedHitCount === 0) return null
+  const name = track.name?.trim() ?? ''
+  return {
+    id: track.id,
+    kind: 'percussion',
+    name: name === '' ? 'Drums' : name,
+    instrumentName: track.instrumentName ?? 'General MIDI Drum Kit',
+    noteCount: hits.length,
+    notes: [],
+    percussionHits: hits,
+    droppedHitCount,
+  }
+}
+
 function firstProgram(
   events: readonly PianoProjectChannelEvent[],
 ): number | null {
@@ -93,6 +141,9 @@ function projectTrack(
   track: PianoProjectTrack,
   ticksPerQuarter: number,
 ): ProjectedMidiSongTrack | null {
+  if (track.isPercussion) {
+    return projectPercussionTrack(track, ticksPerQuarter)
+  }
   const notes = pairTrackNotes(track, ticksPerQuarter)
   if (notes.length === 0) return null
 
@@ -110,6 +161,7 @@ function projectTrack(
 
   return {
     id: track.id,
+    kind: 'pitched',
     name,
     instrumentName,
     noteCount: notes.length,

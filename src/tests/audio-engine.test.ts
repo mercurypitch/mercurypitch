@@ -1167,9 +1167,9 @@ describe('AudioEngine', () => {
           isRest: true,
         },
         {
-          // MIDI 40 has no lane — falls back to the snare voice
+          // Tambourine has no honest synthesized voice and is dropped.
           id: 4,
-          note: { name: 'E', octave: 2, midi: 40, freq: 82.41 },
+          note: { name: 'F#', octave: 3, midi: 54, freq: 184.99 },
           startBeat: 3,
           duration: 1,
         },
@@ -1188,10 +1188,10 @@ describe('AudioEngine', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const instances = (global.OfflineAudioContext as any).mock.instances
       const offlineCtx = instances[instances.length - 1]
-      // kick osc + two snare tone oscs (the rest item is skipped)
-      expect(offlineCtx.createOscillator).toHaveBeenCalledTimes(3)
-      // two snare noise bursts
-      expect(offlineCtx.createBufferSource).toHaveBeenCalledTimes(2)
+      // kick osc + one snare tone osc (rest + unsupported hit are skipped)
+      expect(offlineCtx.createOscillator).toHaveBeenCalledTimes(2)
+      // one snare noise burst
+      expect(offlineCtx.createBufferSource).toHaveBeenCalledTimes(1)
     })
 
     it('renderMelodyToWAV with kind drums returns null when every item is a rest', async () => {

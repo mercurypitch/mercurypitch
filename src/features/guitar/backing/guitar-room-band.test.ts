@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBandBeatPhase } from './guitar-room-band'
-import { createGuitarRoomBand, groupNotesByBeat, resolveBandLoop, } from './guitar-room-band'
+import { createGuitarRoomBand, groupNotesByBeat, groupPercussionHitsByBeat, resolveBandLoop, } from './guitar-room-band'
 import { resolveGuitarRoomRhythmPreset } from './guitar-room-rhythm'
 
 const guitarVoices = vi.hoisted(() => ({
@@ -115,6 +115,33 @@ describe('groupNotesByBeat', () => {
       { midi: 41, startBeat: -2, durationBeats: 1 },
     ])
     expect(grouped.size).toBe(0)
+  })
+})
+
+describe('groupPercussionHitsByBeat', () => {
+  it('keeps fractional authored positions in their scheduling buckets', () => {
+    const grouped = groupPercussionHitsByBeat([
+      { trackId: 'track-drums', gmKey: 36, startBeat: 0, velocity: 100 },
+      { trackId: 'track-drums', gmKey: 42, startBeat: 0.5, velocity: 80 },
+      { trackId: 'track-drums', gmKey: 49, startBeat: 2.75, velocity: 127 },
+    ])
+    expect(grouped.get(0)?.map((hit) => hit.gmKey)).toEqual([36, 42])
+    expect(grouped.get(2)?.map((hit) => hit.gmKey)).toEqual([49])
+    expect(grouped.get(1)).toBeUndefined()
+  })
+
+  it('drops attacks with no usable authored position', () => {
+    expect(
+      groupPercussionHitsByBeat([
+        {
+          trackId: 'track-drums',
+          gmKey: 36,
+          startBeat: Number.NaN,
+          velocity: 100,
+        },
+        { trackId: 'track-drums', gmKey: 38, startBeat: -1, velocity: 100 },
+      ]).size,
+    ).toBe(0)
   })
 })
 
@@ -264,6 +291,109 @@ describe('createGuitarRoomBand', () => {
       5.09, 5.59, 6.09, 7.09,
     ])
     expect(result.expectedHitTimesMs).toEqual([90, 590, 1090, 2090])
+
+    await band.dispose()
+  })
+
+  it('repeats fractional drums through the tempo map with authored velocity', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const gains: Array<
+      ReturnType<typeof fakeAudioNode> & {
+        gain: ReturnType<typeof fakeAudioParam>
+      }
+    > = []
+    const context = fakeAudioContext(gains)
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      tempoChanges: [
+        { beat: 0, usPerBeat: 500000 },
+        { beat: 2, usPerBeat: 1000000 },
+      ],
+      countInBeats: 0,
+      exerciseBeats: 4,
+      startBeat: 1,
+      loop: { start: 1, end: 3 },
+      feel: 'click',
+      exercisePulse: false,
+      percussion: [
+        { trackId: 'track-drums', gmKey: 36, startBeat: 1.25, velocity: 127 },
+        { trackId: 'track-drums', gmKey: 54, startBeat: 1.5, velocity: 100 },
+        { trackId: 'track-drums', gmKey: 40, startBeat: 2.5, velocity: 64 },
+      ],
+    })
+
+    const scheduled = drumVoices.triggerDrumVoice.mock.calls
+      .slice(0, 4)
+      .map((call) => [call[0], call[2], call[3]])
+    expect(scheduled).toEqual([
+      ['kick', 5.215, 1],
+      ['snare', 6.09, 64 / 127],
+      ['kick', 6.715, 1],
+      ['snare', 7.59, 64 / 127],
+    ])
+    expect(
+      drumVoices.triggerDrumVoice.mock.calls.some(
+        (call) => call[0] === 'snare' && call[3] === 100 / 127,
+      ),
+    ).toBe(false)
+    const drumsGate = gains.at(-1)
+    expect(drumsGate).toBeDefined()
+    for (const call of drumVoices.triggerDrumVoice.mock.calls) {
+      expect(call[4]).toBe(drumsGate)
+    }
+
+    await band.dispose()
+  })
+
+  it('opens and closes a muted drum track on the current run without restarting its clock', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const gains: Array<
+      ReturnType<typeof fakeAudioNode> & {
+        gain: ReturnType<typeof fakeAudioParam>
+      }
+    > = []
+    const context = fakeAudioContext(gains)
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 0,
+      exerciseBeats: 4,
+      exercisePulse: false,
+      audiblePercussionTrackIds: [],
+      percussion: [
+        { trackId: 'track-drums', gmKey: 36, startBeat: 1.5, velocity: 96 },
+      ],
+    })
+
+    const trackGate = gains.at(-1)
+    expect(trackGate?.gain.value).toBe(0)
+    expect(drumVoices.triggerDrumVoice).toHaveBeenCalledWith(
+      'kick',
+      context,
+      5.84,
+      96 / 127,
+      trackGate,
+    )
+
+    band.setPercussionTrackAudible('track-drums', true)
+    band.setPercussionTrackAudible('track-drums', false)
+    expect(trackGate?.gain.setValueAtTime.mock.calls).toEqual([
+      [1, 5],
+      [0, 5],
+    ])
 
     await band.dispose()
   })
@@ -445,11 +575,17 @@ describe('createGuitarRoomBand', () => {
       durationBeats: 4,
       startBeat: 2.4,
       feel: 'click',
+      exercisePulse: false,
       melody: [
         { midi: 63, startBeat: 2.25, durationBeats: 0.25 },
         { midi: 64, startBeat: 2.4, durationBeats: 0.25 },
         { midi: 65, startBeat: 2.75, durationBeats: 0.25 },
         { midi: 67, startBeat: 3, durationBeats: 0.5 },
+      ],
+      percussion: [
+        { trackId: 'track-drums', gmKey: 36, startBeat: 2.25, velocity: 127 },
+        { trackId: 'track-drums', gmKey: 38, startBeat: 2.4, velocity: 64 },
+        { trackId: 'track-drums', gmKey: 49, startBeat: 2.75, velocity: 32 },
       ],
       onExerciseStart,
       onBeat,
@@ -469,6 +605,13 @@ describe('createGuitarRoomBand', () => {
     expect(voiceStarts[0]).toBeCloseTo(5.09, 6)
     expect(voiceStarts[1]).toBeCloseTo(5.44, 6)
     expect(voiceStarts[2]).toBeCloseTo(5.69, 6)
+    const drumStarts = drumVoices.triggerDrumVoice.mock.calls
+    expect(drumStarts.map((call) => [call[0], call[3]])).toEqual([
+      ['snare', 64 / 127],
+      ['crash', 32 / 127],
+    ])
+    expect(drumStarts[0]?.[2]).toBeCloseTo(5.09, 6)
+    expect(drumStarts[1]?.[2]).toBeCloseTo(5.44, 6)
 
     await vi.advanceTimersByTimeAsync(600)
     expect(onBeat).toHaveBeenCalledWith(3, 'exercise', expect.any(Number))

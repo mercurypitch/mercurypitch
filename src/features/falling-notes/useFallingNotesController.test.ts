@@ -43,6 +43,7 @@ function mockAudioEngine(): AudioEngine {
 function track(id: string): MidiSongTrack {
   return {
     id,
+    kind: 'pitched',
     name: id,
     instrumentName: 'Acoustic Grand Piano',
     noteCount: 1,
