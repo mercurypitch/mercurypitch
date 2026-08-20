@@ -112,6 +112,9 @@ export async function persistPianoCompatibilitySelection(
   song: SavedMidiSong,
   dependencies: LegacyPianoSelectionPersistenceDependencies = DEFAULT_SELECTION_DEPENDENCIES,
 ): Promise<void> {
+  if (song.scoreTrackId === null) {
+    throw new Error('A Piano compatibility song needs a pitched score track.')
+  }
   if (song.persistenceAuthority !== 'piano-project') {
     dependencies.updateLegacySelection(
       song.id,

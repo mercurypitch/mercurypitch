@@ -188,6 +188,63 @@ describe('scoreToMidiSong', () => {
       toNoteId: notes[2].id,
     })
   })
+
+  it('keeps a modern indexed percussion articulation separate from pitch', () => {
+    const score = scoreFromTex('. 3.3.4')
+    const track = score.tracks[0]
+    const staff = track.staves[0]
+    const note = staff.bars[0].voices[0].beats[0].notes[0]
+    staff.isPercussion = true
+    track.name = 'Room Drums'
+    track.percussionArticulations = [
+      new alphaTab.model.InstrumentArticulation('Snare', 3, 38),
+    ]
+    note.percussionArticulation = 0
+    note.dynamics = alphaTab.model.DynamicValue.F
+
+    const mapped = scoreToMidiSong(score).tracks[0]
+
+    expect(mapped).toMatchObject({
+      kind: 'percussion',
+      name: 'Room Drums',
+      noteCount: 1,
+      notes: [],
+      droppedHitCount: 0,
+    })
+    if (mapped.kind !== 'percussion') throw new Error('Expected drums')
+    expect(mapped.percussionHits[0]).toMatchObject({
+      gmKey: 38,
+      startBeat: 0,
+      velocity: 95,
+      source: {
+        format: 'guitar-pro',
+        articulationIndex: 0,
+        label: 'Snare',
+        staffLine: 3,
+      },
+    })
+  })
+
+  it('resolves legacy direct percussion ids and reports unknown ones', () => {
+    const score = scoreFromTex('. 3.3.4 5.3.4')
+    const track = score.tracks[0]
+    const staff = track.staves[0]
+    const beats = staff.bars[0].voices[0].beats
+    staff.isPercussion = true
+    track.percussionArticulations = []
+    beats[0].notes[0].percussionArticulation = 91
+    beats[1].notes[0].percussionArticulation = 32
+
+    const mapped = scoreToMidiSong(score).tracks[0]
+    if (mapped.kind !== 'percussion') throw new Error('Expected drums')
+
+    expect(mapped.percussionHits).toHaveLength(1)
+    expect(mapped.percussionHits[0]).toMatchObject({
+      gmKey: 38,
+      source: { articulationId: 91, label: 'Snare rim shot' },
+    })
+    expect(mapped.droppedHitCount).toBe(1)
+  })
 })
 
 describe('time signatures', () => {

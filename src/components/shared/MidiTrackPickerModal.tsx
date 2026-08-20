@@ -7,6 +7,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { CloseIcon } from '@/components/shared/midi-picker-icons'
 import type { MidiSongTrack } from '@/lib/midi-song'
+import { isPercussionMidiSongTrack } from '@/lib/midi-song'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import styles from './MidiTrackPickerModal.module.css'
 
@@ -71,21 +72,27 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
                     name={props.radioName}
                     checked={props.pendingScoreId() === t.id}
                     onChange={() => props.setPendingScoreId(t.id)}
+                    disabled={isPercussionMidiSongTrack(t)}
                   />
-                  Score
+                  {isPercussionMidiSongTrack(t) ? 'Drums' : 'Score'}
                 </label>
                 <Show when={props.hideBacking !== true}>
                   <label
                     class={styles.trackHear}
                     classList={{
                       [styles.trackHearDisabled]:
-                        props.pendingScoreId() === t.id,
+                        props.pendingScoreId() === t.id ||
+                        isPercussionMidiSongTrack(t),
                     }}
                   >
                     <input
                       type="checkbox"
-                      disabled={props.pendingScoreId() === t.id}
+                      disabled={
+                        props.pendingScoreId() === t.id ||
+                        isPercussionMidiSongTrack(t)
+                      }
                       checked={
+                        !isPercussionMidiSongTrack(t) &&
                         props.pendingScoreId() !== t.id &&
                         props.pendingBackingIds().has(t.id)
                       }
@@ -96,13 +103,14 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
                         props.setPendingBackingIds(next)
                       }}
                     />
-                    Hear
+                    {isPercussionMidiSongTrack(t) ? 'Preserved' : 'Hear'}
                   </label>
                 </Show>
                 <div class={styles.trackInfo}>
                   <div class={styles.trackName}>{t.name}</div>
                   <div class={styles.trackMeta}>
-                    {t.instrumentName} &middot; {t.noteCount} notes
+                    {t.instrumentName} &middot; {t.noteCount}{' '}
+                    {isPercussionMidiSongTrack(t) ? 'hits' : 'notes'}
                   </div>
                 </div>
               </div>
@@ -110,7 +118,11 @@ export const MidiTrackPickerModal: Component<MidiTrackPickerModalProps> = (
           </For>
         </div>
         <div class={styles.trackActions}>
-          <button class={styles.trackBtn} onClick={() => props.onApply()}>
+          <button
+            class={styles.trackBtn}
+            onClick={() => props.onApply()}
+            disabled={props.pendingScoreId() === ''}
+          >
             Load Song
           </button>
         </div>

@@ -23,6 +23,7 @@ function compatibilitySong(trackCount = 1): SavedMidiSong {
     bpm: 84,
     tracks: Array.from({ length: trackCount }, (_, index) => ({
       id: `track-${index}`,
+      kind: 'pitched' as const,
       name: `Track ${index + 1}`,
       instrumentName: 'Acoustic Grand Piano',
       noteCount: 1,
@@ -33,6 +34,29 @@ function compatibilitySong(trackCount = 1): SavedMidiSong {
       { length: Math.max(0, trackCount - 1) },
       (_, index) => `track-${index + 1}`,
     ),
+    importedAt: 1,
+  }
+}
+
+function percussionSong(): SavedMidiSong {
+  return {
+    id: 'drum-project',
+    name: 'Drum Study',
+    bpm: 96,
+    tracks: [
+      {
+        id: 'drums',
+        kind: 'percussion',
+        name: 'Drums',
+        instrumentName: 'General MIDI Drum Kit',
+        noteCount: 1,
+        notes: [],
+        percussionHits: [{ gmKey: 38, startBeat: 0, velocity: 104 }],
+        droppedHitCount: 0,
+      },
+    ],
+    scoreTrackId: null,
+    backingTrackIds: ['drums'],
     importedAt: 1,
   }
 }
@@ -109,6 +133,21 @@ describe('useMidiSongPicker canonical import seam', () => {
     expect(picker.pendingBackingIds()).toEqual(new Set(['track-1']))
     expect(onSongLoaded).not.toHaveBeenCalled()
     expect(localStorage.getItem('pitchperfect_guitar_songs')).toBeNull()
+    dispose()
+  })
+
+  it('preserves a percussion-only import without claiming it loaded as pitch', async () => {
+    const { dispose, onSongLoaded, picker } = createPicker(async () =>
+      percussionSong(),
+    )
+
+    await picker.importMidiFile(new File([], 'drums.mid'))
+
+    expect(onSongLoaded).not.toHaveBeenCalled()
+    expect(picker.selectedId()).toBeNull()
+    expect(picker.importStatus()).toBe(
+      'Imported: Drum Study — drum parts are preserved, but this pitch view cannot play them',
+    )
     dispose()
   })
 

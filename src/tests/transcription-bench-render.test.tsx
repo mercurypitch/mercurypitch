@@ -20,6 +20,46 @@ vi.mock('@/lib/transcription/stem-transcription-client', () => ({
 
 import { TranscriptionBench } from '@/features/lab/TranscriptionBench'
 
+function midiTrack(channel: number, note: number): number[] {
+  const body = [
+    0,
+    0x90 | channel,
+    note,
+    100,
+    0x83,
+    0x60,
+    0x80 | channel,
+    note,
+    0,
+    0,
+    0xff,
+    0x2f,
+    0,
+  ]
+  return [0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, body.length, ...body]
+}
+
+function drumsFirstMidi(): Uint8Array {
+  return new Uint8Array([
+    0x4d,
+    0x54,
+    0x68,
+    0x64,
+    0,
+    0,
+    0,
+    6,
+    0,
+    1,
+    0,
+    2,
+    1,
+    0xe0,
+    ...midiTrack(9, 36),
+    ...midiTrack(0, 60),
+  ])
+}
+
 describe('TranscriptionBench', () => {
   afterEach(() => {
     cleanup()
@@ -53,6 +93,34 @@ describe('TranscriptionBench', () => {
       'yin',
       'swift',
     ])
+  })
+
+  it('never offers a drums-first track as pitched reference truth', async () => {
+    const { container } = render(() => <TranscriptionBench />)
+    const referenceInput = container.querySelector<HTMLInputElement>(
+      'input[accept=".mid,.midi,.gp,.gp3,.gp4,.gp5,.gpx"]',
+    )
+    expect(referenceInput).not.toBeNull()
+    const midi = drumsFirstMidi()
+
+    fireEvent.change(referenceInput!, {
+      target: {
+        files: [
+          {
+            name: 'mixed.mid',
+            arrayBuffer: async () => midi.buffer,
+          } as File,
+        ],
+      },
+    })
+
+    const pitched = await screen.findByRole('option', { name: 'Track 2 (1)' })
+    const select = pitched.closest('select')
+    expect(select).not.toBeNull()
+    expect([...select!.options].map((option) => option.textContent)).toEqual([
+      'Track 2 (1)',
+    ])
+    expect(select).toHaveValue('t1c0')
   })
 
   it('shows each source its own confidence floor', () => {
