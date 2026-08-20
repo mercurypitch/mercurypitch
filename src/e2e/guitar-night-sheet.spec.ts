@@ -161,3 +161,25 @@ test('scores another part by reading its name on the sheet', async ({
     sheet.getByRole('button', { name: 'Rhythm guitar' }).first(),
   ).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('swaps the corner part with the one being read @smoke', async ({
+  page,
+}) => {
+  await openTheRoom(page, `sheet-corner-${Date.now()}`)
+  const room = page.getByTestId('guitar-night-score-room')
+  await expect(room.getByText(/Tab rehearsal · Lead guitar/)).toBeVisible()
+
+  // Asked for 2026-08-19: "you see 1 other in some corner, smaller... And then
+  // you can maybe swap between the two easily, by tapping."
+  const corner = page.getByTestId('guitar-night-secondary-part')
+  await expect(corner).toBeVisible()
+  await corner.getByRole('button').click()
+
+  await expect(room.getByText(/Tab rehearsal · Rhythm guitar/)).toBeVisible()
+  // The corner now offers the way back, so tapping twice returns.
+  await expect(
+    corner.getByRole('button', { name: 'Read Lead guitar instead' }),
+  ).toBeVisible()
+  await corner.getByRole('button').click()
+  await expect(room.getByText(/Tab rehearsal · Lead guitar/)).toBeVisible()
+})

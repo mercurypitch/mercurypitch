@@ -144,20 +144,40 @@ already walks `score.masterBars`); plain MIDI and measured audio carry none.
 Common time is the documented fallback until that plumbing lands, and it is the
 first thing to fix for scores that are not in four.
 
-## 5. Phase 3 — the secondary part in the corner, and tap to swap
+## 5. Phase 3 — the secondary part in the corner, and tap to swap — **shipped**
 
-- The highway, grid and neck views gain an optional inset drawing a second
-  track, smaller, in a corner — the lead player watching the rhythm part, or
-  the bass.
-- Tapping the inset swaps it with the main view. The scored track does not
-  move with the swap unless scoring is set to follow the main view, which is
-  the default, in which case the room says so on the swap.
-- The inset shares the playhead; it never owns transport.
+- The highway, grid and neck views carry an optional inset drawing a second
+  part, smaller, in the corner — the lead player watching the rhythm part.
+- The part it draws is the one you were reading before you switched, not an
+  arbitrary second track. Switching parts is the only way to name a second one
+  without asking a reader to pick twice, and the way back is the thing a reader
+  actually wants: the corner is a return ticket.
+- Tapping the inset swaps it with the main view. Scoring follows, because the
+  main view is what you are playing; the running take is ended first rather than
+  silently rescored — the same rule the header switcher follows.
+- The inset shares the playhead; it never owns transport. It is hidden in the
+  tab and sheet views, which already show more than one part.
 
-**Rendering:** this one _is_ the canvas. A second renderer instance is the
-simple answer and the expensive one; drawing the inset within the existing
-renderer's frame is cheaper and needs the scene model to carry two note sets.
-Decide after phase 2 has told us what a second placed track costs.
+**What landed where**
+
+| Piece                                         | File                                                                              |
+| --------------------------------------------- | --------------------------------------------------------------------------------- |
+| The inset itself                              | `src/features/guitar-night/GuitarNightSecondaryPart.tsx`                          |
+| Which part it draws, and remembering the last | `secondaryLane` / `previousScoredTrack` in `useGuitarNightReferenceController.ts` |
+| Where it sits, and when it is offered         | `GuitarNightStage.tsx`, `.secondaryPart*` in `GuitarNightApp.module.css`          |
+
+**Rendering:** not a canvas, and not a second renderer instance. The inset shows
+`SECONDARY_PART_WINDOW_BEATS` of music — six beats — which is small enough that
+reusing the stage's own `buildStageTabWindowIndex` and `tabWindowEntries` and
+letting the DOM draw it costs less than standing up a second painter. Phase 2's
+answer to "what does a second placed track cost" was: the placement is already
+shared, so almost nothing. The canvas seam stays where phase 2 left it, for the
+sheet and for phase 4.
+
+**Reading it without seeing it:** with no swap handler the inset is a
+`role="img"` element whose label names the part and says what it is doing —
+"Rhythm guitar, 1 note sounding", "Rhythm guitar, resting". With a handler it is
+a button, "Read <name> instead".
 
 ## 6. Phase 4 (later) — notation staff toggle
 

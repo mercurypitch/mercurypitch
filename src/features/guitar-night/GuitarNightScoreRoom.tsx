@@ -54,6 +54,8 @@ interface GuitarNightScoreRoomProps {
   onSelectTrack?(trackId: string): void
   /** Every part the sheet draws, in written order. */
   sheetLanes?: Accessor<readonly SheetLane[]>
+  /** One other part, drawn small in a corner of the moving views. */
+  secondaryLane?: Accessor<SheetLane | null>
   /** The rest of the band, already carrying each part's own timbre. */
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
   /** Whether the scored part sounds when the player has not said either way. */
@@ -999,6 +1001,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         {...(props.sheetLanes === undefined
           ? {}
           : { sheetLanes: props.sheetLanes })}
+        {...(props.secondaryLane === undefined
+          ? {}
+          : { secondaryLane: props.secondaryLane })}
         scoredTrackId={() => displayedReference().trackId}
         {...(props.onSelectTrack === undefined
           ? {}

@@ -860,4 +860,59 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.scoredPartDefaultsAudible()).toBe(true)
     })
   })
+
+  describe('the part in the corner', () => {
+    it('offers the first other part before any swap', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+      expect(controller.secondaryLane()?.trackId).toBe('track-rhythm')
+    })
+
+    it('offers the way back to the part just left', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+
+      await controller.selectTrack('track-bass')
+      expect(controller.secondaryLane()?.trackId).toBe('track-lead')
+
+      // Tapping it again is the swap back.
+      await controller.selectTrack('track-lead')
+      expect(controller.secondaryLane()?.trackId).toBe('track-bass')
+    })
+
+    it('has no corner part for a file with one part', async () => {
+      const single = {
+        ...VELVET_RIFF,
+        tracks: [VELVET_RIFF.tracks[0]!],
+      }
+      const { port } = fakePort({
+        openReference: (_songId, trackId, tuning) =>
+          openGuitarNightReference(single, trackId, tuning),
+        suggestInstrument: (_songId, trackId) =>
+          suggestReferenceInstrument(single, trackId),
+        readSource: () => single,
+      })
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id)
+      expect(controller.secondaryLane()).toBeNull()
+    })
+
+    it('has no corner part before a score is attached', () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      expect(controller.secondaryLane()).toBeNull()
+    })
+
+    it('leaves the corner alone when a part is hidden from the sheet', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+      controller.toggleSheetTrack('track-rhythm')
+      // Hidden on the page means hidden in the corner too: the corner draws
+      // what the sheet draws.
+      expect(controller.secondaryLane()?.trackId).toBe('track-bass')
+    })
+  })
 })
