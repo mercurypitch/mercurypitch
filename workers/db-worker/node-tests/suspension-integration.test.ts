@@ -174,6 +174,15 @@ beforeEach(() => {
   env = {
     DB: database as unknown as D1Database,
     JWT_SECRET: 'suspension-integration-secret',
+    // These harnesses register real accounts, and registration now passes
+    // through the Turnstile gate. A local origin with no TURNSTILE_SECRET is
+    // the one configuration the gate lets by, and it is what a developer
+    // running the worker locally has — so it is what these simulate.
+    // `https://app.test` rides along because a test further down asserts
+    // the suspension error survives the CORS layer, and an allowlist that
+    // excluded it would answer 'Origin not allowed' before ever getting
+    // to the suspension check.
+    ALLOWED_ORIGINS: 'http://localhost,https://app.test',
     ADMIN_KEY: 'suspension-integration-admin',
   }
 })

@@ -90,6 +90,11 @@ beforeEach(() => {
   env = {
     DB: new SqliteD1Database(sqlite) as unknown as D1Database,
     JWT_SECRET: 'query-oracle-integration-secret',
+    // These harnesses register real accounts, and registration now passes
+    // through the Turnstile gate. A local origin with no TURNSTILE_SECRET is
+    // the one configuration the gate lets by, and it is what a developer
+    // running the worker locally has — so it is what these simulate.
+    ALLOWED_ORIGINS: 'http://localhost',
     ADMIN_KEY,
   }
   seedProfile(VICTIM, 'Victim Singer', {

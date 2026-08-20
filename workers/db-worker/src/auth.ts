@@ -25,6 +25,7 @@ import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
+import { verifyTurnstile } from './turnstile'
 
 export interface Env {
   /** Where emailed links land when the request Origin is not a first-party
@@ -55,6 +56,8 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string
   /** OAuth client secret — required for the redirect code flow. */
   GOOGLE_CLIENT_SECRET?: string
+  /** Cloudflare Turnstile secret key for server-side verification. */
+  TURNSTILE_SECRET?: string
   /**
    * Shared secret for seed/admin writes via X-Admin-Key header. Where
    * Cloudflare Access is configured this is NOT sufficient on its own —
@@ -848,6 +851,8 @@ interface AuthBody {
   deviceLabel?: string
   /** Where to land after the Google redirect (POST /api/auth/google/start). */
   returnTo?: string
+  /** Cloudflare Turnstile CAPTCHA response token (register, login, forgot-password). */
+  cfTurnstileToken?: string
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -2783,6 +2788,24 @@ export async function handleAuth(
 
   const body = await parseBody(request)
   if (!body) return respond({ error: 'Invalid JSON body' }, { status: 400 })
+
+  if (
+    route === 'register' ||
+    route === 'login' ||
+    route === 'forgot-password'
+  ) {
+    const validTurnstile = await verifyTurnstile(
+      request,
+      env,
+      body.cfTurnstileToken as string | undefined,
+    )
+    if (!validTurnstile) {
+      return respond(
+        { error: 'CAPTCHA verification failed. Please try again.' },
+        { status: 400 },
+      )
+    }
+  }
 
   switch (route) {
     case 'anonymous':

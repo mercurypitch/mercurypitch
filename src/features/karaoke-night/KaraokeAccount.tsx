@@ -6,6 +6,7 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
+import Turnstile, { resetTurnstile, turnstileEnabled, } from '@/components/shared/Turnstile'
 import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
@@ -26,6 +27,7 @@ export function KaraokeAccount() {
   const [modalOpen, setModalOpen] = createSignal(false)
   const [menuOpen, setMenuOpen] = createSignal(false)
   const [mode, setMode] = createSignal<'login' | 'register'>('login')
+  const [turnstileToken, setTurnstileToken] = createSignal('')
   const [email, setEmail] = createSignal('')
   const [password, setPassword] = createSignal('')
   const [showPassword, setShowPassword] = createSignal(false)
@@ -66,10 +68,11 @@ export function KaraokeAccount() {
     setBusy(true)
     setError('')
     try {
+      const token = turnstileToken()
       if (mode() === 'register') {
-        await registerWithPassword(email().trim(), password())
+        await registerWithPassword(email().trim(), password(), token)
       } else {
-        await loginWithPassword(email().trim(), password())
+        await loginWithPassword(email().trim(), password(), token)
       }
       await refreshAccount()
       setModalOpen(false)
@@ -77,6 +80,11 @@ export function KaraokeAccount() {
       setShowPassword(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed.')
+      // Turnstile tokens are single-use, so a failed attempt has spent this
+      // one. Without a reset the next press sends a token the server has
+      // already rejected, and the form can never recover.
+      setTurnstileToken('')
+      resetTurnstile()
     } finally {
       setBusy(false)
     }
@@ -220,10 +228,13 @@ export function KaraokeAccount() {
               <Show when={error() !== ''}>
                 <p class="kn-modal-error">{error()}</p>
               </Show>
+              <Turnstile onToken={setTurnstileToken} />
               <button
                 class="kn-btn kn-btn--primary"
                 type="submit"
-                disabled={busy()}
+                disabled={
+                  busy() || (turnstileEnabled && turnstileToken() === '')
+                }
               >
                 {busy()
                   ? 'Please wait…'

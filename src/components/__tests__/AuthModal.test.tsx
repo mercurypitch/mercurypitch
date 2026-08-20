@@ -48,6 +48,7 @@ describe('AuthModal', () => {
     expect(mocks.loginWithPassword).toHaveBeenCalledWith(
       'maff@example.com',
       'secret123',
+      '',
     )
     await waitFor(() =>
       expect(
@@ -77,6 +78,7 @@ describe('AuthModal', () => {
         'maff@example.com',
         'secret123',
         'Maff',
+        '',
       ),
     )
   })
@@ -115,6 +117,7 @@ describe('AuthModal', () => {
     await waitFor(() =>
       expect(mocks.requestPasswordReset).toHaveBeenCalledWith(
         'maff@example.com',
+        '',
       ),
     )
     expect(await screen.findByTestId('auth-forgot-sent')).toBeInTheDocument()
