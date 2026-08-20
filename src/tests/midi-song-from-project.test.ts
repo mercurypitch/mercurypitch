@@ -1,0 +1,173 @@
+// ============================================================
+// MidiSong from a PianoProject — the projection, on its own
+// ============================================================
+//
+// `midi-song.test.ts` covers the parser through its public door. These reach
+// the corners of the projection that a well-formed file does not visit.
+
+import { describe, expect, it, vi } from 'vitest'
+import type * as ParseMidiProject from '@/features/piano-project/parse-midi-project'
+import { gmInstrumentName } from '@/lib/midi-song'
+import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
+
+// ── Binary MIDI builders ───────────────────────────────────────
+
+function varLen(value: number): number[] {
+  if (value < 0x80) return [value]
+  return [0x80 | (value >> 7), value & 0x7f]
+}
+
+function trackChunk(events: number[]): number[] {
+  const body = [...events, 0x00, 0xff, 0x2f, 0x00]
+  return [
+    0x4d,
+    0x54,
+    0x72,
+    0x6b,
+    (body.length >> 24) & 0xff,
+    (body.length >> 16) & 0xff,
+    (body.length >> 8) & 0xff,
+    body.length & 0xff,
+    ...body,
+  ]
+}
+
+function buildMidi(...tracks: number[][]): Uint8Array {
+  return new Uint8Array([
+    0x4d,
+    0x54,
+    0x68,
+    0x64,
+    0,
+    0,
+    0,
+    6,
+    0,
+    1,
+    0,
+    tracks.length,
+    (480 >> 8) & 0xff,
+    480 & 0xff,
+    ...tracks.flatMap(trackChunk),
+  ])
+}
+
+const noteOn = (midi: number, delta = 0, channel = 0): number[] => [
+  ...varLen(delta),
+  0x90 | channel,
+  midi,
+  100,
+]
+
+const noteOff = (midi: number, delta: number, channel = 0): number[] => [
+  ...varLen(delta),
+  0x80 | channel,
+  midi,
+  0,
+]
+
+const parse = (data: Uint8Array) =>
+  parseMidiSongViaProject(data, gmInstrumentName)
+
+// ── Tests ──────────────────────────────────────────────────────
+
+describe('parseMidiSongViaProject', () => {
+  it('ignores a note-off for a pitch that was never struck', () => {
+    const song = parse(
+      buildMidi([...noteOff(64, 0), ...noteOn(60, 0), ...noteOff(60, 480)]),
+    )
+    expect(song?.tracks[0].notes.map((note) => note.midi)).toEqual([60])
+  })
+
+  it('restarts a pitch struck again before it was released', () => {
+    const song = parse(
+      buildMidi([...noteOn(60, 0), ...noteOn(60, 480), ...noteOff(60, 480)]),
+    )
+    expect(song?.tracks[0].notes).toEqual([
+      { midi: 60, startBeat: 1, duration: 1 },
+    ])
+  })
+
+  it('leaves out a track that sounded nothing', () => {
+    const song = parse(
+      buildMidi(
+        [0x00, 0xc0, 25], // a program change and no notes at all
+        [...noteOn(60, 0), ...noteOff(60, 480)],
+      ),
+    )
+    expect(song?.tracks.map((track) => track.id)).toEqual(['t1c0'])
+  })
+
+  it('gives a nameless track without a program a numbered name', () => {
+    const song = parse(buildMidi([...noteOn(60, 0), ...noteOff(60, 480)]))
+    expect(song?.tracks[0]).toMatchObject({
+      name: 'Track 1',
+      instrumentName: 'Unknown Instrument',
+    })
+  })
+
+  it('names a nameless track after its instrument when it has one', () => {
+    const song = parse(
+      buildMidi([0x00, 0xc0, 25, ...noteOn(60, 0), ...noteOff(60, 480)]),
+    )
+    expect(song?.tracks[0]).toMatchObject({
+      name: 'Steel Guitar',
+      instrumentName: 'Steel Guitar',
+    })
+  })
+
+  it('treats an empty track name as no name at all', () => {
+    const song = parse(
+      buildMidi([
+        0x00,
+        0xff,
+        0x03,
+        0x00, // a track-name meta carrying nothing
+        ...noteOn(60, 0),
+        ...noteOff(60, 480),
+      ]),
+    )
+    expect(song?.tracks[0].name).toBe('Track 1')
+  })
+
+  it('gives a note held to the end of the file no length at all, not a stuck one', () => {
+    // Unclosed note-on: nothing pairs it, so it never becomes a note.
+    const song = parse(
+      buildMidi([...noteOn(60, 0), ...noteOff(60, 480), ...noteOn(67, 480)]),
+    )
+    expect(song?.tracks[0].notes.map((note) => note.midi)).toEqual([60])
+  })
+
+  it('floors a note too short to read', () => {
+    const song = parse(buildMidi([...noteOn(60, 0), ...noteOff(60, 1)]))
+    expect(song?.tracks[0].notes[0].duration).toBe(0.25)
+  })
+
+  it('answers null when every track was percussion', () => {
+    expect(
+      parse(buildMidi([...noteOn(38, 0, 9), ...noteOff(38, 480, 9)])),
+    ).toBe(null)
+  })
+
+  it('lets a failure that is not a parse error through', async () => {
+    vi.resetModules()
+    vi.doMock('@/features/piano-project/parse-midi-project', async () => {
+      const actual = await vi.importActual<typeof ParseMidiProject>(
+        '@/features/piano-project/parse-midi-project',
+      )
+      return {
+        ...actual,
+        parseMidiProject: () => {
+          throw new RangeError('out of memory')
+        },
+      }
+    })
+    const { parseMidiSongViaProject: mocked } =
+      await import('@/lib/midi-song-from-project')
+    expect(() =>
+      mocked(buildMidi([...noteOn(60, 0)]), gmInstrumentName),
+    ).toThrow(RangeError)
+    vi.doUnmock('@/features/piano-project/parse-midi-project')
+    vi.resetModules()
+  })
+})

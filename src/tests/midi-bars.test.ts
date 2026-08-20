@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest'
-
-import {
-  DEFAULT_TIME_SIGNATURE,
-  MAX_BARS,
-  barIndexAtBeat,
-  buildBars,
-  normalizeTimeSignatures,
-  quarterBeatsPerBar,
-  type MidiTimeSignature,
-} from '@/lib/midi-bars'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { barIndexAtBeat, buildBars, DEFAULT_TIME_SIGNATURE, MAX_BARS, normalizeTimeSignatures, quarterBeatsPerBar, } from '@/lib/midi-bars'
 
 const sig = (
   beat: number,

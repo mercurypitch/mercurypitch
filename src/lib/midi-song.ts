@@ -8,6 +8,7 @@
 
 import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
 
 /** A single note within a parsed MIDI track. */
 export interface MidiSongNote {
@@ -307,225 +308,17 @@ export function gmInstrumentName(program: number): string {
   return GM_INSTRUMENTS[program] ?? `Program ${program}`
 }
 
-const DRUM_CHANNEL = 9
-
-interface RawNote {
-  midi: number
-  startTick: number
-  durationTicks: number
-}
-
 /**
- * Parse a Standard MIDI File (format 0 or 1) into per-track note lists.
- * Returns null if the data is not a valid MIDI file or has no notes.
+ * Read Standard MIDI bytes into a song, or answer null when the file will not
+ * open.
+ *
+ * The decoding itself belongs to the Piano Project parser — one reader for the
+ * format, validated and tick-native — and `midi-song-from-project.ts` projects
+ * its output down to notes on beats. See that module for what "will not open"
+ * now covers.
  */
 export function parseMidiSong(data: Uint8Array): MidiSong | null {
-  try {
-    if (data.length < 14) return null
-    if (
-      data[0] !== 0x4d ||
-      data[1] !== 0x54 ||
-      data[2] !== 0x68 ||
-      data[3] !== 0x64
-    ) {
-      return null
-    }
-    const format = (data[8] << 8) | data[9]
-    if (format !== 0 && format !== 1) return null
-    const ticksPerBeat = (data[12] << 8) | data[13]
-    if (ticksPerBeat === 0) return null
-
-    // Tempo events can sit in any track, so these accumulate across all of
-    // them and are sorted once at the end.
-    const tempoChanges: MidiTempoChange[] = []
-
-    const tracks: MidiSongTrack[] = []
-    let offset = 14
-    let trackIndex = 0
-
-    while (offset + 8 <= data.length) {
-      if (
-        data[offset] !== 0x4d ||
-        data[offset + 1] !== 0x54 ||
-        data[offset + 2] !== 0x72 ||
-        data[offset + 3] !== 0x6b
-      ) {
-        break
-      }
-      const trackLen =
-        (data[offset + 4] << 24) |
-        (data[offset + 5] << 16) |
-        (data[offset + 6] << 8) |
-        data[offset + 7]
-      offset += 8
-      const trackEnd = offset + trackLen
-
-      let tick = 0
-      let trackName = ''
-      let runningStatus = 0
-      // Per-channel state within this track
-      const programByChannel = new Map<number, number>()
-      const notesByChannel = new Map<number, RawNote[]>()
-      const activeByChannel = new Map<string, { tick: number }>()
-
-      while (offset < trackEnd && offset < data.length) {
-        // Variable-length delta time
-        let delta = 0
-        let vlqBytes = 0
-        while (offset < data.length && vlqBytes < 4) {
-          const b = data[offset++]
-          vlqBytes++
-          delta = (delta << 7) | (b & 0x7f)
-          if (!(b & 0x80)) break
-        }
-        tick += delta
-        if (offset >= data.length) break
-
-        let status = data[offset]
-        if (status & 0x80) {
-          offset++
-          if (status < 0xf0) runningStatus = status
-        } else {
-          // Running status — reuse the previous status byte
-          status = runningStatus
-          if (!(status & 0x80)) break // malformed
-        }
-
-        if (status === 0xff) {
-          // Meta event (cancels running status per SMF spec)
-          runningStatus = 0
-          if (offset >= data.length) break
-          const metaType = data[offset++]
-          // Meta length is a VLQ too
-          let len = 0
-          let lb = 0
-          while (offset < data.length && lb < 4) {
-            const b = data[offset++]
-            lb++
-            len = (len << 7) | (b & 0x7f)
-            if (!(b & 0x80)) break
-          }
-          if (metaType === 0x2f) break // end of track
-          if (metaType === 0x03 && trackName === '') {
-            trackName = new TextDecoder()
-              .decode(data.slice(offset, offset + len))
-              .trim()
-          }
-          if (metaType === 0x51 && len === 3) {
-            const usPerBeat =
-              (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2]
-            if (usPerBeat > 0) {
-              tempoChanges.push({ beat: tick / ticksPerBeat, usPerBeat })
-            }
-          }
-          offset += len
-          continue
-        }
-
-        if (status === 0xf0 || status === 0xf7) {
-          // Sysex — VLQ length (also cancels running status)
-          runningStatus = 0
-          let len = 0
-          let lb = 0
-          while (offset < data.length && lb < 4) {
-            const b = data[offset++]
-            lb++
-            len = (len << 7) | (b & 0x7f)
-            if (!(b & 0x80)) break
-          }
-          offset += len
-          continue
-        }
-
-        const channel = status & 0x0f
-        const msgType = status & 0xf0
-
-        if (msgType === 0x90 || msgType === 0x80) {
-          if (offset + 2 > data.length) break
-          const note = data[offset++]
-          const velocity = data[offset++]
-          const key = `${channel}:${note}`
-          const isOn = msgType === 0x90 && velocity > 0
-          if (isOn) {
-            activeByChannel.set(key, { tick })
-          } else {
-            const on = activeByChannel.get(key)
-            if (on) {
-              activeByChannel.delete(key)
-              let list = notesByChannel.get(channel)
-              if (!list) {
-                list = []
-                notesByChannel.set(channel, list)
-              }
-              list.push({
-                midi: note,
-                startTick: on.tick,
-                durationTicks: Math.max(1, tick - on.tick),
-              })
-            }
-          }
-        } else if (msgType === 0xc0) {
-          if (offset + 1 > data.length) break
-          const program = data[offset++]
-          if (!programByChannel.has(channel)) {
-            programByChannel.set(channel, program)
-          }
-        } else if (msgType === 0xd0) {
-          offset += 1
-        } else if (msgType === 0xa0 || msgType === 0xb0 || msgType === 0xe0) {
-          offset += 2
-        } else {
-          break // unknown status — bail out of this track
-        }
-      }
-      offset = Math.max(offset, trackEnd)
-
-      // Emit one MidiSongTrack per channel that produced notes
-      for (const [channel, rawNotes] of notesByChannel) {
-        if (channel === DRUM_CHANNEL) continue // pitched playback of drums sounds wrong
-        const program = programByChannel.get(channel)
-        const instrumentName =
-          program !== undefined
-            ? (GM_INSTRUMENTS[program] ?? `Program ${program}`)
-            : 'Unknown Instrument'
-        const name =
-          trackName !== ''
-            ? trackName
-            : program !== undefined
-              ? instrumentName
-              : `Track ${trackIndex + 1}`
-        rawNotes.sort((a, b) => a.startTick - b.startTick)
-        tracks.push({
-          id: `t${trackIndex}c${channel}`,
-          name,
-          instrumentName,
-          noteCount: rawNotes.length,
-          notes: rawNotes.map((n) => ({
-            midi: n.midi,
-            startBeat: n.startTick / ticksPerBeat,
-            duration: Math.max(0.25, n.durationTicks / ticksPerBeat),
-          })),
-        })
-      }
-      trackIndex++
-    }
-
-    if (tracks.length === 0) return null
-    const sortedTempoChanges = tempoChanges.sort(
-      (left, right) => left.beat - right.beat,
-    )
-    const openingTempo = sortedTempoChanges.find((change) => change.beat === 0)
-    return {
-      bpm:
-        openingTempo === undefined
-          ? 120
-          : Math.round(60000000 / openingTempo.usPerBeat),
-      tempoChanges: sortedTempoChanges,
-      tracks,
-    }
-  } catch {
-    return null
-  }
+  return parseMidiSongViaProject(data, gmInstrumentName)
 }
 
 /** Pick a sensible default track to score against: most notes wins. */
