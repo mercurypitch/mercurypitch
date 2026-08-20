@@ -14,6 +14,7 @@
 // Event names live in src/lib/funnel-event-catalog.ts, which the db-worker
 // builds its ingest allowlist from — so a name cannot exist on one side only.
 
+import { AD_CONVERSIONS } from '@/lib/consent'
 import { createFunnel } from '@/lib/funnel'
 import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
 
@@ -22,6 +23,21 @@ export type OnboardingEvent = OnboardingFunnelEvent
 export const trackOnboarding = createFunnel<OnboardingEvent>({
   storageKey: 'onboarding.funnel.v1',
   label: 'onboarding-funnel',
+  // Milestones that are also Google Ads conversion actions (see the campaigns
+  // repo `mercury/config/conversion-map.md`).
+  adConversions: {
+    // The in-app analogue of the Mirror's `mirror_complete`, and the bid target
+    // for Campaign H — the visitor sang the ~90s voiceprint and saw their
+    // result. `onboarding_twin` rather than `onboarding_voiceprint` on purpose:
+    // beats fire on ENTRY, so `onboarding_voiceprint` means "started singing",
+    // while the twin beat renders only once a voiceprint exists
+    // (FirstLight.tsx gates it on `voiceprint() !== null`). Bidding on the
+    // start would buy visitors who never finish.
+    //
+    // No device-level dedup guard here, matching the Mirror: the action is
+    // ONE_PER_CLICK, so Google collapses a replay within the same ad click.
+    onboarding_twin: AD_CONVERSIONS.voiceprint_complete,
+  },
 })
 
 /** The per-beat event for a beat id. */
