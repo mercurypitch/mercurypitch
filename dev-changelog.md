@@ -353,6 +353,32 @@ range stayed 0..1 — a clean clarity scale — and the curve got steeper:
 faceplate carried 12.96px of blur at the old default and carries 8.9px now.
 Zero is still the room exactly as it shipped.
 
+### Piano Night and Guitar Night come off noindex
+
+Both rooms shipped as `noindex, nofollow` pilot documents and were absent from
+`public/sitemap.xml`. That was right while they were pilots and wrong once they
+were not: `/karaoke-night` and `/jam` are indexed, and the two instrument rooms
+were the only real entry pages hidden from search.
+
+What actually blocked them was thinner than the robots tag. A page is safe to
+put in a sitemap only when it can stand on its own — its own title, a
+description worth showing in a result, a self-canonical, and a share card — and
+the pilot heads had a bare `Piano Night — MercuryPitch` title and a single line
+of description. So this is not a one-word robots flip: both heads gained a real
+title, a description, a keyword line and the full favicon set the other entries
+carry, and both were added to the sitemap.
+
+Piano Night's Open Graph copy is untouched. It was written two entries above
+this one and is better than anything worth replacing it with; only the head
+around it changed.
+
+The test that pinned the old behaviour asserted the _pilot_ state — `noindex`,
+and absence from the sitemap. Inverting those assertions alone would have
+pinned nothing worth pinning, so it now checks the property that matters: a
+room in the sitemap is self-canonical, carries a description over 120
+characters, a keyword line and an `og:image`. It runs over both rooms from one
+table, so Guitar Night is covered too — it never had a test of its own.
+
 ## [0.9.0] - 2026-08-18
 
 ### Added

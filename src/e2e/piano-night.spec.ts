@@ -149,9 +149,11 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
   await expect(
     page.getByTestId('piano-night-keyboard').locator('button[data-midi]'),
   ).toHaveCount(88)
+  // The room came off `noindex` on 2026-08-20 — it is a listed page now, not
+  // an unlisted pilot. See the sitemap and src/tests/launch-entry-seo.test.ts.
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
-    'noindex, nofollow',
+    'index, follow',
   )
 
   const fallAlignment = await page.evaluate(() => {
