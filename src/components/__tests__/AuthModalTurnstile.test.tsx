@@ -20,9 +20,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/db/services/auth-service', () => mocks)
 
+/** Set before importing the modal to simulate a widget that never loaded. */
+let turnstileBlocked = false
+
 beforeEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
+  turnstileBlocked = false
   // Spread the original: a bare replacement blanks IS_TEST and every other
   // default, which breaks any module that imports one of them.
   vi.doMock('@/lib/defaults', async (importOriginal) => ({
@@ -42,6 +46,7 @@ beforeEach(() => {
       </button>
     ),
     turnstileEnabled: true,
+    turnstileUnavailable: () => turnstileBlocked,
     resetTurnstile: vi.fn(),
   }))
 })
@@ -87,6 +92,32 @@ describe('AuthModal with a site key configured', () => {
       'maff@example.com',
       'secret123',
       'a-fresh-token',
+    )
+  })
+})
+
+describe('AuthModal when the widget could not load', () => {
+  it('lets the reader submit rather than disabling the form forever', async () => {
+    // Reported as "sign in is disabled when I enter mail + password" on dev,
+    // where the CSP blocked challenges.cloudflare.com. With no widget there
+    // is no token, and a button that waits for one waits for ever. The
+    // server still checks, so the worst case is a real error message.
+    turnstileBlocked = true
+    mocks.loginWithPassword.mockResolvedValue({})
+
+    const email = await openLogin()
+    fireEvent.input(email, { target: { value: 'maff@example.com' } })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+
+    expect(screen.getByTestId('auth-submit')).toBeEnabled()
+
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    expect(mocks.loginWithPassword).toHaveBeenCalledWith(
+      'maff@example.com',
+      'secret123',
+      '',
     )
   })
 })

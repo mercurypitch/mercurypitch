@@ -220,3 +220,58 @@ describe('resetTurnstile', () => {
     expect(() => mod.resetTurnstile()).not.toThrow()
   })
 })
+
+describe('when the widget cannot load at all', () => {
+  it('starts out expecting the widget to work', async () => {
+    const mod = await withSiteKey()
+    expect(mod.turnstileUnavailable()).toBe(false)
+  })
+
+  it('reports itself unavailable when the script is blocked', async () => {
+    // A CSP that does not allow challenges.cloudflare.com, an ad blocker, a
+    // captive network. This is the state that left the Sign in button
+    // disabled forever: no widget, so no token, so nothing to enable it.
+    const mod = await withSiteKey()
+    render(() => <mod.default onToken={vi.fn()} />)
+
+    appended[0]?.onerror?.(new Event('error'))
+    await waitFor(() => expect(mod.turnstileUnavailable()).toBe(true))
+  })
+
+  it('reports itself unavailable when the script loads but defines nothing', async () => {
+    const mod = await withSiteKey()
+    render(() => <mod.default onToken={vi.fn()} />)
+    await scriptLoads()
+
+    await waitFor(() => expect(mod.turnstileUnavailable()).toBe(true))
+  })
+
+  it('says so on the form rather than leaving a silent dead button', async () => {
+    const mod = await withSiteKey()
+    const { findByRole } = render(() => <mod.default onToken={vi.fn()} />)
+
+    appended[0]?.onerror?.(new Event('error'))
+
+    const note = await findByRole('status')
+    expect(note.textContent).toMatch(/verification widget could not load/i)
+  })
+
+  it('stays available when a challenge merely fails', async () => {
+    // A failed challenge is retryable — the widget is there and working.
+    // Only a widget that never existed should open the form back up.
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    render(() => <mod.default onToken={vi.fn()} />)
+    await scriptLoads()
+    await waitFor(() => expect(api.render).toHaveBeenCalled())
+
+    const opts = api.render.mock.calls[0][1] as unknown as Record<
+      string,
+      () => void
+    >
+    opts['error-callback']()
+    opts['expired-callback']()
+
+    expect(mod.turnstileUnavailable()).toBe(false)
+  })
+})
