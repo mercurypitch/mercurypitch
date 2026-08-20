@@ -1,0 +1,125 @@
+/* ============================================================
+   Run-kind pills — one colour per kind of run, everywhere
+   ============================================================
+
+   The same four colours appear on the Progress card, the profile and the
+   community runs list, and are named in the Learn guide. That is the whole
+   mechanism: a colour only teaches anything if it means the same thing on
+   every screen, so these tones are defined once here and never inlined at a
+   call site. */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  --pill-tone: var(--text-muted);
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--pill-tone) 40%, transparent);
+  background: color-mix(in srgb, var(--pill-tone) 14%, transparent);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.count {
+  font-weight: 700;
+  color: var(--pill-tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  color: var(--text-secondary, var(--text-primary));
+}
+
+/* A kind nobody has run yet stays in the row — the row answers "where did my
+   work go", and a kind that disappears at zero cannot answer it — but it
+   recedes so the counts that matter read first. */
+.empty {
+  opacity: 0.45;
+}
+
+.tonePractice {
+  --pill-tone: var(--accent, #58a6ff);
+}
+
+.toneExercise {
+  --pill-tone: var(--success, #3fb950);
+}
+
+.toneChallenge {
+  --pill-tone: var(--warning, #d29922);
+}
+
+.toneWeekly {
+  --pill-tone: #a371f7;
+}
+
+/* The scope line: "on your account" vs "on this device". Small, but it is the
+   difference between a number that follows you and one that does not. */
+.scope {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: var(--spacing-sm) 0 0;
+}
+
+.explainButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.explainButton:hover,
+.explainButton:focus-visible {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent, #58a6ff) 55%, transparent);
+}
+
+.explainIcon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* One kind, no count — for a row that already names a single run. Same tone
+   scale as the pills, so a colour learned on the Progress card is the same
+   colour beside a run in the share picker. */
+.chip {
+  --pill-tone: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px 1px 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--pill-tone) 40%, transparent);
+  background: color-mix(in srgb, var(--pill-tone) 14%, transparent);
+  color: var(--text-secondary, var(--text-primary));
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.chipDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--pill-tone);
+  flex: none;
+}

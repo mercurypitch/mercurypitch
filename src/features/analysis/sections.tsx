@@ -9,6 +9,9 @@
 import type { Component, JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { StreakState } from '@/db/services/streak-service'
+import type { ProgressRun } from '@/features/progress/run-kinds'
+import { bestScore } from '@/features/progress/run-kinds'
+import { RunKindPills } from '@/features/progress/RunKindPills'
 import type { MobileAnalysisSummary } from '@/lib/mobile-analysis-summary'
 import type { BreathinessResult, HarmonicRichnessResult, ResonanceResult, } from '@/lib/vocal-analyzer'
 import type { AccuracyRating, SessionResult } from '@/types'
@@ -229,16 +232,23 @@ function trendPath(points: TrendPoint[], pick: (p: TrendPoint) => number) {
 }
 
 export const TrendsCard: Component<{
+  /** Local practice runs, which are the only ones with per-note detail. */
   sessions: SessionResult[]
+  /**
+   * Every recorded run, of every kind. Separate from `sessions` because the
+   * chart and the counts genuinely need different things: a trend line needs
+   * pitch detail, a count needs only that the run happened. Counting from the
+   * plottable subset is what showed "0 sessions" to somebody with forty runs.
+   */
+  runs: readonly ProgressRun[]
+  scope?: 'account' | 'device'
+  onExplain?: () => void
   streak: StreakState | null
 }> = (props) => {
   const points = createMemo(() => buildTrend(props.sessions))
   const path = createMemo(() => trendPath(points(), (p) => p.score))
 
-  const best = createMemo(() => {
-    const all = points()
-    return all.length === 0 ? 0 : Math.max(...all.map((p) => p.score))
-  })
+  const best = createMemo(() => bestScore(props.runs))
 
   return (
     <section class={styles.card} data-tour="analysis.trends">
@@ -259,8 +269,18 @@ export const TrendsCard: Component<{
           label="Best streak"
           value={`${props.streak?.longestStreak ?? 0}d`}
         />
-        <StatTile label="Sessions" value={points().length} />
+        <StatTile label="Runs" value={props.runs.length} />
         <StatTile label="Best score" value={`${best()}%`} />
+      </div>
+
+      <div style={{ 'margin-bottom': '1rem' }}>
+        <RunKindPills
+          runs={props.runs}
+          {...(props.scope === undefined ? {} : { scope: props.scope })}
+          {...(props.onExplain === undefined
+            ? {}
+            : { onExplain: props.onExplain })}
+        />
       </div>
 
       <Show

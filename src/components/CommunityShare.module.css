@@ -94,3 +94,33 @@
   gap: 16px;
   margin-bottom: 24px;
 }
+
+/* ============================================================
+   "What counts where" note
+   ============================================================
+
+   The Sessions tab counts published setlists while the profile beside it
+   counts runs, and both used to say "sessions". The note is the cheap half
+   of the fix; the pills and the guide are the rest. */
+
+.countsNote {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.countsNoteLink {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent, #58a6ff);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.countsNoteLink:hover,
+.countsNoteLink:focus-visible {
+  color: var(--text-primary);
+}

@@ -1,0 +1,103 @@
+/* The "what counts where" guide, shared by the modal and the full page. */
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  margin: 0;
+}
+
+.subTitle {
+  font-size: var(--text-md, 1rem);
+  font-weight: 650;
+  margin: var(--spacing-md) 0 0;
+}
+
+.lede {
+  margin: 0;
+  color: var(--text-secondary, var(--text-primary));
+  line-height: 1.55;
+}
+
+.body {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.kindList {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kind {
+  --kind-tone: var(--text-muted);
+  border: 1px solid color-mix(in srgb, var(--kind-tone) 35%, transparent);
+  border-left: 3px solid var(--kind-tone);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--kind-tone) 8%, transparent);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.kindHead {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--kind-tone);
+  flex: none;
+}
+
+.kindName {
+  font-size: var(--text-md, 1rem);
+}
+
+.rank {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.kindBlurb {
+  margin: 6px 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+/* Same four tones as the pills. Changing one means changing both, which is
+   why the guide names the colour rather than only describing the kind. */
+.tonePractice {
+  --kind-tone: var(--accent, #58a6ff);
+}
+
+.toneExercise {
+  --kind-tone: var(--success, #3fb950);
+}
+
+.toneChallenge {
+  --kind-tone: var(--warning, #d29922);
+}
+
+.toneWeekly {
+  --kind-tone: #a371f7;
+}
