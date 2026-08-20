@@ -129,7 +129,7 @@ export interface GuitarPracticeControllerDeps {
   setMicActive: (active: boolean) => void
   updateMidiSongSelection: (
     id: string,
-    scoreTrackId: string,
+    scoreTrackId: string | null,
     backingTrackIds: string[],
   ) => void
 }
@@ -975,7 +975,11 @@ export function useGuitarPracticeController(
     setCurrentSong(songObj ?? null)
     setMutedTrackIds(new Set(mutedIds ?? []))
     if (songObj) {
-      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+      setVisibleTrackIds(
+        new Set<string>(
+          songObj.scoreTrackId === null ? [] : [songObj.scoreTrackId],
+        ),
+      )
     } else {
       setVisibleTrackIds(new Set<string>())
     }
@@ -1028,7 +1032,11 @@ export function useGuitarPracticeController(
     setCurrentSong(songObj ?? null)
     setMutedTrackIds(new Set(mutedIds ?? []))
     if (songObj) {
-      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+      setVisibleTrackIds(
+        new Set<string>(
+          songObj.scoreTrackId === null ? [] : [songObj.scoreTrackId],
+        ),
+      )
     }
 
     const maxNoteBeat =

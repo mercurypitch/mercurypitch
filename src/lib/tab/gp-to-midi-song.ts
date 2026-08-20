@@ -11,8 +11,9 @@
 import type * as alphaTab from '@coderline/alphatab'
 import type { GuitarBendType, GuitarNoteNotation, GuitarSlideType, GuitarTechnique, } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
-import type { MidiSong, MidiSongNote, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
+import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
+import { guitarProDynamicVelocity, resolveGuitarProPercussion, } from '@/lib/tab/gp-percussion'
 
 /** alphaTab playback ticks per quarter note. */
 const TICKS_PER_QUARTER = 960
@@ -212,11 +213,66 @@ function notePlaybackDuration(
   return Math.max(0, end - start)
 }
 
+function percussionTrackToMidiSongTrack(
+  track: alphaTab.model.Track,
+  index: number,
+): MidiSongPercussionTrack | null {
+  const percussionHits: MidiSongPercussionHit[] = []
+  let droppedHitCount = 0
+
+  for (const staff of track.staves) {
+    for (const bar of staff.bars) {
+      for (const voice of bar.voices) {
+        for (const beat of voice.beats) {
+          if (beat.isRest) continue
+          const startBeat = beat.absolutePlaybackStart / TICKS_PER_QUARTER
+          for (const note of beat.notes) {
+            if (note.isTieDestination) continue
+            const resolved = resolveGuitarProPercussion(
+              track,
+              note.percussionArticulation,
+            )
+            if (resolved === null) {
+              droppedHitCount += 1
+              continue
+            }
+            const writtenDuration = beat.playbackDuration / TICKS_PER_QUARTER
+            percussionHits.push({
+              id: sourceNoteId(index, staff, note),
+              gmKey: resolved.gmKey,
+              startBeat,
+              velocity: guitarProDynamicVelocity(note.dynamics as number),
+              ...(writtenDuration > 0 ? { writtenDuration } : {}),
+              source: resolved.source,
+            })
+          }
+        }
+      }
+    }
+  }
+
+  if (percussionHits.length === 0 && droppedHitCount === 0) return null
+  percussionHits.sort((left, right) => left.startBeat - right.startBeat)
+  const name = track.name.trim()
+  return {
+    id: `gp-t${index}`,
+    kind: 'percussion',
+    name: name === '' ? 'Drums' : name,
+    instrumentName: 'General MIDI Drum Kit',
+    noteCount: percussionHits.length,
+    notes: [],
+    percussionHits,
+    droppedHitCount,
+  }
+}
+
 function trackToMidiSongTrack(
   track: alphaTab.model.Track,
   index: number,
 ): MidiSongTrack | null {
-  if (track.isPercussion) return null
+  if (track.isPercussion) {
+    return percussionTrackToMidiSongTrack(track, index)
+  }
   const info = track.playbackInfo
 
   const notes: MidiSongNote[] = []
@@ -285,6 +341,7 @@ function trackToMidiSongTrack(
   const name = track.name.trim() !== '' ? track.name.trim() : instrumentName
   return {
     id: `gp-t${index}`,
+    kind: 'pitched',
     name,
     instrumentName,
     noteCount: notes.length,
@@ -367,7 +424,7 @@ function scoreTimeSignatures(score: alphaTab.model.Score): MidiTimeSignature[] {
   }))
 }
 
-/** Convert an alphaTab Score into a MidiSong (percussion tracks dropped). */
+/** Convert an alphaTab Score without crossing percussion into pitch notes. */
 export function scoreToMidiSong(score: alphaTab.model.Score): MidiSong {
   const tracks: MidiSongTrack[] = []
   score.tracks.forEach((track, i) => {

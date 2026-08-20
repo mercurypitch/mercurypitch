@@ -43,6 +43,22 @@ function legacySong(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function percussionTrack(id = 'gp-t3') {
+  return {
+    id,
+    kind: 'percussion',
+    name: 'Drums',
+    instrumentName: 'General MIDI Drum Kit',
+    noteCount: 2,
+    notes: [],
+    percussionHits: [
+      { gmKey: 36, startBeat: 0, velocity: 112 },
+      { gmKey: 38, startBeat: 1.5, velocity: 73 },
+    ],
+    droppedHitCount: 1,
+  }
+}
+
 function storageWith(raw: string | null): Storage {
   let value = raw
   return {
@@ -90,6 +106,37 @@ describe('legacy MIDI validation', () => {
       legacySong({ id: 'new-id', name: 'Prelude' }),
     ])
     expect(readLegacyMidiSongs(storage).songs).toHaveLength(2)
+  })
+
+  it('reads mixed and percussion-only rows without turning hits into notes', () => {
+    const pitchedTracks = legacySong().tracks
+    const mixed = legacySong({
+      tracks: [...pitchedTracks, percussionTrack()],
+      backingTrackIds: ['t1c1', 't2c2', 'gp-t3'],
+    })
+    const drumsOnly = legacySong({
+      name: 'Drum study',
+      tracks: [percussionTrack('drums')],
+      scoreTrackId: null,
+      backingTrackIds: ['drums'],
+    })
+
+    const result = readLegacyMidiSongs(
+      storageWith(JSON.stringify([mixed, drumsOnly])),
+    )
+
+    expect(result.skippedRows).toBe(0)
+    expect(result.songs).toHaveLength(2)
+    expect(result.songs[0]?.tracks.at(-1)).toMatchObject({
+      kind: 'percussion',
+      notes: [],
+      percussionHits: [
+        { gmKey: 36, startBeat: 0, velocity: 112 },
+        { gmKey: 38, startBeat: 1.5, velocity: 73 },
+      ],
+      droppedHitCount: 1,
+    })
+    expect(result.songs[1]?.scoreTrackId).toBeNull()
   })
 
   it('skips invalid rows and reports malformed or blocked roots honestly', () => {
@@ -225,8 +272,45 @@ describe('legacy MIDI identity and project mapping', () => {
     song.tracks[0]!.id = 't0c9'
     song.scoreTrackId = 't0c9'
     expect(legacyMidiSongToProject(song, hash).tracks[0]).toMatchObject({
+      channel: 0,
+      isPercussion: false,
+    })
+  })
+
+  it('projects stored percussion as velocity-aware channel-10 one-shots', () => {
+    const song = readLegacyMidiSongs(
+      storageWith(
+        JSON.stringify([
+          legacySong({
+            tracks: [percussionTrack()],
+            scoreTrackId: null,
+            backingTrackIds: ['gp-t3'],
+          }),
+        ]),
+      ),
+    ).songs[0]!
+
+    const project = legacyMidiSongToProject(song, 'percussion-hash')
+
+    expect(project.scoreTrackId).toBeNull()
+    expect(project.tracks[0]).toMatchObject({
+      id: 'gp-t3',
       channel: 9,
       isPercussion: true,
+      events: [
+        expect.objectContaining({
+          type: 'note-on',
+          note: 36,
+          velocity: 112,
+          tick: 0,
+        }),
+        expect.objectContaining({
+          type: 'note-on',
+          note: 38,
+          velocity: 73,
+          tick: 720,
+        }),
+      ],
     })
   })
 

@@ -107,6 +107,8 @@ function expressiveFixture(): Uint8Array {
     channel(480, 0x81, 48, 12),
     channel(0, 0x99, 36, 100),
     channel(120, 0x89, 36, 20),
+    // A valid raw MIDI data byte, but outside the bounded GM drum map.
+    channel(0, 0x99, 91, 90),
     meta(0, 0x2f, []),
   )
   return smf(1, 480, [conductor, music])
@@ -225,6 +227,26 @@ describe('parseMidiProject', () => {
         releaseVelocity: 0,
       },
     ])
+  })
+
+  it('projects percussion only when requested and never selects it to score', () => {
+    const song = projectToMidiSong(
+      parseMidiProject(expressiveFixture(), IDENTITY),
+      { includePercussion: true },
+    )
+    const drums = song.tracks.find((track) => track.kind === 'percussion')
+
+    expect(song.scoreTrackId).toBe('smf-t1-c0')
+    expect(drums).toMatchObject({
+      id: 'smf-t1-c9',
+      kind: 'percussion',
+      noteCount: 1,
+      notes: [],
+      droppedHitCount: 1,
+      percussionHits: [
+        expect.objectContaining({ gmKey: 36, velocity: 100, startBeat: 1.75 }),
+      ],
+    })
   })
 
   it('rejects unsupported structures and bounded-resource violations', () => {

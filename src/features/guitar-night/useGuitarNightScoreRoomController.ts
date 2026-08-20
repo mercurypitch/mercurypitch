@@ -10,8 +10,9 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
-import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
+import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
@@ -55,6 +56,10 @@ interface GuitarNightScoreRoomControllerOptions {
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
   /** Which backing lanes are open now; gain changes are safe during playback. */
   audibleBackingTrackIds?: Accessor<readonly string[] | undefined>
+  /** Authored drum parts kept separate from the pitched backing melody. */
+  backingPercussion?: Accessor<readonly GuitarRoomBandPercussionHit[]>
+  /** Drum parts whose run-scoped gates begin open. */
+  audiblePercussionTrackIds?: Accessor<readonly string[] | undefined>
   /**
    * Whether the scored part sounds when the player has not said either way.
    * A tab with a band behind it hands that part to the player; a tab with one
@@ -85,6 +90,9 @@ interface GuitarNightScoreRoomRunConfiguration {
   melody: readonly GuitarRoomBandNote[]
   /** Every other audible part, merged and already carrying its own timbre. */
   backingMelody: readonly GuitarRoomBandNote[]
+  /** Every audible authored drum attack, never coerced into a melody note. */
+  backingPercussion: readonly GuitarRoomBandPercussionHit[]
+  audiblePercussionTrackIds: readonly string[]
   melodyVariant: 'electric' | 'bass'
   /**
    * Read on every beat rather than settled at launch, so the click can be
@@ -158,6 +166,21 @@ export function scoreDurationBeats(
   if (reference === null) return 0
   return reference.notes.reduce(
     (latest, note) => Math.max(latest, note.startBeat + note.duration),
+    0,
+  )
+}
+
+/** Keep the room alive through the final authored one-shot drum attack. */
+export function percussionDurationBeats(
+  percussion: readonly GuitarRoomBandPercussionHit[],
+): number {
+  return percussion.reduce(
+    (latest, hit) =>
+      Number.isFinite(hit.startBeat) &&
+      hit.startBeat >= 0 &&
+      drumVoiceForMidi(hit.gmKey) !== null
+        ? Math.max(latest, hit.startBeat + 0.001)
+        : latest,
     0,
   )
 }
@@ -327,6 +350,23 @@ export function useGuitarNightScoreRoomController(
         hearBacking() && (audible === null || audible.has(channelId)) ? 1 : 0,
       )
     }
+
+    const configuredAudiblePercussionTracks =
+      options.audiblePercussionTrackIds?.()
+    const audiblePercussion =
+      configuredAudiblePercussionTracks === undefined
+        ? null
+        : new Set(configuredAudiblePercussionTracks)
+    const percussionTrackIds = new Set(
+      (options.backingPercussion?.() ?? []).map((hit) => hit.trackId),
+    )
+    for (const trackId of percussionTrackIds) {
+      band.setPercussionTrackAudible(
+        trackId,
+        hearBacking() &&
+          (audiblePercussion === null || audiblePercussion.has(trackId)),
+      )
+    }
   })
   const setHearScore = (
     next: boolean | ((previous: boolean) => boolean),
@@ -391,6 +431,11 @@ export function useGuitarNightScoreRoomController(
         status() === 'playing' ||
         status() === 'paused'),
   )
+  const percussionBackingLive = createMemo(
+    () =>
+      runningTake()?.mode !== 'assessment' &&
+      (status() === 'count-in' || status() === 'playing'),
+  )
   const tempoBpm = createMemo(
     () =>
       (takePinsSetup() ? runningTake()?.tempoBpm : undefined) ??
@@ -398,7 +443,11 @@ export function useGuitarNightScoreRoomController(
   )
   const durationBeats = createMemo(
     () =>
-      runningTake()?.durationBeats ?? scoreDurationBeats(options.reference()),
+      runningTake()?.durationBeats ??
+      Math.max(
+        scoreDurationBeats(options.reference()),
+        percussionDurationBeats(options.backingPercussion?.() ?? []),
+      ),
   )
   // Deliberately not guarded by `takePinsSetup`: a completed take is reviewed
   // against the score it actually sounded, not against whatever is loaded now.
@@ -527,20 +576,29 @@ export function useGuitarNightScoreRoomController(
       bpm: tempoForRun,
       tempoChanges: tempoChangesForRun,
     })
-    const durationBeatsForRun = scoreDurationBeats(reference)
-    const exerciseBeatsForRun = Math.max(1, Math.ceil(durationBeatsForRun))
+    const scoreDurationBeatsForRun = scoreDurationBeats(reference)
     const assessmentRange =
       requestedAssessment === undefined
         ? null
         : normalizeLoopSpan(
             requestedAssessment.start,
             requestedAssessment.end,
-            durationBeatsForRun,
+            scoreDurationBeatsForRun,
           )
     if (requestedAssessment !== undefined && assessmentRange === null) {
       return null
     }
     const mode = assessmentRange === null ? 'rehearsal' : boundedMode
+    const backingPercussionForRun =
+      mode !== 'assessment' ? [...(options.backingPercussion?.() ?? [])] : []
+    const durationBeatsForRun =
+      mode === 'rehearsal'
+        ? Math.max(
+            scoreDurationBeatsForRun,
+            percussionDurationBeats(backingPercussionForRun),
+          )
+        : scoreDurationBeatsForRun
+    const exerciseBeatsForRun = Math.max(1, Math.ceil(durationBeatsForRun))
     const loopForRun =
       mode !== 'rehearsal'
         ? null
@@ -568,6 +626,13 @@ export function useGuitarNightScoreRoomController(
       melody: mode !== 'assessment' ? scoreToBandMelody(reference) : [],
       backingMelody:
         mode !== 'assessment' ? [...(options.backingMelody?.() ?? [])] : [],
+      backingPercussion: backingPercussionForRun,
+      audiblePercussionTrackIds: [
+        ...(options.audiblePercussionTrackIds?.() ??
+          Array.from(
+            new Set(backingPercussionForRun.map((hit) => hit.trackId)),
+          )),
+      ],
       melodyVariant: configuredMelodyVariant(),
       exercisePulse: () => mode !== 'assessment' && hearClick(),
     }
@@ -610,6 +675,10 @@ export function useGuitarNightScoreRoomController(
         // grooving, and it sounds the part rather than something under it.
         feel: 'click',
         melody: [...run.melody, ...run.backingMelody],
+        percussion: run.backingPercussion,
+        audiblePercussionTrackIds: hearBacking()
+          ? run.audiblePercussionTrackIds
+          : [],
         melodyVariant: run.melodyVariant,
         exercisePulse: run.exercisePulse,
         onExerciseStart: (exerciseStartBeat, scheduledAtSeconds) => {
@@ -1028,6 +1097,20 @@ export function useGuitarNightScoreRoomController(
     void start({ countInOnResume: true })
   }
 
+  const setPercussionTrackAudible = (
+    trackId: string,
+    audible: boolean,
+  ): void => {
+    band.setPercussionTrackAudible(trackId, audible && hearBacking())
+    setRunningTake((run) => {
+      if (run === null || run.mode === 'assessment') return run
+      const trackIds = new Set(run.audiblePercussionTrackIds)
+      if (audible) trackIds.add(trackId)
+      else trackIds.delete(trackId)
+      return { ...run, audiblePercussionTrackIds: [...trackIds] }
+    })
+  }
+
   const setTempoBpm = (value: number): void => {
     parkForConfiguration()
     setTempoOverride(
@@ -1078,6 +1161,8 @@ export function useGuitarNightScoreRoomController(
     /** Setup stays editable for a parked pre-play seek, but not a paused take. */
     setupLocked: takePinsSetup,
     parkForConfiguration,
+    percussionBackingLive,
+    setPercussionTrackAudible,
     /** Open the room's audio without scheduling a beat — for microphone input. */
     activateAudio: async (): Promise<boolean> =>
       (await band.activate()) !== null,

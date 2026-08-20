@@ -30,6 +30,42 @@ function reference(trackId = 'track-lead'): GuitarNightReference {
   }
 }
 
+function referenceWithDrums(): GuitarNightReference {
+  const pitched = reference()
+  return {
+    ...pitched,
+    tracks: [
+      ...pitched.tracks,
+      {
+        id: 'track-drums',
+        name: 'Drum kit',
+        kind: 'percussion',
+        hitCount: 16,
+        supportedHitCount: 16,
+        droppedHitCount: 0,
+      },
+    ],
+  }
+}
+
+function referenceWithUnsupportedDrums(): GuitarNightReference {
+  const mixed = referenceWithDrums()
+  return {
+    ...mixed,
+    tracks: mixed.tracks.map((track) =>
+      track.kind === 'percussion'
+        ? {
+            ...track,
+            name: 'Aux percussion',
+            hitCount: 1,
+            supportedHitCount: 0,
+            droppedHitCount: 2,
+          }
+        : track,
+    ),
+  }
+}
+
 describe('GuitarNightSessionPanel', () => {
   afterEach(cleanup)
 
@@ -327,6 +363,117 @@ describe('GuitarNightSessionPanel', () => {
     fireEvent.click(screen.getByLabelText('Solo Bass'))
     expect(onToggleTrackSolo).toHaveBeenCalledWith('track-bass')
     expect(screen.getByLabelText('Solo Lead guitar')).toBeDisabled()
+  })
+
+  it('lists drums as audible hits without making them score or sheet parts', () => {
+    const onSelectTrack = vi.fn()
+    const onToggleTrackAudible = vi.fn()
+    const onToggleTrackVisible = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => referenceWithDrums()}
+        audibleTrackIds={() => ['track-rhythm', 'track-drums']}
+        onToggleTrackAudible={onToggleTrackAudible}
+        visibleTrackIds={() => ['track-lead', 'track-drums']}
+        onToggleTrackVisible={onToggleTrackVisible}
+        onSelectTrack={onSelectTrack}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const drumPart = screen
+      .getAllByTestId('guitar-night-session-track')
+      .find((button) => button.textContent?.includes('Drum kit'))
+    expect(drumPart).toBeDefined()
+    expect(drumPart).toBeDisabled()
+    expect(drumPart?.textContent).toContain('16 hits · drums')
+    expect(drumPart).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(drumPart!)
+    expect(onSelectTrack).not.toHaveBeenCalled()
+
+    const sound = screen.getByLabelText('Mute Drum kit')
+    expect(sound).toBeEnabled()
+    expect(sound).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(sound)
+    expect(onToggleTrackAudible).toHaveBeenCalledWith('track-drums')
+
+    const sheet = screen.getByLabelText(
+      'Drum kit does not use guitar sheet lanes',
+    )
+    expect(sheet).toBeDisabled()
+    expect(sheet).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(sheet)
+    expect(onToggleTrackVisible).not.toHaveBeenCalled()
+  })
+
+  it('keeps unsupported drums visible without offering a false sound control', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => referenceWithUnsupportedDrums()}
+        audibleTrackIds={() => ['track-rhythm', 'track-drums']}
+        onToggleTrackAudible={vi.fn()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen.getByText(/1 hit · drums · no available sound/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/2 unmapped/)).toBeInTheDocument()
+    const sound = screen.getByLabelText(
+      'Aux percussion has no drum sounds available yet',
+    )
+    expect(sound).toBeDisabled()
+    expect(sound).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByText(/unmapped drum rows stay listed but silent/i),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps pitched and drum mute controls live during rehearsal', () => {
+    const onToggleTrackAudible = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => referenceWithDrums()}
+        audibleTrackIds={() => ['track-rhythm', 'track-drums']}
+        onToggleTrackAudible={onToggleTrackAudible}
+        takeActive={() => true}
+        percussionControlsLive={() => true}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const drums = screen.getByLabelText('Mute Drum kit')
+    expect(drums).toBeEnabled()
+    fireEvent.click(drums)
+    expect(onToggleTrackAudible).toHaveBeenCalledWith('track-drums')
+    const rhythm = screen.getByLabelText('Mute Rhythm guitar')
+    expect(rhythm).toBeEnabled()
+    fireEvent.click(rhythm)
+    expect(onToggleTrackAudible).toHaveBeenCalledWith('track-rhythm')
+  })
+
+  it('does not claim drum controls are live during an acoustic take', () => {
+    const onToggleTrackAudible = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => referenceWithDrums()}
+        audibleTrackIds={() => ['track-rhythm', 'track-drums']}
+        onToggleTrackAudible={onToggleTrackAudible}
+        takeActive={() => true}
+        percussionControlsLive={() => false}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const drums = screen.getByLabelText('Stop this take to mute Drum kit')
+    expect(drums).toBeDisabled()
+    fireEvent.click(drums)
+    expect(onToggleTrackAudible).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Mute Rhythm guitar')).toBeEnabled()
   })
 
   it('reports the scored part rather than owning its sound', () => {

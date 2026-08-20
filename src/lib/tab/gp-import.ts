@@ -26,7 +26,7 @@ export async function parseGuitarProFile(file: File): Promise<GpImportResult> {
   const score = alphaTab.importer.ScoreLoader.loadScoreFromBytes(bytes)
   const song = scoreToMidiSong(score)
   if (song.tracks.length === 0) {
-    throw new Error('No playable (non-percussion) tracks found in this tab.')
+    throw new Error('No playable tracks found in this tab.')
   }
   return { song, name: scoreName(score, file.name) }
 }

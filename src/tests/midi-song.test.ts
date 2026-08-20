@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, gmInstrumentName, parseMidiSong, } from '@/lib/midi-song'
+import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, gmInstrumentName, isPercussionMidiSongTrack, normalizeMidiSong, parseMidiSong, } from '@/lib/midi-song'
 
 // ── Binary MIDI builders ───────────────────────────────────────
 
@@ -176,14 +176,25 @@ describe('parseMidiSong', () => {
     expect(song!.tracks[1].noteCount).toBe(2)
   })
 
-  it('filters out drum-channel notes (channel 10)', () => {
+  it('keeps channel-10 hits separate from pitched notes', () => {
     const data = buildMidi(
       [...quarterNote(0, 60, 0)],
       [...quarterNote(9, 36, 0)], // kick drum on channel 10
     )
     const song = parseMidiSong(data)
-    expect(song!.tracks).toHaveLength(1)
-    expect(song!.tracks[0].notes[0].midi).toBe(60)
+    expect(song!.tracks).toHaveLength(2)
+    const pitched = song!.tracks.find((track) => track.kind !== 'percussion')
+    const drums = song!.tracks.find(isPercussionMidiSongTrack)
+    expect(pitched?.notes[0].midi).toBe(60)
+    expect(drums?.notes).toEqual([])
+    expect(drums?.percussionHits).toEqual([
+      expect.objectContaining({
+        gmKey: 36,
+        startBeat: 0,
+        velocity: 100,
+        source: expect.objectContaining({ channel: 9, midiKey: 36 }),
+      }),
+    ])
   })
 
   it('splits multi-channel format-0 files into per-channel tracks', () => {
@@ -297,6 +308,47 @@ describe('gmInstrumentName', () => {
   })
 })
 
+describe('normalizeMidiSong', () => {
+  it('upgrades legacy pitch tracks and drops malformed percussion rows explicitly', () => {
+    const normalized = normalizeMidiSong({
+      bpm: 120,
+      tracks: [
+        {
+          id: 'legacy-guitar',
+          name: 'Guitar',
+          instrumentName: 'Steel Guitar',
+          noteCount: 1,
+          notes: [{ midi: 64, startBeat: 0, duration: 1 }],
+        },
+        {
+          id: 'drums',
+          kind: 'percussion',
+          name: 'Drums',
+          instrumentName: 'General MIDI Drum Kit',
+          noteCount: 4,
+          notes: [],
+          percussionHits: [
+            { gmKey: 38, startBeat: 0, velocity: 96 },
+            { gmKey: 34, startBeat: 1, velocity: 80 },
+            { gmKey: 42, startBeat: 2, velocity: 0 },
+            { gmKey: 36, startBeat: -1, velocity: 90 },
+          ],
+          droppedHitCount: 2,
+        },
+      ],
+    })
+
+    expect(normalized.tracks[0].kind).toBe('pitched')
+    const drums = normalized.tracks.find(isPercussionMidiSongTrack)
+    expect(drums).toMatchObject({
+      notes: [],
+      noteCount: 1,
+      percussionHits: [{ gmKey: 38, startBeat: 0, velocity: 96 }],
+      droppedHitCount: 5,
+    })
+  })
+})
+
 describe('defaultScoreTrack', () => {
   it('picks the track with the most notes', () => {
     const data = buildMidi(
@@ -304,7 +356,28 @@ describe('defaultScoreTrack', () => {
       [...quarterNote(1, 40, 0), ...quarterNote(1, 43, 0)],
     )
     const song = parseMidiSong(data)!
-    expect(defaultScoreTrack(song).id).toBe(song.tracks[1].id)
+    expect(defaultScoreTrack(song)?.id).toBe(song.tracks[1].id)
+  })
+
+  it('never picks a denser percussion track for pitch scoring', () => {
+    const song = parseMidiSong(
+      buildMidi(
+        [...quarterNote(0, 60, 0)],
+        [
+          ...quarterNote(9, 36, 0),
+          ...quarterNote(9, 38, 0),
+          ...quarterNote(9, 42, 0),
+        ],
+      ),
+    )!
+
+    expect(defaultScoreTrack(song)?.kind).toBe('pitched')
+    expect(defaultScoreTrack(song)?.notes[0].midi).toBe(60)
+  })
+
+  it('answers null for a percussion-only song', () => {
+    const song = parseMidiSong(buildMidi([...quarterNote(9, 36, 0)]))!
+    expect(defaultScoreTrack(song)).toBeNull()
   })
 })
 
