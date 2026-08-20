@@ -11,29 +11,18 @@
 
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
+import type { MidiBar, MidiTimeSignature } from '@/lib/midi-bars'
+import { buildBars } from '@/lib/midi-bars'
 import type { GuitarNightReferenceKind } from '../reference-port'
 
-/** Bars are counted in the score's own beat unit, which is a quarter note. */
-export const DEFAULT_BEATS_PER_BAR = 4
-
 /**
- * A time signature, from the bar it takes effect at. Guitar Pro carries these
- * per master bar; plain MIDI and measured audio do not, so the sheet falls back
- * to common time rather than inventing bar lengths it cannot prove.
+ * One bar of the sheet, in beat time.
+ *
+ * Where the lines fall is not the sheet's business to decide: signatures come
+ * off the file and `@/lib/midi-bars` turns them into bars, the same bars the
+ * highway and the piano roll count. The sheet only has to draw them.
  */
-export interface SheetTimeSignature {
-  /** First bar this signature applies to, 0-based. */
-  barIndex: number
-  /** Bar length in beats. */
-  beatsPerBar: number
-}
-
-/** One bar of the sheet, in beat time. */
-export interface SheetBar {
-  index: number
-  startBeat: number
-  beats: number
-}
+export type SheetBar = MidiBar
 
 /** A horizontal run of bars. Systems stack down the page; bars run across. */
 export interface SheetSystem {
@@ -76,7 +65,7 @@ export interface SheetLayoutInput {
   lanes: readonly SheetLane[]
   /** Beats the sheet must cover. Defaults to the last note that ends. */
   totalBeats?: number
-  timeSignatures?: readonly SheetTimeSignature[]
+  timeSignatures?: readonly MidiTimeSignature[]
   barsPerSystem?: number
 }
 
@@ -105,34 +94,9 @@ export function totalBeatsForLanes(lanes: readonly SheetLane[]): number {
  */
 export function buildSheetBars(
   totalBeats: number,
-  timeSignatures?: readonly SheetTimeSignature[],
+  timeSignatures?: readonly MidiTimeSignature[],
 ): SheetBar[] {
-  const signatures = normalizeTimeSignatures(timeSignatures)
-  const span =
-    Number.isFinite(totalBeats) && totalBeats > 0 ? (totalBeats as number) : 0
-
-  const bars: SheetBar[] = []
-  let startBeat = 0
-  let index = 0
-  let signatureIndex = 0
-  let beatsPerBar = signatures[0]?.beatsPerBar ?? DEFAULT_BEATS_PER_BAR
-
-  // One bar always, then bars until the last note is covered. The guard on
-  // `index` is a runaway stop, not a musical limit.
-  while ((index === 0 || startBeat < span) && index < MAX_BARS) {
-    while (
-      signatureIndex + 1 < signatures.length &&
-      (signatures[signatureIndex + 1]?.barIndex ?? Infinity) <= index
-    ) {
-      signatureIndex += 1
-      beatsPerBar = signatures[signatureIndex]?.beatsPerBar ?? beatsPerBar
-    }
-    bars.push({ index, startBeat, beats: beatsPerBar })
-    startBeat += beatsPerBar
-    index += 1
-  }
-
-  return bars
+  return buildBars(totalBeats, timeSignatures)
 }
 
 /** Cut a bar list into the horizontal rows the page scrolls through. */
@@ -260,7 +224,6 @@ export function beatFractionInSystem(
 }
 
 const EMPTY_NOTES: readonly GuitarNote[] = []
-const MAX_BARS = 4096
 
 function systemIndexForBeat(
   systems: readonly SheetSystem[],
@@ -287,37 +250,6 @@ function systemIndexForBeat(
     }
   }
   return systems.length - 1
-}
-
-function normalizeTimeSignatures(
-  signatures: readonly SheetTimeSignature[] | undefined,
-): readonly SheetTimeSignature[] {
-  if (signatures === undefined || signatures.length === 0) {
-    return [{ barIndex: 0, beatsPerBar: DEFAULT_BEATS_PER_BAR }]
-  }
-
-  const usable = signatures
-    .filter(
-      (signature) =>
-        Number.isFinite(signature.barIndex) &&
-        Number.isFinite(signature.beatsPerBar) &&
-        signature.beatsPerBar > 0,
-    )
-    .map((signature) => ({
-      barIndex: Math.max(0, Math.round(signature.barIndex)),
-      beatsPerBar: signature.beatsPerBar,
-    }))
-    .sort((left, right) => left.barIndex - right.barIndex)
-
-  const first = usable[0]
-  if (first === undefined) {
-    return [{ barIndex: 0, beatsPerBar: DEFAULT_BEATS_PER_BAR }]
-  }
-  // A score whose first signature starts late still needs a length for the bars
-  // before it; common time is the honest default there.
-  return first.barIndex === 0
-    ? usable
-    : [{ barIndex: 0, beatsPerBar: DEFAULT_BEATS_PER_BAR }, ...usable]
 }
 
 function clamp01(value: number): number {

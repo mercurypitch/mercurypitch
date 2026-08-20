@@ -5,8 +5,9 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import styles from './GuitarNightSheetView.module.css'
-import type { SheetLane, SheetPlacement, SheetSystem, SheetTimeSignature, } from './sheet-model'
+import type { SheetLane, SheetPlacement, SheetSystem } from './sheet-model'
 import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, } from './sheet-model'
 import type { SheetMetrics, SheetRenderer, SheetSystemLayout, SheetTheme, } from './sheet-render'
 import { DEFAULT_SHEET_METRICS, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
@@ -20,7 +21,7 @@ export interface GuitarNightSheetViewProps {
   playheadBeat: Accessor<number>
   /** The part being graded, drawn in full ink. */
   scoredTrackId?: Accessor<string | undefined>
-  timeSignatures?: Accessor<readonly SheetTimeSignature[] | undefined>
+  timeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
   /** Swap in another way of drawing a part — staff notation, later. */
   renderer?: Accessor<SheetRenderer>
   /** Tapping a part's name asks to score it. */

@@ -110,11 +110,11 @@ describe('buildBars', () => {
     ])
   })
 
-  it('cuts the last bar to the music that is actually in it', () => {
+  it('leaves the last bar its full length when the music stops inside it', () => {
     expect(buildBars(10, undefined).at(-1)).toEqual({
       index: 2,
       startBeat: 8,
-      beats: 2,
+      beats: 4,
     })
   })
 

@@ -683,6 +683,30 @@ describe('useGuitarNightReferenceController', () => {
       ])
     })
 
+    it('takes its bar lines from the score that carried them', async () => {
+      const inThree = {
+        ...VELVET_RIFF,
+        timeSignatures: [{ beat: 0, numerator: 3, denominator: 4 }],
+      }
+      const { port } = fakePort({ readSource: () => inThree })
+      const controller = mount(port)
+
+      await controller.attach(VELVET_RIFF.id, 'track-rhythm')
+
+      expect(controller.sheetTimeSignatures()).toEqual([
+        { beat: 0, numerator: 3, denominator: 4 },
+      ])
+    })
+
+    it('has no bar lines to offer for a score that carried none', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+
+      await controller.attach(VELVET_RIFF.id, 'track-rhythm')
+
+      expect(controller.sheetTimeSignatures()).toBeUndefined()
+    })
+
     it('has nothing to draw before a score is attached', () => {
       const { port } = fakePort()
       const controller = mount(port)

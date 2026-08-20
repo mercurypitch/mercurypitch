@@ -4,6 +4,7 @@
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
@@ -122,6 +123,17 @@ export function useGuitarNightReferenceController(
     libraryVersion()
     return port()?.readSource(current.songId) ?? null
   })
+
+  /**
+   * Where the sheet's bar lines go, from the file that carried them.
+   *
+   * A measured stem has none: its beats are seconds on a recording, not bars
+   * in a score. Undefined there reads as common time, which the sheet states
+   * as a fallback rather than as a claim about the music.
+   */
+  const sheetTimeSignatures = createMemo<
+    readonly MidiTimeSignature[] | undefined
+  >(() => sheetSource()?.timeSignatures)
 
   const sheetHidden = createMemo<readonly string[]>(() => {
     const current = reference()
@@ -633,6 +645,7 @@ export function useGuitarNightReferenceController(
     transcribeProgress,
     transcribingStem,
     sheetLanes,
+    sheetTimeSignatures,
     sheetVisibleTrackIds,
     toggleSheetTrack,
     secondaryLane,

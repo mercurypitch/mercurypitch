@@ -115,6 +115,11 @@ export function normalizeTimeSignatures(
  * A signature landing mid-bar cuts that bar short rather than overlapping the
  * next one — which is what a written score does, and what makes a pickup bar
  * read correctly.
+ *
+ * The last bar is never cut. A song ending on beat two of a 4/4 bar still ends
+ * in a four-beat bar; shortening it to the music inside would space that bar's
+ * notes twice as wide as every other bar's and put the final note somewhere it
+ * is not.
  */
 export function buildBars(
   totalBeats: number,
@@ -137,7 +142,7 @@ export function buildBars(
       next += 1
     }
     const boundary =
-      next < ordered.length ? Math.min(ordered[next].beat, span) : span
+      next < ordered.length ? ordered[next].beat : Number.POSITIVE_INFINITY
     // Both terms are positive: `current` is filtered to be, and the inner loop
     // has already consumed every signature at or before `beat`, so the next one
     // is strictly ahead. The loop therefore always advances.

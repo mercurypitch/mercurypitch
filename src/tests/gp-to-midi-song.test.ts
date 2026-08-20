@@ -189,3 +189,34 @@ describe('scoreToMidiSong', () => {
     })
   })
 })
+
+describe('time signatures', () => {
+  it('states the signature every bar opens in', () => {
+    const song = scoreToMidiSong(
+      scoreFromTex('\\ts 3 4 . 3.3.4 3.3.4 3.3.4 | 3.3.4 3.3.4 3.3.4'),
+    )
+    expect(song.timeSignatures).toEqual([
+      { beat: 0, numerator: 3, denominator: 4 },
+      { beat: 3, numerator: 3, denominator: 4 },
+    ])
+  })
+
+  it('follows a signature change onto the beat the bar starts', () => {
+    const song = scoreToMidiSong(
+      scoreFromTex(
+        '. 3.3.4 3.3.4 3.3.4 3.3.4 | \\ts 6 8 3.3.8 3.3.8 3.3.8 3.3.8 3.3.8 3.3.8',
+      ),
+    )
+    expect(song.timeSignatures).toEqual([
+      { beat: 0, numerator: 4, denominator: 4 },
+      { beat: 4, numerator: 6, denominator: 8 },
+    ])
+  })
+
+  it('states common time for a score that never says otherwise', () => {
+    const song = scoreToMidiSong(scoreFromTex('. 3.3.4 3.3.4 3.3.4 3.3.4'))
+    expect(song.timeSignatures).toEqual([
+      { beat: 0, numerator: 4, denominator: 4 },
+    ])
+  })
+})
