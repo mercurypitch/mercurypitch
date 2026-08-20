@@ -216,7 +216,12 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
                           src={src()}
                           width="66"
                           height="66"
-                          alt={badge.name}
+                          /* Decorative: the name is right underneath, and an
+                             alt that repeats it makes a screen reader say
+                             every badge twice. Same call the Progress shelf
+                             makes for the same art. */
+                          alt=""
+                          data-badge-art={badge.iconName}
                           loading="lazy"
                           decoding="async"
                         />
