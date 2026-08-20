@@ -9,6 +9,7 @@ import profileStyles from '@/components/CommunityShare.module.css'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { accountHeld } from '@/db/services/auth-service'
 import { loadBadgeDefinitions, loadUserBadges, } from '@/db/services/challenges-service'
 import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
 import { canPostToCommunity, loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, unpublishShared, } from '@/db/services/share-service'
@@ -581,10 +582,19 @@ export const CommunityShare: Component = () => {
     })),
   )
 
-  // The same runs, in the shape every counting surface reads. This list is
-  // the account's, so the profile it feeds says "account" out loud.
+  // The same runs, in the shape every counting surface reads.
   const profileRuns = createMemo(() =>
     (runRecords() ?? []).map(runFromRecord).filter(isProgressRun),
+  )
+
+  // How far those runs follow the singer. NOT the same question as which
+  // store they came from: a lazily provisioned anonymous identity holds a
+  // valid token and has real cloud rows, but that identity lives in this
+  // browser's localStorage — so "counted across your account, on every
+  // device" would be false for them. `accountHeld` reads `authVersion()`,
+  // so this re-derives when somebody signs in or out.
+  const runScope = createMemo<'account' | 'device'>(() =>
+    accountHeld() ? 'account' : 'device',
   )
   const [explainingRuns, setExplainingRuns] = createSignal(false)
 
@@ -1072,7 +1082,7 @@ export const CommunityShare: Component = () => {
             bio={currentProfile().bio}
             sessions={getSessionHistory()}
             runs={profileRuns()}
-            runScope="account"
+            runScope={runScope()}
             onExplainRuns={() => setExplainingRuns(true)}
             streak={currentProfile().streak}
             sharedMelodies={displayMelodies().length}

@@ -19,7 +19,7 @@
 // there is not. Signed out is not a degraded case — it is somebody who has
 // no cloud history to read, and their local runs are the true answer.
 
-import { hasValidToken } from '@/db/services/auth-service'
+import { accountHeld, hasValidToken } from '@/db/services/auth-service'
 import { loadSessionRecords } from '@/db/services/session-service'
 import type { ProgressRun } from './run-kinds'
 import { isProgressRun, runFromLocalResult, runFromRecord } from './run-kinds'
@@ -36,11 +36,18 @@ export const PROGRESS_RUN_LIMIT = 200
 export interface ProgressRunSource {
   runs: readonly ProgressRun[]
   /**
-   * Which store answered.
+   * How far these runs follow the singer.
    *
    * Surfaces say so out loud — "on this device" is a materially different
    * claim from "on your account", and showing a number without saying which
    * one it is was the whole problem.
+   *
+   * NOT the same question as which store answered. A lazily provisioned
+   * anonymous identity holds a valid token and has real cloud rows of its
+   * own, so the cloud is the right place to read its runs from — but that
+   * identity lives in this browser's localStorage, so the runs are still
+   * this device's and saying "on every device you sign in on" would be the
+   * same lie in a new place.
    */
   scope: 'account' | 'device'
 }
@@ -56,20 +63,24 @@ const EMPTY: ProgressRunSource = { runs: [], scope: 'device' }
  */
 export async function loadProgressRuns(
   deps: {
+    /** Whether there is a cloud identity to read rows for, account or not. */
     signedIn?: () => boolean
+    /** Whether that identity is a REAL account, which is a separate question. */
+    hasAccount?: () => boolean
     loadRecords?: typeof loadSessionRecords
     localHistory?: () => readonly unknown[]
   } = {},
 ): Promise<ProgressRunSource> {
   const signedIn = deps.signedIn ?? hasValidToken
+  const hasAccount = deps.hasAccount ?? accountHeld
   if (signedIn()) {
     const loadRecords = deps.loadRecords ?? loadSessionRecords
     const records = await loadRecords(PROGRESS_RUN_LIMIT)
-    // An account with no rows yet still answers "account": the number is a
-    // true zero rather than a store that was not consulted.
+    // An account with no rows yet still reads from the cloud: the number is
+    // a true zero rather than a store that was not consulted.
     return {
       runs: records.map(runFromRecord).filter(isProgressRun),
-      scope: 'account',
+      scope: hasAccount() ? 'account' : 'device',
     }
   }
 

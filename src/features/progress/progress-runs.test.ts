@@ -50,6 +50,7 @@ describe('loadProgressRuns', () => {
 
     const source = await loadProgressRuns({
       signedIn: () => true,
+      hasAccount: () => true,
       loadRecords: loadRecords as never,
       localHistory: () => [localRow()],
     })
@@ -84,6 +85,7 @@ describe('loadProgressRuns', () => {
     // scope is reported.
     const source = await loadProgressRuns({
       signedIn: () => true,
+      hasAccount: () => true,
       loadRecords: (async () => []) as never,
       localHistory: () => [localRow()],
     })
@@ -94,6 +96,7 @@ describe('loadProgressRuns', () => {
   it('drops rows it cannot place in time rather than plotting them at zero', async () => {
     const source = await loadProgressRuns({
       signedIn: () => true,
+      hasAccount: () => true,
       loadRecords: (async () => [
         cloudRow(),
         cloudRow({ endedAt: 'whenever' }),
@@ -140,7 +143,10 @@ describe('loadProgressRuns defaults', () => {
       .spyOn(sessions, 'loadSessionRecords')
       .mockResolvedValue([cloudRow({ source: 'challenge' })])
 
-    const source = await loadProgressRuns({ signedIn: () => true })
+    const source = await loadProgressRuns({
+      signedIn: () => true,
+      hasAccount: () => true,
+    })
 
     expect(loadSessionRecords).toHaveBeenCalledWith(PROGRESS_RUN_LIMIT)
     expect(source).toEqual({
@@ -162,5 +168,48 @@ describe('NO_PROGRESS_RUNS', () => {
   it('is an empty device-scope source, for a surface still loading', async () => {
     const { NO_PROGRESS_RUNS } = await import('./progress-runs')
     expect(NO_PROGRESS_RUNS).toEqual({ runs: [], scope: 'device' })
+  })
+})
+
+describe('loadProgressRuns scope for an anonymous identity', () => {
+  it('reads the cloud, because the anonymous rows are genuinely theirs', async () => {
+    // A lazily provisioned identity holds a valid token and has its own
+    // sessionRecords. Reading local storage instead would lose the
+    // exercises and challenges it did bank.
+    const source = await loadProgressRuns({
+      signedIn: () => true,
+      hasAccount: () => false,
+      loadRecords: async () => [cloudRow({ source: 'exercise' })],
+    })
+
+    expect(source.runs).toHaveLength(1)
+    expect(source.runs[0].kind).toBe('exercise')
+  })
+
+  it('still calls those runs this device’s, because that is what they are', async () => {
+    // The anonymous id lives in this browser's localStorage. Telling
+    // somebody with no account that their runs are counted "on every device
+    // you sign in on" is the same lie in a new place.
+    const source = await loadProgressRuns({
+      signedIn: () => true,
+      hasAccount: () => false,
+      loadRecords: async () => [cloudRow()],
+    })
+
+    expect(source.scope).toBe('device')
+  })
+
+  it('asks the real account check when none is injected', async () => {
+    const auth = await import('@/db/services/auth-service')
+    const accountHeld = vi.spyOn(auth, 'accountHeld').mockReturnValue(true)
+
+    const source = await loadProgressRuns({
+      signedIn: () => true,
+      loadRecords: async () => [],
+    })
+
+    expect(accountHeld).toHaveBeenCalled()
+    expect(source.scope).toBe('account')
+    accountHeld.mockRestore()
   })
 })

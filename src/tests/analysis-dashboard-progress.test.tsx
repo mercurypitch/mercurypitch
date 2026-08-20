@@ -10,21 +10,32 @@
 // assert on the number a signed-in singer actually reads.
 
 import { cleanup, render, screen, waitFor } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionRecord } from '@/db/entities'
 
 const mocks = vi.hoisted(() => ({
   hasValidToken: vi.fn(() => true),
+  accountHeld: vi.fn(() => true),
   loadSessionRecords: vi.fn(async (_limit?: number) => [] as SessionRecord[]),
   getSessionHistory: vi.fn(() => [] as unknown[]),
 }))
 
+// Real signals, so the test can tick a revision the way saving a run or
+// signing in does and watch the card follow.
+const [authRevision, setAuthRevision] = createSignal(0)
+const [sessionRevision, setSessionRevision] = createSignal(0)
+
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: mocks.hasValidToken,
+  accountHeld: mocks.accountHeld,
 }))
 vi.mock('@/db/services/session-service', () => ({
   loadSessionRecords: mocks.loadSessionRecords,
-  sessionRecordVersion: () => 0,
+  sessionRecordVersion: () => sessionRevision(),
+}))
+vi.mock('@/db/services/user-service', () => ({
+  authVersion: () => authRevision(),
 }))
 vi.mock('@/db/services/streak-service', () => ({
   getStreakState: async () => null,
@@ -78,8 +89,11 @@ function tile(label: string): HTMLElement | null {
 
 beforeEach(() => {
   mocks.hasValidToken.mockReturnValue(true)
+  mocks.accountHeld.mockReturnValue(true)
   mocks.loadSessionRecords.mockResolvedValue([])
   mocks.getSessionHistory.mockReturnValue([])
+  setAuthRevision(0)
+  setSessionRevision(0)
 })
 
 afterEach(() => {
@@ -110,6 +124,7 @@ describe('Vocal Analysis > Progress', () => {
 
   it('falls back to this device’s history when nobody is signed in', async () => {
     mocks.hasValidToken.mockReturnValue(false)
+    mocks.accountHeld.mockReturnValue(false)
     mocks.getSessionHistory.mockReturnValue([
       { completedAt: 1_700_000_000_000, score: 55, practiceItemResult: [] },
     ])
@@ -138,5 +153,64 @@ describe('Vocal Analysis > Progress', () => {
     expect(
       screen.getByRole('heading', { name: 'What counts where' }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('Vocal Analysis > Progress stays current', () => {
+  it('picks up a run banked while the tab is open', async () => {
+    render(() => <AnalysisDashboard />)
+    await waitFor(() => expect(tile('Runs')).toHaveTextContent('0'))
+
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'exercise')])
+    setSessionRevision(1)
+
+    // Without a source signal the resource fetches once and never again, so
+    // this stayed at 0 until the whole tab remounted.
+    await waitFor(() => expect(tile('Runs')).toHaveTextContent('1'))
+  })
+
+  it('switches from the device to the account when somebody signs in', async () => {
+    mocks.hasValidToken.mockReturnValue(false)
+    mocks.accountHeld.mockReturnValue(false)
+    mocks.getSessionHistory.mockReturnValue([
+      { completedAt: 1_700_000_000_000, score: 55, practiceItemResult: [] },
+    ])
+
+    render(() => <AnalysisDashboard />)
+    await waitFor(() =>
+      expect(screen.getByText(/on this device only/i)).toBeInTheDocument(),
+    )
+
+    mocks.hasValidToken.mockReturnValue(true)
+    mocks.accountHeld.mockReturnValue(true)
+    mocks.loadSessionRecords.mockResolvedValue([
+      cloudRun('a', 'challenge'),
+      cloudRun('b', 'weekly'),
+    ])
+    setAuthRevision(1)
+
+    // The scope line is a claim about whose runs these are. Leaving it saying
+    // "this device only" over an account count is the same class of lie the
+    // whole change exists to stop.
+    await waitFor(() =>
+      expect(screen.getByText(/across your account/i)).toBeInTheDocument(),
+    )
+    expect(tile('Runs')).toHaveTextContent('2')
+  })
+})
+
+describe('Vocal Analysis > Progress and an anonymous identity', () => {
+  it('counts their cloud runs without promising them an account', async () => {
+    // A lazily provisioned identity holds a valid token, so its runs are in
+    // the cloud and must be counted — but the id itself lives in this
+    // browser, so the scope line must not claim they follow the singer.
+    mocks.accountHeld.mockReturnValue(false)
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'exercise')])
+
+    render(() => <AnalysisDashboard />)
+
+    await waitFor(() => expect(tile('Runs')).toHaveTextContent('1'))
+    expect(screen.getByText(/on this device only/i)).toBeInTheDocument()
+    expect(screen.queryByText(/across your account/i)).toBeNull()
   })
 })

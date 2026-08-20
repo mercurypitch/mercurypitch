@@ -14,7 +14,9 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, onCleanup, Show, } from 'solid-js'
 import { Flask } from '@/components/icons'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
+import { sessionRecordVersion } from '@/db/services/session-service'
 import { getStreakState } from '@/db/services/streak-service'
+import { authVersion } from '@/db/services/user-service'
 import { loadProgressRuns, NO_PROGRESS_RUNS, } from '@/features/progress/progress-runs'
 import { WhatCountsModal } from '@/features/progress/WhatCountsModal'
 import { midiToFrequency } from '@/lib/frequency-to-note'
@@ -70,8 +72,15 @@ export const AnalysisDashboard: Component = () => {
   // Every recorded run, of every kind, from the account when there is one.
   // `getSessionHistory()` stays the chart's source — it is the only store
   // with note detail — but it is no longer allowed to be the count.
-  const [runs] = createResource(() =>
-    loadProgressRuns({ localHistory: () => getSessionHistory() }),
+  //
+  // Keyed on auth and session revisions, exactly as the community runs list
+  // is. Without a source this fetches once and never again: signing in while
+  // the tab is open would leave "on this device only" over a device count,
+  // and a run banked afterwards would not show up until a remount.
+  const [runs] = createResource(
+    () => [authVersion(), sessionRecordVersion()] as const,
+    async () =>
+      await loadProgressRuns({ localHistory: () => getSessionHistory() }),
   )
   const [explaining, setExplaining] = createSignal(false)
 

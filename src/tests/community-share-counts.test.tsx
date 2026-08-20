@@ -11,12 +11,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionRecord } from '@/db/entities'
 
 const mocks = vi.hoisted(() => ({
+  accountHeld: vi.fn(() => true),
   loadSessionRecords: vi.fn(async (_limit?: number) => [] as SessionRecord[]),
   loadSharedSessions: vi.fn(async () => [] as unknown[]),
   loadSharedMelodies: vi.fn(async () => [] as unknown[]),
   storageGet: vi.fn((_key: string, fallback: unknown) => fallback),
 }))
 
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  accountHeld: mocks.accountHeld,
+}))
 vi.mock('@/db/services/session-service', () => ({
   loadSessionRecords: mocks.loadSessionRecords,
   sessionRecordVersion: () => 0,
@@ -78,6 +83,7 @@ function openTab(name: RegExp): void {
 }
 
 beforeEach(() => {
+  mocks.accountHeld.mockReturnValue(true)
   mocks.loadSessionRecords.mockResolvedValue([])
   mocks.loadSharedSessions.mockResolvedValue([])
   mocks.loadSharedMelodies.mockResolvedValue([])
@@ -129,6 +135,25 @@ describe('Community > Profile', () => {
       ),
     )
     expect(screen.getByText(/across your account/i)).toBeInTheDocument()
+  })
+
+  it('does not promise an account to somebody who has not made one', async () => {
+    // An anonymous identity holds a valid token and has real cloud rows, so
+    // the runs are right — but they live under an id in this browser's
+    // localStorage. "On every device you sign in on" would be false.
+    mocks.accountHeld.mockReturnValue(false)
+    mocks.loadSessionRecords.mockResolvedValue([cloudRun('a', 'exercise')])
+
+    render(() => <CommunityShare />)
+    openTab(/Profile/)
+
+    await waitFor(() =>
+      expect(screen.getByText('run').previousElementSibling).toHaveTextContent(
+        '1',
+      ),
+    )
+    expect(screen.getByText(/on this device only/i)).toBeInTheDocument()
+    expect(screen.queryByText(/across your account/i)).toBeNull()
   })
 })
 
