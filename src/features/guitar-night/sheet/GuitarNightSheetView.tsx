@@ -240,6 +240,10 @@ const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
     <div
       class={styles.system}
       data-system={props.system.index}
+      // Where the row starts in the score's own beats. The bar lines
+      // themselves are paint, so this is the one place a reader — or a test —
+      // can see that a 2/4 bar shortened the music ahead of it.
+      data-start-beat={props.system.startBeat}
       style={{
         transform: `translate3d(0, ${props.top}px, 0)`,
         height: `${props.layout.height}px`,

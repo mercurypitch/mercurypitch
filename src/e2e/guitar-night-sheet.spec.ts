@@ -183,3 +183,79 @@ test('swaps the corner part with the one being read @smoke', async ({
   await corner.getByRole('button').click()
   await expect(room.getByText(/Tab rehearsal · Lead guitar/)).toBeVisible()
 })
+
+/**
+ * A song that drops a 2/4 bar in early, the way Wrathchild and Aces High and
+ * half the Maiden catalogue do. Two bars of common time, one two-beat bar,
+ * then common time again: every bar after the short one sits two beats earlier
+ * than four-four arithmetic would put it.
+ */
+function seedShortBarScore() {
+  return (seededSongId: string) => {
+    const notes = Array.from({ length: 40 }, (_, index) => ({
+      midi: 52,
+      startBeat: index,
+      duration: 1,
+    }))
+    localStorage.setItem(
+      'pitchperfect_guitar_songs',
+      JSON.stringify([
+        {
+          id: seededSongId,
+          name: 'Short Bar Study',
+          bpm: 120,
+          timeSignatures: [
+            { beat: 0, numerator: 4, denominator: 4 },
+            { beat: 8, numerator: 2, denominator: 4 },
+            { beat: 10, numerator: 4, denominator: 4 },
+          ],
+          tracks: [
+            {
+              id: 'track-rhythm',
+              name: 'Rhythm guitar',
+              instrumentName: 'Clean Guitar',
+              noteCount: notes.length,
+              notes,
+            },
+          ],
+          scoreTrackId: 'track-rhythm',
+          backingTrackIds: [],
+          importedAt: Date.now(),
+        },
+      ]),
+    )
+  }
+}
+
+test('puts the bar lines where the score says, not every four beats', async ({
+  page,
+}) => {
+  const songId = `sheet-short-bar-${Date.now()}`
+  await page.addInitScript(seedShortBarScore(), songId)
+  await page.setViewportSize(DESKTOP)
+  await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
+    waitUntil: 'domcontentloaded',
+  })
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .click()
+  await expect(page.getByTestId('guitar-night-score-room')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Sheet', exact: true }).click()
+  const sheet = page.getByTestId('guitar-night-sheet')
+  await expect(sheet).toBeVisible()
+
+  const starts = await sheet
+    .locator('[data-start-beat]')
+    .evaluateAll((rows) =>
+      rows.map((row) => Number(row.getAttribute('data-start-beat'))),
+    )
+  expect(starts.length).toBeGreaterThan(1)
+
+  // Four bars to a row, and the 2/4 is the third of them. The second row
+  // therefore opens at beat 14. Held in common time it would open at 16, and
+  // every note on it would be drawn two beats late for the rest of the song.
+  expect(starts).toContain(14)
+  expect(starts).not.toContain(16)
+})
