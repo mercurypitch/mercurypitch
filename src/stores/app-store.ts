@@ -1620,7 +1620,7 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Choose your next room',
     description:
-      'Jump straight into any part of MercuryPitch — live practice, Karaoke, focused drills, the voice lab, or a shared Jam room. And keep an eye on the last card: something new is being tuned.',
+      'Jump straight into live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room. And keep an eye on the last card: something new is being tuned.',
     targetSelector: '.home-destinations',
     placement: 'top',
     requiredTab: TAB_HOME,
