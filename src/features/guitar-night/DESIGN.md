@@ -359,6 +359,19 @@ core Learn set in
   would fight over it.
 - Changing instrument re-places the written part from the alignment already in
   hand. Choosing a neck never re-reads the audio.
+- A reader can place a part by hand when nothing measured the recording. The
+  gesture is the loop's gesture — play to a moment and say "here" — because the
+  room already taught it, and the room is the only place that has the
+  recording's clock to mark against.
+- Two marks, the part's first note and its last, fix both where the part starts
+  and how fast the recording runs against it. One mark alone is a constant
+  shift, which is all one point can honestly claim.
+- A hand placement carries no share of the part confirmed by anything, and is
+  never given a made-up one. The two shapes are distinct in the type so the
+  copy cannot print a 0% that means nothing.
+- Coming back means going back to what the reader had: a part hung over a stem
+  measurement returns to the transcribed line, one hung by hand on an attached
+  tab returns to that tab on its own clock.
 
 ## Copy contract
 

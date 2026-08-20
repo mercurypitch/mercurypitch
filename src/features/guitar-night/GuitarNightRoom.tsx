@@ -15,6 +15,7 @@ import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightHandSync } from './GuitarNightHandSync'
 import { GuitarNightInputError } from './GuitarNightInputError'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightInputNotice } from './GuitarNightInputNotice'
@@ -56,6 +57,25 @@ interface GuitarNightRoomProps {
   onRehearseTab?(): void
   /** Go back for a tab; the lobby owns the picker and the file drop. */
   onAttachTab?(): void
+  /**
+   * Hanging a written part on this recording by hand.
+   *
+   * The room owns the gesture because the room owns the recording's clock: a
+   * mark means nothing without a moment to mark. Absent means nobody has
+   * claimed a part to place, so the controls are not offered.
+   */
+  handSync?: Accessor<GuitarNightRoomHandSync | null>
+}
+
+/** What the room needs to offer hand placement, and where to send the marks. */
+export interface GuitarNightRoomHandSync {
+  partName: string
+  firstMarkSeconds: number | null
+  lastMarkSeconds: number | null
+  placed: boolean
+  onMark(end: 'first' | 'last', audioSeconds: number): void
+  onClear(): void
+  onNudge(deltaSeconds: number): void
 }
 
 const STEM_LABELS: Record<GuitarNightStemKind, string> = {
@@ -532,6 +552,21 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     onClear={loop.clear}
                   />
                 </div>
+                <Show when={props.handSync?.()}>
+                  {(sync) => (
+                    <GuitarNightHandSync
+                      partName={sync().partName}
+                      firstMarkSeconds={sync().firstMarkSeconds}
+                      lastMarkSeconds={sync().lastMarkSeconds}
+                      placed={sync().placed}
+                      format={formatTime}
+                      onMarkFirst={() => sync().onMark('first', position())}
+                      onMarkLast={() => sync().onMark('last', position())}
+                      onClear={() => sync().onClear()}
+                      onNudge={(delta) => sync().onNudge(delta)}
+                    />
+                  )}
+                </Show>
                 <div class={styles.channelStrip} aria-label="Backing tracks">
                   <For each={props.transport.tracks()}>
                     {(track) => (

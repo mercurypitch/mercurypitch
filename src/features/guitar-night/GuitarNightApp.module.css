@@ -2555,6 +2555,85 @@ button.secondaryPartBody:focus-visible {
   color: rgba(224, 164, 93, 0.9);
 }
 
+/* Hanging a part on the recording by hand, in the room. Sits with the loop
+   controls because it is the same gesture — play to a moment, say "here" —
+   and a reader who has just used one will recognise the other. */
+.handSync {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(224, 164, 93, 0.28);
+  border-radius: 0.48rem;
+  background: rgba(224, 164, 93, 0.06);
+}
+
+.handSync strong {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.handSync small,
+.handSync output {
+  display: block;
+  color: rgba(244, 234, 219, 0.7);
+  font-size: 0.66rem;
+}
+
+.handSyncMarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.handSyncMarks button {
+  min-height: var(--touch-target);
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.82);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.handSyncMarks .handSyncMarkSet {
+  border-color: rgba(224, 164, 93, 0.55);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.14);
+}
+
+.handSyncClear {
+  margin-left: auto;
+}
+
+.handSyncNudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.handSyncNudge span {
+  order: 0;
+  color: rgba(244, 234, 219, 0.6);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.handSyncNudge button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0.3rem 0.45rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.82);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .referenceActions {
   display: grid;
   gap: 0.35rem;

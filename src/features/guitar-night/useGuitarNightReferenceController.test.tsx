@@ -1102,5 +1102,349 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.readingOnRecording()).toBeNull()
       expect(controller.alignableScores()).toEqual([])
     })
+
+    it('says so when the score leaves the library between match and place', async () => {
+      // Matching reads the score and placing it reads the score again. If the
+      // library loses the song in between, the reader must be told rather than
+      // left with a tab claiming to be somewhere nobody put it.
+      let present = true
+      let loseOnNextRead = false
+      const { port } = fakePort({
+        listReferences: () => [
+          {
+            songId: RECORDED.id,
+            title: RECORDED.name,
+            trackCount: 1,
+            importedAt: RECORDED.importedAt,
+          },
+        ],
+        readSource: (songId) => {
+          if (!present || songId !== RECORDED.id) return null
+          if (loseOnNextRead) present = false
+          return RECORDED
+        },
+      })
+      const controller = mountWithTranscription(port, heardIt)
+      await measure(controller)
+      loseOnNextRead = true
+      await controller.readScoreOnRecording(RECORDED.id)
+
+      expect(controller.alignStatus()).toBe(
+        'That part could not be placed on this instrument.',
+      )
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+  })
+
+  describe('placing a written part by hand', () => {
+    const BY_HAND = {
+      id: 'gsong-hand',
+      name: 'Hand Riff',
+      bpm: 60,
+      scoreTrackId: 'track-bass',
+      importedAt: Date.UTC(2026, 7, 3),
+      tracks: [
+        {
+          id: 'track-bass',
+          name: 'Bass',
+          instrumentName: 'Electric Bass',
+          noteCount: 41,
+          // Forty seconds of written music at 60 BPM.
+          notes: Array.from({ length: 41 }, (_, index) => ({
+            midi: 40 + (index % 5),
+            startBeat: index,
+            duration: 1,
+          })),
+        },
+      ],
+    }
+
+    /** A recording nothing could be measured from: the stem is silent. */
+    const heardNothing = async () => ({
+      coverage: 0.1,
+      analysedSeconds: 44,
+      notes: [
+        {
+          midi: 40,
+          noteName: 'E1',
+          startSeconds: 2,
+          durationSeconds: 0.5,
+          confidence: 0.9,
+        },
+      ],
+    })
+
+    const handPort = (): GuitarNightReferencePort => {
+      const { port } = fakePort({
+        listReferences: () => [
+          {
+            songId: BY_HAND.id,
+            title: BY_HAND.name,
+            trackCount: 1,
+            importedAt: BY_HAND.importedAt,
+          },
+        ],
+        readSource: (songId) => (songId === BY_HAND.id ? BY_HAND : null),
+        openReference: (songId, trackId, tuning) =>
+          songId === BY_HAND.id
+            ? openGuitarNightReference(BY_HAND, trackId, tuning)
+            : { ok: false, code: 'not-found' },
+        suggestInstrument: (songId, trackId) =>
+          songId === BY_HAND.id
+            ? suggestReferenceInstrument(BY_HAND, trackId)
+            : null,
+      })
+      return port
+    }
+
+    const measure = async (controller: ReturnType<typeof mount>) => {
+      await controller.followStem({
+        sessionId: 'session-hand',
+        stemKind: 'bass',
+        stemLabel: 'Bass',
+        stemUrl: 'blob:bass',
+      })
+    }
+
+    it('claims a part without moving anything until it is told where', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+
+      expect(controller.handPlacement()).toEqual({
+        songId: BY_HAND.id,
+        trackId: 'track-bass',
+        trackName: 'Bass',
+        marks: {},
+      })
+      // Nobody has said where it goes, so nothing has been placed.
+      expect(controller.readingOnRecording()).toBeNull()
+      expect(controller.reference()?.title).toContain('transcribed')
+    })
+
+    it('shifts the part the moment its first note is marked', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', 3)
+
+      const reading = controller.readingOnRecording()
+      expect(reading?.placedBy).toBe('hand')
+      // A hand placement carries no measured share at all, rather than a zero.
+      expect(reading).not.toHaveProperty('matchedFraction')
+      expect(controller.reference()?.notes[0].startBeat).toBeCloseTo(3, 6)
+    })
+
+    it('fixes the rate too once both ends are marked', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', 2)
+      // Forty written seconds take forty-four in this recording.
+      controller.markScoreOnRecording('last', 46)
+
+      const notes = controller.reference()?.notes ?? []
+      expect(notes[0].startBeat).toBeCloseTo(2, 6)
+      expect(notes[notes.length - 1].startBeat).toBeCloseTo(46, 6)
+      expect(controller.readingOnRecording()?.driftSeconds).toBeCloseTo(4, 6)
+    })
+
+    it('ignores a mark before a part has been claimed', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      controller.markScoreOnRecording('first', 3)
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('says so when the part has nothing to place', async () => {
+      const empty = {
+        ...BY_HAND,
+        tracks: [{ ...BY_HAND.tracks[0], notes: [] }],
+      }
+      const { port } = fakePort({ readSource: () => empty })
+      const controller = mountWithTranscription(port, heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+
+      expect(controller.alignStatus()).toContain('no notes to place')
+      expect(controller.handPlacement()).toBeNull()
+    })
+
+    it('says so when the score has left the library', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand('gsong-gone')
+      expect(controller.alignStatus()).toContain('no longer in the library')
+    })
+
+    it('forgets the marks and the tab they placed', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', 3)
+      controller.clearHandPlacement()
+
+      expect(controller.handPlacement()?.marks).toEqual({})
+      expect(controller.readingOnRecording()).toBeNull()
+      expect(controller.reference()?.title).toContain('transcribed')
+    })
+
+    it('has nothing to forget before a part was claimed', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      controller.clearHandPlacement()
+      expect(controller.handPlacement()).toBeNull()
+    })
+
+    it('slides a placed part along the recording', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', 3)
+      controller.nudgeScoreOnRecording(0.5)
+
+      expect(controller.reference()?.notes[0].startBeat).toBeCloseTo(3.5, 6)
+    })
+
+    it('keeps a measured drift through a nudge, and owns the result', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', 2)
+      controller.markScoreOnRecording('last', 46)
+      const driftBefore = controller.readingOnRecording()?.driftSeconds
+      controller.nudgeScoreOnRecording(-0.3)
+
+      expect(controller.readingOnRecording()?.driftSeconds).toBeCloseTo(
+        driftBefore as number,
+        6,
+      )
+      expect(controller.readingOnRecording()?.placedBy).toBe('hand')
+      expect(controller.reference()?.notes[0].startBeat).toBeCloseTo(1.7, 6)
+    })
+
+    it('has nothing to nudge before a part is placed', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      controller.nudgeScoreOnRecording(0.5)
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('puts an attached tab back on its own clock when the marks are cleared', async () => {
+      // No stem was ever measured here: the reader hung an attached tab by
+      // hand, so "back" means the tab as written, not a transcription.
+      const controller = mount(handPort())
+      await controller.attach(BY_HAND.id, 'track-bass')
+      await controller.placeScoreByHand(BY_HAND.id, 'track-bass')
+      controller.markScoreOnRecording('first', 3)
+      expect(controller.reference()?.kind).toBe('measured')
+
+      controller.clearHandPlacement()
+      await waitFor(() => expect(controller.reference()?.kind).toBe('authored'))
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('forgets a measurement once a written score is attached instead', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await waitFor(() => expect(controller.alignableScores()).not.toEqual([]))
+      await controller.attach(BY_HAND.id, 'track-bass')
+      expect(controller.alignableScores()).toEqual([])
+    })
+
+    it('forgets a hand placement when the reference is detached', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.detach()
+      expect(controller.handPlacement()).toBeNull()
+    })
+
+    it('says so when the score leaves the library before a mark lands', async () => {
+      let present = true
+      const { port } = fakePort({
+        listReferences: () => [
+          {
+            songId: BY_HAND.id,
+            title: BY_HAND.name,
+            trackCount: 1,
+            importedAt: BY_HAND.importedAt,
+          },
+        ],
+        readSource: (songId) =>
+          present && songId === BY_HAND.id ? BY_HAND : null,
+        openReference: (songId, trackId, tuning) =>
+          songId === BY_HAND.id
+            ? openGuitarNightReference(BY_HAND, trackId, tuning)
+            : { ok: false, code: 'not-found' },
+        suggestInstrument: (songId, trackId) =>
+          songId === BY_HAND.id
+            ? suggestReferenceInstrument(BY_HAND, trackId)
+            : null,
+      })
+      const controller = mountWithTranscription(port, heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      present = false
+      controller.markScoreOnRecording('first', 3)
+
+      expect(controller.alignStatus()).toContain('no longer in the library')
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('refuses a part the score does not have', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id, 'track-nowhere')
+
+      expect(controller.alignStatus()).toContain('no notes to place')
+      expect(controller.handPlacement()).toBeNull()
+    })
+
+    it('clears marks without disturbing a part nothing hung by hand', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      // Nothing was marked, so there is no hand-placed line to take down.
+      controller.clearHandPlacement()
+
+      expect(controller.handPlacement()?.marks).toEqual({})
+      expect(controller.reference()?.title).toContain('transcribed')
+    })
+
+    it('refuses a mark that is not a moment', async () => {
+      // The room hands over its own clock, and a clock that has not started
+      // reads NaN. Nothing is marked and nothing is placed.
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', Number.NaN)
+
+      expect(controller.handPlacement()?.marks).toEqual({})
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('places nothing at all when the library will not load', async () => {
+      let controller!: ReturnType<typeof useGuitarNightReferenceController>
+      const Harness: Component = () => {
+        controller = useGuitarNightReferenceController({
+          loadReferencePort: async () => {
+            throw new Error('library offline')
+          },
+          loadTranscriptionPort: async () => ({
+            transcribeStem: heardNothing,
+          }),
+        })
+        return null
+      }
+      render(() => <Harness />)
+      await measure(controller)
+
+      await controller.readScoreOnRecording(BY_HAND.id)
+      await controller.placeScoreByHand(BY_HAND.id)
+
+      expect(controller.readingOnRecording()).toBeNull()
+      expect(controller.handPlacement()).toBeNull()
+    })
   })
 })

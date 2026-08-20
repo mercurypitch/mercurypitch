@@ -111,6 +111,14 @@ describe('scoreDurationBeats', () => {
   })
 })
 
+/** The pulse is read on every beat now, so a test has to read it the same way. */
+function pulseAudible(
+  getOptions: () => { exercisePulse?: boolean | (() => boolean) } | null,
+): boolean | undefined {
+  const value = getOptions()?.exercisePulse
+  return typeof value === 'function' ? value() : value
+}
+
 describe('useGuitarNightScoreRoomController', () => {
   it('pins and schedules one silent assessed range on exact audio boundaries', async () => {
     await createRoot(async (dispose) => {
@@ -145,8 +153,8 @@ describe('useGuitarNightScoreRoomController', () => {
         durationBeats: 3.25,
         loop: null,
         melody: [],
-        exercisePulse: false,
       })
+      expect(pulseAudible(getOptions)).toBe(false)
       expect(boundary).toMatchObject({
         range: { start: 1.5, end: 3.25 },
         tempoBpm: 120,
@@ -193,15 +201,13 @@ describe('useGuitarNightScoreRoomController', () => {
         durationBeats: 2,
         loop: null,
         melody: [],
-        exercisePulse: false,
       })
+      expect(pulseAudible(getOptions)).toBe(false)
       room.stop()
 
       await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: true })
-      expect(getOptions()).toMatchObject({
-        loop: null,
-        exercisePulse: true,
-      })
+      expect(getOptions()).toMatchObject({ loop: null })
+      expect(pulseAudible(getOptions)).toBe(true)
       expect(getOptions()?.melody).toHaveLength(2)
       dispose()
     })
@@ -230,7 +236,7 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(room.status()).toBe('paused')
       expect(room.setupLocked()).toBe(false)
       await room.start()
-      expect(getOptions()?.exercisePulse).toBe(true)
+      expect(pulseAudible(getOptions)).toBe(true)
       expect(getOptions()?.melody).toHaveLength(2)
       dispose()
     })
@@ -1097,7 +1103,54 @@ describe('the tab room sounds the tab', () => {
 
         expect(room.hearClick()).toBe(true)
         await room.start()
-        expect(getOptions()?.exercisePulse).toBe(true)
+        expect(pulseAudible(getOptions)).toBe(true)
+        dispose()
+      })
+    })
+
+    it('can be quieted while it is ticking, which is when anyone asks', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        await room.start()
+        getOptions()?.onExerciseStart?.(0, 11)
+        expect(pulseAudible(getOptions)).toBe(true)
+
+        // The band reads this on every beat, so the take does not have to end
+        // and start again for the room to go quiet.
+        room.setHearClick(false)
+        expect(pulseAudible(getOptions)).toBe(false)
+
+        room.setHearClick(true)
+        expect(pulseAudible(getOptions)).toBe(true)
+        dispose()
+      })
+    })
+
+    it('stays silent mid-take in a live score with no audible guide', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          loop: () => ({ start: 0, end: 2 }),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: false })
+        // The mode rule is the run's, not the reader's: the room is never
+        // sounded into an open microphone, whatever the click toggle says.
+        room.setHearClick(true)
+        expect(pulseAudible(getOptions)).toBe(false)
         dispose()
       })
     })
@@ -1116,7 +1169,7 @@ describe('the tab room sounds the tab', () => {
         room.setHearClick(false)
         expect(room.hearClick()).toBe(false)
         await room.start()
-        expect(getOptions()?.exercisePulse).toBe(false)
+        expect(pulseAudible(getOptions)).toBe(false)
         expect(getOptions()?.countInBeats).toBeGreaterThan(0)
         dispose()
       })

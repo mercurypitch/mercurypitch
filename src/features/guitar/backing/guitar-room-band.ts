@@ -96,7 +96,14 @@ export interface GuitarRoomBandStartOptions {
    * is the assessed-microphone path: sounding a click into an open microphone
    * would turn the room's own pulse into player evidence.
    */
-  exercisePulse?: boolean
+  /**
+   * Whether the room's own pulse is audible under the exercise.
+   *
+   * A function is read on every beat, so a reader can quiet the click while it
+   * is ticking — which is the only moment anybody wants to. A plain boolean is
+   * still accepted and still means "settled when the run started".
+   */
+  exercisePulse?: boolean | (() => boolean)
   /**
    * Sound the score itself, not only time. Without this a tab room shows notes
    * falling and plays something unrelated underneath, which is the opposite of
@@ -563,7 +570,11 @@ export function createGuitarRoomBand(
           }
           const exerciseIndex = nextExerciseBeat
           const at = nextExerciseAt
-          if (startOptions.exercisePulse === false) {
+          const pulseAudible =
+            typeof startOptions.exercisePulse === 'function'
+              ? startOptions.exercisePulse()
+              : startOptions.exercisePulse !== false
+          if (!pulseAudible) {
             // The scheduled beat callback still advances the visual score.
             // Only the room's own audible pulse is withheld from the input.
           } else if (feel === 'click') {
