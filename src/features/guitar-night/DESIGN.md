@@ -337,6 +337,29 @@ core Learn set in
   recording's own time, which is why a measured line and an authored score
   cannot share bar lines.
 
+## A written part on a recording
+
+- A measured line and a written tab count different things — seconds of a
+  recording and musical beats — so they never shared a page. The stem
+  measurement is what joins them: it is a transcription of this recording, so
+  the windowed matcher can say where the written part lands against it.
+- Hanging a written part on the recording produces a measured reference. One
+  beat per second, no tempo shown, because once notes are pinned to a recording
+  that speeds up and slows down there is no musical tempo left to claim.
+- The offer refuses rather than guesses. At least one window has to align, and
+  at least a quarter of the written notes have to be confirmed by the
+  recording. A confidently wrong alignment reads to a player as their own
+  timing being wrong, which is the worst failure this could have.
+- The measure is recall against the written part, not precision against what
+  was heard. A stem holds notes the tab never claimed, and that is not the tab
+  being wrong.
+- The alignment belongs to the pair, not to the score. It lives with the
+  attached reference and is never written onto the saved score's tempo map: the
+  score's tempo map is what the file says, and two recordings of the same song
+  would fight over it.
+- Changing instrument re-places the written part from the alignment already in
+  hand. Choosing a neck never re-reads the audio.
+
 ## Copy contract
 
 Use concrete capability names: Listening, Coach, Jam Doctor, separation,

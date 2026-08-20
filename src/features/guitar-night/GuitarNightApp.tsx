@@ -38,6 +38,7 @@ import { GuitarNightFirstWin } from './GuitarNightFirstWin'
 import type { GuitarNightLearnActivityId } from './GuitarNightLearnActivity'
 import { guitarNightLearnTuningLabel } from './GuitarNightLearnActivity'
 import { GuitarNightLearnShelf } from './GuitarNightLearnShelf'
+import { GuitarNightOnRecording } from './GuitarNightOnRecording'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
 import type { GuitarNightPreparationPort } from './preparation-port'
@@ -1633,11 +1634,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           }
                         >
                           <small>
-                            This tab keeps its own {attached().tempoBpm} BPM,
-                            which nothing has aligned to the recording yet — so
-                            it rehearses in the tab room, not over the backing.
+                            This tab keeps its own {attached().tempoBpm} BPM, so
+                            it rehearses in the tab room rather than over the
+                            backing. Measure a stem of this recording and the
+                            written part can be hung on it.
                           </small>
                         </Show>
+                        <GuitarNightOnRecording
+                          scores={referenceController.alignableScores()}
+                          reading={referenceController.readingOnRecording()}
+                          offer={attached().kind === 'measured'}
+                          status={referenceController.alignStatus()}
+                          onRead={(songId) =>
+                            void referenceController.readScoreOnRecording(
+                              songId,
+                            )
+                          }
+                          onStop={() =>
+                            referenceController.stopReadingOnRecording()
+                          }
+                        />
                         <Show when={attached().outOfRangeNotes > 0}>
                           <small>
                             {attached().outOfRangeNotes}{' '}

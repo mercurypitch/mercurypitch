@@ -939,4 +939,168 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.secondaryLane()?.trackId).toBe('track-bass')
     })
   })
+
+  describe('reading a written score on the recording', () => {
+    const RECORDED = {
+      id: 'gsong-recorded',
+      name: 'Recorded Riff',
+      bpm: 60,
+      scoreTrackId: 'track-bass',
+      importedAt: Date.UTC(2026, 7, 2),
+      tracks: [
+        {
+          id: 'track-bass',
+          name: 'Bass',
+          instrumentName: 'Electric Bass',
+          noteCount: 30,
+          notes: Array.from({ length: 30 }, (_, index) => ({
+            midi: 40 + (index % 5),
+            startBeat: index,
+            duration: 1,
+          })),
+        },
+      ],
+    }
+
+    /** The same line, heard a second and a half into the recording. */
+    const heardIt = async () => ({
+      coverage: 0.8,
+      analysedSeconds: 32,
+      notes: Array.from({ length: 30 }, (_, index) => ({
+        midi: 40 + (index % 5),
+        noteName: 'E1',
+        startSeconds: index + 1.5,
+        durationSeconds: 0.5,
+        confidence: 0.9,
+      })),
+    })
+
+    const recordedPort = (): GuitarNightReferencePort => {
+      const { port } = fakePort({
+        listReferences: () => [
+          {
+            songId: RECORDED.id,
+            title: RECORDED.name,
+            trackCount: 1,
+            importedAt: RECORDED.importedAt,
+          },
+        ],
+        readSource: (songId) => (songId === RECORDED.id ? RECORDED : null),
+      })
+      return port
+    }
+
+    const measure = async (controller: ReturnType<typeof mount>) => {
+      await controller.followStem({
+        sessionId: 'session-recorded',
+        stemKind: 'bass',
+        stemLabel: 'Bass',
+        stemUrl: 'blob:bass',
+      })
+    }
+
+    it('offers nothing to hang until a stem has been measured', () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      expect(controller.alignableScores()).toEqual([])
+    })
+
+    it('offers the library once there is a recording to read on', async () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      await measure(controller)
+      await waitFor(() =>
+        expect(
+          controller.alignableScores().map((entry) => entry.songId),
+        ).toEqual([RECORDED.id]),
+      )
+    })
+
+    it('puts the written part where the recording plays it', async () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      await measure(controller)
+      await controller.readScoreOnRecording(RECORDED.id)
+
+      const reference = controller.reference()
+      expect(reference?.kind).toBe('measured')
+      expect(reference?.title).toBe('Recorded Riff on this bass')
+      // Written beat zero is heard a second and a half in, and that is where
+      // it now sits. Held on the score's own clock it would sit at zero.
+      expect(reference?.notes[0].startBeat).toBeCloseTo(1.5, 1)
+      expect(controller.alignStatus()).toBeNull()
+      expect(controller.readingOnRecording()).toMatchObject({
+        songId: RECORDED.id,
+        trackId: 'track-bass',
+      })
+    })
+
+    it('says so rather than guessing when the score is of another song', async () => {
+      const controller = mountWithTranscription(recordedPort(), async () => ({
+        coverage: 0.8,
+        analysedSeconds: 32,
+        notes: Array.from({ length: 30 }, (_, index) => ({
+          midi: 70 + (index % 3),
+          noteName: 'A#4',
+          startSeconds: index * 0.37 + 0.11,
+          durationSeconds: 0.2,
+          confidence: 0.9,
+        })),
+      }))
+      await measure(controller)
+      await controller.readScoreOnRecording(RECORDED.id)
+
+      expect(controller.alignStatus()).toContain('Too little')
+      expect(controller.readingOnRecording()).toBeNull()
+      expect(controller.reference()?.title).toContain('transcribed')
+    })
+
+    it('says so when the score has left the library', async () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      await measure(controller)
+      await controller.readScoreOnRecording('gsong-gone')
+      expect(controller.alignStatus()).toContain('no longer in the library')
+    })
+
+    it('asks for a measurement before it will hang anything', async () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      await controller.readScoreOnRecording(RECORDED.id)
+      expect(controller.alignStatus()).toContain('Measure a stem first')
+    })
+
+    it('goes back to the line the transcriber heard', async () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      await measure(controller)
+      await controller.readScoreOnRecording(RECORDED.id)
+      controller.stopReadingOnRecording()
+
+      expect(controller.readingOnRecording()).toBeNull()
+      expect(controller.reference()?.title).toContain('transcribed')
+    })
+
+    it('has nothing to go back to before anything was measured', () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      controller.stopReadingOnRecording()
+      expect(controller.reference()).toBeNull()
+    })
+
+    it('keeps the written part when the instrument changes', async () => {
+      const transcribe = vi.fn(heardIt)
+      const controller = mountWithTranscription(recordedPort(), transcribe)
+      await measure(controller)
+      await controller.readScoreOnRecording(RECORDED.id)
+
+      controller.setStringCount(6)
+      expect(controller.reference()?.title).toBe('Recorded Riff on this bass')
+      // Changing neck must never re-read the audio.
+      expect(transcribe).toHaveBeenCalledTimes(1)
+    })
+
+    it('forgets the written part when the reference is cleared', async () => {
+      const controller = mountWithTranscription(recordedPort(), heardIt)
+      await measure(controller)
+      await controller.readScoreOnRecording(RECORDED.id)
+      controller.detach()
+
+      expect(controller.readingOnRecording()).toBeNull()
+      expect(controller.alignableScores()).toEqual([])
+    })
+  })
 })

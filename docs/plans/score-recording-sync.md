@@ -1,6 +1,6 @@
 # Hanging a tab on the record
 
-**Status:** phase 1 shipped. Phases 2 and 3 are designed, not built.
+**Status:** phases 1 and 2 shipped. Phase 3 is designed, not built.
 
 Asked for 2026-08-20:
 
@@ -71,23 +71,52 @@ Three decisions worth stating:
   aliased window. Clamping would hide a bad measurement behind a plausible
   picture.
 
-## 3. Phase 2 (next) — the room plays the record and the tab follows
+## 3. Phase 2 — the written part, read on the recording — **shipped**
 
-The score room can already lease separated stems of the actual song. What it
-cannot do is put the authored tab on that recording's clock.
+The room could already measure a stem into a line on the recording's clock, and
+could already attach a tab counting musical beats. It could not put the two on
+one page, because their clocks mean different things.
 
-- Persist an alignment per `(sessionId, songId, trackId)`. **Never** onto
-  `SavedMidiSong.tempoChanges`: the score's tempo map is what the file says,
-  and one recording's alignment is not a property of the score. Two recordings
-  of the same song would fight over it.
-- Measure on an explicit gesture, the way stem measurement already works, using
-  the stem the part is most likely to be in — bass part against the bass stem,
-  guitar against guitar.
-- Convert once, at the edge: audio seconds through the alignment to score
-  seconds, then through `createSecondsToBeatClock` to score beats. Everything
-  downstream keeps counting beats and needs no changes at all.
-- Offer the nudge, and say the drift out loud. A tab that drifts eleven seconds
-  cannot be fixed with one slider, and a surface offering one is lying.
+**The measurement is the bridge.** It is a transcription of this recording, so
+the matcher can say where each part of the written score lands against it. Put
+the written notes through that map and the tab is on the record.
+
+- `alignScoreToRecording` measures the fit and hands back the alignment plus
+  enough evidence to refuse a bad one.
+- `scoreOnRecording` places the written part, and what comes back is an
+  ordinary measured reference — one beat per second, no tempo claimed, because
+  once notes are pinned to a recording that speeds up and slows down there is
+  no musical tempo left to claim. Every surface that draws a measured line
+  draws this with no changes at all.
+- Note lengths travel through the map too, not just note starts. The recording
+  runs at a different rate, so keeping the written duration would leave every
+  note wrong by exactly the drift.
+- Notes the map puts before the recording began are dropped, which is what a
+  tab with a count-in bar needs.
+
+**It refuses rather than guesses.** The matcher always returns its best offsets,
+even for a tab of a different song, so two gates stand in front of it: at least
+one window has to align at all, and at least a quarter of the written notes have
+to be confirmed by the recording. Recall against the written part, not precision
+against what was heard — a stem holds notes the tab never claimed, and that is
+not the tab being wrong. A confidently wrong alignment reads to a player as
+their own timing being wrong, which is the worst failure this feature could
+have.
+
+**What landed where**
+
+| Piece                                   | File                                                      |
+| --------------------------------------- | --------------------------------------------------------- |
+| Measure the fit, place the written part | `src/features/guitar-night/score-on-recording.ts`         |
+| Offer it, remember it, take it back     | `useGuitarNightReferenceController.ts`                    |
+| The offer itself                        | `GuitarNightApp.tsx`, `.referenceOnRecording*` in the CSS |
+
+**Still per-session, still not on the score.** The alignment lives with the
+attached reference and is forgotten when it is detached. It is never written
+onto `SavedMidiSong.tempoChanges`: the score's tempo map is what the file says,
+one recording's alignment is not a property of the score, and two recordings of
+the same song would fight over it. Persisting it across sessions is a small,
+separate change and is worth doing only once a reader asks for it twice.
 
 ## 4. Phase 3 (later) — anchors a person can place
 

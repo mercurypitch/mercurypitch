@@ -2511,6 +2511,50 @@ button.secondaryPartBody:focus-visible {
   background: rgba(224, 164, 93, 0.12);
 }
 
+/* Hanging a written part on the recording being read. Set apart from the
+   measured line's own facts, because it is an offer rather than a statement:
+   a reader who does not want it should be able to skip past the whole box. */
+.referenceOnRecording {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.12);
+}
+
+.referenceOnRecordingList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.referenceOnRecordingButton {
+  min-height: var(--touch-target);
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(224, 164, 93, 0.4);
+  border-radius: 0.4rem;
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.1);
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.referenceOnRecordingBack {
+  justify-self: start;
+  min-height: var(--touch-target);
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.78);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.referenceOnRecordingProblem {
+  color: rgba(224, 164, 93, 0.9);
+}
+
 .referenceActions {
   display: grid;
   gap: 0.35rem;

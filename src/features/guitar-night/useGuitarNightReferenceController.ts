@@ -5,9 +5,11 @@ import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
+import { alignScoreToRecording, scoreOnRecording } from './score-on-recording'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
 import { playableSheetTracks, sheetLaneFromReference, sheetLanesFromSource, } from './sheet/sheet-lanes'
 import type { SheetLane } from './sheet/sheet-model'
@@ -29,6 +31,27 @@ export type GuitarNightReferenceState =
     }
 
 type HistoryMode = 'push' | 'replace' | 'none'
+
+/**
+ * Why a score could not be hung on this recording, in words a player can act
+ * on. Each says what to try, because "alignment failed" tells nobody anything.
+ */
+const ALIGN_FAILURE_COPY: Record<string, string> = {
+  'no-notes': 'That part has no notes to line up against this recording.',
+  'no-anchors':
+    'Nothing in that part lines up with this recording. Check it is the same song.',
+  'no-agreement':
+    'Too little of that part was heard in this recording to place it honestly.',
+}
+
+/** A written score hung on a recording, and the evidence for the fit. */
+interface ReadingOnRecording {
+  songId: string
+  trackId: string
+  alignment: ScoreAlignment
+  matchedFraction: number
+  driftSeconds: number
+}
 
 interface GuitarNightReferenceControllerOptions {
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
@@ -266,6 +289,29 @@ export function useGuitarNightReferenceController(
     setSheetHiddenTracks({ songId: current.songId, trackIds: [...hidden] })
   }
 
+  /**
+   * `lastMeasured` is a plain variable so the transcriber can write it without
+   * re-running the graph; this mirrors it for the parts of the UI that must
+   * appear the moment a measurement lands.
+   */
+  const [measuredForAlignment, setMeasuredForAlignment] =
+    createSignal<MeasuredReferenceInput | null>(null)
+
+  /**
+   * The written score currently being read on the recording, if any.
+   *
+   * Kept so changing instrument can re-place it without measuring the audio
+   * again — the alignment is a property of the pair, not of the neck.
+   */
+  const [readingOnRecording, setReadingOnRecording] =
+    createSignal<ReadingOnRecording | null>(null)
+  const [alignStatus, setAlignStatus] = createSignal<string | null>(null)
+
+  /** Scores in the library that could be hung on the recording being read. */
+  const alignableScores = createMemo<readonly GuitarNightReferenceSummary[]>(
+    () => (measuredForAlignment() === null ? [] : references()),
+  )
+
   const ensurePort = async (): Promise<GuitarNightReferencePort | null> => {
     const current = port()
     if (current !== null) return current
@@ -409,6 +455,9 @@ export function useGuitarNightReferenceController(
     setImportStatus(null)
     cancelFollowStem()
     lastMeasured = null
+    setMeasuredForAlignment(null)
+    setReadingOnRecording(null)
+    setAlignStatus(null)
     tunedForTrack = null
     setSourceTuning(null)
     setState({ kind: 'idle' })
@@ -424,10 +473,93 @@ export function useGuitarNightReferenceController(
    * is re-placed from the transcription already in hand, so changing the neck
    * never re-reads the audio.
    */
+  /** Rebuild the written-on-recording reference for a given neck. */
+  const placeWrittenOnRecording = (
+    written: ReadingOnRecording,
+    nextTuning: InstrumentTuning,
+  ): GuitarNightReference | null => {
+    const source = port()?.readSource(written.songId) ?? null
+    const measured = measuredForAlignment()
+    if (source === null || measured === null) return null
+    return scoreOnRecording(source, written.trackId, written.alignment, {
+      tuning: nextTuning,
+      backingSessionId: measured.sessionId,
+      recordingLabel: `this ${measured.stemLabel.toLowerCase()}`,
+    })
+  }
+
+  /**
+   * Hang a written score on the recording currently being read.
+   *
+   * The measurement is the bridge: it is a transcription of this recording, so
+   * the matcher can say where the written part lands against it. What comes
+   * back reads as a measured line, because once the notes are pinned to a
+   * recording there is no musical tempo left to claim.
+   */
+  const readScoreOnRecording = async (
+    songId: string,
+    trackId?: string,
+  ): Promise<void> => {
+    const measured = measuredForAlignment()
+    if (measured === null) {
+      setAlignStatus(
+        'Measure a stem first, so there is a recording to read on.',
+      )
+      return
+    }
+    const loaded = await ensurePort()
+    if (loaded === null || disposed) return
+    const source = loaded.readSource(songId)
+    if (source === null) {
+      setAlignStatus('That score is no longer in the library.')
+      return
+    }
+    const part = trackId ?? source.scoreTrackId
+    const result = alignScoreToRecording(source, part, measured.transcription)
+    if (!result.ok) {
+      setAlignStatus(ALIGN_FAILURE_COPY[result.code])
+      return
+    }
+
+    const written: ReadingOnRecording = {
+      songId,
+      trackId: part,
+      alignment: result.fit.alignment,
+      matchedFraction: result.fit.matchedFraction,
+      driftSeconds: result.fit.driftSeconds,
+    }
+    const placed = placeWrittenOnRecording(written, tuning())
+    if (placed === null) {
+      setAlignStatus('That part could not be placed on this instrument.')
+      return
+    }
+    setReadingOnRecording(written)
+    setAlignStatus(null)
+    setState({ kind: 'ready', reference: placed })
+  }
+
+  /** Back to the line the transcriber heard, rather than the one written. */
+  const stopReadingOnRecording = (): void => {
+    const measured = measuredForAlignment()
+    if (measured === null) return
+    setReadingOnRecording(null)
+    setAlignStatus(null)
+    setState({
+      kind: 'ready',
+      reference: measuredReferenceFromTranscription(measured, tuning()),
+    })
+  }
+
   const replaceOnCurrentInstrument = (nextTuning: InstrumentTuning): void => {
     const current = state()
     if (current.kind !== 'ready') return
     if (current.reference.kind === 'measured') {
+      const written = readingOnRecording()
+      if (written !== null) {
+        const placed = placeWrittenOnRecording(written, nextTuning)
+        if (placed !== null) setState({ kind: 'ready', reference: placed })
+        return
+      }
       if (lastMeasured === null) return
       setState({
         kind: 'ready',
@@ -573,6 +705,12 @@ export function useGuitarNightReferenceController(
         transcription,
       }
       lastMeasured = measured
+      setMeasuredForAlignment(measured)
+      // A recording to read on is only useful with scores to offer against it,
+      // so the library is loaded now rather than when the reader goes looking.
+      void ensurePort()
+      setReadingOnRecording(null)
+      setAlignStatus(null)
       // The stem names the instrument outright, so no guessing is needed.
       tunedForTrack = `${input.sessionId}:${input.stemKind}`
       const stageTuning = adoptInstrument(
@@ -646,6 +784,11 @@ export function useGuitarNightReferenceController(
     transcribingStem,
     sheetLanes,
     sheetTimeSignatures,
+    alignableScores,
+    readingOnRecording,
+    alignStatus,
+    readScoreOnRecording,
+    stopReadingOnRecording,
     sheetVisibleTrackIds,
     toggleSheetTrack,
     secondaryLane,
