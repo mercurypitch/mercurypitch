@@ -48,6 +48,7 @@ export default defineConfig(
             'scripts/assert-piano-night-bundle.mjs',
             'scripts/assert-pr-preview-isolation.mjs',
             'scripts/code-metrics.mjs',
+            'scripts/curate-drum-night-kits.mjs',
             'scripts/pr-prepare.mjs',
             'scripts/pr-prepare.test.mjs',
           ],
