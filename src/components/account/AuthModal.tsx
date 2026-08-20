@@ -12,7 +12,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
-import Turnstile, { resetTurnstile, turnstileEnabled, } from '@/components/shared/Turnstile'
+import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
@@ -447,7 +447,10 @@ export const AuthModal: Component = () => {
                   class={styles.submit}
                   type="submit"
                   disabled={
-                    busy() || (turnstileEnabled && turnstileToken() === '')
+                    busy() ||
+                    (turnstileEnabled &&
+                      turnstileToken() === '' &&
+                      !turnstileUnavailable())
                   }
                   data-testid="auth-submit"
                 >

@@ -13,7 +13,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, createUniqueId, Match, onMount, Show, Switch, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
-import Turnstile, { resetTurnstile, turnstileEnabled, } from '@/components/shared/Turnstile'
+import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { checkResetToken, requestPasswordReset, resetPassword, } from '@/db/services/auth-service'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -342,7 +342,10 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
                 class={styles.submit}
                 type="submit"
                 disabled={
-                  busy() || (turnstileEnabled && turnstileToken() === '')
+                  busy() ||
+                  (turnstileEnabled &&
+                    turnstileToken() === '' &&
+                    !turnstileUnavailable())
                 }
                 data-testid="reset-request-submit"
               >

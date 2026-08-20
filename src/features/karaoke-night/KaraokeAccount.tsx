@@ -6,7 +6,7 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
-import Turnstile, { resetTurnstile, turnstileEnabled, } from '@/components/shared/Turnstile'
+import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
@@ -233,7 +233,10 @@ export function KaraokeAccount() {
                 class="kn-btn kn-btn--primary"
                 type="submit"
                 disabled={
-                  busy() || (turnstileEnabled && turnstileToken() === '')
+                  busy() ||
+                  (turnstileEnabled &&
+                    turnstileToken() === '' &&
+                    !turnstileUnavailable())
                 }
               >
                 {busy()
