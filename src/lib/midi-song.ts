@@ -7,6 +7,7 @@
 // which track to practice against and which to hear as backing.
 
 import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 
 /** A single note within a parsed MIDI track. */
 export interface MidiSongNote {
@@ -73,6 +74,16 @@ export interface MidiSong {
    * minutes from where it is actually played.
    */
   tempoChanges?: MidiTempoChange[]
+  /**
+   * Every time signature in the file, on the beat it takes effect.
+   *
+   * Optional for the same reason `tempoChanges` is: songs saved before the
+   * field existed do not have one, and a caller building a song by hand need
+   * not care. Absent means "the file said nothing", which `buildBars` reads as
+   * common time throughout — the assumption every reading surface used to make
+   * silently.
+   */
+  timeSignatures?: MidiTimeSignature[]
   tracks: MidiSongTrack[]
 }
 
