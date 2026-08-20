@@ -138,11 +138,12 @@ it. Only the systems near the reader are mounted, so a long score costs what a
 short one does. The renderer is an interface with two questions in it — how tall
 is a part, and paint one system — which is the seam phase 4 arrives through.
 
-**Bars** come from a time signature list the model accepts but nothing supplies
-yet. Guitar Pro carries real signatures per master bar (`gp-to-midi-song.ts`
-already walks `score.masterBars`); plain MIDI and measured audio carry none.
-Common time is the documented fallback until that plumbing lands, and it is the
-first thing to fix for scores that are not in four.
+**Bars** come from the file. That plumbing landed after phase 3: Guitar Pro
+signatures are read off `score.masterBars`, MIDI signatures off the 0x58 metas
+the Piano Project parser already collected, and `@/lib/midi-bars` turns either
+list into bars every surface can count. Common time is now stated only where
+the file said nothing — a measured stem, or a MIDI export that wrote no
+signature — rather than assumed everywhere.
 
 ## 5. Phase 3 — the secondary part in the corner, and tap to swap — **shipped**
 

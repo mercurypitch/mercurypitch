@@ -189,9 +189,11 @@ core Learn set in
 - A measured reference also retains the exact backing-session identity that
   produced it. Staging a different recording detaches that evidence rather than
   carrying a truthful result onto the wrong song.
-- Only the bass stem is offered for measurement. It is effectively monophonic,
-  which is the case pitch detection handles. The guitar stem holds however many
-  guitars the mix contained and is often chordal, so it is not claimed.
+- Bass and guitar stems are both offered for measurement, and each is claimed
+  for what it is. A bass stem is effectively monophonic, which is the case
+  pitch detection handles well. A guitar stem holds however many guitars the
+  mix contained and is often chordal, so its result is presented as evidence
+  about the recording rather than as a tab to read.
 - Measured notes below the guitar's low E are raised by whole octaves into the
   six-string range, preserving pitch class, and the surface says that it did so
   rather than dropping them silently. Measurement runs only on an explicit
@@ -310,6 +312,31 @@ core Learn set in
   clock, aggregate health and event counts without audio or an event timeline;
   it labels a real-device run as user-captured and unverified.
 
+## Where bars and beats come from
+
+- There is one Standard MIDI reader in the tree. `parseMidiProject` decodes the
+  format; `midi-song-from-project.ts` projects it down to the notes-on-beats
+  view every reading surface consumes. A second, looser scanner used to sit
+  beside it and quietly assumed common time. Two readers meant two answers for
+  the same file, so it is gone.
+- Bar lines come off the file, never off an assumption. Guitar Pro states a
+  time signature on every master bar; a MIDI export carries whatever 0x58 meta
+  events the exporter wrote; a measured stem carries none. `@/lib/midi-bars`
+  turns whichever list exists into bars, and states common time only where the
+  file said nothing.
+- A bar's length is counted in quarter notes, the same unit note starts use, so
+  a 6/8 bar is three beats long and not six. The last bar of a song keeps its
+  full length even when the music stops inside it — cutting it to the notes it
+  contains would space that bar twice as wide as every other and put the final
+  note somewhere it is not.
+- Signatures survive persistence alongside the tempo map. A score saved before
+  the field existed simply has none, and reads as common time.
+- Beats become seconds through `createBeatClock`, which walks the whole tempo
+  map rather than holding the opening tempo. A measured reference is the one
+  clock that is not musical: it counts a beat a second because that is the
+  recording's own time, which is why a measured line and an authored score
+  cannot share bar lines.
+
 ## Copy contract
 
 Use concrete capability names: Listening, Coach, Jam Doctor, separation,
@@ -339,6 +366,10 @@ subordinate to the crop until the source receives a final retouch.
    first-viewport mode selectors.
 4. Complete authored-score-to-recording alignment plus release and
    continuous-pitch evidence before adding sustain or intonation observations.
+   The Lab already aligns a Guitar Pro score against a separated stem; the work
+   left is lifting that out of the Lab, expressing an alignment as anchors, and
+   persisting it against the session rather than editing the score's own tempo
+   map.
 5. Move the proved runtime lifecycle beneath the remaining legacy Guitar
    controls before an owner-approved cutover, then finish real-device art and
    performance tuning.

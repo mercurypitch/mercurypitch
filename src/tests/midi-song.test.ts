@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, parseMidiSong, } from '@/lib/midi-song'
+import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, gmInstrumentName, parseMidiSong, } from '@/lib/midi-song'
 
 // ── Binary MIDI builders ───────────────────────────────────────
 
@@ -79,6 +79,24 @@ function setTempo(usPerBeat: number): number[] {
     (usPerBeat >> 16) & 0xff,
     (usPerBeat >> 8) & 0xff,
     usPerBeat & 0xff,
+  ]
+}
+
+function timeSignature(
+  numerator: number,
+  denominator: number,
+  delta = 0,
+): number[] {
+  // Denominator is stored as its power of two: 8 is written as 3.
+  return [
+    ...varLen(delta),
+    0xff,
+    0x58,
+    0x04,
+    numerator,
+    Math.log2(denominator),
+    24,
+    8,
   ]
 }
 
@@ -196,6 +214,86 @@ describe('parseMidiSong', () => {
     ])
     const song = parseMidiSong(data)
     expect(song!.tracks[0].noteCount).toBe(2)
+  })
+})
+
+describe('time signatures', () => {
+  it('reads the signature the file wrote', () => {
+    const song = parseMidiSong(
+      buildMidi([...timeSignature(3, 4), ...quarterNote(0, 60, 0)]),
+    )
+    expect(song?.timeSignatures).toEqual([
+      { beat: 0, numerator: 3, denominator: 4 },
+    ])
+  })
+
+  it('reads a compound signature with its written denominator', () => {
+    const song = parseMidiSong(
+      buildMidi([...timeSignature(6, 8), ...quarterNote(0, 60, 0)]),
+    )
+    expect(song?.timeSignatures).toEqual([
+      { beat: 0, numerator: 6, denominator: 8 },
+    ])
+  })
+
+  it('places a later signature on the beat it takes effect', () => {
+    const song = parseMidiSong(
+      buildMidi([
+        ...timeSignature(4, 4),
+        ...quarterNote(0, 60, 0),
+        ...timeSignature(7, 8, 480 * 7),
+      ]),
+    )
+    expect(song?.timeSignatures).toEqual([
+      { beat: 0, numerator: 4, denominator: 4 },
+      { beat: 8, numerator: 7, denominator: 8 },
+    ])
+  })
+
+  it('records an empty list when the file wrote none', () => {
+    const song = parseMidiSong(buildMidi([...quarterNote(0, 60, 0)]))
+    expect(song?.timeSignatures).toEqual([])
+  })
+})
+
+describe('files that will not open', () => {
+  // The compact scanner this parser replaced kept whatever it had read before
+  // a file went wrong and returned a song with silently wrong timing. These
+  // record the stricter answer, so the change is visible rather than assumed.
+
+  it('refuses a file whose track is shorter than it claims', () => {
+    const whole = [...buildMidi([...quarterNote(0, 60, 0)])]
+    expect(
+      parseMidiSong(new Uint8Array(whole.slice(0, whole.length - 4))),
+    ).toBe(null)
+  })
+
+  it('refuses a file with bytes after its last track', () => {
+    const whole = [...buildMidi([...quarterNote(0, 60, 0)])]
+    expect(parseMidiSong(new Uint8Array([...whole, 0x00, 0x00]))).toBe(null)
+  })
+
+  it('refuses an SMPTE time division it cannot count beats in', () => {
+    const bytes = [...buildMidi([...quarterNote(0, 60, 0)])]
+    bytes[12] = 0xe8 // negative frames-per-second marks SMPTE
+    bytes[13] = 0x50
+    expect(parseMidiSong(new Uint8Array(bytes))).toBe(null)
+  })
+
+  it('refuses a format 2 file', () => {
+    const bytes = [...buildMidi([...quarterNote(0, 60, 0)])]
+    bytes[9] = 2
+    expect(parseMidiSong(new Uint8Array(bytes))).toBe(null)
+  })
+})
+
+describe('gmInstrumentName', () => {
+  it('names a General MIDI program', () => {
+    expect(gmInstrumentName(25)).toBe('Steel Guitar')
+  })
+
+  it('says which program it was when the number names nothing', () => {
+    expect(gmInstrumentName(200)).toBe('Program 200')
   })
 })
 

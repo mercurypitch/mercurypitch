@@ -12,6 +12,7 @@ import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, instrumentTuningFromSource, liftIntoTuningRange, MAX_PLAYABLE_FRET, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { MidiSongNote, MidiTempoChange } from '@/lib/midi-song'
 import { midiToNote } from '@/lib/scale-data'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
@@ -35,6 +36,15 @@ export interface GuitarNightReferenceSource {
   bpm: number
   /** Every authored tempo event, when the imported source retained a map. */
   tempoChanges?: readonly MidiTempoChange[]
+  /**
+   * Every authored time signature, when the imported source carried them.
+   *
+   * Guitar Pro states one per master bar; a MIDI export keeps whatever the
+   * exporter wrote; a measured stem has none at all. Absent means the sheet
+   * draws common time, which is a stated fallback rather than a claim about
+   * the music.
+   */
+  timeSignatures?: readonly MidiTimeSignature[]
   tracks: readonly GuitarNightReferenceSourceTrack[]
   /** The track this source was last scored against. */
   scoreTrackId: string

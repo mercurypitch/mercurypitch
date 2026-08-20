@@ -16,6 +16,7 @@ import type { GuitarBendType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, soundingOpenMidi, } from '@/lib/guitar/instrument-tuning'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightSecondaryPart } from './GuitarNightSecondaryPart'
@@ -90,6 +91,8 @@ interface GuitarNightStageProps {
    * only where there is a score to read; the Sheet view is offered only then.
    */
   sheetLanes?: Accessor<readonly SheetLane[]>
+  /** Bar lines for the sheet, when the score carried its own. */
+  sheetTimeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
   /** The part being graded, drawn in full ink on the sheet. */
   scoredTrackId?: Accessor<string | undefined>
   /**
@@ -1497,6 +1500,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             <GuitarNightSheetView
               lanes={() => props.sheetLanes?.() ?? []}
               playheadBeat={() => actualPlayheadBeat() ?? 0}
+              {...(props.sheetTimeSignatures === undefined
+                ? {}
+                : { timeSignatures: props.sheetTimeSignatures })}
               {...(props.scoredTrackId === undefined
                 ? {}
                 : { scoredTrackId: props.scoredTrackId })}

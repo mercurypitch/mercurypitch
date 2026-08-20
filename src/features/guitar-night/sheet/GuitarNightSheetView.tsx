@@ -5,8 +5,9 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import styles from './GuitarNightSheetView.module.css'
-import type { SheetLane, SheetPlacement, SheetSystem, SheetTimeSignature, } from './sheet-model'
+import type { SheetLane, SheetPlacement, SheetSystem } from './sheet-model'
 import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, } from './sheet-model'
 import type { SheetMetrics, SheetRenderer, SheetSystemLayout, SheetTheme, } from './sheet-render'
 import { DEFAULT_SHEET_METRICS, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
@@ -20,7 +21,7 @@ export interface GuitarNightSheetViewProps {
   playheadBeat: Accessor<number>
   /** The part being graded, drawn in full ink. */
   scoredTrackId?: Accessor<string | undefined>
-  timeSignatures?: Accessor<readonly SheetTimeSignature[] | undefined>
+  timeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
   /** Swap in another way of drawing a part — staff notation, later. */
   renderer?: Accessor<SheetRenderer>
   /** Tapping a part's name asks to score it. */
@@ -239,6 +240,10 @@ const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
     <div
       class={styles.system}
       data-system={props.system.index}
+      // Where the row starts in the score's own beats. The bar lines
+      // themselves are paint, so this is the one place a reader — or a test —
+      // can see that a 2/4 bar shortened the music ahead of it.
+      data-start-beat={props.system.startBeat}
       style={{
         transform: `translate3d(0, ${props.top}px, 0)`,
         height: `${props.layout.height}px`,

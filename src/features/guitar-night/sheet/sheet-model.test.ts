@@ -38,7 +38,10 @@ function lane(
 }
 
 describe('buildSheetBars', () => {
-  it('covers the score in common time by default', () => {
+  // The arithmetic belongs to `@/lib/midi-bars` and is tested there. These
+  // check the sheet asks it the right question.
+
+  it('covers the score in common time when the file said nothing', () => {
     const bars = buildSheetBars(9)
     expect(bars).toHaveLength(3)
     expect(bars.map((bar) => bar.startBeat)).toEqual([0, 4, 8])
@@ -51,35 +54,18 @@ describe('buildSheetBars', () => {
     expect(buildSheetBars(Number.NaN)).toHaveLength(1)
   })
 
-  it('changes bar length where a time signature says so', () => {
+  it('changes bar length where the score changes time signature', () => {
     const bars = buildSheetBars(14, [
-      { barIndex: 0, beatsPerBar: 4 },
-      { barIndex: 2, beatsPerBar: 3 },
+      { beat: 0, numerator: 4, denominator: 4 },
+      { beat: 8, numerator: 3, denominator: 4 },
     ])
     expect(bars.map((bar) => bar.beats)).toEqual([4, 4, 3, 3])
     expect(bars.map((bar) => bar.startBeat)).toEqual([0, 4, 8, 11])
   })
 
-  it('fills common time before a signature that starts late', () => {
-    const bars = buildSheetBars(10, [{ barIndex: 1, beatsPerBar: 2 }])
-    expect(bars[0]).toMatchObject({ startBeat: 0, beats: 4 })
-    expect(bars[1]).toMatchObject({ startBeat: 4, beats: 2 })
-  })
-
-  it('sorts signatures and drops ones it cannot use', () => {
-    const bars = buildSheetBars(10, [
-      { barIndex: 2, beatsPerBar: 2 },
-      { barIndex: 0, beatsPerBar: 4 },
-      { barIndex: 1, beatsPerBar: 0 },
-      { barIndex: Number.NaN, beatsPerBar: 6 },
-    ])
-    expect(bars.map((bar) => bar.beats)).toEqual([4, 4, 2])
-  })
-
-  it('reads an all-unusable signature list as common time', () => {
-    expect(buildSheetBars(8, [{ barIndex: 0, beatsPerBar: -1 }])).toEqual(
-      buildSheetBars(8),
-    )
+  it('draws a 6/8 score in three-quarter bars, not six-beat ones', () => {
+    const bars = buildSheetBars(6, [{ beat: 0, numerator: 6, denominator: 8 }])
+    expect(bars.map((bar) => bar.startBeat)).toEqual([0, 3])
   })
 })
 

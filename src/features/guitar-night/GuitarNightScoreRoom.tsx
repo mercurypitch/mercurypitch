@@ -15,6 +15,7 @@ import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/g
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { guitarPhraseDoctorView, retainedTakeHealth, } from './guitar-phrase-doctor-view'
 import styles from './GuitarNightApp.module.css'
@@ -54,6 +55,7 @@ interface GuitarNightScoreRoomProps {
   onSelectTrack?(trackId: string): void
   /** Every part the sheet draws, in written order. */
   sheetLanes?: Accessor<readonly SheetLane[]>
+  sheetTimeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
   /** One other part, drawn small in a corner of the moving views. */
   secondaryLane?: Accessor<SheetLane | null>
   /** The rest of the band, already carrying each part's own timbre. */
@@ -1001,6 +1003,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         {...(props.sheetLanes === undefined
           ? {}
           : { sheetLanes: props.sheetLanes })}
+        {...(props.sheetTimeSignatures === undefined
+          ? {}
+          : { sheetTimeSignatures: props.sheetTimeSignatures })}
         {...(props.secondaryLane === undefined
           ? {}
           : { secondaryLane: props.secondaryLane })}

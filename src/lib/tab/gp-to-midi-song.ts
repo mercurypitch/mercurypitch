@@ -10,6 +10,7 @@
 
 import type * as alphaTab from '@coderline/alphatab'
 import type { GuitarBendType, GuitarNoteNotation, GuitarSlideType, GuitarTechnique, } from '@/lib/guitar/guitar-notation'
+import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { MidiSong, MidiSongNote, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
 
@@ -348,6 +349,24 @@ function scoreTempoChanges(score: alphaTab.model.Score): MidiTempoChange[] {
   return changes.sort((left, right) => left.beat - right.beat)
 }
 
+/**
+ * Every time signature in the score, on the beat its bar starts.
+ *
+ * Guitar Pro states a signature on every master bar whether or not it changed,
+ * so this is a list of bar openings rather than a list of changes; the repeats
+ * are dropped where bars are built. It is the only source we have that carries
+ * real signatures — a MIDI export of the same score keeps them, an audio
+ * measurement has none — and without it a 6/8 song is drawn in fours, with
+ * every bar line a beat and a half from where the music puts it.
+ */
+function scoreTimeSignatures(score: alphaTab.model.Score): MidiTimeSignature[] {
+  return score.masterBars.map((masterBar) => ({
+    beat: masterBar.start / TICKS_PER_QUARTER,
+    numerator: masterBar.timeSignatureNumerator,
+    denominator: masterBar.timeSignatureDenominator,
+  }))
+}
+
 /** Convert an alphaTab Score into a MidiSong (percussion tracks dropped). */
 export function scoreToMidiSong(score: alphaTab.model.Score): MidiSong {
   const tracks: MidiSongTrack[] = []
@@ -356,7 +375,12 @@ export function scoreToMidiSong(score: alphaTab.model.Score): MidiSong {
     if (mapped !== null) tracks.push(mapped)
   })
   const bpm = score.tempo > 0 ? Math.round(score.tempo) : 120
-  return { bpm, tempoChanges: scoreTempoChanges(score), tracks }
+  return {
+    bpm,
+    tempoChanges: scoreTempoChanges(score),
+    timeSignatures: scoreTimeSignatures(score),
+    tracks,
+  }
 }
 
 /** Human-readable song name from score metadata, falling back to file name. */

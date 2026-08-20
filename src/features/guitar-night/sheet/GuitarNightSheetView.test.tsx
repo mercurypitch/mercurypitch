@@ -204,6 +204,35 @@ describe('GuitarNightSheetView', () => {
     }
   })
 
+  it('lays the page out in the time signature the score is in', () => {
+    const restore = sizeThePage(800, 400)
+    try {
+      // Twelve beats is four bars of 3/4 but only three of common time. At
+      // three bars to a system that is two rows against one, which is what
+      // tells the two layouts apart from outside.
+      const inThree = render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(11)] })]}
+          playheadBeat={() => 0}
+          timeSignatures={() => [{ beat: 0, numerator: 3, denominator: 4 }]}
+        />
+      ))
+      const inFour = render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(11)] })]}
+          playheadBeat={() => 0}
+        />
+      ))
+      expect(
+        inThree.container.querySelectorAll('[data-system]').length,
+      ).toBeGreaterThan(
+        inFour.container.querySelectorAll('[data-system]').length,
+      )
+    } finally {
+      restore()
+    }
+  })
+
   it('builds only the systems near the reader, not the whole score', () => {
     const restore = sizeThePage(800, 400)
     try {
