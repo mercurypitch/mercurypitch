@@ -62,28 +62,75 @@ describe('launch entry documents', () => {
     expect(document).toContain('vocal range and pitch accuracy')
   })
 
-  it('builds Piano Night from a dedicated noindex pilot document', () => {
-    const document = repoHtml('piano-night.html')
-    const vite = repoFile('vite.config.ts')
-    // The standalone-document list lives with the rest of the worker's routing
-    // rules, which moved out of src/sw.ts into src/lib/sw-runtime.ts.
-    const serviceWorker = repoFile('src/lib/sw-runtime.ts')
-    const sitemap = repoFile('public/sitemap.xml')
+  // Both instrument rooms were `noindex, nofollow` pilots until 2026-08-20.
+  // They are listed now, so what is worth pinning is that each one is *safe* to
+  // index: a page enters the sitemap only once it has its own title, a
+  // description worth showing, a self-canonical and a share card. A sitemap
+  // entry whose canonical points elsewhere is how you earn "duplicate,
+  // submitted URL not selected as canonical" — which is exactly why the
+  // /exercises deep links are still held back above.
+  const INSTRUMENT_ROOMS = [
+    {
+      room: 'Piano Night',
+      file: 'piano-night.html',
+      path: 'piano-night',
+      entry: '/src/features/piano-night/main.tsx',
+      vitePaths: "PIANO_NIGHT_PATHS = new Set(['/piano-night'])",
+      viteInput: "pianoNight: resolve(__dirname, 'piano-night.html')",
+    },
+    {
+      room: 'Guitar Night',
+      file: 'guitar-night.html',
+      path: 'guitar-night',
+      entry: '/src/features/guitar-night/main.tsx',
+      vitePaths: "GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])",
+      viteInput: "guitarNight: resolve(__dirname, 'guitar-night.html')",
+    },
+  ] as const
 
-    expect(document.title).toBe('Piano Night — MercuryPitch')
-    expect(
-      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
-    ).toBe('https://mercurypitch.com/piano-night')
-    expect(
-      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
-    ).toBe('noindex, nofollow')
-    expect(
-      document.querySelector('script[type="module"]')?.getAttribute('src'),
-    ).toBe('/src/features/piano-night/main.tsx')
-    expect(vite).toContain("PIANO_NIGHT_PATHS = new Set(['/piano-night'])")
-    expect(vite).toContain("pianoNight: resolve(__dirname, 'piano-night.html')")
-    expect(serviceWorker).toContain("'/piano-night'")
-    expect(serviceWorker).toContain("'/piano-night.html'")
-    expect(sitemap).not.toContain('mercurypitch.com/piano-night')
-  })
+  for (const room of INSTRUMENT_ROOMS) {
+    it(`indexes ${room.room} from a self-canonical document with a share card`, () => {
+      const document = repoHtml(room.file)
+      const vite = repoFile('vite.config.ts')
+      // The standalone-document list lives with the rest of the worker's
+      // routing rules, which moved out of src/sw.ts into src/lib/sw-runtime.ts.
+      const serviceWorker = repoFile('src/lib/sw-runtime.ts')
+      const sitemap = repoFile('public/sitemap.xml')
+      const url = `https://mercurypitch.com/${room.path}`
+
+      expect(document.title).toContain(room.room)
+      expect(
+        document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+      ).toBe(url)
+      expect(
+        document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+      ).toBe('index, follow')
+      // The pilot heads carried a one-line description and no keywords, which
+      // is thin for a page asking to be crawled.
+      expect(
+        document
+          .querySelector('meta[name="description"]')
+          ?.getAttribute('content')?.length ?? 0,
+      ).toBeGreaterThan(120)
+      expect(document.querySelector('meta[name="keywords"]')).not.toBeNull()
+      expect(
+        document
+          .querySelector('meta[property="og:url"]')
+          ?.getAttribute('content'),
+      ).toBe(url)
+      expect(
+        document
+          .querySelector('meta[property="og:image"]')
+          ?.getAttribute('content'),
+      ).toBe(`https://mercurypitch.com/${room.path}-og.png`)
+      expect(
+        document.querySelector('script[type="module"]')?.getAttribute('src'),
+      ).toBe(room.entry)
+      expect(vite).toContain(room.vitePaths)
+      expect(vite).toContain(room.viteInput)
+      expect(serviceWorker).toContain(`'/${room.path}'`)
+      expect(serviceWorker).toContain(`'/${room.path}.html'`)
+      expect(sitemap).toContain(`<loc>${url}</loc>`)
+    })
+  }
 })
