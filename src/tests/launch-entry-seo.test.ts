@@ -142,4 +142,32 @@ describe('launch entry documents', () => {
     expect(consume).toBeGreaterThan(-1)
     expect(restore).toBeGreaterThan(consume)
   })
+
+  it('builds Drum Night from a dedicated noindex pilot document', () => {
+    const document = repoHtml('drum-night.html')
+    const vite = repoFile('vite.config.ts')
+    const serviceWorker = repoFile('src/lib/sw-runtime.ts')
+    const sitemap = repoFile('public/sitemap.xml')
+
+    expect(document.title).toBe('Drum Night — MercuryPitch')
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://mercurypitch.com/drum-night')
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('noindex, nofollow')
+    expect(
+      document
+        .querySelector('meta[name="description"]')
+        ?.getAttribute('content'),
+    ).toContain('interactive visual pilot')
+    expect(
+      document.querySelector('script[type="module"]')?.getAttribute('src'),
+    ).toBe('/src/features/drum-night/main.tsx')
+    expect(vite).toContain("DRUM_NIGHT_PATHS = new Set(['/drum-night'])")
+    expect(vite).toContain("drumNight: resolve(__dirname, 'drum-night.html')")
+    expect(serviceWorker).toContain("'/drum-night'")
+    expect(serviceWorker).toContain("'/drum-night.html'")
+    expect(sitemap).not.toContain('mercurypitch.com/drum-night')
+  })
 })
