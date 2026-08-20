@@ -785,4 +785,79 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.sheetVisibleTrackIds()).toEqual(['bass'])
     })
   })
+
+  describe('the rest of the band', () => {
+    it('plays every part but the one being scored', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+
+      expect(controller.backingPartList().map((part) => part.trackId)).toEqual([
+        'track-rhythm',
+        'track-bass',
+      ])
+      expect(controller.audibleBackingTrackIds()).toEqual([
+        'track-rhythm',
+        'track-bass',
+      ])
+      expect(controller.backingMelodyNotes().length).toBeGreaterThan(0)
+      expect(
+        controller.backingMelodyNotes().every((note) => note.midi !== 64),
+      ).toBe(true)
+    })
+
+    it('hands the scored part to the player when a band can cover it', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+      expect(controller.scoredPartDefaultsAudible()).toBe(false)
+    })
+
+    it('mutes a part, and brings it back', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+      const before = controller.backingMelodyNotes().length
+
+      controller.toggleBackingTrack('track-bass')
+      expect(controller.audibleBackingTrackIds()).toEqual(['track-rhythm'])
+      expect(controller.backingMelodyNotes().length).toBeLessThan(before)
+
+      controller.toggleBackingTrack('track-bass')
+      expect(controller.audibleBackingTrackIds()).toContain('track-bass')
+      expect(controller.backingMelodyNotes()).toHaveLength(before)
+    })
+
+    it('will not mute the scored part from here', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+
+      controller.toggleBackingTrack('track-lead')
+      expect(controller.audibleBackingTrackIds()).toEqual([
+        'track-rhythm',
+        'track-bass',
+      ])
+    })
+
+    it('rebuilds the band when the scored part changes', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+      await controller.selectTrack('track-bass')
+
+      expect(controller.backingPartList().map((part) => part.trackId)).toEqual([
+        'track-lead',
+        'track-rhythm',
+      ])
+    })
+
+    it('has no band before a score is attached', () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      expect(controller.backingPartList()).toEqual([])
+      expect(controller.backingMelodyNotes()).toEqual([])
+      expect(controller.scoredPartDefaultsAudible()).toBe(true)
+    })
+  })
 })

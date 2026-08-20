@@ -988,4 +988,187 @@ describe('the tab room sounds the tab', () => {
       dispose()
     })
   })
+
+  describe('the rest of the band', () => {
+    it('sounds every other part under the scored one', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          backingMelody: () => [
+            { midi: 40, startBeat: 0, durationBeats: 1, variant: 'bass' },
+          ],
+        })
+
+        await room.start()
+        const melody = getOptions()?.melody ?? []
+        // The written part, and the band underneath it.
+        expect(melody.map((note) => note.midi)).toEqual([64, 67, 40])
+        expect(melody.at(-1)?.variant).toBe('bass')
+        dispose()
+      })
+    })
+
+    it('keeps the band when the player mutes their own part', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          backingMelody: () => [
+            { midi: 40, startBeat: 0, durationBeats: 1, variant: 'bass' },
+          ],
+          defaultHearScore: () => false,
+        })
+
+        expect(room.hearScore()).toBe(false)
+        await room.start()
+        expect((getOptions()?.melody ?? []).map((note) => note.midi)).toEqual([
+          40,
+        ])
+        dispose()
+      })
+    })
+
+    it('lets the player overrule the default, per part', async () => {
+      await createRoot(async (dispose) => {
+        const { band } = bandHarness()
+        const frames = frameHarness()
+        const [scored, setScored] = createSignal('track-lead')
+        const room = useGuitarNightScoreRoomController({
+          reference: () =>
+            reference({ trackId: scored(), trackName: scored() }),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          defaultHearScore: () => false,
+        })
+
+        expect(room.hearScore()).toBe(false)
+        room.setHearScore(true)
+        expect(room.hearScore()).toBe(true)
+
+        // Reading a different part starts from that part's own default.
+        setScored('track-rhythm')
+        expect(room.hearScore()).toBe(false)
+        dispose()
+      })
+    })
+
+    it('never sounds the band into an open microphone', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          backingMelody: () => [
+            { midi: 40, startBeat: 0, durationBeats: 1, variant: 'bass' },
+          ],
+        })
+
+        await room.startAssessment({ start: 0, end: 4 })
+        expect(getOptions()?.melody ?? []).toEqual([])
+        dispose()
+      })
+    })
+  })
+
+  describe('the click', () => {
+    it('runs under the take by default', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        expect(room.hearClick()).toBe(true)
+        await room.start()
+        expect(getOptions()?.exercisePulse).toBe(true)
+        dispose()
+      })
+    })
+
+    it('can be quieted, and the count-in still counts', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        room.setHearClick(false)
+        expect(room.hearClick()).toBe(false)
+        await room.start()
+        expect(getOptions()?.exercisePulse).toBe(false)
+        expect(getOptions()?.countInBeats).toBeGreaterThan(0)
+        dispose()
+      })
+    })
+  })
+
+  describe('ending a take', () => {
+    it('unpins the setup a take had locked', async () => {
+      await createRoot(async (dispose) => {
+        const { band } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        await room.start()
+        expect(room.setupLocked()).toBe(true)
+        room.pause()
+        // A paused rehearsal take is resumable, so it keeps its grip.
+        expect(room.setupLocked()).toBe(true)
+
+        room.stop()
+        expect(room.setupLocked()).toBe(false)
+        expect(room.status()).toBe('quiet')
+        dispose()
+      })
+    })
+
+    it('returns the room to the part that is loaded now', async () => {
+      await createRoot(async (dispose) => {
+        const { band } = bandHarness()
+        const frames = frameHarness()
+        const [title, setTitle] = createSignal('Velvet Riff')
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference({ title: title() }),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        await room.start()
+        setTitle('Next Riff')
+        // The sounding take keeps the score it is actually playing.
+        expect(room.displayReference()?.title).toBe('Velvet Riff')
+
+        room.stop()
+        expect(room.displayReference()?.title).toBe('Next Riff')
+        dispose()
+      })
+    })
+  })
 })
