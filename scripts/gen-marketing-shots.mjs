@@ -63,10 +63,17 @@ const SHOTS = [
 // shot actually needs them, this script stays audio-free.
 
 const MIME = new Map([
-  ['.html', 'text/html'], ['.js', 'text/javascript'], ['.css', 'text/css'],
-  ['.json', 'application/json'], ['.png', 'image/png'], ['.jpg', 'image/jpeg'],
-  ['.webp', 'image/webp'], ['.svg', 'image/svg+xml'], ['.woff2', 'font/woff2'],
-  ['.ico', 'image/x-icon'], ['.webmanifest', 'application/manifest+json'],
+  ['.html', 'text/html'],
+  ['.js', 'text/javascript'],
+  ['.css', 'text/css'],
+  ['.json', 'application/json'],
+  ['.png', 'image/png'],
+  ['.jpg', 'image/jpeg'],
+  ['.webp', 'image/webp'],
+  ['.svg', 'image/svg+xml'],
+  ['.woff2', 'font/woff2'],
+  ['.ico', 'image/x-icon'],
+  ['.webmanifest', 'application/manifest+json'],
 ])
 
 if (!existsSync(join(DIST, 'index.html'))) {
@@ -79,9 +86,14 @@ const server = createServer((req, res) => {
   if (requested === '/karaoke-night' || requested === '/karaoke') {
     requested = '/karaoke-night.html'
   }
-  const candidate = join(DIST, normalize(requested).replace(/^(\.\.[/\\])+/, ''))
+  const candidate = join(
+    DIST,
+    normalize(requested).replace(/^(\.\.[/\\])+/, ''),
+  )
   const file =
-    candidate.startsWith(DIST) && existsSync(candidate) && statSync(candidate).isFile()
+    candidate.startsWith(DIST) &&
+    existsSync(candidate) &&
+    statSync(candidate).isFile()
       ? candidate
       : join(DIST, 'index.html')
   res.writeHead(200, {
@@ -118,7 +130,8 @@ for (const shot of SHOTS) {
   // src/features/whats-new/whats-new-release.ts.
   await context.addInitScript(
     ({ line, firstRun, version }) => {
-      if (line !== null) localStorage.setItem('pitchperfect_whats_new_seen', line)
+      if (line !== null)
+        localStorage.setItem('pitchperfect_whats_new_seen', line)
       localStorage.setItem('pitchperfect_survey_dismissed', '1')
       if (!firstRun) {
         localStorage.setItem('pitchperfect_welcome_version', version)
@@ -143,7 +156,10 @@ for (const shot of SHOTS) {
     // Let the beat's entrance settle; reducedMotion shortens but does not
     // remove the transition.
     await page.waitForTimeout(1200)
-    await page.screenshot({ path: join(OUT, shot.file), animations: 'disabled' })
+    await page.screenshot({
+      path: join(OUT, shot.file),
+      animations: 'disabled',
+    })
     const size = statSync(join(OUT, shot.file)).size
     console.log(
       `ok    ${shot.file}  ${VIEWPORT.width * 2}x${VIEWPORT.height * 2}  ${Math.round(size / 1024)} KiB  (beat: ${shot.beat})`,
