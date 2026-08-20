@@ -1,4 +1,4 @@
-// Drum Night smoke coverage protects the standalone visual-pilot boundary.
+// Drum Night smoke coverage protects silent first paint and the live-kit boundary.
 // ============================================================
 
 import { expect, test } from '@playwright/test'
@@ -101,7 +101,9 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   await expect(page.getByTestId('drum-night-shell')).toBeVisible()
   await expect(page.getByTestId('drum-night-pocket-view')).toBeVisible()
   await expect(page.locator('#app-tabs')).toHaveCount(0)
-  await expect(page.getByText('Synthetic performance preview')).toBeVisible()
+  await expect(page.getByRole('status')).toContainText(
+    'Audio, samples, and MIDI stay off',
+  )
   await expect(page.getByText('MIDI not connected')).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
@@ -117,7 +119,7 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   expect(pageErrors).toEqual([])
 })
 
-test('keeps views, preview transport, and rack drawer on one staged session @smoke', async ({
+test('keeps views, take transport, and rack drawer on one staged session @smoke', async ({
   page,
 }) => {
   await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
@@ -136,7 +138,7 @@ test('keeps views, preview transport, and rack drawer on one staged session @smo
   await expect(page.getByTestId('drum-night-kit-view')).toBeVisible()
 
   const play = page
-    .getByRole('button', { name: 'Play Midnight Pocket' })
+    .getByRole('button', { name: 'Play Midnight Pocket take clock' })
     .filter({ visible: true })
   await play.click()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
@@ -144,7 +146,7 @@ test('keeps views, preview transport, and rack drawer on one staged session @smo
     'true',
   )
   await expect(page.getByRole('status')).toContainText(
-    'This preview does not load a soundbank.',
+    'Starting the take clock. No backing track or click is scheduled.',
   )
 
   const groove = page
@@ -161,6 +163,38 @@ test('keeps views, preview transport, and rack drawer on one staged session @smo
   await expect(drawer).not.toBeVisible()
   await expect(page).not.toHaveURL(/drawer=/)
   await expect(groove).toBeFocused()
+})
+
+test('moves the live kit level with a real pointer @smoke', async ({
+  page,
+}) => {
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  await page
+    .getByRole('button', { name: /Groove/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const drawer = page.getByRole('dialog', { name: 'Shape the groove' })
+  await drawer.getByRole('tab', { name: 'Mix' }).click()
+
+  const kitLevel = drawer.getByRole('slider', { name: 'Kit level' })
+  const initialValue = await kitLevel.inputValue()
+  const bounds = await kitLevel.boundingBox()
+  if (bounds === null) throw new Error('Kit level slider has no pointer bounds')
+
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.2,
+    bounds.y + bounds.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.35,
+    bounds.y + bounds.height / 2,
+  )
+  await page.mouse.up()
+
+  await expect(kitLevel).not.toHaveValue(initialValue)
 })
 
 test('recomposes for phone and short landscape without overflow or clipped primary controls', async ({
@@ -235,11 +269,11 @@ test('recomposes for phone and short landscape without overflow or clipped prima
   ).toBeVisible()
   for (const pad of [
     'Closed hi-hat',
-    'Snare',
-    'Kick',
-    'Mid tom',
-    'Ride',
-    'Crash',
+    'Acoustic snare',
+    'Bass drum',
+    'Hi-mid tom',
+    'Ride cymbal',
+    'Crash cymbal',
   ]) {
     await expect(
       page
