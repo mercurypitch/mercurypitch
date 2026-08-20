@@ -27,6 +27,13 @@ function run(
   }
 }
 
+/** The medal drawn for one badge icon, or null when none is. */
+function badgeArt(iconName: string): HTMLImageElement | null {
+  return document.querySelector<HTMLImageElement>(
+    `img[data-badge-art="${iconName}"]`,
+  )
+}
+
 function base(): {
   displayName: string
   bio: string
@@ -241,13 +248,47 @@ describe('ProfileView badges', () => {
 
     expect(screen.getByText('Badges')).toBeInTheDocument()
     expect(screen.getByText('First Light')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'First Light' })).toHaveAttribute(
-      'src',
-      '/badges/crown.webp',
-    )
+    expect(badgeArt('crown')).toHaveAttribute('src', '/badges/crown.webp')
+  })
+
+  it('names each badge once, not once per element', () => {
+    // The medal carries `alt=""` because the name is right underneath it.
+    // An alt that repeats the text makes a screen reader announce every
+    // badge twice — which is why the Progress shelf does the same.
+    render(() => (
+      <ProfileView
+        {...base()}
+        badges={[{ iconName: 'crown', name: 'First Light', tier: 'gold' }]}
+      />
+    ))
+
+    expect(screen.getAllByText('First Light')).toHaveLength(1)
+    expect(screen.queryByRole('img', { name: /First Light/ })).toBeNull()
+    expect(badgeArt('crown')).toHaveAttribute('alt', '')
+  })
+
+  it('draws the medal big enough for the clip to land on it', () => {
+    // The art is a 192px square with no alpha channel: its corners are
+    // opaque near-black, so an unclipped medal shows a dark rectangle. The
+    // CSS clips a circle out of the middle, and the intrinsic size has to
+    // stay in step with it — a 26px image inside a 56px box would clip a
+    // circle out of thin air.
+    render(() => (
+      <ProfileView
+        {...base()}
+        badges={[{ iconName: 'crown', name: 'First Light', tier: 'gold' }]}
+      />
+    ))
+
+    const medal = badgeArt('crown')
+    expect(medal).toHaveAttribute('width', '66')
+    expect(medal).toHaveAttribute('height', '66')
+    expect(medal).toHaveAttribute('loading', 'lazy')
   })
 
   it('draws a placeholder for a badge whose medallion is not drawn yet', () => {
+    // A plain circle keeps the row's rhythm. It is decorative — the badge is
+    // already named beneath it, and announcing it twice helps nobody.
     render(() => (
       <ProfileView
         {...base()}
@@ -256,7 +297,21 @@ describe('ProfileView badges', () => {
     ))
 
     expect(screen.getByText('Mystery')).toBeInTheDocument()
-    expect(screen.queryByRole('img', { name: 'Mystery' })).toBeNull()
+    expect(badgeArt('not-drawn-yet')).toBeNull()
+    // Scoped to the badge section: the avatar monogram is also aria-hidden.
+    const section = screen.getByText('Badges').closest('section')
+    expect(section?.querySelector('[aria-hidden="true"]')).not.toBeNull()
+  })
+
+  it('keeps the tier on the badge for a reader who hovers it', () => {
+    render(() => (
+      <ProfileView
+        {...base()}
+        badges={[{ iconName: 'crown', name: 'First Light', tier: 'gold' }]}
+      />
+    ))
+
+    expect(screen.getByTitle('First Light · gold')).toBeInTheDocument()
   })
 
   it('hides the section entirely when no badges are earned', () => {

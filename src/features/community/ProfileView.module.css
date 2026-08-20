@@ -251,39 +251,60 @@
 .badgeRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin: 10px 0 0;
+  gap: 18px 14px;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.badgeChip {
+.badge {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 7px;
-  padding: 5px 11px 5px 6px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color, var(--border));
-  border-radius: 99px;
+  gap: 8px;
+  width: 84px;
+  text-align: center;
 }
 
-.badgeChip img {
+/* The medallion art is a 192px square with NO alpha channel — its corners
+   are opaque near-black. Drawn raw it reads as a dark rectangle sitting
+   behind a round medal, which is what the chip this replaced looked like,
+   and worse on a light theme than a dark one.
+   The Progress tab clips the same assets to a circle and lets them cast a
+   shadow instead of boxing them. Same treatment here, at half the size:
+   circle(39%) of the image is 0.92 of the box on both surfaces, so a medal
+   is the same shape wherever the singer meets it. */
+.badgeMedallion {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 8px 12px rgb(0 0 0 / 32%));
+}
+
+.badgeMedallion img {
   display: block;
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
+  width: 66px;
+  max-width: none;
+  height: 66px;
+  max-height: none;
+  object-fit: cover;
+  clip-path: circle(39% at 50% 50%);
 }
 
-.badgeChipFallback {
-  width: 26px;
-  height: 26px;
+/* No art for this icon yet. A plain circle, so the row keeps its rhythm
+   rather than collapsing a slot. */
+.badgePlate {
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--border-color, var(--border));
   border-radius: 50%;
   background: var(--bg-tertiary);
 }
 
-.badgeChipName {
-  font-size: 0.76rem;
+.badgeName {
+  font-size: 0.72rem;
   font-weight: 600;
+  line-height: 1.3;
   color: var(--text-secondary);
-  white-space: nowrap;
 }

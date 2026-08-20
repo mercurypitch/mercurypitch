@@ -199,25 +199,36 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
             <For each={props.badges}>
               {(badge) => (
                 <li
-                  class={styles.badgeChip}
+                  class={styles.badge}
                   title={`${badge.name} · ${badge.tier}`}
                 >
-                  <Show
-                    when={badgeArtSrc(badge.iconName)}
-                    fallback={<span class={styles.badgeChipFallback} />}
-                  >
-                    {(src) => (
-                      <img
-                        src={src()}
-                        width="40"
-                        height="40"
-                        alt={badge.name}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
-                  </Show>
-                  <span class={styles.badgeChipName}>{badge.name}</span>
+                  {/* The medal, then its name under it — the Progress tab's
+                      shape, not a chip with a picture stuck on the left. */}
+                  <div class={styles.badgeMedallion}>
+                    <Show
+                      when={badgeArtSrc(badge.iconName)}
+                      fallback={
+                        <span class={styles.badgePlate} aria-hidden="true" />
+                      }
+                    >
+                      {(src) => (
+                        <img
+                          src={src()}
+                          width="66"
+                          height="66"
+                          /* Decorative: the name is right underneath, and an
+                             alt that repeats it makes a screen reader say
+                             every badge twice. Same call the Progress shelf
+                             makes for the same art. */
+                          alt=""
+                          data-badge-art={badge.iconName}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
+                    </Show>
+                  </div>
+                  <span class={styles.badgeName}>{badge.name}</span>
                 </li>
               )}
             </For>
