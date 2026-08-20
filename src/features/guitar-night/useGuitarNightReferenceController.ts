@@ -157,6 +157,33 @@ export function useGuitarNightReferenceController(
     })
   })
 
+  // The part in the corner of the moving views. It is the part you were reading
+  // before, so tapping the corner and tapping it again puts you back — which is
+  // what "swap between the two easily" asks for. Before any swap it is simply
+  // the first other part on the page.
+  const [previousScoredTrack, setPreviousScoredTrack] = createSignal<{
+    songId: string
+    trackId: string
+  } | null>(null)
+
+  const secondaryLane = createMemo<SheetLane | null>(() => {
+    const current = reference()
+    if (current === null) return null
+    const others = sheetLanes().filter(
+      (lane) => lane.trackId !== current.trackId,
+    )
+    if (others.length === 0) return null
+
+    const previous = previousScoredTrack()
+    if (previous !== null && previous.songId === current.songId) {
+      const swappedBack = others.find(
+        (lane) => lane.trackId === previous.trackId,
+      )
+      if (swappedBack !== undefined) return swappedBack
+    }
+    return others[0] ?? null
+  })
+
   // Which other parts the room plays under the player. Muted rather than
   // audible ids: a part added later should sound by default, because "play all
   // but the scored against" is the whole point of having a band.
@@ -354,6 +381,11 @@ export function useGuitarNightReferenceController(
   const selectTrack = async (trackId: string): Promise<void> => {
     const current = reference()
     if (current === null || current.trackId === trackId) return
+    // Remember what is being left, so the corner offers the way back.
+    setPreviousScoredTrack({
+      songId: current.songId,
+      trackId: current.trackId,
+    })
     // Switching the visible part never re-routes: it is the same reference.
     await attach(current.songId, trackId, 'none')
   }
@@ -603,6 +635,7 @@ export function useGuitarNightReferenceController(
     sheetLanes,
     sheetVisibleTrackIds,
     toggleSheetTrack,
+    secondaryLane,
     backingPartList,
     audibleBackingTrackIds,
     backingMelodyNotes,

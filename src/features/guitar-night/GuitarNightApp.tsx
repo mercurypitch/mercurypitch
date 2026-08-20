@@ -2006,6 +2006,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       referenceController.sheetVisibleTrackIds
                     }
                     onToggleSheetTrack={referenceController.toggleSheetTrack}
+                    secondaryLane={referenceController.secondaryLane}
                     backingMelody={referenceController.backingMelodyNotes}
                     defaultHearScore={
                       referenceController.scoredPartDefaultsAudible

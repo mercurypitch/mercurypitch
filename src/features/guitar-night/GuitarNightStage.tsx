@@ -18,6 +18,7 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, soundingOpenMidi, } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightSecondaryPart } from './GuitarNightSecondaryPart'
 import { GuitarNightSheetView } from './sheet/GuitarNightSheetView'
 import type { SheetLane } from './sheet/sheet-model'
 
@@ -91,6 +92,11 @@ interface GuitarNightStageProps {
   sheetLanes?: Accessor<readonly SheetLane[]>
   /** The part being graded, drawn in full ink on the sheet. */
   scoredTrackId?: Accessor<string | undefined>
+  /**
+   * One other part, drawn small in a corner of the moving views. Tapping it
+   * reads that part instead, which is how the two are swapped.
+   */
+  secondaryLane?: Accessor<SheetLane | null>
   /** Reading a part's name on the sheet asks to score it instead. */
   onSelectTrack?(trackId: string): void
   /** Activities can turn the lightweight neck into an accessible touch surface. */
@@ -786,6 +792,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         value === 'full' || value === 'reduced',
     },
   )
+  const secondaryLane = createMemo(() => props.secondaryLane?.() ?? null)
   const activeView = createMemo<GuitarNightStageView>(() => {
     const currentMode = mode()
     if (currentMode !== 'flow') return currentMode
@@ -1469,6 +1476,20 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               </p>
             </Show>
           </div>
+        </Show>
+
+        {/* The corner part belongs to the moving views. Tab is already a tab
+            strip and Sheet already stacks every part, so neither needs it. */}
+        <Show when={mode() !== 'tab' && mode() !== 'sheet' && secondaryLane()}>
+          {(lane) => (
+            <GuitarNightSecondaryPart
+              lane={lane}
+              playheadBeat={() => actualPlayheadBeat() ?? 0}
+              {...(props.onSelectTrack === undefined
+                ? {}
+                : { onSwap: props.onSelectTrack })}
+            />
+          )}
         </Show>
 
         <Show when={mode() === 'sheet'}>

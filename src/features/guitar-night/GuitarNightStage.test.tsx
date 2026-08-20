@@ -715,4 +715,73 @@ describe('GuitarNightStage view picker on a phone', () => {
       expect(onSelectTrack).toHaveBeenCalledWith('track-bass')
     })
   })
+
+  describe('the part in the corner', () => {
+    beforeEach(() => {
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    })
+
+    const CORNER = {
+      trackId: 'track-rhythm',
+      trackName: 'Rhythm guitar',
+      kind: 'authored' as const,
+      instrument: 'guitar' as const,
+      tuning: standardTuning('guitar', 6),
+      notes: [],
+      outOfRangeNotes: 0,
+    }
+
+    it('is absent when there is no other part to show', () => {
+      render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
+      expect(screen.queryByTestId('guitar-night-secondary-part')).toBeNull()
+    })
+
+    it('rides in the corner of the moving views', () => {
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          secondaryLane={() => CORNER}
+        />
+      ))
+      expect(screen.getByTestId('guitar-night-secondary-part')).toBeVisible()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Neck' }))
+      expect(screen.getByTestId('guitar-night-secondary-part')).toBeVisible()
+    })
+
+    it('stays out of the views that already show every part', () => {
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          secondaryLane={() => CORNER}
+          sheetLanes={() => [CORNER]}
+        />
+      ))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Tab' }))
+      expect(screen.queryByTestId('guitar-night-secondary-part')).toBeNull()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sheet' }))
+      expect(screen.queryByTestId('guitar-night-secondary-part')).toBeNull()
+    })
+
+    it('swaps the two parts when tapped', () => {
+      const onSelectTrack = vi.fn()
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          secondaryLane={() => CORNER}
+          onSelectTrack={onSelectTrack}
+        />
+      ))
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Read Rhythm guitar instead' }),
+      )
+      expect(onSelectTrack).toHaveBeenCalledWith('track-rhythm')
+    })
+  })
 })
