@@ -82,3 +82,7 @@ assets/local/
 
 # Local Guitar Pro sample tabs (copyrighted — never commit)
 assets/gp-samples/
+
+# Generated marketing stills (scripts/gen-marketing-shots.mjs). Regenerate on
+# demand; the ad crops that matter live in the campaigns repo.
+public/marketing/

@@ -35,6 +35,17 @@ const PORT = Number(process.env.PWA_SHOT_PORT ?? 0)
  *     VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= \
  *     VITE_JAM_MOCK_SIGNALING=1 pnpm run build
  */
+/**
+ * The `major.minor` the What's New panel announces at — mirrors
+ * `releaseLine()` in src/features/whats-new/whats-new-release.ts. Duplicated
+ * rather than imported because this script runs against the BUILT app in
+ * dist/, with no bundler to resolve `@/` for it.
+ */
+function releaseLineOf(version) {
+  const match = /^(\d+)\.(\d+)/.exec(String(version).trim())
+  return match === null ? null : `${match[1]}.${match[2]}`
+}
+
 const NARROW = { width: 540, height: 1170 }
 const SHOTS = [
   {
@@ -185,19 +196,33 @@ for (const shot of SHOTS) {
     reducedMotion: 'reduce',
     ...(shot.mic ? { permissions: ['microphone'] } : {}),
   })
-  // First-run chrome (welcome, onboarding, the survey, every per-tab tour
-  // offer) would be the whole picture otherwise.
+  // First-run chrome (welcome, onboarding, the survey, the release
+  // announcement, every per-tab tour offer) would be the whole picture
+  // otherwise.
+  //
+  // `pitchperfect_whats_new_seen` holds a RELEASE LINE (`major.minor`), not a
+  // full version — see src/features/whats-new/whats-new-release.ts. Without it
+  // the What's New panel opens over every shot and photographs the changelog
+  // instead of the app, which is exactly what the per-tab tour offer used to
+  // do. Marked seen for the line being shot.
   await context.addInitScript(
-    ({ version, tourTabs }) => {
+    ({ version, whatsNewLine, tourTabs }) => {
       localStorage.setItem('pitchperfect_welcome_version', version)
       localStorage.setItem('pitchperfect_onboarding_done', '1')
       localStorage.setItem('pitchperfect_focus_mode', 'false')
       localStorage.setItem('pitchperfect_survey_dismissed', '1')
+      if (whatsNewLine !== null) {
+        localStorage.setItem('pitchperfect_whats_new_seen', whatsNewLine)
+      }
       for (const tab of tourTabs) {
         localStorage.setItem(`pitchperfect_page_tour_offered_${tab}`, 'true')
       }
     },
-    { version: appVersion, tourTabs: TOUR_OFFER_TABS },
+    {
+      version: appVersion,
+      whatsNewLine: releaseLineOf(appVersion),
+      tourTabs: TOUR_OFFER_TABS,
+    },
   )
 
   const page = await context.newPage()
