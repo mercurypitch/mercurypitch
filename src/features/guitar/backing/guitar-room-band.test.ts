@@ -378,6 +378,41 @@ describe('createGuitarRoomBand', () => {
     await band.dispose()
   })
 
+  it('reads a pulse function on every beat, so it can be quieted mid-run', async () => {
+    // The reason the option accepts a function at all: a reader reaching for
+    // the click while it is ticking is the only moment anybody reaches for it,
+    // and Web Audio cannot unschedule what the lookahead already committed.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    let pulseReads = 0
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    await band.start({
+      tempoBpm: 120,
+      countInBeats: 2,
+      exerciseBeats: 4,
+      durationBeats: 4,
+      feel: 'click',
+      exercisePulse: () => {
+        pulseReads += 1
+        return pulseReads % 2 === 1
+      },
+    })
+
+    await vi.advanceTimersByTimeAsync(2_400)
+    // Once per exercise beat, not once for the run.
+    expect(pulseReads).toBe(4)
+    // Two count-in ticks, then only the beats the function let through.
+    expect(drumVoices.triggerDrumVoice).toHaveBeenCalledTimes(4)
+
+    await band.dispose()
+  })
+
   it('starts between mapped beats without replaying past attacks', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)

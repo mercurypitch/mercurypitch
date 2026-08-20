@@ -205,6 +205,57 @@ describe('GuitarNightRoom', () => {
 
   afterEach(cleanup)
 
+  it('turns a hand-sync mark into the moment the recording is at', () => {
+    // The room is the only place that knows where the recording is, so it is
+    // the room that turns "here" into a number. Everything else is the
+    // controller's, and gets handed straight through.
+    const onMark = vi.fn()
+    const onClear = vi.fn()
+    const onNudge = vi.fn()
+
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+        handSync={() => ({
+          partName: 'Bass',
+          firstMarkSeconds: 4,
+          lastMarkSeconds: null,
+          placed: true,
+          onMark,
+          onClear,
+          onNudge,
+        })}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'First note here' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Last note here' }))
+    expect(onMark).toHaveBeenNthCalledWith(1, 'first', 0)
+    expect(onMark).toHaveBeenNthCalledWith(2, 'last', 0)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Move the tab 0.5 seconds later' }),
+    )
+    expect(onNudge).toHaveBeenCalledWith(0.5)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(onClear).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers no hand sync when no part is being placed', () => {
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={createTransport()}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    expect(screen.queryByRole('button', { name: 'First note here' })).toBeNull()
+  })
+
   it('keeps input health available after a successful route fallback', () => {
     listening.status.mockReturnValue('listening')
     listening.notice.mockReturnValue(

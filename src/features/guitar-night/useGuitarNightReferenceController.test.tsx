@@ -1102,6 +1102,38 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.readingOnRecording()).toBeNull()
       expect(controller.alignableScores()).toEqual([])
     })
+
+    it('says so when the score leaves the library between match and place', async () => {
+      // Matching reads the score and placing it reads the score again. If the
+      // library loses the song in between, the reader must be told rather than
+      // left with a tab claiming to be somewhere nobody put it.
+      let present = true
+      let loseOnNextRead = false
+      const { port } = fakePort({
+        listReferences: () => [
+          {
+            songId: RECORDED.id,
+            title: RECORDED.name,
+            trackCount: 1,
+            importedAt: RECORDED.importedAt,
+          },
+        ],
+        readSource: (songId) => {
+          if (!present || songId !== RECORDED.id) return null
+          if (loseOnNextRead) present = false
+          return RECORDED
+        },
+      })
+      const controller = mountWithTranscription(port, heardIt)
+      await measure(controller)
+      loseOnNextRead = true
+      await controller.readScoreOnRecording(RECORDED.id)
+
+      expect(controller.alignStatus()).toBe(
+        'That part could not be placed on this instrument.',
+      )
+      expect(controller.readingOnRecording()).toBeNull()
+    })
   })
 
   describe('placing a written part by hand', () => {
@@ -1325,6 +1357,93 @@ describe('useGuitarNightReferenceController', () => {
       await measure(controller)
       await controller.placeScoreByHand(BY_HAND.id)
       controller.detach()
+      expect(controller.handPlacement()).toBeNull()
+    })
+
+    it('says so when the score leaves the library before a mark lands', async () => {
+      let present = true
+      const { port } = fakePort({
+        listReferences: () => [
+          {
+            songId: BY_HAND.id,
+            title: BY_HAND.name,
+            trackCount: 1,
+            importedAt: BY_HAND.importedAt,
+          },
+        ],
+        readSource: (songId) =>
+          present && songId === BY_HAND.id ? BY_HAND : null,
+        openReference: (songId, trackId, tuning) =>
+          songId === BY_HAND.id
+            ? openGuitarNightReference(BY_HAND, trackId, tuning)
+            : { ok: false, code: 'not-found' },
+        suggestInstrument: (songId, trackId) =>
+          songId === BY_HAND.id
+            ? suggestReferenceInstrument(BY_HAND, trackId)
+            : null,
+      })
+      const controller = mountWithTranscription(port, heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      present = false
+      controller.markScoreOnRecording('first', 3)
+
+      expect(controller.alignStatus()).toContain('no longer in the library')
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('refuses a part the score does not have', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id, 'track-nowhere')
+
+      expect(controller.alignStatus()).toContain('no notes to place')
+      expect(controller.handPlacement()).toBeNull()
+    })
+
+    it('clears marks without disturbing a part nothing hung by hand', async () => {
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      // Nothing was marked, so there is no hand-placed line to take down.
+      controller.clearHandPlacement()
+
+      expect(controller.handPlacement()?.marks).toEqual({})
+      expect(controller.reference()?.title).toContain('transcribed')
+    })
+
+    it('refuses a mark that is not a moment', async () => {
+      // The room hands over its own clock, and a clock that has not started
+      // reads NaN. Nothing is marked and nothing is placed.
+      const controller = mountWithTranscription(handPort(), heardNothing)
+      await measure(controller)
+      await controller.placeScoreByHand(BY_HAND.id)
+      controller.markScoreOnRecording('first', Number.NaN)
+
+      expect(controller.handPlacement()?.marks).toEqual({})
+      expect(controller.readingOnRecording()).toBeNull()
+    })
+
+    it('places nothing at all when the library will not load', async () => {
+      let controller!: ReturnType<typeof useGuitarNightReferenceController>
+      const Harness: Component = () => {
+        controller = useGuitarNightReferenceController({
+          loadReferencePort: async () => {
+            throw new Error('library offline')
+          },
+          loadTranscriptionPort: async () => ({
+            transcribeStem: heardNothing,
+          }),
+        })
+        return null
+      }
+      render(() => <Harness />)
+      await measure(controller)
+
+      await controller.readScoreOnRecording(BY_HAND.id)
+      await controller.placeScoreByHand(BY_HAND.id)
+
+      expect(controller.readingOnRecording()).toBeNull()
       expect(controller.handPlacement()).toBeNull()
     })
   })

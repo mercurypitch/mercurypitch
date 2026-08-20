@@ -618,15 +618,17 @@ export function useGuitarNightReferenceController(
       return
     }
     const part = trackId ?? source.scoreTrackId
-    if (scoreSpanSeconds(source, part) === null) {
+    // The track is looked up before the span rather than after, so the name a
+    // reader is shown is the part's own name and never its id in disguise.
+    const track = source.tracks.find((candidate) => candidate.id === part)
+    if (track === undefined || scoreSpanSeconds(source, part) === null) {
       setAlignStatus('That part has no notes to place.')
       return
     }
     setHandPlacement({
       songId,
       trackId: part,
-      trackName:
-        source.tracks.find((candidate) => candidate.id === part)?.name ?? part,
+      trackName: track.name,
       marks: {},
     })
     setHandFallback(null)
@@ -653,16 +655,23 @@ export function useGuitarNightReferenceController(
       return
     }
 
-    const marks: RecordingMarks = {
-      ...placing.marks,
-      ...(end === 'first'
-        ? { firstAudioSeconds: audioSeconds }
-        : { lastAudioSeconds: audioSeconds }),
-    }
-    setHandPlacement({ ...placing, marks })
+    // A room whose clock has not started yet reads NaN, and a moment that is
+    // not a number marks nothing. Dropping it here keeps it out of the marks a
+    // reader is shown as well as out of the placement.
+    const moment = Number.isFinite(audioSeconds) ? audioSeconds : null
+    const marks: RecordingMarks =
+      moment === null
+        ? placing.marks
+        : {
+            ...placing.marks,
+            ...(end === 'first'
+              ? { firstAudioSeconds: moment }
+              : { lastAudioSeconds: moment }),
+          }
 
     const alignment = alignmentFromMarks(span, marks)
     if (alignment === null) return
+    setHandPlacement({ ...placing, marks })
     showWrittenOnRecording({
       songId: placing.songId,
       trackId: placing.trackId,
