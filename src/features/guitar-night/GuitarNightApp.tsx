@@ -41,6 +41,7 @@ import { GuitarNightLearnShelf } from './GuitarNightLearnShelf'
 import { GuitarNightOnRecording } from './GuitarNightOnRecording'
 import type { GuitarNightRoomHandSync } from './GuitarNightRoom'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
+import { StoppedPreparationActions } from './GuitarNightStoppedPreparation'
 import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
@@ -1932,17 +1933,35 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       Cancel preparation
                     </button>
                   </Match>
+                  {/* A stopped separation is a dead end unless it can be put
+                      down. Both of these branches used to offer retrying and
+                      nothing else — and because they sit above the branches
+                      that offer a room, a reader who cancelled a separation
+                      and then attached a tab could not reach the tab at all.
+                      Reported as: "I cannot remove that added item... all I
+                      have from options is try again... but cannot rehearse and
+                      close that loaded song for separation". */}
                   <Match when={preparationError()}>
                     {(error) => (
-                      <Show when={error().retryable}>
-                        <button
-                          class={styles.completionAction}
-                          type="button"
-                          onClick={preparationController.retry}
-                        >
-                          Try again
-                        </button>
-                      </Show>
+                      <>
+                        <Show when={error().retryable}>
+                          <button
+                            class={styles.completionAction}
+                            type="button"
+                            onClick={preparationController.retry}
+                          >
+                            Try again
+                          </button>
+                        </Show>
+                        <StoppedPreparationActions
+                          onDiscard={preparationController.clear}
+                          onRehearseTab={
+                            authoredReference() === null
+                              ? undefined
+                              : enterScoreRoom
+                          }
+                        />
+                      </>
                     )}
                   </Match>
                   <Match when={cancelledPreparation() !== null}>
@@ -1953,6 +1972,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     >
                       Try again
                     </button>
+                    <StoppedPreparationActions
+                      onDiscard={preparationController.clear}
+                      onRehearseTab={
+                        authoredReference() === null
+                          ? undefined
+                          : enterScoreRoom
+                      }
+                    />
                   </Match>
                   <Match when={activeBacking()}>
                     {(backing) => (

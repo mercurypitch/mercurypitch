@@ -79,7 +79,13 @@ interface GuitarNightScoreRoomRunConfiguration {
   /** Every other audible part, merged and already carrying its own timbre. */
   backingMelody: readonly GuitarRoomBandNote[]
   melodyVariant: 'electric' | 'bass'
-  exercisePulse: boolean
+  /**
+   * Read on every beat rather than settled at launch, so the click can be
+   * quieted while it is ticking. The mode rule is fixed for the run — a live
+   * take never sounds the room into an open microphone — but whether the
+   * reader wants to hear it is theirs to change at any time.
+   */
+  exercisePulse: () => boolean
 }
 
 export interface GuitarNightScoreAssessmentBoundary {
@@ -467,7 +473,7 @@ export function useGuitarNightScoreRoomController(
           ? [...(options.backingMelody?.() ?? [])]
           : [],
       melodyVariant: configuredMelodyVariant(),
-      exercisePulse:
+      exercisePulse: () =>
         (mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)) &&
         hearClick(),
     }

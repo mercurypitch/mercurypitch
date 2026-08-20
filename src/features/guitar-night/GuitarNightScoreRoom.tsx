@@ -940,12 +940,15 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                     </span>
                   </button>
                   {/* The click used to run whenever the room did, with nothing
-                      anywhere to quiet it. */}
+                      anywhere to quiet it. Unlike its neighbours this one is
+                      NOT held during a take: a click is only ever annoying
+                      while it is ticking, so refusing to quiet it then is
+                      refusing at exactly the moment it is asked. The band
+                      reads this on every beat. */}
                   <button
                     type="button"
                     class={styles.hearScoreToggle}
                     aria-pressed={room.hearClick()}
-                    disabled={takeIsActive()}
                     classList={{ [styles.hearScoreActive]: room.hearClick() }}
                     onClick={() => room.setHearClick((ticking) => !ticking)}
                   >
