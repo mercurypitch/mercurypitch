@@ -54,6 +54,7 @@ describe('entry pages', () => {
   it('found the pages to check', () => {
     expect(pages.length).toBeGreaterThanOrEqual(6)
     expect(pages).toContain('piano-night.html')
+    expect(pages).toContain('drum-night.html')
   })
 
   it.each(pages)('%s unfurls with a card', (name) => {
@@ -102,7 +103,13 @@ describe('the card generators', () => {
   it('exist for every room-specific card', () => {
     // A card with no script is a card nobody can regenerate when the room's
     // art or copy changes.
-    for (const room of ['karaoke', 'jam', 'guitar-night', 'piano-night']) {
+    for (const room of [
+      'karaoke',
+      'jam',
+      'guitar-night',
+      'piano-night',
+      'drum-night',
+    ]) {
       expect(
         existsSync(resolve(repo, `scripts/generate-${room}-og.mjs`)),
         `no generator for ${room}`,
