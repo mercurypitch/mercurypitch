@@ -25,6 +25,8 @@ import { downloadMIDI } from '@/lib/piano-roll'
 import { midiToNote } from '@/lib/scale-data'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
+import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
+import { alignmentFromWindowOffsets, createScoreToAudioClock, IDENTITY_ALIGNMENT, } from '@/lib/transcription/score-alignment'
 import type { StemTranscription, TranscriptionPitchSource, TranscriptionProfile, } from '@/lib/transcription/stem-transcription'
 import { BASS_SWIFT_TRANSCRIPTION_PROFILE, BASS_TRANSCRIPTION_PROFILE, } from '@/lib/transcription/stem-transcription'
 import { transcribeStem } from '@/lib/transcription/stem-transcription-client'
@@ -205,34 +207,27 @@ export const TranscriptionBench: Component = () => {
     return map
   })
 
-  /** Tab outlines moved onto the recording's clock, window by window. */
+  /** The measured map between the score's clock and the recording's. */
+  const alignment = createMemo<ScoreAlignment>(() => {
+    const scored = score()
+    if (!alignTab() || scored === null) return IDENTITY_ALIGNMENT
+    return alignmentFromWindowOffsets(scored.windowOffsets)
+  })
+
+  /** Tab outlines moved onto the recording's clock. */
   const alignedReferenceNotes = createMemo<RollNote[]>(() => {
     const refs = referenceNotes()
-    const scored = score()
-    if (!alignTab() || scored === null || scored.windowOffsets.length === 0) {
-      return refs
-    }
-    const offsets = scored.windowOffsets
-    const offsetAt = (seconds: number): number => {
-      let inForce = offsets[0]?.offsetSeconds ?? 0
-      for (const entry of offsets) {
-        if (entry.startSeconds <= seconds) inForce = entry.offsetSeconds
-        else break
-      }
-      return inForce
-    }
-    return refs.map((note) => {
-      // Offsets are keyed by heard-window start, so look up where the note
-      // LANDS: shift once to get near the audio clock, then read the offset
-      // that actually governs that neighbourhood.
-      const rough = note.startSeconds - offsetAt(note.startSeconds)
-      const offset = offsetAt(Math.max(0, rough))
-      return {
-        ...note,
-        startSeconds: note.startSeconds - offset,
-        endSeconds: note.endSeconds - offset,
-      }
-    })
+    const map = alignment()
+    if (map.anchors.length === 0) return refs
+    // The line through the anchors, not the nearest one: a step function makes
+    // the tab jump every window boundary, and the drift between two anchors is
+    // real music that a step throws away.
+    const toAudio = createScoreToAudioClock(map)
+    return refs.map((note) => ({
+      ...note,
+      startSeconds: toAudio(note.startSeconds),
+      endSeconds: toAudio(note.endSeconds),
+    }))
   })
 
   const totalSeconds = createMemo(() => {
