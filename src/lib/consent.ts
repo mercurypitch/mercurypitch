@@ -103,6 +103,7 @@ export const AD_CONVERSIONS = {
   karaoke_demo_complete: 'AW-18321142458/ij7mCMrOx9EcELrlmaBE',
   karaoke_song_staged: 'AW-18321142458/yMwyCPfhhtMcELrlmaBE',
   glass_complete: 'AW-18321142458/_3BSCJWIndIcELrlmaBE',
+  voiceprint_complete: 'AW-18321142458/paplCNuC-OQcELrlmaBE',
 } as const
 
 // ── reactive state ────────────────────────────────────────────
