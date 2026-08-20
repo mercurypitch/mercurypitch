@@ -665,15 +665,15 @@ describe('useGuitarNightReferenceController', () => {
   })
 
   describe('the sheet', () => {
-    it('stacks every part of the attached score, scored one first', async () => {
+    it('stacks every part of the attached score in its written order', async () => {
       const { port } = fakePort()
       const controller = mount(port)
 
       await controller.attach(VELVET_RIFF.id, 'track-rhythm')
 
       expect(controller.sheetLanes().map((lane) => lane.trackId)).toEqual([
-        'track-rhythm',
         'track-lead',
+        'track-rhythm',
         'track-bass',
       ])
       expect(controller.sheetVisibleTrackIds()).toEqual([
@@ -726,8 +726,8 @@ describe('useGuitarNightReferenceController', () => {
       await controller.selectTrack('track-rhythm')
 
       expect(controller.sheetLanes().map((lane) => lane.trackId)).toEqual([
-        'track-rhythm',
         'track-lead',
+        'track-rhythm',
       ])
     })
 
@@ -739,7 +739,9 @@ describe('useGuitarNightReferenceController', () => {
 
       await controller.selectTrack('track-bass')
 
-      expect(controller.sheetLanes()[0]?.trackId).toBe('track-bass')
+      expect(controller.sheetLanes().map((lane) => lane.trackId)).toContain(
+        'track-bass',
+      )
     })
 
     it('draws each part on the neck its own notes need', async () => {

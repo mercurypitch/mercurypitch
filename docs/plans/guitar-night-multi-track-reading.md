@@ -105,6 +105,10 @@ phase 1) or the room takes the controller's `selectTrack` directly.
   because the source says it is a bass, not because we assumed.
 - Show and hide per part, driven from the phase 1 panel. The scored part cannot
   be hidden; its control is shown and held rather than removed.
+- Parts keep their written order. Promoting the scored part to the top was tried
+  and reported as the sheet doing something unexplained: every other part jumps
+  a row the moment a reader taps a name. Scoring marks a part, it never moves
+  one.
 - The scored part is drawn in full ink, the rest quietly.
 - A measured stem line reads as a sheet of exactly one part. It counts beats on
   the recording's clock (60 BPM, a beat a second) while a written score counts

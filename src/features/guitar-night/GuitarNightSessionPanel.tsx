@@ -119,6 +119,7 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                 <div class={styles.sessionTrackRow}>
                   <button
                     type="button"
+                    data-testid="guitar-night-session-track"
                     classList={{ [styles.sessionTrackActive]: isScored() }}
                     aria-pressed={isScored()}
                     onClick={() => props.onSelectTrack(track.id)}

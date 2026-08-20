@@ -16,7 +16,7 @@ export interface SheetLaneSelection {
    * part being graded is never what was meant.
    */
   visibleTrackIds?: readonly string[]
-  /** The track being scored. Drawn first, because it is read the most. */
+  /** The track being scored. Marked wherever it sits, never moved. */
   scoredTrackId?: string
   /** The neck the player picked for the scored part, when they overrode it. */
   scoredTuning?: InstrumentTuning
@@ -71,18 +71,16 @@ function selectVisibleTracks(
   selection: SheetLaneSelection,
 ): readonly GuitarNightReferenceSourceTrack[] {
   const requested = selection.visibleTrackIds
-  const shown =
-    requested === undefined
-      ? playable
-      : playable.filter(
-          (track) =>
-            requested.includes(track.id) ||
-            track.id === selection.scoredTrackId,
-        )
-
-  const scored = shown.find((track) => track.id === selection.scoredTrackId)
-  if (scored === undefined) return shown
-  return [scored, ...shown.filter((track) => track !== scored)]
+  // Written order, always. Promoting the scored part to the top means every
+  // other part jumps a row the moment a reader taps a name, which reads as the
+  // sheet doing something unexplained. A score's parts have a fixed vertical
+  // order; scoring marks one of them, it does not rearrange the page.
+  return requested === undefined
+    ? playable
+    : playable.filter(
+        (track) =>
+          requested.includes(track.id) || track.id === selection.scoredTrackId,
+      )
 }
 
 /**

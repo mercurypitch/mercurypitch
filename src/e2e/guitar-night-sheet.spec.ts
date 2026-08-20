@@ -85,7 +85,7 @@ test('stacks every part of the file on one sheet @smoke', async ({ page }) => {
   const sheet = page.getByTestId('guitar-night-sheet')
   await expect(sheet).toBeVisible()
 
-  // The scored part is read first, then the rest in the order they were written.
+  // Written order, and the scored part marked where it stands.
   await expect(
     sheet.getByRole('button', { name: 'Lead guitar' }).first(),
   ).toBeVisible()
@@ -98,6 +98,18 @@ test('stacks every part of the file on one sheet @smoke', async ({ page }) => {
   await expect(
     sheet.getByRole('button', { name: 'Lead guitar' }).first(),
   ).toHaveAttribute('aria-pressed', 'true')
+
+  // Scoring another part marks it without moving anything.
+  const orderBefore = await sheet
+    .locator('[data-system="0"] button')
+    .allTextContents()
+  await sheet.getByRole('button', { name: 'Bass' }).first().click()
+  await expect(
+    sheet.getByRole('button', { name: 'Bass' }).first(),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect(
+    await sheet.locator('[data-system="0"] button').allTextContents(),
+  ).toEqual(orderBefore)
 
   // Bars are drawn, and the line that follows the music is on the page.
   await expect(sheet.locator('canvas').first()).toBeVisible()

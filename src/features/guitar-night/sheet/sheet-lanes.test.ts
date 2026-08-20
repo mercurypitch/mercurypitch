@@ -62,13 +62,13 @@ describe('sheetLanesFromSource', () => {
     expect(lanes.every((lane) => lane.kind === 'authored')).toBe(true)
   })
 
-  it('reads the scored part first', () => {
+  it('keeps the written order, whichever part is scored', () => {
     const lanes = sheetLanesFromSource(source(), {
       scoredTrackId: 'track-bass',
     })
     expect(lanes.map((lane) => lane.trackId)).toEqual([
-      'track-bass',
       'track-lead',
+      'track-bass',
     ])
   })
 
@@ -88,6 +88,16 @@ describe('sheetLanesFromSource', () => {
       'track-lead',
       'track-bass',
     ])
+  })
+
+  it('does not move a part when the reader scores it', () => {
+    const before = sheetLanesFromSource(source(), {
+      scoredTrackId: 'track-lead',
+    }).map((lane) => lane.trackId)
+    const after = sheetLanesFromSource(source(), {
+      scoredTrackId: 'track-bass',
+    }).map((lane) => lane.trackId)
+    expect(after).toEqual(before)
   })
 
   it('reads as an empty sheet when nothing chosen is playable', () => {
