@@ -1,0 +1,124 @@
+/* The sheet's own palette. A painter reads these rather than holding colours of
+   its own, so restyling the surface never means editing a renderer. */
+.sheet {
+  --score-sheet-page: #14110e;
+  --score-sheet-staff-line: rgba(244, 234, 219, 0.18);
+  --score-sheet-bar-line: rgba(244, 234, 219, 0.42);
+  --score-sheet-lane-label: rgba(244, 234, 219, 0.56);
+  --score-sheet-note-text: #f4eadb;
+  --score-sheet-note-backdrop: #14110e;
+  --score-sheet-scored-accent: #e0a45d;
+  --score-sheet-muted-note-text: rgba(244, 234, 219, 0.5);
+
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  background: var(--score-sheet-page);
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.9rem;
+  overflow: clip;
+}
+
+.scroll {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.75rem 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
+}
+
+.scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(224, 164, 93, 0.42);
+  border-radius: 999px;
+}
+
+/* Systems are absolutely placed against a page of known height: the page can
+   hold a long score without ever building the rows nobody is looking at. */
+.page {
+  position: relative;
+  width: 100%;
+}
+
+.system {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.laneName {
+  position: absolute;
+  inset-inline-start: 0;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--score-sheet-lane-label);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.laneNameButton {
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 0.35rem;
+  padding-inline: 0.2rem;
+}
+
+.laneNameButton:hover,
+.laneNameButton:focus-visible {
+  color: #f4eadb;
+  background: rgba(244, 234, 219, 0.08);
+}
+
+.laneNameScored {
+  color: var(--score-sheet-scored-accent);
+  font-weight: 600;
+}
+
+/* One element moves per frame. Everything else is painted and left alone. */
+.playhead {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: var(--score-sheet-scored-accent);
+  box-shadow: 0 0 10px rgba(224, 164, 93, 0.55);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: rgba(244, 234, 219, 0.56);
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playhead {
+    box-shadow: none;
+  }
+}

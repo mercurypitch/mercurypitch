@@ -62,6 +62,7 @@ function fakePort(overrides: Partial<GuitarNightReferencePort> = {}) {
       songId === VELVET_RIFF.id
         ? suggestReferenceInstrument(VELVET_RIFF, trackId)
         : null,
+    readSource: (songId) => (songId === VELVET_RIFF.id ? VELVET_RIFF : null),
     rememberTrack,
     importReference: vi.fn(async () => ({
       songId: VELVET_RIFF.id,
@@ -661,5 +662,127 @@ describe('useGuitarNightReferenceController', () => {
     second.resolve({ coverage: 0, analysedSeconds: 1, notes: [] })
     await secondRun
     expect(controller.transcribeProgress()).toBeNull()
+  })
+
+  describe('the sheet', () => {
+    it('stacks every part of the attached score in its written order', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+
+      await controller.attach(VELVET_RIFF.id, 'track-rhythm')
+
+      expect(controller.sheetLanes().map((lane) => lane.trackId)).toEqual([
+        'track-lead',
+        'track-rhythm',
+        'track-bass',
+      ])
+      expect(controller.sheetVisibleTrackIds()).toEqual([
+        'track-lead',
+        'track-rhythm',
+        'track-bass',
+      ])
+    })
+
+    it('has nothing to draw before a score is attached', () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      expect(controller.sheetLanes()).toEqual([])
+      expect(controller.sheetVisibleTrackIds()).toEqual([])
+    })
+
+    it('takes a part off the sheet, and puts it back', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id)
+
+      controller.toggleSheetTrack('track-bass')
+      expect(controller.sheetLanes().map((lane) => lane.trackId)).toEqual([
+        'track-lead',
+        'track-rhythm',
+      ])
+      expect(controller.sheetVisibleTrackIds()).not.toContain('track-bass')
+
+      controller.toggleSheetTrack('track-bass')
+      expect(controller.sheetVisibleTrackIds()).toContain('track-bass')
+    })
+
+    it('will not take the scored part off the sheet', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id)
+
+      controller.toggleSheetTrack('track-lead')
+      expect(controller.sheetLanes().map((lane) => lane.trackId)).toContain(
+        'track-lead',
+      )
+    })
+
+    it('keeps a hidden part hidden when the scored part changes', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id)
+      controller.toggleSheetTrack('track-bass')
+
+      await controller.selectTrack('track-rhythm')
+
+      expect(controller.sheetLanes().map((lane) => lane.trackId)).toEqual([
+        'track-lead',
+        'track-rhythm',
+      ])
+    })
+
+    it('shows a part again once the reader is scored on it', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id)
+      controller.toggleSheetTrack('track-bass')
+
+      await controller.selectTrack('track-bass')
+
+      expect(controller.sheetLanes().map((lane) => lane.trackId)).toContain(
+        'track-bass',
+      )
+    })
+
+    it('draws each part on the neck its own notes need', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id)
+
+      const bass = controller
+        .sheetLanes()
+        .find((lane) => lane.trackId === 'track-bass')
+      expect(bass?.instrument).toBe('bass')
+      expect(bass?.tuning.stringCount).toBe(4)
+    })
+
+    it('reads a stem line as a sheet of one part, on its own clock', async () => {
+      const { port } = fakePort()
+      const controller = mountWithTranscription(port, async () => ({
+        notes: [
+          {
+            midi: 45,
+            noteName: 'A2',
+            startSeconds: 0,
+            durationSeconds: 0.5,
+            confidence: 0.9,
+          },
+        ],
+        coverage: 0.8,
+        analysedSeconds: 1,
+      }))
+
+      await controller.followStem({
+        sessionId: 'session-1',
+        stemKind: 'bass',
+        stemLabel: 'Bass',
+        stemUrl: 'blob:stem',
+      })
+
+      const lanes = controller.sheetLanes()
+      expect(lanes).toHaveLength(1)
+      expect(lanes[0]?.kind).toBe('measured')
+      expect(controller.sheetVisibleTrackIds()).toEqual(['bass'])
+    })
   })
 })

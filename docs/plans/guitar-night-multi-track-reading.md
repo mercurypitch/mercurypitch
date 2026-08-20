@@ -74,9 +74,9 @@ latched one-way (`device-tier.ts:363`), so it costs at most one resize.
 | Playhead       | The sheet follows playback with a moving cursor; a hand scroll takes over until released                                             |
 | Rooms          | Tab room first; play-along room afterwards                                                                                           |
 
-## 3. Phase 1 — the session panel and an in-room track switcher
+## 3. Phase 1 — the session panel and an in-room track switcher — **shipped**
 
-The smallest thing that removes the reported dead end.
+Shipped in #611. The smallest thing that removes the reported dead end.
 
 - A new panel opened from the room's session info (the title the room already
   shows through `guideLabel`). It lists every track in the source with its
@@ -93,31 +93,56 @@ phase 1) or the room takes the controller's `selectTrack` directly.
 
 **Cost:** small. No renderer work.
 
-## 4. Phase 2 — the multi-track tab sheet, as a fifth stage view
+## 4. Phase 2 — the multi-track tab sheet, as a fifth stage view — **shipped**
 
-- `GuitarNightStageView` gains `'sheet'`; `availableViews` keeps every existing
-  host unaffected.
-- Layout: bars laid left to right across the width, a few per row, rows
-  stacking downward and scrolling — one _system_ per row, every visible
-  instrument stacked inside it, exactly as the owner described.
-- Each instrument row draws its own tuning's string lanes. A bass row is four
-  lanes because the source says it is a bass, not because we assumed.
-- Show/hide per track, driven from the phase 1 panel.
-- The scored track is drawn emphasised; the others are dimmed reference.
-- A measured stem line appears as another row, marked as measured, so an
-  authored part can be read against what the recording actually plays.
+- `GuitarNightStageView` gained `'sheet'`. It is offered only where `sheetLanes`
+  is supplied, so every existing host — the neck-only activities included — is
+  untouched.
+- Layout: bars laid left to right across the width, a few per row, rows stacking
+  downward and scrolling. One _system_ per row, every visible part stacked
+  inside it.
+- Each part draws its own tuning's string lines. A bass row is four lines
+  because the source says it is a bass, not because we assumed.
+- Show and hide per part, driven from the phase 1 panel. The scored part cannot
+  be hidden; its control is shown and held rather than removed.
+- Parts keep their written order. Promoting the scored part to the top was tried
+  and reported as the sheet doing something unexplained: every other part jumps
+  a row the moment a reader taps a name. Scoring marks a part, it never moves
+  one.
+- The scored part is drawn in full ink, the rest quietly.
+- A measured stem line reads as a sheet of exactly one part. It counts beats on
+  the recording's clock (60 BPM, a beat a second) while a written score counts
+  musical beats, so stacking the two would draw bar lines meaning two different
+  things in two rows. Reading a stem against an authored part needs a documented
+  time mapping first, and that is its own change.
 
-**The real work:** `openGuitarNightReference` must be able to place notes for
-several tracks at once. The cleanest shape is a sibling that takes a set of
-track ids and returns a placed row per track, each with its own tuning — the
-existing single-track path stays exactly as it is and keeps its tests.
+**What landed where**
 
-**Rendering:** the sheet is layout-heavy and mostly static between bars, which
-is the opposite of the highway. It should not go through the falling-notes
-canvas. Two candidates, to be decided with a measurement rather than taste:
-SVG per visible system (like Piano's score view, simple and accessible), or one
-canvas with only the visible systems drawn. Start with SVG for the visible
-window only; measure with a 12-track file before reaching for canvas.
+| Piece                                                   | File                                                                        |
+| ------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Bars, systems, note indexing, beat lookup               | `src/features/guitar-night/sheet/sheet-model.ts`                            |
+| Which parts are drawn, in what order, on whose neck     | `src/features/guitar-night/sheet/sheet-lanes.ts`                            |
+| Renderer contract, lane geometry, virtual window, theme | `src/features/guitar-night/sheet/sheet-render.ts`                           |
+| The tab painter                                         | `src/features/guitar-night/sheet/sheet-tab-renderer.ts`                     |
+| The scrolling page                                      | `src/features/guitar-night/sheet/GuitarNightSheetView.tsx`                  |
+| Placement shared with the highway                       | `placeReferenceTrack` in `reference-port.ts`                                |
+| Which parts are on the page                             | `sheetLanes` / `toggleSheetTrack` in `useGuitarNightReferenceController.ts` |
+
+**Placement** is shared rather than reimplemented: `openGuitarNightReference`
+now goes through `placeReferenceTrack` too, so a note on the sheet lands exactly
+where the highway would put it.
+
+**Rendering** went to canvas, one per visible system, painted once and then left
+alone. What moves while the song plays is a single element with a transform on
+it. Only the systems near the reader are mounted, so a long score costs what a
+short one does. The renderer is an interface with two questions in it — how tall
+is a part, and paint one system — which is the seam phase 4 arrives through.
+
+**Bars** come from a time signature list the model accepts but nothing supplies
+yet. Guitar Pro carries real signatures per master bar (`gp-to-midi-song.ts`
+already walks `score.masterBars`); plain MIDI and measured audio carry none.
+Common time is the documented fallback until that plumbing lands, and it is the
+first thing to fix for scores that are not in four.
 
 ## 5. Phase 3 — the secondary part in the corner, and tap to swap
 

@@ -665,6 +665,24 @@
   gap: 0.4rem;
 }
 
+/* The part, and whether the sheet draws it: two decisions, two targets. */
+/* The sheet fills the stage the way the neck does, and scrolls inside itself
+   rather than growing the page it sits on. */
+.stageSheet {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+  min-height: 18rem;
+}
+
+.sessionTrackRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
 .sessionTracks button {
   display: grid;
   gap: 0.1rem;
@@ -682,6 +700,27 @@
 .sessionTracks button:focus-visible {
   border-color: rgba(224, 164, 93, 0.4);
   background: rgba(224, 164, 93, 0.08);
+}
+
+.sessionTrackVisibility {
+  place-items: center;
+  width: 44px;
+  padding: 0 !important;
+  color: var(--muted-readable) !important;
+}
+
+.sessionTrackVisibility[aria-pressed='true'] {
+  color: var(--amber) !important;
+}
+
+.sessionTrackVisibility:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.sessionTrackVisibility svg {
+  width: 18px;
+  height: 18px;
 }
 
 .sessionTrackActive {
@@ -3713,9 +3752,18 @@
   white-space: nowrap;
 }
 
+/* One column per view, however many there are. A fixed four wrapped the fifth
+   onto a second row, and at 200% text on a 320px phone that row pushed the
+   instrument setup below the fold. Overflow scrolls sideways rather than
+   growing downwards, because height here costs the controls underneath. */
 .stageModes {
   display: inline-grid;
-  grid-template-columns: repeat(4, minmax(3.35rem, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(3.35rem, 1fr);
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
   flex: none;
   padding: 0.2rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
@@ -3725,6 +3773,10 @@
   -webkit-backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
   backdrop-filter: blur(calc(12px * var(--gn-blur-scale)));
   pointer-events: auto;
+}
+
+.stageModes::-webkit-scrollbar {
+  display: none;
 }
 
 .stageModes button {
@@ -5799,6 +5851,12 @@
     min-width: 0;
     padding-inline: 0.4rem;
     font-size: inherit;
+  }
+
+  /* A narrow phone cannot hold five readable labels at once, so the row keeps
+     its height and gives up width instead. */
+  .stageModes {
+    grid-auto-columns: minmax(2.6rem, 1fr);
   }
 
   .stageSetup summary,

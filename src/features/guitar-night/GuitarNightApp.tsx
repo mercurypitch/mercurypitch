@@ -2001,6 +2001,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     onSelectTrack={(trackId) =>
                       void referenceController.selectTrack(trackId)
                     }
+                    sheetLanes={referenceController.sheetLanes}
+                    sheetVisibleTrackIds={
+                      referenceController.sheetVisibleTrackIds
+                    }
+                    onToggleSheetTrack={referenceController.toggleSheetTrack}
                   />
                 </Suspense>
               )}

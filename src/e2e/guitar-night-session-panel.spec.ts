@@ -87,7 +87,9 @@ test('changes the scored part from inside the tab room @smoke', async ({
   await expect(panel).toBeVisible()
   await expect(panel.getByText('Two Part Study')).toBeVisible()
 
-  const rhythm = panel.getByRole('button', { name: /Rhythm guitar/ })
+  const rhythm = panel
+    .getByTestId('guitar-night-session-track')
+    .filter({ hasText: 'Rhythm guitar' })
   await expect(rhythm).toHaveAttribute('aria-pressed', 'false')
   await rhythm.click()
 
@@ -100,7 +102,8 @@ test('changes the scored part from inside the tab room @smoke', async ({
   await expect(
     page
       .getByTestId('guitar-night-session-panel')
-      .getByRole('button', { name: /Rhythm guitar/ }),
+      .getByTestId('guitar-night-session-track')
+      .filter({ hasText: 'Rhythm guitar' }),
   ).toHaveAttribute('aria-pressed', 'true')
 })
 

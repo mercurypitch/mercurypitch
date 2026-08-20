@@ -7,6 +7,8 @@ import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/g
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
+import { playableSheetTracks, sheetLaneFromReference, sheetLanesFromSource, } from './sheet/sheet-lanes'
+import type { SheetLane } from './sheet/sheet-model'
 import type { GuitarNightStemKind } from './song-port'
 
 export type GuitarNightReferenceLibraryState =
@@ -104,6 +106,67 @@ export function useGuitarNightReferenceController(
     const current = state()
     return current.kind === 'ready' ? current.reference : null
   })
+
+  // Which parts the sheet draws, held against the song they belong to. Keying
+  // the set by song is what makes attaching a different score forget the old
+  // choices without a lifecycle hook to remember to write.
+  const [sheetHiddenTracks, setSheetHiddenTracks] = createSignal<{
+    songId: string
+    trackIds: readonly string[]
+  }>({ songId: '', trackIds: [] })
+
+  const sheetSource = createMemo(() => {
+    const current = reference()
+    if (current === null || current.kind !== 'authored') return null
+    libraryVersion()
+    return port()?.readSource(current.songId) ?? null
+  })
+
+  const sheetHidden = createMemo<readonly string[]>(() => {
+    const current = reference()
+    const held = sheetHiddenTracks()
+    return current === null || held.songId !== current.songId
+      ? []
+      : held.trackIds
+  })
+
+  /** Parts on the sheet right now. The scored part is always among them. */
+  const sheetVisibleTrackIds = createMemo<readonly string[]>(() => {
+    const current = reference()
+    if (current === null) return []
+    const source = sheetSource()
+    if (source === null) return [current.trackId]
+    const hidden = new Set(sheetHidden())
+    return playableSheetTracks(source)
+      .map((track) => track.id)
+      .filter((id) => id === current.trackId || !hidden.has(id))
+  })
+
+  const sheetLanes = createMemo<readonly SheetLane[]>(() => {
+    const current = reference()
+    if (current === null) return []
+    const source = sheetSource()
+    // A measured stem line has no written score behind it and counts its beats
+    // on the recording's clock, so it reads as a sheet of exactly one part.
+    if (source === null) return [sheetLaneFromReference(current)]
+    return sheetLanesFromSource(source, {
+      visibleTrackIds: sheetVisibleTrackIds(),
+      scoredTrackId: current.trackId,
+      scoredTuning: current.tuning,
+    })
+  })
+
+  const toggleSheetTrack = (trackId: string): void => {
+    const current = reference()
+    if (current === null || trackId === current.trackId) return
+    const hidden = new Set(sheetHidden())
+    if (hidden.has(trackId)) {
+      hidden.delete(trackId)
+    } else {
+      hidden.add(trackId)
+    }
+    setSheetHiddenTracks({ songId: current.songId, trackIds: [...hidden] })
+  }
 
   const ensurePort = async (): Promise<GuitarNightReferencePort | null> => {
     const current = port()
@@ -478,6 +541,9 @@ export function useGuitarNightReferenceController(
     importPendingFileName,
     transcribeProgress,
     transcribingStem,
+    sheetLanes,
+    sheetVisibleTrackIds,
+    toggleSheetTrack,
     instrument,
     stringCount,
     tuning,

@@ -28,6 +28,7 @@ import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
+import type { SheetLane } from './sheet/sheet-model'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightLiveScoreController } from './useGuitarNightLiveScoreController'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
@@ -50,6 +51,11 @@ interface GuitarNightScoreRoomProps {
    * keeps the session panel read-only, which is what a single-part file wants.
    */
   onSelectTrack?(trackId: string): void
+  /** Every part the sheet draws, scored one first. */
+  sheetLanes?: Accessor<readonly SheetLane[]>
+  /** Parts currently on the sheet, for the panel's show and hide controls. */
+  sheetVisibleTrackIds?: Accessor<readonly string[]>
+  onToggleSheetTrack?(trackId: string): void
 }
 
 function formatTime(seconds: number): string {
@@ -956,6 +962,13 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       <GuitarNightStage
         source={stage}
         tuning={() => displayedReference().tuning}
+        {...(props.sheetLanes === undefined
+          ? {}
+          : { sheetLanes: props.sheetLanes })}
+        scoredTrackId={() => displayedReference().trackId}
+        {...(props.onSelectTrack === undefined
+          ? {}
+          : { onSelectTrack: props.onSelectTrack })}
         onInstrument={
           props.onInstrument === undefined ? undefined : changeInstrument
         }
@@ -1049,6 +1062,12 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       <Show when={sessionPanelOpen()}>
         <GuitarNightSessionPanel
           reference={displayedReference}
+          {...(props.sheetVisibleTrackIds === undefined
+            ? {}
+            : { visibleTrackIds: props.sheetVisibleTrackIds })}
+          {...(props.onToggleSheetTrack === undefined
+            ? {}
+            : { onToggleTrackVisible: props.onToggleSheetTrack })}
           onSelectTrack={(trackId) => {
             props.onSelectTrack?.(trackId)
             setSessionPanelOpen(false)

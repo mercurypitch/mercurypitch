@@ -9,6 +9,7 @@ import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/gui
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import type { DisplaySettings, TabPresentation, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
+import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { GUITAR_NIGHT_CAMERA_PRESET_KEY, GUITAR_NIGHT_EFFECTS_KEY, GUITAR_NIGHT_FLOW_PRESENTATION_KEY, GUITAR_NIGHT_HANDEDNESS_KEY, GuitarNightStage, } from './GuitarNightStage'
 
 vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
@@ -647,5 +648,71 @@ describe('GuitarNightStage view picker on a phone', () => {
     const trigger = screen.getByLabelText('Camera, Runway')
     expect(trigger.tagName).toBe('SUMMARY')
     expect(trigger.closest('details')).not.toBeNull()
+  })
+
+  describe('the sheet view', () => {
+    // jsdom has no 2d context; the painting itself is covered where it lives.
+    beforeEach(() => {
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    })
+
+    const LANES = [
+      {
+        trackId: 'track-lead',
+        trackName: 'Lead guitar',
+        kind: 'authored' as const,
+        instrument: 'guitar' as const,
+        tuning: standardTuning('guitar', 6),
+        notes: [],
+        outOfRangeNotes: 0,
+      },
+      {
+        trackId: 'track-bass',
+        trackName: 'Bass',
+        kind: 'authored' as const,
+        instrument: 'bass' as const,
+        tuning: standardTuning('bass', 4),
+        notes: [],
+        outOfRangeNotes: 0,
+      },
+    ]
+
+    it('is not offered when there is no score to stack', () => {
+      render(() => <GuitarNightStage source={SOURCE} active={() => true} />)
+      expect(screen.queryByRole('button', { name: 'Sheet' })).toBeNull()
+    })
+
+    it('reads every part against one set of bar lines', () => {
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          sheetLanes={() => LANES}
+          scoredTrackId={() => 'track-bass'}
+        />
+      ))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sheet' }))
+      expect(screen.getByTestId('guitar-night-sheet')).toBeInTheDocument()
+      expect(screen.getByText('Lead guitar')).toBeInTheDocument()
+      expect(screen.getByText('Bass')).toBeInTheDocument()
+    })
+
+    it('turns the name of a part into the way to score it instead', () => {
+      const onSelectTrack = vi.fn()
+      render(() => (
+        <GuitarNightStage
+          source={SOURCE}
+          active={() => true}
+          sheetLanes={() => LANES}
+          scoredTrackId={() => 'track-lead'}
+          onSelectTrack={onSelectTrack}
+        />
+      ))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Sheet' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Bass' }))
+      expect(onSelectTrack).toHaveBeenCalledWith('track-bass')
+    })
   })
 })

@@ -18,14 +18,16 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, soundingOpenMidi, } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightSheetView } from './sheet/GuitarNightSheetView'
+import type { SheetLane } from './sheet/sheet-model'
 
 const Guitar3DStage = lazy(async () => {
   const module = await import('@/features/guitar/ui/Guitar3DStage')
   return { default: module.Guitar3DStage }
 })
 
-export type GuitarNightStageMode = 'flow' | 'tab' | 'neck'
-export type GuitarNightStageView = 'highway' | 'grid' | 'tab' | 'neck'
+export type GuitarNightStageMode = 'flow' | 'tab' | 'neck' | 'sheet'
+export type GuitarNightStageView = 'highway' | 'grid' | 'tab' | 'neck' | 'sheet'
 
 export interface GuitarNightNeckPosition {
   stringIndex: number
@@ -82,6 +84,15 @@ interface GuitarNightStageProps {
   flowLabelMode?: 'note' | 'fret'
   /** A focused activity may expose only the projections that help its task. */
   availableViews?: Accessor<readonly GuitarNightStageView[]>
+  /**
+   * Every part of the loaded score, stacked against one set of bar lines. Given
+   * only where there is a score to read; the Sheet view is offered only then.
+   */
+  sheetLanes?: Accessor<readonly SheetLane[]>
+  /** The part being graded, drawn in full ink on the sheet. */
+  scoredTrackId?: Accessor<string | undefined>
+  /** Reading a part's name on the sheet asks to score it instead. */
+  onSelectTrack?(trackId: string): void
   /** Activities can turn the lightweight neck into an accessible touch surface. */
   neckInteraction?: GuitarNightNeckInteraction
   /** Activity-owned instruction for the interactive neck group. */
@@ -129,6 +140,7 @@ const STAGE_VIEW_CHOICES: readonly {
   { id: 'grid', label: 'Grid' },
   { id: 'tab', label: 'Tab' },
   { id: 'neck', label: 'Neck' },
+  { id: 'sheet', label: 'Sheet' },
 ]
 
 /** Tab shows the same span of music as Flow, so switching view keeps context. */
@@ -780,12 +792,13 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     return flowPresentation() === 'string-highway' ? 'highway' : 'grid'
   })
   const availableViews = createMemo(() => {
+    const offered = STAGE_VIEW_CHOICES.filter(
+      (choice) => choice.id !== 'sheet' || props.sheetLanes !== undefined,
+    )
     const configured = props.availableViews?.()
-    if (configured === undefined || configured.length === 0) {
-      return STAGE_VIEW_CHOICES
-    }
+    if (configured === undefined || configured.length === 0) return offered
     const allowed = new Set(configured)
-    return STAGE_VIEW_CHOICES.filter((choice) => allowed.has(choice.id))
+    return offered.filter((choice) => allowed.has(choice.id))
   })
   const hasFlowView = createMemo(() =>
     availableViews().some(
@@ -1455,6 +1468,22 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 play.
               </p>
             </Show>
+          </div>
+        </Show>
+
+        <Show when={mode() === 'sheet'}>
+          <div class={styles.stageSheet}>
+            <GuitarNightSheetView
+              lanes={() => props.sheetLanes?.() ?? []}
+              playheadBeat={() => actualPlayheadBeat() ?? 0}
+              {...(props.scoredTrackId === undefined
+                ? {}
+                : { scoredTrackId: props.scoredTrackId })}
+              {...(props.onSelectTrack === undefined
+                ? {}
+                : { onSelectTrack: props.onSelectTrack })}
+              emptyNote="No tab attached to this song. Load a tab later, or stay in free play."
+            />
           </div>
         </Show>
 

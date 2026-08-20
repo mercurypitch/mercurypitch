@@ -1,0 +1,326 @@
+// The sheet is a reading surface: bars laid a few to a horizontal system, systems
+// stacked downwards, every visible part drawn on its own rows against the same
+// bar lines. Everything in this file is pure — no DOM, no Solid, no renderer.
+// That is deliberate: the layout is the contract two different painters (tab
+// today, staff notation later) agree on, and it is what the tests pin down.
+//
+// One clock per sheet. Authored tracks from one score share a beat clock;
+// measured stem lines run on the recording's own clock (60 bpm, one beat per
+// second). Stacking the two would draw bar lines that mean different things in
+// different rows, so a placement is built from lanes that already agree.
+
+import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
+import type { GuitarNightReferenceKind } from '../reference-port'
+
+/** Bars are counted in the score's own beat unit, which is a quarter note. */
+export const DEFAULT_BEATS_PER_BAR = 4
+
+/**
+ * A time signature, from the bar it takes effect at. Guitar Pro carries these
+ * per master bar; plain MIDI and measured audio do not, so the sheet falls back
+ * to common time rather than inventing bar lengths it cannot prove.
+ */
+export interface SheetTimeSignature {
+  /** First bar this signature applies to, 0-based. */
+  barIndex: number
+  /** Bar length in beats. */
+  beatsPerBar: number
+}
+
+/** One bar of the sheet, in beat time. */
+export interface SheetBar {
+  index: number
+  startBeat: number
+  beats: number
+}
+
+/** A horizontal run of bars. Systems stack down the page; bars run across. */
+export interface SheetSystem {
+  index: number
+  bars: readonly SheetBar[]
+  startBeat: number
+  beats: number
+}
+
+/**
+ * One part on the sheet, already placed on the rows it will be drawn on. A lane
+ * owns its tuning, so a bass lane and a seven-string lane can sit in the same
+ * sheet without either being redrawn on the other's neck.
+ */
+export interface SheetLane {
+  trackId: string
+  trackName: string
+  kind: GuitarNightReferenceKind
+  instrument: StringedInstrument
+  tuning: InstrumentTuning
+  notes: readonly GuitarNote[]
+  /** Notes this lane's neck could not reach, so they were not placed. */
+  outOfRangeNotes: number
+}
+
+/**
+ * A laid-out sheet. `notesBySystem[systemIndex][laneIndex]` is the slice of that
+ * lane starting inside that system — built once, so drawing a frame never scans
+ * a whole song.
+ */
+export interface SheetPlacement {
+  systems: readonly SheetSystem[]
+  lanes: readonly SheetLane[]
+  notesBySystem: readonly (readonly (readonly GuitarNote[])[])[]
+  totalBeats: number
+  barsPerSystem: number
+}
+
+export interface SheetLayoutInput {
+  lanes: readonly SheetLane[]
+  /** Beats the sheet must cover. Defaults to the last note that ends. */
+  totalBeats?: number
+  timeSignatures?: readonly SheetTimeSignature[]
+  barsPerSystem?: number
+}
+
+/** Where a beat falls on the sheet: which system, and how far across it. */
+export interface SheetBeatPosition {
+  systemIndex: number
+  /** 0 at the system's first bar line, 1 at its last, never outside. */
+  fraction: number
+}
+
+/** The beat the last note of any lane finishes on, or 0 for an empty sheet. */
+export function totalBeatsForLanes(lanes: readonly SheetLane[]): number {
+  let end = 0
+  for (const lane of lanes) {
+    for (const note of lane.notes) {
+      const noteEnd = note.startBeat + Math.max(0, note.duration)
+      if (noteEnd > end) end = noteEnd
+    }
+  }
+  return end
+}
+
+/**
+ * Bar lines for a span of beats. A sheet always has at least one bar: an empty
+ * score should read as an empty bar, not as a blank page.
+ */
+export function buildSheetBars(
+  totalBeats: number,
+  timeSignatures?: readonly SheetTimeSignature[],
+): SheetBar[] {
+  const signatures = normalizeTimeSignatures(timeSignatures)
+  const span =
+    Number.isFinite(totalBeats) && totalBeats > 0 ? (totalBeats as number) : 0
+
+  const bars: SheetBar[] = []
+  let startBeat = 0
+  let index = 0
+  let signatureIndex = 0
+  let beatsPerBar = signatures[0]?.beatsPerBar ?? DEFAULT_BEATS_PER_BAR
+
+  // One bar always, then bars until the last note is covered. The guard on
+  // `index` is a runaway stop, not a musical limit.
+  while ((index === 0 || startBeat < span) && index < MAX_BARS) {
+    while (
+      signatureIndex + 1 < signatures.length &&
+      (signatures[signatureIndex + 1]?.barIndex ?? Infinity) <= index
+    ) {
+      signatureIndex += 1
+      beatsPerBar = signatures[signatureIndex]?.beatsPerBar ?? beatsPerBar
+    }
+    bars.push({ index, startBeat, beats: beatsPerBar })
+    startBeat += beatsPerBar
+    index += 1
+  }
+
+  return bars
+}
+
+/** Cut a bar list into the horizontal rows the page scrolls through. */
+export function groupIntoSystems(
+  bars: readonly SheetBar[],
+  barsPerSystem: number,
+): SheetSystem[] {
+  const perSystem = Math.max(1, Math.round(barsPerSystem))
+  const systems: SheetSystem[] = []
+
+  for (let start = 0; start < bars.length; start += perSystem) {
+    const slice = bars.slice(start, start + perSystem)
+    const first = slice[0]
+    if (first === undefined) continue
+    systems.push({
+      index: systems.length,
+      bars: slice,
+      startBeat: first.startBeat,
+      beats: slice.reduce((total, bar) => total + bar.beats, 0),
+    })
+  }
+
+  return systems
+}
+
+export interface BarsPerSystemOptions {
+  /** Narrowest a bar may be drawn before it stops being readable. */
+  minBarWidth?: number
+  maxBars?: number
+}
+
+/**
+ * How many bars fit across a given width. Kept pure and separate from the view
+ * so the count can be asserted without a layout engine.
+ */
+export function barsPerSystemForWidth(
+  width: number,
+  options: BarsPerSystemOptions = {},
+): number {
+  const minBarWidth = options.minBarWidth ?? 240
+  const maxBars = Math.max(1, options.maxBars ?? 4)
+  if (!Number.isFinite(width) || width <= 0) return 1
+  return Math.min(maxBars, Math.max(1, Math.floor(width / minBarWidth)))
+}
+
+/** Lay the sheet out and index every lane's notes by the system they start in. */
+export function buildSheetPlacement(input: SheetLayoutInput): SheetPlacement {
+  const lanes = input.lanes
+  const totalBeats = input.totalBeats ?? totalBeatsForLanes(lanes)
+  const bars = buildSheetBars(totalBeats, input.timeSignatures)
+  const barsPerSystem = Math.max(1, Math.round(input.barsPerSystem ?? 4))
+  const systems = groupIntoSystems(bars, barsPerSystem)
+
+  const notesBySystem: GuitarNote[][][] = systems.map(() => lanes.map(() => []))
+
+  for (let laneIndex = 0; laneIndex < lanes.length; laneIndex += 1) {
+    const lane = lanes[laneIndex]
+    if (lane === undefined) continue
+    for (const note of lane.notes) {
+      const systemIndex = systemIndexForBeat(systems, note.startBeat)
+      if (systemIndex === null) continue
+      notesBySystem[systemIndex]?.[laneIndex]?.push(note)
+    }
+  }
+
+  // Notes arrive in source order, which is usually but not always by time.
+  // Sorting once here is what lets the painter walk a system straight through.
+  for (const perLane of notesBySystem) {
+    for (const notes of perLane) {
+      notes.sort((left, right) => left.startBeat - right.startBeat)
+    }
+  }
+
+  return { systems, lanes, notesBySystem, totalBeats, barsPerSystem }
+}
+
+/** The notes of one lane inside one system, or an empty list off the sheet. */
+export function laneNotesInSystem(
+  placement: SheetPlacement,
+  systemIndex: number,
+  laneIndex: number,
+): readonly GuitarNote[] {
+  return placement.notesBySystem[systemIndex]?.[laneIndex] ?? EMPTY_NOTES
+}
+
+/**
+ * Where a beat sits on the sheet. Beats before the first bar clamp to its
+ * start and beats past the last clamp to its end, so a playhead stays on the
+ * page instead of vanishing when a recording runs long.
+ */
+export function locateBeat(
+  placement: SheetPlacement,
+  beat: number,
+): SheetBeatPosition | null {
+  const systems = placement.systems
+  if (systems.length === 0) return null
+
+  const first = systems[0]
+  const last = systems[systems.length - 1]
+  if (first === undefined || last === undefined) return null
+  if (!Number.isFinite(beat) || beat <= first.startBeat) {
+    return { systemIndex: 0, fraction: 0 }
+  }
+  const end = last.startBeat + last.beats
+  if (beat >= end) return { systemIndex: last.index, fraction: 1 }
+
+  const systemIndex = systemIndexForBeat(systems, beat) ?? last.index
+  const system = systems[systemIndex]
+  if (system === undefined || system.beats <= 0) {
+    return { systemIndex, fraction: 0 }
+  }
+  return {
+    systemIndex,
+    fraction: clamp01((beat - system.startBeat) / system.beats),
+  }
+}
+
+/** How far across a system a beat sits, for drawing inside one system only. */
+export function beatFractionInSystem(
+  system: SheetSystem,
+  beat: number,
+): number {
+  if (system.beats <= 0) return 0
+  return clamp01((beat - system.startBeat) / system.beats)
+}
+
+const EMPTY_NOTES: readonly GuitarNote[] = []
+const MAX_BARS = 4096
+
+function systemIndexForBeat(
+  systems: readonly SheetSystem[],
+  beat: number,
+): number | null {
+  if (systems.length === 0) return null
+  const safeBeat = Number.isFinite(beat) ? beat : 0
+  if (safeBeat < 0) return 0
+
+  // Binary search: a long score has thousands of notes and hundreds of systems,
+  // and this runs once per note when the placement is built.
+  let low = 0
+  let high = systems.length - 1
+  while (low <= high) {
+    const middle = (low + high) >> 1
+    const system = systems[middle]
+    if (system === undefined) break
+    if (safeBeat < system.startBeat) {
+      high = middle - 1
+    } else if (safeBeat >= system.startBeat + system.beats) {
+      low = middle + 1
+    } else {
+      return middle
+    }
+  }
+  return systems.length - 1
+}
+
+function normalizeTimeSignatures(
+  signatures: readonly SheetTimeSignature[] | undefined,
+): readonly SheetTimeSignature[] {
+  if (signatures === undefined || signatures.length === 0) {
+    return [{ barIndex: 0, beatsPerBar: DEFAULT_BEATS_PER_BAR }]
+  }
+
+  const usable = signatures
+    .filter(
+      (signature) =>
+        Number.isFinite(signature.barIndex) &&
+        Number.isFinite(signature.beatsPerBar) &&
+        signature.beatsPerBar > 0,
+    )
+    .map((signature) => ({
+      barIndex: Math.max(0, Math.round(signature.barIndex)),
+      beatsPerBar: signature.beatsPerBar,
+    }))
+    .sort((left, right) => left.barIndex - right.barIndex)
+
+  const first = usable[0]
+  if (first === undefined) {
+    return [{ barIndex: 0, beatsPerBar: DEFAULT_BEATS_PER_BAR }]
+  }
+  // A score whose first signature starts late still needs a length for the bars
+  // before it; common time is the honest default there.
+  return first.barIndex === 0
+    ? usable
+    : [{ barIndex: 0, beatsPerBar: DEFAULT_BEATS_PER_BAR }, ...usable]
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.min(1, Math.max(0, value))
+}

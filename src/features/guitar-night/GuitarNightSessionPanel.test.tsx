@@ -125,4 +125,74 @@ describe('GuitarNightSessionPanel', () => {
     expect(screen.getByText(/carries one part/)).toBeInTheDocument()
     expect(screen.getByText(/1 part/)).toBeInTheDocument()
   })
+
+  it('offers no sheet controls when the room has no sheet', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+    expect(screen.queryByLabelText(/on the sheet/)).toBeNull()
+  })
+
+  it('shows which parts the sheet is drawing', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        visibleTrackIds={() => ['track-lead', 'track-rhythm']}
+        onToggleTrackVisible={vi.fn()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen
+        .getByLabelText('Hide Rhythm guitar on the sheet')
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(
+      screen
+        .getByLabelText('Show Bass on the sheet')
+        .getAttribute('aria-pressed'),
+    ).toBe('false')
+  })
+
+  it('asks to hide or show a part when its control is used', () => {
+    const onToggleTrackVisible = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        visibleTrackIds={() => ['track-lead']}
+        onToggleTrackVisible={onToggleTrackVisible}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Show Bass on the sheet'))
+    expect(onToggleTrackVisible).toHaveBeenCalledWith('track-bass')
+  })
+
+  it('holds the scored part on the sheet rather than hiding the rule', () => {
+    const onToggleTrackVisible = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        visibleTrackIds={() => []}
+        onToggleTrackVisible={onToggleTrackVisible}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const scored = screen.getByLabelText('Hide Lead guitar on the sheet')
+    expect(scored).toBeDisabled()
+    expect(scored.getAttribute('aria-pressed')).toBe('true')
+    expect(scored.getAttribute('title')).toBe(
+      'Lead guitar is scored, so it always shows on the sheet',
+    )
+  })
 })

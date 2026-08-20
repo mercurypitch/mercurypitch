@@ -463,6 +463,7 @@ describe('GuitarNightApp prepared songs', () => {
       listReferences: () => [],
       openReference: () => ({ ok: false, code: 'not-found' }),
       suggestInstrument: () => null,
+      readSource: () => null,
       rememberTrack: vi.fn(),
       importReference: vi.fn(async () => {
         throw new Error('Not used in this test')
@@ -566,6 +567,7 @@ describe('GuitarNightApp prepared songs', () => {
       listReferences: () => [],
       openReference: () => ({ ok: false, code: 'not-found' }),
       suggestInstrument: () => null,
+      readSource: () => null,
       rememberTrack: vi.fn(),
       importReference: vi.fn(async () => {
         throw new Error('Not used in this test')
@@ -737,6 +739,7 @@ describe('GuitarNightApp prepared songs', () => {
       listReferences: () => [],
       openReference: () => ({ ok: false, code: 'not-found' }),
       suggestInstrument: () => null,
+      readSource: () => null,
       rememberTrack: vi.fn(),
       importReference,
     }
@@ -774,6 +777,7 @@ describe('GuitarNightApp prepared songs', () => {
       listReferences: () => [],
       openReference: () => ({ ok: false, code: 'not-found' }),
       suggestInstrument: () => null,
+      readSource: () => null,
       rememberTrack: vi.fn(),
       importReference,
     }
@@ -1021,6 +1025,7 @@ describe('GuitarNightApp prepared songs', () => {
       ],
       openReference: () => ({ ok: false, code: 'not-found' }),
       suggestInstrument: () => null,
+      readSource: () => null,
       rememberTrack: vi.fn(),
       importReference: vi.fn(async () => {
         throw new Error('Not used in this test')
