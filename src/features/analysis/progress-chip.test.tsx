@@ -1,16 +1,17 @@
 // ============================================================
-// The Vocal Analysis "Progress" chip, and what actually fills it
+// What actually gets banked, and what the Progress card does with it
 // ============================================================
 //
-// Reported: "I did a few sessions on the singing tab with my mic on and the
-// Progress card still reads 0 sessions." These tests establish what the card
-// is wired to, so the gap is written down rather than argued about.
+// Written while diagnosing "I did a few sessions on the singing tab with my
+// mic on and the Progress card still reads 0 sessions". It pinned the gap;
+// #626 then closed it. What is left is the half that is still true and was
+// never covered anywhere else: the banking rules in `endPracticeSession`,
+// exercised through the real store rather than a fixture, and the card read
+// through the same device-scope path the app uses when nobody is signed in.
 //
-// The card reads `getSessionHistory()` — the localStorage-backed
-// `sessionResults` signal — which has exactly ONE production writer:
-// `endPracticeSession`. Everything else that a singer would call "a session"
-// (exercises, challenges, weekly attempts) writes a cloud `sessionRecord`
-// instead and never touches this signal.
+// The one test that inverted is the most valuable one here. It used to
+// assert that a banked session with no per-note detail was *hidden* by the
+// card. That was the bug. It now asserts the opposite, from the real store.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -28,6 +29,7 @@ vi.mock('@/db/services/grant-service', () => ({
   checkAndGrantBadges: mocks.checkAndGrantBadges,
 }))
 
+import { loadProgressRuns } from '@/features/progress/progress-runs'
 import { endPracticeSession, getSessionHistory, recordSessionItemResult, setPracticeResults, setPracticeSession, setSessionResults, } from '@/stores/practice-session-store'
 import { TrendsCard } from './sections'
 
@@ -76,6 +78,31 @@ function aScoredItemWithoutNotes(score: number): PracticeResult {
   return { ...aScoredItem(score), noteResult: [] } as PracticeResult
 }
 
+/**
+ * Render the card the way a signed-out visitor gets it: runs derived from
+ * this device's history by the real loader, not by a fixture. That path is
+ * the whole point — reading the history straight into the card is what
+ * counted the chart's input and produced the zero.
+ */
+async function renderCardFromHistory(): Promise<void> {
+  const source = await loadProgressRuns({
+    signedIn: () => false,
+    localHistory: () => getSessionHistory(),
+  })
+  render(() => (
+    <TrendsCard
+      sessions={getSessionHistory()}
+      runs={source.runs}
+      scope={source.scope}
+      streak={null}
+    />
+  ))
+}
+
+function tile(label: string): HTMLElement | null {
+  return screen.getByText(label).parentElement
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   setSessionResults([])
@@ -85,95 +112,26 @@ beforeEach(() => {
 
 afterEach(cleanup)
 
-describe('the Progress card', () => {
-  it('reads zero when nothing has been banked', () => {
-    render(() => <TrendsCard sessions={getSessionHistory()} streak={null} />)
-
-    expect(
-      screen.getByText('Sessions').previousElementSibling,
-    ).toHaveTextContent('0')
-    expect(
-      screen.getByText('One more session and your score trend appears here.'),
-    ).toBeInTheDocument()
-  })
-
-  it('counts a practice session that banked at least one scored item', () => {
-    // The path that works: session mode, an item completes with a score, and
-    // ending the session writes it to the signal the card reads.
+describe('what endPracticeSession banks', () => {
+  it('banks a session that completed at least one scored item', () => {
     setPracticeSession(aSession())
     recordSessionItemResult(aScoredItem(72))
 
     expect(endPracticeSession()).not.toBeNull()
-
-    render(() => <TrendsCard sessions={getSessionHistory()} streak={null} />)
-    expect(
-      screen.getByText('Sessions').previousElementSibling,
-    ).toHaveTextContent('1')
-    expect(
-      screen.getByText('Best score').previousElementSibling,
-    ).toHaveTextContent('72%')
-  })
-
-  it('draws the trend only from the second banked session onwards', () => {
-    setPracticeSession(aSession())
-    recordSessionItemResult(aScoredItem(60))
-    endPracticeSession()
-    setPracticeSession(aSession())
-    recordSessionItemResult(aScoredItem(80))
-    endPracticeSession()
-
-    render(() => <TrendsCard sessions={getSessionHistory()} streak={null} />)
-    expect(
-      screen.getByText('Sessions').previousElementSibling,
-    ).toHaveTextContent('2')
-    expect(
-      screen.queryByText('One more session and your score trend appears here.'),
-    ).not.toBeInTheDocument()
+    expect(getSessionHistory()).toHaveLength(1)
   })
 
   it('banks nothing at all from a play-then-stop run', () => {
-    // THE REPORTED SYMPTOM. Starting playback and stopping without any item
-    // completing to a score leaves `practiceResults` empty, and
-    // `endPracticeSession` deliberately records nothing rather than banking a
-    // zero — a rule added to stop score-0 runs dragging the profile down.
+    // Starting playback and stopping without any item completing to a score
+    // leaves `practiceResults` empty, and `endPracticeSession` deliberately
+    // records nothing rather than banking a zero — a rule that stops score-0
+    // runs dragging the profile and the leaderboard down.
     //
-    // Correct on its own terms, and completely invisible: the singer sang,
-    // heard themselves scored, pressed stop, and the card still reads 0 with
-    // nothing on screen explaining why.
+    // Correct on its own terms, and still completely unexplained on screen.
     setPracticeSession(aSession())
 
     expect(endPracticeSession()).toBeNull()
-
-    render(() => <TrendsCard sessions={getSessionHistory()} streak={null} />)
-    expect(
-      screen.getByText('Sessions').previousElementSibling,
-    ).toHaveTextContent('0')
-  })
-
-  it('hides a real banked session that carries no per-note results', () => {
-    // THE BUG. The session IS recorded — history has it, and it counts for
-    // streaks and badges — but the card filters it out and reads zero.
-    //
-    // `buildTrend` drops any session whose `buildPracticeMetrics` is null,
-    // and that is null whenever the item has no `noteResult` entries. So a
-    // tile labelled "Sessions" is really counting "sessions with usable
-    // per-note pitch data". A singer whose runs bank without note detail
-    // sees 0 forever, with nothing on screen to explain the difference.
-    setPracticeSession(aSession())
-    recordSessionItemResult(aScoredItemWithoutNotes(72))
-    endPracticeSession()
-
-    // Recorded: the history the rest of the app reads is not empty.
-    expect(getSessionHistory()).toHaveLength(1)
-
-    render(() => <TrendsCard sessions={getSessionHistory()} streak={null} />)
-    // Shown: zero.
-    expect(
-      screen.getByText('Sessions').previousElementSibling,
-    ).toHaveTextContent('0')
-    expect(
-      screen.getByText('Best score').previousElementSibling,
-    ).toHaveTextContent('0%')
+    expect(getSessionHistory()).toEqual([])
   })
 
   it('banks nothing when there was no practice session to end', () => {
@@ -181,5 +139,74 @@ describe('the Progress card', () => {
     // no session to record — pressing stop here can never move the card.
     expect(endPracticeSession()).toBeNull()
     expect(getSessionHistory()).toEqual([])
+  })
+})
+
+describe('the Progress card, reading what was banked', () => {
+  it('reads a true zero when nothing has been banked', async () => {
+    await renderCardFromHistory()
+
+    expect(tile('Runs')).toHaveTextContent('0')
+    expect(
+      screen.getByText('One more session and your score trend appears here.'),
+    ).toBeInTheDocument()
+  })
+
+  it('counts a banked session and takes its score', async () => {
+    setPracticeSession(aSession())
+    recordSessionItemResult(aScoredItem(72))
+    endPracticeSession()
+
+    await renderCardFromHistory()
+
+    expect(tile('Runs')).toHaveTextContent('1')
+    expect(tile('Best score')).toHaveTextContent('72%')
+  })
+
+  it('counts a banked session that carries no per-note results', async () => {
+    // THE BUG THIS FILE WAS OPENED FOR, now the other way round. The session
+    // is recorded, it counts for streaks and badges — and the card used to
+    // filter it out and read zero, because the tile was really counting
+    // "sessions with usable per-note pitch data".
+    setPracticeSession(aSession())
+    recordSessionItemResult(aScoredItemWithoutNotes(72))
+    endPracticeSession()
+
+    expect(getSessionHistory()).toHaveLength(1)
+    await renderCardFromHistory()
+
+    expect(tile('Runs')).toHaveTextContent('1')
+    expect(tile('Best score')).toHaveTextContent('72%')
+    // The chart still honestly has nothing to draw. That is the distinction
+    // the count is no longer allowed to inherit.
+    expect(
+      screen.getByText('One more session and your score trend appears here.'),
+    ).toBeInTheDocument()
+  })
+
+  it('draws the trend from the second banked session with note detail on', async () => {
+    setPracticeSession(aSession())
+    recordSessionItemResult(aScoredItem(60))
+    endPracticeSession()
+    setPracticeSession(aSession())
+    recordSessionItemResult(aScoredItem(80))
+    endPracticeSession()
+
+    await renderCardFromHistory()
+
+    expect(tile('Runs')).toHaveTextContent('2')
+    expect(
+      screen.queryByText('One more session and your score trend appears here.'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('says these runs are this device’s, since nobody is signed in', async () => {
+    setPracticeSession(aSession())
+    recordSessionItemResult(aScoredItem(50))
+    endPracticeSession()
+
+    await renderCardFromHistory()
+
+    expect(screen.getByText(/on this device only/i)).toBeInTheDocument()
   })
 })
