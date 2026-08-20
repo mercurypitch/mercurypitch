@@ -167,6 +167,11 @@ beforeEach(() => {
     ALLOW_TEST_ACCOUNT_PROVISIONING: '1',
     DB: new SqliteD1Database(sqlite) as unknown as D1Database,
     JWT_SECRET: 'managed-testing-jwt-secret',
+    // These harnesses register real accounts, and registration now passes
+    // through the Turnstile gate. A local origin with no TURNSTILE_SECRET is
+    // the one configuration the gate lets by, and it is what a developer
+    // running the worker locally has — so it is what these simulate.
+    ALLOWED_ORIGINS: 'http://localhost',
     STRIPE_SECRET_KEY: 'sk_test_not_called',
     TESTING_PROVISION_KEY: PROVISION_KEY,
   }

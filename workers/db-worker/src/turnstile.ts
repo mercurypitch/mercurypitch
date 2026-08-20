@@ -13,11 +13,11 @@ export async function verifyTurnstile(
   const secret = env.TURNSTILE_SECRET
   if (!secret) {
     // Local dev convenience: no secret needed to exercise the auth flow.
-    // Also bypassed in unit tests (where env is a partial mock).
-    if (
-      env.ALLOWED_ORIGINS?.includes('localhost') ||
-      (typeof process !== 'undefined' && !!process.env.VITEST)
-    ) {
+    // The check is deliberately on ALLOWED_ORIGINS and nothing else. An
+    // earlier version also sniffed `process.env.VITEST`, which does not
+    // typecheck in a Worker (no node types) and put test-detection into
+    // shipped code. Tests set ALLOWED_ORIGINS like a local dev would.
+    if (env.ALLOWED_ORIGINS?.includes('localhost')) {
       return true
     }
     // Deployed without a secret → fail closed and make it visible in observability.

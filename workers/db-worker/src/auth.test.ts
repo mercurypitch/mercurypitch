@@ -512,6 +512,9 @@ function makeEnv(db: AuthDatabase, perks?: PerksDatabase): Env {
     DB: db as unknown as D1Database,
     JWT_SECRET: 'test-jwt-secret',
     GOOGLE_CLIENT_ID: 'test-google-client',
+    // Turnstile is disabled for a local origin and no configured secret,
+    // which is what these tests are: the CAPTCHA has its own tests.
+    ALLOWED_ORIGINS: 'http://localhost:5173',
     ...(perks === undefined
       ? {}
       : { PERKS_DB: perks as unknown as D1Database }),
@@ -544,6 +547,26 @@ async function postAuth(
   if (response == null) throw new Error('Auth route was not handled')
   expect(response.status).toBe(200)
   return (await response.json()) as Record<string, unknown>
+}
+
+/** Drive any auth route directly, without asserting a 200. */
+async function callAuth(
+  route: string,
+  body: Record<string, unknown>,
+  env: Env,
+): Promise<Response> {
+  const response = await handleAuth(
+    new Request(`https://api.test/api/auth/${route}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+    env,
+    `/api/auth/${route}`,
+    respond,
+  )
+  if (response == null) throw new Error('Auth route was not handled')
+  return response
 }
 
 async function postAnonymous(
@@ -2319,5 +2342,93 @@ describe('device links and account erasure', () => {
         sql.includes('DELETE FROM "deviceLinkCodes"'),
       ),
     ).toBe(true)
+  })
+})
+
+describe('the Turnstile gate on the public auth routes', () => {
+  /** A worker configured to enforce the CAPTCHA, on a deployed origin. */
+  function guardedEnv(db: AuthDatabase): Env {
+    return {
+      ...makeEnv(db),
+      TURNSTILE_SECRET: 'test-secret',
+      ALLOWED_ORIGINS: 'https://mercurypitch.com',
+    }
+  }
+
+  function cloudflareSays(success: boolean): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ success }))),
+    )
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  for (const route of ['register', 'login', 'forgot-password'] as const) {
+    it(`turns away ${route} when the CAPTCHA does not check out`, async () => {
+      cloudflareSays(false)
+      const response = await callAuth(
+        route,
+        {
+          email: 'someone@example.com',
+          password: 'Sup3rSecret!x',
+          displayName: 'Someone',
+          cfTurnstileToken: 'a-token',
+        },
+        guardedEnv(new AuthDatabase()),
+      )
+
+      expect(response.status).toBe(400)
+      expect((await response.json()) as { error: string }).toEqual({
+        error: 'CAPTCHA verification failed. Please try again.',
+      })
+    })
+
+    it(`turns away ${route} when no token is sent at all`, async () => {
+      cloudflareSays(true)
+      const response = await callAuth(
+        route,
+        {
+          email: 'someone@example.com',
+          password: 'Sup3rSecret!x',
+          displayName: 'Someone',
+        },
+        guardedEnv(new AuthDatabase()),
+      )
+      expect(response.status).toBe(400)
+    })
+  }
+
+  it('leaves the anonymous route open', async () => {
+    // A deliberate decision, not an oversight. An anonymous identity is
+    // minted on somebody's very first write — putting a CAPTCHA in front of
+    // it would tax every first-time visitor to slow down a bot that has not
+    // yet cost us anything. The rate limiter covers this route instead.
+    cloudflareSays(false)
+    const response = await callAuth(
+      'anonymous',
+      { deviceId: '3f1b9c22-7a44-4f0e-9a1e-2c6d8b5e4a10' },
+      guardedEnv(new AuthDatabase()),
+    )
+    expect(response.status).toBe(200)
+  })
+
+  it('lets a good token through to the route itself', async () => {
+    cloudflareSays(true)
+    const response = await callAuth(
+      'register',
+      {
+        email: 'checked@example.com',
+        password: 'Sup3rSecret!x',
+        displayName: 'Checked',
+        cfTurnstileToken: 'a-good-token',
+      },
+      guardedEnv(new AuthDatabase()),
+    )
+    // The gate is transparent when it passes: whatever the route answers is
+    // what the caller sees, and it is certainly not the CAPTCHA refusal.
+    expect(response.status).not.toBe(400)
   })
 })

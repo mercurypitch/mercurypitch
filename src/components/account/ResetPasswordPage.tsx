@@ -13,6 +13,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, createUniqueId, Match, onMount, Show, Switch, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
+import Turnstile, { resetTurnstile, turnstileEnabled, } from '@/components/shared/Turnstile'
 import { checkResetToken, requestPasswordReset, resetPassword, } from '@/db/services/auth-service'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -56,6 +57,7 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
   const [sentTo, setSentTo] = createSignal('')
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
+  const [turnstileToken, setTurnstileToken] = createSignal('')
 
   useFocusTrap(() => cardRef, {
     isOpen: () => true,
@@ -121,11 +123,15 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
       setError('')
       setBusy(true)
       try {
-        await requestPasswordReset(address)
+        await requestPasswordReset(address, turnstileToken())
         setSentTo(address)
         setView('request-sent')
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
+        // Single-use token: a failed request has spent it, so the widget has
+        // to re-arm or the next press replays a token the server rejected.
+        setTurnstileToken('')
+        resetTurnstile()
       } finally {
         setBusy(false)
       }
@@ -331,10 +337,13 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
                   {error()}
                 </p>
               </Show>
+              <Turnstile onToken={setTurnstileToken} />
               <button
                 class={styles.submit}
                 type="submit"
-                disabled={busy()}
+                disabled={
+                  busy() || (turnstileEnabled && turnstileToken() === '')
+                }
                 data-testid="reset-request-submit"
               >
                 {busy() ? 'Sending…' : 'Send reset link'}
