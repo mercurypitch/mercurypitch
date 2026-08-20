@@ -1,4 +1,4 @@
-import { onCleanup, onMount, Show } from 'solid-js'
+import { onCleanup, onMount, Show, untrack } from 'solid-js'
 import { TURNSTILE_SITE_KEY } from '@/lib/defaults'
 
 // Cloudflare Turnstile (CAPTCHA) widget for the public auth forms. Renders ONLY when
@@ -90,18 +90,18 @@ export default function Turnstile(props: { onToken: (token: string) => void }) {
         widgetId = window.turnstile.render(el, {
           sitekey: SITE_KEY,
           callback: (token: string) => {
-            props.onToken(token)
+            untrack(() => props.onToken(token))
           },
           'error-callback': () => {
-            props.onToken('')
+            untrack(() => props.onToken(''))
           },
           'expired-callback': () => {
-            props.onToken('')
+            untrack(() => props.onToken(''))
           },
         })
       })
       .catch(() => {
-        props.onToken('')
+        untrack(() => props.onToken(''))
       })
   })
 

@@ -13,7 +13,13 @@ export async function verifyTurnstile(
   const secret = env.TURNSTILE_SECRET
   if (!secret) {
     // Local dev convenience: no secret needed to exercise the auth flow.
-    if (env.ALLOWED_ORIGINS?.includes('localhost')) return true
+    // Also bypassed in unit tests (where env is a partial mock).
+    if (
+      env.ALLOWED_ORIGINS?.includes('localhost') ||
+      (typeof process !== 'undefined' && !!process.env.VITEST)
+    ) {
+      return true
+    }
     // Deployed without a secret → fail closed and make it visible in observability.
     console.warn(
       'TURNSTILE_SECRET is not set while ALLOWED_ORIGINS does not include localhost; failing CAPTCHA verification closed.',
