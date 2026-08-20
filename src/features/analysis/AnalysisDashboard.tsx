@@ -15,6 +15,8 @@ import { createEffect, createMemo, createResource, createSignal, onCleanup, Show
 import { Flask } from '@/components/icons'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { getStreakState } from '@/db/services/streak-service'
+import { loadProgressRuns, NO_PROGRESS_RUNS, } from '@/features/progress/progress-runs'
+import { WhatCountsModal } from '@/features/progress/WhatCountsModal'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { buildMobileAnalysisSummary } from '@/lib/mobile-analysis-summary'
 import type { TakeAnalysisResult } from '@/lib/take-analysis-client'
@@ -64,6 +66,14 @@ export const AnalysisDashboard: Component = () => {
   })
 
   const [streak] = createResource(getStreakState)
+
+  // Every recorded run, of every kind, from the account when there is one.
+  // `getSessionHistory()` stays the chart's source — it is the only store
+  // with note detail — but it is no longer allowed to be the count.
+  const [runs] = createResource(() =>
+    loadProgressRuns({ localHistory: () => getSessionHistory() }),
+  )
+  const [explaining, setExplaining] = createSignal(false)
 
   /**
    * Cached note analysis for the selected take. The take itself is the
@@ -319,7 +329,17 @@ export const AnalysisDashboard: Component = () => {
       {/* Always present: progress is about practice overall, not the selected
           take, and with no history it honestly reads zero rather than faking
           numbers. It also gives the page a stable anchor for the tour. */}
-      <TrendsCard sessions={getSessionHistory()} streak={streak() ?? null} />
+      <TrendsCard
+        sessions={getSessionHistory()}
+        runs={(runs.latest ?? NO_PROGRESS_RUNS).runs}
+        scope={(runs.latest ?? NO_PROGRESS_RUNS).scope}
+        onExplain={() => setExplaining(true)}
+        streak={streak() ?? null}
+      />
+
+      <Show when={explaining()}>
+        <WhatCountsModal onClose={() => setExplaining(false)} />
+      </Show>
     </div>
   )
 }

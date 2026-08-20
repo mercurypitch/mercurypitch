@@ -17,6 +17,9 @@ import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
 import { alreadyShared, melodyFingerprint, sessionFingerprint, } from '@/features/community/share-identity'
+import { isProgressRun, runFromRecord, runKindOf, } from '@/features/progress/run-kinds'
+import { RunKindChip } from '@/features/progress/RunKindPills'
+import { WhatCountsModal } from '@/features/progress/WhatCountsModal'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { fuzzyMatch } from '@/lib/fuzzy-match'
 import { generateId } from '@/lib/id'
@@ -565,21 +568,25 @@ export const CommunityShare: Component = () => {
     () => [authVersion(), sessionRecordVersion()] as const,
     async () => await loadSessionRecords(50),
   )
-  const RUN_KIND: Record<string, string> = {
-    practice: 'session',
-    exercise: 'exercise',
-    challenge: 'challenge',
-    weekly: 'weekly challenge',
-  }
+  // Labels come from the run-kind taxonomy rather than a second map here.
+  // The map this replaced called a practice run a "session" while the
+  // Progress card called a published setlist the same thing.
   const shareableRuns = createMemo(() =>
     (runRecords() ?? []).map((r) => ({
       id: r.id,
       name: r.melodyName || 'Practice session',
       score: Math.round(r.score ?? 0),
-      kind: RUN_KIND[r.source ?? 'practice'] ?? 'session',
+      kind: runKindOf(r.source),
       completedAt: new Date(r.endedAt ?? r.startedAt).getTime(),
     })),
   )
+
+  // The same runs, in the shape every counting surface reads. This list is
+  // the account's, so the profile it feeds says "account" out loud.
+  const profileRuns = createMemo(() =>
+    (runRecords() ?? []).map(runFromRecord).filter(isProgressRun),
+  )
+  const [explainingRuns, setExplainingRuns] = createSignal(false)
 
   const shareSession = (s: SessionResult) => {
     const name = s.sessionName || s.name || 'Practice Session'
@@ -911,6 +918,21 @@ export const CommunityShare: Component = () => {
         </Show>
 
         <Show when={activeTab() === 'sessions'}>
+          {/* Says what this number is before anyone counts it against the
+              run total on their profile. These are setlists somebody can
+              load and sing — publishing one is not a run, and never was. */}
+          <p class={profileStyles.countsNote}>
+            These are setlists you published for other people to sing. They are
+            not runs, so they are counted apart from your practice, exercises
+            and challenges.{' '}
+            <button
+              type="button"
+              class={profileStyles.countsNoteLink}
+              onClick={() => setExplainingRuns(true)}
+            >
+              What counts where?
+            </button>
+          </p>
           <div class="sessions-grid">
             <For each={displaySessions()}>
               {(session) => (
@@ -1049,15 +1071,22 @@ export const CommunityShare: Component = () => {
             displayName={currentProfile().displayName}
             bio={currentProfile().bio}
             sessions={getSessionHistory()}
+            runs={profileRuns()}
+            runScope="account"
+            onExplainRuns={() => setExplainingRuns(true)}
             streak={currentProfile().streak}
             sharedMelodies={displayMelodies().length}
-            sharedSessions={displaySessions().length}
+            sharedSetlists={displaySessions().length}
             twinName={latestTwin()}
             badges={earnedBadges()}
             onExploreVoiceConstellation={openVoiceConstellation}
           />
         </Show>
       </div>
+
+      <Show when={explainingRuns()}>
+        <WhatCountsModal onClose={() => setExplainingRuns(false)} />
+      </Show>
 
       <ConfirmDialog
         open={unpublishing() !== null}
@@ -1179,7 +1208,7 @@ export const CommunityShare: Component = () => {
                       <div class="share-picker-info">
                         <span class="share-picker-name">{s.name}</span>
                         <span class="share-picker-meta">
-                          {s.score}% &middot; {s.kind} &middot;{' '}
+                          <RunKindChip kind={s.kind} /> {s.score}% &middot;{' '}
                           {new Date(s.completedAt).toLocaleDateString()}
                         </span>
                       </div>

@@ -21,16 +21,35 @@ import { badgeArtSrc } from '@/features/challenges/badge-art'
 import type { ProfileSession } from '@/features/community/profile-model'
 import { accuracySeries, profileStats, scoreSeries, sparklinePoints, trend, } from '@/features/community/profile-model'
 import { legendTierSrc } from '@/features/mirror/LegendCaricature'
+import type { ProgressRun } from '@/features/progress/run-kinds'
+import { bestScore, recentAverageScore } from '@/features/progress/run-kinds'
+import { RunKindPills } from '@/features/progress/RunKindPills'
 import styles from './ProfileView.module.css'
 
 export interface ProfileViewProps {
   displayName: string
   bio: string
-  /** Practice sessions, oldest first. */
+  /**
+   * Practice sessions, oldest first. Only ever the device's local practice
+   * history, so it draws the chart — which needs the pitch accuracy only
+   * that store keeps — and nothing else.
+   */
   sessions: readonly ProfileSession[]
+  /**
+   * Every recorded run, of every kind. The headline figures read from this
+   * rather than from `sessions`: counting the chart's input is what showed a
+   * singer with thirty-two exercises and challenges "0 sessions".
+   */
+  runs: readonly ProgressRun[]
+  /** Whether `runs` came from the account or from this device alone. */
+  runScope?: 'account' | 'device'
+  /** Opens the "what counts where" guide. Omitted where there is nowhere
+   *  to open it, e.g. a public profile with no modal host. */
+  onExplainRuns?: () => void
   streak: number
   sharedMelodies: number
-  sharedSessions: number
+  /** Published setlists — things made for others to sing, never runs. */
+  sharedSetlists: number
   /** The legend this singer's range overlaps with, once measured. The
    *  portrait is resolved from it here rather than passed in, so art
    *  lookup stays in one place. */
@@ -64,6 +83,7 @@ const Figure: Component<{ value: string; label: string }> = (props) => (
 
 export const ProfileView: Component<ProfileViewProps> = (props) => {
   const stats = () => profileStats(props.sessions)
+  const hasRuns = () => props.runs.length > 0
   const scores = () => scoreSeries(props.sessions)
   const accuracy = () => accuracySeries(props.sessions)
   const movement = () => trend(scores())
@@ -90,21 +110,25 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
    * screen, and `full` (928x1152) would land 116 and 232 exactly but costs
    * twelve times the bytes for an avatar in a list row.
    */
-  const portrait = (): string | undefined => {
+  /**
+   * The twin and its portrait together, or nothing.
+   *
+   * Returned as a pair rather than a bare src so the `alt` text does not
+   * need a fallback for a name that cannot be missing by the time there is
+   * a picture to label.
+   */
+  const portrait = (): { src: string; twin: string } | undefined => {
     const twin = props.twinName
     if (twin === undefined || twin === '') return undefined
     const src = legendTierSrc(twin, 'mid')
-    return src === undefined || src === '' ? undefined : src
+    return src === undefined || src === '' ? undefined : { src, twin }
   }
 
-  const since = () => {
-    const at = stats()?.firstAt
-    if (at === undefined) return ''
-    return new Date(at).toLocaleDateString(undefined, {
+  const monthAndYear = (at: number): string =>
+    new Date(at).toLocaleDateString(undefined, {
       month: 'long',
       year: 'numeric',
     })
-  }
 
   return (
     <div class={styles.profile}>
@@ -135,10 +159,10 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
                was the odd one out. See the image-sharpness playbook. */
             <img
               class={styles.avatar}
-              src={art()}
+              src={art().src}
               width="90"
               height="112"
-              alt={`${props.twinName ?? ''} — your voice twin`}
+              alt={`${art().twin} — your voice twin`}
               decoding="async"
             />
           )}
@@ -202,7 +226,7 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
       </Show>
 
       <Show
-        when={stats()}
+        when={hasRuns()}
         fallback={
           <p class={styles.nothingYet}>
             Nothing to show yet — finish a practice session and your range, your
@@ -210,81 +234,105 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
           </p>
         }
       >
-        {(s) => (
-          <>
-            {/* Said once, as a line. Four equal cards gave a best-ever the
+        <>
+          {/* Said once, as a line. Four equal cards gave a best-ever the
                 same weight as a session count, which is not how anyone
                 reads their own progress. */}
-            <div class={styles.figures}>
-              <Figure value={String(s().sessions)} label="sessions" />
-              <Figure value={`${s().best}%`} label="best" />
-              <Figure value={`${s().recentAverage}%`} label="recent average" />
-              <Show when={props.streak > 0}>
-                <Figure
-                  value={String(props.streak)}
-                  label={props.streak === 1 ? 'day streak' : 'days running'}
-                />
-              </Show>
-            </div>
+          <div class={styles.figures}>
+            <Figure
+              value={String(props.runs.length)}
+              label={props.runs.length === 1 ? 'run' : 'runs'}
+            />
+            <Figure value={`${bestScore(props.runs)}%`} label="best" />
+            <Figure
+              value={`${recentAverageScore(props.runs)}%`}
+              label="recent average"
+            />
+            <Show when={props.streak > 0}>
+              <Figure
+                value={String(props.streak)}
+                label={props.streak === 1 ? 'day streak' : 'days running'}
+              />
+            </Show>
+          </div>
 
-            <Show when={scores().length >= 2}>
-              <section class={styles.trendSection}>
-                <div class={styles.trendHead}>
-                  <h3 class={styles.sectionTitle}>How it has been going</h3>
-                  <Show when={movement() !== null}>
-                    {(_) => {
-                      const delta = movement()!
-                      return (
-                        <span
-                          class={styles.movement}
-                          classList={{
-                            [styles.movementUp]: delta > 0,
-                            [styles.movementDown]: delta < 0,
-                          }}
-                        >
-                          {delta > 0 ? '+' : ''}
-                          {delta} points
-                        </span>
-                      )
-                    }}
-                  </Show>
-                </div>
-                {/* One shape, not two identical bar strips: the line is the
+          {/* The breakdown behind the headline. Without it the figure is
+                one number for four different activities, and a singer who
+                only does challenges cannot tell whether theirs were counted. */}
+          <RunKindPills
+            runs={props.runs}
+            {...(props.runScope === undefined ? {} : { scope: props.runScope })}
+            {...(props.onExplainRuns === undefined
+              ? {}
+              : { onExplain: props.onExplainRuns })}
+          />
+
+          <Show when={scores().length >= 2}>
+            <section class={styles.trendSection}>
+              <div class={styles.trendHead}>
+                <h3 class={styles.sectionTitle}>How it has been going</h3>
+                <Show when={movement() !== null}>
+                  {(_) => {
+                    const delta = movement()!
+                    return (
+                      <span
+                        class={styles.movement}
+                        classList={{
+                          [styles.movementUp]: delta > 0,
+                          [styles.movementDown]: delta < 0,
+                        }}
+                      >
+                        {delta > 0 ? '+' : ''}
+                        {delta} points
+                      </span>
+                    )
+                  }}
+                </Show>
+              </div>
+              {/* One shape, not two identical bar strips: the line is the
                     answer to "am I improving", and accuracy rides under it
                     for context rather than repeating the same chart. */}
-                <svg
-                  class={styles.chart}
-                  viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-                  preserveAspectRatio="none"
-                  role="img"
-                  aria-label={`Scores across your last ${scores().length} sessions`}
-                >
-                  <polyline
-                    class={styles.chartAccuracy}
-                    points={sparklinePoints(accuracy(), CHART_W, CHART_H)}
-                  />
-                  <polyline
-                    class={styles.chartScore}
-                    points={sparklinePoints(scores(), CHART_W, CHART_H)}
-                  />
-                </svg>
-                <p class={styles.chartLegend}>
-                  Score, with pitch accuracy behind it. Since {since()}.
-                </p>
-              </section>
-            </Show>
-          </>
-        )}
+              <svg
+                class={styles.chart}
+                viewBox={`0 0 ${CHART_W} ${CHART_H}`}
+                preserveAspectRatio="none"
+                role="img"
+                aria-label={`Scores across your last ${scores().length} sessions`}
+              >
+                <polyline
+                  class={styles.chartAccuracy}
+                  points={sparklinePoints(accuracy(), CHART_W, CHART_H)}
+                />
+                <polyline
+                  class={styles.chartScore}
+                  points={sparklinePoints(scores(), CHART_W, CHART_H)}
+                />
+              </svg>
+              <Show when={stats()}>
+                {(s) => (
+                  <p class={styles.chartLegend}>
+                    Score, with pitch accuracy behind it. Since{' '}
+                    {monthAndYear(s().firstAt)}.
+                  </p>
+                )}
+              </Show>
+            </section>
+          </Show>
+        </>
       </Show>
 
-      <Show when={props.sharedMelodies + props.sharedSessions > 0}>
+      {/* "Published", not "Shared", and setlists rather than sessions.
+          Nobody sang anything by publishing it, so these are counted apart
+          from runs — and the old wording put "4 sessions" directly under a
+          run count that said something else. */}
+      <Show when={props.sharedMelodies + props.sharedSetlists > 0}>
         <section class={styles.sharedSection}>
-          <h3 class={styles.sectionTitle}>Shared</h3>
+          <h3 class={styles.sectionTitle}>Published</h3>
           <ul class={styles.sharedList}>
             <For
               each={[
                 { n: props.sharedMelodies, one: 'melody', many: 'melodies' },
-                { n: props.sharedSessions, one: 'session', many: 'sessions' },
+                { n: props.sharedSetlists, one: 'setlist', many: 'setlists' },
               ].filter((row) => row.n > 0)}
             >
               {(row) => (

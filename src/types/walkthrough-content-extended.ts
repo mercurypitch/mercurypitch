@@ -3,6 +3,7 @@
 // Spread into WALKTHROUGHS in ./walkthrough.ts. Same shape as the originals.
 // ============================================================
 
+import { whatCountsMarkdown } from '@/features/progress/what-counts-copy'
 import type { WalkthroughContent, WalkthroughTab } from './walkthrough'
 
 export const EXTENDED_WALKTHROUGHS: Partial<
@@ -280,6 +281,38 @@ Switch between **session history** (analyse past practice) and **live mic** mode
           description:
             'Use Pitch Detection / Algorithms to see how pitch is tracked.',
           action: 'Open a pitch tool',
+        },
+      ],
+      thumbnail: 'trending',
+    },
+    {
+      id: 'what-counts-where',
+      tab: 'analysis',
+      title: 'What Counts Where',
+      description:
+        'Practice, exercises, challenges and weeklies — and where each is counted',
+      // Body comes from the same sentences the in-app "What counts here?"
+      // guide shows, so the two cannot disagree. Adding a run kind updates
+      // this chapter without anybody remembering to.
+      content: whatCountsMarkdown(),
+      steps: [
+        {
+          title: 'Open your Progress card',
+          description:
+            'Analysis shows every run you have done, split by kind under the headline.',
+          action: 'Open Analysis',
+        },
+        {
+          title: 'Read the pills',
+          description:
+            'The same four colours mean the same four things on your profile and in the share picker.',
+          action: 'Check the colours',
+        },
+        {
+          title: 'Sign in to join your devices up',
+          description:
+            'Signed out, runs are counted on that device and that site address alone.',
+          action: 'Sign in',
         },
       ],
       thumbnail: 'trending',
