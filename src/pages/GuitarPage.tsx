@@ -27,7 +27,7 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
 import { TAB_GUITAR } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
-import { defaultScoreTrack } from '@/lib/midi-song'
+import { defaultScoreTrack, isPitchedMidiSongTrack } from '@/lib/midi-song'
 import { NOTE_NAMES } from '@/lib/note-utils'
 import { midiToFreq } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
@@ -299,12 +299,21 @@ export function GuitarPage(props: GuitarPageProps) {
       const { song, name } = await parseGuitarProFile(file)
       const score = defaultScoreTrack(song)
       const backing = song.tracks
-        .filter((t) => t.id !== score.id)
+        .filter((t) => t.id !== score?.id)
         .map((t) => t.id)
-      const saved = saveMidiSong(name, song, score.id, backing)
+      const saved = saveMidiSong(name, song, score?.id ?? null, backing)
       picker.loadSavedSong(saved)
-      const count = song.tracks.length
-      setGpStatus(`Loaded ${name} (${count} track${count === 1 ? '' : 's'})`)
+      const pitchedCount = song.tracks.filter(isPitchedMidiSongTrack).length
+      const drumCount = song.tracks.length - pitchedCount
+      if (score === null) {
+        setGpStatus(
+          `Imported ${name} — ${drumCount} drum ${drumCount === 1 ? 'part' : 'parts'} preserved; this pitch view cannot play them`,
+        )
+      } else {
+        setGpStatus(
+          `Loaded ${name} (${pitchedCount} pitched ${pitchedCount === 1 ? 'part' : 'parts'}${drumCount === 0 ? '' : `; ${drumCount} drum ${drumCount === 1 ? 'part' : 'parts'} preserved`})`,
+        )
+      }
     } catch (err) {
       setGpStatus(err instanceof Error ? err.message : 'Failed to load tab')
     }

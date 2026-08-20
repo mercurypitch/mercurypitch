@@ -10,7 +10,7 @@ import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
 
-/** A single note within a parsed MIDI track. */
+/** A single pitched note within a parsed MIDI track. */
 export interface MidiSongNote {
   /** Stable score-local id when the source exposes note relationships. */
   id?: string
@@ -34,8 +34,37 @@ export interface MidiSongNote {
   notation?: GuitarNoteNotation
 }
 
-/** One playable track (drum channels are filtered out). */
-export interface MidiSongTrack {
+/** Source evidence retained for a percussion articulation. */
+export interface MidiSongPercussionSource {
+  format: 'midi' | 'guitar-pro'
+  /** Original MIDI channel when the source was an SMF (zero based). */
+  channel?: number
+  /** Original MIDI key before a documented fold onto the GM map. */
+  midiKey?: number
+  /** Direct legacy GP articulation id, or the modern articulation's own id. */
+  articulationId?: number
+  /** Modern GP index into track.percussionArticulations; zero is meaningful. */
+  articulationIndex?: number
+  label?: string
+  staffLine?: number
+  noteHead?: number
+  technique?: number
+}
+
+/** A one-shot drum articulation. Duration is notation, never sound length. */
+export interface MidiSongPercussionHit {
+  id?: string
+  /** Bounded General MIDI percussion key (35–81), not a pitch. */
+  gmKey: number
+  startBeat: number
+  /** Authored attack intensity, 1–127. */
+  velocity: number
+  /** Written duration for a future staff renderer; playback stays one-shot. */
+  writtenDuration?: number
+  source?: MidiSongPercussionSource
+}
+
+interface MidiSongTrackBase {
   /** Stable id within the song (track index + channel) */
   id: string
   /** Track name from meta events, or a GM instrument fallback */
@@ -43,6 +72,11 @@ export interface MidiSongTrack {
   /** General MIDI instrument name from the first program change */
   instrumentName: string
   noteCount: number
+}
+
+/** A scoreable pitched track in the canonical in-memory song model. */
+export interface MidiSongPitchedTrack extends MidiSongTrackBase {
+  kind: 'pitched'
   notes: MidiSongNote[]
   /** Authored open pitches before capo, highest string first. */
   sourceTuning?: readonly number[]
@@ -50,6 +84,33 @@ export interface MidiSongTrack {
   sourceTuningName?: string
   /** Authored capo fret. Zero is meaningful and may be present. */
   sourceCapo?: number
+}
+
+/** A percussion track whose events can never enter a pitch renderer. */
+export interface MidiSongPercussionTrack extends MidiSongTrackBase {
+  kind: 'percussion'
+  /** Compatibility seam for pitch-only readers; always empty by invariant. */
+  notes: never[]
+  sourceTuning?: never
+  sourceTuningName?: never
+  sourceCapo?: never
+  percussionHits: MidiSongPercussionHit[]
+  /** Source articulations dropped because no honest GM mapping existed. */
+  droppedHitCount: number
+}
+
+export type MidiSongTrack = MidiSongPitchedTrack | MidiSongPercussionTrack
+
+/** Pre-percussion saved rows had no track discriminator. Normalize at ingress. */
+export interface LegacyMidiSongPitchedTrack extends Omit<
+  MidiSongPitchedTrack,
+  'kind'
+> {
+  kind?: 'pitched'
+}
+
+export interface MidiSongNormalizationInput extends Omit<MidiSong, 'tracks'> {
+  tracks: Array<MidiSongTrack | LegacyMidiSongPitchedTrack>
 }
 
 /** One set-tempo event, placed on the beat it takes effect. */
@@ -86,6 +147,56 @@ export interface MidiSong {
    */
   timeSignatures?: MidiTimeSignature[]
   tracks: MidiSongTrack[]
+}
+
+export function isPercussionMidiSongTrack(
+  track: MidiSongTrack,
+): track is MidiSongPercussionTrack {
+  return track.kind === 'percussion'
+}
+
+export function isPitchedMidiSongTrack(
+  track: MidiSongTrack,
+): track is MidiSongPitchedTrack {
+  return track.kind === 'pitched'
+}
+
+/**
+ * Upgrade trusted in-memory or persisted legacy DTOs at their boundary.
+ * Missing `kind` means pitched because old MercuryPitch versions never saved
+ * percussion. A malformed percussion row is dropped, never reinterpreted as
+ * pitch data.
+ */
+export function normalizeMidiSong(song: MidiSongNormalizationInput): MidiSong {
+  return {
+    ...song,
+    tracks: song.tracks.map((track) => {
+      if (track.kind !== 'percussion') {
+        return { ...track, kind: 'pitched' as const }
+      }
+      const hits = (track.percussionHits ?? []).filter(
+        (hit) =>
+          Number.isInteger(hit.gmKey) &&
+          hit.gmKey >= 35 &&
+          hit.gmKey <= 81 &&
+          Number.isFinite(hit.startBeat) &&
+          hit.startBeat >= 0 &&
+          Number.isInteger(hit.velocity) &&
+          hit.velocity >= 1 &&
+          hit.velocity <= 127,
+      )
+      return {
+        ...track,
+        kind: 'percussion' as const,
+        notes: [],
+        percussionHits: hits,
+        noteCount: hits.length,
+        droppedHitCount:
+          Math.max(0, track.droppedHitCount ?? 0) +
+          ((track.percussionHits?.length ?? 0) - hits.length),
+      }
+    }),
+  }
 }
 
 /**
@@ -321,11 +432,12 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
   return parseMidiSongViaProject(data, gmInstrumentName)
 }
 
-/** Pick a sensible default track to score against: most notes wins. */
-export function defaultScoreTrack(song: MidiSong): MidiSongTrack {
-  let best = song.tracks[0]
-  for (const t of song.tracks) {
-    if (t.noteCount > best.noteCount) best = t
+/** Pick the densest pitched track; percussion is never a neck/keyboard score. */
+export function defaultScoreTrack(song: MidiSong): MidiSongPitchedTrack | null {
+  let best: MidiSongPitchedTrack | null = null
+  for (const track of song.tracks) {
+    if (!isPitchedMidiSongTrack(track) || track.notes.length === 0) continue
+    if (best === null || track.noteCount > best.noteCount) best = track
   }
   return best
 }

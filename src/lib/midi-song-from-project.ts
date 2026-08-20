@@ -17,10 +17,8 @@
 import { parseMidiProject, PianoProjectParseError, } from '@/features/piano-project/parse-midi-project'
 import type { PianoProject, PianoProjectTrack, } from '@/features/piano-project/piano-project'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
-import type { MidiSong, MidiSongNote, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
-
-/** MIDI's percussion channel, which sounds wrong played as pitches. */
-const DRUM_CHANNEL = 9
+import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
+import { generalMidiPercussionName, normalizeGeneralMidiPercussionKey, } from '@/lib/percussion'
 
 /** SMF's own default until a set-tempo event says otherwise. */
 const DEFAULT_BPM = 120
@@ -82,6 +80,60 @@ function trackNotes(
   return notes.sort((left, right) => left.startBeat - right.startBeat)
 }
 
+/** Keep channel-10 note-ons as one-shots; a note-off is never required. */
+function trackPercussionHits(
+  track: PianoProjectTrack,
+  ticksPerQuarter: number,
+): { hits: MidiSongPercussionHit[]; droppedHitCount: number } {
+  const hits: MidiSongPercussionHit[] = []
+  let droppedHitCount = 0
+
+  for (const event of track.events) {
+    if (event.type !== 'note-on' || event.velocity <= 0) continue
+    const gmKey = normalizeGeneralMidiPercussionKey(event.note)
+    if (gmKey === null) {
+      droppedHitCount += 1
+      continue
+    }
+    hits.push({
+      id: `midi-t${track.sourceTrackIndex}-e${event.order}`,
+      gmKey,
+      startBeat: event.tick / ticksPerQuarter,
+      velocity: event.velocity,
+      source: {
+        format: 'midi',
+        channel: event.channel,
+        midiKey: event.note,
+        label: generalMidiPercussionName(gmKey),
+      },
+    })
+  }
+
+  return {
+    hits: hits.sort((left, right) => left.startBeat - right.startBeat),
+    droppedHitCount,
+  }
+}
+
+function percussionTrack(
+  track: PianoProjectTrack,
+  ticksPerQuarter: number,
+): MidiSongPercussionTrack | null {
+  const { hits, droppedHitCount } = trackPercussionHits(track, ticksPerQuarter)
+  if (hits.length === 0 && droppedHitCount === 0) return null
+  const name = track.name?.trim() ?? ''
+  return {
+    id: `t${track.sourceTrackIndex}c${track.channel}`,
+    kind: 'percussion',
+    name: name === '' ? 'Drums' : name,
+    instrumentName: track.instrumentName ?? 'General MIDI Drum Kit',
+    noteCount: hits.length,
+    notes: [],
+    percussionHits: hits,
+    droppedHitCount,
+  }
+}
+
 /** The first program change on a track, which is what names its instrument. */
 function trackProgram(track: PianoProjectTrack): number | undefined {
   for (const event of track.events) {
@@ -136,7 +188,11 @@ export function midiSongFromProject(
   const tracks: MidiSongTrack[] = []
 
   for (const track of project.tracks) {
-    if (track.channel === DRUM_CHANNEL) continue
+    if (track.isPercussion) {
+      const mapped = percussionTrack(track, ticksPerQuarter)
+      if (mapped !== null) tracks.push(mapped)
+      continue
+    }
     const notes = trackNotes(track, ticksPerQuarter)
     if (notes.length === 0) continue
 
@@ -152,6 +208,7 @@ export function midiSongFromProject(
 
     tracks.push({
       id: `t${track.sourceTrackIndex}c${track.channel}`,
+      kind: 'pitched',
       name,
       instrumentName,
       noteCount: notes.length,

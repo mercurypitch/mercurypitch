@@ -7,7 +7,7 @@ import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/g
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
-import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
+import { backingMelody, backingParts, backingPercussion, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
 import type { RecordingMarks } from './score-on-recording'
@@ -276,7 +276,11 @@ export function useGuitarNightReferenceController(
     const current = reference()
     const held = soloBackingTrack()
     if (current === null || held.songId !== current.songId) return null
-    return backingPartList().some((part) => part.trackId === held.trackId)
+    const part = backingPartList().find(
+      (candidate) => candidate.trackId === held.trackId,
+    )
+    return part !== undefined &&
+      (part.kind !== 'percussion' || part.supportedHitCount > 0)
       ? held.trackId
       : null
   })
@@ -286,8 +290,12 @@ export function useGuitarNightReferenceController(
     if (soloed !== null) return [soloed]
     const muted = new Set(mutedBacking())
     return backingPartList()
+      .filter(
+        (part) =>
+          !muted.has(part.trackId) &&
+          (part.kind !== 'percussion' || part.supportedHitCount > 0),
+      )
       .map((part) => part.trackId)
-      .filter((trackId) => !muted.has(trackId))
   })
 
   const backingMelodyNotes = createMemo(() => {
@@ -308,6 +316,23 @@ export function useGuitarNightReferenceController(
     return backingMelody(source, { scoredTrackId: current.trackId })
   })
 
+  /** Audible drum hits for snapshots that schedule only the selected mix. */
+  const backingPercussionHits = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingPercussion(source, {
+      scoredTrackId: current.trackId,
+      audibleTrackIds: audibleBackingTrackIds(),
+    })
+  })
+  const allBackingPercussionHits = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingPercussion(source, { scoredTrackId: current.trackId })
+  })
+
   /** Whether the scored part sounds when the player has not said either way. */
   const scoredPartDefaultsAudible = createMemo(() =>
     scoredPartSoundsByDefault(sheetSource(), reference()?.trackId),
@@ -316,6 +341,15 @@ export function useGuitarNightReferenceController(
   const toggleBackingTrack = (trackId: string): void => {
     const current = reference()
     if (current === null || trackId === current.trackId) return
+    const part = backingPartList().find(
+      (candidate) => candidate.trackId === trackId,
+    )
+    if (
+      part === undefined ||
+      (part.kind === 'percussion' && part.supportedHitCount === 0)
+    ) {
+      return
+    }
     const muted = new Set(mutedBacking())
     if (muted.has(trackId)) {
       muted.delete(trackId)
@@ -330,10 +364,14 @@ export function useGuitarNightReferenceController(
 
   const toggleSoloBackingTrack = (trackId: string): void => {
     const current = reference()
+    const part = backingPartList().find(
+      (candidate) => candidate.trackId === trackId,
+    )
     if (
       current === null ||
       trackId === current.trackId ||
-      !backingPartList().some((part) => part.trackId === trackId)
+      part === undefined ||
+      (part.kind === 'percussion' && part.supportedHitCount === 0)
     ) {
       return
     }
@@ -519,6 +557,8 @@ export function useGuitarNightReferenceController(
   const selectTrack = async (trackId: string): Promise<void> => {
     const current = reference()
     if (current === null || current.trackId === trackId) return
+    const selected = current.tracks.find((track) => track.id === trackId)
+    if (selected === undefined || selected.kind === 'percussion') return
     // Solo is a live audition of a backing lane, not a hidden preference that
     // may reappear later. Once that lane becomes the scored part it leaves the
     // backing bus, so clear the audition rather than reviving it silently when
@@ -608,6 +648,10 @@ export function useGuitarNightReferenceController(
       return
     }
     const part = trackId ?? source.scoreTrackId
+    if (part === null) {
+      setAlignStatus('Choose a pitched part before aligning this score.')
+      return
+    }
     const result = alignScoreToRecording(source, part, measured.transcription)
     if (!result.ok) {
       setAlignStatus(ALIGN_FAILURE_COPY[result.code])
@@ -666,6 +710,10 @@ export function useGuitarNightReferenceController(
       return
     }
     const part = trackId ?? source.scoreTrackId
+    if (part === null) {
+      setAlignStatus('Choose a pitched part before placing this score.')
+      return
+    }
     // The track is looked up before the span rather than after, so the name a
     // reader is shown is the part's own name and never its id in disguise.
     const track = source.tracks.find((candidate) => candidate.id === part)
@@ -1038,6 +1086,8 @@ export function useGuitarNightReferenceController(
     backingMelodyNotes,
     rehearsalBackingMelodyNotes,
     soloedBackingTrackId,
+    backingPercussionHits,
+    allBackingPercussionHits,
     scoredPartDefaultsAudible,
     toggleBackingTrack,
     toggleSoloBackingTrack,

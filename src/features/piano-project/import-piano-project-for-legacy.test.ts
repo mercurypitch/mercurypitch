@@ -93,6 +93,7 @@ describe('legacy Piano project import bridge', () => {
       tracks: [
         {
           id: 'track-0-channel-0',
+          kind: 'pitched',
           name: 'Piano',
           instrumentName: 'Acoustic Grand Piano',
           noteCount: 1,

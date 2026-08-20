@@ -11,6 +11,7 @@ import { LoopSeekRail } from '@/components/shared/LoopSeekRail'
 import { ChevronDownIcon, EyeClosedIcon, EyeOpenIcon, SpeakerMutedIcon, SpeakerOpenIcon, } from '@/components/shared/midi-picker-icons'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
+import { isPercussionMidiSongTrack } from '@/lib/midi-song'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
@@ -183,6 +184,7 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
               <For each={song().tracks}>
                 {(t) => {
                   const isScored = () => song().scoreTrackId === t.id
+                  const isPercussion = () => isPercussionMidiSongTrack(t)
                   const isMuted = () => props.mutedTrackIds().has(t.id)
                   const isVisible = () => props.visibleTrackIds().has(t.id)
                   return (
@@ -197,32 +199,37 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
                       <button
                         class={styles.trackName}
                         title={
-                          isScored()
-                            ? 'Currently playing/scored'
-                            : `Set "${t.name}" as scored track`
+                          isPercussion()
+                            ? 'Drum track preserved; this pitch view cannot score it'
+                            : isScored()
+                              ? 'Currently playing/scored'
+                              : `Set "${t.name}" as scored track`
                         }
                         onClick={() => props.picker.selectScoreTrack(t.id)}
-                        disabled={isScored()}
+                        disabled={isScored() || isPercussion()}
                       >
                         {t.name}
                       </button>
                       <button
                         class={styles.trackIconBtn}
                         classList={{
-                          [styles.trackIconOff]: !isVisible() && !isScored(),
+                          [styles.trackIconOff]:
+                            isPercussion() || (!isVisible() && !isScored()),
                         }}
                         title={
-                          isScored()
-                            ? 'Scored track is always visible'
-                            : isVisible()
-                              ? 'Hide track notes'
-                              : 'Show track notes'
+                          isPercussion()
+                            ? 'Drum hits are preserved outside this pitch view'
+                            : isScored()
+                              ? 'Scored track is always visible'
+                              : isVisible()
+                                ? 'Hide track notes'
+                                : 'Show track notes'
                         }
                         onClick={() => props.onToggleVisibility(t.id)}
-                        disabled={isScored()}
+                        disabled={isScored() || isPercussion()}
                       >
                         <Show
-                          when={isVisible() || isScored()}
+                          when={!isPercussion() && (isVisible() || isScored())}
                           fallback={<EyeClosedIcon />}
                         >
                           <EyeOpenIcon />
@@ -231,20 +238,23 @@ export const MidiSongStatusBar: Component<MidiSongStatusBarProps> = (props) => {
                       <button
                         class={styles.trackIconBtn}
                         classList={{
-                          [styles.trackIconOff]: isMuted() && !isScored(),
+                          [styles.trackIconOff]:
+                            isPercussion() || (isMuted() && !isScored()),
                         }}
                         title={
-                          isScored()
-                            ? 'Scored track audio cannot be muted'
-                            : isMuted()
-                              ? 'Unmute track audio'
-                              : 'Mute track audio'
+                          isPercussion()
+                            ? 'Drum playback is not available in this pitch view'
+                            : isScored()
+                              ? 'Scored track audio cannot be muted'
+                              : isMuted()
+                                ? 'Unmute track audio'
+                                : 'Mute track audio'
                         }
                         onClick={() => props.onToggleMute(t.id)}
-                        disabled={isScored()}
+                        disabled={isScored() || isPercussion()}
                       >
                         <Show
-                          when={isMuted() && !isScored()}
+                          when={isPercussion() || (isMuted() && !isScored())}
                           fallback={<SpeakerOpenIcon />}
                         >
                           <SpeakerMutedIcon />

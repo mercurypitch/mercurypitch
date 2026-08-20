@@ -8,7 +8,7 @@
 
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { parseMidiSong } from '@/lib/midi-song'
-import { defaultScoreTrack } from '@/lib/midi-song'
+import { defaultScoreTrack, isPitchedMidiSongTrack } from '@/lib/midi-song'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
 import { getMidiSong, savedMidiSongs, saveMidiSong, updateMidiSongSelection, } from '@/stores/saved-midi-songs-store'
 import type { GuitarNightOpenReferenceResult, GuitarNightReferencePort, GuitarNightReferenceSummary, } from './reference-port'
@@ -17,13 +17,13 @@ import { isGuitarProReferenceFile, isMidiReferenceFile, openGuitarNightReference
 function summarize(song: {
   id: string
   name: string
-  tracks: readonly { notes: readonly unknown[] }[]
+  tracks: readonly { noteCount: number }[]
   importedAt: number
 }): GuitarNightReferenceSummary {
   return {
     songId: song.id,
     title: song.name,
-    trackCount: song.tracks.filter((track) => track.notes.length > 0).length,
+    trackCount: song.tracks.filter((track) => track.noteCount > 0).length,
     importedAt: song.importedAt,
   }
 }
@@ -56,6 +56,8 @@ export function createSavedScoreGuitarNightReferencePort(): GuitarNightReference
     rememberTrack: (songId: string, trackId: string): void => {
       const song = getMidiSong(songId)
       if (song === undefined || song.scoreTrackId === trackId) return
+      const track = song.tracks.find((candidate) => candidate.id === trackId)
+      if (track === undefined || !isPitchedMidiSongTrack(track)) return
       updateMidiSongSelection(songId, trackId, song.backingTrackIds)
     },
 
@@ -65,7 +67,7 @@ export function createSavedScoreGuitarNightReferencePort(): GuitarNightReference
       if (isGuitarProReferenceFile(file.name)) {
         const { song, name } = await parseGuitarProFile(file)
         const scored = defaultScoreTrack(song)
-        return summarize(saveMidiSong(name, song, scored.id, []))
+        return summarize(saveMidiSong(name, song, scored?.id ?? null, []))
       }
 
       if (!isMidiReferenceFile(file.name)) {
@@ -80,7 +82,7 @@ export function createSavedScoreGuitarNightReferencePort(): GuitarNightReference
       }
       const scored = defaultScoreTrack(song)
       const name = file.name.replace(/\.[^.]+$/, '')
-      return summarize(saveMidiSong(name, song, scored.id, []))
+      return summarize(saveMidiSong(name, song, scored?.id ?? null, []))
     },
   }
 }
