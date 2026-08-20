@@ -12,6 +12,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
+import Turnstile, { resetTurnstile, turnstileEnabled, } from '@/components/shared/Turnstile'
 import { loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
@@ -51,6 +52,7 @@ export const AuthModal: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
+  const [turnstileToken, setTurnstileToken] = createSignal('')
   // The address the forgot-sent confirmation names (snapshotted on send,
   // so later edits to the field can't rewrite the message).
   const [sentTo, setSentTo] = createSignal('')
@@ -80,6 +82,8 @@ export const AuthModal: Component = () => {
     setShowPassword(false)
     setError('')
     setBusy(false)
+    setTurnstileToken('')
+    resetTurnstile()
     // The baseline `dirty` compares against — see close()/onBackdropClick.
     setEmailAtOpen(untrack(email))
   })
@@ -90,6 +94,8 @@ export const AuthModal: Component = () => {
     setPassword('')
     setShowPassword(false)
     setError('')
+    setTurnstileToken('')
+    resetTurnstile()
   }
 
   /**
@@ -147,6 +153,7 @@ export const AuthModal: Component = () => {
     const run = async (): Promise<void> => {
       setError('')
       setBusy(true)
+      const token = turnstileToken()
       try {
         if (current === 'register') {
           if (!isPasswordValid(credentials.password)) {
@@ -157,6 +164,7 @@ export const AuthModal: Component = () => {
             credentials.email,
             credentials.password,
             name,
+            token,
           )
           // Creating the account IS the consent the voiceprint adoption
           // notice would ask for — the onboarding keep beat promised "keep
@@ -168,17 +176,23 @@ export const AuthModal: Component = () => {
           setBusy(false) // before close() — its busy-guard is for user dismissal
           close()
         } else if (current === 'login') {
-          await loginWithPassword(credentials.email, credentials.password)
+          await loginWithPassword(
+            credentials.email,
+            credentials.password,
+            token,
+          )
           showNotification('Signed in', 'info')
           setBusy(false)
           close()
         } else if (current === 'forgot') {
-          await requestPasswordReset(credentials.email)
+          await requestPasswordReset(credentials.email, token)
           setSentTo(credentials.email)
           setPane('forgot-sent')
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
+        setTurnstileToken('')
+        resetTurnstile()
         // A rejected sign-in clears the password and re-arms the field for
         // the password manager: extensions refuse to overwrite a non-empty
         // password input (and skip one revealed as type="text"), so leaving
@@ -427,10 +441,14 @@ export const AuthModal: Component = () => {
                   </p>
                 </Show>
 
+                <Turnstile onToken={setTurnstileToken} />
+
                 <button
                   class={styles.submit}
                   type="submit"
-                  disabled={busy()}
+                  disabled={
+                    busy() || (turnstileEnabled && turnstileToken() === '')
+                  }
                   data-testid="auth-submit"
                 >
                   {busy()

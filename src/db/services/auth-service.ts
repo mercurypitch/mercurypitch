@@ -415,12 +415,14 @@ export async function registerWithPassword(
   email: string,
   password: string,
   displayName?: string,
+  cfTurnstileToken?: string,
 ): Promise<AuthResponse> {
   return postAuth('register', {
     email,
     password,
     displayName,
     deviceId: getUserId(),
+    cfTurnstileToken,
     // Registering with a deviceId takes that anonymous account over
     // permanently, so the server needs proof it is ours.
     deviceSecret: getDeviceSecret(),
@@ -430,8 +432,9 @@ export async function registerWithPassword(
 export async function loginWithPassword(
   email: string,
   password: string,
+  cfTurnstileToken?: string,
 ): Promise<AuthResponse> {
-  return postAuth('login', { email, password })
+  return postAuth('login', { email, password, cfTurnstileToken })
 }
 
 /**
@@ -965,11 +968,14 @@ async function extractError(res: Response, fallback: string): Promise<string> {
 
 /** Ask the server to email a password-reset link. The response never
  *  reveals whether the address has an account. */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(
+  email: string,
+  cfTurnstileToken?: string,
+): Promise<void> {
   const res = await fetch(`${requireBaseUrl()}/api/auth/forgot-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, cfTurnstileToken }),
   })
   if (!res.ok) {
     throw new Error(await extractError(res, 'Could not send the reset email'))

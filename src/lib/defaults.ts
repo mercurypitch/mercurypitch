@@ -54,6 +54,12 @@ export const GOOGLE_ADS_TAG_ID: string =
   import.meta.env.VITE_GOOGLE_ADS_TAG_ID ?? ''
 
 /**
+ * Cloudflare Turnstile public site key. Empty unless explicitly set for a build.
+ */
+export const TURNSTILE_SITE_KEY: string =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY ?? ''
+
+/**
  * Google Analytics 4 measurement id (`G-XXXXXXXXXX`) for behaviour analytics
  * (dwell, retention, journeys). Empty unless set for a build, so dev / test /
  * tour builds stay inert. Loaded through the same gtag + Consent Mode as the
