@@ -7,7 +7,8 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Ear, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, } from '@/components/icons'
+import { ChevronLeft, Ear, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Volume2, } from '@/components/icons'
+import type { GuitarRoomBandNote } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
@@ -51,8 +52,15 @@ interface GuitarNightScoreRoomProps {
    * keeps the session panel read-only, which is what a single-part file wants.
    */
   onSelectTrack?(trackId: string): void
-  /** Every part the sheet draws, scored one first. */
+  /** Every part the sheet draws, in written order. */
   sheetLanes?: Accessor<readonly SheetLane[]>
+  /** The rest of the band, already carrying each part's own timbre. */
+  backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
+  /** Whether the scored part sounds when the player has not said either way. */
+  defaultHearScore?: Accessor<boolean>
+  /** Parts currently playing under the player, for the panel's controls. */
+  audibleBackingTrackIds?: Accessor<readonly string[]>
+  onToggleBackingTrack?(trackId: string): void
   /** Parts currently on the sheet, for the panel's show and hide controls. */
   sheetVisibleTrackIds?: Accessor<readonly string[]>
   onToggleSheetTrack?(trackId: string): void
@@ -181,6 +189,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     reference: () => props.reference(),
     loop: loop.span,
     instrument: () => props.tuning?.().instrument ?? 'guitar',
+    backingMelody: () => props.backingMelody?.() ?? [],
+    defaultHearScore: () => props.defaultHearScore?.() ?? true,
   })
   const displayedReference = createMemo(
     () => room.displayReference() ?? props.reference(),
@@ -921,7 +931,31 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                       <small>
                         {room.hearScore()
                           ? 'Hear the written part.'
-                          : 'Click only.'}
+                          : 'The band plays it for you.'}
+                      </small>
+                    </span>
+                  </button>
+                  {/* The click used to run whenever the room did, with nothing
+                      anywhere to quiet it. */}
+                  <button
+                    type="button"
+                    class={styles.hearScoreToggle}
+                    aria-pressed={room.hearClick()}
+                    disabled={takeIsActive()}
+                    classList={{ [styles.hearScoreActive]: room.hearClick() }}
+                    onClick={() => room.setHearClick((ticking) => !ticking)}
+                  >
+                    <span aria-hidden="true">
+                      <Metronome />
+                    </span>
+                    <span>
+                      <strong>
+                        {room.hearClick() ? 'Click on' : 'Click off'}
+                      </strong>
+                      <small>
+                        {room.hearClick()
+                          ? 'A pulse under the take.'
+                          : 'The count-in still counts you in.'}
                       </small>
                     </span>
                   </button>
@@ -968,7 +1002,12 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         scoredTrackId={() => displayedReference().trackId}
         {...(props.onSelectTrack === undefined
           ? {}
-          : { onSelectTrack: props.onSelectTrack })}
+          : {
+              onSelectTrack: (trackId: string) => {
+                room.stop()
+                props.onSelectTrack?.(trackId)
+              },
+            })}
         onInstrument={
           props.onInstrument === undefined ? undefined : changeInstrument
         }
@@ -1068,7 +1107,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           {...(props.onToggleSheetTrack === undefined
             ? {}
             : { onToggleTrackVisible: props.onToggleSheetTrack })}
+          {...(props.audibleBackingTrackIds === undefined
+            ? {}
+            : { audibleTrackIds: props.audibleBackingTrackIds })}
+          {...(props.onToggleBackingTrack === undefined
+            ? {}
+            : { onToggleTrackAudible: props.onToggleBackingTrack })}
+          scoredPartSounds={room.hearScore}
           onSelectTrack={(trackId) => {
+            // A rehearsal take is not a recording, so reading a different part
+            // ends it rather than being swallowed by its pinned snapshot.
+            room.stop()
             props.onSelectTrack?.(trackId)
             setSessionPanelOpen(false)
           }}
@@ -1144,6 +1193,21 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           >
             <span aria-hidden="true">{isRunning() ? <Pause /> : <Play />}</span>
           </button>
+          {/* Without this the room had only Play and Pause, so the first take
+              pinned its setup for good: no tempo, no listening, no click. */}
+          <Show when={room.setupLocked()}>
+            <button
+              class={styles.stopControl}
+              type="button"
+              aria-label="End the take"
+              title="End the take"
+              onClick={() => room.stop()}
+            >
+              <span aria-hidden="true">
+                <Square />
+              </span>
+            </button>
+          </Show>
           <div class={styles.playbackSpeed} role="group" aria-label="Tempo">
             <button
               type="button"

@@ -34,6 +34,12 @@ export interface GuitarRoomBandNote {
   midi: number
   startBeat: number
   durationBeats: number
+  /**
+   * The timbre this note is sounded with, when it differs from the run's. A
+   * room sounding several parts at once has a bass line and four guitars in
+   * one list; one variant for the lot would play the guitars on a bass.
+   */
+  variant?: GuitarVariant
 }
 
 /** One exercise pulse exposed while it is inside the Web Audio look-ahead. */
@@ -450,7 +456,7 @@ export function createGuitarRoomBand(
             note,
             noteAt,
             noteDurationSeconds,
-            melodyVariant,
+            note.variant ?? melodyVariant,
           )
         }
       }

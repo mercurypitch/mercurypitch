@@ -4,6 +4,7 @@
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
+import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
@@ -155,6 +156,64 @@ export function useGuitarNightReferenceController(
       scoredTuning: current.tuning,
     })
   })
+
+  // Which other parts the room plays under the player. Muted rather than
+  // audible ids: a part added later should sound by default, because "play all
+  // but the scored against" is the whole point of having a band.
+  const [mutedBackingTracks, setMutedBackingTracks] = createSignal<{
+    songId: string
+    trackIds: readonly string[]
+  }>({ songId: '', trackIds: [] })
+
+  const mutedBacking = createMemo<readonly string[]>(() => {
+    const current = reference()
+    const held = mutedBackingTracks()
+    return current === null || held.songId !== current.songId
+      ? []
+      : held.trackIds
+  })
+
+  /** Every part that could play under the scored one, in written order. */
+  const backingPartList = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingParts(source, current.trackId)
+  })
+
+  const audibleBackingTrackIds = createMemo<readonly string[]>(() => {
+    const muted = new Set(mutedBacking())
+    return backingPartList()
+      .map((part) => part.trackId)
+      .filter((trackId) => !muted.has(trackId))
+  })
+
+  const backingMelodyNotes = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingMelody(source, {
+      scoredTrackId: current.trackId,
+      audibleTrackIds: audibleBackingTrackIds(),
+    })
+  })
+
+  /** Whether the scored part sounds when the player has not said either way. */
+  const scoredPartDefaultsAudible = createMemo(() =>
+    scoredPartSoundsByDefault(sheetSource(), reference()?.trackId),
+  )
+
+  const toggleBackingTrack = (trackId: string): void => {
+    const current = reference()
+    if (current === null || trackId === current.trackId) return
+    const muted = new Set(mutedBacking())
+    if (muted.has(trackId)) {
+      muted.delete(trackId)
+    } else {
+      muted.add(trackId)
+    }
+    setMutedBackingTracks({ songId: current.songId, trackIds: [...muted] })
+  }
 
   const toggleSheetTrack = (trackId: string): void => {
     const current = reference()
@@ -544,6 +603,11 @@ export function useGuitarNightReferenceController(
     sheetLanes,
     sheetVisibleTrackIds,
     toggleSheetTrack,
+    backingPartList,
+    audibleBackingTrackIds,
+    backingMelodyNotes,
+    scoredPartDefaultsAudible,
+    toggleBackingTrack,
     instrument,
     stringCount,
     tuning,

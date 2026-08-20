@@ -195,4 +195,86 @@ describe('GuitarNightSessionPanel', () => {
       'Lead guitar is scored, so it always shows on the sheet',
     )
   })
+
+  it('offers no sound controls when the room has no band', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+    expect(screen.queryByLabelText(/^Mute /)).toBeNull()
+    expect(screen.queryByLabelText(/^Hear /)).toBeNull()
+  })
+
+  it('shows which parts are playing under the player', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        audibleTrackIds={() => ['track-rhythm']}
+        onToggleTrackAudible={vi.fn()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen.getByLabelText('Mute Rhythm guitar').getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(
+      screen.getByLabelText('Hear Bass').getAttribute('aria-pressed'),
+    ).toBe('false')
+  })
+
+  it('asks to mute or hear a part when its control is used', () => {
+    const onToggleTrackAudible = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        audibleTrackIds={() => ['track-rhythm']}
+        onToggleTrackAudible={onToggleTrackAudible}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Hear Bass'))
+    expect(onToggleTrackAudible).toHaveBeenCalledWith('track-bass')
+  })
+
+  it('reports the scored part rather than owning its sound', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        audibleTrackIds={() => []}
+        onToggleTrackAudible={vi.fn()}
+        scoredPartSounds={() => false}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const scored = screen.getByLabelText('Hear Lead guitar')
+    expect(scored).toBeDisabled()
+    expect(scored.getAttribute('aria-pressed')).toBe('false')
+    expect(scored.getAttribute('title')).toBe(
+      'Use Tab sounds to hear or mute Lead guitar',
+    )
+  })
+
+  it('says what the band is doing when a file has several parts', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        audibleTrackIds={() => ['track-rhythm']}
+        onToggleTrackAudible={vi.fn()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+    expect(
+      screen.getByText(/Every part but the one you are scored on plays/),
+    ).toBeInTheDocument()
+  })
 })

@@ -14,7 +14,7 @@
 
 import type { Accessor } from 'solid-js'
 import { For, onCleanup, onMount, Show } from 'solid-js'
-import { Eye, EyeOff, X } from '@/components/icons'
+import { Eye, EyeOff, Volume2, VolumeX, X } from '@/components/icons'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarNightReference } from './reference-port'
 
@@ -28,6 +28,14 @@ interface GuitarNightSessionPanelProps {
    */
   visibleTrackIds?: Accessor<readonly string[]>
   onToggleTrackVisible?(trackId: string): void
+  /**
+   * Parts playing under the player. Reported 2026-08-20: a loaded tab muted
+   * every part but the scored one, with nothing anywhere to change it.
+   */
+  audibleTrackIds?: Accessor<readonly string[]>
+  onToggleTrackAudible?(trackId: string): void
+  /** Whether the scored part sounds — owned by the room's Tab sounds control. */
+  scoredPartSounds?: Accessor<boolean>
 }
 
 export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
@@ -115,6 +123,12 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
               const isVisible = () =>
                 isScored() ||
                 (props.visibleTrackIds?.().includes(track.id) ?? false)
+              // The scored part's sound belongs to the room's Tab sounds
+              // control, so this row reports it rather than owning it.
+              const isAudible = () =>
+                isScored()
+                  ? (props.scoredPartSounds?.() ?? false)
+                  : (props.audibleTrackIds?.().includes(track.id) ?? false)
               return (
                 <div class={styles.sessionTrackRow}>
                   <button
@@ -134,6 +148,31 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       <Show when={isScored()}> · scored</Show>
                     </small>
                   </button>
+                  <Show when={props.onToggleTrackAudible !== undefined}>
+                    <button
+                      type="button"
+                      class={styles.sessionTrackVisibility}
+                      aria-pressed={isAudible()}
+                      disabled={isScored()}
+                      title={
+                        isScored()
+                          ? `Use Tab sounds to hear or mute ${track.name}`
+                          : isAudible()
+                            ? `Mute ${track.name}`
+                            : `Hear ${track.name}`
+                      }
+                      aria-label={
+                        isAudible()
+                          ? `Mute ${track.name}`
+                          : `Hear ${track.name}`
+                      }
+                      onClick={() => props.onToggleTrackAudible?.(track.id)}
+                    >
+                      <Show when={isAudible()} fallback={<VolumeX />}>
+                        <Volume2 />
+                      </Show>
+                    </button>
+                  </Show>
                   <Show when={props.onToggleTrackVisible !== undefined}>
                     <button
                       type="button"
@@ -165,7 +204,17 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
           </For>
         </div>
 
-        <Show when={tracks().length === 1}>
+        <Show
+          when={tracks().length === 1}
+          fallback={
+            <Show when={props.onToggleTrackAudible !== undefined}>
+              <p class={styles.sessionNote}>
+                Every part but the one you are scored on plays underneath, so
+                yours is the one to play. Mute any of them here.
+              </p>
+            </Show>
+          }
+        >
           <p class={styles.sessionNote}>
             This file carries one part. A Guitar Pro file with several will list
             them all here.
