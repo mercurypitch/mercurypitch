@@ -87,11 +87,11 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
   {
     target: { kind: 'page', href: '/drum-night' },
     visual: 'drumNight',
-    eyebrow: 'Visual pilot',
+    eyebrow: 'New room',
     title: 'Drum Night',
     description:
-      'Preview the Pocket Console from a kit, groove ring or written part. Real drum audio, input and timing evidence are still being built.',
-    action: 'Preview Drum Night',
+      'Play four drum-kit flavors with touch, keys or an e-kit. Open MIDI or Guitar Pro percussion in Pocket, Drummer Seat or written Score views.',
+    action: 'Enter Drum Night',
   },
   {
     target: { kind: 'tab', tab: TAB_EXERCISES },

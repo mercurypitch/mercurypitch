@@ -21,9 +21,15 @@ export {
 export type {
   DrumSessionImportAttempt,
   DrumSessionImportController,
+  DrumSessionImportOptions,
   DrumSessionImportPorts,
+  DrumSessionParserOptions,
   DrumSessionParserOutcome,
 } from './import-drum-session'
+export {
+  MAX_DRUM_SESSION_MUSICAL_EVENTS,
+  MAX_DRUM_SESSION_SOURCE_EVENTS,
+} from './drum-session-import-protocol'
 
 export {
   createDrumSessionScheduler,

@@ -273,4 +273,19 @@ describe('parseMidiProject', () => {
       'EVENT_PAYLOAD_TOO_LARGE',
     )
   })
+
+  it('lets a feature tighten the event ceiling without changing the shared default', () => {
+    expect(() =>
+      parseMidiProject(expressiveFixture(), IDENTITY, { maxEvents: 3 }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: 'TOO_MANY_EVENTS',
+        message: 'MIDI files may contain at most 3 events.',
+      }),
+    )
+
+    expect(parseMidiProject(expressiveFixture(), IDENTITY).tracks).toHaveLength(
+      3,
+    )
+  })
 })

@@ -134,7 +134,7 @@ describe('launch entry documents', () => {
     })
   }
 
-  it('builds Drum Night from a dedicated noindex pilot document', () => {
+  it('builds Drum Night from a dedicated noindex playable document', () => {
     const document = repoHtml('drum-night.html')
     const vite = repoFile('vite.config.ts')
     const serviceWorker = repoFile('src/lib/sw-runtime.ts')
@@ -151,7 +151,7 @@ describe('launch entry documents', () => {
       document
         .querySelector('meta[name="description"]')
         ?.getAttribute('content'),
-    ).toContain('interactive visual pilot')
+    ).toContain('playable MercuryPitch drum room')
     expect(
       document.querySelector('script[type="module"]')?.getAttribute('src'),
     ).toBe('/src/features/drum-night/main.tsx')

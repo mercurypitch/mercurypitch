@@ -360,6 +360,16 @@ export default defineConfig(({ command, mode }) => {
             // app library graph (stores, IndexedDB and media code).
             if (id.includes('/src/components/icons.')) return 'shared-icons'
             if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
+            // The synthesized drum recipes are dependency-free Web Audio
+            // leaves shared by the main app and Drum Night. Without a pin,
+            // Rollup co-locates them with LibraryModal and turns that entire
+            // IndexedDB/media graph into Drum Night first-paint work.
+            if (
+              id.includes('/src/lib/drum-voices.') ||
+              id.includes('/src/lib/drum-voice-map.')
+            ) {
+              return 'drum-voices'
+            }
             // Shared by the app's sign-in surface (statically, via
             // AuthModal → PhoneSignIn) and the sync modal that Karaoke
             // Night lazy-loads. Without a pin it is hoisted into the APP
