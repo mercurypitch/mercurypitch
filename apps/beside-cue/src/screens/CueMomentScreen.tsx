@@ -4,6 +4,12 @@ interface CueMomentScreenProps {
   pullText: string
   bSideText: string
   phrase: string
+  /**
+   * The pull category this cue is about, so the mascot shows that pull's own
+   * creature rather than the generic token. Absent for a self-named pull,
+   * which the content pack answers with the canon turquoise cue.
+   */
+  pullId?: string
   onChooseBSide: () => void
   onNotNow: () => void
   onClose: () => void
@@ -26,7 +32,10 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
         <span class="cue-pulse" aria-hidden="true" />
         One gentle cue
       </div>
-      <MascotStage state="notice" />
+      <MascotStage
+        state="notice"
+        {...(props.pullId === undefined ? {} : { pullId: props.pullId })}
+      />
       <section class="cue-moment__copy">
         <p>{props.phrase}</p>
         <h1 id="cue-title">{props.bSideText}</h1>
