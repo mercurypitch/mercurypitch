@@ -479,6 +479,60 @@
     linear-gradient(145deg, #c09663, #563920 70%);
 }
 
+/* ── Drum Rooms ─────────────────────────────────────────────────────
+   These washes are sampled from the room direction so locked cards and slow
+   protected previews begin in the same light as the authored artwork. */
+
+.edition_blue-hour-live-room {
+  background:
+    radial-gradient(
+      circle at 62% 28%,
+      rgba(225, 164, 83, 0.38),
+      transparent 22%
+    ),
+    linear-gradient(145deg, #294353, #0b1824 72%);
+}
+
+.edition_bronze-soundstage {
+  background:
+    radial-gradient(
+      circle at 48% 30%,
+      rgba(223, 171, 98, 0.4),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #59422f, #181413 72%);
+}
+
+.edition_rain-glass-studio {
+  background:
+    radial-gradient(
+      circle at 66% 26%,
+      rgba(236, 170, 89, 0.36),
+      transparent 23%
+    ),
+    linear-gradient(145deg, #254250, #0b1720 72%);
+}
+
+.edition_walnut-live-room {
+  background:
+    radial-gradient(
+      circle at 42% 30%,
+      rgba(226, 166, 93, 0.4),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #593b28, #171210 72%);
+}
+
+.edition_sunrise-pavilion {
+  background:
+    radial-gradient(
+      circle at 58% 25%,
+      rgba(255, 226, 174, 0.58),
+      transparent 28%
+    ),
+    linear-gradient(145deg, #c7a376, #695441 72%);
+}
+
 .lockMark {
   position: absolute;
   z-index: 3;

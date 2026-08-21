@@ -1,7 +1,7 @@
 # Drum Night functional pilot — EARS Requirements
 
 Approved requirements for the playable standalone Drum Night experience at
-`/drum-night` after the authored-session integration.
+`/drum-night` after the authored-session and room-background integrations.
 
 **Status:** functional pilot; intentionally private from search indexing.
 
@@ -81,6 +81,38 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-STAGE-008 — Durable contrast:** Musical information and controls
   shall remain legible through authored contrast layers if local image
   brightness changes or a room asset fails to decode.
+
+## Visual room catalog — `DN-ROOM-*`
+
+- **REQ-DN-ROOM-001 — First-class surface:** Drum Night shall use the shared
+  typed background lifecycle as the `drum` surface, with
+  `drum-pocket-console` as its shipped public default.
+- **REQ-DN-ROOM-002 — Included first pack:** The public Drum gallery shall
+  expose Pocket Console, Tape Room, Daylight Riser, and After-Hours Booth as
+  independently selectable free rooms.
+- **REQ-DN-ROOM-003 — Supporter first pack:** The protected Drum allowlist
+  shall contain Blue Hour Live Room, Bronze Soundstage, Rain Glass Studio,
+  Walnut Live Room, and Sunrise Pavilion; locked cards shall not request their
+  protected image bytes, and no premium artwork shall ship under `public/`.
+- **REQ-DN-ROOM-004 — Authored orientation:** Every included or supporter
+  Drum room shall provide independently composed landscape and portrait art;
+  the runtime shall select by viewport orientation rather than blindly crop a
+  desktop master.
+- **REQ-DN-ROOM-005 — Visual-only selection:** WHEN a room is selected, Drum
+  Night shall change only the stage image and focal point. It shall not change
+  the kit, volume, mix, ambience, transport, tempo, mapping, or session.
+- **REQ-DN-ROOM-006 — Local preference, current access:** WHEN a known Drum
+  room is selected, Drum Night shall persist only its identifier under
+  `pitchperfect_drum_background`; supporter access shall be checked again from
+  current server evidence before protected bytes resolve.
+- **REQ-DN-ROOM-007 — Silent-first catalogue:** A free Drum preference shall
+  resolve without retaining or fetching premium metadata. Drum Night shall
+  cross the premium-catalogue boundary only after the user first opens Room,
+  and may keep that controller retained for the route lifetime thereafter.
+- **REQ-DN-ROOM-008 — Seat authority:** WHILE Drummer Seat is selected, its
+  authored landscape or portrait scene shall remain the visible backdrop;
+  changing the general room preference shall apply to Pocket and Score without
+  replacing the Drummer Seat perspective.
 
 ## Live kit and input — `DN-INPUT-*`
 
@@ -326,11 +358,9 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 This pilot does not include room-microphone capture or analysis; limb,
 sticking, grip, or technique inference; metronome-click audio; backing or guide
 tracks; Groove Mirror generation; imported-session, recorded-take, or coaching
-history persistence; a usable room-background gallery or first-class `drum`
-background catalog; public indexing; or production deployment. The locally
-retained kit choice and device-scoped MIDI learn map are preferences, not
-session or performance persistence. Planned room thumbnails shall not imply
-that room selection is available.
+history persistence; public indexing; or production deployment. The locally
+retained kit choice, Drum room choice, and device-scoped MIDI learn map are
+preferences, not session or performance persistence.
 
 ## Verification map
 
@@ -338,6 +368,7 @@ that room selection is available.
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                             |
 | `DN-STAGE`, `DN-RESPONSIVE` | Pocket/Score/Seat state-retention tests; landscape/portrait asset assertions; desktop, phone, tablet, and compact-landscape overflow and target-size smoke                   |
+| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke   |
 | `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry |
 | `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests             |
 | `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for count-in, authored tempo, duration, pause/replay, loop identity, dedupe, capacity, unsupported hits, and fallback truth        |

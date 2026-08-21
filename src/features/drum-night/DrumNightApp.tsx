@@ -9,6 +9,9 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { AudioWave, ChevronDown, Drum, FileUpload, Loop, MercuryPlanet, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { barIndexAtBeat } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
@@ -293,6 +296,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const [calibrationAwaiting, setCalibrationAwaiting] = createSignal(false)
   const [draggingSessionFile, setDraggingSessionFile] = createSignal(false)
   const [recoveryLoopActive, setRecoveryLoopActive] = createSignal(false)
+  // Keep the premium metadata boundary behind the first explicit Room action.
+  // Public selections still resolve synchronously through the shared
+  // controller, so a restored free room does not cost a first-paint request.
+  const [backgroundCatalogEnabled, setBackgroundCatalogEnabled] =
+    createSignal(false)
   const [compactScore, setCompactScore] = createSignal(
     typeof window !== 'undefined' && window.innerWidth <= 720,
   )
@@ -305,6 +313,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     {
       validator: isDrumKitId,
     },
+  )
+  const background = useBackgroundSurfaceController(
+    'drum',
+    backgroundCatalogEnabled,
   )
   const audioSession = (
     props.createAudioSession ?? createDrumNightAudioSession
@@ -418,6 +430,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       : `${retained} hits · ${omitted} older not retained`
   })
   const sessionTitle = createMemo(() => readySession()?.title ?? 'Live drums')
+  const roomLabel = createMemo(
+    () =>
+      getBackgroundDefinition(background.resolved().id)?.label ??
+      'Pocket Console',
+  )
   const sessionIdentityDetail = createMemo(() => {
     const document = readySession()
     if (document === null) {
@@ -1006,6 +1023,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   })
 
   createEffect(() => {
+    if (drawerOpen() && workspace() === 'room') {
+      setBackgroundCatalogEnabled(true)
+    }
+  })
+
+  createEffect(() => {
     const hit = runtime.recentHit()
     if (hit === null) return
     const pad = ESSENTIAL_DRUM_PADS.find(
@@ -1122,11 +1145,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   return (
     <div
       class={styles.shell}
+      style={background.resolvedStyle()}
       data-testid="drum-night-shell"
       data-playing={isPlaying() ? 'true' : 'false'}
       data-drawer-open={drawerOpen() ? 'true' : 'false'}
       data-input-open={inputOpen() ? 'true' : 'false'}
       data-view={view()}
+      data-background-treatment={background.resolved().treatment}
       data-session-status={sessionState().status}
     >
       <a
@@ -1261,12 +1286,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <button
               class={styles.roomChip}
               type="button"
+              aria-label={`Change room, ${roomLabel()} selected`}
               onClick={() => openWorkspace('room')}
             >
               <span class={styles.roomChipArt} aria-hidden="true" />
               <span>
-                <strong>Pocket Console</strong>
-                <small>Tracking room</small>
+                <strong>{roomLabel()}</strong>
+                <small>Visual room</small>
               </span>
               <ChevronDown />
             </button>
@@ -1830,29 +1856,26 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 >
                   <div class={styles.workspaceCopy}>
                     <span>Room and ambience</span>
-                    <h3>Pocket Console</h3>
+                    <h3>{roomLabel()}</h3>
                     <p>
-                      Preview art first. Kit and reverb never change without
-                      separate confirmation.
+                      Room art is visual only. It never changes the kit, mix, or
+                      ambience. Your choice stays on this device and supporter
+                      access is checked from the server.
                     </p>
                   </div>
-                  <div class={styles.roomOptions}>
-                    <div class={styles.isSelected}>
-                      <span class={cx('roomThumb', 'pocketThumb')} />
-                      <strong>Pocket Console</strong>
-                      <small>Current visual</small>
-                    </div>
-                    <div>
-                      <span class={cx('roomThumb', 'tapeThumb')} />
-                      <strong>Tape Room</strong>
-                      <small>Planned room</small>
-                    </div>
-                    <div>
-                      <span class={cx('roomThumb', 'daylightThumb')} />
-                      <strong>Daylight Riser</strong>
-                      <small>Planned room</small>
-                    </div>
-                  </div>
+                  <PremiumBackgroundPicker
+                    controller={background}
+                    embedded
+                    onSelect={(option) => {
+                      const accepted = background.select(option.id)
+                      if (accepted) {
+                        announceOnly(
+                          `${option.label} selected. Drum sound unchanged.`,
+                        )
+                      }
+                      return accepted
+                    }}
+                  />
                 </div>
               </Match>
               <Match when={workspace() === 'learn'}>

@@ -73,6 +73,7 @@ const BACKGROUND_SURFACE_FILTERS = [
   { id: 'jam', label: 'Jam' },
   { id: 'piano', label: 'Piano Night' },
   { id: 'guitar', label: 'Guitar Night' },
+  { id: 'drum', label: 'Drum Night' },
 ] as const satisfies readonly BackgroundSurfaceFilterOption[]
 
 const EMPTY_GROUP_DRAFT: SupporterGroupDraft = {
@@ -130,6 +131,8 @@ function backgroundSurfaceLabel(surface: BackgroundSurface): string {
       return 'Piano Night'
     case 'guitar':
       return 'Guitar Night'
+    case 'drum':
+      return 'Drum Night'
   }
 }
 

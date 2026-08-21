@@ -157,6 +157,38 @@ function pianoController(): BackgroundSurfaceController {
   }
 }
 
+function drumController(): BackgroundSurfaceController {
+  const base = fakeController()
+  return {
+    ...base,
+    surface: 'drum',
+    requestedId: () => 'drum-pocket-console',
+    resolved: () => ({
+      id: 'drum-pocket-console',
+      url: '/drum-night/pocket-console-landscape.webp',
+      focalPoint: { x: 0.5, y: 0.54 },
+      treatment: 'dark',
+      source: 'public',
+      version: null,
+      variant: null,
+    }),
+    options: () => [
+      {
+        id: 'drum-pocket-console',
+        surface: 'drum',
+        label: 'Pocket Console',
+        description: 'Warm brass cues around a focused tracking room',
+        edition: 'core',
+        focalPoint: { x: 0.5, y: 0.54 },
+        treatment: 'dark',
+        access: 'free',
+        publicUrl: '/drum-night/pocket-console-landscape.webp',
+        premiumAsset: null,
+      },
+    ],
+  }
+}
+
 beforeAll(() => {
   window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
     callback(0)
@@ -271,6 +303,23 @@ describe('PremiumBackgroundPicker', () => {
     expect(
       screen.queryByRole('button', {
         name: 'Choose Piano Night room background',
+      }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('uses Drum Night copy in its embedded rack gallery', () => {
+    render(() => (
+      <PremiumBackgroundPicker controller={drumController()} embedded />
+    ))
+
+    const gallery = screen.getByRole('region', {
+      name: 'Choose your Drum Night room',
+    })
+    expect(gallery).toHaveTextContent('Pocket Console')
+    expect(gallery).toHaveTextContent('Included')
+    expect(
+      screen.queryByRole('button', {
+        name: 'Choose Drum Night room background',
       }),
     ).not.toBeInTheDocument()
   })
