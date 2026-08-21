@@ -1691,12 +1691,6 @@
   gap: 6px;
 }
 
-.stageMotionGroup .practiceChoiceActive {
-  border-color: rgb(181 138 80 / 55%);
-  color: var(--ivory-strong);
-  background: rgb(181 138 80 / 14%);
-}
-
 .stageMotionNote {
   margin: 8px 0 0;
   color: var(--quiet);
@@ -1710,7 +1704,8 @@
   gap: 6px;
 }
 
-.practiceSpeedGroup .practiceChoiceActive {
+.practiceSpeedGroup .practiceChoiceActive,
+.stageMotionGroup .practiceChoiceActive {
   border-color: rgb(181 138 80 / 55%);
   color: var(--ivory-strong);
   background: rgb(181 138 80 / 14%);

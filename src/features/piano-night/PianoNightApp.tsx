@@ -1312,7 +1312,10 @@ export function PianoNightApp(): JSX.Element {
                 />
               </label>
 
-              <fieldset class={styles.stageMotionGroup}>
+              <fieldset
+                class={styles.stageMotionGroup}
+                aria-describedby="piano-night-stage-motion-note"
+              >
                 <legend>Stage motion</legend>
                 <div>
                   <For each={PIANO_NIGHT_STAGE_MOTIONS}>
@@ -1334,7 +1337,10 @@ export function PianoNightApp(): JSX.Element {
                     )}
                   </For>
                 </div>
-                <p class={styles.stageMotionNote}>
+                <p
+                  class={styles.stageMotionNote}
+                  id="piano-night-stage-motion-note"
+                >
                   {controller.systemReducedMotion()
                     ? 'Your system asks for reduced motion, so the trim and panels stay still. The notes keep advancing either way — their descent is how the stage tells you when to play. Choose Stepped if you would rather they move a bar at a time.'
                     : 'Flowing scrolls the notes continuously. Stepped advances them a bar at a time instead.'}
