@@ -9,6 +9,9 @@ import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
 import { DrumNightApp } from './DrumNightApp'
 import type { DrumMidiAccessPort, DrumMidiInputPort, DrumMidiMessageLike, DrumRuntimeClock, } from './runtime'
+import type { DrumScoreIndex, DrumSessionImportController, DrumSessionImportState, } from './session'
+import { createDrumScoreIndex, IDLE_DRUM_SESSION } from './session'
+import { drumSongFixture, percussionTrackFixture, readySessionFixture, } from './session/drum-session.test-fixtures'
 
 class TestClock implements DrumRuntimeClock {
   private timestampMs = 0
@@ -93,16 +96,104 @@ function dispatchPointerDown(
   fireEvent(target, event)
 }
 
-function sessionHarness() {
-  const contextForGesture = vi.fn(() => ({}) as AudioContext)
-  const outputForGesture = vi.fn(() => ({}) as AudioNode)
+function sessionHarness(mapperAvailable = true) {
+  let activated = false
+  const activeContextValue = { currentTime: 0 } as AudioContext
+  const contextForGesture = vi.fn(() => {
+    activated = true
+    return activeContextValue
+  })
+  const outputForGesture = vi.fn(() => {
+    activated = true
+    return {} as AudioNode
+  })
+  const activeContext = vi.fn(() => (activated ? activeContextValue : null))
+  const performanceTimestampToContextTime = vi.fn((timestampMs: number) =>
+    activated && mapperAvailable ? timestampMs / 1000 : null,
+  )
   const dispose = vi.fn(async () => undefined)
   const session = {
+    activeContext,
     contextForGesture,
     outputForGesture,
+    performanceTimestampToContextTime,
     dispose,
   } satisfies DrumNightAudioSession
-  return { contextForGesture, dispose, outputForGesture, session }
+  return {
+    activeContext,
+    contextForGesture,
+    dispose,
+    outputForGesture,
+    performanceTimestampToContextTime,
+    session,
+  }
+}
+
+function importSessionHarness(
+  initialState: DrumSessionImportState = IDLE_DRUM_SESSION,
+) {
+  let state = initialState
+  let generation = 0
+  let disposed = false
+  let nextResult: DrumSessionImportState = initialState
+  const listeners = new Set<() => void>()
+  const emit = (): void => {
+    for (const listener of listeners) listener()
+  }
+  const setState = (nextState: DrumSessionImportState): void => {
+    state = nextState
+    emit()
+  }
+  const importFile = vi.fn(async (file: File) => {
+    const attemptGeneration = ++generation
+    setState({ status: 'loading', fileName: file.name })
+    await Promise.resolve()
+    if (disposed || attemptGeneration !== generation) {
+      return {
+        status: 'stale' as const,
+        generation: attemptGeneration,
+        state: nextResult,
+      }
+    }
+    setState(nextResult)
+    return {
+      status: 'applied' as const,
+      generation: attemptGeneration,
+      state: nextResult,
+    }
+  })
+  const cancel = vi.fn(() => {
+    generation += 1
+    setState(IDLE_DRUM_SESSION)
+  })
+  const dispose = vi.fn(() => {
+    disposed = true
+    generation += 1
+    listeners.clear()
+  })
+  const controller = {
+    state: () => state,
+    generation: () => generation,
+    subscribe(listener: () => void) {
+      if (disposed) return () => undefined
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    importFile,
+    cancel,
+    dispose,
+  } satisfies DrumSessionImportController
+  return {
+    cancel,
+    controller,
+    dispose,
+    importFile,
+    listenerCount: () => listeners.size,
+    setNextResult(nextState: DrumSessionImportState) {
+      nextResult = nextState
+    },
+    setState,
+  }
 }
 
 function playerHarness(
@@ -224,10 +315,21 @@ function renderRoom(options?: {
   readonly access?: DrumMidiAccessPort
   readonly activationResults?: readonly boolean[]
   readonly clock?: DrumRuntimeClock
+  readonly createScoreIndex?: (
+    document: Extract<DrumSessionImportState, { status: 'ready' }>['document'],
+  ) => DrumScoreIndex
+  readonly importSession?: ReturnType<typeof importSessionHarness>
+  readonly onReadySessionChange?: (
+    document:
+      | Extract<DrumSessionImportState, { status: 'ready' }>['document']
+      | null,
+  ) => void
   readonly requestAccess?: () => Promise<DrumMidiAccessPort>
+  readonly schedulerAudioReady?: boolean
 }) {
-  const session = sessionHarness()
+  const session = sessionHarness(options?.schedulerAudioReady)
   const player = playerHarness('mercury-synth', options?.activationResults)
+  const importSession = options?.importSession ?? importSessionHarness()
   const requestAccess =
     options?.requestAccess ??
     vi.fn(async () => options?.access ?? midiAccess([]))
@@ -235,6 +337,9 @@ function renderRoom(options?: {
     <DrumNightApp
       createAudioSession={() => session.session}
       createPlayer={player.createPlayer}
+      createScoreIndex={options?.createScoreIndex}
+      createSessionController={() => importSession.controller}
+      onReadySessionChange={options?.onReadySessionChange}
       runtimeOptions={{
         clock: options?.clock,
         midiEnvironment: {
@@ -245,7 +350,7 @@ function renderRoom(options?: {
       }}
     />
   ))
-  return { ...mounted, player, requestAccess, session }
+  return { ...mounted, importSession, player, requestAccess, session }
 }
 
 let createAudioContext: ReturnType<typeof vi.fn>
@@ -256,6 +361,10 @@ let originalGetUserMedia: typeof navigator.mediaDevices.getUserMedia
 
 beforeEach(() => {
   window.history.replaceState({}, '', '/drum-night')
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    value: 1280,
+  })
   localStorage.clear()
   createAudioContext = vi.fn()
   createWorker = vi.fn()
@@ -290,9 +399,9 @@ describe('DrumNightApp', () => {
       'data-view',
       'pocket',
     )
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Audio, samples, and MIDI stay off',
-    )
+    expect(
+      screen.getByText(/Audio, samples, and MIDI stay off/i),
+    ).toBeInTheDocument()
     expect(room.player.activate).not.toHaveBeenCalled()
     expect(room.session.contextForGesture).not.toHaveBeenCalled()
     expect(room.requestAccess).not.toHaveBeenCalled()
@@ -307,29 +416,28 @@ describe('DrumNightApp', () => {
 
   it('starts sound from pointer and keyboard strikes and uses Space for one transport', async () => {
     const room = renderRoom()
-    const viewSwitcher = screen.getByRole('group', { name: 'Drum view' })
-    fireEvent.click(within(viewSwitcher).getByRole('button', { name: 'Kit' }))
+    const touchKit = screen.getByLabelText('Touch drum pads')
+    const snare = within(touchKit).getByRole('button', {
+      name: 'Acoustic snare, key 2',
+    })
 
-    dispatchPointerDown(
-      within(screen.getByTestId('drum-night-kit-view')).getByRole('button', {
-        name: 'Acoustic snare, key 2',
-      }),
-      { button: 2, isPrimary: true, pressure: 0.5 },
-    )
-    dispatchPointerDown(
-      within(screen.getByTestId('drum-night-kit-view')).getByRole('button', {
-        name: 'Acoustic snare, key 2',
-      }),
-      { button: 0, isPrimary: false, pressure: 0.5 },
-    )
+    dispatchPointerDown(snare, {
+      button: 2,
+      isPrimary: true,
+      pressure: 0.5,
+    })
+    dispatchPointerDown(snare, {
+      button: 0,
+      isPrimary: false,
+      pressure: 0.5,
+    })
     expect(room.player.trigger).not.toHaveBeenCalled()
 
-    dispatchPointerDown(
-      within(screen.getByTestId('drum-night-kit-view')).getByRole('button', {
-        name: 'Acoustic snare, key 2',
-      }),
-      { button: 0, isPrimary: true, pressure: 0.5 },
-    )
+    dispatchPointerDown(snare, {
+      button: 0,
+      isPrimary: true,
+      pressure: 0.5,
+    })
     await waitFor(() => expect(room.player.trigger).toHaveBeenCalledTimes(1))
     expect(room.player.activate).toHaveBeenCalledOnce()
     expect(room.session.contextForGesture).toHaveBeenCalledOnce()
@@ -546,6 +654,8 @@ describe('DrumNightApp', () => {
     expect(room.player.dispose).toHaveBeenCalledOnce()
     expect(room.player.listenerCount()).toBe(0)
     expect(room.session.dispose).toHaveBeenCalledOnce()
+    expect(room.importSession.dispose).toHaveBeenCalledOnce()
+    expect(room.importSession.listenerCount()).toBe(0)
   })
 
   it('traps input focus and restores its trigger after every close path', async () => {
@@ -704,5 +814,549 @@ describe('DrumNightApp', () => {
 
     expect(room.player.player.setVolume).toHaveBeenLastCalledWith(0.64)
     expect(kitLevel).toBeEnabled()
+  })
+
+  it('renders every honest import state and promotes percussion-only ready files to the score', () => {
+    const importSession = importSessionHarness()
+    renderRoom({ importSession })
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+
+    expect(screen.getByLabelText('score session state')).toHaveTextContent(
+      'No drum part loaded',
+    )
+
+    const states: readonly [DrumSessionImportState, string][] = [
+      [{ status: 'loading', fileName: 'take.mid' }, 'Reading take.mid'],
+      [{ status: 'empty', fileName: 'empty.mid' }, 'This file is empty'],
+      [
+        {
+          status: 'too-large',
+          fileName: 'large.gp',
+          actualBytes: 24 * 1024 * 1024,
+          maximumBytes: 20 * 1024 * 1024,
+        },
+        'This file is too large to open safely',
+      ],
+      [
+        {
+          status: 'unsupported',
+          fileName: 'part.pdf',
+          reason: 'file-type',
+          droppedHitCount: 0,
+        },
+        'File type not supported',
+      ],
+      [
+        {
+          status: 'unsupported',
+          fileName: 'unknown.gpx',
+          reason: 'drum-mapping',
+          droppedHitCount: 3,
+        },
+        'No safely mapped drum hits',
+      ],
+      [
+        { status: 'no-drums', fileName: 'piano.mid', pitchedTrackCount: 2 },
+        'No drum track in this file',
+      ],
+      [
+        {
+          status: 'error',
+          fileName: 'damaged.gp5',
+          message: 'The parser could not read this score.',
+        },
+        'The drum part could not be opened',
+      ],
+    ]
+
+    for (const [state, expectedCopy] of states) {
+      importSession.setState(state)
+      expect(screen.getByLabelText('score session state')).toHaveTextContent(
+        expectedCopy,
+      )
+    }
+
+    importSession.setState(readySessionFixture({ title: 'Percussion Study' }))
+    expect(
+      screen.getByRole('heading', { name: 'Percussion Study' }),
+    ).toBeVisible()
+    expect(screen.getByText('Imported percussion score')).toBeVisible()
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-session-status',
+      'ready',
+    )
+  })
+
+  it('imports from the picker and drop zone, ignores stale UI attempts, and keeps recovery visible', async () => {
+    const ready = readySessionFixture({ title: 'Pocket From File' })
+    const importSession = importSessionHarness()
+    const onReadySessionChange = vi.fn()
+    importSession.setNextResult(ready)
+    renderRoom({ importSession, onReadySessionChange })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
+    let drawer = screen.getByRole('dialog', { name: 'Bring a drum part' })
+    const file = new File([new Uint8Array([1, 2, 3])], 'pocket.mid', {
+      type: 'audio/midi',
+    })
+    const fileList = {
+      0: file,
+      length: 1,
+      item: () => file,
+    } as unknown as FileList
+    fireEvent.change(
+      within(drawer).getByLabelText('Choose a drum session file'),
+      { target: { files: fileList } },
+    )
+
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-view',
+        'score',
+      ),
+    )
+    expect(importSession.importFile).toHaveBeenCalledWith(file)
+    expect(window.location.search).toBe('?view=score')
+    expect(onReadySessionChange).toHaveBeenLastCalledWith(ready.document)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
+    drawer = screen.getByRole('dialog', { name: 'Bring a drum part' })
+    expect(
+      within(drawer).getByText(/Percussion-only session ready/i),
+    ).toBeVisible()
+
+    const damaged = new File([new Uint8Array([4])], 'damaged.gpx')
+    importSession.setNextResult({
+      status: 'error',
+      fileName: damaged.name,
+      message: 'Guitar Pro data ended unexpectedly.',
+    })
+    fireEvent.drop(
+      within(drawer).getByRole('group', {
+        name: 'Drop a drum session file',
+      }),
+      {
+        dataTransfer: {
+          files: { item: () => damaged },
+        },
+      },
+    )
+    await waitFor(() =>
+      expect(within(drawer).getByRole('alert')).toHaveTextContent(
+        'Guitar Pro data ended unexpectedly.',
+      ),
+    )
+    expect(onReadySessionChange).toHaveBeenLastCalledWith(null)
+    expect(
+      within(drawer).getByRole('button', { name: 'Choose drum part' }),
+    ).toBeEnabled()
+  })
+
+  it('reuses one score index across Seat, Score, and Coach and restores the view from the URL', () => {
+    window.history.replaceState({}, '', '/drum-night?view=seat')
+    const ready = readySessionFixture({ title: 'Seat Map Study' })
+    const importSession = importSessionHarness(ready)
+    const createScoreIndex = vi.fn((document: typeof ready.document) =>
+      createDrumScoreIndex(document),
+    )
+    renderRoom({ createScoreIndex, importSession })
+
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-view',
+      'seat',
+    )
+    const backdrop = screen.getByTestId('drummer-seat-backdrop')
+    expect(backdrop.querySelector('img')).toHaveAttribute(
+      'src',
+      '/drum-night/drummer-seat-landscape.webp',
+    )
+    expect(backdrop.querySelector('source')).toHaveAttribute(
+      'srcset',
+      '/drum-night/drummer-seat-portrait.webp',
+    )
+    expect(screen.getByText('Drummer’s seat')).toBeVisible()
+    expect(createScoreIndex).toHaveBeenCalledOnce()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    expect(screen.getByText('Imported percussion score')).toBeVisible()
+    expect(window.location.search).toBe('?view=score')
+    expect(createScoreIndex).toHaveBeenCalledOnce()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open live take monitor' }),
+    )
+    expect(
+      within(
+        screen.getByRole('dialog', { name: 'Recover the backbeat' }),
+      ).getByRole('heading', { name: 'Phrase coach' }),
+    ).toBeVisible()
+    expect(createScoreIndex).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a late indexed phrase visible after the bounded score projection', async () => {
+    const clock = new TestClock()
+    const earlyHits = Array.from({ length: 2_050 }, (_, index) => ({
+      id: `early-${index}`,
+      gmKey: 42,
+      startBeat: index * 0.25,
+      velocity: 72,
+    }))
+    const ready = readySessionFixture({
+      title: 'Long Form Pocket',
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              ...earlyHits,
+              {
+                id: 'late-kick',
+                gmKey: 36,
+                startBeat: 12_000,
+                velocity: 112,
+              },
+            ],
+          }),
+        ],
+      }),
+    })
+    renderRoom({ clock, importSession: importSessionHarness(ready) })
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Long Form Pocket take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', {
+          name: 'Pause Long Form Pocket take clock',
+        }),
+      ).not.toHaveLength(0),
+    )
+
+    clock.advanceTo(12_000 * 500)
+
+    expect(screen.getByText('Now: Bass Drum 1')).toBeVisible()
+    expect(screen.getAllByText(/Bar 3001/)).not.toHaveLength(0)
+  })
+
+  it('uses authored 6/8 bars in the top session map', async () => {
+    const clock = new TestClock()
+    const baseSong = drumSongFixture({
+      percussionTracks: [
+        percussionTrackFixture({
+          hits: [
+            { id: 'kick-1', gmKey: 36, startBeat: 0, velocity: 96 },
+            { id: 'kick-2', gmKey: 36, startBeat: 8.5, velocity: 96 },
+          ],
+        }),
+      ],
+    })
+    const ready = readySessionFixture({
+      title: 'Six Eight Study',
+      song: {
+        ...baseSong,
+        timeSignatures: [{ beat: 0, numerator: 6, denominator: 8 }],
+      },
+    })
+    renderRoom({ clock, importSession: importSessionHarness(ready) })
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Six Eight Study take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', {
+          name: 'Pause Six Eight Study take clock',
+        }),
+      ).not.toHaveLength(0),
+    )
+
+    clock.advanceTo(1_600)
+
+    expect(
+      screen.getByLabelText('Current bar 2, 3 authored bars'),
+    ).toBeVisible()
+  })
+
+  it('schedules authored drums only after Play and discloses bounded routing truth', async () => {
+    const clock = new TestClock()
+    const simultaneousHits = Array.from({ length: 50 }, (_, index) => ({
+      id: `stack-${index}`,
+      gmKey: 38,
+      startBeat: 0,
+      velocity: 90,
+    }))
+    const denseHits = Array.from({ length: 260 }, (_, index) => ({
+      id: `dense-${index}`,
+      gmKey: 42,
+      startBeat: 0.01 + index * 0.0003,
+      velocity: 68,
+    }))
+    const song = drumSongFixture({
+      percussionTracks: [
+        percussionTrackFixture({
+          hits: [...simultaneousHits, ...denseHits],
+          droppedHitCount: 2,
+        }),
+      ],
+    })
+    const ready = readySessionFixture({
+      title: 'Dense Scheduler Truth',
+      song: {
+        ...song,
+        tempoChanges: Array.from({ length: 200 }, (_, index) => ({
+          beat: index,
+          usPerBeat: index === 0 ? 1 : 500_000,
+        })),
+      },
+    })
+    const room = renderRoom({
+      clock,
+      importSession: importSessionHarness(ready),
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+
+    expect(room.player.activate).not.toHaveBeenCalled()
+    expect(room.player.trigger).not.toHaveBeenCalled()
+    expect(
+      room.session.performanceTimestampToContextTime,
+    ).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Dense Scheduler Truth take clock',
+      })[0],
+    )
+
+    await waitFor(() =>
+      expect(room.player.trigger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceId: expect.stringMatching(/^authored:/),
+        }),
+      ),
+    )
+    const playbackTruth = screen.getByRole('note')
+    expect(playbackTruth).toHaveTextContent(
+      '2 unsupported source hits stay silent',
+    )
+    expect(playbackTruth).toHaveTextContent('2 simultaneous hits are silent')
+    expect(playbackTruth).toHaveTextContent(/in-range hits are waiting/i)
+    expect(playbackTruth).toHaveTextContent(
+      /source tempo changes were omitted from the bounded playback map/i,
+    )
+    expect(playbackTruth).toHaveTextContent(
+      /source tempo value was clamped to the supported 40–280 BPM range/i,
+    )
+    expect(playbackTruth).toHaveTextContent(/attacks are using synth fallback/i)
+    expect(screen.getByText(/No metronome click is scheduled/i)).toBeVisible()
+
+    clock.advanceTo(500)
+    await waitFor(() =>
+      expect(playbackTruth).toHaveTextContent(
+        /delayed hits missed the bounded scheduling window and stayed silent/i,
+      ),
+    )
+  })
+
+  it('resets take evidence and practice state when the imported document changes', async () => {
+    const clock = new TestClock()
+    const first = readySessionFixture({
+      title: 'First Pocket',
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              { id: 'first', gmKey: 38, startBeat: 1, velocity: 100 },
+              { id: 'tail', gmKey: 36, startBeat: 8, velocity: 90 },
+            ],
+          }),
+        ],
+      }),
+    })
+    const second = readySessionFixture({
+      title: 'Second Pocket',
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              { id: 'second', gmKey: 38, startBeat: 1, velocity: 100 },
+              { id: 'tail', gmKey: 36, startBeat: 8, velocity: 90 },
+            ],
+          }),
+        ],
+      }),
+    })
+    const importSession = importSessionHarness(first)
+    renderRoom({ clock, importSession })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Learn' })[0])
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Start silent take clock at 82 BPM',
+      }),
+    )
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', {
+          name: 'Pause First Pocket take clock',
+        }),
+      ).not.toHaveLength(0),
+    )
+    clock.advanceTo(4_000)
+    dispatchPointerDown(
+      within(screen.getByLabelText('Touch drum pads')).getByRole('button', {
+        name: 'Acoustic snare, key 2',
+      }),
+      { button: 0, isPrimary: true, pressure: 0.7 },
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('1 hits'),
+    )
+    expect(
+      screen.getByText('Practice loop').closest('button'),
+    ).not.toHaveTextContent('Off')
+
+    importSession.setState(second)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(
+      screen.getByText('Practice loop').closest('button'),
+    ).toHaveTextContent('Off')
+    expect(screen.getByText('Play the imported phrase once.')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: /Clear active .* loop/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows a truthful waiting-for-audio scheduler state', async () => {
+    const clock = new TestClock()
+    const ready = readySessionFixture({ title: 'Waiting Pocket' })
+    renderRoom({
+      clock,
+      importSession: importSessionHarness(ready),
+      schedulerAudioReady: false,
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Waiting Pocket take clock',
+      })[0],
+    )
+
+    await waitFor(() =>
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'Authored playback is waiting for active drum audio',
+      ),
+    )
+  })
+
+  it('sets a measured recovery bar on the shared loop at 70 percent', async () => {
+    const clock = new TestClock()
+    const ready = readySessionFixture({
+      title: 'Recovery Study',
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              { id: 'snare-1', gmKey: 38, startBeat: 1, velocity: 100 },
+              { id: 'snare-2', gmKey: 38, startBeat: 2, velocity: 100 },
+              { id: 'tail', gmKey: 36, startBeat: 3.5, velocity: 90 },
+            ],
+          }),
+        ],
+      }),
+    })
+    renderRoom({ clock, importSession: importSessionHarness(ready) })
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(screen.getByText('Take events').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Recovery Study take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', {
+          name: 'Pause Recovery Study take clock',
+        }),
+      ).not.toHaveLength(0),
+    )
+
+    const snare = within(screen.getByLabelText('Touch drum pads')).getByRole(
+      'button',
+      { name: 'Acoustic snare, key 2' },
+    )
+    clock.advanceTo(550)
+    dispatchPointerDown(snare, {
+      button: 0,
+      isPrimary: true,
+      pressure: 0.7,
+    })
+    clock.advanceTo(1_050)
+    dispatchPointerDown(snare, {
+      button: 0,
+      isPrimary: true,
+      pressure: 0.7,
+    })
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Set recovery loop to bar 1',
+      }),
+    )
+
+    expect(
+      screen.getByText('Practice loop').closest('button'),
+    ).toHaveTextContent('3.5-beat recovery · 70%')
+    expect(screen.getByText(/Recovery loop set to bar 1 at 70%/i)).toBeVisible()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Clear active 3.5-beat recovery · 70%',
+      }),
+    )
+
+    expect(
+      screen.getByText('Practice loop').closest('button'),
+    ).toHaveTextContent('Off')
+    expect(
+      screen.queryByRole('button', { name: /Clear active .* loop/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(/Recovery loop cleared.*tempo returned to 100%/i),
+    ).toBeVisible()
+  })
+
+  it('keeps all six live pads available on a phone in Score and Drummer Seat views', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    })
+    const ready = readySessionFixture({ title: 'Phone Pocket' })
+    renderRoom({ importSession: importSessionHarness(ready) })
+    const touchKit = screen.getByLabelText('Touch drum pads')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    expect(within(touchKit).getAllByRole('button')).toHaveLength(6)
+    for (const pad of within(touchKit).getAllByRole('button')) {
+      expect(pad).toBeEnabled()
+      expect(pad).toHaveAttribute('aria-keyshortcuts')
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drummer Seat view' }))
+    expect(screen.getByTestId('drummer-seat-backdrop')).toBeInTheDocument()
+    expect(within(touchKit).getAllByRole('button')).toHaveLength(6)
   })
 })

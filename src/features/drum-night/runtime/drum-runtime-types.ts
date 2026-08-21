@@ -23,13 +23,21 @@ export interface DrumKitTrigger {
   readonly sourceId?: string
 }
 
+/** Player truth retained for authored playback fidelity reporting. */
+export type DrumKitTriggerOutcome =
+  | 'dropped'
+  | 'sampled'
+  | 'synth-fallback'
+  | 'unmapped'
+
 /**
  * Injected live-audio boundary. Construction must be inert; `activate` is
  * called only from a Play, pad, keyboard, or MIDI-connect user gesture.
  */
 export interface DrumKitPlayerPort {
   activate(): boolean | Promise<boolean>
-  trigger(hit: DrumKitTrigger): void
+  /** Legacy/test ports may return undefined when routing truth is unavailable. */
+  trigger(hit: DrumKitTrigger): DrumKitTriggerOutcome | undefined
   panic(): void
   dispose(): void | Promise<void>
 }
