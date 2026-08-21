@@ -518,6 +518,67 @@ describe('PianoNightApp', () => {
     expect(screen.getByLabelText('Practice timeline')).toHaveTextContent('1×')
   })
 
+  // Regression: the fall stage used to pin its visual beat to the current
+  // practice phrase whenever the OS asked for reduced motion, so the board sat
+  // frozen for a whole 16-beat section while audio played on. Windows Chrome
+  // reports reduced motion whenever "Animation effects" is off, which made
+  // Piano Night look broken on an ordinary desktop.
+  it('keeps the fall track advancing under system reduced motion', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(() => true),
+      })),
+    })
+
+    render(() => <PianoNightApp />)
+
+    const track = screen.getByTestId('piano-night-fall-track')
+    expect(track).toHaveAttribute('data-stage-motion', 'flowing')
+    const atStart = track.getAttribute('style')
+
+    fireEvent.input(screen.getByLabelText('Seek piano project'), {
+      target: { value: '6.5' },
+    })
+
+    expect(track.getAttribute('style')).not.toBe(atStart)
+    expect(track.getAttribute('style')).toContain('translate3d(0, 16%, 0)')
+  })
+
+  it('offers a stepped stage motion that advances a bar at a time', () => {
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    const session = screen.getByRole('tabpanel', { name: 'Session' })
+    fireEvent.click(within(session).getByRole('button', { name: 'Stepped' }))
+
+    const track = screen.getByTestId('piano-night-fall-track')
+    expect(track).toHaveAttribute('data-stage-motion', 'stepped')
+
+    fireEvent.input(screen.getByLabelText('Seek piano project'), {
+      target: { value: '6.5' },
+    })
+    expect(track).toHaveAttribute('data-anchor-beat', '4')
+    expect(track.getAttribute('style')).toContain('translate3d(0, 0%, 0)')
+
+    fireEvent.input(screen.getByLabelText('Seek piano project'), {
+      target: { value: '21' },
+    })
+    expect(track).toHaveAttribute('data-anchor-beat', '20')
+    expect(localStorage.getItem('pitchperfect_piano_night_stage_motion')).toBe(
+      'stepped',
+    )
+  })
+
   it('offers a roving keyboard path and releases its voice on seek', async () => {
     render(() => <PianoNightApp />)
 

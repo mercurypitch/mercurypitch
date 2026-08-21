@@ -25,6 +25,8 @@ import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import { createPersistedSignal } from '@/lib/storage'
 import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
 import { createPianoNightArrangement } from './piano-night-arrangement'
+import type { PianoNightStageMotion } from './piano-night-fall-geometry'
+import { isPianoNightStageMotion } from './piano-night-fall-geometry'
 import type { PianoNightPracticeLoopState, PianoNightPracticeRange, } from './piano-night-practice-loop'
 import { clampPianoNightMasterVolume, clampPianoNightRepeatCount, INITIAL_PIANO_NIGHT_PRACTICE_LOOP, isBeatInPianoNightPracticeRange, isPianoNightPracticeSpeed, normalizePianoNightPracticeRange, PIANO_NIGHT_DEFAULT_MASTER_VOLUME, } from './piano-night-practice-loop'
 import type { PianoNightSource } from './piano-night-source'
@@ -38,6 +40,7 @@ const MASTER_VOLUME_STORAGE_KEY = 'pitchperfect_piano_night_master_volume'
 const INSTRUMENT_STORAGE_KEY = 'pitchperfect_piano_night_instrument'
 const SOUND_CHARACTER_STORAGE_KEY = 'pitchperfect_piano_night_character'
 const SOUND_AMBIENCE_STORAGE_KEY = 'pitchperfect_piano_night_ambience'
+const STAGE_MOTION_STORAGE_KEY = 'pitchperfect_piano_night_stage_motion'
 
 export type PianoNightSoundLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type PianoNightSoundCharacter = 'soft' | 'balanced' | 'bright'
@@ -265,7 +268,18 @@ export function usePianoNightController() {
       'studio',
       { validator: isSoundAmbience },
     )
-  const [reducedMotion, setReducedMotion] = createSignal(false)
+  // The OS signal is advisory here. It strips the decorative transitions
+  // (see the prefers-reduced-motion block in PianoNightApp.module.css) and
+  // surfaces the stage-motion choice in the drawer, but it does NOT stop
+  // the fall: WCAG exempts motion essential to the function, and on this
+  // stage the descent is the notation.
+  const [systemReducedMotion, setSystemReducedMotion] = createSignal(false)
+  const [stageMotion, setStageMotion] =
+    createPersistedSignal<PianoNightStageMotion>(
+      STAGE_MOTION_STORAGE_KEY,
+      'flowing',
+      { validator: isPianoNightStageMotion },
+    )
   const [scoringState, setScoringState] =
     createSignal<PianoPerformanceScoringState>(scoring.snapshot())
   const [statusMessage, setStatusMessage] = createSignal(
@@ -1440,7 +1454,7 @@ export function usePianoNightController() {
         ? window.matchMedia('(prefers-reduced-motion: reduce)')
         : null
     const syncMotion = (): void => {
-      setReducedMotion(motion?.matches ?? false)
+      setSystemReducedMotion(motion?.matches ?? false)
     }
     const onVisibility = (): void => {
       if (document.visibilityState === 'visible') return
@@ -1509,7 +1523,9 @@ export function usePianoNightController() {
     practiceRunComplete,
     practiceSpeed,
     masterVolume,
-    reducedMotion,
+    systemReducedMotion,
+    stageMotion,
+    setStageMotion,
     statusMessage,
     scoringState,
     play,

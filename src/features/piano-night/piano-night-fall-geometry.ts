@@ -4,6 +4,10 @@
 //
 // The leading edge reaches the keyboard at note-on and the trailing edge
 // reaches it at note-off. Travel and duration intentionally share one scale.
+//
+// The fall is the lesson, not decoration: a note's descent IS how the stage
+// says when to play it. So no motion mode ever freezes the track -- the
+// quiet mode advances it in whole anchor blocks instead of pixel by pixel.
 
 export const PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT = 6.4
 export const PIANO_NIGHT_FALL_LOOKAHEAD_BEATS = 13
@@ -23,6 +27,36 @@ export function pianoNightFallAnchorBeat(visualBeat: number): number {
     Math.floor(beat / PIANO_NIGHT_FALL_ANCHOR_BEATS) *
     PIANO_NIGHT_FALL_ANCHOR_BEATS
   )
+}
+
+/**
+ * How the stage advances. `flowing` scrolls the track every frame; `stepped`
+ * jumps a whole anchor block at a time, so the board still tells the truth
+ * about where the music is without a continuously moving surface.
+ */
+export type PianoNightStageMotion = 'flowing' | 'stepped'
+
+export function isPianoNightStageMotion(
+  value: unknown,
+): value is PianoNightStageMotion {
+  return value === 'flowing' || value === 'stepped'
+}
+
+/**
+ * The beat the fall stage should draw itself at.
+ *
+ * `stepped` quantises to the anchor grid, which makes the track translation
+ * exactly zero and re-lays the notes one block lower each time the anchor
+ * moves. It must never return a beat that stops advancing: pinning the
+ * visual to a phrase start froze the whole board while audio kept playing,
+ * which read as "Piano Night is broken" rather than as a motion preference.
+ */
+export function pianoNightFallVisualBeat(
+  playheadBeat: number,
+  motion: PianoNightStageMotion,
+): number {
+  const beat = Number.isFinite(playheadBeat) ? Math.max(0, playheadBeat) : 0
+  return motion === 'stepped' ? pianoNightFallAnchorBeat(beat) : beat
 }
 
 export function pianoNightFallTrackTranslationPercent(
