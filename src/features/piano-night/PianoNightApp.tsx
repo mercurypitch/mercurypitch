@@ -17,6 +17,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap'
 import { createPianoKeyWindowController } from './piano-key-window'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
+import type { PianoNightStageMotion } from './piano-night-fall-geometry'
 import type { PianoNightPracticeRange } from './piano-night-practice-loop'
 import { PIANO_NIGHT_PRACTICE_SPEEDS } from './piano-night-practice-loop'
 import { createPianoNightPracticeSections } from './piano-night-practice-sections'
@@ -56,6 +57,18 @@ const DRAWER_SECTIONS: readonly DrawerSection[] = [
   'sound',
   'room',
 ]
+const PIANO_NIGHT_STAGE_MOTIONS: readonly PianoNightStageMotion[] = [
+  'flowing',
+  'stepped',
+]
+const STAGE_MOTION_LABELS: Record<PianoNightStageMotion, string> = {
+  flowing: 'Flowing',
+  stepped: 'Stepped',
+}
+const STAGE_MOTION_ANNOUNCEMENTS: Record<PianoNightStageMotion, string> = {
+  flowing: 'Stage motion set to flowing. Notes scroll continuously.',
+  stepped: 'Stage motion set to stepped. Notes advance one bar at a time.',
+}
 interface PhraseCoachProps {
   phrase: () => PianoNightPhrase
   phraseIndex: () => number
@@ -885,7 +898,7 @@ export function PianoNightApp(): JSX.Element {
           phrase={phrase}
           activeMidis={controller.activeMidis}
           keyWindow={keyWindow.window}
-          reducedMotion={controller.reducedMotion}
+          stageMotion={controller.stageMotion}
         />
 
         <PianoKeyHorizon
@@ -1298,6 +1311,35 @@ export function PianoNightApp(): JSX.Element {
                   }
                 />
               </label>
+
+              <fieldset class={styles.stageMotionGroup}>
+                <legend>Stage motion</legend>
+                <div>
+                  <For each={PIANO_NIGHT_STAGE_MOTIONS}>
+                    {(motion) => (
+                      <button
+                        type="button"
+                        aria-pressed={controller.stageMotion() === motion}
+                        classList={{
+                          [styles.practiceChoiceActive]:
+                            controller.stageMotion() === motion,
+                        }}
+                        onClick={() => {
+                          controller.setStageMotion(motion)
+                          announce(STAGE_MOTION_ANNOUNCEMENTS[motion])
+                        }}
+                      >
+                        {STAGE_MOTION_LABELS[motion]}
+                      </button>
+                    )}
+                  </For>
+                </div>
+                <p class={styles.stageMotionNote}>
+                  {controller.systemReducedMotion()
+                    ? 'Your system asks for reduced motion, so the trim and panels stay still. The notes keep advancing either way — their descent is how the stage tells you when to play. Choose Stepped if you would rather they move a bar at a time.'
+                    : 'Flowing scrolls the notes continuously. Stepped advances them a bar at a time instead.'}
+                </p>
+              </fieldset>
 
               <fieldset class={styles.practiceSpeedGroup}>
                 <legend>Practice speed</legend>

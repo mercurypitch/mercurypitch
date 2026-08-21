@@ -1621,6 +1621,7 @@
 }
 
 .loopBoundaryActions button,
+.stageMotionGroup button,
 .practiceSpeedGroup button {
   min-width: 44px;
   min-height: 44px;
@@ -1633,6 +1634,7 @@
 }
 
 .loopBoundaryActions button:hover,
+.stageMotionGroup button:hover,
 .practiceSpeedGroup button:hover {
   border-color: rgb(181 138 80 / 42%);
   color: var(--ivory);
@@ -1669,16 +1671,37 @@
   text-align: center;
 }
 
-.practiceSpeedGroup {
+.practiceSpeedGroup,
+.stageMotionGroup {
   min-width: 0;
   padding: 0;
   border: 0;
 }
 
-.practiceSpeedGroup legend {
+.practiceSpeedGroup legend,
+.stageMotionGroup legend {
   margin-bottom: 8px;
   color: var(--quiet);
   font-size: 10px;
+}
+
+.stageMotionGroup > div {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.stageMotionGroup .practiceChoiceActive {
+  border-color: rgb(181 138 80 / 55%);
+  color: var(--ivory-strong);
+  background: rgb(181 138 80 / 14%);
+}
+
+.stageMotionNote {
+  margin: 8px 0 0;
+  color: var(--quiet);
+  font-size: 9px;
+  line-height: 1.5;
 }
 
 .practiceSpeedGroup > div {

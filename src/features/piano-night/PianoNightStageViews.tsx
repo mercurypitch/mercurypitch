@@ -12,7 +12,8 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PianoKeyWindow } from './piano-key-window'
 import { keyCenterPercent } from './piano-key-window'
 import type { PianoNightPhrase } from './piano-night-demo-project'
-import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallWindow, } from './piano-night-fall-geometry'
+import type { PianoNightStageMotion } from './piano-night-fall-geometry'
+import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallVisualBeat, pianoNightFallWindow, } from './piano-night-fall-geometry'
 import styles from './PianoNightApp.module.css'
 
 export type PianoNightPerformanceView = 'fall' | 'score' | 'keys'
@@ -36,7 +37,11 @@ interface PianoNightStageViewsProps {
    * keys while the notes stay put.
    */
   keyWindow: Accessor<PianoKeyWindow>
-  reducedMotion: Accessor<boolean>
+  /**
+   * How the fall track advances. Never a switch between "moves" and
+   * "does not move" -- see pianoNightFallVisualBeat.
+   */
+  stageMotion: Accessor<PianoNightStageMotion>
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -67,7 +72,7 @@ function notePlacement(
 
 function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
   const visualBeat = createMemo(() =>
-    props.reducedMotion() ? props.phrase().startBeat : props.playheadBeat(),
+    pianoNightFallVisualBeat(props.playheadBeat(), props.stageMotion()),
   )
   const anchorBeat = createMemo(() => pianoNightFallAnchorBeat(visualBeat()))
   const trackNotes = createMemo(() =>
@@ -108,6 +113,7 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
           transform: `translate3d(0, ${trackTranslation()}%, 0)`,
         }}
         data-anchor-beat={anchorBeat()}
+        data-stage-motion={props.stageMotion()}
         data-testid="piano-night-fall-track"
         aria-hidden="true"
       >

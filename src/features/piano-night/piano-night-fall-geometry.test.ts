@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallWindow, } from './piano-night-fall-geometry'
+import { isPianoNightStageMotion, PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallVisualBeat, pianoNightFallWindow, } from './piano-night-fall-geometry'
 
 describe('pianoNightFallGeometry', () => {
   it('places the leading edge on the keyboard at note-on', () => {
@@ -88,5 +88,52 @@ describe('pianoNightFallGeometry', () => {
     expect(window.every((note) => note.startBeat + note.duration > 19)).toBe(
       true,
     )
+  })
+})
+
+describe('pianoNightFallVisualBeat', () => {
+  // The regression this exists for: the visual beat used to be pinned to the
+  // current practice phrase whenever the OS asked for reduced motion, so the
+  // board froze for a whole 16-beat section while audio played on. On Windows,
+  // where "Animation effects" is commonly off, Piano Night simply looked
+  // broken. No motion mode may ever stop the beat advancing.
+  it('follows the playhead exactly while flowing', () => {
+    expect(pianoNightFallVisualBeat(6.25, 'flowing')).toBe(6.25)
+    expect(pianoNightFallVisualBeat(0, 'flowing')).toBe(0)
+  })
+
+  it('quantises to the anchor grid while stepped, and still advances', () => {
+    expect(pianoNightFallVisualBeat(6.25, 'stepped')).toBe(4)
+    expect(pianoNightFallVisualBeat(8, 'stepped')).toBe(8)
+    expect(pianoNightFallVisualBeat(11.9, 'stepped')).toBe(8)
+  })
+
+  it('never freezes: every mode is monotonic in the playhead', () => {
+    for (const motion of ['flowing', 'stepped'] as const) {
+      const early = pianoNightFallVisualBeat(2, motion)
+      const later = pianoNightFallVisualBeat(40, motion)
+      expect(later).toBeGreaterThan(early)
+    }
+  })
+
+  it('leaves the stepped track translation at zero', () => {
+    const visual = pianoNightFallVisualBeat(6.25, 'stepped')
+    const anchor = pianoNightFallAnchorBeat(visual)
+
+    expect(pianoNightFallTrackTranslationPercent(visual, anchor)).toBe(0)
+  })
+
+  it('treats a non-finite or negative playhead as beat zero', () => {
+    expect(pianoNightFallVisualBeat(Number.NaN, 'flowing')).toBe(0)
+    expect(pianoNightFallVisualBeat(-4, 'stepped')).toBe(0)
+  })
+})
+
+describe('isPianoNightStageMotion', () => {
+  it('accepts only the two stage motions', () => {
+    expect(isPianoNightStageMotion('flowing')).toBe(true)
+    expect(isPianoNightStageMotion('stepped')).toBe(true)
+    expect(isPianoNightStageMotion('reduced')).toBe(false)
+    expect(isPianoNightStageMotion(undefined)).toBe(false)
   })
 })
