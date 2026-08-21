@@ -28,6 +28,8 @@ export interface DrumNightRuntimeOptions {
     'addEventListener' | 'removeEventListener' | 'visibilityState'
   > | null
   readonly reducedMotionQuery?: MediaQueryList | null
+  /** Test/integration override for the bounded live-take evidence window. */
+  readonly maxRecordedHits?: number
 }
 
 function browserMidiMappingStore(): DrumMidiMappingStore | null {
@@ -78,14 +80,18 @@ function emptyMidiState(): DrumMidiState {
 export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
   const clock = options.clock ?? createBrowserDrumRuntimeClock()
   const player = options.player ?? createSilentDrumKitPlayer()
-  const transport = createDrumTransport({ clock })
+  const transport = createDrumTransport({
+    clock,
+    maxRecordedHits: options.maxRecordedHits,
+  })
   const calibration = new DrumLatencyCalibration()
+  const initialTransportState = transport.state()
   const [transportState, setTransportState] = createSignal<DrumTransportState>(
-    transport.state(),
+    initialTransportState,
   )
   const [recordedHits, setRecordedHits] = createSignal<
     readonly DrumRecordedHit[]
-  >([])
+  >(transport.recordedHits())
   const [recentHit, setRecentHit] = createSignal<DrumLiveHit | null>(null)
   const [midiState, setMidiState] =
     createSignal<DrumMidiState>(emptyMidiState())
@@ -114,10 +120,21 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
   let playerActivated = false
   let playerActivation: Promise<boolean> | null = null
   let disposed = false
+  let syncedRecordedHitCount = initialTransportState.recordedHitCount
+  let syncedRecordedHitOmissionCount =
+    initialTransportState.recordedHitOmissionCount
 
   const syncTransport = (): void => {
-    setTransportState(transport.state())
-    setRecordedHits(transport.recordedHits())
+    const nextState = transport.state()
+    setTransportState(nextState)
+    if (
+      nextState.recordedHitCount !== syncedRecordedHitCount ||
+      nextState.recordedHitOmissionCount !== syncedRecordedHitOmissionCount
+    ) {
+      syncedRecordedHitCount = nextState.recordedHitCount
+      syncedRecordedHitOmissionCount = nextState.recordedHitOmissionCount
+      setRecordedHits(transport.recordedHits())
+    }
   }
 
   const resetLatencyCalibration = (): void => {
@@ -232,11 +249,9 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
   })
 
   const connectMidi = async (): Promise<boolean> => {
-    // Both calls begin synchronously inside the button gesture. The permission
-    // request is never made from construction, mount, or visibility recovery.
-    const activation = activatePlayer()
+    // MIDI permission belongs to this explicit action. Audio remains untouched
+    // until Play or a live strike supplies its own activation gesture.
     const connection = midiInput.connect()
-    void activation
     const connected = await connection
     if (disposed) return false
     setMidiState(midiInput.state())

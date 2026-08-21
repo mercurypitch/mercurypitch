@@ -208,6 +208,41 @@ describe('Drum Night transport', () => {
     ).toBeNull()
   })
 
+  it('bounds retained take evidence and reports older discarded hits', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({
+      clock,
+      tempoBpm: 120,
+      countInBeats: 0,
+      maxRecordedHits: 3,
+    })
+    transport.setRecording(true)
+    transport.start()
+
+    for (let index = 0; index < 5; index += 1) {
+      transport.captureHit({
+        gmKey: 38,
+        velocity: 100,
+        timestampMs: index * 10,
+        source: 'midi',
+        sourceId: 'kit-1',
+      })
+    }
+
+    expect(transport.recordedHits().map((hit) => hit.id)).toEqual([3, 4, 5])
+    expect(transport.state()).toMatchObject({
+      recordedHitCount: 3,
+      recordedHitOmissionCount: 2,
+    })
+
+    transport.clearRecording()
+    expect(transport.recordedHits()).toEqual([])
+    expect(transport.state()).toMatchObject({
+      recordedHitCount: 0,
+      recordedHitOmissionCount: 0,
+    })
+  })
+
   it('records the first hit past a count-in boundary before the next frame', () => {
     const clock = new FakeClock()
     const transport = createDrumTransport({

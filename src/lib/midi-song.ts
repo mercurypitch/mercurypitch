@@ -10,6 +10,11 @@ import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { parseMidiSongViaProject } from '@/lib/midi-song-from-project'
 
+export {
+  createBeatClock,
+  createSecondsToBeatClock,
+} from '@/lib/midi-tempo-clock'
+
 /** A single pitched note within a parsed MIDI track. */
 export interface MidiSongNote {
   /** Stable score-local id when the source exposes note relationships. */
@@ -196,89 +201,6 @@ export function normalizeMidiSong(song: MidiSongNormalizationInput): MidiSong {
           ((track.percussionHits?.length ?? 0) - hits.length),
       }
     }),
-  }
-}
-
-/**
- * Beats to seconds through the whole tempo map.
- *
- * Returns a function rather than converting one beat at a time: the anchors
- * are accumulated once, so converting a few thousand notes stays linear
- * instead of rescanning the map per note.
- */
-type MidiTempoSource = {
-  bpm: number
-  tempoChanges?: readonly MidiTempoChange[]
-  /** Accepted for whole-song object literals; timing itself does not read it. */
-  tracks?: readonly unknown[]
-}
-
-interface TempoAnchor {
-  beat: number
-  seconds: number
-  usPerBeat: number
-}
-
-function tempoAnchors(song: MidiTempoSource): TempoAnchor[] {
-  const changes = [...(song.tempoChanges ?? [])].sort(
-    (left, right) => left.beat - right.beat,
-  )
-  const opening = 60000000 / Math.max(1, song.bpm)
-  if (changes.length === 0 || (changes[0]?.beat ?? 0) > 0) {
-    changes.unshift({ beat: 0, usPerBeat: opening })
-  }
-
-  // Seconds elapsed at each change, accumulated at the tempo in force before it.
-  const anchors: TempoAnchor[] = [
-    { beat: 0, seconds: 0, usPerBeat: changes[0]?.usPerBeat ?? opening },
-  ]
-  for (let index = 1; index < changes.length; index += 1) {
-    const change = changes[index]
-    const previous = anchors[index - 1]
-    if (change === undefined || previous === undefined) continue
-    anchors.push({
-      beat: change.beat,
-      seconds:
-        previous.seconds +
-        ((change.beat - previous.beat) * previous.usPerBeat) / 1e6,
-      usPerBeat: change.usPerBeat,
-    })
-  }
-  return anchors
-}
-
-export function createBeatClock(
-  song: MidiTempoSource,
-): (beat: number) => number {
-  const anchors = tempoAnchors(song)
-
-  return (beat: number): number => {
-    let anchor = anchors[0]
-    if (anchor === undefined) return 0
-    // Linear rather than binary: a tempo map is a handful of entries, and the
-    // scan is cheaper than the branchy search it would replace.
-    for (const candidate of anchors) {
-      if (candidate.beat <= beat) anchor = candidate
-      else break
-    }
-    return anchor.seconds + ((beat - anchor.beat) * anchor.usPerBeat) / 1e6
-  }
-}
-
-/** Seconds back to authored beat time through the same complete tempo map. */
-export function createSecondsToBeatClock(
-  song: MidiTempoSource,
-): (seconds: number) => number {
-  const anchors = tempoAnchors(song)
-
-  return (seconds: number): number => {
-    let anchor = anchors[0]
-    if (anchor === undefined) return 0
-    for (const candidate of anchors) {
-      if (candidate.seconds <= seconds) anchor = candidate
-      else break
-    }
-    return anchor.beat + ((seconds - anchor.seconds) * 1e6) / anchor.usPerBeat
   }
 }
 

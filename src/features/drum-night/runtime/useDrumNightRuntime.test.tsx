@@ -37,6 +37,13 @@ class FakeClock implements DrumRuntimeClock {
   cancelFrame = (handle: number): void => {
     this.frames.delete(handle)
   }
+
+  advance(milliseconds: number): void {
+    this.timestampMs += milliseconds
+    const pending = [...this.frames.values()]
+    this.frames.clear()
+    for (const callback of pending) callback(this.timestampMs)
+  }
 }
 
 function playerHarness() {
@@ -87,7 +94,7 @@ describe('useDrumNightRuntime', () => {
     expect(controller.midiState().status).toBe('idle')
 
     await controller.connectMidi()
-    expect(player.activate).toHaveBeenCalledOnce()
+    expect(player.activate).not.toHaveBeenCalled()
     expect(requestAccess).toHaveBeenCalledOnce()
     expect(controller.midiState().status).toBe('no-inputs')
   })
@@ -140,6 +147,27 @@ describe('useDrumNightRuntime', () => {
       velocity: 88,
       source: 'touch',
     })
+  })
+
+  it('keeps the captured-hit signal stable across transport-only frames', async () => {
+    const player = playerHarness()
+    const clock = new FakeClock()
+    const { controller } = mountRuntime({
+      player,
+      clock,
+      keyboardTarget: null,
+      midiEnvironment: { nowMs: clock.nowMs },
+    })
+    controller.setCountInBeats(0)
+    controller.setRecording(true)
+    await controller.play()
+    controller.strikePad('snare', 100)
+    await waitFor(() => expect(controller.recordedHits()).toHaveLength(1))
+    const capturedReference = controller.recordedHits()
+
+    clock.advance(16)
+
+    expect(controller.recordedHits()).toBe(capturedReference)
   })
 
   it('pauses and releases voices when the page becomes hidden', async () => {

@@ -155,20 +155,25 @@ function transportPrimaryCopy(state: DrumTransportState): {
 }
 
 interface PocketRingProps {
+  readonly inactive: boolean
   readonly transport: () => DrumTransportState
 }
 
 function PocketRing(props: PocketRingProps): JSX.Element {
   const primaryCopy = createMemo(() => transportPrimaryCopy(props.transport()))
   return (
-    <div class={styles.pocketView} data-testid="drum-night-pocket-view">
+    <div
+      class={styles.pocketView}
+      data-testid="drum-night-pocket-view"
+      inert={props.inactive}
+    >
       <svg
         class={styles.pocketRing}
         viewBox="0 0 1000 620"
         role="img"
         aria-labelledby="drum-pocket-title drum-pocket-description"
       >
-        <title id="drum-pocket-title">Pocket Ring for bar nine</title>
+        <title id="drum-pocket-title">Pocket Ring visual drum guide</title>
         <desc id="drum-pocket-description">
           An authored one-bar visual guide with kit events approaching a shared
           strike horizon. It is not scheduled as backing audio.
@@ -255,7 +260,7 @@ function PocketRing(props: PocketRingProps): JSX.Element {
         </g>
       </svg>
 
-      <div class={styles.nowCapsule} aria-live="polite">
+      <div class={styles.nowCapsule} aria-hidden="true">
         <span class={styles.nowPulse} aria-hidden="true" />
         <span>
           <small>{primaryCopy().label}</small>
@@ -382,6 +387,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const authoredBarCount = createMemo(
     () => sessionScoreIndex()?.score.bars.length ?? null,
   )
+  const authoredBarCountCopy = createMemo(() => {
+    const count = authoredBarCount()
+    if (count === null) return 'Unbounded take'
+    return `${count} authored ${count === 1 ? 'bar' : 'bars'}`
+  })
   const currentBar = createMemo(() => {
     const index = sessionScoreIndex()
     if (index === null) return Math.floor(transport().positionBeats / 4) + 1
@@ -396,13 +406,22 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       beat: hit.transportBeat,
     })),
   )
-  const sessionTitle = createMemo(
-    () => readySession()?.title ?? 'Midnight Pocket',
+  const retainedTakeHitCount = createMemo(() => transport().recordedHitCount)
+  const omittedTakeHitCount = createMemo(
+    () => transport().recordedHitOmissionCount,
   )
+  const takeHitCountCopy = createMemo(() => {
+    const retained = retainedTakeHitCount()
+    const omitted = omittedTakeHitCount()
+    return omitted === 0
+      ? `${retained} hits`
+      : `${retained} hits · ${omitted} older not retained`
+  })
+  const sessionTitle = createMemo(() => readySession()?.title ?? 'Live drums')
   const sessionIdentityDetail = createMemo(() => {
     const document = readySession()
     if (document === null) {
-      return `A minor · Neo-soul · ${transport().tempoBpm} BPM`
+      return `Touch · keys · optional MIDI · ${transport().tempoBpm} BPM`
     }
     const source = document.sourceFormat === 'midi' ? 'MIDI' : 'Guitar Pro'
     return `${source} · ${document.hitCount} mapped hits · ${transport().tempoBpm} BPM take clock`
@@ -529,6 +548,23 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (state.status === 'requesting') return 'waiting for permission'
     return 'touch and keys available'
   })
+  const midiCompactStatus = createMemo(() => {
+    switch (runtime.midiState().status) {
+      case 'connected':
+        return 'On'
+      case 'requesting':
+        return 'Wait'
+      case 'no-inputs':
+        return 'None'
+      case 'denied':
+      case 'error':
+        return 'Error'
+      case 'unsupported':
+        return 'N/A'
+      default:
+        return 'Off'
+    }
+  })
   const midiGuidance = createMemo(() => {
     const state = runtime.midiState()
     switch (state.status) {
@@ -611,16 +647,69 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       .map((entry) => entry[0])
       .sort((left, right) => left - right)
 
+  const focusDrawerPrimary = (): void => {
+    const target =
+      drawerRef?.querySelector<HTMLElement>('[aria-selected="true"]') ??
+      drawerRef?.querySelector<HTMLElement>('[data-drawer-primary="true"]') ??
+      drawerRef
+    target?.focus()
+  }
+
   const updateUrl = (
     nextView: StageView,
     nextDrawer: Workspace | null,
+    mode: 'push' | 'replace' = 'push',
   ): void => {
     const url = new URL(window.location.href)
     if (nextView === 'pocket') url.searchParams.delete('view')
     else url.searchParams.set('view', nextView)
     if (nextDrawer === null) url.searchParams.delete('drawer')
     else url.searchParams.set('drawer', nextDrawer)
-    window.history.replaceState({}, '', url)
+    const nextLocation = `${url.pathname}${url.search}${url.hash}`
+    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    if (nextLocation === currentLocation) return
+    if (mode === 'replace') {
+      window.history.replaceState({ drumNight: true }, '', nextLocation)
+    } else {
+      window.history.pushState({ drumNight: true }, '', nextLocation)
+    }
+  }
+
+  const syncStateFromUrl = (): void => {
+    const params = new URLSearchParams(window.location.search)
+    const requestedView = params.get('view')
+    const legacyKitView = requestedView === 'kit'
+    const nextView = legacyKitView
+      ? 'seat'
+      : STAGE_VIEWS.includes(requestedView as StageView)
+        ? (requestedView as StageView)
+        : 'pocket'
+    const requestedDrawer = params.get('drawer')
+    const nextDrawer =
+      requestedDrawer !== null && requestedDrawer in WORKSPACE_TITLES
+        ? (requestedDrawer as Workspace)
+        : null
+    const drawerWorkspaceChanged =
+      nextDrawer !== null && nextDrawer !== workspace()
+
+    closeInput()
+    setView(nextView)
+    if (nextDrawer === null) {
+      setDrawerOpen(false)
+    } else {
+      setWorkspace(nextDrawer)
+      setDrawerOpen(true)
+      queueMicrotask(() => {
+        if (
+          drawerWorkspaceChanged ||
+          (drawerRef !== undefined &&
+            !drawerRef.contains(document.activeElement))
+        ) {
+          focusDrawerPrimary()
+        }
+      })
+    }
+    if (legacyKitView) updateUrl(nextView, nextDrawer, 'replace')
   }
 
   const showToast = (message: string): void => {
@@ -628,6 +717,15 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setLiveMessage(message)
     setToastVisible(true)
     toastTimer = window.setTimeout(() => setToastVisible(false), 2600)
+  }
+
+  const announceOnly = (message: string): void => {
+    if (toastTimer !== undefined) {
+      window.clearTimeout(toastTimer)
+      toastTimer = undefined
+    }
+    setToastVisible(false)
+    setLiveMessage(message)
   }
 
   const selectView = (nextView: StageView): void => {
@@ -687,6 +785,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     showToast('Imported drum part cleared. The live kit remains playable.')
   }
 
+  const cancelSessionImport = (): void => {
+    if (sessionState().status !== 'loading') return
+    sessionController.cancel()
+    showToast('Drum part import cancelled. Nothing was partially loaded.')
+  }
+
   const applyRecoveryLoop = (loop: DrumRecoveryLoop): void => {
     const authoredEndBeat = readySession()?.durationBeats
     const endBeat =
@@ -712,7 +816,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       showToast('Take clock paused. Live voices released.')
       return
     }
-    showToast(
+    announceOnly(
       readySession() === null
         ? 'Starting the live take clock. No backing track or click is scheduled.'
         : 'Starting authored percussion on the shared take clock. No metronome click is scheduled.',
@@ -878,16 +982,26 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   useFocusTrap(() => drawerRef, {
     isOpen: drawerOpen,
     onClose: closeWorkspace,
-    initialFocus: () =>
-      drawerRef?.querySelector<HTMLElement>('[aria-selected="true"]') ??
-      drawerRef,
+    initialFocus: () => {
+      const selected = drawerRef?.querySelector<HTMLElement>(
+        '[aria-selected="true"]',
+      )
+      return (
+        selected ??
+        drawerRef?.querySelector<HTMLElement>('[data-drawer-primary="true"]') ??
+        drawerRef
+      )
+    },
   })
 
   useFocusTrap(() => inputRef, {
     isOpen: inputOpen,
     onClose: closeInput,
     initialFocus: () =>
-      inputRef?.querySelector<HTMLElement>('[data-input-primary="true"]') ??
+      inputRef?.querySelector<HTMLElement>(
+        '[data-input-primary="true"]:not(select)',
+      ) ??
+      inputRef?.querySelector<HTMLElement>('[data-input-close="true"]') ??
       inputRef,
   })
 
@@ -958,19 +1072,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   })
 
   onMount(() => {
-    const params = new URLSearchParams(window.location.search)
-    const initialView = params.get('view')
-    if (initialView === 'kit') {
-      setView('seat')
-      updateUrl('seat', params.get('drawer') as Workspace | null)
-    } else if (STAGE_VIEWS.includes(initialView as StageView)) {
-      setView(initialView as StageView)
-    }
-    const initialDrawer = params.get('drawer')
-    if (initialDrawer !== null && initialDrawer in WORKSPACE_TITLES) {
-      setWorkspace(initialDrawer as Workspace)
-      setDrawerOpen(true)
-    }
+    syncStateFromUrl()
 
     const uninstallSpace = installSpacePlaybackToggle({
       toggle: togglePlaying,
@@ -995,10 +1097,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
 
     document.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('popstate', syncStateFromUrl)
     window.addEventListener('resize', syncCompactScore)
     onCleanup(() => {
       uninstallSpace()
       document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('popstate', syncStateFromUrl)
       window.removeEventListener('resize', syncCompactScore)
     })
   })
@@ -1021,17 +1125,23 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       data-testid="drum-night-shell"
       data-playing={isPlaying() ? 'true' : 'false'}
       data-drawer-open={drawerOpen() ? 'true' : 'false'}
+      data-input-open={inputOpen() ? 'true' : 'false'}
       data-view={view()}
       data-session-status={sessionState().status}
     >
-      <a class={styles.skipLink} href="#drum-night-stage">
+      <a
+        class={styles.skipLink}
+        href="#drum-night-stage"
+        inert={inputOpen() || drawerOpen()}
+        aria-hidden={inputOpen() || drawerOpen()}
+      >
         Skip to the drum stage
       </a>
 
       <aside
         class={styles.roomRail}
         aria-label="Drum Night sections"
-        inert={inputOpen()}
+        inert={inputOpen() || drawerOpen()}
       >
         <a class={styles.brandMark} href="/" aria-label="MercuryPitch home">
           <MercuryPlanet />
@@ -1085,7 +1195,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       </aside>
 
       <main class={styles.roomShell}>
-        <header class={styles.sessionBar} inert={inputOpen()}>
+        <header class={styles.sessionBar} inert={inputOpen() || drawerOpen()}>
           <div class={styles.mobileBrand} aria-label="MercuryPitch Drum Night">
             <MercuryPlanet />
             <span>Drums</span>
@@ -1107,19 +1217,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             aria-label={
               authoredBarCount() === null
                 ? `Current bar ${currentBar()}, unbounded take`
-                : `Current bar ${currentBar()}, ${authoredBarCount()} authored bars`
+                : `Current bar ${currentBar()}, ${authoredBarCountCopy()}`
             }
           >
             <span class={styles.barLabel}>Bar {currentBar()}</span>
             <span class={styles.barExtent} aria-hidden="true">
               <i />
-              {authoredBarCount() === null
-                ? 'Unbounded take'
-                : `${authoredBarCount()} authored bars`}
+              {authoredBarCountCopy()}
             </span>
           </div>
           <div class={styles.sessionActions}>
-            <span class={styles.conceptBadge}>Live kit foundation</span>
+            <span class={styles.conceptBadge}>Playable room · pilot</span>
             <button
               ref={inputButtonRef}
               class={styles.inputChip}
@@ -1141,6 +1249,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 aria-hidden="true"
               />
               <MidiDin />
+              <span class={styles.compactInputState} aria-hidden="true">
+                {midiCompactStatus()}
+              </span>
               <span class={styles.inputCopy}>
                 <strong>{midiHeadline()}</strong>
                 <small>{midiDetail()}</small>
@@ -1186,7 +1297,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <div class={styles.stageShade} aria-hidden="true" />
           <div class={styles.stageVignette} aria-hidden="true" />
 
-          <div class={styles.stageHeading}>
+          <div class={styles.stageHeading} inert={drawerOpen()}>
             <div class={styles.stageCopy}>
               <span class={styles.stageKicker}>
                 <i aria-hidden="true" /> {stageCopy().kicker}
@@ -1215,10 +1326,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </div>
 
           <Show when={view() === 'pocket'}>
-            <PocketRing transport={transport} />
+            <PocketRing transport={transport} inactive={drawerOpen()} />
           </Show>
           <Show when={view() !== 'pocket'}>
-            <div class={styles.sessionStageView} data-session-view={view()}>
+            <div
+              class={styles.sessionStageView}
+              data-session-view={view()}
+              inert={drawerOpen()}
+            >
               <Show when={view() === 'seat'}>
                 <DrummerSeatView
                   session={sessionState}
@@ -1256,7 +1371,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </div>
           </Show>
 
-          <aside class={styles.phraseCoach} aria-label="Session phrase coach">
+          <aside
+            class={styles.phraseCoach}
+            aria-label="Session phrase coach"
+            inert={drawerOpen()}
+          >
             <DrumSessionCoach
               session={sessionState}
               playheadBeat={() => transport().positionBeats}
@@ -1269,6 +1388,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <button
             class={styles.coachCue}
             type="button"
+            inert={drawerOpen()}
             onClick={() => openWorkspace('coach')}
             aria-label="Open live take monitor"
           >
@@ -1279,9 +1399,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               <strong>
                 {readySession() === null
                   ? 'Load a part to coach a take.'
-                  : runtime.recordedHits().length === 0
+                  : retainedTakeHitCount() === 0
                     ? 'Play the imported phrase once.'
-                    : `${runtime.recordedHits().length} strikes ready to compare.`}
+                    : omittedTakeHitCount() === 0
+                      ? `${retainedTakeHitCount()} strikes ready to compare.`
+                      : `${retainedTakeHitCount()} strikes ready · ${omittedTakeHitCount()} older not retained.`}
               </strong>
               <small>
                 {readySession() === null
@@ -1296,6 +1418,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <button
               class={styles.activeLoopControl}
               type="button"
+              inert={drawerOpen()}
               onClick={toggleLoop}
               aria-label={`Clear active ${loopStatusCopy()}`}
             >
@@ -1314,6 +1437,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             aria-label="Close rack drawer"
             onClick={closeWorkspace}
             tabindex={drawerOpen() ? 0 : -1}
+            aria-hidden={!drawerOpen()}
+            inert={!drawerOpen()}
           />
           <section
             ref={drawerRef}
@@ -1332,48 +1457,69 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   {WORKSPACE_TITLES[workspace()]}
                 </strong>
               </div>
-              <div
-                class={styles.workbenchTabs}
-                role="tablist"
-                aria-label="Drum workbench"
+              <Show
+                when={WORKBENCH_TABS.some((item) => item === workspace())}
+                fallback={
+                  <button
+                    class={styles.contextRackBack}
+                    type="button"
+                    data-drawer-primary="true"
+                    onClick={() => {
+                      setWorkspace('groove')
+                      updateUrl(view(), 'groove')
+                      queueMicrotask(focusDrawerPrimary)
+                    }}
+                  >
+                    <SlidersHorizontal />
+                    Rack controls
+                  </button>
+                }
               >
-                <For each={WORKBENCH_TABS}>
-                  {(item, index) => (
-                    <button
-                      class={workspace() === item ? styles.isActive : undefined}
-                      type="button"
-                      role="tab"
-                      id={`drum-workbench-tab-${item}`}
-                      aria-controls={`drum-workbench-panel-${item}`}
-                      aria-selected={workspace() === item}
-                      tabindex={workspace() === item ? 0 : -1}
-                      onClick={() => {
-                        setWorkspace(item)
-                        updateUrl(view(), item)
-                      }}
-                      onKeyDown={(event) => {
-                        const nextIndex = nextRovingIndex(
-                          event.key,
-                          index(),
-                          WORKBENCH_TABS.length,
-                        )
-                        if (nextIndex === null) return
-                        event.preventDefault()
-                        const nextWorkspace = WORKBENCH_TABS[nextIndex]
-                        setWorkspace(nextWorkspace)
-                        updateUrl(view(), nextWorkspace)
-                        const tabs =
-                          event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
-                            '[role="tab"]',
+                <div
+                  class={styles.workbenchTabs}
+                  role="tablist"
+                  aria-label="Drum workbench"
+                >
+                  <For each={WORKBENCH_TABS}>
+                    {(item, index) => (
+                      <button
+                        class={
+                          workspace() === item ? styles.isActive : undefined
+                        }
+                        type="button"
+                        role="tab"
+                        id={`drum-workbench-tab-${item}`}
+                        aria-controls={`drum-workbench-panel-${item}`}
+                        aria-selected={workspace() === item}
+                        tabindex={workspace() === item ? 0 : -1}
+                        onClick={() => {
+                          setWorkspace(item)
+                          updateUrl(view(), item)
+                        }}
+                        onKeyDown={(event) => {
+                          const nextIndex = nextRovingIndex(
+                            event.key,
+                            index(),
+                            WORKBENCH_TABS.length,
                           )
-                        tabs?.[nextIndex]?.focus()
-                      }}
-                    >
-                      {item[0].toUpperCase() + item.slice(1)}
-                    </button>
-                  )}
-                </For>
-              </div>
+                          if (nextIndex === null) return
+                          event.preventDefault()
+                          const nextWorkspace = WORKBENCH_TABS[nextIndex]
+                          setWorkspace(nextWorkspace)
+                          updateUrl(view(), nextWorkspace)
+                          const tabs =
+                            event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                              '[role="tab"]',
+                            )
+                          tabs?.[nextIndex]?.focus()
+                        }}
+                      >
+                        {item[0].toUpperCase() + item.slice(1)}
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </Show>
               <button
                 class={styles.closeWorkbench}
                 type="button"
@@ -1439,6 +1585,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                             variation() === item ? styles.isSelected : undefined
                           }
                           type="button"
+                          aria-label={item}
+                          aria-pressed={variation() === item}
                           onClick={() => {
                             setVariation(item)
                             showToast(
@@ -1446,7 +1594,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                             )
                           }}
                         >
-                          {item}
+                          <span>{item}</span>
+                          <Show when={variation() === item}>
+                            <em class={styles.selectionMark} aria-hidden="true">
+                              Selected
+                            </em>
+                          </Show>
                         </button>
                       )}
                     </For>
@@ -1523,6 +1676,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                           <span>
                             <strong>{kit.name}</strong>
                             <small>{kit.character}</small>
+                            <Show when={kitSnapshot().selectedKitId === kit.id}>
+                              <em
+                                class={styles.selectionMark}
+                                aria-hidden="true"
+                              >
+                                Selected
+                              </em>
+                            </Show>
                           </span>
                           <b>
                             {kit.engine === 'synth'
@@ -1776,6 +1937,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                       ref={sessionFileInputRef}
                       class={styles.visuallyHiddenInput}
                       type="file"
+                      tabindex="-1"
                       accept=".mid,.midi,.gp,.gp3,.gp4,.gp5,.gpx,audio/midi,audio/x-midi"
                       aria-label="Choose a drum session file"
                       onChange={(event) => {
@@ -1787,10 +1949,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     />
                     <button
                       type="button"
-                      disabled={sessionState().status === 'loading'}
                       onClick={() => sessionFileInputRef?.click()}
                     >
-                      Choose drum part
+                      {sessionState().status === 'loading'
+                        ? 'Choose a different part'
+                        : 'Choose drum part'}
                     </button>
                   </div>
                   <div
@@ -1810,6 +1973,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                           Clear imported part
                         </button>
                       </Show>
+                      <Show when={sessionState().status === 'loading'}>
+                        <button type="button" onClick={cancelSessionImport}>
+                          Cancel import
+                        </button>
+                      </Show>
                     </div>
                   </div>
                 </div>
@@ -1826,6 +1994,35 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 </div>
               </Match>
             </Switch>
+            <div
+              class={styles.drawerTouchKit}
+              role="group"
+              aria-label="Rack drawer drum pads"
+            >
+              <For each={ESSENTIAL_DRUM_PADS}>
+                {(pad) => (
+                  <button
+                    class={cx(
+                      pad.id === 'kick' && 'kickPad',
+                      activeHit() === pad.id && 'isHit',
+                    )}
+                    type="button"
+                    onPointerDown={(event) => {
+                      if (!acceptsPadPointer(event)) return
+                      triggerPad(pad.id, pointerVelocity(event))
+                    }}
+                    onClick={(event) => {
+                      if (event.detail === 0) triggerPad(pad.id, 100)
+                    }}
+                    aria-label={`${pad.label}, key ${pad.keyboardLabel}`}
+                    aria-keyshortcuts={pad.keyboardLabel}
+                  >
+                    <span>{pad.shortLabel}</span>
+                    <small>{pad.keyboardLabel}</small>
+                  </button>
+                )}
+              </For>
+            </div>
           </section>
         </section>
 
@@ -1833,7 +2030,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           class={styles.touchKit}
           role="group"
           aria-label="Touch drum pads"
-          inert={inputOpen()}
+          inert={inputOpen() || drawerOpen()}
         >
           <For each={ESSENTIAL_DRUM_PADS}>
             {(pad) => (
@@ -1860,7 +2057,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </For>
         </div>
 
-        <div class={styles.consoleBridge} inert={inputOpen()}>
+        <div class={styles.consoleBridge} inert={inputOpen() || drawerOpen()}>
           <button
             class={styles.consoleModule}
             type="button"
@@ -1936,8 +2133,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               <small>Take events</small>
               <strong>
                 {transport().recording
-                  ? `Armed · ${runtime.recordedHits().length} hits`
-                  : `${runtime.recordedHits().length} hits · off`}
+                  ? `Armed · ${takeHitCountCopy()}`
+                  : `${takeHitCountCopy()} · off`}
               </strong>
             </span>
           </button>
@@ -1970,7 +2167,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         <nav
           class={styles.mobileNav}
           aria-label="Drum Night navigation"
-          inert={inputOpen()}
+          inert={inputOpen() || drawerOpen()}
         >
           <button type="button" onClick={() => openWorkspace('songs')}>
             <MusicNote />
@@ -1995,7 +2192,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             onClick={toggleRecording}
           >
             <i class={styles.mobileRecordMark} aria-hidden="true" />
-            <span>Record</span>
+            <span>{transport().recording ? 'Armed' : 'Record'}</span>
           </button>
           <button type="button" onClick={() => openWorkspace('kit')}>
             <Drum />
@@ -2017,6 +2214,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <div class={styles.popoverHeading}>
               <span>Input and calibration</span>
               <button
+                data-input-close="true"
                 type="button"
                 onClick={closeInput}
                 aria-label="Close input details"
@@ -2162,7 +2360,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
         <Show when={audioErrorMessage()}>
           {(message) => (
-            <div class={styles.runtimeAlert} role="alert" inert={inputOpen()}>
+            <div
+              class={styles.runtimeAlert}
+              role="alert"
+              inert={inputOpen() || drawerOpen()}
+            >
               <span>
                 <strong>Drum audio is unavailable.</strong>
                 <small>{message()}</small>
@@ -2176,6 +2378,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
         <div
           class={cx('toast', toastVisible() && 'toastVisible')}
+          data-visible={toastVisible() ? 'true' : 'false'}
           role="status"
           aria-live="polite"
         >

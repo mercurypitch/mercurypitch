@@ -7,7 +7,7 @@
 // synchronous and falls back to the app's synth while any sample is missing.
 
 import type { DrumKitPlayerPort, DrumKitTrigger, } from '@/features/drum-night/runtime/drum-runtime-types'
-import { drumVoiceForMidi } from '@/lib/drum-lanes'
+import { drumVoiceForMidi } from '@/lib/drum-voice-map'
 import { triggerDrumVoice } from '@/lib/drum-voices'
 import { normalizeGeneralMidiPercussionKey } from '@/lib/percussion'
 import type { DrumKitId, DrumKitManifest, DrumKitSampleResource, } from './drum-kit-manifest'

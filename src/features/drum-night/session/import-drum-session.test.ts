@@ -2,7 +2,9 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { MidiSong } from '@/lib/midi-song'
+import { parseMidiSong } from '@/lib/midi-song'
 import { drumSongFixture, percussionTrackFixture, } from './drum-session.test-fixtures'
+import { DrumSessionImportError } from './drum-session-import-client'
 import type { DrumSessionParserOutcome } from './import-drum-session'
 import { createDrumSessionImportController, importDrumSession, MAX_DRUM_SESSION_FILE_BYTES, } from './import-drum-session'
 
@@ -53,7 +55,14 @@ function mixedMidiFile(): File {
 
 describe('importDrumSession', () => {
   it('opens mixed Standard MIDI through the canonical percussion projector', async () => {
-    const state = await importDrumSession(mixedMidiFile())
+    const state = await importDrumSession(mixedMidiFile(), {
+      parseMidi: (bytes) => {
+        const song = parseMidiSong(bytes)
+        return song === null
+          ? { status: 'unreadable' }
+          : { status: 'parsed', song }
+      },
+    })
 
     expect(state.status).toBe('ready')
     if (state.status !== 'ready') return
@@ -80,7 +89,7 @@ describe('importDrumSession', () => {
 
     const state = await importDrumSession(file, { parseGuitarPro })
 
-    expect(parseGuitarPro).toHaveBeenCalledWith(file)
+    expect(parseGuitarPro).toHaveBeenCalledWith(file, {})
     expect(state).toEqual(
       expect.objectContaining({
         status: 'ready',
@@ -238,6 +247,59 @@ describe('importDrumSession', () => {
 
     expect(state.status).toBe('ready')
   })
+
+  it('passes the File to the Worker boundary without reading it on the UI thread', async () => {
+    const file = midiFile(new Uint8Array([1]), 'worker.mid')
+    const arrayBuffer = vi.spyOn(file, 'arrayBuffer')
+    const importInWorker = vi.fn(async () => ({
+      status: 'parsed' as const,
+      song: drumSongFixture(),
+    }))
+
+    const state = await importDrumSession(file, { importInWorker })
+
+    expect(state.status).toBe('ready')
+    expect(importInWorker).toHaveBeenCalledWith(file, 'midi', {})
+    expect(arrayBuffer).not.toHaveBeenCalled()
+  })
+
+  it('keeps complexity and timeout failures recoverable without partial state', async () => {
+    const tooComplex = await importDrumSession(
+      midiFile(new Uint8Array([1]), 'dense.mid'),
+      {
+        importInWorker: () =>
+          Promise.reject(
+            new DrumSessionImportError(
+              'TOO_COMPLEX',
+              'This part exceeds 32,768 events. Nothing was partially loaded.',
+            ),
+          ),
+      },
+    )
+    const timedOut = await importDrumSession(
+      midiFile(new Uint8Array([1]), 'slow.mid'),
+      {
+        importInWorker: () =>
+          Promise.reject(
+            new DrumSessionImportError(
+              'TIMED_OUT',
+              'This part took too long. Nothing was partially loaded.',
+            ),
+          ),
+      },
+    )
+
+    expect(tooComplex).toEqual({
+      status: 'error',
+      fileName: 'dense.mid',
+      message: 'This part exceeds 32,768 events. Nothing was partially loaded.',
+    })
+    expect(timedOut).toEqual({
+      status: 'error',
+      fileName: 'slow.mid',
+      message: 'This part took too long. Nothing was partially loaded.',
+    })
+  })
 })
 
 describe('createDrumSessionImportController', () => {
@@ -250,9 +312,18 @@ describe('createDrumSessionImportController', () => {
     const fast = new Promise<DrumSessionParserOutcome>((resolve) => {
       resolveFast = resolve
     })
+    const importSignals: AbortSignal[] = []
     const parseMidi = vi
-      .fn<(bytes: Uint8Array) => Promise<DrumSessionParserOutcome>>()
-      .mockImplementation((bytes) => (bytes[0] === 1 ? slow : fast))
+      .fn<
+        (
+          bytes: Uint8Array,
+          options?: { signal?: AbortSignal },
+        ) => Promise<DrumSessionParserOutcome>
+      >()
+      .mockImplementation((bytes, options) => {
+        if (options?.signal !== undefined) importSignals.push(options.signal)
+        return bytes[0] === 1 ? slow : fast
+      })
     const controller = createDrumSessionImportController({ parseMidi })
     const stateChanges = vi.fn()
     controller.subscribe(stateChanges)
@@ -260,9 +331,13 @@ describe('createDrumSessionImportController', () => {
     const olderAttempt = controller.importFile(
       midiFile(new Uint8Array([1]), 'older.mid'),
     )
+    await Promise.resolve()
     const newerAttempt = controller.importFile(
       midiFile(new Uint8Array([2]), 'newer.mid'),
     )
+    await Promise.resolve()
+    expect(importSignals[0]?.aborted).toBe(true)
+    expect(importSignals[1]?.aborted).toBe(false)
     resolveFast?.({ status: 'parsed', song: drumSongFixture() })
     const newer = await newerAttempt
 
@@ -278,10 +353,7 @@ describe('createDrumSessionImportController', () => {
     const older = await olderAttempt
 
     expect(older).toEqual(
-      expect.objectContaining({
-        status: 'stale',
-        state: { status: 'empty', fileName: 'older.mid' },
-      }),
+      expect.objectContaining({ status: 'stale', generation: 1 }),
     )
     expect(controller.state()).toEqual(
       expect.objectContaining({
@@ -297,12 +369,17 @@ describe('createDrumSessionImportController', () => {
     const parse = new Promise<DrumSessionParserOutcome>((resolve) => {
       resolveParse = resolve
     })
+    let importSignal: AbortSignal | undefined
     const controller = createDrumSessionImportController({
-      parseMidi: () => parse,
+      parseMidi: (_bytes, options) => {
+        importSignal = options?.signal
+        return parse
+      },
     })
     const attempt = controller.importFile(
       midiFile(new Uint8Array([1]), 'slow.mid'),
     )
+    await Promise.resolve()
 
     expect(controller.state()).toEqual({
       status: 'loading',
@@ -310,6 +387,7 @@ describe('createDrumSessionImportController', () => {
     })
     expect(controller.generation()).toBe(1)
     controller.cancel()
+    expect(importSignal?.aborted).toBe(true)
     expect(controller.state()).toEqual({ status: 'idle' })
     expect(controller.generation()).toBe(2)
 
@@ -325,17 +403,23 @@ describe('createDrumSessionImportController', () => {
     const parse = new Promise<DrumSessionParserOutcome>((resolve) => {
       resolveParse = resolve
     })
+    let importSignal: AbortSignal | undefined
     const controller = createDrumSessionImportController({
-      parseMidi: () => parse,
+      parseMidi: (_bytes, options) => {
+        importSignal = options?.signal
+        return parse
+      },
     })
     const listener = vi.fn()
     controller.subscribe(listener)
     const attempt = controller.importFile(
       midiFile(new Uint8Array([1]), 'disposed.mid'),
     )
+    await Promise.resolve()
 
     expect(listener).toHaveBeenCalledTimes(1)
     controller.dispose()
+    expect(importSignal?.aborted).toBe(true)
     expect(controller.generation()).toBe(2)
     resolveParse?.({ status: 'parsed', song: drumSongFixture() })
 
