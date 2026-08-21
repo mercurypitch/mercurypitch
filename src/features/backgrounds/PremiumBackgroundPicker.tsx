@@ -64,6 +64,13 @@ const PICKER_COPY = {
     description: 'Included rooms and supporter editions for Guitar Night.',
     busy: 'Preparing your room…',
   },
+  drum: {
+    trigger: 'Choose Drum Night room background',
+    dialog: 'Choose your Drum Night room',
+    heading: 'Choose your room',
+    description: 'Included rooms and supporter editions for Drum Night.',
+    busy: 'Preparing your room…',
+  },
 } as const satisfies Record<
   BackgroundSurface,
   {

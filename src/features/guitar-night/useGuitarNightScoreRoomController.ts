@@ -10,8 +10,9 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup } from 'solid-js'
-import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
+import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
@@ -47,6 +48,10 @@ interface GuitarNightScoreRoomControllerOptions {
    * hear, each already carrying its own timbre.
    */
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
+  /** Authored drum parts kept separate from the pitched backing melody. */
+  backingPercussion?: Accessor<readonly GuitarRoomBandPercussionHit[]>
+  /** Drum parts whose run-scoped gates begin open. */
+  audiblePercussionTrackIds?: Accessor<readonly string[]>
   /**
    * Whether the scored part sounds when the player has not said either way.
    * A tab with a band behind it hands that part to the player; a tab with one
@@ -78,6 +83,9 @@ interface GuitarNightScoreRoomRunConfiguration {
   melody: readonly GuitarRoomBandNote[]
   /** Every other audible part, merged and already carrying its own timbre. */
   backingMelody: readonly GuitarRoomBandNote[]
+  /** Every audible authored drum attack, never coerced into a melody note. */
+  backingPercussion: readonly GuitarRoomBandPercussionHit[]
+  audiblePercussionTrackIds: readonly string[]
   melodyVariant: 'electric' | 'bass'
   /**
    * Read on every beat rather than settled at launch, so the click can be
@@ -142,6 +150,21 @@ export function scoreDurationBeats(
   if (reference === null) return 0
   return reference.notes.reduce(
     (latest, note) => Math.max(latest, note.startBeat + note.duration),
+    0,
+  )
+}
+
+/** Keep the room alive through the final authored one-shot drum attack. */
+export function percussionDurationBeats(
+  percussion: readonly GuitarRoomBandPercussionHit[],
+): number {
+  return percussion.reduce(
+    (latest, hit) =>
+      Number.isFinite(hit.startBeat) &&
+      hit.startBeat >= 0 &&
+      drumVoiceForMidi(hit.gmKey) !== null
+        ? Math.max(latest, hit.startBeat + 0.001)
+        : latest,
     0,
   )
 }
@@ -299,6 +322,11 @@ export function useGuitarNightScoreRoomController(
         status() === 'playing' ||
         status() === 'paused'),
   )
+  const percussionBackingLive = createMemo(
+    () =>
+      runningTake()?.mode === 'rehearsal' &&
+      (status() === 'count-in' || status() === 'playing'),
+  )
   const tempoBpm = createMemo(
     () =>
       (takePinsSetup() ? runningTake()?.tempoBpm : undefined) ??
@@ -306,7 +334,11 @@ export function useGuitarNightScoreRoomController(
   )
   const durationBeats = createMemo(
     () =>
-      runningTake()?.durationBeats ?? scoreDurationBeats(options.reference()),
+      runningTake()?.durationBeats ??
+      Math.max(
+        scoreDurationBeats(options.reference()),
+        percussionDurationBeats(options.backingPercussion?.() ?? []),
+      ),
   )
   // Deliberately not guarded by `takePinsSetup`: a completed take is reviewed
   // against the score it actually sounded, not against whatever is loaded now.
@@ -422,20 +454,31 @@ export function useGuitarNightScoreRoomController(
       bpm: tempoForRun,
       tempoChanges: tempoChangesForRun,
     })
-    const durationBeatsForRun = scoreDurationBeats(reference)
-    const exerciseBeatsForRun = Math.max(1, Math.ceil(durationBeatsForRun))
+    const scoreDurationBeatsForRun = scoreDurationBeats(reference)
     const assessmentRange =
       requestedAssessment === undefined
         ? null
         : normalizeLoopSpan(
             requestedAssessment.start,
             requestedAssessment.end,
-            durationBeatsForRun,
+            scoreDurationBeatsForRun,
           )
     if (requestedAssessment !== undefined && assessmentRange === null) {
       return null
     }
     const mode = assessmentRange === null ? 'rehearsal' : boundedMode
+    const backingPercussionForRun =
+      mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
+        ? [...(options.backingPercussion?.() ?? [])]
+        : []
+    const durationBeatsForRun =
+      mode === 'rehearsal'
+        ? Math.max(
+            scoreDurationBeatsForRun,
+            percussionDurationBeats(backingPercussionForRun),
+          )
+        : scoreDurationBeatsForRun
+    const exerciseBeatsForRun = Math.max(1, Math.ceil(durationBeatsForRun))
     const loopForRun =
       mode !== 'rehearsal'
         ? null
@@ -472,6 +515,13 @@ export function useGuitarNightScoreRoomController(
         mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
           ? [...(options.backingMelody?.() ?? [])]
           : [],
+      backingPercussion: backingPercussionForRun,
+      audiblePercussionTrackIds: [
+        ...(options.audiblePercussionTrackIds?.() ??
+          Array.from(
+            new Set(backingPercussionForRun.map((hit) => hit.trackId)),
+          )),
+      ],
       melodyVariant: configuredMelodyVariant(),
       exercisePulse: () =>
         (mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)) &&
@@ -516,6 +566,8 @@ export function useGuitarNightScoreRoomController(
         // grooving, and it sounds the part rather than something under it.
         feel: 'click',
         melody: [...(run.hearScore ? run.melody : []), ...run.backingMelody],
+        percussion: run.backingPercussion,
+        audiblePercussionTrackIds: run.audiblePercussionTrackIds,
         melodyVariant: run.melodyVariant,
         exercisePulse: run.exercisePulse,
         onExerciseStart: (exerciseStartBeat, scheduledAtSeconds) => {
@@ -741,6 +793,20 @@ export function useGuitarNightScoreRoomController(
     void start()
   }
 
+  const setPercussionTrackAudible = (
+    trackId: string,
+    audible: boolean,
+  ): void => {
+    band.setPercussionTrackAudible(trackId, audible)
+    setRunningTake((run) => {
+      if (run === null || run.mode !== 'rehearsal') return run
+      const trackIds = new Set(run.audiblePercussionTrackIds)
+      if (audible) trackIds.add(trackId)
+      else trackIds.delete(trackId)
+      return { ...run, audiblePercussionTrackIds: [...trackIds] }
+    })
+  }
+
   const setTempoBpm = (value: number): void => {
     setTempoOverride(
       Math.min(
@@ -777,6 +843,8 @@ export function useGuitarNightScoreRoomController(
     runningLoop,
     /** Setup stays editable for a parked pre-play seek, but not a paused take. */
     setupLocked: takePinsSetup,
+    percussionBackingLive,
+    setPercussionTrackAudible,
     /** Open the room's audio without scheduling a beat — for microphone input. */
     activateAudio: async (): Promise<boolean> =>
       (await band.activate()) !== null,

@@ -33,6 +33,7 @@ describe('GuitarNightFirstWin', () => {
         }
       }),
       activate: vi.fn(async () => null),
+      setPercussionTrackAudible: vi.fn(),
       stop: vi.fn(),
       getAudioGraph: () => null,
       dispose: vi.fn(async () => undefined),

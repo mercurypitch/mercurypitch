@@ -19,6 +19,7 @@ function legacySong(name = 'Nocturne', id = 'legacy-random'): LegacyMidiSong {
     tracks: [
       {
         id: 't0c0',
+        kind: 'pitched',
         name: 'Piano',
         instrumentName: 'Acoustic Grand Piano',
         noteCount: 1,
@@ -26,6 +27,7 @@ function legacySong(name = 'Nocturne', id = 'legacy-random'): LegacyMidiSong {
       },
       {
         id: 't1c1',
+        kind: 'pitched',
         name: 'Strings',
         instrumentName: 'String Ensemble 1',
         noteCount: 1,

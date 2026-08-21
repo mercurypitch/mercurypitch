@@ -28,6 +28,17 @@ describe('route-neutral background selection persistence', () => {
     expect(readPersistedBackgroundId('piano', storage)).toBe('piano-afterglow')
   })
 
+  it('stores Drum Night preferences under its own first-class key', () => {
+    const storage = memoryStorage()
+
+    expect(persistBackgroundId('drum', 'drum-tape-room', storage)).toBe(true)
+    expect(storage.values.get(BACKGROUND_SELECTION_KEYS.drum)).toBe(
+      'drum-tape-room',
+    )
+    expect(readPersistedBackgroundId('drum', storage)).toBe('drum-tape-room')
+    expect(readPersistedBackgroundId('piano', storage)).toBeNull()
+  })
+
   it('rejects unknown and cross-surface identifiers', () => {
     const storage = memoryStorage()
 

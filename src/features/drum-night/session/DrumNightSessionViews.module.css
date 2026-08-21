@@ -1,0 +1,635 @@
+/* Drum Night session views — authored score, drummer-seat kit, and coach. */
+
+.stateView,
+.scoreSheet,
+.seatView,
+.coach {
+  --session-room: var(--room, #08090b);
+  --session-slate: var(--slate, #13171b);
+  --session-vellum: var(--vellum, #eee7db);
+  --session-muted: var(--vellum-muted, #b8b2a8);
+  --session-nickel: var(--nickel, #aab3b8);
+  --session-amber: var(--amber, #e7ad52);
+  --session-cyan: var(--cyan, #66d5cd);
+  --session-coral: var(--coral, #c96c70);
+  --session-line: var(--line, rgb(238 231 219 / 13%));
+  --session-serif: var(
+    --serif,
+    'Iowan Old Style',
+    'Palatino Linotype',
+    Baskerville,
+    Georgia,
+    serif
+  );
+  color: var(--session-vellum);
+}
+
+.stateView {
+  display: flex;
+  width: min(100%, 640px);
+  min-height: 188px;
+  align-items: center;
+  gap: 20px;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--session-line);
+  border-radius: 14px;
+  background: rgb(8 9 11 / 84%);
+  box-shadow: 0 22px 54px rgb(0 0 0 / 32%);
+}
+
+.stateMark {
+  width: 18px;
+  height: 72px;
+  flex: 0 0 auto;
+  border: 1px solid var(--session-nickel);
+  border-radius: 9px;
+  background: rgb(170 179 184 / 8%);
+}
+
+.stateView[data-tone='busy'] .stateMark {
+  border-color: var(--session-cyan);
+  background: rgb(102 213 205 / 14%);
+}
+
+.stateView[data-tone='warning'] .stateMark {
+  border-color: var(--session-amber);
+  background: rgb(231 173 82 / 14%);
+}
+
+.stateView[data-tone='error'] .stateMark {
+  border-color: var(--session-coral);
+  background: rgb(201 108 112 / 14%);
+}
+
+.stateView h2 {
+  margin: 0 0 8px;
+  font-family: var(--session-serif);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  font-weight: 540;
+  letter-spacing: -0.02em;
+}
+
+.stateView p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--session-muted);
+  line-height: 1.55;
+}
+
+.scoreSheet,
+.seatView {
+  width: 100%;
+  min-width: 0;
+}
+
+.viewHeader,
+.coachHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 2px 16px;
+}
+
+.viewHeader h2,
+.coachHeader h2 {
+  margin: 4px 0 0;
+  font-family: var(--session-serif);
+  font-size: clamp(1.45rem, 3vw, 2.25rem);
+  font-weight: 540;
+  letter-spacing: -0.025em;
+}
+
+.viewHeader > p {
+  margin: 0 0 4px;
+  color: var(--session-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.viewKicker {
+  color: var(--session-amber);
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scoreFigure,
+.seatFigure {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--session-line);
+  border-radius: 14px;
+  background: rgb(8 10 12 / 88%);
+  box-shadow: 0 24px 62px rgb(0 0 0 / 38%);
+}
+
+.scoreViewport {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: rgb(170 179 184 / 35%) transparent;
+}
+
+.scoreViewport:focus-visible,
+.seatFigure:focus-visible,
+.semanticEvents summary:focus-visible,
+.recovery button:focus-visible {
+  outline: 2px solid var(--session-cyan);
+  outline-offset: -3px;
+}
+
+.scoreSvg {
+  display: block;
+  max-width: none;
+  background:
+    radial-gradient(circle at 50% 105%, rgb(127 57 67 / 12%), transparent 46%),
+    #0c0f12;
+}
+
+.scoreBar path {
+  fill: none;
+  stroke: rgb(238 231 219 / 27%);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.scoreBar text {
+  fill: var(--session-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreMeterMark {
+  fill: var(--session-amber);
+  font-family: var(--session-serif);
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreMeterSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 0;
+  color: var(--session-muted);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+}
+
+.scoreMeterSummary li {
+  padding: 5px 8px;
+  border: 1px solid var(--session-line);
+  border-radius: 999px;
+}
+
+.scoreBar .barLine,
+.barLine {
+  stroke: rgb(238 231 219 / 44%);
+}
+
+.scoreEvent {
+  color: var(--session-vellum);
+}
+
+.scoreEvent path,
+.scoreEvent ellipse {
+  fill: currentcolor;
+  stroke: currentcolor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.scoreEvent .noteStem,
+.scoreEvent .accentMark {
+  fill: none;
+}
+
+.scoreEvent .accentMark {
+  color: var(--session-amber);
+}
+
+.scoreEvent.isActive {
+  color: var(--session-cyan);
+  filter: drop-shadow(0 5px 5px rgb(102 213 205 / 22%));
+}
+
+.scorePlayhead {
+  fill: none;
+  stroke: var(--session-cyan);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.scoreFigure figcaption,
+.seatFigure figcaption {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--session-line);
+  color: var(--session-muted);
+  font-size: 0.78rem;
+}
+
+.scoreFigure figcaption span:first-child,
+.seatFigure figcaption span:first-child {
+  color: var(--session-vellum);
+  font-weight: 650;
+}
+
+.semanticEvents {
+  margin-top: 12px;
+  color: var(--session-muted);
+  font-size: 0.82rem;
+}
+
+.semanticEvents summary {
+  width: fit-content;
+  min-height: 44px;
+  padding: 12px 4px;
+  color: var(--session-vellum);
+  cursor: pointer;
+}
+
+.semanticEvents ol,
+.semanticEvents ul {
+  max-height: 180px;
+  margin: 0;
+  padding: 12px 12px 12px 32px;
+  overflow: auto;
+  border-top: 1px solid var(--session-line);
+  line-height: 1.6;
+}
+
+.semanticLimitNotice {
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--session-line);
+  color: var(--session-muted);
+}
+
+.mappingNotice {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgb(231 173 82 / 34%);
+  border-radius: 12px;
+  color: #f0c886;
+  background: rgb(231 173 82 / 8%);
+}
+
+.seatFigure {
+  overflow-x: auto;
+  background:
+    radial-gradient(ellipse at 50% 74%, rgb(127 57 67 / 20%), transparent 42%),
+    radial-gradient(ellipse at 50% 24%, rgb(102 213 205 / 6%), transparent 48%),
+    #090b0d;
+}
+
+.seatSvg {
+  display: block;
+  width: 100%;
+  min-width: 620px;
+  height: auto;
+}
+
+@media (min-width: 1041px) {
+  .seatSvg {
+    height: min(52vh, 520px);
+  }
+}
+
+.seatRoom path {
+  fill: none;
+  stroke: rgb(170 179 184 / 12%);
+  stroke-width: 1;
+  stroke-dasharray: 3 12;
+}
+
+.kitHardware path {
+  fill: none;
+  stroke: rgb(170 179 184 / 34%);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.kitZone ellipse,
+.kitZone rect {
+  fill: #17191a;
+  stroke: rgb(238 231 219 / 36%);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.kitZone[data-kit-anchor='kick'] ellipse,
+.kitZone[data-kit-anchor^='tom'] ellipse,
+.kitZone[data-kit-anchor='snare'] ellipse {
+  fill: #4d232a;
+}
+
+.kitZone[data-kit-anchor='crash'] ellipse,
+.kitZone[data-kit-anchor='ride'] ellipse,
+.kitZone[data-kit-anchor='hi-hat'] ellipse {
+  fill: #5b4930;
+}
+
+.kitZone .kitInner {
+  fill: rgb(238 231 219 / 8%);
+  stroke: rgb(238 231 219 / 24%);
+  stroke-width: 1;
+}
+
+.kitZone .kickPort {
+  fill: #070809;
+  stroke: rgb(238 231 219 / 16%);
+}
+
+.kitZone text {
+  fill: var(--session-muted);
+  font-size: 12px;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  text-anchor: middle;
+  text-transform: uppercase;
+}
+
+.kitZone .kitTargetLayer ellipse,
+.kitZone .kitTargetLayer rect,
+.kitZone .kitLiveLayer ellipse,
+.kitZone .kitLiveLayer rect {
+  fill: none;
+  pointer-events: none;
+}
+
+.kitZone .kitTargetLayer ellipse,
+.kitZone .kitTargetLayer rect {
+  stroke: var(--session-cyan);
+  stroke-width: 4;
+  stroke-dasharray: 8 5;
+  filter: drop-shadow(0 7px 7px rgb(102 213 205 / 22%));
+}
+
+.kitZone .kitLiveLayer ellipse,
+.kitZone .kitLiveLayer rect {
+  stroke: var(--session-amber);
+  stroke-width: 5;
+  filter: drop-shadow(0 8px 7px rgb(231 173 82 / 24%));
+}
+
+.seatActivitySummary {
+  margin: 0;
+  padding: 11px 18px;
+  border-top: 1px solid var(--session-line);
+  color: var(--session-vellum);
+  background: rgb(238 231 219 / 3%);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.seatSticks path {
+  fill: none;
+  stroke: #c68b51;
+  stroke-width: 9;
+  stroke-linecap: round;
+  filter: drop-shadow(0 8px 7px rgb(0 0 0 / 35%));
+}
+
+.coach {
+  width: min(100%, 410px);
+  padding: 22px;
+  border: 1px solid var(--session-line);
+  border-radius: 14px;
+  background: rgb(8 10 12 / 91%);
+  box-shadow: 0 24px 62px rgb(0 0 0 / 38%);
+}
+
+.coachHeader {
+  align-items: start;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--session-line);
+}
+
+.coachHeader h2 {
+  font-size: 1.75rem;
+}
+
+.coachBar {
+  padding-top: 5px;
+  color: var(--session-muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.evidenceLabels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 16px 0 0;
+}
+
+.evidenceLabels span {
+  padding: 6px 9px;
+  border: 1px solid var(--session-line);
+  border-radius: 999px;
+  color: var(--session-muted);
+  font-size: 0.7rem;
+}
+
+.coachObservation {
+  margin: 26px 0 20px;
+  font-family: var(--session-serif);
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+  line-height: 1.3;
+  letter-spacing: -0.018em;
+}
+
+.coachMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+  border-block: 1px solid var(--session-line);
+}
+
+.coachMetrics > div {
+  min-width: 0;
+  padding: 14px 10px 14px 0;
+}
+
+.coachMetrics > div:nth-child(even) {
+  padding-inline: 12px 0;
+  border-left: 1px solid var(--session-line);
+}
+
+.coachMetrics dt {
+  color: var(--session-muted);
+  font-size: 0.68rem;
+}
+
+.coachMetrics dd {
+  margin: 5px 0 0;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 670;
+}
+
+.recovery {
+  margin-top: 20px;
+  padding: 18px 0 0;
+}
+
+.recovery > span {
+  color: var(--session-amber);
+  font-size: 0.7rem;
+  font-weight: 760;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.recovery h3 {
+  margin: 5px 0 6px;
+  font-family: var(--session-serif);
+  font-size: 1.25rem;
+  font-weight: 560;
+}
+
+.recovery p {
+  margin: 0;
+  color: var(--session-muted);
+  line-height: 1.5;
+}
+
+.recovery button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 15px;
+  border: 1px solid rgb(231 173 82 / 52%);
+  border-radius: 11px;
+  color: var(--session-vellum);
+  background: rgb(231 173 82 / 11%);
+  cursor: pointer;
+}
+
+.recovery button:hover {
+  background: rgb(231 173 82 / 18%);
+}
+
+.coachFooter {
+  margin-top: 18px;
+  color: var(--session-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .viewHeader,
+  .coachHeader {
+    align-items: start;
+  }
+
+  .viewHeader {
+    display: none;
+  }
+
+  .scoreFigure figcaption,
+  .seatFigure figcaption {
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
+    padding: 11px 14px;
+  }
+
+  .seatSvg {
+    min-width: 0;
+  }
+
+  .coach {
+    width: 100%;
+    padding: 18px;
+  }
+}
+
+@media (max-width: 1040px) {
+  .viewHeader {
+    display: none;
+  }
+
+  .seatSvg {
+    width: 100%;
+    min-width: 0;
+    height: min(42vh, 400px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .scoreSheet,
+  .seatView,
+  .scoreFigure,
+  .seatFigure,
+  .scoreViewport {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .scoreFigure,
+  .seatFigure {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .scoreSvg,
+  .seatSvg {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+  }
+
+  .scoreFigure figcaption,
+  .seatFigure figcaption,
+  .seatActivitySummary,
+  .semanticEvents,
+  .mappingNotice,
+  .scoreMeterSummary {
+    display: none;
+  }
+}
+
+@media (max-width: 390px) {
+  .stateView {
+    min-height: 160px;
+    gap: 14px;
+    padding: 20px 16px;
+  }
+
+  .stateMark {
+    width: 14px;
+    height: 58px;
+  }
+
+  .coachMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .coachMetrics > div:nth-child(even) {
+    padding-inline: 0;
+    border-left: 0;
+  }
+
+  .coachMetrics > div + div {
+    border-top: 1px solid var(--session-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scoreEvent,
+  .kitZone {
+    transition: none;
+  }
+}

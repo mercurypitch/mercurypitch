@@ -40,25 +40,43 @@ describe('Home destination gallery', () => {
       { kind: 'page', href: '/karaoke' },
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
+      { kind: 'page', href: '/drum-night' },
       { kind: 'tab', tab: TAB_EXERCISES },
       { kind: 'tab', tab: TAB_ANALYSIS },
       { kind: 'tab', tab: TAB_JAM },
     ])
   })
 
-  it('draws the night rooms from pictures those rooms give away', () => {
+  it('keeps photographic night-room covers on free catalogue assets', () => {
     const { container } = render(() => <DestinationGallery />)
     const sources = [...container.querySelectorAll('img')].map(
       (image) => image.getAttribute('src') ?? '',
     )
 
-    // Both ship as free backdrops inside their own rooms. A supporter-only
-    // picture on the Home page would be handing out what people pay for.
+    // Piano and Guitar ship these as free backdrops inside their own rooms.
+    // Drum Night deliberately uses code-native art until `drum` becomes a
+    // first-class background-catalog surface.
     expect(sources).toContain('/piano-night/afterglow-studio-landscape.webp')
     expect(sources).toContain('/guitar-night/velvet-rehearsal.webp')
     for (const source of sources) {
       expect([...FREE_IMAGE_SOURCES]).toContain(source)
     }
+    expect(
+      container.querySelector('[data-destination="drumNight"] svg'),
+    ).not.toBeNull()
+  })
+
+  it('describes Drum Night as a playable instrument room', () => {
+    const drumNight = HOME_DESTINATIONS.find(
+      (destination) => destination.visual === 'drumNight',
+    )
+
+    expect(drumNight).toMatchObject({
+      eyebrow: 'New room',
+      action: 'Enter Drum Night',
+    })
+    expect(drumNight?.description).toContain('touch, keys or an e-kit')
+    expect(drumNight?.description).toContain('MIDI or Guitar Pro')
   })
 
   it('admits the tap while a room is still opening', () => {

@@ -615,6 +615,24 @@ describe('GET /api/premium-backgrounds/:id', () => {
     expect(response.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
+  it('serves an exact published Drum revision to an active supporter', async () => {
+    const f = fixture()
+    f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+    const key = 'backgrounds/v1/drum/drum-blue-hour-live-room/portrait-2k.webp'
+    f.bucket.objects.set(key, new TextEncoder().encode('drum-room-webp'))
+
+    const response = await call(
+      f.env,
+      '/api/premium-backgrounds/drum-blue-hour-live-room?variant=portrait-2k&version=1',
+      ALICE,
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('drum-room-webp')
+    expect(f.bucket.reads).toEqual([key])
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
   it('fails closed when a stored Piano asset claims another surface', async () => {
     const f = fixture()
     f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')

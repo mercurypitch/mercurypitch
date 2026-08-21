@@ -42,7 +42,7 @@ try {
 }
 
 // Production has real HTML entries for Voice Mirror, the vocal-range test,
-// Karaoke Night, Guitar Night and Piano Night. Dev and preview servers need
+// Karaoke Night, Guitar Night, Piano Night and Drum Night. Dev and preview servers need
 // equivalent clean-path rewrites. The tone-deaf legacy entry is a redirect
 // because this product measures pitch matching and cannot diagnose amusia
 // (public/_redirects handles prod).
@@ -52,6 +52,7 @@ const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
 const PIANO_NIGHT_PATHS = new Set(['/piano-night'])
+const DRUM_NIGHT_PATHS = new Set(['/drum-night'])
 // Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
 // exists so the feature has a real URL a crawler can fetch — see jam.html.
 const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
@@ -98,6 +99,7 @@ function standaloneEntryRewritePlugin() {
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
         else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
         else if (PIANO_NIGHT_PATHS.has(path)) req.url = '/piano-night.html'
+        else if (DRUM_NIGHT_PATHS.has(path)) req.url = '/drum-night.html'
         else if (JAM_PATHS.has(path)) req.url = '/jam.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
@@ -327,6 +329,7 @@ export default defineConfig(({ command, mode }) => {
           jam: resolve(__dirname, 'jam.html'),
           guitarNight: resolve(__dirname, 'guitar-night.html'),
           pianoNight: resolve(__dirname, 'piano-night.html'),
+          drumNight: resolve(__dirname, 'drum-night.html'),
           glass: resolve(__dirname, 'glass.html'),
         },
         output: {
@@ -357,6 +360,16 @@ export default defineConfig(({ command, mode }) => {
             // app library graph (stores, IndexedDB and media code).
             if (id.includes('/src/components/icons.')) return 'shared-icons'
             if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
+            // The synthesized drum recipes are dependency-free Web Audio
+            // leaves shared by the main app and Drum Night. Without a pin,
+            // Rollup co-locates them with LibraryModal and turns that entire
+            // IndexedDB/media graph into Drum Night first-paint work.
+            if (
+              id.includes('/src/lib/drum-voices.') ||
+              id.includes('/src/lib/drum-voice-map.')
+            ) {
+              return 'drum-voices'
+            }
             // Shared by the app's sign-in surface (statically, via
             // AuthModal → PhoneSignIn) and the sync modal that Karaoke
             // Night lazy-loads. Without a pin it is hoisted into the APP

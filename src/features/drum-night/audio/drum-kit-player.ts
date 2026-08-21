@@ -1,0 +1,1032 @@
+// ============================================================
+// Drum kit player — inert four-flavor samples with synth-per-hit resilience
+// ============================================================
+//
+// Construction never asks for audio or network access. Gesture-owned activate
+// creates one bounded bus and starts an optional baseline warm-up; trigger is
+// synchronous and falls back to the app's synth while any sample is missing.
+
+import type { DrumKitPlayerPort, DrumKitTrigger, } from '@/features/drum-night/runtime/drum-runtime-types'
+import { drumVoiceForMidi } from '@/lib/drum-voice-map'
+import { triggerDrumVoice } from '@/lib/drum-voices'
+import { normalizeGeneralMidiPercussionKey } from '@/lib/percussion'
+import type { DrumKitId, DrumKitManifest, DrumKitSampleResource, } from './drum-kit-manifest'
+import { drumKitManifest, drumKitResourcesForHit, resolveDrumKitAssetUrl, } from './drum-kit-manifest'
+
+export type DrumKitLoadStatus = 'error' | 'idle' | 'loading' | 'ready'
+export type DrumKitTriggerResult =
+  | 'dropped'
+  | 'sampled'
+  | 'synth-fallback'
+  | 'unmapped'
+
+export interface DrumKitPrewarmHit {
+  readonly gmKey: number
+  readonly velocity: number
+}
+
+export interface DrumKitPlayerSnapshot {
+  readonly selectedKitId: DrumKitId
+  readonly status: DrumKitLoadStatus
+  /** Audio is gesture-activated and the synth fallback can accept hits. */
+  readonly fallbackReady: boolean
+  /** At least one resource from the selected sampled kit is decoded. */
+  readonly sampledReady: boolean
+  readonly loadedSamples: number
+  readonly preparedSamples: number
+  readonly plannedSamples: number
+  readonly decodedBytes: number
+  readonly publishedEncodedBytes: number
+  readonly error: string | null
+}
+
+export interface DrumKitPlayer extends DrumKitPlayerPort {
+  trigger(hit: DrumKitTrigger): DrumKitTriggerResult
+  selectedKit(): DrumKitManifest
+  selectKit(kitId: DrumKitId, signal?: AbortSignal): Promise<void>
+  retry(signal?: AbortSignal): Promise<void>
+  prewarm(
+    hits: readonly DrumKitPrewarmHit[],
+    signal?: AbortSignal,
+  ): Promise<void>
+  choke(group: string, atContextTime?: number): void
+  setVolume(volume: number): void
+  snapshot(): DrumKitPlayerSnapshot
+  subscribe(listener: () => void): () => void
+}
+
+export interface DrumKitPlayerOptions {
+  /** Route-owned context; this module never constructs or closes it. */
+  readonly getAudioContext: () => AudioContext | null
+  /** Route-owned output bus; samples and fallback synth share this destination. */
+  readonly getOutput: () => AudioNode | null
+  /** Same-origin by default; may be an HTTPS media/R2 custom-domain base. */
+  readonly assetBaseUrl?: string
+  readonly initialKitId?: DrumKitId
+  readonly fetchArrayBuffer?: (
+    url: string,
+    signal: AbortSignal,
+    maximumBytes: number,
+  ) => Promise<ArrayBuffer>
+  readonly verifyResource?: (
+    encoded: ArrayBuffer,
+    expectedSha256: string,
+  ) => Promise<boolean>
+  readonly maxDecodedBytes?: number
+  readonly maxEncodedSampleBytes?: number
+  readonly maxVoices?: number
+  readonly loadConcurrency?: number
+}
+
+interface PlayerGraph {
+  context: AudioContext
+  output: AudioNode
+  master: GainNode
+}
+
+interface CachedSample {
+  buffer: AudioBuffer
+  bytes: number
+  kitId: DrumKitId
+}
+
+interface SampleVoice {
+  sequence: number
+  source: AudioBufferSourceNode
+  gain: GainNode
+  resourceId: string
+  chokeGroup: string | null
+  releasing: boolean
+  cleaned: boolean
+}
+
+const MIB = 1024 * 1024
+const DEFAULT_MAX_DECODED_BYTES = 48 * MIB
+const DEFAULT_MAX_ENCODED_SAMPLE_BYTES = 2 * MIB
+const DEFAULT_MAX_VOICES = 48
+const MAXIMUM_MAX_VOICES = 96
+const DEFAULT_LOAD_CONCURRENCY = 2
+const MINIMUM_GAIN = 0.0001
+const SAMPLE_ATTACK_SECONDS = 0.004
+const CHOKE_RELEASE_SECONDS = 0.045
+const PANIC_RELEASE_SECONDS = 0.12
+const RELEASE_SLACK_SECONDS = 0.03
+const BASELINE_HITS = Object.freeze([
+  Object.freeze({ gmKey: 36, velocity: 104 }),
+  Object.freeze({ gmKey: 38, velocity: 104 }),
+  Object.freeze({ gmKey: 42, velocity: 104 }),
+  Object.freeze({ gmKey: 44, velocity: 104 }),
+  Object.freeze({ gmKey: 46, velocity: 104 }),
+])
+const LOAD_ERROR =
+  'This drum kit could not finish loading. Mercury Synth remains available.'
+const CONTEXT_ERROR =
+  'The drum kit needs an active audio session. Mercury Synth remains available.'
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  if (!Number.isFinite(value)) return minimum
+  return Math.min(maximum, Math.max(minimum, value))
+}
+
+function positiveInteger(
+  value: number | undefined,
+  fallback: number,
+  maximum = Number.MAX_SAFE_INTEGER,
+): number {
+  if (value === undefined || !Number.isFinite(value) || value <= 0) {
+    return fallback
+  }
+  return Math.min(maximum, Math.max(1, Math.floor(value)))
+}
+
+function abortError(): DOMException {
+  return new DOMException('The drum kit load was cancelled.', 'AbortError')
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw abortError()
+}
+
+function combineAbortSignals(
+  ...signals: readonly (AbortSignal | undefined)[]
+): { signal: AbortSignal; cleanup(): void } {
+  const activeSignals = signals.filter(
+    (signal): signal is AbortSignal => signal !== undefined,
+  )
+  if (activeSignals.length === 1) {
+    return { signal: activeSignals[0], cleanup() {} }
+  }
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  for (const signal of activeSignals) {
+    signal.addEventListener('abort', abort, { once: true })
+  }
+  if (activeSignals.some((signal) => signal.aborted)) controller.abort()
+  return {
+    signal: controller.signal,
+    cleanup() {
+      for (const signal of activeSignals) {
+        signal.removeEventListener('abort', abort)
+      }
+    },
+  }
+}
+
+function waitForCaller<T>(
+  promise: Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  if (signal === undefined) return promise
+  if (signal.aborted) return Promise.reject(abortError())
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(abortError())
+    signal.addEventListener('abort', abort, { once: true })
+    promise.then(resolve, reject).finally(() => {
+      signal.removeEventListener('abort', abort)
+    })
+  })
+}
+
+function decodedBufferBytes(buffer: AudioBuffer): number {
+  const length =
+    Number.isFinite(buffer.length) && buffer.length > 0
+      ? buffer.length
+      : Math.ceil(buffer.duration * buffer.sampleRate)
+  return length * Math.max(1, buffer.numberOfChannels) * 4
+}
+
+function safeDisconnect(node: AudioNode): void {
+  try {
+    node.disconnect()
+  } catch {
+    // Natural endings and route teardown may race each other.
+  }
+}
+
+function safeStop(source: AudioBufferSourceNode, at: number): void {
+  try {
+    source.stop(at)
+  } catch {
+    // A naturally ended source is already silent.
+  }
+}
+
+function holdParameter(parameter: AudioParam, at: number): void {
+  try {
+    parameter.cancelAndHoldAtTime(at)
+  } catch {
+    try {
+      parameter.cancelScheduledValues(at)
+      parameter.setValueAtTime(Math.max(MINIMUM_GAIN, parameter.value), at)
+    } catch {
+      // A closed context no longer needs a release envelope.
+    }
+  }
+}
+
+export async function fetchDrumKitSampleArrayBuffer(
+  url: string,
+  signal: AbortSignal,
+  maximumBytes: number,
+): Promise<ArrayBuffer> {
+  const response = await fetch(url, {
+    cache: 'force-cache',
+    credentials: 'omit',
+    referrerPolicy: 'no-referrer',
+    signal,
+  })
+  if (!response.ok) {
+    throw new Error(`Drum sample request failed (${response.status})`)
+  }
+  const statedLength = response.headers.get('content-length')
+  if (statedLength !== null) {
+    const parsedLength = Number(statedLength)
+    if (Number.isFinite(parsedLength) && parsedLength > maximumBytes) {
+      try {
+        await response.body?.cancel(
+          'Drum sample exceeds the declared response budget',
+        )
+      } catch {
+        // The response may already have been cancelled by the fetch signal.
+      }
+      throw new Error('Encoded drum sample exceeds the response budget')
+    }
+  }
+  if (response.body === null) {
+    throw new Error('Drum sample response cannot be streamed safely')
+  }
+  throwIfAborted(signal)
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let byteLength = 0
+  let cancelled = false
+  const cancelForAbort = (): void => {
+    cancelled = true
+    void reader.cancel('Drum sample request was cancelled').catch(() => {
+      // A native fetch abort may close the stream before cancel observes it.
+    })
+  }
+  signal.addEventListener('abort', cancelForAbort, { once: true })
+  try {
+    while (true) {
+      throwIfAborted(signal)
+      const next = await reader.read()
+      throwIfAborted(signal)
+      if (next.done) break
+      if (next.value.byteLength === 0) continue
+      byteLength += next.value.byteLength
+      if (byteLength > maximumBytes) {
+        await reader.cancel('Drum sample exceeded its response budget')
+        cancelled = true
+        throw new Error('Encoded drum sample exceeds the response budget')
+      }
+      chunks.push(next.value)
+    }
+  } catch (error) {
+    if (!cancelled) {
+      try {
+        await reader.cancel(
+          signal.aborted
+            ? 'Drum sample request was cancelled'
+            : 'Drum sample request failed',
+        )
+      } catch {
+        // The fetch abort may already have closed the stream.
+      }
+    }
+    throw error
+  } finally {
+    signal.removeEventListener('abort', cancelForAbort)
+    reader.releaseLock()
+  }
+  const encoded = new Uint8Array(byteLength)
+  let offset = 0
+  for (const chunk of chunks) {
+    encoded.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return encoded.buffer
+}
+
+export async function verifyDrumKitSampleResource(
+  encoded: ArrayBuffer,
+  expectedSha256: string,
+): Promise<boolean> {
+  const subtle = globalThis.crypto?.subtle
+  if (subtle === undefined) return false
+  const digest = new Uint8Array(await subtle.digest('SHA-256', encoded))
+  const actual = Array.from(digest, (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('')
+  return actual === expectedSha256
+}
+
+/** Create an inert player. Only activate may acquire its context and output. */
+export function createDrumKitPlayer(
+  options: DrumKitPlayerOptions,
+): DrumKitPlayer {
+  const fetchArrayBuffer =
+    options.fetchArrayBuffer ?? fetchDrumKitSampleArrayBuffer
+  const verifyResource = options.verifyResource ?? verifyDrumKitSampleResource
+  const maxDecodedBytes = positiveInteger(
+    options.maxDecodedBytes,
+    DEFAULT_MAX_DECODED_BYTES,
+  )
+  const maxEncodedSampleBytes = positiveInteger(
+    options.maxEncodedSampleBytes,
+    DEFAULT_MAX_ENCODED_SAMPLE_BYTES,
+  )
+  const maxVoices = positiveInteger(
+    options.maxVoices,
+    DEFAULT_MAX_VOICES,
+    MAXIMUM_MAX_VOICES,
+  )
+  const loadConcurrency = positiveInteger(
+    options.loadConcurrency,
+    DEFAULT_LOAD_CONCURRENCY,
+    8,
+  )
+  const lifetimeAbort = new AbortController()
+  let selectionAbort = new AbortController()
+  const cache = new Map<string, CachedSample>()
+  const retainedSampleCounts = new Map<string, number>()
+  const inFlight = new Map<string, Promise<AudioBuffer>>()
+  const voices = new Map<number, SampleVoice>()
+  const roundRobinCounters = new Map<string, number>()
+  const listeners = new Set<() => void>()
+
+  let selectedKitId: DrumKitId = options.initialKitId ?? 'mercury-synth'
+  let graph: PlayerGraph | null = null
+  let graphGeneration = 0
+  let voiceSequence = 0
+  let loadGeneration = 0
+  let selectionGeneration = 0
+  let decodedBytes = 0
+  let volume = 1
+  let masterOpen = false
+  let disposed = false
+  let status: DrumKitLoadStatus = 'idle'
+  let plannedSamples = 0
+  let preparedSamples = 0
+  let preparedResourceIds = new Set<string>()
+  let loadError: string | null = null
+
+  const selectedManifest = (): DrumKitManifest => drumKitManifest(selectedKitId)
+
+  const selectedLoadedSamples = (): number => {
+    let count = 0
+    for (const cached of cache.values()) {
+      if (cached.kitId === selectedKitId) count += 1
+    }
+    return count
+  }
+
+  const refreshPreparedSamples = (): void => {
+    preparedSamples = 0
+    for (const resourceId of preparedResourceIds) {
+      if (cache.has(resourceId)) preparedSamples += 1
+    }
+  }
+
+  const currentSnapshot = (): DrumKitPlayerSnapshot => {
+    const loadedSamples = selectedLoadedSamples()
+    refreshPreparedSamples()
+    return Object.freeze({
+      selectedKitId,
+      status,
+      fallbackReady: graph !== null && !disposed,
+      sampledReady:
+        selectedManifest().engine === 'sampled' && loadedSamples > 0,
+      loadedSamples,
+      preparedSamples,
+      plannedSamples,
+      decodedBytes,
+      publishedEncodedBytes: selectedManifest().publishedEncodedBytes,
+      error: loadError,
+    })
+  }
+
+  const emit = (): void => {
+    if (disposed) return
+    for (const listener of listeners) listener()
+  }
+
+  const setLoadState = (
+    nextStatus: DrumKitLoadStatus,
+    error: string | null = null,
+  ): void => {
+    status = nextStatus
+    loadError = error
+    emit()
+  }
+
+  const retainSample = (resourceId: string): void => {
+    retainedSampleCounts.set(
+      resourceId,
+      (retainedSampleCounts.get(resourceId) ?? 0) + 1,
+    )
+  }
+
+  const releaseSample = (resourceId: string): void => {
+    const count = retainedSampleCounts.get(resourceId)
+    if (count === undefined) return
+    if (count <= 1) retainedSampleCounts.delete(resourceId)
+    else retainedSampleCounts.set(resourceId, count - 1)
+  }
+
+  const cachedSample = (
+    resource: DrumKitSampleResource,
+  ): CachedSample | undefined => {
+    const cached = cache.get(resource.id)
+    if (cached === undefined) return undefined
+    cache.delete(resource.id)
+    cache.set(resource.id, cached)
+    return cached
+  }
+
+  const storeSample = (
+    resource: DrumKitSampleResource,
+    buffer: AudioBuffer,
+  ): AudioBuffer => {
+    const bytes = decodedBufferBytes(buffer)
+    if (!Number.isSafeInteger(bytes) || bytes <= 0 || bytes > maxDecodedBytes) {
+      throw new Error('Decoded drum sample exceeds the cache budget')
+    }
+    const previous = cache.get(resource.id)
+    let requiredBytes = decodedBytes - (previous?.bytes ?? 0) + bytes
+    for (const [resourceId, candidate] of cache) {
+      if (requiredBytes <= maxDecodedBytes) break
+      if (
+        resourceId === resource.id ||
+        (retainedSampleCounts.get(resourceId) ?? 0) > 0
+      ) {
+        continue
+      }
+      cache.delete(resourceId)
+      decodedBytes -= candidate.bytes
+      requiredBytes -= candidate.bytes
+    }
+    if (requiredBytes > maxDecodedBytes) {
+      throw new Error('Decoded drum cache has no safe eviction capacity')
+    }
+    if (previous !== undefined) decodedBytes -= previous.bytes
+    cache.delete(resource.id)
+    cache.set(resource.id, { buffer, bytes, kitId: resource.kitId })
+    decodedBytes += bytes
+    refreshPreparedSamples()
+    if (
+      status === 'ready' &&
+      plannedSamples > 0 &&
+      preparedSamples < plannedSamples
+    ) {
+      status = 'error'
+      loadError = LOAD_ERROR
+    }
+    emit()
+    return buffer
+  }
+
+  const cleanVoice = (voice: SampleVoice): void => {
+    if (voice.cleaned) return
+    voice.cleaned = true
+    if (voices.get(voice.sequence) === voice) voices.delete(voice.sequence)
+    releaseSample(voice.resourceId)
+    safeDisconnect(voice.source)
+    safeDisconnect(voice.gain)
+  }
+
+  const releaseVoice = (
+    voice: SampleVoice,
+    at: number,
+    releaseSeconds: number,
+  ): void => {
+    if (voice.cleaned || voice.releasing) return
+    voice.releasing = true
+    if (voices.get(voice.sequence) === voice) voices.delete(voice.sequence)
+    holdParameter(voice.gain.gain, at)
+    try {
+      voice.gain.gain.setTargetAtTime(0, at, releaseSeconds / 5)
+    } catch {
+      cleanVoice(voice)
+      return
+    }
+    safeStop(voice.source, at + releaseSeconds + RELEASE_SLACK_SECONDS)
+  }
+
+  const closeMaster = (activeGraph: PlayerGraph, at: number): void => {
+    masterOpen = false
+    holdParameter(activeGraph.master.gain, at)
+    try {
+      activeGraph.master.gain.setTargetAtTime(0, at, PANIC_RELEASE_SECONDS / 5)
+    } catch {
+      // A closed context is already silent.
+    }
+  }
+
+  const openMaster = (activeGraph: PlayerGraph, at: number): void => {
+    const gain = volume
+    try {
+      activeGraph.master.gain.cancelScheduledValues(at)
+      if (gain === 0) {
+        activeGraph.master.gain.setValueAtTime(0, at)
+      } else if (!masterOpen) {
+        activeGraph.master.gain.setValueAtTime(MINIMUM_GAIN, at)
+        activeGraph.master.gain.exponentialRampToValueAtTime(
+          gain,
+          at + SAMPLE_ATTACK_SECONDS,
+        )
+      } else {
+        activeGraph.master.gain.setTargetAtTime(gain, at, 0.012)
+      }
+      masterOpen = true
+    } catch {
+      // Trigger will report dropped if source construction also fails.
+    }
+  }
+
+  const panicInternal = (atContextTime?: number): void => {
+    const activeGraph = graph
+    if (activeGraph === null) return
+    const at = Math.max(
+      activeGraph.context.currentTime,
+      Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
+    )
+    closeMaster(activeGraph, at)
+    for (const voice of voices.values()) {
+      releaseVoice(voice, at, PANIC_RELEASE_SECONDS)
+    }
+  }
+
+  const retireGraph = (activeGraph: PlayerGraph): void => {
+    const at = activeGraph.context.currentTime
+    closeMaster(activeGraph, at)
+    globalThis.setTimeout(
+      () => {
+        safeDisconnect(activeGraph.master)
+      },
+      (PANIC_RELEASE_SECONDS + RELEASE_SLACK_SECONDS) * 1_000,
+    )
+  }
+
+  const makeGraph = (context: AudioContext, output: AudioNode): PlayerGraph => {
+    const master = context.createGain()
+    master.gain.setValueAtTime(MINIMUM_GAIN, context.currentTime)
+    master.connect(output)
+    return { context, output, master }
+  }
+
+  const acquireGraph = async (): Promise<PlayerGraph> => {
+    if (disposed) throw new Error(CONTEXT_ERROR)
+    const context = options.getAudioContext()
+    const output = options.getOutput()
+    if (context === null || output === null || context.state === 'closed') {
+      throw new Error(CONTEXT_ERROR)
+    }
+    const existingGraph =
+      graph?.context === context && graph.output === output ? graph : null
+    if (context.state === 'suspended') await context.resume()
+    if (disposed) throw abortError()
+    if (existingGraph !== null) return existingGraph
+    if (graph !== null) {
+      selectionAbort.abort()
+      selectionAbort = new AbortController()
+      selectionGeneration += 1
+      loadGeneration += 1
+      panicInternal(graph.context.currentTime)
+      retireGraph(graph)
+      cache.clear()
+      decodedBytes = 0
+      refreshPreparedSamples()
+    }
+    graphGeneration += 1
+    graph = makeGraph(context, output)
+    masterOpen = false
+    return graph
+  }
+
+  const loadResource = async (
+    resource: DrumKitSampleResource,
+    callerSignal?: AbortSignal,
+  ): Promise<AudioBuffer> => {
+    const cached = cachedSample(resource)
+    if (cached !== undefined) return cached.buffer
+    const activeGraph = graph
+    if (activeGraph === null) throw new Error(CONTEXT_ERROR)
+    const contextGeneration = graphGeneration
+    const selectionSignal = selectionAbort.signal
+    const inFlightKey = `${contextGeneration}:${selectionGeneration}:${resource.id}`
+    const existing = inFlight.get(inFlightKey)
+    if (existing !== undefined) return waitForCaller(existing, callerSignal)
+    const combined = combineAbortSignals(lifetimeAbort.signal, selectionSignal)
+    const promise = (async (): Promise<AudioBuffer> => {
+      try {
+        throwIfAborted(combined.signal)
+        const maximumBytes = Math.min(
+          maxEncodedSampleBytes,
+          resource.encodedBytes,
+        )
+        const encoded = await fetchArrayBuffer(
+          resolveDrumKitAssetUrl(resource, options.assetBaseUrl),
+          combined.signal,
+          maximumBytes,
+        )
+        throwIfAborted(combined.signal)
+        if (encoded.byteLength !== resource.encodedBytes) {
+          throw new Error('Encoded drum sample does not match its manifest')
+        }
+        if (!(await verifyResource(encoded, resource.sha256))) {
+          throw new Error('Encoded drum sample failed its integrity check')
+        }
+        throwIfAborted(combined.signal)
+        const buffer = await activeGraph.context.decodeAudioData(
+          encoded.slice(0),
+        )
+        throwIfAborted(combined.signal)
+        if (
+          disposed ||
+          graph !== activeGraph ||
+          graphGeneration !== contextGeneration ||
+          selectedKitId !== resource.kitId
+        ) {
+          throw abortError()
+        }
+        return storeSample(resource, buffer)
+      } finally {
+        combined.cleanup()
+      }
+    })()
+    inFlight.set(inFlightKey, promise)
+    promise.then(
+      () => {
+        if (inFlight.get(inFlightKey) === promise) inFlight.delete(inFlightKey)
+      },
+      () => {
+        if (inFlight.get(inFlightKey) === promise) inFlight.delete(inFlightKey)
+      },
+    )
+    return waitForCaller(promise, callerSignal)
+  }
+
+  const prepareResources = async (
+    resources: readonly DrumKitSampleResource[],
+    signal?: AbortSignal,
+    foreground = true,
+  ): Promise<void> => {
+    const uniqueResources = Array.from(
+      new Map(resources.map((resource) => [resource.id, resource])).values(),
+    )
+    const runSelectionSignal = selectionAbort.signal
+    const generation = foreground ? ++loadGeneration : loadGeneration
+    if (foreground) {
+      preparedResourceIds = new Set(
+        uniqueResources.map((resource) => resource.id),
+      )
+      plannedSamples = uniqueResources.length
+      refreshPreparedSamples()
+      setLoadState(uniqueResources.length === 0 ? 'ready' : 'loading')
+    }
+    const resourcesToLoad = uniqueResources.filter(
+      (resource) => !cache.has(resource.id),
+    )
+    if (resourcesToLoad.length === 0) {
+      if (foreground) {
+        setLoadState(
+          preparedSamples === plannedSamples ? 'ready' : 'error',
+          preparedSamples === plannedSamples ? null : LOAD_ERROR,
+        )
+      }
+      return
+    }
+    if (foreground) {
+      for (const resource of uniqueResources) retainSample(resource.id)
+    }
+    let cursor = 0
+    let failure: unknown = null
+    try {
+      const workers = Array.from(
+        { length: Math.min(loadConcurrency, resourcesToLoad.length) },
+        async () => {
+          while (cursor < resourcesToLoad.length) {
+            const resource = resourcesToLoad[cursor]
+            cursor += 1
+            try {
+              await loadResource(resource, signal)
+              if (foreground && loadGeneration === generation) {
+                refreshPreparedSamples()
+                emit()
+              }
+            } catch (error) {
+              const runCancelled =
+                disposed ||
+                signal?.aborted === true ||
+                runSelectionSignal.aborted ||
+                (foreground && loadGeneration !== generation)
+              if (isAbortError(error) && runCancelled) return
+              failure ??= error
+            }
+          }
+        },
+      )
+      await Promise.all(workers)
+    } finally {
+      if (foreground) {
+        for (const resource of uniqueResources) releaseSample(resource.id)
+      }
+    }
+    if (!foreground) {
+      if (
+        failure !== null &&
+        !disposed &&
+        signal?.aborted !== true &&
+        !runSelectionSignal.aborted
+      ) {
+        setLoadState('error', LOAD_ERROR)
+      }
+      return
+    }
+    if (loadGeneration !== generation) return
+    if (disposed || signal?.aborted === true || runSelectionSignal.aborted) {
+      return
+    }
+    refreshPreparedSamples()
+    if (failure === null && preparedSamples === plannedSamples) {
+      setLoadState('ready')
+    } else {
+      setLoadState('error', LOAD_ERROR)
+    }
+  }
+
+  const resourcesForHits = (
+    hits: readonly DrumKitPrewarmHit[],
+  ): readonly DrumKitSampleResource[] =>
+    hits.flatMap((hit) =>
+      drumKitResourcesForHit(selectedKitId, hit.gmKey, hit.velocity),
+    )
+
+  const warmMiss = (resource: DrumKitSampleResource): void => {
+    void prepareResources([resource], selectionAbort.signal, false).catch(
+      (error: unknown) => {
+        if (!isAbortError(error)) setLoadState('error', LOAD_ERROR)
+      },
+    )
+  }
+
+  const chooseResource = (
+    gmKey: number,
+    velocity: number,
+  ): DrumKitSampleResource | null => {
+    const resources = drumKitResourcesForHit(selectedKitId, gmKey, velocity)
+    if (resources.length === 0) return null
+    const counterKey = `${selectedKitId}:${gmKey}:${resources[0].velocityMin}`
+    const counter = roundRobinCounters.get(counterKey) ?? 0
+    roundRobinCounters.set(counterKey, counter + 1)
+    const preferred = resources[counter % resources.length]
+    if (cache.has(preferred.id)) return preferred
+    return resources.find((resource) => cache.has(resource.id)) ?? preferred
+  }
+
+  const chokeInternal = (group: string, atContextTime?: number): void => {
+    const activeGraph = graph
+    if (activeGraph === null || group === '') return
+    const at = Math.max(
+      activeGraph.context.currentTime,
+      Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
+    )
+    for (const voice of voices.values()) {
+      if (voice.chokeGroup === group) {
+        releaseVoice(voice, at, CHOKE_RELEASE_SECONDS)
+      }
+    }
+  }
+
+  const playSample = (
+    resource: DrumKitSampleResource,
+    cached: CachedSample,
+    velocity: number,
+    atContextTime?: number,
+  ): boolean => {
+    const activeGraph = graph
+    if (activeGraph === null) return false
+    const at = Math.max(
+      activeGraph.context.currentTime,
+      Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
+    )
+    for (const group of resource.chokes) chokeInternal(group, at)
+    if (voices.size >= maxVoices) {
+      const oldest = voices.values().next().value as SampleVoice | undefined
+      if (oldest !== undefined) {
+        releaseVoice(oldest, at, CHOKE_RELEASE_SECONDS)
+      }
+    }
+    let voice: SampleVoice | null = null
+    try {
+      const source = activeGraph.context.createBufferSource()
+      const gain = activeGraph.context.createGain()
+      const strikeGain = Math.max(
+        MINIMUM_GAIN,
+        resource.playbackGain *
+          (0.12 + 0.88 * Math.pow(clamp(velocity, 1, 127) / 127, 1.25)),
+      )
+      source.buffer = cached.buffer
+      gain.gain.setValueAtTime(MINIMUM_GAIN, at)
+      gain.gain.exponentialRampToValueAtTime(
+        strikeGain,
+        at + SAMPLE_ATTACK_SECONDS,
+      )
+      source.connect(gain)
+      gain.connect(activeGraph.master)
+      const startedVoice: SampleVoice = {
+        sequence: ++voiceSequence,
+        source,
+        gain,
+        resourceId: resource.id,
+        chokeGroup: resource.chokeGroup,
+        releasing: false,
+        cleaned: false,
+      }
+      voice = startedVoice
+      voices.set(startedVoice.sequence, startedVoice)
+      retainSample(resource.id)
+      source.onended = () => cleanVoice(startedVoice)
+      openMaster(activeGraph, at)
+      source.start(at)
+      return true
+    } catch {
+      if (voice !== null) {
+        safeStop(voice.source, at)
+        cleanVoice(voice)
+      }
+      return false
+    }
+  }
+
+  const triggerFallback = (
+    gmKey: number,
+    velocity: number,
+    atContextTime?: number,
+  ): DrumKitTriggerResult => {
+    const activeGraph = graph
+    const voice = drumVoiceForMidi(gmKey)
+    if (voice === null) return 'unmapped'
+    if (activeGraph === null) return 'dropped'
+    const at = Math.max(
+      activeGraph.context.currentTime,
+      Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
+    )
+    try {
+      openMaster(activeGraph, at)
+      triggerDrumVoice(
+        voice,
+        activeGraph.context,
+        at,
+        clamp(velocity, 1, 127) / 127,
+        activeGraph.master,
+      )
+      return 'synth-fallback'
+    } catch {
+      return 'dropped'
+    }
+  }
+
+  return {
+    async activate(): Promise<boolean> {
+      try {
+        await acquireGraph()
+      } catch (error) {
+        if (!isAbortError(error)) setLoadState('error', CONTEXT_ERROR)
+        return false
+      }
+      if (selectedManifest().engine === 'synth') {
+        preparedResourceIds = new Set()
+        plannedSamples = 0
+        preparedSamples = 0
+        setLoadState('ready')
+      } else {
+        void prepareResources(
+          resourcesForHits(BASELINE_HITS),
+          selectionAbort.signal,
+        )
+      }
+      return true
+    },
+    trigger(hit: DrumKitTrigger): DrumKitTriggerResult {
+      const gmKey = normalizeGeneralMidiPercussionKey(hit.gmKey)
+      if (gmKey === null) return 'unmapped'
+      const velocity = clamp(hit.velocity, 1, 127)
+      if (selectedManifest().engine === 'sampled') {
+        const resource = chooseResource(gmKey, velocity)
+        if (resource !== null) {
+          const cached = cachedSample(resource)
+          if (
+            cached !== undefined &&
+            playSample(resource, cached, velocity, hit.atContextTime)
+          ) {
+            return 'sampled'
+          }
+          if (graph !== null && !disposed) warmMiss(resource)
+        }
+      }
+      return triggerFallback(gmKey, velocity, hit.atContextTime)
+    },
+    panic(atContextTime?: number): void {
+      panicInternal(atContextTime)
+    },
+    dispose(): void {
+      if (disposed) return
+      lifetimeAbort.abort()
+      selectionAbort.abort()
+      panicInternal()
+      const activeGraph = graph
+      graph = null
+      cache.clear()
+      decodedBytes = 0
+      preparedResourceIds = new Set()
+      plannedSamples = 0
+      preparedSamples = 0
+      listeners.clear()
+      disposed = true
+      if (activeGraph !== null) retireGraph(activeGraph)
+    },
+    selectedKit(): DrumKitManifest {
+      return selectedManifest()
+    },
+    async selectKit(kitId: DrumKitId, signal?: AbortSignal): Promise<void> {
+      if (disposed) return
+      if (kitId === selectedKitId) {
+        if (
+          graph !== null &&
+          selectedManifest().engine === 'sampled' &&
+          status === 'error'
+        ) {
+          await prepareResources(resourcesForHits(BASELINE_HITS), signal)
+        }
+        return
+      }
+      panicInternal()
+      selectionAbort.abort()
+      selectionAbort = new AbortController()
+      selectionGeneration += 1
+      loadGeneration += 1
+      selectedKitId = kitId
+      roundRobinCounters.clear()
+      preparedResourceIds = new Set()
+      plannedSamples = 0
+      preparedSamples = 0
+      setLoadState(graph === null ? 'idle' : 'ready')
+      if (graph !== null && selectedManifest().engine === 'sampled') {
+        await prepareResources(resourcesForHits(BASELINE_HITS), signal)
+      }
+    },
+    async retry(signal?: AbortSignal): Promise<void> {
+      if (disposed || graph === null) return
+      if (selectedManifest().engine === 'synth') {
+        setLoadState('ready')
+        return
+      }
+      await prepareResources(resourcesForHits(BASELINE_HITS), signal)
+    },
+    async prewarm(
+      hits: readonly DrumKitPrewarmHit[],
+      signal?: AbortSignal,
+    ): Promise<void> {
+      if (disposed || graph === null) throw new Error(CONTEXT_ERROR)
+      if (selectedManifest().engine === 'synth') {
+        preparedResourceIds = new Set()
+        plannedSamples = 0
+        preparedSamples = 0
+        setLoadState('ready')
+        return
+      }
+      await prepareResources(resourcesForHits(hits), signal)
+    },
+    choke(group: string, atContextTime?: number): void {
+      chokeInternal(group, atContextTime)
+    },
+    setVolume(nextVolume: number): void {
+      volume = clamp(nextVolume, 0, 1)
+      const activeGraph = graph
+      if (activeGraph === null || !masterOpen) return
+      try {
+        activeGraph.master.gain.setTargetAtTime(
+          volume,
+          activeGraph.context.currentTime,
+          0.012,
+        )
+      } catch {
+        // A closing route no longer needs live volume automation.
+      }
+    },
+    snapshot(): DrumKitPlayerSnapshot {
+      return currentSnapshot()
+    },
+    subscribe(listener: () => void): () => void {
+      if (disposed) return () => undefined
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+  }
+}

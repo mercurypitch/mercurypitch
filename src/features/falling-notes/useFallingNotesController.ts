@@ -769,7 +769,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setCurrentSong(songObj ?? null)
     setMutedTrackIds(new Set(mutedIds ?? []))
     if (songObj) {
-      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+      setVisibleTrackIds(
+        new Set<string>(
+          songObj.scoreTrackId === null ? [] : [songObj.scoreTrackId],
+        ),
+      )
     } else {
       setVisibleTrackIds(new Set<string>())
     }
@@ -874,7 +878,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setCurrentSong(songObj ?? null)
     setMutedTrackIds(new Set(mutedIds ?? []))
     if (songObj) {
-      setVisibleTrackIds(new Set<string>([songObj.scoreTrackId]))
+      setVisibleTrackIds(
+        new Set<string>(
+          songObj.scoreTrackId === null ? [] : [songObj.scoreTrackId],
+        ),
+      )
     }
 
     const maxNoteBeat =

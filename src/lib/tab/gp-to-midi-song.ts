@@ -11,14 +11,49 @@
 import type * as alphaTab from '@coderline/alphatab'
 import type { GuitarBendType, GuitarNoteNotation, GuitarSlideType, GuitarTechnique, } from '@/lib/guitar/guitar-notation'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
-import type { MidiSong, MidiSongNote, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
+import type { MidiSong, MidiSongNote, MidiSongPercussionHit, MidiSongPercussionTrack, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
+import { guitarProDynamicVelocity, resolveGuitarProPercussion, } from '@/lib/tab/gp-percussion'
 
 /** alphaTab playback ticks per quarter note. */
 const TICKS_PER_QUARTER = 960
 
 /** alphaTab BendPoint offsets always run from 0 to 60. */
 const BEND_POINT_MAX_OFFSET = 60
+
+export interface GpSongProjectionOptions {
+  /** Reject before emitting more canonical notes/hits than the owner can hold. */
+  readonly maximumEvents?: number
+}
+
+export class GpSongProjectionLimitError extends Error {
+  readonly name = 'GpSongProjectionLimitError'
+
+  constructor(readonly maximumEvents: number) {
+    super(
+      `This Guitar Pro file contains more than ${maximumEvents.toLocaleString()} musical events, which exceeds the configured safe import limit.`,
+    )
+  }
+}
+
+class GpSongProjectionBudget {
+  private emittedEvents = 0
+
+  constructor(private readonly maximumEvents: number) {}
+
+  emit(): void {
+    this.emittedEvents += 1
+    if (this.emittedEvents > this.maximumEvents) {
+      throw new GpSongProjectionLimitError(this.maximumEvents)
+    }
+  }
+}
+
+function projectionEventLimit(requested: number | undefined): number {
+  if (requested === undefined) return Number.POSITIVE_INFINITY
+  if (!Number.isFinite(requested)) return Number.POSITIVE_INFINITY
+  return Math.max(0, Math.floor(requested))
+}
 
 const BEND_TYPES: Readonly<Record<number, GuitarBendType>> = {
   1: 'custom',
@@ -212,11 +247,69 @@ function notePlaybackDuration(
   return Math.max(0, end - start)
 }
 
+function percussionTrackToMidiSongTrack(
+  track: alphaTab.model.Track,
+  index: number,
+  budget: GpSongProjectionBudget,
+): MidiSongPercussionTrack | null {
+  const percussionHits: MidiSongPercussionHit[] = []
+  let droppedHitCount = 0
+
+  for (const staff of track.staves) {
+    for (const bar of staff.bars) {
+      for (const voice of bar.voices) {
+        for (const beat of voice.beats) {
+          if (beat.isRest) continue
+          const startBeat = beat.absolutePlaybackStart / TICKS_PER_QUARTER
+          for (const note of beat.notes) {
+            if (note.isTieDestination) continue
+            budget.emit()
+            const resolved = resolveGuitarProPercussion(
+              track,
+              note.percussionArticulation,
+            )
+            if (resolved === null) {
+              droppedHitCount += 1
+              continue
+            }
+            const writtenDuration = beat.playbackDuration / TICKS_PER_QUARTER
+            percussionHits.push({
+              id: sourceNoteId(index, staff, note),
+              gmKey: resolved.gmKey,
+              startBeat,
+              velocity: guitarProDynamicVelocity(note.dynamics as number),
+              ...(writtenDuration > 0 ? { writtenDuration } : {}),
+              source: resolved.source,
+            })
+          }
+        }
+      }
+    }
+  }
+
+  if (percussionHits.length === 0 && droppedHitCount === 0) return null
+  percussionHits.sort((left, right) => left.startBeat - right.startBeat)
+  const name = track.name.trim()
+  return {
+    id: `gp-t${index}`,
+    kind: 'percussion',
+    name: name === '' ? 'Drums' : name,
+    instrumentName: 'General MIDI Drum Kit',
+    noteCount: percussionHits.length,
+    notes: [],
+    percussionHits,
+    droppedHitCount,
+  }
+}
+
 function trackToMidiSongTrack(
   track: alphaTab.model.Track,
   index: number,
+  budget: GpSongProjectionBudget,
 ): MidiSongTrack | null {
-  if (track.isPercussion) return null
+  if (track.isPercussion) {
+    return percussionTrackToMidiSongTrack(track, index, budget)
+  }
   const info = track.playbackInfo
 
   const notes: MidiSongNote[] = []
@@ -245,6 +338,7 @@ function trackToMidiSongTrack(
             const duration =
               notePlaybackDuration(note, beat) / TICKS_PER_QUARTER
             if (duration <= 0) continue
+            budget.emit()
             const id = sourceNoteId(index, staff, note)
             const fret = note.fret
             // alphaTab numbers strings from the lowest physical string while
@@ -285,6 +379,7 @@ function trackToMidiSongTrack(
   const name = track.name.trim() !== '' ? track.name.trim() : instrumentName
   return {
     id: `gp-t${index}`,
+    kind: 'pitched',
     name,
     instrumentName,
     noteCount: notes.length,
@@ -332,11 +427,15 @@ function applyLetRing(notes: MidiSongNote[]): void {
  * exactly how far the Lab's tab overlay was drifting from the audio when the
  * reference was the .gp5 rather than the MIDI export.
  */
-function scoreTempoChanges(score: alphaTab.model.Score): MidiTempoChange[] {
+function scoreTempoChanges(
+  score: alphaTab.model.Score,
+  budget: GpSongProjectionBudget,
+): MidiTempoChange[] {
   const changes: MidiTempoChange[] = []
   for (const masterBar of score.masterBars) {
     for (const automation of masterBar.tempoAutomations) {
       if (!(automation.value > 0)) continue
+      budget.emit()
       const tick =
         masterBar.start +
         automation.ratioPosition * masterBar.calculateDuration()
@@ -359,26 +458,38 @@ function scoreTempoChanges(score: alphaTab.model.Score): MidiTempoChange[] {
  * measurement has none — and without it a 6/8 song is drawn in fours, with
  * every bar line a beat and a half from where the music puts it.
  */
-function scoreTimeSignatures(score: alphaTab.model.Score): MidiTimeSignature[] {
-  return score.masterBars.map((masterBar) => ({
-    beat: masterBar.start / TICKS_PER_QUARTER,
-    numerator: masterBar.timeSignatureNumerator,
-    denominator: masterBar.timeSignatureDenominator,
-  }))
+function scoreTimeSignatures(
+  score: alphaTab.model.Score,
+  budget: GpSongProjectionBudget,
+): MidiTimeSignature[] {
+  return score.masterBars.map((masterBar) => {
+    budget.emit()
+    return {
+      beat: masterBar.start / TICKS_PER_QUARTER,
+      numerator: masterBar.timeSignatureNumerator,
+      denominator: masterBar.timeSignatureDenominator,
+    }
+  })
 }
 
-/** Convert an alphaTab Score into a MidiSong (percussion tracks dropped). */
-export function scoreToMidiSong(score: alphaTab.model.Score): MidiSong {
+/** Convert an alphaTab Score without crossing percussion into pitch notes. */
+export function scoreToMidiSong(
+  score: alphaTab.model.Score,
+  options: GpSongProjectionOptions = {},
+): MidiSong {
+  const budget = new GpSongProjectionBudget(
+    projectionEventLimit(options.maximumEvents),
+  )
   const tracks: MidiSongTrack[] = []
   score.tracks.forEach((track, i) => {
-    const mapped = trackToMidiSongTrack(track, i)
+    const mapped = trackToMidiSongTrack(track, i, budget)
     if (mapped !== null) tracks.push(mapped)
   })
   const bpm = score.tempo > 0 ? Math.round(score.tempo) : 120
   return {
     bpm,
-    tempoChanges: scoreTempoChanges(score),
-    timeSignatures: scoreTimeSignatures(score),
+    tempoChanges: scoreTempoChanges(score, budget),
+    timeSignatures: scoreTimeSignatures(score, budget),
     tracks,
   }
 }

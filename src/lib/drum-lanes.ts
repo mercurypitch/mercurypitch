@@ -7,6 +7,8 @@
 
 import type { ScaleDegree } from '@/types'
 import type { DrumVoiceId } from './drum-voices'
+
+export { drumVoiceForMidi } from './drum-voice-map'
 import { midiToFreq, midiToNote } from './scale-data'
 
 export interface DrumLane {
@@ -127,7 +129,3 @@ export const DRUM_LANE_SCALE: ScaleDegree[] = DRUM_LANES.map((lane) => {
 export const DRUM_LANE_BY_MIDI: ReadonlyMap<number, DrumLane> = new Map(
   DRUM_LANES.map((lane) => [lane.midi, lane]),
 )
-
-export function drumVoiceForMidi(midi: number): DrumVoiceId | null {
-  return DRUM_LANE_BY_MIDI.get(midi)?.voice ?? null
-}

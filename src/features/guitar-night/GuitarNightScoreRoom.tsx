@@ -8,7 +8,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { ChevronLeft, Ear, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Volume2, } from '@/components/icons'
-import type { GuitarRoomBandNote } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBandNote, GuitarRoomBandPercussionHit, } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
@@ -60,6 +60,8 @@ interface GuitarNightScoreRoomProps {
   secondaryLane?: Accessor<SheetLane | null>
   /** The rest of the band, already carrying each part's own timbre. */
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
+  /** Authored drum parts, scheduled independently from pitched notes. */
+  backingPercussion?: Accessor<readonly GuitarRoomBandPercussionHit[]>
   /** Whether the scored part sounds when the player has not said either way. */
   defaultHearScore?: Accessor<boolean>
   /** Parts currently playing under the player, for the panel's controls. */
@@ -194,6 +196,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     loop: loop.span,
     instrument: () => props.tuning?.().instrument ?? 'guitar',
     backingMelody: () => props.backingMelody?.() ?? [],
+    backingPercussion: () => props.backingPercussion?.() ?? [],
+    audiblePercussionTrackIds: () => props.audibleBackingTrackIds?.() ?? [],
     defaultHearScore: () => props.defaultHearScore?.() ?? true,
   })
   const displayedReference = createMemo(
@@ -1125,7 +1129,22 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             : { audibleTrackIds: props.audibleBackingTrackIds })}
           {...(props.onToggleBackingTrack === undefined
             ? {}
-            : { onToggleTrackAudible: props.onToggleBackingTrack })}
+            : {
+                onToggleTrackAudible: (trackId: string) => {
+                  const track = displayedReference().tracks.find(
+                    (candidate) => candidate.id === trackId,
+                  )
+                  const audible =
+                    props.audibleBackingTrackIds?.().includes(trackId) ?? false
+                  if (track?.kind === 'percussion') {
+                    if (takeIsActive() && !room.percussionBackingLive()) return
+                    room.setPercussionTrackAudible(trackId, !audible)
+                  }
+                  props.onToggleBackingTrack?.(trackId)
+                },
+              })}
+          takeActive={takeIsActive}
+          percussionControlsLive={room.percussionBackingLive}
           scoredPartSounds={room.hearScore}
           onSelectTrack={(trackId) => {
             // A rehearsal take is not a recording, so reading a different part

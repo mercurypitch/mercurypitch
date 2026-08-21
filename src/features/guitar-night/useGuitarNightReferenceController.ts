@@ -7,7 +7,7 @@ import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/g
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { ScoreAlignment } from '@/lib/transcription/score-alignment'
 import { alignmentDriftSeconds, nudgeAlignment, } from '@/lib/transcription/score-alignment'
-import { backingMelody, backingParts, scoredPartSoundsByDefault, } from './backing-parts'
+import { backingMelody, backingParts, backingPercussion, scoredPartSoundsByDefault, } from './backing-parts'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
 import type { RecordingMarks } from './score-on-recording'
@@ -271,8 +271,12 @@ export function useGuitarNightReferenceController(
   const audibleBackingTrackIds = createMemo<readonly string[]>(() => {
     const muted = new Set(mutedBacking())
     return backingPartList()
+      .filter(
+        (part) =>
+          !muted.has(part.trackId) &&
+          (part.kind !== 'percussion' || part.supportedHitCount > 0),
+      )
       .map((part) => part.trackId)
-      .filter((trackId) => !muted.has(trackId))
   })
 
   const backingMelodyNotes = createMemo(() => {
@@ -285,6 +289,22 @@ export function useGuitarNightReferenceController(
     })
   })
 
+  const backingPercussionHits = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingPercussion(source, {
+      scoredTrackId: current.trackId,
+      audibleTrackIds: audibleBackingTrackIds(),
+    })
+  })
+  const allBackingPercussionHits = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingPercussion(source, { scoredTrackId: current.trackId })
+  })
+
   /** Whether the scored part sounds when the player has not said either way. */
   const scoredPartDefaultsAudible = createMemo(() =>
     scoredPartSoundsByDefault(sheetSource(), reference()?.trackId),
@@ -293,6 +313,15 @@ export function useGuitarNightReferenceController(
   const toggleBackingTrack = (trackId: string): void => {
     const current = reference()
     if (current === null || trackId === current.trackId) return
+    const part = backingPartList().find(
+      (candidate) => candidate.trackId === trackId,
+    )
+    if (
+      part === undefined ||
+      (part.kind === 'percussion' && part.supportedHitCount === 0)
+    ) {
+      return
+    }
     const muted = new Set(mutedBacking())
     if (muted.has(trackId)) {
       muted.delete(trackId)
@@ -478,6 +507,8 @@ export function useGuitarNightReferenceController(
   const selectTrack = async (trackId: string): Promise<void> => {
     const current = reference()
     if (current === null || current.trackId === trackId) return
+    const selected = current.tracks.find((track) => track.id === trackId)
+    if (selected === undefined || selected.kind === 'percussion') return
     // Remember what is being left, so the corner offers the way back.
     setPreviousScoredTrack({
       songId: current.songId,
@@ -560,6 +591,10 @@ export function useGuitarNightReferenceController(
       return
     }
     const part = trackId ?? source.scoreTrackId
+    if (part === null) {
+      setAlignStatus('Choose a pitched part before aligning this score.')
+      return
+    }
     const result = alignScoreToRecording(source, part, measured.transcription)
     if (!result.ok) {
       setAlignStatus(ALIGN_FAILURE_COPY[result.code])
@@ -618,6 +653,10 @@ export function useGuitarNightReferenceController(
       return
     }
     const part = trackId ?? source.scoreTrackId
+    if (part === null) {
+      setAlignStatus('Choose a pitched part before placing this score.')
+      return
+    }
     // The track is looked up before the span rather than after, so the name a
     // reader is shown is the part's own name and never its id in disguise.
     const track = source.tracks.find((candidate) => candidate.id === part)
@@ -987,6 +1026,8 @@ export function useGuitarNightReferenceController(
     backingPartList,
     audibleBackingTrackIds,
     backingMelodyNotes,
+    backingPercussionHits,
+    allBackingPercussionHits,
     scoredPartDefaultsAudible,
     toggleBackingTrack,
     instrument,

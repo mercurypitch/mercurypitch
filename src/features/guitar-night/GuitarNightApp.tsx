@@ -152,7 +152,7 @@ function unavailableReferenceCopy(
     return 'That tab is not on this device. Open its file again to follow it.'
   }
   if (state.reason === 'no-playable-notes') {
-    return 'That file has no playable notes, so the stage stays in free play.'
+    return 'That file has no pitched part to score on the guitar neck, so Guitar Night did not open a scored room. Drum parts, if present, remain preserved in the saved file.'
   }
   return 'Your tab library could not be opened. Try again.'
 }
@@ -2098,6 +2098,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     onToggleSheetTrack={referenceController.toggleSheetTrack}
                     secondaryLane={referenceController.secondaryLane}
                     backingMelody={referenceController.backingMelodyNotes}
+                    backingPercussion={
+                      referenceController.allBackingPercussionHits
+                    }
                     defaultHearScore={
                       referenceController.scoredPartDefaultsAudible
                     }

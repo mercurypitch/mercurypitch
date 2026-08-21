@@ -10,6 +10,7 @@
 import { createSignal } from 'solid-js'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import type { MidiSong, MidiSongTrack, MidiTempoChange } from '@/lib/midi-song'
+import { defaultScoreTrack, isPitchedMidiSongTrack, normalizeMidiSong, } from '@/lib/midi-song'
 
 export interface SavedMidiSong {
   id: string
@@ -22,8 +23,8 @@ export interface SavedMidiSong {
   tracks: MidiSongTrack[]
   /** Marks an in-memory compatibility view whose authority is IndexedDB. */
   persistenceAuthority?: 'piano-project'
-  /** Track id whose notes the player is scored against */
-  scoreTrackId: string
+  /** Pitched track scored by a neck/keyboard player; null for percussion-only. */
+  scoreTrackId: string | null
   /** Track ids played as backing audio (not displayed or scored) */
   backingTrackIds: string[]
   importedAt: number
@@ -38,9 +39,26 @@ function loadFromStorage(): SavedMidiSong[] {
     if (raw === null) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed as SavedMidiSong[]
+    return (parsed as SavedMidiSong[]).map(normalizeSavedMidiSong)
   } catch {
     return []
+  }
+}
+
+function normalizeSavedMidiSong(song: SavedMidiSong): SavedMidiSong {
+  const normalized = normalizeMidiSong(song)
+  const selected = normalized.tracks.find(
+    (track) => track.id === song.scoreTrackId && isPitchedMidiSongTrack(track),
+  )
+  const scoreTrackId = selected?.id ?? defaultScoreTrack(normalized)?.id ?? null
+  const trackIds = new Set(normalized.tracks.map((track) => track.id))
+  return {
+    ...song,
+    ...normalized,
+    scoreTrackId,
+    backingTrackIds: song.backingTrackIds.filter(
+      (id) => id !== scoreTrackId && trackIds.has(id),
+    ),
   }
 }
 
@@ -61,10 +79,10 @@ function persist(songs: SavedMidiSong[]): void {
 export function saveMidiSong(
   name: string,
   song: MidiSong,
-  scoreTrackId: string,
+  scoreTrackId: string | null,
   backingTrackIds: string[],
 ): SavedMidiSong {
-  const entry: SavedMidiSong = {
+  const entry = normalizeSavedMidiSong({
     id: `gsong-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name,
     bpm: song.bpm,
@@ -74,7 +92,7 @@ export function saveMidiSong(
     scoreTrackId,
     backingTrackIds,
     importedAt: Date.now(),
-  }
+  })
   const next = [
     entry,
     ...savedMidiSongs().filter((s) => s.name !== name),
@@ -87,11 +105,13 @@ export function saveMidiSong(
 /** Update which tracks are scored/heard for a saved song. */
 export function updateMidiSongSelection(
   id: string,
-  scoreTrackId: string,
+  scoreTrackId: string | null,
   backingTrackIds: string[],
 ): void {
-  const next = savedMidiSongs().map((s) =>
-    s.id === id ? { ...s, scoreTrackId, backingTrackIds } : s,
+  const next = savedMidiSongs().map((song) =>
+    song.id === id
+      ? normalizeSavedMidiSong({ ...song, scoreTrackId, backingTrackIds })
+      : song,
   )
   setSavedMidiSongs(next)
   persist(next)
