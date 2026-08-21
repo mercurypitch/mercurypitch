@@ -15,9 +15,11 @@ const surfaceButtonName = (surface: BackgroundSurface): string =>
     ? 'Piano Night'
     : surface === 'guitar'
       ? 'Guitar Night'
-      : surface === 'karaoke'
-        ? 'Karaoke'
-        : 'Jam'
+      : surface === 'drum'
+        ? 'Drum Night'
+        : surface === 'karaoke'
+          ? 'Karaoke'
+          : 'Jam'
 
 const serviceMocks = vi.hoisted(() => ({
   loadPremiumPerks: vi.fn(),

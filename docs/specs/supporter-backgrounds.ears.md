@@ -1,8 +1,8 @@
 # Supporter Backgrounds — EARS Requirements
 
-Requirements for the shared Karaoke Night, Jam Rooms, and Piano Night
-background catalog, supporter access evidence, and persisted selection
-behavior.
+Requirements for the shared Karaoke Night, Jam Rooms, Piano Night, Guitar
+Night, and Drum Night background catalog, supporter access evidence, and
+persisted selection behavior.
 
 **Source:** `src/lib/backgrounds/background-catalog.ts`,
 `src/lib/backgrounds/background-access.ts`,
@@ -16,6 +16,10 @@ behavior.
 `workers/db-worker/migrations/0018_premium_background_studio.sql`,
 `workers/db-worker/migrations/0023_piano_background_surface.sql`,
 `workers/db-worker/migrations/0024_piano_background_pack.sql`,
+`workers/db-worker/migrations/0031_guitar_background_surface.sql`,
+`workers/db-worker/migrations/0032_mercury_rooms_background_pack.sql`,
+`workers/db-worker/migrations/0033_drum_background_surface.sql`,
+`workers/db-worker/migrations/0034_drum_background_pack.sql`,
 `workers/jam-worker/src/host-verification.ts`,
 `workers/jam-worker/src/room-ownership.ts`,
 `workers/jam-worker/src/signaling-intent.ts`,
@@ -41,12 +45,12 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ## Catalog — `BG-CAT-*`
 
-- **BG-CAT-1** — The system shall define Karaoke Night, Jam Rooms, and Piano
-  Night backgrounds in one typed catalog.
+- **BG-CAT-1** — The system shall define Karaoke Night, Jam Rooms, Piano
+  Night, Guitar Night, and Drum Night backgrounds in one typed catalog.
 - **BG-CAT-2** — The catalog shall include every currently shipped free
   background, the existing `golden-stage`, `golden-singer`, and `aurora-loft`
-  masters, the reserved Mercury Editions identifiers, and all ten mastered
-  Piano supporter identities.
+  masters, the reserved Mercury Editions identifiers, all ten mastered Piano
+  supporter identities, and all five mastered Drum supporter identities.
 - **BG-CAT-3** — The catalog shall distinguish shipped, master-ready, and planned backgrounds.
 - **BG-CAT-4** — Every supporter background shall use an opaque protected source key and shall not contain a public asset URL.
 - **BG-CAT-5** — Every surface shall have a shipped free default.
@@ -55,8 +59,8 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   without an R2 object key.
 - **BG-CAT-7** — The environment-local main D1 database shall own premium
   asset lifecycle and revision state; static catalog definitions shall remain
-  the allowlist for known identifiers and their Karaoke, Jam, or Piano
-  surface.
+  the allowlist for known identifiers and their Karaoke, Jam, Piano, Guitar,
+  or Drum surface.
 - **BG-CAT-8** — Reusing artwork across surfaces shall require a distinct
   stable identifier, revision, and immutable object path; the system shall not
   reclassify an existing asset to another surface.
@@ -106,6 +110,10 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **BG-SELECT-7** — Piano Night shall persist only a known Piano identifier
   under `pitchperfect_piano_background`; restore shall revalidate current
   access and shall never read the Karaoke or Jam preference as Piano access.
+- **BG-SELECT-8** — Drum Night shall persist only a known Drum identifier
+  under `pitchperfect_drum_background`; a free selection shall restore without
+  a premium-catalog request, while a supporter selection shall resolve again
+  only after current server evidence is retained.
 
 ## Jam host synchronization seam — `BG-JAM-*`
 
@@ -201,9 +209,9 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **BG-STUDIO-14** — Admin draft previews shall be admin-authenticated,
   `private, no-store`, and resolved server-side without exposing an R2 key or
   public preview URL.
-- **BG-STUDIO-15** — The Studio background library shall filter all three
-  surfaces with human-readable Karaoke, Jam, and Piano Night labels while
-  supporter-group assignment remains cross-surface.
+- **BG-STUDIO-15** — The Studio background library shall filter all five
+  surfaces with human-readable Karaoke, Jam, Piano Night, Guitar Night, and
+  Drum Night labels while supporter-group assignment remains cross-surface.
 - **BG-STUDIO-16** — Before any lifecycle mutation or R2 access, the system
   shall require the stored surface to agree with the static identifier
   allowlist and shall reject attempts to mutate an asset's surface.
@@ -211,6 +219,12 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   `landscape-2k`, `landscape-4k`, and `portrait-2k` protected variant contract
   and shall not become runtime-visible before explicit publication.
 - **BG-STUDIO-18** — The Piano-surface migration shall preserve every asset,
+  revision, variant, group assignment, capability, active-revision pointer,
+  and lifecycle index, and shall leave foreign-key integrity clean.
+- **BG-STUDIO-19** — Drum revisions shall use the fixed `landscape-2k`,
+  `landscape-4k`, and `portrait-2k` protected variant contract and shall not
+  become runtime-visible before explicit publication.
+- **BG-STUDIO-20** — The Drum-surface migration shall preserve every asset,
   revision, variant, group assignment, capability, active-revision pointer,
   and lifecycle index, and shall leave foreign-key integrity clean.
 

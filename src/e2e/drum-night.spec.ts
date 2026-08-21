@@ -180,6 +180,56 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   expect(pageErrors).toEqual([])
 })
 
+test('changes only the visual room and preserves the authored Seat scene @smoke', async ({
+  page,
+}) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  const shell = page.getByTestId('drum-night-shell')
+  await page
+    .getByRole('button', {
+      name: 'Change room, Pocket Console selected',
+    })
+    .click()
+
+  const drawer = page.getByRole('dialog', { name: 'Choose the room' })
+  const gallery = drawer.getByRole('region', {
+    name: 'Choose your Drum Night room',
+  })
+  await expect(gallery).toBeVisible()
+  await gallery.getByRole('button', { name: /Tape Room/i }).click()
+
+  await expect(shell).toHaveAttribute('style', /tape-room-landscape\.webp/)
+  await expect(
+    page.getByRole('button', { name: 'Change room, Tape Room selected' }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem('pitchperfect_drum_background'),
+    ),
+  ).toBe('drum-tape-room')
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Tape Room selected. Drum sound unchanged.' }),
+  ).toBeAttached()
+
+  await drawer.getByRole('button', { name: 'Close rack drawer' }).click()
+  await expect(drawer).not.toBeVisible()
+  await page.getByRole('button', { name: 'Drummer Seat view' }).click()
+  await expect(shell).toHaveAttribute('data-view', 'seat')
+  await expect(page.getByTestId('drummer-seat-backdrop')).toBeVisible()
+
+  const boundaries = await boundaryCounts(page)
+  expect(boundaries.audio).toBe(0)
+  expect(boundaries.database).toBe(0)
+  expect(boundaries.midi).toBe(0)
+  expect(boundaries.mic).toBe(0)
+  expect(boundaries.workers).toBe(0)
+})
+
 test('imports one drum document across Score, Seat, transport, and the rack drawer @smoke', async ({
   page,
 }) => {

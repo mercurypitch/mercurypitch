@@ -64,4 +64,8 @@ describe('the premium background surface constraint', () => {
   it('accepts guitar, which is what 0031 was for', () => {
     expect(currentSurfaceCheck()).toContain("'guitar'")
   })
+
+  it('accepts drum, which is what 0033 is for', () => {
+    expect(currentSurfaceCheck()).toContain("'drum'")
+  })
 })
