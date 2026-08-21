@@ -8,7 +8,7 @@
 // fetching and flashing independently.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createComputed, createMemo, createRoot, createSignal, onCleanup, onMount, } from 'solid-js'
+import { createComputed, createEffect, createMemo, createRoot, createSignal, onCleanup, onMount, } from 'solid-js'
 import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, BackgroundTreatment, PublicBackgroundSource, } from './background-catalog'
 import { defaultBackground, getBackgroundDefinition, listBackgrounds, } from './background-catalog'
 import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from './background-catalog-store'
@@ -63,8 +63,13 @@ export interface BackgroundSurfaceController {
   select: (id: BackgroundId) => boolean
   refresh: () => Promise<void>
   invalidateAccess: (id: BackgroundPerkId, status?: number) => void
-  retain: () => () => void
+  retain: (options?: BackgroundSurfaceRetentionOptions) => () => void
   dispose: () => void
+}
+
+export interface BackgroundSurfaceRetentionOptions {
+  /** Keep public responsive art live without crossing the premium API boundary. */
+  premiumCatalog?: boolean
 }
 
 export interface BackgroundSurfaceControllerOptions {
@@ -228,6 +233,16 @@ function descriptionFor(background: BackgroundDefinition): string {
       return 'A glass conservatory in a single silver beam'
     case 'ear-rooms':
       return "The Regulator Room's world, one room at a time"
+    case 'blue-hour-live-room':
+      return 'Deep blue windows and warm practicals around the tracking floor'
+    case 'bronze-soundstage':
+      return 'Smoked bronze and focused cinematic light'
+    case 'rain-glass-studio':
+      return 'Rain-patterned glass and amber studio light'
+    case 'walnut-live-room':
+      return 'Walnut diffusion and classic recording-room warmth'
+    case 'sunrise-pavilion':
+      return 'Soft morning light across an open recording pavilion'
   }
 }
 
@@ -362,6 +377,7 @@ export function createBackgroundSurfaceController(
     const [viewportRevision, setViewportRevision] = createSignal(0)
 
     let retainCount = 0
+    let premiumCatalogRetainCount = 0
     let releaseCatalog: (() => void) | null = null
     let loadGeneration = 0
     let activeLoad: AbortController | null = null
@@ -412,12 +428,31 @@ export function createBackgroundSurfaceController(
 
     createComputed(() => {
       const id = requestedId()
+      const choice = optionsList().find((option) => option.id === id)
       if (!active()) {
+        // Public choices do not need the premium catalogue. Keeping them live
+        // while the controller has no retainer lets silent-first routes paint
+        // a persisted free room without starting a metadata request.
+        if (choice?.access === 'free' && choice.publicUrl !== null) {
+          setError(null)
+          const current = currentResolved
+          if (current.id !== choice.id || current.url !== choice.publicUrl) {
+            swapResolved({
+              id: choice.id,
+              url: choice.publicUrl,
+              focalPoint: choice.focalPoint,
+              treatment: choice.treatment,
+              source: 'public',
+              version: null,
+              variant: null,
+            })
+          }
+          return
+        }
         useFallback()
         return
       }
 
-      const choice = optionsList().find((option) => option.id === id)
       if (choice === undefined || choice.access === 'locked') {
         setError(
           choice?.access === 'locked'
@@ -542,28 +577,39 @@ export function createBackgroundSurfaceController(
       return true
     }
 
-    const retain = () => {
+    const retain = (retention: BackgroundSurfaceRetentionOptions = {}) => {
+      const retainsPremiumCatalog = retention.premiumCatalog !== false
       retainCount += 1
       if (retainCount === 1) {
-        releaseCatalog = catalogStore.retain()
         setViewportRevision((revision) => revision + 1)
         if (typeof window !== 'undefined') {
           window.addEventListener('resize', handleViewportChange)
         }
         setActive(true)
       }
+      if (retainsPremiumCatalog) {
+        premiumCatalogRetainCount += 1
+        if (premiumCatalogRetainCount === 1) {
+          releaseCatalog = catalogStore.retain()
+        }
+      }
       let released = false
       return () => {
         if (released) return
         released = true
+        if (retainsPremiumCatalog) {
+          premiumCatalogRetainCount = Math.max(0, premiumCatalogRetainCount - 1)
+          if (premiumCatalogRetainCount === 0) {
+            releaseCatalog?.()
+            releaseCatalog = null
+          }
+        }
         retainCount = Math.max(0, retainCount - 1)
         if (retainCount !== 0) return
         setActive(false)
         if (typeof window !== 'undefined') {
           window.removeEventListener('resize', handleViewportChange)
         }
-        releaseCatalog?.()
-        releaseCatalog = null
       }
     }
 
@@ -587,6 +633,7 @@ export function createBackgroundSurfaceController(
       retain,
       dispose: () => {
         retainCount = 0
+        premiumCatalogRetainCount = 0
         releaseCatalog?.()
         releaseCatalog = null
         activeLoad?.abort()
@@ -608,6 +655,7 @@ const SURFACE_CONTROLLERS = {
   piano: createBackgroundSurfaceController('piano'),
   guitar: createBackgroundSurfaceController('guitar'),
   ear: createBackgroundSurfaceController('ear'),
+  drum: createBackgroundSurfaceController('drum'),
 } as const satisfies Record<BackgroundSurface, BackgroundSurfaceController>
 
 export function backgroundSurfaceController(
@@ -616,14 +664,24 @@ export function backgroundSurfaceController(
   return SURFACE_CONTROLLERS[surface]
 }
 
-/** Retain the shared controller for exactly the lifetime of a Solid surface. */
+/**
+ * Keep responsive public art live for the Solid surface lifetime. Routes with
+ * a silent-first contract may defer the premium catalogue until an explicit
+ * gallery action.
+ */
 export function useBackgroundSurfaceController(
   surface: BackgroundSurface,
+  retainPremiumCatalogWhen: Accessor<boolean> = () => true,
 ): BackgroundSurfaceController {
   const controller = backgroundSurfaceController(surface)
   onMount(() => {
-    const release = controller.retain()
-    onCleanup(release)
+    const releasePublicSurface = controller.retain({ premiumCatalog: false })
+    onCleanup(releasePublicSurface)
+    createEffect(() => {
+      if (!retainPremiumCatalogWhen()) return
+      const release = controller.retain()
+      onCleanup(release)
+    })
   })
   return controller
 }

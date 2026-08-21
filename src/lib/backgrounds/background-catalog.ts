@@ -6,7 +6,13 @@
 // shared runtime resolves those keys through the authenticated background
 // endpoint and exposes only a short-lived object URL to the renderer.
 
-export type BackgroundSurface = 'karaoke' | 'jam' | 'piano' | 'guitar' | 'ear'
+export type BackgroundSurface =
+  | 'karaoke'
+  | 'jam'
+  | 'piano'
+  | 'guitar'
+  | 'ear'
+  | 'drum'
 
 export function isBackgroundSurface(
   value: unknown,
@@ -16,7 +22,8 @@ export function isBackgroundSurface(
     value === 'jam' ||
     value === 'piano' ||
     value === 'guitar' ||
-    value === 'ear'
+    value === 'ear' ||
+    value === 'drum'
   )
 }
 
@@ -45,6 +52,12 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   'jam-velvet-lounge',
   'piano-ambient-led-studio',
   'guitar-midnight-canyon',
+  // Drum Night keeps its authored Pocket Console as the free default, then
+  // adds three independently composed rooms for the first public room pack.
+  'drum-pocket-console',
+  'drum-tape-room',
+  'drum-daylight-riser',
+  'drum-after-hours-booth',
   // The Ear Lab's one free room until its pack lands (ear-lab-polish-plan
   // Phase 6). A ~1K stand-in pair, not a master.
   'ear-regulator-room',
@@ -82,10 +95,20 @@ export const PIANO_PREMIUM_BACKGROUND_IDS = [
   'piano-coastal-fog-pavilion',
 ] as const
 
+/** Mastered Drum room identities; publication remains server-authoritative. */
+export const DRUM_PREMIUM_BACKGROUND_IDS = [
+  'drum-blue-hour-live-room',
+  'drum-bronze-soundstage',
+  'drum-rain-glass-studio',
+  'drum-walnut-live-room',
+  'drum-sunrise-pavilion',
+] as const
+
 /** Stable Mercury Editions ids beyond the original three premium masters. */
 export const NEW_EDITION_BACKGROUND_IDS = [
   ...SHARED_NEW_EDITION_BACKGROUND_IDS,
   ...PIANO_PREMIUM_BACKGROUND_IDS,
+  ...DRUM_PREMIUM_BACKGROUND_IDS,
 ] as const
 
 /**
@@ -222,6 +245,11 @@ export type BackgroundEdition =
   | 'grand-hall'
   | 'moonlit-conservatory'
   | 'ear-rooms'
+  | 'blue-hour-live-room'
+  | 'bronze-soundstage'
+  | 'rain-glass-studio'
+  | 'walnut-live-room'
+  | 'sunrise-pavilion'
 
 export interface PublicBackgroundSource {
   kind: 'public'
@@ -538,6 +566,68 @@ export const BACKGROUND_CATALOG = [
     focalPoint: { x: 0.5, y: 0.5 },
   },
   {
+    id: 'drum-pocket-console',
+    surface: 'drum',
+    label: 'Pocket Console',
+    description: 'Warm brass cues around a focused tracking room',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/drum-night/pocket-console-landscape.webp',
+      undefined,
+      '/drum-night/pocket-console-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.54 },
+  },
+  {
+    id: 'drum-tape-room',
+    surface: 'drum',
+    label: 'Tape Room',
+    description:
+      'Analogue warmth and soft amber light around the tracking floor',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/drum-night/tape-room-landscape.webp',
+      undefined,
+      '/drum-night/tape-room-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'drum-daylight-riser',
+    surface: 'drum',
+    label: 'Daylight Riser',
+    description: 'Clear morning light across an open drum riser',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/drum-night/daylight-riser-landscape.webp',
+      undefined,
+      '/drum-night/daylight-riser-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.48 },
+    treatment: 'light',
+  },
+  {
+    id: 'drum-after-hours-booth',
+    surface: 'drum',
+    label: 'After-Hours Booth',
+    description: 'A close late-night booth with low amber practicals',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/drum-night/after-hours-booth-landscape.webp',
+      undefined,
+      '/drum-night/after-hours-booth-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
     id: 'golden-stage',
     surface: 'jam',
     label: 'Golden Stage',
@@ -744,6 +834,65 @@ export const BACKGROUND_CATALOG = [
     delivery: 'master-ready',
     access: supporterAccess('piano-coastal-fog-pavilion'),
     assetSource: protectedSource('piano', 'piano-coastal-fog-pavilion'),
+    focalPoint: { x: 0.5, y: 0.46 },
+    treatment: 'light',
+  },
+  {
+    id: 'drum-blue-hour-live-room',
+    surface: 'drum',
+    label: 'Blue Hour Live Room',
+    description:
+      'Deep blue windows and warm practicals around a spacious tracking floor.',
+    edition: 'blue-hour-live-room',
+    delivery: 'master-ready',
+    access: supporterAccess('drum-blue-hour-live-room'),
+    assetSource: protectedSource('drum', 'drum-blue-hour-live-room'),
+    focalPoint: { x: 0.5, y: 0.48 },
+  },
+  {
+    id: 'drum-bronze-soundstage',
+    surface: 'drum',
+    label: 'Bronze Soundstage',
+    description:
+      'Smoked bronze walls and focused light in a cinematic drum room.',
+    edition: 'bronze-soundstage',
+    delivery: 'master-ready',
+    access: supporterAccess('drum-bronze-soundstage'),
+    assetSource: protectedSource('drum', 'drum-bronze-soundstage'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'drum-rain-glass-studio',
+    surface: 'drum',
+    label: 'Rain Glass Studio',
+    description:
+      'Rain-patterned glass and amber light around a focused studio floor.',
+    edition: 'rain-glass-studio',
+    delivery: 'master-ready',
+    access: supporterAccess('drum-rain-glass-studio'),
+    assetSource: protectedSource('drum', 'drum-rain-glass-studio'),
+    focalPoint: { x: 0.5, y: 0.48 },
+  },
+  {
+    id: 'drum-walnut-live-room',
+    surface: 'drum',
+    label: 'Walnut Live Room',
+    description: 'Walnut diffusion panels and classic recording-studio warmth.',
+    edition: 'walnut-live-room',
+    delivery: 'master-ready',
+    access: supporterAccess('drum-walnut-live-room'),
+    assetSource: protectedSource('drum', 'drum-walnut-live-room'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'drum-sunrise-pavilion',
+    surface: 'drum',
+    label: 'Sunrise Pavilion',
+    description: 'Soft morning light across an open modern recording pavilion.',
+    edition: 'sunrise-pavilion',
+    delivery: 'master-ready',
+    access: supporterAccess('drum-sunrise-pavilion'),
+    assetSource: protectedSource('drum', 'drum-sunrise-pavilion'),
     focalPoint: { x: 0.5, y: 0.46 },
     treatment: 'light',
   },
@@ -1233,6 +1382,7 @@ export const DEFAULT_BACKGROUND_IDS = {
   piano: 'piano-afterglow',
   guitar: 'velvet-rehearsal',
   ear: 'ear-regulator-room',
+  drum: 'drum-pocket-console',
 } as const satisfies Record<BackgroundSurface, FreeBackgroundId>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(

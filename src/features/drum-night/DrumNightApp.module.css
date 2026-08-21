@@ -397,7 +397,7 @@
   border-radius: 6px;
   background:
     linear-gradient(90deg, rgb(231 173 82 / 20%), transparent 42%),
-    url('/drum-night/pocket-console-landscape.webp') center 60% / cover;
+    var(--mp-stage-image) var(--mp-stage-position, center 54%) / cover no-repeat;
 }
 
 .performanceStage {
@@ -419,8 +419,11 @@
 
 .stageRoom {
   z-index: -3;
-  background: url('/drum-night/pocket-console-landscape.webp') center 54% /
-    cover no-repeat;
+  background-color: #060708;
+  background-image: var(--mp-stage-image);
+  background-position: var(--mp-stage-position, center 54%);
+  background-size: cover;
+  background-repeat: no-repeat;
   transform: scale(1.01);
 }
 
@@ -467,6 +470,24 @@
 .stageVignette {
   z-index: -1;
   box-shadow: inset 0 0 130px rgb(0 0 0 / 44%);
+}
+
+.shell[data-background-treatment='light'] .stageShade {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(3 4 5 / 70%) 0%,
+      rgb(3 4 5 / 10%) 27%,
+      rgb(3 4 5 / 8%) 66%,
+      rgb(3 4 5 / 72%) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgb(5 6 8 / 38%) 0%,
+      transparent 24%,
+      transparent 66%,
+      rgb(5 6 8 / 58%) 100%
+    );
 }
 
 .stageHeading {
@@ -1663,7 +1684,6 @@
 }
 
 .mappingList,
-.roomOptions,
 .songActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(130px, 1fr));
@@ -1671,7 +1691,6 @@
 }
 
 .mappingList > div,
-.roomOptions > div,
 .songActions button {
   display: grid;
   min-height: 60px;
@@ -1697,12 +1716,10 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.mappingList strong,
-.roomOptions strong {
+.mappingList strong {
   font-size: 10px;
 }
-.mappingList small,
-.roomOptions small {
+.mappingList small {
   color: var(--vellum-muted);
   font-size: 8px;
 }
@@ -1735,37 +1752,6 @@
 
 .mixerStrips .unavailableStrip {
   opacity: 0.54;
-}
-
-.roomOptions {
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
-}
-.roomOptions > div {
-  min-height: 112px;
-  grid-template-columns: 70px 1fr;
-  align-items: center;
-  column-gap: 12px;
-}
-.roomOptions > div.isSelected {
-  border-color: rgb(231 173 82 / 48%);
-}
-.roomThumb {
-  display: block;
-  width: 70px;
-  height: 70px;
-  grid-row: span 2;
-  border-radius: 7px;
-  background-position: center;
-  background-size: cover;
-}
-.pocketThumb {
-  background-image: url('/drum-night/pocket-console-landscape.webp');
-}
-.tapeThumb {
-  background: linear-gradient(135deg, #271c16, #5e3825 48%, #13171b);
-}
-.daylightThumb {
-  background: linear-gradient(135deg, #594638, #b49a74 48%, #333b3e);
 }
 
 .simpleWorkspace {
@@ -2958,8 +2944,8 @@
     height: 20px;
   }
   .stageRoom {
-    background-image: url('/drum-night/pocket-console-portrait.webp');
-    background-position: center 50%;
+    background-image: var(--mp-stage-image);
+    background-position: var(--mp-stage-position, center 50%);
   }
   .stageShade {
     background:
@@ -3255,9 +3241,6 @@
   .mappingPanel .mappingList {
     grid-template-columns: 1fr;
   }
-  .roomOptions {
-    grid-template-columns: 1fr;
-  }
   .mixerStrips {
     grid-template-columns: 1fr 1fr;
   }
@@ -3403,7 +3386,7 @@
     font-size: 8px;
   }
   .stageRoom {
-    background-image: url('/drum-night/pocket-console-landscape.webp');
+    background-image: var(--mp-stage-image);
   }
   .stageCopy h1 {
     display: none;
