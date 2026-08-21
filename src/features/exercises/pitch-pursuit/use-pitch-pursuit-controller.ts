@@ -1,6 +1,7 @@
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_PITCH_PURSUIT } from '../types'
@@ -34,6 +35,11 @@ export function usePitchPursuitController(base: BaseExerciseController) {
   let lastSpawnTime = 0
   let hits = 0
   let misses = 0
+  // Separate from `hits` on purpose. The game's hit line is
+  // hitToleranceCents, which difficulty scales -- right for combo and feel,
+  // wrong for a stored tally that has to mean the same thing on every
+  // setting and beside every other drill. One entry per note presented.
+  let noteDeviations: (number | null)[] = []
   let combo = 0
   let maxCombo = 0
   let totalAccuracy = 0
@@ -65,6 +71,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
     nextId = 0
     hits = 0
     misses = 0
+    noteDeviations = []
     combo = 0
     maxCombo = 0
     totalAccuracy = 0
@@ -128,6 +135,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
 
         if (currentMidi > 0) {
           const cents = (currentMidi - note.midi) * 100
+          noteDeviations.push(Math.abs(cents))
           if (Math.abs(cents) <= hitToleranceCents) {
             note.hit = true
             hits++
@@ -141,6 +149,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
         } else {
           misses++
           combo = 0
+          noteDeviations.push(null)
         }
 
         // Schedule deactivation via timestamp (no untracked setTimeout)
@@ -152,6 +161,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
         note.scored = true
         misses++
         combo = 0
+        noteDeviations.push(null)
         note.deactivateAt = now + 200
       }
     }
@@ -198,7 +208,13 @@ export function usePitchPursuitController(base: BaseExerciseController) {
       return {
         type: EXERCISE_PITCH_PURSUIT,
         score: 0,
-        metrics: { hits: 0, misses: 0, accuracy: 0, maxCombo: 0 },
+        metrics: {
+          hits: 0,
+          misses: 0,
+          accuracy: 0,
+          maxCombo: 0,
+          ...EMPTY_NOTE_TALLY,
+        },
         completedAt: Date.now(),
       }
     }
@@ -224,6 +240,7 @@ export function usePitchPursuitController(base: BaseExerciseController) {
         accuracy: avgAccuracy,
         maxCombo,
         totalNotes: total,
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

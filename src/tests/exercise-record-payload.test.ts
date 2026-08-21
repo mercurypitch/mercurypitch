@@ -52,3 +52,44 @@ describe('the plain-exercise session payload', () => {
     ).toBe(2)
   })
 })
+
+// ── The note tally the drill published ───────────────────────────
+describe('the note tally on a plain-exercise payload', () => {
+  function tallied(
+    metrics: Record<string, number>,
+  ): ReturnType<typeof exerciseSessionPayload> {
+    return exerciseSessionPayload(
+      { type: EXERCISE_INTERVAL_TRAINER, score: 82, metrics, completedAt: 1 },
+      5200,
+    )
+  }
+
+  it('carries a drill tally through to the row', () => {
+    const payload = tallied({ durationMs: 5200, notesHit: 7, notesTotal: 12 })
+
+    expect(payload.notesHit).toBe(7)
+    expect(payload.notesTotal).toBe(12)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+  })
+
+  it('reports 0/0 for a drill with no notes to count', () => {
+    // The sustained-pitch and glide drills publish no tally at all. 0/0 is
+    // how every reader already spells "no note data" — see the
+    // `notesTotal > 0` guards in progress-view-model and progress-share-model.
+    const payload = exerciseSessionPayload(entry(EXERCISE_LONG_NOTE), 5200)
+
+    expect(payload.notesHit).toBe(0)
+    expect(payload.notesTotal).toBe(0)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+  })
+
+  // The whole point of the guard: a drill that publishes an impossible tally
+  // must cost its own tally, never the singer's entire run.
+  it('drops an impossible tally instead of losing the run to a 400', () => {
+    const payload = tallied({ durationMs: 5200, notesHit: 99, notesTotal: 4 })
+
+    expect(payload.notesHit).toBe(0)
+    expect(payload.notesTotal).toBe(0)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+  })
+})

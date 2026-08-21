@@ -13,6 +13,7 @@ import { createSignal } from 'solid-js'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
+import { isNoteHit } from '@/features/exercises/exercise-note-tally'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
 import { STORAGE_KEY_SESSION_HIST } from './melody-store'
@@ -142,7 +143,13 @@ export function practiceSessionPayload(
     melodyName: session.name,
     score: avgScore,
     accuracy: avgScore,
-    notesHit: results.length,
+    // Notes LANDED, not notes reached. This used to be `results.length`,
+    // which counted every item the singer got to regardless of pitch -- so
+    // the column read 100% for a run sung entirely flat, and Practice rows
+    // meant something different from every other run kind. The line is the
+    // same fixed 25 cents the drills use (exercise-note-tally); the singer's
+    // accuracy tier shapes score and accuracy, never the count.
+    notesHit: results.filter((r) => isNoteHit(Math.abs(r.avgCents))).length,
     // A walk that somehow outran its own schedule must not resurrect the
     // 400 — the run happened either way, and the evidence is worth more
     // than the tally.

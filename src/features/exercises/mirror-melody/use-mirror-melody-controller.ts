@@ -3,7 +3,8 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
-import { scoreNoteAccuracy } from '../exercise-scoring-utils'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
+import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_MIRROR_MELODY } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -43,6 +44,9 @@ export function useMirrorMelodyController(
   let melody: number[] = []
   let noteIndex = 0
   let noteScores: number[] = []
+  // One entry per note PRESENTED, so a note that captured nothing stays a
+  // miss rather than vanishing from the denominator.
+  let noteDeviations: (number | null)[] = []
   // Adaptive params, set per-round in `setMelody`; default to d5 baselines.
   let matchWindowMs = MATCH_WINDOW_MS
   let toneDurationMs = TONE_DURATION_MS
@@ -77,6 +81,7 @@ export function useMirrorMelodyController(
     melody = generateMelody(baseMidi, length, range)
     noteIndex = 0
     noteScores = []
+    noteDeviations = []
     base._setTargetPitch(midiToFreq(baseMidi))
   }
 
@@ -128,6 +133,9 @@ export function useMirrorMelodyController(
     )
 
     noteScores.push(noteScore)
+    noteDeviations.push(
+      noteDeviationCents(base.pitchHistory(), targetMidi, matchWindowMs),
+    )
 
     if (noteScores.length > 0) {
       const avg = noteScores.reduce((a, b) => a + b, 0) / noteScores.length
@@ -163,6 +171,7 @@ export function useMirrorMelodyController(
           bestNote: 0,
           consistency: 0,
           richnessScore: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -204,6 +213,7 @@ export function useMirrorMelodyController(
         bestNote,
         consistency,
         richnessScore: Math.round(richness),
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }
