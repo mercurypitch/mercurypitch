@@ -2,6 +2,16 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
+import { Buffer } from 'node:buffer'
+
+const DRUM_SESSION_MIDI = Buffer.from([
+  0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00,
+  0x60, 0x4d, 0x54, 0x72, 0x6b, 0x00, 0x00, 0x00, 0x31, 0x00, 0xff, 0x03, 0x0a,
+  0x45, 0x32, 0x45, 0x20, 0x50, 0x6f, 0x63, 0x6b, 0x65, 0x74, 0x00, 0xff, 0x51,
+  0x03, 0x07, 0xa1, 0x20, 0x00, 0xff, 0x58, 0x04, 0x04, 0x02, 0x18, 0x08, 0x00,
+  0x99, 0x24, 0x64, 0x60, 0x89, 0x24, 0x00, 0x60, 0x99, 0x26, 0x70, 0x60, 0x89,
+  0x26, 0x00, 0x00, 0xff, 0x2f, 0x00,
+])
 
 async function instrumentFirstPaint(
   page: import('@playwright/test').Page,
@@ -101,9 +111,11 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   await expect(page.getByTestId('drum-night-shell')).toBeVisible()
   await expect(page.getByTestId('drum-night-pocket-view')).toBeVisible()
   await expect(page.locator('#app-tabs')).toHaveCount(0)
-  await expect(page.getByRole('status')).toContainText(
-    'Audio, samples, and MIDI stay off',
-  )
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Audio, samples, and MIDI stay off' }),
+  ).toBeVisible()
   await expect(page.getByText('MIDI not connected')).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
@@ -119,26 +131,48 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   expect(pageErrors).toEqual([])
 })
 
-test('keeps views, take transport, and rack drawer on one staged session @smoke', async ({
+test('imports one drum document across Score, Seat, transport, and the rack drawer @smoke', async ({
   page,
 }) => {
   await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
 
-  await page.getByRole('button', { name: 'Score', exact: true }).click()
-  await expect(page.getByTestId('drum-night-score-view')).toBeVisible()
+  await page.getByRole('button', { name: 'Score view' }).click()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
     'data-view',
     'score',
   )
+  await expect(
+    page.getByRole('button', { name: 'Open a drum part' }),
+  ).toBeVisible()
 
-  await page
-    .getByRole('group', { name: 'Drum view' })
-    .getByRole('button', { name: 'Kit', exact: true })
-    .click()
-  await expect(page.getByTestId('drum-night-kit-view')).toBeVisible()
+  const songs = page
+    .getByRole('button', { name: /Songs/ })
+    .filter({ visible: true })
+    .first()
+  await songs.click()
+  const songsDrawer = page.getByRole('dialog', { name: 'Bring a drum part' })
+  await expect(songsDrawer).toBeVisible()
+  await songsDrawer.getByLabel('Choose a drum session file').setInputFiles({
+    name: 'e2e-pocket.mid',
+    mimeType: 'audio/midi',
+    buffer: DRUM_SESSION_MIDI,
+  })
+  await expect(songsDrawer).not.toBeVisible()
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-session-status',
+    'ready',
+  )
+  await expect(page.getByText('Imported percussion score')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Drummer Seat view' }).click()
+  await expect(page.getByText('Drummer’s seat')).toBeVisible()
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-view',
+    'seat',
+  )
 
   const play = page
-    .getByRole('button', { name: 'Play Midnight Pocket take clock' })
+    .getByRole('button', { name: /^Play .* take clock$/ })
     .filter({ visible: true })
   await play.click()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
@@ -146,7 +180,7 @@ test('keeps views, take transport, and rack drawer on one staged session @smoke'
     'true',
   )
   await expect(page.getByRole('status')).toContainText(
-    'Starting the take clock. No backing track or click is scheduled.',
+    'Starting authored percussion on the shared take clock.',
   )
 
   const groove = page
@@ -177,8 +211,9 @@ test('moves the live kit level with a real pointer @smoke', async ({
     .click()
   const drawer = page.getByRole('dialog', { name: 'Shape the groove' })
   await drawer.getByRole('tab', { name: 'Mix' }).click()
+  const mixDrawer = page.getByRole('dialog', { name: 'Balance the room' })
 
-  const kitLevel = drawer.getByRole('slider', { name: 'Kit level' })
+  const kitLevel = mixDrawer.getByRole('slider', { name: 'Kit level' })
   const initialValue = await kitLevel.inputValue()
   const bounds = await kitLevel.boundingBox()
   if (bounds === null) throw new Error('Kit level slider has no pointer bounds')
@@ -204,11 +239,26 @@ test('recomposes for phone and short landscape without overflow or clipped prima
     { width: 320, height: 568 },
     { width: 390, height: 844 },
     { width: 844, height: 390 },
+    { width: 768, height: 1024 },
     { width: 1024, height: 768 },
     { width: 1440, height: 900 },
   ]) {
     await page.setViewportSize(viewport)
     await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+    await expect(
+      page.getByRole('button', { name: /^Open drum input setup:/ }),
+    ).toBeVisible()
+
+    const expectsTouchKit =
+      viewport.width <= 1040 ||
+      (viewport.width > viewport.height && viewport.height <= 520)
+    if (expectsTouchKit) {
+      const touchKit = page.getByRole('group', { name: 'Touch drum pads' })
+      await expect(touchKit).toBeVisible()
+      await expect(touchKit.getByRole('button')).toHaveCount(6)
+      await expect(touchKit.getByRole('button').first()).toBeVisible()
+      await expect(touchKit.getByRole('button').last()).toBeVisible()
+    }
 
     const geometry = await page.evaluate(() => {
       const visible = (element: Element): boolean => {
@@ -256,6 +306,21 @@ test('recomposes for phone and short landscape without overflow or clipped prima
     )
     expect(geometry.undersized, JSON.stringify(viewport)).toBe(0)
   }
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/drum-night?drawer=learn', {
+    waitUntil: 'domcontentloaded',
+  })
+  await page
+    .getByRole('button', { name: 'Start silent take clock at 82 BPM' })
+    .click()
+  const activeLoop = page.getByRole('button', {
+    name: 'Clear active 8-beat loop',
+  })
+  await expect(activeLoop).toBeVisible()
+  await activeLoop.click()
+  await expect(activeLoop).not.toBeVisible()
+  await expect(page.getByRole('status')).toContainText('Practice loop cleared')
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
