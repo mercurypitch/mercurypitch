@@ -14,9 +14,11 @@ function catalog(
   id:
     | 'golden-hour-stage'
     | 'aurora-stage'
-    | 'piano-velvet-recital' = 'golden-hour-stage',
+    | 'piano-velvet-recital'
+    | 'drum-blue-hour-live-room' = 'golden-hour-stage',
 ): PremiumBackgroundCatalogResponse {
   const piano = id === 'piano-velvet-recital'
+  const drum = id === 'drum-blue-hour-live-room'
   return {
     assets: [
       {
@@ -26,9 +28,11 @@ function catalog(
             ? 'Golden Hour Stage'
             : piano
               ? 'Velvet Recital'
-              : 'Aurora Stage',
+              : drum
+                ? 'Blue Hour Live Room'
+                : 'Aurora Stage',
         description: 'A private edition',
-        surface: piano ? 'piano' : 'karaoke',
+        surface: piano ? 'piano' : drum ? 'drum' : 'karaoke',
         activeVersion: 2,
         variants: [
           {
@@ -98,6 +102,17 @@ describe('parsePremiumBackgroundCatalog', () => {
       parsePremiumBackgroundCatalog({
         ...piano,
         assets: [{ ...piano.assets[0], surface: 'jam' }],
+      })?.assets,
+    ).toEqual([])
+  })
+
+  it('accepts a known Drum asset only under its compiled Drum surface', () => {
+    const drum = catalog('drum-blue-hour-live-room')
+    expect(parsePremiumBackgroundCatalog(drum)?.assets).toEqual(drum.assets)
+    expect(
+      parsePremiumBackgroundCatalog({
+        ...drum,
+        assets: [{ ...drum.assets[0], surface: 'guitar' }],
       })?.assets,
     ).toEqual([])
   })

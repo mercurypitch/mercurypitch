@@ -57,6 +57,12 @@ describe('server-evidenced background access', () => {
         access,
       ),
     ).toBe(true)
+    expect(
+      hasBackgroundEntitlement(
+        getBackgroundDefinition('drum-blue-hour-live-room')!,
+        access,
+      ),
+    ).toBe(true)
   })
 
   it('honors a matching explicit grant without unlocking the whole pack', () => {
@@ -258,6 +264,21 @@ describe('background selection', () => {
     expect(BACKGROUND_SELECTION_KEYS.piano).toBe(
       'pitchperfect_piano_background',
     )
+  })
+
+  it('isolates the Drum preference and rechecks supporter access', () => {
+    const storage = memoryStorage()
+    expect(persistBackgroundId('drum', 'drum-tape-room', storage)).toBe(true)
+    expect(readPersistedBackgroundId('drum', storage)).toBe('drum-tape-room')
+    expect(readPersistedBackgroundId('guitar', storage)).toBeNull()
+    expect(
+      resolveBackgroundSelection(
+        'drum',
+        'drum-blue-hour-live-room',
+        NO_BACKGROUND_ACCESS,
+      ).id,
+    ).toBe('drum-pocket-console')
+    expect(BACKGROUND_SELECTION_KEYS.drum).toBe('pitchperfect_drum_background')
   })
 
   it('rejects a persisted id from the wrong surface', () => {

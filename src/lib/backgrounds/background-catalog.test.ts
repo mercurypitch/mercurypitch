@@ -2,8 +2,10 @@
 // Background catalog tests
 // ============================================================
 
+import { readFileSync } from 'node:fs'
+import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
-import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, PIANO_PREMIUM_BACKGROUND_IDS, } from './background-catalog'
+import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, DRUM_PREMIUM_BACKGROUND_IDS, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, PIANO_PREMIUM_BACKGROUND_IDS, } from './background-catalog'
 
 describe('background catalog', () => {
   it('registers every current free performance scene as shipped', () => {
@@ -27,9 +29,15 @@ describe('background catalog', () => {
     for (const id of PIANO_PREMIUM_BACKGROUND_IDS) {
       expect(getBackgroundDefinition(id)?.delivery).toBe('master-ready')
     }
-    const masteredPianoIds = new Set<string>(PIANO_PREMIUM_BACKGROUND_IDS)
+    for (const id of DRUM_PREMIUM_BACKGROUND_IDS) {
+      expect(getBackgroundDefinition(id)?.delivery).toBe('master-ready')
+    }
+    const masteredIds = new Set<string>([
+      ...PIANO_PREMIUM_BACKGROUND_IDS,
+      ...DRUM_PREMIUM_BACKGROUND_IDS,
+    ])
     for (const id of NEW_EDITION_BACKGROUND_IDS.filter(
-      (id) => !masteredPianoIds.has(id),
+      (id) => !masteredIds.has(id),
     )) {
       expect(getBackgroundDefinition(id)?.delivery).toBe('planned')
     }
@@ -121,10 +129,33 @@ describe('background catalog', () => {
       'piano-grand-hall',
       'piano-moonlit-conservatory',
     ])
+    expect(listBackgrounds('drum').map((background) => background.id)).toEqual([
+      'drum-pocket-console',
+      'drum-tape-room',
+      'drum-daylight-riser',
+      'drum-after-hours-booth',
+    ])
+    expect(
+      listBackgrounds('drum', { includeUnshipped: true }).map(
+        (background) => background.id,
+      ),
+    ).toEqual([
+      'drum-pocket-console',
+      'drum-tape-room',
+      'drum-daylight-riser',
+      'drum-after-hours-booth',
+      ...DRUM_PREMIUM_BACKGROUND_IDS,
+    ])
   })
 
-  it('defines a shipped free fallback for all three surfaces', () => {
-    for (const surface of ['karaoke', 'jam', 'piano'] as const) {
+  it('defines a shipped free fallback for every surface', () => {
+    for (const surface of [
+      'karaoke',
+      'jam',
+      'piano',
+      'guitar',
+      'drum',
+    ] as const) {
       const fallback = defaultBackground(surface)
       expect(fallback.surface).toBe(surface)
       expect(fallback.delivery).toBe('shipped')
@@ -163,5 +194,64 @@ describe('background catalog', () => {
     expect(nocturne?.treatment ?? 'dark').toBe('dark')
     expect(brick?.treatment).toBe('light')
     expect(library?.treatment ?? 'dark').toBe('dark')
+  })
+
+  it('keeps every Drum room responsive and the daylight rooms contrast-aware', () => {
+    for (const id of [
+      'drum-pocket-console',
+      'drum-tape-room',
+      'drum-daylight-riser',
+      'drum-after-hours-booth',
+    ] as const) {
+      const source = getBackgroundDefinition(id)?.assetSource
+      expect(source?.kind).toBe('public')
+      if (source?.kind === 'public') expect(source.portrait).toBeDefined()
+    }
+    expect(getBackgroundDefinition('drum-daylight-riser')?.treatment).toBe(
+      'light',
+    )
+    expect(getBackgroundDefinition('drum-sunrise-pavilion')?.treatment).toBe(
+      'light',
+    )
+  })
+
+  it('ships real, bounded landscape and portrait files for every free Drum room', async () => {
+    for (const id of [
+      'drum-pocket-console',
+      'drum-tape-room',
+      'drum-daylight-riser',
+      'drum-after-hours-booth',
+    ] as const) {
+      const source = getBackgroundDefinition(id)?.assetSource
+      expect(source?.kind).toBe('public')
+      if (source?.kind !== 'public' || source.portrait === undefined) continue
+
+      for (const [path, orientation] of [
+        [source.landscape, 'landscape'],
+        [source.portrait, 'portrait'],
+      ] as const) {
+        const publicPath = `public${path}`
+        const bytes = readFileSync(publicPath)
+        expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF')
+        expect(bytes.subarray(8, 12).toString('ascii')).toBe('WEBP')
+        expect(bytes.byteLength).toBeGreaterThan(20_000)
+        expect(bytes.byteLength).toBeLessThanOrEqual(600 * 1024)
+        expect(path.endsWith(`-${orientation}.webp`)).toBe(true)
+
+        const metadata = await sharp(publicPath).metadata()
+        expect(metadata.width).toBeDefined()
+        expect(metadata.height).toBeDefined()
+        if (orientation === 'landscape') {
+          expect(metadata.width).toBeGreaterThan(metadata.height ?? 0)
+        } else {
+          expect(metadata.height).toBeGreaterThan(metadata.width ?? 0)
+        }
+        if (id !== 'drum-pocket-console') {
+          expect([metadata.width, metadata.height]).toEqual(
+            orientation === 'landscape' ? [2048, 1152] : [1440, 2560],
+          )
+        }
+      }
+    }
   })
 })

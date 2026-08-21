@@ -88,16 +88,18 @@ function state(
 function fakeStore(initial: PremiumBackgroundCatalogState) {
   const [catalogState, setCatalogState] = createSignal(initial)
   const invalidate = vi.fn()
+  const release = vi.fn()
+  const retain = vi.fn(() => release)
   const store: PremiumBackgroundCatalogStore = {
     state: catalogState,
-    retain: () => vi.fn(),
+    retain,
     refresh: async () => undefined,
     invalidate,
     assetById: (id) =>
       catalogState().assets.find((entry) => entry.id === id) ?? null,
     dispose: vi.fn(),
   }
-  return { store, setCatalogState, invalidate }
+  return { store, setCatalogState, invalidate, retain, release }
 }
 
 function memoryStorage(value: string | null = null) {
@@ -250,6 +252,68 @@ describe('background selection persistence', () => {
     )
 
     release()
+    controller.dispose()
+  })
+})
+
+describe('silent-first Drum rooms', () => {
+  it('restores responsive free art without retaining or fetching premium state', () => {
+    const catalog = fakeStore(state([], []))
+    const loadProtected = vi.fn()
+    const controller = createBackgroundSurfaceController('drum', {
+      catalogStore: catalog.store,
+      storage: memoryStorage('drum-daylight-riser'),
+      pixelRatio: () => 2,
+      orientation: () => 'portrait',
+      loadProtected,
+      revokeObjectURL: vi.fn(),
+    })
+
+    expect(controller.requestedId()).toBe('drum-daylight-riser')
+    expect(controller.resolved()).toMatchObject({
+      id: 'drum-daylight-riser',
+      url: '/drum-night/daylight-riser-portrait.webp',
+      treatment: 'light',
+      source: 'public',
+    })
+    expect(controller.resolvedStyle()['--mp-stage-image']).toContain(
+      '/drum-night/daylight-riser-portrait.webp',
+    )
+    expect(loadProtected).not.toHaveBeenCalled()
+
+    controller.dispose()
+  })
+
+  it('keeps free responsive art live before retaining premium metadata', () => {
+    let orientation: 'portrait' | 'landscape' = 'portrait'
+    const catalog = fakeStore(state([], []))
+    const controller = createBackgroundSurfaceController('drum', {
+      catalogStore: catalog.store,
+      storage: memoryStorage('drum-tape-room'),
+      orientation: () => orientation,
+      loadProtected: vi.fn(),
+      revokeObjectURL: vi.fn(),
+    })
+    const releasePublic = controller.retain({ premiumCatalog: false })
+
+    expect(catalog.retain).not.toHaveBeenCalled()
+    expect(controller.resolved().url).toBe(
+      '/drum-night/tape-room-portrait.webp',
+    )
+
+    orientation = 'landscape'
+    window.dispatchEvent(new Event('resize'))
+    expect(controller.resolved().url).toBe(
+      '/drum-night/tape-room-landscape.webp',
+    )
+    expect(catalog.retain).not.toHaveBeenCalled()
+
+    const releasePremium = controller.retain()
+    expect(catalog.retain).toHaveBeenCalledOnce()
+    releasePremium()
+    expect(catalog.release).toHaveBeenCalledOnce()
+
+    releasePublic()
     controller.dispose()
   })
 })

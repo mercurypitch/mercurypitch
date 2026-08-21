@@ -4,6 +4,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
@@ -414,6 +415,67 @@ describe('DrumNightApp', () => {
     expect(screen.queryByText('EARLY')).not.toBeInTheDocument()
     expect(screen.queryByText('ON')).not.toBeInTheDocument()
     expect(screen.queryByText('LATE')).not.toBeInTheDocument()
+  })
+
+  it('changes only the visual room and keeps premium metadata behind Room', async () => {
+    const retainBackgroundCatalog = vi.spyOn(
+      premiumBackgroundCatalogStore,
+      'retain',
+    )
+    fetchRequest.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        assets: [],
+        access: {
+          authenticated: false,
+          activeSupporter: false,
+          backgroundIds: [],
+          expiresAt: null,
+        },
+        generatedAt: '2026-08-21T00:00:00.000Z',
+      }),
+    })
+    const room = renderRoom()
+    const shell = screen.getByTestId('drum-night-shell')
+
+    expect(shell.style.getPropertyValue('--mp-stage-image')).toContain(
+      '/drum-night/pocket-console-landscape.webp',
+    )
+    expect(fetchRequest).not.toHaveBeenCalled()
+    expect(retainBackgroundCatalog).not.toHaveBeenCalled()
+    const kitSelectionsBefore = room.player.selectKit.mock.calls.length
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Change room, Pocket Console selected',
+      }),
+    )
+    const drawer = screen.getByRole('dialog', { name: 'Choose the room' })
+    const gallery = within(drawer).getByRole('region', {
+      name: 'Choose your Drum Night room',
+    })
+    await waitFor(() => expect(retainBackgroundCatalog).toHaveBeenCalledOnce())
+    expect(within(gallery).getAllByRole('button')).toHaveLength(4)
+
+    fireEvent.click(within(gallery).getByRole('button', { name: /Tape Room/i }))
+    expect(shell.style.getPropertyValue('--mp-stage-image')).toContain(
+      '/drum-night/tape-room-landscape.webp',
+    )
+    expect(localStorage.getItem('pitchperfect_drum_background')).toBe(
+      'drum-tape-room',
+    )
+    expect(room.player.selectKit).toHaveBeenCalledTimes(kitSelectionsBefore)
+    expect(
+      screen.getByText('Tape Room selected. Drum sound unchanged.'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drummer Seat view' }))
+    expect(screen.getByTestId('drummer-seat-backdrop')).toBeInTheDocument()
+
+    // Leave the shared controller in its shipped default for later unit cases.
+    fireEvent.click(
+      within(gallery).getByRole('button', { name: /Pocket Console/i }),
+    )
   })
 
   it('starts sound from pointer and keyboard strikes and uses Space for one transport', async () => {
