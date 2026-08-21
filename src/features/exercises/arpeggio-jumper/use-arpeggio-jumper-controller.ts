@@ -3,7 +3,8 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
-import { scoreNoteAccuracy, scoreNoteInRange } from '../exercise-scoring-utils'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
+import { noteDeviationCents, noteDeviationCentsInRange, scoreNoteAccuracy, scoreNoteInRange, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -55,6 +56,9 @@ export function useArpeggioJumperController(
   let arpeggioNotes: number[] = []
   let noteIndex = 0
   let noteScores: number[] = []
+  // One entry per note PRESENTED, so a note that captured nothing stays a
+  // miss rather than vanishing from the denominator.
+  let noteDeviations: (number | null)[] = []
   let mode: ArpeggioMode = 'steps'
   // Per-round timing knobs, scaled by adaptive difficulty in setArpeggio
   // (default to the unscaled baselines so difficulty 5 == original).
@@ -83,6 +87,7 @@ export function useArpeggioJumperController(
     arpeggioNotes = buildArpeggioNotes(baseMidi, arpeggioType, direction)
     noteIndex = 0
     noteScores = []
+    noteDeviations = []
     mode = interactionMode
 
     // scale by adaptive difficulty (centred on 5 == 1.0): harder = shorter
@@ -166,6 +171,14 @@ export function useArpeggioJumperController(
         endSec,
       )
       noteScores.push(noteScore)
+      noteDeviations.push(
+        noteDeviationCentsInRange(
+          base.pitchHistory(),
+          arpeggioNotes[slotIndex],
+          startSec,
+          endSec,
+        ),
+      )
       const avg = noteScores.reduce((a, b) => a + b, 0) / noteScores.length
       batch(() => {
         base._updateScore(Math.round(avg))
@@ -227,6 +240,9 @@ export function useArpeggioJumperController(
     )
 
     noteScores.push(noteScore)
+    noteDeviations.push(
+      noteDeviationCents(base.pitchHistory(), targetMidi, matchWindowMs),
+    )
 
     if (noteScores.length > 0) {
       const avg = noteScores.reduce((a, b) => a + b, 0) / noteScores.length
@@ -261,6 +277,7 @@ export function useArpeggioJumperController(
           avgAccuracy: 0,
           bestNote: 0,
           richnessScore: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -288,6 +305,7 @@ export function useArpeggioJumperController(
         bestNote,
         richnessScore: Math.round(richness),
         echoMode: mode === 'echo' ? 1 : 0,
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

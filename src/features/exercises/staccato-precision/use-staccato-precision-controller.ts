@@ -2,6 +2,7 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_STACCATO } from '../types'
@@ -27,6 +28,9 @@ export function useStaccatoPrecisionController(
   let targetNotes: number[] = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // One round IS one target note here (targetNotes[roundIndex]), so this is
+  // a per-note series despite the name. One entry per note presented.
+  let noteDeviations: (number | null)[] = []
   let attackPrecisionScores: number[] = []
   // Adaptive params, recomputed from the launch difficulty at each round setup.
   let notePlayDurationMs = NOTE_PLAY_DURATION_MS
@@ -59,6 +63,7 @@ export function useStaccatoPrecisionController(
     targetNotes = generateNotes(baseMidi, rounds)
     roundIndex = 0
     roundScores = []
+    noteDeviations = []
     attackPrecisionScores = []
   }
 
@@ -112,6 +117,7 @@ export function useStaccatoPrecisionController(
 
     let roundScore = 0
     let attackPrecision = 0
+    let noteDeviation: number | null = null
     if (recentSamples.length > 0) {
       const validSamples = recentSamples.filter((p) => p.freq > 0)
       if (validSamples.length > 0) {
@@ -121,6 +127,7 @@ export function useStaccatoPrecisionController(
         })
         const avgDeviation =
           deviations.reduce((a, b) => a + b, 0) / deviations.length
+        noteDeviation = avgDeviation
         roundScore = Math.round(
           Math.max(0, 100 - avgDeviation * scoreToleranceK),
         )
@@ -134,6 +141,7 @@ export function useStaccatoPrecisionController(
     }
 
     roundScores.push(roundScore)
+    noteDeviations.push(noteDeviation)
     attackPrecisionScores.push(attackPrecision)
 
     const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length
@@ -167,6 +175,7 @@ export function useStaccatoPrecisionController(
           avgAccuracy: 0,
           bestRound: 0,
           attackPrecision: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -193,6 +202,7 @@ export function useStaccatoPrecisionController(
         avgAccuracy,
         bestRound,
         attackPrecision,
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

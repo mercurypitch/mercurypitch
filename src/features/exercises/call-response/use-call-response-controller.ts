@@ -3,6 +3,7 @@ import { difficultyFactor } from '@/features/practice-intelligence/difficulty-sc
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { approximateRichness } from '@/lib/vocal-analyzer'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_CALL_RESPONSE } from '../types'
@@ -65,6 +66,11 @@ export function useCallResponseController(
   let phrases: PhraseNote[][] = []
   let roundIndex = 0
   let roundScores: number[] = []
+  // Run-level, one entry per note the phrases PRESENTED. This drill judges a
+  // note by its BEST deviation across the whole response window rather than a
+  // slot average -- the phrase is sung freely -- so the tally uses that same
+  // measure instead of inventing a second definition of hitting a note.
+  let noteDeviations: (number | null)[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
   base._registerDispose(() => {
@@ -108,6 +114,7 @@ export function useCallResponseController(
           )
     roundIndex = 0
     roundScores = []
+    noteDeviations = []
   }
 
   function startRounds(): void {
@@ -190,10 +197,17 @@ export function useCallResponseController(
           const best = Math.min(...deviations)
           // scale by adaptive difficulty
           noteScores.push(Math.round(Math.max(0, 100 - best * scoreCentsK)))
+          noteDeviations.push(best)
         } else {
           noteScores.push(0)
+          noteDeviations.push(null)
         }
       }
+    } else {
+      // Nothing voiced in the window. The phrase still ASKED for its notes,
+      // so they are misses -- dropping the round would let a singer who went
+      // quiet keep a perfect tally.
+      for (const _target of phrase) noteDeviations.push(null)
     }
 
     const roundScore =
@@ -233,6 +247,7 @@ export function useCallResponseController(
           avgAccuracy: 0,
           bestRound: 0,
           richnessScore: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -259,6 +274,7 @@ export function useCallResponseController(
         avgAccuracy,
         bestRound,
         richnessScore: Math.round(richness),
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

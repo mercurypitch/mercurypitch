@@ -105,8 +105,21 @@ export function pitchStabilityCents(freqs: readonly number[]): number {
   return Math.sqrt(variance) * 100
 }
 
-/** Shared cents-deviation scoring: 100 − avgCents×1.5, floored at 0. */
-function scoreSamples(samples: PitchSample[], targetMidi: number): number {
+/**
+ * How far, in cents, a slice of samples sat from its target on average.
+ * `null` means nothing voiced landed in the slice — no basis to judge, which
+ * is NOT the same as "sang it badly" and must not be flattened to a number.
+ *
+ * Exported because a drill's SCORE cannot answer "was this note hit?".
+ * Drills map cents to a score with their own slope (scoreToleranceK,
+ * scoreCentsK), and those slopes are divided by a difficulty factor — so one
+ * score means a different deviation per drill and per difficulty. Only the
+ * deviation itself is comparable, and the note tally is counted from it.
+ */
+export function averageDeviationCents(
+  samples: readonly PitchSample[],
+  targetMidi: number,
+): number | null {
   const deviations = samples
     .filter((p) => p.freq > 0)
     .map((p) => {
@@ -114,9 +127,40 @@ function scoreSamples(samples: PitchSample[], targetMidi: number): number {
       return Math.abs((midi - targetMidi) * 100) // cents
     })
 
-  if (deviations.length === 0) return 0
+  if (deviations.length === 0) return null
+  return deviations.reduce((a, b) => a + b, 0) / deviations.length
+}
 
-  const avgDeviation = deviations.reduce((a, b) => a + b, 0) / deviations.length
+/** The trailing window's average deviation in cents, or null if unvoiced. */
+export function noteDeviationCents(
+  history: PitchSample[],
+  targetMidi: number,
+  windowMs: number,
+): number | null {
+  if (history.length === 0) return null
+  return averageDeviationCents(
+    trailingSamplesByTime(history, windowMs),
+    targetMidi,
+  )
+}
+
+/** `[startSec, endSec)`'s average deviation in cents, or null if unvoiced. */
+export function noteDeviationCentsInRange(
+  history: PitchSample[],
+  targetMidi: number,
+  startSec: number,
+  endSec: number,
+): number | null {
+  return averageDeviationCents(
+    history.filter((p) => p.time >= startSec && p.time < endSec),
+    targetMidi,
+  )
+}
+
+/** Shared cents-deviation scoring: 100 − avgCents×1.5, floored at 0. */
+function scoreSamples(samples: PitchSample[], targetMidi: number): number {
+  const avgDeviation = averageDeviationCents(samples, targetMidi)
+  if (avgDeviation === null) return 0
   return Math.round(Math.max(0, 100 - avgDeviation * 1.5))
 }
 

@@ -5,6 +5,7 @@
 
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { ScaleDegree } from '@/types'
+import { tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SIGHT_SINGING } from '../types'
@@ -81,6 +82,11 @@ export function useSightSingingController(base: BaseExerciseController) {
   let noteStartMs: number[] = []
   // Per-note score, sparse until that note is reached.
   const noteScores: number[] = []
+  // Index-aligned with noteScores. This drill judges a note by the average
+  // of its BEST 30% of deviations -- it rewards finding the note after a
+  // scoop -- so the tally reuses that measure rather than inventing another.
+  // Notes never reached stay holes, and read as misses at tally time.
+  const noteDeviations: (number | null)[] = []
   let holdMs = 0
   let lastPollTs = 0
   let pollTimer: ReturnType<typeof setInterval> | undefined
@@ -128,6 +134,7 @@ export function useSightSingingController(base: BaseExerciseController) {
     sequence = generateSequence(scale, rangeMin, rangeMax)
     currentIndex = 0
     noteScores.length = 0
+    noteDeviations.length = 0
     noteStartMs = []
   }
 
@@ -142,6 +149,7 @@ export function useSightSingingController(base: BaseExerciseController) {
     sequence = midis.map((midi, index) => noteFromMidi(midi, index))
     currentIndex = 0
     noteScores.length = 0
+    noteDeviations.length = 0
     noteStartMs = []
   }
 
@@ -231,6 +239,7 @@ export function useSightSingingController(base: BaseExerciseController) {
         Math.max(1, Math.floor(deviations.length * 0.3)),
       )
       const avgBest = best.reduce((a, b) => a + b, 0) / best.length
+      noteDeviations[idx] = avgBest
       noteScore = Math.max(0, Math.round(100 - avgBest * 1.5))
     }
     if (matched) noteScore = Math.max(noteScore, 70)
@@ -277,6 +286,14 @@ export function useSightSingingController(base: BaseExerciseController) {
         notesScored: scored.length,
         avgAccuracy: final.avgAccuracy,
         bestNote: final.bestNote,
+        // Over the WHOLE sequence, not just the notes that captured audio:
+        // a run abandoned halfway presented every note it showed.
+        ...tallyFromDeviations(
+          Array.from(
+            { length: sequence.length },
+            (_, i) => noteDeviations[i] ?? null,
+          ),
+        ),
       },
       completedAt: Date.now(),
     }

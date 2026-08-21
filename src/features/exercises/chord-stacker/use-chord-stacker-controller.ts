@@ -2,7 +2,8 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { scoreNoteAccuracy } from '../exercise-scoring-utils'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
+import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_CHORD_STACKER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -56,6 +57,10 @@ export function useChordStackerController(
   let noteIndex = 0
   let noteScores: number[] = []
   let allRoundScores: number[] = []
+  // Run-level, NOT per-round: noteScores is cleared for each new chord, so
+  // a per-round array would report only the last chord's notes. One entry
+  // per note presented across the whole run.
+  let noteDeviations: (number | null)[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let baseMidi = 60
   let _cancelled = false
@@ -84,6 +89,7 @@ export function useChordStackerController(
     chordTypes = shuffleArray(Object.keys(CHORD_DEGREES) as ChordType[])
     roundIndex = 0
     allRoundScores = []
+    noteDeviations = []
 
     // Scale playback/hold and match window by difficulty (5 == baseline).
     const difficulty = launchDifficulty(EXERCISE_CHORD_STACKER)
@@ -187,6 +193,9 @@ export function useChordStackerController(
     )
 
     noteScores.push(noteScore)
+    noteDeviations.push(
+      noteDeviationCents(base.pitchHistory(), targetMidi, matchWindowMs),
+    )
 
     const roundAvg = noteScores.reduce((a, b) => a + b, 0) / noteScores.length
     batch(() => {
@@ -248,6 +257,7 @@ export function useChordStackerController(
           dom7Avg: 0,
           dim7Avg: 0,
           maj6Avg: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -288,6 +298,7 @@ export function useChordStackerController(
         avgAccuracy,
         bestRound,
         ...chordAvgs,
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

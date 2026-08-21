@@ -15,6 +15,7 @@ import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import { exerciseComparabilityKey, exerciseScoringVersion, } from '@/features/exercises/exercise-comparability'
+import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
@@ -63,8 +64,13 @@ export function exerciseSessionPayload(
     melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
     score: entry.score,
     accuracy: entry.score,
-    notesHit: 0,
-    notesTotal: 0,
+    // Drills that run a discrete sequence publish their own tally (see
+    // exercise-note-tally). The sustained-pitch and glide drills have no
+    // notes to count and report 0/0, which every reader already treats as
+    // "no note data" -- the `notesTotal > 0` guards in progress-view-model
+    // and progress-share-model. Writing a tally they cannot measure would
+    // be worse than the empty cell.
+    ...noteTallyFromMetrics(entry.metrics),
     durationMs,
     source: 'exercise',
     sourceRef: entry.type,
@@ -121,11 +127,13 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
       type: entry.type,
       score: entry.score,
       durationMs,
+      metrics: entry.metrics,
     })
     const consumedWeekly = await recordWeeklyAttempt({
       type: entry.type,
       score: entry.score,
       durationMs,
+      metrics: entry.metrics,
     })
     if (consumedChallenge || consumedWeekly) return
 

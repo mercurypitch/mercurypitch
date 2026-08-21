@@ -20,6 +20,7 @@ import { loadChallengeProgress, saveChallengeProgress, } from '@/db/services/cha
 import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { fingerprintOf } from '@/features/community/share-identity'
+import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { showNotification } from '@/stores/notifications-store'
@@ -141,6 +142,8 @@ export async function recordChallengeAttempt(entry: {
   type: ExerciseType
   score: number
   durationMs?: number
+  /** The drill's own metrics, for the note tally it published. */
+  metrics?: Readonly<Record<string, number>>
 }): Promise<boolean> {
   const attempt = activeAttempt()
   if (attempt === null) return false
@@ -217,8 +220,11 @@ export async function recordChallengeAttempt(entry: {
           melodyName: `Challenge: ${attempt.title}`,
           score,
           accuracy: score,
-          notesHit: 0,
-          notesTotal: 0,
+          // A challenge or weekly run IS an exercise run wearing a fixed
+          // target, so it inherits whatever tally that drill published --
+          // 0/0 for the sustained-pitch drills, which every reader already
+          // reads as "no note data".
+          ...noteTallyFromMetrics(entry.metrics),
           durationMs: entry.durationMs,
           source: 'challenge',
           sourceRef: attempt.challengeId,

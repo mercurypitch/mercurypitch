@@ -15,7 +15,12 @@ import { scoreWindow } from './score-window'
 
 // Accuracy constants (cents deviation thresholds)
 const CENTS_PERFECT = 10
-const CENTS_EXCELLENT = 25
+/**
+ * The "sang the right note" line — a quarter of a semitone. Exported because
+ * the exercise note tally counts hits against it, so close-enough has one
+ * definition rather than two that can drift apart.
+ */
+export const CENTS_EXCELLENT = 25
 const CENTS_GOOD = 50
 const SCORE_PERFECT = 100
 const SCORE_EXCELLENT = 90
