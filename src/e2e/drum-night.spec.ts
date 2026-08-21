@@ -20,17 +20,58 @@ async function instrumentFirstPaint(
     const trackedWindow = window as unknown as {
       __drumNightAudioContexts: number
       __drumNightDatabaseOpens: number
+      __drumNightFetches: number
+      __drumNightIntervals: number
       __drumNightMidiRequests: number
       __drumNightMicRequests: number
+      __drumNightAnimationFrames: number
+      __drumNightTimeouts: number
       __drumNightWorkers: number
       AudioContext?: typeof AudioContext
       webkitAudioContext?: typeof AudioContext
     }
     trackedWindow.__drumNightAudioContexts = 0
     trackedWindow.__drumNightDatabaseOpens = 0
+    trackedWindow.__drumNightFetches = 0
+    trackedWindow.__drumNightIntervals = 0
     trackedWindow.__drumNightMidiRequests = 0
     trackedWindow.__drumNightMicRequests = 0
+    trackedWindow.__drumNightAnimationFrames = 0
+    trackedWindow.__drumNightTimeouts = 0
     trackedWindow.__drumNightWorkers = 0
+
+    const nativeFetch = window.fetch.bind(window)
+    window.fetch = ((...args: Parameters<typeof fetch>) => {
+      trackedWindow.__drumNightFetches += 1
+      return nativeFetch(...args)
+    }) as typeof fetch
+
+    const nativeSetTimeout = window.setTimeout.bind(window)
+    window.setTimeout = ((
+      handler: TimerHandler,
+      timeout?: number,
+      ...args: unknown[]
+    ) => {
+      trackedWindow.__drumNightTimeouts += 1
+      return nativeSetTimeout(handler, timeout, ...args)
+    }) as typeof window.setTimeout
+
+    const nativeSetInterval = window.setInterval.bind(window)
+    window.setInterval = ((
+      handler: TimerHandler,
+      timeout?: number,
+      ...args: unknown[]
+    ) => {
+      trackedWindow.__drumNightIntervals += 1
+      return nativeSetInterval(handler, timeout, ...args)
+    }) as typeof window.setInterval
+
+    const nativeRequestAnimationFrame =
+      window.requestAnimationFrame.bind(window)
+    window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      trackedWindow.__drumNightAnimationFrames += 1
+      return nativeRequestAnimationFrame(callback)
+    }) as typeof window.requestAnimationFrame
 
     const NativeAudioContext =
       trackedWindow.AudioContext ?? trackedWindow.webkitAudioContext
@@ -88,8 +129,12 @@ async function boundaryCounts(
     return {
       audio: trackedWindow.__drumNightAudioContexts,
       database: trackedWindow.__drumNightDatabaseOpens,
+      fetch: trackedWindow.__drumNightFetches,
+      interval: trackedWindow.__drumNightIntervals,
       midi: trackedWindow.__drumNightMidiRequests,
       mic: trackedWindow.__drumNightMicRequests,
+      raf: trackedWindow.__drumNightAnimationFrames,
+      timeout: trackedWindow.__drumNightTimeouts,
       workers: trackedWindow.__drumNightWorkers,
     }
   })
@@ -124,8 +169,12 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   expect(await boundaryCounts(page)).toEqual({
     audio: 0,
     database: 0,
+    fetch: 0,
+    interval: 0,
     midi: 0,
     mic: 0,
+    raf: 0,
+    timeout: 0,
     workers: 0,
   })
   expect(pageErrors).toEqual([])
@@ -232,6 +281,36 @@ test('moves the live kit level with a real pointer @smoke', async ({
   await expect(kitLevel).not.toHaveValue(initialValue)
 })
 
+test('keeps URL history, selected rack tab, and focus in sync @smoke', async ({
+  page,
+}) => {
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  await page
+    .getByRole('button', { name: /Groove/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const drawer = page.getByRole('dialog', { name: 'Shape the groove' })
+  const grooveTab = drawer.getByRole('tab', { name: 'Groove' })
+  await expect(grooveTab).toBeFocused()
+  await drawer.getByRole('tab', { name: 'Kit' }).click()
+  await expect(page).toHaveURL(/drawer=kit/)
+
+  await page.goBack()
+  await expect(page).toHaveURL(/drawer=groove/)
+  await expect(grooveTab).toHaveAttribute('aria-selected', 'true')
+  await expect(grooveTab).toBeFocused()
+
+  await page.goBack()
+  await expect(page).not.toHaveURL(/drawer=/)
+  await expect(drawer).not.toBeVisible()
+
+  await page.goForward()
+  await expect(page).toHaveURL(/drawer=groove/)
+  await expect(grooveTab).toBeFocused()
+})
+
 test('recomposes for phone and short landscape without overflow or clipped primary controls', async ({
   page,
 }) => {
@@ -249,16 +328,11 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       page.getByRole('button', { name: /^Open drum input setup:/ }),
     ).toBeVisible()
 
-    const expectsTouchKit =
-      viewport.width <= 1040 ||
-      (viewport.width > viewport.height && viewport.height <= 520)
-    if (expectsTouchKit) {
-      const touchKit = page.getByRole('group', { name: 'Touch drum pads' })
-      await expect(touchKit).toBeVisible()
-      await expect(touchKit.getByRole('button')).toHaveCount(6)
-      await expect(touchKit.getByRole('button').first()).toBeVisible()
-      await expect(touchKit.getByRole('button').last()).toBeVisible()
-    }
+    const touchKit = page.getByRole('group', { name: 'Touch drum pads' })
+    await expect(touchKit).toBeVisible()
+    await expect(touchKit.getByRole('button')).toHaveCount(6)
+    await expect(touchKit.getByRole('button').first()).toBeVisible()
+    await expect(touchKit.getByRole('button').last()).toBeVisible()
 
     const geometry = await page.evaluate(() => {
       const visible = (element: Element): boolean => {
@@ -332,6 +406,9 @@ test('recomposes for phone and short landscape without overflow or clipped prima
   await expect(
     page.getByRole('dialog', { name: 'Shape the groove' }),
   ).toBeVisible()
+  const drawerPads = page.getByRole('group', {
+    name: 'Rack drawer drum pads',
+  })
   for (const pad of [
     'Closed hi-hat',
     'Acoustic snare',
@@ -341,7 +418,7 @@ test('recomposes for phone and short landscape without overflow or clipped prima
     'Crash cymbal',
   ]) {
     await expect(
-      page
+      drawerPads
         .getByRole('button', { name: new RegExp(`^${pad}, key`) })
         .filter({ visible: true }),
     ).toBeVisible()

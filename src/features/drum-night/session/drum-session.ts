@@ -7,7 +7,6 @@
 // preserved without ever becoming drum hits or score lanes.
 
 import type { MidiSong, MidiSongPercussionTrack, MidiSongTrack, } from '@/lib/midi-song'
-import { isPercussionMidiSongTrack } from '@/lib/midi-song'
 
 export type DrumSessionSourceFormat = 'midi' | 'guitar-pro'
 
@@ -68,7 +67,9 @@ export function loadingDrumSession(fileName: string): DrumSessionImportState {
 function percussionTracks(
   tracks: readonly MidiSongTrack[],
 ): MidiSongPercussionTrack[] {
-  return tracks.filter(isPercussionMidiSongTrack)
+  return tracks.filter(
+    (track): track is MidiSongPercussionTrack => track.kind === 'percussion',
+  )
 }
 
 function sessionDurationBeats(

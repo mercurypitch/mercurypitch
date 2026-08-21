@@ -2,7 +2,7 @@
 // ============================================================
 
 import type { MidiTempoChange } from '@/lib/midi-song'
-import { createBeatClock, createSecondsToBeatClock } from '@/lib/midi-song'
+import { createBeatClock, createSecondsToBeatClock, } from '@/lib/midi-tempo-clock'
 import type { DrumLiveHit } from './drum-runtime-types'
 
 export const DRUM_TEMPO_MIN_BPM = 40
@@ -11,6 +11,8 @@ export const DRUM_COUNT_IN_MAX_BEATS = 8
 export const DRUM_SPEED_SCALE_MIN = 0.25
 export const DRUM_SPEED_SCALE_MAX = 2
 export const DRUM_SCHEDULING_LOOKAHEAD_MAX_MS = 2_000
+/** Maximum live take evidence retained in route memory. */
+export const MAX_DRUM_RECORDED_HITS = 4_096
 /** Raw map intake samples across the source list before bounded sorting. */
 export const MAX_DRUM_RAW_TEMPO_CHANGES = 4_096
 export const MAX_DRUM_AUTHORED_TEMPO_CHANGES = 128
@@ -59,6 +61,10 @@ export interface DrumTransportState {
   readonly loopIteration: number
   readonly loop: DrumLoopRange | null
   readonly recording: boolean
+  /** Retained live take events available to the coach. */
+  readonly recordedHitCount: number
+  /** Older live take events discarded after the bounded evidence window filled. */
+  readonly recordedHitOmissionCount: number
   /** A paused count-in restarts from beat one; paused playback resumes in place. */
   readonly pausedFromPhase: Extract<
     DrumTransportPhase,
@@ -113,6 +119,8 @@ export interface DrumTransportOptions {
   readonly countInBeats?: number
   readonly speedScale?: number
   readonly authoredTiming?: DrumAuthoredTiming | null
+  /** Test/integration override, always clamped to the product ceiling. */
+  readonly maxRecordedHits?: number
 }
 
 export interface DrumTransport {
@@ -433,6 +441,11 @@ export function createDrumTransport(
   let disposed = false
   let nextHitId = 1
   let capturedHits: DrumRecordedHit[] = []
+  let capturedHitStartIndex = 0
+  let recordedHitOmissionCount = 0
+  const maxRecordedHits = Number.isFinite(options.maxRecordedHits)
+    ? Math.trunc(clamp(options.maxRecordedHits ?? 1, 1, MAX_DRUM_RECORDED_HITS))
+    : MAX_DRUM_RECORDED_HITS
   let currentScheduleRevision = 0
   let naturalEndReached = false
 
@@ -487,6 +500,8 @@ export function createDrumTransport(
       loopIteration: visible.iteration,
       loop,
       recording,
+      recordedHitCount: capturedHits.length,
+      recordedHitOmissionCount,
       pausedFromPhase,
     })
   }
@@ -692,7 +707,15 @@ export function createDrumTransport(
 
   return {
     state: snapshot,
-    recordedHits: () => Object.freeze([...capturedHits]),
+    recordedHits: () =>
+      Object.freeze(
+        capturedHitStartIndex === 0
+          ? [...capturedHits]
+          : [
+              ...capturedHits.slice(capturedHitStartIndex),
+              ...capturedHits.slice(0, capturedHitStartIndex),
+            ],
+      ),
     scheduleRevision: () => currentScheduleRevision,
     subscribe(listener) {
       listeners.add(listener)
@@ -892,6 +915,8 @@ export function createDrumTransport(
     },
     clearRecording() {
       capturedHits = []
+      capturedHitStartIndex = 0
+      recordedHitOmissionCount = 0
       nextHitId = 1
       emit()
     },
@@ -919,7 +944,13 @@ export function createDrumTransport(
           (visible.positionBeat - nearestGridBeat) *
           (60_000 / effectiveTempoAt(visible.positionBeat)),
       })
-      capturedHits = [...capturedHits, recorded]
+      if (capturedHits.length < maxRecordedHits) {
+        capturedHits.push(recorded)
+      } else {
+        capturedHits[capturedHitStartIndex] = recorded
+        capturedHitStartIndex = (capturedHitStartIndex + 1) % maxRecordedHits
+        recordedHitOmissionCount += 1
+      }
       emit()
       return recorded
     },

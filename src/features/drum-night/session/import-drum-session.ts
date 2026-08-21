@@ -9,8 +9,9 @@
 import type { MidiSong } from '@/lib/midi-song'
 import type { DrumSessionImportState, DrumSessionSourceFormat, } from './drum-session'
 import { drumSessionStateFromSong, IDLE_DRUM_SESSION, loadingDrumSession, } from './drum-session'
+import { MAX_DRUM_SESSION_FILE_BYTES } from './drum-session-import-protocol'
 
-export const MAX_DRUM_SESSION_FILE_BYTES = 20 * 1024 * 1024
+export { MAX_DRUM_SESSION_FILE_BYTES }
 
 export type DrumSessionParserOutcome =
   | {
@@ -26,10 +27,26 @@ export type DrumSessionParserOutcome =
 export interface DrumSessionImportPorts {
   readonly parseMidi?: (
     bytes: Uint8Array,
+    options?: DrumSessionParserOptions,
   ) => DrumSessionParserOutcome | Promise<DrumSessionParserOutcome>
   readonly parseGuitarPro?: (
     file: File,
+    options?: DrumSessionParserOptions,
   ) => DrumSessionParserOutcome | Promise<DrumSessionParserOutcome>
+  /** Test seam; production creates one lazy module Worker per attempt. */
+  readonly importInWorker?: (
+    file: File,
+    format: DrumSessionSourceFormat,
+    options?: DrumSessionImportOptions,
+  ) => DrumSessionParserOutcome | Promise<DrumSessionParserOutcome>
+}
+
+export interface DrumSessionParserOptions {
+  readonly signal?: AbortSignal
+}
+
+export interface DrumSessionImportOptions extends DrumSessionParserOptions {
+  readonly timeoutMs?: number
 }
 
 export type DrumSessionImportAttempt =
@@ -41,7 +58,7 @@ export type DrumSessionImportAttempt =
   | {
       readonly status: 'stale'
       readonly generation: number
-      /** Parsed result for diagnostics only; it was not committed. */
+      /** Parsed result for diagnostics, or idle when cancellation stopped it. */
       readonly state: DrumSessionImportState
     }
 
@@ -74,28 +91,38 @@ function titleFromFileName(fileName: string): string {
   return withoutExtension === '' ? 'Imported drum part' : withoutExtension
 }
 
-async function defaultMidiParser(
-  bytes: Uint8Array,
+async function defaultWorkerParser(
+  file: File,
+  format: DrumSessionSourceFormat,
+  options: DrumSessionImportOptions,
 ): Promise<DrumSessionParserOutcome> {
-  const { parseMidiSong } = await import('@/lib/midi-song')
-  const song = parseMidiSong(bytes)
-  // The shared parser currently returns null for both a valid eventless SMF
-  // and malformed bytes. Do not pretend to know which one occurred.
-  return song === null ? { status: 'unreadable' } : { status: 'parsed', song }
+  const { importDrumSessionInWorker } =
+    await import('./drum-session-import-client')
+  return importDrumSessionInWorker(file, format, options)
 }
 
-async function defaultGuitarProParser(
-  file: File,
-): Promise<DrumSessionParserOutcome> {
-  try {
-    const { parseGuitarProFile } = await import('@/lib/tab/gp-import')
-    const parsed = await parseGuitarProFile(file)
-    return { status: 'parsed', song: parsed.song, name: parsed.name }
-  } catch {
-    // alphaTab's public boundary does not distinguish an empty score from a
-    // damaged file, so the caller receives deliberately conservative copy.
-    return { status: 'unreadable' }
+function abortError(): DOMException {
+  return new DOMException('Drum session import was cancelled.', 'AbortError')
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) throw abortError()
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
+function recoverableWorkerMessage(error: unknown): string | null {
+  if (
+    !(error instanceof Error) ||
+    error.name !== 'DrumSessionImportError' ||
+    !('code' in error)
+  ) {
+    return null
   }
+  const code = error.code
+  return code === 'TOO_COMPLEX' || code === 'TIMED_OUT' ? error.message : null
 }
 
 function formatName(format: DrumSessionSourceFormat): string {
@@ -154,7 +181,9 @@ function stateFromParserOutcome(options: {
 export async function importDrumSession(
   file: File,
   ports: DrumSessionImportPorts = {},
+  options: DrumSessionImportOptions = {},
 ): Promise<DrumSessionImportState> {
+  throwIfAborted(options.signal)
   const format = sourceFormat(file.name)
   if (format === null) {
     return {
@@ -175,18 +204,29 @@ export async function importDrumSession(
   if (file.size === 0) return { status: 'empty', fileName: file.name }
 
   try {
-    const outcome =
-      format === 'midi'
-        ? await (ports.parseMidi ?? defaultMidiParser)(
-            new Uint8Array(await file.arrayBuffer()),
-          )
-        : await (ports.parseGuitarPro ?? defaultGuitarProParser)(file)
+    let outcome: DrumSessionParserOutcome
+    if (format === 'midi' && ports.parseMidi !== undefined) {
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      throwIfAborted(options.signal)
+      outcome = await ports.parseMidi(bytes, options)
+    } else if (format === 'guitar-pro' && ports.parseGuitarPro !== undefined) {
+      outcome = await ports.parseGuitarPro(file, options)
+    } else {
+      outcome = await (ports.importInWorker ?? defaultWorkerParser)(
+        file,
+        format,
+        options,
+      )
+    }
+    throwIfAborted(options.signal)
     return stateFromParserOutcome({ outcome, fileName: file.name, format })
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) throw error
+    const recoverableMessage = recoverableWorkerMessage(error)
     return {
       status: 'error',
       fileName: file.name,
-      message: unreadableMessage(format),
+      message: recoverableMessage ?? unreadableMessage(format),
     }
   }
 }
@@ -198,6 +238,7 @@ export function createDrumSessionImportController(
   const listeners = new Set<() => void>()
   let currentState: DrumSessionImportState = IDLE_DRUM_SESSION
   let currentGeneration = 0
+  let activeImport: AbortController | null = null
   let disposed = false
 
   const emit = (): void => {
@@ -217,9 +258,34 @@ export function createDrumSessionImportController(
       return () => listeners.delete(listener)
     },
     async importFile(file: File): Promise<DrumSessionImportAttempt> {
+      if (disposed) {
+        return {
+          status: 'stale',
+          generation: currentGeneration,
+          state: IDLE_DRUM_SESSION,
+        }
+      }
       const generation = ++currentGeneration
+      activeImport?.abort()
+      const abortController = new AbortController()
+      activeImport = abortController
       commit(loadingDrumSession(file.name))
-      const state = await importDrumSession(file, ports)
+      let state: DrumSessionImportState
+      try {
+        state = await importDrumSession(file, ports, {
+          signal: abortController.signal,
+        })
+      } catch (error) {
+        if (
+          isAbortError(error) &&
+          (disposed || generation !== currentGeneration)
+        ) {
+          return { status: 'stale', generation, state: IDLE_DRUM_SESSION }
+        }
+        throw error
+      } finally {
+        if (activeImport === abortController) activeImport = null
+      }
       if (disposed || generation !== currentGeneration) {
         return { status: 'stale', generation, state }
       }
@@ -228,12 +294,16 @@ export function createDrumSessionImportController(
     },
     cancel(): void {
       currentGeneration += 1
+      activeImport?.abort()
+      activeImport = null
       if (!disposed) commit(IDLE_DRUM_SESSION)
     },
     dispose(): void {
       if (disposed) return
       disposed = true
       currentGeneration += 1
+      activeImport?.abort()
+      activeImport = null
       listeners.clear()
     },
   }

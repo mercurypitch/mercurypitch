@@ -153,6 +153,7 @@ class MidiCursor {
 
 interface ParseState {
   eventCount: number
+  maxEvents: number
   aggregatePayloadBytes: number
   durationTicks: number
   tempoMap: PianoProjectTempoEvent[]
@@ -178,13 +179,32 @@ function parseError(
 
 function countEvent(state: ParseState, cursor: MidiCursor): void {
   state.eventCount += 1
-  if (state.eventCount > PIANO_PROJECT_PARSE_LIMITS.maxEvents) {
+  if (state.eventCount > state.maxEvents) {
     parseError(
       'TOO_MANY_EVENTS',
-      `MIDI files may contain at most ${PIANO_PROJECT_PARSE_LIMITS.maxEvents.toLocaleString()} events.`,
+      `MIDI files may contain at most ${state.maxEvents.toLocaleString()} events.`,
       cursor,
     )
   }
+}
+
+export interface PianoProjectParseOptions {
+  /** A caller may tighten the shared ceiling, but never raise it. */
+  readonly maxEvents?: number
+}
+
+function boundedEventLimit(requested: number | undefined): number {
+  if (
+    typeof requested !== 'number' ||
+    !Number.isFinite(requested) ||
+    requested < 1
+  ) {
+    return PIANO_PROJECT_PARSE_LIMITS.maxEvents
+  }
+  return Math.min(
+    PIANO_PROJECT_PARSE_LIMITS.maxEvents,
+    Math.max(1, Math.floor(requested)),
+  )
 }
 
 function reservePayload(
@@ -630,6 +650,7 @@ function compareSourcePosition(
 export function parseMidiProject(
   data: Uint8Array,
   identity: PianoProjectIdentity,
+  options: PianoProjectParseOptions = {},
 ): PianoProject {
   if (data.byteLength > PIANO_PROJECT_PARSE_LIMITS.maxFileBytes) {
     throw new PianoProjectParseError(
@@ -690,6 +711,7 @@ export function parseMidiProject(
 
   const state: ParseState = {
     eventCount: 0,
+    maxEvents: boundedEventLimit(options.maxEvents),
     aggregatePayloadBytes: 0,
     durationTicks: 0,
     tempoMap: [],

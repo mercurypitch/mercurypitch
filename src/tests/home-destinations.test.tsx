@@ -67,16 +67,17 @@ describe('Home destination gallery', () => {
     ).not.toBeNull()
   })
 
-  it('labels Drum Night as a visual pilot until its real runtime is connected', () => {
+  it('describes Drum Night as a playable instrument room', () => {
     const drumNight = HOME_DESTINATIONS.find(
       (destination) => destination.visual === 'drumNight',
     )
 
     expect(drumNight).toMatchObject({
-      eyebrow: 'Visual pilot',
-      action: 'Preview Drum Night',
+      eyebrow: 'New room',
+      action: 'Enter Drum Night',
     })
-    expect(drumNight?.description).toContain('still being built')
+    expect(drumNight?.description).toContain('touch, keys or an e-kit')
+    expect(drumNight?.description).toContain('MIDI or Guitar Pro')
   })
 
   it('admits the tap while a room is still opening', () => {
