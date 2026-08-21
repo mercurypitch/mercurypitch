@@ -125,3 +125,56 @@ describe('the multi-item session payload', () => {
     expect(payload.melodyName).toBe('Session')
   })
 })
+
+// ── notesHit means notes LANDED, not notes reached ───────────────
+//
+// This used to be `results.length` — every item the singer got to, whatever
+// they sang. A run performed entirely flat therefore posted a perfect note
+// count, and Practice rows meant something different from Exercise, Challenge
+// and Weekly rows in the same column. One rule now: 25 cents, the same fixed
+// line the drills use, and deliberately NOT the singer's accuracy tier — the
+// tier is theirs to calibrate and belongs on score and accuracy, while the
+// count feeds the Notes badges and has to mean one thing for everybody.
+describe('the practice payload note tally', () => {
+  function run(cents: number[]): PracticeResult[] {
+    return cents.map((avgCents) => ({ ...result(80), avgCents }))
+  }
+
+  const session = sessionOf([item({ repeat: 4 })])
+
+  it('counts only the notes that landed inside 25 cents', () => {
+    const payload = practiceSessionPayload(session, run([4, 25, 26, 90]))
+
+    expect(payload.notesHit).toBe(2)
+    expect(payload.notesTotal).toBe(4)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+  })
+
+  it('reads a flat run as flat rather than as a full house', () => {
+    const payload = practiceSessionPayload(session, run([80, 95, 120, 200]))
+
+    expect(payload.notesHit).toBe(0)
+    expect(payload.notesTotal).toBe(4)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+  })
+
+  // avgCents is documented as a deviation, but a negative reading must not
+  // sail past the threshold as "very small".
+  it('judges the size of the deviation, not its sign', () => {
+    const payload = practiceSessionPayload(session, run([-4, -90, 4, 90]))
+
+    expect(payload.notesHit).toBe(2)
+    expect(validateWrite('sessionRecords', payload)).toBeNull()
+  })
+
+  // Not the empty run: endPracticeSession returns before the builder when
+  // nothing scored, so an empty results array is unreachable — and the
+  // builder's avgScore would be NaN for it.
+  it('never posts more hits than notes, however the run went', () => {
+    for (const cents of [[0], [200], [0, 0, 0, 0, 0, 0, 0, 0]]) {
+      const payload = practiceSessionPayload(session, run(cents))
+      expect(payload.notesHit).toBeLessThanOrEqual(payload.notesTotal)
+      expect(validateWrite('sessionRecords', payload)).toBeNull()
+    }
+  })
+})

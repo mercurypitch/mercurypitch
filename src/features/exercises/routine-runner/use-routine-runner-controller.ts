@@ -4,7 +4,8 @@ import { launchDifficulty } from '@/features/practice-intelligence/launch-overri
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import type { FatigueCheckpoint } from '@/lib/vocal-analyzer'
 import { analyzeFatigue, approximateRichness } from '@/lib/vocal-analyzer'
-import { freqToExactMidi, scoreNoteAccuracy, trailingSamplesByTime, } from '../exercise-scoring-utils'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
+import { freqToExactMidi, noteDeviationCents, scoreNoteAccuracy, trailingSamplesByTime, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_ROUTINE_RUNNER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -33,6 +34,8 @@ export function useRoutineRunnerController(
   let phaseIndex = 0
   let noteIndex = 0
   let allScores: number[] = []
+  // One entry per note PRESENTED across every phase of the routine.
+  let noteDeviations: (number | null)[] = []
   let fatigueCheckpoints: FatigueCheckpoint[] = []
   let phaseTimer: ReturnType<typeof setTimeout> | undefined
   let _cancelled = false
@@ -61,6 +64,7 @@ export function useRoutineRunnerController(
     baseMidi = midi
     phaseIndex = 0
     allScores = []
+    noteDeviations = []
     fatigueCheckpoints = []
     const difficulty = launchDifficulty(EXERCISE_ROUTINE_RUNNER)
     phaseRestMs = Math.round(PHASE_REST_MS * difficultyFactor(difficulty))
@@ -154,6 +158,9 @@ export function useRoutineRunnerController(
     )
 
     allScores.push(noteScore)
+    noteDeviations.push(
+      noteDeviationCents(base.pitchHistory(), targetMidi, MATCH_WINDOW_MS),
+    )
 
     if (allScores.length > 0) {
       const avg = allScores.reduce((a, b) => a + b, 0) / allScores.length
@@ -228,6 +235,7 @@ export function useRoutineRunnerController(
           richnessScore: 0,
           hnrTrend: 0,
           richnessTrend: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -270,6 +278,7 @@ export function useRoutineRunnerController(
         richnessScore: Math.round(richness),
         hnrTrend: fatigueResult.trends.hnrTrend,
         richnessTrend: fatigueResult.trends.richnessTrend,
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

@@ -4,7 +4,8 @@ import { launchDifficulty } from '@/features/practice-intelligence/launch-overri
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
 import { getScaleDegrees } from '@/lib/scale-data'
 import { approximateRichness } from '@/lib/vocal-analyzer'
-import { scoreNoteAccuracy } from '../exercise-scoring-utils'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
+import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SCALE_RUNNER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -42,6 +43,9 @@ export function useScaleRunnerController(
   let scaleNotes: number[] = []
   let noteIndex = 0
   let noteScores: number[] = []
+  // One entry per note PRESENTED, so a note that captured nothing stays a
+  // miss rather than vanishing from the denominator.
+  let noteDeviations: (number | null)[] = []
   // Difficulty-scaled timings; default to baselines (== difficulty 5).
   let notePlayDurationMs = NOTE_PLAY_DURATION_MS
   let gapBetweenNotesMs = GAP_BETWEEN_NOTES_MS
@@ -74,6 +78,7 @@ export function useScaleRunnerController(
     scaleNotes = buildScaleNotes(baseMidi, scaleType, direction)
     noteIndex = 0
     noteScores = []
+    noteDeviations = []
   }
 
   function startScale(): void {
@@ -124,6 +129,9 @@ export function useScaleRunnerController(
     )
 
     noteScores.push(noteScore)
+    noteDeviations.push(
+      noteDeviationCents(base.pitchHistory(), targetMidi, matchWindowMs),
+    )
 
     if (noteScores.length > 0) {
       const avg = noteScores.reduce((a, b) => a + b, 0) / noteScores.length
@@ -159,6 +167,7 @@ export function useScaleRunnerController(
           bestNote: 0,
           evennessStdDev: 0,
           richnessScore: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -202,6 +211,7 @@ export function useScaleRunnerController(
         bestNote,
         evennessStdDev,
         richnessScore: Math.round(richness),
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

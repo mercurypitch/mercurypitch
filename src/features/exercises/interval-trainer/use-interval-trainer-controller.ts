@@ -2,7 +2,8 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { scoreNoteInRange } from '../exercise-scoring-utils'
+import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
+import { noteDeviationCentsInRange, scoreNoteInRange, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
@@ -87,6 +88,9 @@ export function useIntervalTrainerController(
   // uses (scoreNoteInRange, 1.5 points per cent of average deviation).
   let slotMs = BASE_SLOT_MS
   let allNoteScores: number[] = []
+  // Both notes of every pair, one entry per note PRESENTED -- a slot that
+  // captured nothing stays a miss rather than leaving the denominator.
+  let noteDeviations: (number | null)[] = []
 
   function setBase(baseMidi: number): void {
     _cancelled = false
@@ -99,6 +103,7 @@ export function useIntervalTrainerController(
     roundScores = []
     intervalSpans = []
     allNoteScores = []
+    noteDeviations = []
     base._setTargetPitch(0)
   }
 
@@ -190,6 +195,9 @@ export function useIntervalTrainerController(
         endSec,
       )
       allNoteScores.push(noteScore)
+      noteDeviations.push(
+        noteDeviationCentsInRange(base.pitchHistory(), midi, startSec, endSec),
+      )
       const runningAvg =
         allNoteScores.reduce((a, b) => a + b, 0) / allNoteScores.length
       batch(() => {
@@ -257,6 +265,7 @@ export function useIntervalTrainerController(
           smallIntervalAvg: 0,
           mediumIntervalAvg: 0,
           largeIntervalAvg: 0,
+          ...EMPTY_NOTE_TALLY,
         },
         completedAt: Date.now(),
       }
@@ -300,6 +309,7 @@ export function useIntervalTrainerController(
         smallIntervalAvg: smallAvg,
         mediumIntervalAvg: mediumAvg,
         largeIntervalAvg: largeAvg,
+        ...tallyFromDeviations(noteDeviations),
       },
       completedAt: Date.now(),
     }

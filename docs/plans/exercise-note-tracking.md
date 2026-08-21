@@ -1,151 +1,103 @@
-# Exercise note tracking — filling the empty "Notes hit" columns
+# Exercise note tracking — how "Notes hit" was filled in
+
+**Status: shipped.** This started as a plan and is kept as the record of what
+was decided and why, because two of its original premises turned out to be
+wrong and the reasons are worth not rediscovering.
 
 The operator console's Practice sessions table ends in **Notes hit** and
-**Total notes**. For a singer whose history is all drills, both columns read
-`0` on every row. That is not a reporting bug — it is what the app writes.
+**Total notes**. For a singer whose history was all drills, both columns read
+`0` on every row. The console was innocent: three of the four `sessionRecords`
+write paths hard-coded the pair.
 
-## What is true today
+## What the first draft got wrong
 
-Four paths write `sessionRecords`. Three of them hard-code the pair:
+**"The columns are `NOT NULL`, so there is no way to say a run had no tally."**
+There is: `notesTotal === 0`. A run with a real tally always has
+`notesTotal > 0`, and a drill that presented no notes banks no result at all.
+The app had been spelling it that way all along — see the `notesTotal > 0`
+guards in `progress-view-model.ts` and `progress-share-model.ts`, which
+already skip the notes line entirely rather than print `0 of 0`. **No
+migration was needed, and no historical row was touched.**
 
-| Path                        | `source`    | Writes                            | File                                               |
-| --------------------------- | ----------- | --------------------------------- | -------------------------------------------------- |
-| Plain drill run             | `exercise`  | `notesHit: 0, notesTotal: 0`      | `src/stores/exercise-history-store.ts:66`          |
-| Challenge run               | `challenge` | `notesHit: 0, notesTotal: 0`      | `src/features/challenges/challenge-attempt.ts:220` |
-| Weekly challenge run        | `weekly`    | `notesHit: 0, notesTotal: 0`      | `src/features/challenges/weekly-attempt.ts:166`    |
-| Multi-item practice session | `practice`  | `results.length` / scheduled runs | `src/stores/practice-session-store.ts:145`         |
+**"Each drill already publishes its tally in `metrics`; add a resolver that
+maps the key names."** They do not. Every controller publishes only
+aggregates — `notesCompleted`, `avgAccuracy`, `bestNote`, `roundsCompleted` —
+and **discards the per-note score arrays** that hold the evidence. So each
+drill had to compute and publish its own tally before anything could read it.
 
-So only `source: 'practice'` rows have ever carried a real tally. Everything
-else has written a zero since the column existed.
+## The threshold, and why it is cents
 
-## The constraint that shapes the whole fix
+A note counts as hit at **25 cents or better** — `CENTS_EXCELLENT`, the line
+`centsToRating` already draws between 'good' and 'okay'.
 
-`0001_baseline.sql` declares both columns `INTEGER NOT NULL`. There is today
-**no way to say "this run had no note tally"** — the schema forces a number,
-and `0` is a lie that reads identically to "sang nothing right".
+It is a **cents** line, not a score line, and that is not a detail.
+`staccato-precision` and `call-response` divide their cents-to-score slope by
+a difficulty factor, so one score means a different deviation per drill _and_
+per difficulty. A score threshold would have made "hit" quietly easier on an
+easy setting.
 
-Every existing row already carries that lie. No backfill can undo it: the
-per-note evidence was never captured, so a historical `0` stays ambiguous
-forever. The plan below fixes forward only, and makes the ambiguity visible
-rather than silently repairing it.
+It is also **not read from the singer's accuracy tier** (Learning / Singer /
+Professional). Owner decision, 2026-08-22: the tier is the singer's own ruler
+and belongs on score and accuracy, which are theirs to calibrate. Exercises
+exist to make people better, so their ruler stays fixed. The tally is a fact
+about the take, and it feeds the Hundred/Thousand/Ten Thousand Notes badges —
+a tier-relative count would award those faster for singing worse.
 
-## Which exercises can honestly count notes
+The same line applies to all four run kinds. `Practice` rows previously wrote
+`results.length` — every note _reached_, whatever was sung — so a run
+performed entirely flat posted a perfect count. That is now the same
+landed-notes rule as everything else.
 
-Of the 18 `ExerciseType` values, roughly 11 already run a discrete sequence and
-can report a real hit/total pair. The rest are continuous — one sustained
-pitch, a glide, or a swell — where "notes hit" has no meaning and inventing
-one would be worse than leaving it empty.
+## What counts, and what does not
 
-**Countable (a sequence of discrete targets):**
+Ten of the eighteen drills run a discrete sequence of sung notes and now
+publish a tally: `scale-runner`, `mirror-melody`, `arpeggio-jumper` (both its
+call-and-answer and echo paths), `chord-stacker`, `interval-trainer`,
+`call-response`, `staccato-precision`, `sight-singing`, `pitch-pursuit`,
+`routine-runner`.
 
-| Exercise             | Unit today                  | Already emits                             |
-| -------------------- | --------------------------- | ----------------------------------------- |
-| `pitch-pursuit`      | targets crossed             | `hits`, `misses`, `totalNotes`            |
-| `sight-singing`      | notes in the read sequence  | `totalNotes`, `notesAttempted`, `correct` |
-| `routine-runner`     | scored segments             | `totalNotes`                              |
-| `interval-trainer`   | rounds / interval prompts   | `correct`, `rounds`                       |
-| `scale-runner`       | notes in the scale          | `noteIndex` over `sequence`               |
-| `arpeggio-jumper`    | notes in the arpeggio       | `noteIndex` over `sequence`               |
-| `mirror-melody`      | notes in the phrase         | `noteIndex` over `sequence`               |
-| `call-response`      | notes per response × rounds | `rounds`, `steps`                         |
-| `staccato-precision` | attacks per round           | `rounds`, `sequence`                      |
-| `chord-stacker`      | notes stacked               | `noteIndex`                               |
-| `warmup`             | pattern steps               | `steps`, `targets`                        |
+Each tallies on **its own** measure of a note, rather than a second definition
+bolted on top: `call-response` judges a note by its best deviation across a
+freely-sung phrase, `sight-singing` by the average of its best 30%,
+`pitch-pursuit` by the deviation at the strike moment. Only the 25-cent line
+is shared.
 
-**Not countable — leave empty, permanently:** `vibrato`, `slide`, `long-note`,
-`pitch-hold`, `drone-intonation`, `siren`, `dynamic-swell`. These are held or
-glided pitches scored on stability and cents, not on a note tally.
+Eight report `0 / 0`, permanently and on purpose:
 
-Challenge and weekly runs inherit whatever the underlying exercise reports —
-they are wrappers, not their own scoring model.
+- **Seven have no notes** — `vibrato`, `slide`, `long-note`, `pitch-hold`,
+  `drone-intonation`, `siren`, `dynamic-swell` are sustained pitches, glides
+  and swells, scored on steadiness and cents.
+- **`warmup` is scored per step**, not per note. There is no per-note evidence
+  in it to count, and inventing one would be the same category error this
+  work set out to fix.
 
-## The fix, in order
+`Challenge` and `Weekly` runs inherit whatever the underlying drill published —
+they are wrappers around an exercise, not their own scoring model.
 
-### 1. Make "not tracked" expressible (migration + types)
+## The invariant that makes this dangerous
 
-Add `workers/db-worker/migrations/NNNN_session_notes_nullable.sql` making both
-columns nullable. Do **not** rewrite existing rows.
+`notesHit <= notesTotal` is enforced by the worker's `validateWrite`, and
+`saveSessionRecord` swallows the resulting 400 **by design**. A payload that
+breaks it does not fail loudly — the whole run banks nothing: no record, no
+practice minutes, no streak, no badges. That is the CLAUDE-JOURNEY-007 shape,
+and it has cost a release twice.
 
-Then, per the entity nullability rule, `SessionRecord.notesHit` and
-`.notesTotal` become `?: number | null` in `src/db/entities.ts`. The drift test
-enforces this; skipping it fails CI rather than silently mistyping the column.
+So `noteTallyFromMetrics` validates defensively and degrades an unusable tally
+to `0 / 0`. A drill that publishes nonsense costs its own tally, never the
+singer's run. `exercise-note-tally.test.ts` holds that against the production
+validator, as do the two payload-builder suites.
 
-`validateWrite` in `workers/db-worker/src/validation.ts` already tolerates the
-pair being absent (its guard is `typeof nh === 'number' && typeof nt ===
-'number'`), so the server rule needs no change — but add a case to the
-validation test pinning that `null`/omitted is accepted, because the evidence
-rule has silently 400'd drill saves twice before and that failure mode is
-invisible on the client.
+Two further traps the tally functions encode:
 
-### 2. Stop writing the lie
+- A note that captured no voiced audio is a **miss, not an absence**. It stays
+  in the denominator, or a singer who went quiet for half a run finishes at
+  100%.
+- `chord-stacker` clears its per-note scores on every new chord, so its
+  deviations accumulate at run level. A per-round array would have reported
+  only the last chord.
 
-Change the three hard-coded sites to omit the pair entirely rather than send
-zeros. `exerciseSessionPayload` is the shared funnel for the plain path; the
-challenge and weekly paths build their own payloads and each need the same
-edit.
+## Console
 
-This alone is worth shipping. A blank cell is honest; a `0` is not.
-
-### 3. Plumb the real counts where they exist
-
-`recordExerciseResult` already receives `metrics: Record<string, number>`, and
-every countable exercise above puts its tally in there — under a different key
-each time. Rather than teach the funnel eleven key names, add one small
-resolver beside `exercise-comparability.ts`:
-
-```ts
-// src/features/exercises/exercise-note-tally.ts
-export function exerciseNoteTally(
-  type: ExerciseType,
-  metrics: Record<string, number>,
-): { notesHit: number; notesTotal: number } | null
-```
-
-It returns `null` for the seven continuous exercises and for any run whose
-metrics are missing or inconsistent. `exerciseSessionPayload` spreads the
-result when it is non-null and omits both fields otherwise.
-
-Two invariants the resolver must hold, both learned the hard way in
-`practiceSessionPayload`:
-
-- `notesHit <= notesTotal`, always. The worker rejects the row otherwise and
-  `saveSessionRecord` swallows the 400 by design — the run then banks nothing:
-  no record, no practice minutes, no streak, no badges.
-- The denominator counts _repeats_, not distinct targets. A drill that runs a
-  four-note pattern three times has `notesTotal: 12`.
-
-Do the exercises in two batches: the three that already emit an explicit
-total (`pitch-pursuit`, `sight-singing`, `routine-runner`) first, since they
-need only a key mapping; then the eight that expose `noteIndex`/`sequence`/
-`rounds`, each of which needs its controller to bank an explicit hit count on
-finish rather than have the resolver infer one.
-
-### 4. Make the console honest about the gap
-
-Two changes in `companyReportViewer/app.js`, in the Practice sessions table
-(`userTable(details.sessions, …)`):
-
-- Render `null`/`undefined` as `—`, not `0`.
-- For rows with a legacy `0`/`0` pair, render `— (not tracked)`. Any pre-cutover
-  row is indistinguishable from a genuine zero, and the table should say so
-  rather than imply a measurement that never happened.
-
-`user-insights.mjs:1021` already selects both columns; nothing changes there.
-
-## Verification
-
-- `exercise-record-payload.test.ts` (and its per-path siblings) hold every
-  payload against the worker's own `validateWrite` — extend those, do not
-  write a new parallel harness. A payload the server rejects is a _silent_
-  feature, not a failed one.
-- Add one case per countable exercise asserting the tally survives a full run,
-  and one asserting each continuous exercise omits the pair.
-- After the migration lands on dev, spot-check one drill run per batch in the
-  console and confirm the columns populate.
-
-## Scope note
-
-Steps 1, 2 and 4 are a coherent unit and can ship together: after them the
-console tells the truth, just with fewer numbers in it. Step 3 is per-exercise
-work that can land incrementally, one batch at a time, without any of it
-blocking the others.
+`companyReportViewer/app.js` renders a `notesTotal === 0` row as **Not
+tracked** rather than `0`. That is the whole honesty fix: the number was never
+wrong, it was unlabelled, and a literal `0` read as a singer who hit nothing.
