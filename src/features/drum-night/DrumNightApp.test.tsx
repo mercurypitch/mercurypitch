@@ -326,6 +326,7 @@ function renderRoom(options?: {
   ) => void
   readonly requestAccess?: () => Promise<DrumMidiAccessPort>
   readonly schedulerAudioReady?: boolean
+  readonly maxRecordedHits?: number
 }) {
   const session = sessionHarness(options?.schedulerAudioReady)
   const player = playerHarness('mercury-synth', options?.activationResults)
@@ -342,6 +343,7 @@ function renderRoom(options?: {
       onReadySessionChange={options?.onReadySessionChange}
       runtimeOptions={{
         clock: options?.clock,
+        maxRecordedHits: options?.maxRecordedHits,
         midiEnvironment: {
           requestAccess,
           nowMs: options?.clock?.nowMs ?? (() => performance.now()),
@@ -456,10 +458,15 @@ describe('DrumNightApp', () => {
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause Midnight Pocket take clock',
+          name: 'Pause Live drums take clock',
         }),
       ).not.toHaveLength(0),
     )
+    expect(
+      screen.getByText(
+        'Starting the live take clock. No backing track or click is scheduled.',
+      ),
+    ).toHaveAttribute('data-visible', 'false')
     expect(room.requestAccess).not.toHaveBeenCalled()
   })
 
@@ -523,10 +530,22 @@ describe('DrumNightApp', () => {
     expect(room.requestAccess).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Connect MIDI input' }))
     await waitFor(() => expect(room.requestAccess).toHaveBeenCalledOnce())
-    expect(room.player.activate).toHaveBeenCalledOnce()
+    expect(room.player.activate).not.toHaveBeenCalled()
+    expect(room.session.contextForGesture).not.toHaveBeenCalled()
     expect(
       screen.getByRole('combobox', { name: 'Active MIDI input' }),
     ).toHaveValue('a')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close input details' }))
+    fireEvent.click(screen.getByRole('button', { name: /Practice Pad/i }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Disconnect MIDI' }),
+      ).toHaveFocus(),
+    )
+    expect(
+      screen.getByRole('combobox', { name: 'Active MIDI input' }),
+    ).not.toHaveFocus()
 
     fireEvent.change(
       screen.getByRole('combobox', { name: 'Active MIDI input' }),
@@ -557,8 +576,20 @@ describe('DrumNightApp', () => {
     expect(
       within(drawer).queryByText(/Raw note 20 on channel 10 is not mapped/i),
     ).not.toBeInTheDocument()
-    expect(room.player.trigger).toHaveBeenLastCalledWith(
-      expect.objectContaining({ gmKey: 38, velocity: 115, sourceId: 'b' }),
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Close rack drawer' }),
+    )
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Live drums take clock',
+      })[0],
+    )
+    await waitFor(() => expect(room.player.activate).toHaveBeenCalledOnce())
+    second.emit([0x99, 20, 115])
+    await waitFor(() =>
+      expect(room.player.trigger).toHaveBeenLastCalledWith(
+        expect.objectContaining({ gmKey: 38, velocity: 115, sourceId: 'b' }),
+      ),
     )
 
     fireEvent.click(screen.getByRole('button', { name: /Stage E-kit/i }))
@@ -608,7 +639,7 @@ describe('DrumNightApp', () => {
     expect(
       screen.getByRole('button', { name: 'Scan for MIDI input' }),
     ).toBeEnabled()
-    expect(room.session.contextForGesture).toHaveBeenCalledOnce()
+    expect(room.session.contextForGesture).not.toHaveBeenCalled()
   })
 
   it('collects and applies five MIDI strikes on the shared performance timeline', async () => {
@@ -717,6 +748,67 @@ describe('DrumNightApp', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('makes the rack a truthful modal while retaining playable pads inside it', async () => {
+    renderRoom()
+    const shell = screen.getByTestId('drum-night-shell')
+    const skipLink = screen.getByText('Skip to the drum stage')
+    const sessionBar = shell.querySelector('header')
+    const backgroundPads = shell.querySelector<HTMLElement>(
+      '[aria-label="Touch drum pads"]',
+    )
+    expect(sessionBar).not.toBeNull()
+    expect(backgroundPads).not.toBeNull()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+    const drawer = screen.getByRole('dialog', { name: 'Shape the groove' })
+    expect(drawer).toHaveAttribute('aria-modal', 'true')
+    expect(skipLink).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      within(drawer).getByRole('group', { name: 'Rack drawer drum pads' }),
+    ).toContainElement(
+      within(drawer).getByRole('button', {
+        name: 'Acoustic snare, key 2',
+      }),
+    )
+
+    const sourceVariation = within(drawer).getByRole('button', {
+      name: 'Source',
+    })
+    expect(sourceVariation).toHaveAttribute('aria-pressed', 'true')
+    expect(within(sourceVariation).getByText('Selected')).toBeVisible()
+
+    fireEvent.click(within(drawer).getByRole('tab', { name: 'Kit' }))
+    const selectedKit = within(drawer).getByRole('radio', {
+      name: /Mercury Synth/i,
+    })
+    expect(selectedKit).toHaveAttribute('aria-checked', 'true')
+    expect(within(selectedKit).getByText('Selected')).toBeVisible()
+
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Close rack drawer' }),
+    )
+    expect(skipLink).toHaveAttribute('aria-hidden', 'false')
+    const hiddenScrim = shell.querySelector<HTMLElement>(
+      'button[aria-label="Close rack drawer"][tabindex="-1"]',
+    )
+    expect(hiddenScrim).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('keeps contextual drawer controls keyboard reachable without an invalid tablist', async () => {
+    renderRoom()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('dialog', { name: 'Bring a drum part' })
+    expect(within(drawer).queryByRole('tablist')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        within(drawer).getByRole('button', { name: 'Rack controls' }),
+      ).toHaveFocus(),
+    )
+    expect(
+      within(drawer).getByLabelText('Choose a drum session file'),
+    ).toHaveAttribute('tabindex', '-1')
+  })
+
   it('supports complete arrow-key behavior for workbench tabs and kit radios', async () => {
     const room = renderRoom()
     fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
@@ -752,18 +844,42 @@ describe('DrumNightApp', () => {
     expect(roomTab).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('reconciles URL drawer history with the selected and focused rack tab', async () => {
+    renderRoom()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+    const drawer = screen.getByRole('dialog', { name: 'Shape the groove' })
+    const grooveTab = within(drawer).getByRole('tab', { name: 'Groove' })
+    await waitFor(() => expect(grooveTab).toHaveFocus())
+
+    const kitTab = within(drawer).getByRole('tab', { name: 'Kit' })
+    kitTab.focus()
+    fireEvent.click(kitTab)
+    expect(window.location.search).toBe('?drawer=kit')
+    expect(kitTab).toHaveFocus()
+
+    window.history.replaceState({}, '', '/drum-night?drawer=groove')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+
+    await waitFor(() => expect(grooveTab).toHaveFocus())
+    expect(grooveTab).toHaveAttribute('aria-selected', 'true')
+    expect(kitTab).toHaveAttribute('aria-selected', 'false')
+    expect(
+      within(drawer).getByRole('tabpanel', { name: 'Groove' }),
+    ).toBeVisible()
+  })
+
   it('shows an unbounded current bar after the take passes beat 64', async () => {
     const clock = new TestClock()
     renderRoom({ clock })
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Midnight Pocket take clock',
+        name: 'Play Live drums take clock',
       })[0],
     )
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause Midnight Pocket take clock',
+          name: 'Pause Live drums take clock',
         }),
       ).not.toHaveLength(0),
     )
@@ -781,7 +897,7 @@ describe('DrumNightApp', () => {
     const room = renderRoom({ activationResults: [false, true] })
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Midnight Pocket take clock',
+        name: 'Play Live drums take clock',
       })[0],
     )
 
@@ -885,6 +1001,36 @@ describe('DrumNightApp', () => {
       'data-session-status',
       'ready',
     )
+  })
+
+  it('keeps replacement and cancellation available while an import is loading', () => {
+    const importSession = importSessionHarness({
+      status: 'loading',
+      fileName: 'long-take.mid',
+    })
+    renderRoom({ importSession })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('dialog', { name: 'Bring a drum part' })
+
+    expect(
+      within(drawer).getByRole('button', {
+        name: 'Choose a different part',
+      }),
+    ).toBeEnabled()
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Cancel import' }),
+    )
+
+    expect(importSession.cancel).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-session-status',
+      'idle',
+    )
+    expect(
+      screen.getByText(
+        'Drum part import cancelled. Nothing was partially loaded.',
+      ),
+    ).toBeVisible()
   })
 
   it('imports from the picker and drop zone, ignores stale UI attempts, and keeps recovery visible', async () => {
@@ -1237,6 +1383,40 @@ describe('DrumNightApp', () => {
     expect(
       screen.queryByRole('button', { name: /Clear active .* loop/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('discloses older take events discarded by the bounded evidence window', async () => {
+    const clock = new TestClock()
+    renderRoom({ clock, maxRecordedHits: 3 })
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(screen.getByText('Take events').closest('button')!)
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /Play .* take clock/i })[0],
+    )
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', { name: /Pause .* take clock/i }),
+      ).not.toHaveLength(0),
+    )
+
+    const snare = within(screen.getByLabelText('Touch drum pads')).getByRole(
+      'button',
+      { name: 'Acoustic snare, key 2' },
+    )
+    for (let index = 1; index <= 5; index += 1) {
+      clock.advanceTo(index * 10)
+      dispatchPointerDown(snare, {
+        button: 0,
+        isPrimary: true,
+        pressure: 0.7,
+      })
+    }
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('3 hits · 2 older not retained'),
+    )
   })
 
   it('shows a truthful waiting-for-audio scheduler state', async () => {

@@ -7,7 +7,7 @@
 // single microphone cannot honestly separate instruments. Uncertainty lowers
 // confidence and can withhold direction; it never widens the fixed window.
 
-import { createBeatClock } from '@/lib/midi-song'
+import { createBeatClock } from '@/lib/midi-tempo-clock'
 import type { DrumScoreDocument, DrumScoreEvent, DrumScoreIndex, } from './drum-score'
 import { createDrumScoreIndex, queryDrumScoreRange } from './drum-score'
 import type { DrumSessionDocument } from './drum-session'

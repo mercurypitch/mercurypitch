@@ -3,8 +3,8 @@
 // ============================================================
 //
 // Construction is deliberately inert. The kit player crosses this boundary
-// only from Play, a pad/key strike, or the explicit MIDI connection action;
-// teardown closes the context because no other route owns it.
+// only from Play or a live pad/key/MIDI strike; connecting MIDI requests only
+// device permission. Teardown closes the context because no other route owns it.
 
 export interface DrumNightAudioSession {
   contextForGesture(): AudioContext | null
