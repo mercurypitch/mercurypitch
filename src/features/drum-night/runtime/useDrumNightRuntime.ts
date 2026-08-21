@@ -354,6 +354,8 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
   })
 
   return {
+    /** Shared clock/transport port for authored-session consumers. */
+    transportPort: transport,
     transportState,
     recordedHits,
     recentHit,
@@ -378,6 +380,7 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     stop,
     seek: (beat: number) => transport.seek(beat),
     setTempoBpm: (tempoBpm: number) => transport.setTempoBpm(tempoBpm),
+    setSpeedScale: (speedScale: number) => transport.setSpeedScale(speedScale),
     setCountInBeats: (countInBeats: number) =>
       transport.setCountInBeats(countInBeats),
     setLoop: (loop: DrumLoopRange | null) => transport.setLoop(loop),
@@ -385,6 +388,8 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     clearRecording: () => transport.clearRecording(),
     schedulingWindow: (lookaheadMs?: number) =>
       transport.schedulingWindow(lookaheadMs),
+    schedulingWindows: (lookaheadMs?: number) =>
+      transport.schedulingWindows(lookaheadMs),
     strikePad,
     strikeGeneralMidi,
     expectCalibrationHit(expectedTimestampMs: number): boolean {
