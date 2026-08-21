@@ -9,11 +9,16 @@
 export interface DrumNightAudioSession {
   contextForGesture(): AudioContext | null
   outputForGesture(): AudioNode | null
+  /** Passive scheduler access; never creates or resumes a context. */
+  activeContext(): AudioContext | null
+  /** Map a performance timestamp only while the gesture-owned graph exists. */
+  performanceTimestampToContextTime(timestampMs: number): number | null
   dispose(): Promise<void>
 }
 
 export interface DrumNightAudioSessionOptions {
   readonly createContext?: () => AudioContext
+  readonly nowMs?: () => number
 }
 
 type SafariAudioWindow = typeof globalThis & {
@@ -75,6 +80,17 @@ export function createDrumNightAudioSession(
     },
     outputForGesture(): AudioNode | null {
       return ensureSession() ? output : null
+    },
+    activeContext(): AudioContext | null {
+      return context !== null && context.state !== 'closed' ? context : null
+    },
+    performanceTimestampToContextTime(timestampMs: number): number | null {
+      const activeContext =
+        context !== null && context.state !== 'closed' ? context : null
+      if (activeContext === null || !Number.isFinite(timestampMs)) return null
+      const nowMs = (options.nowMs ?? (() => performance.now()))()
+      if (!Number.isFinite(nowMs)) return null
+      return activeContext.currentTime + (timestampMs - nowMs) / 1000
     },
     async dispose(): Promise<void> {
       if (disposed) return

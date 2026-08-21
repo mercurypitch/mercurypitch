@@ -8,7 +8,8 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, Loop, MercuryPlanet, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { AudioWave, ChevronDown, Drum, FileUpload, Loop, MercuryPlanet, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { barIndexAtBeat } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -19,18 +20,29 @@ import { createDrumNightAudioSession } from './drum-night-audio-session'
 import styles from './DrumNightApp.module.css'
 import type { DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { ESSENTIAL_DRUM_PADS, useDrumNightRuntime } from './runtime'
+import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, } from './session'
+import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, readyDrumSessionDocument, } from './session'
 
-type StageView = 'pocket' | 'score' | 'kit'
+type StageView = 'pocket' | 'seat' | 'score'
 type Workspace = 'groove' | 'kit' | 'mix' | 'room' | 'learn' | 'songs' | 'coach'
 type PadId = EssentialDrumPadId
 
 interface DrumNightAppProps {
   readonly createAudioSession?: () => DrumNightAudioSession
   readonly createPlayer?: (options: DrumKitPlayerOptions) => DrumKitPlayer
+  readonly createScoreIndex?: (document: DrumSessionDocument) => DrumScoreIndex
+  readonly createSessionController?: () => DrumSessionImportController
+  /** Optional observer for the route-owned imported-session lifecycle. */
+  readonly onReadySessionChange?: (document: DrumSessionDocument | null) => void
   readonly runtimeOptions?: Omit<DrumNightRuntimeOptions, 'player'>
 }
 
-const STAGE_VIEWS: readonly StageView[] = ['pocket', 'score', 'kit']
+const STAGE_VIEWS: readonly StageView[] = ['pocket', 'seat', 'score']
+const STAGE_VIEW_LABELS: Readonly<Record<StageView, string>> = {
+  pocket: 'Pocket',
+  seat: 'Drummer Seat',
+  score: 'Score',
+}
 const WORKBENCH_TABS: readonly Workspace[] = ['groove', 'kit', 'mix', 'room']
 const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
@@ -258,106 +270,6 @@ function PocketRing(props: PocketRingProps): JSX.Element {
   )
 }
 
-function ScoreView(): JSX.Element {
-  const noteXs = [92, 156, 270, 334, 448, 512, 626, 690]
-  return (
-    <div class={styles.scoreView} data-testid="drum-night-score-view">
-      <div
-        class={styles.scorePanel}
-        aria-label="Illustrative percussion score for bars nine through twelve"
-      >
-        <div class={styles.scoreHeading}>
-          <span>Midnight Pocket</span>
-          <small>bars 9–12</small>
-        </div>
-        <svg
-          viewBox="0 0 820 330"
-          role="img"
-          aria-label="Illustrative percussion notation"
-        >
-          <g class={styles.staffLines}>
-            <path d="M54 90h714M54 112h714M54 134h714M54 156h714M54 178h714" />
-            <path d="M232 82v104M410 82v104M588 82v104M768 82v104" />
-          </g>
-          <g class={styles.scoreNotes}>
-            <For each={noteXs}>
-              {(x, index) => (
-                <>
-                  <path d={`m${x} 80 10 10m0-10-10 10m5 0v50`} />
-                  <ellipse
-                    cx={x + 32}
-                    cy={index() % 2 === 0 ? 156 : 134}
-                    rx="8"
-                    ry="6"
-                  />
-                  <path d={`M${x + 40} ${index() % 2 === 0 ? 154 : 132}v-48`} />
-                </>
-              )}
-            </For>
-          </g>
-          <g class={styles.scoreAccents}>
-            <path d="m178 66 12-7 12 7M356 66l12-7 12 7M534 66l12-7 12 7M712 66l12-7 12 7" />
-          </g>
-          <path class={styles.scorePlayhead} d="M420 58v148" />
-          <text class={styles.scoreCopy} x="74" y="238">
-            Kick and snare anchor the pocket. Hi-hat opens on the final eighth.
-          </text>
-          <text class={styles.scoreMuted} x="74" y="270">
-            Authored preview · GM articulations · no sticking inferred
-          </text>
-        </svg>
-      </div>
-    </div>
-  )
-}
-
-interface KitViewProps {
-  activeHit: () => PadId | null
-  onHit: (pad: PadId, velocity: number) => void
-  selectedKitName: () => string
-}
-
-function KitView(props: KitViewProps): JSX.Element {
-  return (
-    <div class={styles.kitView} data-testid="drum-night-kit-view">
-      <div class={styles.kitIntro}>
-        <span>Playable kit · {props.selectedKitName()}</span>
-        <h2>Strike the room.</h2>
-        <p>
-          Use the pads or keys 1–6. Sampled kits warm after your first action;
-          Mercury Synth covers every hit while they load.
-        </p>
-      </div>
-      <div class={styles.kitHotspots} aria-label="Playable drum-kit preview">
-        <For each={ESSENTIAL_DRUM_PADS}>
-          {(pad) => (
-            <button
-              class={cx(
-                'kitHotspot',
-                `hotspot${pad.id === 'hi-hat' ? 'Hat' : pad.id[0].toUpperCase() + pad.id.slice(1)}` as keyof typeof styles,
-                props.activeHit() === pad.id && 'isHit',
-              )}
-              type="button"
-              onPointerDown={(event) => {
-                if (!acceptsPadPointer(event)) return
-                props.onHit(pad.id, pointerVelocity(event))
-              }}
-              onClick={(event) => {
-                if (event.detail === 0) props.onHit(pad.id, 100)
-              }}
-              aria-label={`${pad.label}, key ${pad.keyboardLabel}`}
-              aria-keyshortcuts={pad.keyboardLabel}
-            >
-              <span>{pad.label}</span>
-              <kbd>{pad.keyboardLabel}</kbd>
-            </button>
-          )}
-        </For>
-      </div>
-    </div>
-  )
-}
-
 export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const [view, setView] = createSignal<StageView>('pocket')
   const [workspace, setWorkspace] = createSignal<Workspace>('groove')
@@ -374,6 +286,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const [calibrationRunning, setCalibrationRunning] = createSignal(false)
   const [calibrationCue, setCalibrationCue] = createSignal(0)
   const [calibrationAwaiting, setCalibrationAwaiting] = createSignal(false)
+  const [draggingSessionFile, setDraggingSessionFile] = createSignal(false)
+  const [recoveryLoopActive, setRecoveryLoopActive] = createSignal(false)
+  const [compactScore, setCompactScore] = createSignal(
+    typeof window !== 'undefined' && window.innerWidth <= 720,
+  )
+  const [seatLiveHits, setSeatLiveHits] = createSignal<
+    readonly DrumSeatLiveHit[]
+  >([])
   const [selectedKitId, setSelectedKitId] = createPersistedSignal<DrumKitId>(
     KIT_STORAGE_KEY,
     'mercury-synth',
@@ -394,6 +314,27 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     ...(props.runtimeOptions ?? {}),
     player,
   })
+  const sessionScheduler = createDrumSessionScheduler({
+    transport: runtime.transportPort,
+    player,
+    performanceTimestampToContextTime:
+      audioSession.performanceTimestampToContextTime,
+  })
+  const sessionController = (
+    props.createSessionController ?? createDrumSessionImportController
+  )()
+  const [sessionState, setSessionState] = createSignal<DrumSessionImportState>(
+    sessionController.state(),
+  )
+  const unsubscribeSession = sessionController.subscribe(() =>
+    setSessionState(sessionController.state()),
+  )
+  const [schedulerSnapshot, setSchedulerSnapshot] = createSignal(
+    sessionScheduler.snapshot(),
+  )
+  const unsubscribeScheduler = sessionScheduler.subscribe(() =>
+    setSchedulerSnapshot(sessionScheduler.snapshot()),
+  )
   const calibrationNowMs =
     props.runtimeOptions?.midiEnvironment?.nowMs ??
     props.runtimeOptions?.clock?.nowMs ??
@@ -407,20 +348,158 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   let drawerRef: HTMLElement | undefined
   let inputRef: HTMLDivElement | undefined
   let inputButtonRef: HTMLButtonElement | undefined
+  let sessionFileInputRef: HTMLInputElement | undefined
   let toastTimer: number | undefined
   let hitTimer: number | undefined
+  let seatHitSequence = 0
   let calibrationTimer: number | undefined
   let calibrationInputId: string | null = null
   let calibrationLastSampleCount = 0
+  let scheduledDocument: DrumSessionDocument | null = null
 
   const transport = runtime.transportState
   const isPlaying = createMemo(() => transportIsRunning(transport()))
+  const loopStatusCopy = createMemo(() => {
+    const state = transport()
+    if (state.loop === null) return 'Off'
+    const beatCount =
+      Math.round((state.loop.endBeat - state.loop.startBeat) * 100) / 100
+    return state.speedScale === 0.7
+      ? `${beatCount}-beat recovery · 70%`
+      : `${beatCount}-beat loop`
+  })
   const selectedKit = createMemo(() =>
     drumKitManifest(kitSnapshot().selectedKitId),
   )
-  const currentBar = createMemo(
-    () => Math.floor(transport().positionBeats / 4) + 1,
+  const readySession = createMemo(() =>
+    readyDrumSessionDocument(sessionState()),
   )
+  const sessionScoreIndex = createMemo(() => {
+    const document = readySession()
+    if (document === null) return null
+    return (props.createScoreIndex ?? createDrumScoreIndex)(document)
+  })
+  const authoredBarCount = createMemo(
+    () => sessionScoreIndex()?.score.bars.length ?? null,
+  )
+  const currentBar = createMemo(() => {
+    const index = sessionScoreIndex()
+    if (index === null) return Math.floor(transport().positionBeats / 4) + 1
+    return barIndexAtBeat(index.score.bars, transport().positionBeats) + 1
+  })
+  const capturedSessionHits = createMemo<readonly DrumCapturedHit[]>(() =>
+    runtime.recordedHits().map((hit) => ({
+      id: `runtime-${hit.id}`,
+      source: hit.source,
+      gmKey: hit.gmKey,
+      velocity: hit.velocity,
+      beat: hit.transportBeat,
+    })),
+  )
+  const sessionTitle = createMemo(
+    () => readySession()?.title ?? 'Midnight Pocket',
+  )
+  const sessionIdentityDetail = createMemo(() => {
+    const document = readySession()
+    if (document === null) {
+      return `A minor · Neo-soul · ${transport().tempoBpm} BPM`
+    }
+    const source = document.sourceFormat === 'midi' ? 'MIDI' : 'Guitar Pro'
+    return `${source} · ${document.hitCount} mapped hits · ${transport().tempoBpm} BPM take clock`
+  })
+  const sessionImportCopy = createMemo(() => {
+    const state = sessionState()
+    if (state.status !== 'ready') return drumSessionStateCopy(state)
+    const document = state.document
+    const percussionCount = document.percussionTracks.length
+    const pitchedCopy =
+      document.pitchedTrackCount === 0
+        ? 'Percussion-only session ready.'
+        : `${document.pitchedTrackCount} pitched ${document.pitchedTrackCount === 1 ? 'part is' : 'parts are'} retained, but never treated as drums.`
+    const droppedCopy =
+      document.droppedHitCount === 0
+        ? 'No source hits were dropped.'
+        : `${document.droppedHitCount} unsupported ${document.droppedHitCount === 1 ? 'source hit was' : 'source hits were'} left unmapped.`
+    return {
+      title: `${document.title} is ready`,
+      detail: `${percussionCount} percussion ${percussionCount === 1 ? 'track' : 'tracks'} · ${document.hitCount} mapped hits. ${pitchedCopy} ${droppedCopy}`,
+      tone: 'ready' as const,
+    }
+  })
+  const authoredPlaybackCopy = createMemo(() => {
+    const snapshot = schedulerSnapshot()
+    const sourceUnsupportedCount =
+      snapshot.unsupportedGmHitCount + snapshot.sourceDroppedHitCount
+    const silentTriggerCount =
+      snapshot.triggerCounts.unmapped + snapshot.triggerCounts.dropped
+    const fidelity: string[] = []
+    if (sourceUnsupportedCount > 0) {
+      fidelity.push(
+        `${sourceUnsupportedCount} unsupported ${sourceUnsupportedCount === 1 ? 'source hit stays' : 'source hits stay'} silent rather than being guessed`,
+      )
+    }
+    if (snapshot.overloadOmittedOccurrenceCount > 0) {
+      fidelity.push(
+        `${snapshot.overloadOmittedOccurrenceCount} simultaneous ${snapshot.overloadOmittedOccurrenceCount === 1 ? 'hit is' : 'hits are'} silent beyond the 48-hit audio ceiling`,
+      )
+    }
+    if (snapshot.capacityOmittedOccurrenceCount > 0) {
+      fidelity.push(
+        `${snapshot.capacityOmittedOccurrenceCount} delayed ${snapshot.capacityOmittedOccurrenceCount === 1 ? 'hit missed' : 'hits missed'} the bounded scheduling window and stayed silent`,
+      )
+    }
+    if (snapshot.deferredOccurrenceCount > 0) {
+      fidelity.push(
+        `${snapshot.deferredOccurrenceCount} in-range ${snapshot.deferredOccurrenceCount === 1 ? 'hit is' : 'hits are'} waiting for a later bounded scheduling pass`,
+      )
+    }
+    if (snapshot.omittedTempoChangeCount > 0) {
+      fidelity.push(
+        `${snapshot.omittedTempoChangeCount} source tempo ${snapshot.omittedTempoChangeCount === 1 ? 'change was' : 'changes were'} omitted from the bounded playback map`,
+      )
+    }
+    if (snapshot.adjustedTempoChangeCount > 0) {
+      fidelity.push(
+        `${snapshot.adjustedTempoChangeCount} source tempo ${snapshot.adjustedTempoChangeCount === 1 ? 'value was' : 'values were'} clamped to the supported 40–280 BPM range`,
+      )
+    }
+    if (silentTriggerCount > 0) {
+      fidelity.push(
+        `${silentTriggerCount} scheduled ${silentTriggerCount === 1 ? 'attack was' : 'attacks were'} silent because the active kit reported an unmapped or dropped route`,
+      )
+    }
+    if (snapshot.triggerCounts.synthFallback > 0) {
+      fidelity.push(
+        `${snapshot.triggerCounts.synthFallback} ${snapshot.triggerCounts.synthFallback === 1 ? 'attack is' : 'attacks are'} using synth fallback`,
+      )
+    }
+    if (snapshot.triggerCounts.unreported > 0) {
+      fidelity.push(
+        `${snapshot.triggerCounts.unreported} scheduled ${snapshot.triggerCounts.unreported === 1 ? 'attack has' : 'attacks have'} no routing report from the player`,
+      )
+    }
+    const fidelityCopy =
+      fidelity.length === 0
+        ? 'All indexed source hits use supported General MIDI articulations.'
+        : `${fidelity.join('. ')}.`
+    if (snapshot.status === 'playing') {
+      return `Authored percussion is on the shared take clock. ${fidelityCopy}`
+    }
+    if (snapshot.status === 'waiting-for-audio') {
+      return `Authored playback is waiting for active drum audio. Press Play or strike a pad, then continue the take. ${fidelityCopy}`
+    }
+    return `Authored percussion is ready on the shared take clock. ${fidelityCopy}`
+  })
+  const stageCopy = createMemo(() => {
+    switch (view()) {
+      case 'seat':
+        return { kicker: 'Drummer’s perspective', title: 'Read from the seat.' }
+      case 'score':
+        return { kicker: 'Authored percussion', title: 'Follow every attack.' }
+      default:
+        return { kicker: 'Live take', title: 'Find the centre.\nLet it move.' }
+    }
+  })
   const midiHeadline = createMemo(() => {
     const state = runtime.midiState()
     switch (state.status) {
@@ -572,6 +651,60 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     updateUrl(view(), null)
   }
 
+  const importSessionFile = (file: File | undefined): void => {
+    setDraggingSessionFile(false)
+    if (file === undefined) return
+    void sessionController
+      .importFile(file)
+      .then((attempt) => {
+        if (attempt.status === 'stale') return
+        if (attempt.state.status === 'ready') {
+          setView('score')
+          setDrawerOpen(false)
+          updateUrl('score', null)
+          showToast(
+            `${attempt.state.document.title} is ready. The score now follows the shared take clock.`,
+          )
+          return
+        }
+        showToast(
+          drumSessionStateCopy(attempt.state)?.title ??
+            'The selected drum part was not applied.',
+        )
+      })
+      .catch(() => {
+        showToast('The drum part could not be opened. Choose the file again.')
+      })
+  }
+
+  const clearImportedSession = (): void => {
+    sessionController.cancel()
+    if (recoveryLoopActive()) {
+      runtime.setLoop(null)
+      runtime.setSpeedScale(1)
+      setRecoveryLoopActive(false)
+    }
+    showToast('Imported drum part cleared. The live kit remains playable.')
+  }
+
+  const applyRecoveryLoop = (loop: DrumRecoveryLoop): void => {
+    const authoredEndBeat = readySession()?.durationBeats
+    const endBeat =
+      authoredEndBeat === undefined
+        ? loop.endBeat
+        : Math.min(loop.endBeat, authoredEndBeat)
+    const applied = runtime.setLoop({ startBeat: loop.startBeat, endBeat })
+    if (!applied) {
+      showToast('That recovery bar is outside the authored take range.')
+      return
+    }
+    runtime.setSpeedScale(0.7)
+    setRecoveryLoopActive(true)
+    showToast(
+      `Recovery loop set to bar ${loop.barNumber} at 70% of the authored tempo.`,
+    )
+  }
+
   const togglePlaying = (): void => {
     const phase = transport().phase
     if (phase === 'playing' || phase === 'count-in') {
@@ -580,7 +713,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return
     }
     showToast(
-      'Starting the take clock. No backing track or click is scheduled.',
+      readySession() === null
+        ? 'Starting the live take clock. No backing track or click is scheduled.'
+        : 'Starting authored percussion on the shared take clock. No metronome click is scheduled.',
     )
     void runtime.play()
   }
@@ -588,6 +723,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const changeTempo = (delta: number): void => {
     const nextTempo = Math.max(40, Math.min(280, transport().tempoBpm + delta))
     runtime.setTempoBpm(nextTempo)
+    setRecoveryLoopActive(false)
     showToast(`Tempo set to ${nextTempo} BPM.`)
   }
 
@@ -597,6 +733,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   const startFirstPocket = (): void => {
     runtime.setTempoBpm(82)
+    runtime.setSpeedScale(1)
+    setRecoveryLoopActive(false)
     runtime.setCountInBeats(4)
     runtime.setLoop({ startBeat: 0, endBeat: 8 })
     runtime.setRecording(true)
@@ -616,14 +754,26 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   const toggleLoop = (): void => {
-    const nextLoop =
-      transport().loop === null ? { startBeat: 0, endBeat: 8 } : null
-    runtime.setLoop(nextLoop)
-    showToast(
-      nextLoop === null
-        ? 'Two-bar transport loop cleared.'
-        : 'Two-bar transport loop enabled.',
-    )
+    if (transport().loop !== null) {
+      const clearedRecovery = recoveryLoopActive()
+      runtime.setLoop(null)
+      if (clearedRecovery) runtime.setSpeedScale(1)
+      setRecoveryLoopActive(false)
+      showToast(
+        clearedRecovery
+          ? 'Recovery loop cleared. Authored tempo returned to 100%.'
+          : 'Practice loop cleared.',
+      )
+      return
+    }
+    const authoredEndBeat = readySession()?.durationBeats
+    const endBeat = Math.min(8, authoredEndBeat ?? 8)
+    if (!runtime.setLoop({ startBeat: 0, endBeat })) {
+      showToast('This take is too short for a practice loop.')
+      return
+    }
+    setRecoveryLoopActive(false)
+    showToast(`${endBeat}-beat transport loop enabled.`)
   }
 
   const toggleRecording = (): void => {
@@ -752,7 +902,38 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setLastHit(
       `${pad?.label ?? `GM ${hit.gmKey}`} · ${hit.velocity} · ${hit.source}`,
     )
-    hitTimer = window.setTimeout(() => setActiveHit(null), 150)
+    seatHitSequence += 1
+    setSeatLiveHits((current) =>
+      [
+        ...current,
+        {
+          id: `live-${seatHitSequence}`,
+          gmKey: hit.gmKey,
+          velocity: hit.velocity,
+        },
+      ].slice(-6),
+    )
+    hitTimer = window.setTimeout(() => {
+      setActiveHit(null)
+      setSeatLiveHits([])
+    }, 150)
+  })
+
+  createEffect(() => {
+    const document = readySession()
+    if (document !== scheduledDocument) {
+      scheduledDocument = document
+      // An imported document owns its own take evidence and practice range.
+      // Crossing that boundary must never coach or loop against the previous
+      // document, even when the old loop happens to fit the new duration.
+      runtime.stop()
+      runtime.setLoop(null)
+      runtime.setSpeedScale(1)
+      runtime.clearRecording()
+      setRecoveryLoopActive(false)
+      sessionScheduler.setSession(document)
+    }
+    props.onReadySessionChange?.(document)
   })
 
   createEffect(() => {
@@ -779,8 +960,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   onMount(() => {
     const params = new URLSearchParams(window.location.search)
     const initialView = params.get('view')
-    if (STAGE_VIEWS.includes(initialView as StageView))
+    if (initialView === 'kit') {
+      setView('seat')
+      updateUrl('seat', params.get('drawer') as Workspace | null)
+    } else if (STAGE_VIEWS.includes(initialView as StageView)) {
       setView(initialView as StageView)
+    }
     const initialDrawer = params.get('drawer')
     if (initialDrawer !== null && initialDrawer in WORKSPACE_TITLES) {
       setWorkspace(initialDrawer as Workspace)
@@ -805,16 +990,25 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         closeInput()
       }
     }
+    const syncCompactScore = (): void => {
+      setCompactScore(window.innerWidth <= 720)
+    }
 
     document.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('resize', syncCompactScore)
     onCleanup(() => {
       uninstallSpace()
       document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('resize', syncCompactScore)
     })
   })
 
   onCleanup(() => {
     unsubscribeKit()
+    unsubscribeSession()
+    unsubscribeScheduler()
+    sessionScheduler.dispose()
+    sessionController.dispose()
     cancelCalibration()
     if (toastTimer !== undefined) window.clearTimeout(toastTimer)
     if (hitTimer !== undefined) window.clearTimeout(hitTimer)
@@ -828,6 +1022,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       data-playing={isPlaying() ? 'true' : 'false'}
       data-drawer-open={drawerOpen() ? 'true' : 'false'}
       data-view={view()}
+      data-session-status={sessionState().status}
     >
       <a class={styles.skipLink} href="#drum-night-stage">
         Skip to the drum stage
@@ -902,20 +1097,25 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           >
             <span class={styles.sessionLight} aria-hidden="true" />
             <span>
-              <strong>Midnight Pocket</strong>
-              <small>
-                A minor <i /> Neo-soul <i /> {transport().tempoBpm} BPM
-              </small>
+              <strong>{sessionTitle()}</strong>
+              <small>{sessionIdentityDetail()}</small>
             </span>
             <ChevronDown />
           </button>
           <div
             class={styles.barMap}
-            aria-label={`Current bar ${currentBar()}, unbounded take`}
+            aria-label={
+              authoredBarCount() === null
+                ? `Current bar ${currentBar()}, unbounded take`
+                : `Current bar ${currentBar()}, ${authoredBarCount()} authored bars`
+            }
           >
             <span class={styles.barLabel}>Bar {currentBar()}</span>
             <span class={styles.barExtent} aria-hidden="true">
-              <i /> Unbounded take
+              <i />
+              {authoredBarCount() === null
+                ? 'Unbounded take'
+                : `${authoredBarCount()} authored bars`}
             </span>
           </div>
           <div class={styles.sessionActions}>
@@ -924,6 +1124,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               ref={inputButtonRef}
               class={styles.inputChip}
               type="button"
+              aria-label={`Open drum input setup: ${midiHeadline()}, ${midiDetail()}`}
               aria-expanded={inputOpen()}
               aria-controls="drum-input-popover"
               aria-haspopup="dialog"
@@ -969,19 +1170,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           inert={inputOpen()}
         >
           <div class={styles.stageRoom} aria-hidden="true" />
+          <Show when={view() === 'seat'}>
+            <picture
+              class={styles.seatBackdrop}
+              data-testid="drummer-seat-backdrop"
+              aria-hidden="true"
+            >
+              <source
+                media="(max-width: 720px)"
+                srcset="/drum-night/drummer-seat-portrait.webp"
+              />
+              <img src="/drum-night/drummer-seat-landscape.webp" alt="" />
+            </picture>
+          </Show>
           <div class={styles.stageShade} aria-hidden="true" />
           <div class={styles.stageVignette} aria-hidden="true" />
 
           <div class={styles.stageHeading}>
             <div class={styles.stageCopy}>
               <span class={styles.stageKicker}>
-                <i aria-hidden="true" /> Live take
+                <i aria-hidden="true" /> {stageCopy().kicker}
               </span>
-              <h1>
-                Find the centre.
-                <br />
-                Let it move.
-              </h1>
+              <h1>{stageCopy().title}</h1>
             </div>
             <div
               class={styles.viewSwitcher}
@@ -994,9 +1204,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     class={view() === item ? styles.isActive : undefined}
                     type="button"
                     aria-pressed={view() === item}
+                    aria-label={`${STAGE_VIEW_LABELS[item]} view`}
                     onClick={() => selectView(item)}
                   >
-                    {item[0].toUpperCase() + item.slice(1)}
+                    {item === 'seat' ? 'Seat' : STAGE_VIEW_LABELS[item]}
                   </button>
                 )}
               </For>
@@ -1006,114 +1217,53 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <Show when={view() === 'pocket'}>
             <PocketRing transport={transport} />
           </Show>
-          <Show when={view() === 'score'}>
-            <ScoreView />
-          </Show>
-          <Show when={view() === 'kit'}>
-            <KitView
-              activeHit={activeHit}
-              onHit={triggerPad}
-              selectedKitName={() => selectedKit().name}
-            />
+          <Show when={view() !== 'pocket'}>
+            <div class={styles.sessionStageView} data-session-view={view()}>
+              <Show when={view() === 'seat'}>
+                <DrummerSeatView
+                  session={sessionState}
+                  playheadBeat={() => transport().positionBeats}
+                  scoreIndex={sessionScoreIndex}
+                  liveHits={seatLiveHits}
+                />
+              </Show>
+              <Show when={view() === 'score'}>
+                <DrumScoreSheet
+                  session={sessionState}
+                  playheadBeat={() => transport().positionBeats}
+                  scoreIndex={sessionScoreIndex}
+                  visibleBarCount={() => (compactScore() ? 2 : 4)}
+                />
+              </Show>
+              <Show when={readySession() === null}>
+                <button
+                  class={styles.sessionStageImport}
+                  type="button"
+                  onClick={() => openWorkspace('songs')}
+                >
+                  Open a drum part
+                </button>
+              </Show>
+              <Show when={readySession() !== null}>
+                <p
+                  class={styles.authoredPlaybackNotice}
+                  data-status={schedulerSnapshot().status}
+                  role="note"
+                >
+                  {authoredPlaybackCopy()}
+                </p>
+              </Show>
+            </div>
           </Show>
 
-          <aside class={styles.phraseCoach} aria-label="Live take monitor">
-            <div class={styles.coachHeading}>
-              <span>
-                <i aria-hidden="true" /> Take monitor
-              </span>
-              <small>
-                {transport().recording ? 'Recording armed' : 'Not recording'}
-              </small>
-            </div>
-            <span class={styles.coachWindow}>This take</span>
-            <h2>
-              {runtime.recordedHits().length === 0
-                ? 'Play the phrase once.'
-                : `${runtime.recordedHits().length} strikes captured.`}
-            </h2>
-            <p>
-              {runtime.recordedHits().length === 0 ? (
-                <>
-                  Arm recording, start the take clock, then play with touch,
-                  keys, or a connected e-kit.
-                </>
-              ) : (
-                <>
-                  Latest event: <b>{lastHit()}</b>. Coaching waits for an
-                  authored phrase; this view reports only captured evidence.
-                </>
-              )}
-            </p>
-            <div
-              class={styles.timingEvidence}
-              aria-label="Recorded strike timing around the nearest sixteenth"
-            >
-              <div class={styles.timingAxis}>
-                <span>early</span>
-                <i />
-                <span>late</span>
-              </div>
-              <div class={styles.timingMarks} aria-hidden="true">
-                <Show
-                  when={runtime.recordedHits().length > 0}
-                  fallback={
-                    <span class={styles.emptyEvidence}>No take data</span>
-                  }
-                >
-                  <For each={runtime.recordedHits().slice(-5)}>
-                    {(hit) => (
-                      <i
-                        class={cx(
-                          'mark',
-                          hit.timingOffsetMs < -12
-                            ? 'teal'
-                            : hit.timingOffsetMs > 12
-                              ? 'coral'
-                              : 'ivory',
-                        )}
-                        style={{
-                          left: `${50 + Math.max(-38, Math.min(38, hit.timingOffsetMs / 3))}%`,
-                          height: `${18 + Math.round((hit.velocity / 127) * 24)}px`,
-                        }}
-                      />
-                    )}
-                  </For>
-                </Show>
-              </div>
-            </div>
-            <button
-              class={styles.recoveryAction}
-              type="button"
-              onClick={startFirstPocket}
-            >
-              <span class={styles.recoveryIcon}>
-                <Loop />
-              </span>
-              <span>
-                <strong>Start a two-bar take at 82 BPM</strong>
-                <small>Four-beat visual count-in · no click</small>
-              </span>
-              <ChevronDown />
-            </button>
-            <button
-              class={styles.quietAction}
-              type="button"
-              disabled={runtime.recordedHits().length === 0}
-              onClick={() => {
-                runtime.clearRecording()
-                showToast('Captured hit events cleared from this take.')
-              }}
-            >
-              Clear captured hits
-            </button>
-            <div class={styles.privacyNote}>
-              <span class={styles.privacyMark} aria-hidden="true" />
-              <span>
-                <strong>On-device event timing</strong>
-                <small>No microphone or audio recording is used.</small>
-              </span>
-            </div>
+          <aside class={styles.phraseCoach} aria-label="Session phrase coach">
+            <DrumSessionCoach
+              session={sessionState}
+              playheadBeat={() => transport().positionBeats}
+              capturedHits={capturedSessionHits}
+              scoreIndex={sessionScoreIndex}
+              onRequestRecoveryLoop={applyRecoveryLoop}
+            />
           </aside>
 
           <button
@@ -1127,14 +1277,36 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </span>
             <span>
               <strong>
-                {runtime.recordedHits().length === 0
-                  ? 'Arm a take.'
-                  : `${runtime.recordedHits().length} strikes captured.`}
+                {readySession() === null
+                  ? 'Load a part to coach a take.'
+                  : runtime.recordedHits().length === 0
+                    ? 'Play the imported phrase once.'
+                    : `${runtime.recordedHits().length} strikes ready to compare.`}
               </strong>
-              <small>Measured coaching starts after an authored phrase.</small>
+              <small>
+                {readySession() === null
+                  ? 'MIDI and Guitar Pro percussion are supported.'
+                  : 'Uses authored attacks and captured event timing.'}
+              </small>
             </span>
             <ChevronDown />
           </button>
+
+          <Show when={transport().loop !== null}>
+            <button
+              class={styles.activeLoopControl}
+              type="button"
+              onClick={toggleLoop}
+              aria-label={`Clear active ${loopStatusCopy()}`}
+            >
+              <Loop />
+              <span>
+                <strong>{loopStatusCopy()}</strong>
+                <small>Clear loop</small>
+              </span>
+              <X />
+            </button>
+          </Show>
 
           <button
             class={styles.sheetScrim}
@@ -1224,9 +1396,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     <span>Groove mirror</span>
                     <h3>Neo-soul pocket</h3>
                     <p>
-                      One authored bar. Variations preserve the source hits and
-                      remain a visual arrangement preview until song scheduling
-                      arrives.
+                      One authored visual bar. Variations preserve its preview
+                      hits; they do not alter imported-session playback.
                     </p>
                   </div>
                   <div
@@ -1544,47 +1715,114 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 </div>
               </Match>
               <Match when={workspace() === 'songs'}>
-                <div class={cx('workspaceView', 'simpleWorkspace')}>
+                <div class={cx('workspaceView', 'sessionImportWorkspace')}>
                   <div class={styles.workspaceCopy}>
                     <span>Bring a drum part</span>
                     <h3>Open MIDI or Guitar Pro.</h3>
                     <p>
-                      Percussion tracks remain articulations. Unsupported
-                      mappings fail visibly and never play as pitches.
+                      Percussion tracks keep their articulation, tempo, meter,
+                      and velocity. Pitched tracks remain in the source without
+                      becoming drum sounds.
                     </p>
                   </div>
-                  <div class={styles.songActions}>
-                    <button type="button" disabled>
-                      Local import planned
+                  <div
+                    class={cx(
+                      'sessionDropZone',
+                      draggingSessionFile() && 'isDragging',
+                    )}
+                    role="group"
+                    aria-label="Drop a drum session file"
+                    aria-busy={sessionState().status === 'loading'}
+                    onDragEnter={(event) => {
+                      event.preventDefault()
+                      setDraggingSessionFile(true)
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      if (event.dataTransfer !== null) {
+                        event.dataTransfer.dropEffect = 'copy'
+                      }
+                      setDraggingSessionFile(true)
+                    }}
+                    onDragLeave={(event) => {
+                      if (
+                        event.currentTarget.contains(
+                          event.relatedTarget as Node,
+                        )
+                      )
+                        return
+                      setDraggingSessionFile(false)
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      importSessionFile(
+                        event.dataTransfer?.files.item(0) ?? undefined,
+                      )
+                    }}
+                  >
+                    <FileUpload />
+                    <span>
+                      <strong>
+                        {sessionState().status === 'loading'
+                          ? 'Reading the newest selection'
+                          : 'Drop the drum part here'}
+                      </strong>
+                      <small>
+                        .mid, .midi, .gp, .gp3, .gp4, .gp5, or .gpx · 20 MB
+                        maximum
+                      </small>
+                    </span>
+                    <input
+                      ref={sessionFileInputRef}
+                      class={styles.visuallyHiddenInput}
+                      type="file"
+                      accept=".mid,.midi,.gp,.gp3,.gp4,.gp5,.gpx,audio/midi,audio/x-midi"
+                      aria-label="Choose a drum session file"
+                      onChange={(event) => {
+                        importSessionFile(
+                          event.currentTarget.files?.item(0) ?? undefined,
+                        )
+                        event.currentTarget.value = ''
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={sessionState().status === 'loading'}
+                      onClick={() => sessionFileInputRef?.click()}
+                    >
+                      Choose drum part
                     </button>
-                    <button type="button" disabled>
-                      Prepared parts planned
-                    </button>
+                  </div>
+                  <div
+                    class={styles.sessionImportStatus}
+                    data-tone={sessionImportCopy()?.tone ?? 'neutral'}
+                    role={
+                      sessionImportCopy()?.tone === 'error' ? 'alert' : 'status'
+                    }
+                    aria-live="polite"
+                  >
+                    <span aria-hidden="true" />
+                    <div>
+                      <strong>{sessionImportCopy()?.title}</strong>
+                      <p>{sessionImportCopy()?.detail}</p>
+                      <Show when={sessionState().status === 'ready'}>
+                        <button type="button" onClick={clearImportedSession}>
+                          Clear imported part
+                        </button>
+                      </Show>
+                    </div>
                   </div>
                 </div>
               </Match>
               <Match when={workspace() === 'coach'}>
-                <div class={cx('workspaceView', 'simpleWorkspace')}>
-                  <div class={styles.workspaceCopy}>
-                    <span>Take monitor</span>
-                    <h3>
-                      {runtime.recordedHits().length === 0
-                        ? 'Play the phrase once.'
-                        : `${runtime.recordedHits().length} strikes are on the clock.`}
-                    </h3>
-                    <p>
-                      Drum Night preserves source, articulation, velocity and
-                      timing. It does not claim a coaching result until an
-                      authored phrase supplies the target.
-                    </p>
-                  </div>
-                  <button
-                    class={styles.largeRecovery}
-                    type="button"
-                    onClick={startFirstPocket}
-                  >
-                    Start two-bar take
-                  </button>
+                <div class={cx('workspaceView', 'sessionCoachWorkspace')}>
+                  <DrumSessionCoach
+                    session={sessionState}
+                    playheadBeat={() => transport().positionBeats}
+                    capturedHits={capturedSessionHits}
+                    scoreIndex={sessionScoreIndex}
+                    onRequestRecoveryLoop={applyRecoveryLoop}
+                  />
                 </div>
               </Match>
             </Switch>
@@ -1593,6 +1831,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
         <div
           class={styles.touchKit}
+          role="group"
           aria-label="Touch drum pads"
           inert={inputOpen()}
         >
@@ -1671,7 +1910,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               class={styles.playButton}
               type="button"
               onClick={togglePlaying}
-              aria-label={`${isPlaying() ? 'Pause' : 'Play'} Midnight Pocket take clock`}
+              aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} take clock`}
             >
               {isPlaying() ? <Pause /> : <Play />}
               <span>{isPlaying() ? 'Pause' : 'Play'}</span>
@@ -1723,7 +1962,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <Loop />
             <span>
               <small>Practice loop</small>
-              <strong>{transport().loop === null ? 'Off' : 'Two bars'}</strong>
+              <strong>{loopStatusCopy()}</strong>
             </span>
           </button>
         </div>
@@ -1745,7 +1984,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             class={styles.mobilePlay}
             type="button"
             onClick={togglePlaying}
-            aria-label={`${isPlaying() ? 'Pause' : 'Play'} Midnight Pocket take clock`}
+            aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} take clock`}
           >
             {isPlaying() ? <Pause /> : <Play />}
             <span>{isPlaying() ? 'Pause' : 'Play'}</span>

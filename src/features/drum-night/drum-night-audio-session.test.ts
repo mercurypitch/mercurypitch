@@ -32,10 +32,29 @@ describe('createDrumNightAudioSession', () => {
     const session = createDrumNightAudioSession({ createContext })
 
     expect(createContext).not.toHaveBeenCalled()
+    expect(session.activeContext()).toBeNull()
+    expect(session.performanceTimestampToContextTime(1_000)).toBeNull()
+    expect(createContext).not.toHaveBeenCalled()
     expect(session.contextForGesture()).toBe(harness.context)
     expect(session.outputForGesture()).toBe(harness.output)
     expect(createContext).toHaveBeenCalledOnce()
     expect(harness.connect).toHaveBeenCalledWith(harness.context.destination)
+  })
+
+  it('maps performance timestamps against an already-active context without reacquiring it', () => {
+    const harness = audioHarness()
+    Object.defineProperty(harness.context, 'currentTime', { value: 12.5 })
+    const createContext = vi.fn(() => harness.context)
+    const session = createDrumNightAudioSession({
+      createContext,
+      nowMs: () => 2_000,
+    })
+
+    session.contextForGesture()
+
+    expect(session.activeContext()).toBe(harness.context)
+    expect(session.performanceTimestampToContextTime(2_250)).toBe(12.75)
+    expect(createContext).toHaveBeenCalledOnce()
   })
 
   it('disconnects the output and closes its route-owned context once', async () => {
@@ -51,6 +70,8 @@ describe('createDrumNightAudioSession', () => {
     expect(harness.disconnect).toHaveBeenCalledOnce()
     expect(harness.close).toHaveBeenCalledOnce()
     expect(session.contextForGesture()).toBeNull()
+    expect(session.activeContext()).toBeNull()
+    expect(session.performanceTimestampToContextTime(1_000)).toBeNull()
   })
 
   it('returns a silent boundary when context construction fails', () => {

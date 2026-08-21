@@ -417,6 +417,27 @@
   transform: scale(1.01);
 }
 
+.seatBackdrop {
+  position: absolute;
+  z-index: -3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.seatBackdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 54%;
+  filter: saturate(0.86) contrast(1.04) brightness(0.82);
+  transform: scale(1.012);
+}
+
+.shell[data-view='seat'] .stageRoom {
+  opacity: 0;
+}
+
 .stageShade {
   z-index: -2;
   background:
@@ -487,6 +508,7 @@
   letter-spacing: -0.025em;
   line-height: 0.98;
   text-wrap: balance;
+  white-space: pre-line;
 }
 
 .viewSwitcher {
@@ -523,8 +545,7 @@
 }
 
 .pocketView,
-.scoreView,
-.kitView {
+.sessionStageView {
   position: absolute;
   z-index: 2;
   inset: 0 318px 0 0;
@@ -533,6 +554,52 @@
 .pocketView {
   display: grid;
   place-items: center;
+}
+
+.sessionStageView {
+  min-width: 0;
+  min-height: 0;
+  padding: 108px 22px 28px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgb(170 179 184 / 35%) transparent;
+}
+
+.sessionStageView[data-session-view='seat'] {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgb(5 6 8 / 10%) 45%,
+    rgb(5 6 8 / 38%) 100%
+  );
+}
+
+.sessionStageImport {
+  min-height: 44px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border: 1px solid rgb(231 173 82 / 52%);
+  border-radius: 10px;
+  color: var(--vellum);
+  background: rgb(231 173 82 / 12%);
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.sessionStageImport:hover {
+  background: rgb(231 173 82 / 19%);
+}
+
+.authoredPlaybackNotice {
+  max-width: 72ch;
+  margin: 12px 2px 0;
+  color: var(--vellum-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.authoredPlaybackNotice[data-status='waiting-for-audio'] {
+  color: #f0c886;
 }
 
 .pocketRing {
@@ -864,14 +931,18 @@
   top: 0;
   right: 0;
   bottom: 0;
-  display: flex;
+  display: block;
   width: 318px;
   min-height: 0;
-  flex-direction: column;
-  padding: 18px 18px 14px;
+  padding: 12px;
+  overflow: auto;
   border-left: 1px solid var(--line);
   background: rgb(10 12 15 / 94%);
   box-shadow: -18px 0 40px rgb(0 0 0 / 18%);
+}
+
+.phraseCoach > * {
+  width: 100%;
 }
 
 .coachHeading {
@@ -1126,6 +1197,10 @@
   font-size: 8px;
 }
 .coachCue {
+  display: none;
+}
+
+.activeLoopControl {
   display: none;
 }
 
@@ -1638,6 +1713,171 @@
 .simpleWorkspace {
   grid-template-columns: minmax(220px, 0.7fr) minmax(240px, 1.3fr);
 }
+
+.sessionImportWorkspace {
+  grid-template-columns:
+    minmax(190px, 0.58fr) minmax(280px, 0.92fr)
+    minmax(300px, 1.1fr);
+  gap: 24px;
+}
+
+.sessionDropZone {
+  display: grid;
+  min-width: 0;
+  min-height: 156px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px dashed rgb(170 179 184 / 42%);
+  border-radius: 14px;
+  background: rgb(9 11 14 / 52%);
+  transition:
+    border-color 160ms ease-out,
+    background 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.sessionDropZone.isDragging {
+  border-color: var(--cyan);
+  background: rgb(102 213 205 / 9%);
+  transform: translateY(-2px);
+}
+
+.sessionDropZone > svg {
+  width: 32px;
+  height: 32px;
+  color: var(--amber);
+}
+
+.sessionDropZone > span {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.sessionDropZone strong {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 560;
+}
+
+.sessionDropZone small {
+  color: var(--vellum-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.sessionDropZone > button {
+  min-height: 44px;
+  grid-column: 1 / -1;
+  padding: 0 16px;
+  border: 1px solid rgb(231 173 82 / 52%);
+  border-radius: 9px;
+  color: var(--vellum);
+  background: rgb(231 173 82 / 12%);
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.sessionDropZone > button:hover {
+  background: rgb(231 173 82 / 19%);
+}
+
+.sessionDropZone > button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.visuallyHiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sessionImportStatus {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 13px;
+  padding: 18px 4px;
+}
+
+.sessionImportStatus > span {
+  width: 8px;
+  min-height: 76px;
+  border: 1px solid var(--nickel);
+  border-radius: 8px;
+  background: rgb(170 179 184 / 8%);
+}
+
+.sessionImportStatus[data-tone='busy'] > span {
+  border-color: var(--cyan);
+  background: rgb(102 213 205 / 14%);
+}
+
+.sessionImportStatus[data-tone='warning'] > span {
+  border-color: var(--amber);
+  background: rgb(231 173 82 / 14%);
+}
+
+.sessionImportStatus[data-tone='error'] > span {
+  border-color: var(--coral);
+  background: rgb(201 108 112 / 14%);
+}
+
+.sessionImportStatus[data-tone='ready'] > span {
+  border-color: var(--cyan);
+  background: rgb(102 213 205 / 18%);
+}
+
+.sessionImportStatus > div {
+  min-width: 0;
+}
+
+.sessionImportStatus strong {
+  overflow-wrap: anywhere;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 560;
+}
+
+.sessionImportStatus p {
+  max-width: 64ch;
+  margin: 7px 0 0;
+  color: var(--vellum-muted);
+  font-size: 10px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.sessionImportStatus button {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--vellum-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.sessionCoachWorkspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  justify-items: center;
+}
+
+.sessionCoachWorkspace > * {
+  width: min(100%, 760px);
+}
+
 .largeRecovery,
 .songActions button {
   min-height: 48px;
@@ -2238,6 +2478,9 @@
 }
 
 @media (max-width: 1040px) {
+  .roomShell {
+    grid-template-rows: 66px minmax(0, 1fr) 68px 92px;
+  }
   .barMap {
     display: none;
   }
@@ -2245,8 +2488,7 @@
     right: 20px;
   }
   .pocketView,
-  .scoreView,
-  .kitView {
+  .sessionStageView {
     right: 0;
   }
   .phraseCoach {
@@ -2300,6 +2542,91 @@
     font-size: 8px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .activeLoopControl {
+    position: absolute;
+    z-index: 15;
+    bottom: 12px;
+    left: 14px;
+    display: grid;
+    min-height: 48px;
+    grid-template-columns: 22px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid rgb(231 173 82 / 48%);
+    border-radius: 10px;
+    color: var(--vellum);
+    background: rgb(17 18 20 / 92%);
+    box-shadow: 0 14px 34px rgb(0 0 0 / 38%);
+    cursor: pointer;
+    text-align: left;
+  }
+  .activeLoopControl > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--amber);
+  }
+  .activeLoopControl > svg:last-child {
+    width: 14px;
+    height: 14px;
+    color: var(--vellum-muted);
+  }
+  .activeLoopControl span {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+  }
+  .activeLoopControl strong {
+    font-size: 9px;
+  }
+  .activeLoopControl small {
+    color: var(--vellum-muted);
+    font-size: 8px;
+  }
+  .shell[data-drawer-open='true'] .activeLoopControl {
+    display: none;
+  }
+  .touchKit {
+    position: relative;
+    z-index: 35;
+    display: grid;
+    min-height: 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+    padding: 7px;
+    border-top: 1px solid var(--line);
+    background: #101318;
+  }
+  .touchKit button {
+    display: grid;
+    min-width: 0;
+    min-height: 52px;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    border: 1px solid rgb(238 231 219 / 15%);
+    border-radius: 10px 10px 14px 14px;
+    background: linear-gradient(180deg, #20252a, #14181c);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+    cursor: pointer;
+  }
+  .touchKit button:hover,
+  .touchKit button.isHit {
+    border-color: rgb(231 173 82 / 72%);
+    background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
+  }
+  .touchKit .kickPad {
+    border-color: rgb(238 231 219 / 28%);
+    background: linear-gradient(180deg, #2a2521, #171719);
+  }
+  .touchKit span {
+    font-size: 9px;
+    font-weight: 800;
+  }
+  .touchKit small {
+    color: var(--vellum-muted);
+    font-size: 8px;
   }
   .workbench {
     right: 0;
@@ -2463,8 +2790,7 @@
     font-size: 8px;
   }
   .pocketView,
-  .scoreView,
-  .kitView {
+  .sessionStageView {
     inset: 0;
   }
   .pocketRing {
@@ -2490,24 +2816,15 @@
     width: calc(100% - 16px);
     min-height: 52px;
   }
-  .scoreView {
-    padding: 90px 10px 66px;
+  .activeLoopControl {
+    top: 64px;
+    bottom: auto;
+    left: 9px;
+    min-height: 44px;
+    padding-block: 4px;
   }
-  .scorePanel {
-    width: 100%;
-  }
-  .scoreHeading {
-    padding: 12px 14px;
-  }
-  .scoreHeading span {
-    font-size: 16px;
-  }
-  .scorePanel > svg {
-    min-height: 230px;
-    object-fit: cover;
-  }
-  .kitView {
-    padding: 86px 10px 56px;
+  .sessionStageView {
+    padding: 86px 8px 66px;
   }
   .kitIntro {
     width: min(240px, 72%);
@@ -2798,7 +3115,7 @@
 
 @media (orientation: landscape) and (max-height: 520px) {
   .roomShell {
-    grid-template-rows: 52px minmax(0, 1fr) 68px;
+    grid-template-rows: 52px minmax(0, 1fr) 60px 68px;
   }
   .consoleBridge {
     padding: 4px 10px;
@@ -2815,7 +3132,45 @@
     height: 56px;
   }
   .touchKit {
-    display: none;
+    position: relative;
+    z-index: 35;
+    display: grid;
+    min-height: 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px 6px;
+    border-top: 1px solid var(--line);
+    background: #101318;
+  }
+  .touchKit button {
+    display: grid;
+    min-width: 0;
+    min-height: 52px;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    border: 1px solid rgb(238 231 219 / 15%);
+    border-radius: 9px 9px 13px 13px;
+    background: linear-gradient(180deg, #20252a, #14181c);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+    cursor: pointer;
+  }
+  .touchKit button:hover,
+  .touchKit button.isHit {
+    border-color: rgb(231 173 82 / 72%);
+    background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
+  }
+  .touchKit .kickPad {
+    border-color: rgb(238 231 219 / 28%);
+    background: linear-gradient(180deg, #2a2521, #171719);
+  }
+  .touchKit span {
+    font-size: 9px;
+    font-weight: 800;
+  }
+  .touchKit small {
+    color: var(--vellum-muted);
+    font-size: 8px;
   }
   .stageRoom {
     background-image: url('/drum-night/pocket-console-landscape.webp');
