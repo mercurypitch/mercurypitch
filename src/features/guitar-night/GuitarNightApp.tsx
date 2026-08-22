@@ -2163,7 +2163,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
       <Notifications />
       <Show when={showVoiceHelp()}>
-        <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
+        <VoiceCommandsOverlay
+          tone="velvet"
+          close={() => setShowVoiceHelp(false)}
+        />
       </Show>
 
       <Show when={view() === 'tuner'}>

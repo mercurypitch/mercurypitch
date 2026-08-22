@@ -5,7 +5,7 @@
   grid-template-columns: 1.5rem minmax(0, 1fr);
   align-items: center;
   gap: 0.48rem;
-  min-width: 8.45rem;
+  min-width: min(8.45rem, 135px);
   min-height: max(44px, var(--touch-target, 44px));
   padding: 0.34rem 0.72rem 0.34rem 0.58rem;
   border: 1px solid rgba(244, 234, 219, 0.13);

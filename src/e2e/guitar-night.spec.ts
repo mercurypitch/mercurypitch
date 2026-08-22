@@ -1653,7 +1653,14 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
     room.getByRole('button', { name: 'Pause score', exact: true }),
   ).toBeVisible()
 
-  await page.waitForTimeout(180)
+  const loopStartSeconds = aBeat * 0.5
+  const loopEndSeconds = firstBBeat * 0.5
+  await expect
+    .poll(async () => Number(await seek.inputValue()), { timeout: 1_000 })
+    .toBeGreaterThan(
+      loopStartSeconds + (loopEndSeconds - loopStartSeconds) * 0.25,
+    )
+  const beforeBoundaryEdit = Number(await seek.inputValue())
   await markerB.scrollIntoViewIfNeeded()
   const markerBox = await markerB.boundingBox()
   const seekBox = await seek.boundingBox()
@@ -1669,6 +1676,12 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
   await page.mouse.down()
   await page.mouse.move(targetX, markerCenterY, { steps: 8 })
   await page.mouse.up()
+
+  // Stem Mixer semantics: widening B while the current beat remains inside
+  // the range preserves that beat. Only initial A/B activation or an edit
+  // that excludes the playhead may fold playback back to A.
+  const afterBoundaryEdit = Number(await seek.inputValue())
+  expect(afterBoundaryEdit).toBeGreaterThan(beforeBoundaryEdit - 0.15)
 
   await expect
     .poll(async () => Number(await markerB.getAttribute('aria-valuenow')))
@@ -1996,6 +2009,81 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
     }))
     expect(reflow.scrollWidth).toBeLessThanOrEqual(reflow.clientWidth + 2)
 
+    const expectHittableInsideViewport = async (
+      control: Locator,
+    ): Promise<void> => {
+      await expect(control).toBeVisible()
+      const metrics = await control.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        const centerX = bounds.left + bounds.width / 2
+        const centerY = bounds.top + bounds.height / 2
+        const hit = document.elementFromPoint(centerX, centerY)
+        return {
+          bottom: bounds.bottom,
+          hit: hit === element || element.contains(hit),
+          left: bounds.left,
+          right: bounds.right,
+          top: bounds.top,
+          viewportHeight: window.innerHeight,
+          viewportWidth: window.innerWidth,
+        }
+      })
+      expect(metrics.left).toBeGreaterThanOrEqual(0)
+      expect(metrics.right).toBeLessThanOrEqual(metrics.viewportWidth + 1)
+      expect(metrics.top).toBeGreaterThanOrEqual(0)
+      expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight + 1)
+      expect(metrics.hit).toBe(true)
+    }
+
+    const scorePosition = room.getByRole('slider', {
+      name: 'Score position',
+      exact: true,
+    })
+    const play = room.getByRole('button', {
+      name: 'Start the count-in',
+      exact: true,
+    })
+    const listening = room.getByRole('button', {
+      name: 'Listening is off. Switch to Room mic',
+      exact: true,
+    })
+    await expectHittableInsideViewport(scorePosition)
+    await expectHittableInsideViewport(play)
+    await expectHittableInsideViewport(listening)
+
+    const highway = stageViews.getByRole('button', {
+      name: 'Highway',
+      exact: true,
+    })
+    await highway.focus()
+    await page.keyboard.press('Shift+V')
+    const voiceOverlay = page.getByTestId('voice-commands-overlay')
+    await expect(voiceOverlay).toBeVisible()
+    const commandFilter = voiceOverlay.getByRole('searchbox', {
+      name: 'Filter commands',
+    })
+    await expect(commandFilter).toBeFocused()
+    await commandFilter.fill('forward N minutes')
+    await expect(
+      voiceOverlay.getByText('forward N minutes', { exact: true }),
+    ).toBeVisible()
+    const voiceSurface = await voiceOverlay.evaluate((element) => {
+      const card = element.firstElementChild
+      return {
+        backdrop: getComputedStyle(element).backgroundColor,
+        card: card === null ? '' : getComputedStyle(card).backgroundColor,
+      }
+    })
+    expect(voiceSurface.backdrop).toBe('rgba(8, 6, 5, 0.84)')
+    expect(voiceSurface.card).toBe('rgb(23, 18, 15)')
+    const voiceClose = voiceOverlay.getByRole('button', { name: 'Close' })
+    const voiceCloseBounds = await voiceClose.boundingBox()
+    expect(voiceCloseBounds?.width ?? 0).toBeGreaterThanOrEqual(44)
+    expect(voiceCloseBounds?.height ?? 0).toBeGreaterThanOrEqual(44)
+    await page.keyboard.press('Escape')
+    await expect(voiceOverlay).not.toBeVisible()
+    await expect(highway).toBeFocused()
+
     const camera = room.getByLabel('Camera, Runway', { exact: true })
     await camera.click()
     // A narrow phone gets the portalled sheet, not the in-place popup: the
@@ -2050,6 +2138,12 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
     expect(
       (stringBounds?.y ?? 0) + (stringBounds?.height ?? 0),
     ).toBeLessThanOrEqual(568)
+
+    await page.keyboard.press('Escape')
+    await page.setViewportSize({ width: 568, height: 320 })
+    await expectHittableInsideViewport(scorePosition)
+    await expectHittableInsideViewport(play)
+    await expectHittableInsideViewport(listening)
   } finally {
     await context.close()
   }

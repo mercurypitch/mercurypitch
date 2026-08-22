@@ -7,7 +7,7 @@
 // supplied, so the overlay never advertises a control that cannot do anything.
 
 import type { Accessor } from 'solid-js'
-import { LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, SEEK_START_PHRASES, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
+import { BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, SEEK_START_PHRASES, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
 
@@ -57,6 +57,13 @@ export interface GuitarNightScoreVoiceScore {
   show: () => unknown
 }
 
+export interface GuitarNightScoreVoiceSeek {
+  positionSeconds: Accessor<number>
+  durationSeconds: Accessor<number>
+  /** The host preserves or ends playback evidence before it moves the clock. */
+  seekSeconds: (seconds: number) => void
+}
+
 export interface GuitarNightScoreVoiceDeps {
   playing: Accessor<boolean>
   paused: Accessor<boolean>
@@ -66,6 +73,7 @@ export interface GuitarNightScoreVoiceDeps {
   pause: () => void
   stop: () => void
   goToBeginning: () => void
+  seek?: GuitarNightScoreVoiceSeek
   loop?: GuitarNightScoreVoiceLoop
   click?: GuitarNightScoreVoiceToggle
   countIn?: GuitarNightScoreVoiceCountIn
@@ -228,6 +236,63 @@ export function createGuitarNightScoreVoiceCommands(
       return 'Go to beginning'
     },
   })
+
+  const seek = deps.seek
+  if (seek !== undefined) {
+    const seekRelative = (
+      deltaSeconds: number,
+      spokenAmount: number,
+      unit: 'second' | 'minute',
+    ): VoiceCommandResult => {
+      const duration = seek.durationSeconds()
+      if (!Number.isFinite(duration) || duration <= 0) {
+        return voiceFailure('No score timeline loaded')
+      }
+      const current = Number.isFinite(seek.positionSeconds())
+        ? seek.positionSeconds()
+        : 0
+      seek.seekSeconds(Math.min(duration, Math.max(0, current + deltaSeconds)))
+      const amount = Math.abs(spokenAmount)
+      return `${deltaSeconds >= 0 ? 'Forward' : 'Back'} ${String(amount)} ${unit}${amount === 1 ? '' : 's'}`
+    }
+
+    add({
+      id: 'guitarNight.score.forwardSeconds',
+      label: 'Skip forward',
+      phrases: FORWARD_SECONDS_PHRASES,
+      run: (args) => {
+        const amount = args.n ?? 10
+        return seekRelative(amount, amount, 'second')
+      },
+    })
+    add({
+      id: 'guitarNight.score.backSeconds',
+      label: 'Skip back',
+      phrases: BACK_SECONDS_PHRASES,
+      run: (args) => {
+        const amount = args.n ?? 10
+        return seekRelative(-amount, amount, 'second')
+      },
+    })
+    add({
+      id: 'guitarNight.score.forwardMinutes',
+      label: 'Skip forward',
+      phrases: FORWARD_MINUTES_PHRASES,
+      run: (args) => {
+        const amount = args.n ?? 1
+        return seekRelative(amount * 60, amount, 'minute')
+      },
+    })
+    add({
+      id: 'guitarNight.score.backMinutes',
+      label: 'Skip back',
+      phrases: BACK_MINUTES_PHRASES,
+      run: (args) => {
+        const amount = args.n ?? 1
+        return seekRelative(-amount * 60, amount, 'minute')
+      },
+    })
+  }
 
   const loop = deps.loop
   if (loop !== undefined) {

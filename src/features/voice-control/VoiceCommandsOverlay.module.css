@@ -17,6 +17,26 @@
   backdrop-filter: blur(3px);
 }
 
+/* Guitar Night sits over a photographic room. Its command center needs a
+   denser curtain and an opaque cloth faceplate so notation and stage lights do
+   not compete with the phrases the player is trying to read. */
+.overlay[data-tone='velvet'] {
+  --bg-card: #17120f;
+  --border: rgb(244 234 219 / 18%);
+  --text: #f4eadb;
+  --text-muted: #c7baa7;
+  --accent: #e0a45d;
+
+  background: rgb(8 6 5 / 84%);
+  backdrop-filter: blur(5px);
+}
+
+.overlay[data-tone='velvet'] .card {
+  border-color: rgb(224 164 93 / 28%);
+  background:
+    linear-gradient(180deg, rgb(244 234 219 / 4%) 0%, transparent 30%), #17120f;
+}
+
 .card {
   position: relative;
   display: flex;
@@ -66,8 +86,8 @@
 }
 
 .closeButton {
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex-shrink: 0;
   border: none;
   border-radius: 50%;

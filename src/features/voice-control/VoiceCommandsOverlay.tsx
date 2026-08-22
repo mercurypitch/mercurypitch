@@ -16,6 +16,7 @@
 // that key).
 
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
 import type { VoiceCommand } from './types'
 import { activeVoiceCommands } from './voice-command-registry'
@@ -23,6 +24,7 @@ import styles from './VoiceCommandsOverlay.module.css'
 
 interface VoiceCommandsOverlayProps {
   close: () => void
+  tone?: 'default' | 'velvet'
 }
 
 /** Friendly section title per command-id prefix (before the first dot). */
@@ -96,6 +98,12 @@ const groupRank = (title: string): number => {
 
 const MAX_PHRASES_SHOWN = 3
 
+const normalizeSearchText = (value: string): string =>
+  value
+    .toLowerCase()
+    .replaceAll('<n>', 'n')
+    .replace(/\b\d+(?:\.\d+)?\b/g, 'n')
+
 interface OverlayRow {
   label: string
   phrases: string[]
@@ -109,15 +117,23 @@ interface OverlayGroup {
 }
 
 export function VoiceCommandsOverlay(props: VoiceCommandsOverlayProps) {
+  let overlay: HTMLDivElement | undefined
+  let search: HTMLInputElement | undefined
   const [query, setQuery] = createSignal('')
 
+  useFocusTrap(() => overlay, {
+    isOpen: () => true,
+    initialFocus: () => search,
+  })
+
   const groups = createMemo<OverlayGroup[]>(() => {
-    const needle = query().trim().toLowerCase()
+    const needle = normalizeSearchText(query().trim())
     const byTitle = new Map<string, OverlayRow[]>()
     for (const command of activeVoiceCommands()) {
       if (command.available !== undefined && !command.available()) continue
-      const haystack =
-        `${command.label} ${command.phrases.join(' ')}`.toLowerCase()
+      const haystack = normalizeSearchText(
+        `${command.label} ${command.phrases.join(' ')}`,
+      )
       if (needle !== '' && !haystack.includes(needle)) continue
       const title = groupTitleFor(command.id)
       const rows = byTitle.get(title) ?? []
@@ -178,11 +194,13 @@ export function VoiceCommandsOverlay(props: VoiceCommandsOverlayProps) {
 
   return (
     <div
+      ref={overlay}
       class={styles.overlay}
       role="dialog"
       aria-modal="true"
       aria-label="Voice commands"
       data-testid="voice-commands-overlay"
+      data-tone={props.tone ?? 'default'}
       onClick={() => props.close()}
     >
       <div class={styles.card} onClick={(e) => e.stopPropagation()}>
@@ -206,6 +224,7 @@ export function VoiceCommandsOverlay(props: VoiceCommandsOverlayProps) {
 
         <div class={styles.searchRow}>
           <input
+            ref={search}
             class={styles.search}
             type="search"
             placeholder="Filter commands…"

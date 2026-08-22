@@ -99,6 +99,14 @@ interface GuitarNightStageProps {
   loopStart?: Accessor<number | null>
   loopEnd?: Accessor<number | null>
   loopActive?: Accessor<boolean>
+  loopEditingDisabled?: Accessor<boolean>
+  onMoveLoopMark?(mark: 'A' | 'B', beat: number): void
+  onCommitLoopMark?(mark: 'A' | 'B'): void
+  /** Time-mapped reading surfaces may move the host playhead directly. */
+  onSeekBeat?(beat: number): void
+  onSeekStart?(): void
+  onSeekEnd?(): void
+  seekDisabled?: Accessor<boolean>
   /**
    * One other part, drawn small in a corner of the moving views. Tapping it
    * reads that part instead, which is how the two are swapped.
@@ -1673,6 +1681,23 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               loopStart={props.loopStart}
               loopEnd={props.loopEnd}
               loopActive={props.loopActive}
+              loopEditingDisabled={props.loopEditingDisabled}
+              {...(props.onMoveLoopMark === undefined
+                ? {}
+                : { onMoveLoopMark: props.onMoveLoopMark })}
+              {...(props.onCommitLoopMark === undefined
+                ? {}
+                : { onCommitLoopMark: props.onCommitLoopMark })}
+              {...(props.onSeekBeat === undefined
+                ? {}
+                : { onSeekBeat: props.onSeekBeat })}
+              {...(props.onSeekStart === undefined
+                ? {}
+                : { onSeekStart: props.onSeekStart })}
+              {...(props.onSeekEnd === undefined
+                ? {}
+                : { onSeekEnd: props.onSeekEnd })}
+              seekDisabled={props.seekDisabled}
               {...(props.sheetTimeSignatures === undefined
                 ? {}
                 : { timeSignatures: props.sheetTimeSignatures })}

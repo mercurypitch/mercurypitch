@@ -880,6 +880,42 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
+  it('keeps the audible beat when B moves beyond an active loop playhead', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const [span, setSpan] = createSignal<{
+        start: number
+        end: number
+      } | null>({ start: 0, end: 2 })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        loop: span,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+      getOptions()?.onExerciseStart?.(0, 10)
+      clock.currentTime = 10 + 1.5 * (60 / 90)
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+
+      const expanded = { start: 0, end: 3 }
+      setSpan(expanded)
+      await expect(room.applyLoopSpan(expanded)).resolves.toBe(true)
+      await vi.waitFor(() => expect(band.start).toHaveBeenCalledTimes(2))
+
+      expect(getOptions()).toMatchObject({
+        countInBeats: 0,
+        loop: expanded,
+      })
+      expect(getOptions()?.startBeat).toBeCloseTo(1.5, 5)
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+      dispose()
+    })
+  })
+
   it('clears an active loop immediately from its visible playhead', async () => {
     await createRoot(async (dispose) => {
       const { band, clock, getOptions } = bandHarness()

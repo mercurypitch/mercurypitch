@@ -119,6 +119,7 @@
   .score {
     width: 100%;
     min-width: 0;
+    height: auto;
     padding-top: 0.4rem;
     padding-left: 0;
     border-top: 1px solid rgba(244, 234, 219, 0.14);
