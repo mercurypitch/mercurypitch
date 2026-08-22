@@ -67,7 +67,7 @@
   background: var(--yellow);
 }
 .flat {
-  background: var(--blue);
+  background: var(--accent);
 }
 .labels {
   display: flex;

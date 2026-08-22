@@ -1125,7 +1125,7 @@
 .inlineControlValue {
   font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
-  color: var(--text, #ddd);
+  color: var(--text-primary, #ddd);
   min-width: 2ch;
   text-align: right;
 }

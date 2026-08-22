@@ -34,7 +34,7 @@
     ),
     var(--bg-card);
   box-shadow: 0 24px 64px rgb(0 0 0 / 50%);
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -79,7 +79,7 @@
 }
 
 .closeButton:hover {
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 /* ── Filter ───────────────────────────────────────────────── */
@@ -96,7 +96,7 @@
   border: 1px solid var(--border);
   border-radius: 9px;
   background: rgb(127 127 127 / 8%);
-  color: var(--text);
+  color: var(--text-primary);
   font: inherit;
   font-size: 0.85rem;
 }
@@ -148,7 +148,7 @@
   border: none;
   border-radius: 9px;
   background: transparent;
-  color: var(--text);
+  color: var(--text-primary);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -194,7 +194,7 @@
 }
 
 .row:hover .phrase {
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .phraseMore {
