@@ -1036,6 +1036,28 @@ export function PianoNightApp(): JSX.Element {
                 </For>
               </select>
             </label>
+            <label
+              class={styles.transportVolume}
+              title={`Piano Night volume: ${Math.round(controller.masterVolume() * 100)}%`}
+            >
+              <Volume2 />
+              <span class={styles.srOnly}>Piano Night master volume</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={controller.masterVolume()}
+                aria-label="Piano Night master volume"
+                aria-valuetext={`${Math.round(controller.masterVolume() * 100)}%`}
+                onInput={(event) =>
+                  controller.setMasterVolume(Number(event.currentTarget.value))
+                }
+              />
+              <output aria-hidden="true">
+                {Math.round(controller.masterVolume() * 100)}%
+              </output>
+            </label>
           </div>
         </div>
       </main>

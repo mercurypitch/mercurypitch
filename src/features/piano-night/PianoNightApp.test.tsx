@@ -468,6 +468,36 @@ describe('PianoNightApp', () => {
     expectSilentBrowserBoundary()
   })
 
+  it('keeps the fallboard volume synced with the persisted audio owner', () => {
+    render(() => <PianoNightApp />)
+
+    const transport = screen.getByLabelText('Piano Night transport')
+    const fallboardVolume = within(transport).getByRole('slider', {
+      name: 'Piano Night master volume',
+    })
+
+    expect(fallboardVolume).toHaveValue('0.82')
+
+    fireEvent.input(fallboardVolume, { target: { value: '0.37' } })
+
+    expect(fallboardVolume).toHaveValue('0.37')
+    expect(localStorage.getItem('pitchperfect_piano_night_master_volume')).toBe(
+      '0.37',
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Piano volume set to 37%.',
+    )
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    const session = screen.getByRole('tabpanel', { name: 'Session' })
+    expect(
+      within(session).getByRole('slider', { name: 'Piano volume' }),
+    ).toHaveValue('0.37')
+    expectSilentBrowserBoundary()
+  })
+
   it('captures manual A/B from the audio clock between presentation frames', async () => {
     vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(73)
     render(() => <PianoNightApp />)
