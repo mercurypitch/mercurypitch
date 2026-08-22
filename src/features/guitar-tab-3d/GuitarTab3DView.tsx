@@ -17,7 +17,7 @@ import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
 import type { CameraState } from './renderer/camera'
 import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
-import type { TabPresentation, TabRenderer, TabScene, } from './renderer/TabRenderer'
+import type { TabPresentation, TabRenderer, TabScene, TabSceneLoopSpan, } from './renderer/TabRenderer'
 import { createTabRenderer, DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
 import type { Tab3DControls } from './ui/Tab3DHud'
@@ -44,6 +44,8 @@ export interface GuitarTab3DViewProps {
   display?: Accessor<TabScene['display']>
   /** Change only the spatial projection; the renderer and camera stay mounted. */
   presentation?: Accessor<TabPresentation>
+  /** Host-owned rehearsal range, painted without changing playback behavior. */
+  loopSpan?: Accessor<TabSceneLoopSpan | null>
   /** Override the legacy navigation gizmo without requiring the legacy HUD. */
   showGizmo?: Accessor<boolean>
   /** Accessible canvas name and fallback summary owned by the host surface. */
@@ -305,6 +307,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
 
   const buildScene = (): TabScene => {
     const ctrls = props.controls
+    const loopSpan = props.loopSpan?.()
     const requestedDisplay = props.display?.() ?? DEFAULT_DISPLAY
     const display =
       shouldReduceMotion() || props.reducedEffects?.() === true
@@ -327,6 +330,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       showFretboard: props.showFretboard(),
       display,
       presentation: props.presentation?.(),
+      ...(loopSpan === null || loopSpan === undefined ? {} : { loopSpan }),
       tuning: props.tuning?.(),
       feedback:
         ctrls === undefined
@@ -456,6 +460,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       props.reducedEffects?.()
       systemReducedMotion()
       props.presentation?.()
+      props.loopSpan?.()
       props.tuning?.()
       props.controls?.hitResults()
       props.controls?.detectedMidi()

@@ -60,6 +60,13 @@ export const VELVET_DISPLAY: DisplaySettings = {
 /** The same musical scene can be projected as a fret grid or string lanes. */
 export type TabPresentation = 'fret-axis' | 'string-highway'
 
+/** A host-owned rehearsal loop, expressed on the scene's authored beat axis. */
+export interface TabSceneLoopSpan {
+  startBeat: number
+  endBeat: number
+  active: boolean
+}
+
 /** A single note to render, derived from the guitar engine's falling notes. */
 export interface TabSceneNote {
   id: string
@@ -134,6 +141,8 @@ export interface TabScene {
   detected: TabDetected | null
   display: DisplaySettings
   presentation: TabPresentation
+  /** Read-only rehearsal context; renderers never edit or schedule the loop. */
+  loopSpan?: TabSceneLoopSpan
 }
 
 export interface TabRenderer {

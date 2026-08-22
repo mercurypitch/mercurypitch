@@ -611,6 +611,92 @@ export function useGuitarNightScoreRoomController(
     }
   }
 
+  /**
+   * Apply an owner-approved A/B edit to an ordinary rehearsal already in
+   * flight. Assessment and live-score runs are deliberately refused: their
+   * admitted evidence is pinned to one range and must be ended by the owner
+   * before a fresh scored range begins.
+   */
+  const applyLoopSpan = async (next: LoopSpan | null): Promise<boolean> => {
+    const run = runningTake()
+    const currentStatus = status()
+    if (
+      run === null ||
+      run.mode !== 'rehearsal' ||
+      (currentStatus !== 'starting' &&
+        currentStatus !== 'count-in' &&
+        currentStatus !== 'playing' &&
+        currentStatus !== 'paused')
+    ) {
+      return false
+    }
+    if (next === null) {
+      if (run.loop === null) return true
+      if (currentStatus === 'paused') {
+        const visibleBeat = Math.min(
+          run.endBeat,
+          Math.max(
+            0,
+            scorePlayheadBeat(
+              positionSeconds(),
+              run.loop,
+              run.beatToSeconds,
+              run.secondsToBeat,
+            ),
+          ),
+        )
+        setRunningTake({ ...run, loop: null })
+        setParkedBeat(visibleBeat)
+        setPositionSeconds(run.beatToSeconds(visibleBeat))
+        return true
+      }
+      readAudioClock()
+      const restartBeat = Math.min(
+        run.endBeat,
+        Math.max(
+          0,
+          scorePlayheadBeat(
+            positionSeconds(),
+            run.loop,
+            run.beatToSeconds,
+            run.secondsToBeat,
+          ),
+        ),
+      )
+      return (await launch({ ...run, loop: null }, restartBeat, 0)) !== null
+    }
+    const normalized = normalizeLoopSpan(
+      next.start,
+      next.end,
+      run.durationBeats,
+    )
+    if (normalized === null) return false
+    const activatedLoop = resolveBandLoop(
+      quantizeSpanToBeats(normalized),
+      run.exerciseBeats,
+    )
+    if (activatedLoop === null) return false
+    if (
+      run.loop?.start === activatedLoop.start &&
+      run.loop.end === activatedLoop.end
+    ) {
+      return true
+    }
+    if (currentStatus === 'paused') {
+      setRunningTake({ ...run, loop: activatedLoop })
+      setParkedBeat(activatedLoop.start)
+      setPositionSeconds(run.beatToSeconds(activatedLoop.start))
+      return true
+    }
+    return (
+      (await launch(
+        { ...run, loop: activatedLoop },
+        activatedLoop.start,
+        0,
+      )) !== null
+    )
+  }
+
   const pause = (): void => {
     if (
       status() !== 'starting' &&
@@ -674,6 +760,38 @@ export function useGuitarNightScoreRoomController(
     setStatus('paused')
   }
 
+  /** Exact authored beat → timeline seconds for rails and marker placement. */
+  const secondsForBeat = (value: number): number => {
+    const run = runningTake()
+    const currentReference = run?.reference ?? options.reference()
+    if (currentReference === null || currentReference.notes.length === 0)
+      return 0
+    const maximumBeat =
+      run?.durationBeats ?? scoreDurationBeats(currentReference)
+    const requestedBeat = Number.isFinite(value) ? value : 0
+    const targetBeat = Math.min(maximumBeat, Math.max(0, requestedBeat))
+    return (run?.beatToSeconds ?? configuredBeatToSeconds())(targetBeat)
+  }
+
+  /** Exact timeline seconds → authored beat for rail pointer interactions. */
+  const beatForSeconds = (value: number): number => {
+    const run = runningTake()
+    const currentReference = run?.reference ?? options.reference()
+    if (currentReference === null || currentReference.notes.length === 0)
+      return 0
+    const maximumBeat =
+      run?.durationBeats ?? scoreDurationBeats(currentReference)
+    const beatToSeconds = run?.beatToSeconds ?? configuredBeatToSeconds()
+    const secondsToBeat = run?.secondsToBeat ?? configuredSecondsToBeat()
+    const maximumSeconds = run?.durationSeconds ?? beatToSeconds(maximumBeat)
+    const requestedSeconds = Number.isFinite(value) ? value : 0
+    const targetSeconds = Math.min(
+      maximumSeconds,
+      Math.max(0, requestedSeconds),
+    )
+    return Math.min(maximumBeat, Math.max(0, secondsToBeat(targetSeconds)))
+  }
+
   /** Park the playhead exactly where the rail points, without opening audio. */
   const seekSeconds = (value: number): void => {
     if (status() === 'complete') {
@@ -719,6 +837,11 @@ export function useGuitarNightScoreRoomController(
         ? 'complete'
         : 'paused',
     )
+  }
+
+  /** Seek through the active score's exact tempo map, not a BPM approximation. */
+  const seekBeat = (value: number): void => {
+    seekSeconds(secondsForBeat(value))
   }
 
   const start = async (): Promise<boolean> => {
@@ -879,6 +1002,8 @@ export function useGuitarNightScoreRoomController(
     countInRemaining,
     positionSeconds,
     displayPositionSeconds,
+    secondsForBeat,
+    beatForSeconds,
     playheadBeat,
     durationSeconds,
     durationBeats,
@@ -895,6 +1020,8 @@ export function useGuitarNightScoreRoomController(
     stop,
     toggle,
     seekSeconds,
+    seekBeat,
+    applyLoopSpan,
     setTempoBpm,
     resetTempo,
     setCountInBeats,

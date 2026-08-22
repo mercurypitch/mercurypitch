@@ -4,7 +4,7 @@
 import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { compileTabNotes, matchingTabNoteAtPlayhead } from './compile-tab-notes'
-import type { TabDetected, TabPresentation, TabScene } from './TabRenderer'
+import type { TabDetected, TabPresentation, TabScene, TabSceneLoopSpan, } from './TabRenderer'
 import { DEFAULT_DISPLAY } from './TabRenderer'
 
 const MIN_STRING_COUNT = 6
@@ -26,6 +26,8 @@ export interface BuildTabSceneOptions {
   display?: TabScene['display']
   /** Visual projection only; timing, score, input, and feedback stay shared. */
   presentation?: TabPresentation
+  /** Optional read-only rehearsal range on the same beat clock as the notes. */
+  loopSpan?: TabSceneLoopSpan | null
   feedback?: TabSceneFeedback
   /**
    * The instrument the notes were placed on, when the host knows it. Without
@@ -57,6 +59,15 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
   const clampFret = (fret: number) => Math.max(0, Math.min(laidMaxFret, fret))
   const now = options.now ?? Date.now()
   const feedback = options.feedback
+  const requestedLoop = options.loopSpan
+  const loopSpan =
+    requestedLoop !== null &&
+    requestedLoop !== undefined &&
+    Number.isFinite(requestedLoop.startBeat) &&
+    Number.isFinite(requestedLoop.endBeat) &&
+    requestedLoop.endBeat > requestedLoop.startBeat
+      ? requestedLoop
+      : undefined
 
   const hits = (feedback?.hitResults ?? [])
     .filter((hit) => hit.timing !== 'miss' && now - hit.timestamp < 600)
@@ -122,5 +133,6 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
     detected,
     display: options.display ?? DEFAULT_DISPLAY,
     presentation: options.presentation ?? 'fret-axis',
+    ...(loopSpan === undefined ? {} : { loopSpan }),
   }
 }

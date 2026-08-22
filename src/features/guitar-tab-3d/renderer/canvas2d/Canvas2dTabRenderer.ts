@@ -23,7 +23,7 @@ import { beatsToDepth } from '../projection'
 import type { TabRenderer, TabScene, TabSceneEvent, TabSceneNote, } from '../TabRenderer'
 import { colorForString, labelInk, lighten, withAlpha } from './color'
 import { cellKey, cellNoteName, isDoubleFretMarker, isFretMarker, } from './FretboardStrip'
-import { TAB_FLOOR_DEPTH as FLOOR_DEPTH, TAB_LANE_HEIGHT as LANE_HEIGHT, TAB_WALL_BOTTOM as Y_BOTTOM, TAB_WALL_TOP as WALL_TOP, tabConvergedX, tabFlightPoint, tabFretStringY, tabFretX, tabStringLaneX, tabTransverseWorldSpan, } from './highway-geometry'
+import { TAB_FLOOR_DEPTH as FLOOR_DEPTH, TAB_LANE_HEIGHT as LANE_HEIGHT, TAB_WALL_BOTTOM as Y_BOTTOM, TAB_WALL_TOP as WALL_TOP, tabConvergedX, tabFlightPoint, tabFretStringY, tabFretX, tabLoopDepthRange, tabStringLaneX, tabTransverseWorldSpan, } from './highway-geometry'
 
 // ── Scene constants (world units) ──────────────────────────
 
@@ -391,6 +391,77 @@ export class Canvas2dTabRenderer implements TabRenderer {
     ctx.fillRect(0, 0, W, H)
   }
 
+  /** Paint the host's A/B range onto the same beat-depth plane as the notes. */
+  private drawLoopSpan(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    left: number,
+    right: number,
+    floorY: number,
+    beatWindow: number,
+  ): void {
+    const range = tabLoopDepthRange(
+      scene.loopSpan,
+      scene.playheadBeat,
+      beatWindow,
+    )
+    if (range === null || scene.loopSpan === undefined) return
+
+    const projectBoundary = (x: number, depth: number) =>
+      this.project(
+        this.depthAdjustedX(scene, x, depth),
+        floorY - 0.025,
+        -depth * FLOOR_DEPTH,
+      )
+    const nearLeft = projectBoundary(left, range.startDepth)
+    const nearRight = projectBoundary(right, range.startDepth)
+    const farRight = projectBoundary(right, range.endDepth)
+    const farLeft = projectBoundary(left, range.endDepth)
+    if (
+      range.endDepth > range.startDepth &&
+      [nearLeft, nearRight, farRight, farLeft].every((point) => point.w > NEAR)
+    ) {
+      ctx.beginPath()
+      ctx.moveTo(nearLeft.x, nearLeft.y)
+      ctx.lineTo(nearRight.x, nearRight.y)
+      ctx.lineTo(farRight.x, farRight.y)
+      ctx.lineTo(farLeft.x, farLeft.y)
+      ctx.closePath()
+      ctx.fillStyle = scene.loopSpan.active
+        ? 'rgba(106,202,189,0.08)'
+        : 'rgba(106,202,189,0.04)'
+      ctx.fill()
+    }
+
+    const drawBoundary = (depth: number, label: 'A' | 'B', color: string) => {
+      const a = projectBoundary(left, depth)
+      const b = projectBoundary(right, depth)
+      if (a.w <= NEAR || b.w <= NEAR) return
+      ctx.beginPath()
+      ctx.moveTo(a.x, a.y)
+      ctx.lineTo(b.x, b.y)
+      ctx.strokeStyle = color
+      ctx.lineWidth = scene.loopSpan?.active === true ? 2.25 : 1.5
+      ctx.stroke()
+      const anchor = a.x <= b.x ? a : b
+      ctx.font = '800 10px ui-sans-serif, system-ui, sans-serif'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'bottom'
+      ctx.fillStyle = color
+      ctx.fillText(label, anchor.x + 5, anchor.y - 4)
+    }
+
+    ctx.save()
+    ctx.setLineDash(scene.loopSpan.active ? [] : [5, 4])
+    if (range.startVisible) {
+      drawBoundary(range.startDepth, 'A', 'rgba(106,202,189,0.9)')
+    }
+    if (range.endVisible) {
+      drawBoundary(range.endDepth, 'B', 'rgba(224,164,93,0.92)')
+    }
+    ctx.restore()
+  }
+
   // Highway floor (Y=0) receding to −Z behind the fretboard.
   private drawHighway(
     ctx: CanvasRenderingContext2D,
@@ -408,6 +479,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     const right = isStringHighway
       ? tabStringLaneX(n - 1, n, false)
       : this.fretX(maxFret, maxFret, scene.display.leftHanded)
+    const beatWindow = Math.max(1, scene.visibleBeatWindow)
 
     if (isStringHighway) {
       const nearLeft = this.project(left - 0.45, floorY - 0.04, 0)
@@ -458,6 +530,14 @@ export class Canvas2dTabRenderer implements TabRenderer {
         ctx.fillStyle = runway
         ctx.fill()
       }
+      this.drawLoopSpan(
+        ctx,
+        scene,
+        left - 0.45,
+        right + 0.45,
+        floorY,
+        beatWindow,
+      )
       for (let stringIndex = 0; stringIndex < n; stringIndex += 1) {
         const x = tabStringLaneX(stringIndex, n, scene.display.leftHanded)
         const stringColor = colorForString(
@@ -477,12 +557,12 @@ export class Canvas2dTabRenderer implements TabRenderer {
         )
       }
     } else {
+      this.drawLoopSpan(ctx, scene, left, right, floorY, beatWindow)
       for (let f = 0; f <= maxFret; f++) {
         const x = this.fretX(f, maxFret, scene.display.leftHanded)
         this.line(ctx, x, floorY, 0, x, floorY, -FLOOR_DEPTH, laneColor, 1)
       }
     }
-    const beatWindow = Math.max(1, scene.visibleBeatWindow)
     const startBeat = Math.ceil(scene.playheadBeat)
     for (
       let beat = startBeat;

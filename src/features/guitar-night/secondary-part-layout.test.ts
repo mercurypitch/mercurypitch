@@ -34,6 +34,25 @@ describe('secondary-part layout', () => {
     expect(layout.y).toBeGreaterThanOrEqual(88)
   })
 
+  it('keeps a maximum-width panel beside split header faceplates', () => {
+    const guide = { x: 12, y: 12, width: 300, height: 54 }
+    const tools = { x: 1_100, y: 12, width: 288, height: 54 }
+    const layout = resolveSecondaryPartLayout(
+      { x: 340, y: 18, width: 900 },
+      140,
+      { width: 1_400, height: 640 },
+      [guide, tools],
+    )
+
+    expect(layout).toEqual({ x: 340, y: 18, width: 560 })
+    expect(
+      secondaryPartRectsOverlap({ ...layout, height: 140 }, guide, 10),
+    ).toBe(false)
+    expect(
+      secondaryPartRectsOverlap({ ...layout, height: 140 }, tools, 10),
+    ).toBe(false)
+  })
+
   it('avoids a bottom-right orbit hint while staying near the requested point', () => {
     const orbitHint = { x: 730, y: 535, width: 250, height: 45 }
     const layout = resolveSecondaryPartLayout(

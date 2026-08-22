@@ -31,11 +31,29 @@
 }
 
 .chrome {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
   min-height: max(var(--touch-target, 44px), 44px);
-  border-bottom: 1px solid rgba(244, 234, 219, 0.1);
+  isolation: isolate;
+}
+
+/* The hit plane stays comfortably touch-sized while the visible faceplate is
+   deliberately quieter than the tab beneath it. */
+.chrome::before {
+  position: absolute;
+  z-index: 0;
+  inset: 6px 5px;
+  border: 1px solid rgba(244, 234, 219, 0.075);
+  border-radius: 7px;
   background: rgba(244, 234, 219, 0.035);
+  content: '';
+  pointer-events: none;
+}
+
+.chrome > * {
+  position: relative;
+  z-index: 1;
 }
 
 .moveHandle,
@@ -86,15 +104,26 @@
 .reset {
   display: grid;
   place-items: center;
-  border-left: 1px solid rgba(244, 234, 219, 0.08);
   cursor: pointer;
 }
 
 .collapse {
   display: none;
   place-items: center;
-  border-left: 1px solid rgba(244, 234, 219, 0.08);
   cursor: pointer;
+}
+
+.reset::before,
+.collapse::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 20px;
+  background: rgba(244, 234, 219, 0.1);
+  content: '';
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .reset:hover,

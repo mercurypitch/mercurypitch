@@ -10,7 +10,7 @@ import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import type { TabCameraPresetId } from '@/features/guitar-tab-3d/renderer/camera-presets'
 import { TAB_CAMERA_PRESET_CHOICES, tabCameraPreset, } from '@/features/guitar-tab-3d/renderer/camera-presets'
 import { tabFretX, tabStringLaneX, } from '@/features/guitar-tab-3d/renderer/canvas2d/highway-geometry'
-import type { TabPresentation } from '@/features/guitar-tab-3d/renderer/TabRenderer'
+import type { TabPresentation, TabSceneLoopSpan, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarBendType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -95,6 +95,10 @@ interface GuitarNightStageProps {
   sheetTimeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
   /** The part being graded, drawn in full ink on the sheet. */
   scoredTrackId?: Accessor<string | undefined>
+  /** Authored-beat rehearsal loop. Time-based views render it read-only. */
+  loopStart?: Accessor<number | null>
+  loopEnd?: Accessor<number | null>
+  loopActive?: Accessor<boolean>
   /**
    * One other part, drawn small in a corner of the moving views. Tapping it
    * reads that part instead, which is how the two are swapped.
@@ -172,6 +176,16 @@ export interface TabWindowEntry {
   offsetPercent: number
   isActive: boolean
   isPast: boolean
+}
+
+export interface StageTabLoopMarker {
+  mark: 'A' | 'B'
+  offsetPercent: number
+}
+
+export interface StageTabLoopWindow {
+  markers: readonly StageTabLoopMarker[]
+  range: { leftPercent: number; widthPercent: number } | null
 }
 
 export interface StageTabWindowIndex {
@@ -606,6 +620,69 @@ export function tabWindowEntries(
   return entries
 }
 
+/** Place read-only A/B context on the exact moving beat window used by Tab. */
+export function tabLoopWindow(
+  loopStart: number | null,
+  loopEnd: number | null,
+  playheadBeat: number | null,
+  windowBeats = TAB_WINDOW_BEATS,
+): StageTabLoopWindow {
+  const window = Math.max(1, windowBeats)
+  const head = playheadBeat ?? 0
+  const windowStart = head - window * TAB_PLAYHEAD_RATIO
+  const windowEnd = windowStart + window
+  const marker = (
+    mark: 'A' | 'B',
+    beat: number | null,
+  ): StageTabLoopMarker | null => {
+    if (
+      beat === null ||
+      !Number.isFinite(beat) ||
+      beat < windowStart ||
+      beat > windowEnd
+    ) {
+      return null
+    }
+    return {
+      mark,
+      offsetPercent: ((beat - windowStart) / window) * 100,
+    }
+  }
+  const markers = [marker('A', loopStart), marker('B', loopEnd)].filter(
+    (value): value is StageTabLoopMarker => value !== null,
+  )
+  if (
+    loopStart === null ||
+    loopEnd === null ||
+    !Number.isFinite(loopStart) ||
+    !Number.isFinite(loopEnd) ||
+    loopEnd <= loopStart ||
+    loopEnd <= windowStart ||
+    loopStart >= windowEnd
+  ) {
+    return { markers, range: null }
+  }
+  const clippedStart = Math.max(windowStart, loopStart)
+  const clippedEnd = Math.min(windowEnd, loopEnd)
+  const leftPercent = ((clippedStart - windowStart) / window) * 100
+  return {
+    markers,
+    range: {
+      leftPercent,
+      widthPercent: ((clippedEnd - clippedStart) / window) * 100,
+    },
+  }
+}
+
+/** Beats count from one in player-facing copy, matching the transport rail. */
+function formatStageBeat(beat: number): string {
+  const counted = Math.max(0, beat) + 1
+  const label = Number.isInteger(counted)
+    ? String(counted)
+    : counted.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+  return `beat ${label}`
+}
+
 /**
  * Naming the instrument sits over the rows it renames, because that is where a
  * wrong answer is visible: bass notes on `e B G D A E` lines read as nonsense.
@@ -840,6 +917,29 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   )
   const visualPlayheadBeat = createMemo(() =>
     guidePreviewBeat(notes(), actualPlayheadBeat()),
+  )
+  const authoredLoopStart = createMemo(() => {
+    const value = props.loopStart?.() ?? null
+    return value !== null && Number.isFinite(value) ? value : null
+  })
+  const authoredLoopEnd = createMemo(() => {
+    const value = props.loopEnd?.() ?? null
+    return value !== null && Number.isFinite(value) ? value : null
+  })
+  const loopSpan = createMemo<TabSceneLoopSpan | null>(() => {
+    const startBeat = authoredLoopStart()
+    const endBeat = authoredLoopEnd()
+    if (startBeat === null || endBeat === null || endBeat <= startBeat) {
+      return null
+    }
+    return {
+      startBeat,
+      endBeat,
+      active: props.loopActive?.() === true,
+    }
+  })
+  const tabLoop = createMemo(() =>
+    tabLoopWindow(authoredLoopStart(), authoredLoopEnd(), visualPlayheadBeat()),
   )
   const actualEventContext = createMemo(() =>
     stageEventContext(noteIndex(), actualPlayheadBeat()),
@@ -1116,15 +1216,44 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       ? 'No upcoming target.'
       : `Next target: ${targetGroupSummary(upcoming, tuning(), noteById())}`
   })
+  const loopDescription = createMemo(() => {
+    const span = loopSpan()
+    if (span !== null) {
+      return `Loop from ${formatStageBeat(span.startBeat)} to ${formatStageBeat(span.endBeat)}, ${span.active ? 'repeating' : 'ready'}.`
+    }
+    const start = authoredLoopStart()
+    const end = authoredLoopEnd()
+    if (start !== null) {
+      return `Loop start at ${formatStageBeat(start)}; end not set.`
+    }
+    if (end !== null)
+      return `Loop end at ${formatStageBeat(end)}; start not set.`
+    return ''
+  })
+  const loopBadge = createMemo(() => {
+    const span = loopSpan()
+    if (span !== null) {
+      return `Loop · A ${formatStageBeat(span.startBeat).replace('beat ', '')} · B ${formatStageBeat(span.endBeat).replace('beat ', '')}`
+    }
+    const start = authoredLoopStart()
+    const end = authoredLoopEnd()
+    if (start !== null) {
+      return `Loop · A ${formatStageBeat(start).replace('beat ', '')} · set B`
+    }
+    if (end !== null) {
+      return `Loop · set A · B ${formatStageBeat(end).replace('beat ', '')}`
+    }
+    return null
+  })
   const flowSummary = createMemo(() =>
     hasGuide()
-      ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${targetSummary()}`
-      : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached.`,
+      ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${targetSummary()} ${loopDescription()}`
+      : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached. ${loopDescription()}`,
   )
   const tabSummary = createMemo(() =>
     hasGuide()
-      ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets. ${targetSummary()}`
-      : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached.`,
+      ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets. ${targetSummary()} ${loopDescription()}`
+      : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached. ${loopDescription()}`,
   )
   const visualSource: GuitarPerformanceStageSource = {
     title: () => props.source.title(),
@@ -1158,11 +1287,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       }
     >
       <Show when={props.showHeader?.() ?? true}>
-        <header
-          class={styles.stageHeader}
-          data-guitar-night-secondary-protected
-        >
+        <header class={styles.stageHeader}>
           <div
+            data-guitar-night-secondary-protected
             classList={{
               [styles.stageSignalWithAccessory]:
                 signalAccessory() !== undefined,
@@ -1204,7 +1331,10 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 : `Heard ${heardNote()}`
               : ''}
           </span>
-          <div class={styles.stageHeaderTools}>
+          <div
+            class={styles.stageHeaderTools}
+            data-guitar-night-secondary-protected
+          >
             {/* The instrument names the rows in every view, so it belongs beside
               the view switch rather than inside one of them. */}
             <Show when={canRetune()}>
@@ -1396,6 +1526,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 isActive={() => props.active() && mode() === 'flow'}
                 display={display}
                 presentation={flowPresentation}
+                loopSpan={loopSpan}
                 showGizmo={() => false}
                 ariaLabel={flowSummary}
                 fallbackText={flowSummary}
@@ -1446,11 +1577,42 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               role="img"
               aria-label={tabSummary()}
             >
-              <div
-                class={styles.stageTabPlayhead}
-                aria-hidden="true"
-                style={{ left: `${TAB_PLAYHEAD_RATIO * 100}%` }}
-              />
+              <div class={styles.stageTabGuideLayer} aria-hidden="true">
+                <Show when={tabLoop().range}>
+                  {(range) => (
+                    <div
+                      class={styles.stageTabLoopRange}
+                      data-active={
+                        loopSpan()?.active === true ? 'true' : undefined
+                      }
+                      data-testid="guitar-night-tab-loop-range"
+                      style={{
+                        left: `${range().leftPercent}%`,
+                        width: `${range().widthPercent}%`,
+                      }}
+                    />
+                  )}
+                </Show>
+                <For each={tabLoop().markers}>
+                  {(marker) => (
+                    <div
+                      class={styles.stageTabLoopMarker}
+                      data-mark={marker.mark}
+                      data-active={
+                        loopSpan()?.active === true ? 'true' : undefined
+                      }
+                      data-testid={`guitar-night-tab-loop-marker-${marker.mark.toLowerCase()}`}
+                      style={{ left: `${marker.offsetPercent}%` }}
+                    >
+                      <span>{marker.mark}</span>
+                    </div>
+                  )}
+                </For>
+                <div
+                  class={styles.stageTabPlayhead}
+                  style={{ left: `${TAB_PLAYHEAD_RATIO * 100}%` }}
+                />
+              </div>
               <For each={tuning().labels}>
                 {(label, stringIndex) => (
                   <div class={styles.stageTabString}>
@@ -1508,6 +1670,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             <GuitarNightSheetView
               lanes={() => props.sheetLanes?.() ?? []}
               playheadBeat={() => actualPlayheadBeat() ?? 0}
+              loopStart={props.loopStart}
+              loopEnd={props.loopEnd}
+              loopActive={props.loopActive}
               {...(props.sheetTimeSignatures === undefined
                 ? {}
                 : { timeSignatures: props.sheetTimeSignatures })}
@@ -1525,16 +1690,24 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         <Show when={mode() === 'neck'}>
           <div
             class={styles.stageNeck}
-            aria-label={
-              props.neckLabel?.() ??
-              `${displayedNeckFrets().length}-fret ${instrumentLabel()} neck. ${targetSummary()}`
-            }
+            aria-label={`${props.neckLabel?.() ?? `${displayedNeckFrets().length}-fret ${instrumentLabel()} neck. ${targetSummary()}`} ${loopDescription()}`}
             role={props.neckInteraction === undefined ? 'img' : 'group'}
             data-handedness={handedness()}
             data-interactive={
               props.neckInteraction === undefined ? undefined : 'true'
             }
           >
+            <Show when={loopBadge()}>
+              {(label) => (
+                <span
+                  class={styles.stageLoopStatus}
+                  data-active={loopSpan()?.active === true ? 'true' : undefined}
+                  aria-hidden="true"
+                >
+                  {label()}
+                </span>
+              )}
+            </Show>
             <div
               class={styles.fretNumbers}
               aria-hidden="true"

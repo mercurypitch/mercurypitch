@@ -1,0 +1,146 @@
+/* The Listening cycle is a compact Velvet faceplate, not a second input picker. */
+
+.cycle {
+  display: inline-grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.48rem;
+  min-width: 8.45rem;
+  min-height: max(44px, var(--touch-target, 44px));
+  padding: 0.34rem 0.72rem 0.34rem 0.58rem;
+  border: 1px solid rgba(244, 234, 219, 0.13);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.74);
+  background: linear-gradient(
+    180deg,
+    rgba(244, 234, 219, 0.055),
+    rgba(244, 234, 219, 0.026)
+  );
+  box-shadow: inset 0 1px rgba(255, 248, 236, 0.04);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cycle:hover:not(:disabled) {
+  border-color: rgba(224, 164, 93, 0.34);
+  color: var(--ivory, #f4eadb);
+  background: rgba(224, 164, 93, 0.07);
+}
+
+.cycle:focus-visible {
+  outline: 2px solid var(--amber-bright, #f0bd78);
+  outline-offset: 2px;
+}
+
+.cycle[data-active='true'] {
+  border-color: rgba(224, 164, 93, 0.48);
+  color: var(--ivory, #f4eadb);
+  background:
+    radial-gradient(
+      circle at 18% 50%,
+      rgba(224, 164, 93, 0.16),
+      transparent 58%
+    ),
+    rgba(38, 27, 20, 0.86);
+  box-shadow:
+    inset 0 1px rgba(255, 242, 221, 0.07),
+    0 0.45rem 1.25rem rgba(224, 164, 93, 0.14);
+}
+
+.cycle:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.cycle[data-pending='true']:disabled {
+  opacity: 0.78;
+  cursor: wait;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  color: rgba(244, 234, 219, 0.58);
+  background: rgba(4, 3, 3, 0.28);
+}
+
+.icon svg {
+  width: 0.92rem;
+  height: 0.92rem;
+}
+
+.cycle[data-active='true'] .icon {
+  color: var(--amber-bright, #f0bd78);
+  filter: drop-shadow(0 0 0.3rem rgba(224, 164, 93, 0.58));
+}
+
+.cycle[data-pending='true'] .icon {
+  color: var(--teal, #6acabd);
+  filter: none;
+}
+
+.copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.02rem;
+  line-height: 1.05;
+}
+
+.eyebrow {
+  color: rgba(244, 234, 219, 0.48);
+  font-size: 0.49rem;
+  font-weight: 700;
+  letter-spacing: 0.105em;
+  text-transform: uppercase;
+}
+
+.copy strong {
+  overflow: hidden;
+  font-size: 0.66rem;
+  font-weight: 720;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+}
+
+.cycle[data-active='true'] .eyebrow {
+  color: rgba(240, 189, 120, 0.68);
+}
+
+/* A 320px phone at 200% text cannot hold the long faceplate beside the Play
+   pedal. Keep the same stateful icon and complete accessible action label,
+   while collapsing only the decorative copy into a hand-sized round control. */
+@media (max-width: 360px) {
+  .cycle {
+    grid-template-columns: 1fr;
+    place-items: center;
+    gap: 0;
+    width: max(44px, var(--touch-target, 44px));
+    min-width: max(44px, var(--touch-target, 44px));
+    padding: 0;
+  }
+
+  .icon {
+    width: min(1.5rem, 28px);
+    height: min(1.5rem, 28px);
+  }
+
+  .icon svg {
+    width: min(0.92rem, 18px);
+    height: min(0.92rem, 18px);
+  }
+
+  .copy {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .cycle[data-active='true'] {
+    border-color: Highlight;
+  }
+}

@@ -1,7 +1,7 @@
 // The tab room must open silent, on the tab's own terms, with no recording.
 // ============================================================
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -55,8 +55,67 @@ describe('GuitarNightScoreRoom', () => {
     ).toBeTruthy()
     expect(screen.getByLabelText('Start the count-in')).toBeTruthy()
     // The tab's authored tempo, unaltered.
-    expect(screen.getByLabelText('Tempo 90 BPM')).toBeTruthy()
-    expect(screen.getByLabelText('Rehearsal mix volume')).toBeTruthy()
+    const deck = within(screen.getByTestId('guitar-night-score-deck'))
+    expect(deck.getByLabelText('Tempo 90 BPM')).toBeTruthy()
+    expect(deck.getByLabelText('Rehearsal mix volume')).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'Listening is off. Switch to Room mic',
+      }),
+    ).toBeTruthy()
+    expect(screen.getByText('Score clock')).toBeTruthy()
+    expect(
+      screen.queryByText('Authored score clock · no recording attached'),
+    ).toBeNull()
+  })
+
+  it('keeps mobile Session tempo and volume on the same rehearsal controls', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const summary = screen.getByLabelText('Session controls')
+    fireEvent.click(summary)
+    const details = summary.closest('details')
+    expect(details).toBeTruthy()
+    if (details === null) return
+
+    const session = within(details)
+    const deck = within(screen.getByTestId('guitar-night-score-deck'))
+    const sessionVolume = session.getByLabelText('Session rehearsal mix volume')
+    fireEvent.input(sessionVolume, { target: { value: '0.42' } })
+
+    expect(sessionVolume).toHaveValue('0.42')
+    expect(deck.getByLabelText('Rehearsal mix volume')).toHaveValue('0.42')
+
+    fireEvent.click(
+      session.getByRole('button', { name: 'Slow down from 90 BPM' }),
+    )
+    expect(session.getByLabelText('Tempo 86 BPM')).toBeInTheDocument()
+    expect(deck.getByLabelText('Tempo 86 BPM')).toBeInTheDocument()
+  })
+
+  it('sets zero-safe A/B marks beside the rail and clears them again', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const deck = within(screen.getByTestId('guitar-night-score-deck'))
+    const loop = deck.getByRole('group', { name: 'Section loop' })
+    fireEvent.click(within(loop).getByRole('button', { name: 'A' }))
+    fireEvent.click(within(loop).getByRole('button', { name: 'B' }))
+
+    expect(deck.getByLabelText('Loop start marker')).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    )
+    expect(deck.getByLabelText('Loop end marker')).toHaveAttribute(
+      'aria-valuenow',
+      '1',
+    )
+    fireEvent.click(within(loop).getByRole('button', { name: 'Clear' }))
+    expect(deck.queryByLabelText('Loop start marker')).toBeNull()
+    expect(deck.queryByLabelText('Loop end marker')).toBeNull()
   })
 
   it('registers the useful hands-free Rehearse commands', () => {

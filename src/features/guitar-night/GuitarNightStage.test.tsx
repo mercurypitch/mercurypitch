@@ -7,7 +7,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
-import type { DisplaySettings, TabPresentation, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
+import type { DisplaySettings, TabPresentation, TabSceneLoopSpan, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { GUITAR_NIGHT_CAMERA_PRESET_KEY, GUITAR_NIGHT_EFFECTS_KEY, GUITAR_NIGHT_FLOW_PRESENTATION_KEY, GUITAR_NIGHT_HANDEDNESS_KEY, GuitarNightStage, } from './GuitarNightStage'
@@ -15,6 +15,7 @@ import { GUITAR_NIGHT_CAMERA_PRESET_KEY, GUITAR_NIGHT_EFFECTS_KEY, GUITAR_NIGHT_
 vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
   Guitar3DStage: (props: {
     presentation?: Accessor<TabPresentation>
+    loopSpan?: Accessor<TabSceneLoopSpan | null>
     display?: Accessor<DisplaySettings>
     cameraPreset?: Accessor<CameraState>
     cameraAutoFollow?: Accessor<boolean>
@@ -25,6 +26,9 @@ vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
       aria-label={props.ariaLabel?.()}
       data-testid="shared-3d-stage"
       data-presentation={props.presentation?.() ?? 'fret-axis'}
+      data-loop-start={props.loopSpan?.()?.startBeat}
+      data-loop-end={props.loopSpan?.()?.endBeat}
+      data-loop-active={props.loopSpan?.()?.active ?? false}
       data-left-handed={props.display?.().leftHanded ?? false}
       data-effects={props.display?.().effects ?? 'full'}
       data-camera-target-x={props.cameraPreset?.().target[0] ?? 0}
@@ -100,6 +104,39 @@ describe('GuitarNightStage views', () => {
     expect(
       screen.getByRole('img', {
         name: /Empty 6-string tablature; no song tab is attached/,
+      }),
+    ).toBeVisible()
+  })
+
+  it('forwards one authored loop to Flow and maps it read-only in Tab and Neck', async () => {
+    render(() => (
+      <GuitarNightStage
+        source={SOURCE}
+        active={() => true}
+        loopStart={() => 0}
+        loopEnd={() => 4}
+        loopActive={() => true}
+      />
+    ))
+
+    const sharedStage = await screen.findByTestId('shared-3d-stage')
+    expect(sharedStage).toHaveAttribute('data-loop-start', '0')
+    expect(sharedStage).toHaveAttribute('data-loop-end', '4')
+    expect(sharedStage).toHaveAttribute('data-loop-active', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tab' }))
+    expect(screen.getByTestId('guitar-night-tab-loop-range')).toHaveAttribute(
+      'data-active',
+      'true',
+    )
+    expect(screen.getByTestId('guitar-night-tab-loop-marker-a')).toBeVisible()
+    expect(screen.getByTestId('guitar-night-tab-loop-marker-b')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Neck' }))
+    expect(screen.getByText('Loop · A 1 · B 5')).toBeVisible()
+    expect(
+      screen.getByRole('img', {
+        name: /Loop from beat 1 to beat 5, repeating/,
       }),
     ).toBeVisible()
   })

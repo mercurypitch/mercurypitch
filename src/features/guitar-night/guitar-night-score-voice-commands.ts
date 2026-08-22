@@ -19,11 +19,13 @@ export type GuitarNightScoreCountInBeats =
 export interface GuitarNightScoreVoiceLoop {
   hasA: Accessor<boolean>
   hasB: Accessor<boolean>
+  /** A live reason makes every loop mutation fail explicitly. */
+  blockedReason?: Accessor<string | null>
   /** Return false only when the playhead cannot be marked. */
   markA: () => unknown
   /** Return false only when the playhead cannot be marked. */
   markB: () => unknown
-  clear: () => void
+  clear: () => unknown
   /** Omit both members when a room treats a complete A/B span as always on. */
   enabled?: Accessor<boolean>
   setEnabled?: (enabled: boolean) => void
@@ -229,24 +231,34 @@ export function createGuitarNightScoreVoiceCommands(
 
   const loop = deps.loop
   if (loop !== undefined) {
+    const loopBlocked = (): VoiceCommandResult | null => {
+      const reason = loop.blockedReason?.() ?? null
+      return reason === null ? null : voiceFailure(reason)
+    }
     add({
       id: 'guitarNight.score.loopSetA',
       label: 'Loop A set',
       phrases: LOOP_SET_A_PHRASES,
-      run: () =>
-        loop.markA() === false
+      run: () => {
+        const blocked = loopBlocked()
+        if (blocked !== null) return blocked
+        return loop.markA() === false
           ? voiceFailure('Loop A needs a valid playhead')
-          : 'Loop A set',
+          : 'Loop A set'
+      },
     })
 
     add({
       id: 'guitarNight.score.loopSetB',
       label: 'Loop B set',
       phrases: LOOP_SET_B_PHRASES,
-      run: () =>
-        loop.markB() === false
+      run: () => {
+        const blocked = loopBlocked()
+        if (blocked !== null) return blocked
+        return loop.markB() === false
           ? voiceFailure('Loop B needs a valid playhead')
-          : 'Loop B set',
+          : 'Loop B set'
+      },
     })
 
     add({
@@ -254,10 +266,14 @@ export function createGuitarNightScoreVoiceCommands(
       label: 'Loop cleared',
       phrases: LOOP_CLEAR_PHRASES,
       run: () => {
+        const blocked = loopBlocked()
+        if (blocked !== null) return blocked
         if (!loop.hasA() && !loop.hasB()) {
           return voiceFailure('No loop to clear')
         }
-        loop.clear()
+        if (loop.clear() === false) {
+          return voiceFailure('Loop could not be cleared')
+        }
         return 'Loop cleared'
       },
     })

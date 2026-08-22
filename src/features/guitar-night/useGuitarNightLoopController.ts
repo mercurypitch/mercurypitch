@@ -8,7 +8,7 @@
 // B are the same questions in both rooms, and they are answered here.
 
 import type { Accessor } from 'solid-js'
-import { createMemo, createSignal } from 'solid-js'
+import { batch, createMemo, createSignal } from 'solid-js'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, shouldWrapToStart } from '@/lib/guitar/loop-span'
 
@@ -40,31 +40,55 @@ export function useGuitarNightLoopController(
 
   const markStart = (position: number): void => {
     if (!Number.isFinite(position)) return
-    setMarkA(Math.max(0, position))
     // A dropped after B is the player re-choosing the top of the loop, not the
     // bottom of a new one: keep B if it still sits after the new A.
     const end = markB()
-    if (end !== null && end <= position) setMarkB(null)
+    batch(() => {
+      setMarkA(Math.max(0, position))
+      if (end !== null && end <= position) setMarkB(null)
+    })
   }
 
   const markEnd = (position: number): void => {
     if (!Number.isFinite(position)) return
-    setMarkB(Math.max(0, position))
     const start = markA()
-    if (start !== null && start >= position) setMarkA(null)
+    batch(() => {
+      setMarkB(Math.max(0, position))
+      if (start !== null && start >= position) setMarkA(null)
+    })
   }
 
   const clear = (): void => {
-    setMarkA(null)
-    setMarkB(null)
+    batch(() => {
+      setMarkA(null)
+      setMarkB(null)
+    })
   }
 
   /** Replace both marks as one recovery action, or leave them unchanged. */
   const setSpan = (next: LoopSpan): boolean => {
     const normalized = normalizeLoopSpan(next.start, next.end, options.limit())
     if (normalized === null) return false
-    setMarkA(normalized.start)
-    setMarkB(normalized.end)
+    batch(() => {
+      setMarkA(normalized.start)
+      setMarkB(normalized.end)
+    })
+    return true
+  }
+
+  /** Move one existing boundary without requiring the other mark to exist. */
+  const moveMark = (mark: 'A' | 'B', position: number): boolean => {
+    if (!Number.isFinite(position)) return false
+    const bounded = Math.min(options.limit(), Math.max(0, position))
+    if (mark === 'A') {
+      const end = markB()
+      if (end !== null && bounded >= end) return false
+      setMarkA(bounded)
+      return true
+    }
+    const start = markA()
+    if (start !== null && bounded <= start) return false
+    setMarkB(bounded)
     return true
   }
 
@@ -92,6 +116,7 @@ export function useGuitarNightLoopController(
     markEnd,
     clear,
     setSpan,
+    moveMark,
     follow,
   }
 }

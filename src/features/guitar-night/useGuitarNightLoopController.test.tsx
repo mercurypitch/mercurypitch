@@ -127,6 +127,24 @@ describe('useGuitarNightLoopController', () => {
     })
   })
 
+  it('moves an isolated or completed boundary without clearing its partner', () => {
+    createRoot((dispose) => {
+      const loop = useGuitarNightLoopController({ limit: () => 16 })
+      loop.markStart(2)
+
+      expect(loop.moveMark('A', 4)).toBe(true)
+      expect(loop.markA()).toBe(4)
+      expect(loop.markB()).toBeNull()
+
+      loop.markEnd(10)
+      expect(loop.moveMark('B', 12)).toBe(true)
+      expect(loop.span()).toEqual({ start: 4, end: 12 })
+      expect(loop.moveMark('A', 12)).toBe(false)
+      expect(loop.span()).toEqual({ start: 4, end: 12 })
+      dispose()
+    })
+  })
+
   it('ignores a mark taken from an unusable playhead', () => {
     createRoot((dispose) => {
       const loop = useGuitarNightLoopController({ limit: () => 60 })

@@ -2972,6 +2972,50 @@
   gap: 0.55rem;
 }
 
+.scoreSessionMix {
+  display: grid;
+  grid-template-columns: minmax(8.75rem, 1fr) minmax(8.25rem, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.scoreSessionVolume {
+  grid-template-columns: var(--touch-target) minmax(3.5rem, 1fr) 2.35rem;
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-target);
+  gap: 0.25rem;
+  padding-right: 0.45rem;
+  border: 1px solid rgba(244, 234, 219, 0.1);
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.035);
+}
+
+.scoreSessionVolume > span:not(.visuallyHidden) {
+  display: grid;
+  align-self: stretch;
+  place-items: center;
+}
+
+.scoreSessionVolume input {
+  width: 100%;
+  min-width: 0;
+}
+
+.scoreSessionVolume output {
+  color: rgba(244, 234, 219, 0.54);
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 440px) {
+  .scoreSessionMix {
+    grid-template-columns: 1fr;
+  }
+}
+
 .scoreSessionSettings .countInCycle,
 .scoreSessionSettings .hearScoreToggle {
   display: grid;
@@ -4219,11 +4263,79 @@
 }
 
 .stageTabLanes {
+  --stage-tab-lane-start: 1.9rem;
+
   position: relative;
+  isolation: isolate;
   display: grid;
   gap: clamp(0.7rem, 2vh, 1.05rem);
   width: 100%;
+  padding-top: 0.8rem;
   overflow: hidden;
+}
+
+/* Tab has a label gutter; keeping every time overlay inside this inset makes
+   A, B, the range and NOW share the note lane's exact beat coordinate. */
+.stageTabGuideLayer {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--stage-tab-lane-start);
+  pointer-events: none;
+}
+
+.stageTabLoopRange {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  border-inline: 1px solid rgba(106, 202, 189, 0.34);
+  background: rgba(106, 202, 189, 0.035);
+}
+
+.stageTabLoopRange[data-active='true'] {
+  border-inline-color: rgba(106, 202, 189, 0.58);
+  background: rgba(106, 202, 189, 0.065);
+}
+
+.stageTabLoopMarker {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  border-inline-start: 1px dashed rgba(106, 202, 189, 0.72);
+}
+
+.stageTabLoopMarker[data-mark='B'] {
+  border-inline-start-color: rgba(224, 164, 93, 0.78);
+}
+
+.stageTabLoopMarker[data-active='true'] {
+  border-inline-start-style: solid;
+  border-inline-start-width: 2px;
+}
+
+.stageTabLoopMarker span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 1rem;
+  padding: 0.08rem 0.22rem;
+  border-radius: 0.2rem;
+  color: #100c08;
+  background: #6acabd;
+  font-size: 0.53rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: translateY(0);
+}
+
+.stageTabLoopMarker[data-mark='B'] span {
+  background: #e0a45d;
+  transform: translateX(-100%);
 }
 
 /* The right-hand end of the stage faceplate: which instrument, which view. */
@@ -4565,6 +4677,34 @@
   background: linear-gradient(180deg, #17110d, #0b0908);
 }
 
+.stageLoopStatus {
+  position: absolute;
+  z-index: 2;
+  top: 0.65rem;
+  right: 0.75rem;
+  max-width: calc(100% - 1.5rem);
+  overflow: hidden;
+  padding: 0.25rem 0.48rem;
+  border: 1px dashed rgba(106, 202, 189, 0.34);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.7);
+  background: rgba(9, 8, 7, 0.7);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.55rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.stageLoopStatus[data-active='true'] {
+  border-style: solid;
+  border-color: rgba(106, 202, 189, 0.55);
+  color: #e7f7f3;
+  background: rgba(20, 37, 34, 0.82);
+}
+
 .fretNumbers,
 .neckString {
   display: grid;
@@ -4851,15 +4991,15 @@
   gap: 0.7rem;
 }
 
-.timeRail span,
-.timeRail output {
+.timeRail > span,
+.timeRail > output {
   color: rgba(244, 234, 219, 0.58);
   font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
 }
 
-.timeRail span:last-child,
-.timeRail output:last-child {
+.timeRail > span:last-child,
+.timeRail > output:last-child {
   text-align: right;
 }
 
@@ -6184,6 +6324,10 @@
     gap: 0.35rem;
   }
 
+  .stageTabLanes {
+    --stage-tab-lane-start: 1.55rem;
+  }
+
   .stageTab > p,
   .stageNeck > p {
     width: calc(100% - 2rem);
@@ -6948,5 +7092,243 @@
   .doctorCue > button > b,
   .doctorCueCopy {
     display: none;
+  }
+}
+
+/* Rehearse is a two-line pedalboard: the musical rail stays wide, while
+   transport, tempo and mix retain distinct hand-sized controls below it. */
+[data-room-kind='score'] .transportDeck {
+  position: relative;
+  grid-template-areas:
+    'listening rail loop'
+    'controls controls controls';
+  grid-template-columns: auto minmax(18rem, 1fr) auto;
+  align-items: center;
+  gap: 0.28rem 0.72rem;
+  padding-top: 0.62rem;
+}
+
+.scoreClockChip {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: max(1rem, var(--safe-left));
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  max-width: calc(100% - 2rem);
+  min-height: 1.3rem;
+  padding: 0.12rem 0.48rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.64);
+  background: rgba(12, 9, 7, 0.94);
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.22);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.scoreClockChip > span {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0.45rem rgba(106, 202, 189, 0.4);
+}
+
+.scoreClockChip strong,
+.scoreClockChip small {
+  overflow: hidden;
+  font-size: 0.56rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scoreClockChip strong {
+  color: rgba(244, 234, 219, 0.82);
+  font-weight: 720;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.scoreClockChip small {
+  color: rgba(244, 234, 219, 0.48);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreListeningDock {
+  grid-area: listening;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+[data-room-kind='score'] .scoreRailLoop {
+  grid-area: loop;
+  justify-self: end;
+}
+
+[data-room-kind='score'] .scoreRailLoop .loopControls output {
+  display: none;
+}
+
+[data-room-kind='score'] .scoreRailLoop .loopClear {
+  min-width: var(--touch-target);
+  padding-inline: 0.5rem;
+}
+
+[data-room-kind='score'] .transportControls {
+  display: grid;
+  grid-template-columns: auto minmax(18rem, 1fr) auto;
+  align-items: center;
+  justify-content: stretch;
+  width: 100%;
+  max-width: none;
+  gap: 0.72rem;
+}
+
+.scorePrimaryTransport,
+.scoreMixStrip,
+.scoreUtilities {
+  display: flex;
+  align-items: center;
+}
+
+.scorePrimaryTransport {
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+.scoreMixStrip {
+  justify-content: center;
+  min-width: 0;
+  gap: 0.55rem;
+}
+
+.scoreUtilities {
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+[data-room-kind='score'] .scoreMasterVolume {
+  grid-template-columns: var(--touch-target) minmax(6rem, 10rem) 2.4rem;
+  align-items: center;
+  flex: 0 1 15rem;
+  width: min(15rem, 100%);
+  min-width: 11rem;
+  max-width: 15rem;
+  min-height: var(--touch-target);
+  gap: 0.3rem;
+  padding-right: 0.42rem;
+  border: 1px solid rgba(244, 234, 219, 0.1);
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.035);
+}
+
+[data-room-kind='score'] .scoreMasterVolume > span:not(.visuallyHidden) {
+  display: grid;
+  align-self: stretch;
+  place-items: center;
+}
+
+[data-room-kind='score'] .scoreMasterVolume input {
+  min-width: 0;
+  width: 100%;
+}
+
+[data-room-kind='score'] .scoreMasterVolume output {
+  color: rgba(244, 234, 219, 0.54);
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.timeRail [data-testid*='loop-marker'] > span {
+  color: #100c08;
+  font-size: 0.55rem;
+}
+
+@media (min-width: 721px) and (max-width: 1100px) {
+  [data-room-kind='score'] .transportDeck {
+    grid-template-areas:
+      'listening rail loop'
+      'controls controls controls';
+    grid-template-columns: auto minmax(12rem, 1fr) auto;
+  }
+
+  [data-room-kind='score'] .transportControls {
+    grid-template-columns: auto minmax(14rem, 1fr) auto;
+  }
+
+  [data-room-kind='score'] .scoreMasterVolume {
+    grid-template-columns: var(--touch-target) minmax(4.5rem, 1fr);
+    min-width: 8.5rem;
+    max-width: 11rem;
+    padding-right: 0.55rem;
+  }
+
+  [data-room-kind='score'] .scoreMasterVolume output {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  [data-room-kind='score'] .transportDeck {
+    grid-template-areas:
+      'rail rail'
+      'controls listening';
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.18rem 0.45rem;
+    padding-top: 0.22rem;
+  }
+
+  .scoreClockChip,
+  [data-room-kind='score'] .scoreRailLoop,
+  [data-room-kind='score'] .scoreMixStrip,
+  [data-room-kind='score'] .scoreUtilities {
+    display: none;
+  }
+
+  [data-room-kind='score'] .transportControls {
+    display: flex;
+    justify-content: flex-start;
+    width: auto;
+    gap: 0.3rem;
+  }
+
+  [data-room-kind='score'] .playControl {
+    width: 3.35rem;
+    height: 3.35rem;
+  }
+}
+
+@media (max-height: 540px) and (min-width: 560px) {
+  [data-room-kind='score'] .transportDeck {
+    grid-template-areas: 'controls rail listening';
+    grid-template-columns: auto minmax(7rem, 1fr) auto;
+    gap: 0.32rem;
+    padding-block: 0.12rem;
+  }
+
+  .scoreClockChip,
+  [data-room-kind='score'] .scoreRailLoop,
+  [data-room-kind='score'] .scoreMixStrip,
+  [data-room-kind='score'] .scoreUtilities {
+    display: none;
+  }
+
+  [data-room-kind='score'] .transportControls {
+    display: flex;
+    width: auto;
+    gap: 0.2rem;
+  }
+
+  [data-room-kind='score'] .timeRail > output:last-child {
+    display: none;
+  }
+
+  [data-room-kind='score'] .timeRail {
+    grid-template-columns: 2.15rem minmax(0, 1fr);
   }
 }

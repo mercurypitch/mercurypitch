@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GuitarTab3DView } from './GuitarTab3DView'
 import type { CameraState } from './renderer/camera'
 import { DEFAULT_CAMERA } from './renderer/camera'
-import type { TabPresentation } from './renderer/TabRenderer'
+import type { TabPresentation, TabSceneLoopSpan } from './renderer/TabRenderer'
 
 const renderer = vi.hoisted(() => ({
   mount: vi.fn(),
@@ -52,6 +52,47 @@ afterEach(() => {
 })
 
 describe('GuitarTab3DView keyboard camera', () => {
+  it('forwards loop context and repaints a paused view when it changes', () => {
+    const queuedFrames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      queuedFrames.push(callback)
+      return queuedFrames.length
+    })
+    const [loopSpan, setLoopSpan] = createSignal<TabSceneLoopSpan | null>({
+      startBeat: 2,
+      endBeat: 6,
+      active: false,
+    })
+    render(() => (
+      <GuitarTab3DView
+        fallingNotes={() => []}
+        playheadBeat={() => 0}
+        visibleBeatWindow={() => 8}
+        showNoteLabels={() => true}
+        showFretboard={() => true}
+        isActive={() => true}
+        showGizmo={() => false}
+        loopSpan={loopSpan}
+      />
+    ))
+
+    queuedFrames.shift()?.(performance.now())
+    expect(renderer.render.mock.calls.at(-1)?.[0].loopSpan).toEqual({
+      startBeat: 2,
+      endBeat: 6,
+      active: false,
+    })
+
+    setLoopSpan({ startBeat: 3, endBeat: 7, active: true })
+    expect(queuedFrames).toHaveLength(1)
+    queuedFrames.shift()?.(performance.now())
+    expect(renderer.render.mock.calls.at(-1)?.[0].loopSpan).toEqual({
+      startBeat: 3,
+      endBeat: 7,
+      active: true,
+    })
+  })
+
   it('repaints when the playhead changes without keeping a paused frame loop alive', () => {
     const queuedFrames: FrameRequestCallback[] = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {

@@ -1566,6 +1566,11 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
     shortLandscape.viewportWidth + 1,
   )
 
+  await room.getByLabel('Session controls').click()
+  await expect(room.getByRole('group', { name: 'Session tempo' })).toBeVisible()
+  await expect(room.getByLabel('Session rehearsal mix volume')).toBeVisible()
+  await room.getByLabel('Session controls').click()
+
   await room.getByRole('button', { name: 'Resume score', exact: true }).click()
   await expect(elapsed).not.toHaveText(pausedAt ?? '', { timeout: 2_500 })
   expect(
@@ -1577,9 +1582,133 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   ).toBe(1)
 })
 
+test('activates, edits, and clears an authored A B loop while playing with a real pointer @smoke', async ({
+  page,
+}) => {
+  const songId = `guitar-night-loop-${Date.now()}`
+  await instrumentAudioContext(page)
+  await seedAuthoredGuitarScore(page, songId)
+  await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
+    waitUntil: 'domcontentloaded',
+  })
+
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .click()
+
+  const room = page.getByTestId('guitar-night-score-room')
+  const deck = room.getByTestId('guitar-night-score-deck')
+  const seek = deck.getByRole('slider', {
+    name: 'Score position',
+    exact: true,
+  })
+  const elapsed = deck.getByLabel('Elapsed score time')
+  const loopControls = deck.getByRole('group', { name: 'Section loop' })
+  const countIn = deck.getByRole('button', {
+    name: /^Count-in .*Change count-in$/,
+  })
+
+  for (let step = 0; step < 4; step += 1) {
+    if ((await countIn.getAttribute('aria-label'))?.includes('4 beats')) break
+    await countIn.click()
+  }
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in 4 beats. Change count-in',
+  )
+
+  await room
+    .getByRole('button', { name: 'Start the count-in', exact: true })
+    .click()
+  await expect(
+    room.getByText('Click is running', { exact: true }),
+  ).toBeVisible()
+  await expect(elapsed).toHaveText('0:01')
+
+  await loopControls.getByRole('button', { name: 'A', exact: true }).click()
+  const markerA = deck.getByTestId('guitar-night-score-loop-marker-a')
+  await expect(markerA).toBeVisible()
+  const aBeat = Number(await markerA.getAttribute('aria-valuenow'))
+  expect(aBeat).toBeGreaterThanOrEqual(1)
+
+  await page.waitForTimeout(900)
+  const beforeB = Number(await seek.inputValue())
+  await loopControls.getByRole('button', { name: 'B', exact: true }).click()
+  const markerB = deck.getByTestId('guitar-night-score-loop-marker-b')
+  await expect(markerB).toBeVisible()
+  const firstBBeat = Number(await markerB.getAttribute('aria-valuenow'))
+  expect(firstBBeat).toBeGreaterThan(aBeat)
+
+  // The configured four-beat count-in remains a session preference, but
+  // completing B during playback relaunches the running loop at A with none.
+  await expect
+    .poll(async () => Number(await seek.inputValue()), { timeout: 750 })
+    .toBeLessThan(Math.min(beforeB - 0.25, aBeat * 0.5 + 0.65))
+  await expect(room.getByText('Click is running', { exact: true })).toBeVisible(
+    {
+      timeout: 750,
+    },
+  )
+  await expect(
+    room.getByRole('button', { name: 'Pause score', exact: true }),
+  ).toBeVisible()
+
+  await page.waitForTimeout(180)
+  await markerB.scrollIntoViewIfNeeded()
+  const markerBox = await markerB.boundingBox()
+  const seekBox = await seek.boundingBox()
+  expect(markerBox).not.toBeNull()
+  expect(seekBox).not.toBeNull()
+  const markerCenterX = (markerBox?.x ?? 0) + (markerBox?.width ?? 0) / 2
+  const markerCenterY = (markerBox?.y ?? 0) + (markerBox?.height ?? 0) / 2
+  const targetX = Math.min(
+    (seekBox?.x ?? 0) + (seekBox?.width ?? 0) - 12,
+    markerCenterX + ((seekBox?.width ?? 0) * 2) / 16,
+  )
+  await page.mouse.move(markerCenterX, markerCenterY)
+  await page.mouse.down()
+  await page.mouse.move(targetX, markerCenterY, { steps: 8 })
+  await page.mouse.up()
+
+  await expect
+    .poll(async () => Number(await markerB.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(firstBBeat)
+  const movedBBeat = Number(await markerB.getAttribute('aria-valuenow'))
+  await expect(room.getByText('Click is running', { exact: true })).toBeVisible(
+    {
+      timeout: 750,
+    },
+  )
+  await expect(
+    room.getByRole('button', { name: 'Pause score', exact: true }),
+  ).toBeVisible()
+  await expect(
+    room.getByRole('button', { name: 'Resume score', exact: true }),
+  ).toHaveCount(0)
+
+  await loopControls.getByRole('button', { name: 'Clear', exact: true }).click()
+  await expect(markerA).toHaveCount(0)
+  await expect(markerB).toHaveCount(0)
+  await expect(room.getByText('Click is running', { exact: true })).toBeVisible(
+    {
+      timeout: 750,
+    },
+  )
+  await expect(
+    room.getByRole('button', { name: 'Pause score', exact: true }),
+  ).toBeVisible()
+
+  // Crossing the former B proves Clear changed the active scheduler instead
+  // of leaving the old range folding invisibly behind the removed markers.
+  await expect
+    .poll(async () => Number(await seek.inputValue()), { timeout: 5_000 })
+    .toBeGreaterThan(movedBBeat * 0.5 + 0.1)
+})
+
 test('moves and widens the other-part preview without covering stage controls with a real pointer @smoke', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1_600, height: 900 })
   const songId = `guitar-night-secondary-${Date.now()}`
   await seedAuthoredGuitarScore(page, songId, true)
   await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
@@ -1631,7 +1760,7 @@ test('moves and widens the other-part preview without covering stage controls wi
   )
   await page.mouse.down()
   await page.mouse.move(
-    (liveResizeBox?.x ?? 0) + (liveResizeBox?.width ?? 0) / 2 + 120,
+    (liveResizeBox?.x ?? 0) + (liveResizeBox?.width ?? 0) / 2 + 1_000,
     (liveResizeBox?.y ?? 0) + (liveResizeBox?.height ?? 0) / 2,
     { steps: 8 },
   )
@@ -1639,6 +1768,56 @@ test('moves and widens the other-part preview without covering stage controls wi
   const widenedPanel = await panel.boundingBox()
   expect(widenedPanel?.width ?? 0).toBeGreaterThan(
     (movedPanel?.width ?? 0) + 80,
+  )
+  expect(widenedPanel?.width ?? 0).toBeGreaterThanOrEqual(559)
+
+  const headerFaceplates = room.locator(
+    'header > [data-guitar-night-secondary-protected]',
+  )
+  const guideFaceplate = headerFaceplates.first()
+  const toolFaceplate = headerFaceplates.last()
+  await expect(headerFaceplates).toHaveCount(2)
+  const guideBox = await guideFaceplate.boundingBox()
+  const toolBox = await toolFaceplate.boundingBox()
+  const widePanel = await panel.boundingBox()
+  const wideMoveBox = await moveHandle.boundingBox()
+  expect(guideBox).not.toBeNull()
+  expect(toolBox).not.toBeNull()
+  expect(widePanel).not.toBeNull()
+  expect(wideMoveBox).not.toBeNull()
+  expect(
+    (toolBox?.x ?? 0) - ((guideBox?.x ?? 0) + (guideBox?.width ?? 0)),
+  ).toBeGreaterThan((widePanel?.width ?? 0) + 20)
+
+  const desiredPanelX = (guideBox?.x ?? 0) + (guideBox?.width ?? 0) + 11
+  const desiredPanelY = guideBox?.y ?? 0
+  await page.mouse.move(
+    (wideMoveBox?.x ?? 0) + (wideMoveBox?.width ?? 0) / 2,
+    (wideMoveBox?.y ?? 0) + (wideMoveBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (wideMoveBox?.x ?? 0) +
+      (wideMoveBox?.width ?? 0) / 2 +
+      desiredPanelX -
+      (widePanel?.x ?? 0),
+    (wideMoveBox?.y ?? 0) +
+      (wideMoveBox?.height ?? 0) / 2 +
+      desiredPanelY -
+      (widePanel?.y ?? 0),
+    { steps: 8 },
+  )
+  await page.mouse.up()
+
+  const panelBesideGuide = await panel.boundingBox()
+  expect(panelBesideGuide?.x ?? 0).toBeGreaterThanOrEqual(
+    (guideBox?.x ?? 0) + (guideBox?.width ?? 0) + 9,
+  )
+  expect(
+    (panelBesideGuide?.x ?? 0) + (panelBesideGuide?.width ?? 0),
+  ).toBeLessThanOrEqual((toolBox?.x ?? 0) - 9)
+  expect(panelBesideGuide?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(
+    (guideBox?.y ?? 0) + (guideBox?.height ?? 0),
   )
 
   const storedLayout = await page.evaluate(() =>
@@ -1671,6 +1850,7 @@ test('moves and widens the other-part preview without covering stage controls wi
     .evaluateAll((elements) =>
       elements
         .filter((element) => {
+          if (element.closest('details:not([open])') !== null) return false
           const style = getComputedStyle(element)
           return style.display !== 'none' && style.visibility !== 'hidden'
         })

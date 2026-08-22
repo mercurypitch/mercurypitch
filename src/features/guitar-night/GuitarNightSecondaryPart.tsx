@@ -100,6 +100,20 @@ function mediaMatches(query: string): boolean {
   )
 }
 
+function isHiddenByClosedDisclosure(element: Element): boolean {
+  let ancestor = element.parentElement
+  while (ancestor !== null) {
+    if (ancestor.tagName === 'DETAILS' && !ancestor.hasAttribute('open')) {
+      const summary = Array.from(ancestor.children).find(
+        (child) => child.tagName === 'SUMMARY',
+      )
+      if (summary === undefined || !summary.contains(element)) return true
+    }
+    ancestor = ancestor.parentElement
+  }
+  return false
+}
+
 function sameLayout(
   left: SecondaryPartLayout,
   right: SecondaryPartLayout,
@@ -238,6 +252,10 @@ export const GuitarNightSecondaryPart: Component<
         ) {
           return false
         }
+        // Absolutely positioned disclosure content can retain a measurable
+        // rectangle while its <details> ancestor is closed. It is not painted
+        // and must not become a ghost obstacle for the floating preview.
+        if (isHiddenByClosedDisclosure(element)) return false
         if (typeof window === 'undefined') return true
         const style = window.getComputedStyle(element)
         return style.display !== 'none' && style.visibility !== 'hidden'
@@ -736,25 +754,6 @@ export const GuitarNightSecondaryPart: Component<
       data-collapsed={narrowViewport() && collapsed() ? 'true' : 'false'}
     >
       <div class={styles.chrome}>
-        <Show when={narrowViewport()}>
-          <button
-            type="button"
-            class={styles.collapse}
-            aria-expanded={!collapsed()}
-            aria-controls="guitar-night-secondary-part-body"
-            aria-label={
-              collapsed()
-                ? `Expand ${props.lane().trackName} preview`
-                : `Collapse ${props.lane().trackName} preview`
-            }
-            title={collapsed() ? 'Show the tab preview' : 'Make more room'}
-            onClick={toggleCollapsed}
-          >
-            <Show when={collapsed()} fallback={<ChevronDown size={16} />}>
-              <ChevronUp />
-            </Show>
-          </button>
-        </Show>
         <button
           ref={moveHandle}
           type="button"
@@ -776,6 +775,25 @@ export const GuitarNightSecondaryPart: Component<
           <GripVertical />
           <strong>{props.lane().trackName}</strong>
         </button>
+        <Show when={narrowViewport()}>
+          <button
+            type="button"
+            class={styles.collapse}
+            aria-expanded={!collapsed()}
+            aria-controls="guitar-night-secondary-part-body"
+            aria-label={
+              collapsed()
+                ? `Expand ${props.lane().trackName} preview`
+                : `Collapse ${props.lane().trackName} preview`
+            }
+            title={collapsed() ? 'Show the tab preview' : 'Make more room'}
+            onClick={toggleCollapsed}
+          >
+            <Show when={collapsed()} fallback={<ChevronDown size={16} />}>
+              <ChevronUp />
+            </Show>
+          </button>
+        </Show>
         <button
           type="button"
           class={styles.reset}
