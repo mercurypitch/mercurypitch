@@ -6,17 +6,21 @@
 // evidence-bounded live score; phrase diagnosis remains a separate Review.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Ear, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Volume2, } from '@/components/icons'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { ChevronLeft, Ear, Metronome, Mic, MusicNote, Pause, Play, RotateCcw, SlidersHorizontal, Square, Trophy, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarRoomBandNote } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
+import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
+import type { GuitarScoreTakeSummary } from '@/lib/guitar/guitar-score-history'
+import { loadGuitarScoreHistory, saveGuitarScoreTake, summarizeGuitarScoreTake, } from '@/lib/guitar/guitar-score-history'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
+import { createGuitarNightScoreVoiceCommands, GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES, } from './guitar-night-score-voice-commands'
 import { guitarPhraseDoctorView, retainedTakeHealth, } from './guitar-phrase-doctor-view'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputError } from './GuitarNightInputError'
@@ -26,6 +30,7 @@ import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLiveScore } from './GuitarNightLiveScore'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
+import { GuitarNightScoreSheet } from './GuitarNightScoreSheet'
 import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
@@ -34,7 +39,7 @@ import type { SheetLane } from './sheet/sheet-model'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightLiveScoreController } from './useGuitarNightLiveScoreController'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
-import type { GuitarNightScoreAssessmentBoundary } from './useGuitarNightScoreRoomController'
+import type { GuitarNightScoreAssessmentBoundary, GuitarNightScoreRoomStatus, } from './useGuitarNightScoreRoomController'
 import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
@@ -64,7 +69,11 @@ interface GuitarNightScoreRoomProps {
   defaultHearScore?: Accessor<boolean>
   /** Parts currently playing under the player, for the panel's controls. */
   audibleBackingTrackIds?: Accessor<readonly string[]>
+  /** Explicit M state, independent from the temporary Solo audition. */
+  mutedBackingTrackIds?: Accessor<readonly string[]>
   onToggleBackingTrack?(trackId: string): void
+  soloedBackingTrackId?: Accessor<string | null>
+  onToggleSoloBackingTrack?(trackId: string): void
   /** Parts currently on the sheet, for the panel's show and hide controls. */
   sheetVisibleTrackIds?: Accessor<readonly string[]>
   onToggleSheetTrack?(trackId: string): void
@@ -93,7 +102,21 @@ function compactBeatLength(beats: number): string {
   return `${value} ${beats === 1 ? 'beat' : 'beats'}`
 }
 
-const COUNT_IN_CHOICES = [0, 2, 4, 8]
+function formatCountInChoice(beats: number): string {
+  if (beats === 0) return 'Off'
+  return `${beats} ${beats === 1 ? 'beat' : 'beats'}`
+}
+
+export function nextScoreCountIn(current: number): number {
+  const index = GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES.findIndex(
+    (choice) => choice === current,
+  )
+  return (
+    GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES[
+      index < 0 ? 0 : (index + 1) % GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES.length
+    ] ?? 0
+  )
+}
 
 /** Whether the marks on screen differ from the loop already in the scheduler. */
 export function scoreLoopPendingRestart(
@@ -107,6 +130,25 @@ export function scoreLoopPendingRestart(
   if (scheduledMarks === null) return true
   return (
     running.start !== scheduledMarks.start || running.end !== scheduledMarks.end
+  )
+}
+
+/** Keep result actions parked while the recorder attaches its final pitch. */
+export function scoreResultIsSettling(
+  roomStatus: GuitarNightScoreRoomStatus,
+  captureActive: boolean,
+): boolean {
+  return captureActive && roomStatus === 'complete'
+}
+
+/** Voice Play/Pause must treat async audio startup as active transport. */
+export function scoreVoiceTransportIsPlaying(
+  roomStatus: GuitarNightScoreRoomStatus,
+): boolean {
+  return (
+    roomStatus === 'starting' ||
+    roomStatus === 'count-in' ||
+    roomStatus === 'playing'
   )
 }
 
@@ -166,11 +208,19 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   let sessionSummary!: HTMLElement
   let doctorTrigger: HTMLButtonElement | undefined
   let tunerTrigger: HTMLButtonElement | undefined
+  let scoreTrigger: HTMLButtonElement | undefined
   let disposed = false
   const [sessionPanelOpen, setSessionPanelOpen] = createSignal(false)
   const [doctorOpen, setDoctorOpen] = createSignal(false)
   const [tunerOpen, setTunerOpen] = createSignal(false)
+  const [scoreOpen, setScoreOpen] = createSignal(false)
+  const [currentScoreSummary, setCurrentScoreSummary] =
+    createSignal<GuitarScoreTakeSummary | null>(null)
+  const [scoreHistory, setScoreHistory] = createSignal<
+    readonly GuitarScoreTakeSummary[]
+  >([])
   const [doctorRecoveryActive, setDoctorRecoveryActive] = createSignal(false)
+  const [scoreReplayPending, setScoreReplayPending] = createSignal(false)
   const [assessmentPending, setAssessmentPending] = createSignal(false)
   const [assessmentComparison, setAssessmentComparison] = createSignal<string>()
   const [assessmentBoundary, setAssessmentBoundary] =
@@ -194,6 +244,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     loop: loop.span,
     instrument: () => props.tuning?.().instrument ?? 'guitar',
     backingMelody: () => props.backingMelody?.() ?? [],
+    audibleBackingTrackIds: () => props.audibleBackingTrackIds?.() ?? [],
     defaultHearScore: () => props.defaultHearScore?.() ?? true,
   })
   const displayedReference = createMemo(
@@ -285,6 +336,53 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     )
   })
   const scoredCaptureActive = createMemo(() => liveScore.captureActive())
+  let savedScoreRunId: string | null = null
+  createEffect(() => {
+    const display = liveScore.display()
+    const boundary = liveScore.boundary()
+    const startedAt = liveScore.startedAt()
+    const inputKind = liveScore.inputKind()
+    if (
+      display === null ||
+      boundary === null ||
+      startedAt === null ||
+      inputKind === null
+    ) {
+      return
+    }
+    const status =
+      display.phase === 'completed'
+        ? 'completed'
+        : liveScore.state() === 'paused'
+          ? 'partial'
+          : null
+    if (status === null) return
+    const summary = summarizeGuitarScoreTake(
+      display,
+      {
+        pieceLabel: boundary.reference.title,
+        trackLabel: boundary.reference.trackName,
+        range: {
+          startBeat: boundary.range.start,
+          endBeat: boundary.range.end,
+        },
+        inputKind,
+        status,
+      },
+      startedAt,
+    )
+    if (summary === null) return
+    setCurrentScoreSummary(summary)
+    if (status !== 'completed' || savedScoreRunId === boundary.id) return
+    savedScoreRunId = boundary.id
+    try {
+      if (saveGuitarScoreTake(globalThis.localStorage, summary) !== null) {
+        setScoreHistory(loadGuitarScoreHistory(globalThis.localStorage))
+      }
+    } catch {
+      // The in-memory result remains useful when device storage is unavailable.
+    }
+  })
   let savedReviewTakeId: string | null = null
   createEffect(() => {
     const review = phraseReview()
@@ -330,6 +428,50 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     scoreLoopPendingRestart(loop.span(), room.runningLoop(), takeIsActive()),
   )
   const isCalibrating = createMemo(() => listening.status() === 'calibrating')
+  const inputTransitionPending = createMemo(
+    () =>
+      listening.status() === 'requesting' ||
+      isCalibrating() ||
+      listening.inputTakeoverPending(),
+  )
+  const scoreResultSettling = createMemo(() =>
+    scoreResultIsSettling(room.status(), scoredCaptureActive()),
+  )
+  const toolTransitionPending = createMemo(
+    () =>
+      assessmentPending() ||
+      liveScore.starting() ||
+      scoreReplayPending() ||
+      doctorRecoveryActive() ||
+      inputTransitionPending() ||
+      scoreResultSettling(),
+  )
+
+  const scoreReplay = createMemo(() => {
+    const summary = currentScoreSummary()
+    const boundary = liveScore.boundary()
+    const current = props.reference()
+    if (
+      summary === null ||
+      boundary === null ||
+      boundary.reference.songId !== current.songId ||
+      boundary.reference.trackId !== current.trackId ||
+      summary.range.startBeat !== boundary.range.start ||
+      summary.range.endBeat !== boundary.range.end
+    ) {
+      return null
+    }
+    return {
+      summary,
+      inputKind: summary.inputKind,
+      referenceId: boundary.reference.songId,
+      trackId: boundary.reference.trackId,
+      range: {
+        start: boundary.range.start,
+        end: boundary.range.end,
+      } satisfies LoopSpan,
+    }
+  })
   const isListening = createMemo(
     () =>
       listening.status() === 'listening' ||
@@ -337,6 +479,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       isCalibrating(),
   )
   const playbackLabel = createMemo(() => {
+    if (scoreReplayPending()) return 'Opening input for replay'
+    if (scoreResultSettling()) return 'Finishing the live score'
     if (room.status() === 'starting') return 'Opening the room clock'
     if (isRunning()) return 'Pause score'
     if (room.status() === 'paused') {
@@ -358,6 +502,12 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   let scrubbing = false
   let resumeAfterScrub = false
   let keyboardScrubbing = false
+  let scoreReplayGeneration = 0
+
+  const invalidateScoreReplay = (): void => {
+    scoreReplayGeneration += 1
+    setScoreReplayPending(false)
+  }
 
   const stage: GuitarPerformanceStageSource = {
     title: () => displayedReference().title,
@@ -374,7 +524,16 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     requestedRange: LoopSpan | null = selectedAssessmentRange(),
   ): Promise<boolean> => {
     const range = requestedRange
-    if (range === null || assessmentPending() || isCalibrating()) return false
+    if (
+      range === null ||
+      assessmentPending() ||
+      isCalibrating() ||
+      listening.status() === 'requesting' ||
+      listening.inputTakeoverPending() ||
+      scoreReplayPending()
+    ) {
+      return false
+    }
 
     setAssessmentPending(true)
     liveScore.clear()
@@ -439,23 +598,124 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     return true
   }
 
+  /** End evidence honestly, then leave the playhead where configuration began. */
+  const parkForConfiguration = (): void => {
+    if (assessmentCaptureActive()) listening.stop()
+    if (scoredCaptureActive()) {
+      liveScore.hold()
+      listening.stop()
+    }
+    room.parkForConfiguration()
+  }
+
   const toggleListening = (): void => {
     if (isListening()) {
       const scoring = scoredCaptureActive()
       if (scoring) liveScore.hold()
       if (assessmentCaptureActive() || scoring) room.pause()
       listening.stop()
+      room.parkForConfiguration()
       return
     }
     // The score voice is pitched audio. Letting the microphone listen to it
     // would make the room appear to hear the player when it heard itself.
-    if (takeIsActive() || room.status() === 'complete') room.stop()
+    parkForConfiguration()
     liveScore.clear()
     void listening.start()
   }
 
+  const stopRehearsal = (): void => {
+    const replayWasPending = scoreReplayPending()
+    invalidateScoreReplay()
+    if (replayWasPending) listening.cancel()
+    if (assessmentCaptureActive()) listening.stop()
+    if (scoredCaptureActive()) {
+      liveScore.hold()
+      listening.stop()
+    }
+    room.stop()
+  }
+
+  const goToBeginning = (): void => {
+    parkForConfiguration()
+    room.seekSeconds(0)
+  }
+
+  const cycleCountIn = (): void => {
+    room.setCountInBeats(nextScoreCountIn(room.configuredCountInBeats()))
+  }
+
+  const selectScoredTrack = (trackId: string): void => {
+    if (trackId === displayedReference().trackId) return
+    parkForConfiguration()
+    props.onSelectTrack?.(trackId)
+  }
+
+  const hasScoreToShow = createMemo(
+    () => scoreReplay() !== null || scoreHistory().length > 0,
+  )
+
+  const openScore = (allowEmpty = true): boolean => {
+    if (toolTransitionPending()) return false
+    if (!allowEmpty && !hasScoreToShow() && !scoredCaptureActive()) return false
+    parkForConfiguration()
+    setDoctorOpen(false)
+    setTunerOpen(false)
+    setSessionPanelOpen(false)
+    if (sessionDetails !== undefined) sessionDetails.open = false
+    setScoreOpen(true)
+    return true
+  }
+
+  const playScoreAgain = async (): Promise<void> => {
+    const replay = scoreReplay()
+    if (replay === null) return
+    const operation = ++scoreReplayGeneration
+    const stillCurrent = (): boolean =>
+      operation === scoreReplayGeneration &&
+      !disposed &&
+      props.suspended?.() !== true &&
+      props.reference().songId === replay.referenceId &&
+      props.reference().trackId === replay.trackId
+    setScoreReplayPending(true)
+    setScoreOpen(false)
+    parkForConfiguration()
+    try {
+      if (listening.inputProfile() !== replay.inputKind) {
+        await listening.selectInputProfile(replay.inputKind)
+        if (!stillCurrent()) return
+      }
+      const inputReady =
+        listening.status() === 'listening' || (await listening.start())
+      if (!inputReady || !stillCurrent()) return
+      await liveScore.start(replay.range)
+    } finally {
+      if (operation === scoreReplayGeneration) {
+        setScoreReplayPending(false)
+      }
+    }
+  }
+
+  const reviewFromScore = (): void => {
+    setScoreOpen(false)
+    if (doctorView() !== null) {
+      setDoctorRecoveryActive(false)
+      setDoctorOpen(true)
+      return
+    }
+    void beginAssessment()
+  }
+
   const togglePlayback = (): void => {
-    if (isCalibrating()) return
+    if (
+      scoreReplayPending() ||
+      assessmentPending() ||
+      liveScore.starting() ||
+      doctorRecoveryActive() ||
+      inputTransitionPending()
+    ) {
+      return
+    }
     if (assessmentCaptureActive()) {
       const transportWasActive =
         room.status() === 'starting' ||
@@ -558,15 +818,35 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       if (review.recovery.kind === 'calibrate') {
         const opened =
           listening.status() === 'listening' || (await listening.start())
-        if (!opened || disposed) {
-          if (!disposed) setDoctorOpen(true)
+        if (
+          !opened ||
+          disposed ||
+          props.suspended?.() === true ||
+          !doctorRecoveryActive()
+        ) {
+          if (
+            !disposed &&
+            props.suspended?.() !== true &&
+            doctorRecoveryActive()
+          ) {
+            setDoctorOpen(true)
+          }
           return
         }
         if (!(await listening.calibrate())) {
           listening.cancel({ preserveNotice: true })
-          if (!disposed) setDoctorOpen(true)
+          if (
+            !disposed &&
+            props.suspended?.() !== true &&
+            doctorRecoveryActive()
+          ) {
+            setDoctorOpen(true)
+          }
           return
         }
+      }
+      if (disposed || props.suspended?.() === true || !doctorRecoveryActive()) {
+        return
       }
       await beginAssessment(range)
     } finally {
@@ -584,14 +864,16 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
 
   const openTuner = (): void => {
     if (
-      assessmentPending() ||
-      liveScore.starting() ||
+      toolTransitionPending() ||
       assessmentCaptureActive() ||
       scoredCaptureActive()
     ) {
       return
     }
+    parkForConfiguration()
     setDoctorOpen(false)
+    setScoreOpen(false)
+    setSessionPanelOpen(false)
     setTunerOpen(true)
   }
 
@@ -636,18 +918,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   }
 
   const changeInstrument = (instrument: StringedInstrument): void => {
-    if (takeIsActive()) return
-    if (room.status() === 'complete') room.stop()
+    parkForConfiguration()
     props.onInstrument?.(instrument)
   }
 
   const changeStringCount = (count: number): void => {
-    if (takeIsActive()) return
-    if (room.status() === 'complete') room.stop()
+    parkForConfiguration()
     props.onStringCount?.(count)
   }
 
   const leaveRoom = (): void => {
+    invalidateScoreReplay()
     tuner.close()
     liveScore.clear()
     listening.stop()
@@ -655,11 +936,73 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     props.onSongs()
   }
 
+  const voiceCommands = createGuitarNightScoreVoiceCommands({
+    playing: () => scoreVoiceTransportIsPlaying(room.status()),
+    paused: () => room.status() === 'paused',
+    canStop: () => room.status() !== 'quiet',
+    play: togglePlayback,
+    pause: togglePlayback,
+    stop: stopRehearsal,
+    goToBeginning,
+    loop: {
+      hasA: () => loop.markA() !== null,
+      hasB: () => loop.markB() !== null,
+      markA: () => loop.markStart(room.playheadBeat() ?? 0),
+      markB: () => loop.markEnd(room.playheadBeat() ?? scoreBeats()),
+      clear: loop.clear,
+    },
+    click: {
+      enabled: room.hearClick,
+      setEnabled: room.setHearClick,
+    },
+    countIn: {
+      beats: room.configuredCountInBeats,
+      setBeats: room.setCountInBeats,
+    },
+    tabSound: {
+      enabled: room.hearScore,
+      setEnabled: room.setHearScore,
+    },
+    listening: {
+      active: isListening,
+      blockedReason: () =>
+        isCalibrating()
+          ? 'Input calibration is in progress'
+          : listening.inputTakeoverPending()
+            ? 'Input is switching rooms'
+            : null,
+      requestStart: () => {
+        toggleListening()
+        return true
+      },
+      stop: toggleListening,
+    },
+    score: {
+      open: scoreOpen,
+      show: () => openScore(false),
+    },
+    available: () =>
+      props.suspended?.() !== true &&
+      !toolTransitionPending() &&
+      !doctorOpen() &&
+      !tunerOpen() &&
+      !scoreOpen() &&
+      !sessionPanelOpen(),
+  })
+  onCleanup(registerVoiceCommands(() => voiceCommands))
+  // The shared transport registry polls this accessor outside Solid tracking.
+  // eslint-disable-next-line solid/reactivity
+  onCleanup(registerMusicPlayingSource(() => isRunning()))
+
   createEffect(() => {
     if (props.suspended?.() !== true) return
     setDoctorOpen(false)
     setDoctorRecoveryActive(false)
+    invalidateScoreReplay()
     setTunerOpen(false)
+    setScoreOpen(false)
+    setSessionPanelOpen(false)
+    if (sessionDetails !== undefined) sessionDetails.open = false
     tuner.close()
     if (scoredCaptureActive()) liveScore.hold()
     listening.stop()
@@ -671,13 +1014,22 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   })
 
   onMount(() => {
+    try {
+      setScoreHistory(loadGuitarScoreHistory(globalThis.localStorage))
+    } catch {
+      setScoreHistory([])
+    }
     roomHeading.focus({ preventScroll: true })
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
         ownsSpace: () =>
-          props.suspended?.() !== true && !doctorOpen() && !tunerOpen(),
-        enabled: () => room.status() !== 'starting' && !isCalibrating(),
+          props.suspended?.() !== true &&
+          !doctorOpen() &&
+          !tunerOpen() &&
+          !scoreOpen() &&
+          !sessionPanelOpen(),
+        enabled: () => room.status() !== 'starting' && !toolTransitionPending(),
       }),
     )
   })
@@ -707,6 +1059,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             class={styles.roomIdentityTrigger}
             aria-haspopup="dialog"
             aria-expanded={sessionPanelOpen()}
+            disabled={toolTransitionPending()}
             data-testid="guitar-night-session-trigger"
             onClick={() => setSessionPanelOpen(true)}
           >
@@ -732,13 +1085,28 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
             <button
+              ref={scoreTrigger}
+              type="button"
+              aria-haspopup="dialog"
+              aria-label="Open score"
+              title={
+                scoreResultSettling() ? 'Finishing the live score' : 'Score'
+              }
+              disabled={toolTransitionPending()}
+              onClick={() => openScore()}
+            >
+              <span aria-hidden="true">
+                <Trophy />
+              </span>
+              <strong>Score</strong>
+            </button>
+            <button
               ref={tunerTrigger}
               type="button"
               aria-haspopup="dialog"
               aria-label="Tune guitar"
               disabled={
-                assessmentPending() ||
-                liveScore.starting() ||
+                toolTransitionPending() ||
                 assessmentCaptureActive() ||
                 scoredCaptureActive()
               }
@@ -780,9 +1148,11 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   <div>
                     <strong>Session</strong>
                     <small>
-                      {takeIsActive()
-                        ? 'Sound settings are held until this take stops.'
-                        : 'Set up the next count-in.'}
+                      {isRunning()
+                        ? 'Mix controls stay live. Tempo or input parks at this beat.'
+                        : room.status() === 'paused'
+                          ? 'Change anything. The next count-in starts here.'
+                          : 'Set up the next count-in.'}
                     </small>
                   </div>
                 </header>
@@ -798,19 +1168,23 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   evidenceExportEnabled={listening.evidenceExportEnabled}
                   canExportEvidence={listening.canExportEvidence}
                   switching={() =>
-                    takeIsActive() ||
                     listening.status() === 'requesting' ||
                     listening.status() === 'calibrating' ||
                     listening.inputTakeoverPending() ||
                     listening.midiConnectionStatus() === 'requesting'
                   }
-                  onProfile={(kind) => void listening.selectInputProfile(kind)}
-                  onAudioInput={(deviceId) =>
+                  onProfile={(kind) => {
+                    parkForConfiguration()
+                    void listening.selectInputProfile(kind)
+                  }}
+                  onAudioInput={(deviceId) => {
+                    parkForConfiguration()
                     void listening.selectAudioInput(deviceId)
-                  }
-                  onMidiInput={(deviceId) =>
+                  }}
+                  onMidiInput={(deviceId) => {
+                    parkForConfiguration()
                     void listening.selectMidiInput(deviceId)
-                  }
+                  }}
                   onRefreshAudio={() => void listening.refreshAudioInputs()}
                   onRefreshMidi={() => void listening.refreshMidiInputs()}
                   onExportEvidence={listening.exportEvidenceReport}
@@ -822,7 +1196,6 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   class={styles.sessionListening}
                   classList={{ [styles.listeningActive]: isListening() }}
                   aria-pressed={isListening()}
-                  disabled={takeIsActive()}
                   aria-label={
                     listening.status() === 'requesting'
                       ? 'Cancel opening input'
@@ -863,8 +1236,11 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                     health={listening.health}
                     timingSource={listening.timingSource}
                     latencyMs={listening.latencyMs}
-                    locked={takeIsActive}
-                    onCalibrate={() => void listening.calibrate()}
+                    locked={isRunning}
+                    onCalibrate={() => {
+                      parkForConfiguration()
+                      void listening.calibrate()
+                    }}
                   />
                 </Show>
 
@@ -895,33 +1271,27 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                 </button>
 
                 <div class={styles.scoreSessionSettings}>
-                  <label class={styles.countInSelect}>
+                  <button
+                    type="button"
+                    class={styles.countInCycle}
+                    aria-label={`Count-in ${formatCountInChoice(room.configuredCountInBeats())}. Change count-in`}
+                    title="Change count-in: Off, 1, 2, or 4 beats"
+                    onClick={cycleCountIn}
+                  >
                     <span aria-hidden="true">
                       <Ear />
                     </span>
-                    <strong>Count-in</strong>
-                    <select
-                      aria-label="Count-in beats"
-                      value={room.countInBeats()}
-                      disabled={takeIsActive()}
-                      onChange={(event) =>
-                        room.setCountInBeats(Number(event.currentTarget.value))
-                      }
-                    >
-                      <For each={COUNT_IN_CHOICES}>
-                        {(beats) => (
-                          <option value={beats}>
-                            {beats === 0 ? 'None' : `${beats} beats`}
-                          </option>
-                        )}
-                      </For>
-                    </select>
-                  </label>
+                    <span>
+                      <strong>Count-in</strong>
+                      <small>
+                        {formatCountInChoice(room.configuredCountInBeats())}
+                      </small>
+                    </span>
+                  </button>
                   <button
                     type="button"
                     class={styles.hearScoreToggle}
                     aria-pressed={room.hearScore()}
-                    disabled={takeIsActive()}
                     classList={{ [styles.hearScoreActive]: room.hearScore() }}
                     onClick={() => room.setHearScore((hearing) => !hearing)}
                   >
@@ -1016,10 +1386,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         {...(props.onSelectTrack === undefined
           ? {}
           : {
-              onSelectTrack: (trackId: string) => {
-                room.stop()
-                props.onSelectTrack?.(trackId)
-              },
+              onSelectTrack: selectScoredTrack,
             })}
         onInstrument={
           props.onInstrument === undefined ? undefined : changeInstrument
@@ -1027,7 +1394,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         onStringCount={
           props.onStringCount === undefined ? undefined : changeStringCount
         }
-        instrumentSetupDisabled={takeIsActive}
+        instrumentSetupDisabled={() => isRunning()}
         guideLabel={() =>
           displayedReference().tracks.length > 1
             ? `${displayedReference().title} · ${displayedReference().trackName}`
@@ -1123,15 +1490,21 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           {...(props.audibleBackingTrackIds === undefined
             ? {}
             : { audibleTrackIds: props.audibleBackingTrackIds })}
+          {...(props.mutedBackingTrackIds === undefined
+            ? {}
+            : { mutedTrackIds: props.mutedBackingTrackIds })}
           {...(props.onToggleBackingTrack === undefined
             ? {}
             : { onToggleTrackAudible: props.onToggleBackingTrack })}
+          {...(props.soloedBackingTrackId === undefined
+            ? {}
+            : { soloedTrackId: props.soloedBackingTrackId })}
+          {...(props.onToggleSoloBackingTrack === undefined
+            ? {}
+            : { onToggleTrackSolo: props.onToggleSoloBackingTrack })}
           scoredPartSounds={room.hearScore}
           onSelectTrack={(trackId) => {
-            // A rehearsal take is not a recording, so reading a different part
-            // ends it rather than being swallowed by its pinned snapshot.
-            room.stop()
-            props.onSelectTrack?.(trackId)
+            selectScoredTrack(trackId)
             setSessionPanelOpen(false)
           }}
           onClose={() => {
@@ -1152,13 +1525,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           <span>
             {assessmentCaptureActive()
               ? 'Phrase review · count-in audible, rehearsal range silent'
-              : scoredCaptureActive() || liveScore.starting()
-                ? listening.inputProfile() === 'midi'
-                  ? 'Live score · MIDI guide follows the authored notes'
-                  : 'Live score · count-in audible, scored range silent'
-                : loopPendingRestart()
-                  ? 'Session changes are ready for the next count-in.'
-                  : 'Authored score clock · no recording attached'}
+              : scoreReplayPending()
+                ? 'Live score · opening your saved input route'
+                : scoreResultSettling()
+                  ? 'Live score · settling the final note'
+                  : scoredCaptureActive() || liveScore.starting()
+                    ? listening.inputProfile() === 'midi'
+                      ? 'Live score · MIDI guide follows the authored notes'
+                      : 'Live score · count-in audible, scored range silent'
+                    : loopPendingRestart()
+                      ? 'Session changes are ready for the next count-in.'
+                      : 'Authored score clock · no recording attached'}
           </span>
         </div>
         <div class={styles.timeRail}>
@@ -1171,6 +1548,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             max={room.durationSeconds() > 0 ? room.durationSeconds() : 1}
             step={Math.max(0.05, 15 / room.tempoBpm())}
             value={room.displayPositionSeconds()}
+            disabled={toolTransitionPending()}
             aria-label="Score position"
             aria-valuetext={`${formatTime(room.displayPositionSeconds())} of ${formatTime(room.durationSeconds())} · ${formatBeat(room.playheadBeat() ?? 0)}`}
             onPointerDown={() => {
@@ -1195,26 +1573,31 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           </output>
         </div>
 
-        <div class={styles.transportControls}>
+        <div
+          class={styles.transportControls}
+          data-testid="guitar-night-score-transport-controls"
+        >
           <button
             class={styles.playControl}
             type="button"
             aria-label={playbackLabel()}
             title={playbackLabel()}
-            disabled={room.status() === 'starting' || isCalibrating()}
+            disabled={room.status() === 'starting' || toolTransitionPending()}
             onClick={togglePlayback}
           >
             <span aria-hidden="true">{isRunning() ? <Pause /> : <Play />}</span>
           </button>
           {/* Without this the room had only Play and Pause, so the first take
               pinned its setup for good: no tempo, no listening, no click. */}
-          <Show when={room.setupLocked()}>
+          <Show when={room.setupLocked() || scoreReplayPending()}>
             <button
               class={styles.stopControl}
               type="button"
-              aria-label="End the take"
-              title="End the take"
-              onClick={() => room.stop()}
+              aria-label={
+                scoreReplayPending() ? 'Cancel replay' : 'End the take'
+              }
+              title={scoreReplayPending() ? 'Cancel replay' : 'End the take'}
+              onClick={stopRehearsal}
             >
               <span aria-hidden="true">
                 <Square />
@@ -1226,9 +1609,14 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               type="button"
               aria-label={`Slow down from ${room.tempoBpm()} BPM`}
               disabled={
-                takeIsActive() || room.tempoBpm() <= SCORE_ROOM_MIN_TEMPO
+                room.status() === 'starting' ||
+                toolTransitionPending() ||
+                room.tempoBpm() <= SCORE_ROOM_MIN_TEMPO
               }
-              onClick={() => room.setTempoBpm(room.tempoBpm() - 4)}
+              onClick={() => {
+                parkForConfiguration()
+                room.setTempoBpm(room.tempoBpm() - 4)
+              }}
             >
               <span aria-hidden="true">−</span>
             </button>
@@ -1240,13 +1628,92 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               type="button"
               aria-label={`Speed up from ${room.tempoBpm()} BPM`}
               disabled={
-                takeIsActive() || room.tempoBpm() >= SCORE_ROOM_MAX_TEMPO
+                room.status() === 'starting' ||
+                toolTransitionPending() ||
+                room.tempoBpm() >= SCORE_ROOM_MAX_TEMPO
               }
-              onClick={() => room.setTempoBpm(room.tempoBpm() + 4)}
+              onClick={() => {
+                parkForConfiguration()
+                room.setTempoBpm(room.tempoBpm() + 4)
+              }}
             >
               <span aria-hidden="true">+</span>
             </button>
           </div>
+          <label class={`${styles.masterVolume} ${styles.scoreMasterVolume}`}>
+            <span aria-hidden="true">
+              <Volume2 />
+            </span>
+            <span class={styles.visuallyHidden}>Rehearsal mix volume</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={room.masterVolume()}
+              aria-label="Rehearsal mix volume"
+              aria-valuetext={`${Math.round(room.masterVolume() * 100)}%`}
+              onInput={(event) =>
+                room.setMasterVolume(Number(event.currentTarget.value))
+              }
+            />
+          </label>
+          <div class={styles.scoreRailLoop}>
+            <GuitarNightLoopControls
+              span={loop.span()}
+              pending={loop.isPending()}
+              hasStart={loop.markA() !== null}
+              hasEnd={loop.markB() !== null}
+              format={formatBeat}
+              onMarkStart={() => loop.markStart(room.playheadBeat() ?? 0)}
+              onMarkEnd={() =>
+                loop.markEnd(room.playheadBeat() ?? scoreBeats())
+              }
+              onClear={loop.clear}
+            />
+          </div>
+          <button
+            type="button"
+            class={styles.scoreRailToggle}
+            classList={{ [styles.scoreRailToggleActive]: room.hearClick() }}
+            aria-pressed={room.hearClick()}
+            aria-label={room.hearClick() ? 'Turn click off' : 'Turn click on'}
+            title={room.hearClick() ? 'Click on' : 'Click off'}
+            onClick={() => room.setHearClick((ticking) => !ticking)}
+          >
+            <span aria-hidden="true">
+              <Metronome />
+            </span>
+            <small>Click</small>
+          </button>
+          <button
+            type="button"
+            class={styles.scoreRailToggle}
+            aria-label={`Count-in ${formatCountInChoice(room.configuredCountInBeats())}. Change count-in`}
+            title="Cycle count-in"
+            onClick={cycleCountIn}
+          >
+            <span aria-hidden="true">
+              <Ear />
+            </span>
+            <small>{formatCountInChoice(room.configuredCountInBeats())}</small>
+          </button>
+          <button
+            type="button"
+            class={styles.scoreRailToggle}
+            classList={{ [styles.scoreRailToggleActive]: room.hearScore() }}
+            aria-pressed={room.hearScore()}
+            aria-label={room.hearScore() ? 'Make tab silent' : 'Hear tab'}
+            title={room.hearScore() ? 'Tab sounds' : 'Tab silent'}
+            onClick={() => room.setHearScore((hearing) => !hearing)}
+          >
+            <span aria-hidden="true">
+              <Show when={room.hearScore()} fallback={<VolumeX />}>
+                <Volume2 />
+              </Show>
+            </span>
+            <small>Tab</small>
+          </button>
         </div>
       </div>
 
@@ -1301,7 +1768,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           detectedFrequencyHz={listening.detectedFrequency}
           detectedNoteLabel={listening.currentNote}
           surfaceMode="overlay"
-          showTuningPresets={() => !room.setupLocked()}
+          showTuningPresets={() => !isRunning()}
           recoveryActionLabel={() =>
             listening.canTakeOverInput() ? 'Use it here' : null
           }
@@ -1309,6 +1776,19 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           onBack={closeTuner}
         />
       </Show>
+      <GuitarNightScoreSheet
+        open={scoreOpen()}
+        current={scoreReplay()?.summary ?? null}
+        history={scoreHistory()}
+        returnFocus={() => (doctorOpen() ? null : (scoreTrigger ?? null))}
+        onClose={() => setScoreOpen(false)}
+        {...(scoreReplay() === null
+          ? {}
+          : { onPlayAgain: () => void playScoreAgain() })}
+        {...(scoreReplay() !== null && selectedAssessmentRange() !== null
+          ? { onReviewPhrase: reviewFromScore }
+          : {})}
+      />
     </section>
   )
 }

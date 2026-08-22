@@ -221,10 +221,10 @@ describe('GuitarNightSessionPanel', () => {
 
     expect(
       screen.getByLabelText('Mute Rhythm guitar').getAttribute('aria-pressed'),
-    ).toBe('true')
-    expect(
-      screen.getByLabelText('Hear Bass').getAttribute('aria-pressed'),
     ).toBe('false')
+    expect(
+      screen.getByLabelText('Unmute Bass').getAttribute('aria-pressed'),
+    ).toBe('true')
   })
 
   it('asks to mute or hear a part when its control is used', () => {
@@ -239,8 +239,30 @@ describe('GuitarNightSessionPanel', () => {
       />
     ))
 
-    fireEvent.click(screen.getByLabelText('Hear Bass'))
+    fireEvent.click(screen.getByLabelText('Unmute Bass'))
     expect(onToggleTrackAudible).toHaveBeenCalledWith('track-bass')
+  })
+
+  it('offers a live solo control for backing parts', () => {
+    const onToggleTrackSolo = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        soloedTrackId={() => 'track-rhythm'}
+        onToggleTrackSolo={onToggleTrackSolo}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen
+        .getByLabelText('Turn off solo for Rhythm guitar')
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    fireEvent.click(screen.getByLabelText('Solo Bass'))
+    expect(onToggleTrackSolo).toHaveBeenCalledWith('track-bass')
+    expect(screen.getByLabelText('Solo Lead guitar')).toBeDisabled()
   })
 
   it('reports the scored part rather than owning its sound', () => {
@@ -255,9 +277,9 @@ describe('GuitarNightSessionPanel', () => {
       />
     ))
 
-    const scored = screen.getByLabelText('Hear Lead guitar')
+    const scored = screen.getByLabelText('Unmute Lead guitar')
     expect(scored).toBeDisabled()
-    expect(scored.getAttribute('aria-pressed')).toBe('false')
+    expect(scored.getAttribute('aria-pressed')).toBe('true')
     expect(scored.getAttribute('title')).toBe(
       'Use Tab sounds to hear or mute Lead guitar',
     )
@@ -273,8 +295,33 @@ describe('GuitarNightSessionPanel', () => {
         onClose={vi.fn()}
       />
     ))
+    expect(screen.getByText(/1 backing part is muted/)).toBeInTheDocument()
+  })
+
+  it('distinguishes an underlying mute from a track masked by Solo', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        audibleTrackIds={() => ['track-rhythm']}
+        mutedTrackIds={() => ['track-bass']}
+        soloedTrackId={() => 'track-rhythm'}
+        onToggleTrackAudible={vi.fn()}
+        onToggleTrackSolo={vi.fn()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    expect(screen.getByLabelText('Mute Rhythm guitar')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByLabelText('Unmute Bass')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     expect(
-      screen.getByText(/Every part but the one you are scored on plays/),
+      screen.getByText(/Only Rhythm guitar is playing/),
     ).toBeInTheDocument()
   })
 })

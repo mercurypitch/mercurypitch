@@ -665,120 +665,6 @@
   gap: 0.4rem;
 }
 
-/* The other part, in the corner. Small enough to glance at without taking the
-   stage's room, and a target big enough to tap on a phone. */
-.secondaryPart {
-  position: absolute;
-  inset-block-end: 0.9rem;
-  inset-inline-end: 0.9rem;
-  z-index: 3;
-  max-width: min(42%, 18rem);
-  pointer-events: auto;
-}
-
-.secondaryPartBody {
-  display: grid;
-  gap: 0.3rem;
-  width: 100%;
-  min-height: var(--touch-target);
-  padding: 0.5rem 0.6rem;
-  border: 1px solid rgba(244, 234, 219, 0.12);
-  border-radius: 0.6rem;
-  color: var(--muted-readable);
-  text-align: left;
-  background: rgb(9 7 6 / calc(0.82 * var(--gn-surface-scale)));
-  -webkit-backdrop-filter: blur(calc(10px * var(--gn-blur-scale)));
-  backdrop-filter: blur(calc(10px * var(--gn-blur-scale)));
-  box-shadow: 0 0.6rem 1.6rem rgba(0, 0, 0, 0.3);
-}
-
-button.secondaryPartBody {
-  cursor: pointer;
-}
-
-button.secondaryPartBody:hover,
-button.secondaryPartBody:focus-visible {
-  border-color: rgba(224, 164, 93, 0.45);
-  color: var(--ivory);
-}
-
-.secondaryPartBody > strong {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.secondaryPartStrip {
-  position: relative;
-  display: grid;
-  gap: 1px;
-}
-
-.secondaryPartPlayhead {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 18%;
-  width: 1px;
-  background: rgba(224, 164, 93, 0.55);
-}
-
-.secondaryPartString {
-  display: grid;
-  grid-template-columns: 0.8rem minmax(0, 1fr);
-  align-items: center;
-  gap: 0.25rem;
-  height: 0.85rem;
-}
-
-.secondaryPartString > span {
-  font-size: 0.5rem;
-  color: rgba(244, 234, 219, 0.4);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.secondaryPartString > i {
-  display: none;
-}
-
-.secondaryPartString > div {
-  position: relative;
-  height: 100%;
-  border-block-start: 1px solid rgba(244, 234, 219, 0.14);
-  transform: translateY(50%);
-}
-
-.secondaryPartString b {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  padding-inline: 0.12rem;
-  font-size: 0.55rem;
-  font-weight: 700;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: rgba(244, 234, 219, 0.62);
-  background: rgb(9 7 6 / 0.92);
-}
-
-.secondaryPartNoteActive {
-  color: var(--amber-bright) !important;
-}
-
-.secondaryPartNotePast {
-  color: rgba(244, 234, 219, 0.3) !important;
-}
-
-@media (max-width: 720px) {
-  .secondaryPart {
-    inset-block-end: 0.6rem;
-    inset-inline-end: 0.6rem;
-    max-width: 48%;
-  }
-}
-
 /* Ending a take sits beside Play, because it is the only way back to a room
    whose setup a take has pinned. */
 .stopControl {
@@ -818,7 +704,9 @@ button.secondaryPartBody:focus-visible {
 
 .sessionTrackRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: var(--touch-target);
   gap: 0.4rem;
   align-items: stretch;
 }
@@ -861,6 +749,33 @@ button.secondaryPartBody:focus-visible {
 .sessionTrackVisibility svg {
   width: 18px;
   height: 18px;
+}
+
+.sessionTrackVisibility > span {
+  font-size: 0.62rem;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+}
+
+.sessionTrackVisibility.sessionTrackSolo {
+  color: #dff7f2 !important;
+  border-color: rgba(106, 202, 189, 0.42);
+  background: rgba(106, 202, 189, 0.12);
+}
+
+.sessionTrackVisibility.sessionTrackMute {
+  color: var(--amber) !important;
+  border-color: rgba(224, 164, 93, 0.38);
+  background: rgba(224, 164, 93, 0.1);
+}
+
+.sessionTrackVisibility.sessionTrackMasked {
+  color: var(--muted) !important;
+  border-style: dashed;
+}
+
+.sessionTrackRowMasked > button:first-child {
+  opacity: 0.68;
 }
 
 .sessionTrackActive {
@@ -3057,7 +2972,7 @@ button.secondaryPartBody:focus-visible {
   gap: 0.55rem;
 }
 
-.scoreSessionSettings .countInSelect,
+.scoreSessionSettings .countInCycle,
 .scoreSessionSettings .hearScoreToggle {
   display: grid;
   grid-template-columns: 1rem 1fr;
@@ -3065,30 +2980,48 @@ button.secondaryPartBody:focus-visible {
   align-content: center;
   gap: 0.08rem 0.48rem;
   min-height: 3.4rem;
+  min-width: 0;
+  width: 100%;
   padding: 0.45rem 0.55rem;
   border: 1px solid rgba(244, 234, 219, 0.11);
   border-radius: 0.55rem;
+  color: rgba(244, 234, 219, 0.75);
   background: rgba(244, 234, 219, 0.03);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.scoreSessionSettings .countInSelect > span,
+.scoreSessionSettings .countInCycle > span:first-child,
 .scoreSessionSettings .hearScoreToggle > span:first-child {
   grid-row: 1 / 3;
   align-self: center;
 }
 
-.scoreSessionSettings .countInSelect select {
+.scoreSessionSettings .countInCycle > span:last-child {
+  display: grid;
   min-width: 0;
-  min-height: 1.4rem;
-  padding: 0;
-  border: 0;
-  color: rgba(244, 234, 219, 0.58);
-  background: transparent;
-  font-size: 0.58rem;
+  gap: 0.12rem;
 }
 
-.scoreSessionSettings button:disabled,
-.scoreSessionSettings select:disabled {
+.scoreSessionSettings .countInCycle:hover:not(:disabled),
+.scoreSessionSettings .hearScoreToggle:hover:not(:disabled) {
+  border-color: rgba(224, 164, 93, 0.34);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.08);
+}
+
+.scoreSessionSettings .countInCycle svg {
+  width: 0.88rem;
+  height: 0.88rem;
+}
+
+.scoreSessionSettings .countInCycle small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scoreSessionSettings button:disabled {
   cursor: not-allowed;
   opacity: 0.46;
 }
@@ -4914,6 +4847,7 @@ button.secondaryPartBody:focus-visible {
   display: grid;
   grid-template-columns: 2.8rem 1fr 2.8rem;
   align-items: center;
+  min-width: 0;
   gap: 0.7rem;
 }
 
@@ -4933,6 +4867,7 @@ button.secondaryPartBody:focus-visible {
 .masterVolume input {
   -webkit-appearance: none;
   appearance: none;
+  min-width: 0;
   width: 100%;
   min-height: var(--touch-target);
   margin: 0;
@@ -5039,7 +4974,11 @@ button.secondaryPartBody:focus-visible {
 [data-room-kind='score'] .transportControls {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.4rem;
 }
 
 .transportControls button,
@@ -5230,6 +5169,90 @@ button.secondaryPartBody:focus-visible {
   color: rgba(244, 234, 219, 0.6);
 }
 
+.scoreMasterVolume {
+  grid-template-columns: 0.9rem minmax(4.75rem, 1fr);
+  flex: 1 1 7.25rem;
+  width: clamp(7.25rem, 10vw, 9rem);
+  min-width: 7.25rem;
+  max-width: 9rem;
+  gap: 0.4rem;
+}
+
+.scoreMasterVolume:hover {
+  color: rgba(244, 234, 219, 0.82);
+}
+
+.scoreRailLoop {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.scoreRailLoop .loopControls {
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  margin-top: 0;
+}
+
+.scoreRailLoop .loopControls output {
+  max-width: 6.25rem;
+}
+
+.scoreRailToggle {
+  display: grid;
+  grid-template-rows: 1rem auto;
+  place-items: center;
+  gap: 0.12rem;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0.25rem 0.35rem;
+  border: 1px solid rgba(244, 234, 219, 0.13);
+  border-radius: 0.48rem;
+  color: rgba(244, 234, 219, 0.68);
+  background: rgba(244, 234, 219, 0.035);
+  font: inherit;
+  cursor: pointer;
+}
+
+.scoreRailToggle > span {
+  display: grid;
+  place-items: center;
+}
+
+.scoreRailToggle svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.scoreRailToggle small {
+  max-width: 4.25rem;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.55rem;
+  font-weight: 680;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scoreRailToggle:hover:not(:disabled) {
+  border-color: rgba(224, 164, 93, 0.38);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.09);
+}
+
+.scoreRailToggleActive,
+.scoreRailToggleActive:hover:not(:disabled) {
+  border-color: rgba(106, 202, 189, 0.42);
+  color: #dff7f2;
+  background: rgba(106, 202, 189, 0.12);
+}
+
+.scoreRailToggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
 /* Two marks and what lies between them — the same control in both rooms. */
 .loopControls {
   display: flex;
@@ -5303,27 +5326,6 @@ button.secondaryPartBody:focus-visible {
   border: 1px solid rgba(216, 200, 175, 0.18);
   border-radius: 0.4rem;
   font-weight: 500;
-}
-
-/* The tab room's count-in sits where the play-along room's volume does. */
-.countInSelect {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  justify-self: start;
-  color: rgba(244, 234, 219, 0.6);
-}
-
-.countInSelect select {
-  min-height: var(--touch-target);
-  padding: 0.25rem 0.5rem;
-  border: 1px solid rgba(216, 200, 175, 0.18);
-  border-radius: 0.45rem;
-  color: rgba(244, 234, 219, 0.82);
-  background: rgba(7, 6, 5, 0.5);
-  font: inherit;
-  font-size: 0.7rem;
-  cursor: pointer;
 }
 
 .channelStrip {
@@ -5611,6 +5613,19 @@ button.secondaryPartBody:focus-visible {
     padding-top: 0;
     border-top: 0;
     overflow-x: visible;
+  }
+}
+
+/* The expanded Rehearse pedalboard needs the full deck width before the
+   identity, timeline and controls can share one row without squeezing the
+   position rail. Wide desktop returns to the single-row composition. */
+@media (min-width: 1101px) and (max-width: 1320px) {
+  [data-room-kind='score'] .transportDeck {
+    grid-template-areas:
+      'identity rail'
+      'controls controls';
+    grid-template-columns: minmax(14rem, 0.8fr) minmax(0, 1.2fr);
+    gap: 0.35rem 0.8rem;
   }
 }
 
@@ -6312,6 +6327,42 @@ button.secondaryPartBody:focus-visible {
     width: var(--touch-target);
   }
 
+  [data-room-kind='score'] .transportControls {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    gap: 0.4rem;
+  }
+
+  [data-room-kind='score'] .playbackSpeed {
+    flex: none;
+  }
+
+  .scoreMasterVolume {
+    grid-template-columns: 0.9rem minmax(4.5rem, 1fr);
+    flex: 1 1 7rem;
+    justify-self: stretch;
+    width: auto;
+    min-width: 7rem;
+    max-width: none;
+    gap: 0.35rem;
+  }
+
+  .scoreMasterVolume input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Session retains the full A/B editor. The pedalboard gives that space to
+     the stage and the controls needed while both hands are on the guitar. */
+  .scoreRailLoop {
+    display: none;
+  }
+
+  .scoreRailToggle {
+    flex: 0 0 auto;
+  }
+
   .channelStrip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(6.25rem, 1fr));
@@ -6483,8 +6534,8 @@ button.secondaryPartBody:focus-visible {
   }
 
   [data-room-kind='score'] .transportControls {
-    flex-wrap: nowrap;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   [data-room-kind='score'] .playControl {
@@ -6672,14 +6723,64 @@ button.secondaryPartBody:focus-visible {
 
   [data-room-kind='score'] .transportDeck {
     grid-template-areas: 'rail controls';
-    grid-template-columns: minmax(11rem, 1fr) auto;
+    grid-template-columns: minmax(5.5rem, 1fr) auto;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.35rem;
+    padding-inline: max(0.45rem, var(--safe-left))
+      max(0.45rem, var(--safe-right));
     padding-block: 0.15rem;
   }
 
   [data-room-kind='score'] .transportIdentity {
     display: none;
+  }
+
+  [data-room-kind='score'] .timeRail {
+    grid-template-columns: 2.15rem minmax(0, 1fr) 2.15rem;
+    gap: 0.25rem;
+  }
+
+  [data-room-kind='score'] .transportControls {
+    flex-wrap: nowrap;
+    width: auto;
+    gap: 0.15rem;
+  }
+
+  [data-room-kind='score'] .playControl {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+
+  [data-room-kind='score'] .playbackSpeed {
+    grid-template-columns:
+      var(--touch-target) minmax(2rem, 2.2rem)
+      var(--touch-target);
+  }
+
+  .scoreMasterVolume {
+    grid-template-columns: var(--touch-target);
+    flex: none;
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    gap: 0;
+  }
+
+  .scoreMasterVolume > span:not(.visuallyHidden) {
+    display: none;
+  }
+
+  .scoreMasterVolume input {
+    width: var(--touch-target);
+  }
+
+  .scoreRailLoop {
+    display: none;
+  }
+
+  .scoreRailToggle {
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    padding-inline: 0.2rem;
   }
 
   .firstWinBrief {
