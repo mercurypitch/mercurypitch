@@ -40,7 +40,7 @@ describe('guitar input profile persistence', () => {
 describe('guitarInputProfileLabel', () => {
   it('uses player-facing route names', () => {
     expect(guitarInputProfileLabel('microphone')).toBe('Room mic')
-    expect(guitarInputProfileLabel('interface')).toBe('Plugged in')
+    expect(guitarInputProfileLabel('interface')).toBe('Direct input')
     expect(guitarInputProfileLabel('midi')).toBe('MIDI')
   })
 })
