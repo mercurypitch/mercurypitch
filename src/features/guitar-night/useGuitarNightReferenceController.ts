@@ -251,6 +251,10 @@ export function useGuitarNightReferenceController(
     songId: string
     trackIds: readonly string[]
   }>({ songId: '', trackIds: [] })
+  const [soloBackingTrack, setSoloBackingTrack] = createSignal<{
+    songId: string
+    trackId: string | null
+  }>({ songId: '', trackId: null })
 
   const mutedBacking = createMemo<readonly string[]>(() => {
     const current = reference()
@@ -268,7 +272,18 @@ export function useGuitarNightReferenceController(
     return backingParts(source, current.trackId)
   })
 
+  const soloedBackingTrackId = createMemo<string | null>(() => {
+    const current = reference()
+    const held = soloBackingTrack()
+    if (current === null || held.songId !== current.songId) return null
+    return backingPartList().some((part) => part.trackId === held.trackId)
+      ? held.trackId
+      : null
+  })
+
   const audibleBackingTrackIds = createMemo<readonly string[]>(() => {
+    const soloed = soloedBackingTrackId()
+    if (soloed !== null) return [soloed]
     const muted = new Set(mutedBacking())
     return backingPartList()
       .map((part) => part.trackId)
@@ -285,6 +300,14 @@ export function useGuitarNightReferenceController(
     })
   })
 
+  /** Every backing note, including muted lanes, so live gains can restore it. */
+  const rehearsalBackingMelodyNotes = createMemo(() => {
+    const source = sheetSource()
+    const current = reference()
+    if (source === null || current === null) return []
+    return backingMelody(source, { scoredTrackId: current.trackId })
+  })
+
   /** Whether the scored part sounds when the player has not said either way. */
   const scoredPartDefaultsAudible = createMemo(() =>
     scoredPartSoundsByDefault(sheetSource(), reference()?.trackId),
@@ -298,8 +321,26 @@ export function useGuitarNightReferenceController(
       muted.delete(trackId)
     } else {
       muted.add(trackId)
+      if (soloedBackingTrackId() === trackId) {
+        setSoloBackingTrack({ songId: current.songId, trackId: null })
+      }
     }
     setMutedBackingTracks({ songId: current.songId, trackIds: [...muted] })
+  }
+
+  const toggleSoloBackingTrack = (trackId: string): void => {
+    const current = reference()
+    if (
+      current === null ||
+      trackId === current.trackId ||
+      !backingPartList().some((part) => part.trackId === trackId)
+    ) {
+      return
+    }
+    setSoloBackingTrack({
+      songId: current.songId,
+      trackId: soloedBackingTrackId() === trackId ? null : trackId,
+    })
   }
 
   const toggleSheetTrack = (trackId: string): void => {
@@ -985,10 +1026,14 @@ export function useGuitarNightReferenceController(
     toggleSheetTrack,
     secondaryLane,
     backingPartList,
+    mutedBackingTrackIds: mutedBacking,
     audibleBackingTrackIds,
     backingMelodyNotes,
+    rehearsalBackingMelodyNotes,
+    soloedBackingTrackId,
     scoredPartDefaultsAudible,
     toggleBackingTrack,
+    toggleSoloBackingTrack,
     instrument,
     stringCount,
     tuning,

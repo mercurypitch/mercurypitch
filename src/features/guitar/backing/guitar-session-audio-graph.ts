@@ -38,6 +38,25 @@ function clamp(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
+/** Anchor a live gain before replacing its automation, then settle calmly. */
+export function setGuitarSessionGainTarget(
+  parameter: AudioParam,
+  target: number,
+  at: number,
+  timeConstant = 0.012,
+): void {
+  // Read first: a fallback cancel may move `.value` to an older scheduled
+  // point. Re-anchoring that moved value is the click this helper prevents.
+  const held = parameter.value
+  if (typeof parameter.cancelAndHoldAtTime === 'function') {
+    parameter.cancelAndHoldAtTime(at)
+  } else {
+    parameter.cancelScheduledValues(at)
+    parameter.setValueAtTime(held, at)
+  }
+  parameter.setTargetAtTime(target, at, timeConstant)
+}
+
 /**
  * Build the shared room graph without activating its context. The caller owns
  * the AudioContext lifetime; this graph owns only the nodes it creates.
@@ -84,7 +103,12 @@ export function createGuitarSessionAudioGraph(
     },
     setMasterLevel(position) {
       if (disposed) return
-      master.gain.value = sliderToGain(clamp(position))
+      const now = context.currentTime
+      setGuitarSessionGainTarget(
+        master.gain,
+        sliderToGain(clamp(position)),
+        now,
+      )
     },
     dispose() {
       if (disposed) return

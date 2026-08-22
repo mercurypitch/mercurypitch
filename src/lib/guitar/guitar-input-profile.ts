@@ -103,7 +103,7 @@ export function saveGuitarMidiInputId(
 }
 
 export function guitarInputProfileLabel(kind: GuitarInputProfileKind): string {
-  if (kind === 'interface') return 'Plugged in'
+  if (kind === 'interface') return 'Direct input'
   if (kind === 'midi') return 'MIDI'
   return 'Room mic'
 }

@@ -852,6 +852,48 @@ describe('useGuitarNightReferenceController', () => {
       expect(controller.backingMelodyNotes()).toHaveLength(before)
     })
 
+    it('solos one backing part without discarding the mute mix', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+
+      controller.toggleBackingTrack('track-bass')
+      controller.toggleSoloBackingTrack('track-bass')
+      expect(controller.soloedBackingTrackId()).toBe('track-bass')
+      expect(controller.audibleBackingTrackIds()).toEqual(['track-bass'])
+
+      controller.toggleSoloBackingTrack('track-bass')
+      expect(controller.soloedBackingTrackId()).toBeNull()
+      expect(controller.audibleBackingTrackIds()).toEqual(['track-rhythm'])
+    })
+
+    it('ends Solo when the soloed lane is muted', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+
+      controller.toggleSoloBackingTrack('track-bass')
+      expect(controller.audibleBackingTrackIds()).toEqual(['track-bass'])
+
+      controller.toggleBackingTrack('track-bass')
+      expect(controller.soloedBackingTrackId()).toBeNull()
+      expect(controller.mutedBackingTrackIds()).toContain('track-bass')
+      expect(controller.audibleBackingTrackIds()).toEqual(['track-rhythm'])
+    })
+
+    it('keeps every backing lane scheduled so mute and solo can change live', async () => {
+      const { port } = fakePort()
+      const controller = mount(port)
+      await controller.attach(VELVET_RIFF.id, 'track-lead')
+      const allLanes = controller.rehearsalBackingMelodyNotes()
+
+      controller.toggleBackingTrack('track-bass')
+      expect(controller.rehearsalBackingMelodyNotes()).toEqual(allLanes)
+      expect(new Set(allLanes.map((note) => note.channelId))).toEqual(
+        new Set(['track-rhythm', 'track-bass']),
+      )
+    })
+
     it('will not mute the scored part from here', async () => {
       const { port } = fakePort()
       const controller = mount(port)

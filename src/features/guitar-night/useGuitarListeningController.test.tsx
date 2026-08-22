@@ -752,6 +752,44 @@ describe('useGuitarListeningController', () => {
     })
   })
 
+  it('disconnects a MIDI permission result that arrives after Stop', async () => {
+    const port = {
+      id: 'late-midi-guitar',
+      name: 'Late MIDI guitar',
+      state: 'connected',
+      onmidimessage: null as ((event: MIDIMessageEvent) => void) | null,
+    }
+    const access = {
+      inputs: new Map([[port.id, port]]),
+      onstatechange: null as (() => void) | null,
+    }
+    let finishRequest: ((value: typeof access) => void) | undefined
+    const requestMIDIAccess = vi.fn(
+      () =>
+        new Promise<typeof access>((resolve) => {
+          finishRequest = resolve
+        }),
+    )
+    vi.stubGlobal('navigator', { ...navigator, requestMIDIAccess })
+    const audio = createAudioHarness()
+
+    await withController(audio.context, async (controller) => {
+      const pending = controller.selectInputProfile('midi')
+      await vi.waitFor(() => expect(requestMIDIAccess).toHaveBeenCalledOnce())
+      expect(controller.midiConnectionStatus()).toBe('requesting')
+
+      controller.stop()
+      finishRequest?.(access)
+
+      await expect(pending).resolves.toBeUndefined()
+      expect(controller.status()).toBe('off')
+      expect(controller.midiConnectionStatus()).toBe('idle')
+      expect(controller.midiInputs()).toEqual([])
+      expect(access.onstatechange).toBeNull()
+      expect(port.onmidimessage).toBeNull()
+    })
+  })
+
   it('releases a successful handoff when the room audio clock cannot start', async () => {
     const audio = createAudioHarness()
     installFrameHarness(audio.context)

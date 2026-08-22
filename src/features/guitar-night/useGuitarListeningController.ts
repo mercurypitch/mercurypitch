@@ -18,7 +18,7 @@
 // in evidence quality, so it is reported as `timingSource` rather than hidden;
 // nothing downstream should make fine timing claims on the coarse path.
 
-import { createMemo, createSignal, onCleanup } from 'solid-js'
+import { createMemo, createSignal, onCleanup, untrack } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
@@ -377,6 +377,7 @@ export function useGuitarListeningController(
   let tap: GuitarInputTap | null = null
   let frame = 0
   let generation = 0
+  let midiRefreshGeneration = 0
   let disposed = false
   let heldMidi: number | null = null
   let lastCoarseAttackAt: number | null = null
@@ -396,12 +397,13 @@ export function useGuitarListeningController(
   let ownsMic = false
   let stoppingInput = false
   let lastStartOptions: GuitarListeningStartOptions = {}
+  const initialInputProfile = untrack(inputProfile)
   let activeInput: GuitarInputProfileSnapshot = {
-    kind: inputProfile(),
+    kind: initialInputProfile,
     requestedDeviceId:
-      inputProfile() === 'midi'
-        ? selectedMidiInputId()
-        : selectedAudioInputId(),
+      initialInputProfile === 'midi'
+        ? untrack(selectedMidiInputId)
+        : untrack(selectedAudioInputId),
     activeDeviceId: null,
     activeDeviceLabel: null,
   }
@@ -504,7 +506,26 @@ export function useGuitarListeningController(
     micManager.release(CONSUMER_ID)
   }
 
-  let handleInputLoss: (message: string) => void = () => undefined
+  function handleInputLoss(message: string): void {
+    if (stoppingInput || status() === 'off' || status() === 'error') {
+      return
+    }
+    generation += 1
+    completeTake()
+    stopNodes()
+    releaseMicHold()
+    setCurrentNote(null)
+    setDetectedMidi(null)
+    setDetectedFrequency(null)
+    setDetectedCents(null)
+    setPitchRevision(0)
+    setClarity(0)
+    setHealth(null)
+    setNotice(null)
+    setError(message)
+    setCanTakeOverInput(false)
+    setStatus('error')
+  }
 
   const handleMidiNote = (message: GuitarMidiNoteMessage): void => {
     const context = takeContext
@@ -569,13 +590,24 @@ export function useGuitarListeningController(
 
   const ensureMidiAdapter = (): GuitarMidiInputAdapter => {
     if (midiAdapter !== null) return midiAdapter
-    midiAdapter = new GuitarMidiInputAdapter({
+    const adapter = new GuitarMidiInputAdapter({
       onNote: handleMidiNote,
       onPortsChanged: (ports, activePortId) => {
+        if (midiAdapter !== adapter || disposed) {
+          return
+        }
         setMidiInputs(ports)
         if (activePortId !== null && selectedMidiInputId() === null) {
           setSelectedMidiInputIdSignal(activePortId)
           saveGuitarMidiInputId(activePortId)
+        }
+        if (
+          inputProfile() === 'midi' &&
+          midiConnectionStatus() !== 'requesting'
+        ) {
+          setMidiConnectionStatus(
+            activePortId === null ? 'unavailable' : 'ready',
+          )
         }
         if (
           !stoppingInput &&
@@ -587,8 +619,9 @@ export function useGuitarListeningController(
         }
       },
     })
-    midiAdapter.selectPort(selectedMidiInputId())
-    return midiAdapter
+    midiAdapter = adapter
+    adapter.selectPort(selectedMidiInputId())
+    return adapter
   }
 
   const refreshAudioInputs = async (): Promise<void> => {
@@ -606,10 +639,19 @@ export function useGuitarListeningController(
   }
 
   const refreshMidiInputs = async (): Promise<boolean> => {
+    const refreshGeneration = ++midiRefreshGeneration
     setMidiConnectionStatus('requesting')
+    const adapter = ensureMidiAdapter()
     try {
-      const adapter = ensureMidiAdapter()
       const ports = await adapter.connect()
+      if (
+        disposed ||
+        refreshGeneration !== midiRefreshGeneration ||
+        midiAdapter !== adapter
+      ) {
+        adapter.disconnect()
+        return false
+      }
       adapter.selectPort(selectedMidiInputId())
       setMidiInputs(ports)
       const ready = adapter.selectedPortId() !== null
@@ -620,6 +662,14 @@ export function useGuitarListeningController(
       midiRefreshError = null
       return ready
     } catch (caught) {
+      if (
+        disposed ||
+        refreshGeneration !== midiRefreshGeneration ||
+        midiAdapter !== adapter
+      ) {
+        adapter.disconnect()
+        return false
+      }
       setMidiConnectionStatus('error')
       if (inputProfile() === 'midi') {
         const message =
@@ -635,6 +685,7 @@ export function useGuitarListeningController(
 
   const stopNodes = (): void => {
     stoppingInput = true
+    midiRefreshGeneration += 1
     completionGeneration += 1
     if (completionTimer !== 0) window.clearTimeout(completionTimer)
     completionTimer = 0
@@ -668,6 +719,10 @@ export function useGuitarListeningController(
     stopNodes()
     releaseMicHold()
     setStatus('off')
+    if (inputProfile() === 'midi') {
+      setMidiInputs([])
+      setMidiConnectionStatus('idle')
+    }
     setCurrentNote(null)
     setDetectedMidi(null)
     setDetectedFrequency(null)
@@ -694,6 +749,10 @@ export function useGuitarListeningController(
     stopNodes()
     releaseMicHold()
     setStatus('off')
+    if (inputProfile() === 'midi') {
+      setMidiInputs([])
+      setMidiConnectionStatus('idle')
+    }
     setCurrentNote(null)
     setDetectedMidi(null)
     setDetectedFrequency(null)
@@ -776,28 +835,9 @@ export function useGuitarListeningController(
     return true
   }
 
-  handleInputLoss = (message: string): void => {
-    if (stoppingInput || status() === 'off' || status() === 'error') {
-      return
-    }
-    generation += 1
-    completeTake()
-    stopNodes()
-    releaseMicHold()
-    setCurrentNote(null)
-    setDetectedMidi(null)
-    setDetectedFrequency(null)
-    setDetectedCents(null)
-    setPitchRevision(0)
-    setClarity(0)
-    setHealth(null)
-    setNotice(null)
-    setError(message)
-    setCanTakeOverInput(false)
-    setStatus('error')
-  }
-
   onCleanup(
+    // This guard is polled by the mic manager; it is intentionally untracked.
+    // eslint-disable-next-line solid/reactivity
     micManager.registerRunGuard(`${CONSUMER_ID}-take`, () => {
       const snapshot = takeRecorder?.snapshot()
       return (
@@ -809,6 +849,8 @@ export function useGuitarListeningController(
   )
 
   onCleanup(
+    // The mic manager owns this external-state callback lifecycle.
+    // eslint-disable-next-line solid/reactivity
     micManager.subscribe((state) => {
       if (!ownsMic || stoppingInput || state.active) return
       handleInputLoss(
@@ -829,6 +871,8 @@ export function useGuitarListeningController(
       () =>
         inputProfile() !== 'midi' && status() !== 'off' && status() !== 'error',
 
+      // The sentinel invokes the stop callback only when it detects a leak.
+      // eslint-disable-next-line solid/reactivity
       () => stop(),
     ),
   )

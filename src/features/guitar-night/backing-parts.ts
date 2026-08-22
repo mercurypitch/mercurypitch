@@ -72,6 +72,7 @@ export function backingMelody(
         startBeat: note.startBeat,
         durationBeats: Math.max(0, note.duration),
         variant,
+        channelId: track.id,
       })
     }
   }
