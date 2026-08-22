@@ -2,9 +2,11 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { GuitarRoomBandBeatPhase } from './guitar-room-band'
+import { sliderToGain } from '@/lib/volume-curve'
+import type { GuitarRoomBand, GuitarRoomBandBeatPhase, } from './guitar-room-band'
 import { createGuitarRoomBand, groupNotesByBeat, resolveBandLoop, } from './guitar-room-band'
 import { resolveGuitarRoomRhythmPreset } from './guitar-room-rhythm'
+import { setGuitarSessionGainTarget } from './guitar-session-audio-graph'
 
 const guitarVoices = vi.hoisted(() => ({
   createBassVoice: vi.fn(),
@@ -27,7 +29,9 @@ function fakeAudioNode() {
 function fakeAudioParam() {
   return {
     value: 0,
+    cancelScheduledValues: vi.fn(),
     setValueAtTime: vi.fn(),
+    setTargetAtTime: vi.fn(),
     linearRampToValueAtTime: vi.fn(),
   }
 }
@@ -61,6 +65,12 @@ function fakeAudioContext(
     }),
     close: vi.fn(async () => undefined),
   } as unknown as AudioContext
+}
+
+async function disposeBand(band: GuitarRoomBand): Promise<void> {
+  const pending = band.dispose()
+  if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(80)
+  await pending
 }
 
 afterEach(() => {
@@ -119,6 +129,100 @@ describe('groupNotesByBeat', () => {
 })
 
 describe('createGuitarRoomBand', () => {
+  it('anchors a live gain before destructive cancellation', () => {
+    const parameter = fakeAudioParam()
+    parameter.value = 0.43
+    parameter.cancelScheduledValues.mockImplementation(() => {
+      parameter.value = 0
+    })
+
+    setGuitarSessionGainTarget(parameter as unknown as AudioParam, 0.7, 5)
+
+    expect(parameter.setValueAtTime).toHaveBeenCalledWith(0.43, 5)
+    expect(parameter.setTargetAtTime).toHaveBeenCalledWith(0.7, 5, 0.012)
+  })
+
+  it('remembers master volume before audio activation and ramps later changes', async () => {
+    const context = fakeAudioContext()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+    })
+
+    band.setMasterLevel(0.42)
+    const graph = await band.activate()
+    expect(graph?.master.gain.value).toBeCloseTo(sliderToGain(0.42), 6)
+
+    band.setMasterLevel(0.68)
+    expect(graph?.master.gain.setTargetAtTime).toHaveBeenCalledWith(
+      sliderToGain(0.68),
+      expect.any(Number),
+      0.012,
+    )
+    await disposeBand(band)
+  })
+
+  it('keeps authored parts on independent live gain lanes', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    guitarVoices.createGuitarVoice.mockImplementation(() => ({
+      gain: { ...fakeAudioNode(), gain: fakeAudioParam() },
+      oscillators: [],
+      lfos: [],
+      lfoGains: [],
+      hasCustomEnvelope: true,
+      dispose: vi.fn(),
+    }))
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 2,
+    })
+    band.setMelodyChannelLevel('track-bass', 0)
+
+    await band.start({
+      tempoBpm: 90,
+      countInBeats: 0,
+      exerciseBeats: 2,
+      durationBeats: 2,
+      feel: 'click',
+      melody: [
+        {
+          midi: 40,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'track-bass',
+        },
+        {
+          midi: 64,
+          startBeat: 0,
+          durationBeats: 1,
+          channelId: 'track-guitar',
+        },
+      ],
+    })
+
+    const bassGate = guitarVoices.createGuitarVoice.mock.calls[0]?.[0]
+    const guitarGate = guitarVoices.createGuitarVoice.mock.calls[1]?.[0]
+    expect(bassGate).toBeDefined()
+    expect(guitarGate).toBeDefined()
+
+    band.setMelodyChannelLevel('track-bass', 0.5)
+    const bassOutput = guitarVoices.createGuitarVoice.mock.results[0]?.value
+      .gain.connect.mock.calls[0]?.[0] as GainNode | undefined
+    const guitarOutput = guitarVoices.createGuitarVoice.mock.results[1]?.value
+      .gain.connect.mock.calls[0]?.[0] as GainNode | undefined
+    expect(bassOutput).not.toBe(guitarOutput)
+    expect(bassOutput?.gain.value).toBe(0)
+    expect(bassOutput?.gain.setTargetAtTime).toHaveBeenCalledWith(
+      sliderToGain(0.5),
+      5,
+      0.012,
+    )
+    await disposeBand(band)
+  })
+
   it('schedules a semantic beat including fractional hits on the shared clock', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
@@ -145,7 +249,7 @@ describe('createGuitarRoomBand', () => {
       ['hh-closed', 5.34],
     ])
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('changes a rhythm only on a gapless loop boundary', async () => {
@@ -197,7 +301,7 @@ describe('createGuitarRoomBand', () => {
       5.09, 5.59, 6.09, 6.59, 7.09,
     ])
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('keeps 220 BPM and reports the authoritative audio time for each beat', async () => {
@@ -233,7 +337,7 @@ describe('createGuitarRoomBand', () => {
     expect(firstAt).toBeCloseTo(5.09, 6)
     expect(secondAt).toBeCloseTo(5.09 + 60 / 220, 6)
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('schedules every beat through an authored tempo map', async () => {
@@ -265,7 +369,7 @@ describe('createGuitarRoomBand', () => {
     ])
     expect(result.expectedHitTimesMs).toEqual([90, 590, 1090, 2090])
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('starts from a parked authored beat without replaying the score prefix', async () => {
@@ -301,7 +405,7 @@ describe('createGuitarRoomBand', () => {
     expect(result.expectedHitTimesMs).toEqual([90, 1090])
     expect(onComplete).toHaveBeenCalledOnce()
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('reports the exact scheduled score start and fractional end', async () => {
@@ -336,7 +440,7 @@ describe('createGuitarRoomBand', () => {
     expect(onBeat.mock.calls.map((call) => call[0])).toEqual([0, 1, 1, 2, 3])
     expect(onComplete).toHaveBeenCalledWith(7.34)
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('keeps the count-in audible while a silent exercise pulse advances callbacks', async () => {
@@ -375,7 +479,7 @@ describe('createGuitarRoomBand', () => {
       [1, 'exercise'],
     ])
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('reads a pulse function on every beat, so it can be quieted mid-run', async () => {
@@ -410,7 +514,7 @@ describe('createGuitarRoomBand', () => {
     // Two count-in ticks, then only the beats the function let through.
     expect(drumVoices.triggerDrumVoice).toHaveBeenCalledTimes(4)
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('starts between mapped beats without replaying past attacks', async () => {
@@ -477,7 +581,7 @@ describe('createGuitarRoomBand', () => {
     await vi.advanceTimersByTimeAsync(1_000)
     expect(onComplete).toHaveBeenCalledOnce()
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('repeats mapped beat and note durations through a tempo-changing loop', async () => {
@@ -534,7 +638,7 @@ describe('createGuitarRoomBand', () => {
       [1000, 7.59],
     ])
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it("completes once at the score's exact fractional duration", async () => {
@@ -562,7 +666,7 @@ describe('createGuitarRoomBand', () => {
     await vi.advanceTimersByTimeAsync(20)
     expect(onComplete).toHaveBeenCalledOnce()
 
-    await band.dispose()
+    await disposeBand(band)
   })
 
   it('silences already scheduled guide and drum audio when stopped', async () => {
@@ -597,18 +701,54 @@ describe('createGuitarRoomBand', () => {
       feel: 'click',
       melody: [{ midi: 64, startBeat: 0, durationBeats: 8 }],
     })
-    const guideGate = gains.at(-2)
-    const drumsGate = gains.at(-1)
+    const guideGate = gains.at(-3)
+    const drumsGate = gains.at(-2)
+    const scoreGate = gains.at(-1)
     expect(guideGate).toBeDefined()
     expect(drumsGate).toBeDefined()
-    expect(voiceGain.connect).toHaveBeenCalledWith(guideGate)
+    expect(scoreGate).toBeDefined()
+    expect(voiceGain.connect).toHaveBeenCalledWith(scoreGate)
+    expect(scoreGate?.connect).toHaveBeenCalledWith(guideGate)
 
     band.stop()
 
-    expect(guideGate?.gain.setValueAtTime).toHaveBeenCalledWith(0, 5)
-    expect(drumsGate?.gain.setValueAtTime).toHaveBeenCalledWith(0, 5)
+    expect(guideGate?.gain.setValueAtTime).toHaveBeenCalledWith(1, 5)
+    expect(drumsGate?.gain.setValueAtTime).toHaveBeenCalledWith(1, 5)
+    expect(guideGate?.gain.setTargetAtTime).toHaveBeenCalledWith(0, 5, 0.012)
+    expect(drumsGate?.gain.setTargetAtTime).toHaveBeenCalledWith(0, 5, 0.012)
+    expect(scoreGate?.gain.setTargetAtTime).toHaveBeenCalledWith(0, 5, 0.012)
+    expect(guideGate?.disconnect).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(80)
     expect(guideGate?.disconnect).toHaveBeenCalledOnce()
     expect(drumsGate?.disconnect).toHaveBeenCalledOnce()
-    await band.dispose()
+    expect(scoreGate?.disconnect).toHaveBeenCalledOnce()
+    await disposeBand(band)
+  })
+
+  it('keeps the owned graph alive through the final release tail', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 2,
+    })
+
+    await band.start({
+      tempoBpm: 60,
+      countInBeats: 0,
+      exerciseBeats: 8,
+      durationBeats: 8,
+      feel: 'click',
+    })
+    const pending = band.dispose()
+
+    expect(context.close).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(79)
+    expect(context.close).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    await pending
+    expect(context.close).toHaveBeenCalledOnce()
   })
 })

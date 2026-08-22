@@ -20,6 +20,8 @@ function createBandHarness(expectedHitTimesMs = [1_000, 1_500, 2_000, 2_500]) {
       }
     }),
     activate: vi.fn(async () => null),
+    setMasterLevel: vi.fn(),
+    setMelodyChannelLevel: vi.fn(),
     stop: vi.fn(),
     getAudioGraph: () => null,
     dispose: vi.fn(async () => undefined),

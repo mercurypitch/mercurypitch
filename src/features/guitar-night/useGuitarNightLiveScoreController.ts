@@ -128,6 +128,9 @@ export function useGuitarNightLiveScoreController(
   const [announcement, setAnnouncement] = createSignal('')
   const [presentedGrade, setPresentedGrade] =
     createSignal<GuitarLiveScoreGrade | null>(null)
+  const [startedAt, setStartedAt] = createSignal<number | null>(null)
+  const [scoringInputKind, setScoringInputKind] =
+    createSignal<GuitarInputProfileKind | null>(null)
   let engine: GuitarLiveScoreEngine | null = null
   let takeId: string | null = null
   let generation = 0
@@ -335,19 +338,15 @@ export function useGuitarNightLiveScoreController(
     setPresentedGrade(null)
     setStarting(false)
     setHoldReason(null)
+    setStartedAt(null)
+    setScoringInputKind(null)
   }
 
   const start = async (range: LoopSpan): Promise<boolean> => {
     if (starting() || options.listeningStatus() !== 'listening') return false
     const currentGeneration = ++generation
-    engine = null
-    takeId = null
-    lastSampledFrame = 0
-    setBoundary(null)
-    setDisplay(null)
-    setPresentedGrade(null)
-    setHoldReason(null)
     setStarting(true)
+    const wallClockStartedAt = Date.now()
     try {
       const inputKind = options.inputKind()
       const run = await options.startRoom(range, {
@@ -392,8 +391,13 @@ export function useGuitarNightLiveScoreController(
       }
       engine = nextEngine
       takeId = armedTake.id
+      lastSampledFrame = 0
       setBoundary(run)
       setDisplay(nextEngine.snapshot())
+      setPresentedGrade(null)
+      setHoldReason(null)
+      setStartedAt(wallClockStartedAt)
+      setScoringInputKind(inputKind)
       return true
     } finally {
       if (currentGeneration === generation) setStarting(false)
@@ -423,6 +427,11 @@ export function useGuitarNightLiveScoreController(
       return value === null ? null : Math.round(value)
     },
     grade: presentedGrade,
+    /** Immutable run facts used by the separate objective take ledger. */
+    display,
+    boundary,
+    startedAt,
+    inputKind: scoringInputKind,
     announcement,
     start,
     hold,

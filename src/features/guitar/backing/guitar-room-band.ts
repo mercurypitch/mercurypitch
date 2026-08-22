@@ -9,10 +9,11 @@ import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { foldIntoLoop } from '@/lib/guitar/loop-span'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock } from '@/lib/midi-song'
+import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomRhythmPreset } from './guitar-room-rhythm'
 import { guitarRoomRhythmHitsForBeat } from './guitar-room-rhythm'
 import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
-import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
+import { createGuitarSessionAudioGraph, setGuitarSessionGainTarget, } from './guitar-session-audio-graph'
 
 export type GuitarRoomBandBeatPhase = 'count-in' | 'exercise'
 
@@ -40,6 +41,8 @@ export interface GuitarRoomBandNote {
    * one list; one variant for the lot would play the guitars on a bass.
    */
   variant?: GuitarVariant
+  /** A stable mix lane, so a part can be muted without restarting the room. */
+  channelId?: string
 }
 
 /** One exercise pulse exposed while it is inside the Web Audio look-ahead. */
@@ -139,6 +142,10 @@ export interface GuitarRoomBand {
    * into; `getAudioGraph` stays null until something has opened one.
    */
   activate(): Promise<GuitarSessionAudioGraph | null>
+  /** Persisted room position, applied before audio opens and while it runs. */
+  setMasterLevel(position: number): void
+  /** A live, pop-free gain gate for one authored melody lane. */
+  setMelodyChannelLevel(channelId: string, position: number): void
   stop(): void
   getAudioGraph(): GuitarSessionAudioGraph | null
   dispose(): Promise<void>
@@ -280,15 +287,23 @@ export function createGuitarRoomBand(
   let graph: GuitarSessionAudioGraph | null = null
   let interval: number | null = null
   let generation = 0
-  let runOutput: { guide: GainNode; drums: GainNode } | null = null
+  let masterLevel = 0.76
+  const melodyChannelLevels = new Map<string, number>()
+  let runOutput: {
+    guide: GainNode
+    drums: GainNode
+    melodyChannels: Map<string, GainNode>
+  } | null = null
   const callbackTimers = new Set<number>()
+  const pendingReleases = new Set<Promise<void>>()
+  let disposed = false
 
   const ensureGraph = (): GuitarSessionAudioGraph => {
     if (graph !== null) return graph
     const createdContext = createContext()
     context = createdContext
     graph = createGuitarSessionAudioGraph(createdContext, {
-      masterLevel: 0.76,
+      masterLevel,
       busLevels: { drums: 0.72 },
     })
     return graph
@@ -301,25 +316,43 @@ export function createGuitarRoomBand(
     callbackTimers.clear()
   }
 
-  const stop = (): void => {
+  const releaseRunOutput = (): Promise<void> | null => {
     generation += 1
     clearTimers()
     const output = runOutput
     runOutput = null
-    if (output !== null) {
-      // Sources already inside Web Audio's lookahead cannot be unscheduled.
-      // Disconnect their run-scoped gates so Stop is audibly immediate and a
-      // microphone opened next cannot hear the guide pretending to be input.
-      const now = context?.currentTime ?? 0
-      output.guide.gain.setValueAtTime(0, now)
-      output.drums.gain.setValueAtTime(0, now)
-      output.guide.disconnect()
-      output.drums.disconnect()
+    if (output === null) return null
+
+    // Sources already inside Web Audio's lookahead cannot be unscheduled.
+    // Fade their run-scoped gates before disconnecting so Stop remains fast
+    // without introducing a discontinuity click at the output.
+    const now = context?.currentTime ?? 0
+    const outputs = [
+      output.guide,
+      output.drums,
+      ...output.melodyChannels.values(),
+    ]
+    for (const node of outputs) {
+      setGuitarSessionGainTarget(node.gain, 0, now)
     }
+    const release = new Promise<void>((resolve) => {
+      window.setTimeout(() => {
+        for (const node of outputs) node.disconnect()
+        pendingReleases.delete(release)
+        resolve()
+      }, 80)
+    })
+    pendingReleases.add(release)
+    return release
+  }
+
+  const stop = (): void => {
+    void releaseRunOutput()
   }
 
   return {
     async activate() {
+      if (disposed) return null
       const currentGraph = ensureGraph()
       try {
         await activateContext(currentGraph.context)
@@ -329,7 +362,31 @@ export function createGuitarRoomBand(
       return currentGraph
     },
 
+    setMasterLevel(position) {
+      masterLevel = Math.min(1, Math.max(0, position))
+      if (disposed) return
+      graph?.setMasterLevel(masterLevel)
+    },
+
+    setMelodyChannelLevel(channelId, position) {
+      if (channelId.length === 0) return
+      const level = Math.min(1, Math.max(0, position))
+      melodyChannelLevels.set(channelId, level)
+      if (disposed) return
+      const channel = runOutput?.melodyChannels.get(channelId)
+      if (channel === undefined || context === null) return
+      const now = context.currentTime
+      setGuitarSessionGainTarget(channel.gain, sliderToGain(level), now)
+    },
+
     async start(startOptions) {
+      if (disposed) {
+        return {
+          expectedHitTimesMs: [],
+          exerciseStartedAtSeconds: null,
+          completedAtSeconds: null,
+        }
+      }
       stop()
       const currentGeneration = generation
       const currentGraph = ensureGraph()
@@ -348,7 +405,8 @@ export function createGuitarRoomBand(
       drumsOutput.gain.value = 1
       guideOutput.connect(currentGraph.buses.guide)
       drumsOutput.connect(currentGraph.buses.drums)
-      runOutput = { guide: guideOutput, drums: drumsOutput }
+      const melodyChannels = new Map<string, GainNode>()
+      runOutput = { guide: guideOutput, drums: drumsOutput, melodyChannels }
 
       const tempoBpm = resolveGuitarRoomBandTempoBpm(startOptions.tempoBpm)
       const openingBeatSeconds = 60 / tempoBpm
@@ -457,9 +515,19 @@ export function createGuitarRoomBand(
           const noteDurationSeconds =
             beatToSeconds(note.startBeat + note.durationBeats) -
             beatToSeconds(note.startBeat)
+          const channelId = note.channelId ?? 'score'
+          let channelOutput = melodyChannels.get(channelId)
+          if (channelOutput === undefined) {
+            channelOutput = currentGraph.context.createGain()
+            channelOutput.gain.value = sliderToGain(
+              melodyChannelLevels.get(channelId) ?? 1,
+            )
+            channelOutput.connect(guideOutput)
+            melodyChannels.set(channelId, channelOutput)
+          }
           soundNote(
             currentGraph,
-            guideOutput,
+            channelOutput,
             note,
             noteAt,
             noteDurationSeconds,
@@ -664,7 +732,10 @@ export function createGuitarRoomBand(
     stop,
     getAudioGraph: () => graph,
     async dispose() {
-      stop()
+      if (disposed) return
+      disposed = true
+      void releaseRunOutput()
+      await Promise.all([...pendingReleases])
       graph?.dispose()
       graph = null
       const ownedContext = context

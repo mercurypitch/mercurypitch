@@ -33,6 +33,8 @@ describe('GuitarNightFirstWin', () => {
         }
       }),
       activate: vi.fn(async () => null),
+      setMasterLevel: vi.fn(),
+      setMelodyChannelLevel: vi.fn(),
       stop: vi.fn(),
       getAudioGraph: () => null,
       dispose: vi.fn(async () => undefined),
