@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightSecondaryPart } from './GuitarNightSecondaryPart'
+import { GUITAR_NIGHT_SECONDARY_COLLAPSED_STORAGE_KEY, GUITAR_NIGHT_SECONDARY_LAYOUT_STORAGE_KEY, GuitarNightSecondaryPart, } from './GuitarNightSecondaryPart'
 import type { SheetLane } from './sheet/sheet-model'
 
 function note(startBeat: number, fret: number, stringIndex = 0): GuitarNote {
@@ -32,6 +33,17 @@ function lane(overrides: Partial<SheetLane> = {}): SheetLane {
 }
 
 describe('GuitarNightSecondaryPart', () => {
+  beforeEach(() => {
+    localStorage.removeItem(GUITAR_NIGHT_SECONDARY_LAYOUT_STORAGE_KEY)
+    localStorage.removeItem(GUITAR_NIGHT_SECONDARY_COLLAPSED_STORAGE_KEY)
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
   it('names the part it is showing', () => {
     render(() => (
       <GuitarNightSecondaryPart lane={() => lane()} playheadBeat={() => 0} />
@@ -57,7 +69,7 @@ describe('GuitarNightSecondaryPart', () => {
       <GuitarNightSecondaryPart lane={() => lane()} playheadBeat={() => 0} />
     ))
     expect(
-      container.querySelectorAll('[class*="secondaryPartString"]'),
+      container.querySelectorAll('[data-secondary-part-string]'),
     ).toHaveLength(6)
   })
 
@@ -81,7 +93,32 @@ describe('GuitarNightSecondaryPart', () => {
     render(() => (
       <GuitarNightSecondaryPart lane={() => lane()} playheadBeat={() => 0} />
     ))
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Read Rhythm guitar instead' }),
+    ).toBeNull()
+    expect(
+      screen.getByLabelText('Rhythm guitar, 1 note sounding'),
+    ).toHaveAttribute('role', 'img')
+  })
+
+  it('offers dedicated move, reset, and horizontal resize controls', () => {
+    render(() => (
+      <GuitarNightSecondaryPart lane={() => lane()} playheadBeat={() => 0} />
+    ))
+
+    expect(
+      screen.getByRole('button', { name: 'Move Rhythm guitar preview' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Reset Rhythm guitar preview position',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('slider', {
+        name: 'Resize Rhythm guitar preview horizontally',
+      }),
+    ).toHaveAttribute('aria-orientation', 'horizontal')
   })
 
   it('reads that part instead when tapped', () => {
@@ -109,5 +146,185 @@ describe('GuitarNightSecondaryPart', () => {
     ))
     const first = container.querySelector('b')
     expect(first?.getAttribute('style')).toContain('left:')
+  })
+
+  it('moves and resizes from the keyboard, then persists that layout', async () => {
+    const rect = (width: number, height: number): DOMRect =>
+      ({
+        x: 0,
+        y: 0,
+        top: 0,
+        right: width,
+        bottom: height,
+        left: 0,
+        width,
+        height,
+        toJSON: () => ({}),
+      }) as DOMRect
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const element = this as HTMLElement
+        if (element.hasAttribute('data-secondary-boundary')) {
+          return rect(900, 540)
+        }
+        if (
+          element.getAttribute('data-testid') === 'guitar-night-secondary-part'
+        ) {
+          const width = Number.parseFloat(element.style.width)
+          return rect(Number.isFinite(width) && width > 0 ? width : 300, 140)
+        }
+        return rect(0, 0)
+      })
+    let boundary: HTMLDivElement | undefined
+    render(() => (
+      <div ref={boundary} data-secondary-boundary>
+        <GuitarNightSecondaryPart
+          lane={() => lane()}
+          playheadBeat={() => 0}
+          layoutKey={() => 'highway'}
+          boundaryElement={() => boundary}
+        />
+      </div>
+    ))
+
+    const panel = screen.getByTestId('guitar-night-secondary-part')
+    await waitFor(() =>
+      expect(panel).toHaveAttribute('data-positioned', 'true'),
+    )
+    fireEvent.keyDown(
+      screen.getByRole('button', { name: 'Move Rhythm guitar preview' }),
+      { key: 'ArrowRight' },
+    )
+    fireEvent.keyDown(
+      screen.getByRole('slider', {
+        name: 'Resize Rhythm guitar preview horizontally',
+      }),
+      { key: 'ArrowRight' },
+    )
+
+    await waitFor(() =>
+      expect(panel.getAttribute('style')).toContain('width: 324px'),
+    )
+    const stored = JSON.parse(
+      localStorage.getItem(GUITAR_NIGHT_SECONDARY_LAYOUT_STORAGE_KEY) ?? '{}',
+    ) as Record<string, { width: number; xRatio: number }>
+    expect(stored.highway?.width).toBe(324)
+    expect(stored.highway?.xRatio).toBeGreaterThan(0)
+    rectSpy.mockRestore()
+  })
+
+  it('moves away when an opened stage picker enters its protected area', async () => {
+    const rect = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+    ): DOMRect =>
+      ({
+        x,
+        y,
+        top: y,
+        right: x + width,
+        bottom: y + height,
+        left: x,
+        width,
+        height,
+        toJSON: () => ({}),
+      }) as DOMRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this.hasAttribute('data-secondary-boundary')) {
+          return rect(0, 0, 900, 540)
+        }
+        if (this.hasAttribute('data-stage-picker')) {
+          return this.hasAttribute('open')
+            ? rect(12, 268, 340, 260)
+            : rect(0, 0, 0, 0)
+        }
+        if (
+          this.getAttribute('data-testid') === 'guitar-night-secondary-part'
+        ) {
+          const width = Number.parseFloat(this.style.width)
+          return rect(0, 0, Number.isFinite(width) ? width : 300, 140)
+        }
+        return rect(0, 0, 0, 0)
+      },
+    )
+
+    let boundary: HTMLDivElement | undefined
+    const [pickerOpen, setPickerOpen] = createSignal(false)
+    render(() => (
+      <div ref={boundary} data-secondary-boundary>
+        <details
+          open={pickerOpen()}
+          data-stage-picker
+          data-guitar-night-secondary-protected
+        />
+        <GuitarNightSecondaryPart
+          lane={() => lane()}
+          playheadBeat={() => 0}
+          boundaryElement={() => boundary}
+        />
+      </div>
+    ))
+
+    const panel = screen.getByTestId('guitar-night-secondary-part')
+    await waitFor(() =>
+      expect(panel.style.transform).toBe('translate3d(12px, 388px, 0)'),
+    )
+    setPickerOpen(true)
+    await waitFor(() =>
+      expect(panel.style.transform).not.toBe('translate3d(12px, 388px, 0)'),
+    )
+  })
+
+  it('lets a small-screen player collapse the dock and remembers the choice', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(
+        (query: string) =>
+          ({
+            matches: query === '(max-width: 720px)',
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+          }) as MediaQueryList,
+      ),
+    )
+
+    const first = render(() => (
+      <GuitarNightSecondaryPart
+        lane={() => lane()}
+        playheadBeat={() => 0}
+        layoutKey={() => 'highway'}
+      />
+    ))
+    const panel = screen.getByTestId('guitar-night-secondary-part')
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Collapse Rhythm guitar preview',
+      }),
+    )
+    expect(panel).toHaveAttribute('data-collapsed', 'true')
+    expect(screen.queryByLabelText('Rhythm guitar, 1 note sounding')).toBeNull()
+    first.unmount()
+
+    render(() => (
+      <GuitarNightSecondaryPart
+        lane={() => lane()}
+        playheadBeat={() => 0}
+        layoutKey={() => 'highway'}
+      />
+    ))
+    expect(
+      await screen.findByRole('button', {
+        name: 'Expand Rhythm guitar preview',
+      }),
+    ).toBeInTheDocument()
   })
 })

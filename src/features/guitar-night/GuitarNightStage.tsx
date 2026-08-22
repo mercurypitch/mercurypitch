@@ -617,7 +617,7 @@ function InstrumentPicker(props: {
   onStringCount(count: number): void
 }) {
   return (
-    <div class={styles.stageInstrument}>
+    <div class={styles.stageInstrument} data-guitar-night-secondary-protected>
       <div
         class={styles.stageInstrumentKind}
         role="group"
@@ -674,6 +674,7 @@ function StageViewPicker(props: {
   return (
     <div
       class={styles.stageViewPicker}
+      data-guitar-night-secondary-protected
       role="group"
       aria-label="Stage view and display settings"
     >
@@ -1157,7 +1158,10 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       }
     >
       <Show when={props.showHeader?.() ?? true}>
-        <header class={styles.stageHeader}>
+        <header
+          class={styles.stageHeader}
+          data-guitar-night-secondary-protected
+        >
           <div
             classList={{
               [styles.stageSignalWithAccessory]:
@@ -1402,7 +1406,10 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 reducedEffects={() => display().effects === 'reduced'}
               />
             </Suspense>
-            <p class={styles.stageGestureHint}>
+            <p
+              class={styles.stageGestureHint}
+              data-guitar-night-secondary-protected
+            >
               Drag / arrows to orbit · scroll / + − to zoom · R resets
             </p>
             <Show
@@ -1488,6 +1495,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             <GuitarNightSecondaryPart
               lane={lane}
               playheadBeat={() => actualPlayheadBeat() ?? 0}
+              layoutKey={() => activeView()}
               {...(props.onSelectTrack === undefined
                 ? {}
                 : { onSwap: props.onSelectTrack })}
