@@ -279,38 +279,60 @@ async function seedCompletedFullBandSong(
 async function seedAuthoredGuitarScore(
   page: import('@playwright/test').Page,
   songId: string,
+  includeSecondaryPart = false,
 ): Promise<void> {
-  await page.addInitScript((seededSongId) => {
-    const notes = Array.from({ length: 16 }, (_, index) => ({
-      midi: index % 2 === 0 ? 64 : 67,
-      startBeat: index,
-      duration: 1,
-      stringIndex: 0,
-      fret: index % 2 === 0 ? 0 : 3,
-    }))
-    localStorage.setItem(
-      'pitchperfect_guitar_songs',
-      JSON.stringify([
-        {
-          id: seededSongId,
-          name: 'Velvet pointer study',
-          bpm: 120,
-          tracks: [
-            {
-              id: 'track-lead',
-              name: 'Lead guitar',
-              instrumentName: 'Clean Guitar',
-              noteCount: notes.length,
-              notes,
-            },
-          ],
-          scoreTrackId: 'track-lead',
-          backingTrackIds: [],
-          importedAt: Date.now(),
-        },
-      ]),
-    )
-  }, songId)
+  await page.addInitScript(
+    ({ includeSecondary, seededSongId }) => {
+      const notes = Array.from({ length: 16 }, (_, index) => ({
+        midi: index % 2 === 0 ? 64 : 67,
+        startBeat: index,
+        duration: 1,
+        stringIndex: 0,
+        fret: index % 2 === 0 ? 0 : 3,
+      }))
+      const rhythmNotes = Array.from({ length: 16 }, (_, index) => ({
+        midi: index % 2 === 0 ? 59 : 62,
+        startBeat: index + 0.5,
+        duration: 0.5,
+        stringIndex: 1,
+        fret: index % 2 === 0 ? 0 : 3,
+      }))
+      localStorage.setItem(
+        'pitchperfect_guitar_songs',
+        JSON.stringify([
+          {
+            id: seededSongId,
+            name: 'Velvet pointer study',
+            bpm: 120,
+            tracks: [
+              {
+                id: 'track-lead',
+                name: 'Lead guitar',
+                instrumentName: 'Clean Guitar',
+                noteCount: notes.length,
+                notes,
+              },
+              ...(includeSecondary
+                ? [
+                    {
+                      id: 'track-rhythm',
+                      name: 'Rhythm guitar',
+                      instrumentName: 'Rhythm Guitar',
+                      noteCount: rhythmNotes.length,
+                      notes: rhythmNotes,
+                    },
+                  ]
+                : []),
+            ],
+            scoreTrackId: 'track-lead',
+            backingTrackIds: includeSecondary ? ['track-rhythm'] : [],
+            importedAt: Date.now(),
+          },
+        ]),
+      )
+    },
+    { includeSecondary: includeSecondaryPart, seededSongId: songId },
+  )
 }
 
 async function instrumentMicrophoneRequests(
@@ -1478,7 +1500,14 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   await expect(elapsed).toHaveText('0:02')
 
   await room.getByLabel('Session controls').click()
-  await room.getByLabel('Count-in beats').selectOption('0')
+  const countIn = room
+    .locator('details[open]')
+    .getByRole('button', { name: /^Count-in .*Change count-in$/ })
+  for (let step = 0; step < 4; step += 1) {
+    if ((await countIn.getAttribute('aria-label'))?.includes('Off')) break
+    await countIn.click()
+  }
+  await expect(countIn).toHaveAccessibleName('Count-in Off. Change count-in')
   await room.getByLabel('Session controls').click()
   expect(
     await page.evaluate(
@@ -1504,6 +1533,39 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   await page.waitForTimeout(700)
   await expect(elapsed).toHaveText(pausedAt ?? '')
 
+  await page.setViewportSize({ width: 568, height: 320 })
+  const shortLandscape = await room
+    .getByTestId('guitar-night-score-deck')
+    .evaluate((deck) => {
+      const controls = deck.querySelector<HTMLElement>(
+        '[data-testid="guitar-night-score-transport-controls"]',
+      )
+      const deckRect = deck.getBoundingClientRect()
+      const controlsRect = controls?.getBoundingClientRect()
+      return {
+        viewportWidth: document.documentElement.clientWidth,
+        pageWidth: document.documentElement.scrollWidth,
+        deckLeft: deckRect.left,
+        deckRight: deckRect.right,
+        controlsWidth: controls?.clientWidth ?? 0,
+        controlsScrollWidth: controls?.scrollWidth ?? 0,
+        controlsRight: controlsRect?.right ?? 0,
+      }
+    })
+  expect(shortLandscape.pageWidth).toBeLessThanOrEqual(
+    shortLandscape.viewportWidth + 2,
+  )
+  expect(shortLandscape.deckLeft).toBeGreaterThanOrEqual(0)
+  expect(shortLandscape.deckRight).toBeLessThanOrEqual(
+    shortLandscape.viewportWidth + 1,
+  )
+  expect(shortLandscape.controlsScrollWidth).toBeLessThanOrEqual(
+    shortLandscape.controlsWidth + 1,
+  )
+  expect(shortLandscape.controlsRight).toBeLessThanOrEqual(
+    shortLandscape.viewportWidth + 1,
+  )
+
   await room.getByRole('button', { name: 'Resume score', exact: true }).click()
   await expect(elapsed).not.toHaveText(pausedAt ?? '', { timeout: 2_500 })
   expect(
@@ -1513,6 +1575,134 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
           .__guitarNightAudioContexts,
     ),
   ).toBe(1)
+})
+
+test('moves and widens the other-part preview without covering stage controls with a real pointer @smoke', async ({
+  page,
+}) => {
+  const songId = `guitar-night-secondary-${Date.now()}`
+  await seedAuthoredGuitarScore(page, songId, true)
+  await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
+    waitUntil: 'domcontentloaded',
+  })
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .click()
+
+  const room = page.getByTestId('guitar-night-score-room')
+  const panel = room.getByTestId('guitar-night-secondary-part')
+  const moveHandle = room.getByRole('button', {
+    name: 'Move Rhythm guitar preview',
+  })
+  const resizeHandle = room.getByRole('slider', {
+    name: 'Resize Rhythm guitar preview horizontally',
+  })
+  await expect(panel).toBeVisible()
+  await expect(panel).toHaveAttribute('data-placement-mode', 'floating')
+
+  const initialPanel = await panel.boundingBox()
+  const moveBox = await moveHandle.boundingBox()
+  const resizeBox = await resizeHandle.boundingBox()
+  expect(initialPanel).not.toBeNull()
+  expect(moveBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(resizeBox?.width ?? 0).toBeGreaterThanOrEqual(44)
+
+  await page.mouse.move(
+    (moveBox?.x ?? 0) + (moveBox?.width ?? 0) / 2,
+    (moveBox?.y ?? 0) + (moveBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (moveBox?.x ?? 0) + (moveBox?.width ?? 0) / 2 + 150,
+    (moveBox?.y ?? 0) + (moveBox?.height ?? 0) / 2 - 75,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+  const movedPanel = await panel.boundingBox()
+  expect(movedPanel).not.toBeNull()
+  expect(movedPanel?.x ?? 0).toBeGreaterThan((initialPanel?.x ?? 0) + 80)
+  expect(movedPanel?.y ?? 0).toBeLessThan((initialPanel?.y ?? 0) - 35)
+
+  const liveResizeBox = await resizeHandle.boundingBox()
+  await page.mouse.move(
+    (liveResizeBox?.x ?? 0) + (liveResizeBox?.width ?? 0) / 2,
+    (liveResizeBox?.y ?? 0) + (liveResizeBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (liveResizeBox?.x ?? 0) + (liveResizeBox?.width ?? 0) / 2 + 120,
+    (liveResizeBox?.y ?? 0) + (liveResizeBox?.height ?? 0) / 2,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+  const widenedPanel = await panel.boundingBox()
+  expect(widenedPanel?.width ?? 0).toBeGreaterThan(
+    (movedPanel?.width ?? 0) + 80,
+  )
+
+  const storedLayout = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem('guitar-night-secondary-part-layout-v1') ?? '{}',
+    ),
+  )
+  expect(storedLayout.highway?.width ?? 0).toBeGreaterThan(300)
+
+  const protectedTarget = room
+    .locator('[data-guitar-night-secondary-protected]')
+    .first()
+  const targetBox = await protectedTarget.boundingBox()
+  const currentMoveBox = await moveHandle.boundingBox()
+  expect(targetBox).not.toBeNull()
+  await page.mouse.move(
+    (currentMoveBox?.x ?? 0) + (currentMoveBox?.width ?? 0) / 2,
+    (currentMoveBox?.y ?? 0) + (currentMoveBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (targetBox?.x ?? 0) + (targetBox?.width ?? 0) / 2,
+    (targetBox?.y ?? 0) + (targetBox?.height ?? 0) / 2,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+
+  const protectedRects = await room
+    .locator('[data-guitar-night-secondary-protected]')
+    .evaluateAll((elements) =>
+      elements
+        .filter((element) => {
+          const style = getComputedStyle(element)
+          return style.display !== 'none' && style.visibility !== 'hidden'
+        })
+        .map((element) => {
+          const rect = element.getBoundingClientRect()
+          return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+          }
+        }),
+    )
+  expect(protectedRects.length).toBeGreaterThan(0)
+  const finalPanel = await panel.boundingBox()
+  for (const protectedRect of protectedRects) {
+    const overlaps =
+      (finalPanel?.x ?? 0) < protectedRect.x + protectedRect.width &&
+      (finalPanel?.x ?? 0) + (finalPanel?.width ?? 0) > protectedRect.x &&
+      (finalPanel?.y ?? 0) < protectedRect.y + protectedRect.height &&
+      (finalPanel?.y ?? 0) + (finalPanel?.height ?? 0) > protectedRect.y
+    expect(overlaps).toBe(false)
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(panel).toHaveAttribute('data-placement-mode', 'docked')
+  await expect(
+    room.getByRole('button', {
+      name: 'Rhythm guitar preview is docked on this screen',
+    }),
+  ).toBeDisabled()
+  await expect(resizeHandle).toBeHidden()
 })
 
 test('keeps stage settings reachable at 200% text on a narrow phone @smoke', async ({
@@ -1611,10 +1801,15 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
       'true',
     )
 
-    const modeButtons = room.getByRole('button').filter({
-      hasText: /^(Highway|Grid|Tab|Neck)$/,
+    const stageViews = room.getByRole('group', {
+      name: 'Stage view',
+      exact: true,
     })
-    await expect(modeButtons).toHaveCount(4)
+    for (const view of ['Highway', 'Grid', 'Tab', 'Neck', 'Sheet']) {
+      await expect(
+        stageViews.getByRole('button', { name: view, exact: true }),
+      ).toBeVisible()
+    }
     const reflow = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,

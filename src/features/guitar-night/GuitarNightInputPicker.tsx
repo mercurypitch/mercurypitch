@@ -2,7 +2,7 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { For, onMount, Show } from 'solid-js'
+import { createUniqueId, For, onMount, Show } from 'solid-js'
 import type { GuitarInputDeviceOption, GuitarInputProfileKind, } from '@/lib/guitar/guitar-input-profile'
 import type { GuitarMidiPort } from '@/lib/guitar/guitar-midi-input'
 import styles from './GuitarNightApp.module.css'
@@ -30,13 +30,31 @@ interface GuitarNightInputPickerProps {
 const PROFILES: readonly {
   kind: GuitarInputProfileKind
   label: string
+  description: string
 }[] = [
-  { kind: 'microphone', label: 'Room mic' },
-  { kind: 'interface', label: 'Plugged in' },
-  { kind: 'midi', label: 'MIDI' },
+  {
+    kind: 'microphone',
+    label: 'Room mic',
+    description: 'Listen through this device’s microphone',
+  },
+  {
+    kind: 'interface',
+    label: 'Direct input',
+    description: 'Guitar connected through an audio interface',
+  },
+  {
+    kind: 'midi',
+    label: 'MIDI',
+    description: 'Listen through a connected MIDI guitar or controller',
+  },
 ]
 
 export function GuitarNightInputPicker(props: GuitarNightInputPickerProps) {
+  const profileDescriptionId = createUniqueId()
+  const selectedProfileDescription = () =>
+    PROFILES.find((profile) => profile.kind === props.profile())?.description ??
+    ''
+
   onMount(() => {
     if (props.profile() !== 'midi') props.onRefreshAudio()
   })
@@ -66,6 +84,7 @@ export function GuitarNightInputPicker(props: GuitarNightInputPickerProps) {
         class={styles.inputProfileChoices}
         role="group"
         aria-label="Input route"
+        aria-describedby={profileDescriptionId}
       >
         <For each={PROFILES}>
           {(profile) => (
@@ -73,6 +92,7 @@ export function GuitarNightInputPicker(props: GuitarNightInputPickerProps) {
               type="button"
               aria-pressed={props.profile() === profile.kind}
               disabled={props.switching()}
+              title={profile.description}
               onClick={() => props.onProfile(profile.kind)}
             >
               {profile.label}
@@ -80,6 +100,9 @@ export function GuitarNightInputPicker(props: GuitarNightInputPickerProps) {
           )}
         </For>
       </div>
+      <small id={profileDescriptionId} class={styles.inputPickerNote}>
+        {selectedProfileDescription()}
+      </small>
 
       <Show
         when={props.profile() === 'midi'}

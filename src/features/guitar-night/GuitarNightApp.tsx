@@ -17,8 +17,10 @@ import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-b
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
+import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -178,6 +180,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const voiceControl = useVoiceControlController()
   useVoiceToggleKey(voiceControl.toggle, () => setShowVoiceHelp(true))
   const [showVoiceHelp, setShowVoiceHelp] = createSignal(false)
+  const voiceHelpCommands = createVoiceHelpCommands({
+    openVoiceHelp: () => setShowVoiceHelp(true),
+  })
+  onCleanup(registerVoiceCommands(() => voiceHelpCommands))
   const firstWinConfig = createMemo(() =>
     resolveGuitarFirstWinConfig(props.firstWinConfig),
   )
@@ -2097,15 +2103,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     }
                     onToggleSheetTrack={referenceController.toggleSheetTrack}
                     secondaryLane={referenceController.secondaryLane}
-                    backingMelody={referenceController.backingMelodyNotes}
+                    backingMelody={
+                      referenceController.rehearsalBackingMelodyNotes
+                    }
                     defaultHearScore={
                       referenceController.scoredPartDefaultsAudible
                     }
                     audibleBackingTrackIds={
                       referenceController.audibleBackingTrackIds
                     }
+                    mutedBackingTrackIds={
+                      referenceController.mutedBackingTrackIds
+                    }
                     onToggleBackingTrack={
                       referenceController.toggleBackingTrack
+                    }
+                    soloedBackingTrackId={
+                      referenceController.soloedBackingTrackId
+                    }
+                    onToggleSoloBackingTrack={
+                      referenceController.toggleSoloBackingTrack
                     }
                   />
                 </Suspense>

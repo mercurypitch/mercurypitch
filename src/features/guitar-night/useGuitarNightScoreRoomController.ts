@@ -9,7 +9,7 @@
 // that clock to refresh the signal — it never defines the beat.
 
 import type { Accessor } from 'solid-js'
-import { createMemo, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
@@ -17,6 +17,7 @@ import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock, createSecondsToBeatClock } from '@/lib/midi-song'
+import { createPersistedSignal } from '@/lib/storage'
 import type { GuitarNightReference } from './reference-port'
 
 export type GuitarNightScoreRoomStatus =
@@ -31,6 +32,9 @@ export type GuitarNightScoreRoomStatus =
 export const SCORE_ROOM_MIN_TEMPO = 40
 export const SCORE_ROOM_MAX_TEMPO = GUITAR_ROOM_BAND_MAX_TEMPO_BPM
 export const SCORE_ROOM_MAX_COUNT_IN = 8
+export const GUITAR_NIGHT_SCORE_CHANNEL = 'guitar-night-score'
+export const GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY =
+  'mercurypitch.guitar-night.score-mix-volume.v1'
 
 interface GuitarNightScoreRoomControllerOptions {
   reference: Accessor<GuitarNightReference | null>
@@ -47,6 +51,8 @@ interface GuitarNightScoreRoomControllerOptions {
    * hear, each already carrying its own timbre.
    */
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
+  /** Which backing lanes are open now; gain changes are safe during playback. */
+  audibleBackingTrackIds?: Accessor<readonly string[]>
   /**
    * Whether the scored part sounds when the player has not said either way.
    * A tab with a band behind it hands that part to the player; a tab with one
@@ -132,6 +138,7 @@ export function scoreToBandMelody(
     midi: note.midi,
     startBeat: note.startBeat,
     durationBeats: note.duration,
+    channelId: GUITAR_NIGHT_SCORE_CHANNEL,
   }))
 }
 
@@ -219,6 +226,17 @@ export function useGuitarNightScoreRoomController(
     options.cancelFrame ?? ((handle: number) => cancelAnimationFrame(handle))
 
   const band = options.createBand?.() ?? createGuitarRoomBand()
+  const [masterVolume, setMasterVolumeSignal] = createPersistedSignal<number>(
+    GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY,
+    0.76,
+    {
+      validator: (value): value is number =>
+        typeof value === 'number' &&
+        Number.isFinite(value) &&
+        value >= 0 &&
+        value <= 1,
+    },
+  )
   // Held against the part it was chosen for, so scoring a different part gets
   // the default that suits it rather than the last part's answer.
   const [hearScoreOverride, setHearScoreOverride] = createSignal<{
@@ -235,6 +253,31 @@ export function useGuitarNightScoreRoomController(
       return override.value
     }
     return options.defaultHearScore?.() ?? true
+  })
+
+  // This signal changes only through `setMasterVolume`; seed the dormant graph
+  // once, then let that setter schedule exactly one live ramp per gesture.
+  band.setMasterLevel(masterVolume())
+  createEffect(() => {
+    band.setMelodyChannelLevel(
+      GUITAR_NIGHT_SCORE_CHANNEL,
+      configuredHearScore() ? 1 : 0,
+    )
+    const audible =
+      options.audibleBackingTrackIds === undefined
+        ? null
+        : new Set(options.audibleBackingTrackIds())
+    const channelIds = new Set(
+      (options.backingMelody?.() ?? [])
+        .map((note) => note.channelId)
+        .filter((channelId): channelId is string => channelId !== undefined),
+    )
+    for (const channelId of channelIds) {
+      band.setMelodyChannelLevel(
+        channelId,
+        audible === null || audible.has(channelId) ? 1 : 0,
+      )
+    }
   })
   const setHearScore = (
     next: boolean | ((previous: boolean) => boolean),
@@ -325,11 +368,7 @@ export function useGuitarNightScoreRoomController(
       (takePinsSetup() ? runningTake()?.countInBeats : undefined) ??
       configuredCountInBeats(),
   )
-  const hearScore = createMemo(
-    () =>
-      (takePinsSetup() ? runningTake()?.hearScore : undefined) ??
-      configuredHearScore(),
-  )
+  const hearScore = configuredHearScore
   const runningLoop = createMemo(() => runningTake()?.loop ?? null)
   /** The loop as the click was actually scheduled with it: whole beats. */
   const scheduledLoop = createMemo(() => {
@@ -354,6 +393,24 @@ export function useGuitarNightScoreRoomController(
     const beatToSeconds =
       runningTake()?.beatToSeconds ?? configuredBeatToSeconds()
     return beatToSeconds(beat)
+  })
+
+  // Once a pinned run has been released, keep the parked musical position in
+  // the newly selected score/tempo domain. Track changes are reactive, so the
+  // second half of this handoff necessarily happens after the owner's signal
+  // updates rather than inside the click handler that requested it.
+  createEffect(() => {
+    const currentStatus = status()
+    if (
+      runningTake() !== null ||
+      (currentStatus !== 'paused' && currentStatus !== 'complete')
+    ) {
+      return
+    }
+    const maximumBeat = scoreDurationBeats(options.reference())
+    const beat = Math.min(maximumBeat, Math.max(0, parkedBeat()))
+    if (beat !== parkedBeat()) setParkedBeat(beat)
+    setPositionSeconds(configuredBeatToSeconds()(beat))
   })
 
   const stopFrames = (): void => {
@@ -459,9 +516,7 @@ export function useGuitarNightScoreRoomController(
       secondsToBeat: secondsToBeatForRun,
       loop: loopForRun,
       hearScore:
-        mode === 'rehearsal'
-          ? configuredHearScore()
-          : mode === 'live-score' && audibleGuide && configuredHearScore(),
+        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide),
       melody:
         mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
           ? scoreToBandMelody(reference)
@@ -515,7 +570,7 @@ export function useGuitarNightScoreRoomController(
         // A tab room rehearses a written part, so it ticks rather than
         // grooving, and it sounds the part rather than something under it.
         feel: 'click',
-        melody: [...(run.hearScore ? run.melody : []), ...run.backingMelody],
+        melody: [...run.melody, ...run.backingMelody],
         melodyVariant: run.melodyVariant,
         exercisePulse: run.exercisePulse,
         onExerciseStart: (exerciseStartBeat, scheduledAtSeconds) => {
@@ -589,6 +644,34 @@ export function useGuitarNightScoreRoomController(
     setCountInRemaining(0)
     setStatus('paused')
     if (run !== null && run.mode !== 'rehearsal') setRunningTake(null)
+  }
+
+  /**
+   * Pause at the exact visible beat and release the old run snapshot. Setup
+   * changes can then apply to the next count-in without throwing the player
+   * back to beat one.
+   */
+  const parkForConfiguration = (): void => {
+    if (
+      status() === 'starting' ||
+      status() === 'count-in' ||
+      status() === 'playing'
+    ) {
+      pause()
+    }
+    if (
+      (status() !== 'paused' && status() !== 'complete') ||
+      runningTake() === null
+    ) {
+      return
+    }
+    const beat = parkedBeat()
+    setRunningTake(null)
+    const maximumBeat = scoreDurationBeats(options.reference())
+    const parked = Math.min(maximumBeat, Math.max(0, beat))
+    setParkedBeat(parked)
+    setPositionSeconds(configuredBeatToSeconds()(parked))
+    setStatus('paused')
   }
 
   /** Park the playhead exactly where the rail points, without opening audio. */
@@ -742,6 +825,7 @@ export function useGuitarNightScoreRoomController(
   }
 
   const setTempoBpm = (value: number): void => {
+    parkForConfiguration()
     setTempoOverride(
       Math.min(
         SCORE_ROOM_MAX_TEMPO,
@@ -754,6 +838,7 @@ export function useGuitarNightScoreRoomController(
   }
 
   const resetTempo = (): void => {
+    parkForConfiguration()
     setTempoOverride(null)
     if (runningTake() === null && status() === 'paused') {
       setPositionSeconds(configuredBeatToSeconds()(parkedBeat()))
@@ -761,9 +846,16 @@ export function useGuitarNightScoreRoomController(
   }
 
   const setCountInBeats = (value: number): void => {
+    if (status() === 'paused') parkForConfiguration()
     setCountInBeatsSignal(
       Math.min(SCORE_ROOM_MAX_COUNT_IN, Math.max(0, Math.round(value))),
     )
+  }
+
+  const setMasterVolume = (value: number): void => {
+    const next = Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0))
+    setMasterVolumeSignal(next)
+    band.setMasterLevel(next)
   }
 
   onCleanup(() => {
@@ -777,6 +869,7 @@ export function useGuitarNightScoreRoomController(
     runningLoop,
     /** Setup stays editable for a parked pre-play seek, but not a paused take. */
     setupLocked: takePinsSetup,
+    parkForConfiguration,
     /** Open the room's audio without scheduling a beat — for microphone input. */
     activateAudio: async (): Promise<boolean> =>
       (await band.activate()) !== null,
@@ -794,6 +887,7 @@ export function useGuitarNightScoreRoomController(
     tempoBpm,
     scoreTempo,
     countInBeats,
+    configuredCountInBeats,
     start,
     startAssessment,
     startLiveScore,
@@ -804,7 +898,9 @@ export function useGuitarNightScoreRoomController(
     setTempoBpm,
     resetTempo,
     setCountInBeats,
-    /** Whether the room sounds the score. Takes effect on the next take. */
+    masterVolume,
+    setMasterVolume,
+    /** Whether the room sounds the score; its gain changes during playback. */
     hearScore,
     setHearScore,
     /** Whether the click runs under the take. */

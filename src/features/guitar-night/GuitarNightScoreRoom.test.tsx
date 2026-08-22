@@ -4,8 +4,9 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightScoreRoom, scoreAssessmentRange, scoreLiveRange, scoreLoopPendingRestart, } from './GuitarNightScoreRoom'
+import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreLiveRange, scoreLoopPendingRestart, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 
@@ -34,7 +35,10 @@ const VELVET_RIFF: GuitarNightReference = {
 }
 
 describe('GuitarNightScoreRoom', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    globalThis.localStorage.clear()
+  })
 
   it('opens silent, naming the tab and its own clock', () => {
     render(() => (
@@ -52,6 +56,51 @@ describe('GuitarNightScoreRoom', () => {
     expect(screen.getByLabelText('Start the count-in')).toBeTruthy()
     // The tab's authored tempo, unaltered.
     expect(screen.getByLabelText('Tempo 90 BPM')).toBeTruthy()
+    expect(screen.getByLabelText('Rehearsal mix volume')).toBeTruthy()
+  })
+
+  it('registers the useful hands-free Rehearse commands', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const ids = new Set(activeVoiceCommands().map((command) => command.id))
+    expect(ids).toContain('guitarNight.score.play')
+    expect(ids).toContain('guitarNight.score.loopSetA')
+    expect(ids).toContain('guitarNight.score.loopSetB')
+    expect(ids).toContain('guitarNight.score.clickToggle')
+    expect(ids).toContain('guitarNight.score.listeningToggle')
+    expect(ids).toContain('guitarNight.score.showScore')
+  })
+
+  it('opens an honest empty Score sheet before the first take', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    expect(screen.getByRole('dialog', { name: 'Score' })).toBeInTheDocument()
+    expect(screen.getByText('No scored take yet')).toBeInTheDocument()
+  })
+
+  it('keeps modal ownership exclusive and pauses voice commands behind it', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(screen.getByTestId('guitar-night-session-trigger'))
+    expect(
+      screen.getByRole('dialog', { name: 'Loaded score' }),
+    ).toBeInTheDocument()
+    expect(
+      activeVoiceCommands()
+        .find((command) => command.id === 'guitarNight.score.play')
+        ?.available?.(),
+    ).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    expect(screen.queryByRole('dialog', { name: 'Loaded score' })).toBeNull()
+    expect(screen.getByRole('dialog', { name: 'Score' })).toBeInTheDocument()
   })
 
   it('offers the instrument picker in every view, not just the tab', () => {
@@ -85,7 +134,11 @@ describe('GuitarNightScoreRoom', () => {
 
     const summary = screen.getByLabelText('Session controls')
     fireEvent.click(summary)
-    const countIn = screen.getByLabelText('Count-in beats')
+    const countIn = summary
+      .closest('details')
+      ?.querySelector<HTMLButtonElement>('button[aria-label^="Count-in"]')
+    expect(countIn).toBeTruthy()
+    if (countIn === undefined || countIn === null) return
     countIn.focus()
 
     fireEvent.keyDown(countIn, { key: 'Escape' })
@@ -175,6 +228,16 @@ describe('GuitarNightScoreRoom', () => {
   })
 })
 
+describe('nextScoreCountIn', () => {
+  it('cycles Off, 1, 2 and 4 beats without a dropdown', () => {
+    expect(nextScoreCountIn(0)).toBe(1)
+    expect(nextScoreCountIn(1)).toBe(2)
+    expect(nextScoreCountIn(2)).toBe(4)
+    expect(nextScoreCountIn(4)).toBe(0)
+    expect(nextScoreCountIn(8)).toBe(0)
+  })
+})
+
 describe('scoreAssessmentRange', () => {
   it('uses quantized A/B marks as the explicit one-pass range', () => {
     expect(
@@ -237,6 +300,24 @@ describe('scoreLoopPendingRestart', () => {
     expect(scoreLoopPendingRestart(null, { start: 1, end: 5 }, false)).toBe(
       false,
     )
+  })
+})
+
+describe('scoreResultIsSettling', () => {
+  it('holds result actions only during the completed take settle window', () => {
+    expect(scoreResultIsSettling('complete', true)).toBe(true)
+    expect(scoreResultIsSettling('playing', true)).toBe(false)
+    expect(scoreResultIsSettling('complete', false)).toBe(false)
+  })
+})
+
+describe('scoreVoiceTransportIsPlaying', () => {
+  it('treats async room startup as active transport for honest voice feedback', () => {
+    expect(scoreVoiceTransportIsPlaying('starting')).toBe(true)
+    expect(scoreVoiceTransportIsPlaying('count-in')).toBe(true)
+    expect(scoreVoiceTransportIsPlaying('playing')).toBe(true)
+    expect(scoreVoiceTransportIsPlaying('paused')).toBe(false)
+    expect(scoreVoiceTransportIsPlaying('quiet')).toBe(false)
   })
 })
 

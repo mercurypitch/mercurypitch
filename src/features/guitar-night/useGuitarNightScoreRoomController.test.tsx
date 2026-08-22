@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference } from './reference-port'
-import { scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 function reference(
   overrides: Partial<GuitarNightReference> = {},
@@ -65,6 +65,8 @@ function bandHarness() {
       return result
     }),
     activate: vi.fn(async () => graph),
+    setMasterLevel: vi.fn(),
+    setMelodyChannelLevel: vi.fn(),
     stop: vi.fn(),
     getAudioGraph: () => graph,
     dispose: vi.fn(async () => undefined),
@@ -300,7 +302,7 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
-  it('pins every visible take value until the scheduled take is stopped', async () => {
+  it('parks at the playhead before applying a clock change', async () => {
     await createRoot(async (dispose) => {
       const { band, clock, getOptions } = bandHarness()
       const frames = frameHarness()
@@ -339,44 +341,20 @@ describe('useGuitarNightScoreRoomController', () => {
       )
       setInstrument('bass')
 
-      expect(room.tempoBpm()).toBe(120)
-      expect(room.countInBeats()).toBe(2)
-      expect(room.hearScore()).toBe(true)
-      expect(room.durationBeats()).toBe(4)
-      expect(room.durationSeconds()).toBe(2)
-      expect(room.displayReference()?.title).toBe('Velvet Riff')
-
-      getOptions()?.onBeat?.(0, 'count-in', 9.5)
-      expect(room.countInRemaining()).toBe(2)
-      clock.currentTime = 10.3
-      getOptions()?.onExerciseStart?.(0, 10)
-      clock.currentTime = 11
-      frames.pump()
-      expect(room.positionSeconds()).toBeCloseTo(1, 5)
-      expect(room.playheadBeat()).toBeCloseTo(2, 5)
-
-      // A delayed completion callback must not let the visible position run
-      // past the duration the active take pinned.
-      clock.currentTime = 14
-      frames.pump()
-      expect(room.positionSeconds()).toBe(2)
-
-      getOptions()?.onComplete?.(12)
-      expect(room.positionSeconds()).toBe(2)
-      expect(room.durationSeconds()).toBe(2)
-      // The completed take keeps its timeline, while setup now describes the
-      // next count-in instead of trapping controls on the old values.
+      expect(room.status()).toBe('paused')
+      expect(room.setupLocked()).toBe(false)
       expect(room.tempoBpm()).toBe(60)
-      expect(room.countInBeats()).toBe(8)
-      expect(room.hearScore()).toBe(false)
-      expect(room.displayReference()?.title).toBe('Velvet Riff')
-
-      room.stop()
-      expect(room.tempoBpm()).toBe(60)
-      expect(room.countInBeats()).toBe(8)
+      expect(room.configuredCountInBeats()).toBe(8)
       expect(room.hearScore()).toBe(false)
       expect(room.durationBeats()).toBe(10)
       expect(room.displayReference()?.title).toBe('Next Riff')
+      expect(band.stop).toHaveBeenCalled()
+
+      // Delayed callbacks from the abandoned run cannot revive its clock.
+      getOptions()?.onExerciseStart?.(0, 10)
+      clock.currentTime = 14
+      frames.pump()
+      expect(room.status()).toBe('paused')
       dispose()
     })
   })
@@ -648,6 +626,47 @@ describe('useGuitarNightScoreRoomController', () => {
 
       await room.start()
       expect(getOptions()).toMatchObject({ tempoBpm: 72, countInBeats: 2 })
+      dispose()
+    })
+  })
+
+  it('releases a completed score before switching the loaded part', async () => {
+    await createRoot(async (dispose) => {
+      const [currentReference, setCurrentReference] = createSignal(reference())
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: currentReference,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+      getOptions()?.onComplete?.(getOptions()?.durationBeats ?? 4)
+      expect(room.status()).toBe('complete')
+      expect(room.displayReference()?.title).toBe('Velvet Riff')
+
+      room.parkForConfiguration()
+      setCurrentReference(
+        reference({
+          title: 'Short part',
+          trackId: 'track-rhythm',
+          trackName: 'Rhythm guitar',
+          notes: [
+            {
+              ...reference().notes[0]!,
+              id: 'short-1',
+              duration: 2,
+            },
+          ],
+        }),
+      )
+
+      expect(room.status()).toBe('paused')
+      expect(room.setupLocked()).toBe(false)
+      expect(room.displayReference()?.title).toBe('Short part')
+      expect(room.playheadBeat()).toBe(2)
       dispose()
     })
   })
@@ -927,8 +946,18 @@ describe('scaleScoreTempoChanges', () => {
 describe('scoreToBandMelody', () => {
   it('hands the band pitch and position, dropping the fingering it cannot use', () => {
     expect(scoreToBandMelody(reference())).toEqual([
-      { midi: 64, startBeat: 0, durationBeats: 1 },
-      { midi: 67, startBeat: 2, durationBeats: 2 },
+      {
+        midi: 64,
+        startBeat: 0,
+        durationBeats: 1,
+        channelId: 'guitar-night-score',
+      },
+      {
+        midi: 67,
+        startBeat: 2,
+        durationBeats: 2,
+        channelId: 'guitar-night-score',
+      },
     ])
   })
 
@@ -988,11 +1017,83 @@ describe('the tab room sounds the tab', () => {
       room.setHearScore(false)
       await room.start()
 
-      // The click still keeps time; only the part goes quiet.
-      expect(getOptions()?.melody).toEqual([])
+      // The lane remains scheduled so it can be restored without a restart.
+      expect(getOptions()?.melody).toHaveLength(2)
+      expect(band.setMelodyChannelLevel).toHaveBeenCalledWith(
+        'guitar-night-score',
+        0,
+      )
       expect(getOptions()?.feel).toBe('click')
       dispose()
     })
+  })
+
+  it('changes the scored-part gain live without replacing the take', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+      getOptions()?.onExerciseStart?.(0, 11)
+      expect(room.status()).toBe('playing')
+
+      room.setHearScore(false)
+      expect(room.status()).toBe('playing')
+      expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+        'guitar-night-score',
+        0,
+      )
+
+      room.setHearScore(true)
+      expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+        'guitar-night-score',
+        1,
+      )
+      dispose()
+    })
+  })
+
+  it('persists and rehydrates the rehearsal mix volume', () => {
+    localStorage.removeItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)
+    try {
+      createRoot((dispose) => {
+        const { band } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        room.setMasterVolume(0.37)
+        expect(room.masterVolume()).toBe(0.37)
+        expect(band.setMasterLevel).toHaveBeenLastCalledWith(0.37)
+        dispose()
+      })
+
+      createRoot((dispose) => {
+        const { band } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        expect(room.masterVolume()).toBe(0.37)
+        expect(band.setMasterLevel).toHaveBeenLastCalledWith(0.37)
+        dispose()
+      })
+    } finally {
+      localStorage.removeItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)
+    }
   })
 
   describe('the rest of the band', () => {
@@ -1037,8 +1138,53 @@ describe('the tab room sounds the tab', () => {
         expect(room.hearScore()).toBe(false)
         await room.start()
         expect((getOptions()?.melody ?? []).map((note) => note.midi)).toEqual([
-          40,
+          64, 67, 40,
         ])
+        expect(band.setMelodyChannelLevel).toHaveBeenCalledWith(
+          'guitar-night-score',
+          0,
+        )
+        dispose()
+      })
+    })
+
+    it('opens and closes backing lanes live from the host mix', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const [audible, setAudible] = createSignal<readonly string[]>([
+          'track-bass',
+        ])
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          backingMelody: () => [
+            {
+              midi: 40,
+              startBeat: 0,
+              durationBeats: 1,
+              variant: 'bass',
+              channelId: 'track-bass',
+            },
+          ],
+          audibleBackingTrackIds: audible,
+        })
+
+        await room.start()
+        getOptions()?.onExerciseStart?.(0, 11)
+        setAudible([])
+        expect(room.status()).toBe('playing')
+        expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+          'track-bass',
+          0,
+        )
+        setAudible(['track-bass'])
+        expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+          'track-bass',
+          1,
+        )
         dispose()
       })
     })
