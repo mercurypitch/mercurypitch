@@ -38,8 +38,16 @@ describe('GuitarNightInputPicker', () => {
       'aria-pressed',
       'true',
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Plugged in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Direct input' }))
     expect(chooseProfile).toHaveBeenCalledWith('interface')
+    expect(
+      screen.getByRole('button', { name: 'Direct input' }),
+    ).toHaveAttribute('title', 'Guitar connected through an audio interface')
+    const routeGroup = screen.getByRole('group', { name: 'Input route' })
+    const description = screen.getByText(
+      'Listen through this device’s microphone',
+    )
+    expect(routeGroup).toHaveAttribute('aria-describedby', description.id)
     expect(
       screen.getByRole('combobox', { name: 'Audio input device' }),
     ).toHaveValue('')
