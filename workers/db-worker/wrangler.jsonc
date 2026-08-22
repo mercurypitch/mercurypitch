@@ -51,6 +51,10 @@
       "bucket_name": "mercurypitch-guided-media",
     },
     {
+      "binding": "PRACTICE_RESULTS_BUCKET",
+      "bucket_name": "mercurypitch-practice-results",
+    },
+    {
       // Private premium originals and variants. No public domain and no UVR
       // expiry rules: published revision keys are immutable. The top-level
       // config mirrors prod for local/default config resolution; supported
@@ -167,6 +171,10 @@
           "bucket_name": "mercurypitch-guided-media-dev",
         },
         {
+          "binding": "PRACTICE_RESULTS_BUCKET",
+          "bucket_name": "mercurypitch-practice-results-dev",
+        },
+        {
           "binding": "PREMIUM_BACKGROUNDS_BUCKET",
           "bucket_name": "mercurypitch-premium-backgrounds-dev",
         },
@@ -241,6 +249,10 @@
         {
           "binding": "GUIDED_MEDIA_BUCKET",
           "bucket_name": "mercurypitch-guided-media-prod",
+        },
+        {
+          "binding": "PRACTICE_RESULTS_BUCKET",
+          "bucket_name": "mercurypitch-practice-results-prod",
         },
         {
           "binding": "PREMIUM_BACKGROUNDS_BUCKET",

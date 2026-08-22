@@ -7,8 +7,9 @@ import { getDb } from '@/db'
 import type { PracticeResultRecord, SessionRecord, SessionSource, } from '@/db/entities'
 import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { getCurrentStreak } from '@/db/services/streak-service'
-import { getUserId } from '@/db/services/user-service'
+import { getAuthHeaders, getUserId } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { API_BASE_URL } from '@/lib/defaults'
 
 /**
  * Bumped whenever a session record lands. Every producer — session mode,
@@ -157,6 +158,31 @@ export async function loadSessionRecords(limit = 50): Promise<SessionRecord[]> {
     })
   } catch {
     return []
+  }
+}
+
+/**
+ * Fetch the heavy note-by-note analytics JSON for a session from the cloud (R2).
+ * These are stripped from the D1 sessionRecords row to save bandwidth, so they
+ * must be fetched explicitly when needed (e.g. restoring history on a new device).
+ */
+export async function loadSessionAnalytics(
+  sessionId: string,
+): Promise<PracticeResultRecord[] | null> {
+  const headers = getAuthHeaders()
+  if (headers.Authorization == null || headers.Authorization === '') return null
+  if (API_BASE_URL == null || API_BASE_URL === '') return null
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/api/sessionRecords/${sessionId}/analytics`,
+      {
+        headers,
+      },
+    )
+    if (!res.ok) return null
+    return (await res.json()) as PracticeResultRecord[]
+  } catch {
+    return null
   }
 }
 

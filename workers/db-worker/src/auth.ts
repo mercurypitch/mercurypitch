@@ -40,6 +40,8 @@ export interface Env {
    *  Premium Background Studio and bytes are readable only through the
    *  entitlement/capability-gated delivery endpoint. */
   PREMIUM_BACKGROUNDS_BUCKET?: R2Bucket
+  /** Holds the heavy note-by-note session results JSON. */
+  PRACTICE_RESULTS_BUCKET?: R2Bucket
   /** Private service binding to the Jam signaling Worker. Used only to ask
    *  the room Durable Object whether an owner token matches its stored host. */
   JAM_WORKER?: {
