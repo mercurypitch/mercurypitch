@@ -109,23 +109,23 @@ test('plays the rest of the band, and lets any of it be muted @smoke', async ({
   const panel = page.getByTestId('guitar-night-session-panel')
   await expect(panel.getByLabel('Mute Rhythm guitar')).toHaveAttribute(
     'aria-pressed',
-    'true',
+    'false',
   )
   await expect(panel.getByLabel('Mute Bass')).toHaveAttribute(
     'aria-pressed',
-    'true',
+    'false',
   )
   // The part being scored is the player's to play, so it is quiet by default.
-  await expect(panel.getByLabel('Hear Lead guitar')).toHaveAttribute(
+  await expect(panel.getByLabel('Unmute Lead guitar')).toHaveAttribute(
     'aria-pressed',
-    'false',
+    'true',
   )
-  await expect(panel.getByLabel('Hear Lead guitar')).toBeDisabled()
+  await expect(panel.getByLabel('Unmute Lead guitar')).toBeDisabled()
 
   await panel.getByLabel('Mute Bass').click()
-  await expect(panel.getByLabel('Hear Bass')).toHaveAttribute(
+  await expect(panel.getByLabel('Unmute Bass')).toHaveAttribute(
     'aria-pressed',
-    'false',
+    'true',
   )
 })
 
@@ -152,9 +152,10 @@ test('gives a take a way out, so the room is not locked for good @smoke', async 
   const end = page.getByRole('button', { name: 'End the take' })
   await expect(end).toBeVisible()
 
-  // THE REPORT: everything the room offers goes dead once a take is running.
+  // Configuration stays reachable during a take; using it parks the run at
+  // the current playhead instead of leaving the room locked.
   await openSessionControls(page)
-  await expect(listening).toBeDisabled()
+  await expect(listening).toBeEnabled()
 
   await end.click()
   await openSessionControls(page)

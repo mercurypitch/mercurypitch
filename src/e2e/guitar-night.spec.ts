@@ -1801,10 +1801,15 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
       'true',
     )
 
-    const modeButtons = room.getByRole('button').filter({
-      hasText: /^(Highway|Grid|Tab|Neck)$/,
+    const stageViews = room.getByRole('group', {
+      name: 'Stage view',
+      exact: true,
     })
-    await expect(modeButtons).toHaveCount(4)
+    for (const view of ['Highway', 'Grid', 'Tab', 'Neck', 'Sheet']) {
+      await expect(
+        stageViews.getByRole('button', { name: view, exact: true }),
+      ).toBeVisible()
+    }
     const reflow = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
