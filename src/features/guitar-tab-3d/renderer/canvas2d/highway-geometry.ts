@@ -1,7 +1,8 @@
 // Highway geometry maps one musical scene onto either frets or string lanes.
 // ============================================================
 
-import type { TabPresentation } from '../TabRenderer'
+import { beatsToDepth } from '../projection'
+import type { TabPresentation, TabSceneLoopSpan } from '../TabRenderer'
 
 export const TAB_WALL_HALF_WIDTH = 6
 export const TAB_WALL_BOTTOM = 0
@@ -12,6 +13,42 @@ export const TAB_FRET_MARGIN = 0.4
 export const TAB_LANE_HEIGHT = 0.18
 
 export type TabWorldPoint = [number, number, number]
+
+export interface TabLoopDepthRange {
+  /** Clipped depth ratios on the visible runway, where 0 is NOW and 1 is far. */
+  startDepth: number
+  endDepth: number
+  startVisible: boolean
+  endVisible: boolean
+}
+
+/** Clip one authored loop to the exact beat window painted by either 3D view. */
+export function tabLoopDepthRange(
+  loopSpan: TabSceneLoopSpan | undefined,
+  playheadBeat: number,
+  visibleBeatWindow: number,
+): TabLoopDepthRange | null {
+  if (
+    loopSpan === undefined ||
+    !Number.isFinite(loopSpan.startBeat) ||
+    !Number.isFinite(loopSpan.endBeat) ||
+    loopSpan.endBeat <= loopSpan.startBeat
+  ) {
+    return null
+  }
+  const window = Math.max(1, visibleBeatWindow)
+  // Use the renderer's canonical beat projection rather than duplicating its
+  // current arithmetic; a future depth curve must move notes and loop together.
+  const rawStart = beatsToDepth(loopSpan.startBeat - playheadBeat, window)
+  const rawEnd = beatsToDepth(loopSpan.endBeat - playheadBeat, window)
+  if (rawEnd < 0 || rawStart > 1) return null
+  return {
+    startDepth: Math.max(0, Math.min(1, rawStart)),
+    endDepth: Math.max(0, Math.min(1, rawEnd)),
+    startVisible: rawStart >= 0 && rawStart <= 1,
+    endVisible: rawEnd >= 0 && rawEnd <= 1,
+  }
+}
 
 export function tabFretX(
   fret: number,

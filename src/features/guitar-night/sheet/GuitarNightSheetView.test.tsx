@@ -270,6 +270,40 @@ describe('GuitarNightSheetView', () => {
     }
   })
 
+  it('paints read-only A/B fragments on each system they cross', () => {
+    const restore = sizeThePage(800, 1_000)
+    try {
+      const { container } = render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(20)] })]}
+          playheadBeat={() => 9}
+          loopStart={() => 6}
+          loopEnd={() => 18}
+          loopActive={() => true}
+        />
+      ))
+
+      expect(
+        screen.getByRole('group', {
+          name: /Score sheet.*Loop from beat 7 to beat 19, repeating/,
+        }),
+      ).toBeVisible()
+      expect(
+        container.querySelectorAll(
+          '[data-testid^="guitar-night-sheet-loop-region-"]',
+        ),
+      ).toHaveLength(2)
+      expect(
+        screen.getByTestId('guitar-night-sheet-loop-marker-a'),
+      ).toHaveAttribute('data-active', 'true')
+      expect(
+        screen.getByTestId('guitar-night-sheet-loop-marker-b'),
+      ).toHaveAttribute('data-active', 'true')
+    } finally {
+      restore()
+    }
+  })
+
   it('paints the music onto the canvas it mounted', () => {
     const restore = sizeThePage(800, 400)
     try {

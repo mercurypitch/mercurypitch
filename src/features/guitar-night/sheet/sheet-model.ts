@@ -76,6 +76,20 @@ export interface SheetBeatPosition {
   fraction: number
 }
 
+/** One clipped piece of a rehearsal loop on a single horizontal system. */
+export interface SheetLoopFragment {
+  systemIndex: number
+  startFraction: number
+  endFraction: number
+  startsAtA: boolean
+  endsAtB: boolean
+}
+
+/** A labelled loop boundary placed on one horizontal system. */
+export interface SheetLoopMarker extends SheetBeatPosition {
+  mark: 'A' | 'B'
+}
+
 /** The beat the last note of any lane finishes on, or 0 for an empty sheet. */
 export function totalBeatsForLanes(lanes: readonly SheetLane[]): number {
   let end = 0
@@ -212,6 +226,88 @@ export function locateBeat(
     systemIndex,
     fraction: clamp01((beat - system.startBeat) / system.beats),
   }
+}
+
+/**
+ * Split a complete A/B range at system boundaries. A range ending exactly at
+ * a new system belongs to the previous system's right edge, avoiding a stray
+ * zero-width fragment at the start of the next row.
+ */
+export function sheetLoopFragments(
+  placement: SheetPlacement,
+  loopStart: number | null,
+  loopEnd: number | null,
+): SheetLoopFragment[] {
+  if (
+    loopStart === null ||
+    loopEnd === null ||
+    !Number.isFinite(loopStart) ||
+    !Number.isFinite(loopEnd) ||
+    loopEnd <= loopStart
+  ) {
+    return []
+  }
+
+  const fragments: SheetLoopFragment[] = []
+  for (const system of placement.systems) {
+    if (system.beats <= 0) continue
+    const systemEnd = system.startBeat + system.beats
+    const clippedStart = Math.max(loopStart, system.startBeat)
+    const clippedEnd = Math.min(loopEnd, systemEnd)
+    if (clippedEnd <= clippedStart) continue
+    fragments.push({
+      systemIndex: system.index,
+      startFraction: beatFractionInSystem(system, clippedStart),
+      endFraction: beatFractionInSystem(system, clippedEnd),
+      startsAtA: loopStart >= system.startBeat && loopStart < systemEnd,
+      endsAtB: loopEnd > system.startBeat && loopEnd <= systemEnd,
+    })
+  }
+  return fragments
+}
+
+/** Place A/B labels consistently with the fragments they terminate. */
+export function sheetLoopMarkers(
+  placement: SheetPlacement,
+  loopStart: number | null,
+  loopEnd: number | null,
+): SheetLoopMarker[] {
+  const complete =
+    loopStart !== null &&
+    loopEnd !== null &&
+    Number.isFinite(loopStart) &&
+    Number.isFinite(loopEnd) &&
+    loopEnd > loopStart
+  if (complete) {
+    const markers: SheetLoopMarker[] = []
+    for (const fragment of sheetLoopFragments(placement, loopStart, loopEnd)) {
+      if (fragment.startsAtA) {
+        markers.push({
+          mark: 'A',
+          systemIndex: fragment.systemIndex,
+          fraction: fragment.startFraction,
+        })
+      }
+      if (fragment.endsAtB) {
+        markers.push({
+          mark: 'B',
+          systemIndex: fragment.systemIndex,
+          fraction: fragment.endFraction,
+        })
+      }
+    }
+    return markers
+  }
+
+  const markers: SheetLoopMarker[] = []
+  const addMark = (mark: 'A' | 'B', beat: number | null) => {
+    if (beat === null || !Number.isFinite(beat)) return
+    const position = locateBeat(placement, beat)
+    if (position !== null) markers.push({ mark, ...position })
+  }
+  addMark('A', loopStart)
+  addMark('B', loopEnd)
+  return markers
 }
 
 /** How far across a system a beat sits, for drawing inside one system only. */

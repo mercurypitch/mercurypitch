@@ -103,10 +103,49 @@ describe('GuitarNightSessionPanel', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Close the session details' })[0],
-    )
+    fireEvent.click(screen.getByTestId('guitar-night-session-scrim'))
     expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  it('closes on an outside pointer start without swallowing the stage gesture', () => {
+    const onClose = vi.fn()
+    const onHighwayPointerDown = vi.fn()
+    render(() => (
+      <>
+        <button type="button" onPointerDown={onHighwayPointerDown}>
+          Guitar highway
+        </button>
+        <GuitarNightSessionPanel
+          reference={() => reference()}
+          onSelectTrack={vi.fn()}
+          onClose={onClose}
+        />
+      </>
+    ))
+
+    expect(
+      screen.getByRole('button', { name: 'Close the session details' }),
+    ).toHaveFocus()
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Guitar highway' }),
+    )
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onHighwayPointerDown).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not close when the pointer starts inside the dialog', () => {
+    const onClose = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        onSelectTrack={vi.fn()}
+        onClose={onClose}
+      />
+    ))
+
+    fireEvent.pointerDown(screen.getByRole('dialog', { name: 'Loaded score' }))
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('explains a single-part file instead of showing a pointless list', () => {

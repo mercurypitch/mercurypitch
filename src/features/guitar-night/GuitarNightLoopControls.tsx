@@ -12,6 +12,7 @@ interface GuitarNightLoopControlsProps {
   pending: boolean
   hasStart: boolean
   hasEnd: boolean
+  disabled?: boolean
   /** Render one position the way this room's timeline reads. */
   format(position: number): string
   onMarkStart(): void
@@ -31,7 +32,12 @@ export function GuitarNightLoopControls(props: GuitarNightLoopControlsProps) {
           type="button"
           classList={{ [styles.loopMarkSet]: props.hasStart }}
           aria-pressed={props.hasStart}
-          title="Start the loop where the playhead is"
+          disabled={props.disabled}
+          title={
+            props.disabled === true
+              ? 'Finish the scored take before changing its loop'
+              : 'Start the loop where the playhead is'
+          }
           onClick={() => props.onMarkStart()}
         >
           A
@@ -40,7 +46,12 @@ export function GuitarNightLoopControls(props: GuitarNightLoopControlsProps) {
           type="button"
           classList={{ [styles.loopMarkSet]: props.hasEnd }}
           aria-pressed={props.hasEnd}
-          title="End the loop where the playhead is"
+          disabled={props.disabled}
+          title={
+            props.disabled === true
+              ? 'Finish the scored take before changing its loop'
+              : 'End the loop where the playhead is'
+          }
           onClick={() => props.onMarkEnd()}
         >
           B
@@ -65,6 +76,7 @@ export function GuitarNightLoopControls(props: GuitarNightLoopControlsProps) {
         <button
           type="button"
           class={styles.loopClear}
+          disabled={props.disabled}
           title="Clear the loop"
           onClick={() => props.onClear()}
         >

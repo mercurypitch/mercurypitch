@@ -21,6 +21,7 @@ interface Fixture {
   listeningActive: () => boolean
   scoreOpen: () => boolean
   setListeningBlocked: (reason: string | null) => void
+  setLoopBlocked: (reason: string | null) => void
   setScoreCanShow: (value: boolean) => void
 }
 
@@ -37,12 +38,14 @@ function makeFixture(): Fixture {
   let tabSoundEnabled = true
   let listeningActive = false
   let listeningBlocked: string | null = null
+  let loopBlocked: string | null = null
   let scoreOpen = false
   let scoreCanShow = true
 
   const loop: GuitarNightScoreVoiceLoop = {
     hasA: () => markA,
     hasB: () => markB,
+    blockedReason: () => loopBlocked,
     markA: () => {
       calls.push('loop:a')
       markA = true
@@ -150,6 +153,9 @@ function makeFixture(): Fixture {
     setListeningBlocked: (reason) => {
       listeningBlocked = reason
     },
+    setLoopBlocked: (reason) => {
+      loopBlocked = reason
+    },
     setScoreCanShow: (value) => {
       scoreCanShow = value
     },
@@ -214,6 +220,12 @@ describe('guitar night score voice commands', () => {
     expect(fire(fixture, 'loop')).toBe('Loop off')
     expect(fire(fixture, 'clear loop')).toBe('Loop cleared')
     expect(fire(fixture, 'clear loop')).toBe('No loop to clear')
+
+    fixture.setLoopBlocked('Finish the scored take before changing its loop')
+    expect(fire(fixture, 'mark a')).toBe(
+      'Finish the scored take before changing its loop',
+    )
+    expect(fixture.calls.filter((call) => call === 'loop:a')).toHaveLength(1)
   })
 
   it('changes the click, count-in and tab sound while preserving state', () => {

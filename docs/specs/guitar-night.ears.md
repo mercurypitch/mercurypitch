@@ -245,12 +245,19 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   or event timeline and shall label the capture as user-run and unverified.
 - **REQ-GN-RUNTIME-023 — Rehearsal control parity:** WHILE an authored score
   room is open, its primary rail shall expose persistent master volume, shared
-  A/B marks, click, count-in, and authored-tab sound without requiring the
-  Session sheet. Mute and solo shall change audible lanes during playback;
-  changing the scored track or input route may park the run but shall preserve
-  the playhead. Voice control shall advertise only the Rehearse commands it can
-  execute, including transport, marks, click, count-in, tab sound, Listening,
-  and Score.
+  A/B marks, a coarse Off/Room mic/Direct input/MIDI Listening cycle, click,
+  count-in, and authored-tab sound without requiring the Session sheet. Mute
+  and solo shall change audible lanes during playback; changing the scored
+  track or input route may park the run but shall preserve the playhead. Voice
+  control shall advertise only the Rehearse commands it can execute, including
+  transport, marks, click, count-in, tab sound, Listening, and Score.
+- **REQ-GN-RUNTIME-024 — Live loop admission:** WHEN an ordinary authored-score
+  rehearsal is playing and a valid B mark completes an A/B span, the room shall
+  immediately relaunch the same pinned rehearsal at A with no second count-in
+  and schedule that loop into its audio clock. WHEN that active loop is cleared,
+  the unlooped rehearsal shall continue from the exact currently visible beat.
+  Phrase-review and live-score evidence runs shall refuse loop mutation rather
+  than blending evidence from different ranges.
 
 ## Tuner — `GN-TUNER-*`
 
@@ -885,6 +892,15 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   increase the visible upcoming beat window within a bounded range. On narrow
   viewports the preview shall use a stable non-draggable dock instead of
   introducing overflow or unsafe targets.
+- **REQ-GN-STAGE-018 — Visible loop range:** WHERE an authored A or B mark is
+  set, the elapsed-time rail and every time-bearing stage projection shall show
+  its labelled boundary without colour being the only distinction. A complete
+  range shall remain visible through Tab, Sheet, Highway, and Grid motion; Neck
+  may use a compact range status because fret space is not a time axis. The
+  elapsed rail shall keep the full-score seek mapping after B is set, offer an
+  explicit focused boundary editor only when close marks need more room, and
+  support pointer and keyboard boundary edits without pausing the ordinary
+  rehearsal or moving its seek thumb unexpectedly.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 

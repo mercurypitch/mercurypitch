@@ -7,8 +7,8 @@ import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import styles from './GuitarNightSheetView.module.css'
-import type { SheetLane, SheetPlacement, SheetSystem } from './sheet-model'
-import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, } from './sheet-model'
+import type { SheetLane, SheetLoopFragment, SheetLoopMarker, SheetPlacement, SheetSystem, } from './sheet-model'
+import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, sheetLoopFragments, sheetLoopMarkers, } from './sheet-model'
 import type { SheetMetrics, SheetRenderer, SheetSystemLayout, SheetTheme, } from './sheet-render'
 import { DEFAULT_SHEET_METRICS, layoutSystemLanes, readSheetTheme, visibleSystemRange, } from './sheet-render'
 import { tabSheetRenderer } from './sheet-tab-renderer'
@@ -19,6 +19,10 @@ const MAX_CANVAS_SCALE = 2
 export interface GuitarNightSheetViewProps {
   lanes: Accessor<readonly SheetLane[]>
   playheadBeat: Accessor<number>
+  /** Authored-beat rehearsal loop, painted without becoming an editor here. */
+  loopStart?: Accessor<number | null>
+  loopEnd?: Accessor<number | null>
+  loopActive?: Accessor<boolean>
   /** The part being graded, drawn in full ink. */
   scoredTrackId?: Accessor<string | undefined>
   timeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
@@ -75,6 +79,54 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
   const visibleSystems = createMemo(() =>
     placement().systems.slice(range().start, range().end),
   )
+  const loopVisuals = createMemo(() => {
+    const currentPlacement = placement()
+    const loopStart = props.loopStart?.() ?? null
+    const loopEnd = props.loopEnd?.() ?? null
+    const fragments = new Map(
+      sheetLoopFragments(currentPlacement, loopStart, loopEnd).map(
+        (fragment) => [fragment.systemIndex, fragment] as const,
+      ),
+    )
+    const markers = new Map<number, SheetLoopMarker[]>()
+    for (const marker of sheetLoopMarkers(
+      currentPlacement,
+      loopStart,
+      loopEnd,
+    )) {
+      const systemMarkers = markers.get(marker.systemIndex) ?? []
+      systemMarkers.push(marker)
+      markers.set(marker.systemIndex, systemMarkers)
+    }
+    return { fragments, markers }
+  })
+  const loopDescription = createMemo(() => {
+    const start = props.loopStart?.() ?? null
+    const end = props.loopEnd?.() ?? null
+    const formatBeat = (beat: number) => {
+      const counted = Math.max(0, beat) + 1
+      const label = Number.isInteger(counted)
+        ? String(counted)
+        : counted.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+      return `beat ${label}`
+    }
+    if (
+      start !== null &&
+      end !== null &&
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      end > start
+    ) {
+      return `Loop from ${formatBeat(start)} to ${formatBeat(end)}, ${props.loopActive?.() === true ? 'repeating' : 'ready'}`
+    }
+    if (start !== null && Number.isFinite(start)) {
+      return `Loop start at ${formatBeat(start)}; end not set`
+    }
+    if (end !== null && Number.isFinite(end)) {
+      return `Loop end at ${formatBeat(end)}; start not set`
+    }
+    return ''
+  })
 
   const playhead = createMemo(() => {
     const position = locateBeat(placement(), props.playheadBeat())
@@ -128,7 +180,11 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
       class={styles.sheet}
       ref={host}
       role="group"
-      aria-label="Score sheet"
+      aria-label={
+        loopDescription() === ''
+          ? 'Score sheet'
+          : `Score sheet. ${loopDescription()}.`
+      }
       data-testid="guitar-night-sheet"
     >
       <div
@@ -160,6 +216,9 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
                   theme={theme()}
                   renderer={renderer()}
                   top={system.index * systemHeight()}
+                  loopFragment={loopVisuals().fragments.get(system.index)}
+                  loopMarkers={loopVisuals().markers.get(system.index) ?? []}
+                  loopActive={props.loopActive?.() ?? false}
                   {...(props.onSelectTrack === undefined
                     ? {}
                     : { onSelectTrack: props.onSelectTrack })}
@@ -194,12 +253,22 @@ interface SheetSystemRowProps {
   theme: SheetTheme
   renderer: SheetRenderer
   top: number
+  loopFragment: SheetLoopFragment | undefined
+  loopMarkers: readonly SheetLoopMarker[]
+  loopActive: boolean
   onSelectTrack?: (trackId: string) => void
 }
 
 /** One horizontal row of bars: the music on a canvas, the names above it. */
 const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
   let canvas: HTMLCanvasElement | undefined
+  const loopX = (fraction: number) => {
+    const contentWidth = Math.max(
+      1,
+      props.metrics.width - props.metrics.gutterWidth,
+    )
+    return props.metrics.gutterWidth + fraction * contentWidth
+  }
 
   createEffect(() => {
     const element = canvas
@@ -249,7 +318,35 @@ const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
         height: `${props.layout.height}px`,
       }}
     >
+      <Show when={props.loopFragment}>
+        {(fragment) => (
+          <div
+            class={styles.loopRegion}
+            data-active={props.loopActive ? 'true' : undefined}
+            data-testid={`guitar-night-sheet-loop-region-${props.system.index}`}
+            aria-hidden="true"
+            style={{
+              left: `${loopX(fragment().startFraction)}px`,
+              width: `${Math.max(0, loopX(fragment().endFraction) - loopX(fragment().startFraction))}px`,
+            }}
+          />
+        )}
+      </Show>
       <canvas class={styles.canvas} ref={canvas} aria-hidden="true" />
+      <For each={props.loopMarkers}>
+        {(marker) => (
+          <div
+            class={styles.loopMarker}
+            data-mark={marker.mark}
+            data-active={props.loopActive ? 'true' : undefined}
+            data-testid={`guitar-night-sheet-loop-marker-${marker.mark.toLowerCase()}`}
+            aria-hidden="true"
+            style={{ left: `${loopX(marker.fraction)}px` }}
+          >
+            <span>{marker.mark}</span>
+          </div>
+        )}
+      </For>
       <For each={props.layout.lanes}>
         {(laneLayout) => (
           <LaneName

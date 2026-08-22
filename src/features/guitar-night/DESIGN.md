@@ -261,14 +261,23 @@ core Learn set in
   loop. Reduced motion snaps camera changes, while reduced effects removes
   glow, shadows and additive compositing without removing musical meaning.
 - The score-only room keeps Play, tempo and master volume visible. Its compact
-  rail also reuses the same A/B marks, click, count-in and Tab-sound state as the
-  restrained Session overlay, so routine rehearsal never requires reopening a
-  sheet. Count-in is one calm Off/1/2/4 cycle rather than a fragile select.
+  pedalboard keeps Listening beside the timeline and reuses the same A/B marks,
+  click, count-in and Tab-sound state as the restrained Session overlay, so
+  routine rehearsal never requires reopening a sheet. Listening cycles through
+  Off, Room mic, Direct input and MIDI while Session remains the place for an
+  exact device. Count-in is one calm Off/1/2/4 cycle rather than a fragile
+  select.
   Before Play, the stage rests just ahead of the first authored note so a long
   intro reads as intentional rather than broken. The score rail supports exact
   pointer, touch, and keyboard seeking through the authored tempo map. An idle
   seek remains silent and leaves setup editable; pausing an actual take pins its
-  sound and resumes on the same audio context without another count-in. Input,
+  sound and resumes on the same audio context without another count-in.
+  Completing B during ordinary playback immediately reschedules the pinned run
+  at A with no second count-in; clearing the loop continues unlooped from the
+  currently visible beat. The full-score seek map stays stable, while a separate
+  explicit precision lens gives close A/B handles room. Tab, Sheet, Highway and
+  Grid mirror the range as read-only musical context; Neck names it without
+  pretending fret space is time. Input,
   instrument, tempo and scored-track changes park at that beat instead of
   resetting or presenting unexplained disabled controls. Per-part mute and solo
   remain live. Instrument and loop controls keep 44px targets. On a phone, room,

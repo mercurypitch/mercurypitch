@@ -59,9 +59,64 @@
 }
 
 .canvas {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.loopRegion {
+  position: absolute;
+  z-index: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  border-block: 1px solid rgba(106, 202, 189, 0.18);
+  background: rgba(106, 202, 189, 0.045);
+  pointer-events: none;
+}
+
+.loopRegion[data-active='true'] {
+  border-block-color: rgba(106, 202, 189, 0.34);
+  background: rgba(106, 202, 189, 0.075);
+}
+
+.loopMarker {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  border-inline-start: 1px dashed rgba(106, 202, 189, 0.68);
+  pointer-events: none;
+}
+
+.loopMarker[data-mark='B'] {
+  border-inline-start-color: rgba(224, 164, 93, 0.72);
+}
+
+.loopMarker[data-active='true'] {
+  border-inline-start-style: solid;
+  border-inline-start-width: 2px;
+}
+
+.loopMarker span {
+  position: absolute;
+  top: 0.1rem;
+  left: 0;
+  min-width: 1rem;
+  padding: 0.08rem 0.22rem;
+  border-radius: 0.2rem;
+  color: #100c08;
+  background: #6acabd;
+  font-size: 0.53rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.loopMarker[data-mark='B'] span {
+  background: #e0a45d;
+  transform: translateX(-100%);
 }
 
 .laneName {
@@ -100,6 +155,7 @@
 /* One element moves per frame. Everything else is painted and left alone. */
 .playhead {
   position: absolute;
+  z-index: 3;
   top: 0;
   inset-inline-start: 0;
   width: 2px;

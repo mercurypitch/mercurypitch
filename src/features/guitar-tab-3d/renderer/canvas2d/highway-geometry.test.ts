@@ -2,7 +2,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { TAB_FLOOR_DEPTH, tabConvergedX, tabFlightPoint, tabLandingPoint, tabTransverseWorldSpan, } from './highway-geometry'
+import { beatsToDepth } from '../projection'
+import { TAB_FLOOR_DEPTH, tabConvergedX, tabFlightPoint, tabLandingPoint, tabLoopDepthRange, tabTransverseWorldSpan, } from './highway-geometry'
 
 describe('highway geometry', () => {
   it('encodes fret position on the grid and only in the label on string lanes', () => {
@@ -70,5 +71,34 @@ describe('highway geometry', () => {
     expect(tabConvergedX(5.6, 0, 0.45)).toBe(5.6)
     expect(tabConvergedX(5.6, 1, 0.45)).toBeCloseTo(2.52)
     expect(tabConvergedX(-5.6, 1, 0.45)).toBeCloseTo(-2.52)
+  })
+
+  it('clips a loop through the renderer canonical beat-depth projection', () => {
+    const range = tabLoopDepthRange(
+      { startBeat: 11, endBeat: 17, active: true },
+      10,
+      8,
+    )
+
+    expect(range).toEqual({
+      startDepth: beatsToDepth(1, 8),
+      endDepth: beatsToDepth(7, 8),
+      startVisible: true,
+      endVisible: true,
+    })
+  })
+
+  it('clips a loop crossing NOW and hides ranges outside the runway', () => {
+    expect(
+      tabLoopDepthRange({ startBeat: 2, endBeat: 14, active: false }, 10, 8),
+    ).toEqual({
+      startDepth: 0,
+      endDepth: 0.5,
+      startVisible: false,
+      endVisible: true,
+    })
+    expect(
+      tabLoopDepthRange({ startBeat: 30, endBeat: 34, active: false }, 10, 8),
+    ).toBeNull()
   })
 })

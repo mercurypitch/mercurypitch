@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
 import type { SheetLane } from './sheet-model'
-import { barsPerSystemForWidth, beatFractionInSystem, buildSheetBars, buildSheetPlacement, groupIntoSystems, laneNotesInSystem, locateBeat, totalBeatsForLanes, } from './sheet-model'
+import { barsPerSystemForWidth, beatFractionInSystem, buildSheetBars, buildSheetPlacement, groupIntoSystems, laneNotesInSystem, locateBeat, sheetLoopFragments, sheetLoopMarkers, totalBeatsForLanes, } from './sheet-model'
 
 function note(
   startBeat: number,
@@ -271,5 +271,54 @@ describe('beatFractionInSystem', () => {
 
   it('reads a zero-length system as its start', () => {
     expect(beatFractionInSystem({ ...system!, beats: 0 }, 3)).toBe(0)
+  })
+})
+
+describe('sheet loop placement', () => {
+  const placement = buildSheetPlacement({
+    lanes: [lane([note(0), note(20)])],
+    totalBeats: 24,
+    barsPerSystem: 2,
+  })
+
+  it('splits a range across systems without moving its authored boundaries', () => {
+    expect(sheetLoopFragments(placement, 6, 18)).toEqual([
+      {
+        systemIndex: 0,
+        startFraction: 0.75,
+        endFraction: 1,
+        startsAtA: true,
+        endsAtB: false,
+      },
+      {
+        systemIndex: 1,
+        startFraction: 0,
+        endFraction: 1,
+        startsAtA: false,
+        endsAtB: false,
+      },
+      {
+        systemIndex: 2,
+        startFraction: 0,
+        endFraction: 0.25,
+        startsAtA: false,
+        endsAtB: true,
+      },
+    ])
+  })
+
+  it('puts B on the previous system when it lands exactly on a row break', () => {
+    expect(sheetLoopMarkers(placement, 8, 16)).toEqual([
+      { mark: 'A', systemIndex: 1, fraction: 0 },
+      { mark: 'B', systemIndex: 1, fraction: 1 },
+    ])
+    expect(sheetLoopFragments(placement, 8, 16)).toHaveLength(1)
+  })
+
+  it('shows an isolated mark without inventing a range', () => {
+    expect(sheetLoopFragments(placement, 8, null)).toEqual([])
+    expect(sheetLoopMarkers(placement, 8, null)).toEqual([
+      { mark: 'A', systemIndex: 1, fraction: 0 },
+    ])
   })
 })

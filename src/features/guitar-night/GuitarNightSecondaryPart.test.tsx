@@ -238,7 +238,7 @@ describe('GuitarNightSecondaryPart', () => {
           return rect(0, 0, 900, 540)
         }
         if (this.hasAttribute('data-stage-picker')) {
-          return this.hasAttribute('open')
+          return this.closest('details')?.hasAttribute('open') === true
             ? rect(12, 268, 340, 260)
             : rect(0, 0, 0, 0)
         }
@@ -256,11 +256,10 @@ describe('GuitarNightSecondaryPart', () => {
     const [pickerOpen, setPickerOpen] = createSignal(false)
     render(() => (
       <div ref={boundary} data-secondary-boundary>
-        <details
-          open={pickerOpen()}
-          data-stage-picker
-          data-guitar-night-secondary-protected
-        />
+        <details open={pickerOpen()}>
+          <summary>Camera</summary>
+          <div data-stage-picker data-guitar-night-secondary-protected />
+        </details>
         <GuitarNightSecondaryPart
           lane={() => lane()}
           playheadBeat={() => 0}
@@ -277,6 +276,79 @@ describe('GuitarNightSecondaryPart', () => {
     await waitFor(() =>
       expect(panel.style.transform).not.toBe('translate3d(12px, 388px, 0)'),
     )
+  })
+
+  it('uses the open space between separately protected header faceplates', async () => {
+    const rect = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+    ): DOMRect =>
+      ({
+        x,
+        y,
+        top: y,
+        right: x + width,
+        bottom: y + height,
+        left: x,
+        width,
+        height,
+        toJSON: () => ({}),
+      }) as DOMRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this.hasAttribute('data-secondary-boundary')) {
+          return rect(100, 50, 1_400, 640)
+        }
+        if (this.hasAttribute('data-guide-faceplate')) {
+          return rect(112, 62, 300, 54)
+        }
+        if (this.hasAttribute('data-tool-faceplate')) {
+          return rect(1_200, 62, 288, 54)
+        }
+        if (this.hasAttribute('data-hidden-picker')) {
+          return rect(900, 62, 400, 280)
+        }
+        if (
+          this.getAttribute('data-testid') === 'guitar-night-secondary-part'
+        ) {
+          const width = Number.parseFloat(this.style.width)
+          return rect(100, 50, Number.isFinite(width) ? width : 300, 140)
+        }
+        return rect(0, 0, 0, 0)
+      },
+    )
+    localStorage.setItem(
+      GUITAR_NIGHT_SECONDARY_LAYOUT_STORAGE_KEY,
+      JSON.stringify({
+        highway: { xRatio: 0.401_960_784, yRatio: 0, width: 560 },
+      }),
+    )
+
+    let boundary: HTMLDivElement | undefined
+    render(() => (
+      <div ref={boundary} data-secondary-boundary>
+        <div data-guide-faceplate data-guitar-night-secondary-protected />
+        <div data-tool-faceplate data-guitar-night-secondary-protected />
+        <details>
+          <summary>Camera</summary>
+          <div data-hidden-picker data-guitar-night-secondary-protected />
+        </details>
+        <GuitarNightSecondaryPart
+          lane={() => lane()}
+          playheadBeat={() => 0}
+          layoutKey={() => 'highway'}
+          boundaryElement={() => boundary}
+        />
+      </div>
+    ))
+
+    const panel = screen.getByTestId('guitar-night-secondary-part')
+    await waitFor(() =>
+      expect(panel.style.transform).toBe('translate3d(340px, 12px, 0)'),
+    )
+    expect(panel.style.width).toBe('560px')
   })
 
   it('lets a small-screen player collapse the dock and remembers the choice', async () => {

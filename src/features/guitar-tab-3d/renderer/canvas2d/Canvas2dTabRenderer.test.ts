@@ -77,6 +77,32 @@ function fakeCanvas() {
 }
 
 describe('Canvas2dTabRenderer notation', () => {
+  it.each(['string-highway', 'fret-axis'] as const)(
+    'draws labelled A/B planes in the %s presentation',
+    (presentation) => {
+      const scene = buildTabScene({
+        notes: [note('inside-loop')],
+        playheadBeat: 0,
+        visibleBeatWindow: 8,
+        showNoteLabels: true,
+        showFretboard: true,
+        display: VELVET_DISPLAY,
+        presentation,
+        loopSpan: { startBeat: 1, endBeat: 5, active: true },
+      })
+      const fake = fakeCanvas()
+      const renderer = new Canvas2dTabRenderer()
+      renderer.mount(fake.canvas)
+      renderer.resize(960, 600, 2)
+
+      renderer.render(scene)
+
+      const labels = fake.fillText.mock.calls.map((call) => call[0])
+      expect(labels).toEqual(expect.arrayContaining(['A', 'B']))
+      expect(fake.setLineDash).toHaveBeenCalledWith([])
+    },
+  )
+
   it('draws only source-authored chord and technique marks in reduced-effects mode', () => {
     const notation = {
       chordLabel: 'Am',

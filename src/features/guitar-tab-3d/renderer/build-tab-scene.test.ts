@@ -64,6 +64,25 @@ describe('buildTabScene', () => {
     expect({ ...highway, presentation: grid.presentation }).toEqual(grid)
   })
 
+  it('forwards a valid read-only loop and drops malformed ranges', () => {
+    const options = {
+      notes: [note()],
+      playheadBeat: 1,
+      visibleBeatWindow: 8,
+      showNoteLabels: true,
+      showFretboard: true,
+    } as const
+    const loopSpan = { startBeat: 4, endBeat: 12, active: true } as const
+
+    expect(buildTabScene({ ...options, loopSpan }).loopSpan).toBe(loopSpan)
+    expect(
+      buildTabScene({
+        ...options,
+        loopSpan: { startBeat: 12, endBeat: 4, active: true },
+      }).loopSpan,
+    ).toBeUndefined()
+  })
+
   it('draws a four-string bass as four strings when the host declares it', () => {
     // Inference alone floors at six and fills the two extra rows from guitar
     // defaults, which puts phantom strings above a bass's own G string.

@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import { buildStageNoteIndex, buildStageTabWindowIndex, guidePreviewBeat, neckWindow, stageEventContext, TAB_PLAYHEAD_RATIO, tabWindowEntries, } from './GuitarNightStage'
+import { buildStageNoteIndex, buildStageTabWindowIndex, guidePreviewBeat, neckWindow, stageEventContext, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabWindowEntries, } from './GuitarNightStage'
 
 function note(startBeat: number, fret = 0): GuitarNote {
   return {
@@ -127,6 +127,34 @@ describe('guidePreviewBeat', () => {
 
   it('has no preview without authored notes', () => {
     expect(guidePreviewBeat([], null)).toBeNull()
+  })
+})
+
+describe('tabLoopWindow', () => {
+  it('clips a complete range to the same moving window as the notes', () => {
+    const loop = tabLoopWindow(8, 16, 8 + WINDOW * TAB_PLAYHEAD_RATIO, WINDOW)
+
+    expect(loop.markers).toEqual([
+      { mark: 'A', offsetPercent: 0 },
+      { mark: 'B', offsetPercent: 100 },
+    ])
+    expect(loop.range).toEqual({ leftPercent: 0, widthPercent: 100 })
+  })
+
+  it('keeps an isolated boundary visible without inventing a range', () => {
+    const loop = tabLoopWindow(12, null, 12, WINDOW)
+
+    expect(loop.markers).toHaveLength(1)
+    expect(loop.markers[0]).toMatchObject({ mark: 'A' })
+    expect(loop.markers[0]?.offsetPercent).toBeCloseTo(TAB_PLAYHEAD_RATIO * 100)
+    expect(loop.range).toBeNull()
+  })
+
+  it('clips a range crossing NOW while leaving its offscreen A label behind', () => {
+    const loop = tabLoopWindow(2, 14, 10, WINDOW)
+
+    expect(loop.markers).toEqual([{ mark: 'B', offsetPercent: 68 }])
+    expect(loop.range).toEqual({ leftPercent: 0, widthPercent: 68 })
   })
 })
 

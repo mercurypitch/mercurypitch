@@ -1,0 +1,212 @@
+.frame {
+  --loop-range-track: rgba(244, 234, 219, 0.2);
+  --loop-range-progress: rgba(224, 164, 93, 0.78);
+  --loop-range-a: #6acabd;
+  --loop-range-b: #e0a45d;
+  --loop-range-region: rgba(106, 202, 189, 0.13);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.rail,
+.precisionRail {
+  position: relative;
+  min-width: 0;
+  min-height: var(--touch-target, 44px);
+}
+
+.track,
+.progress {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 3px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.track {
+  right: 0;
+  background: var(--loop-range-track);
+}
+
+.progress {
+  background: var(--loop-range-progress);
+}
+
+.region {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  height: 12px;
+  border: 1px solid color-mix(in srgb, var(--loop-range-a) 48%, transparent);
+  border-radius: 3px;
+  background: var(--loop-range-region);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.regionActive {
+  background: color-mix(in srgb, var(--loop-range-a) 22%, transparent);
+}
+
+.seek {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.rail:focus-within {
+  border-radius: 0.35rem;
+  box-shadow: inset 0 0 0 2px
+    color-mix(in srgb, var(--loop-range-a) 54%, transparent);
+}
+
+.marker {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  color: var(--loop-range-a);
+  cursor: ew-resize;
+  transform: translateX(-50%);
+  touch-action: none;
+}
+
+.marker::after {
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.35rem;
+  left: 50%;
+  width: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  box-shadow: 0 0 0.55rem color-mix(in srgb, currentColor 42%, transparent);
+  content: '';
+  transform: translateX(-50%);
+}
+
+.marker > span {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 50%;
+  min-width: 1rem;
+  padding: 0.08rem 0.22rem;
+  border-radius: 0.22rem;
+  color: #100c08;
+  background: currentColor;
+  font-size: 0.55rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.markerB {
+  color: var(--loop-range-b);
+}
+
+.markerDragging::after,
+.marker:focus-visible::after {
+  width: 3px;
+}
+
+.marker:focus-visible {
+  border-radius: 0.35rem;
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+.precisionLens {
+  position: absolute;
+  z-index: 12;
+  right: 2.9rem;
+  bottom: calc(100% - 0.12rem);
+  left: 0;
+  padding: 0.35rem 0.65rem 0.2rem;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.55rem;
+  background: rgba(10, 8, 7, 0.96);
+  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.32);
+}
+
+.precisionLabel {
+  position: absolute;
+  top: 0.26rem;
+  left: 0.55rem;
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.52rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.precisionRail {
+  margin-top: 0.24rem;
+}
+
+.focusAction {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.38rem;
+  color: rgba(244, 234, 219, 0.58);
+  background: transparent;
+  cursor: pointer;
+}
+
+.focusAction:hover,
+.focusAction:focus-visible,
+.focusAction[aria-pressed='true'] {
+  color: #f4eadb;
+  background: rgba(244, 234, 219, 0.07);
+}
+
+.focusAction svg {
+  display: block;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .track,
+  .progress {
+    height: 7px;
+  }
+
+  .region {
+    height: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .progress,
+  .region,
+  .marker {
+    transition:
+      left 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .markerDragging {
+    transition: none;
+  }
+}
