@@ -73,6 +73,7 @@ describe('backingMelody', () => {
       startBeat: 1,
       durationBeats: 2,
       variant: 'bass',
+      channelId: 'track-bass',
     })
   })
 

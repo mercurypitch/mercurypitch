@@ -173,6 +173,10 @@ describe('useGuitarNightLiveScoreController', () => {
       )
       expect(armTakeAt).toHaveBeenCalledWith(10)
       expect(completeTakeAt).toHaveBeenCalledWith(14)
+      expect(controller.boundary()?.id).toBe('live-1')
+      expect(controller.display()?.phase).toBe('active')
+      expect(controller.inputKind()).toBe('microphone')
+      expect(controller.startedAt()).toEqual(expect.any(Number))
 
       setRoomStatus('playing')
       setCurrentTake(take([attack(0), attack(1), attack(2)]))
@@ -255,6 +259,64 @@ describe('useGuitarNightLiveScoreController', () => {
       await Promise.resolve()
       expect(controller.score()).toBe(100)
       expect(controller.state()).toBe('paused')
+      dispose()
+    })
+  })
+
+  it('keeps a held result when a replacement run cannot be admitted', async () => {
+    await createRoot(async (dispose) => {
+      const [currentTake, setCurrentTake] =
+        createSignal<GuitarTakeSnapshot | null>(null)
+      const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+      let admitRun = true
+      const controller = useGuitarNightLiveScoreController({
+        listeningStatus: () => 'listening',
+        inputKind: () => 'microphone',
+        take: currentTake,
+        health: () => ({ state: 'good', hint: 'Good' }),
+        roomStatus: () => 'playing',
+        countInRemaining: () => 0,
+        playheadBeat,
+        startRoom: async () =>
+          admitRun
+            ? {
+                id: 'live-retained',
+                reference: REFERENCE,
+                range: { start: 0, end: 4 },
+                tempoBpm: 60,
+                scoreTempoBpm: 60,
+                countInBeats: 0,
+                sampleRate: SAMPLE_RATE,
+                startedAtSeconds: 10,
+                completedAtSeconds: 14,
+                beatToSeconds: (beat) => beat,
+              }
+            : null,
+        stopRoom: vi.fn(),
+        pauseRoom: vi.fn(),
+        stopInput: vi.fn(),
+        armTakeAt: () => {
+          setCurrentTake(take([]))
+          return true
+        },
+        completeTakeAt: () => true,
+      })
+
+      expect(await controller.start({ start: 0, end: 4 })).toBe(true)
+      setCurrentTake(take([attack(0), attack(1), attack(2)]))
+      setPlayheadBeat(3.1)
+      await Promise.resolve()
+      controller.hold()
+
+      const retainedBoundary = controller.boundary()
+      const retainedDisplay = controller.display()
+      admitRun = false
+
+      expect(await controller.start({ start: 0, end: 4 })).toBe(false)
+      expect(controller.boundary()).toBe(retainedBoundary)
+      expect(controller.display()).toBe(retainedDisplay)
+      expect(controller.state()).toBe('paused')
+      expect(controller.score()).toBe(100)
       dispose()
     })
   })
