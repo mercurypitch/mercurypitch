@@ -1382,6 +1382,48 @@
   font-variant-numeric: tabular-nums;
 }
 
+.transportVolume {
+  display: flex;
+  min-width: 126px;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  margin-left: 3px;
+  padding: 0 8px;
+  border: 1px solid rgb(224 207 180 / 14%);
+  border-radius: 10px;
+  color: var(--quiet);
+  background: #0d1012;
+}
+
+.transportVolume svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--cyan);
+}
+
+.transportVolume input {
+  width: 62px;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--brass);
+  cursor: pointer;
+}
+
+.transportVolume input:focus-visible {
+  outline: 2px solid var(--brass-soft);
+  outline-offset: 2px;
+}
+
+.transportVolume output {
+  min-width: 28px;
+  color: var(--brass-soft);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 .mobileNav {
   display: none;
 }
@@ -2458,7 +2500,7 @@
 
   .transportDivider,
   .tempoReadout,
-  .tempoStep {
+  .transport .tempoStep {
     display: none;
   }
 
@@ -2468,6 +2510,20 @@
 
   .transport .playButton {
     width: 50px;
+  }
+
+  .transportVolume {
+    min-width: 84px;
+    gap: 5px;
+    padding: 0 6px;
+  }
+
+  .transportVolume input {
+    width: 52px;
+  }
+
+  .transportVolume output {
+    display: none;
   }
 
   .scorePaper {
@@ -2672,6 +2728,12 @@
 
   .whiteKeys button:nth-child(3n) {
     background-color: #e8e1d6;
+  }
+}
+
+@media (max-width: 350px) {
+  .transportSpeed {
+    display: none;
   }
 }
 
