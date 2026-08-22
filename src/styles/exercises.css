@@ -4,7 +4,41 @@
 
 /* ── Exercise Menu ────────────────────────────────────────── */
 
+#exercises-panel {
+  /* Score ink is shared by the menu's recent-session row and the active
+     exercise's mobile history card, so it belongs to their common root. */
+  --exercise-score-high: #66d391;
+  --exercise-score-mid: #e5bd4d;
+  --exercise-score-low: #ff8f8b;
+}
+
+[data-theme='light'] #exercises-panel {
+  --exercise-score-high: #126b3a;
+  --exercise-score-mid: #775800;
+  --exercise-score-low: #b42335;
+}
+
 .exercises-panel {
+  /* Small badges need opaque pairs: their 0.6–0.66rem text cannot rely on a
+     translucent accent over whichever card happens to sit behind it. These
+     defaults are the dark composition; the light theme remaps the same roles
+     below without changing the exercise/difficulty meaning. */
+  --exercise-tag-bg: #1b2d42;
+  --exercise-tag-fg: #8fc7ff;
+  --exercise-easy-bg: #163a27;
+  --exercise-easy-fg: #66d391;
+  --exercise-medium-bg: #3a2d10;
+  --exercise-medium-fg: #e5bd4d;
+  --exercise-hard-bg: #421d23;
+  --exercise-hard-fg: #ff8f8b;
+  --exercise-elite-bg: #302650;
+  --exercise-elite-fg: #c4b5fd;
+  --exercise-great-bg: #163a27;
+  --exercise-great-fg: #66d391;
+  --exercise-good-bg: #3a2d10;
+  --exercise-good-fg: #e5bd4d;
+  --exercise-novice-bg: #27313d;
+  --exercise-novice-fg: #b6c2cf;
   width: 100%;
   height: 100%;
   padding: 20px;
@@ -34,6 +68,22 @@
 
 /* The art is near-black and there is no light version of it. */
 [data-theme='light'] .exercises-panel {
+  --exercise-tag-bg: #e7f1ff;
+  --exercise-tag-fg: #0969da;
+  --exercise-easy-bg: #dcf4e5;
+  --exercise-easy-fg: #167744;
+  --exercise-medium-bg: #fff0bf;
+  --exercise-medium-fg: #806000;
+  --exercise-hard-bg: #fde4e4;
+  --exercise-hard-fg: #b42335;
+  --exercise-elite-bg: #ede9fe;
+  --exercise-elite-fg: #6d28d9;
+  --exercise-great-bg: #dcf4e5;
+  --exercise-great-fg: #167744;
+  --exercise-good-bg: #fff0bf;
+  --exercise-good-fg: #806000;
+  --exercise-novice-bg: #e2e8f0;
+  --exercise-novice-fg: #475569;
   background-image: none;
 }
 
@@ -140,18 +190,18 @@
 }
 
 .exercise-card-difficulty.diff-easy {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.14);
+  color: var(--exercise-easy-fg);
+  background: var(--exercise-easy-bg);
 }
 
 .exercise-card-difficulty.diff-medium {
-  color: #eab308;
-  background: rgba(234, 179, 8, 0.14);
+  color: var(--exercise-medium-fg);
+  background: var(--exercise-medium-bg);
 }
 
 .exercise-card-difficulty.diff-hard {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.14);
+  color: var(--exercise-hard-fg);
+  background: var(--exercise-hard-bg);
 }
 
 /* Difficulty filter pills above the gallery. */
@@ -187,7 +237,7 @@
    selected seat already uses it. */
 .exercise-filter-pill.active {
   background: var(--accent);
-  color: var(--bg-primary);
+  color: var(--on-accent, var(--bg-primary));
   border-color: var(--accent);
 }
 
@@ -211,8 +261,8 @@
   font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background: var(--bg-accent, rgba(99, 102, 241, 0.1));
-  color: var(--text-accent, #a5b4fc);
+  background: var(--exercise-tag-bg);
+  color: var(--exercise-tag-fg);
 }
 
 /* ── Exercise Card Stats ──────────────────────────────────── */
@@ -238,23 +288,23 @@
 }
 
 .exercise-grade-elite {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a78bfa;
+  background: var(--exercise-elite-bg);
+  color: var(--exercise-elite-fg);
 }
 
 .exercise-grade-great {
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
+  background: var(--exercise-great-bg);
+  color: var(--exercise-great-fg);
 }
 
 .exercise-grade-good {
-  background: rgba(234, 179, 8, 0.12);
-  color: #facc15;
+  background: var(--exercise-good-bg);
+  color: var(--exercise-good-fg);
 }
 
 .exercise-grade-novice {
-  background: rgba(148, 163, 184, 0.1);
-  color: var(--text-secondary);
+  background: var(--exercise-novice-bg);
+  color: var(--exercise-novice-fg);
 }
 
 .exercise-card-best {
@@ -277,7 +327,7 @@
   border-radius: 999px;
   border: none;
   background: var(--accent-color, #6366f1);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
@@ -290,8 +340,21 @@
   transform: scale(0.96);
 }
 
-.exercise-card-start-btn:hover {
+.exercise-card-start-btn:hover:not(:disabled) {
   background: var(--accent-hover, #4f46e5);
+}
+
+.exercise-card-start-btn:focus-visible,
+.exercise-btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.exercise-card-start-btn:disabled,
+.exercise-btn-primary:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.55);
+  opacity: 0.55;
 }
 
 /* Inline "start with X" link in the getting-started nudge. */
@@ -585,10 +648,10 @@
 
 .exercise-btn-primary {
   background: var(--accent-color, #6366f1);
-  color: #fff;
+  color: var(--on-accent, var(--bg-primary));
 }
 
-.exercise-btn-primary:hover {
+.exercise-btn-primary:hover:not(:disabled) {
   background: var(--accent-hover, #4f46e5);
 }
 
@@ -893,6 +956,13 @@
 /* ── ExerciseShell: recent-scores chip (canvas corner) ─────── */
 
 .exercise-score-history {
+  /* This is a deliberately dark glass card even inside the light app shell.
+     Own its ink locally; mobile-polish.css remaps these roles when the card
+     becomes an ordinary theme surface in the in-flow phone layout. */
+  --exercise-history-muted: #a8b3bf;
+  --exercise-history-good: #66d391;
+  --exercise-history-ok: #e5bd4d;
+  --exercise-history-poor: #ff8f8b;
   position: absolute;
   top: 12px;
   right: 12px;
@@ -914,7 +984,7 @@
   font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  color: var(--exercise-history-muted);
 }
 
 /* The most recent score, shown large so it's clearly visible after a run. */
@@ -938,24 +1008,23 @@
   padding: 2px 8px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
-  opacity: 0.85;
 }
 
 .exercise-score-chip-good {
-  color: #22c55e;
+  color: var(--exercise-history-good);
 }
 
 .exercise-score-chip-ok {
-  color: #eab308;
+  color: var(--exercise-history-ok);
 }
 
 .exercise-score-chip-poor {
-  color: #ef4444;
+  color: var(--exercise-history-poor);
 }
 
 .exercise-score-history-best {
   font-size: 0.72rem;
-  color: var(--text-secondary);
+  color: var(--exercise-history-muted);
   margin-top: 2px;
 }
 
