@@ -173,14 +173,27 @@ test('swaps the corner part with the one being read @smoke', async ({
   // you can maybe swap between the two easily, by tapping."
   const corner = page.getByTestId('guitar-night-secondary-part')
   await expect(corner).toBeVisible()
-  await corner.getByRole('button').click()
+  await corner
+    .getByRole('button', {
+      name: 'Read Rhythm guitar instead',
+      exact: true,
+    })
+    .click()
 
   await expect(room.getByText(/Tab rehearsal · Rhythm guitar/)).toBeVisible()
   // The corner now offers the way back, so tapping twice returns.
   await expect(
-    corner.getByRole('button', { name: 'Read Lead guitar instead' }),
+    corner.getByRole('button', {
+      name: 'Read Lead guitar instead',
+      exact: true,
+    }),
   ).toBeVisible()
-  await corner.getByRole('button').click()
+  await corner
+    .getByRole('button', {
+      name: 'Read Lead guitar instead',
+      exact: true,
+    })
+    .click()
   await expect(room.getByText(/Tab rehearsal · Lead guitar/)).toBeVisible()
 })
 
