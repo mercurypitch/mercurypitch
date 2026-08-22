@@ -176,10 +176,13 @@ core Learn set in
 - Authored score beat time is derived from the tab room's canonical audio
   clock, never from render frames. Beat-to-seconds and seconds-to-beat mapping
   both use the complete persisted tempo map; changing the opening tempo scales
-  the whole map instead of flattening it. The take snapshots its tempo, map,
-  count-in, guide sound, melody and loop until Stop, so an already scheduled
-  click cannot drift away from the visible score. Without a usable reference,
-  the stage reports free play.
+  the whole map instead of flattening it. A launched take pins its tempo map,
+  targets, loop and exact boundary so an already scheduled click cannot drift
+  away from the visible score. Master volume, click and per-part gain remain
+  pop-free live controls. Count-in changes apply to the next launch; tempo,
+  scored-track and input-route changes park at the exact visible beat, retain
+  an earned partial result and release the pinned run for an explicit restart.
+  Without a usable reference, the stage reports free play.
 - A reference is either authored or measured. Authored notes come from a file
   and carry a real musical tempo. Measured notes are heard in one separated
   stem: they are evidence about this recording, already on its timeline, so they
@@ -257,17 +260,20 @@ core Learn set in
   room paints on scene or camera change instead of running a permanent frame
   loop. Reduced motion snaps camera changes, while reduced effects removes
   glow, shadows and additive compositing without removing musical meaning.
-- The score-only room keeps Play and tempo visible while count-in, guide sound,
-  Listening and loop setup live in one restrained Session overlay. Before Play,
-  the stage rests just ahead of the first authored note so a long intro reads as
-  intentional rather than broken. The score rail supports exact pointer, touch,
-  and keyboard seeking through the authored tempo map. An idle seek remains
-  silent and leaves setup editable; pausing an actual take pins its sound and
-  resumes on the same audio context without another count-in. Instrument and
-  loop controls keep 44px targets, and a completed take offers Replay or
-  Rehearse loop without opening an analysis dashboard. On a phone, room, Studio
-  and account utilities collapse behind one Room control so the instrument
-  keeps the viewport.
+- The score-only room keeps Play, tempo and master volume visible. Its compact
+  rail also reuses the same A/B marks, click, count-in and Tab-sound state as the
+  restrained Session overlay, so routine rehearsal never requires reopening a
+  sheet. Count-in is one calm Off/1/2/4 cycle rather than a fragile select.
+  Before Play, the stage rests just ahead of the first authored note so a long
+  intro reads as intentional rather than broken. The score rail supports exact
+  pointer, touch, and keyboard seeking through the authored tempo map. An idle
+  seek remains silent and leaves setup editable; pausing an actual take pins its
+  sound and resumes on the same audio context without another count-in. Input,
+  instrument, tempo and scored-track changes park at that beat instead of
+  resetting or presenting unexplained disabled controls. Per-part mute and solo
+  remain live. Instrument and loop controls keep 44px targets. On a phone, room,
+  Studio and account utilities collapse behind one Room control so the
+  instrument keeps the viewport.
 - Explicit Listening upgrades the next authored-score Play into one independent
   live-score take. Its quiet score latch extends the existing stage signal
   faceplate rather than adding a card, modal, arcade HUD, combo, or diagnosis.
@@ -278,13 +284,24 @@ core Learn set in
   takes keep the guide and exercise pulse silent after the count-in; MIDI may
   retain the guide. Jam Doctor remains the separate action for phrase evidence,
   explanation, and recovery.
+- The top-level Score action opens a calm objective take ledger rather than a
+  diagnosis dashboard. It shows the latest completed cumulative grade and
+  scalar outcomes, may hold the current session's partial result without saving
+  it, and keeps at most a bounded local history of completed takes. The ledger
+  stores no raw input, event timeline or device identifier. Play again starts a
+  fresh scored take; Review phrase remains the explicit bridge to Jam Doctor.
+- A secondary authored part is a player-owned stage reference, not fixed
+  chrome. On larger stages it has dedicated drag and horizontal-resize handles,
+  keyboard equivalents, per-view placement and a bounded upcoming-note window.
+  Its collision rules protect the signal faceplate, camera tools and orbit hint.
+  Phones use a stable dock rather than a draggable layer.
 - Jam Doctor is an on-demand overlay/sheet rather than normal-flow content, so
   opening it never collapses the instrument. Desktop, tablet, and phone
   regressions keep the stage and pedalboard in the first viewport, preserve
   44px controls, and wrap a six-part band without horizontal page or channel
   discovery scrolling.
 - `Listening` is explicit and local. A compact Session/Band sheet offers Room
-  mic, Plugged in, and MIDI without requesting access until the player acts.
+  mic, Direct input, and MIDI without requesting access until the player acts.
   The selected route and device persist independently; the active take records
   the device the browser actually opened, reports a saved-device fallback, and
   completes cleanly if that device disappears. A microphone held by another
