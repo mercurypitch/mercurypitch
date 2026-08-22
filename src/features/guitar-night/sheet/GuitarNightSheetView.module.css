@@ -24,6 +24,7 @@
 .scroll {
   position: relative;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.75rem 1rem;
@@ -55,6 +56,7 @@
   position: absolute;
   inset-inline: 0;
   top: 0;
+  overflow: clip;
   will-change: transform;
 }
 
@@ -64,6 +66,61 @@
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+}
+
+/* One transparent native range per visible system makes the notation itself a
+   precise seek surface. Its focus ring is deliberately visible; the canvas
+   remains paint and never steals a hit from the controls above it. */
+.systemSeek {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  outline-offset: -3px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.systemSeek::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+
+.systemSeek::-webkit-slider-thumb {
+  width: 1px;
+  height: 100%;
+  appearance: none;
+  border: 0;
+  background: transparent;
+}
+
+.systemSeek::-moz-range-track {
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.systemSeek::-moz-range-thumb {
+  width: 1px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.systemSeek:focus-visible {
+  outline: 2px solid rgba(224, 164, 93, 0.9);
+}
+
+.systemSeek:disabled {
+  cursor: default;
 }
 
 .loopRegion {
@@ -83,21 +140,49 @@
 
 .loopMarker {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   top: 0;
   bottom: 0;
-  width: 1px;
+  width: 0;
   border-inline-start: 1px dashed rgba(106, 202, 189, 0.68);
-  pointer-events: none;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.loopMarker::after {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 44px;
+  content: '';
 }
 
 .loopMarker[data-mark='B'] {
   border-inline-start-color: rgba(224, 164, 93, 0.72);
 }
 
+.loopMarker[data-mark='B']::after {
+  left: -44px;
+}
+
 .loopMarker[data-active='true'] {
   border-inline-start-style: solid;
   border-inline-start-width: 2px;
+}
+
+.loopMarker[aria-disabled='true'] {
+  cursor: default;
+  pointer-events: none;
+}
+
+.loopMarker[aria-hidden='true'] {
+  cursor: default;
+  pointer-events: none;
+}
+
+.loopMarker:focus-visible::after {
+  outline: 2px solid #f4eadb;
+  outline-offset: 3px;
 }
 
 .loopMarker span {
@@ -121,6 +206,7 @@
 
 .laneName {
   position: absolute;
+  z-index: 5;
   inset-inline-start: 0;
   display: flex;
   align-items: center;

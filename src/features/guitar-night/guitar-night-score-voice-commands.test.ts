@@ -41,6 +41,8 @@ function makeFixture(): Fixture {
   let loopBlocked: string | null = null
   let scoreOpen = false
   let scoreCanShow = true
+  let positionSeconds = 30
+  const durationSeconds = 180
 
   const loop: GuitarNightScoreVoiceLoop = {
     hasA: () => markA,
@@ -87,6 +89,14 @@ function makeFixture(): Fixture {
       paused = false
     },
     goToBeginning: () => calls.push('beginning'),
+    seek: {
+      positionSeconds: () => positionSeconds,
+      durationSeconds: () => durationSeconds,
+      seekSeconds: (seconds) => {
+        positionSeconds = seconds
+        calls.push(`seek:${String(seconds)}`)
+      },
+    },
     loop,
     click: {
       enabled: () => clickEnabled,
@@ -210,6 +220,21 @@ describe('guitar night score voice commands', () => {
     expect(fire(fixture, 'stop')).toBe('Nothing to stop')
   })
 
+  it('moves through the score by spoken seconds and minutes', () => {
+    const fixture = makeFixture()
+
+    expect(fire(fixture, 'forward 15 seconds')).toBe('Forward 15 seconds')
+    expect(fire(fixture, 'go back 5 seconds')).toBe('Back 5 seconds')
+    expect(fire(fixture, 'forward 2 minutes')).toBe('Forward 2 minutes')
+    expect(fire(fixture, 'back 1 minute')).toBe('Back 1 minute')
+    expect(fixture.calls).toEqual([
+      'seek:45',
+      'seek:40',
+      'seek:160',
+      'seek:100',
+    ])
+  })
+
   it('marks, enables and clears A/B loops with useful failures', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'loop on')).toBe('Set A and B first')
@@ -279,6 +304,7 @@ describe('guitar night score voice commands', () => {
     const fixture = makeFixture()
     const commands = createGuitarNightScoreVoiceCommands({
       ...fixture.deps,
+      seek: undefined,
       loop: undefined,
       click: undefined,
       countIn: undefined,

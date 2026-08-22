@@ -2,6 +2,7 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
@@ -260,12 +261,20 @@ describe('Guitar Night calibration lock', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     listening.status.mockReturnValue('calibrating')
+    listening.inputProfile.mockReturnValue('microphone')
     listening.notice.mockReturnValue(null)
     listening.take.mockReturnValue(null)
     listening.armTakeAt.mockReturnValue(false)
     listening.completeTakeAt.mockReturnValue(false)
     listening.calibrate.mockResolvedValue(false)
+    listening.start.mockResolvedValue(true)
+    listening.selectInputProfile.mockResolvedValue(undefined)
     scoreRoom.status.mockReturnValue('quiet')
+    scoreRoom.setupLocked.mockReturnValue(false)
+    scoreRoom.start.mockResolvedValue(true)
+    scoreRoom.pause.mockImplementation(() => undefined)
+    scoreRoom.toggle.mockImplementation(() => undefined)
+    scoreRoom.stop.mockImplementation(() => undefined)
     scoreRoom.startAssessment.mockResolvedValue(null)
   })
 
@@ -313,6 +322,205 @@ describe('Guitar Night calibration lock', () => {
 
     fireEvent.keyDown(window, { code: 'Space' })
     expect(scoreRoom.toggle).not.toHaveBeenCalled()
+  })
+
+  it('keeps every room tool locked through an asynchronous route change', async () => {
+    let routeStatus = 'listening'
+    let resolveRoute!: () => void
+    const routeReady = new Promise<undefined>((resolve) => {
+      resolveRoute = () => resolve(undefined)
+    })
+    listening.status.mockImplementation(() => routeStatus)
+    listening.selectInputProfile.mockReturnValue(routeReady)
+
+    render(() => (
+      <GuitarNightScoreRoom reference={() => REFERENCE} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Listening with Room mic. Switch to Direct input',
+      }),
+    )
+
+    expect(listening.selectInputProfile).toHaveBeenCalledWith('interface')
+    expect(screen.getByLabelText('Start the count-in')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Tune guitar' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', {
+        name: 'Review beat 1 for 1 beat',
+        hidden: true,
+      }),
+    ).toBeDisabled()
+    fireEvent.keyDown(window, { code: 'Space' })
+    expect(scoreRoom.toggle).not.toHaveBeenCalled()
+    expect(listening.start).not.toHaveBeenCalled()
+
+    routeStatus = 'off'
+    resolveRoute()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(listening.start).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText('Start the count-in')).toBeEnabled()
+  })
+
+  it('cancels a pending route continuation when the room is suspended', async () => {
+    let resolveRoute!: () => void
+    const routeReady = new Promise<undefined>((resolve) => {
+      resolveRoute = () => resolve(undefined)
+    })
+    listening.status.mockReturnValue('listening')
+    listening.selectInputProfile.mockReturnValue(routeReady)
+    const [suspended, setSuspended] = createSignal(false)
+
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => REFERENCE}
+        suspended={suspended}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Listening with Room mic. Switch to Direct input',
+      }),
+    )
+    setSuspended(true)
+    resolveRoute()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(listening.start).not.toHaveBeenCalled()
+    setSuspended(false)
+    await Promise.resolve()
+    expect(screen.getByLabelText('Start the count-in')).toBeEnabled()
+  })
+
+  it('keeps Cancel opening input available during a pending permission prompt', async () => {
+    const [routeStatus, setRouteStatus] = createSignal('off')
+    let resolveStart!: (ready: boolean) => void
+    const startReady = new Promise<boolean>((resolve) => {
+      resolveStart = resolve
+    })
+    // Vitest invokes the accessor only when the component reads status, so the
+    // signal remains inside the component's tracked scope.
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(routeStatus)
+    listening.start.mockImplementation(() => {
+      setRouteStatus('requesting')
+      return startReady
+    })
+    listening.stop.mockImplementation(() => setRouteStatus('off'))
+
+    render(() => (
+      <GuitarNightScoreRoom reference={() => REFERENCE} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Listening is off. Switch to Room mic',
+      }),
+    )
+    expect(listening.start).toHaveBeenCalledOnce()
+
+    fireEvent.click(screen.getByLabelText('Listening is on'))
+    const cancel = screen.getByRole('button', {
+      name: 'Cancel opening input',
+    })
+    expect(cancel).toBeEnabled()
+    fireEvent.click(cancel)
+
+    expect(listening.stop).toHaveBeenCalledOnce()
+    resolveStart(true)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(listening.start).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText('Start the count-in')).toBeEnabled()
+  })
+
+  it('does not resume a scrub after the room becomes suspended', async () => {
+    scoreRoom.status.mockReturnValue('playing')
+    const [suspended, setSuspended] = createSignal(false)
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => REFERENCE}
+        suspended={suspended}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const rail = screen.getByLabelText('Score position')
+    fireEvent.pointerDown(rail)
+    setSuspended(true)
+    await Promise.resolve()
+    fireEvent.pointerUp(rail)
+
+    expect(scoreRoom.pause).toHaveBeenCalled()
+    expect(scoreRoom.start).not.toHaveBeenCalled()
+  })
+
+  it('does not resume a scrub behind a room modal', () => {
+    listening.status.mockReturnValue('off')
+    scoreRoom.status.mockReturnValue('playing')
+    render(() => (
+      <GuitarNightScoreRoom reference={() => REFERENCE} onSongs={vi.fn()} />
+    ))
+
+    const rail = screen.getByLabelText('Score position')
+    fireEvent.pointerDown(rail)
+    fireEvent.click(screen.getByRole('button', { name: 'Open score' }))
+    expect(screen.getByRole('dialog', { name: 'Score' })).toBeInTheDocument()
+    fireEvent.pointerUp(rail)
+
+    expect(scoreRoom.pause).toHaveBeenCalled()
+    expect(scoreRoom.start).not.toHaveBeenCalled()
+  })
+
+  it('does not let scrub release undo an explicit Stop', () => {
+    const [status, setStatus] = createSignal('playing')
+    listening.status.mockReturnValue('off')
+    // eslint-disable-next-line solid/reactivity -- called from the component's tracked scope
+    scoreRoom.status.mockImplementation(status)
+    scoreRoom.setupLocked.mockReturnValue(true)
+    scoreRoom.pause.mockImplementation(() => setStatus('paused'))
+    scoreRoom.stop.mockImplementation(() => setStatus('quiet'))
+
+    render(() => (
+      <GuitarNightScoreRoom reference={() => REFERENCE} onSongs={vi.fn()} />
+    ))
+
+    const rail = screen.getByLabelText('Score position')
+    fireEvent.pointerDown(rail)
+    fireEvent.click(screen.getByRole('button', { name: 'End the take' }))
+    fireEvent.pointerUp(rail)
+
+    expect(scoreRoom.stop).toHaveBeenCalledOnce()
+    expect(scoreRoom.start).not.toHaveBeenCalled()
+  })
+
+  it('does not double-start when Play is pressed during a scrub', () => {
+    const [status, setStatus] = createSignal('playing')
+    listening.status.mockReturnValue('off')
+    // eslint-disable-next-line solid/reactivity -- called from the component's tracked scope
+    scoreRoom.status.mockImplementation(status)
+    scoreRoom.setupLocked.mockReturnValue(true)
+    scoreRoom.pause.mockImplementation(() => setStatus('paused'))
+    scoreRoom.toggle.mockImplementation(() => setStatus('playing'))
+
+    render(() => (
+      <GuitarNightScoreRoom reference={() => REFERENCE} onSongs={vi.fn()} />
+    ))
+
+    const rail = screen.getByLabelText('Score position')
+    fireEvent.pointerDown(rail)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume score' }))
+    fireEvent.pointerUp(rail)
+
+    expect(scoreRoom.toggle).toHaveBeenCalledOnce()
+    expect(scoreRoom.start).not.toHaveBeenCalled()
   })
 
   it('parks a completed score take before opening Listening', () => {

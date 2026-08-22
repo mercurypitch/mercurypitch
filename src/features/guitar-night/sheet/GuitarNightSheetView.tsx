@@ -5,6 +5,8 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { DragGestureEndReason, DragGestureOptions, } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import styles from './GuitarNightSheetView.module.css'
 import type { SheetLane, SheetLoopFragment, SheetLoopMarker, SheetPlacement, SheetSystem, } from './sheet-model'
@@ -19,10 +21,18 @@ const MAX_CANVAS_SCALE = 2
 export interface GuitarNightSheetViewProps {
   lanes: Accessor<readonly SheetLane[]>
   playheadBeat: Accessor<number>
-  /** Authored-beat rehearsal loop, painted without becoming an editor here. */
+  /** Authored-beat rehearsal loop, with host-owned direct manipulation. */
   loopStart?: Accessor<number | null>
   loopEnd?: Accessor<number | null>
   loopActive?: Accessor<boolean>
+  loopEditingDisabled?: Accessor<boolean>
+  onMoveLoopMark?: (mark: 'A' | 'B', beat: number) => void
+  onCommitLoopMark?: (mark: 'A' | 'B') => void
+  /** Clicking or keyboard-adjusting a notation row moves the room playhead. */
+  onSeekBeat?: (beat: number) => void
+  onSeekStart?: () => void
+  onSeekEnd?: () => void
+  seekDisabled?: Accessor<boolean>
   /** The part being graded, drawn in full ink. */
   scoredTrackId?: Accessor<string | undefined>
   timeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
@@ -38,6 +48,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
 ) => {
   let host: HTMLDivElement | undefined
   let scroller: HTMLDivElement | undefined
+  let page: HTMLDivElement | undefined
 
   const [width, setWidth] = createSignal(0)
   const [scrollTop, setScrollTop] = createSignal(0)
@@ -143,7 +154,10 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
   const measure = (): void => {
     const element = scroller
     if (element === undefined) return
-    setWidth(element.clientWidth)
+    // The scroller owns horizontal padding while the score page owns the
+    // actual paintable width. Measuring the padded box projected a row-end B
+    // marker beyond the page and created a hidden horizontal scroll range.
+    setWidth(page?.clientWidth ?? element.clientWidth)
     setViewportHeight(element.clientHeight)
     setScrollTop(element.scrollTop)
   }
@@ -190,6 +204,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
       <div
         class={styles.scroll}
         ref={scroller}
+        data-testid="guitar-night-sheet-scroll"
         onScroll={() => {
           measure()
         }}
@@ -204,6 +219,10 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
         >
           <div
             class={styles.page}
+            ref={(element) => {
+              page = element
+              measure()
+            }}
             style={{ height: `${systemHeight() * systemCount()}px` }}
           >
             <For each={visibleSystems()}>
@@ -216,9 +235,29 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
                   theme={theme()}
                   renderer={renderer()}
                   top={system.index * systemHeight()}
+                  playheadBeat={props.playheadBeat()}
                   loopFragment={loopVisuals().fragments.get(system.index)}
                   loopMarkers={loopVisuals().markers.get(system.index) ?? []}
                   loopActive={props.loopActive?.() ?? false}
+                  loopStart={props.loopStart?.() ?? null}
+                  loopEnd={props.loopEnd?.() ?? null}
+                  loopEditingDisabled={props.loopEditingDisabled?.() ?? false}
+                  {...(props.onMoveLoopMark === undefined
+                    ? {}
+                    : { onMoveLoopMark: props.onMoveLoopMark })}
+                  {...(props.onCommitLoopMark === undefined
+                    ? {}
+                    : { onCommitLoopMark: props.onCommitLoopMark })}
+                  {...(props.onSeekBeat === undefined
+                    ? {}
+                    : { onSeekBeat: props.onSeekBeat })}
+                  {...(props.onSeekStart === undefined
+                    ? {}
+                    : { onSeekStart: props.onSeekStart })}
+                  {...(props.onSeekEnd === undefined
+                    ? {}
+                    : { onSeekEnd: props.onSeekEnd })}
+                  seekDisabled={props.seekDisabled?.() ?? false}
                   {...(props.onSelectTrack === undefined
                     ? {}
                     : { onSelectTrack: props.onSelectTrack })}
@@ -253,15 +292,26 @@ interface SheetSystemRowProps {
   theme: SheetTheme
   renderer: SheetRenderer
   top: number
+  playheadBeat: number
   loopFragment: SheetLoopFragment | undefined
   loopMarkers: readonly SheetLoopMarker[]
   loopActive: boolean
+  loopStart: number | null
+  loopEnd: number | null
+  loopEditingDisabled: boolean
+  onMoveLoopMark?: (mark: 'A' | 'B', beat: number) => void
+  onCommitLoopMark?: (mark: 'A' | 'B') => void
+  onSeekBeat?: (beat: number) => void
+  onSeekStart?: () => void
+  onSeekEnd?: () => void
+  seekDisabled: boolean
   onSelectTrack?: (trackId: string) => void
 }
 
 /** One horizontal row of bars: the music on a canvas, the names above it. */
 const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
   let canvas: HTMLCanvasElement | undefined
+  let keyboardScrubbing = false
   const loopX = (fraction: number) => {
     const contentWidth = Math.max(
       1,
@@ -333,18 +383,66 @@ const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
         )}
       </Show>
       <canvas class={styles.canvas} ref={canvas} aria-hidden="true" />
+      <Show when={props.onSeekBeat !== undefined}>
+        <input
+          class={styles.systemSeek}
+          type="range"
+          min={props.system.startBeat}
+          max={props.system.startBeat + props.system.beats}
+          step={0.25}
+          disabled={props.seekDisabled}
+          value={Math.min(
+            props.system.startBeat + props.system.beats,
+            Math.max(props.system.startBeat, props.playheadBeat),
+          )}
+          style={{ left: `${props.metrics.gutterWidth}px` }}
+          aria-label={`Playback position in score row ${props.system.index + 1}`}
+          aria-valuetext={formatSheetBeat(
+            Math.min(
+              props.system.startBeat + props.system.beats,
+              Math.max(props.system.startBeat, props.playheadBeat),
+            ),
+          )}
+          onPointerDown={() => props.onSeekStart?.()}
+          onPointerUp={() => props.onSeekEnd?.()}
+          onPointerCancel={() => props.onSeekEnd?.()}
+          onKeyDown={(event) => {
+            if (!LOOP_MARK_KEYS.has(event.key) || keyboardScrubbing) return
+            keyboardScrubbing = true
+            props.onSeekStart?.()
+          }}
+          onKeyUp={(event) => {
+            if (!LOOP_MARK_KEYS.has(event.key) || !keyboardScrubbing) return
+            keyboardScrubbing = false
+            props.onSeekEnd?.()
+          }}
+          onInput={(event) => {
+            props.onSeekBeat?.(Number(event.currentTarget.value))
+          }}
+          onBlur={() => {
+            if (!keyboardScrubbing) return
+            keyboardScrubbing = false
+            props.onSeekEnd?.()
+          }}
+        />
+      </Show>
       <For each={props.loopMarkers}>
         {(marker) => (
-          <div
-            class={styles.loopMarker}
-            data-mark={marker.mark}
-            data-active={props.loopActive ? 'true' : undefined}
-            data-testid={`guitar-night-sheet-loop-marker-${marker.mark.toLowerCase()}`}
-            aria-hidden="true"
-            style={{ left: `${loopX(marker.fraction)}px` }}
-          >
-            <span>{marker.mark}</span>
-          </div>
+          <SheetLoopBoundary
+            marker={marker}
+            system={props.system}
+            metrics={props.metrics}
+            active={props.loopActive}
+            loopStart={props.loopStart}
+            loopEnd={props.loopEnd}
+            disabled={props.loopEditingDisabled}
+            {...(props.onMoveLoopMark === undefined
+              ? {}
+              : { onMove: props.onMoveLoopMark })}
+            {...(props.onCommitLoopMark === undefined
+              ? {}
+              : { onCommit: props.onCommitLoopMark })}
+          />
         )}
       </For>
       <For each={props.layout.lanes}>
@@ -360,6 +458,157 @@ const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
           />
         )}
       </For>
+    </div>
+  )
+}
+
+const LOOP_MARK_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown',
+])
+
+const formatSheetBeat = (beat: number): string => {
+  const counted = Math.max(0, beat) + 1
+  const label = Number.isInteger(counted)
+    ? String(counted)
+    : counted.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+  return `Beat ${label}`
+}
+
+interface SheetLoopBoundaryProps {
+  marker: SheetLoopMarker
+  system: SheetSystem
+  metrics: SheetMetrics
+  active: boolean
+  loopStart: number | null
+  loopEnd: number | null
+  disabled: boolean
+  onMove?: (mark: 'A' | 'B', beat: number) => void
+  onCommit?: (mark: 'A' | 'B') => void
+}
+
+/** One exact A/B boundary, draggable inside the row whose bar map owns it. */
+const SheetLoopBoundary: Component<SheetLoopBoundaryProps> = (props) => {
+  let handle: HTMLDivElement | undefined
+  const [previewBeat, setPreviewBeat] = createSignal<number | null>(null)
+  let keyboardDirty = false
+
+  const markerBeat = () =>
+    props.system.startBeat + props.marker.fraction * props.system.beats
+  const shownBeat = () => previewBeat() ?? markerBeat()
+  const rowMinimum = () => props.system.startBeat
+  const rowMaximum = () => props.system.startBeat + props.system.beats
+  const minimum = () =>
+    props.marker.mark === 'B' && props.loopStart !== null
+      ? Math.max(rowMinimum(), props.loopStart + 1)
+      : rowMinimum()
+  const maximum = () =>
+    props.marker.mark === 'A' && props.loopEnd !== null
+      ? Math.min(rowMaximum(), props.loopEnd - 1)
+      : rowMaximum()
+  const legalBeat = (value: number) =>
+    Math.min(maximum(), Math.max(minimum(), Math.round(value)))
+  const contentX = (beat: number) => {
+    const contentWidth = Math.max(
+      1,
+      props.metrics.width - props.metrics.gutterWidth,
+    )
+    const fraction =
+      props.system.beats <= 0
+        ? 0
+        : Math.min(
+            1,
+            Math.max(0, (beat - props.system.startBeat) / props.system.beats),
+          )
+    return Math.min(
+      Math.max(0, props.metrics.width - 1),
+      props.metrics.gutterWidth + fraction * contentWidth,
+    )
+  }
+  const editable = () => props.onMove !== undefined
+  const interactive = () => editable() && !props.disabled
+  const publish = (): void => {
+    const value = previewBeat()
+    keyboardDirty = false
+    setPreviewBeat(null)
+    if (value === null || props.onMove === undefined) return
+    props.onMove(props.marker.mark, legalBeat(value))
+    props.onCommit?.(props.marker.mark)
+  }
+  const finish = (reason: DragGestureEndReason): void => {
+    if (reason === 'pointerup') publish()
+    else {
+      keyboardDirty = false
+      setPreviewBeat(null)
+    }
+  }
+  const options: DragGestureOptions = {
+    canStart: () => interactive(),
+    onStart: () => setPreviewBeat(markerBeat()),
+    onEnd: (_event, reason) => finish(reason),
+    stopPropagation: true,
+    slider: {
+      getAriaLabel: () =>
+        props.marker.mark === 'A'
+          ? 'Loop start marker on sheet'
+          : 'Loop end marker on sheet',
+      getValue: shownBeat,
+      getMin: minimum,
+      getMax: maximum,
+      getStep: () => 1,
+      getPageStep: () => 4,
+      getValueText: () => formatSheetBeat(shownBeat()),
+      isDisabled: () => !interactive(),
+      getValueFromPointer: (event) => {
+        const row = handle?.parentElement
+        if (row === null || row === undefined) return markerBeat()
+        const bounds = row.getBoundingClientRect()
+        const contentLeft = bounds.left + props.metrics.gutterWidth
+        const contentWidth = Math.max(
+          1,
+          bounds.width - props.metrics.gutterWidth,
+        )
+        const ratio = Math.min(
+          1,
+          Math.max(0, (event.clientX - contentLeft) / contentWidth),
+        )
+        return legalBeat(props.system.startBeat + ratio * props.system.beats)
+      },
+      onChange: (value) => {
+        setPreviewBeat(legalBeat(value))
+        keyboardDirty = true
+      },
+      onPointerValue: (value) => setPreviewBeat(legalBeat(value)),
+    },
+  }
+
+  return (
+    <div
+      class={styles.loopMarker}
+      data-mark={props.marker.mark}
+      data-active={props.active ? 'true' : undefined}
+      data-testid={`guitar-night-sheet-loop-marker-${props.marker.mark.toLowerCase()}`}
+      aria-hidden={editable() ? undefined : 'true'}
+      style={{ left: `${contentX(shownBeat())}px` }}
+      ref={(element) => {
+        handle = element
+        if (editable()) dragGesture(element, () => options)
+      }}
+      onClick={(event) => event.stopPropagation()}
+      onKeyUp={(event) => {
+        if (LOOP_MARK_KEYS.has(event.key) && keyboardDirty) publish()
+      }}
+      onBlur={() => {
+        if (keyboardDirty) publish()
+      }}
+    >
+      <span>{props.marker.mark}</span>
     </div>
   )
 }

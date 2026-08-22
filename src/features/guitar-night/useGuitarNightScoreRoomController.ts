@@ -682,18 +682,37 @@ export function useGuitarNightScoreRoomController(
     ) {
       return true
     }
+    if (currentStatus !== 'paused') readAudioClock()
+    const visibleBeat = Math.min(
+      run.endBeat,
+      Math.max(
+        0,
+        scorePlayheadBeat(
+          positionSeconds(),
+          run.loop,
+          run.beatToSeconds,
+          run.secondsToBeat,
+        ),
+      ),
+    )
+    // Completing A/B is an explicit request to enter the new loop at A. Once
+    // a loop already exists, boundary edits behave like the Stem Mixer: keep
+    // the audible playhead when it remains inside the edited range, and only
+    // fold to A when the edit leaves it outside the new half-open span.
+    const restartBeat =
+      run.loop !== null &&
+      visibleBeat >= activatedLoop.start &&
+      visibleBeat < activatedLoop.end
+        ? visibleBeat
+        : activatedLoop.start
     if (currentStatus === 'paused') {
       setRunningTake({ ...run, loop: activatedLoop })
-      setParkedBeat(activatedLoop.start)
-      setPositionSeconds(run.beatToSeconds(activatedLoop.start))
+      setParkedBeat(restartBeat)
+      setPositionSeconds(run.beatToSeconds(restartBeat))
       return true
     }
     return (
-      (await launch(
-        { ...run, loop: activatedLoop },
-        activatedLoop.start,
-        0,
-      )) !== null
+      (await launch({ ...run, loop: activatedLoop }, restartBeat, 0)) !== null
     )
   }
 

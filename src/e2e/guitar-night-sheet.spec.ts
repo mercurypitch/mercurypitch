@@ -116,6 +116,122 @@ test('stacks every part of the file on one sheet @smoke', async ({ page }) => {
   await expect(page.getByTestId('guitar-night-sheet-playhead')).toBeVisible()
 })
 
+test('seeks and edits a full-width sheet loop without horizontal scroll @smoke', async ({
+  page,
+}) => {
+  await openTheRoom(page, `sheet-loop-${Date.now()}`)
+  const room = page.getByTestId('guitar-night-score-room')
+  const deck = room.getByTestId('guitar-night-score-deck')
+  const scorePosition = deck.getByRole('slider', {
+    name: 'Score position',
+    exact: true,
+  })
+  const loopControls = deck.getByRole('group', { name: 'Section loop' })
+
+  await loopControls.getByRole('button', { name: 'A', exact: true }).click()
+  await scorePosition.focus()
+  await page.keyboard.press('End')
+  const duration = Number(await scorePosition.getAttribute('max'))
+  await expect
+    .poll(async () => Number(await scorePosition.inputValue()))
+    .toBe(duration)
+  await loopControls.getByRole('button', { name: 'B', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Sheet', exact: true }).click()
+  const sheet = page.getByTestId('guitar-night-sheet')
+  const scroller = sheet.getByTestId('guitar-night-sheet-scroll')
+  const markerB = sheet.getByRole('slider', {
+    name: 'Loop end marker on sheet',
+    exact: true,
+  })
+  await expect(markerB).toBeVisible()
+
+  const initialGeometry = await markerB.evaluate((element) => {
+    const marker = element.getBoundingClientRect()
+    const hit = getComputedStyle(element, '::after')
+    const system = element.parentElement?.getBoundingClientRect()
+    const scroll = element
+      .closest('[data-testid="guitar-night-sheet-scroll"]')
+      ?.getBoundingClientRect()
+    const hitLeft = marker.left + Number.parseFloat(hit.left)
+    const hitWidth = Number.parseFloat(hit.width)
+    return {
+      hitLeft,
+      hitRight: hitLeft + hitWidth,
+      hitWidth,
+      markerX: marker.left,
+      markerY: marker.top + marker.height / 2,
+      scrollLeft: scroll?.left ?? 0,
+      scrollRight: scroll?.right ?? 0,
+      systemRight: system?.right ?? 0,
+    }
+  })
+  expect(initialGeometry.hitWidth).toBeGreaterThanOrEqual(44)
+  expect(initialGeometry.hitLeft).toBeGreaterThanOrEqual(
+    initialGeometry.scrollLeft,
+  )
+  expect(initialGeometry.hitRight).toBeLessThanOrEqual(
+    Math.min(initialGeometry.systemRight, initialGeometry.scrollRight) + 1,
+  )
+
+  const overflowBefore = await scroller.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollLeft: element.scrollLeft,
+    scrollWidth: element.scrollWidth,
+  }))
+  expect(overflowBefore.scrollWidth).toBeLessThanOrEqual(
+    overflowBefore.clientWidth + 1,
+  )
+  expect(overflowBefore.scrollLeft).toBe(0)
+
+  const initialB = Number(await markerB.getAttribute('aria-valuenow'))
+  await page.mouse.move(
+    initialGeometry.hitLeft + initialGeometry.hitWidth / 2,
+    initialGeometry.markerY,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    initialGeometry.hitLeft + initialGeometry.hitWidth / 2 - 180,
+    initialGeometry.markerY,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+  await expect
+    .poll(async () => Number(await markerB.getAttribute('aria-valuenow')))
+    .toBeLessThan(initialB)
+
+  // The Session sheet is intentionally dismissed at pointer start, leaving
+  // the same gesture free to seek the notation underneath it.
+  await page.getByTestId('guitar-night-session-trigger').click()
+  await expect(page.getByRole('dialog', { name: 'Loaded score' })).toBeVisible()
+  const rowSeek = sheet.getByRole('slider', {
+    name: 'Playback position in score row 1',
+    exact: true,
+  })
+  const rowBox = await rowSeek.boundingBox()
+  expect(rowBox).not.toBeNull()
+  await page.mouse.click(
+    (rowBox?.x ?? 0) + (rowBox?.width ?? 0) * 0.22,
+    (rowBox?.y ?? 0) + (rowBox?.height ?? 0) / 2,
+  )
+  await expect(page.getByRole('dialog', { name: 'Loaded score' })).toHaveCount(
+    0,
+  )
+  await expect
+    .poll(async () => Number(await scorePosition.inputValue()))
+    .toBeLessThan(duration * 0.5)
+
+  const overflowAfter = await scroller.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollLeft: element.scrollLeft,
+    scrollWidth: element.scrollWidth,
+  }))
+  expect(overflowAfter.scrollWidth).toBeLessThanOrEqual(
+    overflowAfter.clientWidth + 1,
+  )
+  expect(overflowAfter.scrollLeft).toBe(0)
+})
+
 test('takes a part off the sheet from the loaded-score panel', async ({
   page,
 }) => {

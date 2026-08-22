@@ -304,6 +304,70 @@ describe('GuitarNightSheetView', () => {
     }
   })
 
+  it('makes each notation row a keyboard and pointer seek surface', () => {
+    const restore = sizeThePage(800, 400)
+    const onSeekBeat = vi.fn()
+    const onSeekStart = vi.fn()
+    const onSeekEnd = vi.fn()
+    try {
+      render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(11)] })]}
+          playheadBeat={() => 0}
+          onSeekBeat={onSeekBeat}
+          onSeekStart={onSeekStart}
+          onSeekEnd={onSeekEnd}
+        />
+      ))
+
+      const row = screen.getByRole('slider', {
+        name: 'Playback position in score row 1',
+      })
+      fireEvent.pointerDown(row)
+      fireEvent.input(row, { target: { value: '5' } })
+      fireEvent.pointerUp(row)
+
+      expect(onSeekStart).toHaveBeenCalledOnce()
+      expect(onSeekBeat).toHaveBeenCalledWith(5)
+      expect(onSeekEnd).toHaveBeenCalledOnce()
+    } finally {
+      restore()
+    }
+  })
+
+  it('publishes a sheet loop-boundary edit only when the gesture settles', () => {
+    const restore = sizeThePage(800, 1_000)
+    const onMoveLoopMark = vi.fn()
+    const onCommitLoopMark = vi.fn()
+    try {
+      render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(20)] })]}
+          playheadBeat={() => 9}
+          loopStart={() => 6}
+          loopEnd={() => 18}
+          loopActive={() => true}
+          onMoveLoopMark={onMoveLoopMark}
+          onCommitLoopMark={onCommitLoopMark}
+        />
+      ))
+
+      const marker = screen.getByRole('slider', {
+        name: 'Loop start marker on sheet',
+      })
+      expect(marker).toHaveAttribute('aria-valuetext', 'Beat 7')
+
+      fireEvent.keyDown(marker, { key: 'ArrowRight' })
+      expect(onMoveLoopMark).not.toHaveBeenCalled()
+      fireEvent.keyUp(marker, { key: 'ArrowRight' })
+
+      expect(onMoveLoopMark).toHaveBeenCalledWith('A', 7)
+      expect(onCommitLoopMark).toHaveBeenCalledWith('A')
+    } finally {
+      restore()
+    }
+  })
+
   it('paints the music onto the canvas it mounted', () => {
     const restore = sizeThePage(800, 400)
     try {

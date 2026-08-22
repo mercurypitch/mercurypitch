@@ -224,6 +224,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   >([])
   const [doctorRecoveryActive, setDoctorRecoveryActive] = createSignal(false)
   const [scoreReplayPending, setScoreReplayPending] = createSignal(false)
+  const [listeningRouteOperation, setListeningRouteOperation] = createSignal<
+    number | null
+  >(null)
   const [assessmentPending, setAssessmentPending] = createSignal(false)
   const [assessmentComparison, setAssessmentComparison] = createSignal<string>()
   const [assessmentBoundary, setAssessmentBoundary] =
@@ -433,6 +436,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const isCalibrating = createMemo(() => listening.status() === 'calibrating')
   const inputTransitionPending = createMemo(
     () =>
+      listeningRouteOperation() !== null ||
       listening.status() === 'requesting' ||
       isCalibrating() ||
       listening.inputTakeoverPending(),
@@ -564,10 +568,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     if (
       range === null ||
       assessmentPending() ||
-      isCalibrating() ||
-      listening.status() === 'requesting' ||
-      listening.inputTakeoverPending() ||
-      scoreReplayPending()
+      inputTransitionPending() ||
+      scoreReplayPending() ||
+      props.suspended?.() === true
     ) {
       return false
     }
@@ -647,6 +650,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
 
   const toggleListening = (): void => {
     listeningCycleGeneration += 1
+    setListeningRouteOperation(null)
     if (isListening()) {
       const scoring = scoredCaptureActive()
       if (scoring) liveScore.hold()
@@ -666,30 +670,53 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     next: GuitarNightListeningSelection,
   ): Promise<void> => {
     const operation = ++listeningCycleGeneration
-    if (next === null) {
-      if (isListening()) toggleListening()
-      return
-    }
+    setListeningRouteOperation(operation)
+    try {
+      if (next === null) {
+        if (isListening()) toggleListening()
+        return
+      }
 
+      parkForConfiguration()
+      liveScore.clear()
+      if (listening.inputProfile() !== next) {
+        await listening.selectInputProfile(next)
+      }
+      if (
+        operation !== listeningCycleGeneration ||
+        disposed ||
+        props.suspended?.() === true
+      ) {
+        return
+      }
+      if (listening.status() !== 'listening') await listening.start()
+    } finally {
+      if (listeningRouteOperation() === operation) {
+        setListeningRouteOperation(null)
+      }
+    }
+  }
+
+  const configureListeningRoute = async (
+    configure: () => Promise<unknown>,
+  ): Promise<void> => {
+    const operation = ++listeningCycleGeneration
+    setListeningRouteOperation(operation)
     parkForConfiguration()
-    liveScore.clear()
-    if (listening.inputProfile() !== next) {
-      await listening.selectInputProfile(next)
+    try {
+      await configure()
+    } finally {
+      if (listeningRouteOperation() === operation) {
+        setListeningRouteOperation(null)
+      }
     }
-    if (
-      operation !== listeningCycleGeneration ||
-      disposed ||
-      props.suspended?.() === true
-    ) {
-      return
-    }
-    if (listening.status() !== 'listening') await listening.start()
   }
 
   const stopRehearsal = (): void => {
     const replayWasPending = scoreReplayPending()
     const inputWasPending = inputTransitionPending()
     listeningCycleGeneration += 1
+    setListeningRouteOperation(null)
     invalidateScoreReplay()
     if (replayWasPending || inputWasPending) listening.cancel()
     if (assessmentCaptureActive()) listening.stop()
@@ -951,7 +978,31 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     const shouldResume = resumeAfterScrub
     scrubbing = false
     resumeAfterScrub = false
-    if (shouldResume) void room.start()
+    if (
+      shouldResume &&
+      room.status() === 'paused' &&
+      !disposed &&
+      props.suspended?.() !== true &&
+      !toolTransitionPending() &&
+      !doctorOpen() &&
+      !tunerOpen() &&
+      !scoreOpen() &&
+      !sessionPanelOpen()
+    ) {
+      void room.start()
+    }
+  }
+
+  const seekScoreBeat = (beat: number): void => {
+    if (toolTransitionPending()) return
+    room.seekBeat(beat)
+  }
+
+  const seekScoreSeconds = (seconds: number): void => {
+    if (toolTransitionPending()) return
+    beginScrub()
+    room.seekSeconds(seconds)
+    finishScrub()
   }
 
   const changeInstrument = (instrument: StringedInstrument): void => {
@@ -981,6 +1032,11 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     pause: togglePlayback,
     stop: stopRehearsal,
     goToBeginning,
+    seek: {
+      positionSeconds: room.displayPositionSeconds,
+      durationSeconds: room.durationSeconds,
+      seekSeconds: seekScoreSeconds,
+    },
     loop: {
       hasA: () => loop.markA() !== null,
       hasB: () => loop.markB() !== null,
@@ -1040,6 +1096,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   createEffect(() => {
     if (props.suspended?.() !== true) return
     listeningCycleGeneration += 1
+    setListeningRouteOperation(null)
+    scrubbing = false
+    resumeAfterScrub = false
     setDoctorOpen(false)
     setDoctorRecoveryActive(false)
     invalidateScoreReplay()
@@ -1056,6 +1115,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   onCleanup(() => {
     disposed = true
     listeningCycleGeneration += 1
+    setListeningRouteOperation(null)
+    scrubbing = false
+    resumeAfterScrub = false
   })
 
   onMount(() => {
@@ -1213,22 +1275,26 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   evidenceExportEnabled={listening.evidenceExportEnabled}
                   canExportEvidence={listening.canExportEvidence}
                   switching={() =>
+                    listeningRouteOperation() !== null ||
                     listening.status() === 'requesting' ||
                     listening.status() === 'calibrating' ||
                     listening.inputTakeoverPending() ||
                     listening.midiConnectionStatus() === 'requesting'
                   }
                   onProfile={(kind) => {
-                    parkForConfiguration()
-                    void listening.selectInputProfile(kind)
+                    void configureListeningRoute(() =>
+                      listening.selectInputProfile(kind),
+                    )
                   }}
                   onAudioInput={(deviceId) => {
-                    parkForConfiguration()
-                    void listening.selectAudioInput(deviceId)
+                    void configureListeningRoute(() =>
+                      listening.selectAudioInput(deviceId),
+                    )
                   }}
                   onMidiInput={(deviceId) => {
-                    parkForConfiguration()
-                    void listening.selectMidiInput(deviceId)
+                    void configureListeningRoute(() =>
+                      listening.selectMidiInput(deviceId),
+                    )
                   }}
                   onRefreshAudio={() => void listening.refreshAudioInputs()}
                   onRefreshMidi={() => void listening.refreshMidiInputs()}
@@ -1241,6 +1307,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   class={styles.sessionListening}
                   classList={{ [styles.listeningActive]: isListening() }}
                   aria-pressed={isListening()}
+                  disabled={
+                    listeningRouteOperation() !== null && !isListening()
+                  }
                   aria-label={
                     listening.status() === 'requesting'
                       ? 'Cancel opening input'
@@ -1297,8 +1366,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                     selectedAssessmentRange() === null ||
                     assessmentPending() ||
                     takeIsActive() ||
-                    isCalibrating() ||
-                    listening.status() === 'requesting'
+                    toolTransitionPending()
                   }
                   onClick={() => void beginAssessment()}
                 >
@@ -1503,6 +1571,13 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         loopStart={loop.markA}
         loopEnd={loop.markB}
         loopActive={loop.isLooping}
+        loopEditingDisabled={loopEditBlocked}
+        onMoveLoopMark={previewLoopBoundary}
+        onCommitLoopMark={() => commitLoopBoundary()}
+        onSeekBeat={seekScoreBeat}
+        onSeekStart={beginScrub}
+        onSeekEnd={finishScrub}
+        seekDisabled={toolTransitionPending}
         {...(props.onSelectTrack === undefined
           ? {}
           : {

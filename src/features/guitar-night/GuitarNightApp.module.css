@@ -585,6 +585,7 @@
   display: grid;
   place-items: center;
   padding: 1rem;
+  pointer-events: none;
 }
 
 .sessionScrimButton {
@@ -595,6 +596,7 @@
   cursor: pointer;
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
+  pointer-events: none;
 }
 
 .sessionPanel {
@@ -612,6 +614,7 @@
   box-shadow: 0 1.6rem 5rem rgba(0, 0, 0, 0.5);
   scrollbar-width: thin;
   scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
+  pointer-events: auto;
 }
 
 .sessionHeader {
@@ -6643,24 +6646,45 @@
   }
 
   .roomPanel[data-room-kind='score'] > .performanceStage {
-    flex: 1 0 15rem;
-    min-height: 15rem;
+    flex: 1 1 min(15rem, 46dvh);
+    min-height: min(15rem, 46dvh);
   }
 
   .stageHeader {
     right: max(6px, var(--safe-right));
     left: max(6px, var(--safe-left));
+    row-gap: 12px;
   }
 
   .stageHeader > div.stageSignalWithAccessory {
     grid-template-columns: minmax(0, 1fr);
     width: calc(100vw - 12px);
     max-width: calc(100vw - 12px);
+    margin-top: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* Live Score already carries the truthful state and next action. At large
+     text sizes, repeating the Guide label above it forces the whole stage
+     header below the playable viewport. */
+  .stageHeader > div.stageSignalWithAccessory > span,
+  .stageHeader > div.stageSignalWithAccessory > strong {
+    display: none;
   }
 
   .stageSignalAccessory {
-    grid-row: 3;
+    grid-row: 1;
     grid-column: 1;
+  }
+
+  .stageSetup summary,
+  .stageViewTrigger {
+    padding-inline: 7px;
   }
 
   [data-room-kind='score'] .transportIdentity {
@@ -7180,7 +7204,7 @@
 
 [data-room-kind='score'] .transportControls {
   display: grid;
-  grid-template-columns: auto minmax(18rem, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   justify-content: stretch;
   width: 100%;
@@ -7196,11 +7220,13 @@
 }
 
 .scorePrimaryTransport {
+  justify-self: end;
   justify-content: flex-start;
   gap: 0.35rem;
 }
 
 .scoreMixStrip {
+  justify-self: center;
   justify-content: center;
   min-width: 0;
   gap: 0.55rem;
@@ -7258,7 +7284,7 @@
   }
 
   [data-room-kind='score'] .transportControls {
-    grid-template-columns: auto minmax(14rem, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
   [data-room-kind='score'] .scoreMasterVolume {
@@ -7298,8 +7324,8 @@
   }
 
   [data-room-kind='score'] .playControl {
-    width: 3.35rem;
-    height: 3.35rem;
+    width: min(3.35rem, 54px);
+    height: min(3.35rem, 54px);
   }
 }
 
