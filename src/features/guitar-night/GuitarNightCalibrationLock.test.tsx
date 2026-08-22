@@ -66,17 +66,25 @@ const scoreRoom = vi.hoisted(() => ({
   playheadBeat: vi.fn(() => null),
   tempoBpm: vi.fn(() => 90),
   countInBeats: vi.fn(() => 4),
+  configuredCountInBeats: vi.fn(() => 4),
   hearScore: vi.fn(() => true),
   hearClick: vi.fn(() => true),
   displayReference: vi.fn(() => REFERENCE),
   runningLoop: vi.fn(() => null),
   error: vi.fn(() => null),
+  masterVolume: vi.fn(() => 0.76),
   activateAudio: vi.fn(async () => true),
   getAudioGraph: vi.fn(() => null),
+  parkForConfiguration: vi.fn(),
+  start: vi.fn(async () => true),
+  startLiveScore: vi.fn(async () => null),
+  pause: vi.fn(),
   toggle: vi.fn(),
   stop: vi.fn(),
+  seekSeconds: vi.fn(),
   setTempoBpm: vi.fn(),
   setCountInBeats: vi.fn(),
+  setMasterVolume: vi.fn(),
   setHearScore: vi.fn(),
   setHearClick: vi.fn(),
   startAssessment: vi.fn<
@@ -303,7 +311,7 @@ describe('Guitar Night calibration lock', () => {
     expect(scoreRoom.toggle).not.toHaveBeenCalled()
   })
 
-  it('silences a completed score take before opening Listening', () => {
+  it('parks a completed score take before opening Listening', () => {
     listening.status.mockReturnValue('off')
     scoreRoom.status.mockReturnValue('complete')
     render(() => (
@@ -312,10 +320,12 @@ describe('Guitar Night calibration lock', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Turn on Listening' }))
 
-    expect(scoreRoom.stop).toHaveBeenCalledOnce()
+    expect(scoreRoom.parkForConfiguration).toHaveBeenCalledOnce()
+    expect(scoreRoom.stop).not.toHaveBeenCalled()
     expect(listening.start).toHaveBeenCalledOnce()
     expect(
-      scoreRoom.stop.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+      scoreRoom.parkForConfiguration.mock.invocationCallOrder[0] ??
+        Number.POSITIVE_INFINITY,
     ).toBeLessThan(
       listening.start.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     )
