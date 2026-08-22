@@ -166,12 +166,16 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   seconds-to-beat, click, guide, playhead, note duration, and take completion.
   WHEN the player changes the opening tempo, every authored tempo segment shall
   scale by the same ratio rather than flattening to one tempo.
-- **REQ-GN-RUNTIME-011 — Immutable active take:** WHEN a score-room count-in
-  starts, its tempo and tempo map, count-in length, guide-sound choice, melody,
-  duration, instrument voice, and loop shall remain fixed until that take stops
-  or completes. A configuration change made during a scheduled take shall be
-  identified as applying to the next count-in and shall not move the active
-  clock.
+- **REQ-GN-RUNTIME-011 — Stable take, live mix:** WHEN a score-room count-in
+  starts, its tempo map, authored targets, duration, instrument voice, loop,
+  and exact scheduler boundary shall remain fixed until that take stops or
+  completes. Master level, click, and authored/backing lane gains may change
+  live through pop-free ramps without restarting that clock. A count-in change
+  made during a scheduled take shall apply to the next count-in. A tempo,
+  scored-track, or input-route change shall park at the exact visible beat,
+  retain the earned partial result, release the pinned run, and remain paused
+  for an explicit restart rather than fail, jump to zero, or silently retime
+  admitted evidence.
 - **REQ-GN-RUNTIME-012 — Measured-reference ownership:** WHEN notes are
   measured from a separated stem, the reference shall retain the exact backing
   session that produced them. IF a different backing is staged, THEN Guitar
@@ -239,6 +243,14 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   development-only real-device export may include route, clock, aggregate
   health, latency provenance, and event counts, but shall contain no raw audio
   or event timeline and shall label the capture as user-run and unverified.
+- **REQ-GN-RUNTIME-023 — Rehearsal control parity:** WHILE an authored score
+  room is open, its primary rail shall expose persistent master volume, shared
+  A/B marks, click, count-in, and authored-tab sound without requiring the
+  Session sheet. Mute and solo shall change audible lanes during playback;
+  changing the scored track or input route may park the run but shall preserve
+  the playhead. Voice control shall advertise only the Rehearse commands it can
+  execute, including transport, marks, click, count-in, tab sound, Listening,
+  and Score.
 
 ## Tuner — `GN-TUNER-*`
 
@@ -359,6 +371,14 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   one marked loop shall be scored as one bounded pass. Backing-only rooms shall
   remain unscored until an authored reference has an explicit alignment to the
   recording.
+- **REQ-GN-SCORE-010 — Objective take ledger:** Guitar Night shall offer one
+  calm Score sheet, separate from Jam Doctor, with the latest cumulative grade,
+  percentage, judged/hit/missed/skipped counts, best streak, pinned range,
+  track, and input kind. A held take may appear as an explicitly partial result
+  for the current session but shall not enter history. Only canonical completed
+  cumulative results may persist, with bounded scalar-only history and no raw
+  audio, event timeline, or device identifier. Play again shall start a fresh
+  scored run; phrase diagnosis shall remain a distinct, explicit action.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 
@@ -857,6 +877,14 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   permanent frame loop while paused. Reduced effects shall remove additive
   glow and shadow work without hiding the now-line, targets, techniques, or
   result identity.
+- **REQ-GN-STAGE-017 — Player-placed tab preview:** WHERE a secondary authored
+  part is available on a non-mobile stage, its preview shall provide explicit
+  drag and horizontal-resize handles with pointer and keyboard equivalents.
+  Placement shall persist per Highway/Grid/Neck view, remain within the stage,
+  and never cover protected signal, camera, or gesture chrome. Width shall
+  increase the visible upcoming beat window within a bounded range. On narrow
+  viewports the preview shall use a stable non-draggable dock instead of
+  introducing overflow or unsafe targets.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 
