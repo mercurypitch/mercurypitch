@@ -34,6 +34,12 @@ export interface GuitarLiveScoreSource {
   range: { startBeat: number; endBeat: number }
 }
 
+/** Optional deterministic counters for complexity regressions and profiling. */
+export interface GuitarLiveScoreInstrumentation {
+  onRetainedEventVisit?(): void
+  onTargetVisit?(): void
+}
+
 export interface CreateGuitarLiveScoreEngineOptions {
   source: GuitarLiveScoreSource
   sampleRate: number
@@ -42,6 +48,7 @@ export interface CreateGuitarLiveScoreEngineOptions {
   inputKind: GuitarInputProfileKind
   matchToleranceMs?: number
   minimumPitchClarity?: number
+  instrumentation?: GuitarLiveScoreInstrumentation
 }
 
 export type GuitarLiveScoreSkipReason =
@@ -332,11 +339,15 @@ export function createGuitarLiveScoreEngine(
     1,
     Math.round((PITCH_ATTACH_WINDOW_MS / 1000) * options.sampleRate),
   )
+  const onRetainedEventVisit = options.instrumentation?.onRetainedEventVisit
+  const onTargetVisit = options.instrumentation?.onTargetVisit
 
   let takeId: string | null = null
+  let lastIngestedTake: GuitarTakeSnapshot | null = null
   let lastThroughFrame = -1
   let lastTotalEventCount = 0
   let lastFilteredAfterEnd = 0
+  let firstUnresolvedTargetIndex = 0
   let phase: GuitarLiveScorePhase = 'active'
   let judgedTargets = 0
   let hitTargets = 0
@@ -348,7 +359,6 @@ export function createGuitarLiveScoreEngine(
   let detectedGapCount = 0
   let recentJudgments: readonly GuitarLiveScoreJudgment[] = []
   let rollingJudgments: readonly GuitarLiveScoreJudgment[] = []
-  const resolvedTargetIds = new Set<string>()
   const consumedEventIds = new Set<string>()
   const activeEvents = new Map<string, GuitarTakeEvent>()
   const eventIdentities = new Map<string, EventIdentity>()
@@ -356,7 +366,6 @@ export function createGuitarLiveScoreEngine(
 
   const appendJudgment = (judgment: GuitarLiveScoreJudgment): void => {
     const frozen = freezeJudgment(judgment)
-    resolvedTargetIds.add(frozen.targetId)
     recentJudgments = Object.freeze(
       [...recentJudgments, frozen].slice(-GUITAR_LIVE_SCORE_ROLLING_TARGETS),
     )
@@ -455,11 +464,16 @@ export function createGuitarLiveScoreEngine(
     finalDurationFrames: number,
   ): void => {
     const badHealthReason = healthSkipReason(health)
-    for (const target of targets) {
-      if (resolvedTargetIds.has(target.id)) continue
-      if (finalize && target.onsetFrame >= finalDurationFrames) continue
+    while (firstUnresolvedTargetIndex < targets.length) {
+      const target = targets[firstUnresolvedTargetIndex]
+      if (target === undefined) break
+      onTargetVisit?.()
+      if (finalize && target.onsetFrame >= finalDurationFrames) {
+        firstUnresolvedTargetIndex = targets.length
+        break
+      }
       const expired = throughFrame > target.onsetFrame + toleranceFrames
-      if (!finalize && !expired) continue
+      if (!finalize && !expired) break
 
       if (target.skipReason !== null) {
         appendJudgment({
@@ -472,6 +486,7 @@ export function createGuitarLiveScoreEngine(
           timingOffsetMs: null,
           skipReason: target.skipReason,
         })
+        firstUnresolvedTargetIndex += 1
         continue
       }
       if (overlapsGap(target)) {
@@ -485,6 +500,7 @@ export function createGuitarLiveScoreEngine(
           timingOffsetMs: null,
           skipReason: 'event-gap',
         })
+        firstUnresolvedTargetIndex += 1
         continue
       }
       if (badHealthReason !== null) {
@@ -498,6 +514,7 @@ export function createGuitarLiveScoreEngine(
           timingOffsetMs: null,
           skipReason: badHealthReason,
         })
+        firstUnresolvedTargetIndex += 1
         continue
       }
 
@@ -519,9 +536,10 @@ export function createGuitarLiveScoreEngine(
             Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
           skipReason: null,
         })
+        firstUnresolvedTargetIndex += 1
         continue
       }
-      if (!finalize && hasProvisionalCandidate(target, throughFrame)) continue
+      if (!finalize && hasProvisionalCandidate(target, throughFrame)) break
       appendJudgment({
         targetId: target.id,
         midi: target.midi,
@@ -532,13 +550,12 @@ export function createGuitarLiveScoreEngine(
         timingOffsetMs: null,
         skipReason: null,
       })
+      firstUnresolvedTargetIndex += 1
     }
   }
 
   const prune = (throughFrame: number): void => {
-    const nextTarget = targets.find(
-      (target) => !resolvedTargetIds.has(target.id),
-    )
+    const nextTarget = targets[firstUnresolvedTargetIndex]
     const oldestUsefulFrame =
       nextTarget === undefined
         ? throughFrame
@@ -636,73 +653,83 @@ export function createGuitarLiveScoreEngine(
       return display()
     }
 
-    const totalEventCount =
-      take.droppedEventCount + take.filteredAfterEnd + take.events.length
-    if (totalEventCount < lastTotalEventCount) {
-      throw new Error('The take event sequence moved backwards.')
-    }
-    if (take.filteredAfterEnd < lastFilteredAfterEnd) {
-      throw new Error('The take end-filter sequence moved backwards.')
-    }
-    let newEventCount = 0
-    let oldestNewFrame = Number.POSITIVE_INFINITY
-    for (const event of take.events) {
-      const identity = eventIdentities.get(event.id)
-      if (identity !== undefined && !sameIdentity(identity, event)) {
-        throw new Error(`Guitar take event identity changed: ${event.id}`)
+    if (take !== lastIngestedTake) {
+      const totalEventCount =
+        take.droppedEventCount + take.filteredAfterEnd + take.events.length
+      if (totalEventCount < lastTotalEventCount) {
+        throw new Error('The take event sequence moved backwards.')
       }
-      if (identity === undefined) {
-        newEventCount += 1
-        oldestNewFrame = Math.min(
-          oldestNewFrame,
-          event.compensatedTransportFrame,
-        )
-        eventIdentities.set(event.id, {
-          kind: event.kind,
-          source: event.source,
-          voiceId: event.voiceId,
-          frame: event.compensatedTransportFrame,
-        })
-      } else {
-        eventIdentities.delete(event.id)
-        eventIdentities.set(event.id, identity)
+      if (take.filteredAfterEnd < lastFilteredAfterEnd) {
+        throw new Error('The take end-filter sequence moved backwards.')
       }
-      activeEvents.set(event.id, event)
-    }
-    while (eventIdentities.size > RECENT_EVENT_IDENTITIES) {
-      const oldestId = eventIdentities.keys().next().value as string | undefined
-      if (oldestId === undefined) break
-      eventIdentities.delete(oldestId)
-    }
+      let newEventCount = 0
+      let oldestNewFrame = Number.POSITIVE_INFINITY
+      for (const event of take.events) {
+        onRetainedEventVisit?.()
+        const identity = eventIdentities.get(event.id)
+        if (identity !== undefined && !sameIdentity(identity, event)) {
+          throw new Error(`Guitar take event identity changed: ${event.id}`)
+        }
+        if (identity === undefined) {
+          newEventCount += 1
+          oldestNewFrame = Math.min(
+            oldestNewFrame,
+            event.compensatedTransportFrame,
+          )
+          eventIdentities.set(event.id, {
+            kind: event.kind,
+            source: event.source,
+            voiceId: event.voiceId,
+            frame: event.compensatedTransportFrame,
+          })
+        } else {
+          eventIdentities.delete(event.id)
+          eventIdentities.set(event.id, identity)
+        }
+        activeEvents.set(event.id, event)
+      }
+      while (eventIdentities.size > RECENT_EVENT_IDENTITIES) {
+        const oldestId = eventIdentities.keys().next().value as
+          | string
+          | undefined
+        if (oldestId === undefined) break
+        eventIdentities.delete(oldestId)
+      }
 
-    // Events rejected by the pinned half-open end never belonged to this
-    // score's evidence window. Keep them in the monotonic recorder count, but
-    // do not mistake their diagnostic counter for a missing in-range page.
-    const newlyFilteredAfterEnd = take.filteredAfterEnd - lastFilteredAfterEnd
-    const expectedNewEvents = Math.max(
-      0,
-      totalEventCount - lastTotalEventCount - newlyFilteredAfterEnd,
-    )
-    if (newEventCount < expectedNewEvents) {
-      detectedGapCount += 1
-      const interval = {
-        startFrame: Math.max(0, lastThroughFrame),
-        endFrame: Number.isFinite(oldestNewFrame)
-          ? oldestNewFrame
-          : throughFrame,
+      // Events rejected by the pinned half-open end never belonged to this
+      // score's evidence window. Keep them in the monotonic recorder count,
+      // but do not mistake their diagnostic counter for a missing in-range
+      // page.
+      const newlyFilteredAfterEnd = take.filteredAfterEnd - lastFilteredAfterEnd
+      const expectedNewEvents = Math.max(
+        0,
+        totalEventCount - lastTotalEventCount - newlyFilteredAfterEnd,
+      )
+      if (newEventCount < expectedNewEvents) {
+        detectedGapCount += 1
+        const interval = {
+          startFrame: Math.max(0, lastThroughFrame),
+          endFrame: Number.isFinite(oldestNewFrame)
+            ? oldestNewFrame
+            : throughFrame,
+        }
+        const previousGap = gapIntervals[gapIntervals.length - 1]
+        if (
+          previousGap !== undefined &&
+          interval.startFrame <= previousGap.endFrame + 1
+        ) {
+          previousGap.endFrame = Math.max(
+            previousGap.endFrame,
+            interval.endFrame,
+          )
+        } else {
+          gapIntervals.push(interval)
+        }
       }
-      const previousGap = gapIntervals[gapIntervals.length - 1]
-      if (
-        previousGap !== undefined &&
-        interval.startFrame <= previousGap.endFrame + 1
-      ) {
-        previousGap.endFrame = Math.max(previousGap.endFrame, interval.endFrame)
-      } else {
-        gapIntervals.push(interval)
-      }
+      lastTotalEventCount = totalEventCount
+      lastFilteredAfterEnd = take.filteredAfterEnd
+      lastIngestedTake = take
     }
-    lastTotalEventCount = totalEventCount
-    lastFilteredAfterEnd = take.filteredAfterEnd
 
     const finalDurationFrames = Math.min(
       durationFrames,

@@ -243,6 +243,17 @@ describe('createGuitarVoice', () => {
     expect(vi.mocked(ctx.createBiquadFilter).mock.calls.length).toBe(2)
   })
 
+  it('reuses the immutable overdrive curve across dense electric voices', () => {
+    const ctx = mockAudioContext() as unknown as BaseAudioContext
+    createGuitarVoice(ctx, 220, 500, 'electric')
+    createGuitarVoice(ctx, 246.94, 500, 'electric')
+
+    const createWaveShaper = vi.mocked(ctx.createWaveShaper)
+    const first = createWaveShaper.mock.results[0]?.value as WaveShaperNode
+    const second = createWaveShaper.mock.results[1]?.value as WaveShaperNode
+    expect(first.curve).toBe(second.curve)
+  })
+
   it('dispose stops the source and disconnects nodes', () => {
     const ctx = mockAudioContext() as unknown as BaseAudioContext
     const voice = createGuitarVoice(ctx, 220, 500, 'acoustic')

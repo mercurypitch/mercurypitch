@@ -903,6 +903,20 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   explicit focused boundary editor only when close marks need more room, and
   support pointer and keyboard boundary edits without pausing the ordinary
   rehearsal or moving its seek thumb unexpectedly.
+- **REQ-GN-STAGE-019 — Adaptive moving Tab:** WHEN an authored score opens in
+  `Tab`, Guitar Night shall choose one stable reading window from tempo and
+  distinct onset density, keep that window within 3.5–10 beats, and offer one
+  persisted Tab-only zoom through an accessible range, wheel input over the
+  lanes, and a two-pointer pinch. Notes and visible A/B context shall share the
+  exact same window. `Highway` and `Grid` camera framing shall remain unchanged,
+  and free play shall not expose an inert Tab-zoom control.
+- **REQ-GN-STAGE-020 — Dense-score work bounds:** WHILE a long authored score
+  plays, Guitar Night shall preserve keyed moving-Tab note elements between
+  animation frames, query precompiled score indexes rather than repeatedly
+  sorting the whole reference, advance live-score judgments from a monotonic
+  unresolved frontier, and avoid rebuilding immutable synthesis data for each
+  scheduled note. The resulting views and judgments shall remain equivalent
+  to the unindexed score contract.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 

@@ -19,9 +19,23 @@ import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, soundingOpen
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightMovingTab } from './GuitarNightMovingTab'
 import { GuitarNightSecondaryPart } from './GuitarNightSecondaryPart'
 import { GuitarNightSheetView } from './sheet/GuitarNightSheetView'
 import type { SheetLane } from './sheet/sheet-model'
+
+export {
+  buildStageTabWindowIndex,
+  TAB_PLAYHEAD_RATIO,
+  tabLoopWindow,
+  tabWindowEntries,
+} from './tab-window'
+export type {
+  StageTabLoopMarker,
+  StageTabLoopWindow,
+  StageTabWindowIndex,
+  TabWindowEntry,
+} from './tab-window'
 
 const Guitar3DStage = lazy(async () => {
   const module = await import('@/features/guitar/ui/Guitar3DStage')
@@ -164,11 +178,6 @@ const STAGE_VIEW_CHOICES: readonly {
   { id: 'sheet', label: 'Sheet' },
 ]
 
-/** Tab shows the same span of music as Flow, so switching view keeps context. */
-const TAB_WINDOW_BEATS = 8
-/** Where the now-line sits, leaving a little played history behind it. */
-export const TAB_PLAYHEAD_RATIO = 0.18
-
 /** Guitar Night owns its cinematic framing without changing the legacy tab. */
 export const GUITAR_NIGHT_CAMERA_WIDE: CameraState = {
   ...tabCameraPreset('flow', { narrow: false }),
@@ -177,29 +186,6 @@ export const GUITAR_NIGHT_CAMERA_WIDE: CameraState = {
 /** Portrait needs distance and a steeper view so every fret stays reachable. */
 export const GUITAR_NIGHT_CAMERA_NARROW: CameraState = {
   ...tabCameraPreset('flow', { narrow: true }),
-}
-
-export interface TabWindowEntry {
-  note: GuitarNote
-  offsetPercent: number
-  isActive: boolean
-  isPast: boolean
-}
-
-export interface StageTabLoopMarker {
-  mark: 'A' | 'B'
-  offsetPercent: number
-}
-
-export interface StageTabLoopWindow {
-  markers: readonly StageTabLoopMarker[]
-  range: { leftPercent: number; widthPercent: number } | null
-}
-
-export interface StageTabWindowIndex {
-  notes: readonly GuitarNote[]
-  /** Segment-tree maxima let moving windows skip expired score regions. */
-  maxEndTree: readonly number[]
 }
 
 export interface NeckWindow {
@@ -227,46 +213,6 @@ export interface StageEventContext {
 
 const EVENT_TOLERANCE_BEATS = 0.0625
 const NECK_WINDOW_FRETS = 13
-
-function fillTabWindowEndTree(
-  notes: readonly GuitarNote[],
-  tree: number[],
-  node: number,
-  left: number,
-  right: number,
-): number {
-  if (left === right) {
-    const note = notes[left]
-    const endBeat =
-      note === undefined ? -Infinity : note.startBeat + note.duration
-    tree[node] = endBeat
-    return endBeat
-  }
-  const middle = Math.floor((left + right) / 2)
-  const endBeat = Math.max(
-    fillTabWindowEndTree(notes, tree, node * 2, left, middle),
-    fillTabWindowEndTree(notes, tree, node * 2 + 1, middle + 1, right),
-  )
-  tree[node] = endBeat
-  return endBeat
-}
-
-/** Compile every rendered note, including backing, for the lightweight Tab lane. */
-export function buildStageTabWindowIndex(
-  notes: readonly GuitarNote[],
-): StageTabWindowIndex {
-  const sorted = [...notes].sort(
-    (left, right) => left.startBeat - right.startBeat,
-  )
-  const maxEndTree = Array.from(
-    { length: Math.max(1, sorted.length * 4) },
-    () => -Infinity,
-  )
-  if (sorted.length > 0) {
-    fillTabWindowEndTree(sorted, maxEndTree, 1, 0, sorted.length - 1)
-  }
-  return { notes: sorted, maxEndTree }
-}
 
 function fillActiveEndTree(
   events: readonly StageNoteEvent[],
@@ -586,102 +532,6 @@ export function guidePreviewBeat(
   return first === null ? null : first - 2.5
 }
 
-/**
- * Place the notes that fall inside the moving window, as a percentage across
- * it. Without a playhead the window rests at the top of the score so an
- * attached tab is readable before anything starts.
- */
-export function tabWindowEntries(
-  index: StageTabWindowIndex,
-  playheadBeat: number | null,
-  windowBeats = TAB_WINDOW_BEATS,
-): TabWindowEntry[] {
-  const head = playheadBeat ?? 0
-  const start = head - windowBeats * TAB_PLAYHEAD_RATIO
-  const end = start + windowBeats
-
-  const entries: TabWindowEntry[] = []
-  if (index.notes.length === 0) return entries
-
-  const visit = (node: number, left: number, right: number) => {
-    if ((index.maxEndTree[node] ?? -Infinity) < start) return
-    const first = index.notes[left]
-    if (first === undefined || first.startBeat > end) return
-    if (left !== right) {
-      const middle = Math.floor((left + right) / 2)
-      visit(node * 2, left, middle)
-      visit(node * 2 + 1, middle + 1, right)
-      return
-    }
-    if (first.startBeat + first.duration < start) return
-    entries.push({
-      note: first,
-      offsetPercent: ((first.startBeat - start) / windowBeats) * 100,
-      isActive:
-        playheadBeat !== null &&
-        first.startBeat <= playheadBeat &&
-        first.startBeat + first.duration > playheadBeat,
-      isPast: playheadBeat !== null && first.startBeat + first.duration <= head,
-    })
-  }
-  visit(1, 0, index.notes.length - 1)
-  return entries
-}
-
-/** Place read-only A/B context on the exact moving beat window used by Tab. */
-export function tabLoopWindow(
-  loopStart: number | null,
-  loopEnd: number | null,
-  playheadBeat: number | null,
-  windowBeats = TAB_WINDOW_BEATS,
-): StageTabLoopWindow {
-  const window = Math.max(1, windowBeats)
-  const head = playheadBeat ?? 0
-  const windowStart = head - window * TAB_PLAYHEAD_RATIO
-  const windowEnd = windowStart + window
-  const marker = (
-    mark: 'A' | 'B',
-    beat: number | null,
-  ): StageTabLoopMarker | null => {
-    if (
-      beat === null ||
-      !Number.isFinite(beat) ||
-      beat < windowStart ||
-      beat > windowEnd
-    ) {
-      return null
-    }
-    return {
-      mark,
-      offsetPercent: ((beat - windowStart) / window) * 100,
-    }
-  }
-  const markers = [marker('A', loopStart), marker('B', loopEnd)].filter(
-    (value): value is StageTabLoopMarker => value !== null,
-  )
-  if (
-    loopStart === null ||
-    loopEnd === null ||
-    !Number.isFinite(loopStart) ||
-    !Number.isFinite(loopEnd) ||
-    loopEnd <= loopStart ||
-    loopEnd <= windowStart ||
-    loopStart >= windowEnd
-  ) {
-    return { markers, range: null }
-  }
-  const clippedStart = Math.max(windowStart, loopStart)
-  const clippedEnd = Math.min(windowEnd, loopEnd)
-  const leftPercent = ((clippedStart - windowStart) / window) * 100
-  return {
-    markers,
-    range: {
-      leftPercent,
-      widthPercent: ((clippedEnd - clippedStart) / window) * 100,
-    },
-  }
-}
-
 /** Beats count from one in player-facing copy, matching the transport rail. */
 function formatStageBeat(beat: number): string {
   const counted = Math.max(0, beat) + 1
@@ -919,7 +769,6 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     () => new Map(notes().map((note) => [note.id, note] as const)),
   )
   const noteIndex = createMemo(() => buildStageNoteIndex(notes()))
-  const tabWindowIndex = createMemo(() => buildStageTabWindowIndex(notes()))
   const actualPlayheadBeat = createMemo(() =>
     props.source.timeline.playheadBeat(),
   )
@@ -946,9 +795,6 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       active: props.loopActive?.() === true,
     }
   })
-  const tabLoop = createMemo(() =>
-    tabLoopWindow(authoredLoopStart(), authoredLoopEnd(), visualPlayheadBeat()),
-  )
   const actualEventContext = createMemo(() =>
     stageEventContext(noteIndex(), actualPlayheadBeat()),
   )
@@ -965,19 +811,6 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     ),
   )
   const hasGuide = createMemo(() => notes().length > 0)
-  const visibleTabNotes = createMemo(() =>
-    tabWindowEntries(tabWindowIndex(), visualPlayheadBeat()),
-  )
-  const visibleTabNotesByString = createMemo(() => {
-    const rows = Array.from(
-      { length: tuning().stringCount },
-      () => [] as TabWindowEntry[],
-    )
-    for (const entry of visibleTabNotes()) {
-      rows[entry.note.stringIndex]?.push(entry)
-    }
-    return rows
-  })
   const maxAuthoredFret = createMemo(() =>
     notes().reduce((highest, note) => Math.max(highest, note.fret), 12),
   )
@@ -1579,83 +1412,17 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         </Show>
 
         <Show when={mode() === 'tab'}>
-          <div class={styles.stageTab}>
-            <div
-              class={styles.stageTabLanes}
-              role="img"
-              aria-label={tabSummary()}
-            >
-              <div class={styles.stageTabGuideLayer} aria-hidden="true">
-                <Show when={tabLoop().range}>
-                  {(range) => (
-                    <div
-                      class={styles.stageTabLoopRange}
-                      data-active={
-                        loopSpan()?.active === true ? 'true' : undefined
-                      }
-                      data-testid="guitar-night-tab-loop-range"
-                      style={{
-                        left: `${range().leftPercent}%`,
-                        width: `${range().widthPercent}%`,
-                      }}
-                    />
-                  )}
-                </Show>
-                <For each={tabLoop().markers}>
-                  {(marker) => (
-                    <div
-                      class={styles.stageTabLoopMarker}
-                      data-mark={marker.mark}
-                      data-active={
-                        loopSpan()?.active === true ? 'true' : undefined
-                      }
-                      data-testid={`guitar-night-tab-loop-marker-${marker.mark.toLowerCase()}`}
-                      style={{ left: `${marker.offsetPercent}%` }}
-                    >
-                      <span>{marker.mark}</span>
-                    </div>
-                  )}
-                </For>
-                <div
-                  class={styles.stageTabPlayhead}
-                  style={{ left: `${TAB_PLAYHEAD_RATIO * 100}%` }}
-                />
-              </div>
-              <For each={tuning().labels}>
-                {(label, stringIndex) => (
-                  <div class={styles.stageTabString}>
-                    <span>{label}</span>
-                    <i aria-hidden="true" />
-                    <div aria-hidden="true">
-                      <For
-                        each={visibleTabNotesByString()[stringIndex()] ?? []}
-                      >
-                        {(entry) => (
-                          <b
-                            classList={{
-                              [styles.stageTabNoteActive]: entry.isActive,
-                              [styles.stageTabNotePast]: entry.isPast,
-                              [styles.stageTabNoteBacking]:
-                                entry.note.isBacking === true,
-                            }}
-                            style={{ left: `${entry.offsetPercent}%` }}
-                          >
-                            {entry.note.fret}
-                          </b>
-                        )}
-                      </For>
-                    </div>
-                  </div>
-                )}
-              </For>
-            </div>
-            <Show when={!hasGuide()}>
-              <p>
-                No tab attached to this song. Load a tab later, or stay in free
-                play.
-              </p>
-            </Show>
-          </div>
+          <GuitarNightMovingTab
+            notes={notes}
+            tuning={tuning}
+            tempoBpm={() => props.source.timeline.tempoBpm()}
+            playheadBeat={visualPlayheadBeat}
+            summary={tabSummary}
+            hasGuide={hasGuide}
+            loopStart={authoredLoopStart}
+            loopEnd={authoredLoopEnd}
+            loopActive={() => props.loopActive?.() === true}
+          />
         </Show>
 
         {/* The corner part belongs to the moving views. Tab is already a tab

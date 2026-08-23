@@ -3,7 +3,8 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import { buildStageNoteIndex, buildStageTabWindowIndex, guidePreviewBeat, neckWindow, stageEventContext, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabWindowEntries, } from './GuitarNightStage'
+import { buildStageNoteIndex, guidePreviewBeat, neckWindow, stageEventContext, } from './GuitarNightStage'
+import { adaptiveTabWindowBeats, buildStageTabWindowIndex, TAB_MAX_WINDOW_BEATS, TAB_MIN_WINDOW_BEATS, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabWindowEntries, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
 
 function note(startBeat: number, fret = 0): GuitarNote {
   return {
@@ -109,6 +110,64 @@ describe('tabWindowEntries', () => {
       'short-9506',
     ])
     expect(indexedReads).toBeLessThan(100)
+  })
+
+  it('returns stable score-note references for keyed lane rendering', () => {
+    const first = note(4)
+    const second = note(6)
+    const index = buildStageTabWindowIndex([second, first])
+
+    const early = tabWindowNotes(index, 4, WINDOW)
+    const later = tabWindowNotes(index, 4.1, WINDOW)
+
+    expect(early[0]).toBe(first)
+    expect(later[0]).toBe(first)
+    expect(later[1]).toBe(second)
+  })
+})
+
+describe('adaptive Tab window', () => {
+  it('brings a fast dense score closer than a slow sparse score', () => {
+    const dense = Array.from({ length: 2_245 }, (_, index) => ({
+      ...note((index * 1_254) / 2_245),
+      id: `dense-${index}`,
+      stringIndex: index % 6,
+    }))
+    const sparse = Array.from({ length: 24 }, (_, index) => ({
+      ...note(index * 4),
+      id: `sparse-${index}`,
+    }))
+
+    const denseWindow = adaptiveTabWindowBeats(dense, 169)
+    const sparseWindow = adaptiveTabWindowBeats(sparse, 72)
+
+    expect(denseWindow).toBeLessThan(sparseWindow)
+    expect(denseWindow).toBeLessThan(6)
+    expect(denseWindow).toBeGreaterThanOrEqual(TAB_MIN_WINDOW_BEATS)
+  })
+
+  it('counts authored onset columns rather than every note in a chord', () => {
+    const singleLine = Array.from({ length: 32 }, (_, index) => ({
+      ...note(index),
+      id: `single-${index}`,
+    }))
+    const chordLayers = singleLine.flatMap((root) =>
+      Array.from({ length: 6 }, (_, stringIndex) => ({
+        ...root,
+        id: `${root.id}-${stringIndex}`,
+        stringIndex,
+      })),
+    )
+
+    expect(adaptiveTabWindowBeats(chordLayers, 120)).toBe(
+      adaptiveTabWindowBeats(singleLine, 120),
+    )
+  })
+
+  it('keeps persisted zoom preferences inside the readable beat bounds', () => {
+    expect(zoomedTabWindowBeats(8, 0.1)).toBe(TAB_MAX_WINDOW_BEATS)
+    expect(zoomedTabWindowBeats(5, 20)).toBe(TAB_MIN_WINDOW_BEATS)
+    expect(zoomedTabWindowBeats(6, 1.5)).toBe(4)
   })
 })
 

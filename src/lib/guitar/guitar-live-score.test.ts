@@ -116,6 +116,10 @@ function take(
 function engine(
   targets: readonly GuitarLiveScoreTargetInput[],
   inputKind: GuitarInputProfileKind = 'midi',
+  instrumentation?: {
+    onRetainedEventVisit?(): void
+    onTargetVisit?(): void
+  },
 ) {
   const finalBeat = Math.max(1, ...targets.map((note) => note.startBeat + 1))
   return createGuitarLiveScoreEngine({
@@ -128,6 +132,7 @@ function engine(
     beatToSeconds: (beat) => beat,
     targets,
     inputKind,
+    instrumentation,
   })
 }
 
@@ -180,6 +185,29 @@ describe('createGuitarLiveScoreEngine', () => {
       eventId: 'event-0',
       score: 100,
     })
+  })
+
+  it('does not advance the unresolved frontier past a provisional attack', () => {
+    const score = engine([
+      { id: 'chord-c', midi: 60, startBeat: 0 },
+      { id: 'chord-e', midi: 64, startBeat: 0 },
+    ])
+    const provisional = event('event-c', 170, null)
+    const exact = event('event-e', 0, 64)
+
+    const waiting = score.sample(take([provisional, exact]), 181, 'good')
+    expect(waiting.totals.judgedTargets).toBe(0)
+
+    const enriched = { ...provisional, pitch: event('x', 0, 60).pitch }
+    const settled = score.sample(take([enriched, exact]), 181, 'good')
+    expect(settled.totals).toMatchObject({
+      judgedTargets: 2,
+      hitTargets: 2,
+      missedTargets: 0,
+    })
+    expect(
+      settled.recentJudgments.map((judgment) => judgment.targetId),
+    ).toEqual(['chord-c', 'chord-e'])
   })
 
   it('never reuses one retained attack for a later same-pitch target', () => {
@@ -472,6 +500,63 @@ describe('createGuitarLiveScoreEngine', () => {
     expect(result.recentJudgments).toHaveLength(
       GUITAR_LIVE_SCORE_ROLLING_TARGETS,
     )
+  })
+
+  it('judges a 2,245-target session from a monotonic frontier without re-ingesting unchanged snapshots', () => {
+    const count = 2_245
+    const targets = Array.from({ length: count }, (_, index) => target(index))
+    let targetVisits = 0
+    let retainedEventVisits = 0
+    const score = engine(targets, 'midi', {
+      onTargetVisit: () => {
+        targetVisits += 1
+      },
+      onRetainedEventVisit: () => {
+        retainedEventVisits += 1
+      },
+    })
+    let result = score.snapshot()
+
+    for (let index = 0; index < count; index += 1) {
+      const note = targets[index]
+      if (note === undefined) continue
+      const frame = Math.round(note.startBeat * SAMPLE_RATE)
+      const snapshot = take([event(`event-${index}`, frame, note.midi)], {
+        droppedEventCount: index,
+      })
+      score.sample(snapshot, frame, 'good')
+      result = score.sample(snapshot, frame + 181, 'good')
+    }
+
+    const finalIndex = count - 1
+    const finalFrame = finalIndex * SAMPLE_RATE
+    result = score.sample(
+      take(
+        [event(`event-${finalIndex}`, finalFrame, targets[finalIndex]!.midi)],
+        {
+          lifecycle: 'completed',
+          durationFrames: finalFrame + 182,
+          droppedEventCount: finalIndex,
+        },
+      ),
+      finalFrame + 181,
+      'good',
+    )
+
+    expect(result).toMatchObject({
+      phase: 'completed',
+      basis: 'cumulative',
+      score: 100,
+      evidenceStatus: 'complete',
+      totals: {
+        judgedTargets: count,
+        hitTargets: count,
+        missedTargets: 0,
+        points: count * 100,
+      },
+    })
+    expect(targetVisits).toBe(count * 3 - 1)
+    expect(retainedEventVisits).toBe(count + 1)
   })
 
   it('detects a recorder page it never observed and skips targets the gap could affect', () => {

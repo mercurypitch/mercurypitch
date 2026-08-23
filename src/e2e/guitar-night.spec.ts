@@ -335,6 +335,48 @@ async function seedAuthoredGuitarScore(
   )
 }
 
+async function seedDenseAuthoredGuitarScore(
+  page: import('@playwright/test').Page,
+  songId: string,
+): Promise<void> {
+  await page.addInitScript((seededSongId) => {
+    const noteCount = 2_245
+    const totalBeats = 1_254
+    const notes = Array.from({ length: noteCount }, (_, index) => {
+      const stringIndex = index % 6
+      return {
+        midi: 64 - stringIndex * 5 + (index % 4),
+        startBeat: (index * totalBeats) / noteCount,
+        duration: 0.25,
+        stringIndex,
+        fret: 5 + (index % 5),
+      }
+    })
+    localStorage.setItem(
+      'pitchperfect_guitar_songs',
+      JSON.stringify([
+        {
+          id: seededSongId,
+          name: 'Fast dense rehearsal study',
+          bpm: 169,
+          tracks: [
+            {
+              id: 'track-fast-lead',
+              name: 'Fast lead guitar',
+              instrumentName: 'Electric Guitar',
+              noteCount: notes.length,
+              notes,
+            },
+          ],
+          scoreTrackId: 'track-fast-lead',
+          backingTrackIds: [],
+          importedAt: Date.now(),
+        },
+      ]),
+    )
+  }, songId)
+}
+
 async function instrumentMicrophoneRequests(
   page: import('@playwright/test').Page,
 ) {
@@ -1582,6 +1624,202 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   ).toBe(1)
 })
 
+test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke', async ({
+  page,
+}) => {
+  const songId = `guitar-night-dense-tab-${Date.now()}`
+  await seedDenseAuthoredGuitarScore(page, songId)
+  await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
+    waitUntil: 'domcontentloaded',
+  })
+
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .click()
+
+  const room = page.getByTestId('guitar-night-score-room')
+  await room.getByRole('button', { name: 'Tab', exact: true }).click()
+
+  const tab = room.getByTestId('guitar-night-moving-tab')
+  const tabWindow = room.locator('[data-window-beats]')
+  const zoom = room.getByRole('slider', { name: 'Tab zoom', exact: true })
+  await expect(tab).toBeVisible()
+  await expect(zoom).toHaveValue('100')
+  await expect(zoom).toHaveAttribute(
+    'aria-valuetext',
+    /^100% zoom, \d(?:\.\d)? beats visible$/,
+  )
+
+  const initialWindow = Number(
+    await tabWindow.getAttribute('data-window-beats'),
+  )
+  expect(initialWindow).toBeGreaterThanOrEqual(3.5)
+  expect(initialWindow).toBeLessThan(6)
+  await expect(tab.locator('[data-note-id]')).not.toHaveCount(0)
+  expect(await tab.locator('[data-note-id]').count()).toBeLessThan(40)
+
+  const lanesBox = await tab.boundingBox()
+  expect(lanesBox).not.toBeNull()
+  await page.mouse.move(
+    (lanesBox?.x ?? 0) + (lanesBox?.width ?? 0) / 2,
+    (lanesBox?.y ?? 0) + (lanesBox?.height ?? 0) / 2,
+  )
+  await page.mouse.wheel(0, -120)
+  await expect
+    .poll(async () => Number(await zoom.inputValue()))
+    .toBeGreaterThan(100)
+  await expect
+    .poll(async () => Number(await tabWindow.getAttribute('data-window-beats')))
+    .toBeLessThan(initialWindow)
+
+  await zoom.evaluate((input) => {
+    const range = input as HTMLInputElement
+    range.value = '100'
+    range.dispatchEvent(new InputEvent('input', { bubbles: true }))
+  })
+  await expect(zoom).toHaveValue('100')
+  const touch = await page.context().newCDPSession(page)
+  const pinchBox = await tab.boundingBox()
+  expect(pinchBox).not.toBeNull()
+  const pinchY = (pinchBox?.y ?? 0) + (pinchBox?.height ?? 0) / 2
+  const pinchX = (pinchBox?.x ?? 0) + (pinchBox?.width ?? 0) / 2
+  await touch.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [
+      { x: pinchX - 35, y: pinchY, id: 1, radiusX: 8, radiusY: 8 },
+      { x: pinchX + 35, y: pinchY, id: 2, radiusX: 8, radiusY: 8 },
+    ],
+  })
+  await touch.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [
+      { x: pinchX - 70, y: pinchY, id: 1, radiusX: 8, radiusY: 8 },
+      { x: pinchX + 70, y: pinchY, id: 2, radiusX: 8, radiusY: 8 },
+    ],
+  })
+  await touch.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await expect
+    .poll(async () => Number(await zoom.inputValue()))
+    .toBeGreaterThan(100)
+
+  const zoomBox = await zoom.boundingBox()
+  expect(zoomBox).not.toBeNull()
+  const sliderY = (zoomBox?.y ?? 0) + (zoomBox?.height ?? 0) / 2
+  const sliderLeft = (zoomBox?.x ?? 0) + 8
+  const sliderTravel = Math.max(1, (zoomBox?.width ?? 16) - 16)
+  await page.mouse.move(sliderLeft + sliderTravel * 0.75, sliderY)
+  await page.mouse.down()
+  await page.mouse.move(sliderLeft + sliderTravel * 0.9, sliderY, { steps: 5 })
+  await page.mouse.up()
+  await expect
+    .poll(async () => Number(await zoom.inputValue()))
+    .toBeGreaterThan(150)
+
+  const persistedZoom = await page.evaluate(() =>
+    localStorage.getItem('guitar-night-tab-zoom-v1'),
+  )
+  expect(Number(persistedZoom)).toBeGreaterThan(1.5)
+
+  await room.getByRole('button', { name: 'Highway', exact: true }).click()
+  await expect(zoom).toHaveCount(0)
+  await room.getByRole('button', { name: 'Tab', exact: true }).click()
+  await expect(room.getByRole('slider', { name: 'Tab zoom' })).toHaveValue(
+    String(Math.round(Number(persistedZoom) * 100)),
+  )
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobileBounds = await room
+    .getByRole('slider', { name: 'Tab zoom' })
+    .evaluate((slider) => {
+      const rect = slider.getBoundingClientRect()
+      return {
+        left: rect.left,
+        right: rect.right,
+        height: rect.height,
+        viewportWidth: document.documentElement.clientWidth,
+        pageWidth: document.documentElement.scrollWidth,
+      }
+    })
+  expect(mobileBounds.left).toBeGreaterThanOrEqual(0)
+  expect(mobileBounds.right).toBeLessThanOrEqual(mobileBounds.viewportWidth + 1)
+  expect(mobileBounds.height).toBeGreaterThanOrEqual(44)
+  expect(mobileBounds.pageWidth).toBeLessThanOrEqual(
+    mobileBounds.viewportWidth + 1,
+  )
+
+  const readCompactLayout = () =>
+    zoom.evaluate((slider) => {
+      const faceplate = slider.parentElement
+      const tab = slider.closest('[data-window-beats]')
+      if (
+        !(faceplate instanceof HTMLElement) ||
+        !(tab instanceof HTMLElement)
+      ) {
+        throw new Error('Tab zoom layout is not mounted')
+      }
+      const plateRect = faceplate.getBoundingClientRect()
+      const overlaps = [...tab.querySelectorAll<HTMLElement>('[data-note-id]')]
+        .map((note) => note.getBoundingClientRect())
+        .filter(
+          (note) =>
+            note.right > plateRect.left &&
+            note.left < plateRect.right &&
+            note.bottom > plateRect.top &&
+            note.top < plateRect.bottom,
+        ).length
+      return {
+        clientWidth: faceplate.clientWidth,
+        scrollWidth: faceplate.scrollWidth,
+        left: plateRect.left,
+        right: plateRect.right,
+        bottom: plateRect.bottom,
+        overlaps,
+        viewportWidth: document.documentElement.clientWidth,
+        viewportHeight: document.documentElement.clientHeight,
+        pageWidth: document.documentElement.scrollWidth,
+      }
+    })
+
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '200%'
+  })
+  const zoomedPhone = await readCompactLayout()
+  expect(zoomedPhone.scrollWidth).toBeLessThanOrEqual(
+    zoomedPhone.clientWidth + 1,
+  )
+  expect(zoomedPhone.left).toBeGreaterThanOrEqual(0)
+  expect(zoomedPhone.right).toBeLessThanOrEqual(zoomedPhone.viewportWidth + 1)
+  expect(zoomedPhone.bottom).toBeLessThanOrEqual(zoomedPhone.viewportHeight + 1)
+  expect(zoomedPhone.overlaps).toBe(0)
+  expect(zoomedPhone.pageWidth).toBeLessThanOrEqual(
+    zoomedPhone.viewportWidth + 1,
+  )
+
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = ''
+  })
+  await page.setViewportSize({ width: 568, height: 320 })
+  const shortLandscape = await readCompactLayout()
+  expect(shortLandscape.scrollWidth).toBeLessThanOrEqual(
+    shortLandscape.clientWidth + 1,
+  )
+  expect(shortLandscape.right).toBeLessThanOrEqual(
+    shortLandscape.viewportWidth + 1,
+  )
+  expect(shortLandscape.bottom).toBeLessThanOrEqual(
+    shortLandscape.viewportHeight + 1,
+  )
+  expect(shortLandscape.overlaps).toBe(0)
+  expect(shortLandscape.pageWidth).toBeLessThanOrEqual(
+    shortLandscape.viewportWidth + 1,
+  )
+})
+
 test('activates, edits, and clears an authored A B loop while playing with a real pointer @smoke', async ({
   page,
 }) => {
@@ -1631,13 +1869,17 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
   const aBeat = Number(await markerA.getAttribute('aria-valuenow'))
   expect(aBeat).toBeGreaterThanOrEqual(1)
 
-  await page.waitForTimeout(900)
+  // Give the loop enough runway that a loaded CI worker cannot naturally
+  // cross B while the real-pointer boundary drag is still being dispatched.
+  // The deterministic controller suite separately proves the exact restart
+  // beat; this smoke test protects the browser gesture and live transport.
+  await page.waitForTimeout(2_000)
   const beforeB = Number(await seek.inputValue())
   await loopControls.getByRole('button', { name: 'B', exact: true }).click()
   const markerB = deck.getByTestId('guitar-night-score-loop-marker-b')
   await expect(markerB).toBeVisible()
   const firstBBeat = Number(await markerB.getAttribute('aria-valuenow'))
-  expect(firstBBeat).toBeGreaterThan(aBeat)
+  expect(firstBBeat - aBeat).toBeGreaterThanOrEqual(3)
 
   // The configured four-beat count-in remains a session preference, but
   // completing B during playback relaunches the running loop at A with none.

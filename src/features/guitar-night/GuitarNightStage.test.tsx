@@ -10,6 +10,7 @@ import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import type { DisplaySettings, TabPresentation, TabSceneLoopSpan, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
+import { GUITAR_NIGHT_TAB_ZOOM_KEY } from './GuitarNightMovingTab'
 import { GUITAR_NIGHT_CAMERA_PRESET_KEY, GUITAR_NIGHT_EFFECTS_KEY, GUITAR_NIGHT_FLOW_PRESENTATION_KEY, GUITAR_NIGHT_HANDEDNESS_KEY, GuitarNightStage, } from './GuitarNightStage'
 
 vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
@@ -48,12 +49,29 @@ const SOURCE: GuitarPerformanceStageSource = {
   },
 }
 
+const GUIDED_SOURCE: GuitarPerformanceStageSource = {
+  ...SOURCE,
+  notes: () => [
+    {
+      id: 'guided-e4',
+      midi: 64,
+      noteName: 'E4',
+      stringIndex: 0,
+      fret: 0,
+      startBeat: 0,
+      duration: 1,
+      targetFreq: 329.63,
+    },
+  ],
+}
+
 describe('GuitarNightStage views', () => {
   const persistedKeys = [
     GUITAR_NIGHT_FLOW_PRESENTATION_KEY,
     GUITAR_NIGHT_CAMERA_PRESET_KEY,
     GUITAR_NIGHT_HANDEDNESS_KEY,
     GUITAR_NIGHT_EFFECTS_KEY,
+    GUITAR_NIGHT_TAB_ZOOM_KEY,
   ] as const
 
   beforeEach(() => {
@@ -106,6 +124,20 @@ describe('GuitarNightStage views', () => {
         name: /Empty 6-string tablature; no song tab is attached/,
       }),
     ).toBeVisible()
+  })
+
+  it('keeps the reading zoom local to Tab instead of changing Flow camera chrome', () => {
+    render(() => (
+      <GuitarNightStage source={GUIDED_SOURCE} active={() => true} />
+    ))
+
+    expect(screen.queryByRole('slider', { name: 'Tab zoom' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Tab' }))
+    expect(screen.getByRole('slider', { name: 'Tab zoom' })).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Highway' }))
+    expect(screen.queryByRole('slider', { name: 'Tab zoom' })).toBeNull()
+    expect(screen.getByLabelText('Camera, Runway')).toBeVisible()
   })
 
   it('forwards one authored loop to Flow and maps it read-only in Tab and Neck', async () => {

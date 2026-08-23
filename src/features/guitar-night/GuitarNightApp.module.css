@@ -4298,6 +4298,9 @@
 }
 
 .stageTab {
+  --stage-tab-note-size: 1.6rem;
+  --stage-tab-note-font-size: 0.68rem;
+
   position: relative;
   display: grid;
   align-content: center;
@@ -4324,6 +4327,7 @@
   width: 100%;
   padding-top: 0.8rem;
   overflow: hidden;
+  touch-action: none;
 }
 
 /* Tab has a label gutter; keeping every time overlay inside this inset makes
@@ -4657,7 +4661,7 @@
   z-index: 1;
   grid-column: 2;
   grid-row: 1;
-  height: 1.6rem;
+  height: var(--stage-tab-note-size);
 }
 
 .stageTabString b {
@@ -4665,15 +4669,172 @@
   top: 0;
   display: grid;
   place-items: center;
-  min-width: 1.6rem;
-  height: 1.6rem;
+  min-width: var(--stage-tab-note-size);
+  height: var(--stage-tab-note-size);
   border: 1px solid rgba(106, 202, 189, 0.44);
   border-radius: 50%;
   color: #e7f7f3;
   background: #142522;
-  font-size: 0.68rem;
+  font-size: var(--stage-tab-note-font-size);
   box-shadow: 0 0 1.1rem rgba(106, 202, 189, 0.13);
   transform: translateX(-50%);
+}
+
+/* A tactile velvet faceplate keeps Tab spacing available without entering the
+   transport or borrowing the 3D camera controls. The native range preserves
+   keyboard semantics and gives touch users a dependable pinch alternative. */
+.stageTabZoom {
+  position: absolute;
+  z-index: 4;
+  right: clamp(0.75rem, 2vw, 1.35rem);
+  bottom: clamp(0.65rem, 1.7vh, 1.05rem);
+  display: grid;
+  grid-template-columns: auto minmax(5rem, 8.5rem) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.58rem;
+  width: min(16.5rem, calc(100% - 1.5rem));
+  min-height: var(--touch-target);
+  padding: 0.42rem 0.62rem;
+  border: 1px solid rgba(216, 200, 175, 0.16);
+  border-radius: 0.8rem;
+  color: rgba(244, 234, 219, 0.84);
+  background:
+    linear-gradient(135deg, rgba(224, 164, 93, 0.075), transparent 48%),
+    rgba(10, 8, 7, 0.8);
+  box-shadow:
+    0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
+    inset 0 1px rgba(255, 255, 255, 0.035);
+  -webkit-backdrop-filter: blur(calc(14px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(14px * var(--gn-blur-scale)));
+  cursor: pointer;
+}
+
+.stageTabZoom > span {
+  grid-row: 1 / span 2;
+  color: rgba(244, 234, 219, 0.72);
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stageTabZoom input {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 100%;
+  height: var(--touch-target);
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize;
+  appearance: none;
+}
+
+.stageTabZoom input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(106, 202, 189, 0.4),
+    rgba(224, 164, 93, 0.72)
+  );
+}
+
+.stageTabZoom input::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(106, 202, 189, 0.4),
+    rgba(224, 164, 93, 0.72)
+  );
+}
+
+.stageTabZoom input::-webkit-slider-thumb {
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.41rem;
+  border: 1px solid rgba(253, 243, 228, 0.8);
+  border-radius: 50%;
+  background: #e0a45d;
+  box-shadow: 0 0 0.8rem rgba(224, 164, 93, 0.32);
+  appearance: none;
+}
+
+.stageTabZoom input::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid rgba(253, 243, 228, 0.8);
+  border-radius: 50%;
+  background: #e0a45d;
+  box-shadow: 0 0 0.8rem rgba(224, 164, 93, 0.32);
+}
+
+.stageTabZoom input:focus-visible {
+  outline: 2px solid rgba(224, 164, 93, 0.82);
+  outline-offset: -0.35rem;
+  border-radius: 0.5rem;
+}
+
+.stageTabZoom output {
+  align-self: end;
+  color: #fdf3e4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+}
+
+.stageTabZoom small {
+  align-self: start;
+  color: var(--muted-readable);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.52rem;
+  line-height: 1.1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* On phones and short landscape stages, the faceplate keeps a physical-size
+   footprint below the strings. Secondary copy yields before either the native
+   range or the authored notes, including at 200% text. */
+@media (max-width: 720px), (max-height: 540px) {
+  .stageTab {
+    padding-bottom: max(3.15rem, calc(var(--touch-target) + 0.5rem));
+  }
+
+  .stageTabZoom {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+    column-gap: 0.4rem;
+    width: min(12rem, calc(100% - 1rem));
+    min-width: 0;
+    min-height: var(--touch-target);
+    padding: 0.16rem 0.48rem;
+    right: max(0.5rem, var(--safe-right));
+    bottom: max(0.3rem, var(--safe-bottom));
+  }
+
+  .stageTabZoom > span,
+  .stageTabZoom small {
+    display: none;
+  }
+
+  .stageTabZoom input {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .stageTabZoom output {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
 }
 
 .stageTabString .stageTabNoteActive {
