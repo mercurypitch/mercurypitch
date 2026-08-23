@@ -1,8 +1,9 @@
 // Live-score controller tests pin room boundaries without involving Jam Doctor.
 // ============================================================
 
-import { createRoot, createSignal } from 'solid-js'
-import { describe, expect, it, vi } from 'vitest'
+import { createEffect, createRoot, createSignal } from 'solid-js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { summarizeGuitarScoreTake } from '@/lib/guitar/guitar-score-history'
 import type { GuitarTakeEvent, GuitarTakeSnapshot, } from '@/lib/guitar/guitar-take-recorder'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference } from './reference-port'
@@ -123,6 +124,8 @@ function take(
   }
 }
 
+afterEach(() => vi.useRealTimers())
+
 describe('useGuitarNightLiveScoreController', () => {
   it('moves from explicit Listening through warming, active, and complete', async () => {
     await createRoot(async (dispose) => {
@@ -163,17 +166,21 @@ describe('useGuitarNightLiveScoreController', () => {
         stopInput: vi.fn(),
         armTakeAt,
         completeTakeAt,
+        completeTakeNow: () => false,
+      })
+      let observedCaptureActive = false
+      createEffect(() => {
+        observedCaptureActive = controller.captureActive()
       })
 
       expect(controller.state()).toBe('ready')
+      expect(observedCaptureActive).toBe(false)
       expect(await controller.start({ start: 0, end: 4 })).toBe(true)
-      expect(startRoom).toHaveBeenCalledWith(
-        { start: 0, end: 4 },
-        { audibleGuide: false },
-      )
+      expect(startRoom).toHaveBeenCalledWith({ start: 0, end: 4 })
       expect(armTakeAt).toHaveBeenCalledWith(10)
       expect(completeTakeAt).toHaveBeenCalledWith(14)
       expect(controller.boundary()?.id).toBe('live-1')
+      expect(observedCaptureActive).toBe(true)
       expect(controller.display()?.phase).toBe('active')
       expect(controller.inputKind()).toBe('microphone')
       expect(controller.startedAt()).toEqual(expect.any(Number))
@@ -240,6 +247,7 @@ describe('useGuitarNightLiveScoreController', () => {
           return true
         },
         completeTakeAt: () => true,
+        completeTakeNow: () => false,
       })
 
       await controller.start({ start: 0, end: 4 })
@@ -253,12 +261,170 @@ describe('useGuitarNightLiveScoreController', () => {
       expect(controller.state()).toBe('paused')
       expect(controller.captureActive()).toBe(false)
       expect(controller.score()).toBe(100)
+      expect(controller.display()).toMatchObject({
+        phase: 'active',
+        basis: 'rolling-16',
+      })
+      expect(
+        summarizeGuitarScoreTake(
+          controller.display()!,
+          {
+            pieceLabel: REFERENCE.title,
+            trackLabel: REFERENCE.trackName,
+            range: { startBeat: 0, endBeat: 4 },
+            inputKind: 'microphone',
+            status: 'partial',
+          },
+          10,
+        ),
+      ).not.toBeNull()
 
       setCurrentTake(take([attack(0), attack(1), attack(2)], 'completed'))
       setPlayheadBeat(4)
       await Promise.resolve()
       expect(controller.score()).toBe(100)
       expect(controller.state()).toBe('paused')
+
+      expect(controller.finish()).toBe(true)
+      expect(controller.state()).toBe('complete')
+      expect(controller.display()).toMatchObject({
+        phase: 'completed',
+        basis: 'cumulative',
+        score: 75,
+      })
+      expect(
+        summarizeGuitarScoreTake(
+          controller.display()!,
+          {
+            pieceLabel: REFERENCE.title,
+            trackLabel: REFERENCE.trackName,
+            range: { startBeat: 0, endBeat: 4 },
+            inputKind: 'microphone',
+            status: 'completed',
+          },
+          10,
+        ),
+      ).toMatchObject({ status: 'completed', basis: 'cumulative', score: 75 })
+      dispose()
+    })
+  })
+
+  it('settles an explicitly stopped take without judging post-End evidence', async () => {
+    vi.useFakeTimers()
+    await createRoot(async (dispose) => {
+      const [currentTake, setCurrentTake] =
+        createSignal<GuitarTakeSnapshot | null>(null)
+      const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+      const stopInput = vi.fn()
+      const completeTakeNow = vi.fn(() => {
+        // pinEnd publishes before completion, and a rejected attack may update
+        // recorder diagnostics while the transport advances in the same turn.
+        setCurrentTake((snapshot) =>
+          snapshot === null ? null : { ...snapshot, filteredAfterEnd: 1 },
+        )
+        setPlayheadBeat(4)
+        window.setTimeout(() => {
+          setCurrentTake((snapshot) =>
+            snapshot === null
+              ? null
+              : {
+                  ...snapshot,
+                  lifecycle: 'completed',
+                  durationFrames: 3_250,
+                },
+          )
+        }, 120)
+        return true
+      })
+      const controller = useGuitarNightLiveScoreController({
+        listeningStatus: () => 'listening',
+        inputKind: () => 'microphone',
+        take: currentTake,
+        health: () => ({ state: 'good', hint: 'Good' }),
+        roomStatus: () => 'playing',
+        countInRemaining: () => 0,
+        playheadBeat,
+        startRoom: async () => ({
+          id: 'live-stopped',
+          reference: END_BOUNDARY_REFERENCE,
+          range: { start: 0, end: 4 },
+          tempoBpm: 60,
+          scoreTempoBpm: 60,
+          countInBeats: 0,
+          sampleRate: SAMPLE_RATE,
+          startedAtSeconds: 10,
+          completedAtSeconds: 14,
+          beatToSeconds: (beat) => beat,
+        }),
+        stopRoom: vi.fn(),
+        pauseRoom: vi.fn(),
+        stopInput,
+        armTakeAt: () => {
+          setCurrentTake(take([]))
+          return true
+        },
+        completeTakeAt: () => true,
+        completeTakeNow,
+      })
+
+      expect(await controller.start({ start: 0, end: 4 })).toBe(true)
+      setCurrentTake(take([attack(0), attack(1), attack(2), attack(3)]))
+      setPlayheadBeat(3.25)
+      await Promise.resolve()
+      expect(controller.display()).toMatchObject({
+        phase: 'active',
+        basis: 'rolling-16',
+        score: 100,
+      })
+
+      expect(controller.finish()).toBe(true)
+
+      expect(completeTakeNow).toHaveBeenCalledOnce()
+      expect(stopInput).not.toHaveBeenCalled()
+      expect(controller.finishing()).toBe(true)
+      expect(controller.captureActive()).toBe(true)
+      expect(controller.display()?.phase).toBe('active')
+      expect(controller.display()).toMatchObject({
+        targetCount: 5,
+        totals: { judgedTargets: 4, hitTargets: 4 },
+      })
+      await vi.advanceTimersByTimeAsync(120)
+
+      expect(controller.finishing()).toBe(false)
+      expect(controller.captureActive()).toBe(false)
+      expect(controller.state()).toBe('complete')
+      expect(controller.display()).toMatchObject({
+        phase: 'completed',
+        basis: 'cumulative',
+        score: 100,
+        grade: 'S',
+        evidenceStatus: 'complete',
+        targetCount: 5,
+        totals: {
+          judgedTargets: 4,
+          hitTargets: 4,
+          missedTargets: 0,
+          skippedTargets: 0,
+          points: 400,
+          possiblePoints: 400,
+        },
+      })
+      expect(
+        summarizeGuitarScoreTake(
+          controller.display()!,
+          {
+            pieceLabel: END_BOUNDARY_REFERENCE.title,
+            trackLabel: END_BOUNDARY_REFERENCE.trackName,
+            range: { startBeat: 0, endBeat: 4 },
+            inputKind: 'microphone',
+            status: 'completed',
+          },
+          10,
+        ),
+      ).not.toBeNull()
+      expect(controller.announcement()).toBe(
+        'Take complete, live score 100 out of 100, grade S',
+      )
       dispose()
     })
   })
@@ -300,6 +466,7 @@ describe('useGuitarNightLiveScoreController', () => {
           return true
         },
         completeTakeAt: () => true,
+        completeTakeNow: () => false,
       })
 
       expect(await controller.start({ start: 0, end: 4 })).toBe(true)
@@ -358,6 +525,7 @@ describe('useGuitarNightLiveScoreController', () => {
           return true
         },
         completeTakeAt: () => true,
+        completeTakeNow: () => false,
       })
 
       await controller.start({ start: 0, end: 4 })
@@ -425,6 +593,7 @@ describe('useGuitarNightLiveScoreController', () => {
           return true
         },
         completeTakeAt: () => true,
+        completeTakeNow: () => false,
       })
 
       await controller.start({ start: 0, end: 4 })

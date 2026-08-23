@@ -104,9 +104,47 @@ test('plays the rest of the band, and lets any of it be muted @smoke', async ({
 }) => {
   await openTheRoom(page, `room-band-${Date.now()}`)
 
+  const listeningMix = page.getByRole('group', {
+    name: 'Listening playback mix',
+  })
+  await expect(
+    listeningMix.getByRole('button', { name: 'Mute backing parts' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    listeningMix.getByRole('button', { name: 'Hear target guide' }),
+  ).toHaveAttribute('aria-pressed', 'false')
+
+  // Coarse Target and Backing controls are explicit mix choices. They do not
+  // rewrite the individual M/S state that Session owns.
+  await listeningMix.getByRole('button', { name: 'Mute backing parts' }).click()
+  await listeningMix.getByRole('button', { name: 'Hear target guide' }).click()
+  await expect(
+    listeningMix.getByRole('button', { name: 'Hear backing parts' }),
+  ).toHaveAttribute('aria-pressed', 'false')
+  await expect(
+    listeningMix.getByRole('button', { name: 'Mute target guide' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+
+  // Session reports the same coarse bus truth; the individual M/S choices
+  // underneath it are retained while the bus is quiet.
+  await page.getByTestId('guitar-night-session-trigger').click()
+  let panel = page.getByTestId('guitar-night-session-panel')
+  const restoreBacking = panel.getByRole('button', {
+    name: 'Hear selected backing parts',
+  })
+  await expect(restoreBacking).toHaveAttribute('aria-pressed', 'false')
+  await expect(panel.getByLabel('Mute Rhythm guitar')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  await restoreBacking.click()
+  await panel.getByRole('button', { name: 'Close the session details' }).click()
+
+  await listeningMix.getByRole('button', { name: 'Mute target guide' }).click()
+
   // THE REPORT: every part but the scored one was silent, with no control.
   await page.getByTestId('guitar-night-session-trigger').click()
-  const panel = page.getByTestId('guitar-night-session-panel')
+  panel = page.getByTestId('guitar-night-session-panel')
   await expect(panel.getByLabel('Mute Rhythm guitar')).toHaveAttribute(
     'aria-pressed',
     'false',

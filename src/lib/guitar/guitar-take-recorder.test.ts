@@ -291,6 +291,33 @@ describe('createGuitarTakeRecorder', () => {
     expect(take.append(exactCapture(11))).toBeNull()
   })
 
+  it('pins an end while recording and refuses later evidence during settle', () => {
+    const take = recorder()
+
+    take.pinEnd(12)
+    const beforeEnd = take.append(exactCapture(12.03))
+    expect(beforeEnd).not.toBeNull()
+    expect(take.append(exactCapture(12.04))).toBeNull()
+    expect(take.append(exactCapture(12.2))).toBeNull()
+    if (beforeEnd !== null) {
+      expect(
+        take.replace(beforeEnd.id, {
+          ...beforeEnd,
+          pitch: pitch(64),
+        }),
+      ).not.toBeNull()
+    }
+
+    expect(take.snapshot()).toMatchObject({
+      lifecycle: 'recording',
+      filteredAfterEnd: 2,
+    })
+    const completed = take.complete(13)
+    expect(completed.durationFrames).toBe(96_000)
+    expect(completed.events).toHaveLength(1)
+    expect(completed.events[0]?.pitch?.midi).toBe(64)
+  })
+
   it('bounds long takes and reports truncation', () => {
     const take = recorder({ maxEvents: 2 })
     take.append(exactCapture(10.1))

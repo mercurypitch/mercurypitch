@@ -69,6 +69,58 @@ describe('GuitarNightScoreRoom', () => {
     ).toBeNull()
   })
 
+  it('keeps target and backing mix choices independent from Listening', () => {
+    const reference: GuitarNightReference = {
+      ...VELVET_RIFF,
+      tracks: [
+        ...VELVET_RIFF.tracks,
+        { id: 'track-bass', name: 'Bass', noteCount: 1 },
+      ],
+    }
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => reference}
+        backingMelody={() => [
+          {
+            midi: 40,
+            startBeat: 0,
+            durationBeats: 1,
+            variant: 'bass',
+            channelId: 'track-bass',
+          },
+        ]}
+        defaultHearScore={() => false}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const mix = screen.getByRole('group', { name: 'Listening playback mix' })
+    const backing = within(mix).getByRole('button', {
+      name: 'Mute backing parts',
+    })
+    const target = within(mix).getByRole('button', {
+      name: 'Hear target guide',
+    })
+
+    expect(backing).toHaveAttribute('aria-pressed', 'true')
+    expect(target).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(backing)
+    fireEvent.click(target)
+
+    expect(
+      within(mix).getByRole('button', { name: 'Hear backing parts' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      within(mix).getByRole('button', { name: 'Mute target guide' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByTestId('guitar-night-session-trigger'))
+    expect(
+      screen.getByRole('button', { name: 'Hear selected backing parts' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('keeps mobile Session tempo and volume on the same rehearsal controls', () => {
     render(() => (
       <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
@@ -367,6 +419,8 @@ describe('scoreResultIsSettling', () => {
     expect(scoreResultIsSettling('complete', true)).toBe(true)
     expect(scoreResultIsSettling('playing', true)).toBe(false)
     expect(scoreResultIsSettling('complete', false)).toBe(false)
+    expect(scoreResultIsSettling('quiet', true, true)).toBe(true)
+    expect(scoreResultIsSettling('quiet', false, true)).toBe(true)
   })
 })
 

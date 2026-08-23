@@ -668,6 +668,55 @@
   gap: 0.4rem;
 }
 
+.sessionBackingMaster {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: var(--touch-target) minmax(0, 1fr);
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 !important;
+  overflow: hidden;
+  border-color: rgba(224, 164, 93, 0.24) !important;
+  background: rgba(224, 164, 93, 0.055) !important;
+}
+
+.sessionBackingMaster > span:first-child {
+  display: grid;
+  align-self: stretch;
+  place-items: center;
+  border-right: 1px solid rgba(244, 234, 219, 0.08);
+  color: var(--muted-readable);
+}
+
+.sessionBackingMaster > span:last-child {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+  padding: 0.45rem 0.7rem;
+}
+
+.sessionBackingMaster strong,
+.sessionBackingMaster small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionBackingMaster strong {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sessionBackingMaster svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sessionBackingMasterActive > span:first-child {
+  color: var(--amber);
+  background: rgba(224, 164, 93, 0.1);
+}
+
 /* Ending a take sits beside Play, because it is the only way back to a room
    whose setup a take has pinned. */
 .stopControl {
@@ -7183,9 +7232,127 @@
 
 .scoreListeningDock {
   grid-area: listening;
-  display: flex;
+  position: relative;
+  display: grid;
   align-items: center;
+  gap: 0.22rem;
+  width: min(8.45rem, 135px);
   min-width: 0;
+}
+
+.scoreListeningMix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(3.75rem, 1fr));
+  gap: 0.22rem;
+  width: 100%;
+}
+
+.scoreListeningMixToggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  place-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding: 0.2rem 0.32rem;
+  border: 1px solid rgba(244, 234, 219, 0.1);
+  border-radius: 0.5rem;
+  color: rgba(244, 234, 219, 0.58);
+  background: rgba(244, 234, 219, 0.025);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.scoreListeningMixToggle > span {
+  display: grid;
+  place-items: center;
+}
+
+.scoreListeningMixToggle svg {
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+.scoreListeningMixToggle small {
+  overflow: hidden;
+  font-size: clamp(10px, 0.62rem, 11px);
+  font-weight: 680;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scoreListeningMixToggle:hover:not(:disabled) {
+  border-color: rgba(224, 164, 93, 0.32);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.065);
+}
+
+.scoreListeningMixToggleActive,
+.scoreListeningMixToggleActive:hover:not(:disabled) {
+  border-color: rgba(224, 164, 93, 0.4);
+  color: var(--ivory);
+  background: rgba(60, 40, 28, 0.72);
+}
+
+.scoreListeningMixToggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scoreListeningWarning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.18rem 0.36rem;
+  border: 1px solid rgba(240, 189, 120, 0.2);
+  border-radius: 999px;
+  color: rgba(244, 218, 181, 0.82);
+  background: rgba(44, 29, 18, 0.82);
+  font-size: clamp(10px, 0.64rem, 11px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.scoreListeningWarning > span:first-child {
+  display: grid;
+  place-items: center;
+}
+
+.scoreListeningWarning svg {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.scoreListeningWarningCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+  line-height: 1.05;
+}
+
+.scoreListeningWarningCopy strong,
+.scoreListeningWarningCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scoreListeningWarningCopy strong {
+  color: rgba(244, 234, 219, 0.84);
+  font-size: inherit;
+  font-weight: 680;
+}
+
+.scoreListeningWarningCopy small {
+  color: rgba(240, 189, 120, 0.78);
+  font-size: clamp(9px, 0.56rem, 10px);
 }
 
 [data-room-kind='score'] .scoreRailLoop {
@@ -7323,6 +7490,38 @@
     gap: 0.3rem;
   }
 
+  .scoreListeningDock {
+    display: grid;
+    grid-template-columns: auto auto;
+    width: auto;
+    gap: 0.26rem;
+  }
+
+  .scoreListeningMix {
+    grid-auto-columns: var(--touch-target);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    width: auto;
+  }
+
+  .scoreListeningMixToggle {
+    grid-template-columns: 1fr;
+    width: var(--touch-target);
+    padding: 0;
+  }
+
+  .scoreListeningMixToggle small {
+    display: none;
+  }
+
+  .scoreListeningWarning {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 2.25rem;
+    padding: 0.24rem 0.4rem;
+    pointer-events: none;
+  }
+
   [data-room-kind='score'] .playControl {
     width: min(3.35rem, 54px);
     height: min(3.35rem, 54px);
@@ -7348,6 +7547,38 @@
     display: flex;
     width: auto;
     gap: 0.2rem;
+  }
+
+  .scoreListeningDock {
+    display: grid;
+    grid-template-columns: auto auto;
+    width: auto;
+    gap: 0.2rem;
+  }
+
+  .scoreListeningMix {
+    grid-auto-columns: var(--touch-target);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    width: auto;
+  }
+
+  .scoreListeningMixToggle {
+    grid-template-columns: 1fr;
+    width: var(--touch-target);
+    padding: 0;
+  }
+
+  .scoreListeningMixToggle small {
+    display: none;
+  }
+
+  .scoreListeningWarning {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 2.1rem;
+    padding: 0.2rem 0.36rem;
+    pointer-events: none;
   }
 
   [data-room-kind='score'] .timeRail > output:last-child {

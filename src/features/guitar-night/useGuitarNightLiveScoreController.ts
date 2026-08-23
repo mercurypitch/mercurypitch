@@ -34,15 +34,13 @@ interface GuitarNightLiveScoreControllerOptions {
   roomStatus: Accessor<GuitarNightScoreRoomStatus>
   countInRemaining: Accessor<number>
   playheadBeat: Accessor<number | null>
-  startRoom(
-    range: LoopSpan,
-    options: { audibleGuide: boolean },
-  ): Promise<GuitarNightScoreLiveBoundary | null>
+  startRoom(range: LoopSpan): Promise<GuitarNightScoreLiveBoundary | null>
   stopRoom(): void
   pauseRoom(): void
   stopInput(): void
   armTakeAt(startedAtSeconds: number): boolean
   completeTakeAt(endedAtSeconds: number): boolean
+  completeTakeNow(): boolean
 }
 
 function compactBeat(beat: number | null): string {
@@ -131,8 +129,10 @@ export function useGuitarNightLiveScoreController(
   const [startedAt, setStartedAt] = createSignal<number | null>(null)
   const [scoringInputKind, setScoringInputKind] =
     createSignal<GuitarInputProfileKind | null>(null)
+  const [finishing, setFinishing] = createSignal(false)
   let engine: GuitarLiveScoreEngine | null = null
   let takeId: string | null = null
+  let finishingTakeId: string | null = null
   let generation = 0
   let lastSampledFrame = 0
 
@@ -186,10 +186,62 @@ export function useGuitarNightLiveScoreController(
   }
 
   createEffect(() => {
-    if (holdReason() !== null || options.listeningStatus() === 'error') {
+    if (
+      finishing() ||
+      holdReason() !== null ||
+      options.listeningStatus() === 'error'
+    ) {
       return
     }
     sampleCurrentTake()
+  })
+
+  const settleCompletedTake = (take: GuitarTakeSnapshot): boolean => {
+    const currentEngine = engine
+    const run = boundary()
+    if (
+      currentEngine === null ||
+      run === null ||
+      take.id !== takeId ||
+      take.lifecycle !== 'completed'
+    ) {
+      return false
+    }
+    const throughFrame = Math.max(
+      lastSampledFrame,
+      take.durationFrames ?? sampledTransportFrame(),
+    )
+    lastSampledFrame = throughFrame
+    setDisplay(
+      currentEngine.sample(
+        take,
+        throughFrame,
+        retainedHealth(take, options.health()),
+      ),
+    )
+    finishingTakeId = null
+    setHoldReason(null)
+    setFinishing(false)
+    return true
+  }
+
+  createEffect(() => {
+    if (!finishing()) return
+    const currentTake = options.take()
+    if (currentTake === null || currentTake.id !== finishingTakeId) {
+      finishingTakeId = null
+      setFinishing(false)
+      setHoldReason('paused')
+      return
+    }
+    if (currentTake.lifecycle === 'recording') {
+      return
+    }
+    if (!settleCompletedTake(currentTake)) {
+      finishingTakeId = null
+      setFinishing(false)
+      setHoldReason('paused')
+    }
   })
 
   createEffect(() => {
@@ -340,6 +392,8 @@ export function useGuitarNightLiveScoreController(
     setHoldReason(null)
     setStartedAt(null)
     setScoringInputKind(null)
+    finishingTakeId = null
+    setFinishing(false)
   }
 
   const start = async (range: LoopSpan): Promise<boolean> => {
@@ -349,9 +403,7 @@ export function useGuitarNightLiveScoreController(
     const wallClockStartedAt = Date.now()
     try {
       const inputKind = options.inputKind()
-      const run = await options.startRoom(range, {
-        audibleGuide: inputKind === 'midi',
-      })
+      const run = await options.startRoom(range)
       if (currentGeneration !== generation) {
         if (run !== null) options.stopRoom()
         return false
@@ -398,6 +450,8 @@ export function useGuitarNightLiveScoreController(
       setHoldReason(null)
       setStartedAt(wallClockStartedAt)
       setScoringInputKind(inputKind)
+      finishingTakeId = null
+      setFinishing(false)
       return true
     } finally {
       if (currentGeneration === generation) setStarting(false)
@@ -413,11 +467,52 @@ export function useGuitarNightLiveScoreController(
     setStarting(false)
   }
 
+  /**
+   * End an ordinary rehearsal take and settle its cumulative score now.
+   *
+   * Pause deliberately keeps an active, rolling result. Stop is different:
+   * it pins the input boundary now, then keeps analysis alive only long enough
+   * to attach late pitch before publishing the cumulative result.
+   */
+  const finish = (): boolean => {
+    const currentTake = options.take()
+    if (engine === null || currentTake === null || currentTake.id !== takeId) {
+      return false
+    }
+    if (finishing()) return true
+
+    sampleCurrentTake()
+    generation += 1
+    setStarting(false)
+    if (currentTake.lifecycle === 'completed') {
+      return settleCompletedTake(currentTake)
+    }
+    if (currentTake.lifecycle !== 'recording') {
+      return false
+    }
+
+    // Enter the gate before pinEnd publishes its still-recording snapshot.
+    // Otherwise the ordinary reactive sampler can advance past the manual
+    // boundary in the same turn and judge targets the player never reached.
+    finishingTakeId = currentTake.id
+    setFinishing(true)
+    if (!options.completeTakeNow()) {
+      finishingTakeId = null
+      setFinishing(false)
+      return false
+    }
+    return true
+  }
+
   return {
     visible: () => true,
     captureActive: () =>
-      holdReason() === null && engine !== null && display()?.phase === 'active',
+      // An active display can only exist with an engine. Keeping this accessor
+      // signal-first also lets owner memos observe the first admitted run;
+      // checking the non-reactive engine first would short-circuit forever.
+      holdReason() === null && display()?.phase === 'active',
     starting,
+    finishing,
     state,
     basis: () => 'notes' as const,
     label,
@@ -435,6 +530,7 @@ export function useGuitarNightLiveScoreController(
     announcement,
     start,
     hold,
+    finish,
     clear,
   }
 }

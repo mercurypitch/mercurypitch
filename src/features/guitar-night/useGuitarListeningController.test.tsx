@@ -455,6 +455,48 @@ describe('useGuitarListeningController', () => {
     })
   })
 
+  it('pins manual End while the final pitch settles and excludes later attacks', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    dependencies.detections = [E4]
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      expect(controller.armTakeAt(1)).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(1.95 * 48_000),
+        level: 0.25,
+      })
+
+      Object.assign(audio.context, { currentTime: 2 })
+      expect(controller.completeTakeNow()).toBe(true)
+      expect(controller.status()).toBe('listening')
+      expect(controller.take()?.lifecycle).toBe('recording')
+
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(2.2 * 48_000),
+        level: 0.3,
+      })
+      frames.run(2.01)
+      await vi.advanceTimersByTimeAsync(119)
+      expect(controller.take()?.lifecycle).toBe('recording')
+
+      await vi.advanceTimersByTimeAsync(2)
+      expect(controller.status()).toBe('off')
+      expect(controller.take()).toMatchObject({
+        lifecycle: 'completed',
+        durationFrames: 48_000,
+        filteredAfterEnd: 1,
+      })
+      expect(controller.events()).toHaveLength(1)
+      expect(controller.events()[0]?.pitch?.midi).toBe(64)
+    })
+  })
+
   it('does not let an old scheduled completion overwrite a newly armed take', async () => {
     vi.useFakeTimers()
     const audio = createAudioHarness()

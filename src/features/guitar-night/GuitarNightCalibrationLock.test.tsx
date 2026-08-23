@@ -11,7 +11,7 @@ import { GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightScoreRoom } from './GuitarNightScoreRoom'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease } from './song-port'
-import type { GuitarNightScoreAssessmentBoundary } from './useGuitarNightScoreRoomController'
+import type { GuitarNightScoreAssessmentBoundary, GuitarNightScoreLiveBoundary, } from './useGuitarNightScoreRoomController'
 
 const listening = vi.hoisted(() => ({
   status: vi.fn(() => 'calibrating'),
@@ -45,6 +45,7 @@ const listening = vi.hoisted(() => ({
   cancel: vi.fn(),
   armTakeAt: vi.fn(() => false),
   completeTakeAt: vi.fn(() => false),
+  completeTakeNow: vi.fn(() => false),
   calibrate: vi.fn(async () => false),
   clearTake: vi.fn(),
   useInputHere: vi.fn(async () => true),
@@ -64,11 +65,12 @@ const scoreRoom = vi.hoisted(() => ({
   displayPositionSeconds: vi.fn(() => 0),
   durationSeconds: vi.fn(() => 1),
   durationBeats: vi.fn(() => 1),
-  playheadBeat: vi.fn(() => null),
+  playheadBeat: vi.fn<() => number | null>(() => null),
   tempoBpm: vi.fn(() => 90),
   countInBeats: vi.fn(() => 4),
   configuredCountInBeats: vi.fn(() => 4),
   hearScore: vi.fn(() => true),
+  hearBacking: vi.fn(() => true),
   hearClick: vi.fn(() => true),
   displayReference: vi.fn(() => REFERENCE),
   runningLoop: vi.fn(() => null),
@@ -78,7 +80,12 @@ const scoreRoom = vi.hoisted(() => ({
   getAudioGraph: vi.fn(() => null),
   parkForConfiguration: vi.fn(),
   start: vi.fn(async () => true),
-  startLiveScore: vi.fn(async () => null),
+  startLiveScore: vi.fn<
+    (range: {
+      start: number
+      end: number
+    }) => Promise<GuitarNightScoreLiveBoundary | null>
+  >(async () => null),
   pause: vi.fn(),
   toggle: vi.fn(),
   stop: vi.fn(),
@@ -91,6 +98,7 @@ const scoreRoom = vi.hoisted(() => ({
   setCountInBeats: vi.fn(),
   setMasterVolume: vi.fn(),
   setHearScore: vi.fn(),
+  setHearBacking: vi.fn(),
   setHearClick: vi.fn(),
   startAssessment: vi.fn<
     (range: {
@@ -163,6 +171,17 @@ const REVIEW_REFERENCE: GuitarNightReference = {
   notes: Array.from({ length: 4 }, (_, index) => ({
     ...REFERENCE.notes[0]!,
     id: `review-note-${index}`,
+    startBeat: index,
+  })),
+}
+
+const SCORE_RESTART_REFERENCE: GuitarNightReference = {
+  ...REVIEW_REFERENCE,
+  title: 'Six-note restart study',
+  tracks: [{ id: 'lead', name: 'Lead guitar', noteCount: 6 }],
+  notes: Array.from({ length: 6 }, (_, index) => ({
+    ...REFERENCE.notes[0]!,
+    id: `score-note-${index}`,
     startBeat: index,
   })),
 }
@@ -266,12 +285,16 @@ describe('Guitar Night calibration lock', () => {
     listening.take.mockReturnValue(null)
     listening.armTakeAt.mockReturnValue(false)
     listening.completeTakeAt.mockReturnValue(false)
+    listening.completeTakeNow.mockReturnValue(false)
     listening.calibrate.mockResolvedValue(false)
     listening.start.mockResolvedValue(true)
     listening.selectInputProfile.mockResolvedValue(undefined)
     scoreRoom.status.mockReturnValue('quiet')
     scoreRoom.setupLocked.mockReturnValue(false)
+    scoreRoom.hearScore.mockReturnValue(true)
+    scoreRoom.hearBacking.mockReturnValue(true)
     scoreRoom.start.mockResolvedValue(true)
+    scoreRoom.startLiveScore.mockResolvedValue(null)
     scoreRoom.pause.mockImplementation(() => undefined)
     scoreRoom.toggle.mockImplementation(() => undefined)
     scoreRoom.stop.mockImplementation(() => undefined)
@@ -322,6 +345,45 @@ describe('Guitar Night calibration lock', () => {
 
     fireEvent.keyDown(window, { code: 'Space' })
     expect(scoreRoom.toggle).not.toHaveBeenCalled()
+  })
+
+  it('warns about speaker bleed without muting a Room mic rehearsal mix', () => {
+    listening.status.mockReturnValue('listening')
+    listening.inputProfile.mockReturnValue('microphone')
+
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => REFERENCE}
+        backingMelody={() => [
+          {
+            midi: 40,
+            startBeat: 0,
+            durationBeats: 1,
+            variant: 'bass',
+            channelId: 'track-bass',
+          },
+        ]}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen.getByRole('note', {
+        name: /Room mic can hear speaker playback/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Mute backing parts' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: 'Mute target guide' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mute backing parts' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mute target guide' }))
+
+    expect(scoreRoom.setHearBacking).toHaveBeenCalledOnce()
+    expect(scoreRoom.setHearScore).toHaveBeenCalledOnce()
   })
 
   it('keeps every room tool locked through an asynchronous route change', async () => {
@@ -521,6 +583,189 @@ describe('Guitar Night calibration lock', () => {
 
     expect(scoreRoom.toggle).toHaveBeenCalledOnce()
     expect(scoreRoom.start).not.toHaveBeenCalled()
+  })
+
+  it('reopens the selected route after scored Pause and completed Replay', async () => {
+    const [listeningStatus, setListeningStatus] = createSignal('listening')
+    const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(null)
+    const [roomStatus, setRoomStatus] = createSignal('quiet')
+    const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+    let takeNumber = 0
+    let rejectInput!: (ready: boolean) => void
+    const rejectedInput = new Promise<boolean>((resolve) => {
+      rejectInput = resolve
+    })
+
+    // Accessors are invoked from the component's tracked owner.
+    // eslint-disable-next-line solid/reactivity
+    listening.status.mockImplementation(listeningStatus)
+    // eslint-disable-next-line solid/reactivity
+    listening.take.mockImplementation(take)
+    listening.armTakeAt.mockImplementation(() => {
+      takeNumber += 1
+      setTake({
+        ...completedReviewTake('recording'),
+        id: `score-take-${takeNumber}`,
+      })
+      return true
+    })
+    listening.completeTakeAt.mockReturnValue(true)
+    listening.stop.mockImplementation(() => {
+      setListeningStatus('off')
+      setTake((current) =>
+        current === null
+          ? null
+          : {
+              ...current,
+              lifecycle: 'completed',
+              durationFrames: 6_000,
+            },
+      )
+    })
+    listening.start.mockImplementationOnce(() => rejectedInput)
+
+    // Accessors are invoked from the component's tracked owner.
+    // eslint-disable-next-line solid/reactivity
+    scoreRoom.status.mockImplementation(roomStatus)
+    // eslint-disable-next-line solid/reactivity
+    scoreRoom.playheadBeat.mockImplementation(playheadBeat)
+    // eslint-disable-next-line solid/reactivity
+    scoreRoom.setupLocked.mockImplementation(() =>
+      ['starting', 'count-in', 'playing'].includes(roomStatus()),
+    )
+    scoreRoom.pause.mockImplementation(() => setRoomStatus('paused'))
+    scoreRoom.stop.mockImplementation(() => setRoomStatus('quiet'))
+    scoreRoom.startLiveScore.mockImplementation(async (range) => {
+      setRoomStatus('playing')
+      return {
+        id: `score-run-${scoreRoom.startLiveScore.mock.calls.length}`,
+        reference: SCORE_RESTART_REFERENCE,
+        range,
+        tempoBpm: 90,
+        scoreTempoBpm: 90,
+        countInBeats: 4,
+        sampleRate: 1_000,
+        startedAtSeconds: 10,
+        completedAtSeconds: 10 + range.end - range.start,
+        beatToSeconds: (beat: number) => beat,
+      }
+    })
+
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => SCORE_RESTART_REFERENCE}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Start the count-in'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(scoreRoom.startLiveScore).toHaveBeenNthCalledWith(1, {
+      start: 0,
+      end: 6,
+    })
+
+    setPlayheadBeat(3.4)
+    const pause = screen.getByLabelText('Pause score')
+    await vi.waitFor(() => expect(pause).toBeEnabled())
+    fireEvent.click(screen.getByLabelText('Pause score'))
+    await Promise.resolve()
+
+    const liveScore = screen.getByTestId('guitar-night-live-score')
+    expect(scoreRoom.toggle).not.toHaveBeenCalled()
+    expect(listening.stop).toHaveBeenCalledOnce()
+    expect(scoreRoom.pause).toHaveBeenCalledOnce()
+    expect(liveScore).toHaveAttribute('data-state', 'paused')
+    expect(within(liveScore).getByText('Score held')).toBeInTheDocument()
+    expect(screen.getByLabelText('Start a fresh live score')).toBeEnabled()
+
+    fireEvent.click(screen.getByLabelText('Start a fresh live score'))
+    expect(screen.getByLabelText('Starting a fresh live score')).toBeDisabled()
+    expect(screen.getByLabelText('Cancel score start')).toBeEnabled()
+    expect(liveScore).toHaveAttribute('data-state', 'paused')
+
+    fireEvent.click(screen.getByLabelText('Cancel score start'))
+    expect(listening.cancel).toHaveBeenCalledOnce()
+    expect(liveScore).toHaveAttribute('data-state', 'paused')
+    expect(screen.getByLabelText('Start a fresh live score')).toBeEnabled()
+    rejectInput(true)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(scoreRoom.startLiveScore).toHaveBeenCalledOnce()
+    expect(liveScore).toHaveAttribute('data-state', 'paused')
+
+    listening.start.mockResolvedValueOnce(false)
+    fireEvent.click(screen.getByLabelText('Start a fresh live score'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(scoreRoom.startLiveScore).toHaveBeenCalledOnce()
+    expect(liveScore).toHaveAttribute('data-state', 'paused')
+    expect(screen.getByLabelText('Start a fresh live score')).toBeEnabled()
+
+    listening.start.mockImplementationOnce(async () => {
+      setListeningStatus('listening')
+      return true
+    })
+    fireEvent.click(screen.getByLabelText('Start a fresh live score'))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(scoreRoom.startLiveScore).toHaveBeenNthCalledWith(2, {
+      start: 3.4,
+      end: 6,
+    })
+    expect(listening.start).toHaveBeenCalledTimes(3)
+    expect(listening.selectInputProfile).not.toHaveBeenCalled()
+    expect(listening.armTakeAt).toHaveBeenCalledTimes(2)
+    expect(scoreRoom.toggle).not.toHaveBeenCalled()
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Pause score')).toBeEnabled(),
+    )
+
+    setPlayheadBeat(6)
+    setRoomStatus('complete')
+    setListeningStatus('off')
+    setTake((current) =>
+      current === null
+        ? null
+        : {
+            ...current,
+            lifecycle: 'completed',
+            durationFrames: 2_600,
+          },
+    )
+    await Promise.resolve()
+    expect(liveScore).toHaveAttribute('data-state', 'complete')
+    expect(screen.getByLabelText('Replay score')).toBeEnabled()
+
+    listening.start.mockResolvedValueOnce(false)
+    fireEvent.click(screen.getByLabelText('Replay score'))
+    expect(screen.getByLabelText('Starting a fresh live score')).toBeDisabled()
+    expect(liveScore).toHaveAttribute('data-state', 'complete')
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(scoreRoom.startLiveScore).toHaveBeenCalledTimes(2)
+    expect(liveScore).toHaveAttribute('data-state', 'complete')
+    expect(screen.getByLabelText('Replay score')).toBeEnabled()
+
+    listening.start.mockImplementationOnce(async () => {
+      setListeningStatus('listening')
+      return true
+    })
+    fireEvent.click(screen.getByLabelText('Replay score'))
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Pause score')).toBeEnabled(),
+    )
+
+    expect(scoreRoom.startLiveScore).toHaveBeenNthCalledWith(3, {
+      start: 0,
+      end: 6,
+    })
+    expect(listening.start).toHaveBeenCalledTimes(5)
+    expect(listening.selectInputProfile).not.toHaveBeenCalled()
+    expect(listening.armTakeAt).toHaveBeenCalledTimes(3)
+    expect(scoreRoom.toggle).not.toHaveBeenCalled()
   })
 
   it('parks a completed score take before opening Listening', () => {

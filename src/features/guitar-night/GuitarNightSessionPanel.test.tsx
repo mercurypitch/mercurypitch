@@ -282,6 +282,33 @@ describe('GuitarNightSessionPanel', () => {
     expect(onToggleTrackAudible).toHaveBeenCalledWith('track-bass')
   })
 
+  it('shows the backing master truth without losing per-part choices', () => {
+    const onToggleBackingMaster = vi.fn()
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => reference()}
+        audibleTrackIds={() => ['track-rhythm', 'track-bass']}
+        mutedTrackIds={() => []}
+        onToggleTrackAudible={vi.fn()}
+        backingMasterEnabled={() => false}
+        onToggleBackingMaster={onToggleBackingMaster}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const master = screen.getByLabelText('Hear selected backing parts')
+    expect(master).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText(/Backing is silent/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Mute Rhythm guitar')).toHaveAttribute(
+      'title',
+      'Rhythm guitar is quiet while Backing is off',
+    )
+
+    fireEvent.click(master)
+    expect(onToggleBackingMaster).toHaveBeenCalledTimes(1)
+  })
+
   it('offers a live solo control for backing parts', () => {
     const onToggleTrackSolo = vi.fn()
     render(() => (

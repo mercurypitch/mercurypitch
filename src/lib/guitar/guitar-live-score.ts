@@ -336,6 +336,7 @@ export function createGuitarLiveScoreEngine(
   let takeId: string | null = null
   let lastThroughFrame = -1
   let lastTotalEventCount = 0
+  let lastFilteredAfterEnd = 0
   let phase: GuitarLiveScorePhase = 'active'
   let judgedTargets = 0
   let hitTargets = 0
@@ -640,6 +641,9 @@ export function createGuitarLiveScoreEngine(
     if (totalEventCount < lastTotalEventCount) {
       throw new Error('The take event sequence moved backwards.')
     }
+    if (take.filteredAfterEnd < lastFilteredAfterEnd) {
+      throw new Error('The take end-filter sequence moved backwards.')
+    }
     let newEventCount = 0
     let oldestNewFrame = Number.POSITIVE_INFINITY
     for (const event of take.events) {
@@ -671,7 +675,14 @@ export function createGuitarLiveScoreEngine(
       eventIdentities.delete(oldestId)
     }
 
-    const expectedNewEvents = totalEventCount - lastTotalEventCount
+    // Events rejected by the pinned half-open end never belonged to this
+    // score's evidence window. Keep them in the monotonic recorder count, but
+    // do not mistake their diagnostic counter for a missing in-range page.
+    const newlyFilteredAfterEnd = take.filteredAfterEnd - lastFilteredAfterEnd
+    const expectedNewEvents = Math.max(
+      0,
+      totalEventCount - lastTotalEventCount - newlyFilteredAfterEnd,
+    )
     if (newEventCount < expectedNewEvents) {
       detectedGapCount += 1
       const interval = {
@@ -691,12 +702,23 @@ export function createGuitarLiveScoreEngine(
       }
     }
     lastTotalEventCount = totalEventCount
+    lastFilteredAfterEnd = take.filteredAfterEnd
 
     const finalDurationFrames = Math.min(
       durationFrames,
       take.durationFrames ?? durationFrames,
     )
     const finalize = take.lifecycle !== 'recording'
+    if (finalize) {
+      // pinEnd may retract an event that a prior recording snapshot exposed.
+      // Reconcile the retained page before cumulative judgment so evidence at
+      // or beyond the manual half-open boundary cannot score an earlier note.
+      for (const [eventId, event] of activeEvents) {
+        if (event.compensatedTransportFrame >= finalDurationFrames) {
+          activeEvents.delete(eventId)
+        }
+      }
+    }
     const effectiveThroughFrame = finalize
       ? Math.max(throughFrame, finalDurationFrames + toleranceFrames + 1)
       : throughFrame

@@ -801,14 +801,19 @@ export function useGuitarListeningController(
       return false
     }
     if (completionTimer !== 0) window.clearTimeout(completionTimer)
-    scheduledTakeEndSeconds = endedAtSeconds
+    scheduledTakeEndSeconds =
+      scheduledTakeEndSeconds === null
+        ? endedAtSeconds
+        : Math.min(scheduledTakeEndSeconds, endedAtSeconds)
+    setTake(takeRecorder.pinEnd(scheduledTakeEndSeconds))
     const currentGeneration = generation
     const currentCompletion = ++completionGeneration
     const settleSeconds = (PITCH_ATTACH_WINDOW_MS + 30) / 1000
     const delayMs = Math.max(
       0,
-      (endedAtSeconds + settleSeconds - context.currentTime) * 1000,
+      (scheduledTakeEndSeconds + settleSeconds - context.currentTime) * 1000,
     )
+    const pinnedEndSeconds = scheduledTakeEndSeconds
     completionTimer = window.setTimeout(() => {
       completionTimer = 0
       if (
@@ -818,7 +823,7 @@ export function useGuitarListeningController(
         return
       }
       generation += 1
-      completeTake(endedAtSeconds)
+      completeTake(pinnedEndSeconds)
       stopNodes()
       releaseMicHold()
       setStatus('off')
@@ -833,6 +838,12 @@ export function useGuitarListeningController(
       setTimingSource('frame-loop')
     }, delayMs)
     return true
+  }
+
+  /** Pin a player-invoked End to the route clock, then drain late pitch. */
+  const completeTakeNow = (): boolean => {
+    const context = takeContext
+    return context !== null && completeTakeAt(context.currentTime)
   }
 
   onCleanup(
@@ -1506,6 +1517,7 @@ export function useGuitarListeningController(
     cancel,
     armTakeAt,
     completeTakeAt,
+    completeTakeNow,
     calibrate,
     clearTake,
   }

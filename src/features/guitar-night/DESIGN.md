@@ -289,10 +289,12 @@ core Learn set in
   The active number is a recoverable last-16 note percentage, the completed
   number is cumulative, and the letter waits for four judged notes. V1 is
   deliberately notes-only: MIDI can prove chords and fast note messages, while
-  microphone/interface chords and too-close notes are excluded. Acoustic scored
-  takes keep the guide and exercise pulse silent after the count-in; MIDI may
-  retain the guide. Jam Doctor remains the separate action for phrase evidence,
-  explanation, and recovery.
+  microphone/interface chords and too-close notes are excluded. Listening never
+  acts as a mix preset: compact Target and Backing controls retain their current
+  state across Room mic, Direct input, and MIDI, while Click and per-track M/S
+  remain independently live. Room mic visibly recommends headphones whenever
+  pitched playback is audible. Jam Doctor remains the separate quiet action for
+  phrase evidence, explanation, and recovery.
 - The top-level Score action opens a calm objective take ledger rather than a
   diagnosis dashboard. It shows the latest completed cumulative grade and
   scalar outcomes, may hold the current session's partial result without saving
@@ -315,8 +317,9 @@ core Learn set in
   the device the browser actually opened, reports a saved-device fallback, and
   completes cleanly if that device disappears. A microphone held by another
   tab offers `Use it here` through the shared handoff instead of requiring a
-  refresh. Audio routes reuse the room context, pause pitched backing for a
-  clean assessed take, and run the existing guitar-range MPM detector. MIDI
+  refresh. Audio routes reuse the room context without mutating the player's
+  explicit Target, Backing, Click, master, or per-track mix, and run the existing
+  guitar-range MPM detector. MIDI
   keeps per-voice attack/release identity and maps its high-resolution event
   timestamp onto the room clock while stating that route delay is unmeasured.
   The on-demand Jam Doctor stores no audio and makes no phrase, string, fret,

@@ -17,7 +17,7 @@ Night can project that one scene as string lanes or the original fret grid
 without remounting it; the broader runtime lifecycle cutover remains pending.
 Entry, preparation, staging, room handoff, and speed changes before Play remain
 silent. Playback, count-in, and microphone capture each begin only from their
-explicit player actions; assessed listening pauses pitched backing. A distinct
+explicit player actions; a Listening route never rewrites the player's mix. A distinct
 guitar stem defaults muted, while two-stem fallback copy states that guitar
 remains in the accompaniment.
 
@@ -361,11 +361,13 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   The S/A/B/C/D grade shall remain hidden until at least four targets are
   judged. No zero, failing grade, or placeholder grade shall appear before
   sufficient evidence exists.
-- **REQ-GN-SCORE-007 — Acoustic isolation:** A microphone or direct-interface
-  scored take shall keep the pitched authored guide and exercise pulse silent
-  after its audible count-in so room audio cannot become player evidence. A
-  MIDI scored take may retain the configured guide because speaker output
-  cannot create MIDI note messages.
+- **REQ-GN-SCORE-007 — Explicit scored-take mix:** Selecting Room mic, Direct
+  input, or MIDI shall not mute or restore the authored target, backing parts,
+  click, or master output. Those lanes shall remain explicit, independent live
+  controls throughout the scored take. WHILE Room mic is listening and any
+  pitched room playback is audible, Guitar Night shall visibly recommend
+  headphones and explain that speakers can bleed into the score. Phrase review
+  shall remain quiet under REQ-GN-DOCTOR-002.
 - **REQ-GN-SCORE-008 — Calm stage latch:** Live score shall extend the existing
   stage signal faceplate with its basis, percentage, and letter rather than add
   a dashboard, modal, streak, combo, celebration, or second coaching cue.
