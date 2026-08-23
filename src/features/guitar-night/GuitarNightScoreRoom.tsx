@@ -38,6 +38,7 @@ import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
 import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
+import { buildScoreNoteStartIndex, nextScoreNoteStart, } from './score-note-index'
 import type { SheetLane } from './sheet/sheet-model'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightLiveScoreController } from './useGuitarNightLiveScoreController'
@@ -170,9 +171,7 @@ export function scoreAssessmentRange(
   }
 
   const parked = Math.min(durationBeats, Math.max(0, playheadBeat ?? 0))
-  const nextNote = [...noteStarts]
-    .filter((beat) => Number.isFinite(beat) && beat >= parked)
-    .sort((left, right) => left - right)[0]
+  const nextNote = nextScoreNoteStart(noteStarts, parked)
   let start = Math.floor(nextNote ?? parked)
   let end = Math.min(durationBeats, start + 4)
   const intendedLength = Math.min(4, durationBeats)
@@ -196,9 +195,8 @@ export function scoreLiveRange(
     return normalizeLoopSpan(quantized.start, quantized.end, durationBeats)
   }
   const parked = Math.min(durationBeats, Math.max(0, playheadBeat ?? 0))
-  const hasUpcomingTarget = noteStarts.some(
-    (beat) => Number.isFinite(beat) && beat >= parked && beat < durationBeats,
-  )
+  const nextNote = nextScoreNoteStart(noteStarts, parked)
+  const hasUpcomingTarget = nextNote !== undefined && nextNote < durationBeats
   const start =
     parked >= durationBeats || (noteStarts.length > 0 && !hasUpcomingTarget)
       ? 0
@@ -249,6 +247,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         0,
       ),
   )
+  const scoreNoteStarts = createMemo(() =>
+    buildScoreNoteStartIndex(props.reference().notes),
+  )
   const loop = useGuitarNightLoopController({ limit: scoreBeats })
   const room = useGuitarNightScoreRoomController({
     reference: () => props.reference(),
@@ -270,7 +271,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       loop.span(),
       room.playheadBeat(),
       scoreBeats(),
-      props.reference().notes.map((note) => note.startBeat),
+      scoreNoteStarts(),
     ),
   )
   const liveScore = useGuitarNightLiveScoreController({
@@ -300,13 +301,19 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     pausePlayback: room.pause,
     onTuning: (next) => props.onTuning?.(next),
   })
-  const selectedAssessmentRange = createMemo(() =>
-    scoreAssessmentRange(
-      loop.span(),
-      room.playheadBeat(),
-      scoreBeats(),
-      props.reference().notes.map((note) => note.startBeat),
-    ),
+  const selectedAssessmentRange = createMemo<LoopSpan | null>(
+    () =>
+      scoreAssessmentRange(
+        loop.span(),
+        room.playheadBeat(),
+        scoreBeats(),
+        scoreNoteStarts(),
+      ),
+    null,
+    {
+      equals: (previous, next) =>
+        previous?.start === next?.start && previous?.end === next?.end,
+    },
   )
   const phraseReview = createMemo(() => {
     const window = assessmentWindow()
@@ -1001,7 +1008,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             null,
             review.range.endBeat,
             scoreBeats(),
-            props.reference().notes.map((note) => note.startBeat),
+            scoreNoteStarts(),
           ) ?? range
       }
       loop.setSpan(range)

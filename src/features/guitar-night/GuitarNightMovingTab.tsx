@@ -1,0 +1,280 @@
+// Guitar Night moving Tab renders a dense score with its own calm, persisted reading scale.
+// ============================================================
+
+import type { Accessor } from 'solid-js'
+import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
+import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
+import { createPersistedSignal } from '@/lib/storage'
+import styles from './GuitarNightApp.module.css'
+import { adaptiveTabWindowBeats, buildStageTabWindowIndex, clampTabZoomMultiplier, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_ZOOM_MULTIPLIER, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabNoteOffsetPercent, tabNoteScale, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
+
+export const GUITAR_NIGHT_TAB_ZOOM_KEY = 'guitar-night-tab-zoom-v1'
+
+interface GuitarNightMovingTabProps {
+  notes: Accessor<readonly GuitarNote[]>
+  tuning: Accessor<InstrumentTuning>
+  tempoBpm: Accessor<number | null>
+  playheadBeat: Accessor<number | null>
+  summary: Accessor<string>
+  hasGuide: Accessor<boolean>
+  loopStart: Accessor<number | null>
+  loopEnd: Accessor<number | null>
+  loopActive: Accessor<boolean>
+}
+
+interface PointerPosition {
+  x: number
+  y: number
+}
+
+function formatBeatSpan(beats: number): string {
+  return Number.isInteger(beats)
+    ? String(beats)
+    : beats.toFixed(1).replace(/\.0$/, '')
+}
+
+export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
+  let gestureSurface: HTMLDivElement | undefined
+  const [zoomMultiplier, setZoomMultiplier] = createPersistedSignal<number>(
+    GUITAR_NIGHT_TAB_ZOOM_KEY,
+    TAB_DEFAULT_ZOOM_MULTIPLIER,
+    {
+      validator: (value): value is number =>
+        typeof value === 'number' &&
+        Number.isFinite(value) &&
+        value >= TAB_MIN_ZOOM_MULTIPLIER &&
+        value <= TAB_MAX_ZOOM_MULTIPLIER,
+    },
+  )
+  const index = createMemo(() => buildStageTabWindowIndex(props.notes()))
+  const adaptiveWindow = createMemo(() =>
+    adaptiveTabWindowBeats(props.notes(), props.tempoBpm()),
+  )
+  const windowBeats = createMemo(() =>
+    zoomedTabWindowBeats(adaptiveWindow(), zoomMultiplier()),
+  )
+  const zoomPercent = createMemo(() => Math.round(zoomMultiplier() * 100))
+  const beatSpanLabel = createMemo(() => formatBeatSpan(windowBeats()))
+  const noteScale = createMemo(() => tabNoteScale(windowBeats()))
+  const zoomValueText = createMemo(
+    () => `${zoomPercent()}% zoom, ${beatSpanLabel()} beats visible`,
+  )
+  const visibleNotes = createMemo(() =>
+    tabWindowNotes(index(), props.playheadBeat(), windowBeats()),
+  )
+  const visibleNotesByString = createMemo(() => {
+    const rows = Array.from(
+      { length: props.tuning().stringCount },
+      () => [] as GuitarNote[],
+    )
+    for (const note of visibleNotes()) rows[note.stringIndex]?.push(note)
+    return rows
+  })
+  const loop = createMemo(() =>
+    tabLoopWindow(
+      props.loopStart(),
+      props.loopEnd(),
+      props.playheadBeat(),
+      windowBeats(),
+    ),
+  )
+
+  const updateZoom = (value: number): boolean => {
+    const next = clampTabZoomMultiplier(value)
+    if (next === zoomMultiplier()) return false
+    setZoomMultiplier(next)
+    return true
+  }
+
+  const pointers = new Map<number, PointerPosition>()
+  let pinchStartDistance = 0
+  let pinchStartZoom = TAB_DEFAULT_ZOOM_MULTIPLIER
+
+  const beginPinch = (): void => {
+    const [first, second] = [...pointers.values()]
+    if (first === undefined || second === undefined) return
+    pinchStartDistance = Math.hypot(first.x - second.x, first.y - second.y)
+    pinchStartZoom = zoomMultiplier()
+  }
+  const handlePointerDown = (event: PointerEvent): void => {
+    if (event.pointerType !== 'touch') return
+    try {
+      gestureSurface?.setPointerCapture(event.pointerId)
+    } catch {
+      // Synthetic pointer events do not always enter the browser's active set.
+    }
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (pointers.size !== 2) return
+    beginPinch()
+    event.preventDefault()
+  }
+  const handlePointerMove = (event: PointerEvent): void => {
+    if (!pointers.has(event.pointerId)) return
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (pointers.size < 2 || pinchStartDistance <= 0) return
+    const [first, second] = [...pointers.values()]
+    if (first === undefined || second === undefined) return
+    const distance = Math.hypot(first.x - second.x, first.y - second.y)
+    if (distance <= 0) return
+    event.preventDefault()
+    updateZoom(pinchStartZoom * (distance / pinchStartDistance))
+  }
+  const handlePointerEnd = (event: PointerEvent): void => {
+    if (!pointers.delete(event.pointerId)) return
+    if (gestureSurface?.hasPointerCapture?.(event.pointerId) === true) {
+      gestureSurface.releasePointerCapture?.(event.pointerId)
+    }
+    if (pointers.size === 2) beginPinch()
+    else pinchStartDistance = 0
+  }
+  const handleWheel = (event: WheelEvent): void => {
+    if (event.deltaY === 0 || event.ctrlKey || event.metaKey) return
+    const unit =
+      event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? (gestureSurface?.clientHeight ?? 640)
+          : 1
+    const next = zoomMultiplier() * Math.exp((-event.deltaY * unit) / 600)
+    if (updateZoom(next)) event.preventDefault()
+  }
+
+  onMount(() => {
+    const surface = gestureSurface
+    if (surface === undefined) return
+    surface.addEventListener('pointerdown', handlePointerDown)
+    surface.addEventListener('pointermove', handlePointerMove)
+    surface.addEventListener('pointerup', handlePointerEnd)
+    surface.addEventListener('pointercancel', handlePointerEnd)
+    surface.addEventListener('wheel', handleWheel, { passive: false })
+    onCleanup(() => {
+      pointers.clear()
+      surface.removeEventListener('pointerdown', handlePointerDown)
+      surface.removeEventListener('pointermove', handlePointerMove)
+      surface.removeEventListener('pointerup', handlePointerEnd)
+      surface.removeEventListener('pointercancel', handlePointerEnd)
+      surface.removeEventListener('wheel', handleWheel)
+    })
+  })
+
+  return (
+    <div
+      class={styles.stageTab}
+      data-window-beats={windowBeats().toFixed(2)}
+      style={{
+        '--stage-tab-note-size': `${(1.6 * noteScale()).toFixed(3)}rem`,
+        '--stage-tab-note-font-size': `${(0.68 * noteScale()).toFixed(3)}rem`,
+      }}
+    >
+      <div
+        ref={gestureSurface}
+        class={styles.stageTabLanes}
+        role="img"
+        aria-label={props.summary()}
+        data-testid="guitar-night-moving-tab"
+      >
+        <div class={styles.stageTabGuideLayer} aria-hidden="true">
+          <Show when={loop().range}>
+            {(range) => (
+              <div
+                class={styles.stageTabLoopRange}
+                data-active={props.loopActive() ? 'true' : undefined}
+                data-testid="guitar-night-tab-loop-range"
+                style={{
+                  left: `${range().leftPercent}%`,
+                  width: `${range().widthPercent}%`,
+                }}
+              />
+            )}
+          </Show>
+          <For each={loop().markers}>
+            {(marker) => (
+              <div
+                class={styles.stageTabLoopMarker}
+                data-mark={marker.mark}
+                data-active={props.loopActive() ? 'true' : undefined}
+                data-testid={`guitar-night-tab-loop-marker-${marker.mark.toLowerCase()}`}
+                style={{ left: `${marker.offsetPercent}%` }}
+              >
+                <span>{marker.mark}</span>
+              </div>
+            )}
+          </For>
+          <div
+            class={styles.stageTabPlayhead}
+            style={{ left: `${TAB_PLAYHEAD_RATIO * 100}%` }}
+          />
+        </div>
+        <For each={props.tuning().labels}>
+          {(label, stringIndex) => (
+            <div class={styles.stageTabString}>
+              <span>{label}</span>
+              <i aria-hidden="true" />
+              <div aria-hidden="true">
+                <For each={visibleNotesByString()[stringIndex()] ?? []}>
+                  {(note) => (
+                    <b
+                      classList={{
+                        [styles.stageTabNoteActive]:
+                          props.playheadBeat() !== null &&
+                          note.startBeat <= (props.playheadBeat() ?? 0) &&
+                          note.startBeat + note.duration >
+                            (props.playheadBeat() ?? 0),
+                        [styles.stageTabNotePast]:
+                          props.playheadBeat() !== null &&
+                          note.startBeat + note.duration <=
+                            (props.playheadBeat() ?? 0),
+                        [styles.stageTabNoteBacking]: note.isBacking === true,
+                      }}
+                      data-note-id={note.id}
+                      style={{
+                        left: `${tabNoteOffsetPercent(
+                          note.startBeat,
+                          props.playheadBeat(),
+                          windowBeats(),
+                        )}%`,
+                      }}
+                    >
+                      {note.fret}
+                    </b>
+                  )}
+                </For>
+              </div>
+            </div>
+          )}
+        </For>
+      </div>
+
+      <Show when={props.hasGuide()}>
+        <label
+          class={styles.stageTabZoom}
+          data-guitar-night-secondary-protected
+          title="Scroll or pinch over the tab, or drag this control."
+        >
+          <span>Tab zoom</span>
+          <input
+            type="range"
+            min={TAB_MIN_ZOOM_MULTIPLIER * 100}
+            max={TAB_MAX_ZOOM_MULTIPLIER * 100}
+            step="1"
+            value={zoomPercent()}
+            aria-label="Tab zoom"
+            aria-valuetext={zoomValueText()}
+            onInput={(event) =>
+              updateZoom(Number(event.currentTarget.value) / 100)
+            }
+          />
+          <output>{zoomPercent()}%</output>
+          <small>{beatSpanLabel()} beats</small>
+        </label>
+      </Show>
+
+      <Show when={!props.hasGuide()}>
+        <p>
+          No tab attached to this song. Load a tab later, or stay in free play.
+        </p>
+      </Show>
+    </div>
+  )
+}

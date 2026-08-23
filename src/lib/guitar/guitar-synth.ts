@@ -200,6 +200,12 @@ function makeDriveCurve(drive: number): Float32Array<ArrayBuffer> {
   return curve
 }
 
+// Dense electric passages can schedule dozens of voices in one lookahead
+// burst. The curve is immutable and identical for every voice, so building
+// 1,024 tanh samples per note only adds avoidable CPU and garbage-collection
+// pressure on the devices that need the guide most.
+const ELECTRIC_DRIVE_CURVE = makeDriveCurve(2.5)
+
 function createPluckVoice(
   ctx: BaseAudioContext,
   freq: number,
@@ -240,7 +246,7 @@ function createPluckVoice(
   } else if (variant === 'electric') {
     // Overdrive → presence boost → cabinet lowpass
     const drive = ctx.createWaveShaper()
-    drive.curve = makeDriveCurve(2.5)
+    drive.curve = ELECTRIC_DRIVE_CURVE
     drive.oversample = '2x'
 
     const presence = ctx.createBiquadFilter()
