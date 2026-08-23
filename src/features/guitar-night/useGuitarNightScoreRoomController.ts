@@ -80,16 +80,14 @@ interface GuitarNightScoreRoomRunConfiguration {
   beatToSeconds: (beat: number) => number
   secondsToBeat: (seconds: number) => number
   loop: LoopSpan | null
-  hearScore: boolean
   melody: readonly GuitarRoomBandNote[]
   /** Every other audible part, merged and already carrying its own timbre. */
   backingMelody: readonly GuitarRoomBandNote[]
   melodyVariant: 'electric' | 'bass'
   /**
    * Read on every beat rather than settled at launch, so the click can be
-   * quieted while it is ticking. The mode rule is fixed for the run — a live
-   * take never sounds the room into an open microphone — but whether the
-   * reader wants to hear it is theirs to change at any time.
+   * quieted while it is ticking. Phrase assessment is the only fixed-silent
+   * mode; a live score keeps the reader's explicit rehearsal mix.
    */
   exercisePulse: () => boolean
 }
@@ -254,6 +252,7 @@ export function useGuitarNightScoreRoomController(
     }
     return options.defaultHearScore?.() ?? true
   })
+  const [hearBacking, setHearBacking] = createSignal(true)
 
   // This signal changes only through `setMasterVolume`; seed the dormant graph
   // once, then let that setter schedule exactly one live ramp per gesture.
@@ -275,7 +274,7 @@ export function useGuitarNightScoreRoomController(
     for (const channelId of channelIds) {
       band.setMelodyChannelLevel(
         channelId,
-        audible === null || audible.has(channelId) ? 1 : 0,
+        hearBacking() && (audible === null || audible.has(channelId)) ? 1 : 0,
       )
     }
   })
@@ -456,7 +455,6 @@ export function useGuitarNightScoreRoomController(
   const buildRun = (
     requestedAssessment?: LoopSpan,
     boundedMode: 'assessment' | 'live-score' = 'assessment',
-    audibleGuide = false,
   ): GuitarNightScoreRoomRunConfiguration | null => {
     const currentReference = options.reference()
     if (currentReference === null || currentReference.notes.length === 0) {
@@ -515,22 +513,13 @@ export function useGuitarNightScoreRoomController(
       beatToSeconds: beatToSecondsForRun,
       secondsToBeat: secondsToBeatForRun,
       loop: loopForRun,
-      hearScore:
-        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide),
-      melody:
-        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
-          ? scoreToBandMelody(reference)
-          : [],
-      // The band follows the same rule as the score: never sounded into an
-      // open microphone, where the room's own playback becomes player evidence.
+      // Live scoring schedules the complete explicit mix. Input route never
+      // doubles as a mute preset; live channel gates remain authoritative.
+      melody: mode !== 'assessment' ? scoreToBandMelody(reference) : [],
       backingMelody:
-        mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)
-          ? [...(options.backingMelody?.() ?? [])]
-          : [],
+        mode !== 'assessment' ? [...(options.backingMelody?.() ?? [])] : [],
       melodyVariant: configuredMelodyVariant(),
-      exercisePulse: () =>
-        (mode === 'rehearsal' || (mode === 'live-score' && audibleGuide)) &&
-        hearClick(),
+      exercisePulse: () => mode !== 'assessment' && hearClick(),
     }
   }
 
@@ -919,15 +908,14 @@ export function useGuitarNightScoreRoomController(
 
   /**
    * Schedule one evidence-scored range on the same exact boundary as review.
-   * Room-microphone routes keep the range silent so the app cannot grade its
-   * own guide. MIDI may retain the configured guide because its note messages
-   * cannot originate from the room speakers.
+   * The run schedules every rehearsal lane so explicit Target, Backing, track,
+   * and Click controls remain live; the selected input route never rewrites
+   * the player's mix.
    */
   const startLiveScore = async (
     range: LoopSpan,
-    options: { audibleGuide: boolean },
   ): Promise<GuitarNightScoreLiveBoundary | null> => {
-    const run = buildRun(range, 'live-score', options.audibleGuide)
+    const run = buildRun(range, 'live-score')
     if (run === null || run.mode !== 'live-score') return null
     const result = await launch(run, run.startBeat, run.countInBeats)
     if (
@@ -1049,6 +1037,9 @@ export function useGuitarNightScoreRoomController(
     /** Whether the room sounds the score; its gain changes during playback. */
     hearScore,
     setHearScore,
+    /** Master gate above the backing lanes' individual mute and solo state. */
+    hearBacking,
+    setHearBacking,
     /** Whether the click runs under the take. */
     hearClick,
     setHearClick,

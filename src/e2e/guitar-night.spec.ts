@@ -2047,9 +2047,13 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
       name: 'Listening is off. Switch to Room mic',
       exact: true,
     })
+    const targetMix = room.getByRole('button', {
+      name: /^(?:Hear|Mute) target guide$/,
+    })
     await expectHittableInsideViewport(scorePosition)
     await expectHittableInsideViewport(play)
     await expectHittableInsideViewport(listening)
+    await expectHittableInsideViewport(targetMix)
 
     const highway = stageViews.getByRole('button', {
       name: 'Highway',
@@ -2144,6 +2148,7 @@ test('keeps stage settings reachable at 200% text on a narrow phone @smoke', asy
     await expectHittableInsideViewport(scorePosition)
     await expectHittableInsideViewport(play)
     await expectHittableInsideViewport(listening)
+    await expectHittableInsideViewport(targetMix)
   } finally {
     await context.close()
   }

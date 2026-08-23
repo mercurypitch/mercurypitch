@@ -7,7 +7,7 @@ import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartRes
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference } from './reference-port'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
-import { GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { GUITAR_NIGHT_SCORE_CHANNEL, GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 function reference(
   overrides: Partial<GuitarNightReference> = {},
@@ -181,7 +181,7 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
-  it('keeps acoustic live scoring silent but lets MIDI retain the configured guide', async () => {
+  it('keeps live-score target and click sound under explicit mix controls', async () => {
     await createRoot(async (dispose) => {
       const { band, getOptions, setResult } = bandHarness()
       const frames = frameHarness()
@@ -198,20 +198,28 @@ describe('useGuitarNightScoreRoomController', () => {
         cancelFrame: frames.cancelFrame,
       })
 
-      await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: false })
+      room.setHearScore(false)
+      room.setHearClick(false)
+      await room.startLiveScore({ start: 0, end: 2 })
       expect(getOptions()).toMatchObject({
         startBeat: 0,
         durationBeats: 2,
         loop: null,
-        melody: [],
       })
-      expect(pulseAudible(getOptions)).toBe(false)
-      room.stop()
-
-      await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: true })
-      expect(getOptions()).toMatchObject({ loop: null })
-      expect(pulseAudible(getOptions)).toBe(true)
       expect(getOptions()?.melody).toHaveLength(2)
+      expect(band.setMelodyChannelLevel).toHaveBeenCalledWith(
+        GUITAR_NIGHT_SCORE_CHANNEL,
+        0,
+      )
+      expect(pulseAudible(getOptions)).toBe(false)
+
+      room.setHearScore(true)
+      expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+        GUITAR_NIGHT_SCORE_CHANNEL,
+        1,
+      )
+      room.setHearClick(true)
+      expect(pulseAudible(getOptions)).toBe(true)
       dispose()
     })
   })
@@ -1044,7 +1052,7 @@ describe('useGuitarNightScoreRoomController', () => {
         requestFrame: frames.requestFrame,
         cancelFrame: frames.cancelFrame,
       })
-      await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: false })
+      await room.startLiveScore({ start: 0, end: 2 })
 
       await expect(room.applyLoopSpan({ start: 1, end: 3 })).resolves.toBe(
         false,
@@ -1521,6 +1529,62 @@ describe('the tab room sounds the tab', () => {
       })
     })
 
+    it('keeps live backing lanes scheduled under their master and track gates', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions, setResult } = bandHarness()
+        const frames = frameHarness()
+        const [audible, setAudible] = createSignal<readonly string[]>([
+          'track-bass',
+        ])
+        setResult({
+          expectedHitTimesMs: [],
+          exerciseStartedAtSeconds: 11,
+          completedAtSeconds: 13,
+        })
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+          backingMelody: () => [
+            {
+              midi: 40,
+              startBeat: 0,
+              durationBeats: 1,
+              variant: 'bass',
+              channelId: 'track-bass',
+            },
+          ],
+          audibleBackingTrackIds: audible,
+        })
+
+        room.setHearBacking(false)
+        await room.startLiveScore({ start: 0, end: 2 })
+
+        expect((getOptions()?.melody ?? []).map((note) => note.midi)).toEqual([
+          64, 67, 40,
+        ])
+        expect(
+          (getOptions()?.melody ?? []).some(
+            (note) => note.channelId === GUITAR_NIGHT_SCORE_CHANNEL,
+          ),
+        ).toBe(true)
+        expect(band.setMelodyChannelLevel).toHaveBeenCalledWith('track-bass', 0)
+
+        room.setHearBacking(true)
+        expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+          'track-bass',
+          1,
+        )
+        setAudible([])
+        expect(band.setMelodyChannelLevel).toHaveBeenLastCalledWith(
+          'track-bass',
+          0,
+        )
+        dispose()
+      })
+    })
+
     it('lets the player overrule the default, per part', async () => {
       await createRoot(async (dispose) => {
         const { band } = bandHarness()
@@ -1612,7 +1676,7 @@ describe('the tab room sounds the tab', () => {
       })
     })
 
-    it('stays silent mid-take in a live score with no audible guide', async () => {
+    it('keeps the click live-controlled during a scored take', async () => {
       await createRoot(async (dispose) => {
         const { band, getOptions } = bandHarness()
         const frames = frameHarness()
@@ -1624,10 +1688,9 @@ describe('the tab room sounds the tab', () => {
           cancelFrame: frames.cancelFrame,
         })
 
-        await room.startLiveScore({ start: 0, end: 2 }, { audibleGuide: false })
-        // The mode rule is the run's, not the reader's: the room is never
-        // sounded into an open microphone, whatever the click toggle says.
-        room.setHearClick(true)
+        await room.startLiveScore({ start: 0, end: 2 })
+        expect(pulseAudible(getOptions)).toBe(true)
+        room.setHearClick(false)
         expect(pulseAudible(getOptions)).toBe(false)
         dispose()
       })

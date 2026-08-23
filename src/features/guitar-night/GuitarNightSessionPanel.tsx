@@ -14,7 +14,7 @@
 
 import type { Accessor } from 'solid-js'
 import { For, onCleanup, onMount, Show } from 'solid-js'
-import { Eye, EyeOff, X } from '@/components/icons'
+import { Eye, EyeOff, Volume2, VolumeX, X } from '@/components/icons'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarNightReference } from './reference-port'
 
@@ -36,6 +36,9 @@ interface GuitarNightSessionPanelProps {
   /** Explicit M state, so Solo does not make every other lane look muted. */
   mutedTrackIds?: Accessor<readonly string[]>
   onToggleTrackAudible?(trackId: string): void
+  /** Coarse backing-bus state. Per-part mute and Solo choices stay intact. */
+  backingMasterEnabled?: Accessor<boolean>
+  onToggleBackingMaster?(): void
   soloedTrackId?: Accessor<string | null>
   onToggleTrackSolo?(trackId: string): void
   /** Whether the scored part sounds — owned by the room's Tab sounds control. */
@@ -98,6 +101,9 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
         : !(props.audibleTrackIds?.().includes(track.id) ?? false),
     ).length
   const bandStatus = () => {
+    if (props.backingMasterEnabled?.() === false) {
+      return 'Backing is silent. Your M and Solo choices stay ready for when Backing returns.'
+    }
     const soloed = soloedTrack()
     if (soloed !== null) {
       return `Only ${soloed.name} is playing. Turn Solo off to restore the backing mix.`
@@ -151,6 +157,45 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
           role="group"
           aria-label="Part to read and score"
         >
+          <Show
+            when={
+              backingTracks().length > 0 &&
+              props.onToggleBackingMaster !== undefined
+            }
+          >
+            <button
+              type="button"
+              class={styles.sessionBackingMaster}
+              classList={{
+                [styles.sessionBackingMasterActive]:
+                  props.backingMasterEnabled?.() !== false,
+              }}
+              aria-pressed={props.backingMasterEnabled?.() !== false}
+              aria-label={
+                props.backingMasterEnabled?.() === false
+                  ? 'Hear selected backing parts'
+                  : 'Mute all backing parts'
+              }
+              onClick={() => props.onToggleBackingMaster?.()}
+            >
+              <span aria-hidden="true">
+                <Show
+                  when={props.backingMasterEnabled?.() !== false}
+                  fallback={<VolumeX />}
+                >
+                  <Volume2 />
+                </Show>
+              </span>
+              <span>
+                <strong>Backing</strong>
+                <small>
+                  {props.backingMasterEnabled?.() === false
+                    ? 'Silent · part choices kept'
+                    : 'Playing · live mix'}
+                </small>
+              </span>
+            </button>
+          </Show>
           <For each={tracks()}>
             {(track) => {
               const isScored = () => track.id === props.reference().trackId
@@ -177,11 +222,14 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
               }
               const isMaskedBySolo = () =>
                 !isScored() && !isMuted() && anotherTrackIsSoloed()
+              const isMaskedByMaster = () =>
+                !isScored() && props.backingMasterEnabled?.() === false
               return (
                 <div
                   class={styles.sessionTrackRow}
                   classList={{
-                    [styles.sessionTrackRowMasked]: isMaskedBySolo(),
+                    [styles.sessionTrackRowMasked]:
+                      isMaskedBySolo() || isMaskedByMaster(),
                   }}
                 >
                   <button
@@ -207,7 +255,8 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                       class={styles.sessionTrackVisibility}
                       classList={{
                         [styles.sessionTrackMute]: isMuted(),
-                        [styles.sessionTrackMasked]: isMaskedBySolo(),
+                        [styles.sessionTrackMasked]:
+                          isMaskedBySolo() || isMaskedByMaster(),
                       }}
                       aria-pressed={isMuted()}
                       disabled={isScored()}
@@ -215,14 +264,18 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                         isScored()
                           ? `Use Tab sounds to hear or mute ${track.name}`
                           : isMuted()
-                            ? anotherTrackIsSoloed()
-                              ? `Unmute ${track.name}; it will return when Solo ends`
-                              : `Unmute ${track.name}`
-                            : isMaskedBySolo()
-                              ? `${track.name} is quiet while ${soloedTrack()?.name ?? 'another part'} is soloed`
-                              : isSoloed()
-                                ? `Mute ${track.name} and end Solo`
-                                : `Mute ${track.name}`
+                            ? isMaskedByMaster()
+                              ? `Unmute ${track.name}; it will return when Backing is on`
+                              : anotherTrackIsSoloed()
+                                ? `Unmute ${track.name}; it will return when Solo ends`
+                                : `Unmute ${track.name}`
+                            : isMaskedByMaster()
+                              ? `${track.name} is quiet while Backing is off`
+                              : isMaskedBySolo()
+                                ? `${track.name} is quiet while ${soloedTrack()?.name ?? 'another part'} is soloed`
+                                : isSoloed()
+                                  ? `Mute ${track.name} and end Solo`
+                                  : `Mute ${track.name}`
                       }
                       aria-label={
                         isMuted()
@@ -245,8 +298,12 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
                         isScored()
                           ? `${track.name} is the scored part`
                           : isSoloed()
-                            ? `Hear every backing part`
-                            : `Solo ${track.name}`
+                            ? props.backingMasterEnabled?.() === false
+                              ? `Turn off Solo for ${track.name}; Backing is currently off`
+                              : `Hear every backing part`
+                            : props.backingMasterEnabled?.() === false
+                              ? `Solo ${track.name}; it will sound when Backing is on`
+                              : `Solo ${track.name}`
                       }
                       aria-label={
                         isSoloed()

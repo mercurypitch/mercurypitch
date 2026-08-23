@@ -82,6 +82,8 @@ export interface GuitarTakeRecorder {
     eventId: string,
     replacement: GuitarInputEvent,
   ): GuitarTakeEvent | null
+  /** Close admission at an exact future/current frame while pitch may settle. */
+  pinEnd(endedAtSeconds: number): GuitarTakeSnapshot
   complete(endedAtSeconds: number): GuitarTakeSnapshot
   cancel(): GuitarTakeSnapshot
   snapshot(): GuitarTakeSnapshot
@@ -203,6 +205,7 @@ export function createGuitarTakeRecorder(
   let lifecycle: GuitarTakeLifecycle = 'recording'
   let events: readonly GuitarTakeEvent[] = []
   let durationFrames: number | null = null
+  let pinnedEndFrame: number | null = null
   let filteredBeforeStart = 0
   let filteredAfterEnd = 0
   let droppedEventCount = 0
@@ -237,13 +240,52 @@ export function createGuitarTakeRecorder(
     healthStates[state] += 1
   }
 
+  const endFrameAt = (endedAtSeconds: number): number => {
+    assertFiniteNonNegative(endedAtSeconds, 'endedAtSeconds')
+    return Math.max(0, Math.round(endedAtSeconds * sampleRate) - startedAtFrame)
+  }
+
+  const retainBeforeEnd = (endFrame: number): void => {
+    const retained = events.filter(
+      (event) => event.compensatedTransportFrame < endFrame,
+    )
+    filteredAfterEnd += events.length - retained.length
+    events = retained
+  }
+
+  const pinEnd = (endedAtSeconds: number): GuitarTakeSnapshot => {
+    if (lifecycle !== 'recording') return snapshot()
+    const requestedEndFrame = endFrameAt(endedAtSeconds)
+    pinnedEndFrame =
+      pinnedEndFrame === null
+        ? requestedEndFrame
+        : Math.min(pinnedEndFrame, requestedEndFrame)
+    retainBeforeEnd(pinnedEndFrame)
+    return snapshot()
+  }
+
   const append = (capture: GuitarInputCapture): GuitarTakeEvent | null => {
     if (lifecycle !== 'recording') return null
     const rawSeconds = captureAtSeconds(capture)
     if (rawSeconds === null) return null
 
+    const capturedAtFrame = Math.round(rawSeconds * sampleRate)
+    const rawTransportFrame = capturedAtFrame - startedAtFrame
+    const compensatedTransportFrame = rawTransportFrame - latencyFrames
+    if (compensatedTransportFrame < 0) {
+      filteredBeforeStart += 1
+      return null
+    }
+    if (
+      pinnedEndFrame !== null &&
+      compensatedTransportFrame >= pinnedEndFrame
+    ) {
+      filteredAfterEnd += 1
+      return null
+    }
+
     // Pitch changes are intentionally found on the coarse analyser even in an
-    // exact-attack take. Only an attack can weaken the take's attack clock.
+    // exact-attack take. Only an admitted attack can weaken the take's clock.
     if (capture.kind === 'attack' && capture.clock.kind === 'frame-loop') {
       clock.attack = {
         timingSource: 'frame-loop',
@@ -258,14 +300,6 @@ export function createGuitarTakeRecorder(
         timingSource: 'midi-clock',
         precision: 'high-resolution-midi',
       }
-    }
-
-    const capturedAtFrame = Math.round(rawSeconds * sampleRate)
-    const rawTransportFrame = capturedAtFrame - startedAtFrame
-    const compensatedTransportFrame = rawTransportFrame - latencyFrames
-    if (compensatedTransportFrame < 0) {
-      filteredBeforeStart += 1
-      return null
     }
 
     const event: GuitarTakeEvent = {
@@ -316,16 +350,13 @@ export function createGuitarTakeRecorder(
 
   const complete = (endedAtSeconds: number): GuitarTakeSnapshot => {
     if (lifecycle !== 'recording') return snapshot()
-    assertFiniteNonNegative(endedAtSeconds, 'endedAtSeconds')
-    durationFrames = Math.max(
-      0,
-      Math.round(endedAtSeconds * sampleRate) - startedAtFrame,
-    )
-    const retained = events.filter(
-      (event) => event.compensatedTransportFrame < (durationFrames ?? 0),
-    )
-    filteredAfterEnd += events.length - retained.length
-    events = retained
+    const requestedEndFrame = endFrameAt(endedAtSeconds)
+    durationFrames =
+      pinnedEndFrame === null
+        ? requestedEndFrame
+        : Math.min(pinnedEndFrame, requestedEndFrame)
+    pinnedEndFrame = durationFrames
+    retainBeforeEnd(durationFrames)
     lifecycle = 'completed'
     return snapshot()
   }
@@ -338,5 +369,5 @@ export function createGuitarTakeRecorder(
     return snapshot()
   }
 
-  return { append, observeHealth, replace, complete, cancel, snapshot }
+  return { append, observeHealth, replace, pinEnd, complete, cancel, snapshot }
 }

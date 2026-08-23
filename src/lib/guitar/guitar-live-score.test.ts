@@ -237,6 +237,89 @@ describe('createGuitarLiveScoreEngine', () => {
     })
   })
 
+  it('does not turn rejected post-End events into an in-range evidence gap', () => {
+    const score = engine([
+      target(0),
+      target(1),
+      target(2),
+      target(3),
+      target(4),
+    ])
+    const earned = [0, 1, 2, 3].map((index) =>
+      event(`event-${index}`, index * SAMPLE_RATE, 60 + index),
+    )
+
+    score.sample(take(earned), 3_250, 'good')
+    const result = score.sample(
+      take(earned, {
+        lifecycle: 'completed',
+        durationFrames: 3_250,
+        filteredAfterEnd: 1,
+      }),
+      3_250,
+      'good',
+    )
+
+    expect(result).toMatchObject({
+      phase: 'completed',
+      basis: 'cumulative',
+      evidenceStatus: 'complete',
+      targetCount: 5,
+      totals: {
+        judgedTargets: 4,
+        hitTargets: 4,
+        missedTargets: 0,
+        skippedTargets: 0,
+      },
+    })
+    expect(
+      result.recentJudgments.some(
+        (judgment) => judgment.targetId === 'target-4',
+      ),
+    ).toBe(false)
+  })
+
+  it('forgets a previously published event beyond the pinned manual End', () => {
+    const score = engine([
+      target(0),
+      target(1),
+      target(2),
+      { id: 'target-before-end', midi: 64, startBeat: 3.2 },
+      target(4),
+    ])
+    const earned = [0, 1, 2].map((index) =>
+      event(`event-${index}`, index * SAMPLE_RATE, 60 + index),
+    )
+    const removedAfterEnd = event('event-after-end', 3_300, 64)
+
+    score.sample(take([...earned, removedAfterEnd]), 3_250, 'good')
+    const result = score.sample(
+      take(earned, {
+        lifecycle: 'completed',
+        durationFrames: 3_250,
+        filteredAfterEnd: 1,
+      }),
+      3_250,
+      'good',
+    )
+
+    expect(result).toMatchObject({
+      phase: 'completed',
+      evidenceStatus: 'complete',
+      totals: {
+        judgedTargets: 4,
+        hitTargets: 3,
+        missedTargets: 1,
+        skippedTargets: 0,
+      },
+    })
+    expect(
+      result.recentJudgments.find(
+        (judgment) => judgment.targetId === 'target-before-end',
+      ),
+    ).toMatchObject({ outcome: 'miss', eventId: null })
+  })
+
   it('scores MIDI chord onsets and passages faster than the acoustic pitch window', () => {
     const targets = [
       { id: 'chord-c', midi: 60, startBeat: 0 },
