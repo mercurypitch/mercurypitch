@@ -1749,6 +1749,456 @@ svg {
   text-transform: uppercase;
 }
 
+/* The film keeps generated pixels and native product controls in separate
+   layers. The player is intentionally portrait and sleeve-like on wide
+   screens instead of stretching the 9:16 picture into a desktop layout. */
+.cinematic-onboarding {
+  isolation: isolate;
+  display: grid;
+  max-width: 32rem;
+  min-height: 100dvh;
+  padding: 0;
+  background: var(--spruce-deep);
+  color: var(--paper-light);
+  grid-template: 1fr / 1fr;
+}
+
+.cinematic-onboarding__picture,
+.cinematic-onboarding__preroll,
+.cinematic-onboarding__toolbar,
+.cinematic-onboarding__interaction,
+.cinematic-onboarding__native-overlay,
+.cinematic-onboarding__error,
+.cinematic-onboarding__caption,
+.cinematic-onboarding__motion-note {
+  grid-area: 1 / 1;
+}
+
+.cinematic-onboarding__picture {
+  position: relative;
+  z-index: 0;
+  display: grid;
+  overflow: hidden;
+  background: #1c120f;
+  place-items: center;
+}
+
+.cinematic-onboarding__picture video,
+.cinematic-onboarding__picture img,
+.cinematic-onboarding__picture-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  background: #1c120f;
+  object-fit: contain;
+}
+
+.cinematic-onboarding__picture-fallback {
+  background:
+    radial-gradient(circle at 50% 34%, rgb(106 86 201 / 28%), transparent 28%),
+    linear-gradient(160deg, var(--spruce-deep), #1c120f);
+}
+
+.cinematic-onboarding__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(13 67 54 / 72%) 0, transparent 22%),
+    linear-gradient(0deg, rgb(13 35 30 / 88%) 0, transparent 45%);
+  pointer-events: none;
+}
+
+.cinematic-onboarding__preroll {
+  z-index: 3;
+  align-self: end;
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem;
+  padding: 1.35rem;
+  border: 2px solid var(--ink);
+  border-radius: 1.25rem;
+  background: rgb(255 245 221 / 96%);
+  box-shadow: 0.45rem 0.55rem 0 rgb(36 25 19 / 86%);
+  color: var(--ink);
+}
+
+.cinematic-onboarding__eyebrow {
+  color: var(--orange-dark);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__preroll h1,
+.cinematic-onboarding__interaction h2,
+.cinematic-onboarding__native-overlay h2,
+.cinematic-onboarding__error h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.cinematic-onboarding__preroll h1 {
+  font-size: clamp(2.75rem, 13vw, 4.25rem);
+}
+
+.cinematic-onboarding__preroll > p:not(.cinematic-onboarding__eyebrow),
+.cinematic-onboarding__interaction > p:not(.cinematic-onboarding__eyebrow),
+.cinematic-onboarding__native-overlay > p:last-child,
+.cinematic-onboarding__error > p:last-of-type {
+  color: var(--ink-soft);
+  line-height: 1.42;
+}
+
+.cinematic-onboarding__preroll-actions {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.35rem;
+}
+
+.cinematic-onboarding__audio-status {
+  padding: 0.55rem 0.7rem;
+  border-left: 0.3rem solid var(--orange);
+  background: rgb(224 173 62 / 14%);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.cinematic-onboarding__preroll button,
+.cinematic-onboarding__interaction button,
+.cinematic-onboarding__error button {
+  min-height: 3rem;
+}
+
+.cinematic-onboarding__preroll > .text-button {
+  justify-self: center;
+}
+
+.cinematic-onboarding__toolbar {
+  z-index: 4;
+  align-self: start;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: var(--safe-top) var(--safe-right) 1rem var(--safe-left);
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__toolbar > span {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(255 245 221 / 42%);
+  border-radius: 999px;
+  background: rgb(13 67 54 / 72%);
+  white-space: nowrap;
+}
+
+.cinematic-onboarding__toolbar > div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.cinematic-onboarding__toolbar button {
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgb(255 245 221 / 42%);
+  border-radius: 999px;
+  background: rgb(13 67 54 / 78%);
+  color: var(--paper-light);
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.cinematic-onboarding__toolbar button:focus-visible {
+  outline-color: var(--custard);
+  box-shadow: 0 0 0 3px var(--spruce-deep);
+}
+
+.cinematic-onboarding__interaction,
+.cinematic-onboarding__error {
+  z-index: 3;
+  align-self: end;
+  display: grid;
+  gap: 0.85rem;
+  max-height: calc(100dvh - 10.5rem);
+  margin: 0.75rem;
+  padding: 1.2rem;
+  overflow-y: auto;
+  border: 2px solid var(--ink);
+  border-radius: 1.25rem;
+  background: rgb(255 245 221 / 97%);
+  box-shadow: 0.4rem 0.5rem 0 rgb(36 25 19 / 86%);
+  color: var(--ink);
+}
+
+.cinematic-onboarding__interaction h2,
+.cinematic-onboarding__error h2 {
+  font-size: clamp(1.85rem, 8vw, 2.65rem);
+}
+
+.cinematic-onboarding__interaction h2:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 0.25rem;
+}
+
+.cinematic-onboarding__cue-token,
+.cinematic-onboarding__record-control {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--custard);
+  box-shadow: 0.25rem 0.3rem 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.cinematic-onboarding__cue-token span {
+  font-size: 1.7rem;
+}
+
+.cinematic-onboarding__sort-chips {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cinematic-onboarding__sort-chip {
+  min-width: 0;
+  padding: 0.45rem;
+  border: 2px solid var(--ink);
+  border-radius: 0.45rem;
+  box-shadow: 0.16rem 0.2rem 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: clamp(0.72rem, 3vw, 0.88rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.cinematic-onboarding__sort-chip--cream {
+  background: var(--paper-deep);
+}
+
+.cinematic-onboarding__sort-chip--coral {
+  background: #f19b7d;
+}
+
+.cinematic-onboarding__sort-chip.is-selected {
+  transform: translateY(0.2rem);
+  box-shadow: 0.08rem 0.1rem 0 var(--ink);
+}
+
+.cinematic-onboarding__sort-chip.is-sorted {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.cinematic-onboarding__sort-wells {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cinematic-onboarding__sort-well {
+  display: grid;
+  min-height: 6.4rem;
+  min-width: 0;
+  align-content: start;
+  gap: 0.2rem;
+  padding: 0.7rem;
+  border: 2px dashed var(--ink);
+  border-radius: 0.85rem;
+  background: rgb(255 245 221 / 72%);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.cinematic-onboarding__sort-well--b {
+  background: rgb(241 155 125 / 38%);
+}
+
+.cinematic-onboarding__sort-well:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.cinematic-onboarding__sort-well > span:first-child {
+  font-family: var(--font-label);
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__sort-well small {
+  color: var(--ink-soft);
+}
+
+.cinematic-onboarding__well-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.cinematic-onboarding__well-items i {
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0.16rem 0.28rem;
+  border: 1px solid var(--ink);
+  border-radius: 0.25rem;
+  background: var(--paper-light);
+  font-size: 0.64rem;
+  font-style: normal;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cinematic-onboarding__sort-status {
+  min-height: 2.4em;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.cinematic-onboarding__record-control > span {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 0.45rem solid var(--orange);
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 0.25rem var(--custard);
+}
+
+.cinematic-onboarding__record-control.is-spinning > span {
+  animation: cinematic-record-spin 1.6s linear infinite;
+  background: conic-gradient(
+    var(--ink) 0 70%,
+    var(--paper-deep) 70% 78%,
+    var(--ink) 78%
+  );
+}
+
+.cinematic-onboarding__reminder-field {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__reminder-field input {
+  min-height: 3rem;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 0.7rem;
+  background: var(--paper-light);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.cinematic-onboarding__reminder-actions {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cinematic-onboarding__skip-hold {
+  justify-self: center;
+}
+
+.cinematic-onboarding__native-overlay {
+  z-index: 2;
+  align-self: end;
+  display: grid;
+  gap: 0.45rem;
+  margin: 1rem;
+  padding: 1rem 1.1rem;
+  border-left: 0.45rem solid var(--orange);
+  border-radius: 0.2rem 0.9rem 0.9rem 0.2rem;
+  background: rgb(255 245 221 / 94%);
+  color: var(--ink);
+}
+
+.cinematic-onboarding__native-overlay h2 {
+  font-size: clamp(1.7rem, 7vw, 2.35rem);
+}
+
+.cinematic-onboarding__caption {
+  z-index: 4;
+  align-self: start;
+  justify-self: center;
+  max-width: calc(100% - 2rem);
+  margin: calc(var(--safe-top) + 4.75rem) 1rem 0;
+  padding: 0.62rem 0.85rem;
+  border-radius: 0.35rem;
+  background: rgb(20 14 11 / 88%);
+  box-decoration-break: clone;
+  color: #fff;
+  font-size: clamp(0.95rem, 3.8vw, 1.08rem);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.cinematic-onboarding__motion-note {
+  z-index: 2;
+  align-self: start;
+  justify-self: center;
+  margin-top: calc(var(--safe-top) + 8rem);
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: rgb(13 67 54 / 82%);
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__error > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+@keyframes cinematic-record-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
 @media (min-width: 42rem) {
   :root {
     --safe-right: max(2rem, env(safe-area-inset-right));
@@ -1758,6 +2208,19 @@ svg {
   .app-screen {
     min-height: 100dvh;
     box-shadow: 0 0 4rem rgb(0 0 0 / 25%);
+  }
+
+  .cinematic-onboarding {
+    min-height: min(100dvh, 62rem);
+    border-right: 1px solid rgb(255 245 221 / 16%);
+    border-left: 1px solid rgb(255 245 221 / 16%);
+    box-shadow: 0 0 5rem rgb(0 0 0 / 48%);
+  }
+
+  .cinematic-onboarding__picture video,
+  .cinematic-onboarding__picture img,
+  .cinematic-onboarding__picture-fallback {
+    min-height: min(100dvh, 62rem);
   }
 
   .welcome-screen {
@@ -1866,6 +2329,38 @@ svg {
 }
 
 @media (max-width: 23rem) {
+  .cinematic-onboarding__toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cinematic-onboarding__toolbar > div {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cinematic-onboarding__toolbar button {
+    padding-right: 0.35rem;
+    padding-left: 0.35rem;
+  }
+
+  .cinematic-onboarding__interaction,
+  .cinematic-onboarding__error,
+  .cinematic-onboarding__preroll {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+
+  .cinematic-onboarding__interaction,
+  .cinematic-onboarding__error {
+    max-height: calc(100dvh - 13rem);
+  }
+
+  .cinematic-onboarding__caption {
+    margin-top: calc(var(--safe-top) + 8.5rem);
+  }
+
   .custom-time {
     grid-template-columns: 1fr;
   }
@@ -1901,5 +2396,9 @@ svg {
   .mascot-stage[data-state] .mascot-stage__record,
   .mascot-stage[data-state] .mascot-stage__sleeve {
     transform: none;
+  }
+
+  .cinematic-onboarding__record-control.is-spinning > span {
+    animation: none;
   }
 }

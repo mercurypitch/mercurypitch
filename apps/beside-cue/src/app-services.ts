@@ -5,6 +5,8 @@ import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-
 import { createIndexedDbBesideCueRepository } from './infrastructure/indexed-db-repository'
 import type { BesideCuePlatform } from './infrastructure/mobile-runtime'
 import { createBesideCueMobileRuntime, getBesideCuePlatform, } from './infrastructure/mobile-runtime'
+import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
+import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { MockPurchaseRequest } from './purchases/mock-purchases'
 import { isMockPurchasesEnabled } from './purchases/mock-purchases-flag'
 import type { PurchasesSetup } from './purchases/revenuecat-config'
@@ -15,6 +17,7 @@ export interface BesideCueAppServices {
   readonly runtime: Promise<MobileRuntime>
   readonly platform: BesideCuePlatform
   readonly purchases: PurchasesSetup
+  readonly onboardingPreferences: CinematicOnboardingPreferenceStore
   /**
    * Set only by a development build running the fake store. The app renders the
    * mock overlay from it; a shipped build leaves it undefined.
@@ -84,6 +87,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
         entitlementId: purchases.entitlementId,
         config: { apiKey: 'mock-store', logLevel: 'debug' },
       },
+      onboardingPreferences: createCinematicOnboardingPreferenceStore(),
       mockPurchaseRequest,
       now: () => new Date(),
       createId: createLocalId,
@@ -95,6 +99,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
     runtime: createBesideCueMobileRuntime(purchases.config),
     platform,
     purchases,
+    onboardingPreferences: createCinematicOnboardingPreferenceStore(),
     now: () => new Date(),
     createId: createLocalId,
   }

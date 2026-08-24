@@ -1,17 +1,26 @@
 // ============================================================
-// Beside Cue app config tests — guarded cinematic delivery mode
+// Beside Cue app config tests — approved cinematic delivery mode
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
+import { CORKY_ONBOARDING_MEDIA_V0_7, validateCinematicOnboardingMediaManifest, } from './onboarding'
 
 describe('Beside Cue app config', () => {
-  it('keeps cinematic onboarding off the first-run path until Phase 5 media lands', () => {
-    expect(DEFAULT_BESIDE_CUE_CONFIG.onboarding).toMatchObject({
-      delivery: 'welcome-only',
-      revision: 'cinematic-onboarding-v0.2-architecture',
-      contractVersion: '0.2.0',
+  it('selects the approved v0.7 cinematic on the first-run path', () => {
+    const onboarding = DEFAULT_BESIDE_CUE_CONFIG.onboarding
+
+    expect(onboarding).toMatchObject({
+      delivery: 'cinematic-first-run',
+      revision: 'corky-onboarding-v0.7',
+      contractVersion: '0.3.0',
+      media: CORKY_ONBOARDING_MEDIA_V0_7,
     })
-    expect('media' in DEFAULT_BESIDE_CUE_CONFIG.onboarding).toBe(false)
+    if (onboarding.delivery !== 'cinematic-first-run') {
+      throw new Error('Expected the default cinematic-first-run config.')
+    }
+    expect(validateCinematicOnboardingMediaManifest(onboarding.media)).toEqual(
+      [],
+    )
   })
 })

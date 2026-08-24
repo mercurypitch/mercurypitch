@@ -11,6 +11,9 @@ import { BrandMark } from './components/BrandMark'
 import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
 import { ProSection } from './components/ProSection'
 import type { PullOption } from './content'
+import { validateCinematicOnboardingMediaManifest } from './onboarding'
+import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
+import { CinematicOnboardingDirector } from './onboarding/CinematicOnboardingDirector'
 import { createProAccess } from './purchases/pro-access'
 import { PRO_DISPLAY_NAME } from './purchases/revenuecat-config'
 import type { DailyCueCoordinator, DailyCueReconcileResult, } from './scheduling/daily-cue-coordinator'
@@ -30,6 +33,7 @@ import { WelcomeScreen } from './screens/WelcomeScreen'
 type AppScreen =
   | 'loading'
   | 'load-error'
+  | 'cinematic'
   | 'welcome'
   | 'choose-pull'
   | 'choose-b-side'
@@ -100,8 +104,30 @@ function messageForValidation(error: unknown, subject: string): string {
   return `We could not keep that ${subject.toLowerCase()}. Please try again.`
 }
 
+function firstRunScreen(
+  state: BesideCueStateV1,
+  onboarding: BesideCueAppConfig['onboarding'],
+  preferences: CinematicOnboardingPreferenceStore,
+): AppScreen {
+  if (currentCue(state) !== undefined) return 'home'
+  if (
+    onboarding.delivery === 'cinematic-first-run' &&
+    validateCinematicOnboardingMediaManifest(onboarding.media).length === 0 &&
+    preferences.read(onboarding.revision) === undefined
+  ) {
+    return 'cinematic'
+  }
+  return 'welcome'
+}
+
 export function App(props: AppProps) {
   const config = createMemo(() => props.config ?? DEFAULT_BESIDE_CUE_CONFIG)
+  const cinematicConfig = createMemo(() => {
+    const onboarding = config().onboarding
+    return onboarding.delivery === 'cinematic-first-run'
+      ? onboarding
+      : undefined
+  })
   const services = createMemo(
     () => props.services ?? createDefaultAppServices(),
   )
@@ -402,6 +428,23 @@ export function App(props: AppProps) {
   function beginSetup(nextMode: SetupMode): void {
     resetSetup(nextMode)
     setScreen('choose-pull')
+  }
+
+  function completeCinematicOnboarding(
+    outcome: 'finished' | 'dismissed',
+  ): void {
+    const onboarding = config().onboarding
+    if (onboarding.delivery !== 'cinematic-first-run') {
+      setScreen('welcome')
+      return
+    }
+
+    services().onboardingPreferences.write(
+      onboarding.revision,
+      outcome,
+      services().now,
+    )
+    beginSetup('create')
   }
 
   function choosePull(pullId: string): void {
@@ -740,7 +783,14 @@ export function App(props: AppProps) {
         resetSetup('create')
         setScheduleMessage(undefined)
         setScheduleError(undefined)
-        setScreen('welcome')
+        appServices.onboardingPreferences.clear()
+        setScreen(
+          firstRunScreen(
+            nextState,
+            appConfig.onboarding,
+            appServices.onboardingPreferences,
+          ),
+        )
         return reconcileDailyCue(nextState, appConfig, true).catch(
           () => undefined,
         )
@@ -763,7 +813,13 @@ export function App(props: AppProps) {
         latestState = nextState
         stateLoaded = true
         setAppState(nextState)
-        setScreen(currentCue(nextState) === undefined ? 'welcome' : 'home')
+        setScreen(
+          firstRunScreen(
+            nextState,
+            appConfig.onboarding,
+            appServices.onboardingPreferences,
+          ),
+        )
         restoreDailyCue(nextState, appConfig)
         if (pendingDailyCue !== undefined) {
           const pending = pendingDailyCue
@@ -785,7 +841,14 @@ export function App(props: AppProps) {
         latestState = nextState
         stateLoaded = true
         setAppState(nextState)
-        setScreen('welcome')
+        appServices.onboardingPreferences.clear()
+        setScreen(
+          firstRunScreen(
+            nextState,
+            appConfig.onboarding,
+            appServices.onboardingPreferences,
+          ),
+        )
         return reconcileDailyCue(nextState, appConfig, true).catch(
           () => undefined,
         )
@@ -882,6 +945,18 @@ export function App(props: AppProps) {
       {screen() === 'welcome' ? (
         <WelcomeScreen onBegin={() => beginSetup('create')} />
       ) : null}
+
+      <Show
+        when={screen() === 'cinematic' ? cinematicConfig() : undefined}
+        keyed
+      >
+        {(onboarding) => (
+          <CinematicOnboardingDirector
+            media={onboarding.media}
+            onComplete={completeCinematicOnboarding}
+          />
+        )}
+      </Show>
 
       {screen() === 'choose-pull' ? (
         <ChoosePullScreen
