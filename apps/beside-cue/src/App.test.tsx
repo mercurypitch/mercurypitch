@@ -4,11 +4,34 @@ import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { describe, expect, it } from 'vitest'
 import { App } from './App'
+import type { BesideCueAppConfig } from './app-config'
+import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
+import { CORKY_ONBOARDING_MEDIA_V0_7 } from './onboarding'
+import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 
 interface MemoryRepository extends ResettableBesideCueRepository {
   snapshot(): BesideCueStateV1 | null
+}
+
+const WELCOME_ONLY_TEST_CONFIG: BesideCueAppConfig = {
+  ...DEFAULT_BESIDE_CUE_CONFIG,
+  onboarding: {
+    delivery: 'welcome-only',
+    revision: 'welcome-only-test',
+    contractVersion: '0.2.0',
+  },
+}
+
+const CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
+  ...DEFAULT_BESIDE_CUE_CONFIG,
+  onboarding: {
+    delivery: 'cinematic-first-run',
+    revision: CORKY_ONBOARDING_MEDIA_V0_7.revision,
+    contractVersion: '0.3.0',
+    media: CORKY_ONBOARDING_MEDIA_V0_7,
+  },
 }
 
 function createMemoryRepository(): MemoryRepository {
@@ -49,9 +72,11 @@ function createTestServices(
     readonly runtime?: MobileRuntime
     readonly platform?: BesideCueAppServices['platform']
     readonly purchases?: BesideCueAppServices['purchases']
+    readonly onboardingPreferences?: BesideCueAppServices['onboardingPreferences']
   } = {},
 ): BesideCueAppServices {
   let nextId = 0
+  const preferenceValues = new Map<string, string>()
   return {
     repository,
     runtime: Promise.resolve(
@@ -62,15 +87,72 @@ function createTestServices(
       entitlementId: 'BeSideCue Pro',
       problem: 'Purchases need the Android or iOS app.',
     },
+    onboardingPreferences:
+      options.onboardingPreferences ??
+      createCinematicOnboardingPreferenceStore({
+        getItem: (key) => preferenceValues.get(key) ?? null,
+        setItem: (key, value) => preferenceValues.set(key, value),
+        removeItem: (key) => preferenceValues.delete(key),
+      }),
     now: () => new Date('2026-08-06T10:00:00'),
     createId: () => `test-${String((nextId += 1))}`,
   }
 }
 
 describe('Beside Cue app', () => {
+  it('shows the approved film once, records a local outcome, and enters setup', async () => {
+    const preferenceValues = new Map<string, string>()
+    const onboardingPreferences = createCinematicOnboardingPreferenceStore({
+      getItem: (key) => preferenceValues.get(key) ?? null,
+      setItem: (key, value) => preferenceValues.set(key, value),
+      removeItem: (key) => preferenceValues.delete(key),
+    })
+    const repository = createMemoryRepository()
+    const view = render(() => (
+      <App
+        config={CINEMATIC_TEST_CONFIG}
+        services={createTestServices(repository, { onboardingPreferences })}
+      />
+    ))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Meet Corky.' }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /skip introduction/iu }))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /which moment would you like less of/iu,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      onboardingPreferences.read(CORKY_ONBOARDING_MEDIA_V0_7.revision),
+    ).toMatchObject({ outcome: 'dismissed' })
+
+    view.unmount()
+    render(() => (
+      <App
+        config={CINEMATIC_TEST_CONFIG}
+        services={createTestServices(createMemoryRepository(), {
+          onboardingPreferences,
+        })}
+      />
+    ))
+    expect(
+      await screen.findByRole('heading', {
+        name: /keep your better choice beside the moment/iu,
+      }),
+    ).toBeInTheDocument()
+  })
+
   it('completes the manual cue loop and records a gentle reflection', async () => {
     const repository = createMemoryRepository()
-    render(() => <App services={createTestServices(repository)} />)
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
 
     fireEvent.click(
       await screen.findByRole('button', { name: /make my first cue/iu }),
@@ -115,7 +197,12 @@ describe('Beside Cue app', () => {
 
   it('keeps empty onboarding neutral and validates before continuing', async () => {
     const repository = createMemoryRepository()
-    render(() => <App services={createTestServices(repository)} />)
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
 
     fireEvent.click(
       await screen.findByRole('button', { name: /make my first cue/iu }),
@@ -133,6 +220,7 @@ describe('Beside Cue app', () => {
     const probe = createMobileRuntimeProbe({ permission: 'granted' })
     render(() => (
       <App
+        config={WELCOME_ONLY_TEST_CONFIG}
         services={createTestServices(repository, {
           platform: 'android',
           runtime: probe.runtime,
@@ -202,6 +290,7 @@ describe('Beside Cue app', () => {
     })
     render(() => (
       <App
+        config={WELCOME_ONLY_TEST_CONFIG}
         services={createTestServices(repository, {
           platform: 'android',
           runtime: probe.runtime,

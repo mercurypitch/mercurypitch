@@ -1,111 +1,227 @@
 // ============================================================
-// Cinematic onboarding media tests — Phase-5 package safeguards
+// Cinematic onboarding media tests — v0.3 package safeguards
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
 import type { CinematicOnboardingMediaManifest } from './cinematic-onboarding-media'
 import { resolveCinematicOnboardingMedia, validateCinematicOnboardingMediaManifest, } from './cinematic-onboarding-media'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_2 } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_3 } from './cinematic-onboarding-timeline'
 
 function mediaManifest(): CinematicOnboardingMediaManifest {
   const segments = Object.fromEntries(
-    CINEMATIC_ONBOARDING_TIMELINE_V0_2.shots.flatMap((shot) =>
-      shot.segments.map((segment) => [
-        segment.id,
-        segment.kind === 'automatic'
-          ? {
+    CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.flatMap((shot) =>
+      shot.segments.map((segment) => {
+        const stable = {
+          poster: `/onboarding/${segment.id}.webp`,
+          reducedStill: `/onboarding/${segment.id}-reduced.webp`,
+          alt: `Stable scene for ${segment.id}`,
+        }
+        if (segment.kind === 'automatic') {
+          return [
+            segment.id,
+            {
+              ...stable,
               kind: 'automatic',
-              poster: `/onboarding/${segment.id}.webp`,
-              reducedStill: `/onboarding/${segment.id}-reduced.webp`,
               video: `/onboarding/${segment.id}.mp4`,
-              alt: `Stable scene for ${segment.id}`,
-            }
-          : {
-              kind: 'hold',
-              poster: `/onboarding/${segment.id}.webp`,
-              reducedStill: `/onboarding/${segment.id}-reduced.webp`,
-              alt: `Stable scene for ${segment.id}`,
             },
-      ]),
+          ]
+        }
+        if (segment.kind === 'automatic_native_overlay') {
+          return [segment.id, { ...stable, kind: 'automatic_native_overlay' }]
+        }
+        return [segment.id, { ...stable, kind: 'hold' }]
+      }),
     ),
   ) as unknown as CinematicOnboardingMediaManifest['segments']
 
   return {
-    revision: 'test-v0.2',
-    sourceContractVersion: '0.2.0',
+    revision: 'test-v0.3',
+    sourceContractVersion: '0.3.0',
     sourceContractSha256: 'a'.repeat(64),
+    audio: {
+      kind: 'continuous_review_mix',
+      src: '/onboarding/audio/review-mix-continuous-746f.m4a',
+      sourceDurationFrames: 746,
+      clockPolicy: 'pause_with_picture',
+    },
     segments,
   }
 }
 
 describe('cinematic onboarding media', () => {
-  it('uses one-shot video only for a normal automatic beat', () => {
+  it('uses one-shot video only for a normal moving beat', () => {
     expect(
       resolveCinematicOnboardingMedia(
         mediaManifest(),
-        'S02_AUTO_HELLO',
+        'S01_S02_AUTO_ENTRANCE_HELLO',
         'normal',
       ),
     ).toEqual({
       kind: 'video',
-      src: '/onboarding/S02_AUTO_HELLO.mp4',
-      poster: '/onboarding/S02_AUTO_HELLO.webp',
-      alt: 'Stable scene for S02_AUTO_HELLO',
+      src: '/onboarding/S01_S02_AUTO_ENTRANCE_HELLO.mp4',
+      poster: '/onboarding/S01_S02_AUTO_ENTRANCE_HELLO.webp',
+      alt: 'Stable scene for S01_S02_AUTO_ENTRANCE_HELLO',
     })
   })
 
-  it('never selects video in reduced mode', () => {
+  it('selects the authored still instead of every video in reduced mode', () => {
     expect(
       resolveCinematicOnboardingMedia(
         mediaManifest(),
-        'S02_AUTO_HELLO',
+        'S01_S02_AUTO_ENTRANCE_HELLO',
         'reduced',
       ),
     ).toEqual({
       kind: 'still',
-      src: '/onboarding/S02_AUTO_HELLO-reduced.webp',
-      alt: 'Stable scene for S02_AUTO_HELLO',
+      src: '/onboarding/S01_S02_AUTO_ENTRANCE_HELLO-reduced.webp',
+      alt: 'Stable scene for S01_S02_AUTO_ENTRANCE_HELLO',
     })
   })
 
-  it('keeps a native interaction hold on its stable scene', () => {
+  it('uses the final-state still and no fabricated video for a native overlay', () => {
+    const manifest = mediaManifest()
+
+    expect(
+      resolveCinematicOnboardingMedia(
+        manifest,
+        'S07_AUTO_REMINDER_DIAL_REVEAL',
+        'normal',
+      ),
+    ).toEqual({
+      kind: 'still',
+      src: '/onboarding/S07_AUTO_REMINDER_DIAL_REVEAL-reduced.webp',
+      alt: 'Stable scene for S07_AUTO_REMINDER_DIAL_REVEAL',
+    })
+    expect('video' in manifest.segments.S07_AUTO_REMINDER_DIAL_REVEAL).toBe(
+      false,
+    )
+  })
+
+  it('keeps a normal native interaction hold on the preceding final state', () => {
     expect(
       resolveCinematicOnboardingMedia(
         mediaManifest(),
         'S06_SIM_USER_SPIN_STOP_HOLD',
         'normal',
-      ).kind,
-    ).toBe('still')
+      ),
+    ).toEqual({
+      kind: 'still',
+      src: '/onboarding/S06_SIM_USER_SPIN_STOP_HOLD-reduced.webp',
+      alt: 'Stable scene for S06_SIM_USER_SPIN_STOP_HOLD',
+    })
   })
 
-  it('accepts only a complete, portable manifest that matches segment kinds', () => {
-    expect(validateCinematicOnboardingMediaManifest(mediaManifest())).toEqual(
-      [],
-    )
+  it('accepts the exact complete v0.3 manifest and continuous audio contract', () => {
+    const manifest = mediaManifest()
 
+    expect(validateCinematicOnboardingMediaManifest(manifest)).toEqual([])
+    expect(manifest.audio).toEqual({
+      kind: 'continuous_review_mix',
+      src: '/onboarding/audio/review-mix-continuous-746f.m4a',
+      sourceDurationFrames: 746,
+      clockPolicy: 'pause_with_picture',
+    })
+  })
+
+  it('rejects the old contract, wrong kinds, and a missing moving video', () => {
     const valid = mediaManifest()
     const invalid = {
       ...valid,
-      sourceContractSha256: 'not-a-sha',
+      sourceContractVersion: '0.2.0',
       segments: {
         ...valid.segments,
-        S01_AUTO_ENTER: {
+        S01_S02_AUTO_ENTRANCE_HELLO: {
           kind: 'hold',
-          poster: 'file:///tmp/opening.webp',
-          reducedStill: '/home/person/opening.webp',
-          alt: '',
+          poster: '/onboarding/opening.webp',
+          reducedStill: '/onboarding/opening-reduced.webp',
+          alt: 'Opening',
         },
       },
-    } as unknown as CinematicOnboardingMediaManifest
+    }
+
+    const problems = validateCinematicOnboardingMediaManifest(invalid)
+
+    expect(problems).toContain(
+      'Media manifest targets timeline 0.2.0, not 0.3.0.',
+    )
+    expect(problems).toContain(
+      'Media for "S01_S02_AUTO_ENTRANCE_HELLO" is hold, expected automatic.',
+    )
+    expect(problems).toContain(
+      'Media for "S01_S02_AUTO_ENTRANCE_HELLO" has no video asset.',
+    )
+  })
+
+  it('rejects videos and any other extra field on stable-only states', () => {
+    const valid = mediaManifest()
+    const invalid = {
+      ...valid,
+      extraTopLevel: true,
+      segments: {
+        ...valid.segments,
+        S07_AUTO_REMINDER_DIAL_REVEAL: {
+          ...valid.segments.S07_AUTO_REMINDER_DIAL_REVEAL,
+          video: '/onboarding/fake-overlay.mp4',
+        },
+        S06_SIM_USER_SPIN_STOP_HOLD: {
+          ...valid.segments.S06_SIM_USER_SPIN_STOP_HOLD,
+          loop: true,
+        },
+      },
+    }
+
+    const problems = validateCinematicOnboardingMediaManifest(invalid)
+
+    expect(problems).toContain(
+      'Media manifest has unexpected field "extraTopLevel".',
+    )
+    expect(problems).toContain(
+      'Media for "S07_AUTO_REMINDER_DIAL_REVEAL" has unexpected field "video".',
+    )
+    expect(problems).toContain(
+      'Media for "S06_SIM_USER_SPIN_STOP_HOLD" has unexpected field "loop".',
+    )
+  })
+
+  it('rejects unknown or missing segment records', () => {
+    const valid = mediaManifest()
+    const { S08_AUTO_TITLE_CLOSE: _missing, ...segments } = valid.segments
+    const invalid = {
+      ...valid,
+      segments: {
+        ...segments,
+        UNKNOWN_STATE: valid.segments.S08_AUTO_TITLE_CLOSE,
+      },
+    }
 
     expect(
       validateCinematicOnboardingMediaManifest(invalid).join('\n'),
     ).toMatch(
-      /SHA-256.*S01_AUTO_ENTER.*expected automatic.*description.*non-packaged/isu,
+      /unknown segment "UNKNOWN_STATE".*missing segment "S08_AUTO_TITLE_CLOSE"/isu,
     )
   })
 
-  it('rejects remote, workstation, traversal, and malformed manifest values', () => {
+  it('rejects a mismatched or incomplete continuous audio clock', () => {
+    const valid = mediaManifest()
+    const invalid = {
+      ...valid,
+      audio: {
+        kind: 'stems',
+        src: 'https://cdn.example/review.m4a',
+        sourceDurationFrames: 624,
+        clockPolicy: 'run_freely',
+        gain: 1,
+      },
+    }
+
+    expect(
+      validateCinematicOnboardingMediaManifest(invalid).join('\n'),
+    ).toMatch(
+      /unexpected field "gain".*expected continuous_review_mix.*expected 746.*expected pause_with_picture.*non-packaged/isu,
+    )
+  })
+
+  it('rejects remote, workstation, traversal, and malformed asset values', () => {
     for (const url of [
       '//cdn.example/opening.webp',
       'ftp://cdn.example/opening.webp',
@@ -120,8 +236,8 @@ describe('cinematic onboarding media', () => {
         ...valid,
         segments: {
           ...valid.segments,
-          S01_AUTO_ENTER: {
-            ...valid.segments.S01_AUTO_ENTER,
+          S01_S02_AUTO_ENTRANCE_HELLO: {
+            ...valid.segments.S01_S02_AUTO_ENTRANCE_HELLO,
             poster: url,
           },
         },
@@ -131,7 +247,9 @@ describe('cinematic onboarding media', () => {
         validateCinematicOnboardingMediaManifest(invalid).join('\n'),
       ).toMatch(/non-packaged asset URL/iu)
     }
+  })
 
+  it('rejects non-object and structurally malformed manifests', () => {
     expect(validateCinematicOnboardingMediaManifest(null)).toEqual([
       'Media manifest must be an object.',
     ])
@@ -140,8 +258,9 @@ describe('cinematic onboarding media', () => {
         revision: 2,
         sourceContractVersion: null,
         sourceContractSha256: false,
-        segments: { S01_AUTO_ENTER: null },
+        audio: null,
+        segments: null,
       }).join('\n'),
-    ).toMatch(/revision.*timeline.*SHA-256.*missing/isu)
+    ).toMatch(/revision.*timeline.*SHA-256.*audio.*segments/isu)
   })
 })

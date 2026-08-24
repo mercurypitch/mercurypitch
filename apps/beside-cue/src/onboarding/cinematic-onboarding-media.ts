@@ -1,15 +1,15 @@
 // ============================================================
-// Cinematic onboarding media — portable Phase-5 asset boundary
+// Cinematic onboarding media — portable v0.3 asset boundary
 // ============================================================
 
-import type { CinematicOnboardingMode, CinematicOnboardingSegmentId, CinematicOnboardingTimeline, } from './cinematic-onboarding-timeline'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_2 } from './cinematic-onboarding-timeline'
+import type { CinematicOnboardingMode, CinematicOnboardingSegment, CinematicOnboardingSegmentId, CinematicOnboardingTimeline, } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_3 } from './cinematic-onboarding-timeline'
 
-/** Media shared by a moving beat and its no-motion equivalent. */
+/** Media shared by a moving beat and its stable-plate equivalent. */
 export interface CinematicOnboardingStableMedia {
-  /** First paint and decode-failure fallback. */
+  /** First paint and moving-video error fallback. */
   readonly poster: string
-  /** Complete, readable state used when reduced motion is requested. */
+  /** Complete readable end state used for holds, overlays and reduced motion. */
   readonly reducedStill: string
   /** Describes the scene state; captions and controls remain native DOM. */
   readonly alt: string
@@ -21,22 +21,33 @@ export interface CinematicOnboardingAutomaticMedia extends CinematicOnboardingSt
   readonly video: string
 }
 
+export interface CinematicOnboardingAutomaticNativeOverlayMedia extends CinematicOnboardingStableMedia {
+  readonly kind: 'automatic_native_overlay'
+}
+
 export interface CinematicOnboardingHoldMedia extends CinematicOnboardingStableMedia {
   readonly kind: 'hold'
 }
 
 export type CinematicOnboardingSegmentMedia =
   | CinematicOnboardingAutomaticMedia
+  | CinematicOnboardingAutomaticNativeOverlayMedia
   | CinematicOnboardingHoldMedia
 
-/**
- * Phase 5 fills this manifest with packaged app assets. Blender files, rig
- * reports, and local workstation paths remain in the dotfiles source package.
- */
+export interface CinematicOnboardingContinuousAudioMedia {
+  readonly kind: 'continuous_review_mix'
+  readonly src: string
+  readonly sourceDurationFrames: 746
+  readonly clockPolicy: 'pause_with_picture'
+}
+
+/** Packaged delivery manifest; authoring and workstation paths stay outside. */
 export interface CinematicOnboardingMediaManifest {
   readonly revision: string
   readonly sourceContractVersion: CinematicOnboardingTimeline['version']
   readonly sourceContractSha256: string
+  /** Silent picture files share this one authored 746-frame audio clock. */
+  readonly audio: CinematicOnboardingContinuousAudioMedia
   readonly segments: Readonly<
     Record<CinematicOnboardingSegmentId, CinematicOnboardingSegmentMedia>
   >
@@ -56,8 +67,8 @@ export type CinematicOnboardingResolvedMedia =
     }
 
 /**
- * Chooses media without reading browser preferences. The director owns the
- * mode so a running scene cannot silently switch contracts halfway through.
+ * Normal moving beats use video. Native overlays, interaction holds and
+ * reduced motion consistently select the authored final-state still.
  */
 export function resolveCinematicOnboardingMedia(
   manifest: CinematicOnboardingMediaManifest,
@@ -74,7 +85,11 @@ export function resolveCinematicOnboardingMedia(
     }
   }
 
-  return { kind: 'still', src: media.reducedStill, alt: media.alt }
+  return {
+    kind: 'still',
+    src: media.reducedStill,
+    alt: media.alt,
+  }
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -113,12 +128,54 @@ function isPackagedOnboardingAssetUrl(value: unknown): value is string {
   )
 }
 
-/** Runtime guard for a generated Phase-5 manifest. */
+const TOP_LEVEL_KEYS = [
+  'revision',
+  'sourceContractVersion',
+  'sourceContractSha256',
+  'audio',
+  'segments',
+] as const
+
+const AUDIO_KEYS = [
+  'kind',
+  'src',
+  'sourceDurationFrames',
+  'clockPolicy',
+] as const
+
+const STABLE_MEDIA_KEYS = ['kind', 'poster', 'reducedStill', 'alt'] as const
+const AUTOMATIC_MEDIA_KEYS = [...STABLE_MEDIA_KEYS, 'video'] as const
+
+function expectedManifestKind(
+  segment: CinematicOnboardingSegment,
+): CinematicOnboardingSegmentMedia['kind'] {
+  if (segment.kind === 'automatic') return 'automatic'
+  if (segment.kind === 'automatic_native_overlay') {
+    return 'automatic_native_overlay'
+  }
+  return 'hold'
+}
+
+function reportUnexpectedKeys(
+  value: Readonly<Record<string, unknown>>,
+  expected: readonly string[],
+  label: string,
+  problems: string[],
+): void {
+  const expectedSet = new Set(expected)
+  for (const key of Object.keys(value)) {
+    if (!expectedSet.has(key)) {
+      problems.push(`${label} has unexpected field "${key}".`)
+    }
+  }
+}
+
+/** Strict runtime guard for a generated v0.3 delivery manifest. */
 export function validateCinematicOnboardingMediaManifest(
   manifest: unknown,
 ): readonly string[] {
   const problems: string[] = []
-  const expectedSegments = CINEMATIC_ONBOARDING_TIMELINE_V0_2.shots.flatMap(
+  const expectedSegments = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.flatMap(
     (shot) => shot.segments,
   )
   const expectedIds = new Set(expectedSegments.map((segment) => segment.id))
@@ -126,24 +183,55 @@ export function validateCinematicOnboardingMediaManifest(
     return ['Media manifest must be an object.']
   }
 
+  reportUnexpectedKeys(manifest, TOP_LEVEL_KEYS, 'Media manifest', problems)
+
   const revision = manifest.revision
   const sourceContractVersion = manifest.sourceContractVersion
   const sourceContractSha256 = manifest.sourceContractSha256
+  const audio = isRecord(manifest.audio) ? manifest.audio : undefined
   const supplied = isRecord(manifest.segments) ? manifest.segments : undefined
 
   if (typeof revision !== 'string' || revision.trim() === '') {
     problems.push('Media manifest revision is empty.')
   }
-  if (sourceContractVersion !== CINEMATIC_ONBOARDING_TIMELINE_V0_2.version) {
+  if (sourceContractVersion !== CINEMATIC_ONBOARDING_TIMELINE_V0_3.version) {
     problems.push(
-      `Media manifest targets timeline ${String(sourceContractVersion)}, not ${CINEMATIC_ONBOARDING_TIMELINE_V0_2.version}.`,
+      `Media manifest targets timeline ${String(sourceContractVersion)}, not ${CINEMATIC_ONBOARDING_TIMELINE_V0_3.version}.`,
     )
   }
   if (
     typeof sourceContractSha256 !== 'string' ||
-    !/^[a-f\d]{64}$/iu.test(sourceContractSha256)
+    !/^[a-f\d]{64}$/u.test(sourceContractSha256)
   ) {
-    problems.push('Media manifest has no valid source-contract SHA-256.')
+    problems.push(
+      'Media manifest has no valid lowercase source-contract SHA-256.',
+    )
+  }
+
+  if (audio === undefined) {
+    problems.push('Media manifest audio must be an object.')
+  } else {
+    reportUnexpectedKeys(audio, AUDIO_KEYS, 'Media manifest audio', problems)
+    if (audio.kind !== 'continuous_review_mix') {
+      problems.push(
+        `Media manifest audio is ${String(audio.kind)}, expected continuous_review_mix.`,
+      )
+    }
+    if (audio.sourceDurationFrames !== 746) {
+      problems.push(
+        `Media manifest audio has ${String(audio.sourceDurationFrames)} source frames, expected 746.`,
+      )
+    }
+    if (audio.clockPolicy !== 'pause_with_picture') {
+      problems.push(
+        `Media manifest audio uses ${String(audio.clockPolicy)}, expected pause_with_picture.`,
+      )
+    }
+    if (!isPackagedOnboardingAssetUrl(audio.src)) {
+      problems.push(
+        `Media manifest audio has a non-packaged asset URL "${String(audio.src)}".`,
+      )
+    }
   }
 
   if (supplied === undefined) {
@@ -164,21 +252,41 @@ export function validateCinematicOnboardingMediaManifest(
       continue
     }
 
-    const expectedKind =
-      segment.kind === 'automatic' ? 'automatic' : ('hold' as const)
-    const kind = media.kind
-    if (kind !== expectedKind) {
+    const expectedKind = expectedManifestKind(segment)
+    const expectedKeys =
+      expectedKind === 'automatic' ? AUTOMATIC_MEDIA_KEYS : STABLE_MEDIA_KEYS
+    reportUnexpectedKeys(
+      media,
+      expectedKeys,
+      `Media for "${segment.id}"`,
+      problems,
+    )
+
+    if (media.kind !== expectedKind) {
       problems.push(
-        `Media for "${segment.id}" is ${String(kind)}, expected ${expectedKind}.`,
+        `Media for "${segment.id}" is ${String(media.kind)}, expected ${expectedKind}.`,
       )
     }
     if (typeof media.alt !== 'string' || media.alt.trim() === '') {
       problems.push(`Media for "${segment.id}" has no description.`)
     }
 
-    const urls = [media.poster, media.reducedStill]
-    if (expectedKind === 'automatic') urls.push(media.video)
-    for (const url of urls) {
+    const urls: readonly (readonly [string, unknown])[] =
+      expectedKind === 'automatic'
+        ? [
+            ['poster', media.poster],
+            ['reducedStill', media.reducedStill],
+            ['video', media.video],
+          ]
+        : [
+            ['poster', media.poster],
+            ['reducedStill', media.reducedStill],
+          ]
+    for (const [field, url] of urls) {
+      if (typeof url !== 'string' || url.trim() === '') {
+        problems.push(`Media for "${segment.id}" has no ${field} asset.`)
+        continue
+      }
       if (!isPackagedOnboardingAssetUrl(url)) {
         problems.push(
           `Media for "${segment.id}" has a non-packaged asset URL "${String(url)}".`,

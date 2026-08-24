@@ -1,7 +1,7 @@
 import type { PullOption } from './content'
 import { bSideAcknowledgements, cuePhrases, notNowAcknowledgements, pullOptions, } from './content'
 import type { CinematicOnboardingMediaManifest } from './onboarding'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_2 } from './onboarding'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_3, CORKY_ONBOARDING_MEDIA_V0_7, } from './onboarding'
 
 export interface DailyCuePreset {
   readonly id: string
@@ -31,10 +31,10 @@ export type CinematicOnboardingConfig =
       readonly contractVersion: '0.2.0'
     }
   | {
-      /** Phase 5 may select this only with a complete packaged media manifest. */
+      /** Approved cinematic delivery requires the complete v0.3 media clock. */
       readonly delivery: 'cinematic-first-run'
       readonly revision: string
-      readonly contractVersion: '0.2.0'
+      readonly contractVersion: '0.3.0'
       readonly media: CinematicOnboardingMediaManifest
     }
 
@@ -56,9 +56,10 @@ export interface BesideCueAppConfig {
 export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
   mascotSetId: 'corktop-v1',
   onboarding: Object.freeze({
-    delivery: 'welcome-only',
-    revision: 'cinematic-onboarding-v0.2-architecture',
-    contractVersion: CINEMATIC_ONBOARDING_TIMELINE_V0_2.version,
+    delivery: 'cinematic-first-run',
+    revision: CORKY_ONBOARDING_MEDIA_V0_7.revision,
+    contractVersion: CINEMATIC_ONBOARDING_TIMELINE_V0_3.version,
+    media: CORKY_ONBOARDING_MEDIA_V0_7,
   }),
   pullOptions,
   cuePhrases,
