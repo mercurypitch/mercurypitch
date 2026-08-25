@@ -5,79 +5,55 @@
 // background has one obvious place to be — REQ-SYNC-030. Tapping it
 // brings the dialog back; it carries no destructive controls of its
 // own, because a mis-tap here must cost nothing.
+//
+// Reads the summary sync-store mirrors into sync-ui rather than the
+// session itself: the wording is shared with Karaoke Night's "Other
+// devices" card (REQ-SYNC-036), the percentage is rounded at the source
+// so a 16KB chunk that changes nothing on screen changes nothing here,
+// and the chip stays a leaf that a standalone page can show without
+// loading the WebRTC machinery behind it.
 
 import type { Component } from 'solid-js'
-import { createMemo, Show } from 'solid-js'
+import { Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import type { SyncTransfer } from '@/stores/sync-store'
-import { isLiveTransfer, syncPeerLabel, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
-import { openSyncModal } from '@/stores/sync-ui-store'
+import { openSyncModal, syncSummary, syncSummaryLabel, } from '@/stores/sync-ui-store'
 import { DeviceSync } from '../icons'
 import styles from './SyncTransferChip.module.css'
 
 export const SyncTransferChip: Component = () => {
-  // Memos, not plain calls: `syncTransfers` is republished on every 16KB
-  // chunk, and the chip is always on screen while one is moving. The
-  // percentage only changes a hundred times a transfer, so gating the
-  // DOM write on the rounded value is the difference between ~100
-  // updates and several thousand.
-  const current = createMemo<SyncTransfer | undefined>(() =>
-    syncTransfers().find(isLiveTransfer),
-  )
-  const pct = createMemo(() => Math.round((current()?.ratio ?? 0) * 100))
-
-  const label = (): string => {
-    const t = current()
-    if (t !== undefined) {
-      const verb =
-        t.status === 'packing'
-          ? 'Packing'
-          : t.status === 'preparing'
-            ? 'Preparing'
-            : t.direction === 'out'
-              ? 'Sending'
-              : 'Receiving'
-      // `preparing` has no honest number behind it — see `sync-preparing`.
-      const suffix = t.status === 'preparing' ? '' : ` — ${pct()}%`
-      return `${verb} “${t.title}”${suffix}`
-    }
-    if (syncState() === 'connected') {
-      return `Sync ready: ${syncPeerLabel() ?? 'another device'}`
-    }
-    return 'Sync open — waiting for the other device'
-  }
+  // Null both when nothing is moving and while `preparing` — which has
+  // no honest number — so the bar is absent rather than empty. Read as
+  // "is there a number", never as truthiness: 0% is a number.
+  const pct = (): number | null => syncSummary()?.transfer?.pct ?? null
 
   return (
     <Portal>
-      <button
-        type="button"
-        class={styles.chip}
-        onClick={() => openSyncModal()}
-        title="Open the sync dialog"
-        data-testid="sync-chip"
-      >
-        <span class={styles.row}>
-          <span class={styles.icon}>
-            <DeviceSync />
-          </span>
-          <span class={styles.text}>
-            {label()}
-            <Show when={syncQueue().length > 0}>
-              {' '}
-              · {syncQueue().length} more queued
-            </Show>
-          </span>
-        </span>
-        <Show when={current()} keyed>
-          {(t) => (
-            <Show when={t.status !== 'preparing'}>
+      <Show when={syncSummary()}>
+        {(summary) => (
+          <button
+            type="button"
+            class={styles.chip}
+            onClick={() => openSyncModal()}
+            title="Open the sync dialog"
+            data-testid="sync-chip"
+          >
+            <span class={styles.row}>
+              <span class={styles.icon}>
+                <DeviceSync />
+              </span>
+              <span class={styles.text}>{syncSummaryLabel(summary())}</span>
+            </span>
+            <Show when={pct() !== null}>
               <span class={styles.bar}>
-                <span class={styles.barFill} style={{ width: `${pct()}%` }} />
+                <span
+                  class={styles.barFill}
+                  style={{ width: `${pct() ?? 0}%` }}
+                />
               </span>
             </Show>
-          )}
-        </Show>
-      </button>
+          </button>
+        )}
+      </Show>
     </Portal>
   )
 }

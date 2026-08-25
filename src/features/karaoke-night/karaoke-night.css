@@ -656,6 +656,30 @@ body {
   color: #cdbde6;
 }
 
+/* The "Other devices" card while a session is live. Same words as the
+   corner chip (REQ-SYNC-036); this is only the shape they take inside a
+   card, where the chip's fixed corner box would make no sense. */
+.kn-sync-line {
+  color: #f4ecff;
+  font-variant-numeric: tabular-nums;
+}
+
+.kn-sync-bar {
+  display: block;
+  height: 3px;
+  margin-top: 0.5rem;
+  border-radius: 2px;
+  background: rgba(183, 154, 224, 0.22);
+  overflow: hidden;
+}
+
+.kn-sync-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(120deg, #ffd9a0, #ff9ad5);
+  transition: width 0.3s ease;
+}
+
 .kn-soon {
   margin-top: 0.7rem;
   font-size: 0.85rem;

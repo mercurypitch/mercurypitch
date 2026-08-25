@@ -421,3 +421,39 @@ both stay in the room", "does not chase a peer that left the room",
 "gives up after its two tries", "a disposed peer never retries";
 `sync-store` — "REQ-SYNC-035: a peer that comes back is welcomed
 behind a hidden dialog".
+
+### REQ-SYNC-036 — A live session says the same thing wherever it is shown
+
+**WHILE** a session exists, every surface that describes it in words —
+the corner chip (REQ-SYNC-030) and Karaoke Night's "Other devices" card
+— shall render one summary, computed once in `sync-store` and mirrored
+into `sync-ui-store`: whether the pair is connected and to what, the one
+transfer `isLiveTransfer` accepts, its whole-percent progress (null
+while `preparing`, which has no honest number — REQ-SYNC-003), and how
+many songs are queued behind it.
+
+**IF** a surface read the session itself, **THEN** two things break at
+once. Karaoke Night is a standalone entry: a static import of
+`sync-store` there drags the WebRTC/bundle graph — and with it the app
+ENTRY chunk — into the page's first paint, which is how the app once
+rendered underneath the karaoke stage (`vite.config.ts`, the QrCode
+note). And the wording forks: the card shipped with no sync state at
+all, so a device connected and a song arriving were visible only in the
+chip, and the card that exists to be the door to sync was the one place
+that could not say sync was running.
+
+The percentage is rounded where the summary is built, and the signal
+compares field by field: the transfer republishes on every 16KB chunk,
+and a sentence that has not changed must not reach a surface.
+_Tests:_ `sync-store` — "REQ-SYNC-036: says a room is open before
+anybody has joined it", "names the far device once its channel is
+open", "reads the far device packing as `preparing`, with no number",
+"counts the songs still waiting their turn", "forgets the session the
+moment it ends"; `KaraokeRailPanels` — "REQ-SYNC-036: explains itself
+when no session is running", "names the device it is connected to",
+"says a session is open before anybody has joined it", "follows a
+transfer, in the corner chip's words", "gives `preparing` no bar,
+because it has no number"; `SyncTransferChip` — "narrates the transfer
+in flight, with the queue behind it", "follows the session without
+being remounted", "still draws a bar for a transfer that has moved
+nothing yet".

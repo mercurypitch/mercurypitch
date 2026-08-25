@@ -31,7 +31,8 @@ import { createSyncPeer } from '@/lib/sync/sync-peer'
 import type { BundleReceiver, BundleSender, SyncWireMessage, } from '@/lib/sync/sync-protocol'
 import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, } from '@/lib/sync/sync-protocol'
 import { showNotification } from '@/stores/notifications-store'
-import { registerSyncUiLifecycle, setSyncSessionLive, syncModalOpen, } from '@/stores/sync-ui-store'
+import type { SyncSummaryActivity } from '@/stores/sync-ui-store'
+import { registerSyncUiLifecycle, setSyncSessionLive, setSyncSummary, syncModalOpen, } from '@/stores/sync-ui-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessions, getUvrSession, initSessionStore, } from '@/stores/uvr-store'
 
@@ -95,6 +96,17 @@ export function isLiveTransfer(t: SyncTransfer): boolean {
     t.status === 'preparing' ||
     t.status === 'transferring'
   )
+}
+
+/**
+ * The same transfer, said the way a person reads it: which end of the
+ * wire this device is on only matters once the bytes are actually
+ * moving, because `packing` and `preparing` already name who is working.
+ */
+function summaryActivity(t: SyncTransfer): SyncSummaryActivity {
+  if (t.status === 'packing') return 'packing'
+  if (t.status === 'preparing') return 'preparing'
+  return t.direction === 'out' ? 'sending' : 'receiving'
 }
 
 const [syncState, setSyncState] = createSignal<SyncSessionState>('idle')
@@ -1284,6 +1296,37 @@ createRoot(() => {
   // without making its always-mounted host import this (WebRTC-heavy)
   // module at first paint.
   createEffect(() => setSyncSessionLive(syncState() !== 'idle'))
+
+  // And WHAT it is doing, for the two surfaces that say so in words:
+  // the corner chip and Karaoke Night's "Other devices" card. Mirrored
+  // rather than read, for the same reason as the line above — the card
+  // sits on a standalone page whose first paint must not load this
+  // module — and computed in ONE place so the two cannot describe the
+  // same session differently. `isLiveTransfer` is the one status list
+  // (REQ-SYNC-030); the rounding is `sync-ui`'s note on `pct`.
+  createEffect(() => {
+    if (syncState() === 'idle') {
+      setSyncSummary(null)
+      return
+    }
+    const moving = syncTransfers().find(isLiveTransfer)
+    setSyncSummary({
+      connected: syncState() === 'connected',
+      peerLabel: syncPeerLabel(),
+      transfer:
+        moving === undefined
+          ? null
+          : {
+              title: moving.title,
+              activity: summaryActivity(moving),
+              pct:
+                moving.status === 'preparing'
+                  ? null
+                  : Math.round(moving.ratio * 100),
+            },
+      queued: syncQueue().length,
+    })
+  })
 
   // A phone that sleeps mid-pack stalls the job where it stood — the
   // same death the Drive backup guards against (REQ-DRV-017). Strictly

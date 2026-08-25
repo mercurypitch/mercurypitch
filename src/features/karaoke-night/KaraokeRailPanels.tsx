@@ -12,7 +12,11 @@ import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-pic
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { openSyncModal } from '@/stores/sync-ui-store'
+// sync-ui only, and never sync-store: this rail's first paint must not
+// pull the WebRTC/bundle machinery onto the standalone page. The live
+// session reaches the card as a summary sync-store mirrors here — see
+// the module header there, and vite.config's `sync-ui` pin.
+import { openSyncModal, syncSummary, syncSummaryLabel, } from '@/stores/sync-ui-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, uvrProcessingMode, } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'
@@ -129,6 +133,14 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       })
     }
   })
+
+  /**
+   * How far the song on the wire has got, or null when there is nothing
+   * to show a bar for — nothing moving, or a `preparing` row that has no
+   * honest number behind it. Read as "is there a number", never as
+   * truthiness: a transfer that has moved nothing yet is at 0%.
+   */
+  const syncPct = (): number | null => syncSummary()?.transfer?.pct ?? null
 
   const sessions = () => getAllUvrSessionsReactive()
 
@@ -640,13 +652,42 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           exactly that case. */}
       <section class="kn-card">
         <p class="kn-card-kicker">Other devices</p>
-        <p class="kn-card-sub">
-          Move a song between two of your own devices over the local network.
-          Nothing is uploaded.
-        </p>
+        {/* A live session says what it is doing here, in the corner
+            chip's own words (REQ-SYNC-036). Without this the card was
+            the one place on the page that could not tell you a device
+            was connected or a song was arriving — and on a page whose
+            rail is often the only thing on screen, "nothing here" read
+            as "sync is not running". */}
+        <Show
+          when={syncSummary()}
+          fallback={
+            <p class="kn-card-sub">
+              Move a song between two of your own devices over the local
+              network. Nothing is uploaded.
+            </p>
+          }
+        >
+          {(summary) => (
+            <>
+              <p class="kn-card-sub kn-sync-line" data-testid="kn-sync-status">
+                {syncSummaryLabel(summary())}
+              </p>
+              <Show when={syncPct() !== null}>
+                <span class="kn-sync-bar" data-testid="kn-sync-bar">
+                  <span
+                    class="kn-sync-bar-fill"
+                    style={{ width: `${syncPct() ?? 0}%` }}
+                  />
+                </span>
+              </Show>
+            </>
+          )}
+        </Show>
         <button class="kn-btn" onClick={() => openSyncModal()}>
           <DeviceSync />
-          Send or receive a song
+          <Show when={syncSummary()} fallback="Send or receive a song">
+            Open sync
+          </Show>
         </button>
       </section>
 
