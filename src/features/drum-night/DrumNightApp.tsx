@@ -10,7 +10,7 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, FileUpload, Loop, MercuryPlanet, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { AudioWave, ChevronDown, Drum, FileUpload, Loop, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -76,44 +76,6 @@ const cx = (...names: Array<keyof typeof styles | false | undefined>): string =>
     .map((name) => styles[name])
     .join(' ')
 
-function pocketEventClass(hit: PreparedPocketHit): keyof typeof styles {
-  if (hit.gmKey === 36 || hit.gmKey === 35) return 'eventKick'
-  if (hit.gmKey === 38 || hit.gmKey === 40) return 'eventSnare'
-  if (hit.seatAnchor.startsWith('tom')) return 'eventTom'
-  if (hit.seatAnchor === 'ride') return 'eventRide'
-  if (hit.seatAnchor === 'crash') return 'eventCrash'
-  return 'eventHat'
-}
-
-function pocketEventGeometry(hit: PreparedPocketHit): {
-  readonly delay: string
-  readonly height: number
-  readonly transform: string
-  readonly width: number
-} {
-  const angle = -Math.PI / 2 + hit.phase * Math.PI * 2
-  const radialOffset =
-    hit.seatAnchor === 'kick'
-      ? -58
-      : hit.seatAnchor === 'snare'
-        ? -24
-        : hit.seatAnchor === 'hi-hat'
-          ? 18
-          : 42
-  const radiusX = 346 + radialOffset
-  const radiusY = 188 + radialOffset * 0.42
-  const x = 500 + Math.cos(angle) * radiusX
-  const y = 342 + Math.sin(angle) * radiusY
-  const rotation = (angle * 180) / Math.PI + 90
-  const emphasis = hit.velocity / 127
-  return {
-    delay: `${(-hit.phase * 4).toFixed(2)}s`,
-    height: Math.round(18 + emphasis * 24),
-    transform: `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rotation.toFixed(2)})`,
-    width: Math.round(6 + emphasis * 5),
-  }
-}
-
 function isDrumKitId(value: unknown): value is DrumKitId {
   return (
     typeof value === 'string' &&
@@ -155,7 +117,17 @@ function transportIsRunning(state: DrumTransportState): boolean {
   return state.phase === 'count-in' || state.phase === 'playing'
 }
 
-function transportPrimaryCopy(state: DrumTransportState): {
+interface PocketMeterReading {
+  readonly barNumber: number
+  readonly numerator: number
+  readonly denominator: number
+  readonly pulseIndex: number
+}
+
+function transportPrimaryCopy(
+  state: DrumTransportState,
+  meter: PocketMeterReading,
+): {
   readonly label: string
   readonly value: string
   readonly detail: string
@@ -170,145 +142,152 @@ function transportPrimaryCopy(state: DrumTransportState): {
   if (state.phase === 'playing') {
     return {
       label: state.recording ? 'Recording take' : 'Take clock',
-      value: `Beat ${Math.floor(state.positionBeats) + 1}`,
-      detail: `${state.loopIteration + 1}`,
+      value: `Bar ${meter.barNumber} · beat ${meter.pulseIndex + 1}`,
+      detail: `${meter.numerator}/${meter.denominator}`,
     }
   }
   if (state.phase === 'paused') {
     return {
       label: 'Paused',
-      value: `Beat ${Math.floor(state.positionBeats) + 1}`,
-      detail: 'II',
+      value: `Bar ${meter.barNumber} · beat ${meter.pulseIndex + 1}`,
+      detail: `${meter.numerator}/${meter.denominator}`,
     }
   }
   return { label: 'Ready', value: 'Strike a pad', detail: '1–6' }
 }
 
-interface PocketRingProps {
+interface PocketStageProps {
+  readonly activePad: () => PadId | null
+  readonly imported: boolean
   readonly inactive: boolean
+  readonly meter: () => PocketMeterReading
+  readonly onStrike: (padId: PadId, velocity: number) => void
+  readonly photoKit: boolean
   readonly pocket: () => PreparedPocketProjection
   readonly sessionTitle: () => string
   readonly transport: () => DrumTransportState
 }
 
-function PocketRing(props: PocketRingProps): JSX.Element {
-  const primaryCopy = createMemo(() => transportPrimaryCopy(props.transport()))
+function PocketStage(props: PocketStageProps): JSX.Element {
+  const primaryCopy = createMemo(() =>
+    transportPrimaryCopy(props.transport(), props.meter()),
+  )
+  const activeSteps = createMemo(
+    () => new Set(props.pocket().hits.map((hit) => hit.stepIndex)),
+  )
+  const currentStep = createMemo(() => {
+    const pocket = props.pocket()
+    if (pocket.stepCount <= 0 || pocket.durationBeats <= 0) return 0
+    const position = Math.max(0, props.transport().positionBeats)
+    const localBeat =
+      (((position - pocket.startBeat) % pocket.durationBeats) +
+        pocket.durationBeats) %
+      pocket.durationBeats
+    return Math.min(
+      pocket.stepCount - 1,
+      Math.floor((localBeat / pocket.durationBeats) * pocket.stepCount),
+    )
+  })
+  const currentPulse = createMemo(() => {
+    const state = props.transport()
+    if (state.phase === 'count-in') {
+      return Math.max(
+        0,
+        Math.min(state.countInBeats - 1, (state.countInBeat ?? 1) - 1),
+      )
+    }
+    return props.meter().pulseIndex
+  })
+  const pulseCount = createMemo(() => {
+    const state = props.transport()
+    if (state.phase === 'count-in') {
+      return Math.max(1, Math.min(16, state.countInBeats))
+    }
+    return Math.max(1, Math.min(16, props.meter().numerator))
+  })
+  const guideCopy = createMemo(() => {
+    const state = props.transport()
+    if (state.phase === 'count-in') {
+      return `Audible count-in ${state.countInBeat ?? 1} of ${state.countInBeats}`
+    }
+    if (state.phase === 'playing') {
+      const meter = props.meter()
+      return `Bar ${meter.barNumber} · ${meter.numerator}/${meter.denominator} · beat ${meter.pulseIndex + 1}`
+    }
+    if (state.phase === 'paused') return 'Paused on the shared take clock'
+    return props.imported
+      ? 'Press Play to follow this two-bar song window'
+      : 'Press Play to hear and follow the two-bar phrase'
+  })
   return (
     <div
       class={styles.pocketView}
       data-testid="drum-night-pocket-view"
       inert={props.inactive}
     >
-      <svg
-        class={styles.pocketRing}
-        viewBox="0 0 1000 620"
-        role="img"
-        aria-labelledby="drum-pocket-title drum-pocket-description"
-      >
-        <title id="drum-pocket-title">Pocket Ring drum guide</title>
-        <desc id="drum-pocket-description">
-          The active drum document arranged around a shared strike horizon and
-          scheduled on the same take clock as Score and Drummer Seat.
-        </desc>
-        <defs>
-          <linearGradient id="drum-arc-fade" x1="0" x2="1">
-            <stop offset="0" stop-color="#aab3b8" stop-opacity="0" />
-            <stop offset="0.18" stop-color="#aab3b8" stop-opacity=".48" />
-            <stop offset=".82" stop-color="#aab3b8" stop-opacity=".48" />
-            <stop offset="1" stop-color="#aab3b8" stop-opacity="0" />
-          </linearGradient>
-          <filter
-            id="drum-event-soft"
-            x="-100%"
-            y="-100%"
-            width="300%"
-            height="300%"
-          >
-            <feGaussianBlur stdDeviation="6" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        <g class={styles.ringGeometry} aria-hidden="true">
-          <ellipse cx="500" cy="342" rx="416" ry="236" />
-          <ellipse cx="500" cy="342" rx="370" ry="205" />
-          <ellipse cx="500" cy="342" rx="322" ry="175" />
-          <ellipse cx="500" cy="342" rx="274" ry="144" />
-          <path class={styles.subdivision} d="M100 342h800" />
-          <path class={styles.strikeArc} d="M174 430Q500 578 826 430" />
-          <path class={styles.scanArc} d="M94 342A406 226 0 0 1 906 342" />
-        </g>
-
-        <g class={styles.kitAnchors} aria-hidden="true">
-          <g transform="translate(178 290)">
-            <circle r="5" />
-            <text y="-16">HI-HAT</text>
-          </g>
-          <g transform="translate(350 206)">
-            <circle r="5" />
-            <text y="-16">SNARE</text>
-          </g>
-          <g transform="translate(500 170)">
-            <circle r="5" />
-            <text y="-16">KICK</text>
-          </g>
-          <g transform="translate(638 214)">
-            <circle r="5" />
-            <text y="-16">TOMS</text>
-          </g>
-          <g transform="translate(790 294)">
-            <circle r="5" />
-            <text y="-16">RIDE</text>
-          </g>
-          <g transform="translate(866 398)">
-            <circle r="5" />
-            <text x="-18" y="-18">
-              CRASH
-            </text>
-          </g>
-        </g>
-
-        <g class={styles.ringEvents} aria-hidden="true">
-          <For each={props.pocket().hits}>
-            {(hit) => {
-              const geometry = pocketEventGeometry(hit)
-              return (
-                <g
-                  class={cx('event', pocketEventClass(hit))}
-                  style={
-                    { '--event-delay': geometry.delay } as JSX.CSSProperties
-                  }
-                  transform={geometry.transform}
-                >
-                  <rect
-                    x={-geometry.width / 2}
-                    y={-geometry.height / 2}
-                    width={geometry.width}
-                    height={geometry.height}
-                    rx={geometry.width / 2}
-                  />
-                </g>
-              )
-            }}
+      <Show when={props.photoKit}>
+        <div class={styles.pocketHitMap} aria-label="Pocket Console drum kit">
+          <For each={ESSENTIAL_DRUM_PADS}>
+            {(pad) => (
+              <button
+                class={cx('pocketHit', props.activePad() === pad.id && 'isHit')}
+                data-pad={pad.id}
+                type="button"
+                aria-label={`${pad.label}, key ${pad.keyboardLabel}`}
+                aria-keyshortcuts={pad.keyboardLabel}
+                onPointerDown={(event) => {
+                  if (!acceptsPadPointer(event)) return
+                  props.onStrike(pad.id, pointerVelocity(event))
+                }}
+                onClick={(event) => {
+                  if (event.detail === 0) props.onStrike(pad.id, 100)
+                }}
+              >
+                <span>{pad.shortLabel}</span>
+              </button>
+            )}
           </For>
-        </g>
-      </svg>
+        </div>
+      </Show>
 
-      <div class={styles.nowCapsule} aria-hidden="true">
-        <span class={styles.nowPulse} aria-hidden="true" />
-        <span>
-          <small>{primaryCopy().label}</small>
-          <strong>{primaryCopy().value}</strong>
-        </span>
-        <b>{primaryCopy().detail}</b>
-      </div>
-      <div class={styles.syntheticLabel}>
-        {props.sessionTitle()} · {props.pocket().hitCount} authored attacks ·
-        shared audio clock
-      </div>
+      <section class={styles.pocketGuide} aria-label="Pocket guide">
+        <header>
+          <span class={styles.guideSignal} aria-hidden="true" />
+          <span>
+            <small>Pocket guide</small>
+            <strong>{primaryCopy().value}</strong>
+          </span>
+          <b>{primaryCopy().detail}</b>
+        </header>
+        <div class={styles.guideBeats} aria-hidden="true">
+          <For each={Array.from({ length: pulseCount() })}>
+            {(beat) => (
+              <i
+                classList={{
+                  [styles.isCurrent]: currentPulse() === beat,
+                  [styles.isDownbeat]: beat === 0,
+                }}
+              />
+            )}
+          </For>
+        </div>
+        <div class={styles.guideSteps} aria-hidden="true">
+          <For each={Array.from({ length: props.pocket().stepCount })}>
+            {(_, index) => (
+              <i
+                classList={{
+                  [styles.hasHit]: activeSteps().has(index()),
+                  [styles.isCurrent]: currentStep() === index(),
+                }}
+              />
+            )}
+          </For>
+        </div>
+        <p>{guideCopy()}</p>
+        <small>
+          {props.sessionTitle()} · {props.pocket().hitCount} authored attacks
+        </small>
+      </section>
     </div>
   )
 }
@@ -341,6 +320,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     createSignal(false)
   const [compactScore, setCompactScore] = createSignal(
     typeof window !== 'undefined' && window.innerWidth <= 720,
+  )
+  const drawerIsModal = createMemo(() => compactScore())
+  const drawerInteractionLocked = createMemo(
+    () => drawerOpen() && drawerIsModal(),
+  )
+  const modalLayerOpen = createMemo(
+    () => inputOpen() || drawerInteractionLocked(),
   )
   const [seatLiveHits, setSeatLiveHits] = createSignal<
     readonly DrumSeatLiveHit[]
@@ -393,12 +379,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     status: 'ready',
     document: activeDocument(),
   }))
-  const activePocket = createMemo(() => {
-    const document = activeDocument()
-    return document.sourceFormat === 'prepared'
-      ? preparedGroove().pocket
-      : projectDrumPocket(document)
-  })
   const clickController = (
     props.createClickController ?? createDrumNightClickController
   )({
@@ -415,29 +395,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setClickSnapshot(clickController.snapshot()),
   )
   const usingImportedDocument = createMemo(() => importedDocument() !== null)
-  const grooveLaneModel = createMemo(() => {
-    const pocket = activePocket()
-    const laneHits = (
-      family: 'hat' | 'snare' | 'kick',
-    ): readonly (PreparedPocketHit | null)[] =>
-      Array.from({ length: pocket.stepCount }, (_, stepIndex) => {
-        const matches = pocket.hits.filter((hit) => {
-          if (hit.stepIndex !== stepIndex) return false
-          if (family === 'kick') return hit.gmKey === 35 || hit.gmKey === 36
-          if (family === 'snare') return hit.gmKey === 38 || hit.gmKey === 40
-          return hit.gmKey === 42 || hit.gmKey === 44 || hit.gmKey === 46
-        })
-        return (
-          matches.sort((left, right) => right.velocity - left.velocity)[0] ??
-          null
-        )
-      })
-    return [
-      { id: 'hat' as const, label: 'Hat', hits: laneHits('hat') },
-      { id: 'snare' as const, label: 'Snare', hits: laneHits('snare') },
-      { id: 'kick' as const, label: 'Kick', hits: laneHits('kick') },
-    ]
-  })
   const unsubscribeSession = sessionController.subscribe(() => {
     const nextState = sessionController.state()
     setSessionState(nextState)
@@ -461,6 +418,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setKitSnapshot(player.snapshot()),
   )
   let drawerRef: HTMLElement | undefined
+  let workspaceOpener: HTMLElement | null = null
   let inputRef: HTMLDivElement | undefined
   let inputButtonRef: HTMLButtonElement | undefined
   let sessionFileInputRef: HTMLInputElement | undefined
@@ -515,6 +473,88 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const index = sessionScoreIndex()
     if (index === null) return Math.floor(transport().positionBeats / 4) + 1
     return barIndexAtBeat(index.score.bars, transport().positionBeats) + 1
+  })
+  const activePocketBarPair = createMemo(() =>
+    Math.floor((currentBar() - 1) / 2),
+  )
+  const activePocket = createMemo(() => {
+    const document = activeDocument()
+    if (document.sourceFormat === 'prepared') return preparedGroove().pocket
+    const bars = sessionScoreIndex()?.score.bars ?? []
+    const firstBarIndex = activePocketBarPair() * 2
+    const firstBar = bars[firstBarIndex] ?? bars[0]
+    if (firstBar === undefined) return projectDrumPocket(document)
+    const followingBar = bars[firstBarIndex + 2]
+    const secondBar = bars[firstBarIndex + 1] ?? firstBar
+    const endBeat = Math.min(
+      document.durationBeats,
+      followingBar?.startBeat ?? secondBar.startBeat + secondBar.beats,
+    )
+    return projectDrumPocket(document, {
+      startBeat: firstBar.startBeat,
+      durationBeats: Math.max(0.25, endBeat - firstBar.startBeat),
+    })
+  })
+  const activePocketMeter = createMemo<PocketMeterReading>(() => {
+    const index = sessionScoreIndex()
+    if (index === null || index.score.bars.length === 0) {
+      const beat = Math.max(0, transport().positionBeats)
+      return {
+        barNumber: Math.floor(beat / 4) + 1,
+        numerator: 4,
+        denominator: 4,
+        pulseIndex: Math.floor(beat) % 4,
+      }
+    }
+    const barIndex = Math.max(
+      0,
+      Math.min(index.score.bars.length - 1, currentBar() - 1),
+    )
+    const bar = index.score.bars[barIndex]!
+    let meter = index.score.timeSignatures[0]!
+    for (const candidate of index.score.timeSignatures) {
+      if (candidate.beat > bar.startBeat) break
+      meter = candidate
+    }
+    const pulseLength = 4 / meter.denominator
+    const pulseIndex = Math.max(
+      0,
+      Math.min(
+        meter.numerator - 1,
+        Math.floor(
+          Math.max(0, transport().positionBeats - bar.startBeat) / pulseLength,
+        ),
+      ),
+    )
+    return {
+      barNumber: barIndex + 1,
+      numerator: meter.numerator,
+      denominator: meter.denominator,
+      pulseIndex,
+    }
+  })
+  const grooveLaneModel = createMemo(() => {
+    const pocket = activePocket()
+    const laneHits = (
+      family: 'hat' | 'snare' | 'kick',
+    ): readonly (PreparedPocketHit | null)[] =>
+      Array.from({ length: pocket.stepCount }, (_, stepIndex) => {
+        const matches = pocket.hits.filter((hit) => {
+          if (hit.stepIndex !== stepIndex) return false
+          if (family === 'kick') return hit.gmKey === 35 || hit.gmKey === 36
+          if (family === 'snare') return hit.gmKey === 38 || hit.gmKey === 40
+          return hit.gmKey === 42 || hit.gmKey === 44 || hit.gmKey === 46
+        })
+        return (
+          matches.sort((left, right) => right.velocity - left.velocity)[0] ??
+          null
+        )
+      })
+    return [
+      { id: 'hat' as const, label: 'Hat', hits: laneHits('hat') },
+      { id: 'snare' as const, label: 'Snare', hits: laneHits('snare') },
+      { id: 'kick' as const, label: 'Kick', hits: laneHits('kick') },
+    ]
   })
   const capturedSessionHits = createMemo<readonly DrumCapturedHit[]>(() =>
     runtime.recordedHits().map((hit) => ({
@@ -876,14 +916,38 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   const openWorkspace = (nextWorkspace: Workspace): void => {
     closeInput()
+    if (drawerOpen() && workspace() === nextWorkspace) {
+      closeWorkspace()
+      return
+    }
+    const activeElement = document.activeElement
+    if (
+      activeElement instanceof HTMLElement &&
+      (drawerRef === undefined || !drawerRef.contains(activeElement))
+    ) {
+      workspaceOpener = activeElement
+    }
     setWorkspace(nextWorkspace)
     setDrawerOpen(true)
     updateUrl(view(), nextWorkspace)
   }
 
   const closeWorkspace = (): void => {
+    const restoreFocus = drawerRef?.contains(document.activeElement) ?? false
+    const fallbackOpener = document.querySelector<HTMLButtonElement>(
+      '[aria-controls="drum-workbench"][aria-expanded="true"]',
+    )
     setDrawerOpen(false)
     updateUrl(view(), null)
+    if (restoreFocus) {
+      queueMicrotask(() => {
+        const target =
+          workspaceOpener !== null && workspaceOpener.isConnected
+            ? workspaceOpener
+            : fallbackOpener
+        target?.focus()
+      })
+    }
   }
 
   const importSessionFile = (file: File | undefined): void => {
@@ -1140,7 +1204,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   useFocusTrap(() => drawerRef, {
-    isOpen: drawerOpen,
+    isOpen: () => drawerOpen() && drawerIsModal(),
     onClose: closeWorkspace,
     initialFocus: () => {
       const selected = drawerRef?.querySelector<HTMLElement>(
@@ -1265,13 +1329,26 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const syncCompactScore = (): void => {
       setCompactScore(window.innerWidth <= 720)
     }
+    const closeTetheredWorkbenchOnEscape = (event: KeyboardEvent): void => {
+      if (
+        event.key !== 'Escape' ||
+        inputOpen() ||
+        !drawerOpen() ||
+        drawerIsModal()
+      )
+        return
+      event.preventDefault()
+      closeWorkspace()
+    }
 
     document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', closeTetheredWorkbenchOnEscape)
     window.addEventListener('popstate', syncStateFromUrl)
     window.addEventListener('resize', syncCompactScore)
     onCleanup(() => {
       uninstallSpace()
       document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', closeTetheredWorkbenchOnEscape)
       window.removeEventListener('popstate', syncStateFromUrl)
       window.removeEventListener('resize', syncCompactScore)
     })
@@ -1309,8 +1386,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       <a
         class={styles.skipLink}
         href="#drum-night-stage"
-        inert={inputOpen() || drawerOpen()}
-        aria-hidden={inputOpen() || drawerOpen()}
+        inert={modalLayerOpen()}
+        aria-hidden={modalLayerOpen()}
       >
         Skip to the drum stage
       </a>
@@ -1318,10 +1395,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       <aside
         class={styles.roomRail}
         aria-label="Drum Night sections"
-        inert={inputOpen() || drawerOpen()}
+        inert={inputOpen()}
       >
         <a class={styles.brandMark} href="/" aria-label="MercuryPitch home">
-          <MercuryPlanet />
+          <img src="/favicon.svg" alt="" />
         </a>
         <nav class={styles.railNav}>
           <button
@@ -1337,24 +1414,39 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <span>Pocket</span>
           </button>
           <button
-            class={styles.railAction}
+            class={cx(
+              'railAction',
+              drawerOpen() && workspace() === 'learn' && 'isActive',
+            )}
             type="button"
+            aria-expanded={drawerOpen() && workspace() === 'learn'}
+            aria-controls="drum-workbench"
             onClick={() => openWorkspace('learn')}
           >
             <MusicLibrary />
             <span>Learn</span>
           </button>
           <button
-            class={styles.railAction}
+            class={cx(
+              'railAction',
+              drawerOpen() && workspace() === 'songs' && 'isActive',
+            )}
             type="button"
+            aria-expanded={drawerOpen() && workspace() === 'songs'}
+            aria-controls="drum-workbench"
             onClick={() => openWorkspace('songs')}
           >
             <MusicNote />
             <span>Songs</span>
           </button>
           <button
-            class={styles.railAction}
+            class={cx(
+              'railAction',
+              drawerOpen() && workspace() === 'groove' && 'isActive',
+            )}
             type="button"
+            aria-expanded={drawerOpen() && workspace() === 'groove'}
+            aria-controls="drum-workbench"
             onClick={() => openWorkspace('groove')}
           >
             <SlidersHorizontal />
@@ -1362,8 +1454,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </button>
         </nav>
         <button
-          class={cx('railAction', 'railKit')}
+          class={cx(
+            'railAction',
+            'railKit',
+            drawerOpen() && workspace() === 'kit' && 'isActive',
+          )}
           type="button"
+          aria-expanded={drawerOpen() && workspace() === 'kit'}
+          aria-controls="drum-workbench"
           onClick={() => openWorkspace('kit')}
         >
           <Drum />
@@ -1372,9 +1470,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       </aside>
 
       <main class={styles.roomShell}>
-        <header class={styles.sessionBar} inert={inputOpen() || drawerOpen()}>
+        <header class={styles.sessionBar} inert={modalLayerOpen()}>
           <div class={styles.mobileBrand} aria-label="MercuryPitch Drum Night">
-            <MercuryPlanet />
+            <img src="/favicon.svg" alt="" />
             <span>Drums</span>
           </div>
           <button
@@ -1474,7 +1572,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <div class={styles.stageShade} aria-hidden="true" />
           <div class={styles.stageVignette} aria-hidden="true" />
 
-          <div class={styles.stageHeading} inert={drawerOpen()}>
+          <div class={styles.stageHeading} inert={drawerInteractionLocked()}>
             <div class={styles.stageCopy}>
               <span class={styles.stageKicker}>
                 <i aria-hidden="true" /> {stageCopy().kicker}
@@ -1503,18 +1601,23 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           </div>
 
           <Show when={view() === 'pocket'}>
-            <PocketRing
+            <PocketStage
+              activePad={activeHit}
               transport={transport}
               pocket={activePocket}
+              meter={activePocketMeter}
+              imported={usingImportedDocument()}
               sessionTitle={sessionTitle}
-              inactive={drawerOpen()}
+              inactive={drawerInteractionLocked()}
+              photoKit={background.resolved().id === 'drum-pocket-console'}
+              onStrike={triggerPad}
             />
           </Show>
           <Show when={view() !== 'pocket'}>
             <div
               class={styles.sessionStageView}
               data-session-view={view()}
-              inert={drawerOpen()}
+              inert={drawerInteractionLocked()}
             >
               <Show when={view() === 'seat'}>
                 <DrummerSeatView
@@ -1546,7 +1649,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <aside
             class={styles.phraseCoach}
             aria-label="Session phrase coach"
-            inert={drawerOpen()}
+            inert={drawerInteractionLocked()}
           >
             <DrumSessionCoach
               session={activeSessionState}
@@ -1560,7 +1663,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <button
             class={styles.coachCue}
             type="button"
-            inert={drawerOpen()}
+            inert={drawerInteractionLocked()}
             onClick={() => openWorkspace('coach')}
             aria-label="Open live take monitor"
           >
@@ -1590,7 +1693,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <button
               class={styles.activeLoopControl}
               type="button"
-              inert={drawerOpen()}
+              inert={drawerInteractionLocked()}
               onClick={toggleLoop}
               aria-label={`Clear active ${loopStatusCopy()}`}
             >
@@ -1608,15 +1711,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             type="button"
             aria-label="Close rack drawer"
             onClick={closeWorkspace}
-            tabindex={drawerOpen() ? 0 : -1}
-            aria-hidden={!drawerOpen()}
-            inert={!drawerOpen()}
+            tabindex={drawerInteractionLocked() ? 0 : -1}
+            aria-hidden={!drawerInteractionLocked()}
+            inert={!drawerInteractionLocked()}
           />
           <section
             ref={drawerRef}
+            id="drum-workbench"
             class={styles.workbench}
-            role="dialog"
-            aria-modal="true"
+            role={drawerIsModal() ? 'dialog' : 'region'}
+            aria-modal={drawerIsModal() ? 'true' : undefined}
             aria-labelledby="drum-workbench-title"
             aria-hidden={!drawerOpen()}
             inert={!drawerOpen()}
@@ -2191,126 +2295,108 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 </div>
               </Match>
             </Switch>
-            <div
-              class={styles.drawerTouchKit}
-              role="group"
-              aria-label="Rack drawer drum pads"
-            >
-              <For each={ESSENTIAL_DRUM_PADS}>
-                {(pad) => (
-                  <button
-                    class={cx(
-                      pad.id === 'kick' && 'kickPad',
-                      activeHit() === pad.id && 'isHit',
-                    )}
-                    type="button"
-                    onPointerDown={(event) => {
-                      if (!acceptsPadPointer(event)) return
-                      triggerPad(pad.id, pointerVelocity(event))
-                    }}
-                    onClick={(event) => {
-                      if (event.detail === 0) triggerPad(pad.id, 100)
-                    }}
-                    aria-label={`${pad.label}, key ${pad.keyboardLabel}`}
-                    aria-keyshortcuts={pad.keyboardLabel}
-                  >
-                    <span>{pad.shortLabel}</span>
-                    <small>{pad.keyboardLabel}</small>
-                  </button>
-                )}
-              </For>
-            </div>
           </section>
         </section>
 
-        <div
-          class={styles.touchKit}
-          role="group"
-          aria-label="Touch drum pads"
-          inert={inputOpen() || drawerOpen()}
-        >
-          <For each={ESSENTIAL_DRUM_PADS}>
-            {(pad) => (
-              <button
-                class={cx(
-                  pad.id === 'kick' && 'kickPad',
-                  activeHit() === pad.id && 'isHit',
-                )}
-                type="button"
-                onPointerDown={(event) => {
-                  if (!acceptsPadPointer(event)) return
-                  triggerPad(pad.id, pointerVelocity(event))
-                }}
-                onClick={(event) => {
-                  if (event.detail === 0) triggerPad(pad.id, 100)
-                }}
-                aria-label={`${pad.label}, key ${pad.keyboardLabel}`}
-                aria-keyshortcuts={pad.keyboardLabel}
-              >
-                <span>{pad.shortLabel}</span>
-                <small>{pad.keyboardLabel}</small>
-              </button>
-            )}
-          </For>
-        </div>
-
-        <div class={styles.consoleBridge} inert={inputOpen() || drawerOpen()}>
-          <button
-            class={styles.consoleModule}
-            type="button"
-            aria-pressed={transport().countInBeats > 0}
-            onClick={() => {
-              const enabled = transport().countInBeats === 0
-              runtime.setCountInBeats(enabled ? 4 : 0)
-              showToast(
-                enabled
-                  ? clickSnapshot().enabled
-                    ? 'Four-beat count-in enabled with the shared click.'
-                    : 'Four-beat visual count-in enabled. Turn on Click in Mix to hear it.'
-                  : 'Count-in disabled.',
-              )
-            }}
+        <Show when={compactScore()}>
+          <div
+            class={styles.touchKit}
+            role="group"
+            aria-label="Touch drum pads"
+            inert={modalLayerOpen()}
           >
-            <Metronome />
-            <span>
-              <small>Count-in</small>
-              <strong>
-                {transport().countInBeats > 0
-                  ? `${transport().countInBeats} beats · ${clickSnapshot().enabled ? 'click' : 'visual'}`
-                  : 'Off'}
-              </strong>
-            </span>
-          </button>
-          <div class={styles.tempoModule} aria-label="Tempo">
+            <For each={ESSENTIAL_DRUM_PADS}>
+              {(pad) => (
+                <button
+                  class={cx(
+                    pad.id === 'kick' && 'kickPad',
+                    activeHit() === pad.id && 'isHit',
+                  )}
+                  type="button"
+                  onPointerDown={(event) => {
+                    if (!acceptsPadPointer(event)) return
+                    triggerPad(pad.id, pointerVelocity(event))
+                  }}
+                  onClick={(event) => {
+                    if (event.detail === 0) triggerPad(pad.id, 100)
+                  }}
+                  aria-label={`${pad.label}, key ${pad.keyboardLabel}`}
+                  aria-keyshortcuts={pad.keyboardLabel}
+                >
+                  <span>{pad.shortLabel}</span>
+                  <small>{pad.keyboardLabel}</small>
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
+
+        <div class={styles.consoleBridge} inert={modalLayerOpen()}>
+          <div class={cx('consoleSide', 'consoleLead')}>
             <button
+              class={styles.consoleModule}
               type="button"
-              onClick={() => changeTempo(-2)}
-              aria-label="Decrease tempo"
+              aria-pressed={transport().countInBeats > 0}
+              aria-label={
+                transport().countInBeats > 0
+                  ? `Count-in: ${transport().countInBeats} audible beats`
+                  : 'Count-in: off'
+              }
+              onClick={() => {
+                const enabled = transport().countInBeats === 0
+                runtime.setCountInBeats(enabled ? 4 : 0)
+                showToast(
+                  enabled
+                    ? 'Four-beat audible count-in enabled.'
+                    : 'Count-in disabled.',
+                )
+              }}
             >
-              <Minus />
+              <Metronome />
+              <span>
+                <small>Count-in</small>
+                <strong>
+                  {transport().countInBeats > 0
+                    ? `${transport().countInBeats} beats`
+                    : 'Off'}
+                </strong>
+              </span>
             </button>
-            <span>
-              <strong>{transport().tempoBpm}</strong>
-              <small>BPM</small>
-            </span>
             <button
+              class={styles.consoleModule}
               type="button"
-              onClick={() => changeTempo(2)}
-              aria-label="Increase tempo"
+              aria-pressed={clickSnapshot().enabled}
+              aria-label={`Playback click: ${clickSnapshot().enabled ? 'on' : 'off'}`}
+              onClick={toggleClick}
             >
-              <Plus />
+              <AudioWave />
+              <span>
+                <small>Play click</small>
+                <strong>{clickSnapshot().enabled ? 'On' : 'Off'}</strong>
+              </span>
             </button>
+            <div class={styles.tempoModule} aria-label="Tempo">
+              <button
+                type="button"
+                onClick={() => changeTempo(-2)}
+                aria-label="Decrease tempo"
+              >
+                <Minus />
+              </button>
+              <span>
+                <strong>{transport().tempoBpm}</strong>
+                <small>BPM</small>
+              </span>
+              <button
+                type="button"
+                onClick={() => changeTempo(2)}
+                aria-label="Increase tempo"
+              >
+                <Plus />
+              </button>
+            </div>
           </div>
           <div class={styles.playCradle}>
-            <button
-              class={styles.playButton}
-              type="button"
-              onClick={togglePlaying}
-              aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} take clock`}
-            >
-              {isPlaying() ? <Pause /> : <Play />}
-              <span>{isPlaying() ? 'Pause' : 'Play'}</span>
-            </button>
             <button
               class={styles.stopButton}
               type="button"
@@ -2320,53 +2406,52 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             >
               <Square />
             </button>
+            <button
+              class={styles.playButton}
+              type="button"
+              onClick={togglePlaying}
+              aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} take clock`}
+            >
+              {isPlaying() ? <Pause /> : <Play />}
+              <span>{isPlaying() ? 'Pause' : 'Play'}</span>
+            </button>
           </div>
-          <button
-            class={cx('consoleModule', 'recordModule')}
-            type="button"
-            aria-pressed={transport().recording}
-            onClick={toggleRecording}
-          >
-            <i class={styles.recordMark} aria-hidden="true" />
-            <span>
-              <small>Take events</small>
-              <strong>
-                {transport().recording
-                  ? `Armed · ${takeHitCountCopy()}`
-                  : `${takeHitCountCopy()} · off`}
-              </strong>
-            </span>
-          </button>
-          <button
-            class={styles.consoleModule}
-            type="button"
-            onClick={() => openWorkspace('kit')}
-          >
-            <Drum />
-            <span>
-              <small>Kit</small>
-              <strong>{selectedKit().name}</strong>
-            </span>
-            <ChevronDown />
-          </button>
-          <button
-            class={cx('consoleModule', 'compactModule')}
-            type="button"
-            aria-pressed={transport().loop !== null}
-            onClick={toggleLoop}
-          >
-            <Loop />
-            <span>
-              <small>Practice loop</small>
-              <strong>{loopStatusCopy()}</strong>
-            </span>
-          </button>
+          <div class={cx('consoleSide', 'consoleTrail')}>
+            <button
+              class={cx('consoleModule', 'recordModule')}
+              type="button"
+              aria-pressed={transport().recording}
+              onClick={toggleRecording}
+            >
+              <i class={styles.recordMark} aria-hidden="true" />
+              <span>
+                <small>Take events</small>
+                <strong>
+                  {transport().recording
+                    ? `Armed · ${takeHitCountCopy()}`
+                    : `${takeHitCountCopy()} · off`}
+                </strong>
+              </span>
+            </button>
+            <button
+              class={styles.consoleModule}
+              type="button"
+              onClick={() => openWorkspace('kit')}
+            >
+              <Drum />
+              <span>
+                <small>Kit</small>
+                <strong>{selectedKit().name}</strong>
+              </span>
+              <ChevronDown />
+            </button>
+          </div>
         </div>
 
         <nav
           class={styles.mobileNav}
           aria-label="Drum Night navigation"
-          inert={inputOpen() || drawerOpen()}
+          inert={modalLayerOpen()}
         >
           <button type="button" onClick={() => openWorkspace('songs')}>
             <MusicNote />
@@ -2562,7 +2647,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <div
               class={styles.runtimeAlert}
               role="alert"
-              inert={inputOpen() || drawerOpen()}
+              inert={modalLayerOpen()}
             >
               <span>
                 <strong>Drum audio is unavailable.</strong>

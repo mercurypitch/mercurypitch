@@ -153,6 +153,27 @@ async function boundaryCounts(
   })
 }
 
+async function scoreGeometry(page: import('@playwright/test').Page): Promise<{
+  readonly panelWidth: number
+  readonly scoreWidth: number
+  readonly viewportWidth: number
+}> {
+  const viewport = page.getByLabel('Windowed percussion score')
+  await expect(viewport).toBeVisible()
+  return viewport.evaluate((element) => {
+    const panel = element.closest('figure')
+    const score = element.querySelector('svg')
+    if (panel === null || score === null) {
+      throw new Error('Score viewport is missing its figure or SVG')
+    }
+    return {
+      panelWidth: panel.getBoundingClientRect().width,
+      scoreWidth: score.getBoundingClientRect().width,
+      viewportWidth: element.getBoundingClientRect().width,
+    }
+  })
+}
+
 test('pairs the Home rooms and opens Drum Night from the Play group @smoke', async ({
   page,
 }) => {
@@ -161,6 +182,10 @@ test('pairs the Home rooms and opens Drum Night from the Play group @smoke', asy
     localStorage.setItem('pitchperfect_welcome_version', '1')
     localStorage.setItem('pitchperfect_onboarding_done', '1')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
+    localStorage.setItem(
+      'mp.consent.v1',
+      JSON.stringify({ status: 'denied', at: Date.now(), implicit: false }),
+    )
   })
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('/#/home', { waitUntil: 'domcontentloaded' })
@@ -228,7 +253,7 @@ test('pairs the Home rooms and opens Drum Night from the Play group @smoke', asy
   })
   await expect(desktopDoor).toHaveAttribute('href', '/drum-night')
   await desktopDoor.click()
-  await expect(page).toHaveURL(/\/drum-night$/)
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/drum-night')
   await expect(page.getByTestId('drum-night-shell')).toBeVisible()
 
   await page.setViewportSize({ width: 390, height: 844 })
@@ -284,6 +309,119 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   expect(pageErrors).toEqual([])
 })
 
+test('switches and closes the desktop rail workbench with URL and aria state in sync @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  const rail = page.getByRole('complementary', {
+    name: 'Drum Night sections',
+  })
+  const learn = rail.getByRole('button', { name: 'Learn', exact: true })
+  const songs = rail.getByRole('button', { name: 'Songs', exact: true })
+  const workbench = page.locator('#drum-workbench')
+
+  await expect(learn).toHaveAttribute('aria-expanded', 'false')
+  await expect(songs).toHaveAttribute('aria-expanded', 'false')
+
+  await learn.click()
+  await expect(
+    page.getByRole('region', { name: 'Build the first pocket' }),
+  ).toBeVisible()
+  await expect(workbench).toBeVisible()
+  await expect(learn).toHaveAttribute('aria-expanded', 'true')
+  await expect(songs).toHaveAttribute('aria-expanded', 'false')
+  await expect(page).toHaveURL(/drawer=learn/)
+
+  await songs.click()
+  await expect(
+    page.getByRole('region', { name: 'Bring a drum part' }),
+  ).toBeVisible()
+  await expect(workbench).toBeVisible()
+  await expect(learn).toHaveAttribute('aria-expanded', 'false')
+  await expect(songs).toHaveAttribute('aria-expanded', 'true')
+  await expect(page).toHaveURL(/drawer=songs/)
+
+  await songs.click()
+  await expect(workbench).toHaveAttribute('aria-hidden', 'true')
+  await expect(workbench).toHaveAttribute('inert', '')
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-drawer-open',
+    'false',
+  )
+  await expect(songs).toHaveAttribute('aria-expanded', 'false')
+  await expect(page).not.toHaveURL(/drawer=/)
+})
+
+test('plays all six photographed Pocket zones with a real pointer across room sizes @smoke', async ({
+  page,
+}) => {
+  await instrumentFirstPaint(page)
+  const padNames = [
+    'Closed hi-hat',
+    'Acoustic snare',
+    'Bass drum',
+    'Hi-mid tom',
+    'Ride cymbal',
+    'Crash cymbal',
+  ] as const
+
+  for (const viewport of [
+    { width: 844, height: 390 },
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+    const touchKit = page.getByRole('group', { name: 'Touch drum pads' })
+    if (viewport.width <= 720) {
+      await expect(touchKit).toBeVisible()
+      await expect(touchKit.getByRole('button')).toHaveCount(6)
+    } else {
+      await expect(touchKit).toHaveCount(0)
+    }
+
+    const photoKit = page.locator('[aria-label="Pocket Console drum kit"]')
+    await expect(photoKit).toBeVisible()
+    await expect(photoKit.getByRole('button')).toHaveCount(6)
+
+    for (const padName of padNames) {
+      const pad = photoKit.getByRole('button', {
+        name: new RegExp(`^${padName}, key`),
+      })
+      const bounds = await pad.boundingBox()
+      if (bounds === null) {
+        throw new Error(
+          `${padName} has no pointer bounds at ${viewport.width}px`,
+        )
+      }
+      expect(
+        bounds.width,
+        `${padName} at ${viewport.width}px`,
+      ).toBeGreaterThanOrEqual(44)
+      expect(
+        bounds.height,
+        `${padName} at ${viewport.width}px`,
+      ).toBeGreaterThanOrEqual(44)
+      await page.mouse.click(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2,
+      )
+      expect(await pad.getAttribute('class')).toContain('isHit')
+    }
+
+    await expect
+      .poll(async () => (await boundaryCounts(page)).audio)
+      .toBeGreaterThan(0)
+    await page.getByRole('button', { name: /^Open drum input setup:/ }).click()
+    const input = page.getByRole('dialog', { name: 'Drum input' })
+    await expect(input.getByText(/Crash cymbal · \d+ · touch/)).toBeVisible()
+    await input.getByRole('button', { name: 'Close input details' }).click()
+  }
+})
+
 test('plays a real prepared groove and changes its authored variation @smoke', async ({
   page,
 }) => {
@@ -296,33 +434,47 @@ test('plays a real prepared groove and changes its authored variation @smoke', a
     .filter({ visible: true })
     .first()
     .click()
-  const grooveDrawer = page.getByRole('dialog', { name: 'Shape the groove' })
-  await grooveDrawer.getByRole('button', { name: 'Tight' }).click()
+  const grooveDrawer = page.getByRole('region', { name: 'Shape the groove' })
+  await grooveDrawer.getByRole('button', { name: 'Funk' }).click()
   await expect(
-    grooveDrawer.getByRole('button', { name: 'Tight' }),
+    grooveDrawer.getByRole('button', { name: 'Funk' }),
   ).toHaveAttribute('aria-pressed', 'true')
-  await grooveDrawer.getByRole('tab', { name: 'Mix' }).click()
-  const mixDrawer = page.getByRole('dialog', { name: 'Balance the room' })
-  await mixDrawer.getByRole('button', { name: /Click/ }).click()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
     'data-click-enabled',
-    'true',
-  )
-  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
-    'data-click-status',
-    'waiting-for-audio',
+    'false',
   )
   expect((await boundaryCounts(page)).audio).toBe(0)
-  await mixDrawer.getByRole('button', { name: 'Close rack drawer' }).click()
+  await grooveDrawer.getByRole('button', { name: 'Close rack drawer' }).click()
   await expect(
     page.getByRole('button', {
-      name: /^First Pocket — Tight Built-in groove/,
+      name: /^First Pocket — Funk Built-in groove/,
     }),
   ).toBeVisible()
 
-  await page.getByRole('button', { name: /^Count-in/ }).click()
+  const countIn = page.getByRole('button', {
+    name: 'Count-in: 4 audible beats',
+  })
+  await expect(countIn).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page.getByRole('button', { name: 'Playback click: off' }),
+  ).toHaveAttribute('aria-pressed', 'false')
+  const pocketSnare = page
+    .locator('[aria-label="Pocket Console drum kit"]')
+    .getByRole('button', { name: /^Acoustic snare, key/i })
+  const pocketSnareBounds = await pocketSnare.boundingBox()
+  if (pocketSnareBounds === null) {
+    throw new Error('Pocket snare cannot arm audio before the count-in test')
+  }
+  await page.mouse.click(
+    pocketSnareBounds.x + pocketSnareBounds.width / 2,
+    pocketSnareBounds.y + pocketSnareBounds.height / 2,
+  )
+  await expect
+    .poll(async () => (await boundaryCounts(page)).oscillator)
+    .toBeGreaterThan(0)
+  const oscillatorBaseline = (await boundaryCounts(page)).oscillator
   await page
-    .getByRole('button', { name: /^Play First Pocket — Tight take clock$/ })
+    .getByRole('button', { name: /^Play First Pocket — Funk take clock$/ })
     .filter({ visible: true })
     .click()
 
@@ -330,13 +482,13 @@ test('plays a real prepared groove and changes its authored variation @smoke', a
     'data-playing',
     'true',
   )
-  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
-    'data-click-status',
-    'playing',
-  )
   await expect
     .poll(async () => (await boundaryCounts(page)).oscillator)
-    .toBeGreaterThan(0)
+    .toBeGreaterThan(oscillatorBaseline)
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-click-enabled',
+    'false',
+  )
   await expect(
     page.getByRole('button', { name: /Take events Armed/ }),
   ).toHaveAttribute('aria-pressed', 'true')
@@ -356,7 +508,7 @@ test('changes only the visual room and preserves the authored Seat scene @smoke'
     })
     .click()
 
-  const drawer = page.getByRole('dialog', { name: 'Choose the room' })
+  const drawer = page.getByRole('region', { name: 'Choose the room' })
   const gallery = drawer.getByRole('region', {
     name: 'Choose your Drum Night room',
   })
@@ -405,13 +557,29 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   await expect(
     page.getByRole('heading', { name: 'First Pocket' }),
   ).toBeVisible()
+  await expect
+    .poll(async () => {
+      const geometry = await scoreGeometry(page)
+      return Math.min(
+        geometry.viewportWidth / geometry.panelWidth,
+        geometry.scoreWidth / geometry.viewportWidth,
+      )
+    })
+    .toBeGreaterThanOrEqual(0.98)
+  const preparedScoreGeometry = await scoreGeometry(page)
+  expect(preparedScoreGeometry.viewportWidth).toBeGreaterThanOrEqual(
+    preparedScoreGeometry.panelWidth * 0.98,
+  )
+  expect(preparedScoreGeometry.scoreWidth).toBeGreaterThanOrEqual(
+    preparedScoreGeometry.viewportWidth * 0.98,
+  )
 
   const songs = page
     .getByRole('button', { name: /Songs/ })
     .filter({ visible: true })
     .first()
   await songs.click()
-  const songsDrawer = page.getByRole('dialog', { name: 'Bring a drum part' })
+  const songsDrawer = page.getByRole('region', { name: 'Bring a drum part' })
   await expect(songsDrawer).toBeVisible()
   await songsDrawer.getByLabel('Choose a drum session file').setInputFiles({
     name: 'e2e-pocket.mid',
@@ -423,7 +591,19 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
     'data-import-status',
     'ready',
   )
-  await expect(page.getByText('Imported percussion score')).toBeVisible()
+  await expect(
+    page.getByText('Percussion score', { exact: true }),
+  ).toBeVisible()
+  await expect
+    .poll(async () => {
+      const geometry = await scoreGeometry(page)
+      return geometry.scoreWidth / geometry.viewportWidth
+    })
+    .toBeGreaterThanOrEqual(0.98)
+  const importedScoreGeometry = await scoreGeometry(page)
+  expect(importedScoreGeometry.viewportWidth).toBeGreaterThanOrEqual(
+    importedScoreGeometry.panelWidth * 0.98,
+  )
 
   await page.getByRole('button', { name: 'Drummer Seat view' }).click()
   await expect(
@@ -451,10 +631,11 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
     .filter({ visible: true })
     .first()
   await groove.click()
-  const drawer = page.getByRole('dialog', { name: 'Shape the groove' })
+  const drawer = page.getByRole('region', { name: 'Shape the groove' })
   await expect(drawer).toBeVisible()
   await expect(page).toHaveURL(/drawer=groove/)
-  await expect(drawer.getByRole('tab', { name: 'Groove' })).toBeFocused()
+  await expect(groove).toBeFocused()
+  await expect(groove).toHaveAttribute('aria-expanded', 'true')
 
   await page.keyboard.press('Escape')
   await expect(drawer).not.toBeVisible()
@@ -462,27 +643,46 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   await expect(groove).toBeFocused()
 })
 
-test('plays the photographed Drummer Seat with a real pointer @smoke', async ({
+test('plays the photographed Drummer Seat with a real pointer at desktop, landscape, and phone sizes @smoke', async ({
   page,
 }) => {
   await instrumentFirstPaint(page)
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/drum-night?view=seat', { waitUntil: 'domcontentloaded' })
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 844, height: 390 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/drum-night?view=seat', {
+      waitUntil: 'domcontentloaded',
+    })
 
-  const snare = page.getByRole('button', { name: /^Play Acoustic snare/i })
-  await expect(snare).toBeVisible()
-  const bounds = await snare.boundingBox()
-  if (bounds === null) throw new Error('Seat snare has no pointer bounds')
-  expect(bounds.width).toBeGreaterThanOrEqual(44)
-  expect(bounds.height).toBeGreaterThanOrEqual(44)
+    await expect(
+      page.getByRole('group', { name: 'Touch drum pads' }),
+    ).toHaveCount(0)
+    const seatKit = page.getByRole('group', {
+      name: 'Playable photographed drum kit',
+    })
+    await expect(seatKit.getByRole('button')).toHaveCount(6)
+    const snare = seatKit.getByRole('button', {
+      name: /^Play Acoustic snare/i,
+    })
+    await expect(snare).toBeVisible()
+    const bounds = await snare.boundingBox()
+    if (bounds === null) {
+      throw new Error(`Seat snare has no pointer bounds at ${viewport.width}px`)
+    }
+    expect(bounds.width).toBeGreaterThanOrEqual(44)
+    expect(bounds.height).toBeGreaterThanOrEqual(44)
 
-  await page.mouse.click(
-    bounds.x + bounds.width / 2,
-    bounds.y + bounds.height / 2,
-  )
+    await page.mouse.click(
+      bounds.x + bounds.width / 2,
+      bounds.y + bounds.height / 2,
+    )
 
-  await expect(snare).toHaveAttribute('data-live-active', 'true')
-  expect((await boundaryCounts(page)).audio).toBe(1)
+    await expect(snare).toHaveAttribute('data-live-active', 'true')
+    expect((await boundaryCounts(page)).audio).toBe(1)
+  }
 })
 
 test('moves the live kit level with a real pointer @smoke', async ({
@@ -495,9 +695,9 @@ test('moves the live kit level with a real pointer @smoke', async ({
     .filter({ visible: true })
     .first()
     .click()
-  const drawer = page.getByRole('dialog', { name: 'Shape the groove' })
+  const drawer = page.getByRole('region', { name: 'Shape the groove' })
   await drawer.getByRole('tab', { name: 'Mix' }).click()
-  const mixDrawer = page.getByRole('dialog', { name: 'Balance the room' })
+  const mixDrawer = page.getByRole('region', { name: 'Balance the room' })
 
   const kitLevel = mixDrawer.getByRole('slider', { name: 'Kit level' })
   const initialValue = await kitLevel.inputValue()
@@ -523,14 +723,14 @@ test('keeps URL history, selected rack tab, and focus in sync @smoke', async ({
 }) => {
   await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
 
-  await page
+  const grooveTrigger = page
     .getByRole('button', { name: /Groove/ })
     .filter({ visible: true })
     .first()
-    .click()
-  const drawer = page.getByRole('dialog', { name: 'Shape the groove' })
+  await grooveTrigger.click()
+  const drawer = page.getByRole('region', { name: 'Shape the groove' })
   const grooveTab = drawer.getByRole('tab', { name: 'Groove' })
-  await expect(grooveTab).toBeFocused()
+  await expect(grooveTrigger).toBeFocused()
   await drawer.getByRole('tab', { name: 'Kit' }).click()
   await expect(page).toHaveURL(/drawer=kit/)
 
@@ -548,7 +748,7 @@ test('keeps URL history, selected rack tab, and focus in sync @smoke', async ({
   await expect(grooveTab).toBeFocused()
 })
 
-test('recomposes for phone and short landscape without overflow or clipped primary controls', async ({
+test('recomposes for phone and short landscape without overflow or clipped primary controls @smoke', async ({
   page,
 }) => {
   for (const viewport of [
@@ -566,10 +766,14 @@ test('recomposes for phone and short landscape without overflow or clipped prima
     ).toBeVisible()
 
     const touchKit = page.getByRole('group', { name: 'Touch drum pads' })
-    await expect(touchKit).toBeVisible()
-    await expect(touchKit.getByRole('button')).toHaveCount(6)
-    await expect(touchKit.getByRole('button').first()).toBeVisible()
-    await expect(touchKit.getByRole('button').last()).toBeVisible()
+    if (viewport.width <= 720) {
+      await expect(touchKit).toBeVisible()
+      await expect(touchKit.getByRole('button')).toHaveCount(6)
+      await expect(touchKit.getByRole('button').first()).toBeVisible()
+      await expect(touchKit.getByRole('button').last()).toBeVisible()
+    } else {
+      await expect(touchKit).toHaveCount(0)
+    }
 
     const geometry = await page.evaluate(() => {
       const visible = (element: Element): boolean => {
@@ -588,8 +792,15 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       }
       const visiblePlay = [...document.querySelectorAll<HTMLElement>('button')]
         .filter(visible)
-        .find((button) => button.getAttribute('aria-label')?.startsWith('Play'))
+        .find((button) =>
+          /^(?:Play|Pause) .+ take clock$/.test(
+            button.getAttribute('aria-label') ?? '',
+          ),
+        )
       const playRect = visiblePlay?.getBoundingClientRect()
+      const consoleRect =
+        visiblePlay?.parentElement?.parentElement?.getBoundingClientRect()
+      const roomRect = document.querySelector('main')?.getBoundingClientRect()
       const undersized = [...document.querySelectorAll('button')]
         .filter(visible)
         .map((button) => button.getBoundingClientRect())
@@ -602,7 +813,21 @@ test('recomposes for phone and short landscape without overflow or clipped prima
           document.documentElement.scrollHeight -
           document.documentElement.clientHeight,
         playBottom: playRect?.bottom ?? Number.POSITIVE_INFINITY,
+        playCenterDelta:
+          playRect === undefined || roomRect === undefined
+            ? Number.POSITIVE_INFINITY
+            : Math.abs(
+                playRect.left +
+                  playRect.width / 2 -
+                  (roomRect.left + roomRect.width / 2),
+              ),
+        playHeight: playRect?.height ?? 0,
         playRight: playRect?.right ?? Number.POSITIVE_INFINITY,
+        playWidth: playRect?.width ?? 0,
+        consoleBottom: consoleRect?.bottom ?? Number.POSITIVE_INFINITY,
+        consoleLeft: consoleRect?.left ?? Number.NEGATIVE_INFINITY,
+        consoleRight: consoleRect?.right ?? Number.POSITIVE_INFINITY,
+        roomWidth: roomRect?.width ?? 0,
         undersized: undersized.length,
       }
     })
@@ -616,6 +841,35 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       viewport.width,
     )
     expect(geometry.undersized, JSON.stringify(viewport)).toBe(0)
+    if (
+      (viewport.width === 844 && viewport.height === 390) ||
+      (viewport.width === 1440 && viewport.height === 900)
+    ) {
+      expect(
+        geometry.playCenterDelta,
+        JSON.stringify(viewport),
+      ).toBeLessThanOrEqual(geometry.roomWidth * 0.06)
+      expect(
+        geometry.playWidth,
+        JSON.stringify(viewport),
+      ).toBeGreaterThanOrEqual(54)
+      expect(
+        geometry.playHeight,
+        JSON.stringify(viewport),
+      ).toBeGreaterThanOrEqual(54)
+      expect(
+        geometry.consoleLeft,
+        JSON.stringify(viewport),
+      ).toBeGreaterThanOrEqual(0)
+      expect(
+        geometry.consoleRight,
+        JSON.stringify(viewport),
+      ).toBeLessThanOrEqual(viewport.width)
+      expect(
+        geometry.consoleBottom,
+        JSON.stringify(viewport),
+      ).toBeLessThanOrEqual(viewport.height)
+    }
   }
 
   await page.setViewportSize({ width: 390, height: 844 })
@@ -643,34 +897,24 @@ test('recomposes for phone and short landscape without overflow or clipped prima
   await expect(
     page.getByRole('dialog', { name: 'Shape the groove' }),
   ).toBeVisible()
-  const drawerPads = page.getByRole('group', {
-    name: 'Rack drawer drum pads',
+
+  await page.goto('/drum-night?view=score', {
+    waitUntil: 'domcontentloaded',
   })
-  for (const pad of [
-    'Closed hi-hat',
-    'Acoustic snare',
-    'Bass drum',
-    'Hi-mid tom',
-    'Ride cymbal',
-    'Crash cymbal',
-  ]) {
-    await expect(
-      drawerPads
-        .getByRole('button', { name: new RegExp(`^${pad}, key`) })
-        .filter({ visible: true }),
-    ).toBeVisible()
-  }
+  const scoreTouchKit = page.getByRole('group', { name: 'Touch drum pads' })
+  await expect(scoreTouchKit).toBeVisible()
+  await expect(scoreTouchKit.getByRole('button')).toHaveCount(6)
 
   await page.setViewportSize({ width: 844, height: 390 })
   await page.goto('/drum-night?drawer=groove', {
     waitUntil: 'domcontentloaded',
   })
-  const landscapeDrawer = page.getByRole('dialog', {
+  const landscapeDrawer = page.getByRole('region', {
     name: 'Shape the groove',
   })
   await expect(landscapeDrawer).toBeVisible()
   await landscapeDrawer.getByRole('tab', { name: 'Kit' }).click()
-  const kitDrawer = page.getByRole('dialog', { name: 'Choose the kit' })
+  const kitDrawer = page.getByRole('region', { name: 'Choose the kit' })
   await expect(
     kitDrawer.getByRole('radio', { name: /Mercury Synth/i }),
   ).toBeVisible()
