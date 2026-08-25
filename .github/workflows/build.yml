@@ -430,6 +430,38 @@ jobs:
             > db-smoke.json
           jq -e '.exercises | arrays' db-smoke.json > /dev/null
 
+          # Prove the public test pair works end to end on this exact immutable
+          # backend. The deliberately nonexistent account must pass Turnstile
+          # and reach credential validation; a CAPTCHA 400 means the frontend
+          # and Worker credentials have drifted apart.
+          preview_auth_payload=$(jq -n \
+            --arg email "preview-turnstile-${GITHUB_RUN_ID}@example.invalid" \
+            '{
+              email: $email,
+              password: "DeliberatelyWrong-7f2c",
+              cfTurnstileToken: "XXXX.DUMMY.TOKEN.XXXX"
+            }')
+          preview_auth_response=$(curl \
+            --silent \
+            --show-error \
+            --request POST \
+            --header 'content-type: application/json' \
+            --data "$preview_auth_payload" \
+            --write-out $'\n%{http_code}' \
+            "$db_preview_url/api/auth/login")
+          preview_auth_status="${preview_auth_response##*$'\n'}"
+          preview_auth_body="${preview_auth_response%$'\n'*}"
+          if [ "$preview_auth_status" != '401' ]; then
+            echo "Preview Turnstile pairing canary returned HTTP ${preview_auth_status}; expected credential validation (401)."
+            exit 1
+          fi
+          if ! printf '%s' "$preview_auth_body" \
+            | jq -e '.error == "Invalid email or password"' \
+            > /dev/null; then
+            echo 'Preview Turnstile pairing canary returned an unexpected body.'
+            exit 1
+          fi
+
           export VITE_API_BASE_URL="$db_preview_url"
           # A versioned workers.dev hostname changes on every preview upload,
           # so it cannot be allowlisted on the real Turnstile widget. Pair the
