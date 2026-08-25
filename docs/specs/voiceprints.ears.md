@@ -124,11 +124,12 @@ resolving is proof an account was made, so AuthModal could adopt inline —
 whereas Google leaves the page, and one button both registers and signs in,
 so nothing on the client knew which had happened.
 
-The consequence was silent and one-sided: of the accounts created on
-production between 2026-08-07 and 2026-08-24, password sign-ups kept their
-onboarding voiceprint 10 times in 11, and Google sign-ups 4 times in 21.
-The visitor was promised "keep this take" at the keep beat and, two thirds
-of the time, chose the button that dropped it.
+The consequence was silent and one-sided. Of the accounts created on
+production between 2026-08-07 and 2026-08-24, an onboarding voiceprint
+reached the account for 9 of 11 password sign-ups and 3 of 21 Google ones
+(counting a voiceprint of any source: 10 of 11 and 4 of 21). The visitor
+was promised "keep this take" at the keep beat and, most of the time,
+chose the button that dropped it.
 
 **When** the sign-in that resolves is a Google redirect, the worker's
 `isNew` — already returned by `resolveGoogleUser` and already carried back
