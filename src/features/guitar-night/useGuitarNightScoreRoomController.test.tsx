@@ -1307,6 +1307,105 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
+  it('keeps percussion-only seek and rail conversions on the authored tempo map', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            scoreMode: 'backing-only',
+            trackId: '',
+            trackName: 'No scored part',
+            tempoBpm: 120,
+            tempoChanges: [
+              { beat: 0, usPerBeat: 500000 },
+              { beat: 2, usPerBeat: 1000000 },
+            ],
+            notes: [],
+          }),
+        backingPercussion: () => [
+          {
+            trackId: 'track-drums',
+            gmKey: 38,
+            startBeat: 3.5,
+            velocity: 96,
+          },
+        ],
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      expect(room.durationBeats()).toBeCloseTo(3.501, 5)
+      expect(room.durationSeconds()).toBeCloseTo(2.501, 5)
+      expect(room.secondsForBeat(2.5)).toBeCloseTo(1.5, 5)
+      expect(room.beatForSeconds(1.5)).toBeCloseTo(2.5, 5)
+
+      room.seekSeconds(1.5)
+      await Promise.resolve()
+
+      expect(room.status()).toBe('paused')
+      expect(room.playheadBeat()).toBeCloseTo(2.5, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(1.5, 5)
+      expect(band.activate).not.toHaveBeenCalled()
+      expect(band.start).not.toHaveBeenCalled()
+      dispose()
+    })
+  })
+
+  it('admits a full-right loop through the final fractional percussion horizon', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const [span, setSpan] = createSignal<{
+        start: number
+        end: number
+      } | null>(null)
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            scoreMode: 'backing-only',
+            trackId: '',
+            trackName: 'No scored part',
+            notes: [],
+          }),
+        loop: span,
+        backingPercussion: () => [
+          {
+            trackId: 'track-drums',
+            gmKey: 38,
+            startBeat: 2,
+            velocity: 96,
+          },
+        ],
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+      getOptions()?.onExerciseStart?.(0, 10)
+      expect(getOptions()).toMatchObject({
+        durationBeats: 2.001,
+        exerciseBeats: 3,
+        loop: null,
+      })
+
+      const fullSpan = { start: 0, end: 3 }
+      setSpan(fullSpan)
+      await expect(room.applyLoopSpan(fullSpan)).resolves.toBe(true)
+
+      expect(getOptions()).toMatchObject({
+        startBeat: 0,
+        countInBeats: 0,
+        loop: { start: 0, end: 3 },
+      })
+      expect(room.runningLoop()).toEqual({ start: 0, end: 3 })
+      dispose()
+    })
+  })
+
   it('stopping leaves the room quiet and the clock released', async () => {
     await createRoot(async (dispose) => {
       const { band, clock, getOptions } = bandHarness()

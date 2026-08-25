@@ -1626,6 +1626,7 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
 test('imports authored drums into a backing-only free-play room @smoke', async ({
   page,
 }, testInfo) => {
+  testInfo.setTimeout(75_000)
   const pageErrors: Error[] = []
   page.on('pageerror', (error) => pageErrors.push(error))
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -1661,7 +1662,7 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
     .getByRole('button', { name: 'Play the drum backing', exact: true })
     .click()
   const room = page.getByTestId('guitar-night-percussion-room')
-  await expect(room).toBeVisible()
+  await expect(room).toBeVisible({ timeout: 15_000 })
   await expect(room).toHaveAttribute('data-room-kind', 'backing-only')
   await expect(room).toHaveAttribute('data-score-authority', 'none')
   await expect(page.getByTestId('guitar-night-score-room')).toHaveCount(0)
@@ -1713,6 +1714,96 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
     .click()
   await expect(sheet).toBeVisible()
 
+  const timeline = room.getByTestId('guitar-night-percussion-loop-range')
+  const position = room.getByRole('slider', {
+    name: 'Drum backing position',
+    exact: true,
+  })
+  const loopControls = room.getByRole('group', {
+    name: 'Section loop',
+    exact: true,
+  })
+  const markAButton = loopControls.getByRole('button', {
+    name: 'A — start the loop at the playhead',
+    exact: true,
+  })
+  const markBButton = loopControls.getByRole('button', {
+    name: 'B — end the loop at the playhead',
+    exact: true,
+  })
+  await expect(timeline).toBeVisible()
+  await expect(position).toHaveAttribute('aria-valuetext', /beat 1$/)
+  await markAButton.click()
+  await markBButton.click()
+
+  let markerA = room.getByRole('slider', {
+    name: 'Loop start marker',
+    exact: true,
+  })
+  let markerB = room.getByRole('slider', {
+    name: 'Loop end marker',
+    exact: true,
+  })
+  await expect(markerA).toHaveAttribute('aria-valuenow', '0')
+  // The authored one-shot horizon ends just after beat 2. The right edge is
+  // the scheduler's full third beat, so the last snare remains in [A, B).
+  await expect(markerB).toHaveAttribute('aria-valuenow', '3')
+
+  const desktopRailBox = await position.boundingBox()
+  const desktopMarkerABox = await markerA.boundingBox()
+  expect(desktopRailBox).not.toBeNull()
+  expect(desktopMarkerABox).not.toBeNull()
+  await page.mouse.move(
+    (desktopMarkerABox?.x ?? 0) + (desktopMarkerABox?.width ?? 0) / 2,
+    (desktopMarkerABox?.y ?? 0) + (desktopMarkerABox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (desktopMarkerABox?.x ?? 0) +
+      (desktopMarkerABox?.width ?? 0) / 2 +
+      (desktopRailBox?.width ?? 0) * 0.34,
+    (desktopMarkerABox?.y ?? 0) + (desktopMarkerABox?.height ?? 0) / 2,
+    { steps: 6 },
+  )
+  await page.mouse.up()
+  await expect(markerA).toHaveAttribute('aria-valuenow', '1')
+
+  await page.mouse.click(
+    (desktopRailBox?.x ?? 0) + (desktopRailBox?.width ?? 0) * 0.62,
+    (desktopRailBox?.y ?? 0) + (desktopRailBox?.height ?? 0) / 2,
+  )
+  await expect
+    .poll(async () => Number(await position.inputValue()))
+    .toBeGreaterThan(0.45)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await loopControls.getByRole('button', { name: 'Clear', exact: true }).click()
+  await expect(markerA).toHaveCount(0)
+  await expect(markerB).toHaveCount(0)
+
+  await position.focus()
+  await page.keyboard.press('Home')
+  await markAButton.click()
+  await position.focus()
+  await page.keyboard.press('End')
+  await markBButton.click()
+  markerA = room.getByRole('slider', {
+    name: 'Loop start marker',
+    exact: true,
+  })
+  markerB = room.getByRole('slider', {
+    name: 'Loop end marker',
+    exact: true,
+  })
+  await expect(markerA).toHaveAttribute('aria-valuenow', '0')
+  await expect(markerB).toHaveAttribute('aria-valuenow', '3')
+
   await page.screenshot({
     path: testInfo.outputPath('guitar-night-percussion-room.png'),
     fullPage: true,
@@ -1725,13 +1816,53 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
       () => document.documentElement.scrollWidth - window.innerWidth,
     ),
   ).toBeLessThanOrEqual(0)
+  const phonePositionBox = await position.boundingBox()
+  const phoneMarkABox = await markAButton.boundingBox()
+  const phoneMarkBBox = await markBButton.boundingBox()
+  const phoneMarkerBBox = await markerB.boundingBox()
+  expect(phonePositionBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkABox?.width ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkABox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkBBox?.width ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkBBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(phoneMarkerBBox).not.toBeNull()
+
+  // Drag B away and back with a real pointer at phone size. Returning to the
+  // endpoint must recover exercise beat 3, not floor the one-shot horizon.
+  await page.mouse.move(
+    (phoneMarkerBBox?.x ?? 0) + (phoneMarkerBBox?.width ?? 0) / 2,
+    (phoneMarkerBBox?.y ?? 0) + (phoneMarkerBBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (phoneMarkerBBox?.x ?? 0) - (phonePositionBox?.width ?? 0) * 0.2,
+    (phoneMarkerBBox?.y ?? 0) + (phoneMarkerBBox?.height ?? 0) / 2,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect(markerB).toHaveAttribute('aria-valuenow', '1')
+  const movedPhoneMarkerBBox = await markerB.boundingBox()
+  await page.mouse.move(
+    (movedPhoneMarkerBBox?.x ?? 0) + (movedPhoneMarkerBBox?.width ?? 0) / 2,
+    (movedPhoneMarkerBBox?.y ?? 0) + (movedPhoneMarkerBBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (phonePositionBox?.x ?? 0) + (phonePositionBox?.width ?? 0) - 1,
+    (movedPhoneMarkerBBox?.y ?? 0) + (movedPhoneMarkerBBox?.height ?? 0) / 2,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect(markerB).toHaveAttribute('aria-valuenow', '3')
   await page.screenshot({
     path: testInfo.outputPath('guitar-night-percussion-room-phone.png'),
     fullPage: true,
   })
 
   await room
-    .getByRole('button', { name: 'Start drum backing', exact: true })
+    .getByRole('button', {
+      name: /^(?:Start|Replay|Resume) drum backing$/,
+    })
     .click()
   await expect
     .poll(() =>
@@ -1746,6 +1877,34 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
   await expect(
     room.getByRole('status').filter({ hasText: /Counting in|playing/ }),
   ).toBeVisible()
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Drum backing is playing' }),
+  ).toBeVisible({ timeout: 5_000 })
+  const runningRailBox = await position.boundingBox()
+  expect(runningRailBox).not.toBeNull()
+  await page.mouse.move(
+    (runningRailBox?.x ?? 0) + (runningRailBox?.width ?? 0) * 0.42,
+    (runningRailBox?.y ?? 0) + (runningRailBox?.height ?? 0) / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (runningRailBox?.x ?? 0) + (runningRailBox?.width ?? 0) * 0.62,
+    (runningRailBox?.y ?? 0) + (runningRailBox?.height ?? 0) / 2,
+    { steps: 5 },
+  )
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Backing paused' }),
+  ).toBeVisible()
+  await page.mouse.up()
+  await expect(
+    room.getByRole('status').filter({ hasText: /^Counting in/ }),
+  ).toHaveCount(0)
+  await expect(
+    room.getByRole('status').filter({ hasText: 'Drum backing is playing' }),
+  ).toBeVisible({ timeout: 2_000 })
+  await loopControls.getByRole('button', { name: 'Clear', exact: true }).click()
+  await expect(markerA).toHaveCount(0)
+  await expect(markerB).toHaveCount(0)
   expect(
     await page.evaluate(
       () =>

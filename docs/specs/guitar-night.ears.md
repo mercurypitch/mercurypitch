@@ -262,6 +262,16 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   the unlooped rehearsal shall continue from the exact currently visible beat.
   Phrase-review and live-score evidence runs shall refuse loop mutation rather
   than blending evidence from different ranges.
+- **REQ-GN-RUNTIME-025 — Percussion-room timeline parity:** WHEN a
+  percussion-only reference opens, its full authored horizon shall remain
+  seekable in elapsed seconds through the complete tempo map, with the same
+  shared labelled A/B rail used by authored-score rehearsal. Loop boundaries
+  shall snap to whole exercise beats; a B marker at the right edge shall admit
+  the last fractional-horizon drum attack. WHEN a running percussion rehearsal
+  is scrubbed, it shall pause once and automatically resume once without a
+  second count-in. Scrubbing before Play shall remain silent. WHEN the reference
+  changes or the player clears the range, the percussion room shall release its
+  owned A/B marks and active scheduler loop together.
 
 ## Tuner — `GN-TUNER-*`
 
