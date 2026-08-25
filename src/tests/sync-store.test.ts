@@ -89,7 +89,7 @@ vi.mock('@/db/persistent-storage', () => ({
 }))
 
 import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
-import { closeSyncModal, openSyncModal } from '@/stores/sync-ui-store'
+import { closeSyncModal, openSyncModal, syncSummary, syncSummaryLabel, } from '@/stores/sync-ui-store'
 import type { UvrSession } from '@/stores/uvr-store'
 
 /** Drive the store to a live room with a connected peer. */
@@ -827,6 +827,76 @@ describe('the dialog is a view; the session is not', () => {
     // Enabled the moment packing started; released once nothing moved.
     expect(wake.enable).toHaveBeenCalledTimes(1)
     await vi.waitFor(() => expect(wake.disable).toHaveBeenCalledTimes(1))
+  })
+})
+
+// ── The summary the store mirrors out ────────────────────────────────
+// Two surfaces describe a live session in words — the corner chip and
+// Karaoke Night's "Other devices" card — and neither may import this
+// module to do it (the card lives on a standalone page whose first paint
+// must not carry WebRTC). So the description is computed here, once, and
+// mirrored into sync-ui. These pin what it says; the surfaces' own tests
+// pin how it looks.
+describe('REQ-SYNC-036: what the surfaces are told about the session', () => {
+  it('says nothing at all while there is no session', () => {
+    expect(syncSummary()).toBeNull()
+  })
+
+  it('says a room is open before anybody has joined it', async () => {
+    await startSyncReceive()
+
+    const summary = syncSummary()
+    expect(summary?.connected).toBe(false)
+    expect(summary?.transfer).toBeNull()
+    expect(syncSummaryLabel(summary!)).toBe(
+      'Sync open — waiting for the other device',
+    )
+  })
+
+  it('names the far device once its channel is open', async () => {
+    await connect()
+
+    expect(syncSummary()?.connected).toBe(true)
+    expect(syncSummaryLabel(syncSummary()!)).toBe('Sync ready: Computer')
+  })
+
+  it('reads the far device packing as `preparing`, with no number', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-preparing',
+      fileHash: 'hash-2',
+      title: 'Far Song',
+    })
+
+    const transfer = syncSummary()?.transfer
+    expect(transfer?.activity).toBe('preparing')
+    // `preparing` has no honest ratio behind it (`sync-preparing`), and
+    // the summary must not invent one for the surfaces to render.
+    expect(transfer?.pct).toBeNull()
+    expect(syncSummaryLabel(syncSummary()!)).toBe('Preparing “Far Song”')
+  })
+
+  it('counts the songs still waiting their turn', async () => {
+    uvr.byId = {
+      s1: { id: 's1', fileHash: 'hash-1' },
+      s2: { id: 's2', fileHash: 'hash-2' },
+      s3: { id: 's3', fileHash: 'hash-3' },
+    }
+    await connect()
+    enqueueSongs(['s1', 's2', 's3'])
+    await vi.waitFor(() => expect(syncQueue().length).toBeGreaterThan(0))
+
+    expect(syncSummary()?.queued).toBe(syncQueue().length)
+    expect(syncSummaryLabel(syncSummary()!)).toContain('more queued')
+  })
+
+  it('forgets the session the moment it ends', async () => {
+    await connect()
+    expect(syncSummary()).not.toBeNull()
+
+    stopSync()
+
+    expect(syncSummary()).toBeNull()
   })
 })
 

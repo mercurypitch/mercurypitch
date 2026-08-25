@@ -17,6 +17,9 @@
 import { fireEvent, render, waitFor } from '@solidjs/testing-library'
 import { createSignal, Suspense } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as SyncUi from '@/stores/sync-ui-store'
+import type { SyncSessionSummary } from '@/stores/sync-ui-store'
+import { setSyncSummary } from '@/stores/sync-ui-store'
 
 /** Hoisted so the vi.mock factories can close over it. */
 const store = vi.hoisted(() => ({
@@ -66,9 +69,16 @@ vi.mock('./funnel', () => ({ trackKaraoke: vi.fn() }))
 const syncStore = vi.hoisted(() => ({ setSyncCodeToJoin: vi.fn() }))
 vi.mock('@/stores/sync-store', () => syncStore)
 // The dialog mounts at page scope (KaraokeNightApp → SyncHost); the
-// rail only rings the bell, so the mock is the bell.
+// rail only rings the bell, so the bell is the mock. Everything else
+// here is the REAL sync-ui module: it is a leaf on solid-js, the card
+// reads a live session through it, and mocking `syncSummaryLabel` would
+// let the card's wording drift from the corner chip's — which is the
+// one thing REQ-SYNC-036 is for.
 const syncUi = vi.hoisted(() => ({ openSyncModal: vi.fn() }))
-vi.mock('@/stores/sync-ui-store', () => syncUi)
+vi.mock('@/stores/sync-ui-store', async (importOriginal) => {
+  const actual = await importOriginal<typeof SyncUi>()
+  return { ...actual, openSyncModal: syncUi.openSyncModal }
+})
 vi.mock('./karaoke-account', () => ({
   credits: () => [],
   refreshCredits: vi.fn(),
@@ -103,7 +113,22 @@ beforeEach(() => {
 
 afterEach(() => {
   store.readSessions = () => []
+  // Module-level and shared with every other suite in the run.
+  setSyncSummary(null)
 })
+
+/** A live session, as sync-store mirrors one into sync-ui. */
+function liveSession(
+  overrides: Partial<SyncSessionSummary> = {},
+): SyncSessionSummary {
+  return {
+    connected: true,
+    peerLabel: 'Kitchen TV',
+    transfer: null,
+    queued: 0,
+    ...overrides,
+  }
+}
 
 describe('the library survives a song change', () => {
   it('does not re-query stems when the store ticks with the same songs', async () => {
@@ -239,5 +264,139 @@ describe('the door to another device', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(syncUi.openSyncModal).not.toHaveBeenCalled()
     expect(syncStore.setSyncCodeToJoin).not.toHaveBeenCalled()
+  })
+})
+
+// The card used to be a kicker, a sentence and a button, and nothing
+// else — it read no sync state at all. On the standalone page that made
+// it the only surface unable to say a device was connected or a song was
+// arriving, which is exactly how it was reported: "not even in 'other
+// devices' as a connection or progress".
+describe('the other device, while it is actually there', () => {
+  it('REQ-SYNC-036: explains itself when no session is running', async () => {
+    store.readSessions = () => []
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    await waitFor(() =>
+      expect(
+        container.querySelector('[data-testid="kn-sync-status"]'),
+      ).toBeNull(),
+    )
+    expect(container.textContent).toContain('Move a song between two of your')
+    expect(
+      [...container.querySelectorAll('.kn-btn')].some((b) =>
+        /Send or receive/.test(b.textContent ?? ''),
+      ),
+    ).toBe(true)
+  })
+
+  it('REQ-SYNC-036: names the device it is connected to', async () => {
+    store.readSessions = () => []
+    setSyncSummary(liveSession())
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    await waitFor(() =>
+      expect(
+        container.querySelector('[data-testid="kn-sync-status"]')?.textContent,
+      ).toBe('Sync ready: Kitchen TV'),
+    )
+    // The door becomes the way back to the dialog, not an invitation to
+    // start something that is already running.
+    expect(
+      [...container.querySelectorAll('.kn-btn')].some((b) =>
+        /Open sync/.test(b.textContent ?? ''),
+      ),
+    ).toBe(true)
+    expect(container.textContent).not.toContain('Nothing is uploaded')
+  })
+
+  it('REQ-SYNC-036: says a session is open before anybody has joined it', async () => {
+    store.readSessions = () => []
+    setSyncSummary(liveSession({ connected: false, peerLabel: null }))
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    await waitFor(() =>
+      expect(
+        container.querySelector('[data-testid="kn-sync-status"]')?.textContent,
+      ).toBe('Sync open — waiting for the other device'),
+    )
+  })
+
+  it("REQ-SYNC-036: follows a transfer, in the corner chip's words", async () => {
+    store.readSessions = () => []
+    setSyncSummary(
+      liveSession({
+        transfer: { title: 'Song A', activity: 'receiving', pct: 0 },
+        queued: 2,
+      }),
+    )
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+    const line = () =>
+      container.querySelector('[data-testid="kn-sync-status"]')?.textContent
+
+    await waitFor(() =>
+      expect(line()).toBe('Receiving “Song A” — 0% · 2 more queued'),
+    )
+    // 0% is a percentage, not an absence: the bar is there from the
+    // first byte, not from the first chunk.
+    const bar = container.querySelector(
+      '[data-testid="kn-sync-bar"] > span',
+    ) as HTMLElement | null
+    expect(bar?.style.width).toBe('0%')
+
+    setSyncSummary(
+      liveSession({
+        transfer: { title: 'Song A', activity: 'receiving', pct: 63 },
+        queued: 1,
+      }),
+    )
+    await waitFor(() =>
+      expect(line()).toBe('Receiving “Song A” — 63% · 1 more queued'),
+    )
+    expect(
+      (
+        container.querySelector(
+          '[data-testid="kn-sync-bar"] > span',
+        ) as HTMLElement | null
+      )?.style.width,
+    ).toBe('63%')
+  })
+
+  it('REQ-SYNC-036: gives `preparing` no bar, because it has no number', async () => {
+    store.readSessions = () => []
+    setSyncSummary(
+      liveSession({
+        transfer: { title: 'Song A', activity: 'preparing', pct: null },
+      }),
+    )
+
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    await waitFor(() =>
+      expect(
+        container.querySelector('[data-testid="kn-sync-status"]')?.textContent,
+      ).toBe('Preparing “Song A”'),
+    )
+    expect(container.querySelector('[data-testid="kn-sync-bar"]')).toBeNull()
+  })
+
+  it('REQ-SKL-009: reading a live session still costs no sync machinery', async () => {
+    // The card's state arrives through sync-ui, a leaf on solid-js.
+    // A static `import ... from '@/stores/sync-store'` here would drag
+    // the WebRTC/bundle graph — and with it the app entry — onto the
+    // standalone page's first paint (vite.config, the QrCode note).
+    syncUi.openSyncModal.mockClear()
+    store.readSessions = () => []
+    setSyncSummary(liveSession())
+
+    render(() => <KaraokeRailPanels {...railProps} />)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(syncStore.setSyncCodeToJoin).not.toHaveBeenCalled()
+    expect(syncUi.openSyncModal).not.toHaveBeenCalled()
   })
 })
