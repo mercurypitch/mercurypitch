@@ -100,6 +100,8 @@ export interface DrumSessionScheduler {
   subscribe(listener: () => void): () => void
   /** Replaces the canonical session, resets to beat zero, and invalidates audio. */
   setSession(document: DrumSessionDocument | null): void
+  /** Reindexes an edit in the same session without moving or stopping transport. */
+  updateSession(document: DrumSessionDocument): void
   /** Schedule one bounded lookahead immediately; normally transport emits it. */
   schedule(lookaheadMs?: number): readonly DrumScheduledSessionOccurrence[]
   /** Cancel queued/tailing authored audio without changing the session. */
@@ -642,6 +644,23 @@ export function createDrumSessionScheduler(
     if (scheduled.length === 0) emit()
   })
 
+  const indexDocument = (nextDocument: DrumSessionDocument | null): void => {
+    currentSessionRevision += 1
+    document = nextDocument
+    if (nextDocument === null) {
+      playableHits = Object.freeze([])
+      indexedHitCount = 0
+      unsupportedGmHitCount = 0
+      sourceDroppedHitCount = 0
+      return
+    }
+    const index = indexSession(nextDocument)
+    playableHits = index.playable
+    indexedHitCount = index.total
+    unsupportedGmHitCount = index.unsupported
+    sourceDroppedHitCount = nextDocument.droppedHitCount
+  }
+
   return {
     snapshot,
     sessionRevision: () => currentSessionRevision,
@@ -652,20 +671,7 @@ export function createDrumSessionScheduler(
     },
     setSession(nextDocument) {
       if (disposed) return
-      currentSessionRevision += 1
-      document = nextDocument
-      if (nextDocument === null) {
-        playableHits = Object.freeze([])
-        indexedHitCount = 0
-        unsupportedGmHitCount = 0
-        sourceDroppedHitCount = 0
-      } else {
-        const index = indexSession(nextDocument)
-        playableHits = index.playable
-        indexedHitCount = index.total
-        unsupportedGmHitCount = index.unsupported
-        sourceDroppedHitCount = nextDocument.droppedHitCount
-      }
+      indexDocument(nextDocument)
       invalidateQueue(true)
       suppressTransportReaction = true
       options.transport.setAuthoredTiming(
@@ -680,6 +686,14 @@ export function createDrumSessionScheduler(
       options.transport.seek(0)
       currentTransportRevision = options.transport.scheduleRevision()
       suppressTransportReaction = false
+      const scheduled = scheduleNow()
+      if (scheduled.length === 0) emit()
+    },
+    updateSession(nextDocument) {
+      if (disposed) return
+      indexDocument(nextDocument)
+      invalidateQueue(true)
+      currentTransportRevision = options.transport.scheduleRevision()
       const scheduled = scheduleNow()
       if (scheduled.length === 0) emit()
     },

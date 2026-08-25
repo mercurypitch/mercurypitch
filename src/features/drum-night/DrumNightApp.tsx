@@ -32,15 +32,16 @@ import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNig
 import { createDrumNightClickController } from './drum-night-click'
 import styles from './DrumNightApp.module.css'
 import { DrumNightTimeline } from './DrumNightTimeline'
+import { createDrumGrooveDraftController } from './groove'
 import type { DrumPlayAlongBusId, DrumPlayAlongMixPreset, DrumPlayAlongSnapshot, DrumStemPlayAlongSnapshot, } from './play-along'
 import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangement-player'
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
 import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
-import type { DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
-import { ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
-import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketHit, PreparedPocketProjection, } from './session'
-import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
+import type { DrumKitAuthoredFamily, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
+import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
+import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
+import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
 
 const PremiumBackgroundPicker = lazy(() =>
   import('@/features/backgrounds/PremiumBackgroundPicker').then((module) => ({
@@ -50,6 +51,16 @@ const PremiumBackgroundPicker = lazy(() =>
 const DrumPlayAlongMixer = lazy(() =>
   import('./play-along/DrumPlayAlongMixer').then((module) => ({
     default: module.DrumPlayAlongMixer,
+  })),
+)
+const DrumFamilyBalance = lazy(() =>
+  import('./play-along/DrumFamilyBalance').then((module) => ({
+    default: module.DrumFamilyBalance,
+  })),
+)
+const DrumGrooveEditor = lazy(() =>
+  import('./groove/DrumGrooveEditor').then((module) => ({
+    default: module.DrumGrooveEditor,
   })),
 )
 const DrumPlayAlongSongsPanel = lazy(() =>
@@ -91,6 +102,14 @@ const STAGE_VIEW_LABELS: Readonly<Record<StageView, string>> = {
   seat: 'Drummer Seat',
   score: 'Score',
 }
+const AUTHORED_FAMILY_LABELS: Readonly<Record<DrumKitAuthoredFamily, string>> =
+  {
+    cymbals: 'Cymbals',
+    hats: 'Hats',
+    kick: 'Kick',
+    snare: 'Snare',
+    toms: 'Toms',
+  }
 const WORKBENCH_TABS: readonly Workspace[] = ['groove', 'kit', 'mix', 'room']
 const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
@@ -355,11 +374,27 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     'Ready. Audio, samples, and MIDI stay off until your first action.',
   )
   const [toastVisible, setToastVisible] = createSignal(false)
-  const [variation, setVariation] = createSignal<FirstPocketVariantId>(
-    FIRST_POCKET_DEFAULT_VARIANT,
-  )
+  const grooveDrafts = createDrumGrooveDraftController({
+    initialVariantId: FIRST_POCKET_DEFAULT_VARIANT,
+  })
+  const variation = grooveDrafts.variantId
+  const setVariation = grooveDrafts.selectVariant
   const [kitVolume, setKitVolume] = createSignal(INITIAL_KIT_VOLUME)
   const [liveKitMuted, setLiveKitMuted] = createSignal(false)
+  const [selectedAuthoredFamily, setSelectedAuthoredFamily] =
+    createSignal<DrumKitAuthoredFamily>('kick')
+  const [authoredFamilyMix, setAuthoredFamilyMix] = createSignal<
+    Record<
+      DrumKitAuthoredFamily,
+      { readonly level: number; readonly muted: boolean }
+    >
+  >({
+    cymbals: { level: 1, muted: false },
+    hats: { level: 1, muted: false },
+    kick: { level: 1, muted: false },
+    snare: { level: 1, muted: false },
+    toms: { level: 1, muted: false },
+  })
   const [calibrationRunning, setCalibrationRunning] = createSignal(false)
   const [calibrationCue, setCalibrationCue] = createSignal(0)
   const [calibrationAwaiting, setCalibrationAwaiting] = createSignal(false)
@@ -534,7 +569,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const usingStemBacking = createMemo(() => selectedBackingSource() !== null)
   const preparedGroove = createMemo(() => createFirstPocketGroove(variation()))
   const activeDocument = createMemo(
-    () => importedDocument() ?? preparedGroove().document,
+    () => importedDocument() ?? grooveDrafts.document(),
   )
   const loopRange = useDrumNightLoopRange({
     durationBeats: () =>
@@ -614,6 +649,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   let calibrationInputId: string | null = null
   let calibrationLastSampleCount = 0
   let scheduledDocument: DrumSessionDocument | null = null
+  let scheduledPreparedVariation: FirstPocketVariantId | null = null
   let scheduledBackingSource: PlayAlongBackingSource<'drums'> | null = null
 
   const transport = runtime.transportState
@@ -678,7 +714,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   )
   const activePocket = createMemo(() => {
     const document = activeDocument()
-    if (document.sourceFormat === 'prepared') return preparedGroove().pocket
+    if (document.sourceFormat === 'prepared') return projectDrumPocket(document)
     const bars = sessionScoreIndex()?.score.bars ?? []
     const firstBarIndex = activePocketBarPair() * 2
     const firstBar = bars[firstBarIndex] ?? bars[0]
@@ -731,29 +767,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       denominator: meter.denominator,
       pulseIndex,
     }
-  })
-  const grooveLaneModel = createMemo(() => {
-    const pocket = activePocket()
-    const laneHits = (
-      family: 'hat' | 'snare' | 'kick',
-    ): readonly (PreparedPocketHit | null)[] =>
-      Array.from({ length: pocket.stepCount }, (_, stepIndex) => {
-        const matches = pocket.hits.filter((hit) => {
-          if (hit.stepIndex !== stepIndex) return false
-          if (family === 'kick') return hit.gmKey === 35 || hit.gmKey === 36
-          if (family === 'snare') return hit.gmKey === 38 || hit.gmKey === 40
-          return hit.gmKey === 42 || hit.gmKey === 44 || hit.gmKey === 46
-        })
-        return (
-          matches.sort((left, right) => right.velocity - left.velocity)[0] ??
-          null
-        )
-      })
-    return [
-      { id: 'hat' as const, label: 'Hat', hits: laneHits('hat') },
-      { id: 'snare' as const, label: 'Snare', hits: laneHits('snare') },
-      { id: 'kick' as const, label: 'Kick', hits: laneHits('kick') },
-    ]
   })
   const capturedSessionHits = createMemo<readonly DrumCapturedHit[]>(() =>
     runtime.recordedHits().map((hit) => ({
@@ -1670,6 +1683,53 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       detail: `${track.playbackLabel} · timing and pitch guide`,
     }))
   })
+  const authoredFamilyBalanceRows = createMemo(() => {
+    const mix = authoredFamilyMix()
+    return DRUM_KIT_AUTHORED_FAMILIES.map((family) => ({
+      id: family,
+      label: AUTHORED_FAMILY_LABELS[family],
+      level: mix[family].level,
+      muted: mix[family].muted,
+    }))
+  })
+  const setAuthoredFamilyLevel = (
+    family: DrumKitAuthoredFamily,
+    requestedLevel: number,
+  ): void => {
+    const level = Number.isFinite(requestedLevel)
+      ? Math.min(1, Math.max(0, requestedLevel))
+      : 0
+    const current = authoredFamilyMix()[family]
+    setAuthoredFamilyMix((mix) => ({
+      ...mix,
+      [family]: { ...mix[family], level },
+    }))
+    player.setAuthoredFamilyVolume?.(family, current.muted ? 0 : level)
+  }
+  const setAuthoredFamilyMuted = (
+    family: DrumKitAuthoredFamily,
+    muted: boolean,
+  ): void => {
+    const current = authoredFamilyMix()[family]
+    setAuthoredFamilyMix((mix) => ({
+      ...mix,
+      [family]: { ...mix[family], muted },
+    }))
+    player.setAuthoredFamilyVolume?.(family, muted ? 0 : current.level)
+  }
+
+  createEffect(() => {
+    const preparedSourceActive =
+      importedDocument() === null && !usingStemBacking()
+    const mix = untrack(authoredFamilyMix)
+    for (const family of DRUM_KIT_AUTHORED_FAMILIES) {
+      const familyMix = mix[family]
+      player.setAuthoredFamilyVolume?.(
+        family,
+        preparedSourceActive ? (familyMix.muted ? 0 : familyMix.level) : 1,
+      )
+    }
+  })
 
   const selectKit = (kitId: DrumKitId): void => {
     const manifest = drumKitManifest(kitId)
@@ -1837,13 +1897,32 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   })
 
   createEffect(() => {
-    const document = readySession()
     const backingSource = selectedBackingSource()
+    const document = backingSource === null ? readySession() : null
+    const preparedVariation =
+      document?.sourceFormat === 'prepared' ? variation() : null
+    const hotPreparedRevision =
+      backingSource === null &&
+      scheduledBackingSource === null &&
+      document !== null &&
+      document !== scheduledDocument &&
+      document.sourceFormat === 'prepared' &&
+      scheduledDocument?.sourceFormat === 'prepared' &&
+      preparedVariation === scheduledPreparedVariation
+
+    if (hotPreparedRevision) {
+      scheduledDocument = document
+      sessionScheduler.updateSession(document)
+      authoredPlayAlong.setSession(document)
+      return
+    }
+
     if (
       document !== scheduledDocument ||
       backingSource !== scheduledBackingSource
     ) {
       scheduledDocument = document
+      scheduledPreparedVariation = preparedVariation
       scheduledBackingSource = backingSource
       // An imported document owns its own take evidence and practice range.
       // Crossing that boundary must never coach or loop against the previous
@@ -1866,6 +1945,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         runtime.setCountInBeats(0)
         if (clickSnapshot().enabled) clickController.enable(false)
       } else {
+        if (document === null) return
         stemPlayAlong.configure(null)
         sessionScheduler.setSession(document)
         authoredPlayAlong.setSession(document)
@@ -2447,87 +2527,58 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <Switch>
               <Match when={workspace() === 'groove'}>
                 <div
-                  class={styles.workspaceView}
+                  class={cx('workspaceView', 'grooveWorkspace')}
                   id="drum-workbench-panel-groove"
                   role="tabpanel"
                   aria-labelledby="drum-workbench-tab-groove"
                 >
-                  <div class={styles.workspaceCopy}>
-                    <span>Pocket pattern</span>
-                    <h3>{sessionTitle()}</h3>
-                    <p>
-                      {usingImportedDocument()
-                        ? 'This is the opening phrase of your imported drum part. Clear it in Songs to return to First Pocket variations.'
-                        : preparedGroove().variant.description}
-                    </p>
-                  </div>
-                  <div
-                    class={styles.grooveLanes}
-                    aria-label={`${sessionTitle()} playable groove lanes`}
-                  >
-                    <For each={grooveLaneModel()}>
-                      {(lane) => (
-                        <div data-lane={lane.id}>
-                          <b>{lane.label}</b>
-                          <span
-                            style={{
-                              'grid-template-columns': `repeat(${activePocket().stepCount}, minmax(4px, 1fr))`,
+                  <Show when={drawerOpen()}>
+                    <Switch>
+                      <Match when={usingStemBacking()}>
+                        <section class={styles.grooveReadOnly}>
+                          <span>Prepared audio</span>
+                          <h3>Keep the source honest.</h3>
+                          <p>
+                            A saved audio session has no authored drum grid. Mix
+                            its separated Drums and Backing in Mix, or choose a
+                            prepared groove or MIDI/GP part in Songs.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => openWorkspace('songs')}
+                          >
+                            Open Songs
+                          </button>
+                        </section>
+                      </Match>
+                      <Match when={usingImportedDocument()}>
+                        <section class={styles.grooveReadOnly}>
+                          <span>Read-only imported part</span>
+                          <h3>{sessionTitle()}</h3>
+                          <p>
+                            Imported MIDI and Guitar Pro remain the exact Score
+                            and playalong authority. Clear the part in Songs to
+                            return to the session-local First Pocket editor.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setView('score')
+                              closeWorkspace()
                             }}
                           >
-                            <For each={lane.hits}>
-                              {(hit) => (
-                                <i
-                                  class={hit !== null ? styles.on : undefined}
-                                  style={
-                                    hit === null
-                                      ? undefined
-                                      : ({
-                                          '--feel-offset': `${Math.max(-35, Math.min(35, (hit.offsetBeats / activePocket().subdivisionBeats) * 35))}%`,
-                                          '--hit-strength': `${Math.max(0.38, hit.velocity / 127)}`,
-                                        } as JSX.CSSProperties)
-                                  }
-                                />
-                              )}
-                            </For>
-                          </span>
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                  <div
-                    class={styles.variationSwitch}
-                    role="group"
-                    aria-label="Groove variation"
-                  >
-                    <For each={FIRST_POCKET_VARIANTS}>
-                      {(item) => (
-                        <button
-                          class={
-                            variation() === item.id
-                              ? styles.isSelected
-                              : undefined
-                          }
-                          type="button"
-                          aria-label={item.label}
-                          aria-pressed={variation() === item.id}
-                          disabled={usingImportedDocument()}
-                          onClick={() => {
-                            setVariation(item.id)
-                            showToast(
-                              `${item.label} is now active in Pocket, Score, Seat, and playback.`,
-                            )
-                          }}
-                        >
-                          <span>{item.label}</span>
-                          <Show when={variation() === item.id}>
-                            <em class={styles.selectionMark} aria-hidden="true">
-                              Selected
-                            </em>
-                          </Show>
-                        </button>
-                      )}
-                    </For>
-                  </div>
+                            Open imported score
+                          </button>
+                        </section>
+                      </Match>
+                      <Match when={true}>
+                        <DrumGrooveEditor
+                          controller={grooveDrafts}
+                          label={`${preparedGroove().variant.label} groove editor`}
+                        />
+                      </Match>
+                    </Switch>
+                  </Show>
                 </div>
               </Match>
               <Match when={workspace() === 'kit'}>
@@ -2722,6 +2773,18 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         : clickStatusCopy(),
                     }}
                     tracks={sourceMixTracks()}
+                    drumsAccessory={
+                      activeDocument().sourceFormat === 'prepared' &&
+                      !usingStemBacking() ? (
+                        <DrumFamilyBalance
+                          families={authoredFamilyBalanceRows()}
+                          selectedFamily={selectedAuthoredFamily()}
+                          onFamilySelect={setSelectedAuthoredFamily}
+                          onFamilyLevelChange={setAuthoredFamilyLevel}
+                          onFamilyMuteChange={setAuthoredFamilyMuted}
+                        />
+                      ) : undefined
+                    }
                     onPresetChange={applyMixPreset}
                     onBusLevelChange={setMixBusLevel}
                     onBusMuteChange={setMixBusMuted}

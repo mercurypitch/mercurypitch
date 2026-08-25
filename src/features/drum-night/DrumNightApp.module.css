@@ -1653,79 +1653,6 @@
   line-height: 1.4;
 }
 
-.grooveLanes {
-  display: grid;
-  min-width: 360px;
-  gap: 12px;
-}
-.grooveLanes > div {
-  display: grid;
-  grid-template-columns: 48px 1fr;
-  align-items: center;
-  gap: 14px;
-}
-.grooveLanes b {
-  color: var(--vellum-muted);
-  font-size: 10px;
-  font-weight: 650;
-}
-.grooveLanes span {
-  display: grid;
-  gap: 3px;
-}
-.grooveLanes i {
-  height: 11px;
-  border: 1px solid rgb(238 231 219 / 20%);
-  border-radius: 3px;
-  background: rgb(238 231 219 / 6%);
-}
-.grooveLanes i.on {
-  border-color: rgb(102 213 205 / 54%);
-  background: var(--cyan);
-  opacity: var(--hit-strength, 1);
-  transform: translateX(var(--feel-offset, 0));
-}
-.grooveLanes > div:nth-child(2) i.on {
-  border-color: rgb(231 173 82 / 62%);
-  background: var(--amber);
-}
-.grooveLanes > div:nth-child(3) i.on {
-  border-color: rgb(238 231 219 / 62%);
-  background: var(--vellum);
-}
-
-.variationSwitch {
-  display: grid;
-  gap: 7px;
-}
-.variationSwitch button {
-  display: flex;
-  min-width: 100px;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--vellum-muted);
-  background: #151a20;
-  font-size: 10px;
-  cursor: pointer;
-}
-
-.variationSwitch button:hover,
-.variationSwitch button.isSelected {
-  border-color: rgb(231 173 82 / 50%);
-  color: var(--vellum);
-  background: rgb(231 173 82 / 10%);
-}
-
-.variationSwitch button:disabled {
-  cursor: not-allowed;
-  opacity: 0.52;
-}
-
 .mappingList,
 .songActions {
   display: grid;
@@ -1876,6 +1803,65 @@
   align-items: start;
   gap: 12px;
   padding: 14px 18px 24px;
+}
+
+.grooveWorkspace {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+  padding: 14px 18px 118px;
+}
+
+.grooveReadOnly {
+  display: grid;
+  width: min(620px, 100%);
+  min-height: 220px;
+  align-content: center;
+  justify-self: center;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(120deg, rgb(231 173 82 / 8%), transparent 55%), #11151a;
+}
+
+.grooveReadOnly > span {
+  color: var(--amber);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.grooveReadOnly > h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(24px, 4vw, 38px);
+  font-weight: 520;
+  letter-spacing: -0.025em;
+}
+
+.grooveReadOnly > p {
+  max-width: 54ch;
+  margin: 0;
+  color: var(--vellum-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.grooveReadOnly > button {
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 5px;
+  padding: 0 15px;
+  border: 1px solid rgb(231 173 82 / 45%);
+  border-radius: 9px;
+  color: var(--vellum);
+  background: rgb(231 173 82 / 10%);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 720;
 }
 
 .mixWorkspace {
@@ -2755,7 +2741,8 @@
 }
 
 @media (min-width: 721px) {
-  .workbench[data-workspace='songs'] {
+  .workbench[data-workspace='songs'],
+  .workbench[data-workspace='groove'] {
     height: min(76vh, 720px);
   }
 }
@@ -3144,12 +3131,6 @@
   .workspaceCopy h3 {
     font-size: 21px;
   }
-  .grooveLanes {
-    min-width: 0;
-  }
-  .variationSwitch {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .mappingList,
   .songActions {
     grid-template-columns: 1fr 1fr;
@@ -3354,7 +3335,8 @@
     height: 100%;
     min-height: 0;
   }
-  .workbench[data-workspace='songs'] {
+  .workbench[data-workspace='songs'],
+  .workbench[data-workspace='groove'] {
     height: 100%;
   }
   .touchKit {

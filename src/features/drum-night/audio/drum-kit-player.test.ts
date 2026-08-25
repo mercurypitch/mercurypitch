@@ -297,6 +297,36 @@ describe('createDrumKitPlayer', () => {
     })
   })
 
+  it('routes synth fallback through authored family gains without touching live input', async () => {
+    const { context, player } = harness()
+    player.setAuthoredFamilyVolume('snare', 0)
+    await player.activate()
+
+    const liveLane = context.gains[1]
+    const authoredSnare = context.gains[4]
+    expect(authoredSnare.gain.events).toContainEqual({
+      kind: 'set',
+      value: 0,
+      at: 10,
+    })
+
+    expect(player.trigger({ gmKey: 38, velocity: 100, lane: 'authored' })).toBe(
+      'synth-fallback',
+    )
+    expect(
+      context.gains
+        .slice(8)
+        .some((gain) => gain.connections.includes(authoredSnare)),
+    ).toBe(true)
+
+    expect(player.trigger({ gmKey: 38, velocity: 100 })).toBe('synth-fallback')
+    expect(
+      context.gains
+        .slice(8)
+        .some((gain) => gain.connections.includes(liveLane)),
+    ).toBe(true)
+  })
+
   it('resumes a suspended route-owned context on repeated activation', async () => {
     const { context, player } = harness()
     await player.activate()
@@ -304,7 +334,7 @@ describe('createDrumKitPlayer', () => {
 
     await expect(player.activate()).resolves.toBe(true)
     expect(context.resume).toHaveBeenCalledOnce()
-    expect(context.gains).toHaveLength(3)
+    expect(context.gains).toHaveLength(8)
   })
 
   it('shares one graph and sample cache across independent live and authored lanes', async () => {
@@ -331,10 +361,12 @@ describe('createDrumKitPlayer', () => {
     const master = context.gains[0]
     const liveLane = context.gains[1]
     const authoredLane = context.gains[2]
+    const authoredKick = context.gains[3]
     const liveVoice = context.sources[0].connections[0] as FakeGainNode
     const authoredVoice = context.sources[1].connections[0] as FakeGainNode
     expect(liveVoice.connections).toEqual([liveLane])
-    expect(authoredVoice.connections).toEqual([authoredLane])
+    expect(authoredVoice.connections).toEqual([authoredKick])
+    expect(authoredKick.connections).toEqual([authoredLane])
     expect(liveLane.connections).toEqual([master])
     expect(authoredLane.connections).toEqual([master])
     expect(master.connections).toEqual([output])
@@ -347,6 +379,17 @@ describe('createDrumKitPlayer', () => {
     expect(liveLane.gain.events).not.toContainEqual({
       kind: 'target',
       value: 0.25,
+      at: 10,
+    })
+
+    player.setAuthoredFamilyVolume('kick', 0.4)
+    expect(authoredKick.gain.events.slice(-2)).toEqual([
+      { kind: 'hold', at: 10 },
+      { kind: 'target', value: 0.4, at: 10 },
+    ])
+    expect(liveLane.gain.events).not.toContainEqual({
+      kind: 'target',
+      value: 0.4,
       at: 10,
     })
 

@@ -357,6 +357,8 @@ function playerHarness(
     })
   })
   const setLaneVolume = vi.fn<NonNullable<DrumKitPlayer['setLaneVolume']>>()
+  const setAuthoredFamilyVolume =
+    vi.fn<NonNullable<DrumKitPlayer['setAuthoredFamilyVolume']>>()
   const player = {
     activate,
     trigger,
@@ -369,6 +371,7 @@ function playerHarness(
     choke: vi.fn(),
     setVolume: vi.fn(),
     setLaneVolume,
+    setAuthoredFamilyVolume,
     snapshot: () => snapshot,
     subscribe(listener: () => void) {
       listeners.add(listener)
@@ -393,6 +396,7 @@ function playerHarness(
     player,
     retry,
     selectKit,
+    setAuthoredFamilyVolume,
     setLaneVolume,
     trigger,
     updateSnapshot,
@@ -1049,10 +1053,10 @@ describe('DrumNightApp', () => {
     expect(backgroundPads!.inert).toBe(true)
 
     const sourceVariation = within(drawer).getByRole('button', {
-      name: 'Classic',
+      name: 'Classic Editing',
     })
     expect(sourceVariation).toHaveAttribute('aria-pressed', 'true')
-    expect(within(sourceVariation).getByText('Selected')).toBeVisible()
+    expect(within(sourceVariation).getByText('Editing')).toBeVisible()
 
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Kit' }))
     const selectedKit = within(drawer).getByRole('radio', {
@@ -1616,6 +1620,74 @@ describe('DrumNightApp', () => {
     expect(screen.queryByText(/of 16/i)).not.toBeInTheDocument()
   })
 
+  it('hot-applies a prepared groove edit without resetting playback or its A B range', async () => {
+    const clock = new TestClock()
+    const room = renderRoom({ clock })
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    const markA = timelineControls.getByRole('button', {
+      name: 'Set loop start A at the playhead',
+    })
+    const markB = timelineControls.getByRole('button', {
+      name: 'Set loop end B at the playhead',
+    })
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+
+    fireEvent.click(markA)
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(markB)
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play First Pocket take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', {
+          name: 'Pause First Pocket take clock',
+        }),
+      ).not.toHaveLength(0),
+    )
+    clock.advanceTo(240)
+    const positionBeforeEdit = (seek as HTMLInputElement).value
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+    const drawer = screen.getByRole('region', { name: 'Shape the groove' })
+    const editor = await within(drawer).findByTestId('drum-groove-editor')
+    fireEvent.click(
+      within(editor).getByRole('button', {
+        name: 'Add Hi-Mid Tom at bar 1, beat 1 e',
+      }),
+    )
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Built-in groove · 32 mapped hits/),
+      ).toBeVisible(),
+    )
+    expect(editor).toHaveAttribute('data-dirty', 'true')
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+    expect(seek).toHaveValue(positionBeforeEdit)
+    expect(
+      screen.getAllByRole('button', {
+        name: 'Pause First Pocket take clock',
+      }),
+    ).not.toHaveLength(0)
+    expect(room.session.contextForGesture).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Close rack drawer' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    expect(
+      screen.getByLabelText('Windowed percussion score').querySelector('desc'),
+    ).toHaveTextContent('32 indexed authored percussion hits')
+  })
+
   it('reactivates audio before retrying an initial graph failure', async () => {
     const room = renderRoom({ activationResults: [false, true] })
     fireEvent.click(
@@ -1662,6 +1734,12 @@ describe('DrumNightApp', () => {
     const clickLevel = within(drawer).getByRole('slider', {
       name: 'Click level',
     })
+    const authoredKickLevel = within(drawer).getByRole('slider', {
+      name: 'Kick authored level',
+    })
+    const authoredKickMute = within(drawer).getByRole('button', {
+      name: 'Mute authored Kick',
+    })
 
     expect(mixer).toHaveAttribute('data-source-kind', 'authored-arrangement')
     expect(sourceDrumsLevel).toBeEnabled()
@@ -1669,6 +1747,10 @@ describe('DrumNightApp', () => {
     expect(youLevel).toBeEnabled()
     expect(clickToggle).toHaveAttribute('aria-pressed', 'true')
     expect(clickLevel).toBeEnabled()
+    expect(authoredKickLevel).toBeEnabled()
+    expect(
+      within(drawer).getByText(/live hits stay independent/i),
+    ).toBeVisible()
 
     fireEvent.click(clickToggle)
     expect(click.enable).toHaveBeenCalledWith(true)
@@ -1681,10 +1763,70 @@ describe('DrumNightApp', () => {
     fireEvent.input(clickLevel, { target: { value: '63' } })
 
     fireEvent.input(youLevel, { target: { value: '64' } })
+    fireEvent.input(authoredKickLevel, { target: { value: '55' } })
 
     expect(click.setLevel).toHaveBeenLastCalledWith(0.63)
     expect(room.player.setLaneVolume).toHaveBeenLastCalledWith('live', 0.64)
+    expect(room.player.setAuthoredFamilyVolume).toHaveBeenLastCalledWith(
+      'kick',
+      0.55,
+    )
+
+    fireEvent.click(authoredKickMute)
+    expect(room.player.setAuthoredFamilyVolume).toHaveBeenLastCalledWith(
+      'kick',
+      0,
+    )
+    expect(room.player.setLaneVolume).toHaveBeenLastCalledWith('live', 0.64)
     expect(youLevel).toBeEnabled()
+  })
+
+  it('bypasses prepared family balance for imported parts and restores it on return', async () => {
+    const importSession = importSessionHarness()
+    const room = renderRoom({ importSession })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+    let drawer = screen.getByRole('region', { name: 'Shape the groove' })
+    fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
+    fireEvent.input(
+      within(drawer).getByRole('slider', { name: 'Kick authored level' }),
+      { target: { value: '55' } },
+    )
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Mute authored Kick' }),
+    )
+    expect(room.player.setAuthoredFamilyVolume).toHaveBeenLastCalledWith(
+      'kick',
+      0,
+    )
+
+    room.player.setAuthoredFamilyVolume.mockClear()
+    importSession.setState(readySessionFixture({ title: 'Imported Pocket' }))
+
+    await waitFor(() =>
+      expect(room.player.setAuthoredFamilyVolume).toHaveBeenCalledWith(
+        'kick',
+        1,
+      ),
+    )
+    expect(
+      within(drawer).queryByRole('slider', { name: 'Kick authored level' }),
+    ).not.toBeInTheDocument()
+
+    room.player.setAuthoredFamilyVolume.mockClear()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    fireEvent.click(
+      within(drawer).getByRole('button', {
+        name: 'Clear authored arrangement',
+      }),
+    )
+
+    await waitFor(() =>
+      expect(room.player.setAuthoredFamilyVolume).toHaveBeenCalledWith(
+        'kick',
+        0,
+      ),
+    )
   })
 
   it('keeps the playable groove active through honest import states and promotes a ready part', () => {
