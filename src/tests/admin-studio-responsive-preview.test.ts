@@ -268,17 +268,28 @@ describe('PR preview API environment', () => {
     )
   })
 
-  it.each(['mercury-pitch-db-dev', 'mercury-pitch-db'])(
-    'rejects protected Worker %s before a Cloudflare mutation',
-    (protectedWorker) => {
-      const mutatedConfig = DB_PREVIEW_TEMPLATE.replace(
-        '"name": "mercury-pitch-db-preview"',
-        `"name": "${protectedWorker}"`,
-      )
-      expect(validatePreviewConfig(mutatedConfig).status).not.toBe(0)
-      expect(
-        validatePreviewConfig(DB_PREVIEW_TEMPLATE, protectedWorker).status,
-      ).not.toBe(0)
+  it.each(
+    ['mercury-pitch-db-dev', 'mercury-pitch-db'].flatMap((protectedWorker) => [
+      {
+        boundary: 'config',
+        protectedWorker,
+        config: DB_PREVIEW_TEMPLATE.replace(
+          '"name": "mercury-pitch-db-preview"',
+          `"name": "${protectedWorker}"`,
+        ),
+        workflowWorker: 'mercury-pitch-db-preview',
+      },
+      {
+        boundary: 'workflow',
+        protectedWorker,
+        config: DB_PREVIEW_TEMPLATE,
+        workflowWorker: protectedWorker,
+      },
+    ]),
+  )(
+    'rejects protected Worker $protectedWorker in the $boundary boundary',
+    ({ config, workflowWorker }) => {
+      expect(validatePreviewConfig(config, workflowWorker).status).not.toBe(0)
     },
   )
 
@@ -320,16 +331,25 @@ ${DB_PREVIEW_TEMPLATE.replace(
     )
   })
 
-  it('accepts only the resolved preview D1 UUID after config generation', () => {
+  it('accepts the resolved preview D1 UUID after config generation', () => {
     const generatedConfig = DB_PREVIEW_TEMPLATE.replace(
       PREVIEW_DATABASE_PLACEHOLDER_ID,
       RESOLVED_PREVIEW_DATABASE_ID,
     )
 
-    const matchingResult = validatePreviewConfig(
-      generatedConfig,
-      'mercury-pitch-db-preview',
-      'mercurypitch-db-preview',
+    expect(
+      validatePreviewConfig(
+        generatedConfig,
+        'mercury-pitch-db-preview',
+        'mercurypitch-db-preview',
+        RESOLVED_PREVIEW_DATABASE_ID,
+      ).status,
+    ).toBe(0)
+  })
+
+  it('rejects a generated D1 UUID that differs from the resolved preview database', () => {
+    const generatedConfig = DB_PREVIEW_TEMPLATE.replace(
+      PREVIEW_DATABASE_PLACEHOLDER_ID,
       RESOLVED_PREVIEW_DATABASE_ID,
     )
     const mismatchedConfig = generatedConfig.replace(
@@ -343,16 +363,16 @@ ${DB_PREVIEW_TEMPLATE.replace(
       RESOLVED_PREVIEW_DATABASE_ID,
     )
 
-    expect(matchingResult.status).toBe(0)
     expect(mismatchedResult.status).not.toBe(0)
     expect(mismatchedResult.stderr).toContain(
       'D1 id must exactly match the expected preview database id',
     )
   })
 
-  it('rejects every unapproved top-level Wrangler surface', () => {
-    const unapprovedEntries = [
-      '  "unsafe": {},',
+  it.each([
+    ['empty unsafe block', '  "unsafe": {},'],
+    [
+      'unsafe foreign DB override',
       `  "unsafe": {
     "bindings": [
       {
@@ -362,21 +382,22 @@ ${DB_PREVIEW_TEMPLATE.replace(
       },
     ],
   },`,
+    ],
+    [
+      'extra KV binding',
       '  "kv_namespaces": [{ "binding": "EXTRA", "id": "foreign" }],',
-      '  "build": { "command": "node foreign-build.mjs" },',
-    ]
-
-    for (const entry of unapprovedEntries) {
-      const config = DB_PREVIEW_TEMPLATE.replace(
-        '  "d1_databases": [',
-        `${entry}\n  "d1_databases": [`,
-      )
-      const result = validatePreviewConfig(config)
-      expect(result.status).not.toBe(0)
-      expect(result.stderr).toContain(
-        'PR preview Wrangler config must contain exactly the approved keys',
-      )
-    }
+    ],
+    ['build hook', '  "build": { "command": "node foreign-build.mjs" },'],
+  ])('rejects unapproved top-level Wrangler surface: %s', (_label, entry) => {
+    const config = DB_PREVIEW_TEMPLATE.replace(
+      '  "d1_databases": [',
+      `${entry}\n  "d1_databases": [`,
+    )
+    const result = validatePreviewConfig(config)
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain(
+      'PR preview Wrangler config must contain exactly the approved keys',
+    )
   })
 
   it('rejects nested binding drift', () => {
