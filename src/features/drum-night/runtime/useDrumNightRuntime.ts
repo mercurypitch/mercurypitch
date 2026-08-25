@@ -427,7 +427,22 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     play,
     pause,
     stop,
+    positionSeconds: () =>
+      transport.secondsForBeat(transportState().positionBeats),
+    durationSeconds: () => {
+      transportState()
+      return transport.durationSeconds()
+    },
+    secondsForBeat: (beat: number) => {
+      transportState()
+      return transport.secondsForBeat(beat)
+    },
+    beatForSeconds: (seconds: number) => {
+      transportState()
+      return transport.beatForSeconds(seconds)
+    },
     seek: (beat: number) => transport.seek(beat),
+    seekSeconds: (seconds: number) => transport.seekSeconds(seconds),
     setTempoBpm: (tempoBpm: number) => transport.setTempoBpm(tempoBpm),
     setSpeedScale: (speedScale: number) => transport.setSpeedScale(speedScale),
     setCountInBeats: (countInBeats: number) =>

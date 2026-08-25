@@ -10,7 +10,7 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, FileUpload, Loop, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { AudioWave, ChevronDown, Drum, FileUpload, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -25,8 +25,9 @@ import { createDrumNightAudioSession } from './drum-night-audio-session'
 import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNightClickSnapshot, } from './drum-night-click'
 import { createDrumNightClickController } from './drum-night-click'
 import styles from './DrumNightApp.module.css'
+import { DrumNightTimeline } from './DrumNightTimeline'
 import type { DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
-import { ESSENTIAL_DRUM_PADS, useDrumNightRuntime } from './runtime'
+import { ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketHit, PreparedPocketProjection, } from './session'
 import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, projectDrumPocket, readyDrumSessionDocument, } from './session'
 
@@ -111,6 +112,11 @@ function nextRovingIndex(
 function formatMegabytes(bytes: number): string {
   if (bytes === 0) return 'No download'
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB encoded`
+}
+
+function formatCountedBeat(beat: number): number {
+  const bounded = Math.max(0, Number.isFinite(beat) ? beat : 0)
+  return Math.round((bounded + 1) * 100) / 100
 }
 
 function transportIsRunning(state: DrumTransportState): boolean {
@@ -375,6 +381,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const activeDocument = createMemo(
     () => importedDocument() ?? preparedGroove().document,
   )
+  const loopRange = useDrumNightLoopRange({
+    durationBeats: () => activeDocument().durationBeats,
+    positionBeats: () => runtime.transportState().positionBeats,
+    phase: () => runtime.transportState().phase,
+    currentLoop: () => runtime.transportState().loop,
+    setLoop: runtime.setLoop,
+    seekSeconds: runtime.seekSeconds,
+    pause: runtime.pause,
+    resume: runtime.play,
+  })
   const activeSessionState = createMemo<DrumSessionImportState>(() => ({
     status: 'ready',
     document: activeDocument(),
@@ -433,15 +449,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   const transport = runtime.transportState
   const isPlaying = createMemo(() => transportIsRunning(transport()))
-  const loopStatusCopy = createMemo(() => {
-    const state = transport()
-    if (state.loop === null) return 'Off'
-    const beatCount =
-      Math.round((state.loop.endBeat - state.loop.startBeat) * 100) / 100
-    return state.speedScale === 0.7
-      ? `${beatCount}-beat recovery · 70%`
-      : `${beatCount}-beat loop`
-  })
   const clickStatusCopy = createMemo(() => {
     const snapshot = clickSnapshot()
     if (!snapshot.enabled) return 'Off by default'
@@ -979,11 +986,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const clearImportedSession = (): void => {
     setImportedDocument(null)
     sessionController.cancel()
-    if (recoveryLoopActive()) {
-      runtime.setLoop(null)
-      runtime.setSpeedScale(1)
-      setRecoveryLoopActive(false)
-    }
+    loopRange.clear()
+    if (recoveryLoopActive()) runtime.setSpeedScale(1)
+    setRecoveryLoopActive(false)
     showToast('Imported drum part cleared. First Pocket is active again.')
   }
 
@@ -996,7 +1001,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const applyRecoveryLoop = (loop: DrumRecoveryLoop): void => {
     const authoredEndBeat = readySession().durationBeats
     const endBeat = Math.min(loop.endBeat, authoredEndBeat)
-    const applied = runtime.setLoop({ startBeat: loop.startBeat, endBeat })
+    const applied = loopRange.setSpan({
+      startBeat: loop.startBeat,
+      endBeat,
+    })
     if (!applied) {
       showToast('That recovery bar is outside the authored take range.')
       return
@@ -1040,7 +1048,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     runtime.setSpeedScale(1)
     setRecoveryLoopActive(false)
     runtime.setCountInBeats(4)
-    runtime.setLoop({ startBeat: 0, endBeat: 8 })
+    loopRange.clear()
     runtime.setRecording(true)
     setRecordingChoiceMade(false)
     setDrawerOpen(false)
@@ -1058,27 +1066,53 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     )
   }
 
-  const toggleLoop = (): void => {
-    if (transport().loop !== null) {
-      const clearedRecovery = recoveryLoopActive()
-      runtime.setLoop(null)
-      if (clearedRecovery) runtime.setSpeedScale(1)
-      setRecoveryLoopActive(false)
-      showToast(
-        clearedRecovery
-          ? 'Recovery loop cleared. Authored tempo returned to 100%.'
-          : 'Practice loop cleared.',
-      )
-      return
-    }
-    const authoredEndBeat = readySession().durationBeats
-    const endBeat = Math.min(8, authoredEndBeat)
-    if (!runtime.setLoop({ startBeat: 0, endBeat })) {
-      showToast('This take is too short for a practice loop.')
-      return
-    }
+  const leaveRecoveryTempo = (): void => {
+    if (!recoveryLoopActive()) return
+    runtime.setSpeedScale(1)
     setRecoveryLoopActive(false)
-    showToast(`${endBeat}-beat transport loop enabled.`)
+  }
+
+  const markLoopAtPlayhead = (mark: 'A' | 'B'): void => {
+    leaveRecoveryTempo()
+    const accepted = mark === 'A' ? loopRange.setStart() : loopRange.setEnd()
+    if (!accepted) {
+      showToast('This drum part has no playable timeline range.')
+      return
+    }
+    const span = loopRange.span()
+    showToast(
+      span === null
+        ? `Loop ${mark} marked. Set the other end to begin looping.`
+        : `A–B loop set from beat ${formatCountedBeat(span.startBeat)} to beat ${formatCountedBeat(span.endBeat)}.`,
+    )
+  }
+
+  const moveLoopMark = (mark: 'A' | 'B', beat: number): void => {
+    leaveRecoveryTempo()
+    if (mark === 'A') loopRange.moveMarkA(beat)
+    else loopRange.moveMarkB(beat)
+  }
+
+  const commitLoopMark = (mark: 'A' | 'B'): void => {
+    if (!loopRange.commitMark(mark)) return
+    const span = loopRange.span()
+    if (span !== null) {
+      announceOnly(
+        `A–B loop set from beat ${formatCountedBeat(span.startBeat)} to beat ${formatCountedBeat(span.endBeat)}.`,
+      )
+    }
+  }
+
+  const clearPracticeLoop = (): void => {
+    const clearedRecovery = recoveryLoopActive()
+    loopRange.clear()
+    if (clearedRecovery) runtime.setSpeedScale(1)
+    setRecoveryLoopActive(false)
+    showToast(
+      clearedRecovery
+        ? 'Recovery loop cleared. Authored tempo returned to 100%.'
+        : 'A–B loop cleared. Full-song playback restored.',
+    )
   }
 
   const toggleRecording = (): void => {
@@ -1271,7 +1305,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       // Crossing that boundary must never coach or loop against the previous
       // document, even when the old loop happens to fit the new duration.
       runtime.stop()
-      runtime.setLoop(null)
+      loopRange.setSpan(null)
       runtime.setSpeedScale(1)
       runtime.clearRecording()
       setRecordingChoiceMade(false)
@@ -1688,23 +1722,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </span>
             <ChevronDown />
           </button>
-
-          <Show when={transport().loop !== null}>
-            <button
-              class={styles.activeLoopControl}
-              type="button"
-              inert={drawerInteractionLocked()}
-              onClick={toggleLoop}
-              aria-label={`Clear active ${loopStatusCopy()}`}
-            >
-              <Loop />
-              <span>
-                <strong>{loopStatusCopy()}</strong>
-                <small>Clear loop</small>
-              </span>
-              <X />
-            </button>
-          </Show>
 
           <button
             class={styles.sheetScrim}
@@ -2297,6 +2314,29 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </Switch>
           </section>
         </section>
+
+        <DrumNightTimeline
+          sourceLabel={() =>
+            usingImportedDocument() ? 'Song timeline' : 'Groove timeline'
+          }
+          positionSeconds={runtime.positionSeconds}
+          durationSeconds={runtime.durationSeconds}
+          playheadBeat={() => transport().positionBeats}
+          durationBeats={() => activeDocument().durationBeats}
+          markA={loopRange.markA}
+          markB={loopRange.markB}
+          active={loopRange.isActive}
+          disabled={modalLayerOpen}
+          secondsForBeat={runtime.secondsForBeat}
+          beatForSeconds={runtime.beatForSeconds}
+          onSeek={loopRange.seekSeconds}
+          onScrubStart={loopRange.beginScrub}
+          onScrubEnd={loopRange.endScrub}
+          onMoveMark={moveLoopMark}
+          onCommitMark={commitLoopMark}
+          onMarkAtPlayhead={markLoopAtPlayhead}
+          onClear={clearPracticeLoop}
+        />
 
         <Show when={compactScore()}>
           <div

@@ -177,7 +177,7 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: 66px minmax(0, 1fr) 92px;
+  grid-template-rows: 66px minmax(0, 1fr) 58px 92px;
   overflow: hidden;
   background: var(--room);
 }
@@ -1266,10 +1266,6 @@
   font-size: 10px;
 }
 .coachCue {
-  display: none;
-}
-
-.activeLoopControl {
   display: none;
 }
 
@@ -2624,7 +2620,7 @@
 
 @media (max-width: 1040px) {
   .roomShell {
-    grid-template-rows: 66px minmax(0, 1fr) 92px;
+    grid-template-rows: 66px minmax(0, 1fr) 58px 92px;
   }
   .barMap {
     display: none;
@@ -2702,50 +2698,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .activeLoopControl {
-    position: absolute;
-    z-index: 15;
-    bottom: 12px;
-    left: 14px;
-    display: grid;
-    min-height: 48px;
-    grid-template-columns: 22px minmax(0, 1fr) 16px;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border: 1px solid rgb(231 173 82 / 48%);
-    border-radius: 10px;
-    color: var(--vellum);
-    background: rgb(17 18 20 / 92%);
-    box-shadow: 0 14px 34px rgb(0 0 0 / 38%);
-    cursor: pointer;
-    text-align: left;
-  }
-  .activeLoopControl > svg {
-    width: 18px;
-    height: 18px;
-    color: var(--amber);
-  }
-  .activeLoopControl > svg:last-child {
-    width: 14px;
-    height: 14px;
-    color: var(--vellum-muted);
-  }
-  .activeLoopControl span {
-    display: grid;
-    min-width: 0;
-    gap: 1px;
-  }
-  .activeLoopControl strong {
-    font-size: 10px;
-  }
-  .activeLoopControl small {
-    color: var(--vellum-muted);
-    font-size: 9px;
-  }
-  .shell[data-drawer-open='true'] .activeLoopControl {
-    display: none;
-  }
   .workbench {
     right: 0;
   }
@@ -2767,7 +2719,7 @@
 
 @media (min-width: 1041px) {
   .roomShell {
-    grid-template-rows: 66px minmax(0, 1fr) 92px;
+    grid-template-rows: 66px minmax(0, 1fr) 58px 92px;
   }
   .workspaceView {
     padding-bottom: 24px;
@@ -2841,7 +2793,7 @@
   .roomShell {
     width: 100%;
     height: 100%;
-    grid-template-rows: 58px minmax(0, 1fr) 104px 74px;
+    grid-template-rows: 58px minmax(0, 1fr) 54px 104px 74px;
   }
   .sessionBar {
     gap: 8px;
@@ -2948,13 +2900,6 @@
     bottom: 7px;
     width: calc(100% - 16px);
     min-height: 52px;
-  }
-  .activeLoopControl {
-    top: 64px;
-    bottom: auto;
-    left: 9px;
-    min-height: 44px;
-    padding-block: 4px;
   }
   .sessionStageView {
     padding: 62px 6px 6px;
@@ -3245,7 +3190,7 @@
 
 @media (max-height: 650px) and (max-width: 720px) {
   .roomShell {
-    grid-template-rows: 54px minmax(0, 1fr) 84px 66px;
+    grid-template-rows: 54px minmax(0, 1fr) 50px 84px 66px;
   }
   .stageCopy h1 {
     display: none;
@@ -3272,7 +3217,7 @@
 
 @media (orientation: landscape) and (max-height: 520px) {
   .roomShell {
-    grid-template-rows: 52px minmax(0, 1fr) 68px;
+    grid-template-rows: 52px minmax(0, 1fr) 48px 68px;
   }
   .consoleBridge {
     padding: 4px 10px;
@@ -3382,7 +3327,7 @@
 
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 720px) {
   .roomShell {
-    grid-template-rows: 52px minmax(0, 1fr) 60px 68px;
+    grid-template-rows: 52px minmax(0, 1fr) 48px 60px 68px;
   }
   .touchKit {
     display: grid;
@@ -3426,7 +3371,7 @@
    the full stage instead of repeating the phone fallback strip and empty coach
    rail around it. */
 .shell[data-view='seat'] .roomShell {
-  grid-template-rows: 66px minmax(0, 1fr) 92px;
+  grid-template-rows: 66px minmax(0, 1fr) 58px 92px;
 }
 
 .shell[data-view='seat'] .touchKit,
@@ -3439,9 +3384,15 @@
   right: 0;
 }
 
+@media (max-width: 720px) {
+  .shell[data-view='seat'] .roomShell {
+    grid-template-rows: 58px minmax(0, 1fr) 54px 74px;
+  }
+}
+
 @media (max-height: 650px) and (max-width: 720px) {
   .shell[data-view='seat'] .roomShell {
-    grid-template-rows: 54px minmax(0, 1fr) 66px;
+    grid-template-rows: 54px minmax(0, 1fr) 50px 66px;
   }
 }
 
@@ -3478,7 +3429,7 @@
 
 @media (orientation: landscape) and (max-height: 520px) {
   .shell[data-view='seat'] .roomShell {
-    grid-template-rows: 52px minmax(0, 1fr) 68px;
+    grid-template-rows: 52px minmax(0, 1fr) 48px 68px;
   }
 }
 

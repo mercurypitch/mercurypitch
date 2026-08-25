@@ -11,6 +11,7 @@ export const DRUM_COUNT_IN_MAX_BEATS = 8
 export const DRUM_SPEED_SCALE_MIN = 0.25
 export const DRUM_SPEED_SCALE_MAX = 2
 export const DRUM_SCHEDULING_LOOKAHEAD_MAX_MS = 2_000
+export const DRUM_LOOP_MINIMUM_LENGTH_BEATS = 0.25
 /** Maximum live take evidence retained in route memory. */
 export const MAX_DRUM_RECORDED_HITS = 4_096
 /** Raw map intake samples across the source list before bounded sorting. */
@@ -133,6 +134,13 @@ export interface DrumTransport {
   pause(): void
   stop(): void
   seek(beat: number): void
+  /** Authored beat to elapsed display seconds at the current speed. */
+  secondsForBeat(beat: number): number
+  /** Elapsed display seconds to authored beat at the current speed. */
+  beatForSeconds(seconds: number): number
+  /** Finite authored duration in display seconds, or zero without a song. */
+  durationSeconds(): number
+  seekSeconds(seconds: number): void
   setTempoBpm(tempoBpm: number): void
   setSpeedScale(speedScale: number): void
   setAuthoredTiming(timing: DrumAuthoredTiming | null): void
@@ -475,6 +483,29 @@ export function createDrumTransport(
     return Math.max(0, targetTimeline)
   }
 
+  const boundedAuthoredBeat = (beat: number): number => {
+    if (!Number.isFinite(beat)) return 0
+    return clamp(beat, 0, timing.durationBeats ?? Number.POSITIVE_INFINITY)
+  }
+
+  const secondsForBeat = (beat: number): number =>
+    timing.beatToSeconds(boundedAuthoredBeat(beat)) / speedScale
+
+  const beatForSeconds = (seconds: number): number => {
+    if (!Number.isFinite(seconds)) return 0
+    const maximumSeconds =
+      timing.durationBeats === null
+        ? Number.POSITIVE_INFINITY
+        : secondsForBeat(timing.durationBeats)
+    const displaySeconds = clamp(seconds, 0, maximumSeconds)
+    return boundedAuthoredBeat(
+      timing.secondsToBeat(displaySeconds * speedScale),
+    )
+  }
+
+  const durationSeconds = (): number =>
+    timing.durationBeats === null ? 0 : secondsForBeat(timing.durationBeats)
+
   const snapshot = (): DrumTransportState => {
     const visible = visiblePosition()
     const sourceTempo = localTempoBpm(timing, visible.positionBeat)
@@ -586,6 +617,28 @@ export function createDrumTransport(
     anchorTimestampMs = timestampMs
     anchorTimelineBeats = timelineBeats
     anchorCountInProgressBeats = countInProgressBeats
+  }
+
+  const seekBeat = (beat: number): void => {
+    if (!Number.isFinite(beat)) return
+    const nowMs = clock.nowMs()
+    const maximum =
+      loop === null && timing.durationBeats !== null
+        ? timing.durationBeats
+        : Number.POSITIVE_INFINITY
+    timelineBeats = clamp(beat, 0, maximum)
+    naturalEndReached = false
+    anchorTimelineBeats = timelineBeats
+    anchorTimestampMs = nowMs
+    if (phase === 'count-in') {
+      countInProgressBeats = 0
+      anchorCountInProgressBeats = 0
+      countInTempoBpm = effectiveTempoAt(
+        visiblePosition(timelineBeats).positionBeat,
+      )
+    }
+    invalidateScheduledAudio()
+    emit()
   }
 
   const detailedSchedulingWindows = (
@@ -784,26 +837,13 @@ export function createDrumTransport(
       invalidateScheduledAudio()
       emit()
     },
-    seek(beat) {
-      if (!Number.isFinite(beat)) return
-      const nowMs = clock.nowMs()
-      const maximum =
-        loop === null && timing.durationBeats !== null
-          ? timing.durationBeats
-          : Number.POSITIVE_INFINITY
-      timelineBeats = clamp(beat, 0, maximum)
-      naturalEndReached = false
-      anchorTimelineBeats = timelineBeats
-      anchorTimestampMs = nowMs
-      if (phase === 'count-in') {
-        countInProgressBeats = 0
-        anchorCountInProgressBeats = 0
-        countInTempoBpm = effectiveTempoAt(
-          visiblePosition(timelineBeats).positionBeat,
-        )
-      }
-      invalidateScheduledAudio()
-      emit()
+    seek: seekBeat,
+    secondsForBeat,
+    beatForSeconds,
+    durationSeconds,
+    seekSeconds(seconds) {
+      if (!Number.isFinite(seconds)) return
+      seekBeat(beatForSeconds(seconds))
     },
     setTempoBpm(value) {
       const nowMs = clock.nowMs()
@@ -890,7 +930,8 @@ export function createDrumTransport(
         !Number.isFinite(nextLoop.startBeat) ||
         !Number.isFinite(nextLoop.endBeat) ||
         nextLoop.startBeat < 0 ||
-        nextLoop.endBeat - nextLoop.startBeat < 0.25 ||
+        nextLoop.endBeat - nextLoop.startBeat <
+          DRUM_LOOP_MINIMUM_LENGTH_BEATS ||
         (timing.durationBeats !== null &&
           nextLoop.endBeat > timing.durationBeats + TIMELINE_EPSILON)
       ) {
@@ -898,11 +939,13 @@ export function createDrumTransport(
       }
       loop = Object.freeze({ ...nextLoop })
       naturalEndReached = false
-      // A loop edit is a control boundary. Keep the authored position when it
-      // lies before/inside the new range; clamp a position beyond its end to
-      // the new start rather than manufacturing an arbitrary iteration.
+      // A loop edit is a control boundary. Preserve an audible position inside
+      // the new range; otherwise enter it at A without a second seek/relaunch.
       timelineBeats =
-        currentVisibleBeat < loop.endBeat ? currentVisibleBeat : loop.startBeat
+        currentVisibleBeat >= loop.startBeat &&
+        currentVisibleBeat < loop.endBeat
+          ? currentVisibleBeat
+          : loop.startBeat
       anchorTimelineBeats = timelineBeats
       anchorTimestampMs = nowMs
       invalidateScheduledAudio()

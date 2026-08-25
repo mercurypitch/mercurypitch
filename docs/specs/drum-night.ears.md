@@ -321,9 +321,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   occurrence shall retain its loop iteration and monotonic timeline identity;
   overlapping lookahead passes shall not double-schedule it.
 - **REQ-DN-PLAYBACK-010 — Audible first pocket:** Drum Night shall ship one
-  route-owned, velocity-aware prepared groove with truthful Source, Tight,
-  Loose, and Half-time authored variants. Play shall sound that document through
-  the selected kit on the same clock used by Pocket, Score, Seat, and Coach.
+  route-owned, velocity-aware prepared groove with truthful Classic, Funk,
+  Driving, and Half-time authored variants. Play shall sound that document
+  through the selected kit on the same clock used by Pocket, Score, Seat, and
+  Coach.
 - **REQ-DN-PLAYBACK-011 — Bounded take evidence:** Drum Night shall retain at
   most 4,096 captured live hits for the current take. IF newer hits replace
   older retained evidence, THEN the route shall expose a durable discarded-hit
@@ -335,12 +336,25 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   meter, tempo changes, speed, loops, invalidation, and teardown on the route
   clock. Its enabled state shall not gate the audible count-in. Backing controls
   shall not be presented until that source exists.
-- **REQ-DN-PLAYBACK-013 — Deferred flexible timeline:** This pilot shall not
-  claim a flexible loaded-song timeline or user-positioned A/B loop markers.
-  WHERE that later slice is implemented, Drum Night shall first consume the
-  shared rail landed by MercuryPitch PR #632, with elapsed seconds as its seek
-  axis and authored beats as its A/B axis; it shall not copy a branch-local
-  rail or create another scheduler.
+- **REQ-DN-PLAYBACK-013 — Shared full-song timeline:** Drum Night shall present
+  the shared `LoopRangeRail` across Pocket, Score, and Drummer Seat rather than
+  copy a feature-local rail. Its seek axis shall show elapsed seconds while its
+  A/B marks retain authored-beat identity through tempo and speed changes.
+- **REQ-DN-PLAYBACK-014 — Explicit range states:** The timeline shall expose
+  full-song, one-mark-waiting, and active A/B states. A and B shall snap to a
+  quarter-beat grid with a minimum quarter-beat gap; Drum Night shall not
+  manufacture a fixed-length loop when no marks exist.
+- **REQ-DN-PLAYBACK-015 — One loop authority:** WHEN both marks form a valid
+  range, Drum Night shall commit that range once to the route transport. A
+  Coach recovery range shall adopt the same visible marks, and clearing the
+  range shall preserve the visible playhead while restoring full-song playback.
+- **REQ-DN-PLAYBACK-016 — Scrub lifecycle:** WHEN a running take begins a
+  pointer or keyboard scrub, Drum Night shall pause once, seek on the elapsed
+  axis, and resume once when the scrub ends. An idle scrub shall remain idle,
+  and neither path shall create another clock or an extra count-in.
+- **REQ-DN-PLAYBACK-017 — Session boundary:** WHEN the prepared groove or an
+  imported document replaces the current session, Drum Night shall clear both
+  A/B marks and the active transport loop before the new document plays.
 
 ## Interaction and accessibility — `DN-A11Y-*`
 
@@ -397,20 +411,19 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 This pilot does not include room-microphone capture or analysis; limb,
 sticking, grip, or technique inference; backing or guide tracks; Groove Mirror
-generation; imported-session, recorded-take, or coaching history persistence;
-flexible loaded-song timeline or A/B authoring; public indexing; or production
-deployment. The locally retained kit choice, Drum room choice, and
-device-scoped MIDI learn map are preferences, not session or performance
-persistence.
+generation; imported-session, recorded-take, coaching-history, or A/B-range
+persistence; public indexing; or production deployment. The locally retained
+kit choice, Drum room choice, and device-scoped MIDI learn map are preferences,
+not session or performance persistence.
 
 ## Verification map
 
-| Requirement area            | Minimum evidence                                                                                                                                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                           |
-| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke  |
-| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                 |
-| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                               |
-| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                           |
-| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in with continuous click off/on, authored tempo, duration, pause/replay, loop identity, dedupe, capacity, unsupported hits, and fallback truth |
-| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                       |
+| Requirement area            | Minimum evidence                                                                                                                                                                                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                                                                                            |
+| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke                                                                   |
+| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                                                                                  |
+| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                                                                                                |
+| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                                                                                            |
+| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in, authored tempo/duration, seconds/beat conversion, pause/replay, loop identity, A/B state and reset, scrub lifecycle, dedupe, capacity, unsupported hits, and fallback truth; real-pointer seek/marker smoke |
+| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                                                                                        |

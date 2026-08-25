@@ -1613,6 +1613,66 @@ describe('DrumNightApp', () => {
     )
   })
 
+  it('moves the shared timeline from full song through A waiting, active, and clear', () => {
+    renderRoom()
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    const markA = timelineControls.getByRole('button', {
+      name: 'Set loop start A at the playhead',
+    })
+    const markB = timelineControls.getByRole('button', {
+      name: 'Set loop end B at the playhead',
+    })
+
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(timelineControls.getByText('Full song')).toBeVisible()
+    expect(markA).toHaveAttribute('aria-pressed', 'false')
+    expect(markB).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(markA)
+    expect(timeline).toHaveAttribute('data-loop-state', 'waiting')
+    expect(timelineControls.getByText('Set B to finish the loop')).toBeVisible()
+    expect(markA).toHaveAttribute('aria-pressed', 'true')
+    expect(markB).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      timelineControls.getByRole('slider', { name: 'Loop start marker' }),
+    ).toHaveAttribute('aria-valuenow', '0')
+
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    expect(seek).toHaveAttribute(
+      'aria-valuetext',
+      expect.stringContaining('Beat 1'),
+    )
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(markB)
+
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+    expect(markA).toHaveAttribute('aria-pressed', 'true')
+    expect(markB).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      timelineControls.getByRole('slider', { name: 'Loop end marker' }),
+    ).toBeVisible()
+    expect(timelineControls.getByText(/Beat 1 – Beat/)).toBeVisible()
+    expect(screen.getByText(/A–B loop set from beat 1 to beat /)).toBeVisible()
+
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Clear A B practice loop',
+      }),
+    )
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(timelineControls.getByText('Full song')).toBeVisible()
+    expect(markA).toHaveAttribute('aria-pressed', 'false')
+    expect(markB).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      timelineControls.queryByRole('slider', { name: /Loop .* marker/ }),
+    ).not.toBeInTheDocument()
+  })
+
   it('resets take evidence and an active authored loop when the document changes', async () => {
     const clock = new TestClock()
     const first = readySessionFixture({
@@ -1654,8 +1714,29 @@ describe('DrumNightApp', () => {
         'true',
       ),
     )
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
     expect(
-      screen.getByRole('button', { name: 'Clear active 8-beat loop' }),
+      timelineControls.getByRole('button', {
+        name: 'Clear A B practice loop',
+      }),
     ).toBeVisible()
     clock.advanceTo(4_000)
     dispatchPointerDown(
@@ -1679,8 +1760,15 @@ describe('DrumNightApp', () => {
     expect(
       screen.getByText('Press Play, then answer the phrase.'),
     ).toBeVisible()
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(timelineControls.getByText('Full song')).toBeVisible()
     expect(
-      screen.queryByRole('button', { name: /Clear active .* loop/i }),
+      timelineControls.queryByRole('button', {
+        name: 'Clear A B practice loop',
+      }),
+    ).not.toBeInTheDocument()
+    expect(
+      timelineControls.queryByRole('slider', { name: /Loop .* marker/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -1699,9 +1787,14 @@ describe('DrumNightApp', () => {
         'true',
       ),
     )
+    const timeline = screen.getByTestId('drum-night-timeline')
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(within(timeline).getByText('Full song')).toBeVisible()
     expect(
-      screen.getByRole('button', { name: 'Clear active 8-beat loop' }),
-    ).toBeVisible()
+      within(timeline).queryByRole('button', {
+        name: 'Clear A B practice loop',
+      }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getAllByRole('button', {
         name: 'Pause First Pocket take clock',
@@ -1819,17 +1912,38 @@ describe('DrumNightApp', () => {
       }),
     )
 
-    const activeLoop = screen.getByRole('button', {
-      name: 'Clear active 3.5-beat recovery · 70%',
-    })
-    expect(activeLoop).toBeVisible()
-    expect(activeLoop).toHaveTextContent('3.5-beat recovery · 70%')
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+    expect(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      timelineControls.getByRole('slider', { name: 'Loop start marker' }),
+    ).toHaveAttribute('aria-valuenow', '0')
+    expect(
+      timelineControls.getByRole('slider', { name: 'Loop end marker' }),
+    ).toHaveAttribute('aria-valuenow', '3.5')
+    expect(timelineControls.getByText('Beat 1 – Beat 4.5')).toBeVisible()
     expect(screen.getByText(/Recovery loop set to bar 1 at 70%/i)).toBeVisible()
 
-    fireEvent.click(activeLoop)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Clear A B practice loop',
+      }),
+    )
 
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(timelineControls.getByText('Full song')).toBeVisible()
     expect(
-      screen.queryByRole('button', { name: /Clear active .* loop/i }),
+      timelineControls.queryByRole('slider', { name: /Loop .* marker/ }),
     ).not.toBeInTheDocument()
     expect(
       screen.getByText(/Recovery loop cleared.*tempo returned to 100%/i),
