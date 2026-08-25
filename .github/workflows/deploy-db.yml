@@ -200,3 +200,41 @@ jobs:
           workingDirectory: workers/db-worker
           command: deploy --env ${{ env.DEPLOY_ENV }}
           packageManager: 'pnpm'
+
+      # DEV ONLY. Cloudflare's documented dummy token is accepted by the
+      # public always-pass test secret and rejected by every real widget
+      # secret. A 401 here means a PR preview credential contaminated dev;
+      # any other response drift also fails rather than hiding broken login.
+      - name: Verify dev Turnstile credential isolation
+        if: env.DEPLOY_ENV == 'dev'
+        run: |
+          set -euo pipefail
+
+          canary_payload=$(jq -n \
+            --arg email "turnstile-isolation-${GITHUB_RUN_ID}@example.invalid" \
+            '{
+              email: $email,
+              password: "DeliberatelyWrong-7f2c",
+              cfTurnstileToken: "XXXX.DUMMY.TOKEN.XXXX"
+            }')
+          canary_response=$(curl \
+            --silent \
+            --show-error \
+            --request POST \
+            --header 'content-type: application/json' \
+            --data "$canary_payload" \
+            --write-out $'\n%{http_code}' \
+            'https://api-dev.mercurypitch.com/api/auth/login')
+          canary_status="${canary_response##*$'\n'}"
+          canary_body="${canary_response%$'\n'*}"
+
+          if [ "$canary_status" != '400' ]; then
+            echo "Dev Turnstile isolation canary returned HTTP ${canary_status}; expected 400."
+            exit 1
+          fi
+          if ! printf '%s' "$canary_body" \
+            | jq -e '.error == "CAPTCHA verification failed. Please try again."' \
+            > /dev/null; then
+            echo 'Dev Turnstile isolation canary returned an unexpected body.'
+            exit 1
+          fi

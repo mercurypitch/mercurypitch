@@ -99,16 +99,39 @@ describe('verifyTurnstile', () => {
     })
 
     it('refuses a token Cloudflare rejects', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.stubGlobal(
         'fetch',
-        vi.fn(async () => new Response(JSON.stringify({ success: false }))),
+        vi.fn(
+          async () =>
+            new Response(
+              JSON.stringify({
+                success: false,
+                'error-codes': ['invalid-input-secret'],
+                hostname: 'dev.mercurypitch.com',
+                action: 'login',
+              }),
+            ),
+        ),
       )
       expect(await verifyTurnstile(request(), configured, 'bad-token')).toBe(
         false,
       )
+      expect(warn).toHaveBeenCalledWith(
+        'Turnstile Siteverify rejected an authentication token.',
+        {
+          errorCodes: ['invalid-input-secret'],
+          hostname: 'dev.mercurypitch.com',
+          action: 'login',
+        },
+      )
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('bad-token')
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('test-secret')
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('203.0.113.7')
     })
 
     it('refuses when the verification response says nothing either way', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => new Response(JSON.stringify({}))),
@@ -120,6 +143,7 @@ describe('verifyTurnstile', () => {
 
     it('refuses when Cloudflare cannot be reached', async () => {
       // An outage must not become an open door.
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => {
@@ -129,9 +153,13 @@ describe('verifyTurnstile', () => {
       expect(await verifyTurnstile(request(), configured, 'good-token')).toBe(
         false,
       )
+      expect(warn).toHaveBeenCalledWith(
+        'Turnstile Siteverify was unavailable or returned malformed data; failing CAPTCHA verification closed.',
+      )
     })
 
     it('refuses when the response is not JSON at all', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => new Response('<html>502</html>')),

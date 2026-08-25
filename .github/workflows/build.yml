@@ -212,14 +212,10 @@ jobs:
 
       # Creates or reuses one shared D1 database for all PR previews, applies
       # the branch's additive schema, and uploads the branch's DB Worker as an
-      # immutable version. The matching DB preview URL is baked into the
-      # frontend before its own immutable version is uploaded. Neither active
-      # dev deployment is changed, and Cloudflare retains only one preview D1.
-      #
-      # The DB version reuses the mercury-pitch-db-dev Worker name so Wrangler
-      # inherits its ADMIN_KEY and JWT_SECRET secrets. Its generated config
-      # explicitly enables Preview URLs while keeping the normal workers.dev
-      # route disabled.
+      # immutable version on a dedicated preview Worker. The matching DB
+      # preview URL is baked into the frontend before its own immutable
+      # version is uploaded. Dev and production have separate Worker version
+      # and secret lineages; Cloudflare retains only one preview D1.
       - name: Deploy PR Preview (versioned)
         id: deploy-preview
         if: steps.preview-scope.outputs.deploy == 'true' && github.event_name == 'pull_request'
@@ -231,15 +227,29 @@ jobs:
           set -euo pipefail
 
           preview_database_name="mercurypitch-db-preview"
-          db_worker_name="mercury-pitch-db-dev"
+          db_worker_name="mercury-pitch-db-preview"
           frontend_worker_name="mercurypitch-preview"
           preview_turnstile_site_key="1x00000000000000000000AA"
-          preview_turnstile_secret="1x0000000000000000000000000000000AA"
-          preview_turnstile_secrets_file="$RUNNER_TEMP/pr-preview-turnstile.env"
+          preview_db_secrets_file="$RUNNER_TEMP/pr-preview-db-secrets.env"
+
+          # Fail before the first Cloudflare mutation if workflow/config names
+          # drift toward either protected Worker or the template already holds
+          # a real D1 id. The generated config is checked again against the id
+          # resolved by name before any Worker upload.
+          node scripts/assert-pr-preview-isolation.mjs \
+            workers/db-worker/wrangler.pr-preview.template.jsonc \
+            "$db_worker_name" \
+            "$preview_database_name"
+
+          # Preview JWTs are intentionally ephemeral. The public Turnstile
+          # test secret is an auditable plain binding in the dedicated config;
+          # no development secret is inherited or supplied to this Worker.
+          preview_jwt_secret="$(openssl rand -hex 32)"
           umask 077
-          printf 'TURNSTILE_SECRET=%s\n' "$preview_turnstile_secret" \
-            > "$preview_turnstile_secrets_file"
-          trap 'rm -f "$preview_turnstile_secrets_file"' EXIT
+          printf 'JWT_SECRET=%s\n' "$preview_jwt_secret" \
+            > "$preview_db_secrets_file"
+          unset preview_jwt_secret
+          trap 'rm -f "$preview_db_secrets_file"' EXIT
           database_id=$(
             pnpm exec wrangler d1 list --json \
               | jq -r --arg name "$preview_database_name" \
@@ -280,11 +290,11 @@ jobs:
           writeFileSync(process.env.GENERATED_DB_CONFIG, generated)
           NODE
 
-          # This version inherits the dev Worker's secrets, including Resend
-          # when configured. The immutable preview binding is the server-side
-          # fail-closed guard that keeps public test CAPTCHA credentials from
-          # turning the preview into a real email relay.
-          grep -F -q '"PR_PREVIEW": "true"' "$generated_db_config"
+          node scripts/assert-pr-preview-isolation.mjs \
+            "$generated_db_config" \
+            "$db_worker_name" \
+            "$preview_database_name" \
+            "$database_id"
 
           # The schema ships as the tracked migration chain (schema.sql was
           # retired by the migration work): wrangler records applied files in
@@ -320,19 +330,6 @@ jobs:
             --config "$generated_db_config" \
             --file "$RUNNER_TEMP/preview-definitions.sql"
 
-          preview_settings=$(
-            curl --fail-with-body --silent --show-error \
-              --request POST \
-              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              --header "Content-Type: application/json" \
-              --header "Cloudflare-Workers-Script-Api-Date: 2025-08-01" \
-              --data '{"enabled":false,"previews_enabled":true}' \
-              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${db_worker_name}/subdomain"
-          )
-          printf '%s' "$preview_settings" \
-            | jq -e '.success == true and .result.previews_enabled == true' \
-            > /dev/null
-
           account_subdomain_response=$(
             curl --fail-with-body --silent --show-error \
               --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -347,14 +344,42 @@ jobs:
             exit 1
           fi
 
-          pnpm exec wrangler versions upload \
-            --config "$generated_db_config" \
-            --secrets-file "$preview_turnstile_secrets_file" \
-            --message "PR #${PR_NUMBER} ${GITHUB_SHA}" \
-            2>&1 | tee db-upload.log
+          preview_worker_exists=true
+          if ! pnpm exec wrangler versions list \
+            --name "$db_worker_name" \
+            --json \
+            > "$RUNNER_TEMP/pr-preview-worker-versions.json" \
+            2> "$RUNNER_TEMP/pr-preview-worker-versions.error"; then
+            if grep -F -q 'code: 10007' \
+              "$RUNNER_TEMP/pr-preview-worker-versions.error"; then
+              preview_worker_exists=false
+            else
+              cat "$RUNNER_TEMP/pr-preview-worker-versions.error" >&2
+              echo "Could not determine whether ${db_worker_name} exists."
+              exit 1
+            fi
+          fi
+
+          if [ "$preview_worker_exists" = 'true' ]; then
+            pnpm exec wrangler versions upload \
+              --config "$generated_db_config" \
+              --secrets-file "$preview_db_secrets_file" \
+              --message "PR #${PR_NUMBER} ${GITHUB_SHA}" \
+              2>&1 | tee db-upload.log
+          else
+            # Wrangler cannot upload an immutable version until a Worker
+            # exists. Bootstrap only the already-validated dedicated preview
+            # identity. workers_dev=false and no routes/custom domains keep
+            # this first deployment unreachable except through its preview URL.
+            pnpm exec wrangler deploy \
+              --config "$generated_db_config" \
+              --secrets-file "$preview_db_secrets_file" \
+              --message "Bootstrap PR preview Worker for #${PR_NUMBER} ${GITHUB_SHA}" \
+              2>&1 | tee db-upload.log
+          fi
 
           db_version_id=$(
-            grep -E 'Worker Version ID:' db-upload.log \
+            grep -E '(Worker|Current) Version ID:' db-upload.log \
               | grep -oE '[0-9a-f]{8}-[0-9a-f-]{27,}' \
               | tail -1 \
               || true
@@ -363,6 +388,37 @@ jobs:
             echo "DB Worker upload did not provide a version id."
             exit 1
           fi
+
+          # A second independent guard checks Cloudflare's dev version list,
+          # not just the local config. The freshly uploaded preview version
+          # must never exist in the development Worker's secret lineage.
+          dev_versions=$(
+            pnpm exec wrangler versions list \
+              --name mercury-pitch-db-dev \
+              --json
+          )
+          if printf '%s' "$dev_versions" | grep -F -q "$db_version_id"; then
+            echo "PR preview version was uploaded to the protected dev Worker."
+            exit 1
+          fi
+
+          # `versions upload` does not reconcile the non-versioned subdomain
+          # settings. The one-time bootstrap deploy applies these values from
+          # the validated config; every later run verifies they still belong
+          # to the isolated preview Worker before publishing its URL.
+          preview_subdomain_settings=$(
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${db_worker_name}/subdomain"
+          )
+          if ! printf '%s' "$preview_subdomain_settings" \
+            | jq -e \
+              '.success == true and .result.enabled == false and .result.previews_enabled == true' \
+            > /dev/null; then
+            echo "Dedicated PR preview Worker does not have the required isolated preview-URL settings."
+            exit 1
+          fi
+
           db_version_prefix="${db_version_id%%-*}"
           db_preview_url="https://${db_version_prefix}-${db_worker_name}.${workers_dev_subdomain}.workers.dev"
 
@@ -378,8 +434,8 @@ jobs:
           # A versioned workers.dev hostname changes on every preview upload,
           # so it cannot be allowlisted on the real Turnstile widget. Pair the
           # frontend and DB version with Cloudflare's documented always-pass
-          # test credentials. They are scoped to this immutable PR version;
-          # dev and production keep their real credentials unchanged.
+          # test credentials. They belong only to the dedicated preview
+          # Worker; dev and production retain independent real credentials.
           export VITE_TURNSTILE_SITE_KEY="$preview_turnstile_site_key"
           export VITE_PR_PREVIEW=true
           # Previews are served WITHOUT the jam signaling worker, so the real
