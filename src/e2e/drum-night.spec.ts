@@ -692,6 +692,20 @@ test('sets, moves, clears, and scrubs the authored A B loop with a real pointer 
   await markBControl.click()
 
   await expect(timeline).toHaveAttribute('data-loop-state', 'active')
+  const loopToast = page
+    .locator('[role="status"][data-visible="true"]')
+    .filter({ hasText: 'A–B loop set' })
+  await expect(loopToast).toBeVisible()
+  const [toastBounds, timelineBounds] = await Promise.all([
+    loopToast.boundingBox(),
+    timeline.boundingBox(),
+  ])
+  if (toastBounds === null || timelineBounds === null) {
+    throw new Error('A B feedback or timeline is missing geometry')
+  }
+  expect(toastBounds.y + toastBounds.height).toBeLessThanOrEqual(
+    timelineBounds.y,
+  )
   const markerA = timeline.getByRole('slider', { name: 'Loop start marker' })
   const markerB = timeline.getByRole('slider', { name: 'Loop end marker' })
   await expect(markerA).toHaveAttribute('aria-valuenow', '0')
