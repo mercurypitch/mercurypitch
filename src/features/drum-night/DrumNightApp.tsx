@@ -9,15 +9,21 @@
 // browser activation gesture.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, FileUpload, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
-import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
+import { AudioWave, ChevronDown, Drum, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
+import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
+import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
+import { loadUvrPlayAlongSongPort } from '@/features/play-along/song-port-loader'
+import { loadPlayAlongBandPreparationPort, usePlayAlongBandPreparationController, } from '@/features/play-along/useBandPreparationController'
+import { usePlayAlongSongController } from '@/features/play-along/useSongController'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { barIndexAtBeat } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { useFocusTrap } from '@/lib/use-focus-trap'
+import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { createDrumKitPlayer, DRUM_KIT_CATALOG, DRUM_KIT_IDS, drumKitManifest, } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
@@ -26,10 +32,36 @@ import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNig
 import { createDrumNightClickController } from './drum-night-click'
 import styles from './DrumNightApp.module.css'
 import { DrumNightTimeline } from './DrumNightTimeline'
+import type { DrumPlayAlongBusId, DrumPlayAlongMixPreset, DrumPlayAlongSnapshot, DrumStemPlayAlongSnapshot, } from './play-along'
+import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangement-player'
+import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
+import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
+import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
 import type { DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketHit, PreparedPocketProjection, } from './session'
-import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, projectDrumPocket, readyDrumSessionDocument, } from './session'
+import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
+
+const PremiumBackgroundPicker = lazy(() =>
+  import('@/features/backgrounds/PremiumBackgroundPicker').then((module) => ({
+    default: module.PremiumBackgroundPicker,
+  })),
+)
+const DrumPlayAlongMixer = lazy(() =>
+  import('./play-along/DrumPlayAlongMixer').then((module) => ({
+    default: module.DrumPlayAlongMixer,
+  })),
+)
+const DrumPlayAlongSongsPanel = lazy(() =>
+  import('./play-along/DrumPlayAlongSongsPanel').then((module) => ({
+    default: module.DrumPlayAlongSongsPanel,
+  })),
+)
+const DrumPlayAlongStage = lazy(() =>
+  import('./play-along/DrumPlayAlongStage').then((module) => ({
+    default: module.DrumPlayAlongStage,
+  })),
+)
 
 type StageView = 'pocket' | 'seat' | 'score'
 type Workspace = 'groove' | 'kit' | 'mix' | 'room' | 'learn' | 'songs' | 'coach'
@@ -43,6 +75,11 @@ interface DrumNightAppProps {
   readonly createPlayer?: (options: DrumKitPlayerOptions) => DrumKitPlayer
   readonly createScoreIndex?: (document: DrumSessionDocument) => DrumScoreIndex
   readonly createSessionController?: () => DrumSessionImportController
+  readonly loadSongPort?: () => Promise<PlayAlongSongSourcePort<'drums'>>
+  readonly loadBandPreparationPort?: () => Promise<PlayAlongBandPreparationPort>
+  readonly checkBandPreflight?: (
+    sessionId: string,
+  ) => CloudSplitBlocker | null | Promise<CloudSplitBlocker | null>
   /** Optional observer for the route-owned imported-session lifecycle. */
   readonly onReadySessionChange?: (document: DrumSessionDocument | null) => void
   readonly runtimeOptions?: Omit<DrumNightRuntimeOptions, 'player'>
@@ -64,7 +101,7 @@ const WORKSPACE_TITLES: Record<Workspace, string> = {
   mix: 'Balance the room',
   room: 'Choose the room',
   learn: 'Build the first pocket',
-  songs: 'Bring a drum part',
+  songs: 'Bring a song',
   coach: 'Recover the backbeat',
 }
 
@@ -112,6 +149,15 @@ function nextRovingIndex(
 function formatMegabytes(bytes: number): string {
   if (bytes === 0) return 'No download'
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB encoded`
+}
+
+function formatSessionTime(seconds: number): string {
+  const bounded = Math.max(
+    0,
+    Math.floor(Number.isFinite(seconds) ? seconds : 0),
+  )
+  const minutes = Math.floor(bounded / 60)
+  return `${minutes}:${String(bounded % 60).padStart(2, '0')}`
 }
 
 function formatCountedBeat(beat: number): number {
@@ -313,12 +359,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     FIRST_POCKET_DEFAULT_VARIANT,
   )
   const [kitVolume, setKitVolume] = createSignal(INITIAL_KIT_VOLUME)
+  const [liveKitMuted, setLiveKitMuted] = createSignal(false)
   const [calibrationRunning, setCalibrationRunning] = createSignal(false)
   const [calibrationCue, setCalibrationCue] = createSignal(0)
   const [calibrationAwaiting, setCalibrationAwaiting] = createSignal(false)
-  const [draggingSessionFile, setDraggingSessionFile] = createSignal(false)
+  const [sessionFileMessage, setSessionFileMessage] = createSignal<
+    string | null
+  >(null)
   const [recoveryLoopActive, setRecoveryLoopActive] = createSignal(false)
   const [recordingChoiceMade, setRecordingChoiceMade] = createSignal(false)
+  const [playRequestPending, setPlayRequestPending] = createSignal(false)
   // Keep the premium metadata boundary behind the first explicit Room action.
   // Public selections still resolve synchronously through the shared
   // controller, so a restored free room does not cost a first-paint request.
@@ -356,7 +406,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     getOutput: audioSession.outputForGesture,
     initialKitId: selectedKitId(),
   })
-  player.setVolume(INITIAL_KIT_VOLUME / 100)
+  const applyLiveKitLevel = (level: number): void => {
+    if (player.setLaneVolume !== undefined) player.setLaneVolume('live', level)
+    else player.setVolume(level)
+  }
+  applyLiveKitLevel(INITIAL_KIT_VOLUME / 100)
   const runtime = useDrumNightRuntime({
     ...(props.runtimeOptions ?? {}),
     player,
@@ -367,9 +421,27 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     performanceTimestampToContextTime:
       audioSession.performanceTimestampToContextTime,
   })
-  const sessionController = (
-    props.createSessionController ?? createDrumSessionImportController
-  )()
+  const arrangementBackingPlayer = createDrumArrangementBackingPlayer({
+    getAudioContext: audioSession.activeContext,
+    getOutput: audioSession.activeOutput,
+  })
+  const authoredPlayAlong = createDrumPlayAlongController({
+    transport: runtime.transportPort,
+    player: arrangementBackingPlayer,
+    performanceTimestampToContextTime:
+      audioSession.performanceTimestampToContextTime,
+    onDrumsLevelChange: (level) => player.setLaneVolume?.('authored', level),
+  })
+  const stemPlayAlong = createDrumStemPlayAlongController({
+    transport: runtime.transportPort,
+    activeContext: audioSession.activeContext,
+    activeOutput: audioSession.activeOutput,
+    performanceTimestampToContextTime:
+      audioSession.performanceTimestampToContextTime,
+  })
+  const sessionController =
+    props.createSessionController?.() ??
+    createDrumSessionImportController({}, { allowPitchedOnly: true })
   const initialSessionState = sessionController.state()
   const [sessionState, setSessionState] =
     createSignal<DrumSessionImportState>(initialSessionState)
@@ -377,12 +449,97 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     createSignal<DrumSessionDocument | null>(
       readyDrumSessionDocument(initialSessionState),
     )
+  const songController = usePlayAlongSongController<
+    'drums',
+    PlayAlongBackingSource<'drums'>
+  >({
+    loadSongPort: () =>
+      props.loadSongPort?.() ??
+      loadUvrPlayAlongSongPort(DRUM_PLAY_ALONG_POLICY),
+    initialSessionId: readDrumPlayAlongSession(),
+    writeSession: (sessionId, mode) => {
+      const nextLocation = withDrumPlayAlongSession(
+        window.location.href,
+        sessionId,
+      )
+      if (mode === 'replace') {
+        window.history.replaceState({ drumNight: true }, '', nextLocation)
+      } else {
+        window.history.pushState({ drumNight: true }, '', nextLocation)
+      }
+    },
+    onBackingWillRelease: () => stemPlayAlong.configure(null),
+  })
+  let sourceIntentGeneration = 0
+  let activeBandIntent: {
+    readonly generation: number
+    readonly sessionId: string
+  } | null = null
+  const bandPreparation = usePlayAlongBandPreparationController({
+    loadPort: () =>
+      props.loadBandPreparationPort?.() ??
+      loadPlayAlongBandPreparationPort(DRUM_PLAY_ALONG_POLICY),
+    checkPreflight: async (sessionId) => {
+      if (props.checkBandPreflight !== undefined) {
+        return props.checkBandPreflight(sessionId)
+      }
+      const [account, preflight] = await Promise.all([
+        import('@/lib/standalone-account'),
+        import('@/lib/uvr-cloud-preflight'),
+      ])
+      if (!account.accountReady()) await account.refreshAccount()
+      const balance = account.credits()
+      return preflight.cloudSplitBlocker({
+        signedIn: account.signedIn(),
+        ...(balance === null ? {} : { balance }),
+      })
+    },
+    onPrepared: async (sessionId, signal) => {
+      const intent = activeBandIntent
+      if (
+        intent === null ||
+        intent.sessionId !== sessionId ||
+        intent.generation !== sourceIntentGeneration ||
+        signal.aborted
+      ) {
+        return
+      }
+      const refreshed = await songController.refreshLibrary()
+      if (
+        signal.aborted ||
+        activeBandIntent !== intent ||
+        intent.generation !== sourceIntentGeneration
+      ) {
+        return
+      }
+      if (!refreshed) {
+        throw new Error(
+          'The separated parts were saved, but the prepared-song library could not reopen them.',
+        )
+      }
+      await songController.stageSession(sessionId, 'replace', { force: true })
+      if (
+        !signal.aborted &&
+        activeBandIntent === intent &&
+        intent.generation === sourceIntentGeneration
+      ) {
+        activeBandIntent = null
+      }
+    },
+  })
+  const selectedBackingSource = createMemo(() => {
+    const state = songController.selectionState()
+    return state.kind === 'ready' ? state.lease : null
+  })
+  const usingStemBacking = createMemo(() => selectedBackingSource() !== null)
   const preparedGroove = createMemo(() => createFirstPocketGroove(variation()))
   const activeDocument = createMemo(
     () => importedDocument() ?? preparedGroove().document,
   )
   const loopRange = useDrumNightLoopRange({
-    durationBeats: () => activeDocument().durationBeats,
+    durationBeats: () =>
+      runtime.transportState().authoredDurationBeats ??
+      activeDocument().durationBeats,
     positionBeats: () => runtime.transportState().positionBeats,
     phase: () => runtime.transportState().phase,
     currentLoop: () => runtime.transportState().loop,
@@ -410,7 +567,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const unsubscribeClick = clickController.subscribe(() =>
     setClickSnapshot(clickController.snapshot()),
   )
-  const usingImportedDocument = createMemo(() => importedDocument() !== null)
+  const usingImportedDocument = createMemo(
+    () => importedDocument() !== null && !usingStemBacking(),
+  )
   const unsubscribeSession = sessionController.subscribe(() => {
     const nextState = sessionController.state()
     setSessionState(nextState)
@@ -422,6 +581,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   )
   const unsubscribeScheduler = sessionScheduler.subscribe(() =>
     setSchedulerSnapshot(sessionScheduler.snapshot()),
+  )
+  const [authoredPlayAlongSnapshot, setAuthoredPlayAlongSnapshot] =
+    createSignal<DrumPlayAlongSnapshot>(authoredPlayAlong.snapshot())
+  const unsubscribeAuthoredPlayAlong = authoredPlayAlong.subscribe(() =>
+    setAuthoredPlayAlongSnapshot(authoredPlayAlong.snapshot()),
+  )
+  const [stemPlayAlongSnapshot, setStemPlayAlongSnapshot] =
+    createSignal<DrumStemPlayAlongSnapshot>(stemPlayAlong.snapshot())
+  const unsubscribeStemPlayAlong = stemPlayAlong.subscribe(() =>
+    setStemPlayAlongSnapshot(stemPlayAlong.snapshot()),
   )
   const calibrationNowMs =
     props.runtimeOptions?.midiEnvironment?.nowMs ??
@@ -437,7 +606,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   let workspaceOpener: HTMLElement | null = null
   let inputRef: HTMLDivElement | undefined
   let inputButtonRef: HTMLButtonElement | undefined
-  let sessionFileInputRef: HTMLInputElement | undefined
   let toastTimer: number | undefined
   let hitTimer: number | undefined
   let seatHitSequence = 0
@@ -446,6 +614,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   let calibrationInputId: string | null = null
   let calibrationLastSampleCount = 0
   let scheduledDocument: DrumSessionDocument | null = null
+  let scheduledBackingSource: PlayAlongBackingSource<'drums'> | null = null
 
   const transport = runtime.transportState
   const isPlaying = createMemo(() => transportIsRunning(transport()))
@@ -464,6 +633,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   )
   const readySession = activeDocument
   const sessionScoreIndex = createMemo(() => {
+    if (usingStemBacking()) return null
     const document = readySession()
     if (document === null) return null
     return (props.createScoreIndex ?? createDrumScoreIndex)(document)
@@ -480,6 +650,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const index = sessionScoreIndex()
     if (index === null) return Math.floor(transport().positionBeats / 4) + 1
     return barIndexAtBeat(index.score.bars, transport().positionBeats) + 1
+  })
+  const sessionMapCopy = createMemo(() => {
+    if (usingStemBacking()) {
+      const position = formatSessionTime(runtime.positionSeconds())
+      const duration = stemPlayAlongSnapshot().durationSeconds
+      return {
+        label: position,
+        detail: duration > 0 ? formatSessionTime(duration) : 'Loads on Play',
+        aria:
+          duration > 0
+            ? `Song position ${position} of ${formatSessionTime(duration)}`
+            : `Song position ${position}; audio loads on Play`,
+      }
+    }
+    return {
+      label: `Bar ${currentBar()}`,
+      detail: authoredBarCountCopy(),
+      aria:
+        authoredBarCount() === null
+          ? `Current bar ${currentBar()}, unbounded take`
+          : `Current bar ${currentBar()}, ${authoredBarCountCopy()}`,
+    }
   })
   const activePocketBarPair = createMemo(() =>
     Math.floor((currentBar() - 1) / 2),
@@ -583,13 +775,27 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       ? `${retained} hits`
       : `${retained} hits · ${omitted} older not retained`
   })
-  const sessionTitle = createMemo(() => readySession().title)
+  const sessionTitle = createMemo(
+    () => selectedBackingSource()?.title ?? readySession().title,
+  )
+  const transportClockLabel = createMemo(() =>
+    usingStemBacking() ? 'song clock' : 'take clock',
+  )
   const roomLabel = createMemo(
     () =>
       getBackgroundDefinition(background.resolved().id)?.label ??
       'Pocket Console',
   )
   const sessionIdentityDetail = createMemo(() => {
+    const backing = selectedBackingSource()
+    if (backing !== null) {
+      const source =
+        backing.plannedMix.kind === 'parts'
+          ? 'Separated source audio'
+          : 'Two-stem source audio'
+      const duration = stemPlayAlongSnapshot().durationSeconds
+      return `${source} · ${duration > 0 ? formatSessionTime(duration) : 'loads on Play'} · shared song clock`
+    }
     const document = readySession()
     const source =
       document.sourceFormat === 'midi'
@@ -617,6 +823,19 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       detail: `${percussionCount} percussion ${percussionCount === 1 ? 'track' : 'tracks'} · ${document.hitCount} mapped hits. ${pitchedCopy} ${droppedCopy}`,
       tone: 'ready' as const,
     }
+  })
+  const sessionImportProblem = createMemo(() => {
+    const explicit = sessionFileMessage()
+    if (explicit !== null) return explicit
+    const status = sessionState().status
+    if (status === 'idle' || status === 'loading' || status === 'ready') {
+      return null
+    }
+    return sessionImportCopy()?.detail ?? 'The authored file was not applied.'
+  })
+  const openingSessionFileName = createMemo(() => {
+    const state = sessionState()
+    return state.status === 'loading' ? state.fileName : null
   })
   const authoredPlaybackCopy = createMemo(() => {
     const snapshot = schedulerSnapshot()
@@ -683,6 +902,15 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     return `Authored percussion is ready on the shared take clock. ${fidelityCopy}`
   })
   const stageCopy = createMemo(() => {
+    if (usingStemBacking()) {
+      if (view() === 'score') {
+        return { kicker: 'Prepared audio', title: 'Audio, not notation.' }
+      }
+      if (view() === 'seat') {
+        return { kicker: 'Play-along room', title: 'Take the drummer’s seat.' }
+      }
+      return { kicker: 'Prepared backing', title: 'Bring the band in.' }
+    }
     switch (view()) {
       case 'seat':
         return { kicker: 'Drummer’s perspective', title: 'Read from the seat.' }
@@ -853,8 +1081,62 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
   }
 
+  const invalidateSourceIntent = (): number => {
+    sourceIntentGeneration += 1
+    activeBandIntent = null
+    return sourceIntentGeneration
+  }
+
+  const selectPreparedSession = (
+    sessionId: string,
+    historyMode: 'push' | 'replace' | 'none' = 'push',
+    force = false,
+  ): void => {
+    invalidateSourceIntent()
+    bandPreparation.cancel()
+    sessionController.cancel()
+    setImportedDocument(null)
+    setSessionFileMessage(null)
+    void songController.stageSession(sessionId, historyMode, { force })
+  }
+
+  const clearPreparedSession = (
+    historyMode: 'push' | 'replace' | 'none' = 'push',
+  ): void => {
+    invalidateSourceIntent()
+    bandPreparation.cancel()
+    songController.clearSession(historyMode)
+  }
+
+  const retryPreparedSession = (sessionId: string): void => {
+    if (songController.routeSessionId() !== sessionId) return
+    selectPreparedSession(sessionId, 'none', true)
+  }
+
+  const startBandSeparation = (sessionId: string): void => {
+    const selection = songController.selectionState()
+    if (
+      songController.routeSessionId() !== sessionId ||
+      selection.kind !== 'ready' ||
+      selection.lease.sessionId !== sessionId
+    ) {
+      return
+    }
+    const generation = invalidateSourceIntent()
+    activeBandIntent = { generation, sessionId }
+    sessionController.cancel()
+    setImportedDocument(null)
+    bandPreparation.start(sessionId)
+  }
+
+  const cancelBandSeparation = (): void => {
+    invalidateSourceIntent()
+    bandPreparation.cancel()
+  }
+
   const syncStateFromUrl = (): void => {
     const params = new URLSearchParams(window.location.search)
+    const nextSongSessionId = readDrumPlayAlongSession()
     const requestedView = params.get('view')
     const legacyKitView = requestedView === 'kit'
     const nextView = legacyKitView
@@ -888,6 +1170,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       })
     }
     if (legacyKitView) updateUrl(nextView, nextDrawer, 'replace')
+    if (nextSongSessionId === null) {
+      if (songController.routeSessionId() !== null) {
+        clearPreparedSession('none')
+      }
+    } else if (
+      nextSongSessionId !== songController.routeSessionId() ||
+      songController.selectionState().kind === 'idle'
+    ) {
+      selectPreparedSession(nextSongSessionId, 'none')
+    }
   }
 
   const showToast = (message: string): void => {
@@ -936,6 +1228,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
     setWorkspace(nextWorkspace)
     setDrawerOpen(true)
+    if (nextWorkspace === 'songs') songController.initialize()
     updateUrl(view(), nextWorkspace)
   }
 
@@ -958,13 +1251,21 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   const importSessionFile = (file: File | undefined): void => {
-    setDraggingSessionFile(false)
     if (file === undefined) return
+    const intentGeneration = invalidateSourceIntent()
+    bandPreparation.cancel()
+    setSessionFileMessage(null)
     void sessionController
       .importFile(file)
       .then((attempt) => {
-        if (attempt.status === 'stale') return
+        if (
+          attempt.status === 'stale' ||
+          intentGeneration !== sourceIntentGeneration
+        ) {
+          return
+        }
         if (attempt.state.status === 'ready') {
+          songController.clearSession('replace')
           setView('score')
           setDrawerOpen(false)
           updateUrl('score', null)
@@ -979,11 +1280,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         )
       })
       .catch(() => {
+        if (intentGeneration !== sourceIntentGeneration) return
+        setSessionFileMessage(
+          'The authored arrangement could not be opened. Choose the file again.',
+        )
         showToast('The drum part could not be opened. Choose the file again.')
       })
   }
 
   const clearImportedSession = (): void => {
+    invalidateSourceIntent()
+    bandPreparation.cancel()
     setImportedDocument(null)
     sessionController.cancel()
     loopRange.clear()
@@ -994,9 +1301,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   const cancelSessionImport = (): void => {
     if (sessionState().status !== 'loading') return
+    invalidateSourceIntent()
     sessionController.cancel()
     showToast('Drum part import cancelled. Nothing was partially loaded.')
   }
+
+  const localArrangementAccessory = createMemo<JSX.Element | undefined>(() => {
+    const document = importedDocument()
+    if (document === null) return undefined
+    const backingCount = document.pitchedTrackCount
+    return (
+      <div>
+        <strong>{document.title}</strong>
+        <span>
+          {document.hitCount} authored drum hits · {backingCount}{' '}
+          {backingCount === 1 ? 'backing track' : 'backing tracks'}
+        </span>
+        <button type="button" onClick={clearImportedSession}>
+          Clear authored arrangement
+        </button>
+      </div>
+    )
+  })
 
   const applyRecoveryLoop = (loop: DrumRecoveryLoop): void => {
     const authoredEndBeat = readySession().durationBeats
@@ -1020,17 +1346,74 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const phase = transport().phase
     if (phase === 'playing' || phase === 'count-in') {
       runtime.pause()
-      showToast('Take clock paused. Live voices released.')
+      showToast(
+        `${usingStemBacking() ? 'Song' : 'Take'} clock paused. Live voices released.`,
+      )
       return
     }
-    if (!recordingChoiceMade()) runtime.setRecording(true)
+    if (playRequestPending()) return
+    if (!usingStemBacking() && !recordingChoiceMade()) {
+      runtime.setRecording(true)
+    }
     announceOnly(
-      `${sessionTitle()} is starting on the shared take clock${recordingChoiceMade() && !transport().recording ? '.' : ' with take events armed.'}`,
+      usingStemBacking()
+        ? `${sessionTitle()} is preparing on the shared song clock.`
+        : `${sessionTitle()} is starting on the shared take clock${recordingChoiceMade() && !transport().recording ? '.' : ' with take events armed.'}`,
     )
-    void runtime.play()
+    setPlayRequestPending(true)
+    const selectedSource = selectedBackingSource()
+    let kitActivation: Promise<boolean>
+    try {
+      // Cross the Web Audio boundary synchronously inside the button gesture.
+      kitActivation = runtime.activateAudio()
+    } catch {
+      kitActivation = Promise.resolve(false)
+    }
+    void kitActivation
+      .then(async (kitReady) => {
+        if (!kitReady) return false
+        if (selectedSource !== null) {
+          const loaded = await stemPlayAlong.load()
+          if (!loaded || untrack(selectedBackingSource) !== selectedSource) {
+            return false
+          }
+          const durationSeconds = untrack(
+            () => stemPlayAlong.snapshot().durationSeconds,
+          )
+          if (!(durationSeconds > 0)) return false
+          runtime.transportPort.setAuthoredTiming({
+            tempoBpm: 60,
+            durationBeats: durationSeconds,
+          })
+          return runtime.play()
+        }
+        const backingReady = await authoredPlayAlong.activate()
+        if (!backingReady || untrack(selectedBackingSource) !== null) {
+          return false
+        }
+        return runtime.play()
+      })
+      .then((started) => {
+        if (started) return
+        const error = stemPlayAlong.snapshot().error
+        showToast(
+          error?.message ??
+            'Audio could not start. Your selected source and mix are unchanged.',
+        )
+      })
+      .catch(() => {
+        showToast(
+          'Audio could not start. Your selected source and mix are unchanged.',
+        )
+      })
+      .finally(() => setPlayRequestPending(false))
   }
 
   const changeTempo = (delta: number): void => {
+    if (usingStemBacking()) {
+      showToast('Prepared audio keeps its recorded timing and pitch.')
+      return
+    }
     const nextTempo = Math.max(40, Math.min(280, transport().tempoBpm + delta))
     runtime.setTempoBpm(nextTempo)
     setRecoveryLoopActive(false)
@@ -1042,6 +1425,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   const startFirstPocket = (): void => {
+    invalidateSourceIntent()
+    bandPreparation.cancel()
+    songController.clearSession('replace')
     setImportedDocument(null)
     sessionController.cancel()
     setVariation(FIRST_POCKET_DEFAULT_VARIANT)
@@ -1062,7 +1448,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const stopTake = (): void => {
     runtime.stop()
     showToast(
-      'Take clock returned to beat one. Captured hits stay in this take.',
+      usingStemBacking()
+        ? 'Song clock returned to the start. Your mix is unchanged.'
+        : 'Take clock returned to beat one. Captured hits stay in this take.',
     )
   }
 
@@ -1123,6 +1511,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   const toggleClick = (): void => {
+    if (usingStemBacking()) {
+      showToast(
+        'Prepared audio has no authored tempo map. Use the song itself as the timing guide.',
+      )
+      return
+    }
     const enabled = !clickSnapshot().enabled
     clickController.enable(enabled)
     showToast(
@@ -1131,6 +1525,151 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         : 'Click muted. The authored groove and take clock keep running.',
     )
   }
+
+  const mixSourceKind = createMemo<
+    'separated-audio' | 'two-stem-audio' | 'authored-arrangement'
+  >(() => {
+    if (!usingStemBacking()) return 'authored-arrangement'
+    return stemPlayAlongSnapshot().hasIndependentDrums
+      ? 'separated-audio'
+      : 'two-stem-audio'
+  })
+  const mixPreset = createMemo<DrumPlayAlongMixPreset>(() => {
+    if (usingStemBacking()) {
+      const snapshot = stemPlayAlongSnapshot()
+      if (snapshot.buses.drums.muted && !snapshot.buses.backing.muted) {
+        return 'play-along'
+      }
+      if (!snapshot.buses.drums.muted && snapshot.buses.backing.muted) {
+        return 'drum-focus'
+      }
+      return 'full'
+    }
+    const snapshot = authoredPlayAlongSnapshot()
+    if (snapshot.drums.muted && !snapshot.backing.muted) return 'play-along'
+    if (!snapshot.drums.muted && snapshot.backing.muted) return 'drum-focus'
+    return 'full'
+  })
+  const applyMixPreset = (preset: DrumPlayAlongMixPreset): void => {
+    if (usingStemBacking()) {
+      if (!stemPlayAlong.applyPreset(preset)) {
+        showToast('Separate drums before changing the source-drum balance.')
+        return
+      }
+    } else {
+      const snapshot = authoredPlayAlong.snapshot()
+      authoredPlayAlong.setBusSolo('drums', false)
+      authoredPlayAlong.setBusSolo('backing', false)
+      for (const track of snapshot.backingTracks) {
+        authoredPlayAlong.setTrackSolo(track.id, false)
+      }
+      authoredPlayAlong.setBusMuted('drums', preset === 'play-along')
+      authoredPlayAlong.setBusMuted('backing', preset === 'drum-focus')
+    }
+    const copy =
+      preset === 'play-along'
+        ? 'Source drums muted. Backing and your live kit stay available.'
+        : preset === 'drum-focus'
+          ? 'Backing muted. Source drums and your live kit stay available.'
+          : 'Full source mix restored. Your live kit remains independent.'
+    showToast(copy)
+  }
+  const setMixBusLevel = (bus: DrumPlayAlongBusId, level: number): void => {
+    if (bus === 'you') {
+      const percent = Math.round(level * 100)
+      setKitVolume(percent)
+      applyLiveKitLevel(liveKitMuted() ? 0 : level)
+      return
+    }
+    if (bus === 'click') {
+      clickController.setLevel(level)
+      return
+    }
+    if (usingStemBacking()) stemPlayAlong.setBusLevel(bus, level)
+    else authoredPlayAlong.setBusLevel(bus, level)
+  }
+  const setMixBusMuted = (bus: DrumPlayAlongBusId, muted: boolean): void => {
+    if (bus === 'you') {
+      setLiveKitMuted(muted)
+      applyLiveKitLevel(muted ? 0 : kitVolume() / 100)
+      return
+    }
+    if (bus === 'click') {
+      if (usingStemBacking()) return
+      clickController.enable(!muted)
+      return
+    }
+    if (usingStemBacking()) stemPlayAlong.setBusMuted(bus, muted)
+    else authoredPlayAlong.setBusMuted(bus, muted)
+  }
+  const setMixTrackLevel = (trackId: string, level: number): void => {
+    if (usingStemBacking()) stemPlayAlong.setTrackLevel(trackId, level)
+    else authoredPlayAlong.setTrackLevel(trackId, level)
+  }
+  const setMixTrackMuted = (trackId: string, muted: boolean): void => {
+    if (usingStemBacking()) stemPlayAlong.setTrackMuted(trackId, muted)
+    else authoredPlayAlong.setTrackMuted(trackId, muted)
+  }
+  const sourceDrumsMix = createMemo(() => {
+    if (usingStemBacking()) {
+      const snapshot = stemPlayAlongSnapshot()
+      return {
+        level: snapshot.buses.drums.level,
+        muted: snapshot.buses.drums.muted,
+        disabled: !snapshot.hasIndependentDrums,
+        detail: snapshot.hasIndependentDrums
+          ? 'Separated source audio'
+          : 'Inside Backing',
+      }
+    }
+    const drums = authoredPlayAlongSnapshot().drums
+    return {
+      level: drums.level,
+      muted: drums.muted,
+      disabled: !drums.available,
+      detail: `${drums.eventCount} authored ${drums.eventCount === 1 ? 'hit' : 'hits'}`,
+    }
+  })
+  const backingMix = createMemo(() => {
+    if (usingStemBacking()) {
+      const backing = stemPlayAlongSnapshot().buses.backing
+      return {
+        level: backing.level,
+        muted: backing.muted,
+        detail: 'Prepared source audio',
+      }
+    }
+    const backing = authoredPlayAlongSnapshot().backing
+    return {
+      level: backing.level,
+      muted: backing.muted,
+      disabled: !backing.available,
+      detail:
+        backing.available && backing.trackCount > 0
+          ? `${backing.trackCount} timing and pitch ${backing.trackCount === 1 ? 'guide' : 'guides'}`
+          : 'No pitched backing tracks',
+    }
+  })
+  const sourceMixTracks = createMemo(() => {
+    if (usingStemBacking()) {
+      return stemPlayAlongSnapshot().tracks.map((track) => ({
+        id: track.id,
+        label: track.label,
+        bus: track.bus,
+        level: track.level,
+        muted: track.muted,
+        detail: track.available ? 'Prepared stem' : 'Loads on Play',
+      }))
+    }
+    return authoredPlayAlongSnapshot().backingTracks.map((track) => ({
+      id: track.id,
+      label: track.label,
+      bus: 'backing' as const,
+      level: track.level,
+      muted: track.muted,
+      detail: `${track.playbackLabel} · timing and pitch guide`,
+    }))
+  })
 
   const selectKit = (kitId: DrumKitId): void => {
     const manifest = drumKitManifest(kitId)
@@ -1147,7 +1686,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     showToast('Reactivating drum audio before retrying the selected kit.')
     let activation: Promise<boolean>
     try {
-      activation = Promise.resolve(player.activate())
+      activation = runtime.retryAudio()
     } catch {
       showToast('Drum audio is still unavailable. Check browser audio access.')
       return
@@ -1299,8 +1838,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
   createEffect(() => {
     const document = readySession()
-    if (document !== scheduledDocument) {
+    const backingSource = selectedBackingSource()
+    if (
+      document !== scheduledDocument ||
+      backingSource !== scheduledBackingSource
+    ) {
       scheduledDocument = document
+      scheduledBackingSource = backingSource
       // An imported document owns its own take evidence and practice range.
       // Crossing that boundary must never coach or loop against the previous
       // document, even when the old loop happens to fit the new duration.
@@ -1310,7 +1854,29 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       runtime.clearRecording()
       setRecordingChoiceMade(false)
       setRecoveryLoopActive(false)
-      sessionScheduler.setSession(document)
+      if (backingSource !== null) {
+        sessionScheduler.setSession(null)
+        authoredPlayAlong.setSession(null)
+        stemPlayAlong.configure(backingSource)
+        runtime.transportPort.setAuthoredTiming({
+          tempoBpm: 60,
+          durationBeats: backingSource.durationSeconds ?? 0,
+        })
+        runtime.transportPort.seek(0)
+        runtime.setCountInBeats(0)
+        if (clickSnapshot().enabled) clickController.enable(false)
+      } else {
+        stemPlayAlong.configure(null)
+        sessionScheduler.setSession(document)
+        authoredPlayAlong.setSession(document)
+        const arrangement = authoredPlayAlong.snapshot().arrangement
+        runtime.transportPort.setAuthoredTiming({
+          tempoBpm: document.canonicalSong.bpm,
+          tempoChanges: document.canonicalSong.tempoChanges,
+          durationBeats: arrangement?.durationBeats ?? document.durationBeats,
+        })
+        runtime.transportPort.seek(0)
+      }
     }
   })
 
@@ -1393,6 +1959,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     unsubscribeKit()
     unsubscribeSession()
     unsubscribeScheduler()
+    unsubscribeAuthoredPlayAlong()
+    unsubscribeStemPlayAlong()
+    stemPlayAlong.dispose()
+    void authoredPlayAlong.dispose()
     sessionScheduler.dispose()
     clickController.dispose()
     sessionController.dispose()
@@ -1521,18 +2091,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </span>
             <ChevronDown />
           </button>
-          <div
-            class={styles.barMap}
-            aria-label={
-              authoredBarCount() === null
-                ? `Current bar ${currentBar()}, unbounded take`
-                : `Current bar ${currentBar()}, ${authoredBarCountCopy()}`
-            }
-          >
-            <span class={styles.barLabel}>Bar {currentBar()}</span>
+          <div class={styles.barMap} aria-label={sessionMapCopy().aria}>
+            <span class={styles.barLabel}>{sessionMapCopy().label}</span>
             <span class={styles.barExtent} aria-hidden="true">
               <i />
-              {authoredBarCountCopy()}
+              {sessionMapCopy().detail}
             </span>
           </div>
           <div class={styles.sessionActions}>
@@ -1606,13 +2169,19 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <div class={styles.stageShade} aria-hidden="true" />
           <div class={styles.stageVignette} aria-hidden="true" />
 
-          <div class={styles.stageHeading} inert={drawerInteractionLocked()}>
-            <div class={styles.stageCopy}>
-              <span class={styles.stageKicker}>
-                <i aria-hidden="true" /> {stageCopy().kicker}
-              </span>
-              <h1>{stageCopy().title}</h1>
-            </div>
+          <div
+            class={styles.stageHeading}
+            data-copy-hidden={usingStemBacking() && view() !== 'seat'}
+            inert={drawerInteractionLocked()}
+          >
+            <Show when={!usingStemBacking() || view() === 'seat'}>
+              <div class={styles.stageCopy}>
+                <span class={styles.stageKicker}>
+                  <i aria-hidden="true" /> {stageCopy().kicker}
+                </span>
+                <h1>{stageCopy().title}</h1>
+              </div>
+            </Show>
             <div
               class={styles.viewSwitcher}
               role="group"
@@ -1634,96 +2203,145 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </div>
           </div>
 
-          <Show when={view() === 'pocket'}>
-            <PocketStage
-              activePad={activeHit}
-              transport={transport}
-              pocket={activePocket}
-              meter={activePocketMeter}
-              imported={usingImportedDocument()}
-              sessionTitle={sessionTitle}
-              inactive={drawerInteractionLocked()}
-              photoKit={background.resolved().id === 'drum-pocket-console'}
-              onStrike={triggerPad}
-            />
-          </Show>
-          <Show when={view() !== 'pocket'}>
-            <div
-              class={styles.sessionStageView}
-              data-session-view={view()}
-              inert={drawerInteractionLocked()}
+          <Show
+            when={usingStemBacking()}
+            fallback={
+              <>
+                <Show when={view() === 'pocket'}>
+                  <PocketStage
+                    activePad={activeHit}
+                    transport={transport}
+                    pocket={activePocket}
+                    meter={activePocketMeter}
+                    imported={usingImportedDocument()}
+                    sessionTitle={sessionTitle}
+                    inactive={drawerInteractionLocked()}
+                    photoKit={
+                      background.resolved().id === 'drum-pocket-console'
+                    }
+                    onStrike={triggerPad}
+                  />
+                </Show>
+                <Show when={view() !== 'pocket'}>
+                  <div
+                    class={styles.sessionStageView}
+                    data-session-view={view()}
+                    inert={drawerInteractionLocked()}
+                  >
+                    <Show when={view() === 'seat'}>
+                      <DrummerSeatView
+                        session={activeSessionState}
+                        playheadBeat={() => transport().positionBeats}
+                        scoreIndex={sessionScoreIndex}
+                        liveHits={seatLiveHits}
+                        onStrike={triggerPad}
+                      />
+                    </Show>
+                    <Show when={view() === 'score'}>
+                      <DrumScoreSheet
+                        session={activeSessionState}
+                        playheadBeat={() => transport().positionBeats}
+                        scoreIndex={sessionScoreIndex}
+                        visibleBarCount={() => (compactScore() ? 2 : 4)}
+                        markA={loopRange.markA}
+                        markB={loopRange.markB}
+                      />
+                    </Show>
+                    <p
+                      class={styles.authoredPlaybackNotice}
+                      data-status={schedulerSnapshot().status}
+                      role="note"
+                    >
+                      {authoredPlaybackCopy()}
+                    </p>
+                  </div>
+                </Show>
+
+                <aside
+                  class={styles.phraseCoach}
+                  aria-label="Session phrase coach"
+                  inert={drawerInteractionLocked()}
+                >
+                  <DrumSessionCoach
+                    session={activeSessionState}
+                    playheadBeat={() => transport().positionBeats}
+                    capturedHits={capturedSessionHits}
+                    scoreIndex={sessionScoreIndex}
+                    onRequestRecoveryLoop={applyRecoveryLoop}
+                  />
+                </aside>
+
+                <button
+                  class={styles.coachCue}
+                  type="button"
+                  inert={drawerInteractionLocked()}
+                  onClick={() => openWorkspace('coach')}
+                  aria-label="Open live take monitor"
+                >
+                  <span class={styles.coachOrb}>
+                    <AudioWave />
+                  </span>
+                  <span>
+                    <strong>
+                      {retainedTakeHitCount() === 0
+                        ? recordingChoiceMade() && !transport().recording
+                          ? 'Arm Take events, then press Play.'
+                          : 'Press Play, then answer the phrase.'
+                        : omittedTakeHitCount() === 0
+                          ? `${retainedTakeHitCount()} strikes ready to compare.`
+                          : `${retainedTakeHitCount()} strikes ready · ${omittedTakeHitCount()} older not retained.`}
+                    </strong>
+                    <small>
+                      {retainedTakeHitCount() === 0
+                        ? 'Take events arms automatically on the first Play.'
+                        : 'Uses authored attacks and captured event timing.'}
+                    </small>
+                  </span>
+                  <ChevronDown />
+                </button>
+              </>
+            }
+          >
+            <Show
+              when={view() === 'seat'}
+              fallback={
+                <DrumPlayAlongStage
+                  title={sessionTitle()}
+                  mixKind={
+                    stemPlayAlongSnapshot().hasIndependentDrums
+                      ? 'separated'
+                      : 'two-stem'
+                  }
+                  view={view()}
+                  positionSeconds={runtime.positionSeconds()}
+                  durationSeconds={stemPlayAlongSnapshot().durationSeconds}
+                  isPlaying={isPlaying()}
+                  isLoading={
+                    playRequestPending() ||
+                    stemPlayAlongSnapshot().status === 'loading'
+                  }
+                  recentPadId={activeHit()}
+                  strikeDisabled={drawerInteractionLocked()}
+                  onStrike={triggerPad}
+                  onOpenAuthoredScore={() => openWorkspace('songs')}
+                />
+              }
             >
-              <Show when={view() === 'seat'}>
+              <div
+                class={styles.sessionStageView}
+                data-session-view="seat"
+                inert={drawerInteractionLocked()}
+              >
                 <DrummerSeatView
-                  session={activeSessionState}
+                  session={() => IDLE_DRUM_SESSION}
                   playheadBeat={() => transport().positionBeats}
-                  scoreIndex={sessionScoreIndex}
+                  scoreIndex={() => null}
                   liveHits={seatLiveHits}
                   onStrike={triggerPad}
                 />
-              </Show>
-              <Show when={view() === 'score'}>
-                <DrumScoreSheet
-                  session={activeSessionState}
-                  playheadBeat={() => transport().positionBeats}
-                  scoreIndex={sessionScoreIndex}
-                  visibleBarCount={() => (compactScore() ? 2 : 4)}
-                  markA={loopRange.markA}
-                  markB={loopRange.markB}
-                />
-              </Show>
-              <p
-                class={styles.authoredPlaybackNotice}
-                data-status={schedulerSnapshot().status}
-                role="note"
-              >
-                {authoredPlaybackCopy()}
-              </p>
-            </div>
+              </div>
+            </Show>
           </Show>
-
-          <aside
-            class={styles.phraseCoach}
-            aria-label="Session phrase coach"
-            inert={drawerInteractionLocked()}
-          >
-            <DrumSessionCoach
-              session={activeSessionState}
-              playheadBeat={() => transport().positionBeats}
-              capturedHits={capturedSessionHits}
-              scoreIndex={sessionScoreIndex}
-              onRequestRecoveryLoop={applyRecoveryLoop}
-            />
-          </aside>
-
-          <button
-            class={styles.coachCue}
-            type="button"
-            inert={drawerInteractionLocked()}
-            onClick={() => openWorkspace('coach')}
-            aria-label="Open live take monitor"
-          >
-            <span class={styles.coachOrb}>
-              <AudioWave />
-            </span>
-            <span>
-              <strong>
-                {retainedTakeHitCount() === 0
-                  ? recordingChoiceMade() && !transport().recording
-                    ? 'Arm Take events, then press Play.'
-                    : 'Press Play, then answer the phrase.'
-                  : omittedTakeHitCount() === 0
-                    ? `${retainedTakeHitCount()} strikes ready to compare.`
-                    : `${retainedTakeHitCount()} strikes ready · ${omittedTakeHitCount()} older not retained.`}
-              </strong>
-              <small>
-                {retainedTakeHitCount() === 0
-                  ? 'Take events arms automatically on the first Play.'
-                  : 'Uses authored attacks and captured event timing.'}
-              </small>
-            </span>
-            <ChevronDown />
-          </button>
 
           <button
             class={styles.sheetScrim}
@@ -1738,6 +2356,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             ref={drawerRef}
             id="drum-workbench"
             class={styles.workbench}
+            data-workspace={workspace()}
             role={drawerIsModal() ? 'dialog' : 'region'}
             aria-modal={drawerIsModal() ? 'true' : undefined}
             aria-labelledby="drum-workbench-title"
@@ -2079,69 +2698,36 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </Match>
               <Match when={workspace() === 'mix'}>
                 <div
-                  class={styles.workspaceView}
+                  class={cx('workspaceView', 'mixWorkspace')}
                   id="drum-workbench-panel-mix"
                   role="tabpanel"
                   aria-labelledby="drum-workbench-tab-mix"
                 >
-                  <div class={styles.workspaceCopy}>
-                    <span>Session mix</span>
-                    <h3>Keep the kit in front.</h3>
-                    <p>
-                      Kit and click are live. The click follows the same take
-                      clock and stays off until you turn it on.
-                    </p>
-                  </div>
-                  <div class={styles.mixerStrips}>
-                    <label>
-                      <span>Kit · {kitVolume()}%</span>
-                      <input
-                        aria-label="Kit level"
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={kitVolume()}
-                        onInput={(event) => {
-                          const value = Number(event.currentTarget.value)
-                          setKitVolume(value)
-                          player.setVolume(value / 100)
-                        }}
-                      />
-                    </label>
-                    <div class={styles.clickStrip}>
-                      <button
-                        type="button"
-                        class={styles.mixToggle}
-                        aria-pressed={clickSnapshot().enabled}
-                        onClick={toggleClick}
-                      >
-                        <span>
-                          <strong>Click</strong>
-                          <small>{clickStatusCopy()}</small>
-                        </span>
-                        <b>{clickSnapshot().enabled ? 'On' : 'Off'}</b>
-                      </button>
-                      <label>
-                        <span>
-                          Click level ·{' '}
-                          {Math.round(clickSnapshot().level * 100)}%
-                        </span>
-                        <input
-                          aria-label="Click level"
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={Math.round(clickSnapshot().level * 100)}
-                          disabled={!clickSnapshot().enabled}
-                          onInput={(event) =>
-                            clickController.setLevel(
-                              Number(event.currentTarget.value) / 100,
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-                  </div>
+                  <DrumPlayAlongMixer
+                    sourceKind={mixSourceKind()}
+                    activePreset={mixPreset()}
+                    drums={sourceDrumsMix()}
+                    backing={backingMix()}
+                    you={{
+                      level: kitVolume() / 100,
+                      muted: liveKitMuted(),
+                      detail: `${selectedKit().name} · touch, keys, or e-kit`,
+                    }}
+                    click={{
+                      level: clickSnapshot().level,
+                      muted: !clickSnapshot().enabled,
+                      disabled: usingStemBacking(),
+                      detail: usingStemBacking()
+                        ? 'Unavailable without authored tempo'
+                        : clickStatusCopy(),
+                    }}
+                    tracks={sourceMixTracks()}
+                    onPresetChange={applyMixPreset}
+                    onBusLevelChange={setMixBusLevel}
+                    onBusMuteChange={setMixBusMuted}
+                    onTrackLevelChange={setMixTrackLevel}
+                    onTrackMuteChange={setMixTrackMuted}
+                  />
                 </div>
               </Match>
               <Match when={workspace() === 'room'}>
@@ -2197,109 +2783,59 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </Match>
               <Match when={workspace() === 'songs'}>
                 <div class={cx('workspaceView', 'sessionImportWorkspace')}>
-                  <div class={styles.workspaceCopy}>
-                    <span>Bring a drum part</span>
-                    <h3>Open MIDI or Guitar Pro.</h3>
-                    <p>
-                      Percussion tracks keep their articulation, tempo, meter,
-                      and velocity. Pitched tracks remain in the source without
-                      becoming drum sounds.
-                    </p>
-                  </div>
-                  <div
-                    class={cx(
-                      'sessionDropZone',
-                      draggingSessionFile() && 'isDragging',
-                    )}
-                    role="group"
-                    aria-label="Drop a drum session file"
-                    aria-busy={sessionState().status === 'loading'}
-                    onDragEnter={(event) => {
-                      event.preventDefault()
-                      setDraggingSessionFile(true)
-                    }}
-                    onDragOver={(event) => {
-                      event.preventDefault()
-                      if (event.dataTransfer !== null) {
-                        event.dataTransfer.dropEffect = 'copy'
-                      }
-                      setDraggingSessionFile(true)
-                    }}
-                    onDragLeave={(event) => {
-                      if (
-                        event.currentTarget.contains(
-                          event.relatedTarget as Node,
-                        )
-                      )
-                        return
-                      setDraggingSessionFile(false)
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault()
-                      importSessionFile(
-                        event.dataTransfer?.files.item(0) ?? undefined,
-                      )
-                    }}
-                  >
-                    <FileUpload />
-                    <span>
-                      <strong>
-                        {sessionState().status === 'loading'
-                          ? 'Reading the newest selection'
-                          : 'Drop the drum part here'}
-                      </strong>
-                      <small>
-                        .mid, .midi, .gp, .gp3, .gp4, .gp5, or .gpx · 20 MB
-                        maximum
-                      </small>
-                    </span>
-                    <input
-                      ref={sessionFileInputRef}
-                      class={styles.visuallyHiddenInput}
-                      type="file"
-                      tabindex="-1"
-                      accept=".mid,.midi,.gp,.gp3,.gp4,.gp5,.gpx,audio/midi,audio/x-midi"
-                      aria-label="Choose a drum session file"
-                      onChange={(event) => {
-                        importSessionFile(
-                          event.currentTarget.files?.item(0) ?? undefined,
-                        )
-                        event.currentTarget.value = ''
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => sessionFileInputRef?.click()}
-                    >
-                      {sessionState().status === 'loading'
-                        ? 'Choose a different part'
-                        : 'Choose drum part'}
-                    </button>
-                  </div>
-                  <div
-                    class={styles.sessionImportStatus}
-                    data-tone={sessionImportCopy()?.tone ?? 'neutral'}
-                    role={
-                      sessionImportCopy()?.tone === 'error' ? 'alert' : 'status'
+                  <DrumPlayAlongSongsPanel
+                    libraryState={songController.libraryState()}
+                    selectionState={songController.selectionState()}
+                    songs={songController.songs()}
+                    preparationState={bandPreparation.state()}
+                    localArrangement={localArrangementAccessory()}
+                    selectedSessionAccessory={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWorkspace('mix')
+                          updateUrl(view(), 'mix')
+                        }}
+                      >
+                        Open the play-along mixer
+                      </button>
                     }
-                    aria-live="polite"
-                  >
-                    <span aria-hidden="true" />
-                    <div>
-                      <strong>{sessionImportCopy()?.title}</strong>
-                      <p>{sessionImportCopy()?.detail}</p>
-                      <Show when={sessionState().status === 'ready'}>
-                        <button type="button" onClick={clearImportedSession}>
-                          Clear imported part
-                        </button>
-                      </Show>
-                      <Show when={sessionState().status === 'loading'}>
-                        <button type="button" onClick={cancelSessionImport}>
-                          Cancel import
-                        </button>
-                      </Show>
-                    </div>
-                  </div>
+                    openingFileName={openingSessionFileName()}
+                    fileMessage={sessionImportProblem()}
+                    fileBusy={sessionState().status === 'loading'}
+                    onFile={importSessionFile}
+                    onFilesRejected={() => {
+                      const message =
+                        'Choose one MIDI, GP, GP3, GP4, GP5, or GPX file.'
+                      setSessionFileMessage(message)
+                      showToast(message)
+                    }}
+                    onSelectSession={selectPreparedSession}
+                    onClearSession={clearPreparedSession}
+                    onRetryLibrary={() => {
+                      void songController.refreshLibrary()
+                    }}
+                    onRetrySession={retryPreparedSession}
+                    onSeparateDrums={startBandSeparation}
+                    onCancelSeparation={cancelBandSeparation}
+                    onRetrySeparation={startBandSeparation}
+                    onDismissSeparation={cancelBandSeparation}
+                    onResolveBlocker={(blocker) => {
+                      if (blocker.cta === null) return
+                      window.location.assign(
+                        `/#/settings/${blocker.cta.section}`,
+                      )
+                    }}
+                  />
+                  <Show when={sessionState().status === 'loading'}>
+                    <button
+                      class={styles.cancelSessionImport}
+                      type="button"
+                      onClick={cancelSessionImport}
+                    >
+                      Cancel authored-file import
+                    </button>
+                  </Show>
                 </div>
               </Match>
               <Match when={workspace() === 'coach'}>
@@ -2319,12 +2855,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
         <DrumNightTimeline
           sourceLabel={() =>
-            usingImportedDocument() ? 'Song timeline' : 'Groove timeline'
+            usingImportedDocument() || usingStemBacking()
+              ? 'Song timeline'
+              : 'Groove timeline'
           }
           positionSeconds={runtime.positionSeconds}
           durationSeconds={runtime.durationSeconds}
           playheadBeat={() => transport().positionBeats}
-          durationBeats={() => activeDocument().durationBeats}
+          durationBeats={() =>
+            transport().authoredDurationBeats ?? activeDocument().durationBeats
+          }
           markA={loopRange.markA}
           markB={loopRange.markB}
           active={loopRange.isActive}
@@ -2378,6 +2918,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <button
               class={styles.consoleModule}
               type="button"
+              disabled={usingStemBacking()}
               aria-pressed={transport().countInBeats > 0}
               aria-label={
                 transport().countInBeats > 0
@@ -2407,6 +2948,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             <button
               class={styles.consoleModule}
               type="button"
+              disabled={usingStemBacking()}
               aria-pressed={clickSnapshot().enabled}
               aria-label={`Playback click: ${clickSnapshot().enabled ? 'on' : 'off'}`}
               onClick={toggleClick}
@@ -2417,20 +2959,29 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 <strong>{clickSnapshot().enabled ? 'On' : 'Off'}</strong>
               </span>
             </button>
-            <div class={styles.tempoModule} aria-label="Tempo">
+            <div
+              class={styles.tempoModule}
+              aria-label={
+                usingStemBacking() ? 'Recorded song timing' : 'Authored tempo'
+              }
+            >
               <button
                 type="button"
+                disabled={usingStemBacking()}
                 onClick={() => changeTempo(-2)}
                 aria-label="Decrease tempo"
               >
                 <Minus />
               </button>
               <span>
-                <strong>{transport().tempoBpm}</strong>
-                <small>BPM</small>
+                <strong>
+                  {usingStemBacking() ? '1×' : transport().tempoBpm}
+                </strong>
+                <small>{usingStemBacking() ? 'Song' : 'BPM'}</small>
               </span>
               <button
                 type="button"
+                disabled={usingStemBacking()}
                 onClick={() => changeTempo(2)}
                 aria-label="Increase tempo"
               >
@@ -2444,7 +2995,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               type="button"
               disabled={transport().phase === 'stopped'}
               onClick={stopTake}
-              aria-label="Stop and return the take clock to beat one"
+              aria-label={`Stop and return the ${transportClockLabel()} to ${usingStemBacking() ? 'the start' : 'beat one'}`}
             >
               <Square />
             </button>
@@ -2452,7 +3003,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               class={styles.playButton}
               type="button"
               onClick={togglePlaying}
-              aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} take clock`}
+              aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`}
             >
               {isPlaying() ? <Pause /> : <Play />}
               <span>{isPlaying() ? 'Pause' : 'Play'}</span>
@@ -2507,7 +3058,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             class={styles.mobilePlay}
             type="button"
             onClick={togglePlaying}
-            aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} take clock`}
+            aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`}
           >
             {isPlaying() ? <Pause /> : <Play />}
             <span>{isPlaying() ? 'Pause' : 'Play'}</span>

@@ -304,7 +304,91 @@ describe('createDrumKitPlayer', () => {
 
     await expect(player.activate()).resolves.toBe(true)
     expect(context.resume).toHaveBeenCalledOnce()
-    expect(context.gains).toHaveLength(1)
+    expect(context.gains).toHaveLength(3)
+  })
+
+  it('shares one graph and sample cache across independent live and authored lanes', async () => {
+    const {
+      context,
+      fetchArrayBuffer,
+      getAudioContext,
+      getOutput,
+      output,
+      player,
+    } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+    expect(
+      player.trigger({
+        gmKey: 36,
+        velocity: 112,
+        lane: 'authored',
+      }),
+    ).toBe('sampled')
+
+    const master = context.gains[0]
+    const liveLane = context.gains[1]
+    const authoredLane = context.gains[2]
+    const liveVoice = context.sources[0].connections[0] as FakeGainNode
+    const authoredVoice = context.sources[1].connections[0] as FakeGainNode
+    expect(liveVoice.connections).toEqual([liveLane])
+    expect(authoredVoice.connections).toEqual([authoredLane])
+    expect(liveLane.connections).toEqual([master])
+    expect(authoredLane.connections).toEqual([master])
+    expect(master.connections).toEqual([output])
+
+    player.setLaneVolume('authored', 0.25)
+    expect(authoredLane.gain.events.slice(-2)).toEqual([
+      { kind: 'hold', at: 10 },
+      { kind: 'target', value: 0.25, at: 10 },
+    ])
+    expect(liveLane.gain.events).not.toContainEqual({
+      kind: 'target',
+      value: 0.25,
+      at: 10,
+    })
+
+    expect(getAudioContext).toHaveBeenCalledOnce()
+    expect(getOutput).toHaveBeenCalledOnce()
+    expect(fetchArrayBuffer).toHaveBeenCalledTimes(5)
+    expect(context.decodeAudioData).toHaveBeenCalledTimes(5)
+  })
+
+  it('releases an authored lane without killing a concurrent live voice', async () => {
+    const { context, player } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+    expect(
+      player.trigger({
+        gmKey: 38,
+        velocity: 112,
+        lane: 'authored',
+      }),
+    ).toBe('sampled')
+    const liveVoice = context.sources[0]
+    const authoredVoice = context.sources[1]
+
+    player.panic('authored')
+
+    expect(liveVoice.stops).toEqual([])
+    expect(authoredVoice.stops[0]).toBeCloseTo(10.15)
+    expect(context.gains[1].gain.events).not.toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 10,
+    })
+    expect(context.gains[2].gain.events).toContainEqual({
+      kind: 'target',
+      value: 0,
+      at: 10,
+    })
+
+    expect(player.trigger({ gmKey: 42, velocity: 112 })).toBe('sampled')
+    expect(context.sources[2].stops).toEqual([])
   })
 
   it('falls back per hit while a selected sample is still downloading', async () => {

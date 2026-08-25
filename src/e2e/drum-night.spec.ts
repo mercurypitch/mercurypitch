@@ -13,6 +13,140 @@ const DRUM_SESSION_MIDI = Buffer.from([
   0x26, 0x00, 0x00, 0xff, 0x2f, 0x00,
 ])
 
+const DRUM_PLAY_ALONG_SECONDS = 3
+
+function midiTrack(bytes: readonly number[]): Buffer {
+  const header = Buffer.alloc(8)
+  header.write('MTrk', 0)
+  header.writeUInt32BE(bytes.length, 4)
+  return Buffer.concat([header, Buffer.from(bytes)])
+}
+
+/** Format-1 MIDI with one pitched bass guide and one channel-10 drum part. */
+function createMixedDrumSessionMidi(): Buffer {
+  const pitchedName = [...Buffer.from('Bass Guide', 'ascii')]
+  const drumName = [...Buffer.from('Drum Part', 'ascii')]
+  const pitchedTrack = midiTrack([
+    0x00,
+    0xff,
+    0x03,
+    pitchedName.length,
+    ...pitchedName,
+    0x00,
+    0xff,
+    0x51,
+    0x03,
+    0x07,
+    0xa1,
+    0x20,
+    0x00,
+    0xff,
+    0x58,
+    0x04,
+    0x04,
+    0x02,
+    0x18,
+    0x08,
+    0x00,
+    0xc0,
+    0x21,
+    0x00,
+    0x90,
+    0x30,
+    0x60,
+    0x60,
+    0x80,
+    0x30,
+    0x00,
+    0x00,
+    0x90,
+    0x34,
+    0x60,
+    0x60,
+    0x80,
+    0x34,
+    0x00,
+    0x00,
+    0xff,
+    0x2f,
+    0x00,
+  ])
+  const drumTrack = midiTrack([
+    0x00,
+    0xff,
+    0x03,
+    drumName.length,
+    ...drumName,
+    0x00,
+    0x99,
+    0x24,
+    0x64,
+    0x60,
+    0x89,
+    0x24,
+    0x00,
+    0x00,
+    0x99,
+    0x2a,
+    0x50,
+    0x60,
+    0x89,
+    0x2a,
+    0x00,
+    0x00,
+    0x99,
+    0x26,
+    0x70,
+    0x60,
+    0x89,
+    0x26,
+    0x00,
+    0x00,
+    0xff,
+    0x2f,
+    0x00,
+  ])
+  return Buffer.concat([
+    Buffer.from([
+      0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x02,
+      0x00, 0x60,
+    ]),
+    pitchedTrack,
+    drumTrack,
+  ])
+}
+
+function createDrumPlayAlongWav(frequencyHz: number): Buffer {
+  const sampleRate = 8_000
+  const sampleCount = sampleRate * DRUM_PLAY_ALONG_SECONDS
+  const wav = Buffer.alloc(44 + sampleCount * 2)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(wav.length - 8, 4)
+  wav.write('WAVE', 8)
+  wav.write('fmt ', 12)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(1, 22)
+  wav.writeUInt32LE(sampleRate, 24)
+  wav.writeUInt32LE(sampleRate * 2, 28)
+  wav.writeUInt16LE(2, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(sampleCount * 2, 40)
+
+  for (let sample = 0; sample < sampleCount; sample += 1) {
+    const seconds = sample / sampleRate
+    const fade = Math.min(
+      1,
+      seconds * 20,
+      (DRUM_PLAY_ALONG_SECONDS - seconds) * 20,
+    )
+    const amplitude = Math.sin(seconds * frequencyHz * Math.PI * 2) * fade
+    wav.writeInt16LE(Math.round(amplitude * 3_000), 44 + sample * 2)
+  }
+  return wav
+}
+
 async function instrumentFirstPaint(
   page: import('@playwright/test').Page,
 ): Promise<void> {
@@ -151,6 +285,177 @@ async function boundaryCounts(
       workers: trackedWindow.__drumNightWorkers,
     }
   })
+}
+
+async function instrumentStemPayloadReads(
+  page: import('@playwright/test').Page,
+): Promise<void> {
+  await page.addInitScript(() => {
+    const trackedWindow = window as unknown as {
+      __drumNightStemPayloadReads: number
+    }
+    trackedWindow.__drumNightStemPayloadReads = 0
+
+    const isStemPayloadIndex = (index: IDBIndex): boolean =>
+      index.objectStore.name === 'uvrStemBlobs' &&
+      index.name === '[sessionId+stemType+createdAt]'
+
+    const nativeOpenCursor = IDBIndex.prototype.openCursor
+    IDBIndex.prototype.openCursor = function (...args) {
+      if (isStemPayloadIndex(this)) {
+        trackedWindow.__drumNightStemPayloadReads += 1
+      }
+      return nativeOpenCursor.apply(this, args)
+    }
+
+    // Chromium's current IndexedDB implementation lets Dexie satisfy a
+    // reverse-first value query with getAll({ count: 1, direction: 'prev' }).
+    // Older engines take the openCursor branch above, so cover both without
+    // counting the manifest's metadata-only IDBIndex.count calls.
+    const nativeGetAll = IDBIndex.prototype.getAll
+    IDBIndex.prototype.getAll = function (...args) {
+      if (isStemPayloadIndex(this)) {
+        trackedWindow.__drumNightStemPayloadReads += 1
+      }
+      return nativeGetAll.apply(this, args)
+    }
+  })
+}
+
+async function stemPayloadReads(
+  page: import('@playwright/test').Page,
+): Promise<number> {
+  return page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __drumNightStemPayloadReads: number
+        }
+      ).__drumNightStemPayloadReads,
+  )
+}
+
+async function initializeDrumNightDatabase(
+  page: import('@playwright/test').Page,
+): Promise<void> {
+  await page.goto('/drum-night?drawer=songs', {
+    waitUntil: 'domcontentloaded',
+  })
+  const drawer = page.getByRole('region', { name: 'Bring a song' })
+  await expect(drawer).toBeVisible()
+  const loadSavedSongs = drawer.getByRole('button', {
+    name: 'Load saved songs',
+  })
+  if (await loadSavedSongs.isVisible()) await loadSavedSongs.click()
+  await expect(drawer.getByText('No prepared backing yet')).toBeVisible()
+}
+
+async function seedDrumPlayAlongSession(
+  page: import('@playwright/test').Page,
+  options: {
+    sessionId: string
+    fileName: string
+    mix: 'two-stem' | 'parts'
+  },
+): Promise<void> {
+  const stemWav = createDrumPlayAlongWav(options.mix === 'two-stem' ? 110 : 165)
+  const stemKinds =
+    options.mix === 'two-stem'
+      ? (['vocal', 'instrumental'] as const)
+      : ([
+          'vocal',
+          'instrumental',
+          'drums',
+          'bass',
+          'guitar',
+          'piano',
+          'other',
+        ] as const)
+
+  await page.evaluate(
+    async ({ durationSeconds, fileName, sessionId, stemBase64, stemKinds }) => {
+      const stemData = Uint8Array.from(atob(stemBase64), (character) =>
+        character.charCodeAt(0),
+      ).buffer
+      const now = new Date().toISOString()
+
+      await new Promise<void>((resolve, reject) => {
+        const openRequest = indexedDB.open('MercuryPitchDB')
+        openRequest.onerror = () => reject(openRequest.error)
+        openRequest.onsuccess = () => {
+          const database = openRequest.result
+          const transaction = database.transaction(
+            ['uvrSessions', 'uvrStemBlobs'],
+            'readwrite',
+          )
+          transaction.objectStore('uvrSessions').put({
+            id: `${sessionId}-record`,
+            appSessionId: sessionId,
+            userId: 'drum-night-e2e',
+            status: 'completed',
+            progress: 100,
+            originalFileName: fileName,
+            originalFileSize: stemData.byteLength,
+            originalFileType: 'audio/wav',
+            processingMode: 'local',
+            provider: 'local',
+            ...(stemKinds.some((kind) => kind === 'vocal')
+              ? { vocalStemId: `${sessionId}-vocal` }
+              : {}),
+            ...(stemKinds.some((kind) => kind === 'instrumental')
+              ? { instrumentalStemId: `${sessionId}-instrumental` }
+              : {}),
+            stemMetaJson: JSON.stringify(
+              Object.fromEntries(
+                stemKinds.map((kind) => [
+                  kind,
+                  {
+                    duration: durationSeconds,
+                    size: stemData.byteLength,
+                  },
+                ]),
+              ),
+            ),
+            appCreatedAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
+          })
+          for (const kind of stemKinds) {
+            transaction.objectStore('uvrStemBlobs').put({
+              id: `${sessionId}-${kind}`,
+              sessionId,
+              stemType: kind,
+              mimeType: 'audio/wav',
+              data: stemData,
+              size: stemData.byteLength,
+              fileName: `${fileName}-${kind}.wav`,
+              createdAt: now,
+              updatedAt: now,
+            })
+          }
+          transaction.oncomplete = () => {
+            database.close()
+            resolve()
+          }
+          transaction.onerror = () => {
+            database.close()
+            reject(transaction.error)
+          }
+          transaction.onabort = () => {
+            database.close()
+            reject(transaction.error)
+          }
+        }
+      })
+    },
+    {
+      durationSeconds: DRUM_PLAY_ALONG_SECONDS,
+      fileName: options.fileName,
+      sessionId: options.sessionId,
+      stemBase64: stemWav.toString('base64'),
+      stemKinds: [...stemKinds],
+    },
+  )
 }
 
 async function scoreGeometry(page: import('@playwright/test').Page): Promise<{
@@ -351,9 +656,7 @@ test('switches and closes the desktop rail workbench with URL and aria state in 
   await expect(page).toHaveURL(/drawer=learn/)
 
   await songs.click()
-  await expect(
-    page.getByRole('region', { name: 'Bring a drum part' }),
-  ).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Bring a song' })).toBeVisible()
   await expect(workbench).toBeVisible()
   await expect(learn).toHaveAttribute('aria-expanded', 'false')
   await expect(songs).toHaveAttribute('aria-expanded', 'true')
@@ -368,6 +671,147 @@ test('switches and closes the desktop rail workbench with URL and aria state in 
   )
   await expect(songs).toHaveAttribute('aria-expanded', 'false')
   await expect(page).not.toHaveURL(/drawer=/)
+})
+
+test('keeps the Songs play-along panel full-width without responsive overflow @smoke', async ({
+  page,
+}, testInfo) => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/drum-night?drawer=songs', {
+      waitUntil: 'domcontentloaded',
+    })
+    const workbench = page.locator('#drum-workbench')
+    await expect(workbench).toBeVisible()
+    await expect(
+      workbench.getByRole('heading', {
+        name: 'Bring the band. Keep the drums yours.',
+      }),
+    ).toBeVisible()
+
+    await workbench.evaluate(async (element) => {
+      await Promise.all(
+        element
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      )
+    })
+
+    const geometry = await workbench.evaluate((element) => {
+      const heading = [...element.querySelectorAll('h2')].find(
+        (candidate) =>
+          candidate.textContent?.trim() ===
+          'Bring the band. Keep the drums yours.',
+      )
+      const panel = heading?.closest('section')
+      const workspace = panel?.parentElement
+      const sessionHeader = element.closest('main')?.querySelector('header')
+      const workbenchBar = element.firstElementChild
+      const closeButton = element.querySelector<HTMLButtonElement>(
+        'button[aria-label="Close rack drawer"]',
+      )
+      const workbenchRect = element.getBoundingClientRect()
+      const panelRect = panel?.getBoundingClientRect()
+      const sessionHeaderRect = sessionHeader?.getBoundingClientRect()
+      const workbenchBarRect = workbenchBar?.getBoundingClientRect()
+      const closeRect = closeButton?.getBoundingClientRect()
+      const closeCenterHit =
+        closeButton !== null &&
+        closeButton !== undefined &&
+        closeRect !== undefined &&
+        closeButton.contains(
+          document.elementFromPoint(
+            closeRect.left + closeRect.width / 2,
+            closeRect.top + closeRect.height / 2,
+          ),
+        )
+      return {
+        closeCenterHit,
+        closeTop: closeRect?.top ?? Number.NEGATIVE_INFINITY,
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        panelLeft: panelRect?.left ?? Number.NEGATIVE_INFINITY,
+        panelRight: panelRect?.right ?? Number.POSITIVE_INFINITY,
+        panelWidth: panelRect?.width ?? 0,
+        panelClientWidth: panel?.clientWidth ?? 0,
+        panelScrollWidth: panel?.scrollWidth ?? 0,
+        viewportHeight: innerHeight,
+        viewportWidth: innerWidth,
+        sessionHeaderBottom:
+          sessionHeaderRect?.bottom ?? Number.POSITIVE_INFINITY,
+        workbenchBarTop: workbenchBarRect?.top ?? Number.NEGATIVE_INFINITY,
+        workbenchBottom: workbenchRect.bottom,
+        workbenchClientWidth: element.clientWidth,
+        workbenchLeft: workbenchRect.left,
+        workbenchRight: workbenchRect.right,
+        workbenchScrollWidth: element.scrollWidth,
+        workbenchTop: workbenchRect.top,
+        workspaceClientWidth: workspace?.clientWidth ?? 0,
+        workspaceScrollWidth: workspace?.scrollWidth ?? 0,
+      }
+    })
+
+    expect(geometry.documentScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.documentClientWidth,
+    )
+    expect(geometry.workbenchScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.workbenchClientWidth,
+    )
+    expect(geometry.workspaceScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.workspaceClientWidth,
+    )
+    expect(geometry.panelScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.panelClientWidth,
+    )
+    expect(
+      geometry.workspaceClientWidth - geometry.panelWidth,
+      JSON.stringify(viewport),
+    ).toBeLessThanOrEqual(48)
+    expect(
+      geometry.panelWidth,
+      JSON.stringify(viewport),
+    ).toBeGreaterThanOrEqual(geometry.workspaceClientWidth * 0.9)
+    expect(
+      geometry.workbenchLeft,
+      JSON.stringify(viewport),
+    ).toBeGreaterThanOrEqual(0)
+    expect(
+      geometry.workbenchRight,
+      JSON.stringify(viewport),
+    ).toBeLessThanOrEqual(geometry.viewportWidth)
+    expect(geometry.panelLeft, JSON.stringify(viewport)).toBeGreaterThanOrEqual(
+      geometry.workbenchLeft,
+    )
+    expect(geometry.panelRight, JSON.stringify(viewport)).toBeLessThanOrEqual(
+      geometry.workbenchRight,
+    )
+    expect(geometry.workbenchTop, JSON.stringify(viewport)).toBeLessThan(
+      geometry.viewportHeight,
+    )
+    expect(geometry.workbenchBottom, JSON.stringify(viewport)).toBeGreaterThan(
+      0,
+    )
+    expect(geometry.closeCenterHit, JSON.stringify(viewport)).toBe(true)
+    expect(geometry.closeTop, JSON.stringify(viewport)).toBeGreaterThanOrEqual(
+      0,
+    )
+    if (viewport.width === 844 && viewport.height === 390) {
+      expect(
+        geometry.workbenchBarTop,
+        JSON.stringify(viewport),
+      ).toBeGreaterThanOrEqual(geometry.sessionHeaderBottom)
+    }
+
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `drum-night-songs-${viewport.width}x${viewport.height}.png`,
+      ),
+    })
+  }
 })
 
 test('plays all six photographed Pocket zones with a real pointer across room sizes @smoke', async ({
@@ -595,13 +1039,15 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
     .filter({ visible: true })
     .first()
   await songs.click()
-  const songsDrawer = page.getByRole('region', { name: 'Bring a drum part' })
+  const songsDrawer = page.getByRole('region', { name: 'Bring a song' })
   await expect(songsDrawer).toBeVisible()
-  await songsDrawer.getByLabel('Choose a drum session file').setInputFiles({
-    name: 'e2e-pocket.mid',
-    mimeType: 'audio/midi',
-    buffer: DRUM_SESSION_MIDI,
-  })
+  await songsDrawer
+    .getByTestId('drum-play-along-file-drop-input')
+    .setInputFiles({
+      name: 'e2e-pocket.mid',
+      mimeType: 'audio/midi',
+      buffer: DRUM_SESSION_MIDI,
+    })
   await expect(songsDrawer).not.toBeVisible()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
     'data-import-status',
@@ -660,6 +1106,273 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   await expect(drawer).not.toBeVisible()
   await expect(page).not.toHaveURL(/drawer=/)
   await expect(groove).toBeFocused()
+})
+
+test('keeps a mixed authored MIDI on one Score, mixer, and timeline clock @smoke', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night?view=score', {
+    waitUntil: 'domcontentloaded',
+  })
+
+  await page
+    .getByRole('button', { name: 'Songs', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const songsDrawer = page.getByRole('region', { name: 'Bring a song' })
+  await songsDrawer
+    .getByTestId('drum-play-along-file-drop-input')
+    .setInputFiles({
+      name: 'mixed-band.mid',
+      mimeType: 'audio/midi',
+      buffer: createMixedDrumSessionMidi(),
+    })
+
+  await expect(songsDrawer).not.toBeVisible()
+  await expect(page.getByRole('heading', { name: 'mixed-band' })).toBeVisible()
+  await expect(
+    page.getByText('Percussion score', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('Song timeline', { exact: true })).toBeVisible()
+  await page.screenshot({
+    path: testInfo.outputPath('drum-night-mixed-midi-score-1440x900.png'),
+  })
+
+  await page
+    .getByRole('button', { name: 'Songs', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click()
+  await expect(
+    page.getByText('3 authored drum hits · 1 backing track', { exact: true }),
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Songs', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click()
+
+  await page
+    .getByRole('button', { name: 'Groove', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const grooveDrawer = page.getByRole('region', { name: 'Shape the groove' })
+  await grooveDrawer.getByRole('tab', { name: 'Mix' }).click()
+  const mixer = page.getByTestId('drum-play-along-mixer')
+  await expect(mixer).toHaveAttribute(
+    'data-source-kind',
+    'authored-arrangement',
+  )
+  await expect(
+    mixer.getByRole('slider', { name: 'Source Drums level' }),
+  ).toBeEnabled()
+  const backingLevel = mixer.getByRole('slider', { name: 'Backing level' })
+  await expect(backingLevel).toBeEnabled()
+  await expect(mixer.getByRole('slider', { name: 'You level' })).toBeEnabled()
+  await expect(mixer.getByText('Bass Guide', { exact: true })).toBeVisible()
+  await page.screenshot({
+    path: testInfo.outputPath('drum-night-mixed-midi-mixer-1440x900.png'),
+  })
+
+  const initialBackingLevel = await backingLevel.inputValue()
+  await backingLevel.scrollIntoViewIfNeeded()
+  const backingBounds = await backingLevel.boundingBox()
+  if (backingBounds === null) {
+    throw new Error('Authored Backing slider has no pointer bounds')
+  }
+  await page.mouse.move(
+    backingBounds.x + backingBounds.width * (Number(initialBackingLevel) / 100),
+    backingBounds.y + backingBounds.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    backingBounds.x + backingBounds.width * 0.3,
+    backingBounds.y + backingBounds.height / 2,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect(backingLevel).not.toHaveValue(initialBackingLevel)
+
+  await mixer.getByRole('button', { name: 'Mute Source Drums' }).click()
+  await expect(
+    mixer.getByRole('button', { name: 'Unmute Source Drums' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page
+      .getByTestId('drum-night-timeline')
+      .getByRole('slider', { name: 'Drum part position' }),
+  ).toBeVisible()
+})
+
+test('keeps a saved two-stem source metadata-only until Play hydrates its audio @smoke', async ({
+  page,
+}, testInfo) => {
+  const sessionId = `drum-night-two-stem-${Date.now()}`
+  await instrumentFirstPaint(page)
+  await instrumentStemPayloadReads(page)
+  await initializeDrumNightDatabase(page)
+  await seedDrumPlayAlongSession(page, {
+    sessionId,
+    fileName: 'two-stem-drive.wav',
+    mix: 'two-stem',
+  })
+
+  await page.goto('/drum-night?drawer=songs', {
+    waitUntil: 'domcontentloaded',
+  })
+  const songsDrawer = page.getByRole('region', { name: 'Bring a song' })
+  const loadSavedSongs = songsDrawer.getByRole('button', {
+    name: 'Load saved songs',
+  })
+  if (await loadSavedSongs.isVisible()) await loadSavedSongs.click()
+  const song = songsDrawer.getByRole('button', {
+    name: /two-stem-drive\.wav.*Load backing/i,
+  })
+  await expect(song).toBeVisible()
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  expect(await stemPayloadReads(page)).toBe(0)
+
+  const songBounds = await song.boundingBox()
+  if (songBounds === null)
+    throw new Error('Two-stem song has no pointer bounds')
+  await page.mouse.click(
+    songBounds.x + songBounds.width / 2,
+    songBounds.y + songBounds.height / 2,
+  )
+  await expect(songsDrawer.getByText('Backing with drums inside')).toBeVisible()
+  await expect(
+    songsDrawer.getByText(
+      'The source drums are still inside this two-stem mix, so they cannot be controlled separately yet.',
+    ),
+  ).toBeVisible()
+  await expect(
+    songsDrawer.getByRole('button', { name: 'Separate drums' }),
+  ).toBeVisible()
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  expect(await stemPayloadReads(page)).toBe(0)
+
+  await songsDrawer
+    .getByRole('button', { name: 'Open the play-along mixer' })
+    .click()
+  const mixer = page.getByTestId('drum-play-along-mixer')
+  await expect(mixer).toHaveAttribute('data-source-kind', 'two-stem-audio')
+  await expect(
+    mixer.getByRole('slider', { name: 'Source Drums level' }),
+  ).toBeDisabled()
+  await expect(
+    mixer.getByRole('button', { name: 'Mute Source Drums' }),
+  ).toBeDisabled()
+  await expect(
+    mixer.getByRole('slider', { name: 'Backing level' }),
+  ).toBeEnabled()
+  await expect(mixer.getByRole('slider', { name: 'You level' })).toBeEnabled()
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  expect(await stemPayloadReads(page)).toBe(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-night-two-stem-mixer-metadata-only.png'),
+  })
+
+  await page.getByRole('button', { name: 'Close rack drawer' }).click()
+  await page.getByRole('button', { name: 'Score view' }).click()
+  await expect(page.getByText('No drum score was created')).toBeVisible()
+  await expect(
+    page.getByText(
+      'Stem separation can isolate sound, but it does not author drum notation. Open MIDI or Guitar Pro to follow a score.',
+    ),
+  ).toBeVisible()
+  expect(await stemPayloadReads(page)).toBe(0)
+
+  await page
+    .getByRole('button', { name: 'Play two-stem-drive.wav song clock' })
+    .filter({ visible: true })
+    .first()
+    .click()
+  await expect.poll(() => stemPayloadReads(page)).toBeGreaterThan(0)
+  await expect
+    .poll(async () => (await boundaryCounts(page)).audio)
+    .toBeGreaterThan(0)
+})
+
+test('hydrates only reconstructed Source Drums and Backing after an inert full-manifest selection @smoke', async ({
+  page,
+}, testInfo) => {
+  const sessionId = `drum-night-full-band-${Date.now()}`
+  await instrumentFirstPaint(page)
+  await instrumentStemPayloadReads(page)
+  await initializeDrumNightDatabase(page)
+  await seedDrumPlayAlongSession(page, {
+    sessionId,
+    fileName: 'full-band-room.wav',
+    mix: 'parts',
+  })
+
+  await page.goto('/drum-night?drawer=songs', {
+    waitUntil: 'domcontentloaded',
+  })
+  const songsDrawer = page.getByRole('region', { name: 'Bring a song' })
+  const loadSavedSongs = songsDrawer.getByRole('button', {
+    name: 'Load saved songs',
+  })
+  if (await loadSavedSongs.isVisible()) await loadSavedSongs.click()
+  const song = songsDrawer.getByRole('button', {
+    name: /full-band-room\.wav.*Load backing/i,
+  })
+  await expect(song).toBeVisible()
+  await song.click()
+  await expect(songsDrawer.getByText('Full mix ready')).toBeVisible()
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  expect(await stemPayloadReads(page)).toBe(0)
+
+  await songsDrawer
+    .getByRole('button', { name: 'Open the play-along mixer' })
+    .click()
+  const mixer = page.getByTestId('drum-play-along-mixer')
+  await expect(mixer).toHaveAttribute('data-source-kind', 'separated-audio')
+  await expect(
+    mixer.getByRole('slider', { name: 'Source Drums level' }),
+  ).toBeEnabled()
+  await expect(
+    mixer.getByRole('slider', { name: 'Backing level' }),
+  ).toBeEnabled()
+  await expect(mixer.getByRole('slider', { name: 'You level' })).toBeEnabled()
+  await expect(mixer.getByText('Drums', { exact: true })).toBeVisible()
+  await expect(mixer.getByText('Vocals', { exact: true })).toBeVisible()
+  await expect(
+    mixer.getByText('Backing (drums removed)', { exact: true }),
+  ).toBeVisible()
+  await expect(mixer.getByText('Bass', { exact: true })).toHaveCount(0)
+  await expect(mixer.getByText('Guitar', { exact: true })).toHaveCount(0)
+  await expect(mixer.getByText('Piano', { exact: true })).toHaveCount(0)
+  await expect(
+    mixer.getByText('Other instruments', { exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    mixer.getByText('Backing (drums included)', { exact: true }),
+  ).toHaveCount(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-night-separated-mixer-metadata-only.png'),
+  })
+
+  await mixer.getByRole('button', { name: /Play along/ }).click()
+  await expect(
+    mixer.getByRole('button', { name: 'Unmute Source Drums' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  expect(await stemPayloadReads(page)).toBe(0)
+
+  await page.getByRole('button', { name: 'Close rack drawer' }).click()
+  await page
+    .getByRole('button', { name: 'Play full-band-room.wav song clock' })
+    .filter({ visible: true })
+    .first()
+    .click()
+  await expect.poll(() => stemPayloadReads(page)).toBe(3)
+  await expect
+    .poll(async () => (await boundaryCounts(page)).audio)
+    .toBeGreaterThan(0)
 })
 
 test('sets, moves, clears, and scrubs the authored A B loop with a real pointer @smoke', async ({
@@ -1013,23 +1726,25 @@ test('moves the live kit level with a real pointer @smoke', async ({
   await drawer.getByRole('tab', { name: 'Mix' }).click()
   const mixDrawer = page.getByRole('region', { name: 'Balance the room' })
 
-  const kitLevel = mixDrawer.getByRole('slider', { name: 'Kit level' })
-  const initialValue = await kitLevel.inputValue()
-  const bounds = await kitLevel.boundingBox()
-  if (bounds === null) throw new Error('Kit level slider has no pointer bounds')
+  const youLevel = mixDrawer.getByRole('slider', { name: 'You level' })
+  const initialValue = await youLevel.inputValue()
+  await youLevel.scrollIntoViewIfNeeded()
+  const bounds = await youLevel.boundingBox()
+  if (bounds === null) throw new Error('You level slider has no pointer bounds')
 
   await page.mouse.move(
-    bounds.x + bounds.width * 0.2,
+    bounds.x + bounds.width * (Number(initialValue) / 100),
     bounds.y + bounds.height / 2,
   )
   await page.mouse.down()
   await page.mouse.move(
     bounds.x + bounds.width * 0.35,
     bounds.y + bounds.height / 2,
+    { steps: 5 },
   )
   await page.mouse.up()
 
-  await expect(kitLevel).not.toHaveValue(initialValue)
+  await expect(youLevel).not.toHaveValue(initialValue)
 })
 
 test('keeps URL history, selected rack tab, and focus in sync @smoke', async ({

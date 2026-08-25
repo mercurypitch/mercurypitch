@@ -4,7 +4,10 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
+import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'
+import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
@@ -98,6 +101,28 @@ function dispatchPointerDown(
   fireEvent(target, event)
 }
 
+function deferred<T>(): {
+  readonly promise: Promise<T>
+  readonly resolve: (value: T | PromiseLike<T>) => void
+  readonly reject: (reason?: unknown) => void
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve
+    reject = nextReject
+  })
+  return { promise, reject, resolve }
+}
+
+async function settleMicrotasks(): Promise<void> {
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
 function openDrummerSeatKit(): HTMLElement {
   fireEvent.click(screen.getByRole('button', { name: 'Drummer Seat view' }))
   return screen.getByRole('group', {
@@ -189,6 +214,7 @@ function clickHarness() {
 
 function importSessionHarness(
   initialState: DrumSessionImportState = IDLE_DRUM_SESSION,
+  options: { readonly beforeApply?: () => Promise<void> } = {},
 ) {
   let state = initialState
   let generation = 0
@@ -205,6 +231,7 @@ function importSessionHarness(
   const importFile = vi.fn(async (file: File) => {
     const attemptGeneration = ++generation
     setState({ status: 'loading', fileName: file.name })
+    await options.beforeApply?.()
     await Promise.resolve()
     if (disposed || attemptGeneration !== generation) {
       return {
@@ -329,6 +356,7 @@ function playerHarness(
       error: null,
     })
   })
+  const setLaneVolume = vi.fn<NonNullable<DrumKitPlayer['setLaneVolume']>>()
   const player = {
     activate,
     trigger,
@@ -340,6 +368,7 @@ function playerHarness(
     prewarm: vi.fn(async () => undefined),
     choke: vi.fn(),
     setVolume: vi.fn(),
+    setLaneVolume,
     snapshot: () => snapshot,
     subscribe(listener: () => void) {
       listeners.add(listener)
@@ -364,9 +393,76 @@ function playerHarness(
     player,
     retry,
     selectKit,
+    setLaneVolume,
     trigger,
     updateSnapshot,
   }
+}
+
+function preparedBackingHarness(options: {
+  readonly sessionId: string
+  readonly title: string
+  readonly kind: 'two-stem' | 'parts'
+}) {
+  const stemKinds =
+    options.kind === 'parts'
+      ? (['vocal', 'drums', 'bass', 'guitar', 'piano', 'other'] as const)
+      : (['vocal', 'instrumental'] as const)
+  const plannedMix: PlayAlongBackingSource<'drums'>['plannedMix'] =
+    options.kind === 'parts'
+      ? { kind: 'parts', audible: stemKinds, muted: [] }
+      : {
+          kind: 'mixed-instrumental',
+          audible: ['vocal', 'instrumental'],
+          muted: [],
+        }
+  const load = vi.fn<PlayAlongBackingSource<'drums'>['load']>(async () => ({
+    ok: false,
+    code: 'missing-local-audio',
+  }))
+  const release = vi.fn()
+  const source = {
+    sessionId: options.sessionId,
+    title: options.title,
+    stemKinds,
+    plannedMix,
+    durationSeconds: 210,
+    source: 'device',
+    load,
+    release,
+  } satisfies PlayAlongBackingSource<'drums'>
+  return { load, release, source }
+}
+
+function songPortHarness(
+  sources: readonly ReturnType<typeof preparedBackingHarness>[],
+) {
+  const initialize = vi.fn(async () => undefined)
+  const completedSongs = vi.fn(() =>
+    sources.map(({ source }, index) => ({
+      sessionId: source.sessionId,
+      title: source.title,
+      createdAt: Date.UTC(2026, 7, 24 - index),
+      source: 'device' as const,
+      subtitle: source.plannedMix.kind === 'parts' ? 'Full parts' : 'Two stems',
+    })),
+  )
+  const openSession = vi.fn<PlayAlongSongSourcePort<'drums'>['openSession']>(
+    async (sessionId, signal) => {
+      if (signal.aborted) return { ok: false, code: 'aborted' }
+      const match = sources.find(({ source }) => source.sessionId === sessionId)
+      return match === undefined
+        ? { ok: false, code: 'not-found' }
+        : { ok: true, lease: match.source }
+    },
+  )
+  const port = {
+    initialize,
+    completedSongs,
+    openSession,
+  } satisfies PlayAlongSongSourcePort<'drums'>
+  const loadSongPort = vi.fn(async () => port)
+  return { completedSongs, initialize, loadSongPort, openSession, port }
 }
 
 function renderRoom(options?: {
@@ -378,6 +474,11 @@ function renderRoom(options?: {
     document: Extract<DrumSessionImportState, { status: 'ready' }>['document'],
   ) => DrumScoreIndex
   readonly importSession?: ReturnType<typeof importSessionHarness>
+  readonly loadSongPort?: () => Promise<PlayAlongSongSourcePort<'drums'>>
+  readonly loadBandPreparationPort?: () => Promise<PlayAlongBandPreparationPort>
+  readonly checkBandPreflight?: (
+    sessionId: string,
+  ) => CloudSplitBlocker | null | Promise<CloudSplitBlocker | null>
   readonly onReadySessionChange?: (
     document:
       | Extract<DrumSessionImportState, { status: 'ready' }>['document']
@@ -400,6 +501,9 @@ function renderRoom(options?: {
       createPlayer={player.createPlayer}
       createScoreIndex={options?.createScoreIndex}
       createSessionController={() => importSession.controller}
+      loadSongPort={options?.loadSongPort}
+      loadBandPreparationPort={options?.loadBandPreparationPort}
+      checkBandPreflight={options?.checkBandPreflight}
       onReadySessionChange={options?.onReadySessionChange}
       runtimeOptions={{
         clock: options?.clock,
@@ -510,7 +614,7 @@ describe('DrumNightApp', () => {
       }),
     )
     const drawer = screen.getByRole('region', { name: 'Choose the room' })
-    const gallery = within(drawer).getByRole('region', {
+    const gallery = await within(drawer).findByRole('region', {
       name: 'Choose your Drum Night room',
     })
     await waitFor(() => expect(retainBackgroundCatalog).toHaveBeenCalledOnce())
@@ -990,9 +1094,7 @@ describe('DrumNightApp', () => {
 
     fireEvent.click(songs)
 
-    expect(screen.getByRole('region', { name: 'Bring a drum part' })).toBe(
-      workbench,
-    )
+    expect(screen.getByRole('region', { name: 'Bring a song' })).toBe(workbench)
     expect(learn).toHaveAttribute('aria-expanded', 'false')
     expect(songs).toHaveAttribute('aria-expanded', 'true')
     expect(window.location.search).toBe('?drawer=songs')
@@ -1000,7 +1102,7 @@ describe('DrumNightApp', () => {
     fireEvent.click(songs)
 
     expect(
-      screen.queryByRole('region', { name: 'Bring a drum part' }),
+      screen.queryByRole('region', { name: 'Bring a song' }),
     ).not.toBeInTheDocument()
     expect(songs).toHaveAttribute('aria-expanded', 'false')
     expect(pocket).toHaveAttribute('aria-current', 'page')
@@ -1021,17 +1123,393 @@ describe('DrumNightApp', () => {
     expect(window.location.search).toBe('')
   })
 
-  it('keeps contextual drawer controls keyboard reachable without an invalid tablist', () => {
+  it('keeps contextual drawer controls keyboard reachable without an invalid tablist', async () => {
     renderRoom()
     fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
-    const drawer = screen.getByRole('region', { name: 'Bring a drum part' })
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
     expect(within(drawer).queryByRole('tablist')).not.toBeInTheDocument()
     expect(
       within(drawer).getByRole('button', { name: 'Rack controls' }),
     ).toBeEnabled()
     expect(
-      within(drawer).getByLabelText('Choose a drum session file'),
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
     ).toHaveAttribute('tabindex', '-1')
+    expect(
+      within(drawer).getByRole('button', {
+        name: 'Choose MIDI or Guitar Pro',
+      }),
+    ).toBeEnabled()
+  })
+
+  it('opens the prepared-song catalog lazily and keeps two-stem metadata audio-inert until Play', async () => {
+    const backing = preparedBackingHarness({
+      sessionId: 'two-stem-night-drive',
+      title: 'Night Drive',
+      kind: 'two-stem',
+    })
+    const catalog = songPortHarness([backing])
+    const room = renderRoom({ loadSongPort: catalog.loadSongPort })
+
+    expect(catalog.loadSongPort).not.toHaveBeenCalled()
+    expect(catalog.initialize).not.toHaveBeenCalled()
+    expect(catalog.openSession).not.toHaveBeenCalled()
+    expect(backing.load).not.toHaveBeenCalled()
+    expect(room.player.activate).not.toHaveBeenCalled()
+    expect(room.session.contextForGesture).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
+    await waitFor(() => expect(catalog.loadSongPort).toHaveBeenCalledOnce())
+    expect(catalog.initialize).toHaveBeenCalledOnce()
+
+    const song = await within(drawer).findByRole('button', {
+      name: /Night Drive.*Two stems.*Load backing/i,
+    })
+    fireEvent.click(song)
+
+    await waitFor(() =>
+      expect(catalog.openSession).toHaveBeenCalledWith(
+        backing.source.sessionId,
+        expect.any(AbortSignal),
+      ),
+    )
+    expect(within(drawer).getByText('Backing with drums inside')).toBeVisible()
+    expect(backing.load).not.toHaveBeenCalled()
+    expect(room.player.activate).not.toHaveBeenCalled()
+    expect(room.session.contextForGesture).not.toHaveBeenCalled()
+    expect(room.session.outputForGesture).not.toHaveBeenCalled()
+    expect(createAudioContext).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      within(drawer).getByRole('button', {
+        name: 'Open the play-along mixer',
+      }),
+    )
+    const mixer = await screen.findByTestId('drum-play-along-mixer')
+    expect(screen.queryByText('Bring the band in.')).not.toBeInTheDocument()
+    expect(mixer).toHaveAttribute('data-source-kind', 'two-stem-audio')
+    expect(
+      within(mixer).getByRole('slider', { name: 'Source Drums level' }),
+    ).toBeDisabled()
+    expect(
+      within(mixer).getByRole('button', { name: 'Mute Source Drums' }),
+    ).toBeDisabled()
+    expect(
+      within(mixer).getByRole('slider', { name: 'Backing level' }),
+    ).toBeEnabled()
+    expect(
+      within(mixer).getByRole('slider', { name: 'You level' }),
+    ).toBeEnabled()
+
+    fireEvent.click(within(mixer).getByRole('button', { name: 'Mute You' }))
+    expect(room.player.setLaneVolume).toHaveBeenLastCalledWith('live', 0)
+    expect(backing.load).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play Night Drive song clock',
+      })[0],
+    )
+
+    await waitFor(() => expect(backing.load).toHaveBeenCalledOnce())
+    expect(room.player.activate).toHaveBeenCalledOnce()
+    expect(room.session.contextForGesture).toHaveBeenCalledOnce()
+    expect(room.session.outputForGesture).toHaveBeenCalledOnce()
+    expect(room.player.activate.mock.invocationCallOrder[0]).toBeLessThan(
+      backing.load.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('exposes independently mixable Source Drums, Backing, and You for full separated parts', async () => {
+    const backing = preparedBackingHarness({
+      sessionId: 'full-band-parts',
+      title: 'Full Band Rehearsal',
+      kind: 'parts',
+    })
+    const catalog = songPortHarness([backing])
+    const room = renderRoom({ loadSongPort: catalog.loadSongPort })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
+    const song = await within(drawer).findByRole('button', {
+      name: /Full Band Rehearsal.*Full parts.*Load backing/i,
+    })
+    fireEvent.click(song)
+
+    await waitFor(() =>
+      expect(within(drawer).getByText('Full mix ready')).toBeVisible(),
+    )
+    expect(backing.load).not.toHaveBeenCalled()
+    fireEvent.click(
+      within(drawer).getByRole('button', {
+        name: 'Open the play-along mixer',
+      }),
+    )
+
+    const mixer = await screen.findByTestId('drum-play-along-mixer')
+    const sourceDrumsLevel = within(mixer).getByRole('slider', {
+      name: 'Source Drums level',
+    })
+    const backingLevel = within(mixer).getByRole('slider', {
+      name: 'Backing level',
+    })
+    const youLevel = within(mixer).getByRole('slider', { name: 'You level' })
+    expect(mixer).toHaveAttribute('data-source-kind', 'separated-audio')
+    expect(sourceDrumsLevel).toBeEnabled()
+    expect(backingLevel).toBeEnabled()
+    expect(youLevel).toBeEnabled()
+
+    const liveWritesBeforeSourceMute =
+      room.player.setLaneVolume.mock.calls.length
+    fireEvent.click(
+      within(mixer).getByRole('button', { name: 'Mute Source Drums' }),
+    )
+    expect(
+      within(mixer).getByRole('button', { name: 'Unmute Source Drums' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(room.player.setLaneVolume).toHaveBeenCalledTimes(
+      liveWritesBeforeSourceMute,
+    )
+
+    fireEvent.click(within(mixer).getByRole('button', { name: 'Mute You' }))
+    expect(room.player.setLaneVolume).toHaveBeenLastCalledWith('live', 0)
+    expect(
+      within(mixer).getByRole('button', { name: 'Unmute You' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(backing.load).not.toHaveBeenCalled()
+  })
+
+  it('keeps a newer authored file when an older separation finishes late', async () => {
+    const backing = preparedBackingHarness({
+      sessionId: 'session-a',
+      title: 'Prepared Session A',
+      kind: 'two-stem',
+    })
+    const catalog = songPortHarness([backing])
+    const separation = deferred<{ saved: readonly string[] }>()
+    const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>(
+      () => separation.promise,
+    )
+    const reusePreparedBand = vi.fn<
+      NonNullable<PlayAlongBandPreparationPort['reusePreparedBand']>
+    >(async () => null)
+    const loadBandPreparationPort = vi.fn(async () => ({
+      prepareBand,
+      reusePreparedBand,
+    }))
+    const authored = readySessionFixture({ title: 'Authored File B' })
+    const importSession = importSessionHarness()
+    const onReadySessionChange = vi.fn()
+    importSession.setNextResult(authored)
+    renderRoom({
+      checkBandPreflight: () => null,
+      importSession,
+      loadBandPreparationPort,
+      loadSongPort: catalog.loadSongPort,
+      onReadySessionChange,
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    let drawer = screen.getByRole('region', { name: 'Bring a song' })
+    fireEvent.click(
+      await within(drawer).findByRole('button', {
+        name: /Prepared Session A.*Two stems.*Load backing/i,
+      }),
+    )
+    await within(drawer).findByText('Backing with drums inside')
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Separate drums' }),
+    )
+    await waitFor(() => expect(prepareBand).toHaveBeenCalledOnce())
+    const separationSignal = prepareBand.mock.calls[0]?.[1].signal
+    expect(separationSignal).toBeDefined()
+    expect(separationSignal?.aborted).toBe(false)
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'authored-b.mid', {
+      type: 'audio/midi',
+    })
+    const files = {
+      0: file,
+      length: 1,
+      item: () => file,
+    } as unknown as FileList
+    fireEvent.change(
+      within(drawer).getByTestId('drum-play-along-file-drop-input'),
+      { target: { files } },
+    )
+
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-view',
+        'score',
+      ),
+    )
+    expect(separationSignal?.aborted).toBe(true)
+    expect(onReadySessionChange).toHaveBeenLastCalledWith(authored.document)
+    expect(new URLSearchParams(window.location.search).get('song')).toBeNull()
+
+    const lateAttempt = prepareBand.mock.results[0]?.value
+    separation.resolve({ saved: ['drums', 'instrumental'] })
+    await lateAttempt
+    await settleMicrotasks()
+
+    expect(catalog.openSession).toHaveBeenCalledTimes(1)
+    expect(new URLSearchParams(window.location.search).get('song')).toBeNull()
+    expect(onReadySessionChange).toHaveBeenLastCalledWith(authored.document)
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    expect(within(drawer).getByText('Authored File B')).toBeVisible()
+    expect(within(drawer).getByText('No backing selected')).toBeVisible()
+  })
+
+  it('keeps a selected saved session when an older authored import finishes late', async () => {
+    const savedBacking = preparedBackingHarness({
+      sessionId: 'saved-session-b',
+      title: 'Saved Session B',
+      kind: 'two-stem',
+    })
+    const catalog = songPortHarness([savedBacking])
+    const parser = deferred<undefined>()
+    const authored = readySessionFixture({ title: 'Authored File A' })
+    const importSession = importSessionHarness(IDLE_DRUM_SESSION, {
+      beforeApply: () => parser.promise,
+    })
+    const onReadySessionChange = vi.fn()
+    importSession.setNextResult(authored)
+    renderRoom({
+      importSession,
+      loadSongPort: catalog.loadSongPort,
+      onReadySessionChange,
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
+    const file = new File([new Uint8Array([4, 5, 6])], 'authored-a.mid', {
+      type: 'audio/midi',
+    })
+    const files = {
+      0: file,
+      length: 1,
+      item: () => file,
+    } as unknown as FileList
+    fireEvent.change(
+      within(drawer).getByTestId('drum-play-along-file-drop-input'),
+      { target: { files } },
+    )
+    await within(drawer).findByText('Reading authored-a.mid…')
+    const importAttempt = importSession.importFile.mock.results[0]?.value
+
+    fireEvent.click(
+      await within(drawer).findByRole('button', {
+        name: /Saved Session B.*Two stems.*Load backing/i,
+      }),
+    )
+    await within(drawer).findByText('Backing with drums inside')
+    expect(new URLSearchParams(window.location.search).get('song')).toBe(
+      'saved-session-b',
+    )
+
+    parser.resolve(undefined)
+    await importAttempt
+    await settleMicrotasks()
+
+    expect(catalog.openSession).toHaveBeenCalledTimes(1)
+    expect(new URLSearchParams(window.location.search).get('song')).toBe(
+      'saved-session-b',
+    )
+    expect(within(drawer).getByText('Backing with drums inside')).toBeVisible()
+    expect(
+      within(drawer).queryByText('Authored File A'),
+    ).not.toBeInTheDocument()
+    expect(onReadySessionChange).not.toHaveBeenCalledWith(authored.document)
+  })
+
+  it('ignores a late separation retry for session A after session B becomes current', async () => {
+    const sessionA = preparedBackingHarness({
+      sessionId: 'retry-session-a',
+      title: 'Retry Session A',
+      kind: 'two-stem',
+    })
+    const sessionB = preparedBackingHarness({
+      sessionId: 'current-session-b',
+      title: 'Current Session B',
+      kind: 'two-stem',
+    })
+    const catalog = songPortHarness([sessionA, sessionB])
+    const retryCompletion = deferred<{ saved: readonly string[] }>()
+    let preparationAttempt = 0
+    const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>(
+      () => {
+        preparationAttempt += 1
+        if (preparationAttempt === 1) {
+          return Promise.reject(new Error('Session A separation failed.'))
+        }
+        return retryCompletion.promise
+      },
+    )
+    const loadBandPreparationPort = vi.fn(async () => ({ prepareBand }))
+    renderRoom({
+      checkBandPreflight: () => null,
+      loadBandPreparationPort,
+      loadSongPort: catalog.loadSongPort,
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
+    fireEvent.click(
+      await within(drawer).findByRole('button', {
+        name: /Retry Session A.*Two stems.*Load backing/i,
+      }),
+    )
+    await within(drawer).findByText('Backing with drums inside')
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Separate drums' }),
+    )
+
+    const retry = await within(drawer).findByRole('button', {
+      name: 'Try again',
+    })
+    fireEvent.click(retry)
+    await waitFor(() => expect(prepareBand).toHaveBeenCalledTimes(2))
+    const retrySignal = prepareBand.mock.calls[1]?.[1].signal
+    const retryAttempt = prepareBand.mock.results[1]?.value
+    expect(retrySignal?.aborted).toBe(false)
+
+    window.history.pushState(
+      {},
+      '',
+      '/drum-night?drawer=songs&song=current-session-b',
+    )
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    await waitFor(() =>
+      expect(catalog.openSession).toHaveBeenLastCalledWith(
+        'current-session-b',
+        expect.any(AbortSignal),
+      ),
+    )
+    await waitFor(() =>
+      expect(
+        within(drawer).getByRole('button', {
+          name: /Current Session B.*Two stems.*Selected/i,
+        }),
+      ).toHaveAttribute('aria-current', 'true'),
+    )
+    expect(retrySignal?.aborted).toBe(true)
+
+    retryCompletion.resolve({ saved: ['drums', 'instrumental'] })
+    await retryAttempt
+    await settleMicrotasks()
+
+    expect(catalog.openSession).toHaveBeenCalledTimes(2)
+    expect(new URLSearchParams(window.location.search).get('song')).toBe(
+      'current-session-b',
+    )
+    expect(
+      within(drawer).getByRole('button', {
+        name: /Current Session B.*Two stems.*Selected/i,
+      }),
+    ).toHaveAttribute('aria-current', 'true')
   })
 
   it('supports complete arrow-key behavior for workbench tabs and kit radios', () => {
@@ -1164,37 +1642,49 @@ describe('DrumNightApp', () => {
     )
   })
 
-  it('keeps kit and an off-by-default shared-clock click operable', async () => {
+  it('keeps the authored Source Drums, You, and off-by-default click independently operable', async () => {
     const click = clickHarness()
     const room = renderRoom({ click })
     fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
     const drawer = screen.getByRole('region', { name: 'Shape the groove' })
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
-    const kitLevel = within(drawer).getByRole('slider', { name: 'Kit level' })
-    const clickToggle = within(drawer).getByRole('button', { name: /Click/i })
+    const mixer = within(drawer).getByTestId('drum-play-along-mixer')
+    const sourceDrumsLevel = within(mixer).getByRole('slider', {
+      name: 'Source Drums level',
+    })
+    const backingLevel = within(mixer).getByRole('slider', {
+      name: 'Backing level',
+    })
+    const youLevel = within(mixer).getByRole('slider', { name: 'You level' })
+    const clickToggle = within(mixer).getByRole('button', {
+      name: 'Unmute Click',
+    })
     const clickLevel = within(drawer).getByRole('slider', {
       name: 'Click level',
     })
 
-    expect(clickToggle).toHaveAttribute('aria-pressed', 'false')
-    expect(clickLevel).toBeDisabled()
-    expect(within(drawer).queryByText(/Backing/i)).not.toBeInTheDocument()
-    expect(within(drawer).queryByText(/Guide/i)).not.toBeInTheDocument()
+    expect(mixer).toHaveAttribute('data-source-kind', 'authored-arrangement')
+    expect(sourceDrumsLevel).toBeEnabled()
+    expect(backingLevel).toBeDisabled()
+    expect(youLevel).toBeEnabled()
+    expect(clickToggle).toHaveAttribute('aria-pressed', 'true')
+    expect(clickLevel).toBeEnabled()
 
     fireEvent.click(clickToggle)
     expect(click.enable).toHaveBeenCalledWith(true)
-    expect(clickToggle).toHaveAttribute('aria-pressed', 'true')
-    expect(clickLevel).toBeEnabled()
+    expect(
+      within(mixer).getByRole('button', { name: 'Mute Click' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(within(drawer).getByText('Press Play to arm audio')).toBeVisible()
     expect(room.session.contextForGesture).not.toHaveBeenCalled()
 
     fireEvent.input(clickLevel, { target: { value: '63' } })
 
-    fireEvent.input(kitLevel, { target: { value: '64' } })
+    fireEvent.input(youLevel, { target: { value: '64' } })
 
     expect(click.setLevel).toHaveBeenLastCalledWith(0.63)
-    expect(room.player.player.setVolume).toHaveBeenLastCalledWith(0.64)
-    expect(kitLevel).toBeEnabled()
+    expect(room.player.setLaneVolume).toHaveBeenLastCalledWith('live', 0.64)
+    expect(youLevel).toBeEnabled()
   })
 
   it('keeps the playable groove active through honest import states and promotes a ready part', () => {
@@ -1204,11 +1694,14 @@ describe('DrumNightApp', () => {
 
     expect(screen.getByRole('heading', { name: 'First Pocket' })).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
-    const drawer = screen.getByRole('region', { name: 'Bring a drum part' })
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
 
     const states: readonly [DrumSessionImportState, string][] = [
-      [{ status: 'loading', fileName: 'take.mid' }, 'Reading take.mid'],
-      [{ status: 'empty', fileName: 'empty.mid' }, 'This file is empty'],
+      [{ status: 'loading', fileName: 'take.mid' }, 'Reading take.mid…'],
+      [
+        { status: 'empty', fileName: 'empty.mid' },
+        'Export the part again with at least one drum event, then retry.',
+      ],
       [
         {
           status: 'too-large',
@@ -1216,7 +1709,7 @@ describe('DrumNightApp', () => {
           actualBytes: 24 * 1024 * 1024,
           maximumBytes: 20 * 1024 * 1024,
         },
-        'This file is too large to open safely',
+        'Choose a file smaller than 20 MB. This file is 24 MB.',
       ],
       [
         {
@@ -1225,7 +1718,7 @@ describe('DrumNightApp', () => {
           reason: 'file-type',
           droppedHitCount: 0,
         },
-        'File type not supported',
+        'Choose a MIDI, GP, GP3, GP4, GP5, or GPX file.',
       ],
       [
         {
@@ -1234,11 +1727,11 @@ describe('DrumNightApp', () => {
           reason: 'drum-mapping',
           droppedHitCount: 3,
         },
-        'No safely mapped drum hits',
+        '3 source events were reported as unsupported. Drum Night will not guess a substitute sound.',
       ],
       [
         { status: 'no-drums', fileName: 'piano.mid', pitchedTrackCount: 2 },
-        'No drum track in this file',
+        '2 pitched parts were found, but Drum Night needs a percussion track.',
       ],
       [
         {
@@ -1246,7 +1739,7 @@ describe('DrumNightApp', () => {
           fileName: 'damaged.gp5',
           message: 'The parser could not read this score.',
         },
-        'The drum part could not be opened',
+        'The parser could not read this score.',
       ],
     ]
 
@@ -1273,22 +1766,25 @@ describe('DrumNightApp', () => {
     )
   })
 
-  it('keeps replacement and cancellation available while an import is loading', () => {
+  it('serializes authored-file replacement and keeps cancellation available while importing', () => {
     const importSession = importSessionHarness({
       status: 'loading',
       fileName: 'long-take.mid',
     })
     renderRoom({ importSession })
     fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
-    const drawer = screen.getByRole('region', { name: 'Bring a drum part' })
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
 
     expect(
       within(drawer).getByRole('button', {
-        name: 'Choose a different part',
+        name: 'Choose MIDI or Guitar Pro',
       }),
-    ).toBeEnabled()
+    ).toBeDisabled()
+    expect(within(drawer).getByText('Reading long-take.mid…')).toBeVisible()
     fireEvent.click(
-      within(drawer).getByRole('button', { name: 'Cancel import' }),
+      within(drawer).getByRole('button', {
+        name: 'Cancel authored-file import',
+      }),
     )
 
     expect(importSession.cancel).toHaveBeenCalledOnce()
@@ -1301,6 +1797,11 @@ describe('DrumNightApp', () => {
         'Drum part import cancelled. Nothing was partially loaded.',
       ),
     ).toBeVisible()
+    expect(
+      within(drawer).getByRole('button', {
+        name: 'Choose MIDI or Guitar Pro',
+      }),
+    ).toBeEnabled()
   })
 
   it('imports from the picker and drop zone, ignores stale UI attempts, and keeps recovery visible', async () => {
@@ -1311,7 +1812,7 @@ describe('DrumNightApp', () => {
     renderRoom({ importSession, onReadySessionChange })
 
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
-    let drawer = screen.getByRole('region', { name: 'Bring a drum part' })
+    let drawer = screen.getByRole('region', { name: 'Bring a song' })
     const file = new File([new Uint8Array([1, 2, 3])], 'pocket.mid', {
       type: 'audio/midi',
     })
@@ -1321,7 +1822,7 @@ describe('DrumNightApp', () => {
       item: () => file,
     } as unknown as FileList
     fireEvent.change(
-      within(drawer).getByLabelText('Choose a drum session file'),
+      within(drawer).getByTestId('drum-play-along-file-drop-input'),
       { target: { files: fileList } },
     )
 
@@ -1336,9 +1837,10 @@ describe('DrumNightApp', () => {
     expect(onReadySessionChange).toHaveBeenLastCalledWith(ready.document)
 
     fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
-    drawer = screen.getByRole('region', { name: 'Bring a drum part' })
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    expect(within(drawer).getByText('Pocket From File')).toBeVisible()
     expect(
-      within(drawer).getByText(/Percussion-only session ready/i),
+      within(drawer).getByText('4 authored drum hits · 0 backing tracks'),
     ).toBeVisible()
 
     const damaged = new File([new Uint8Array([4])], 'damaged.gpx')
@@ -1347,16 +1849,17 @@ describe('DrumNightApp', () => {
       fileName: damaged.name,
       message: 'Guitar Pro data ended unexpectedly.',
     })
-    fireEvent.drop(
-      within(drawer).getByRole('group', {
-        name: 'Drop a drum session file',
-      }),
-      {
-        dataTransfer: {
-          files: { item: () => damaged },
-        },
+    const damagedFiles = {
+      0: damaged,
+      length: 1,
+      item: () => damaged,
+    } as unknown as FileList
+    fireEvent.drop(within(drawer).getByTestId('drum-play-along-file-drop'), {
+      dataTransfer: {
+        types: ['Files'],
+        files: damagedFiles,
       },
-    )
+    })
     await waitFor(() =>
       expect(within(drawer).getByRole('alert')).toHaveTextContent(
         'Guitar Pro data ended unexpectedly.',
@@ -1368,7 +1871,9 @@ describe('DrumNightApp', () => {
       'ready',
     )
     expect(
-      within(drawer).getByRole('button', { name: 'Choose drum part' }),
+      within(drawer).getByRole('button', {
+        name: 'Choose MIDI or Guitar Pro',
+      }),
     ).toBeEnabled()
   })
 

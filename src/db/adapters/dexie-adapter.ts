@@ -98,6 +98,14 @@ class DexieDatabase extends DexieDB {
       voiceTakeAudio: 'id, &takeId',
       voiceTakeContours: 'id, &takeId',
     })
+    // v10: selecting the newest durable UVR stem must not materialize every
+    // historical duplicate blob first. The trailing timestamp keeps the
+    // lookup cursor-ordered while preserving the existing exact-kind index.
+    this.version(10).stores({
+      uvrStemBlobs:
+        'id, sessionId, stemType, createdAt, [sessionId+stemType], [sessionId+stemType+createdAt]',
+    })
+    })
   }
 }
 
@@ -365,6 +373,25 @@ export class DexieAdapter implements DatabaseAdapter {
       .where(indexName)
       .equals([...value])
       .toArray()
+  }
+
+  /** Read only the newest value under a compound prefix. */
+  readLatestByCompoundPrefixStrict<T extends DbEntity>(
+    entityName: string,
+    indexName: string,
+    prefix: readonly (string | number)[],
+  ): Promise<T | undefined> {
+    return this.db
+      .table<T, string>(entityName)
+      .where(indexName)
+      .between(
+        [...prefix, DexieDB.minKey],
+        [...prefix, DexieDB.maxKey],
+        true,
+        true,
+      )
+      .reverse()
+      .first()
   }
 
   /** Add a caller-owned local row and preserve uniqueness failures. */

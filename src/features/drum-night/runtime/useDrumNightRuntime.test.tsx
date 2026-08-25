@@ -148,6 +148,65 @@ describe('useDrumNightRuntime', () => {
     )
   })
 
+  it('shares gesture-owned activation with later MIDI strikes', async () => {
+    const player = playerHarness()
+    const input: DrumMidiInputPort = {
+      id: 'stage-kit',
+      name: 'Stage Kit',
+      state: 'connected',
+      onmidimessage: null,
+    }
+    const access: DrumMidiAccessPort = {
+      inputs: { values: () => [input][Symbol.iterator]() },
+      onstatechange: null,
+    }
+    const { controller } = mountRuntime({
+      player,
+      clock: new FakeClock(),
+      keyboardTarget: null,
+      midiEnvironment: {
+        requestAccess: async () => access,
+        nowMs: () => 0,
+      },
+    })
+
+    await controller.connectMidi()
+    await controller.activateAudio()
+    input.onmidimessage?.({
+      data: new Uint8Array([0x99, 38, 112]),
+      timeStamp: 20,
+    })
+
+    expect(player.activate).toHaveBeenCalledOnce()
+    expect(player.trigger).toHaveBeenCalledWith(
+      expect.objectContaining({ gmKey: 38, velocity: 112 }),
+    )
+  })
+
+  it('waits out an in-flight failure before retrying audio once', async () => {
+    const firstAttempt = deferred<boolean>()
+    const player = playerHarness()
+    player.activate
+      .mockImplementationOnce(() => firstAttempt.promise)
+      .mockImplementationOnce(() => true)
+    const { controller } = mountRuntime({
+      player,
+      clock: new FakeClock(),
+      keyboardTarget: null,
+      midiEnvironment: { requestAccess: undefined, nowMs: () => 0 },
+    })
+
+    const initial = controller.activateAudio()
+    const retry = controller.retryAudio()
+    expect(player.activate).toHaveBeenCalledOnce()
+
+    firstAttempt.resolve(false)
+
+    await expect(initial).resolves.toBe(false)
+    await expect(retry).resolves.toBe(true)
+    expect(player.activate).toHaveBeenCalledTimes(2)
+  })
+
   it('plays every repeated keyboard and pointer strike and panics on stop', async () => {
     const player = playerHarness()
     const { controller } = mountRuntime({
