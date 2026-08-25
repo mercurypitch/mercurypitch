@@ -22,11 +22,15 @@ export interface SheetLaneSelection {
   scoredTuning?: InstrumentTuning
 }
 
-/** Every track of a score that has notes to draw, in source order. */
+/** Every track of a score that has authored marks to draw, in source order. */
 export function playableSheetTracks(
   source: GuitarNightReferenceSource,
 ): readonly GuitarNightReferenceSourceTrack[] {
-  return source.tracks.filter((track) => track.notes.length > 0)
+  return source.tracks.filter((track) =>
+    track.kind === 'percussion'
+      ? (track.percussionHits?.length ?? 0) > 0
+      : track.notes.length > 0,
+  )
 }
 
 /**
@@ -41,6 +45,23 @@ export function sheetLanesFromSource(
   const visible = selectVisibleTracks(playable, selection)
 
   return visible.map((track) => {
+    if (track.kind === 'percussion') {
+      return {
+        trackId: track.id,
+        trackName: track.name,
+        kind: 'authored',
+        // These fields keep the established lane shape compatible; the drum
+        // renderer never treats them as rows or score authority.
+        instrument: 'guitar',
+        tuning: DEFAULT_GUITAR_TUNING,
+        notes: [],
+        content: 'percussion',
+        percussionHits: [...(track.percussionHits ?? [])],
+        droppedPercussionHits: Math.max(0, track.droppedHitCount ?? 0),
+        scoreable: false,
+        outOfRangeNotes: 0,
+      }
+    }
     const scored = track.id === selection.scoredTrackId
     const suggestion = suggestReferenceInstrument(source, track.id)
     const fallbackTuning =
@@ -61,6 +82,8 @@ export function sheetLanesFromSource(
       instrument: placed.instrument,
       tuning: placed.tuning,
       notes: placed.notes,
+      content: 'pitched',
+      scoreable: true,
       outOfRangeNotes: placed.outOfRangeNotes,
     }
   })
@@ -99,6 +122,8 @@ export function sheetLaneFromReference(
     instrument: reference.tuning.instrument,
     tuning: reference.tuning,
     notes: reference.notes,
+    content: 'pitched',
+    scoreable: true,
     outOfRangeNotes: reference.outOfRangeNotes,
   }
 }

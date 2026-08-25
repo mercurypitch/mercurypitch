@@ -50,6 +50,27 @@ describe('playableSheetTracks', () => {
       'track-bass',
     ])
   })
+
+  it('keeps authored percussion hits as readable sheet material', () => {
+    const withDrums = source({
+      tracks: [
+        ...source().tracks,
+        {
+          id: 'track-drums',
+          kind: 'percussion',
+          name: 'Drum kit',
+          instrumentName: 'General MIDI Drum Kit',
+          noteCount: 1,
+          notes: [],
+          percussionHits: [{ gmKey: 49, startBeat: 4.5, velocity: 108 }],
+        },
+      ],
+    })
+
+    expect(playableSheetTracks(withDrums).map((track) => track.id)).toContain(
+      'track-drums',
+    )
+  })
 })
 
 describe('sheetLanesFromSource', () => {
@@ -176,5 +197,50 @@ describe('sheetLanesFromSource', () => {
     const lane = sheetLanesFromSource(tooLow)[0]
     expect(lane?.notes).toHaveLength(1)
     expect(lane?.outOfRangeNotes).toBe(1)
+  })
+
+  it('preserves authored GM evidence in a non-scoreable percussion lane', () => {
+    const hit = {
+      id: 'gp-t2-b3-v0-n1',
+      gmKey: 54,
+      startBeat: 6.25,
+      velocity: 87,
+      writtenDuration: 0.5,
+      source: {
+        format: 'guitar-pro' as const,
+        articulationIndex: 0,
+        label: 'Tambourine',
+        staffLine: 3,
+      },
+    }
+    const withDrums = source({
+      tracks: [
+        ...source().tracks,
+        {
+          id: 'track-drums',
+          kind: 'percussion',
+          name: 'Drum kit',
+          instrumentName: 'General MIDI Drum Kit',
+          noteCount: 1,
+          notes: [],
+          percussionHits: [hit],
+          droppedHitCount: 2,
+        },
+      ],
+    })
+
+    const drumLane = sheetLanesFromSource(withDrums, {
+      visibleTrackIds: ['track-drums'],
+      scoredTrackId: 'track-lead',
+    }).find((lane) => lane.trackId === 'track-drums')
+
+    expect(drumLane).toMatchObject({
+      content: 'percussion',
+      scoreable: false,
+      notes: [],
+      droppedPercussionHits: 2,
+    })
+    expect(drumLane?.percussionHits).toEqual([hit])
+    expect(drumLane?.percussionHits?.[0]).toBe(hit)
   })
 })

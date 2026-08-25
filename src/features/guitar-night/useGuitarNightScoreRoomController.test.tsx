@@ -1248,6 +1248,65 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
+  it('starts percussion-only free play on the room clock without a score melody', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const percussion = [
+        {
+          trackId: 'track-drums',
+          sourceId: 'midi-t0-e1',
+          gmKey: 36,
+          startBeat: 0.25,
+          velocity: 127,
+        },
+        {
+          trackId: 'track-drums',
+          sourceId: 'gp-t0-b1-v0-n0',
+          gmKey: 54,
+          startBeat: 3.5,
+          velocity: 83,
+        },
+      ] as const
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            scoreMode: 'backing-only',
+            trackId: '',
+            trackName: 'No scored part',
+            notes: [],
+            tracks: [
+              {
+                id: 'track-drums',
+                name: 'Drum kit',
+                kind: 'percussion',
+                hitCount: 2,
+                supportedHitCount: 1,
+                droppedHitCount: 0,
+              },
+            ],
+          }),
+        backingPercussion: () => percussion,
+        audiblePercussionTrackIds: () => ['track-drums'],
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      expect(await room.start()).toBe(true)
+      expect(getOptions()).toMatchObject({
+        feel: 'click',
+        melody: [],
+        percussion,
+        audiblePercussionTrackIds: ['track-drums'],
+        durationBeats: 3.501,
+        exerciseBeats: 4,
+      })
+      expect(band.start).toHaveBeenCalledTimes(1)
+      dispose()
+    })
+  })
+
   it('stopping leaves the room quiet and the clock released', async () => {
     await createRoot(async (dispose) => {
       const { band, clock, getOptions } = bandHarness()
