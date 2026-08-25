@@ -4550,6 +4550,10 @@
   pointer-events: none;
 }
 
+.stageHeaderWithoutStatus {
+  justify-content: flex-end;
+}
+
 .stageHeader > div:first-child {
   display: grid;
   min-width: 0;

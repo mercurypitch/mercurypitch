@@ -841,6 +841,26 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   account and credit truth before retrying that exact separation request. IF
   the signed-in balance is known to be insufficient, THEN it shall offer one
   styled `Get credits` action instead of submitting billable work.
+- **REQ-GN-SONG-020 — Distinct percussion identity:** WHEN MIDI or Guitar Pro
+  contains authored percussion, Guitar Night shall retain each supported GM
+  articulation, velocity, track identity, and authored time outside the
+  pitched-note score model. It shall never interpret a drum key as a guitar
+  pitch or make percussion a live-score authority.
+- **REQ-GN-SONG-021 — Percussion-only room:** WHEN a saved reference contains
+  authored percussion but no playable pitched track, Guitar Night shall offer
+  a backing-only free-play room instead of rejecting the reference. The room
+  shall state that no guitar score or neck grading is active and shall retain
+  one gesture-owned transport for the authored drums.
+- **REQ-GN-SONG-022 — Readable mixed drum lane:** WHEN a saved reference mixes
+  pitched and percussion tracks, the Sheet view shall expose each authored
+  drum track as a separately hideable, non-scoreable GM reference lane while
+  retaining a pitched track as the only eligible score authority.
+- **REQ-GN-SONG-023 — Shared drum-player boundary:** WHEN an authored drum part
+  starts, Guitar Night shall lazily acquire a drum player, schedule exact GM
+  identity and velocity on the room AudioContext clock, and route each track
+  through its live mute gate. A failed player activation shall abort the run
+  without exposing a false Playing state; pitched-only rooms shall not load or
+  construct this drum path.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

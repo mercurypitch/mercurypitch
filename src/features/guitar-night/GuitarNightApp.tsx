@@ -83,6 +83,12 @@ const GuitarNightScoreRoom = lazy(async () => {
   return { default: module.GuitarNightScoreRoom }
 })
 
+/** Backing-only imports keep their smaller, explicitly non-scoring room lazy. */
+const GuitarNightPercussionRoom = lazy(async () => {
+  const module = await import('./GuitarNightPercussionRoom')
+  return { default: module.GuitarNightPercussionRoom }
+})
+
 /** Learn input and activity state stay out of the silent entry bundle. */
 const GuitarNightLearnRoom = lazy(async () => {
   const module = await import('./GuitarNightLearnRoom')
@@ -468,6 +474,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const authoredReference = createMemo(() => {
     const attached = attachedReference()
     return attached !== null && attached.kind === 'authored' ? attached : null
+  })
+  const percussionOnlyReference = createMemo(() => {
+    const authored = authoredReference()
+    return authored?.scoreMode === 'backing-only' ? authored : null
   })
   const attachedMeasuredReference = createMemo(() => {
     const attached = attachedReference()
@@ -1823,7 +1833,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 }
               >
                 <div class={styles.songLibraryHeader}>
-                  <h2 id="guitar-night-reference-title">Score to follow</h2>
+                  <h2 id="guitar-night-reference-title">
+                    Score or drums to follow
+                  </h2>
                   <Show when={attachedReference() !== null}>
                     <button
                       type="button"
@@ -1844,10 +1856,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                             staged panel now. Repeating them here cost four
                             rows of the one column that has to fit. */}
                         <small>
-                          {attached().kind === 'measured'
-                            ? `Heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
-                            : `${attached().notes.length} notes · ${attached().tuning.stringCount}-string`}
+                          {attached().scoreMode === 'backing-only'
+                            ? `${attached().tracks.reduce(
+                                (total, track) =>
+                                  total +
+                                  (track.kind === 'percussion'
+                                    ? track.hitCount
+                                    : 0),
+                                0,
+                              )} authored drum hits at ${attached().tempoBpm} BPM · backing-only free play`
+                            : attached().kind === 'measured'
+                              ? `Heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
+                              : `${attached().notes.length} notes · ${attached().tuning.stringCount}-string`}
                         </small>
+                        <Show when={attached().scoreMode !== 'backing-only'}>
+                          <small>
+                            On a {attached().tuning.stringCount}-string{' '}
+                            {attached().tuning.instrument} ·{' '}
+                            {attached().tuning.labels.join(' ')}
+                          </small>
+                        </Show>
                         <Show when={attached().liftedOctaves === true}>
                           <small>
                             Raised by whole octaves to reach this instrument’s
@@ -1857,6 +1885,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         <Show
                           when={
                             attached().kind === 'authored' &&
+                            attached().scoreMode !== 'backing-only' &&
                             activeBacking() !== null
                           }
                         >
@@ -1941,10 +1970,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                                       track.id === attached().trackId,
                                   }}
                                   aria-pressed={track.id === attached().trackId}
+                                  disabled={track.kind === 'percussion'}
+                                  title={
+                                    track.kind === 'percussion'
+                                      ? `${track.name} is readable backing, not a guitar scoring target`
+                                      : undefined
+                                  }
                                   onClick={() =>
-                                    void referenceController.selectTrack(
-                                      track.id,
-                                    )
+                                    track.kind === 'percussion'
+                                      ? undefined
+                                      : void referenceController.selectTrack(
+                                          track.id,
+                                        )
                                   }
                                 >
                                   {track.name}
@@ -2121,55 +2158,85 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       role="status"
                       aria-live="polite"
                     >
-                      Opening the tab room…
+                      Opening the rehearsal room…
                     </p>
                   }
                 >
-                  <GuitarNightScoreRoom
-                    reference={authored}
-                    tuning={referenceController.tuning}
-                    onInstrument={referenceController.setInstrument}
-                    onStringCount={referenceController.setStringCount}
-                    onTuning={referenceController.setTuning}
-                    suspended={learnOpen}
-                    onSongs={returnToSongs}
-                    onSelectTrack={(trackId) =>
-                      void referenceController.selectTrack(trackId)
+                  <Show
+                    when={authored().scoreMode === 'backing-only'}
+                    fallback={
+                      <GuitarNightScoreRoom
+                        reference={authored}
+                        tuning={referenceController.tuning}
+                        onInstrument={referenceController.setInstrument}
+                        onStringCount={referenceController.setStringCount}
+                        onTuning={referenceController.setTuning}
+                        suspended={learnOpen}
+                        onSongs={returnToSongs}
+                        onSelectTrack={(trackId) =>
+                          void referenceController.selectTrack(trackId)
+                        }
+                        sheetLanes={referenceController.sheetLanes}
+                        sheetTimeSignatures={
+                          referenceController.sheetTimeSignatures
+                        }
+                        sheetVisibleTrackIds={
+                          referenceController.sheetVisibleTrackIds
+                        }
+                        onToggleSheetTrack={
+                          referenceController.toggleSheetTrack
+                        }
+                        secondaryLane={referenceController.secondaryLane}
+                        backingMelody={
+                          referenceController.rehearsalBackingMelodyNotes
+                        }
+                        backingPercussion={
+                          referenceController.allBackingPercussionHits
+                        }
+                        defaultHearScore={
+                          referenceController.scoredPartDefaultsAudible
+                        }
+                        audibleBackingTrackIds={
+                          referenceController.audibleBackingTrackIds
+                        }
+                        mutedBackingTrackIds={
+                          referenceController.mutedBackingTrackIds
+                        }
+                        onToggleBackingTrack={
+                          referenceController.toggleBackingTrack
+                        }
+                        soloedBackingTrackId={
+                          referenceController.soloedBackingTrackId
+                        }
+                        onToggleSoloBackingTrack={
+                          referenceController.toggleSoloBackingTrack
+                        }
+                      />
                     }
-                    sheetLanes={referenceController.sheetLanes}
-                    sheetTimeSignatures={
-                      referenceController.sheetTimeSignatures
-                    }
-                    sheetVisibleTrackIds={
-                      referenceController.sheetVisibleTrackIds
-                    }
-                    onToggleSheetTrack={referenceController.toggleSheetTrack}
-                    secondaryLane={referenceController.secondaryLane}
-                    backingMelody={
-                      referenceController.rehearsalBackingMelodyNotes
-                    }
-                    backingPercussion={
-                      referenceController.allBackingPercussionHits
-                    }
-                    defaultHearScore={
-                      referenceController.scoredPartDefaultsAudible
-                    }
-                    audibleBackingTrackIds={
-                      referenceController.audibleBackingTrackIds
-                    }
-                    mutedBackingTrackIds={
-                      referenceController.mutedBackingTrackIds
-                    }
-                    onToggleBackingTrack={
-                      referenceController.toggleBackingTrack
-                    }
-                    soloedBackingTrackId={
-                      referenceController.soloedBackingTrackId
-                    }
-                    onToggleSoloBackingTrack={
-                      referenceController.toggleSoloBackingTrack
-                    }
-                  />
+                  >
+                    <GuitarNightPercussionRoom
+                      reference={authored}
+                      suspended={learnOpen}
+                      onSongs={returnToSongs}
+                      sheetLanes={referenceController.sheetLanes}
+                      sheetTimeSignatures={
+                        referenceController.sheetTimeSignatures
+                      }
+                      sheetVisibleTrackIds={
+                        referenceController.sheetVisibleTrackIds
+                      }
+                      onToggleSheetTrack={referenceController.toggleSheetTrack}
+                      backingPercussion={
+                        referenceController.allBackingPercussionHits
+                      }
+                      audibleBackingTrackIds={
+                        referenceController.audibleBackingTrackIds
+                      }
+                      onToggleBackingTrack={
+                        referenceController.toggleBackingTrack
+                      }
+                    />
+                  </Show>
                 </Suspense>
               )}
             </Match>

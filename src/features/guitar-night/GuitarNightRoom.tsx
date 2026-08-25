@@ -639,6 +639,9 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           if (authored === null) {
             return 'Attach a tab or turn on Listening whenever you want a target.'
           }
+          if (authored.scoreMode === 'backing-only') {
+            return `${authored.title} carries authored drums on their own clock. Open its backing-only room for free play.`
+          }
           return `${authored.title} is attached, but it keeps its own tempo — it plays in the tab room, not against this recording.`
         }}
         invitationAction={
@@ -651,7 +654,10 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     type="button"
                     onClick={() => rehearse()()}
                   >
-                    Practice with tab
+                    {(props.authoredReference?.() ?? null)?.scoreMode ===
+                    'backing-only'
+                      ? 'Play the drum backing'
+                      : 'Practice with tab'}
                   </button>
                 )}
               </Show>

@@ -290,7 +290,7 @@ describe('openGuitarNightReference', () => {
     expect(result).toEqual({ ok: false, code: 'no-playable-notes' })
   })
 
-  it('refuses a percussion-only scored room without discarding the drum source', () => {
+  it('opens percussion-only music as backing without inventing score authority', () => {
     const drumsOnly = source({
       scoreTrackId: null,
       tracks: [
@@ -301,17 +301,44 @@ describe('openGuitarNightReference', () => {
           noteCount: 2,
           notes: [],
           percussionHits: [
-            { gmKey: 36, startBeat: 0, velocity: 110 },
-            { gmKey: 38, startBeat: 1, velocity: 96 },
+            {
+              id: 'midi-t0-e1',
+              gmKey: 36,
+              startBeat: 0,
+              velocity: 110,
+              source: { format: 'midi', channel: 9, midiKey: 36 },
+            },
+            {
+              id: 'midi-t0-e2',
+              gmKey: 38,
+              startBeat: 1,
+              velocity: 96,
+              source: { format: 'midi', channel: 9, midiKey: 38 },
+            },
           ],
         },
       ],
     })
 
     expect(drumsOnly.tracks[0]?.percussionHits).toHaveLength(2)
-    expect(openGuitarNightReference(drumsOnly)).toEqual({
-      ok: false,
-      code: 'no-playable-notes',
+    const result = openGuitarNightReference(drumsOnly)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference).toMatchObject({
+      scoreMode: 'backing-only',
+      title: drumsOnly.name,
+      trackId: '',
+      trackName: 'No scored part',
+      tempoBpm: drumsOnly.bpm,
+      notes: [],
+    })
+    expect(result.reference.tracks[0]).toEqual({
+      id: 'track-drums',
+      name: 'Drum kit',
+      kind: 'percussion',
+      hitCount: 2,
+      supportedHitCount: 2,
+      droppedHitCount: 0,
     })
   })
 

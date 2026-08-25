@@ -230,7 +230,7 @@ export function useGuitarNightReferenceController(
     const current = reference()
     if (current === null) return null
     const others = sheetLanes().filter(
-      (lane) => lane.trackId !== current.trackId,
+      (lane) => lane.trackId !== current.trackId && lane.scoreable !== false,
     )
     if (others.length === 0) return null
 
@@ -533,7 +533,9 @@ export function useGuitarNightReferenceController(
       setMeasuredForAlignment(null)
       // Remember the visible track so the same part returns next time, in
       // Guitar Night and in the legacy tab that shares this library.
-      loadedPort.rememberTrack(normalizedSongId, result.reference.trackId)
+      if (result.reference.scoreMode !== 'backing-only') {
+        loadedPort.rememberTrack(normalizedSongId, result.reference.trackId)
+      }
       setState({ kind: 'ready', reference: result.reference })
     } else {
       setState({

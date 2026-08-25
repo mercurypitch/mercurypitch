@@ -15,8 +15,9 @@ import styles from './GuitarNightApp.module.css'
 
 export interface GuitarNightStoppedPreparationProps {
   onDiscard(): void
-  /** Offered only when a tab is attached, because only then does it go anywhere. */
+  /** Offered only when an authored rehearsal is attached. */
   onRehearseTab?: (() => void) | undefined
+  rehearsalLabel?: string
 }
 
 export function StoppedPreparationActions(
@@ -38,7 +39,7 @@ export function StoppedPreparationActions(
             type="button"
             onClick={() => rehearse()()}
           >
-            Practice with tab
+            {props.rehearsalLabel ?? 'Practice with tab'}
           </button>
         )}
       </Show>

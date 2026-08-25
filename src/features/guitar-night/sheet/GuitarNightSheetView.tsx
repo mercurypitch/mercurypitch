@@ -63,6 +63,8 @@ export interface GuitarNightSheetViewProps {
   /** Tapping a part's name asks to score it. */
   onSelectTrack?: (trackId: string) => void
   emptyNote?: string
+  /** Give a short reference-only part the visual weight of a music stand. */
+  focusSingleSystem?: boolean
 }
 
 export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
@@ -90,8 +92,20 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
   // Magnification scales the measure set rather than transforming the result.
   // Every painter derives its fonts and stave gaps from these numbers, so the
   // canvas is drawn at the size it is displayed and stays sharp at any zoom --
-  // a CSS scale on a finished canvas would just enlarge its pixels.
+  // a CSS scale on a finished canvas would just enlarge its pixels. The
+  // focused single-system view pins its own compact numbers instead.
   const metrics = createMemo<SheetMetrics>(() => {
+    if (props.focusSingleSystem === true) {
+      return {
+        ...DEFAULT_SHEET_METRICS,
+        rowHeight: 22,
+        labelHeight: 24,
+        systemPaddingTop: 12,
+        systemPaddingBottom: 16,
+        gutterWidth: 42,
+        width: Math.max(1, width()),
+      }
+    }
     const scale = zoom()
     return {
       rowHeight: DEFAULT_SHEET_METRICS.rowHeight * scale,
@@ -188,6 +202,11 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     }
     return ''
   })
+  const focusedInset = createMemo(() =>
+    props.focusSingleSystem === true && systemCount() === 1
+      ? Math.max(0, (viewportHeight() - systemHeight()) / 2)
+      : 0,
+  )
 
   const playhead = createMemo(() => {
     const position = locateBeat(placement(), props.playheadBeat())
@@ -197,7 +216,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     return {
       systemIndex: position.systemIndex,
       x: current.gutterWidth + position.fraction * contentWidth,
-      y: position.systemIndex * systemHeight(),
+      y: focusedInset() + position.systemIndex * systemHeight(),
     }
   })
   const playheadSystemIndex = createMemo(() => playhead()?.systemIndex ?? null)
@@ -342,6 +361,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
           : `Score sheet. ${loopDescription()}.`
       }
       data-testid="guitar-night-sheet"
+      data-layout={props.focusSingleSystem === true ? 'focused' : 'page'}
     >
       <div
         class={styles.scroll}
@@ -363,7 +383,12 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
           <div
             class={styles.page}
             data-testid="guitar-night-sheet-page"
-            style={{ height: `${pageHeight()}px` }}
+            style={{
+              height: `${Math.max(
+                systemHeight() * systemCount() + focusedInset(),
+                props.focusSingleSystem === true ? viewportHeight() : 0,
+              )}px`,
+            }}
           >
             <For each={visibleSystems()}>
               {(system) => (
@@ -374,7 +399,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
                   metrics={metrics()}
                   theme={theme()}
                   renderer={renderer()}
-                  top={system.index * systemHeight()}
+                  top={focusedInset() + system.index * systemHeight()}
                   playheadBeat={props.playheadBeat()}
                   loopFragment={loopVisuals().fragments.get(system.index)}
                   loopMarkers={loopVisuals().markers.get(system.index) ?? []}
@@ -810,15 +835,20 @@ interface LaneNameProps {
 
 const LaneName: Component<LaneNameProps> = (props) => {
   const missing = createMemo(() => props.lane.outOfRangeNotes)
-  const label = createMemo(() =>
-    missing() > 0
+  const label = createMemo(() => {
+    if (props.lane.content === 'percussion') {
+      const hits = props.lane.percussionHits?.length ?? 0
+      const dropped = props.lane.droppedPercussionHits ?? 0
+      return `${props.lane.trackName} — ${hits} authored ${hits === 1 ? 'hit' : 'hits'}${dropped > 0 ? ` · ${dropped} unmapped` : ''} · reference only`
+    }
+    return missing() > 0
       ? `${props.lane.trackName} — ${missing()} note${missing() === 1 ? '' : 's'} off this neck`
-      : props.lane.trackName,
-  )
+      : props.lane.trackName
+  })
 
   return (
     <Show
-      when={props.onSelectTrack !== undefined}
+      when={props.onSelectTrack !== undefined && props.lane.scoreable !== false}
       fallback={
         <span
           class={styles.laneName}

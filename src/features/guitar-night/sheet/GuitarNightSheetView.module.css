@@ -248,6 +248,11 @@
   font-weight: 600;
 }
 
+.sheet[data-layout='focused'] .laneName {
+  color: rgba(244, 234, 219, 0.72);
+  font-size: 0.8rem;
+}
+
 /* One element moves per frame. Everything else is painted and left alone. */
 .playhead {
   position: absolute;

@@ -145,6 +145,7 @@ export function backingPercussion(
         gmKey: hit.gmKey,
         startBeat: hit.startBeat,
         velocity: hit.velocity,
+        ...(hit.id === undefined ? {} : { sourceId: hit.id }),
       })
     }
   }

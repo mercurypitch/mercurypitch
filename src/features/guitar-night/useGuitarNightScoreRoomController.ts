@@ -12,7 +12,6 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandPercussionHit, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
-import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
@@ -178,7 +177,9 @@ export function percussionDurationBeats(
     (latest, hit) =>
       Number.isFinite(hit.startBeat) &&
       hit.startBeat >= 0 &&
-      drumVoiceForMidi(hit.gmKey) !== null
+      Number.isInteger(hit.gmKey) &&
+      hit.gmKey >= 35 &&
+      hit.gmKey <= 81
         ? Math.max(latest, hit.startBeat + 0.001)
         : latest,
     0,
@@ -556,7 +557,12 @@ export function useGuitarNightScoreRoomController(
     boundedMode: 'assessment' | 'live-score' = 'assessment',
   ): GuitarNightScoreRoomRunConfiguration | null => {
     const currentReference = options.reference()
-    if (currentReference === null || currentReference.notes.length === 0) {
+    const configuredPercussion = options.backingPercussion?.() ?? []
+    if (
+      currentReference === null ||
+      (currentReference.notes.length === 0 &&
+        percussionDurationBeats(configuredPercussion) === 0)
+    ) {
       return null
     }
     const reference = snapshotReference(currentReference)
@@ -590,7 +596,7 @@ export function useGuitarNightScoreRoomController(
     }
     const mode = assessmentRange === null ? 'rehearsal' : boundedMode
     const backingPercussionForRun =
-      mode !== 'assessment' ? [...(options.backingPercussion?.() ?? [])] : []
+      mode !== 'assessment' ? [...configuredPercussion] : []
     const durationBeatsForRun =
       mode === 'rehearsal'
         ? Math.max(
@@ -950,10 +956,16 @@ export function useGuitarNightScoreRoomController(
     }
     const run = runningTake()
     const reference = run?.reference ?? options.reference()
-    if (reference === null || reference.notes.length === 0) return
+    if (reference === null) return
     const beatToSeconds = run?.beatToSeconds ?? configuredBeatToSeconds()
     const secondsToBeat = run?.secondsToBeat ?? configuredSecondsToBeat()
-    const scoreBeats = run?.durationBeats ?? scoreDurationBeats(reference)
+    const scoreBeats =
+      run?.durationBeats ??
+      Math.max(
+        scoreDurationBeats(reference),
+        percussionDurationBeats(options.backingPercussion?.() ?? []),
+      )
+    if (scoreBeats <= 0) return
     const scoreSeconds = run?.durationSeconds ?? beatToSeconds(scoreBeats)
     const exerciseBeats =
       run?.exerciseBeats ?? Math.max(1, Math.ceil(scoreBeats))

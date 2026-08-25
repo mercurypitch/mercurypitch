@@ -9,6 +9,7 @@
 
 import type { GuitarSlideType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import type { MidiSongPercussionHit } from '@/lib/midi-song'
 import type { SheetLane } from './sheet-model'
 import { beatFractionInSystem } from './sheet-model'
 import type { SheetLaneLayout, SheetMetrics, SheetRenderer, SheetSystemPaintArgs, SheetTheme, } from './sheet-render'
@@ -18,7 +19,8 @@ const NOTE_LABEL_CHAR_WIDTH = 0.62
 const NOTE_LABEL_PADDING = 3
 
 function laneHeight(lane: SheetLane, metrics: SheetMetrics): number {
-  const lines = Math.max(1, lane.tuning.stringCount)
+  const lines =
+    lane.content === 'percussion' ? 5 : Math.max(1, lane.tuning.stringCount)
   return metrics.labelHeight + (lines - 1) * metrics.rowHeight
 }
 
@@ -51,7 +53,8 @@ function paintLane(
   const { ctx, metrics, theme, system, placement } = args
   const { lane } = laneLayout
   const staffTop = laneLayout.top + metrics.labelHeight
-  const lines = Math.max(1, lane.tuning.stringCount)
+  const lines =
+    lane.content === 'percussion' ? 5 : Math.max(1, lane.tuning.stringCount)
   const staffBottom = staffTop + (lines - 1) * metrics.rowHeight
 
   paintStaff(ctx, {
@@ -71,6 +74,24 @@ function paintLane(
     contentLeft,
     contentWidth,
   })
+
+  if (lane.content === 'percussion') {
+    const hits =
+      placement.percussionHitsBySystem[system.index]?.[laneLayout.laneIndex]
+    if (hits === undefined || hits.length === 0) return
+    for (const hit of hits) {
+      paintPercussionHit(ctx, {
+        hit,
+        staffTop,
+        contentLeft,
+        contentWidth,
+        metrics,
+        theme,
+        system,
+      })
+    }
+    return
+  }
 
   const notes = placement.notesBySystem[system.index]?.[laneLayout.laneIndex]
   if (notes === undefined || notes.length === 0) return
@@ -126,10 +147,65 @@ function paintStaff(
   ctx.fillStyle = input.scored ? theme.scoredAccent : theme.laneLabel
   ctx.font = `${Math.max(8, metrics.rowHeight - 4)}px ui-monospace, SFMono-Regular, Menlo, monospace`
   for (let line = 0; line < lines; line += 1) {
-    const label = input.lane.tuning.labels[line]
+    const label =
+      input.lane.content === 'percussion'
+        ? ['CY', 'HH', 'T', 'SN', 'K'][line]
+        : input.lane.tuning.labels[line]
     if (label === undefined) continue
     ctx.fillText(label, contentLeft - 6, staffTop + line * metrics.rowHeight)
   }
+}
+
+function percussionRow(gmKey: number): number {
+  if (gmKey === 35 || gmKey === 36) return 4
+  if (gmKey >= 37 && gmKey <= 40) return 3
+  if (gmKey === 42 || gmKey === 44 || gmKey === 46) return 1
+  if (
+    gmKey === 41 ||
+    gmKey === 43 ||
+    gmKey === 45 ||
+    gmKey === 47 ||
+    gmKey === 48 ||
+    gmKey === 50
+  ) {
+    return 2
+  }
+  return 0
+}
+
+/** Draw one authored GM attack without ever turning it into a pitched note. */
+function paintPercussionHit(
+  ctx: CanvasRenderingContext2D,
+  input: {
+    hit: MidiSongPercussionHit
+    staffTop: number
+    contentLeft: number
+    contentWidth: number
+    metrics: SheetMetrics
+    theme: SheetTheme
+    system: SheetSystemPaintArgs['system']
+  },
+): void {
+  const { hit, metrics, theme } = input
+  const x =
+    input.contentLeft +
+    beatFractionInSystem(input.system, hit.startBeat) * input.contentWidth
+  const y = input.staffTop + percussionRow(hit.gmKey) * metrics.rowHeight
+  const fontSize = Math.max(8, metrics.rowHeight - 4)
+  const label = `${hit.gmKey}`
+  const width = label.length * fontSize * NOTE_LABEL_CHAR_WIDTH
+
+  ctx.fillStyle = theme.noteBackdrop
+  ctx.fillRect(
+    x - width / 2 - NOTE_LABEL_PADDING,
+    y - fontSize / 2 - 1,
+    width + NOTE_LABEL_PADDING * 2,
+    fontSize + 2,
+  )
+  ctx.fillStyle = theme.mutedNoteText
+  ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`
+  ctx.textAlign = 'center'
+  ctx.fillText(label, x, y)
 }
 
 function paintBarLines(

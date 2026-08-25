@@ -1,4 +1,4 @@
-// Guitar Night reference ports describe verified authored scores, never invented ones.
+// Guitar Night reference ports describe verified authored material, never invented notes.
 // ============================================================
 //
 // A reference is the score axis of a rehearsal: the authored notes the stage
@@ -88,9 +88,16 @@ export type GuitarNightReferenceKind = 'authored' | 'measured'
 
 export interface GuitarNightReference {
   kind: GuitarNightReferenceKind
+  /**
+   * Missing means the legacy/scored pitched mode. A percussion-only import is
+   * still an authored rehearsal, but it carries no guitar score authority.
+   */
+  scoreMode?: 'pitched' | 'backing-only'
   songId: string
   title: string
+  /** Empty only when `scoreMode` is `backing-only`. */
   trackId: string
+  /** Human-readable scored part, or "No scored part" in backing-only mode. */
   trackName: string
   tempoBpm: number
   /** Authored only: tempo events in the score's beat time. */
@@ -385,7 +392,35 @@ export function openGuitarNightReference(
   tuning?: InstrumentTuning,
 ): GuitarNightOpenReferenceResult {
   const track = resolveReferenceTrack(source, requestedTrackId)
-  if (track === null) return { ok: false, code: 'no-playable-notes' }
+  if (track === null) {
+    const hasAuthoredPercussion = source.tracks.some(
+      (candidate) =>
+        candidate.kind === 'percussion' &&
+        (candidate.percussionHits?.length ?? 0) > 0,
+    )
+    if (!hasAuthoredPercussion) {
+      return { ok: false, code: 'no-playable-notes' }
+    }
+    const tempoBpm =
+      Number.isFinite(source.bpm) && source.bpm > 0 ? source.bpm : 120
+    return {
+      ok: true,
+      reference: {
+        kind: 'authored',
+        scoreMode: 'backing-only',
+        songId: source.id,
+        title: source.name,
+        trackId: '',
+        trackName: 'No scored part',
+        tempoBpm,
+        tempoChanges: source.tempoChanges,
+        tuning: tuning ?? DEFAULT_GUITAR_TUNING,
+        notes: [],
+        tracks: referenceTrackSummaries(source),
+        outOfRangeNotes: 0,
+      },
+    }
+  }
 
   const placed = placeReferenceTrack(track, { tuning })
   const tempoBpm =
