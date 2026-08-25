@@ -3,7 +3,7 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [0.9.1] - 2026-08-19
+## [0.9.1] - 2026-08-25
 
 ### Added
 
@@ -74,6 +74,93 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   whole separate pages, and on a slow link there were several seconds where
   nothing on screen had changed. The button dims and spins while the room
   loads — including the one in the options sheet, which had no spinner at all.
+- **Guitar Night reads every part of a score at once.** A five-part Guitar Pro
+  file used to show you one line at a time. There is a page now that stacks
+  the parts you choose, a few bars to a row, and scrolls down through the
+  piece — so you can see what the other guitar is doing under your own part
+  instead of guessing at it.
+- **The other part sits in the corner, and a tap trades places with it.** The
+  moving views carry a small strip of one other part, on the same playhead as
+  the stage behind it. Tap it and you are reading that part; tap again and you
+  are back, rather than walking through all five to return.
+- **The scored part can be changed without leaving the room.** It was only
+  changeable from the lobby, so picking the wrong part meant walking out and
+  coming back in.
+- **The rest of the band plays.** A multi-part file used to sound only the
+  part you were being graded on, with everything else muted — backwards, since
+  the point is to play along with the others. Every part is audible by default
+  now, each one mutes and solos on its own without a click, and the Listening
+  route and the count-in click are controls rather than fixed settings.
+- **A written part can sit on the recording you are actually hearing.** A tab
+  counts musical beats; a record counts seconds, and drifts. The room can put
+  the two on one clock — measured against a separated stem where there is one,
+  and placed by hand where there is not, by marking the same moment in both.
+  It is saved with the song, so you set it once.
+- **Bar lines come from the file.** They were spaced by assumption before, so
+  any piece that changed time signature drew its bars in the wrong places.
+- **The guitar stem can drive the note reader too.** It was offered for bass
+  alone, on the grounds that bass is one note at a time and easier to follow.
+  The guitar stem is offered on the same terms now — with no promises about
+  chords, which are still hard.
+- **Rehearsing a part is a workspace, not a transport.** The mix is live:
+  master volume that is remembered, per-part mute and solo without a pop, the
+  tab's own sound, the click, and a count-in — all changeable while the
+  playhead keeps its place. A and B loop markers can be dragged on the rail
+  while the music runs, completing B jumps straight back to A with no second
+  count-in, and clearing a loop carries on from the beat you can hear. The
+  second part you are watching can be moved, resized and docked, and it stays
+  where you put it per view.
+- **Piano Night has a master volume on the fallboard.** It sits with the rest
+  of the transport and stays in step with the one in Session.
+- **Twelve new rooms — the Mercury Rooms pack.** One free and two supporter
+  rooms each for Karaoke, Jam, Piano Night and Guitar Night, and the first
+  supporter art Guitar Night has ever had. Each surface gets a dark room and
+  a bright one, which the library was short of.
+- **A song can move between two of your own devices.** Open the sync door on
+  both, scan the code or type it in, and pick what to send: the stems travel
+  straight across the local network, with nothing uploaded anywhere. It shows
+  you what the other device already has so a second send does not repeat the
+  first. Closing the window does not stop the transfer — a corner chip keeps
+  the progress and takes you back to it — and the pairing survives a phone
+  going in a pocket or a moment of bad Wi-Fi.
+- **Progress counts every run, and says which pile a number came from.**
+  "Session" meant three different things on three neighbouring screens, and
+  the Vocal Analysis card read zero for anyone whose practice was drills. Four
+  kinds of run, each named and coloured the same way everywhere, and the card
+  counts all of them.
+- **"Notes hit" is a real number.** Ten of the eighteen drills sing a
+  sequence of notes and every one of them reported zero, which looked like
+  broken tracking and was not — the tally was hard-coded. Each drill counts on
+  its own measure of a note now, so the number means what the drill means.
+- **Public forms carry a bot check.** Sign-in, sign-up and the contact form
+  run Cloudflare Turnstile. It is invisible unless it wants a moment from you.
+
+### Fixed
+
+- **Piano Night's falling notes never freeze.** On a machine asking for
+  reduced motion the board pinned itself to the start of each practice
+  phrase — sixteen beats, about ten seconds — so the audio played, the
+  playhead moved, the scoring counted, and the notes sat perfectly still. It
+  looked like a broken room and was a setting. The notes keep falling for
+  everyone; what reduced motion turns off is the decorative movement around
+  them, and the room now says so.
+- **A Google sign-up keeps the voiceprint that led to it.** Onboarding
+  promises "keep this take" and offers two buttons; only the password one
+  kept it.
+- **Earned badges look earned on your profile.** The art is square with no
+  transparency, so 46 of them showed as a dark tile — which reads as locked
+  for something you have already won. The profile clips and lifts them the
+  way the Progress tab always has.
+- **Guitar Night scrolls in one place.** The page and the decorative backdrop
+  each had a scrollbar, so the room had two, one of them for 17px of bleed
+  nobody could reach.
+- **The Zen music level is the same control as the one beside it.** It was a
+  second slider invented for the job, sitting 22px above the row it belongs
+  to. It is the same capsule as the guide-vocal pill now, in line with the
+  mic.
+- **A blocked bot check cannot hold a form hostage.** The site's own security
+  policy did not allow the Turnstile script, so on a form that required it
+  there was nothing to solve and no way forward.
 
 ## [0.9.0] - 2026-08-18
 

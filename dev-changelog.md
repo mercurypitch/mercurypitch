@@ -6,7 +6,104 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1] - 2026-08-19
+## [0.9.1] - 2026-08-25
+
+### Guitar Night: multi-track reading (#611, #613, #616, #617, #619)
+
+Four phases of `docs/plans/guitar-night-multi-track-reading.md`. Phase 1 put a
+track switcher in the room; #613 added the page it switches on — bars, systems
+and lanes computed as pure geometry first, with no DOM, no Solid and no canvas,
+so two painters can be held to the same layout by assertion rather than by eye.
+#616 puts one other part in the corner of the moving views on the same
+playhead, and makes the corner offer the part you just left so a second tap
+returns rather than cycling. #617 collapses two Standard MIDI decoders into
+one: the tick-native, validated Piano Project reader, which keeps the meta
+events the compact track-picker scanner threw away — including the time
+signatures that bar lines actually come from.
+
+#619 came from three reports against one five-part file, and the third was the
+tell: `pause()` keeps a rehearsal take alive so Resume can continue it, and
+`takePinsSetup()` counts a paused take as pinned, so with only Play and Pause
+on the transport the first take locked the room's setup permanently. The other
+two — every other part muted by default, and a disabled Listening toggle with
+an unadjustable click — were symptoms of the same missing exit.
+
+`followStem` had always tuned the stage from `stemKind`, so offering the guitar
+stem to the note reader alongside bass needed nothing downstream; it had been
+withheld on the honest grounds that the stem is often chordal and pitch
+detection is monophonic.
+
+### Score-to-recording sync (#618, #620, #622)
+
+All three phases of `docs/plans/score-recording-sync.md`. A written score
+counts musical beats; a recording counts seconds and drifts. Phase 1 makes the
+map between the two clocks a first-class object — storable, nudgeable, handed
+to a view. Phase 2 puts a measured stem transcription and an attached tab on
+one page by resolving their clocks against each other. Phase 3 closes the gap
+where there is no transcription at all — a live version, a cover, a song whose
+stems were never separated — by letting two marked points establish the map by
+hand.
+
+### Guitar Night: the rehearsal workspace (#632)
+
+The authored-score mix becomes fully live: persistent master volume, pop-free
+per-part mute and solo, tab sound, click and count-in, all reconfigurable
+without moving the playhead. A/B loops are direct — completing B jumps to A
+with no second count-in, rail markers commit once on drag, Clear continues from
+the audible beat, and a close range gets a deliberate precision lens instead of
+surprise auto-zoom. The transport reorganizes around Listening, the full-score
+rail, compact loop actions, tempo and volume, with an Off to Room mic to Direct
+input to MIDI cycle and mobile Session fallbacks. The secondary preview becomes
+movable and resizable with real protected geometry and per-view persistence.
+Piano Night's fallboard gains an isolated, persisted master volume in the same
+slice.
+
+### Device sync between two of your own devices (#534)
+
+REQ-SYNC-030..035 in `docs/specs/device-sync-transfers.ears.md`. A session
+outlives the dialog: `SyncHost` mounts the dialog and a corner chip once per
+entry (app shell and Karaoke Night), closing a connected session keeps it and
+its transfers alive, and Disconnect is the only deliberate end — the backdrop
+used to call `stopSync()`. `platform.keepAwake` becomes refcounted so Drive
+jobs and sync transfers share one sentinel. The hello carries the far library
+by hash (capped at 2000) so the send list can mark what is already over there,
+and a dropped pair rebuilds itself at 2s and 8s, twice, with the initiator
+chosen by the same glare rule as a fresh join.
+
+A multi-angle audit of the branch found fourteen defects before merge, all the
+same shape: an invariant the old close-means-stop provided, never
+re-established. The three that mattered — a hidden waiting room stayed
+joinable under its old code for ten minutes and auto-accepted the first
+stranger with device name, free space and library hashes; the documented
+"two tries" reconnect had no counter and scheduled two more on every failure;
+and the idle countdown could only see the local dialog, so a peer freeing space
+in its own open dialog was cut off at ten minutes. Fixed with one 45s grace
+window covering the first two and a `sync-active` keepalive frame for the
+third. Transfers are refused over a relayed route on purpose — STUN only, no
+TURN, so cross-network pairs cannot connect and are told so.
+
+### One run taxonomy, and drills that count their own notes (#626, #631)
+
+"Session" meant three different things on three adjacent screens, and the
+Progress card counted `buildTrend(sessions).length`, which drops any run
+without per-note detail — so a history of drills read zero. `run-kinds.ts` is
+now the single taxonomy: four kinds, each with one label, colour and ranked
+flag, consumed by every counting surface.
+
+Separately, three of the four `sessionRecords` write paths hard-coded
+`notesHit`/`totalNotes` to zero, so only a multi-item Practice session ever
+banked a real tally. Ten drills run a discrete sequence of sung notes and each
+now tallies on ITS OWN measure of a note rather than a second definition
+bolted on top — the evidence was already computed and thrown away.
+
+### Cloudflare Turnstile on public forms (#614, #627)
+
+Sign-in, sign-up and contact run Turnstile wherever it is enforced. The CSP in
+`public/_headers` allowed Google's hosts and nothing else, so the widget script
+was blocked outright; the origin is in both directives now, with a test that
+reads `_headers` and fails if it drifts from the origin `Turnstile.tsx`
+actually loads. A blocked widget no longer holds a form hostage — the component
+reports `turnstileUnavailable()` and the form proceeds.
 
 ### Added
 
