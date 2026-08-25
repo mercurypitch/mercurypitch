@@ -32,9 +32,11 @@ export default defineConfig({
     // colocated tests (docs/agent/TESTING.md §3.1), because a test next to its
     // module was only picked up under src/features, src/lib or src/tests.
     //
-    // Playwright specs are .spec.ts and live in src/e2e, so they stay out of
-    // this by naming. The beside-cue workspaces are deliberately absent: they
-    // are a separate Vitest project, run by `pnpm beside-cue:test`.
+    // Playwright specs are .spec.ts and live in src/e2e or src/e2e-cloud, so
+    // they stay out of this by naming; both directories are excluded below as
+    // well, so a .test.ts placed there is still not swept in. The beside-cue
+    // workspaces are deliberately absent: they are a separate Vitest project,
+    // run by `pnpm beside-cue:test`.
     include: [
       'tools/**/*.test.ts',
       'src/**/*.test.ts',
@@ -43,7 +45,12 @@ export default defineConfig({
       'workers/db-worker/node-tests/**/*.test.ts',
       'workers/jam-worker/src/**/*.test.ts',
     ],
-    exclude: ['**/node_modules/**', '**/dist/**', 'src/e2e/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'src/e2e/**',
+      'src/e2e-cloud/**',
+    ],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: [
