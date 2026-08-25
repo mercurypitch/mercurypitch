@@ -151,4 +151,29 @@ describe('DrumPlayAlongMixer', () => {
       screen.queryByText(/realistic|studio|original timbre/i),
     ).not.toBeInTheDocument()
   })
+
+  it('places an optional drum accessory beneath an available Source Drums bus', () => {
+    const { unmount } = mountMixer({
+      sourceKind: 'authored-arrangement',
+      drumsAccessory: <div data-testid="family-balance">Family balance</div>,
+    })
+
+    const drumsSection = document.querySelector('[data-bus-section="drums"]')
+    const sourceSlider = screen.getByRole('slider', {
+      name: 'Source Drums level',
+    })
+    const accessory = screen.getByTestId('family-balance')
+    expect(drumsSection).toContainElement(accessory)
+    expect(
+      sourceSlider.compareDocumentPosition(accessory) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    unmount()
+    mountMixer({
+      sourceKind: 'two-stem-audio',
+      drumsAccessory: <div data-testid="family-balance">Family balance</div>,
+    })
+    expect(screen.queryByTestId('family-balance')).not.toBeInTheDocument()
+  })
 })

@@ -357,6 +357,44 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   imported document replaces the current session, Drum Night shall clear both
   A/B marks and the active transport loop before the new document plays.
 
+## Session-local Groove Rack editing — `DN-GROOVE-*`
+
+- **REQ-DN-GROOVE-001 — Prepared-source boundary:** The Groove Rack shall edit
+  only a session-local copy of the prepared First Pocket document. Imported
+  MIDI, GP, GP3, GP4, GP5, and GPX shall remain read-only playalong and Score
+  authority in this phase; the editor shall not overwrite imported provenance.
+- **REQ-DN-GROOVE-002 — Bounded canonical grid:** The editor shall expose the
+  prepared one/two-bar 4/4 phrase as exact articulation rows on a sixteenth-note
+  grid. It shall support adding, selecting, moving, and removing hits while
+  retaining a bounded canonical percussion document with stable hit identity.
+- **REQ-DN-GROOVE-003 — Pointer and keyboard parity:** An empty cell shall add
+  its row articulation; an occupied cell shall be selectable and removable.
+  A selected hit shall move by real pointer drag and by labelled keyboard
+  controls without committing intermediate drag positions or creating another
+  playback clock.
+- **REQ-DN-GROOVE-004 — Deterministic feel controls:** Swing and density shall
+  be deterministic projections over the editable source events. They shall not
+  silently rewrite or delete source hits, and Reset plus one bounded Undo shall
+  return to an evidenced prior state.
+- **REQ-DN-GROOVE-005 — Hot authored revision:** WHEN an edit changes the
+  prepared document, the authored scheduler shall invalidate and reindex only
+  queued authored audio. It shall preserve the current play/pause phase,
+  position, A/B range, tempo or recovery speed, count-in choice, captured take,
+  and independent live-input lane.
+- **REQ-DN-GROOVE-006 — Authored-family mix:** The Rack shall expose Kick,
+  Snare, Hats, Toms, and Cymbals mute and level control for the prepared
+  authored-kit lane. These controls shall use bounded gain ramps and shall not
+  change live touch/keyboard/e-kit volume, prepared-audio stem buses, or the
+  Source Drums/Backing/You truth of imported playalong material.
+- **REQ-DN-GROOVE-007 — Ephemeral drafts:** Each prepared variation may retain
+  its own draft while the route remains mounted. Reloading or leaving the route
+  shall restore the shipped prepared groove; this phase shall not persist or
+  export groove drafts.
+- **REQ-DN-GROOVE-008 — Inert opening:** Opening the Groove Rack, selecting a
+  variation, or changing an editor/mix value before audio activation shall not
+  construct or resume AudioContext, fetch samples, request MIDI, or start a
+  timer, frame loop, media element, or playback.
+
 ## Full-arrangement and prepared-audio playalong — `DN-PLAYALONG-*`
 
 - **REQ-DN-PLAYALONG-001 — Two source families:** Songs shall offer the same
@@ -480,20 +518,21 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 This pilot does not include room-microphone capture or analysis; limb,
 sticking, grip, or technique inference; automatic transcription of a UVR drum
 stem into score evidence; Groove Mirror generation; imported-session,
-recorded-take, coaching-history, mix, or A/B-range persistence; public
-indexing; or production deployment. The locally retained kit choice, Drum room
-choice, and device-scoped MIDI learn map are preferences, not session or
-performance persistence.
+recorded-take, coaching-history, groove-draft, mix, or A/B-range persistence;
+groove export; public indexing; or production deployment. The locally retained
+kit choice, Drum room choice, and device-scoped MIDI learn map are preferences,
+not session or performance persistence.
 
 ## Verification map
 
-| Requirement area            | Minimum evidence                                                                                                                                                                                                                                                            |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                                                                                            |
-| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke                                                                   |
-| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                                                                                  |
-| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                                                                                                |
-| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                                                                                            |
-| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in, authored tempo/duration, seconds/beat conversion, pause/replay, loop identity, A/B state and reset, scrub lifecycle, dedupe, capacity, unsupported hits, and fallback truth; real-pointer seek/marker smoke |
-| `DN-PLAYALONG`              | Mixed MIDI/GP fixtures; lazy local-UVR catalogue and lease tests; true-parts/two-stem/upgrade state tests; external-clock stem and authored-backing scheduler tests; live bus ramps, memory refusal, stale replacement, and real-browser Songs/Mix/play/seek/loop journeys  |
-| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                                                                                        |
+| Requirement area            | Minimum evidence                                                                                                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                                                                                                     |
+| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke                                                                            |
+| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                                                                                           |
+| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                                                                                                         |
+| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                                                                                                     |
+| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in, authored tempo/duration, seconds/beat conversion, pause/replay, loop identity, A/B state and reset, scrub lifecycle, dedupe, capacity, unsupported hits, and fallback truth; real-pointer seek/marker smoke          |
+| `DN-GROOVE`                 | Prepared-only domain fixtures; deterministic add/move/remove/swing/density/reset/undo tests; authored-family graph isolation and gain-ramp tests; hot-revision phase/position/loop/take preservation; real-pointer and keyboard grid journeys at desktop, phone, and short landscape |
+| `DN-PLAYALONG`              | Mixed MIDI/GP fixtures; lazy local-UVR catalogue and lease tests; true-parts/two-stem/upgrade state tests; external-clock stem and authored-backing scheduler tests; live bus ramps, memory refusal, stale replacement, and real-browser Songs/Mix/play/seek/loop journeys           |
+| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                                                                                                 |
