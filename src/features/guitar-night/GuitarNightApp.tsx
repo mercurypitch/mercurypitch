@@ -1773,7 +1773,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               >
                 <div class={styles.songLibraryHeader}>
                   <h2 id="guitar-night-reference-title">
-                    Score or drums to follow
+                    {percussionOnlyReference() === null
+                      ? 'Score to follow'
+                      : 'Drums to follow'}
                   </h2>
                   <Show when={attachedReference() !== null}>
                     <button
