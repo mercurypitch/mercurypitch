@@ -74,7 +74,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 26.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
+| `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 27.0k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 13.3k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
@@ -336,8 +336,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.8k |
+| [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.6k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.6k |
-| [src/features/guitar-night/GuitarNightScoreRoom.tsx](../../src/features/guitar-night/GuitarNightScoreRoom.tsx) | 2.5k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.2k |

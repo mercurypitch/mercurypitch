@@ -94,6 +94,15 @@ interface GuitarNightScoreRoomRunConfiguration {
   exercisePulse: () => boolean
 }
 
+interface GuitarNightScoreRoomStartOptions {
+  /**
+   * A deliberate Play, Space, or voice-command resume rehearses the selected
+   * lead-in again. Automatic scrub recovery leaves this false so dragging the
+   * playhead never surprises the player with another count-in.
+   */
+  countInOnResume?: boolean
+}
+
 export interface GuitarNightScoreAssessmentBoundary {
   id: string
   reference: GuitarNightReference
@@ -908,18 +917,27 @@ export function useGuitarNightScoreRoomController(
     seekSeconds(secondsForBeat(value))
   }
 
-  const start = async (): Promise<boolean> => {
+  const start = async (
+    startOptions: GuitarNightScoreRoomStartOptions = {},
+  ): Promise<boolean> => {
     const pausedRun = status() === 'paused' ? runningTake() : null
     const run = pausedRun ?? buildRun()
     if (run === null) return false
 
     if (status() === 'paused') {
+      const launchCountInBeats =
+        pausedRun === null
+          ? run.countInBeats
+          : startOptions.countInOnResume === true
+            ? configuredCountInBeats()
+            : 0
+      const resumedRun =
+        startOptions.countInOnResume === true &&
+        run.countInBeats !== launchCountInBeats
+          ? { ...run, countInBeats: launchCountInBeats }
+          : run
       return (
-        (await launch(
-          run,
-          parkedBeat(),
-          pausedRun === null ? run.countInBeats : 0,
-        )) !== null
+        (await launch(resumedRun, parkedBeat(), launchCountInBeats)) !== null
       )
     }
 
@@ -1007,7 +1025,7 @@ export function useGuitarNightScoreRoomController(
       pause()
       return
     }
-    void start()
+    void start({ countInOnResume: true })
   }
 
   const setTempoBpm = (value: number): void => {

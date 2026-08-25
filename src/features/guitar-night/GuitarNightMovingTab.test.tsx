@@ -6,7 +6,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
-import { GUITAR_NIGHT_TAB_ZOOM_KEY, GuitarNightMovingTab, } from './GuitarNightMovingTab'
+import { GUITAR_NIGHT_TAB_SIZE_KEY, GUITAR_NIGHT_TAB_ZOOM_KEY, GuitarNightMovingTab, } from './GuitarNightMovingTab'
 
 function note(id: string, startBeat: number, stringIndex = 0): GuitarNote {
   return {
@@ -40,9 +40,13 @@ function pointer(
 }
 
 describe('GuitarNightMovingTab', () => {
-  beforeEach(() => localStorage.removeItem(GUITAR_NIGHT_TAB_ZOOM_KEY))
+  beforeEach(() => {
+    localStorage.removeItem(GUITAR_NIGHT_TAB_SIZE_KEY)
+    localStorage.removeItem(GUITAR_NIGHT_TAB_ZOOM_KEY)
+  })
   afterEach(() => {
     cleanup()
+    localStorage.removeItem(GUITAR_NIGHT_TAB_SIZE_KEY)
     localStorage.removeItem(GUITAR_NIGHT_TAB_ZOOM_KEY)
     vi.useRealTimers()
   })
@@ -108,10 +112,43 @@ describe('GuitarNightMovingTab', () => {
     )
   })
 
+  it('persists a separate large reading-distance presentation without changing the beat window', () => {
+    const firstMount = mount()
+    const lanes = screen.getByTestId('guitar-night-moving-tab')
+    const stage = lanes.parentElement
+    const sizeToggle = screen.getByRole('button', {
+      name: 'Large tab size',
+    })
+    const initialWindow = stage?.dataset.windowBeats
+
+    expect(stage).toHaveAttribute('data-tab-size', 'compact')
+    expect(sizeToggle).toHaveAttribute('aria-pressed', 'false')
+    expect(localStorage.getItem(GUITAR_NIGHT_TAB_SIZE_KEY)).toBeNull()
+
+    fireEvent.click(sizeToggle)
+
+    expect(stage).toHaveAttribute('data-tab-size', 'large')
+    expect(stage?.dataset.windowBeats).toBe(initialWindow)
+    expect(sizeToggle).toHaveAccessibleName('Large tab size')
+    expect(sizeToggle).toHaveAttribute('aria-pressed', 'true')
+    expect(localStorage.getItem(GUITAR_NIGHT_TAB_SIZE_KEY)).toBe('large')
+
+    firstMount.unmount()
+    mount()
+
+    expect(
+      screen.getByTestId('guitar-night-moving-tab').parentElement,
+    ).toHaveAttribute('data-tab-size', 'large')
+    expect(
+      screen.getByRole('button', { name: 'Large tab size' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('does not offer an inert reading-scale control in free play', () => {
     mount(false)
 
     expect(screen.queryByRole('slider', { name: /Tab zoom/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /tab size/i })).toBeNull()
     expect(screen.getByText(/No tab attached/)).toBeVisible()
   })
 

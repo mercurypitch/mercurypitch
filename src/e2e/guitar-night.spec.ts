@@ -1683,8 +1683,13 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   const tab = room.getByTestId('guitar-night-moving-tab')
   const tabWindow = room.locator('[data-window-beats]')
   const zoom = room.getByRole('slider', { name: 'Tab zoom', exact: true })
+  const sizeToggle = room.getByRole('button', {
+    name: 'Large tab size',
+    exact: true,
+  })
   await expect(tab).toBeVisible()
   await expect(zoom).toHaveValue('125')
+  await expect(sizeToggle).toHaveAttribute('aria-pressed', 'false')
   await expect(zoom).toHaveAttribute(
     'aria-valuetext',
     /^125% zoom, \d+(?:\.\d{1,2})? beats visible$/,
@@ -1697,6 +1702,111 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   expect(initialWindow).toBeLessThan(4.75)
   await expect(tab.locator('[data-note-id]')).not.toHaveCount(0)
   expect(await tab.locator('[data-note-id]').count()).toBeLessThan(40)
+
+  const readTabScale = () =>
+    tab.evaluate((lanes) => {
+      const note = lanes.querySelector<HTMLElement>('[data-note-id]')
+      const noteTrack = lanes.querySelector<HTMLElement>(
+        '[data-testid="guitar-night-tab-note-track"]',
+      )
+      const laneRect = lanes.getBoundingClientRect()
+      const noteRect = (note ?? noteTrack)?.getBoundingClientRect()
+      if (noteRect === undefined)
+        throw new Error('Tab note track is not mounted')
+      const fontProbe = document.createElement('span')
+      fontProbe.style.cssText =
+        'position:absolute;visibility:hidden;font-size:var(--stage-tab-note-font-size)'
+      lanes.append(fontProbe)
+      const noteFontSize = Number.parseFloat(
+        getComputedStyle(fontProbe).fontSize,
+      )
+      fontProbe.remove()
+      return {
+        laneHeight: laneRect.height,
+        noteFontSize,
+        noteHeight: noteRect.height,
+      }
+    })
+  const readTabContainment = () =>
+    tabWindow.evaluate((stage) => {
+      const lanes = stage.querySelector<HTMLElement>(
+        '[data-testid="guitar-night-moving-tab"]',
+      )
+      const controls = stage.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Tab reading controls"]',
+      )
+      const rows = [
+        ...(lanes?.querySelectorAll<HTMLElement>(
+          '[data-testid="guitar-night-tab-note-track"]',
+        ) ?? []),
+      ]
+      if (lanes === null || controls === null || rows.length === 0) {
+        throw new Error('Large Tab layout is not mounted')
+      }
+      const stageRect = stage.getBoundingClientRect()
+      const laneRect = lanes.getBoundingClientRect()
+      const controlsRect = controls.getBoundingClientRect()
+      const rowRects = rows.map((row) =>
+        (row.parentElement ?? row).getBoundingClientRect(),
+      )
+      const noteRects = [
+        ...lanes.querySelectorAll<HTMLElement>('[data-note-id]'),
+      ].map((note) => note.getBoundingClientRect())
+      const intersectsControls = (rect: DOMRect) =>
+        rect.right > controlsRect.left &&
+        rect.left < controlsRect.right &&
+        rect.bottom > controlsRect.top &&
+        rect.top < controlsRect.bottom
+      return {
+        controlsBottom: controlsRect.bottom,
+        controlsLeft: controlsRect.left,
+        controlsRight: controlsRect.right,
+        controlsTop: controlsRect.top,
+        laneBottom: laneRect.bottom,
+        laneTop: laneRect.top,
+        noteControlOverlaps: noteRects.filter(intersectsControls).length,
+        pageWidth: document.documentElement.scrollWidth,
+        rowBottom: Math.max(...rowRects.map((rect) => rect.bottom)),
+        rowControlOverlaps: rowRects.filter(intersectsControls).length,
+        rowTop: Math.min(...rowRects.map((rect) => rect.top)),
+        stageBottom: stageRect.bottom,
+        stageLeft: stageRect.left,
+        stageRight: stageRect.right,
+        stageTop: stageRect.top,
+        viewportHeight: document.documentElement.clientHeight,
+        viewportWidth: document.documentElement.clientWidth,
+      }
+    })
+  const expectLargeTabContained = async () => {
+    const layout = await readTabContainment()
+    expect(layout.rowTop).toBeGreaterThanOrEqual(layout.laneTop - 1)
+    expect(layout.rowBottom).toBeLessThanOrEqual(layout.laneBottom + 1)
+    expect(layout.laneTop).toBeGreaterThanOrEqual(layout.stageTop - 1)
+    expect(layout.laneBottom).toBeLessThanOrEqual(layout.stageBottom + 1)
+    expect(layout.controlsTop).toBeGreaterThanOrEqual(layout.stageTop - 1)
+    expect(layout.controlsBottom).toBeLessThanOrEqual(layout.stageBottom + 1)
+    expect(layout.controlsLeft).toBeGreaterThanOrEqual(layout.stageLeft - 1)
+    expect(layout.controlsRight).toBeLessThanOrEqual(layout.stageRight + 1)
+    expect(layout.rowBottom).toBeLessThanOrEqual(layout.controlsTop)
+    expect(layout.rowControlOverlaps).toBe(0)
+    expect(layout.noteControlOverlaps).toBe(0)
+    expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewportWidth + 1)
+    expect(layout.controlsBottom).toBeLessThanOrEqual(layout.viewportHeight + 1)
+  }
+  const compactScale = await readTabScale()
+  const compactWindow = await tabWindow.getAttribute('data-window-beats')
+
+  await sizeToggle.click()
+  await expect(tabWindow).toHaveAttribute('data-tab-size', 'large')
+  await expect(sizeToggle).toHaveAttribute('aria-pressed', 'true')
+  const largeScale = await readTabScale()
+  expect(largeScale.noteHeight).toBeGreaterThan(compactScale.noteHeight * 1.2)
+  expect(largeScale.laneHeight).toBeGreaterThan(compactScale.laneHeight + 12)
+  expect(await tabWindow.getAttribute('data-window-beats')).toBe(compactWindow)
+  expect(
+    await page.evaluate(() => localStorage.getItem('guitar-night-tab-size-v1')),
+  ).toBe('large')
+  await expectLargeTabContained()
 
   const lanesBox = await tab.boundingBox()
   expect(lanesBox).not.toBeNull()
@@ -1775,6 +1885,12 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   await expect(room.getByRole('slider', { name: 'Tab zoom' })).toHaveValue(
     String(Math.round(Number(persistedZoom) * 100)),
   )
+  await expect(
+    room.getByRole('button', {
+      name: 'Large tab size',
+      exact: true,
+    }),
+  ).toHaveAttribute('aria-pressed', 'true')
 
   await page.setViewportSize({ width: 390, height: 844 })
   const mobileBounds = await room
@@ -1795,10 +1911,40 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   expect(mobileBounds.pageWidth).toBeLessThanOrEqual(
     mobileBounds.viewportWidth + 1,
   )
+  const mobileSizeBounds = await room
+    .getByRole('button', { name: 'Large tab size', exact: true })
+    .evaluate((button) => {
+      const rect = button.getBoundingClientRect()
+      return {
+        left: rect.left,
+        right: rect.right,
+        height: rect.height,
+        viewportWidth: document.documentElement.clientWidth,
+        pageWidth: document.documentElement.scrollWidth,
+      }
+    })
+  expect(mobileSizeBounds.left).toBeGreaterThanOrEqual(0)
+  expect(mobileSizeBounds.right).toBeLessThanOrEqual(
+    mobileSizeBounds.viewportWidth + 1,
+  )
+  expect(mobileSizeBounds.height).toBeGreaterThanOrEqual(44)
+  expect(mobileSizeBounds.pageWidth).toBeLessThanOrEqual(
+    mobileSizeBounds.viewportWidth + 1,
+  )
+  await expectLargeTabContained()
 
-  const readCompactLayout = () =>
+  const setup = room.getByLabel('6-string guitar setup', { exact: true })
+  await setup.click()
+  await room.getByRole('combobox', { name: 'Strings' }).selectOption('8')
+  await page.keyboard.press('Escape')
+  await expect(tabWindow).toHaveAttribute('data-string-count', '8')
+  await expectLargeTabContained()
+
+  const readProtectedLayout = () =>
     zoom.evaluate((slider) => {
-      const faceplate = slider.parentElement
+      const faceplate = slider.closest<HTMLElement>(
+        '[role="group"][aria-label="Tab reading controls"]',
+      )
       const tab = slider.closest('[data-window-beats]')
       if (
         !(faceplate instanceof HTMLElement) ||
@@ -1833,7 +1979,8 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   await page.evaluate(() => {
     document.documentElement.style.fontSize = '200%'
   })
-  const zoomedPhone = await readCompactLayout()
+  await expectLargeTabContained()
+  const zoomedPhone = await readProtectedLayout()
   expect(zoomedPhone.scrollWidth).toBeLessThanOrEqual(
     zoomedPhone.clientWidth + 1,
   )
@@ -1849,7 +1996,9 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
     document.documentElement.style.fontSize = ''
   })
   await page.setViewportSize({ width: 568, height: 320 })
-  const shortLandscape = await readCompactLayout()
+  await expectLargeTabContained()
+  const shortLandscapeLargeScale = await readTabScale()
+  const shortLandscape = await readProtectedLayout()
   expect(shortLandscape.scrollWidth).toBeLessThanOrEqual(
     shortLandscape.clientWidth + 1,
   )
@@ -1862,6 +2011,16 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   expect(shortLandscape.overlaps).toBe(0)
   expect(shortLandscape.pageWidth).toBeLessThanOrEqual(
     shortLandscape.viewportWidth + 1,
+  )
+
+  await sizeToggle.click()
+  await expect(sizeToggle).toHaveAttribute('aria-pressed', 'false')
+  const shortLandscapeCompactScale = await readTabScale()
+  expect(shortLandscapeLargeScale.noteHeight).toBeGreaterThanOrEqual(
+    shortLandscapeCompactScale.noteHeight,
+  )
+  expect(shortLandscapeLargeScale.noteFontSize).toBeGreaterThanOrEqual(
+    shortLandscapeCompactScale.noteFontSize,
   )
 })
 

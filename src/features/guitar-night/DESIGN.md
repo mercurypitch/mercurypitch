@@ -258,9 +258,13 @@ core Learn set in
   tuning, and capo remain source-aware. Authored chords and bend, slide,
   hammer/pull, vibrato, palm-mute, and let-ring marks reach the stage without
   inferring technique from coincident notes. `Tab` and `Neck` remain fast,
-  quieter alternatives. A song without an attached score exposes a nullable
-  beat, says no tab is attached, and remains a useful free-play fretboard
-  instead of deriving a fake beat from elapsed seconds.
+  quieter alternatives. Moving Tab separates its persisted time window from a
+  persisted Compact/Large reading-distance presentation: Large opens note size
+  and string cadence toward the available stage without moving beat, playhead,
+  or loop coordinates, and caps itself for 4–8 strings, short rooms, and
+  magnified text. A song without an attached score exposes a nullable beat,
+  says no tab is attached, and remains a useful free-play fretboard instead of
+  deriving a fake beat from elapsed seconds.
 - The canvas observes its actual bounds, caps its device-pixel ratio, reuses a
   compiled immutable score and queries only the visible time window. A paused
   room paints on scene or camera change instead of running a permanent frame
@@ -275,13 +279,17 @@ core Learn set in
   restrained Session overlay, so routine rehearsal never requires reopening a
   sheet. Listening cycles through Off, Room mic, Direct input and MIDI while
   Session remains the place for an exact device. Count-in is one calm Off/1/2/4
-  cycle rather than a fragile select; it cannot change after launch beats have
-  already been queued, while the independent playback click remains live.
+  cycle rather than a fragile select; its non-Off choices share the playback
+  click's active treatment and expose their pressed state. It cannot change
+  after launch beats have already been queued, while the independent playback
+  click remains live.
   Before Play, the stage rests just ahead of the first authored note so a long
   intro reads as intentional rather than broken. The score rail supports exact
   pointer, touch, and keyboard seeking through the authored tempo map. An idle
   seek remains silent and leaves setup editable; pausing an actual take pins its
-  sound and resumes on the same audio context without another count-in.
+  sound. Automatic resume after an active scrub continues without another
+  count-in, while deliberate Play, Space, or voice-command resume runs the
+  currently selected count-in before continuing from the parked beat.
   Completing B during ordinary playback immediately reschedules the pinned run
   at A with no second count-in; clearing the loop continues unlooped from the
   currently visible beat. The full-score seek map stays stable, while a separate

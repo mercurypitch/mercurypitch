@@ -3,6 +3,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { Maximize2, Minimize2 } from '@/components/icons'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
@@ -10,8 +11,11 @@ import styles from './GuitarNightApp.module.css'
 import { adaptiveTabWindowBeats, buildStageTabWindowIndex, clampTabZoomMultiplier, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_ZOOM_MULTIPLIER, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabNoteScale, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
 
 export const GUITAR_NIGHT_TAB_ZOOM_KEY = 'guitar-night-tab-zoom-v1'
+export const GUITAR_NIGHT_TAB_SIZE_KEY = 'guitar-night-tab-size-v1'
 
 const WHEEL_ZOOM_PERSIST_IDLE_MS = 180
+
+type GuitarNightTabSize = 'compact' | 'large'
 
 interface GuitarNightMovingTabProps {
   notes: Accessor<readonly GuitarNote[]>
@@ -38,6 +42,14 @@ function formatBeatSpan(beats: number): string {
 
 export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
   let gestureSurface: HTMLDivElement | undefined
+  const [tabSize, setTabSize] = createPersistedSignal<GuitarNightTabSize>(
+    GUITAR_NIGHT_TAB_SIZE_KEY,
+    'compact',
+    {
+      validator: (value): value is GuitarNightTabSize =>
+        value === 'compact' || value === 'large',
+    },
+  )
   const [persistedZoomMultiplier, setPersistedZoomMultiplier] =
     createPersistedSignal<number>(
       GUITAR_NIGHT_TAB_ZOOM_KEY,
@@ -209,10 +221,12 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
   return (
     <div
       class={styles.stageTab}
+      data-tab-size={tabSize()}
+      data-string-count={props.tuning().stringCount}
       data-window-beats={windowBeats().toFixed(2)}
       style={{
-        '--stage-tab-note-size': `${(1.6 * noteScale()).toFixed(3)}rem`,
-        '--stage-tab-note-font-size': `${(0.68 * noteScale()).toFixed(3)}rem`,
+        '--stage-tab-note-base-size': `${(1.6 * noteScale()).toFixed(3)}rem`,
+        '--stage-tab-note-base-font-size': `${(0.68 * noteScale()).toFixed(3)}rem`,
       }}
     >
       <div
@@ -295,31 +309,61 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
       </div>
 
       <Show when={props.hasGuide()}>
-        <label
-          class={styles.stageTabZoom}
+        <div
+          class={styles.stageTabControls}
           data-guitar-night-secondary-protected
-          title="Scroll over the tab, pinch with two fingers on touch, or drag this control."
+          role="group"
+          aria-label="Tab reading controls"
         >
-          <span>Tab zoom</span>
-          <input
-            type="range"
-            min={TAB_MIN_ZOOM_MULTIPLIER * 100}
-            max={TAB_MAX_ZOOM_MULTIPLIER * 100}
-            step="1"
-            value={zoomPercent()}
-            aria-label="Tab zoom"
-            aria-valuetext={zoomValueText()}
-            onInput={(event) =>
-              updateZoom(Number(event.currentTarget.value) / 100)
+          <button
+            type="button"
+            class={styles.stageTabSizeToggle}
+            aria-label="Large tab size"
+            aria-pressed={tabSize() === 'large'}
+            title={
+              tabSize() === 'large'
+                ? 'Return to compact strings and notes'
+                : 'Make strings and notes larger for distance reading'
             }
-            onChange={persistZoom}
-            onPointerUp={persistZoom}
-            onPointerCancel={persistZoom}
-            onBlur={persistZoom}
-          />
-          <output aria-hidden="true">{zoomPercent()}%</output>
-          <small>{beatSpanLabel()} beats</small>
-        </label>
+            onClick={() =>
+              setTabSize((current) =>
+                current === 'compact' ? 'large' : 'compact',
+              )
+            }
+          >
+            <Show
+              when={tabSize() === 'large'}
+              fallback={<Maximize2 size={15} />}
+            >
+              <Minimize2 size={15} />
+            </Show>
+            <span>{tabSize() === 'large' ? 'Large' : 'Compact'}</span>
+          </button>
+          <label
+            class={styles.stageTabZoom}
+            title="Scroll over the tab, pinch with two fingers on touch, or drag this control."
+          >
+            <span>Tab zoom</span>
+            <input
+              type="range"
+              min={TAB_MIN_ZOOM_MULTIPLIER * 100}
+              max={TAB_MAX_ZOOM_MULTIPLIER * 100}
+              step="1"
+              value={zoomPercent()}
+              aria-label="Tab zoom"
+              aria-valuetext={zoomValueText()}
+              onInput={(event) =>
+                updateZoom(Number(event.currentTarget.value) / 100)
+              }
+              onChange={persistZoom}
+              onPointerUp={persistZoom}
+              onPointerCancel={persistZoom}
+              onBlur={persistZoom}
+            />
+            <output aria-hidden="true">{zoomPercent()}%</output>
+            <small>{beatSpanLabel()} beats</small>
+          </label>
+        </div>
       </Show>
 
       <Show when={!props.hasGuide()}>
