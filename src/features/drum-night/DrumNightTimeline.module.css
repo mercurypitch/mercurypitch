@@ -1,0 +1,217 @@
+.timelineDock {
+  position: relative;
+  z-index: 37;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 116px minmax(140px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 14px;
+  border-top: 1px solid rgba(238, 231, 219, 0.12);
+  background:
+    linear-gradient(90deg, rgba(231, 173, 82, 0.035), transparent 28%), #0d1014;
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.timelineIdentity {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.timelineIdentity > span {
+  overflow: hidden;
+  color: rgba(238, 231, 219, 0.52);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.timelineIdentity strong {
+  color: #eee7db;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 620;
+  white-space: nowrap;
+}
+
+.timelineIdentity small {
+  color: rgba(238, 231, 219, 0.48);
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 580;
+}
+
+.timelineRail {
+  position: relative;
+  min-width: 0;
+  padding-bottom: 10px;
+}
+
+.timelinePosition {
+  position: absolute;
+  right: 44px;
+  bottom: 0;
+  color: rgba(238, 231, 219, 0.46);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.loopControls {
+  display: grid;
+  min-width: 170px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.loopMarks {
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  overflow: hidden;
+  border: 1px solid rgba(238, 231, 219, 0.16);
+  border-radius: 9px;
+}
+
+.loopMarks button,
+.clearLoop {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  color: rgba(238, 231, 219, 0.64);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.loopMarks button + button {
+  border-left: 1px solid rgba(238, 231, 219, 0.13);
+}
+
+.loopMarks button:hover,
+.clearLoop:hover,
+.clearLoop:focus-visible {
+  color: #eee7db;
+  background: rgba(238, 231, 219, 0.07);
+}
+
+.loopMarks button:focus-visible {
+  z-index: 1;
+  outline: 0;
+  box-shadow: inset 0 0 0 2px #eee7db;
+}
+
+.loopMarks .isSet {
+  color: #111318;
+  background: #e7ad52;
+}
+
+.loopMarks .isSet:first-child {
+  background: #6acabd;
+}
+
+.loopMarks .isSet:focus-visible {
+  box-shadow: inset 0 0 0 2px #111318;
+}
+
+.loopControls output {
+  max-width: 158px;
+  overflow: hidden;
+  color: rgba(238, 231, 219, 0.58);
+  font-size: 9px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clearLoop {
+  padding-inline: 8px;
+  border-radius: 8px;
+  color: rgba(238, 231, 219, 0.52);
+  font-size: 9px;
+}
+
+@media (max-width: 1040px) {
+  .timelineDock {
+    grid-template-columns: 88px minmax(120px, 1fr) auto;
+    gap: 7px;
+    padding-inline: 8px;
+  }
+
+  .loopControls {
+    min-width: 96px;
+    grid-template-columns: auto auto;
+  }
+
+  .loopControls output {
+    display: none;
+  }
+
+  .clearLoop {
+    width: 44px;
+    padding: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .timelineDock {
+    grid-template-columns: 54px minmax(70px, 1fr) auto;
+    gap: 4px;
+    padding: 2px 5px;
+  }
+
+  .timelineIdentity > span,
+  .timelineIdentity small,
+  .timelinePosition {
+    display: none;
+  }
+
+  .timelineIdentity strong {
+    font-family: var(--sans);
+    font-size: 11px;
+  }
+
+  .timelineRail {
+    padding-bottom: 0;
+  }
+
+  .loopMarks {
+    grid-template-columns: repeat(2, 44px);
+  }
+
+  .clearLoop {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid rgba(238, 231, 219, 0.14);
+    background: #0d1014;
+  }
+}
+
+@media (max-width: 360px) {
+  .timelineDock {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .timelineIdentity {
+    display: none;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .timelineDock {
+    padding-block: 0;
+  }
+
+  .timelineIdentity > span,
+  .timelinePosition,
+  .loopControls output {
+    display: none;
+  }
+}

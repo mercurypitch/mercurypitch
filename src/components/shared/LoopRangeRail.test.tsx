@@ -119,6 +119,37 @@ describe('LoopRangeRail', () => {
     )
   })
 
+  it('keeps endpoint marker hit targets inside the rail', () => {
+    render(() => (
+      <LoopRangeRail
+        axisDomain={() => ({ start: 0, end: 16 })}
+        axisValue={() => 0}
+        markDomain={() => ({ start: 0, end: 16 })}
+        markA={() => 0}
+        markB={() => 16}
+        toAxis={(value) => value}
+        fromAxis={(value) => value}
+        formatAxisValue={String}
+        formatMarkValue={String}
+        onSeek={vi.fn()}
+        onMoveMarkA={vi.fn()}
+        onMoveMarkB={vi.fn()}
+        testIdPrefix="endpoints"
+      />
+    ))
+
+    expect(screen.getByLabelText('Loop start marker')).toHaveStyle({
+      '--loop-marker-anchor': '0%',
+      '--loop-marker-shift': '0%',
+      left: '0%',
+    })
+    expect(screen.getByLabelText('Loop end marker')).toHaveStyle({
+      '--loop-marker-anchor': '100%',
+      '--loop-marker-shift': '-100%',
+      left: '100%',
+    })
+  })
+
   it('opens an explicit boundary-only lens without changing the seek domain', () => {
     mount()
     const seek = screen.getByLabelText('Score position')
@@ -151,7 +182,7 @@ describe('LoopRangeRail', () => {
     sendPointer(marker, 'pointermove', 160)
     sendPointer(marker, 'pointerup', 160)
     expect(onMoveA).toHaveBeenCalledTimes(1)
-    expect(onMoveA).toHaveBeenLastCalledWith(6)
+    expect(onMoveA).toHaveBeenLastCalledWith(3)
     expect(onCommit).toHaveBeenCalledTimes(1)
     expect(onCommit).toHaveBeenLastCalledWith('A')
   })
@@ -170,6 +201,22 @@ describe('LoopRangeRail', () => {
     sendPointer(marker, 'pointerup', 180)
 
     expect(rectSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves the grab offset for an endpoint marker', () => {
+    const onMoveA = vi.fn()
+    mount({ a: 0, b: 4, onMoveA, onCommit: vi.fn() })
+    const marker = screen.getByLabelText('Loop start marker')
+    installPointerCapture(marker)
+
+    // The start marker's 44px hitbox extends inward from x=100. Grabbing its
+    // centre must not jump the authored boundary toward that pointer position.
+    sendPointer(marker, 'pointerdown', 122)
+    sendPointer(marker, 'pointermove', 123)
+    sendPointer(marker, 'pointerup', 123)
+
+    expect(onMoveA).toHaveBeenCalledOnce()
+    expect(onMoveA).toHaveBeenCalledWith(0)
   })
 
   it('coalesces keyboard repeats and keeps native seek scrubbing open through keyup', () => {

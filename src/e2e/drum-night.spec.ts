@@ -174,6 +174,22 @@ async function scoreGeometry(page: import('@playwright/test').Page): Promise<{
   })
 }
 
+async function rangePoint(
+  slider: import('@playwright/test').Locator,
+  fraction: number,
+): Promise<{ readonly x: number; readonly y: number }> {
+  const bounds = await slider.boundingBox()
+  if (bounds === null) throw new Error('Timeline slider has no pointer bounds')
+  const thumbInset = Math.min(8, bounds.width / 4)
+  return {
+    x:
+      bounds.x +
+      thumbInset +
+      Math.max(0, bounds.width - thumbInset * 2) * fraction,
+    y: bounds.y + bounds.height / 2,
+  }
+}
+
 test('pairs the Home rooms and opens Drum Night from the Play group @smoke', async ({
   page,
 }) => {
@@ -622,9 +638,12 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
     'data-playing',
     'true',
   )
-  await expect(page.getByRole('status')).toContainText(
-    'e2e-pocket is starting on the shared take clock with take events armed.',
-  )
+  await expect(
+    page.getByRole('status').filter({
+      hasText:
+        'e2e-pocket is starting on the shared take clock with take events armed.',
+    }),
+  ).toBeAttached()
 
   const groove = page
     .getByRole('button', { name: /Groove/ })
@@ -641,6 +660,287 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   await expect(drawer).not.toBeVisible()
   await expect(page).not.toHaveURL(/drawer=/)
   await expect(groove).toBeFocused()
+})
+
+test('sets, moves, clears, and scrubs the authored A B loop with a real pointer @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  const shell = page.getByTestId('drum-night-shell')
+  const timeline = page.getByTestId('drum-night-timeline')
+  const seek = timeline.getByRole('slider', { name: 'Drum part position' })
+  const markAControl = timeline.getByRole('button', {
+    name: 'Set loop start A at the playhead',
+  })
+  const markBControl = timeline.getByRole('button', {
+    name: 'Set loop end B at the playhead',
+  })
+
+  await expect(timeline).toHaveAttribute('data-loop-state', 'full')
+  await expect(timeline.getByText('Full song')).toBeVisible()
+  await markAControl.click()
+  await expect(timeline).toHaveAttribute('data-loop-state', 'waiting')
+  await expect(timeline.getByText('Set B to finish the loop')).toBeVisible()
+
+  const laterPosition = await rangePoint(seek, 0.62)
+  await page.mouse.click(laterPosition.x, laterPosition.y)
+  await expect
+    .poll(async () => Number(await seek.inputValue()))
+    .toBeGreaterThan(Number(await seek.getAttribute('min')))
+  await markBControl.click()
+
+  await expect(timeline).toHaveAttribute('data-loop-state', 'active')
+  const markerA = timeline.getByRole('slider', { name: 'Loop start marker' })
+  const markerB = timeline.getByRole('slider', { name: 'Loop end marker' })
+  await expect(markerA).toHaveAttribute('aria-valuenow', '0')
+  await expect(markerB).toBeVisible()
+  const initialA = Number(await markerA.getAttribute('aria-valuenow'))
+  const markerBounds = await markerA.boundingBox()
+  const railBounds = await page
+    .getByTestId('drum-night-loop-range')
+    .locator('input[type="range"]')
+    .boundingBox()
+  if (markerBounds === null || railBounds === null) {
+    throw new Error('A B timeline marker is missing real pointer bounds')
+  }
+
+  await page.mouse.move(
+    markerBounds.x + markerBounds.width / 2,
+    markerBounds.y + markerBounds.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    railBounds.x + railBounds.width * 0.24,
+    markerBounds.y + markerBounds.height / 2,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+  await expect
+    .poll(async () => Number(await markerA.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(initialA)
+  await expect(timeline).toHaveAttribute('data-loop-state', 'active')
+
+  await timeline
+    .getByRole('button', { name: 'Clear A B practice loop' })
+    .click()
+  await expect(timeline).toHaveAttribute('data-loop-state', 'full')
+  await expect(markerA).toHaveCount(0)
+  await expect(markerB).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Count-in: 4 audible beats' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Count-in: off' }),
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Play First Pocket take clock' })
+    .filter({ visible: true })
+    .click()
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+
+  await shell.evaluate((element) => {
+    const trackedWindow = window as unknown as {
+      __drumNightPlayingTransitions: string[]
+      __drumNightPlayingObserver?: MutationObserver
+    }
+    trackedWindow.__drumNightPlayingTransitions = []
+    trackedWindow.__drumNightPlayingObserver?.disconnect()
+    trackedWindow.__drumNightPlayingObserver = new MutationObserver(() => {
+      trackedWindow.__drumNightPlayingTransitions.push(
+        element.getAttribute('data-playing') ?? '',
+      )
+    })
+    trackedWindow.__drumNightPlayingObserver.observe(element, {
+      attributeFilter: ['data-playing'],
+    })
+  })
+
+  const scrubFrom = await rangePoint(seek, 0.72)
+  const scrubTo = await rangePoint(seek, 0.41)
+  await page.mouse.move(scrubFrom.x, scrubFrom.y)
+  await page.mouse.down()
+  await expect(shell).toHaveAttribute('data-playing', 'false')
+  await page.mouse.move(scrubTo.x, scrubTo.y, { steps: 8 })
+  await page.mouse.up()
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+  await expect(page.getByText(/^Count in$/)).toHaveCount(0)
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window as unknown as {
+              __drumNightPlayingTransitions: string[]
+            }
+          ).__drumNightPlayingTransitions,
+      ),
+    )
+    .toEqual(['false', 'true'])
+})
+
+test('keeps quarter-beat marks and end-boundary controls pointer-safe at 320px @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  const timeline = page.getByTestId('drum-night-timeline')
+  const seek = timeline.getByRole('slider', { name: 'Drum part position' })
+  const setA = timeline.getByRole('button', {
+    name: 'Set loop start A at the playhead',
+  })
+  const setB = timeline.getByRole('button', {
+    name: 'Set loop end B at the playhead',
+  })
+
+  await setA.click()
+  await seek.focus()
+  await seek.press('Home')
+  for (let step = 0; step < 4; step += 1) await seek.press('ArrowRight')
+  await setB.click()
+
+  const markerA = timeline.getByRole('slider', { name: 'Loop start marker' })
+  const markerB = timeline.getByRole('slider', { name: 'Loop end marker' })
+  await expect(markerA).toHaveAttribute('aria-valuenow', '0')
+  await expect(markerA).toHaveAttribute('aria-valuetext', 'Beat 1')
+  await expect(markerB).toHaveAttribute('aria-valuenow', '0.25')
+  await expect(markerB).toHaveAttribute('aria-valuetext', 'Beat 1.25')
+
+  const openFocus = timeline.getByRole('button', {
+    name: 'Focus the A B loop',
+  })
+  await expect(openFocus).toBeVisible()
+  const openFocusBounds = await openFocus.boundingBox()
+  if (openFocusBounds === null) {
+    throw new Error('Focused A B editor action has no pointer bounds')
+  }
+  await page.mouse.click(
+    openFocusBounds.x + openFocusBounds.width / 2,
+    openFocusBounds.y + openFocusBounds.height / 2,
+  )
+  await expect(page.getByTestId('drum-night-loop-precision-lens')).toBeVisible()
+  await expect(
+    timeline.getByRole('button', {
+      name: 'Close the focused loop editor',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true')
+
+  await timeline
+    .getByRole('button', { name: 'Clear A B practice loop' })
+    .click()
+  await seek.focus()
+  await seek.press('End')
+  await setB.click()
+  const endBeat = await markerB.getAttribute('aria-valuenow')
+  expect(Number(endBeat)).toBeGreaterThan(0.25)
+  await seek.focus()
+  for (let step = 0; step < 4; step += 1) await seek.press('ArrowLeft')
+  await setA.click()
+  await expect(timeline).toHaveAttribute('data-loop-state', 'active')
+  await expect(markerB).toHaveAttribute('aria-valuenow', endBeat ?? '')
+
+  const neighboringFocus = timeline.getByRole('button', {
+    name: 'Focus the A B loop',
+  })
+  await expect(neighboringFocus).toBeVisible()
+  const neighboringBounds = await neighboringFocus.boundingBox()
+  if (neighboringBounds === null) {
+    throw new Error('End-boundary focus action has no pointer bounds')
+  }
+  await page.mouse.click(
+    neighboringBounds.x + neighboringBounds.width / 2,
+    neighboringBounds.y + neighboringBounds.height / 2,
+  )
+  await expect(page.getByTestId('drum-night-loop-precision-lens')).toBeVisible()
+})
+
+test('keeps the full song timeline inside Pocket, Seat, and Score at phone and landscape sizes @smoke', async ({
+  page,
+}, testInfo) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport)
+    for (const view of ['pocket', 'seat', 'score'] as const) {
+      await page.goto(`/drum-night?view=${view}`, {
+        waitUntil: 'domcontentloaded',
+      })
+      const timeline = page.getByTestId('drum-night-timeline')
+      const seek = timeline.getByRole('slider', {
+        name: 'Drum part position',
+      })
+      await expect(timeline).toBeVisible()
+      await expect(timeline).toHaveAttribute('data-loop-state', 'full')
+      await expect(seek).toBeVisible()
+
+      const geometry = await timeline.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const visibleButtons = [...element.querySelectorAll('button')].filter(
+          (button) => {
+            const bounds = button.getBoundingClientRect()
+            const style = getComputedStyle(button)
+            return (
+              bounds.width > 0 &&
+              bounds.height > 0 &&
+              style.display !== 'none' &&
+              style.visibility !== 'hidden'
+            )
+          },
+        )
+        const undersizedButtons = visibleButtons.filter((button) => {
+          const bounds = button.getBoundingClientRect()
+          return bounds.width < 44 || bounds.height < 44
+        })
+        const slider = element.querySelector<HTMLInputElement>(
+          'input[type="range"]',
+        )
+        const sliderRect = slider?.getBoundingClientRect()
+        return {
+          bottom: rect.bottom,
+          left: rect.left,
+          pageWidth: document.documentElement.scrollWidth,
+          right: rect.right,
+          sliderHeight: sliderRect?.height ?? 0,
+          top: rect.top,
+          undersizedButtons: undersizedButtons.length,
+          viewportHeight: document.documentElement.clientHeight,
+          viewportWidth: document.documentElement.clientWidth,
+        }
+      })
+
+      expect(
+        geometry.left,
+        `${view} ${viewport.width}px`,
+      ).toBeGreaterThanOrEqual(0)
+      expect(
+        geometry.top,
+        `${view} ${viewport.width}px`,
+      ).toBeGreaterThanOrEqual(0)
+      expect(geometry.right, `${view} ${viewport.width}px`).toBeLessThanOrEqual(
+        geometry.viewportWidth,
+      )
+      expect(
+        geometry.bottom,
+        `${view} ${viewport.width}px`,
+      ).toBeLessThanOrEqual(geometry.viewportHeight)
+      expect(
+        geometry.pageWidth,
+        `${view} ${viewport.width}px`,
+      ).toBeLessThanOrEqual(geometry.viewportWidth)
+      expect(
+        geometry.sliderHeight,
+        `${view} ${viewport.width}px`,
+      ).toBeGreaterThanOrEqual(44)
+      expect(geometry.undersizedButtons, `${view} ${viewport.width}px`).toBe(0)
+    }
+
+    await page.screenshot({
+      path: testInfo.outputPath(`drum-night-timeline-${viewport.width}.png`),
+      fullPage: true,
+    })
+  }
 })
 
 test('plays the photographed Drummer Seat with a real pointer at desktop, landscape, and phone sizes @smoke', async ({
@@ -871,21 +1171,6 @@ test('recomposes for phone and short landscape without overflow or clipped prima
       ).toBeLessThanOrEqual(viewport.height)
     }
   }
-
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/drum-night?drawer=learn', {
-    waitUntil: 'domcontentloaded',
-  })
-  await page
-    .getByRole('button', { name: 'Play First Pocket at 84 BPM' })
-    .click()
-  const activeLoop = page.getByRole('button', {
-    name: 'Clear active 8-beat loop',
-  })
-  await expect(activeLoop).toBeVisible()
-  await activeLoop.click()
-  await expect(activeLoop).not.toBeVisible()
-  await expect(page.getByRole('status')).toContainText('Practice loop cleared')
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
