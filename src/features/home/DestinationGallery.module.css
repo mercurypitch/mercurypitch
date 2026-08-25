@@ -107,23 +107,20 @@
 }
 
 .practice,
-.analysis,
-.jam {
-  grid-column: span 7;
-}
-
-/* The three night rooms make a row of their own, so adding them does not
-   restripe the 7/5 rhythm the other covers are laid out on. */
+.exercises,
+.karaoke,
+.drumNight,
 .pianoNight,
 .guitarNight,
-.drumNight {
-  grid-column: span 4;
+.jam,
+.mystery {
+  grid-column: span 6;
 }
 
-.karaoke,
-.exercises,
-.mystery {
-  grid-column: span 5;
+/* Analysis is the one deliberate pause in the sequence: the instrument and
+   performance rooms pair off above it, then the deeper lab gets the full row. */
+.analysis {
+  grid-column: 1 / -1;
 }
 
 .coverShade {
@@ -223,7 +220,7 @@
 }
 
 /* The only photographic covers. `object-fit: cover` with a bias towards the
-   upper half: both rooms put the instrument there and the floor below it,
+   upper half: all three rooms put the instrument there and the floor below it,
    and the card's own copy sits over the bottom third anyway. */
 .roomPhoto {
   width: 100%;
@@ -246,13 +243,18 @@
    the drawn covers instead of reading as a pasted-in picture. */
 .pianoNightVisual::after,
 .guitarNightVisual::after,
+<<<<<<< HEAD
 .earLabVisual::after {
+=======
+.drumNightVisual::after {
+>>>>>>> 0d294fc4 (feat(home): give Drum Night its own destination row)
   content: '';
   position: absolute;
   inset: 0;
   mix-blend-mode: soft-light;
 }
 
+<<<<<<< HEAD
 /* Brass lamplight from above, the Regulator Room's own light. */
 .earLabVisual::after {
   background: radial-gradient(
@@ -362,6 +364,8 @@
   background: rgba(8, 9, 11, 0.68);
 }
 
+=======
+>>>>>>> 0d294fc4 (feat(home): give Drum Night its own destination row)
 .pianoNightVisual::after {
   background: radial-gradient(
     72% 60% at 50% 22%,
@@ -375,6 +379,14 @@
     72% 60% at 50% 22%,
     rgba(255, 176, 92, 0.3),
     transparent 70%
+  );
+}
+
+.drumNightVisual::after {
+  background: radial-gradient(
+    74% 62% at 50% 20%,
+    rgba(231, 173, 82, 0.22),
+    transparent 72%
   );
 }
 
@@ -999,7 +1011,6 @@
   .cover,
   .coverAction svg,
   .practiceInstruments,
-  .drumKit,
   .karaokeVisual,
   .jamVisual,
   .mysteryScene,
