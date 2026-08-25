@@ -102,6 +102,7 @@ describe('Karaoke Night sign-in with the CAPTCHA unconfigured', () => {
       expect(mocks.registerWithPassword).toHaveBeenCalledWith(
         'singer@example.com',
         'Sup3rSecret!x',
+        undefined,
         '',
       ),
     )

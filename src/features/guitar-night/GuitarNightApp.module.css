@@ -1198,7 +1198,7 @@
 }
 
 .entryActions button,
-.detailActions button,
+.detailActions :is(button, a),
 .tapAction {
   min-height: var(--touch-target);
   border: 0;
@@ -2235,15 +2235,23 @@
   margin-top: 1.25rem;
 }
 
-.detailActions > button:first-child {
+.detailActions > :first-child {
   margin-inline-end: auto;
 }
 
-.detailActions button {
+.detailActions :is(button, a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.65rem 0.9rem;
+  border: 0;
   border-radius: 0.45rem;
   color: var(--muted);
   background: transparent;
+  font: inherit;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .detailActions .completionAction {
@@ -2252,7 +2260,7 @@
   font-weight: 700;
 }
 
-.detailActions button:hover:not(.completionAction) {
+.detailActions :is(button, a):hover:not(.completionAction) {
   color: var(--ivory);
   background: rgba(244, 234, 219, 0.055);
 }
@@ -6697,7 +6705,7 @@
     align-items: stretch;
   }
 
-  .detailActions button {
+  .detailActions :is(button, a) {
     flex: 1;
   }
 

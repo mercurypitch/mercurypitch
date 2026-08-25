@@ -16,7 +16,7 @@ vi.mock('@/db/services/auth-service', () => ({
   googleSignInUrl: mocks.googleSignInUrl,
 }))
 
-import { GOOGLE_SIGN_IN_UNREACHABLE, googleSignInPending, resetGoogleSignInPending, startGoogleSignIn, } from '@/lib/google-sign-in'
+import { getGoogleSignInUnavailableReason, GOOGLE_SIGN_IN_PR_PREVIEW_UNAVAILABLE, GOOGLE_SIGN_IN_UNREACHABLE, googleSignInPending, resetGoogleSignInPending, startGoogleSignIn, } from '@/lib/google-sign-in'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -32,6 +32,30 @@ beforeEach(() => {
 })
 
 describe('startGoogleSignIn', () => {
+  it('explains why Google is unavailable only on pull request previews', () => {
+    expect(getGoogleSignInUnavailableReason(true)).toBe(
+      GOOGLE_SIGN_IN_PR_PREVIEW_UNAVAILABLE,
+    )
+    expect(getGoogleSignInUnavailableReason(false)).toBeNull()
+  })
+
+  it('does not contact the auth worker from a pull request preview', async () => {
+    vi.resetModules()
+    vi.doMock('@/lib/defaults', () => ({ IS_PR_PREVIEW: true }))
+
+    try {
+      const previewSignIn = await import('@/lib/google-sign-in')
+
+      await expect(previewSignIn.startGoogleSignIn()).resolves.toBe(
+        GOOGLE_SIGN_IN_PR_PREVIEW_UNAVAILABLE,
+      )
+      expect(mocks.googleSignInUrl).not.toHaveBeenCalled()
+    } finally {
+      vi.doUnmock('@/lib/defaults')
+      vi.resetModules()
+    }
+  })
+
   it('navigates to the consent url the worker handed back', async () => {
     await expect(startGoogleSignIn()).resolves.toBeNull()
 
@@ -48,6 +72,35 @@ describe('startGoogleSignIn', () => {
 
     await expect(startGoogleSignIn()).resolves.toBe(GOOGLE_SIGN_IN_UNREACHABLE)
     expect(mocks.assign).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a prepared return intent when fetching the consent url fails', async () => {
+    const rollback = vi.fn()
+    const prepareRedirect = vi.fn(() => rollback)
+    mocks.googleSignInUrl.mockRejectedValue(new Error('offline'))
+
+    await expect(startGoogleSignIn({ prepareRedirect })).resolves.toBe(
+      GOOGLE_SIGN_IN_UNREACHABLE,
+    )
+
+    expect(prepareRedirect).toHaveBeenCalledOnce()
+    expect(rollback).toHaveBeenCalledOnce()
+    expect(mocks.assign).not.toHaveBeenCalled()
+  })
+
+  it('rolls back a prepared return intent when browser navigation throws', async () => {
+    const rollback = vi.fn()
+    const prepareRedirect = vi.fn(() => rollback)
+    mocks.assign.mockImplementationOnce(() => {
+      throw new Error('navigation blocked')
+    })
+
+    await expect(startGoogleSignIn({ prepareRedirect })).resolves.toBe(
+      GOOGLE_SIGN_IN_UNREACHABLE,
+    )
+
+    expect(prepareRedirect).toHaveBeenCalledOnce()
+    expect(rollback).toHaveBeenCalledOnce()
   })
 
   it('never rejects, so a click handler cannot die silently', async () => {

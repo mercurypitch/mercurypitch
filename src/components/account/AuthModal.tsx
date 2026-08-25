@@ -16,7 +16,7 @@ import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } fr
 import { loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isTvDevice } from '@/lib/device-tier'
-import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
+import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -37,9 +37,20 @@ const TITLES: Record<Pane, string> = {
   phone: 'Sign in with your phone',
 }
 
-export const AuthModal: Component = () => {
+export interface AuthModalProps {
+  /** The host surface may tint the shared dialog without owning auth logic. */
+  tone?: 'default' | 'guitar-night'
+  /** Reconcile account-aware standalone UI before this dialog closes. */
+  onAuthenticated?: () => void
+  /** Prepare a host-owned return intent, with rollback if Google cannot start. */
+  prepareGoogleRedirect?: () => (() => void) | undefined
+}
+
+export const AuthModal: Component<AuthModalProps> = (props) => {
   let dialogRef: HTMLDivElement | undefined
+  let titleRef: HTMLHeadingElement | undefined
   let passwordRef: HTMLInputElement | undefined
+  let requestGeneration = 0
   const titleId = createUniqueId()
 
   // A television opens straight on the phone pane. Not a preference: the
@@ -74,6 +85,9 @@ export const AuthModal: Component = () => {
   createEffect(() => {
     const mode = authModalMode()
     if (mode == null) return
+    // A reopened dialog must not inherit the completion of a request the
+    // player dismissed on the previous open.
+    requestGeneration += 1
     // On a TV, "sign in" means the phone pane whichever entry point asked;
     // "create account" still needs the form, since there is nothing to
     // approve from yet.
@@ -89,8 +103,12 @@ export const AuthModal: Component = () => {
   })
 
   function close(): void {
-    if (busy()) return
+    // Authentication may outlive the dialog. Closing invalidates its UI
+    // continuation (including Guitar Night's billable separation retry),
+    // while the request itself remains free to settle in the auth service.
+    requestGeneration += 1
     closeAuthModal()
+    setBusy(false)
     setPassword('')
     setShowPassword(false)
     setError('')
@@ -115,13 +133,20 @@ export const AuthModal: Component = () => {
     setPane(next)
     setError('')
     setShowPassword(false)
+    // The control that changes panes unmounts. Without an explicit handoff,
+    // focus falls to <body> and the next Tab enters at the end of the dialog,
+    // skipping every field in the newly displayed form.
+    queueMicrotask(() => {
+      const firstInput = dialogRef?.querySelector<HTMLInputElement>('input')
+      ;(firstInput ?? titleRef)?.focus({ preventScroll: true })
+    })
   }
 
   useFocusTrap(() => dialogRef, {
     isOpen: () => authModalMode() != null,
     onClose: close,
     // Land on the first field, not the header's close button.
-    initialFocus: () => dialogRef?.querySelector('input') ?? undefined,
+    initialFocus: () => dialogRef?.querySelector('input') ?? titleRef,
   })
 
   /** Shows the failure inline, next to the form the singer is already
@@ -131,7 +156,9 @@ export const AuthModal: Component = () => {
     // onboarding flow, remember where it stood (a no-op on every other
     // surface, where the auth return-hash restores the route instead).
     armOnboardingResume()
-    const failure = await startGoogleSignIn()
+    const failure = await startGoogleSignIn({
+      prepareRedirect: props.prepareGoogleRedirect,
+    })
     if (failure !== null) setError(failure)
   }
 
@@ -149,6 +176,7 @@ export const AuthModal: Component = () => {
     const current = pane()
     const credentials = { email: email().trim(), password: password() }
     const name = displayName().trim()
+    const request = ++requestGeneration
 
     const run = async (): Promise<void> => {
       setError('')
@@ -166,6 +194,7 @@ export const AuthModal: Component = () => {
             name,
             token,
           )
+          if (request !== requestGeneration) return
           // Creating the account IS the consent the voiceprint adoption
           // notice would ask for — the onboarding keep beat promised "keep
           // this take", so takes made signed-out on this device join the
@@ -173,7 +202,7 @@ export const AuthModal: Component = () => {
           // account stays prompt-gated (spec REQ-VPR-014).
           void adoptDeviceVoiceprints()
           showNotification('Account created — progress is now synced', 'info')
-          setBusy(false) // before close() — its busy-guard is for user dismissal
+          props.onAuthenticated?.()
           close()
         } else if (current === 'login') {
           await loginWithPassword(
@@ -181,15 +210,18 @@ export const AuthModal: Component = () => {
             credentials.password,
             token,
           )
+          if (request !== requestGeneration) return
           showNotification('Signed in', 'info')
-          setBusy(false)
+          props.onAuthenticated?.()
           close()
         } else if (current === 'forgot') {
           await requestPasswordReset(credentials.email, token)
+          if (request !== requestGeneration) return
           setSentTo(credentials.email)
-          setPane('forgot-sent')
+          switchPane('forgot-sent')
         }
       } catch (err) {
+        if (request !== requestGeneration) return
         setError(err instanceof Error ? err.message : String(err))
         setTurnstileToken('')
         resetTurnstile()
@@ -205,7 +237,7 @@ export const AuthModal: Component = () => {
           passwordRef?.focus({ preventScroll: true })
         }
       } finally {
-        setBusy(false)
+        if (request === requestGeneration) setBusy(false)
       }
     }
     void run()
@@ -215,6 +247,7 @@ export const AuthModal: Component = () => {
     <Show when={authModalMode() != null}>
       <div
         class={styles.overlay}
+        data-tone={props.tone ?? 'default'}
         data-testid="auth-modal-overlay"
         onClick={onBackdropClick}
       >
@@ -228,7 +261,7 @@ export const AuthModal: Component = () => {
           onClick={(e) => e.stopPropagation()}
         >
           <div class={styles.head}>
-            <h2 id={titleId} class={styles.title}>
+            <h2 ref={titleRef} id={titleId} class={styles.title} tabindex="-1">
               {TITLES[pane()]}
             </h2>
             <button
@@ -250,6 +283,7 @@ export const AuthModal: Component = () => {
                   // Signing in to an EXISTING account, so voiceprint
                   // adoption stays prompt-gated (see the register path).
                   showNotification('Signed in', 'info')
+                  props.onAuthenticated?.()
                   close()
                 }}
               />
@@ -294,18 +328,30 @@ export const AuthModal: Component = () => {
               </p>
 
               <Show when={pane() !== 'forgot'}>
-                <button
-                  type="button"
-                  class={styles.googleButton}
-                  onClick={() => void onGoogleSignIn()}
-                  data-testid="auth-google"
-                  disabled={googleSignInPending()}
+                <Show
+                  when={googleSignInUnavailableReason === null}
+                  fallback={
+                    <p
+                      class={styles.providerNote}
+                      data-testid="auth-google-unavailable"
+                    >
+                      {googleSignInUnavailableReason}
+                    </p>
+                  }
                 >
-                  <GoogleMark />
-                  {googleSignInPending()
-                    ? 'Opening Google\u2026'
-                    : 'Continue with Google'}
-                </button>
+                  <button
+                    type="button"
+                    class={styles.googleButton}
+                    onClick={() => void onGoogleSignIn()}
+                    data-testid="auth-google"
+                    disabled={googleSignInPending()}
+                  >
+                    <GoogleMark />
+                    {googleSignInPending()
+                      ? 'Opening Google\u2026'
+                      : 'Continue with Google'}
+                  </button>
+                </Show>
                 <Show when={pane() === 'login'}>
                   <button
                     type="button"

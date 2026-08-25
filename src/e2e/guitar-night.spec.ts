@@ -452,6 +452,62 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
   await page.keyboard.press('Tab')
   await expect(buttons.nth(2)).toBeFocused()
 
+  const accountTrigger = page.getByRole('button', {
+    name: 'Sign in to MercuryPitch',
+    exact: true,
+  })
+  await expect(accountTrigger).toBeVisible()
+  const accountTriggerBox = await accountTrigger.boundingBox()
+  expect(accountTriggerBox?.height).toBeGreaterThanOrEqual(44)
+
+  const roomTrigger = page.getByRole('button', { name: 'Room', exact: true })
+  await roomTrigger.click()
+  const roomDrawer = page.getByRole('dialog', {
+    name: 'Guitar Night room and settings',
+  })
+  await expect(roomDrawer).toBeVisible()
+  await page.keyboard.press('Tab')
+  await expect
+    .poll(async () =>
+      roomDrawer.evaluate((drawer) => drawer.contains(document.activeElement)),
+    )
+    .toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(roomDrawer).toBeHidden()
+  await expect(roomTrigger).toBeFocused()
+
+  await accountTrigger.click()
+
+  const authDialog = page.getByRole('dialog', {
+    name: 'Sign in',
+    exact: true,
+  })
+  await expect(authDialog).toBeVisible()
+  await expect(page.locator('[role="dialog"][aria-modal="true"]')).toHaveCount(
+    1,
+  )
+  await expect(page.getByTestId('auth-modal-overlay')).toHaveAttribute(
+    'data-tone',
+    'guitar-night',
+  )
+  await expect(page.getByTestId('auth-email')).toBeFocused()
+  const createAccount = page.getByTestId('auth-switch-register')
+  await createAccount.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('auth-display-name')).toBeFocused()
+  const authClose = page.getByTestId('auth-modal-close')
+  // The dialog enters at scale(.98); wait until that purely visual motion is
+  // finished before measuring the settled CSS hit target.
+  await expect
+    .poll(async () => (await authClose.boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(44)
+  await expect
+    .poll(async () => (await authClose.boundingBox())?.height ?? 0)
+    .toBeGreaterThanOrEqual(44)
+  await page.keyboard.press('Escape')
+  await expect(authDialog).toBeHidden()
+  await expect(accountTrigger).toBeFocused()
+
   const microphoneRequests = await page.evaluate(
     () =>
       (window as unknown as { __guitarNightMicCalls: number })

@@ -178,18 +178,44 @@ describe('PR preview API environment', () => {
     )
   })
 
-  it('enables only version previews and inherits the existing dev secrets', () => {
+  it('inherits stable dev secrets and replaces Turnstile only for the preview version', () => {
     expect(DB_PREVIEW_TEMPLATE).toMatch(/"name"\s*:\s*"mercury-pitch-db-dev"/)
     expect(DB_PREVIEW_TEMPLATE).toMatch(/"preview_urls"\s*:\s*true/)
     expect(DB_PREVIEW_TEMPLATE).toMatch(/"workers_dev"\s*:\s*false/)
     expect(DB_PREVIEW_TEMPLATE).toMatch(
-      /"required"\s*:\s*\["ADMIN_KEY",\s*"JWT_SECRET"\]/,
+      /"required"\s*:\s*\["ADMIN_KEY",\s*"JWT_SECRET",\s*"TURNSTILE_SECRET"\]/,
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      '--secrets-file "$preview_turnstile_secrets_file"',
     )
     expect(BUILD_WORKFLOW).toContain(
       `--data '{"enabled":false,"previews_enabled":true}'`,
     )
     expect(BUILD_WORKFLOW).toContain(
       'db_preview_url="https://${db_version_prefix}-${db_worker_name}.${workers_dev_subdomain}.workers.dev"',
+    )
+  })
+
+  it('pairs Cloudflare test credentials only inside immutable PR previews', () => {
+    expect(DB_PREVIEW_TEMPLATE).toContain('"PR_PREVIEW": "true"')
+    expect(BUILD_WORKFLOW).toContain(
+      `grep -F -q '"PR_PREVIEW": "true"' "$generated_db_config"`,
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      'preview_turnstile_site_key="1x00000000000000000000AA"',
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      'preview_turnstile_secret="1x0000000000000000000000000000000AA"',
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      'export VITE_TURNSTILE_SITE_KEY="$preview_turnstile_site_key"',
+    )
+    expect(BUILD_WORKFLOW).toContain('export VITE_PR_PREVIEW=true')
+    expect(BUILD_WORKFLOW).toContain(
+      `grep -R -F -q --include='*.js' "$preview_turnstile_site_key" dist/assets`,
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      'Preview bundle unexpectedly contains the real Turnstile site key.',
     )
   })
 

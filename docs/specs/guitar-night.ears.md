@@ -834,6 +834,13 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   buffer goal shall contract near the end of the recording, and newer Play,
   seek, Pause, Stop, source replacement, or disposal intent shall prevent an
   older warm-up from reopening audio.
+- **REQ-GN-SONG-019 — Account-gated separation:** WHEN a signed-out player
+  requests cloud guitar separation, THEN Guitar Night shall keep the song
+  unchanged, charge nothing, and open its in-page account dialog from one
+  `Sign in` action. WHEN authentication succeeds, THEN the room shall refresh
+  account and credit truth before retrying that exact separation request. IF
+  the signed-in balance is known to be insufficient, THEN it shall offer one
+  styled `Get credits` action instead of submitting billable work.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 
@@ -864,9 +871,10 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-STAGE-021 — Visible account access:** Guitar Night shall keep one
   account action in the top rail beside Room rather than hiding it inside room
   settings. A signed-in desktop player shall see their compact identity and
-  available credits; signed-out state shall offer sign-in. At narrow widths the
-  same action may collapse visually, but it shall retain a 44 by 44 CSS-pixel
-  target and an explicit accessible name.
+  available credits; signed-out state shall open the shared in-page account
+  dialog instead of navigating away. At narrow widths the same action may
+  collapse visually, but it shall retain a 44 by 44 CSS-pixel target and an
+  explicit accessible name.
 - **REQ-GN-STAGE-008 — Full-room topology:** WHILE a prepared song room is
   open, the entry faceplate shall not constrain it. A compact session bar,
   flexible musical stage, edge-to-edge pedalboard, and status rail shall fit

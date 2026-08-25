@@ -70,7 +70,7 @@ export function KaraokeAccount() {
     try {
       const token = turnstileToken()
       if (mode() === 'register') {
-        await registerWithPassword(email().trim(), password(), token)
+        await registerWithPassword(email().trim(), password(), undefined, token)
       } else {
         await loginWithPassword(email().trim(), password(), token)
       }

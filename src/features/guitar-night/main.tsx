@@ -4,13 +4,17 @@
 import { render } from 'solid-js/web'
 import '@/styles/mobile-kit.css'
 import '@/styles/performance-mode.css'
-import { restoreAuth } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, restoreAuth } from '@/db/services/auth-service'
 import { initDeviceTier } from '@/lib/device-tier'
 import { GuitarNightApp } from './GuitarNightApp'
 
 // Publish the device tier on <html> before the first paint: a television
 // must never render a frame of full-quality glass and then downgrade.
 initDeviceTier()
+
+// Consume Google first: the worker returns the session in #gauth, and
+// restoreAuth cannot restore a token that has not been stored yet.
+consumeGoogleRedirect()
 
 // Pick up a session signed in elsewhere so the account chip and its credit
 // balance are real. Restore only — never provision: entering a rehearsal room

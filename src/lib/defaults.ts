@@ -17,6 +17,9 @@ export const IS_DEV =
 /** True when running inside Vitest or an E2E test harness. */
 export const IS_TEST = import.meta.env.MODE === 'test'
 
+/** True only for an immutable pull-request preview build. */
+export const IS_PR_PREVIEW = import.meta.env.VITE_PR_PREVIEW === 'true'
+
 /**
  * Premium features that depend on cloud storage of users' songs (cross-device
  * share links, reopening a separated session on another device, etc.). OFF by

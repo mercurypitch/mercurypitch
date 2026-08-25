@@ -2431,4 +2431,102 @@ describe('the Turnstile gate on the public auth routes', () => {
     // what the caller sees, and it is certainly not the CAPTCHA refusal.
     expect(response.status).not.toBe(400)
   })
+
+  it('keeps preview registration usable without calling inherited Resend', async () => {
+    cloudflareSays(true)
+    const db = new AuthDatabase()
+    const response = await callAuth(
+      'register',
+      {
+        email: 'preview-register@example.com',
+        password: 'Sup3rSecret!x',
+        displayName: 'Preview Singer',
+        cfTurnstileToken: 'always-pass-test-token',
+      },
+      {
+        ...guardedEnv(db),
+        PR_PREVIEW: 'true',
+        RESEND_API_KEY: 'inherited-dev-resend-key',
+      },
+    )
+
+    expect(response.status).toBe(200)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(
+      db.preparedSql.some((sql) => sql.includes('emailVerifications')),
+    ).toBe(false)
+  })
+
+  it('truthfully refuses preview password-reset email without an account lookup or Resend call', async () => {
+    cloudflareSays(true)
+    const db = new AuthDatabase()
+    const response = await callAuth(
+      'forgot-password',
+      {
+        email: 'preview-reset@example.com',
+        cfTurnstileToken: 'always-pass-test-token',
+      },
+      {
+        ...guardedEnv(db),
+        PR_PREVIEW: 'true',
+        RESEND_API_KEY: 'inherited-dev-resend-key',
+      },
+    )
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Email delivery is unavailable in this pull-request preview',
+    })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(
+      db.preparedSql.some(
+        (sql) => sql === 'SELECT * FROM users WHERE email = ?',
+      ),
+    ).toBe(false)
+    expect(db.preparedSql.some((sql) => sql.includes('passwordResets'))).toBe(
+      false,
+    )
+  })
+
+  it('truthfully refuses preview verification resend without calling inherited Resend', async () => {
+    cloudflareSays(true)
+    const db = new AuthDatabase()
+    const env: Env = {
+      ...guardedEnv(db),
+      PR_PREVIEW: 'true',
+      RESEND_API_KEY: 'inherited-dev-resend-key',
+    }
+    const registered = await callAuth(
+      'register',
+      {
+        email: 'preview-verify@example.com',
+        password: 'Sup3rSecret!x',
+        displayName: 'Preview Singer',
+        cfTurnstileToken: 'always-pass-test-token',
+      },
+      env,
+    )
+    const token = String(
+      ((await registered.json()) as Record<string, unknown>).token,
+    )
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      env,
+      '/api/auth/resend-verification',
+      respond,
+    )
+    if (response == null) throw new Error('Auth route was not handled')
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Email delivery is unavailable in this pull-request preview',
+    })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(
+      db.preparedSql.some((sql) => sql.includes('emailVerifications')),
+    ).toBe(false)
+  })
 })

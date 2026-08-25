@@ -58,6 +58,11 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string
   /** Cloudflare Turnstile secret key for server-side verification. */
   TURNSTILE_SECRET?: string
+  /** "true" only on immutable pull-request preview versions. Preview auth
+   *  may use Cloudflare's public Turnstile test credentials, so every
+   *  external auth email must remain disabled even when the version inherits
+   *  the development Worker's RESEND_API_KEY. */
+  PR_PREVIEW?: 'true'
   /**
    * Shared secret for seed/admin writes via X-Admin-Key header. Where
    * Cloudflare Access is configured this is NOT sufficient on its own —
@@ -158,6 +163,12 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PASSWORD_MIN_LENGTH = 8
+const PREVIEW_EMAIL_UNAVAILABLE =
+  'Email delivery is unavailable in this pull-request preview'
+
+function authEmailDeliveryEnabled(env: Env): boolean {
+  return env.PR_PREVIEW !== 'true'
+}
 
 // Length + letter + number only — no uppercase/special-char composition
 // rules. Browser password generators must always pass (Firefox generates
@@ -868,13 +879,14 @@ function defaultDisplayName(userId: string): string {
 }
 
 // Fire the account welcome email — best-effort, never blocks or fails signup.
-// Skipped when Resend is unconfigured or the account has no email (anonymous).
+// Skipped in PR previews, when Resend is unconfigured or when the account has
+// no email (anonymous).
 async function sendWelcomeEmail(
   env: Env,
   to: string | null | undefined,
   displayName: string | null | undefined,
 ): Promise<void> {
-  if (!env.RESEND_API_KEY || !to) return
+  if (!authEmailDeliveryEnabled(env) || !env.RESEND_API_KEY || !to) return
   try {
     await sendSignupWelcome(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
@@ -928,9 +940,10 @@ async function createEmailVerification(
 }
 
 // Fire the confirm-your-email message (doubles as the welcome for password
-// signups) — best-effort, never blocks or fails signup. The link routes
-// through this worker and bounces back to the app origin the signup came
-// from (validated against the allowed origins; prod app as fallback).
+// signups) — best-effort, never blocks or fails signup. PR previews skip both
+// token minting and delivery. Elsewhere, the link routes through this worker
+// and bounces back to the app origin the signup came from (validated against
+// the allowed origins; prod app as fallback).
 async function sendVerificationEmail(
   request: Request,
   env: Env,
@@ -938,7 +951,7 @@ async function sendVerificationEmail(
   email: string,
   displayName: string | null | undefined,
 ): Promise<void> {
-  if (!env.RESEND_API_KEY) return
+  if (!authEmailDeliveryEnabled(env) || !env.RESEND_API_KEY) return
   try {
     const token = await createEmailVerification(env.DB, userId, email)
     const requestOrigin = request.headers.get('Origin') ?? ''
@@ -1006,14 +1019,15 @@ async function createPasswordReset(
 // Mint a token and email the reset link — best-effort, callers never let a
 // mail failure change the (deliberately uniform) forgot-password response.
 // The link points at the app origin the request came from (validated, prod
-// fallback), so dev resets stay on dev. With Resend unconfigured (local
-// wrangler) the link is logged instead so the flow stays testable.
+// fallback), so dev resets stay on dev. PR previews skip token minting and
+// delivery. With Resend unconfigured (local wrangler) the link is logged
+// instead so the flow stays testable.
 async function sendPasswordResetEmail(
   request: Request,
   env: Env,
   user: UserRow,
 ): Promise<void> {
-  if (!user.email) return
+  if (!authEmailDeliveryEnabled(env) || !user.email) return
   try {
     const token = await createPasswordReset(env.DB, user.id, user.email)
     const requestOrigin = request.headers.get('Origin') ?? ''
@@ -1048,9 +1062,10 @@ async function sendPasswordResetEmail(
   }
 }
 
-/** POST /api/auth/forgot-password { email } — always { ok: true } (except
- *  malformed input), so the response never reveals whether the address has
- *  an account. */
+/** POST /api/auth/forgot-password { email } — always { ok: true } in an
+ *  email-capable environment (except malformed input), so the response never
+ *  reveals whether the address has an account. PR previews uniformly return
+ *  503 because external email delivery is deliberately unavailable. */
 async function handleForgotPassword(
   request: Request,
   body: AuthBody,
@@ -1064,6 +1079,13 @@ async function handleForgotPassword(
   }
   if (isManagedTestEmail(email)) {
     return respond({ error: 'Email address is reserved' }, { status: 400 })
+  }
+  // PR previews intentionally use Cloudflare's public always-pass Turnstile
+  // credentials. Answer uniformly before looking up the address, minting a
+  // token or touching Resend: the preview remains useful for registration
+  // and login without becoming a public email relay or an account oracle.
+  if (!authEmailDeliveryEnabled(env)) {
+    return respond({ error: PREVIEW_EMAIL_UNAVAILABLE }, { status: 503 })
   }
   // Per-address cap on top of the per-IP one (rotating IPs must not be able
   // to bomb one inbox). Applied silently — a visible 429 here would reveal
@@ -2372,6 +2394,9 @@ async function handleResendVerification(
   }
   if (row.emailVerified) {
     return respond({ ok: true, alreadyVerified: true })
+  }
+  if (!authEmailDeliveryEnabled(env)) {
+    return respond({ error: PREVIEW_EMAIL_UNAVAILABLE }, { status: 503 })
   }
   if (!env.RESEND_API_KEY) {
     return respond(

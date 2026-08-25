@@ -155,8 +155,11 @@ core Learn set in
 - The first raw-file pass produces the available two-stem accompaniment, so
   guitar remains inside its instrumental mix and no non-functional guitar-mute
   control is shown. From that honest fallback, `Separate guitar` can run the
-  existing full-band pipeline. Failure retains the original two-stem mix;
-  completion refreshes and restages the exact upgraded session.
+  existing full-band pipeline. Signed-out requests stay in place and open the
+  shared account dialog; successful authentication refreshes account and
+  credit truth before retrying that exact session, while a known insufficient
+  balance offers one `Get credits` action. Failure retains the original
+  two-stem mix; completion refreshes and restages the exact upgraded session.
 - If stems are saved but the room cannot refresh or stage them, the player can
   recover the result from Prepared songs rather than separating the file
   again.
@@ -305,8 +308,10 @@ core Learn set in
   remain live. Instrument and loop controls keep 44px targets. Account access
   remains a separate top-rail action beside Room: desktop shows the player name
   and credits, while tablet and phone widths retain one compact 44px action and
-  its explicit accessible identity. Studio and room-detail utilities stay in
-  the Room drawer so the instrument keeps the viewport.
+  its explicit accessible identity. Signed-out entry opens the shared auth
+  dialog in Guitar Night's Velvet treatment rather than leaving the room.
+  Studio and room-detail utilities stay in the Room drawer so the instrument
+  keeps the viewport.
 - Explicit Listening upgrades the next authored-score Play into one independent
   live-score take. Its quiet score latch extends the existing stage signal
   faceplate rather than adding a card, modal, arcade HUD, combo, or diagnosis.
