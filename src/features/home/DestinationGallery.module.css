@@ -243,18 +243,14 @@
    the drawn covers instead of reading as a pasted-in picture. */
 .pianoNightVisual::after,
 .guitarNightVisual::after,
-<<<<<<< HEAD
-.earLabVisual::after {
-=======
+.earLabVisual::after,
 .drumNightVisual::after {
->>>>>>> 0d294fc4 (feat(home): give Drum Night its own destination row)
   content: '';
   position: absolute;
   inset: 0;
   mix-blend-mode: soft-light;
 }
 
-<<<<<<< HEAD
 /* Brass lamplight from above, the Regulator Room's own light. */
 .earLabVisual::after {
   background: radial-gradient(
@@ -364,8 +360,6 @@
   background: rgba(8, 9, 11, 0.68);
 }
 
-=======
->>>>>>> 0d294fc4 (feat(home): give Drum Night its own destination row)
 .pianoNightVisual::after {
   background: radial-gradient(
     72% 60% at 50% 22%,

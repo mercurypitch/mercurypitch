@@ -218,8 +218,9 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   project only percussion tracks into drum hits.
 - **REQ-DN-IMPORT-005 — Mixed-file truth:** WHILE a source also contains
   pitched tracks, those tracks shall remain in the canonical source and shall
-  be counted in import evidence, but they shall never become drum hits or kit
-  voices.
+  be counted in import evidence and may sound only through the labelled
+  Backing bus; they shall never become drum hits, drum notation, coaching
+  targets, or kit voices.
 - **REQ-DN-IMPORT-006 — Exact source evidence:** Mapped percussion shall retain
   available authored timing, tempo, meter, velocity, written duration, source
   articulation, track identity, and MIDI/Guitar Pro provenance.
@@ -356,6 +357,73 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   imported document replaces the current session, Drum Night shall clear both
   A/B marks and the active transport loop before the new document plays.
 
+## Full-arrangement and prepared-audio playalong — `DN-PLAYALONG-*`
+
+- **REQ-DN-PLAYALONG-001 — Two source families:** Songs shall offer the same
+  accessible one-file MIDI/Guitar Pro picker used by the standalone practice
+  rooms and a lazily opened catalogue of completed Karaoke/UVR sessions on
+  this device. Opening Songs or its catalogue shall not activate audio, fetch
+  stem bytes, request MIDI, or start a separation job.
+- **REQ-DN-PLAYALONG-002 — Canonical arrangement split:** WHEN MIDI, GP, GP3,
+  GP4, GP5, or GPX contains percussion and pitched tracks, Drum Night shall
+  retain the complete canonical arrangement. General MIDI percussion shall
+  remain the score/e-kit comparison authority on the Drums bus; every pitched
+  track shall remain non-drum material on the Backing bus with its authored
+  track identity, pitch, timing, duration, tempo map, and meter. The initial
+  backing renderer shall identify itself as a synthesized timing/pitch guide
+  and shall not claim source timbre or dynamics that the canonical pitched
+  note model does not carry.
+- **REQ-DN-PLAYALONG-003 — Arrangement horizon:** A mixed authored session
+  shall use the latest valid end across both percussion and pitched tracks for
+  transport duration, timeline, seek, loop, and natural completion. Muting a
+  bus or track shall not shorten or restart that horizon.
+- **REQ-DN-PLAYALONG-004 — One authored clock:** Authored Drums, pitched
+  Backing, click, views, timeline, A/B range, and captured player hits shall
+  consume the existing Drum Night transport and route-owned audio-clock
+  mapping. Backing shall not create another AudioContext, transport, frame
+  clock, or media element.
+- **REQ-DN-PLAYALONG-005 — Prepared stem lease:** WHEN a completed local
+  Karaoke/UVR session is selected, Drum Night shall acquire a route-owned,
+  abortable lease over only the available selected stem blobs and release all
+  object URLs on replacement, clear, or unmount. It shall distinguish a true
+  separate drum stem from drums that remain inside a mixed instrumental.
+- **REQ-DN-PLAYALONG-006 — Player mix presets:** WHEN separate band parts are
+  available, the initial Full mix shall keep the evidenced source Drums and
+  non-drum Backing audible while the live player kit/input remains independently
+  audible. Drum focus shall solo source Drums; Play along shall mute source
+  Drums and retain Backing. The same labelled buses shall also support direct
+  mute, unmute, and level changes without restarting transport.
+- **REQ-DN-PLAYALONG-007 — Two-stem truth:** WHEN only vocal and mixed
+  instrumental stems exist, Drum Night shall label the accompaniment as
+  Backing with drums still inside it. It shall not expose an independent Drums
+  mute/solo state or imply that drum removal has already happened.
+- **REQ-DN-PLAYALONG-008 — Explicit Separate drums upgrade:** WHERE a durable
+  two-stem UVR session can run the existing full-band split, Drum Night shall
+  offer an explicit Separate drums action. The action shall complete account
+  and credit preflight before billable work, expose cancellable phase/progress
+  truth, reuse already-saved band parts instead of billing twice, refresh the
+  local catalogue, and atomically restage the same session with its separate
+  Drums and Backing buses.
+- **REQ-DN-PLAYALONG-009 — Buffered stem bounds:** Prepared-audio playback
+  shall fetch and decode only after an explicit audio action, report per-load
+  progress and failures, enforce a declared decoded-memory ceiling, and refuse
+  an unsafe mix honestly. It shall not fall back to one media element per stem
+  or claim readiness for stems that are unavailable.
+- **REQ-DN-PLAYALONG-010 — Pop-free live mix:** Drums, Backing, individual
+  authored parts, and master level changes shall use bounded live gain ramps.
+  Pause, stop, seek, source replacement, and teardown shall release scheduled
+  voices after their audible tail and shall invalidate stale queued work.
+- **REQ-DN-PLAYALONG-011 — Evidence boundary:** Only authored General MIDI or
+  Guitar Pro percussion events may drive drum notation, articulation matching,
+  velocity comparison, timing coaching, or recovery loops. A separated UVR
+  drum stem may be heard, muted, or soloed, but shall not be converted into
+  guessed hits, limbs, sticking, kit pieces, or score evidence.
+- **REQ-DN-PLAYALONG-012 — Source-labelled controls:** Songs, Mix, and the
+  transport status shall identify whether Drums and Backing come from an
+  authored arrangement, separate UVR stems, or a mixed two-stem fallback.
+  Controls that have no independent source shall be absent or disabled with a
+  reason rather than acting as no-ops.
+
 ## Interaction and accessibility — `DN-A11Y-*`
 
 - **REQ-DN-A11Y-001 — Control names:** Every control shall expose an
@@ -410,11 +478,12 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 ## Pilot exclusions and persistence boundary
 
 This pilot does not include room-microphone capture or analysis; limb,
-sticking, grip, or technique inference; backing or guide tracks; Groove Mirror
-generation; imported-session, recorded-take, coaching-history, or A/B-range
-persistence; public indexing; or production deployment. The locally retained
-kit choice, Drum room choice, and device-scoped MIDI learn map are preferences,
-not session or performance persistence.
+sticking, grip, or technique inference; automatic transcription of a UVR drum
+stem into score evidence; Groove Mirror generation; imported-session,
+recorded-take, coaching-history, mix, or A/B-range persistence; public
+indexing; or production deployment. The locally retained kit choice, Drum room
+choice, and device-scoped MIDI learn map are preferences, not session or
+performance persistence.
 
 ## Verification map
 
@@ -426,4 +495,5 @@ not session or performance persistence.
 | `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                                                                                                |
 | `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                                                                                            |
 | `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in, authored tempo/duration, seconds/beat conversion, pause/replay, loop identity, A/B state and reset, scrub lifecycle, dedupe, capacity, unsupported hits, and fallback truth; real-pointer seek/marker smoke |
+| `DN-PLAYALONG`              | Mixed MIDI/GP fixtures; lazy local-UVR catalogue and lease tests; true-parts/two-stem/upgrade state tests; external-clock stem and authored-backing scheduler tests; live bus ramps, memory refusal, stale replacement, and real-browser Songs/Mix/play/seek/loop journeys  |
 | `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                                                                                        |

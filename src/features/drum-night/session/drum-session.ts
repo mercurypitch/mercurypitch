@@ -96,6 +96,8 @@ export function drumSessionStateFromSong(options: {
   readonly title: string
   readonly fileName: string
   readonly sourceFormat: DrumSessionSourceFormat
+  /** Play-along surfaces may keep pitched-only arrangements for backing. */
+  readonly allowPitchedOnly?: boolean
 }): DrumSessionImportState {
   const tracks = percussionTracks(options.song.tracks)
   const pitchedTrackCount = options.song.tracks.length - tracks.length
@@ -103,7 +105,7 @@ export function drumSessionStateFromSong(options: {
   if (options.song.tracks.length === 0) {
     return { status: 'empty', fileName: options.fileName }
   }
-  if (tracks.length === 0) {
+  if (tracks.length === 0 && options.allowPitchedOnly !== true) {
     return {
       status: 'no-drums',
       fileName: options.fileName,
@@ -119,7 +121,7 @@ export function drumSessionStateFromSong(options: {
     (total, track) => total + track.droppedHitCount,
     0,
   )
-  if (hitCount === 0) {
+  if (hitCount === 0 && tracks.length > 0) {
     return {
       status: 'unsupported',
       fileName: options.fileName,

@@ -47,6 +47,13 @@ export interface DrumSessionParserOptions {
 
 export interface DrumSessionImportOptions extends DrumSessionParserOptions {
   readonly timeoutMs?: number
+  /** Retain pitched-only files as backing arrangements for Drum play-along. */
+  readonly allowPitchedOnly?: boolean
+}
+
+export interface DrumSessionImportControllerOptions {
+  /** Retain pitched-only files as backing arrangements for Drum play-along. */
+  readonly allowPitchedOnly?: boolean
 }
 
 export type DrumSessionImportAttempt =
@@ -141,6 +148,7 @@ function stateFromParserOutcome(options: {
   readonly outcome: DrumSessionParserOutcome
   readonly fileName: string
   readonly format: DrumSessionImportSourceFormat
+  readonly allowPitchedOnly?: boolean
 }): DrumSessionImportState {
   switch (options.outcome.status) {
     case 'parsed': {
@@ -153,6 +161,7 @@ function stateFromParserOutcome(options: {
             : titleFromFileName(options.fileName),
         fileName: options.fileName,
         sourceFormat: options.format,
+        allowPitchedOnly: options.allowPitchedOnly,
       })
     }
     case 'empty':
@@ -219,7 +228,12 @@ export async function importDrumSession(
       )
     }
     throwIfAborted(options.signal)
-    return stateFromParserOutcome({ outcome, fileName: file.name, format })
+    return stateFromParserOutcome({
+      outcome,
+      fileName: file.name,
+      format,
+      allowPitchedOnly: options.allowPitchedOnly,
+    })
   } catch (error) {
     if (isAbortError(error)) throw error
     const recoverableMessage = recoverableWorkerMessage(error)
@@ -234,6 +248,7 @@ export async function importDrumSession(
 /** Own import generations so only the newest selected file may commit state. */
 export function createDrumSessionImportController(
   ports: DrumSessionImportPorts = {},
+  controllerOptions: DrumSessionImportControllerOptions = {},
 ): DrumSessionImportController {
   const listeners = new Set<() => void>()
   let currentState: DrumSessionImportState = IDLE_DRUM_SESSION
@@ -274,6 +289,7 @@ export function createDrumSessionImportController(
       try {
         state = await importDrumSession(file, ports, {
           signal: abortController.signal,
+          allowPitchedOnly: controllerOptions.allowPitchedOnly,
         })
       } catch (error) {
         if (

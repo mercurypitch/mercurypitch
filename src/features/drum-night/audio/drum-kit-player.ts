@@ -3,10 +3,10 @@
 // ============================================================
 //
 // Construction never asks for audio or network access. Gesture-owned activate
-// creates one bounded bus and starts an optional baseline warm-up; trigger is
-// synchronous and falls back to the app's synth while any sample is missing.
+// creates one bounded graph with live/authored lanes and starts an optional
+// baseline warm-up; trigger falls back to synth while any sample is missing.
 
-import type { DrumKitPlayerPort, DrumKitTrigger, } from '@/features/drum-night/runtime/drum-runtime-types'
+import type { DrumKitPlaybackLane, DrumKitPlayerPort, DrumKitTrigger, } from '@/features/drum-night/runtime/drum-runtime-types'
 import { drumVoiceForMidi } from '@/lib/drum-voice-map'
 import { triggerDrumVoice } from '@/lib/drum-voices'
 import { normalizeGeneralMidiPercussionKey } from '@/lib/percussion'
@@ -51,8 +51,15 @@ export interface DrumKitPlayer extends DrumKitPlayerPort {
   ): Promise<void>
   choke(group: string, atContextTime?: number): void
   setVolume(volume: number): void
+  /** Optional for injected legacy players; the concrete player always provides it. */
+  setLaneVolume?(lane: DrumKitPlaybackLane, volume: number): void
   snapshot(): DrumKitPlayerSnapshot
   subscribe(listener: () => void): () => void
+}
+
+/** Concrete factory result; injected legacy/test players may omit lane mixing. */
+export interface RoutedDrumKitPlayer extends DrumKitPlayer {
+  setLaneVolume(lane: DrumKitPlaybackLane, volume: number): void
 }
 
 export interface DrumKitPlayerOptions {
@@ -82,6 +89,7 @@ interface PlayerGraph {
   context: AudioContext
   output: AudioNode
   master: GainNode
+  lanes: Readonly<Record<DrumKitPlaybackLane, GainNode>>
 }
 
 interface CachedSample {
@@ -96,6 +104,7 @@ interface SampleVoice {
   gain: GainNode
   resourceId: string
   chokeGroup: string | null
+  lane: DrumKitPlaybackLane
   releasing: boolean
   cleaned: boolean
 }
@@ -108,6 +117,7 @@ const MAXIMUM_MAX_VOICES = 96
 const DEFAULT_LOAD_CONCURRENCY = 2
 const MINIMUM_GAIN = 0.0001
 const SAMPLE_ATTACK_SECONDS = 0.004
+const LANE_LEVEL_TIME_CONSTANT_SECONDS = 0.012
 const CHOKE_RELEASE_SECONDS = 0.045
 const PANIC_RELEASE_SECONDS = 0.12
 const RELEASE_SLACK_SECONDS = 0.03
@@ -328,7 +338,7 @@ export async function verifyDrumKitSampleResource(
 /** Create an inert player. Only activate may acquire its context and output. */
 export function createDrumKitPlayer(
   options: DrumKitPlayerOptions,
-): DrumKitPlayer {
+): RoutedDrumKitPlayer {
   const fetchArrayBuffer =
     options.fetchArrayBuffer ?? fetchDrumKitSampleArrayBuffer
   const verifyResource = options.verifyResource ?? verifyDrumKitSampleResource
@@ -367,6 +377,14 @@ export function createDrumKitPlayer(
   let selectionGeneration = 0
   let decodedBytes = 0
   let volume = 1
+  const laneVolumes: Record<DrumKitPlaybackLane, number> = {
+    authored: 1,
+    live: 1,
+  }
+  const laneOpen: Record<DrumKitPlaybackLane, boolean> = {
+    authored: true,
+    live: true,
+  }
   let masterOpen = false
   let disposed = false
   let status: DrumKitLoadStatus = 'idle'
@@ -548,15 +566,57 @@ export function createDrumKitPlayer(
     }
   }
 
-  const panicInternal = (atContextTime?: number): void => {
+  const closeLane = (
+    activeGraph: PlayerGraph,
+    lane: DrumKitPlaybackLane,
+    at: number,
+  ): void => {
+    laneOpen[lane] = false
+    const parameter = activeGraph.lanes[lane].gain
+    holdParameter(parameter, at)
+    try {
+      parameter.setTargetAtTime(0, at, PANIC_RELEASE_SECONDS / 5)
+    } catch {
+      // A closed context is already silent.
+    }
+  }
+
+  const openLane = (
+    activeGraph: PlayerGraph,
+    lane: DrumKitPlaybackLane,
+    at: number,
+  ): void => {
+    if (laneOpen[lane]) return
+    const parameter = activeGraph.lanes[lane].gain
+    const gain = laneVolumes[lane]
+    try {
+      parameter.cancelScheduledValues(at)
+      if (gain === 0) {
+        parameter.setValueAtTime(0, at)
+      } else {
+        parameter.setValueAtTime(MINIMUM_GAIN, at)
+        parameter.exponentialRampToValueAtTime(gain, at + SAMPLE_ATTACK_SECONDS)
+      }
+      laneOpen[lane] = true
+    } catch {
+      // Source construction reports a dropped hit if the route is closed.
+    }
+  }
+
+  const panicInternal = (
+    atContextTime?: number,
+    lane?: DrumKitPlaybackLane,
+  ): void => {
     const activeGraph = graph
     if (activeGraph === null) return
     const at = Math.max(
       activeGraph.context.currentTime,
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
-    closeMaster(activeGraph, at)
+    if (lane === undefined) closeMaster(activeGraph, at)
+    else closeLane(activeGraph, lane, at)
     for (const voice of voices.values()) {
+      if (lane !== undefined && voice.lane !== lane) continue
       releaseVoice(voice, at, PANIC_RELEASE_SECONDS)
     }
   }
@@ -566,6 +626,8 @@ export function createDrumKitPlayer(
     closeMaster(activeGraph, at)
     globalThis.setTimeout(
       () => {
+        safeDisconnect(activeGraph.lanes.live)
+        safeDisconnect(activeGraph.lanes.authored)
         safeDisconnect(activeGraph.master)
       },
       (PANIC_RELEASE_SECONDS + RELEASE_SLACK_SECONDS) * 1_000,
@@ -574,9 +636,17 @@ export function createDrumKitPlayer(
 
   const makeGraph = (context: AudioContext, output: AudioNode): PlayerGraph => {
     const master = context.createGain()
+    const live = context.createGain()
+    const authored = context.createGain()
     master.gain.setValueAtTime(MINIMUM_GAIN, context.currentTime)
+    live.gain.setValueAtTime(laneVolumes.live, context.currentTime)
+    authored.gain.setValueAtTime(laneVolumes.authored, context.currentTime)
+    laneOpen.live = true
+    laneOpen.authored = true
+    live.connect(master)
+    authored.connect(master)
     master.connect(output)
-    return { context, output, master }
+    return { context, output, master, lanes: { authored, live } }
   }
 
   const acquireGraph = async (): Promise<PlayerGraph> => {
@@ -789,7 +859,11 @@ export function createDrumKitPlayer(
     return resources.find((resource) => cache.has(resource.id)) ?? preferred
   }
 
-  const chokeInternal = (group: string, atContextTime?: number): void => {
+  const chokeInternal = (
+    group: string,
+    atContextTime?: number,
+    lane?: DrumKitPlaybackLane,
+  ): void => {
     const activeGraph = graph
     if (activeGraph === null || group === '') return
     const at = Math.max(
@@ -797,7 +871,10 @@ export function createDrumKitPlayer(
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
     for (const voice of voices.values()) {
-      if (voice.chokeGroup === group) {
+      if (
+        voice.chokeGroup === group &&
+        (lane === undefined || voice.lane === lane)
+      ) {
         releaseVoice(voice, at, CHOKE_RELEASE_SECONDS)
       }
     }
@@ -808,6 +885,7 @@ export function createDrumKitPlayer(
     cached: CachedSample,
     velocity: number,
     atContextTime?: number,
+    lane: DrumKitPlaybackLane = 'live',
   ): boolean => {
     const activeGraph = graph
     if (activeGraph === null) return false
@@ -815,7 +893,7 @@ export function createDrumKitPlayer(
       activeGraph.context.currentTime,
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
-    for (const group of resource.chokes) chokeInternal(group, at)
+    for (const group of resource.chokes) chokeInternal(group, at, lane)
     if (voices.size >= maxVoices) {
       const oldest = voices.values().next().value as SampleVoice | undefined
       if (oldest !== undefined) {
@@ -838,13 +916,14 @@ export function createDrumKitPlayer(
         at + SAMPLE_ATTACK_SECONDS,
       )
       source.connect(gain)
-      gain.connect(activeGraph.master)
+      gain.connect(activeGraph.lanes[lane])
       const startedVoice: SampleVoice = {
         sequence: ++voiceSequence,
         source,
         gain,
         resourceId: resource.id,
         chokeGroup: resource.chokeGroup,
+        lane,
         releasing: false,
         cleaned: false,
       }
@@ -852,6 +931,7 @@ export function createDrumKitPlayer(
       voices.set(startedVoice.sequence, startedVoice)
       retainSample(resource.id)
       source.onended = () => cleanVoice(startedVoice)
+      openLane(activeGraph, lane, at)
       openMaster(activeGraph, at)
       source.start(at)
       return true
@@ -868,6 +948,7 @@ export function createDrumKitPlayer(
     gmKey: number,
     velocity: number,
     atContextTime?: number,
+    lane: DrumKitPlaybackLane = 'live',
   ): DrumKitTriggerResult => {
     const activeGraph = graph
     const voice = drumVoiceForMidi(gmKey)
@@ -878,13 +959,14 @@ export function createDrumKitPlayer(
       Number.isFinite(atContextTime) ? (atContextTime as number) : 0,
     )
     try {
+      openLane(activeGraph, lane, at)
       openMaster(activeGraph, at)
       triggerDrumVoice(
         voice,
         activeGraph.context,
         at,
         clamp(velocity, 1, 127) / 127,
-        activeGraph.master,
+        activeGraph.lanes[lane],
       )
       return 'synth-fallback'
     } catch {
@@ -917,23 +999,24 @@ export function createDrumKitPlayer(
       const gmKey = normalizeGeneralMidiPercussionKey(hit.gmKey)
       if (gmKey === null) return 'unmapped'
       const velocity = clamp(hit.velocity, 1, 127)
+      const lane = hit.lane ?? 'live'
       if (selectedManifest().engine === 'sampled') {
         const resource = chooseResource(gmKey, velocity)
         if (resource !== null) {
           const cached = cachedSample(resource)
           if (
             cached !== undefined &&
-            playSample(resource, cached, velocity, hit.atContextTime)
+            playSample(resource, cached, velocity, hit.atContextTime, lane)
           ) {
             return 'sampled'
           }
           if (graph !== null && !disposed) warmMiss(resource)
         }
       }
-      return triggerFallback(gmKey, velocity, hit.atContextTime)
+      return triggerFallback(gmKey, velocity, hit.atContextTime, lane)
     },
-    panic(atContextTime?: number): void {
-      panicInternal(atContextTime)
+    panic(lane?: DrumKitPlaybackLane): void {
+      panicInternal(undefined, lane)
     },
     dispose(): void {
       if (disposed) return
@@ -1014,10 +1097,27 @@ export function createDrumKitPlayer(
         activeGraph.master.gain.setTargetAtTime(
           volume,
           activeGraph.context.currentTime,
-          0.012,
+          LANE_LEVEL_TIME_CONSTANT_SECONDS,
         )
       } catch {
         // A closing route no longer needs live volume automation.
+      }
+    },
+    setLaneVolume(lane: DrumKitPlaybackLane, nextVolume: number): void {
+      laneVolumes[lane] = clamp(nextVolume, 0, 1)
+      const activeGraph = graph
+      if (activeGraph === null || !laneOpen[lane]) return
+      const at = activeGraph.context.currentTime
+      const parameter = activeGraph.lanes[lane].gain
+      holdParameter(parameter, at)
+      try {
+        parameter.setTargetAtTime(
+          laneVolumes[lane],
+          at,
+          LANE_LEVEL_TIME_CONSTANT_SECONDS,
+        )
+      } catch {
+        // A closing route no longer needs lane automation.
       }
     },
     snapshot(): DrumKitPlayerSnapshot {

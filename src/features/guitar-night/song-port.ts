@@ -1,121 +1,22 @@
-// Guitar Night song ports describe prepared local backing without owning playback.
+// Guitar Night song ports preserve the feature API over shared play-along policies.
 // ============================================================
 
-export type GuitarNightStemKind =
-  | 'vocal'
-  | 'instrumental'
-  | 'drums'
-  | 'bass'
-  | 'guitar'
-  | 'piano'
-  | 'other'
+import type { PlayAlongBackingLease, PlayAlongBackingPlan, PlayAlongDefaultMix, PlayAlongOpenBackingResult, PlayAlongSongPort, PlayAlongSongSummary, PlayAlongStemAsset, PlayAlongStemKind, } from '@/features/play-along/song-port'
+import { GUITAR_PLAY_ALONG_POLICY, planPlayAlongBacking, resolvePlayAlongDefaultMix, } from '@/features/play-along/song-port'
 
-export interface GuitarNightSongSummary {
-  sessionId: string
-  title: string
-  createdAt: number
-  /**
-   * Where the song came from. `device` is a separation this visitor
-   * prepared and the room counts as "on this device"; `demo` is the
-   * shared song the app offers, which lives on the network and belongs to
-   * nobody's library. Absent means device, which is what every caller
-   * before the demo existed meant.
-   */
-  source?: 'device' | 'demo'
-  /**
-   * Shown under the title in place of the prepared date. A demo has no
-   * prepared date to show — it was never prepared here.
-   */
-  subtitle?: string
-}
-
-export interface GuitarNightStemAsset {
-  kind: GuitarNightStemKind
-  url: string
-  sizeBytes: number
-  durationSeconds?: number
-}
-
-export type GuitarNightDefaultMix =
-  | {
-      kind: 'parts'
-      audible: readonly GuitarNightStemKind[]
-      muted: readonly [] | readonly ['guitar']
-    }
-  | {
-      kind: 'mixed-instrumental'
-      audible: readonly ('vocal' | 'instrumental')[]
-      muted: readonly []
-    }
-
-export interface GuitarNightBackingLease {
-  sessionId: string
-  title: string
-  stems: readonly GuitarNightStemAsset[]
-  defaultMix: GuitarNightDefaultMix
-  /**
-   * Same meaning as on the summary, and read for the same reason: a demo
-   * is not a separation session, so the room must not offer it the
-   * band-split upgrade — that path reconnects to a durable UVR record
-   * this song has never had. Absent means device.
-   */
-  source?: 'device' | 'demo'
-  release(): void
-}
-
-export type GuitarNightOpenBackingResult =
-  | { ok: true; lease: GuitarNightBackingLease }
-  | {
-      ok: false
-      code: 'not-found' | 'not-completed' | 'missing-local-audio' | 'aborted'
-    }
-
-export interface GuitarNightSongPort {
-  initialize(): Promise<void>
-  completedSongs(): readonly GuitarNightSongSummary[]
-  openSession(
-    sessionId: string,
-    signal: AbortSignal,
-  ): Promise<GuitarNightOpenBackingResult>
-}
-
-export interface GuitarNightBackingPlan {
-  kind: GuitarNightDefaultMix['kind']
-  requested: readonly GuitarNightStemKind[]
-}
-
-const PART_STEMS: readonly GuitarNightStemKind[] = [
-  'drums',
-  'bass',
-  'guitar',
-  'piano',
-  'other',
-]
+export type GuitarNightStemKind = PlayAlongStemKind
+export type GuitarNightSongSummary = PlayAlongSongSummary
+export type GuitarNightStemAsset = PlayAlongStemAsset
+export type GuitarNightDefaultMix = PlayAlongDefaultMix<'guitar'>
+export type GuitarNightBackingLease = PlayAlongBackingLease<'guitar'>
+export type GuitarNightOpenBackingResult = PlayAlongOpenBackingResult<'guitar'>
+export type GuitarNightSongPort = PlayAlongSongPort<'guitar'>
+export type GuitarNightBackingPlan = PlayAlongBackingPlan
 
 export function planGuitarNightBacking(
   available: readonly GuitarNightStemKind[],
 ): GuitarNightBackingPlan {
-  const kinds = new Set(available)
-  const accompanimentParts = PART_STEMS.filter(
-    (kind) => kind !== 'guitar' && kinds.has(kind),
-  )
-
-  if (accompanimentParts.length > 0) {
-    return {
-      kind: 'parts',
-      requested: [
-        ...(kinds.has('vocal') ? (['vocal'] as const) : []),
-        ...PART_STEMS.filter((kind) => kinds.has(kind)),
-      ],
-    }
-  }
-
-  return {
-    kind: 'mixed-instrumental',
-    requested: (['vocal', 'instrumental'] as const).filter((kind) =>
-      kinds.has(kind),
-    ),
-  }
+  return planPlayAlongBacking(available, GUITAR_PLAY_ALONG_POLICY)
 }
 
 /**
@@ -126,28 +27,7 @@ export function planGuitarNightBacking(
 export function resolveGuitarNightDefaultMix(
   leased: readonly GuitarNightStemKind[],
 ): GuitarNightDefaultMix | null {
-  const kinds = new Set(leased)
-  const accompanimentParts = PART_STEMS.filter(
-    (kind) => kind !== 'guitar' && kinds.has(kind),
-  )
-
-  if (accompanimentParts.length > 0) {
-    return {
-      kind: 'parts',
-      audible: leased.filter((kind) => kind !== 'guitar'),
-      muted: kinds.has('guitar') ? ['guitar'] : [],
-    }
-  }
-
-  if (!kinds.has('instrumental')) return null
-  return {
-    kind: 'mixed-instrumental',
-    audible: leased.filter(
-      (kind): kind is 'vocal' | 'instrumental' =>
-        kind === 'vocal' || kind === 'instrumental',
-    ),
-    muted: [],
-  }
+  return resolvePlayAlongDefaultMix(leased, GUITAR_PLAY_ALONG_POLICY)
 }
 
 /**

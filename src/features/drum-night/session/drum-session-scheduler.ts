@@ -260,7 +260,7 @@ export function createDrumSessionScheduler(
 
   const panicPlayer = (): void => {
     try {
-      options.player.panic()
+      options.player.panic('authored')
     } catch {
       // The transport still owns invalidation if a concrete audio graph failed.
     }
@@ -588,6 +588,7 @@ export function createDrumSessionScheduler(
                 velocity: hit.velocity,
                 atContextTime,
                 sourceId: `authored:${hit.trackId}:${hit.sourceHitId ?? hit.sequence}`,
+                lane: 'authored',
               }),
             )
           } catch {
