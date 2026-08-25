@@ -778,7 +778,7 @@ export const GuitarNightSecondaryPart: Component<
           <div class={styles.string} data-secondary-part-string>
             <span>{label}</span>
             <i />
-            <div>
+            <div data-secondary-part-note-track>
               <For each={byString()[stringIndex()] ?? []}>
                 {(note) => (
                   <b

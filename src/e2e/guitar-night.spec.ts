@@ -1703,6 +1703,34 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   await expect(tab.locator('[data-note-id]')).not.toHaveCount(0)
   expect(await tab.locator('[data-note-id]').count()).toBeLessThan(40)
 
+  const labelGutter = await tab.evaluate((lanes) => {
+    const track = lanes.querySelector<HTMLElement>(
+      '[data-testid="guitar-night-tab-note-track"]',
+    )
+    const label =
+      track?.parentElement?.querySelector<HTMLElement>(':scope > span')
+    if (
+      track === null ||
+      track === undefined ||
+      label === null ||
+      label === undefined
+    ) {
+      throw new Error('Tab label gutter is not mounted')
+    }
+    const trackStyle = getComputedStyle(track)
+    return {
+      labelRight: label.getBoundingClientRect().right,
+      mask:
+        trackStyle.maskImage ||
+        trackStyle.getPropertyValue('-webkit-mask-image'),
+      overflowX: trackStyle.overflowX,
+      trackLeft: track.getBoundingClientRect().left,
+    }
+  })
+  expect(labelGutter.trackLeft).toBeGreaterThanOrEqual(labelGutter.labelRight)
+  expect(labelGutter.overflowX).toBe('hidden')
+  expect(labelGutter.mask).not.toBe('none')
+
   const readTabScale = () =>
     tab.evaluate((lanes) => {
       const note = lanes.querySelector<HTMLElement>('[data-note-id]')

@@ -58,8 +58,11 @@ class FakeMediaElementSourceNode {
 }
 
 class FakeMediaElement extends EventTarget {
-  currentTime = 0
   duration = 240
+  bufferedEnd = 240
+  bufferAfterSeekSeconds = 0
+  readyState = 4
+  seeking = false
   paused = true
   preload = ''
   src = ''
@@ -72,6 +75,43 @@ class FakeMediaElement extends EventTarget {
     this.paused = true
   })
   readonly load = vi.fn()
+  seekLatencyMs = 0
+
+  private position = 0
+  private seekTimer: ReturnType<typeof setTimeout> | null = null
+
+  get currentTime(): number {
+    return this.position
+  }
+
+  set currentTime(value: number) {
+    if (this.seekTimer !== null) clearTimeout(this.seekTimer)
+    if (this.seekLatencyMs <= 0) {
+      this.position = value
+      this.seeking = false
+      return
+    }
+    this.seeking = true
+    this.seekTimer = setTimeout(() => {
+      this.seekTimer = null
+      this.position = value
+      this.seeking = false
+      if (this.bufferAfterSeekSeconds > 0) {
+        this.bufferedEnd = value + this.bufferAfterSeekSeconds
+      }
+      this.dispatchEvent(new Event('seeked'))
+      this.dispatchEvent(new Event('progress'))
+    }, this.seekLatencyMs)
+  }
+
+  get buffered(): TimeRanges {
+    const end = this.bufferedEnd
+    return {
+      length: end > 0 ? 1 : 0,
+      start: () => 0,
+      end: () => end,
+    }
+  }
 
   removeAttribute(name: string): void {
     if (name === 'src') this.src = ''
@@ -497,6 +537,7 @@ describe('createGuitarBackingTransport', () => {
     harness.context.currentTime = 14
 
     harness.transport.seek(7.25)
+    expect(harness.transport.getStatus()).toBe('loading')
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(stems.gain.operations).toEqual([
@@ -516,9 +557,60 @@ describe('createGuitarBackingTransport', () => {
     }
     expect(master.gain.value).toBe(masterGain)
     expect(master.gain.operations).toEqual([])
-    // A seek is not a load: the transport controls stay live throughout.
+    // The existing Play spinner owns this brief re-prime, then clears as soon
+    // as every stem can play the requested window continuously.
     expect(harness.transport.getStatus()).toBe('playing')
     expect(harness.transport.getCurrentTime()).toBeCloseTo(7.25)
+  })
+
+  it('keeps a streamed seek on the loading spinner until its window is ready', async () => {
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('iphone-seek', [track('drums')]))
+    await expect(harness.transport.play()).resolves.toBe(true)
+    const element = harness.mediaElements[0]
+    element.bufferedEnd = 7.5
+
+    harness.transport.seek(7)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(harness.transport.getStatus()).toBe('loading')
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(7)
+
+    element.bufferedEnd = 14
+    element.dispatchEvent(new Event('progress'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(harness.transport.getStatus()).toBe('playing')
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(7)
+  })
+
+  it('keeps loading through an accepted iOS seek slower than 1.2 seconds', async () => {
+    vi.useFakeTimers()
+    try {
+      const harness = audioHarness({ memoryBudgetBytes: 1 })
+      harness.transport.configure(
+        session('iphone-slow-seek', [track('drums', { durationSeconds: 60 })]),
+      )
+      await expect(harness.transport.play()).resolves.toBe(true)
+      const element = harness.mediaElements[0]
+      element.seekLatencyMs = 2000
+      element.bufferedEnd = 8
+      element.bufferAfterSeekSeconds = 8
+
+      harness.transport.seek(20)
+      await Promise.resolve()
+      expect(harness.transport.getStatus()).toBe('loading')
+
+      await vi.advanceTimersByTimeAsync(1300)
+      expect(harness.transport.getStatus()).toBe('loading')
+
+      await vi.advanceTimersByTimeAsync(900)
+      expect(harness.transport.getStatus()).toBe('playing')
+      expect(harness.transport.getCurrentTime()).toBeCloseTo(20)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('lands a scrubber drag once, where the finger stopped', async () => {
@@ -537,6 +629,7 @@ describe('createGuitarBackingTransport', () => {
     harness.transport.seek(6.5)
     // The playhead reports where the finger is, not where the in-flight
     // re-prime is heading and not where the stalled element still reads.
+    expect(harness.transport.getStatus()).toBe('loading')
     expect(harness.transport.getCurrentTime()).toBeCloseTo(6.5)
     await new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -548,12 +641,59 @@ describe('createGuitarBackingTransport', () => {
     expect(harness.transport.getStatus()).toBe('playing')
   })
 
+  it('never opens the bus at a scrub target superseded during warm-up', async () => {
+    const harness = audioHarness({ memoryBudgetBytes: 1 })
+    harness.transport.configure(session('superseded-warm-up'))
+    await expect(harness.transport.play()).resolves.toBe(true)
+    const element = harness.mediaElements[0]
+    const stems = harness.transport.getAudioGraph()!.buses
+      .stems as unknown as FakeGainNode
+    const reportedStatuses: string[] = []
+    const unsubscribe = harness.transport.subscribe(() => {
+      reportedStatuses.push(harness.transport.getStatus())
+    })
+    stems.gain.operations.length = 0
+    element.bufferedEnd = 2.5
+
+    harness.transport.seek(2)
+    harness.transport.seek(6)
+    expect(harness.transport.getStatus()).toBe('loading')
+
+    // Enough for target 2, but not the newer target 6. Target 2 may finish
+    // warming internally; it must never become audible or report playing.
+    element.bufferedEnd = 7.5
+    element.dispatchEvent(new Event('progress'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(harness.transport.getStatus()).toBe('loading')
+    expect(reportedStatuses).not.toContain('playing')
+    expect(
+      stems.gain.operations.filter(
+        (operation) => operation.kind === 'linear' && operation.value === 1,
+      ),
+    ).toEqual([])
+
+    element.bufferedEnd = 12
+    element.dispatchEvent(new Event('progress'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    unsubscribe()
+
+    expect(harness.transport.getStatus()).toBe('playing')
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(6)
+    expect(
+      stems.gain.operations.filter(
+        (operation) => operation.kind === 'linear' && operation.value === 1,
+      ),
+    ).toHaveLength(1)
+  })
+
   it('lets a pause outrank a seek that is still in the air', async () => {
     const harness = audioHarness({ memoryBudgetBytes: 1 })
     harness.transport.configure(session('pause-wins'))
     await expect(harness.transport.play()).resolves.toBe(true)
 
     harness.transport.seek(5)
+    expect(harness.transport.getStatus()).toBe('loading')
     harness.transport.pause()
     await new Promise((resolve) => setTimeout(resolve, 0))
 

@@ -49,6 +49,24 @@
   background: rgba(244, 234, 219, 0.035);
   content: '';
   pointer-events: none;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+/* Emphasize the existing inset faceplate instead of painting a taller button
+   behind it. The 44px hit plane remains generous without making the preview
+   appear to jump when a mouse or keyboard reaches the chrome. */
+.chrome:hover::before {
+  border-color: rgba(244, 234, 219, 0.13);
+  background: rgba(244, 234, 219, 0.055);
+}
+
+.chrome:focus-within::before {
+  border-color: rgba(240, 189, 120, 0.58);
+  background: rgba(244, 234, 219, 0.055);
+  box-shadow: inset 0 0 0 1px rgba(240, 189, 120, 0.1);
 }
 
 .chrome > * {
@@ -133,7 +151,17 @@
 .moveHandle:not(:disabled):hover,
 .moveHandle:not(:disabled):focus-visible {
   color: #f4eadb;
-  background: rgba(244, 234, 219, 0.075);
+  outline: 0;
+}
+
+.moveHandle:not(:disabled):hover svg,
+.moveHandle:not(:disabled):focus-visible svg {
+  color: rgba(244, 234, 219, 0.82);
+}
+
+.moveHandle:not(:disabled):hover strong,
+.moveHandle:not(:disabled):focus-visible strong {
+  color: #f4eadb;
 }
 
 .body {
@@ -193,6 +221,7 @@ button.body:focus-visible {
 .string > div {
   position: relative;
   height: 100%;
+  overflow: hidden;
   border-block-start: 1px solid rgba(244, 234, 219, 0.18);
   transform: translateY(50%);
 }
@@ -246,9 +275,6 @@ button.body:focus-visible {
   background: var(--amber-bright, #f0bd78);
 }
 
-.moveHandle:focus-visible,
-.reset:focus-visible,
-.collapse:focus-visible,
 .body:focus-visible,
 .resizeHandle:focus-visible {
   outline: 3px solid var(--amber-bright, #f0bd78);
@@ -319,6 +345,10 @@ button.body:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .panel {
+    transition: none;
+  }
+
+  .chrome::before {
     transition: none;
   }
 }

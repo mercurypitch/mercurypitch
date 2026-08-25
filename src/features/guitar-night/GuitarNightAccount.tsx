@@ -9,7 +9,8 @@
 
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { UserRound } from '@/components/icons'
-import { account, accountReady, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
+import { accountHeld } from '@/db/services/auth-service'
+import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
 import styles from './GuitarNightApp.module.css'
 
 export function GuitarNightAccount() {
@@ -58,61 +59,71 @@ export function GuitarNightAccount() {
     return at > 0 ? full.slice(0, at) : full
   }
 
+  const accessibleAccountLabel = (): string => {
+    if (email() === '') return 'Open account options'
+    const balance = credits()
+    if (balance === null) return `Account for ${shortName()}`
+    return `Account for ${shortName()}, ${balance} ${balance === 1 ? 'credit' : 'credits'} remaining`
+  }
+
   return (
-    <Show when={accountReady()}>
-      <Show
-        when={signedIn()}
-        fallback={
-          <a class={styles.accountChip} href="/#/settings/account">
-            <span aria-hidden="true">
-              <UserRound />
-            </span>
-            Sign in
-          </a>
-        }
-      >
-        <div class={styles.accountChipWrap}>
-          <button
-            ref={trigger}
-            type="button"
-            class={styles.accountChip}
-            aria-expanded={menuOpen()}
-            aria-controls="guitar-night-account-options"
-            title={email() !== '' ? email() : undefined}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span aria-hidden="true">
-              <UserRound />
-            </span>
-            <span class={styles.accountName}>{shortName()}</span>
-            <Show when={credits() !== null}>
-              <small>{credits()} cr</small>
-            </Show>
-          </button>
-          <Show when={menuOpen()}>
-            <div
-              id="guitar-night-account-options"
-              class={styles.accountMenu}
-              role="group"
-              aria-label="Account options"
-            >
-              <Show when={email() !== ''}>
-                <span>{email()}</span>
-              </Show>
-              <a href="/#/settings/credits">Manage credits</a>
-              <button
-                type="button"
-                onClick={() => {
-                  signOutStandalone()
-                  setMenuOpen(false)
-                }}
-              >
-                Sign out
-              </button>
-            </div>
+    <Show
+      when={accountHeld()}
+      fallback={
+        <a
+          class={styles.accountChip}
+          href="/#/settings/account"
+          aria-label="Sign in to MercuryPitch"
+        >
+          <span aria-hidden="true">
+            <UserRound />
+          </span>
+          <span class={styles.accountName}>Sign in</span>
+        </a>
+      }
+    >
+      <div class={styles.accountChipWrap}>
+        <button
+          ref={trigger}
+          type="button"
+          class={styles.accountChip}
+          aria-expanded={menuOpen()}
+          aria-controls="guitar-night-account-options"
+          aria-label={accessibleAccountLabel()}
+          title={email() !== '' ? email() : undefined}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true">
+            <UserRound />
+          </span>
+          <span class={styles.accountName}>{shortName()}</span>
+          <Show when={credits() !== null}>
+            <small>{credits()} cr</small>
           </Show>
-        </div>
-      </Show>
+        </button>
+        <Show when={menuOpen()}>
+          <div
+            id="guitar-night-account-options"
+            class={styles.accountMenu}
+            role="group"
+            aria-label="Account options"
+          >
+            <Show when={email() !== ''}>
+              <span>{email()}</span>
+            </Show>
+            <a href="/#/settings/credits">Manage credits</a>
+            <button
+              type="button"
+              onClick={() => {
+                signOutStandalone()
+                setMenuOpen(false)
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </Show>
+      </div>
     </Show>
   )
 }

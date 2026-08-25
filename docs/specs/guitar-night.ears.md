@@ -826,6 +826,14 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   unsupported input, and prevent an older score parse from attaching over a
   newer selection. Choosing or dropping a file shall not start playback,
   listening, capture, count-in, or an audio context.
+- **REQ-GN-SONG-018 — Streamed-start readiness:** WHEN an oversized or
+  speed-controlled backing uses media-element streaming, THEN cold Play and a
+  playing seek shall keep the transport in its cancellable loading state until
+  every usable stem has settled on the requested position and exposes a
+  target-containing forward buffer sufficient for continuous playback. The
+  buffer goal shall contract near the end of the recording, and newer Play,
+  seek, Pause, Stop, source replacement, or disposal intent shall prevent an
+  older warm-up from reopening audio.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 
@@ -853,6 +861,12 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-STAGE-007 — Motion and power:** WHERE reduced motion or a low-power
   fallback is active, room ambience and 3D motion shall reduce without hiding
   the current beat, next note, or performance result.
+- **REQ-GN-STAGE-021 — Visible account access:** Guitar Night shall keep one
+  account action in the top rail beside Room rather than hiding it inside room
+  settings. A signed-in desktop player shall see their compact identity and
+  available credits; signed-out state shall offer sign-in. At narrow widths the
+  same action may collapse visually, but it shall retain a 44 by 44 CSS-pixel
+  target and an explicit accessible name.
 - **REQ-GN-STAGE-008 — Full-room topology:** WHILE a prepared song room is
   open, the entry faceplate shall not constrain it. A compact session bar,
   flexible musical stage, edge-to-edge pedalboard, and status rail shall fit

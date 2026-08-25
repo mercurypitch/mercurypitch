@@ -169,6 +169,13 @@ tail net in `audio-engine.test.ts` ("every scheduled stop lands below
 audibility") replays the automation and fails any truncation — never weaken it.
 **See:** `src/lib/audio-engine.ts` (`_releaseParam`), `src/lib/preview-player.ts`
 
+### Treat media play as permission, not buffered readiness
+
+**Symptom:** streamed stems waited on Android but started and stuttered immediately on iOS, especially after a forward seek.
+**Cause:** WebKit resolved `play()` before a useful range or async seek had landed; before metadata it could also reject `currentTime`, so waiting for the target range before retrying the seek waited on bytes it was never asked to fetch.
+**Rule:** call `play()` inside the gesture, then align to the target, require one contiguous near-term buffered window per stem, re-align, and await seek settlement before opening the bus. Own every listener and timeout with pause/dispose cancellation.
+**See:** `src/features/guitar/backing/guitar-backing-stream.ts`
+
 ## Framework
 
 ### Do not destructure props
