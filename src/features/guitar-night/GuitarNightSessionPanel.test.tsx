@@ -66,6 +66,25 @@ function referenceWithUnsupportedDrums(): GuitarNightReference {
   }
 }
 
+function backingOnlyReference(): GuitarNightReference {
+  return {
+    ...reference(),
+    scoreMode: 'backing-only',
+    trackId: '',
+    trackName: 'No scored part',
+    tracks: [
+      {
+        id: 'track-drums',
+        name: 'Drum kit',
+        kind: 'percussion',
+        hitCount: 16,
+        supportedHitCount: 16,
+        droppedHitCount: 0,
+      },
+    ],
+  }
+}
+
 describe('GuitarNightSessionPanel', () => {
   afterEach(cleanup)
 
@@ -197,6 +216,29 @@ describe('GuitarNightSessionPanel', () => {
 
     expect(screen.getByText(/carries one part/)).toBeInTheDocument()
     expect(screen.getByText(/1 part/)).toBeInTheDocument()
+  })
+
+  it('names a percussion-only arrangement as free play with no score target', () => {
+    render(() => (
+      <GuitarNightSessionPanel
+        reference={() => backingOnlyReference()}
+        visibleTrackIds={() => ['track-drums']}
+        onToggleTrackVisible={vi.fn()}
+        audibleTrackIds={() => ['track-drums']}
+        onToggleTrackAudible={vi.fn()}
+        onSelectTrack={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen.getByRole('dialog', { name: 'Loaded arrangement' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Loaded arrangement · free play')).toBeTruthy()
+    expect(
+      screen.getByText(/sheet is reference only; no guitar notes are scored/),
+    ).toBeTruthy()
+    expect(screen.queryByText(/ · scored/)).toBeNull()
   })
 
   it('offers no sheet controls when the room has no sheet', () => {
@@ -365,7 +407,7 @@ describe('GuitarNightSessionPanel', () => {
     expect(screen.getByLabelText('Solo Lead guitar')).toBeDisabled()
   })
 
-  it('lists drums as audible hits without making them score or sheet parts', () => {
+  it('lists drums as audible, readable hits without making them score parts', () => {
     const onSelectTrack = vi.fn()
     const onToggleTrackAudible = vi.fn()
     const onToggleTrackVisible = vi.fn()
@@ -397,13 +439,11 @@ describe('GuitarNightSessionPanel', () => {
     fireEvent.click(sound)
     expect(onToggleTrackAudible).toHaveBeenCalledWith('track-drums')
 
-    const sheet = screen.getByLabelText(
-      'Drum kit does not use guitar sheet lanes',
-    )
-    expect(sheet).toBeDisabled()
-    expect(sheet).toHaveAttribute('aria-pressed', 'false')
+    const sheet = screen.getByLabelText('Hide Drum kit on the sheet')
+    expect(sheet).toBeEnabled()
+    expect(sheet).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(sheet)
-    expect(onToggleTrackVisible).not.toHaveBeenCalled()
+    expect(onToggleTrackVisible).toHaveBeenCalledWith('track-drums')
   })
 
   it('keeps unsupported drums visible without offering a false sound control', () => {
@@ -427,7 +467,7 @@ describe('GuitarNightSessionPanel', () => {
     expect(sound).toBeDisabled()
     expect(sound).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByText(/unmapped drum rows stay listed but silent/i),
+      screen.getByText(/unmapped sounds stay listed but silent/),
     ).toBeInTheDocument()
   })
 

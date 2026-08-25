@@ -107,6 +107,8 @@ interface GuitarNightStageProps {
   sheetLanes?: Accessor<readonly SheetLane[]>
   /** Bar lines for the sheet, when the score carried its own. */
   sheetTimeSignatures?: Accessor<readonly MidiTimeSignature[] | undefined>
+  /** Host-specific truth for an intentionally empty or fully hidden sheet. */
+  sheetEmptyNote?: string
   /** The part being graded, drawn in full ink on the sheet. */
   scoredTrackId?: Accessor<string | undefined>
   /** Authored-beat rehearsal loop. Time-based views render it read-only. */
@@ -134,6 +136,10 @@ interface GuitarNightStageProps {
   neckLabel?: Accessor<string>
   /** Free-play hosts may replace the generic ready copy without inventing a guide. */
   idleStatus?: Accessor<{ label: string; detail: string }>
+  /** A focused host can keep the view controls while removing redundant status chrome. */
+  showStatus?: Accessor<boolean>
+  /** Short reference-only sheets can present their one system as a centred music stand. */
+  focusSingleSheetSystem?: Accessor<boolean>
   /** Host-owned evidence may extend the signal faceplate without becoming stage chrome. */
   signalAccessory?: JSX.Element
   /** Focused beginner activities may remove expert display chrome entirely. */
@@ -1128,38 +1134,45 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       }
     >
       <Show when={props.showHeader?.() ?? true}>
-        <header class={styles.stageHeader}>
-          <div
-            data-guitar-night-secondary-protected
-            classList={{
-              [styles.stageSignalWithAccessory]:
-                signalAccessory() !== undefined,
-            }}
-          >
-            <span>
-              {isListening()
-                ? heardNote() === null
-                  ? 'Listening'
-                  : 'Heard now'
-                : hasGuide()
-                  ? 'Guide ready'
-                  : idleStatus().label}
-            </span>
-            <strong>
-              {heardCopy() ??
-                (hasGuide()
-                  ? actualPlayheadBeat() === null
-                    ? readyGuideCopy()
-                    : (props.guideLabel?.() ??
-                      'Follow the next note into the neck')
-                  : idleStatus().detail)}
-            </strong>
-            <Show when={signalAccessory()}>
-              {(accessory) => (
-                <div class={styles.stageSignalAccessory}>{accessory()}</div>
-              )}
-            </Show>
-          </div>
+        <header
+          class={styles.stageHeader}
+          classList={{
+            [styles.stageHeaderWithoutStatus]: !(props.showStatus?.() ?? true),
+          }}
+        >
+          <Show when={props.showStatus?.() ?? true}>
+            <div
+              data-guitar-night-secondary-protected
+              classList={{
+                [styles.stageSignalWithAccessory]:
+                  signalAccessory() !== undefined,
+              }}
+            >
+              <span>
+                {isListening()
+                  ? heardNote() === null
+                    ? 'Listening'
+                    : 'Heard now'
+                  : hasGuide()
+                    ? 'Guide ready'
+                    : idleStatus().label}
+              </span>
+              <strong>
+                {heardCopy() ??
+                  (hasGuide()
+                    ? actualPlayheadBeat() === null
+                      ? readyGuideCopy()
+                      : (props.guideLabel?.() ??
+                        'Follow the next note into the neck')
+                    : idleStatus().detail)}
+              </strong>
+              <Show when={signalAccessory()}>
+                {(accessory) => (
+                  <div class={styles.stageSignalAccessory}>{accessory()}</div>
+                )}
+              </Show>
+            </div>
+          </Show>
           <span
             class={styles.visuallyHidden}
             role="status"
@@ -1475,7 +1488,11 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               {...(props.onSelectTrack === undefined
                 ? {}
                 : { onSelectTrack: props.onSelectTrack })}
-              emptyNote="No tab attached to this song. Load a tab later, or stay in free play."
+              emptyNote={
+                props.sheetEmptyNote ??
+                'No tab attached to this song. Load a tab later, or stay in free play.'
+              }
+              focusSingleSystem={props.focusSingleSheetSystem?.() ?? false}
             />
           </div>
         </Show>

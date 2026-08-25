@@ -51,6 +51,7 @@ function mixedSource(): GuitarNightReferenceSource {
         notes: [],
         percussionHits: [
           {
+            id: 'midi-t3-e8',
             gmKey: 36,
             startBeat: 1.5,
             velocity: 64,
@@ -66,6 +67,7 @@ function mixedSource(): GuitarNightReferenceSource {
         notes: [],
         percussionHits: [
           {
+            id: 'gp-t4-b2-v0-n1',
             gmKey: 49,
             startBeat: 0.5,
             velocity: 111,
@@ -236,12 +238,14 @@ describe('backingPercussion', () => {
     ).toEqual([
       {
         trackId: 'track-gp-drums',
+        sourceId: 'gp-t4-b2-v0-n1',
         gmKey: 49,
         startBeat: 0.5,
         velocity: 111,
       },
       {
         trackId: 'track-midi-drums',
+        sourceId: 'midi-t3-e8',
         gmKey: 36,
         startBeat: 1.5,
         velocity: 64,
@@ -264,6 +268,7 @@ describe('backingPercussion', () => {
     ).toEqual([
       {
         trackId: 'track-gp-drums',
+        sourceId: 'gp-t4-b2-v0-n1',
         gmKey: 49,
         startBeat: 0.5,
         velocity: 111,

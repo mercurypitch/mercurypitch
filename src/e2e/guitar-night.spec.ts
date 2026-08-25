@@ -39,6 +39,77 @@ function createTestWav(
   return wav
 }
 
+/** A format-0 score with three authored channel-10 GM drum attacks. */
+function createPercussionOnlyMidi(): Buffer {
+  const name = Buffer.from('Studio Drums', 'ascii')
+  const track = Buffer.from([
+    // 120 BPM, 4/4, and a source-authored part name.
+    0x00,
+    0xff,
+    0x51,
+    0x03,
+    0x07,
+    0xa1,
+    0x20,
+    0x00,
+    0xff,
+    0x58,
+    0x04,
+    0x04,
+    0x02,
+    0x18,
+    0x08,
+    0x00,
+    0xff,
+    0x03,
+    name.length,
+    ...name,
+    // Kick at beat 0 (velocity 110), closed hat at beat 1 (83),
+    // and snare at beat 2 (96). Notes are one sixteenth long.
+    0x00,
+    0x99,
+    36,
+    110,
+    0x78,
+    0x89,
+    36,
+    0,
+    0x82,
+    0x68,
+    0x99,
+    42,
+    83,
+    0x78,
+    0x89,
+    42,
+    0,
+    0x82,
+    0x68,
+    0x99,
+    38,
+    96,
+    0x78,
+    0x89,
+    38,
+    0,
+    0x00,
+    0xff,
+    0x2f,
+    0x00,
+  ])
+  const trackHeader = Buffer.alloc(8)
+  trackHeader.write('MTrk', 0)
+  trackHeader.writeUInt32BE(track.length, 4)
+  return Buffer.concat([
+    Buffer.from([
+      0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01,
+      0x01, 0xe0,
+    ]),
+    trackHeader,
+    track,
+  ])
+}
+
 async function instrumentAudioContext(
   page: import('@playwright/test').Page,
 ): Promise<void> {
@@ -1547,6 +1618,140 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
         .__guitarNightMicCalls,
   )
   expect(microphoneRequests).toBe(0)
+})
+
+test('imports authored drums into a backing-only free-play room @smoke', async ({
+  page,
+}, testInfo) => {
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await instrumentAudioContext(page)
+  await instrumentMicrophoneRequests(page)
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page.getByTestId('guitar-night-file-input').setInputFiles({
+    name: 'studio-drums-only.mid',
+    mimeType: 'audio/midi',
+    buffer: createPercussionOnlyMidi(),
+  })
+
+  await expect(
+    page.getByText('3 authored drum hits at 120 BPM · backing-only free play', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/guitar-night\?song=/)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await page
+    .getByRole('button', { name: 'Play the drum backing', exact: true })
+    .click()
+  const room = page.getByTestId('guitar-night-percussion-room')
+  await expect(room).toBeVisible()
+  await expect(room).toHaveAttribute('data-room-kind', 'backing-only')
+  await expect(room).toHaveAttribute('data-score-authority', 'none')
+  await expect(page.getByTestId('guitar-night-score-room')).toHaveCount(0)
+
+  const sheet = room.getByTestId('guitar-night-sheet')
+  await expect(sheet).toBeVisible()
+  await expect(sheet).toHaveAttribute('data-layout', 'focused')
+  await expect(
+    room.getByText(
+      'The authored drums are backing only. Your guitar is not scored.',
+      { exact: true },
+    ),
+  ).toHaveCount(0)
+  await expect(
+    sheet
+      .getByText('Studio Drums — 3 authored hits · reference only', {
+        exact: true,
+      })
+      .first(),
+  ).toBeVisible()
+
+  await room.getByTestId('guitar-night-session-trigger').click()
+  let arrangement = page.getByRole('dialog', { name: 'Loaded arrangement' })
+  await expect(arrangement).toBeVisible()
+  await expect(
+    arrangement.getByRole('group', { name: 'Arrangement parts' }),
+  ).toBeVisible()
+  const drumPart = arrangement
+    .getByTestId('guitar-night-session-track')
+    .filter({ hasText: 'Studio Drums' })
+  await expect(drumPart).toBeDisabled()
+  await expect(arrangement.getByLabel('Mute Studio Drums')).toBeEnabled()
+  await arrangement.getByLabel('Hide Studio Drums on the sheet').click()
+  await arrangement
+    .getByRole('button', { name: 'Close the session details' })
+    .click()
+  await expect(
+    room.getByText(
+      'All drum reference lanes are hidden. Open the arrangement to show one.',
+      { exact: true },
+    ),
+  ).toBeVisible()
+
+  await room.getByTestId('guitar-night-session-trigger').click()
+  arrangement = page.getByRole('dialog', { name: 'Loaded arrangement' })
+  await arrangement.getByLabel('Show Studio Drums on the sheet').click()
+  await arrangement
+    .getByRole('button', { name: 'Close the session details' })
+    .click()
+  await expect(sheet).toBeVisible()
+
+  await page.screenshot({
+    path: testInfo.outputPath('guitar-night-percussion-room.png'),
+    fullPage: true,
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(sheet).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0)
+  await page.screenshot({
+    path: testInfo.outputPath('guitar-night-percussion-room-phone.png'),
+    fullPage: true,
+  })
+
+  await room
+    .getByRole('button', { name: 'Start drum backing', exact: true })
+    .click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __guitarNightAudioContexts: number })
+            .__guitarNightAudioContexts,
+      ),
+    )
+    .toBe(1)
+  await expect(room.getByRole('button', { name: 'End the take' })).toBeVisible()
+  await expect(
+    room.getByRole('status').filter({ hasText: /Counting in|playing/ }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __guitarNightMicCalls: number
+            __guitarNightMidiCalls: number
+          }
+        ).__guitarNightMicCalls,
+    ),
+  ).toBe(0)
+  expect(pageErrors).toEqual([])
 })
 
 test('scrubs, pauses, and resumes an authored score with a real pointer @smoke', async ({

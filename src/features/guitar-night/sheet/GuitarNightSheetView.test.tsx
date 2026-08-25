@@ -168,6 +168,49 @@ describe('GuitarNightSheetView', () => {
     expect(onSelectTrack).toHaveBeenCalledWith('track-2')
   })
 
+  it('keeps an authored percussion lane readable but never scoreable', () => {
+    const onSelectTrack = vi.fn()
+    render(() => (
+      <GuitarNightSheetView
+        lanes={() => [
+          lane({
+            trackId: 'track-drums',
+            trackName: 'Drum kit',
+            content: 'percussion',
+            scoreable: false,
+            notes: [],
+            percussionHits: [
+              {
+                id: 'midi-t2-e1',
+                gmKey: 36,
+                startBeat: 0,
+                velocity: 117,
+              },
+              {
+                id: 'midi-t2-e2',
+                gmKey: 49,
+                startBeat: 1,
+                velocity: 91,
+              },
+            ],
+            droppedPercussionHits: 1,
+          }),
+        ]}
+        playheadBeat={() => 0}
+        scoredTrackId={() => 'track-lead'}
+        onSelectTrack={onSelectTrack}
+      />
+    ))
+
+    expect(
+      screen.getByText(
+        'Drum kit — 2 authored hits · 1 unmapped · reference only',
+      ),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Drum kit/ })).toBeNull()
+    expect(onSelectTrack).not.toHaveBeenCalled()
+  })
+
   it('says how many notes a part could not reach', () => {
     render(() => (
       <GuitarNightSheetView
