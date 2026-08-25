@@ -12,6 +12,23 @@ import { drumSessionStateCopy, DrumSessionStateView, } from './DrumSessionStateV
 
 afterEach(cleanup)
 
+function dispatchSeatPointerDown(
+  target: Element,
+  init: {
+    readonly button: number
+    readonly isPrimary: boolean
+    readonly pressure: number
+  },
+): void {
+  const event = new Event('pointerdown', { bubbles: true, cancelable: true })
+  Object.defineProperties(event, {
+    button: { value: init.button },
+    isPrimary: { value: init.isPrimary },
+    pressure: { value: init.pressure },
+  })
+  fireEvent(target, event)
+}
+
 describe('Drum session state views', () => {
   it.each([
     [
@@ -331,7 +348,105 @@ describe('DrumScoreSheet', () => {
 })
 
 describe('DrummerSeatView', () => {
-  it('separates the authored playhead target from current live input', () => {
+  it('keeps all six photographed kit surfaces playable without an imported part', () => {
+    const onStrike = vi.fn()
+    render(() => (
+      <DrummerSeatView
+        session={() => ({ status: 'idle' })}
+        playheadBeat={() => 0}
+        onStrike={onStrike}
+      />
+    ))
+
+    expect(
+      screen.getByRole('heading', { name: 'Playable drummer’s seat' }),
+    ).toBeInTheDocument()
+    const kit = screen.getByRole('group', {
+      name: 'Playable photographed drum kit',
+    })
+    const pads = Array.from(kit.querySelectorAll('button'))
+    expect(pads).toHaveLength(6)
+    expect(pads.map((pad) => pad.getAttribute('data-pad'))).toEqual([
+      'hi-hat',
+      'snare',
+      'kick',
+      'tom',
+      'ride',
+      'crash',
+    ])
+    expect(pads.every((pad) => pad.getAttribute('tabindex') !== '-1')).toBe(
+      true,
+    )
+    expect(screen.getByText('No authored part · free play')).toBeVisible()
+    expect(screen.queryByText('No drum part loaded')).not.toBeInTheDocument()
+  })
+
+  it('filters pointer input and preserves pressure as bounded kit velocity', () => {
+    const onStrike = vi.fn()
+    render(() => (
+      <DrummerSeatView
+        session={() => ({ status: 'idle' })}
+        playheadBeat={() => 0}
+        onStrike={onStrike}
+      />
+    ))
+    const snare = screen.getByRole('button', {
+      name: 'Play Acoustic snare',
+    })
+
+    dispatchSeatPointerDown(snare, {
+      button: 2,
+      isPrimary: true,
+      pressure: 0.25,
+    })
+    dispatchSeatPointerDown(snare, {
+      button: 0,
+      isPrimary: false,
+      pressure: 0.25,
+    })
+    expect(onStrike).not.toHaveBeenCalled()
+
+    dispatchSeatPointerDown(snare, {
+      button: 0,
+      isPrimary: true,
+      pressure: 0.25,
+    })
+    expect(onStrike).toHaveBeenCalledOnce()
+    expect(onStrike).toHaveBeenLastCalledWith('snare', 68)
+
+    dispatchSeatPointerDown(snare, {
+      button: 0,
+      isPrimary: true,
+      pressure: 0,
+    })
+    expect(onStrike).toHaveBeenLastCalledWith('snare', 105)
+  })
+
+  it('fires once for each native Enter or Space button activation', () => {
+    const onStrike = vi.fn()
+    render(() => (
+      <DrummerSeatView
+        session={() => ({ status: 'idle' })}
+        playheadBeat={() => 0}
+        onStrike={onStrike}
+      />
+    ))
+    const kick = screen.getByRole('button', { name: 'Play Bass drum' })
+
+    fireEvent.keyDown(kick, { key: 'Enter', code: 'Enter' })
+    fireEvent.click(kick, { detail: 0 })
+    fireEvent.keyUp(kick, { key: 'Enter', code: 'Enter' })
+    expect(onStrike).toHaveBeenCalledTimes(1)
+
+    fireEvent.keyDown(kick, { key: ' ', code: 'Space' })
+    fireEvent.keyUp(kick, { key: ' ', code: 'Space' })
+    fireEvent.click(kick, { detail: 0 })
+    expect(onStrike).toHaveBeenCalledTimes(2)
+    expect(onStrike).toHaveBeenNthCalledWith(1, 'kick', 100)
+    expect(onStrike).toHaveBeenNthCalledWith(2, 'kick', 100)
+  })
+
+  it('keeps authored-target and live-hit evidence on the same hit surfaces', () => {
     const session = readySessionFixture()
     const view = render(() => (
       <DrummerSeatView
@@ -344,11 +459,6 @@ describe('DrummerSeatView', () => {
       />
     ))
 
-    expect(
-      screen.getByRole('img', { name: /Top-down drum kit/i }),
-    ).toBeVisible()
-    // SVG kit regions are descriptive shapes, so their explicit data contract
-    // is the only stable way to inspect target/live visual state in jsdom.
     const kick = view.container.querySelector('[data-kit-anchor="kick"]')
     const snare = view.container.querySelector('[data-kit-anchor="snare"]')
     expect(kick).toHaveAttribute('data-target-active', 'true')
@@ -361,28 +471,11 @@ describe('DrummerSeatView', () => {
     expect(
       kick?.querySelector('[data-visual-layer="live-input"]'),
     ).toBeInTheDocument()
-    const targetOutline = kick?.querySelector(
-      '[data-visual-layer="authored-target"] ellipse',
-    )
-    const liveOutline = kick?.querySelector(
-      '[data-visual-layer="live-input"] ellipse',
-    )
-    expect(targetOutline).not.toHaveAttribute(
-      'rx',
-      liveOutline?.getAttribute('rx') ?? '',
-    )
     expect(
-      screen.getByLabelText('Scrollable drummer-seat kit'),
-    ).toHaveAttribute('tabindex', '0')
-    expect(
-      screen.getByText(
-        'Authored now: Bass Drum 1. Live now: Bass Drum 1, Acoustic Snare.',
-      ),
+      screen.getByText('Target Bass Drum 1 · Live Bass Drum 1, Acoustic Snare'),
     ).toBeVisible()
-    expect(screen.getByText('Next: Acoustic Snare, bar 1')).toBeVisible()
-    const liveRegions = view.container.querySelectorAll('[aria-live="polite"]')
-    expect(liveRegions).toHaveLength(1)
-    expect(liveRegions[0]).toHaveTextContent('Bar 1')
+    expect(screen.getByText('Next Acoustic Snare · bar 1')).toBeVisible()
+    expect(view.container.querySelectorAll('[aria-live]')).toHaveLength(0)
   })
 
   it('illuminates a late authored target without scanning an opening prefix', () => {
@@ -411,7 +504,7 @@ describe('DrummerSeatView', () => {
     expect(
       view.container.querySelector('[data-kit-anchor="kick"]'),
     ).toHaveAttribute('data-target-active', 'true')
-    expect(screen.getByText(/Authored now: Bass Drum 1/)).toBeVisible()
+    expect(screen.getByText(/Target Bass Drum 1/)).toBeVisible()
   })
 
   it('discloses a locally capped simultaneous kit highlight', () => {
@@ -434,11 +527,7 @@ describe('DrummerSeatView', () => {
       <DrummerSeatView session={() => session} playheadBeat={() => 0} />
     ))
 
-    expect(
-      screen.getByText(
-        '2 simultaneous mapped hits exceed this kit-highlight limit. The canonical session is unchanged.',
-      ),
-    ).toBeVisible()
+    expect(screen.getByText('+2 simultaneous authored hits')).toBeVisible()
   })
 })
 

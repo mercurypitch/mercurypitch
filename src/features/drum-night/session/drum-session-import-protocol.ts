@@ -7,6 +7,7 @@
 // stopped by terminating its one owning Worker.
 
 import type { MidiSong } from '@/lib/midi-song'
+import type { DrumSessionImportSourceFormat } from './drum-session'
 import type { DrumSessionParserOutcome } from './import-drum-session'
 
 export const MAX_DRUM_SESSION_FILE_BYTES = 20 * 1024 * 1024
@@ -91,7 +92,7 @@ export function assertBoundedDrumSessionPayload(
   }
 }
 
-export type DrumSessionWorkerSourceFormat = 'midi' | 'guitar-pro'
+export type DrumSessionWorkerSourceFormat = DrumSessionImportSourceFormat
 
 export interface DrumSessionImportWorkerRequest {
   readonly type: 'IMPORT_DRUM_SESSION'

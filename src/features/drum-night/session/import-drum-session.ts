@@ -7,7 +7,7 @@
 // selection generations so a slow older parse can never replace a newer one.
 
 import type { MidiSong } from '@/lib/midi-song'
-import type { DrumSessionImportState, DrumSessionSourceFormat, } from './drum-session'
+import type { DrumSessionImportSourceFormat, DrumSessionImportState, } from './drum-session'
 import { drumSessionStateFromSong, IDLE_DRUM_SESSION, loadingDrumSession, } from './drum-session'
 import { MAX_DRUM_SESSION_FILE_BYTES } from './drum-session-import-protocol'
 
@@ -36,7 +36,7 @@ export interface DrumSessionImportPorts {
   /** Test seam; production creates one lazy module Worker per attempt. */
   readonly importInWorker?: (
     file: File,
-    format: DrumSessionSourceFormat,
+    format: DrumSessionImportSourceFormat,
     options?: DrumSessionImportOptions,
   ) => DrumSessionParserOutcome | Promise<DrumSessionParserOutcome>
 }
@@ -79,7 +79,7 @@ function fileExtension(fileName: string): string {
   return dot < 0 ? '' : fileName.slice(dot + 1).toLowerCase()
 }
 
-function sourceFormat(fileName: string): DrumSessionSourceFormat | null {
+function sourceFormat(fileName: string): DrumSessionImportSourceFormat | null {
   const extension = fileExtension(fileName)
   if (MIDI_EXTENSIONS.has(extension)) return 'midi'
   if (GUITAR_PRO_EXTENSIONS.has(extension)) return 'guitar-pro'
@@ -93,7 +93,7 @@ function titleFromFileName(fileName: string): string {
 
 async function defaultWorkerParser(
   file: File,
-  format: DrumSessionSourceFormat,
+  format: DrumSessionImportSourceFormat,
   options: DrumSessionImportOptions,
 ): Promise<DrumSessionParserOutcome> {
   const { importDrumSessionInWorker } =
@@ -125,22 +125,22 @@ function recoverableWorkerMessage(error: unknown): string | null {
   return code === 'TOO_COMPLEX' || code === 'TIMED_OUT' ? error.message : null
 }
 
-function formatName(format: DrumSessionSourceFormat): string {
+function formatName(format: DrumSessionImportSourceFormat): string {
   return format === 'midi' ? 'MIDI' : 'Guitar Pro'
 }
 
-function unreadableMessage(format: DrumSessionSourceFormat): string {
+function unreadableMessage(format: DrumSessionImportSourceFormat): string {
   return `No readable musical events were found in this ${formatName(format)} file. It may be empty, damaged, or unsupported by the parser. Export it again and retry.`
 }
 
-function malformedMessage(format: DrumSessionSourceFormat): string {
+function malformedMessage(format: DrumSessionImportSourceFormat): string {
   return `This ${formatName(format)} file is malformed. Export a fresh copy and try again.`
 }
 
 function stateFromParserOutcome(options: {
   readonly outcome: DrumSessionParserOutcome
   readonly fileName: string
-  readonly format: DrumSessionSourceFormat
+  readonly format: DrumSessionImportSourceFormat
 }): DrumSessionImportState {
   switch (options.outcome.status) {
     case 'parsed': {

@@ -229,7 +229,7 @@
 .sessionIdentity small {
   overflow: hidden;
   color: var(--vellum-muted);
-  font-size: 10px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -284,7 +284,7 @@
   align-items: center;
   gap: 9px;
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 680;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -304,14 +304,6 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 10px;
-}
-
-.conceptBadge {
-  padding: 6px 9px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  color: rgb(238 231 219 / 52%);
-  font-size: 9px;
 }
 
 .inputChip,
@@ -387,7 +379,7 @@
 .inputChip small,
 .roomChip small {
   color: var(--vellum-muted);
-  font-size: 9px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
@@ -513,7 +505,7 @@
   align-items: center;
   gap: 8px;
   color: var(--amber);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 780;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -557,7 +549,7 @@
   border-radius: 8px;
   color: var(--vellum-muted);
   background: transparent;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 720;
   cursor: pointer;
 }
@@ -622,7 +614,7 @@
   max-width: 72ch;
   margin: 12px 2px 0;
   color: var(--vellum-muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -752,7 +744,7 @@
 
 .nowCapsule small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 11px;
 }
 .nowCapsule strong {
   font-family: var(--serif);
@@ -772,7 +764,8 @@
   border-radius: 5px;
   color: rgb(238 231 219 / 52%);
   background: rgb(4 5 6 / 56%);
-  font-size: 8px;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .scoreView {
@@ -805,7 +798,7 @@
 }
 .scoreHeading small {
   color: var(--vellum-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .scorePanel > svg {
   display: block;
@@ -866,7 +859,7 @@
 .kitIntro > span,
 .workspaceCopy > span {
   color: var(--amber);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 780;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -921,7 +914,7 @@
 }
 
 .kitHotspot span {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 760;
 }
 .kitHotspot kbd {
@@ -985,7 +978,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 760;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1001,12 +994,12 @@
 
 .coachHeading small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 .coachWindow {
   margin-top: 30px;
   color: var(--amber);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 780;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1048,7 +1041,7 @@
   align-items: center;
   gap: 8px;
   color: rgb(238 231 219 / 46%);
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .timingAxis i {
@@ -1087,7 +1080,7 @@
   display: grid;
   place-items: center;
   color: rgb(238 231 219 / 44%);
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1174,11 +1167,11 @@
   gap: 2px;
 }
 .recoveryAction strong {
-  font-size: 10px;
+  font-size: 11px;
 }
 .recoveryAction small {
   color: rgb(8 9 11 / 62%);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .quietAction {
@@ -1188,7 +1181,7 @@
   border: 0;
   color: var(--vellum-muted);
   background: transparent;
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -1218,11 +1211,11 @@
   gap: 2px;
 }
 .privacyNote strong {
-  font-size: 9px;
+  font-size: 11px;
 }
 .privacyNote small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 .coachCue {
   display: none;
@@ -1284,7 +1277,7 @@
 }
 .workbenchBar > div:first-child span {
   color: var(--amber);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 760;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1307,7 +1300,7 @@
   border-bottom: 2px solid transparent;
   color: var(--vellum-muted);
   background: transparent;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 720;
   cursor: pointer;
 }
@@ -1332,7 +1325,7 @@
   border-radius: 9px;
   color: var(--vellum-muted);
   background: rgb(238 231 219 / 4%);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 720;
   cursor: pointer;
 }
@@ -1392,7 +1385,7 @@
   max-width: 40ch;
   margin: 0;
   color: var(--vellum-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -1413,14 +1406,14 @@
 
 .kitLoadStatus strong {
   color: var(--vellum);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 680;
   line-height: 1.4;
 }
 
 .kitLoadStatus small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .kitLoadStatus[data-status='error'] strong {
@@ -1481,14 +1474,14 @@
 
 .kitCatalog small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.35;
 }
 
 .kitCatalog b {
   flex: 0 0 auto;
   color: var(--amber);
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1500,7 +1493,7 @@
   border-radius: 999px;
   color: #f0c886;
   background: rgb(231 173 82 / 9%);
-  font-size: 7px;
+  font-size: 9px;
   font-style: normal;
   font-weight: 760;
   letter-spacing: 0.045em;
@@ -1515,7 +1508,7 @@
   border-radius: 7px;
   color: var(--vellum-muted);
   background: rgb(238 231 219 / 5%);
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -1543,26 +1536,27 @@
 }
 
 .mappingHeading strong {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .mappingHeading small {
   overflow: hidden;
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .mappingHeading button,
 .mappingPanel .mappingList button {
+  min-width: 44px;
   min-height: 44px;
   padding: 0 9px;
   border: 1px solid var(--line);
   border-radius: 7px;
   color: var(--vellum-muted);
   background: #151a20;
-  font-size: 8px;
+  font-size: 10px;
   cursor: pointer;
 }
 
@@ -1612,7 +1606,7 @@
 .rawMidiNotice {
   margin: 0;
   color: #edc990;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -1629,16 +1623,15 @@
 }
 .grooveLanes b {
   color: var(--vellum-muted);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 650;
 }
 .grooveLanes span {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 9px;
+  gap: 3px;
 }
 .grooveLanes i {
-  height: 9px;
+  height: 11px;
   border: 1px solid rgb(238 231 219 / 20%);
   border-radius: 3px;
   background: rgb(238 231 219 / 6%);
@@ -1646,6 +1639,8 @@
 .grooveLanes i.on {
   border-color: rgb(102 213 205 / 54%);
   background: var(--cyan);
+  opacity: var(--hit-strength, 1);
+  transform: translateX(var(--feel-offset, 0));
 }
 .grooveLanes > div:nth-child(2) i.on {
   border-color: rgb(231 173 82 / 62%);
@@ -1672,7 +1667,7 @@
   gap: 8px;
   color: var(--vellum-muted);
   background: #151a20;
-  font-size: 9px;
+  font-size: 10px;
   cursor: pointer;
 }
 
@@ -1681,6 +1676,11 @@
   border-color: rgb(231 173 82 / 50%);
   color: var(--vellum);
   background: rgb(231 173 82 / 10%);
+}
+
+.variationSwitch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .mappingList,
@@ -1717,16 +1717,16 @@
   font-variant-numeric: tabular-nums;
 }
 .mappingList strong {
-  font-size: 10px;
+  font-size: 11px;
 }
 .mappingList small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .mixerStrips {
   display: grid;
-  grid-template-columns: repeat(4, minmax(80px, 1fr));
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
   gap: 16px;
 }
 .mixerStrips label {
@@ -1740,7 +1740,7 @@
   background: #151a20;
 }
 .mixerStrips span {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 .mixerStrips input {
@@ -1750,8 +1750,78 @@
   cursor: pointer;
 }
 
-.mixerStrips .unavailableStrip {
-  opacity: 0.54;
+.clickStrip {
+  display: grid;
+  min-height: 120px;
+  grid-template-columns: minmax(142px, 0.8fr) minmax(160px, 1.2fr);
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #151a20;
+}
+
+.mixToggle {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  color: var(--vellum);
+  background: rgb(238 231 219 / 2%);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mixToggle > span {
+  display: grid;
+  gap: 5px;
+}
+
+.mixToggle strong {
+  font-size: 13px;
+}
+
+.mixToggle small {
+  color: var(--vellum-muted);
+  font-size: 10px;
+  font-weight: 560;
+}
+
+.mixToggle b {
+  min-width: 38px;
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--vellum-muted);
+  background: rgb(8 9 11 / 56%);
+  font-size: 10px;
+  text-align: center;
+}
+
+.mixToggle[aria-pressed='true'] {
+  color: #f2c477;
+  background: rgb(231 173 82 / 9%);
+}
+
+.mixToggle[aria-pressed='true'] b {
+  border-color: rgb(231 173 82 / 52%);
+  color: #f2c477;
+  background: rgb(231 173 82 / 12%);
+}
+
+.mixerStrips .clickStrip label {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.mixerStrips .clickStrip label:has(input:disabled) {
+  opacity: 0.55;
 }
 
 .simpleWorkspace {
@@ -1809,7 +1879,7 @@
 
 .sessionDropZone small {
   color: var(--vellum-muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -1895,7 +1965,7 @@
   max-width: 64ch;
   margin: 7px 0 0;
   color: var(--vellum-muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
@@ -1985,13 +2055,13 @@
 }
 
 .drawerTouchKit span {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
 }
 
 .drawerTouchKit small {
   color: var(--vellum-muted);
-  font-size: 7px;
+  font-size: 9px;
 }
 
 .consoleBridge {
@@ -2045,11 +2115,11 @@
 }
 .consoleModule small {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 .consoleModule strong {
   overflow: hidden;
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2117,7 +2187,7 @@
 }
 .tempoModule small {
   color: var(--vellum-muted);
-  font-size: 7px;
+  font-size: 9px;
 }
 
 .playCradle {
@@ -2253,7 +2323,7 @@
   align-items: center;
   justify-content: space-between;
   color: var(--amber);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 760;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2271,7 +2341,7 @@
 .inputPopover > p {
   margin: 8px 0 15px;
   color: var(--vellum-muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
 }
 .inputRow {
@@ -2280,7 +2350,7 @@
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--line);
-  font-size: 9px;
+  font-size: 11px;
 }
 .inputRow span {
   color: var(--vellum-muted);
@@ -2301,7 +2371,7 @@
 
 .inputSelect span {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .inputSelect select {
@@ -2319,7 +2389,7 @@
   border-radius: 8px;
   color: #edc990;
   background: rgb(231 173 82 / 9%);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -2344,13 +2414,13 @@
 }
 
 .calibrationHeading strong {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .calibrationHeading small,
 .appliedLatency {
   color: var(--vellum-muted);
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -2362,7 +2432,7 @@
 
 .calibrationEvidence {
   color: #edc990;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -2459,13 +2529,13 @@
 }
 
 .runtimeAlert strong {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .runtimeAlert small {
   overflow-wrap: anywhere;
   color: #e6b4b6;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -2494,7 +2564,7 @@
   color: var(--vellum);
   background: #1a2026;
   box-shadow: 0 18px 58px rgb(0 0 0 / 46%);
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
@@ -2551,7 +2621,6 @@
 }
 
 @media (max-width: 1280px) {
-  .conceptBadge,
   .roomChip {
     display: none;
   }
@@ -2650,12 +2719,12 @@
     gap: 2px;
   }
   .coachCue strong {
-    font-size: 10px;
+    font-size: 11px;
   }
   .coachCue small {
     overflow: hidden;
     color: var(--vellum-muted);
-    font-size: 8px;
+    font-size: 10px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -2694,11 +2763,11 @@
     gap: 1px;
   }
   .activeLoopControl strong {
-    font-size: 9px;
+    font-size: 10px;
   }
   .activeLoopControl small {
     color: var(--vellum-muted);
-    font-size: 8px;
+    font-size: 9px;
   }
   .shell[data-drawer-open='true'] .activeLoopControl {
     display: none;
@@ -2737,12 +2806,12 @@
     background: linear-gradient(180deg, #2a2521, #171719);
   }
   .touchKit span {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
   }
   .touchKit small {
     color: var(--vellum-muted);
-    font-size: 8px;
+    font-size: 9px;
   }
   .workbench {
     right: 0;
@@ -2780,10 +2849,10 @@
     background: #101318;
   }
   .drawerTouchKit {
-    display: grid;
+    display: none;
   }
   .workspaceView {
-    padding-bottom: 84px;
+    padding-bottom: 24px;
   }
   .touchKit button {
     display: grid;
@@ -2808,12 +2877,12 @@
     background: linear-gradient(180deg, #2a2521, #171719);
   }
   .touchKit span {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
   }
   .touchKit small {
     color: var(--vellum-muted);
-    font-size: 8px;
+    font-size: 9px;
   }
 }
 
@@ -2848,7 +2917,7 @@
     border-radius: 4px;
     color: var(--vellum);
     background: #08090b;
-    font-size: 6px;
+    font-size: 9px;
     font-weight: 800;
     line-height: 1.2;
     text-overflow: clip;
@@ -2877,7 +2946,6 @@
     overscroll-behavior: none;
   }
   .roomRail,
-  .conceptBadge,
   .barMap,
   .roomChip,
   .consoleBridge {
@@ -2897,7 +2965,7 @@
     flex: 0 0 auto;
     align-items: center;
     gap: 6px;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 730;
   }
   .mobileBrand svg {
@@ -2920,10 +2988,10 @@
   }
   .sessionIdentity strong {
     font-family: var(--sans);
-    font-size: 10px;
+    font-size: 11px;
   }
   .sessionIdentity small {
-    font-size: 8px;
+    font-size: 9px;
   }
   .sessionActions {
     gap: 6px;
@@ -2967,7 +3035,7 @@
     gap: 2px;
   }
   .stageKicker {
-    font-size: 7px;
+    font-size: 9px;
   }
   .stageCopy h1 {
     max-width: 150px;
@@ -2982,11 +3050,14 @@
     min-width: 48px;
     min-height: 44px;
     padding: 0 8px;
-    font-size: 8px;
+    font-size: 10px;
   }
   .pocketView,
   .sessionStageView {
     inset: 0;
+  }
+  .shell[data-view='seat'] .authoredPlaybackNotice {
+    display: none;
   }
   .pocketRing {
     width: 130%;
@@ -3029,7 +3100,7 @@
     font-size: 20px;
   }
   .kitIntro p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .kitHotspot {
     min-width: 62px;
@@ -3101,12 +3172,12 @@
     background: linear-gradient(180deg, #2a2521, #171719);
   }
   .touchKit span {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
   }
   .touchKit small {
     color: var(--vellum-muted);
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .mobileNav {
@@ -3142,7 +3213,7 @@
     height: 21px;
   }
   .mobileNav button > span {
-    font-size: 8px;
+    font-size: 10px;
   }
   .mobileNav .mobilePlay {
     width: 60px;
@@ -3242,10 +3313,17 @@
     grid-template-columns: 1fr;
   }
   .mixerStrips {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
   .mixerStrips label {
     min-height: 86px;
+  }
+  .clickStrip {
+    grid-template-columns: 1fr;
+  }
+  .mixToggle {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
   .inputPopover {
     top: calc(54px + env(safe-area-inset-top));
@@ -3294,7 +3372,7 @@
   }
   .workbenchTabs button {
     padding-inline: 4px;
-    font-size: 8px;
+    font-size: 10px;
   }
 }
 
@@ -3378,12 +3456,12 @@
     background: linear-gradient(180deg, #2a2521, #171719);
   }
   .touchKit span {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
   }
   .touchKit small {
     color: var(--vellum-muted);
-    font-size: 8px;
+    font-size: 9px;
   }
   .stageRoom {
     background-image: var(--mp-stage-image);
@@ -3409,6 +3487,69 @@
   }
   .workbench {
     height: 84%;
+  }
+}
+
+/* Below desktop width the rack is a real viewport modal. Keeping it tied to
+   the stage made short-landscape drawers taller than their containing block,
+   placing tabs above the visible viewport. */
+@media (max-width: 1040px) {
+  .shell[data-drawer-open='true'] .performanceStage {
+    z-index: 60;
+    overflow: visible;
+  }
+
+  .sheetScrim {
+    position: fixed;
+    inset: 0;
+  }
+
+  .workbench {
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top));
+    right: calc(8px + env(safe-area-inset-right));
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    left: calc(8px + env(safe-area-inset-left));
+    width: auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    border: 1px solid rgb(238 231 219 / 20%);
+    border-radius: 16px;
+  }
+
+  .shell[data-drawer-open='true'] .toast {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* The photographed Seat is itself the six-surface instrument. Give that view
+   the full stage instead of repeating a detached pad strip and empty coach
+   rail around it. Score and Pocket keep the universal strip. */
+.shell[data-view='seat'] .roomShell {
+  grid-template-rows: 66px minmax(0, 1fr) 92px;
+}
+
+.shell[data-view='seat'] .touchKit,
+.shell[data-view='seat'] .phraseCoach,
+.shell[data-view='seat'] .sessionStageImport {
+  display: none;
+}
+
+.shell[data-view='seat'] .sessionStageView {
+  right: 0;
+}
+
+@media (max-height: 650px) and (max-width: 720px) {
+  .shell[data-view='seat'] .roomShell {
+    grid-template-rows: 54px minmax(0, 1fr) 66px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .shell[data-view='seat'] .roomShell {
+    grid-template-rows: 52px minmax(0, 1fr) 68px;
   }
 }
 

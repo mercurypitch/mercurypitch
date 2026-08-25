@@ -119,6 +119,7 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
   let appliedLatencySourceId: string | null = null
   let playerActivated = false
   let playerActivation: Promise<boolean> | null = null
+  let pendingActivationHitGeneration = 0
   let disposed = false
   let syncedRecordedHitCount = initialTransportState.recordedHitCount
   let syncedRecordedHitOmissionCount =
@@ -154,6 +155,13 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     if (playerActivation !== null) return playerActivation
     try {
       const activationResult = player.activate()
+      if (typeof activationResult === 'boolean') {
+        playerActivated = activationResult
+        setRuntimeError(
+          playerActivated ? null : 'Drum audio could not be started.',
+        )
+        return Promise.resolve(playerActivated)
+      }
       playerActivation = Promise.resolve(activationResult)
         .then((result) => {
           if (disposed) return false
@@ -211,13 +219,39 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     setRecentHit(hit)
     transport.captureHit(hit)
     syncTransport()
-    void activatePlayer().then((activated) => {
-      if (!activated || disposed) return
+    // WebMIDI messages are not browser activation gestures. A connected kit
+    // may still illuminate the room and contribute timing evidence before
+    // audio is armed, but it must never pretend it can unlock Web Audio. Play,
+    // touch, and keyboard actions own that boundary.
+    if (hit.source === 'midi' && !playerActivated) return
+
+    const trigger = (): void => {
       player.trigger({
         gmKey: hit.gmKey,
         velocity: hit.velocity,
         sourceId: hit.sourceId ?? hit.source,
       })
+    }
+    if (playerActivated) {
+      trigger()
+      return
+    }
+
+    pendingActivationHitGeneration += 1
+    const hitGeneration = pendingActivationHitGeneration
+    const activation = activatePlayer()
+    if (playerActivated) {
+      trigger()
+      return
+    }
+    void activation.then((activated) => {
+      if (
+        !activated ||
+        disposed ||
+        hitGeneration !== pendingActivationHitGeneration
+      )
+        return
+      trigger()
     })
   }
 

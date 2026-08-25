@@ -45,6 +45,29 @@ describe('projectDrumScore', () => {
     expect(document.percussionTracks[0]?.percussionHits[1]?.startBeat).toBe(1.1)
   })
 
+  it('does not invent an empty bar after a phrase ends on a bar line', () => {
+    const document = readyDocumentFixture({
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              {
+                id: 'final-hat',
+                gmKey: 42,
+                startBeat: 7.5,
+                velocity: 82,
+                writtenDuration: 0.5,
+              },
+            ],
+          }),
+        ],
+      }),
+    })
+
+    expect(document.durationBeats).toBe(8)
+    expect(projectDrumScore(document).bars).toHaveLength(2)
+  })
+
   it('sorts only its reusable index and leaves canonical track order unchanged', () => {
     const document = readyDocumentFixture({
       song: drumSongFixture({

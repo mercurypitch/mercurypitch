@@ -8,6 +8,7 @@ import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-cata
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
+import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNightClickSnapshot, } from './drum-night-click'
 import { DrumNightApp } from './DrumNightApp'
 import type { DrumMidiAccessPort, DrumMidiInputPort, DrumMidiMessageLike, DrumRuntimeClock, } from './runtime'
 import type { DrumScoreIndex, DrumSessionImportController, DrumSessionImportState, } from './session'
@@ -109,12 +110,14 @@ function sessionHarness(mapperAvailable = true) {
     return {} as AudioNode
   })
   const activeContext = vi.fn(() => (activated ? activeContextValue : null))
+  const activeOutput = vi.fn(() => (activated ? ({} as AudioNode) : null))
   const performanceTimestampToContextTime = vi.fn((timestampMs: number) =>
     activated && mapperAvailable ? timestampMs / 1000 : null,
   )
   const dispose = vi.fn(async () => undefined)
   const session = {
     activeContext,
+    activeOutput,
     contextForGesture,
     outputForGesture,
     performanceTimestampToContextTime,
@@ -122,12 +125,59 @@ function sessionHarness(mapperAvailable = true) {
   } satisfies DrumNightAudioSession
   return {
     activeContext,
+    activeOutput,
     contextForGesture,
     dispose,
     outputForGesture,
     performanceTimestampToContextTime,
     session,
   }
+}
+
+function clickHarness() {
+  const listeners = new Set<() => void>()
+  let current: DrumNightClickSnapshot = {
+    status: 'disabled',
+    enabled: false,
+    level: 0.5,
+    transportRevision: 0,
+    scheduledClickCount: 0,
+    lateOmittedClickCount: 0,
+    dedupeLedgerSize: 0,
+    activeVoiceCount: 0,
+    lastClick: null,
+    error: null,
+  }
+  const emit = (): void => {
+    for (const listener of listeners) listener()
+  }
+  const enable = vi.fn((enabled: boolean) => {
+    current = {
+      ...current,
+      enabled,
+      status: enabled ? 'waiting-for-audio' : 'disabled',
+    }
+    emit()
+  })
+  const setLevel = vi.fn((level: number) => {
+    current = { ...current, level }
+    emit()
+  })
+  const dispose = vi.fn()
+  const controller: DrumNightClickController = {
+    snapshot: () => current,
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    enable,
+    setLevel,
+    dispose,
+  }
+  const createClickController = vi.fn(
+    (_options: DrumNightClickControllerOptions) => controller,
+  )
+  return { controller, createClickController, dispose, enable, setLevel }
 }
 
 function importSessionHarness(
@@ -316,6 +366,7 @@ function renderRoom(options?: {
   readonly access?: DrumMidiAccessPort
   readonly activationResults?: readonly boolean[]
   readonly clock?: DrumRuntimeClock
+  readonly click?: ReturnType<typeof clickHarness>
   readonly createScoreIndex?: (
     document: Extract<DrumSessionImportState, { status: 'ready' }>['document'],
   ) => DrumScoreIndex
@@ -338,6 +389,7 @@ function renderRoom(options?: {
   const mounted = render(() => (
     <DrumNightApp
       createAudioSession={() => session.session}
+      createClickController={options?.click?.createClickController}
       createPlayer={player.createPlayer}
       createScoreIndex={options?.createScoreIndex}
       createSessionController={() => importSession.controller}
@@ -520,13 +572,13 @@ describe('DrumNightApp', () => {
     await waitFor(() =>
       expect(
         screen.getAllByRole('button', {
-          name: 'Pause Live drums take clock',
+          name: 'Pause First Pocket take clock',
         }),
       ).not.toHaveLength(0),
     )
     expect(
       screen.getByText(
-        'Starting the live take clock. No backing track or click is scheduled.',
+        'First Pocket is starting on the shared take clock with take events armed.',
       ),
     ).toHaveAttribute('data-visible', 'false')
     expect(room.requestAccess).not.toHaveBeenCalled()
@@ -595,6 +647,11 @@ describe('DrumNightApp', () => {
     expect(room.player.activate).not.toHaveBeenCalled()
     expect(room.session.contextForGesture).not.toHaveBeenCalled()
     expect(
+      screen.getByRole('button', {
+        name: /Practice Pad, press Play once for sound/i,
+      }),
+    ).toBeVisible()
+    expect(
       screen.getByRole('combobox', { name: 'Active MIDI input' }),
     ).toHaveValue('a')
 
@@ -615,6 +672,12 @@ describe('DrumNightApp', () => {
     )
     expect(screen.getByRole('button', { name: /Stage E-kit/i })).toBeVisible()
     second.emit([0x99, 20, 115])
+    expect(room.player.activate).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', {
+        name: /Stage E-kit, strikes seen · press Play for sound/i,
+      }),
+    ).toBeVisible()
     expect(screen.getByText(/Raw note 20 on channel 10 needs/i)).toBeVisible()
     fireEvent.click(
       screen.getByRole('button', { name: 'Review sound and mapping' }),
@@ -643,13 +706,13 @@ describe('DrumNightApp', () => {
     )
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Live drums take clock',
+        name: 'Play First Pocket take clock',
       })[0],
     )
     await waitFor(() => expect(room.player.activate).toHaveBeenCalledOnce())
     second.emit([0x99, 20, 115])
     await waitFor(() =>
-      expect(room.player.trigger).toHaveBeenLastCalledWith(
+      expect(room.player.trigger).toHaveBeenCalledWith(
         expect.objectContaining({ gmKey: 38, velocity: 115, sourceId: 'b' }),
       ),
     )
@@ -718,17 +781,57 @@ describe('DrumNightApp', () => {
     for (let strike = 1; strike <= 5; strike += 1) {
       await vi.advanceTimersByTimeAsync(strike === 1 ? 700 : 650)
       expect(screen.getByText(`Strike ${strike}`)).toBeVisible()
+      if (strike === 1) {
+        input.emit([0x99, 38, 100], performance.now() + 24)
+        expect(screen.getByText('0/5')).toBeVisible()
+      }
+      await vi.advanceTimersToNextTimerAsync()
       input.emit([0x99, 38, 100], performance.now() + 24)
       await Promise.resolve()
     }
 
     expect(screen.getByText('5/5')).toBeVisible()
-    expect(screen.getByText('24 ms estimate')).toBeVisible()
+    expect(screen.getByText(/ms estimate/)).toHaveTextContent('24 ms estimate')
     expect(
       screen.getByText(/5 of 5 strikes consistent · 0 ms spread/i),
     ).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Apply estimate' }))
     expect(screen.getByText(/Applied: 24 ms/i)).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close input details' }))
+    fireEvent.click(screen.getByRole('button', { name: /Calibration Kit/i }))
+    expect(screen.getByText(/Applied: 24 ms/i)).toBeVisible()
+  })
+
+  it('cancels an unseen latency cue when the Input dialog closes', async () => {
+    vi.useFakeTimers()
+    const input = new FakeMidiInput('kit', 'Calibration Kit')
+    renderRoom({ access: midiAccess([input]) })
+    const inputTrigger = screen.getByRole('button', {
+      name: /MIDI not connected/i,
+    })
+    fireEvent.click(inputTrigger)
+    fireEvent.click(screen.getByRole('button', { name: 'Connect MIDI input' }))
+    await vi.runAllTicks()
+    await Promise.resolve()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start five strikes' }))
+    await vi.advanceTimersByTimeAsync(700)
+    expect(screen.getByText('Strike 1')).toBeVisible()
+
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Drum input' }), {
+      key: 'Escape',
+    })
+    await vi.advanceTimersByTimeAsync(800)
+    input.emit([0x99, 38, 100], performance.now() + 24)
+
+    expect(screen.queryByRole('dialog', { name: 'Drum input' })).toBeNull()
+
+    fireEvent.click(inputTrigger)
+    expect(screen.getByText('0/5')).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Start five strikes' }),
+    ).toBeEnabled()
   })
 
   it('restores drawer focus and releases player and route audio on cleanup', async () => {
@@ -930,28 +1033,14 @@ describe('DrumNightApp', () => {
     ).toBeVisible()
   })
 
-  it('shows an unbounded current bar after the take passes beat 64', async () => {
-    const clock = new TestClock()
-    renderRoom({ clock })
-    fireEvent.click(
-      screen.getAllByRole('button', {
-        name: 'Play Live drums take clock',
-      })[0],
-    )
-    await waitFor(() =>
-      expect(
-        screen.getAllByRole('button', {
-          name: 'Pause Live drums take clock',
-        }),
-      ).not.toHaveLength(0),
-    )
-
-    clock.advanceTo(2_500 + 65 * 625)
+  it('shows the bounded authored bar count for the prepared first pocket', () => {
+    renderRoom()
 
     expect(
-      screen.getByLabelText('Current bar 17, unbounded take'),
+      screen.getByLabelText('Current bar 1, 2 authored bars'),
     ).toBeVisible()
-    expect(screen.getByText('Bar 17')).toBeVisible()
+    expect(screen.getAllByText('Bar 1')).not.toHaveLength(0)
+    expect(screen.getByText('2 authored bars')).toBeVisible()
     expect(screen.queryByText(/of 16/i)).not.toBeInTheDocument()
   })
 
@@ -959,7 +1048,7 @@ describe('DrumNightApp', () => {
     const room = renderRoom({ activationResults: [false, true] })
     fireEvent.click(
       screen.getAllByRole('button', {
-        name: 'Play Live drums take clock',
+        name: 'Play First Pocket take clock',
       })[0],
     )
 
@@ -981,27 +1070,47 @@ describe('DrumNightApp', () => {
     )
   })
 
-  it('keeps the live mixer range operable', async () => {
-    const room = renderRoom()
+  it('keeps kit and an off-by-default shared-clock click operable', async () => {
+    const click = clickHarness()
+    const room = renderRoom({ click })
     fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
     const drawer = screen.getByRole('dialog', { name: 'Shape the groove' })
     fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
     const kitLevel = within(drawer).getByRole('slider', { name: 'Kit level' })
+    const clickToggle = within(drawer).getByRole('button', { name: /Click/i })
+    const clickLevel = within(drawer).getByRole('slider', {
+      name: 'Click level',
+    })
+
+    expect(clickToggle).toHaveAttribute('aria-pressed', 'false')
+    expect(clickLevel).toBeDisabled()
+    expect(within(drawer).queryByText(/Backing/i)).not.toBeInTheDocument()
+    expect(within(drawer).queryByText(/Guide/i)).not.toBeInTheDocument()
+
+    fireEvent.click(clickToggle)
+    expect(click.enable).toHaveBeenCalledWith(true)
+    expect(clickToggle).toHaveAttribute('aria-pressed', 'true')
+    expect(clickLevel).toBeEnabled()
+    expect(within(drawer).getByText('Press Play to arm audio')).toBeVisible()
+    expect(room.session.contextForGesture).not.toHaveBeenCalled()
+
+    fireEvent.input(clickLevel, { target: { value: '63' } })
 
     fireEvent.input(kitLevel, { target: { value: '64' } })
 
+    expect(click.setLevel).toHaveBeenLastCalledWith(0.63)
     expect(room.player.player.setVolume).toHaveBeenLastCalledWith(0.64)
     expect(kitLevel).toBeEnabled()
   })
 
-  it('renders every honest import state and promotes percussion-only ready files to the score', () => {
+  it('keeps the playable groove active through honest import states and promotes a ready part', () => {
     const importSession = importSessionHarness()
     renderRoom({ importSession })
     fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
 
-    expect(screen.getByLabelText('score session state')).toHaveTextContent(
-      'No drum part loaded',
-    )
+    expect(screen.getByRole('heading', { name: 'First Pocket' })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
+    const drawer = screen.getByRole('dialog', { name: 'Bring a drum part' })
 
     const states: readonly [DrumSessionImportState, string][] = [
       [{ status: 'loading', fileName: 'take.mid' }, 'Reading take.mid'],
@@ -1049,12 +1158,17 @@ describe('DrumNightApp', () => {
 
     for (const [state, expectedCopy] of states) {
       importSession.setState(state)
-      expect(screen.getByLabelText('score session state')).toHaveTextContent(
-        expectedCopy,
+      expect(within(drawer).getByText(expectedCopy)).toBeVisible()
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-session-status',
+        'ready',
       )
     }
 
     importSession.setState(readySessionFixture({ title: 'Percussion Study' }))
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Close rack drawer' }),
+    )
     expect(
       screen.getByRole('heading', { name: 'Percussion Study' }),
     ).toBeVisible()
@@ -1085,7 +1199,7 @@ describe('DrumNightApp', () => {
 
     expect(importSession.cancel).toHaveBeenCalledOnce()
     expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
-      'data-session-status',
+      'data-import-status',
       'idle',
     )
     expect(
@@ -1154,7 +1268,11 @@ describe('DrumNightApp', () => {
         'Guitar Pro data ended unexpectedly.',
       ),
     )
-    expect(onReadySessionChange).toHaveBeenLastCalledWith(null)
+    expect(onReadySessionChange).toHaveBeenLastCalledWith(ready.document)
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-session-status',
+      'ready',
+    )
     expect(
       within(drawer).getByRole('button', { name: 'Choose drum part' }),
     ).toBeEnabled()
@@ -1182,7 +1300,9 @@ describe('DrumNightApp', () => {
       'srcset',
       '/drum-night/drummer-seat-portrait.webp',
     )
-    expect(screen.getByText('Drummer’s seat')).toBeVisible()
+    expect(
+      screen.getByRole('heading', { name: 'Playable drummer’s seat' }),
+    ).toBeInTheDocument()
     expect(createScoreIndex).toHaveBeenCalledOnce()
 
     fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
@@ -1361,7 +1481,11 @@ describe('DrumNightApp', () => {
       /source tempo value was clamped to the supported 40–280 BPM range/i,
     )
     expect(playbackTruth).toHaveTextContent(/attacks are using synth fallback/i)
-    expect(screen.getByText(/No metronome click is scheduled/i)).toBeVisible()
+    expect(
+      screen.getByText(
+        'Dense Scheduler Truth is starting on the shared take clock with take events armed.',
+      ),
+    ).toBeInTheDocument()
 
     clock.advanceTo(500)
     await waitFor(() =>
@@ -1402,11 +1526,13 @@ describe('DrumNightApp', () => {
     const importSession = importSessionHarness(first)
     renderRoom({ clock, importSession })
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Learn' })[0])
+    fireEvent.click(screen.getByText('Count-in').closest('button')!)
+    fireEvent.click(screen.getByText('Take events').closest('button')!)
+    fireEvent.click(screen.getByText('Practice loop').closest('button')!)
     fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Start silent take clock at 82 BPM',
-      }),
+      screen.getAllByRole('button', {
+        name: 'Play First Pocket take clock',
+      })[0],
     )
     await waitFor(() =>
       expect(
@@ -1441,10 +1567,37 @@ describe('DrumNightApp', () => {
     expect(
       screen.getByText('Practice loop').closest('button'),
     ).toHaveTextContent('Off')
-    expect(screen.getByText('Play the imported phrase once.')).toBeVisible()
+    expect(
+      screen.getByText('Press Play, then answer the phrase.'),
+    ).toBeVisible()
     expect(
       screen.queryByRole('button', { name: /Clear active .* loop/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('starts First Pocket after leaving an imported document', async () => {
+    const imported = readySessionFixture({ title: 'Imported Break' })
+    renderRoom({ importSession: importSessionHarness(imported) })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learn' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Play First Pocket at 84 BPM' }),
+    )
+
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Clear active 8-beat loop' }),
+    ).toBeVisible()
+    expect(
+      screen.getAllByRole('button', {
+        name: 'Pause First Pocket take clock',
+      }),
+    ).not.toHaveLength(0)
   })
 
   it('discloses older take events discarded by the bounded evidence window', async () => {
