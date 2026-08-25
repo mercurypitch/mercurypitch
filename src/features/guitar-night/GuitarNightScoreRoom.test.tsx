@@ -6,7 +6,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreLiveRange, scoreLoopPendingRestart, scoreRecoveryRange, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
+import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreCountInControlDisabled, scoreEndControlState, scoreLiveRange, scoreLoopPendingRestart, scorePlaybackControlLabel, scoreRecoveryRange, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 import { GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY } from './useGuitarNightScoreRoomController'
@@ -59,11 +59,21 @@ describe('GuitarNightScoreRoom', () => {
     const deck = within(screen.getByTestId('guitar-night-score-deck'))
     expect(deck.getByLabelText('Tempo 90 BPM')).toBeTruthy()
     expect(deck.getByLabelText('Rehearsal mix volume')).toBeTruthy()
+    const listening = screen.getByRole('button', {
+      name: 'Listening is off. Switch to Room mic',
+    })
+    expect(listening).toBeTruthy()
     expect(
-      screen.getByRole('button', {
-        name: 'Listening is off. Switch to Room mic',
-      }),
-    ).toBeTruthy()
+      deck.getByTestId('guitar-night-score-listening-dock'),
+    ).toContainElement(listening)
+    expect(
+      deck.getByTestId('guitar-night-score-listening-support'),
+    ).toContainElement(
+      deck.getByRole('group', { name: 'Listening playback mix' }),
+    )
+    expect(
+      deck.getByTestId('guitar-night-score-transport-core'),
+    ).toContainElement(deck.getByLabelText('Tempo 90 BPM'))
     expect(screen.getByText('Score clock')).toBeTruthy()
     expect(
       screen.queryByText('Authored score clock · no recording attached'),
@@ -120,6 +130,28 @@ describe('GuitarNightScoreRoom', () => {
     expect(
       screen.getByRole('button', { name: 'Hear selected backing parts' }),
     ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('separates the launch count-in from the playback click', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const deck = within(screen.getByTestId('guitar-night-score-deck'))
+    const countIn = deck.getByRole('button', {
+      name: 'Count-in 4 beats before playback. Change count-in',
+    })
+    const click = deck.getByRole('button', {
+      name: 'Turn playback click off',
+    })
+
+    fireEvent.click(countIn)
+
+    expect(countIn).toHaveAccessibleName(
+      'Count-in Off before playback. Change count-in',
+    )
+    expect(click).toHaveAttribute('aria-pressed', 'true')
+    expect(click).toHaveAttribute('title', 'Playback click on')
   })
 
   it('keeps mobile Session tempo and volume on the same rehearsal controls', () => {
@@ -451,6 +483,58 @@ describe('scoreVoiceTransportIsPlaying', () => {
     expect(scoreVoiceTransportIsPlaying('playing')).toBe(true)
     expect(scoreVoiceTransportIsPlaying('paused')).toBe(false)
     expect(scoreVoiceTransportIsPlaying('quiet')).toBe(false)
+  })
+})
+
+describe('scoreCountInControlDisabled', () => {
+  it('blocks only an in-flight launch and unrelated pending transitions', () => {
+    expect(scoreCountInControlDisabled('starting')).toBe(true)
+    expect(scoreCountInControlDisabled('count-in')).toBe(true)
+    expect(scoreCountInControlDisabled('playing')).toBe(false)
+    expect(scoreCountInControlDisabled('paused')).toBe(false)
+    expect(scoreCountInControlDisabled('quiet', true)).toBe(true)
+  })
+})
+
+describe('scoreEndControlState', () => {
+  const quiet = {
+    roomSetupLocked: false,
+    liveScoreState: 'ready' as const,
+    liveScoreFinishing: false,
+    replayPending: false,
+    resumePending: false,
+  }
+
+  it('keeps End available while a held score can still be finalized', () => {
+    expect(scoreEndControlState({ ...quiet, liveScoreState: 'paused' })).toBe(
+      'end',
+    )
+  })
+
+  it('keeps one truthful disabled state while the final take is settling', () => {
+    expect(scoreEndControlState({ ...quiet, liveScoreFinishing: true })).toBe(
+      'finishing',
+    )
+    expect(
+      scoreEndControlState({ ...quiet, liveScoreState: 'complete' }),
+    ).toBeNull()
+  })
+})
+
+describe('scorePlaybackControlLabel', () => {
+  it('names the held scored action as Resume instead of a second Play', () => {
+    expect(
+      scorePlaybackControlLabel({
+        roomStatus: 'paused',
+        liveScoreState: 'paused',
+        roomSetupLocked: false,
+        hasLoop: false,
+        loopPendingRestart: false,
+        replayPending: false,
+        resumePending: false,
+        resultSettling: false,
+      }),
+    ).toBe('Resume score')
   })
 })
 

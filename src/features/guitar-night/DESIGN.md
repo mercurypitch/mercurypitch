@@ -16,6 +16,12 @@ the player asks for them. The first screen is an invitation, not a dashboard.
   system sans carries controls and evidence.
 - **Surfaces:** compact amp-faceplate panels with narrow radii and precise
   hairlines. Avoid floating card grids, generic glass panels, and arcade HUDs.
+- **Room clarity:** the Room drawer keeps the chosen photograph visible at
+  four named stops from `Focused` to `Open`. The full 0–100% control uses fine
+  2.5% steps; its open endpoint removes nearly all blur and veil while keeping
+  one thin contrast layer behind stage copy. Catalog-authored light rooms keep
+  a stronger faceplate pigment floor rather than asking the browser to guess
+  image luminance.
 - **Hierarchy:** one primary musical action, one secondary import action, and
   one quiet expert escape. These must not read as three equal feature cards.
 
@@ -261,12 +267,16 @@ core Learn set in
   loop. Reduced motion snaps camera changes, while reduced effects removes
   glow, shadows and additive compositing without removing musical meaning.
 - The score-only room keeps Play, tempo and master volume visible. Its compact
-  pedalboard keeps Listening beside the timeline and reuses the same A/B marks,
-  click, count-in and Tab-sound state as the restrained Session overlay, so
-  routine rehearsal never requires reopening a sheet. Listening cycles through
-  Off, Room mic, Direct input and MIDI while Session remains the place for an
-  exact device. Count-in is one calm Off/1/2/4 cycle rather than a fragile
-  select.
+  two-row pedalboard keeps Listening beside the timeline, then aligns the
+  Backing/Target mix and speaker-risk note with the centred transport below.
+  Play changes to Pause while the clock runs; pausing retains a separate End
+  action so the held take can still settle into a grade. The rail reuses the
+  same A/B marks, playback click, launch count-in and Tab-sound state as the
+  restrained Session overlay, so routine rehearsal never requires reopening a
+  sheet. Listening cycles through Off, Room mic, Direct input and MIDI while
+  Session remains the place for an exact device. Count-in is one calm Off/1/2/4
+  cycle rather than a fragile select; it cannot change after launch beats have
+  already been queued, while the independent playback click remains live.
   Before Play, the stage rests just ahead of the first authored note so a long
   intro reads as intentional rather than broken. The score rail supports exact
   pointer, touch, and keyboard seeking through the authored tempo map. An idle

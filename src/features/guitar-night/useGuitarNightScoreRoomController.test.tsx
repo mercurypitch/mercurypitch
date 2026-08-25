@@ -1746,6 +1746,52 @@ describe('the tab room sounds the tab', () => {
         dispose()
       })
     })
+
+    it('can launch immediately while the playback click stays on', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        room.setCountInBeats(0)
+        expect(room.configuredCountInBeats()).toBe(0)
+        expect(room.hearClick()).toBe(true)
+
+        await room.start()
+        expect(getOptions()?.countInBeats).toBe(0)
+        expect(pulseAudible(getOptions)).toBe(true)
+        dispose()
+      })
+    })
+
+    it('pins an in-flight count-in even when the next launch is set to Off', async () => {
+      await createRoot(async (dispose) => {
+        const { band, getOptions } = bandHarness()
+        const frames = frameHarness()
+        const room = useGuitarNightScoreRoomController({
+          reference: () => reference(),
+          createBand: () => band,
+          requestFrame: frames.requestFrame,
+          cancelFrame: frames.cancelFrame,
+        })
+
+        await room.start()
+        getOptions()?.onBeat?.(0, 'count-in', 10)
+        expect(room.status()).toBe('count-in')
+        expect(room.countInBeats()).toBe(4)
+
+        room.setCountInBeats(0)
+        expect(room.configuredCountInBeats()).toBe(0)
+        expect(room.countInBeats()).toBe(4)
+        expect(getOptions()?.countInBeats).toBe(4)
+        dispose()
+      })
+    })
   })
 
   describe('ending a take', () => {

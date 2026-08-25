@@ -1509,12 +1509,45 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
     .click()
 
   const room = page.getByTestId('guitar-night-score-room')
+  const deck = room.getByTestId('guitar-night-score-deck')
   const slider = room.getByRole('slider', {
     name: 'Score position',
     exact: true,
   })
   const elapsed = room.getByLabel('Elapsed score time')
   await expect(slider).toBeVisible()
+
+  const desktopDeck = await deck.evaluate((element) => {
+    const rect = (testId: string): DOMRect => {
+      const target = element.querySelector<HTMLElement>(
+        `[data-testid="${testId}"]`,
+      )
+      if (target === null) throw new Error(`Missing ${testId}`)
+      return target.getBoundingClientRect()
+    }
+    const listening = rect('guitar-night-score-listening-dock')
+    const support = rect('guitar-night-score-listening-support')
+    const core = rect('guitar-night-score-transport-core')
+    const controls = rect('guitar-night-score-transport-controls')
+    return {
+      coreCenter: core.left + core.width / 2,
+      controlsCenter: controls.left + controls.width / 2,
+      listeningBottom: listening.bottom,
+      supportLeft: support.left,
+      supportRight: support.right,
+      supportTop: support.top,
+      coreLeft: core.left,
+    }
+  })
+  expect(desktopDeck.supportTop).toBeGreaterThanOrEqual(
+    desktopDeck.listeningBottom - 1,
+  )
+  expect(desktopDeck.supportLeft).toBeGreaterThanOrEqual(0)
+  expect(desktopDeck.supportRight).toBeLessThanOrEqual(desktopDeck.coreLeft + 1)
+  expect(
+    Math.abs(desktopDeck.coreCenter - desktopDeck.controlsCenter),
+  ).toBeLessThanOrEqual(1)
+
   await slider.focus()
   await slider.press('Home')
   await slider.press('ArrowRight')
@@ -1542,14 +1575,16 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   await expect(elapsed).toHaveText('0:02')
 
   await room.getByLabel('Session controls').click()
-  const countIn = room
-    .locator('details[open]')
-    .getByRole('button', { name: /^Count-in .*Change count-in$/ })
+  const countIn = room.locator('details[open]').getByRole('button', {
+    name: /^Count-in .* before playback\. Change count-in$/,
+  })
   for (let step = 0; step < 4; step += 1) {
     if ((await countIn.getAttribute('aria-label'))?.includes('Off')) break
     await countIn.click()
   }
-  await expect(countIn).toHaveAccessibleName('Count-in Off. Change count-in')
+  await expect(countIn).toHaveAccessibleName(
+    'Count-in Off before playback. Change count-in',
+  )
   await room.getByLabel('Session controls').click()
   expect(
     await page.evaluate(
@@ -1574,26 +1609,30 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   const pausedAt = await elapsed.textContent()
   await page.waitForTimeout(700)
   await expect(elapsed).toHaveText(pausedAt ?? '')
+  await expect(
+    room.getByRole('button', { name: 'Resume score', exact: true }),
+  ).toBeVisible()
+  await expect(
+    room.getByRole('button', { name: 'End the take', exact: true }),
+  ).toBeVisible()
 
   await page.setViewportSize({ width: 568, height: 320 })
-  const shortLandscape = await room
-    .getByTestId('guitar-night-score-deck')
-    .evaluate((deck) => {
-      const controls = deck.querySelector<HTMLElement>(
-        '[data-testid="guitar-night-score-transport-controls"]',
-      )
-      const deckRect = deck.getBoundingClientRect()
-      const controlsRect = controls?.getBoundingClientRect()
-      return {
-        viewportWidth: document.documentElement.clientWidth,
-        pageWidth: document.documentElement.scrollWidth,
-        deckLeft: deckRect.left,
-        deckRight: deckRect.right,
-        controlsWidth: controls?.clientWidth ?? 0,
-        controlsScrollWidth: controls?.scrollWidth ?? 0,
-        controlsRight: controlsRect?.right ?? 0,
-      }
-    })
+  const shortLandscape = await deck.evaluate((deck) => {
+    const controls = deck.querySelector<HTMLElement>(
+      '[data-testid="guitar-night-score-transport-controls"]',
+    )
+    const deckRect = deck.getBoundingClientRect()
+    const controlsRect = controls?.getBoundingClientRect()
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      pageWidth: document.documentElement.scrollWidth,
+      deckLeft: deckRect.left,
+      deckRight: deckRect.right,
+      controlsWidth: controls?.clientWidth ?? 0,
+      controlsScrollWidth: controls?.scrollWidth ?? 0,
+      controlsRight: controlsRect?.right ?? 0,
+    }
+  })
   expect(shortLandscape.pageWidth).toBeLessThanOrEqual(
     shortLandscape.viewportWidth + 2,
   )
@@ -1645,17 +1684,17 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   const tabWindow = room.locator('[data-window-beats]')
   const zoom = room.getByRole('slider', { name: 'Tab zoom', exact: true })
   await expect(tab).toBeVisible()
-  await expect(zoom).toHaveValue('100')
+  await expect(zoom).toHaveValue('125')
   await expect(zoom).toHaveAttribute(
     'aria-valuetext',
-    /^100% zoom, \d(?:\.\d)? beats visible$/,
+    /^125% zoom, \d+(?:\.\d{1,2})? beats visible$/,
   )
 
   const initialWindow = Number(
     await tabWindow.getAttribute('data-window-beats'),
   )
-  expect(initialWindow).toBeGreaterThanOrEqual(3.5)
-  expect(initialWindow).toBeLessThan(6)
+  expect(initialWindow).toBeGreaterThan(1.75)
+  expect(initialWindow).toBeLessThan(4.75)
   await expect(tab.locator('[data-note-id]')).not.toHaveCount(0)
   expect(await tab.locator('[data-note-id]').count()).toBeLessThan(40)
 
@@ -1668,17 +1707,17 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   await page.mouse.wheel(0, -120)
   await expect
     .poll(async () => Number(await zoom.inputValue()))
-    .toBeGreaterThan(100)
+    .toBeGreaterThan(125)
   await expect
     .poll(async () => Number(await tabWindow.getAttribute('data-window-beats')))
     .toBeLessThan(initialWindow)
 
   await zoom.evaluate((input) => {
     const range = input as HTMLInputElement
-    range.value = '100'
+    range.value = '125'
     range.dispatchEvent(new InputEvent('input', { bubbles: true }))
   })
-  await expect(zoom).toHaveValue('100')
+  await expect(zoom).toHaveValue('125')
   const touch = await page.context().newCDPSession(page)
   const pinchBox = await tab.boundingBox()
   expect(pinchBox).not.toBeNull()
@@ -1704,7 +1743,7 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   })
   await expect
     .poll(async () => Number(await zoom.inputValue()))
-    .toBeGreaterThan(100)
+    .toBeGreaterThan(125)
 
   const zoomBox = await zoom.boundingBox()
   expect(zoomBox).not.toBeNull()
@@ -1718,6 +1757,12 @@ test('adapts and zooms a dense fast Tab with real wheel and slider input @smoke'
   await expect
     .poll(async () => Number(await zoom.inputValue()))
     .toBeGreaterThan(150)
+
+  await zoom.press('End')
+  await expect(zoom).toHaveValue('300')
+  await expect
+    .poll(async () => Number(await tabWindow.getAttribute('data-window-beats')))
+    .toBeLessThan(2)
 
   const persistedZoom = await page.evaluate(() =>
     localStorage.getItem('guitar-night-tab-zoom-v1'),
@@ -1844,7 +1889,7 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
   const elapsed = deck.getByLabel('Elapsed score time')
   const loopControls = deck.getByRole('group', { name: 'Section loop' })
   const countIn = deck.getByRole('button', {
-    name: /^Count-in .*Change count-in$/,
+    name: /^Count-in .* before playback\. Change count-in$/,
   })
 
   for (let step = 0; step < 4; step += 1) {
@@ -1852,7 +1897,7 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
     await countIn.click()
   }
   await expect(countIn).toHaveAccessibleName(
-    'Count-in 4 beats. Change count-in',
+    'Count-in 4 beats before playback. Change count-in',
   )
 
   await room

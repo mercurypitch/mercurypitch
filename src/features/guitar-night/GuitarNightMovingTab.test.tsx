@@ -71,10 +71,11 @@ describe('GuitarNightMovingTab', () => {
     const slider = screen.getByRole('slider', { name: /Tab zoom/ })
 
     expect(slider).toHaveAttribute('min', '75')
-    expect(slider).toHaveAttribute('max', '180')
+    expect(slider).toHaveAttribute('max', '300')
+    expect(slider).toHaveValue('125')
     expect(slider).toHaveAttribute(
       'aria-valuetext',
-      expect.stringMatching(/^100% zoom, \d(?:\.\d)? beats visible$/),
+      expect.stringMatching(/^125% zoom, \d+(?:\.\d{1,2})? beats visible$/),
     )
 
     fireEvent.input(slider, { target: { value: '145' } })
@@ -88,6 +89,22 @@ describe('GuitarNightMovingTab', () => {
     expect(slider.closest('label')).toHaveAttribute(
       'title',
       'Scroll over the tab, pinch with two fingers on touch, or drag this control.',
+    )
+  })
+
+  it('reaches a substantially tighter reading window without overstating it', () => {
+    mount()
+    const lanes = screen.getByTestId('guitar-night-moving-tab')
+    const slider = screen.getByRole('slider', { name: /Tab zoom/ })
+
+    fireEvent.input(slider, { target: { value: '300' } })
+
+    const visibleBeats = Number(lanes.parentElement?.dataset.windowBeats)
+    expect(visibleBeats).toBeLessThan(3.5)
+    expect(visibleBeats).toBeGreaterThanOrEqual(1.75)
+    expect(slider).toHaveAttribute(
+      'aria-valuetext',
+      `${(slider as HTMLInputElement).value}% zoom, ${String(visibleBeats)} beats visible`,
     )
   })
 
@@ -111,7 +128,7 @@ describe('GuitarNightMovingTab', () => {
     lanes.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
-    expect(Number((slider as HTMLInputElement).value)).toBeGreaterThan(100)
+    expect(Number((slider as HTMLInputElement).value)).toBeGreaterThan(125)
   })
 
   it('accumulates high-resolution trackpad wheel deltas', () => {
@@ -129,7 +146,7 @@ describe('GuitarNightMovingTab', () => {
       )
     }
 
-    expect(Number((slider as HTMLInputElement).value)).toBeGreaterThan(100)
+    expect(Number((slider as HTMLInputElement).value)).toBeGreaterThan(125)
   })
 
   it('persists wheel zoom once the gesture has gone idle', () => {
@@ -168,7 +185,7 @@ describe('GuitarNightMovingTab', () => {
     lanes.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(false)
-    expect((slider as HTMLInputElement).value).toBe('100')
+    expect((slider as HTMLInputElement).value).toBe('125')
   })
 
   it('uses two touch pointers for pinch while leaving one finger inert', () => {
@@ -178,7 +195,7 @@ describe('GuitarNightMovingTab', () => {
 
     lanes.dispatchEvent(pointer('pointerdown', 1, 100))
     lanes.dispatchEvent(pointer('pointermove', 1, 130))
-    expect((slider as HTMLInputElement).value).toBe('100')
+    expect((slider as HTMLInputElement).value).toBe('125')
 
     lanes.dispatchEvent(pointer('pointerdown', 2, 200))
     lanes.dispatchEvent(pointer('pointermove', 2, 260))

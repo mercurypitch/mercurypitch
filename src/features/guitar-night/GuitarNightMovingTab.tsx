@@ -33,7 +33,7 @@ interface PointerPosition {
 function formatBeatSpan(beats: number): string {
   return Number.isInteger(beats)
     ? String(beats)
-    : beats.toFixed(1).replace(/\.0$/, '')
+    : beats.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
 }
 
 export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {

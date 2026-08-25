@@ -737,9 +737,10 @@ describe('Guitar Night calibration lock', () => {
     expect(scoreRoom.pause).toHaveBeenCalledOnce()
     expect(liveScore).toHaveAttribute('data-state', 'paused')
     expect(within(liveScore).getByText('Score held')).toBeInTheDocument()
-    expect(screen.getByLabelText('Start a fresh live score')).toBeEnabled()
+    expect(screen.getByLabelText('Resume score')).toBeEnabled()
+    expect(screen.getByLabelText('End the take')).toBeEnabled()
 
-    fireEvent.click(screen.getByLabelText('Start a fresh live score'))
+    fireEvent.click(screen.getByLabelText('Resume score'))
     expect(screen.getByLabelText('Starting a fresh live score')).toBeDisabled()
     expect(screen.getByLabelText('Cancel score start')).toBeEnabled()
     expect(liveScore).toHaveAttribute('data-state', 'paused')
@@ -747,7 +748,7 @@ describe('Guitar Night calibration lock', () => {
     fireEvent.click(screen.getByLabelText('Cancel score start'))
     expect(listening.cancel).toHaveBeenCalledOnce()
     expect(liveScore).toHaveAttribute('data-state', 'paused')
-    expect(screen.getByLabelText('Start a fresh live score')).toBeEnabled()
+    expect(screen.getByLabelText('Resume score')).toBeEnabled()
     rejectInput(true)
     await Promise.resolve()
     await Promise.resolve()
@@ -755,18 +756,18 @@ describe('Guitar Night calibration lock', () => {
     expect(liveScore).toHaveAttribute('data-state', 'paused')
 
     listening.start.mockResolvedValueOnce(false)
-    fireEvent.click(screen.getByLabelText('Start a fresh live score'))
+    fireEvent.click(screen.getByLabelText('Resume score'))
     await Promise.resolve()
     await Promise.resolve()
     expect(scoreRoom.startLiveScore).toHaveBeenCalledOnce()
     expect(liveScore).toHaveAttribute('data-state', 'paused')
-    expect(screen.getByLabelText('Start a fresh live score')).toBeEnabled()
+    expect(screen.getByLabelText('Resume score')).toBeEnabled()
 
     listening.start.mockImplementationOnce(async () => {
       setListeningStatus('listening')
       return true
     })
-    fireEvent.click(screen.getByLabelText('Start a fresh live score'))
+    fireEvent.click(screen.getByLabelText('Resume score'))
     await Promise.resolve()
     await Promise.resolve()
 
@@ -825,6 +826,15 @@ describe('Guitar Night calibration lock', () => {
     expect(listening.selectInputProfile).not.toHaveBeenCalled()
     expect(listening.armTakeAt).toHaveBeenCalledTimes(3)
     expect(scoreRoom.toggle).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByLabelText('Pause score'))
+    await Promise.resolve()
+    expect(screen.getByLabelText('End the take')).toBeEnabled()
+    fireEvent.click(screen.getByLabelText('End the take'))
+    await vi.waitFor(() =>
+      expect(liveScore).toHaveAttribute('data-state', 'complete'),
+    )
+    expect(scoreRoom.stop).toHaveBeenCalled()
   })
 
   it('parks a completed score take before opening Listening', () => {

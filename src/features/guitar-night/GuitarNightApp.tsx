@@ -51,7 +51,7 @@ import { measuredReferenceForBacking } from './reference-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightStemKind } from './song-port'
 import type { GuitarNightSongPort, GuitarNightSongSummary } from './song-port'
-import { GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
+import { formatGuitarNightGlassValue, GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, guitarNightGlassLabel, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
 import { guitarNightBandPreparationMessage, loadDefaultGuitarNightBandPreparationPort, useGuitarNightBandPreparationController, } from './useGuitarNightBandPreparationController'
 import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
@@ -1053,6 +1053,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       class={styles.app}
       classList={{ [styles.appRoom]: isStageView() }}
       style={{ [GUITAR_NIGHT_GLASS_VAR]: String(roomGlass()) }}
+      data-backdrop-treatment={background.resolved().treatment}
       data-testid="guitar-night-shell"
     >
       <a class={styles.skipLink} href="#guitar-night-main">
@@ -1175,11 +1176,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               step={GUITAR_NIGHT_GLASS.step}
               value={roomGlass()}
               aria-label="Room visibility"
+              aria-valuetext={formatGuitarNightGlassValue(roomGlass())}
               data-testid="guitar-night-room-glass"
               onInput={(event) =>
                 updateRoomGlass(Number(event.currentTarget.value))
               }
             />
+            <output class={styles.roomGlassValue} aria-hidden="true">
+              {guitarNightGlassLabel(roomGlass())}
+            </output>
           </label>
         </section>
 

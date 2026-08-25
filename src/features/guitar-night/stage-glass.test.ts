@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
+import { formatGuitarNightGlassValue, GUITAR_NIGHT_GLASS, GUITAR_NIGHT_GLASS_VAR, loadGuitarNightGlass, persistGuitarNightGlass, } from './stage-glass'
 
 describe('the Guitar Night room glass preference', () => {
   beforeEach(() => {
@@ -21,8 +21,18 @@ describe('the Guitar Night room glass preference', () => {
   it('lets the slider reach zero, because zero is the room as it shipped', () => {
     expect(GUITAR_NIGHT_GLASS.min).toBe(0)
     expect(GUITAR_NIGHT_GLASS.max).toBe(1)
+    expect(GUITAR_NIGHT_GLASS.step).toBe(0.025)
     expect(persistGuitarNightGlass(0)).toBe(0)
     expect(loadGuitarNightGlass()).toBe(0)
+  })
+
+  it('names the useful room-visibility stops without hiding the percentage', () => {
+    expect(formatGuitarNightGlassValue(0)).toBe('Focused · 0% room visibility')
+    expect(formatGuitarNightGlassValue(0.35)).toBe('Soft · 35% room visibility')
+    expect(formatGuitarNightGlassValue(0.55)).toBe(
+      'Clear · 55% room visibility',
+    )
+    expect(formatGuitarNightGlassValue(1)).toBe('Open · 100% room visibility')
   })
 
   it('does not read an absent preference as a deliberate zero', () => {

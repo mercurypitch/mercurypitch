@@ -5,11 +5,11 @@ import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 
 /** Where the now-line sits, leaving a little played history behind it. */
 export const TAB_PLAYHEAD_RATIO = 0.18
-export const TAB_MIN_WINDOW_BEATS = 3.5
+export const TAB_MIN_WINDOW_BEATS = 1.75
 export const TAB_MAX_WINDOW_BEATS = 10
-export const TAB_DEFAULT_ZOOM_MULTIPLIER = 1
+export const TAB_DEFAULT_ZOOM_MULTIPLIER = 1.25
 export const TAB_MIN_ZOOM_MULTIPLIER = 0.75
-export const TAB_MAX_ZOOM_MULTIPLIER = 1.8
+export const TAB_MAX_ZOOM_MULTIPLIER = 3
 
 const EMPTY_TAB_WINDOW_BEATS = 8
 const DENSITY_BLOCK_BEATS = 4
