@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { buildStageNoteIndex, guidePreviewBeat, neckWindow, stageEventContext, } from './GuitarNightStage'
-import { adaptiveTabWindowBeats, buildStageTabWindowIndex, TAB_MAX_WINDOW_BEATS, TAB_MIN_WINDOW_BEATS, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabWindowEntries, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
+import { adaptiveTabWindowBeats, buildStageTabWindowIndex, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_WINDOW_BEATS, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_WINDOW_BEATS, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabWindowEntries, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
 
 function note(startBeat: number, fret = 0): GuitarNote {
   return {
@@ -144,6 +144,12 @@ describe('adaptive Tab window', () => {
     expect(denseWindow).toBeLessThan(sparseWindow)
     expect(denseWindow).toBeLessThan(6)
     expect(denseWindow).toBeGreaterThanOrEqual(TAB_MIN_WINDOW_BEATS)
+    expect(
+      zoomedTabWindowBeats(denseWindow, TAB_DEFAULT_ZOOM_MULTIPLIER),
+    ).toBeLessThan(4.75)
+    expect(
+      zoomedTabWindowBeats(denseWindow, TAB_MAX_ZOOM_MULTIPLIER),
+    ).toBeLessThan(2)
   })
 
   it('counts authored onset columns rather than every note in a chord', () => {
@@ -168,6 +174,14 @@ describe('adaptive Tab window', () => {
     expect(zoomedTabWindowBeats(8, 0.1)).toBe(TAB_MAX_WINDOW_BEATS)
     expect(zoomedTabWindowBeats(5, 20)).toBe(TAB_MIN_WINDOW_BEATS)
     expect(zoomedTabWindowBeats(6, 1.5)).toBe(4)
+  })
+
+  it('offers a closer default and a three-times ceiling with a musical floor', () => {
+    expect(TAB_DEFAULT_ZOOM_MULTIPLIER).toBe(1.25)
+    expect(TAB_MAX_ZOOM_MULTIPLIER).toBe(3)
+    expect(TAB_MIN_WINDOW_BEATS).toBe(1.75)
+    expect(zoomedTabWindowBeats(TAB_MAX_WINDOW_BEATS, 3)).toBeLessThan(3.5)
+    expect(zoomedTabWindowBeats(5, 3)).toBe(1.75)
   })
 })
 

@@ -11,7 +11,7 @@
 // here is the plumbing. That the plumbing actually moves real pixels was
 // measured in Chromium against the running app: at 0 the entry panel is
 // `blur(18px)` over `rgba(22, 17, 14, 0.94)` — byte-identical to before this
-// existed — and at 1 it is `blur(3.6px)` over `rgba(22, 17, 14, 0.424)`.
+// existed — and at 1 it is `blur(0.36px)` over `rgba(22, 17, 14, 0.169)`.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -83,12 +83,16 @@ const shellGlass = (): string =>
 describe('the Guitar Night room visibility slider', () => {
   beforeEach(() => {
     localStorage.removeItem(GUITAR_NIGHT_GLASS.storageKey)
+    localStorage.removeItem('pitchperfect_guitar_background')
+    localStorage.removeItem('pitchperfect_guitar_night_backdrop')
   })
 
   afterEach(() => {
     cleanup()
     vi.restoreAllMocks()
     localStorage.removeItem(GUITAR_NIGHT_GLASS.storageKey)
+    localStorage.removeItem('pitchperfect_guitar_background')
+    localStorage.removeItem('pitchperfect_guitar_night_backdrop')
     window.history.replaceState(null, '', '/guitar-night')
   })
 
@@ -114,12 +118,32 @@ describe('the Guitar Night room visibility slider', () => {
     mountRoom()
     expect(slider().value).toBe(String(GUITAR_NIGHT_GLASS.defaultValue))
     expect(shellGlass()).toBe(String(GUITAR_NIGHT_GLASS.defaultValue))
+    openRoomDrawer()
+    expect(slider()).toHaveAttribute(
+      'aria-valuetext',
+      'Clear · 55% room visibility',
+    )
+    expect(screen.getByText('Clear')).toBeInTheDocument()
+  })
+
+  it('exposes the catalog treatment so bright rooms retain readable chrome', () => {
+    mountRoom()
+    const shell = screen.getByTestId('guitar-night-shell')
+    expect(shell).toHaveAttribute('data-backdrop-treatment', 'dark')
+
+    openRoomDrawer()
+    fireEvent.click(screen.getByRole('button', { name: /Daylight Loft/i }))
+    expect(shell).toHaveAttribute('data-backdrop-treatment', 'light')
   })
 
   it('writes the property the whole stylesheet reads', () => {
     mountRoom()
     fireEvent.input(slider(), { target: { value: '0.8' } })
     expect(shellGlass()).toBe('0.8')
+    expect(slider()).toHaveAttribute(
+      'aria-valuetext',
+      'Open · 80% room visibility',
+    )
   })
 
   it('can be taken all the way back to the room as it shipped', () => {

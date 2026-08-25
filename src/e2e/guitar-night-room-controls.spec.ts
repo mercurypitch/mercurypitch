@@ -171,10 +171,19 @@ test('lets the click be quieted before a take @smoke', async ({ page }) => {
   await openTheRoom(page, `room-click-${Date.now()}`)
   await openSessionControls(page)
 
-  const click = page.getByRole('button', { name: /Click on/ })
+  const session = page.getByLabel('Room tools')
+  const click = session.getByRole('button', {
+    name: 'Turn playback click off',
+    exact: true,
+  })
   await expect(click).toBeVisible()
   await click.click()
-  await expect(page.getByRole('button', { name: /Click off/ })).toBeVisible()
+  await expect(
+    session.getByRole('button', {
+      name: 'Turn playback click on',
+      exact: true,
+    }),
+  ).toBeVisible()
 })
 
 test('gives a take a way out, so the room is not locked for good @smoke', async ({

@@ -22,6 +22,7 @@ interface Fixture {
   scoreOpen: () => boolean
   setListeningBlocked: (reason: string | null) => void
   setLoopBlocked: (reason: string | null) => void
+  setCountInBlocked: (reason: string | null) => void
   setScoreCanShow: (value: boolean) => void
 }
 
@@ -39,6 +40,7 @@ function makeFixture(): Fixture {
   let listeningActive = false
   let listeningBlocked: string | null = null
   let loopBlocked: string | null = null
+  let countInBlocked: string | null = null
   let scoreOpen = false
   let scoreCanShow = true
   let positionSeconds = 30
@@ -107,6 +109,7 @@ function makeFixture(): Fixture {
     },
     countIn: {
       beats: () => countInBeats,
+      blockedReason: () => countInBlocked,
       setBeats: (beats) => {
         calls.push(`count-in:${String(beats)}`)
         countInBeats = beats
@@ -165,6 +168,9 @@ function makeFixture(): Fixture {
     },
     setLoopBlocked: (reason) => {
       loopBlocked = reason
+    },
+    setCountInBlocked: (reason) => {
+      countInBlocked = reason
     },
     setScoreCanShow: (value) => {
       scoreCanShow = value
@@ -269,6 +275,15 @@ describe('guitar night score voice commands', () => {
     expect(fire(fixture, 'count in three beats')).toBe(
       'Count-in can be off, 1, 2 or 4 beats',
     )
+
+    fixture.setCountInBlocked('Pause before changing the launch count-in')
+    expect(fire(fixture, 'count in')).toBe(
+      'Pause before changing the launch count-in',
+    )
+    expect(fire(fixture, 'count in off')).toBe(
+      'Pause before changing the launch count-in',
+    )
+    expect(fixture.countInBeats()).toBe(4)
 
     expect(fire(fixture, 'tab silent')).toBe('Tab silent')
     expect(fixture.tabSoundEnabled()).toBe(false)

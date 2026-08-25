@@ -35,6 +35,8 @@ export interface GuitarNightScoreVoiceToggle {
 
 export interface GuitarNightScoreVoiceCountIn {
   beats: Accessor<number>
+  /** A live reason prevents a command from relabeling an already-queued launch. */
+  blockedReason?: Accessor<string | null>
   setBeats: (beats: GuitarNightScoreCountInBeats) => void
 }
 
@@ -400,6 +402,10 @@ export function createGuitarNightScoreVoiceCommands(
   const countIn = deps.countIn
   if (countIn !== undefined) {
     const setCountIn = (raw: number | undefined): VoiceCommandResult => {
+      const blockedReason = countIn.blockedReason?.()
+      if (blockedReason !== undefined && blockedReason !== null) {
+        return voiceFailure(blockedReason)
+      }
       if (raw === undefined || !isGuitarNightScoreCountInBeats(raw)) {
         return voiceFailure('Count-in can be off, 1, 2 or 4 beats')
       }
@@ -426,11 +432,7 @@ export function createGuitarNightScoreVoiceCommands(
       id: 'guitarNight.score.countInCycle',
       label: 'Next count-in',
       phrases: COUNT_IN_CYCLE_PHRASES,
-      run: () => {
-        const next = nextGuitarNightScoreCountIn(countIn.beats())
-        countIn.setBeats(next)
-        return formatCountIn(next)
-      },
+      run: () => setCountIn(nextGuitarNightScoreCountIn(countIn.beats())),
     })
   }
 

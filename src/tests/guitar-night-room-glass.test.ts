@@ -67,10 +67,10 @@ describe('one token opens the room back up', () => {
     const app = ruleBody('.app')
     expect(app).toContain('--gn-glass: 0.55;')
     expect(app).toContain(
-      '--gn-surface-scale: calc(1 - var(--gn-glass) * 0.65)',
+      '--gn-surface-scale: calc(1 - var(--gn-glass) * 0.82)',
     )
-    expect(app).toContain('--gn-blur-scale: calc(1 - var(--gn-glass) * 0.92)')
-    expect(app).toContain('--gn-veil-scale: calc(1 - var(--gn-glass) * 0.6)')
+    expect(app).toContain('--gn-blur-scale: calc(1 - var(--gn-glass) * 0.98)')
+    expect(app).toContain('--gn-veil-scale: calc(1 - var(--gn-glass) * 0.85)')
   })
 
   it('lets the backdrop stop veiling its own photograph', () => {
@@ -107,6 +107,17 @@ describe('the chrome over the room follows the slider', () => {
     expect(ruleBody('.entryPanel')).toContain('var(--faceplate)')
   })
 
+  it('keeps a contrast-safe faceplate floor on catalog-authored light rooms', () => {
+    const lightRoom = ruleBody(".app[data-backdrop-treatment='light']")
+    expect(lightRoom).toContain(
+      '--gn-surface-scale: calc(1 - var(--gn-glass) * 0.42)',
+    )
+    expect(lightRoom).toContain('--muted: #f1e6d6')
+    expect(lightRoom).toContain('--muted-readable: #f4eadb')
+    expect(0.94 * (1 - 1 * 0.42)).toBeGreaterThanOrEqual(0.54)
+    expect(css).toContain('.tunerEntryAction span {\n  color: var(--muted);')
+  })
+
   it.each(NOT_ROOM_CHROME)('leaves %s opaque', (sel) => {
     const body = ruleBody(sel)
     expect(body).not.toContain('--gn-surface-scale')
@@ -122,9 +133,9 @@ describe('zero means the room exactly as it shipped', () => {
    * and it is reachable exactly.
    */
   it.each([
-    ['--gn-surface-scale', 0.65],
-    ['--gn-blur-scale', 0.92],
-    ['--gn-veil-scale', 0.6],
+    ['--gn-surface-scale', 0.82],
+    ['--gn-blur-scale', 0.98],
+    ['--gn-veil-scale', 0.85],
   ])('%s resolves to 1', (token, k) => {
     expect(ruleBody('.app')).toContain(
       `${token}: calc(1 - var(--gn-glass) * ${k})`,
@@ -133,15 +144,15 @@ describe('zero means the room exactly as it shipped', () => {
   })
 
   it('never lets a scale reach zero, so chrome cannot vanish', () => {
-    // At the top of the slider surfaces keep about a third of their alpha
-    // and blur keeps a twelfth of its radius — nearly clear, which is what
+    // At the top of the slider surfaces keep a little of their alpha and
+    // blur keeps a fiftieth of its radius — nearly clear, which is what
     // "as open as it goes" was asked to mean, but not literally nothing.
     // Small ivory type over a lit amplifier needs some diffusion left, and
     // Daylight Loft is bright enough to prove it.
-    expect(1 - 1 * 0.65).toBeCloseTo(0.35)
-    expect(1 - 1 * 0.92).toBeCloseTo(0.08)
-    expect(1 - 1 * 0.6).toBeCloseTo(0.4)
-    for (const k of [0.65, 0.92, 0.6]) {
+    expect(1 - 1 * 0.82).toBeCloseTo(0.18)
+    expect(1 - 1 * 0.98).toBeCloseTo(0.02)
+    expect(1 - 1 * 0.85).toBeCloseTo(0.15)
+    for (const k of [0.82, 0.98, 0.85]) {
       expect(1 - 1 * k).toBeGreaterThan(0)
     }
   })
@@ -150,8 +161,8 @@ describe('zero means the room exactly as it shipped', () => {
     // Reported after using it: "the max setting should be a bit more".
     // The range stayed 0..1 — a clean clarity scale — and the curve got
     // steeper instead, so the same slider position means more room.
-    const before = { surface: 0.55, blur: 0.8 }
-    const after = { surface: 0.65, blur: 0.92 }
+    const before = { surface: 0.65, blur: 0.92 }
+    const after = { surface: 0.82, blur: 0.98 }
     expect(1 - after.blur).toBeLessThan(1 - before.blur)
     expect(1 - after.surface).toBeLessThan(1 - before.surface)
   })
@@ -159,8 +170,8 @@ describe('zero means the room exactly as it shipped', () => {
   it('starts mid-slider, not a quarter turn up', () => {
     // "around middle by default so its a bit more less blurry than what
     // default is currently on prod". At 0.35 the faceplate still carried
-    // 12.96px of blur; at 0.55 it carries 8.9px.
-    expect(18 * (1 - 0.55 * 0.92)).toBeCloseTo(8.9, 1)
+    // 12.96px of blur; at 0.55 it carries 8.3px.
+    expect(18 * (1 - 0.55 * 0.98)).toBeCloseTo(8.3, 1)
     expect(18 * (1 - 0.35 * 0.8)).toBeCloseTo(12.96, 1)
   })
 })

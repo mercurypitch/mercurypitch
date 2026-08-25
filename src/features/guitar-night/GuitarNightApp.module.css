@@ -52,8 +52,8 @@
      Measured on the 18px faceplate blur and its 0.94 alpha:
 
        0     blur 18px    alpha 0.94   the room exactly as it shipped
-       0.55  blur 8.9px   alpha 0.60   the default
-       1     blur 1.4px   alpha 0.33   as open as it goes
+       0.55  blur 8.3px   alpha 0.52   the default
+       1     blur 0.4px   alpha 0.17   as open as it goes
 
      The default sits mid-slider rather than low, because the first thing
      said about the shipped look was that it was too blurry — starting at a
@@ -61,11 +61,12 @@
 
      Blur never quite reaches zero: a little diffusion is what keeps small
      ivory type legible over a busy, high-contrast photo, and Daylight Loft
-     is bright enough to prove it. */
+     is bright enough to prove it. Light-treatment rooms also receive the
+     contrast floor below; dark rooms can use the full open-surface curve. */
   --gn-glass: 0.55;
-  --gn-surface-scale: calc(1 - var(--gn-glass) * 0.65);
-  --gn-blur-scale: calc(1 - var(--gn-glass) * 0.92);
-  --gn-veil-scale: calc(1 - var(--gn-glass) * 0.6);
+  --gn-surface-scale: calc(1 - var(--gn-glass) * 0.82);
+  --gn-blur-scale: calc(1 - var(--gn-glass) * 0.98);
+  --gn-veil-scale: calc(1 - var(--gn-glass) * 0.85);
 
   --night: #0d0b09;
   --faceplate: rgb(22 17 14 / calc(0.94 * var(--gn-surface-scale)));
@@ -103,6 +104,16 @@
   overflow: clip;
   color: var(--ivory);
   background: var(--night);
+}
+
+/* Background catalog treatments are authored knowledge, not a browser guess.
+   A light room can still shed nearly all blur and veil, but text-bearing
+   faceplates keep enough dark pigment for ivory copy to remain readable.
+   At Open this yields 0.94 * 0.58 = 0.545 alpha over the photograph. */
+.app[data-backdrop-treatment='light'] {
+  --gn-surface-scale: calc(1 - var(--gn-glass) * 0.42);
+  --muted: #f1e6d6;
+  --muted-readable: #f4eadb;
 }
 
 .appRoom {
@@ -432,6 +443,17 @@
   min-width: 0;
   accent-color: var(--amber);
   cursor: pointer;
+}
+
+.roomGlassValue {
+  flex: none;
+  min-width: 3.7rem;
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.64rem;
+  font-weight: 680;
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-transform: uppercase;
 }
 
 .studioLink,
@@ -1394,7 +1416,7 @@
 }
 
 .tunerEntryAction span {
-  color: rgba(244, 234, 219, 0.5);
+  color: var(--muted);
 }
 
 .tunerEntryAction:hover {
@@ -7444,19 +7466,26 @@
 
 .scoreListeningDock {
   grid-area: listening;
-  position: relative;
-  display: grid;
+  display: flex;
   align-items: center;
-  gap: 0.22rem;
   width: min(8.45rem, 135px);
   min-width: 0;
 }
 
+.scoreListeningSupport {
+  grid-area: support;
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  min-width: 0;
+  gap: 0.4rem;
+}
+
 .scoreListeningMix {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(3.75rem, 1fr));
+  display: flex;
+  flex: none;
   gap: 0.22rem;
-  width: 100%;
+  width: auto;
 }
 
 .scoreListeningMixToggle {
@@ -7518,9 +7547,11 @@
 
 .scoreListeningWarning {
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 0.25rem;
-  width: 100%;
+  width: auto;
+  max-width: 14rem;
   min-width: 0;
   margin: 0;
   padding: 0.18rem 0.36rem;
@@ -7583,6 +7614,7 @@
 
 [data-room-kind='score'] .transportControls {
   display: grid;
+  grid-template-areas: 'support core utilities';
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   justify-content: stretch;
@@ -7591,16 +7623,23 @@
   gap: 0.72rem;
 }
 
-.scorePrimaryTransport,
+.scoreTransportCore,
 .scoreMixStrip,
 .scoreUtilities {
   display: flex;
   align-items: center;
 }
 
+.scoreTransportCore {
+  grid-area: core;
+  justify-self: center;
+  gap: 0.55rem;
+}
+
 .scorePrimaryTransport {
-  justify-self: end;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: 3.4rem var(--touch-target);
+  align-items: center;
   gap: 0.35rem;
 }
 
@@ -7612,6 +7651,8 @@
 }
 
 .scoreUtilities {
+  grid-area: utilities;
+  justify-self: end;
   justify-content: flex-end;
   gap: 0.35rem;
 }
@@ -7654,6 +7695,23 @@
   font-size: 0.55rem;
 }
 
+@media (min-width: 721px) and (max-width: 1320px) {
+  .scoreListeningMixToggle {
+    grid-template-columns: 1fr;
+    width: var(--touch-target);
+    padding: 0;
+  }
+
+  .scoreListeningMixToggle small,
+  .scoreListeningWarningCopy small {
+    display: none;
+  }
+
+  .scoreListeningWarning {
+    max-width: 8.5rem;
+  }
+}
+
 @media (min-width: 721px) and (max-width: 1100px) {
   [data-room-kind='score'] .transportDeck {
     grid-template-areas:
@@ -7663,6 +7721,7 @@
   }
 
   [data-room-kind='score'] .transportControls {
+    grid-template-areas: 'support core utilities';
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
@@ -7681,9 +7740,9 @@
 @media (max-width: 720px) {
   [data-room-kind='score'] .transportDeck {
     grid-template-areas:
-      'rail rail'
-      'controls listening';
-    grid-template-columns: minmax(0, 1fr) auto;
+      'listening rail'
+      'controls controls';
+    grid-template-columns: auto minmax(0, 1fr);
     gap: 0.18rem 0.45rem;
     padding-top: 0.22rem;
   }
@@ -7696,23 +7755,22 @@
   }
 
   [data-room-kind='score'] .transportControls {
-    display: flex;
-    justify-content: flex-start;
-    width: auto;
+    display: grid;
+    grid-template-areas: 'support core';
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
     gap: 0.3rem;
   }
 
   .scoreListeningDock {
-    display: grid;
-    grid-template-columns: auto auto;
     width: auto;
+  }
+
+  .scoreListeningSupport {
     gap: 0.26rem;
   }
 
   .scoreListeningMix {
-    grid-auto-columns: var(--touch-target);
-    grid-auto-flow: column;
-    grid-template-columns: none;
     width: auto;
   }
 
@@ -7727,11 +7785,24 @@
   }
 
   .scoreListeningWarning {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-height: 2.25rem;
+    flex: 0 1 6.8rem;
+    width: auto;
+    min-height: var(--touch-target);
     padding: 0.24rem 0.4rem;
     pointer-events: none;
+  }
+
+  .scoreListeningWarningCopy small {
+    display: none;
+  }
+
+  .scoreTransportCore {
+    gap: 0;
+  }
+
+  .scorePrimaryTransport {
+    grid-template-columns: 54px var(--touch-target);
+    gap: 0.3rem;
   }
 
   [data-room-kind='score'] .playControl {
@@ -7742,7 +7813,7 @@
 
 @media (max-height: 540px) and (min-width: 560px) {
   [data-room-kind='score'] .transportDeck {
-    grid-template-areas: 'controls rail listening';
+    grid-template-areas: 'listening rail controls';
     grid-template-columns: auto minmax(7rem, 1fr) auto;
     gap: 0.32rem;
     padding-block: 0.12rem;
@@ -7756,22 +7827,22 @@
   }
 
   [data-room-kind='score'] .transportControls {
-    display: flex;
-    width: auto;
-    gap: 0.2rem;
-  }
-
-  .scoreListeningDock {
     display: grid;
+    grid-template-areas: 'support core';
     grid-template-columns: auto auto;
     width: auto;
     gap: 0.2rem;
   }
 
+  .scoreListeningDock {
+    width: auto;
+  }
+
+  .scoreListeningSupport {
+    gap: 0.2rem;
+  }
+
   .scoreListeningMix {
-    grid-auto-columns: var(--touch-target);
-    grid-auto-flow: column;
-    grid-template-columns: none;
     width: auto;
   }
 
@@ -7786,11 +7857,16 @@
   }
 
   .scoreListeningWarning {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-height: 2.1rem;
-    padding: 0.2rem 0.36rem;
+    flex: none;
+    justify-content: center;
+    width: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
     pointer-events: none;
+  }
+
+  .scoreListeningWarningCopy {
+    display: none;
   }
 
   [data-room-kind='score'] .timeRail > output:last-child {
@@ -7799,5 +7875,18 @@
 
   [data-room-kind='score'] .timeRail {
     grid-template-columns: 2.15rem minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 360px) {
+  .scoreListeningWarning {
+    flex-basis: var(--touch-target);
+    justify-content: center;
+    width: var(--touch-target);
+    padding: 0;
+  }
+
+  .scoreListeningWarningCopy {
+    display: none;
   }
 }

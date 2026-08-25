@@ -27,7 +27,7 @@ const preference = createClampedPreference({
   defaultValue: 0.55,
   min: 0,
   max: 1,
-  step: 0.05,
+  step: 0.025,
 })
 
 export const GUITAR_NIGHT_GLASS = preference.spec
@@ -38,3 +38,28 @@ export const persistGuitarNightGlass = preference.persist
 
 /** The custom property the whole stylesheet reads. */
 export const GUITAR_NIGHT_GLASS_VAR = '--gn-glass'
+
+export type GuitarNightGlassLabel = 'Focused' | 'Soft' | 'Clear' | 'Open'
+
+function clampGuitarNightGlass(value: number): number {
+  if (!Number.isFinite(value)) return GUITAR_NIGHT_GLASS.defaultValue
+  return Math.min(
+    GUITAR_NIGHT_GLASS.max,
+    Math.max(GUITAR_NIGHT_GLASS.min, value),
+  )
+}
+
+/** A short, useful description for the visual room-clarity stop. */
+export function guitarNightGlassLabel(value: number): GuitarNightGlassLabel {
+  const clamped = clampGuitarNightGlass(value)
+  if (clamped <= 0.2) return 'Focused'
+  if (clamped <= 0.45) return 'Soft'
+  if (clamped <= 0.7) return 'Clear'
+  return 'Open'
+}
+
+/** Keeps the otherwise visual slider understandable without seeing the room. */
+export function formatGuitarNightGlassValue(value: number): string {
+  const clamped = clampGuitarNightGlass(value)
+  return `${guitarNightGlassLabel(clamped)} · ${Math.round(clamped * 100)}% room visibility`
+}

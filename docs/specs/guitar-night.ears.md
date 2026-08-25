@@ -918,11 +918,12 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   rehearsal or moving its seek thumb unexpectedly.
 - **REQ-GN-STAGE-019 — Adaptive moving Tab:** WHEN an authored score opens in
   `Tab`, Guitar Night shall choose one stable reading window from tempo and
-  distinct onset density, keep that window within 3.5–10 beats, and offer one
-  persisted Tab-only zoom through an accessible range, wheel input over the
-  lanes, and a two-pointer pinch. Notes and visible A/B context shall share the
-  exact same window. `Highway` and `Grid` camera framing shall remain unchanged,
-  and free play shall not expose an inert Tab-zoom control.
+  distinct onset density, keep that window within 1.75–10 beats, and offer one
+  persisted Tab-only zoom from 75–300% through an accessible range, wheel input
+  over the lanes, and a two-pointer pinch. New players shall begin at 125%.
+  Notes and visible A/B context shall share the exact same window. `Highway`
+  and `Grid` camera framing shall remain unchanged, and free play shall not
+  expose an inert Tab-zoom control.
 - **REQ-GN-STAGE-020 — Dense-score work bounds:** WHILE a long authored score
   plays, Guitar Night shall preserve keyed moving-Tab note elements between
   animation frames, query precompiled score indexes rather than repeatedly
