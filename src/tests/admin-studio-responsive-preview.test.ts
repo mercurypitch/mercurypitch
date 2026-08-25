@@ -54,6 +54,21 @@ const PREVIEW_ISOLATION_SCRIPT = resolve(
   __dirname,
   '../../scripts/assert-pr-preview-isolation.mjs',
 )
+const DEV_TURNSTILE_CANARY_SCRIPT_PATH = resolve(
+  __dirname,
+  '../../scripts/verify-dev-turnstile-isolation.mjs',
+)
+const DEV_TURNSTILE_CANARY_SCRIPT = readFileSync(
+  DEV_TURNSTILE_CANARY_SCRIPT_PATH,
+  'utf-8',
+)
+const DEV_TURNSTILE_CANARY_CONFIG = readFileSync(
+  resolve(
+    __dirname,
+    '../../workers/db-worker/wrangler.dev-turnstile-canary.jsonc',
+  ),
+  'utf-8',
+)
 const PREVIEW_DATABASE_PLACEHOLDER_ID = '00000000-0000-0000-0000-000000000000'
 const RESOLVED_PREVIEW_DATABASE_ID = '11111111-2222-4333-8444-555555555555'
 const FOREIGN_DATABASE_ID = 'deadbeef-dead-4bad-8bad-deadbeefcafe'
@@ -492,11 +507,52 @@ ${DB_PREVIEW_TEMPLATE.replace(
       /- name: Verify dev Turnstile credential isolation\s+if: env\.DEPLOY_ENV == 'dev'/,
     )
     expect(DB_DEPLOY_WORKFLOW).toContain(
-      "'https://api-dev.mercurypitch.com/api/auth/login'",
+      'run: node scripts/verify-dev-turnstile-isolation.mjs',
     )
-    expect(DB_DEPLOY_WORKFLOW).toContain('XXXX.DUMMY.TOKEN.XXXX')
     expect(DB_DEPLOY_WORKFLOW).toContain(
+      'CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}',
+    )
+    expect(DB_DEPLOY_WORKFLOW).toContain(
+      'CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}',
+    )
+    expect(DB_DEPLOY_WORKFLOW).not.toContain(
+      'turnstile-isolation-${GITHUB_RUN_ID}',
+    )
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain(
+      "const DEV_AUTH_URL = 'https://api-dev.mercurypitch.com/api/auth/login'",
+    )
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain('XXXX.DUMMY.TOKEN.XXXX')
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain('response.status === 401')
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain('remoteBindings: true')
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain('persist: false')
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain(
       'CAPTCHA verification failed. Please try again.',
+    )
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).toContain(
+      "if (process.env.DEPLOY_ENV !== 'dev')",
+    )
+    expect(DEV_TURNSTILE_CANARY_SCRIPT).not.toContain(
+      'https://api.mercurypitch.com',
+    )
+    expect(DEV_TURNSTILE_CANARY_CONFIG).toContain(
+      '"service": "mercury-pitch-db-dev"',
+    )
+    expect(DEV_TURNSTILE_CANARY_CONFIG).toContain('"remote": true')
+    expect(DEV_TURNSTILE_CANARY_CONFIG).toContain('"workers_dev": false')
+    expect(DEV_TURNSTILE_CANARY_CONFIG).not.toMatch(/"main"\s*:/)
+    expect(DEV_TURNSTILE_CANARY_CONFIG).not.toMatch(/"routes"\s*:/)
+    expect(DEV_TURNSTILE_CANARY_CONFIG).not.toMatch(/"env"\s*:/)
+    const prodAttempt = spawnSync(
+      process.execPath,
+      [DEV_TURNSTILE_CANARY_SCRIPT_PATH],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, DEPLOY_ENV: 'prod' },
+      },
+    )
+    expect(prodAttempt.status).not.toBe(0)
+    expect(prodAttempt.stderr).toContain(
+      'The Turnstile isolation canary may run only against DEV.',
     )
     expect(DB_DEPLOY_WORKFLOW).not.toMatch(
       /Verify dev Turnstile credential isolation[\s\S]*https:\/\/api\.mercurypitch\.com/,

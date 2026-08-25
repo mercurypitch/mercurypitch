@@ -205,36 +205,12 @@ jobs:
       # public always-pass test secret and rejected by every real widget
       # secret. A 401 here means a PR preview credential contaminated dev;
       # any other response drift also fails rather than hiding broken login.
+      # Invoke the deployed Worker through a remote Service Binding: public
+      # GitHub-runner requests are challenged by the zone WAF before they can
+      # exercise the Worker or its secret.
       - name: Verify dev Turnstile credential isolation
         if: env.DEPLOY_ENV == 'dev'
-        run: |
-          set -euo pipefail
-
-          canary_payload=$(jq -n \
-            --arg email "turnstile-isolation-${GITHUB_RUN_ID}@example.invalid" \
-            '{
-              email: $email,
-              password: "DeliberatelyWrong-7f2c",
-              cfTurnstileToken: "XXXX.DUMMY.TOKEN.XXXX"
-            }')
-          canary_response=$(curl \
-            --silent \
-            --show-error \
-            --request POST \
-            --header 'content-type: application/json' \
-            --data "$canary_payload" \
-            --write-out $'\n%{http_code}' \
-            'https://api-dev.mercurypitch.com/api/auth/login')
-          canary_status="${canary_response##*$'\n'}"
-          canary_body="${canary_response%$'\n'*}"
-
-          if [ "$canary_status" != '400' ]; then
-            echo "Dev Turnstile isolation canary returned HTTP ${canary_status}; expected 400."
-            exit 1
-          fi
-          if ! printf '%s' "$canary_body" \
-            | jq -e '.error == "CAPTCHA verification failed. Please try again."' \
-            > /dev/null; then
-            echo 'Dev Turnstile isolation canary returned an unexpected body.'
-            exit 1
-          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/verify-dev-turnstile-isolation.mjs
