@@ -321,14 +321,19 @@ the wire, the session and every transfer shall keep running, and a
 corner chip (where notifications land) shall show progress and reopen
 the dialog when pressed. Reopening lands on the screen the dialog was
 closed on, not on the chooser. A session still being set up (starting,
-waiting) is torn down as before — its code is on screen nowhere once
-the dialog is gone, so nobody could ever join it. Ending a connected
-pairing is a deliberate act: the dialog's Disconnect button.
+waiting) gets 45 seconds and then ends — its code is on screen nowhere
+once the dialog is gone, so the only person who could still join it is
+whoever else has the code. The 45 seconds exist for REQ-SYNC-035: a
+live pair spends the seconds after a Wi-Fi wobble in exactly this
+state, and closing the dialog then must not destroy the pairing the
+reconnect is about to rebuild. Ending a connected pairing is a
+deliberate act: the dialog's Disconnect button.
 _Tests:_ `sync-store` — "REQ-SYNC-030: hiding the dialog keeps a
 connected session", "REQ-SYNC-030: hiding a session still being set up
-tears it down"; `SyncHost` — "REQ-SYNC-030: the chip appears when a
-live session is hidden"; `SyncDevicesModal` — "REQ-SYNC-030: the X
-hides the dialog without ending the session".
+closes it, after a grace", "REQ-SYNC-030: reopening inside the grace
+keeps the setup alive"; `SyncHost` — "REQ-SYNC-030: the chip appears
+when a live session is hidden"; `SyncDevicesModal` — "REQ-SYNC-030: the
+X hides the dialog without ending the session".
 
 ### REQ-SYNC-031 — Only the X (or Escape) closes the dialog
 
@@ -346,10 +351,16 @@ neither closes nor disconnects".
 **WHEN** ten minutes pass, the session shall end and say so in a
 notification. Reopening the dialog or any transfer activity rewinds
 the countdown, and a moving transfer is never cut — its completion
-starts the ten minutes over.
+starts the ten minutes over. The far device's dialog counts too: while
+a dialog is open it sends `sync-active` every 30 seconds, and
+receiving one rewinds the countdown. Without it, the peer doing what
+our own copy asks — sitting in its open dialog freeing space — looked
+abandoned and was cut off at ten minutes.
 _Tests:_ `sync-store` — "REQ-SYNC-032: a hidden idle session closes
 after ten minutes", "REQ-SYNC-032: reopening the dialog stops the
-countdown".
+countdown", "REQ-SYNC-032: an open dialog tells the far device
+somebody is here", "REQ-SYNC-032: the far dialog being open rewinds
+our countdown".
 
 ### REQ-SYNC-033 — The screen stays awake while songs move
 
@@ -376,25 +387,37 @@ refreshes between sends, and without that the bulk action would
 re-pick every song the last batch just delivered. Every row stays
 individually sendable — a torn copy over there is repaired only by a
 resend (REQ-SYNC-028) — and a build that announces nothing marks
-nothing: unknown is not empty. The announcement dies with the peer;
-the next device on the same code speaks for itself.
+nothing: unknown is not empty — and neither is a library field that
+arrives as anything but a list of non-empty strings, which is read as
+unknown rather than trusted into a Set. The announcement dies with the
+peer; the next device on the same code speaks for itself. The hello
+itself goes out the moment the channel opens, carrying the device
+name, and again once the local library has been read: a slow or failed
+database open must delay the hashes, never the greeting.
 _Tests:_ `sync-store` — "REQ-SYNC-034: the hello carries this library,
 by hash", "REQ-SYNC-034: the far library is remembered, and dies with
-the peer"; `SyncDevicesModal` — "REQ-SYNC-034: marks songs the far
-device holds, and selects only the missing", "REQ-SYNC-034: a song
-sent this session stops being missing".
+the peer", "a hello whose library is not a list is treated as
+unknown", "a hello keeps only the hashes that could name a song";
+`SyncDevicesModal` — "REQ-SYNC-034: marks songs the far device holds,
+and selects only the missing", "REQ-SYNC-034: a song sent this session
+stops being missing".
 
 ### REQ-SYNC-035 — A dropped pair rebuilds itself
 
 **WHILE** both devices remain in the room, **WHEN** the pair between
 them dies (channel closed, ICE failed), the peer layer shall attempt a
 brand-new connection at 2 s and 8 s, the initiator chosen by the same
-glare rule as a fresh join. A device that LEFT the room is not chased —
-that offer lands nowhere. A transfer that was in flight has already
-failed honestly: what returns is the PAIRING, never the song. Behind a
-hidden dialog the comeback is announced, because the corner chip
-changing its text is not an announcement.
+glare rule as a fresh join. Two attempts is the whole budget: each
+failed rebuild otherwise schedules two more, and since a cross-network
+pair cannot connect at all over STUN, an evening ends in an unbounded
+retry loop with an error toast per round. A device that LEFT the room
+is not chased — that offer lands nowhere, and any attempt already
+scheduled for it is cancelled. A transfer that was in flight has
+already failed honestly: what returns is the PAIRING, never the song.
+Behind a hidden dialog the comeback is announced, because the corner
+chip changing its text is not an announcement.
 _Tests:_ `sync-peer` — "REQ-SYNC-035: rebuilds a dropped pair while
-both stay in the room", "does not chase a peer that left the room";
+both stay in the room", "does not chase a peer that left the room",
+"gives up after its two tries", "a disposed peer never retries";
 `sync-store` — "REQ-SYNC-035: a peer that comes back is welcomed
 behind a hidden dialog".

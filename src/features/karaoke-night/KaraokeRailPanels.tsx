@@ -12,7 +12,7 @@ import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-pic
 import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { openSyncModal } from '@/stores/sync-ui'
+import { openSyncModal } from '@/stores/sync-ui-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, uvrProcessingMode, } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'

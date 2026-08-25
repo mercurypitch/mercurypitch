@@ -16,6 +16,10 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('@/stores/sync-store', () => ({
+  isLiveTransfer: (t: SyncTransfer) =>
+    t.status === 'packing' ||
+    t.status === 'preparing' ||
+    t.status === 'transferring',
   syncPeerLabel: () => state.label,
   syncQueue: () => state.queue,
   syncState: () => state.syncState,
@@ -23,7 +27,7 @@ vi.mock('@/stores/sync-store', () => ({
 }))
 
 const syncUi = vi.hoisted(() => ({ openSyncModal: vi.fn() }))
-vi.mock('@/stores/sync-ui', () => syncUi)
+vi.mock('@/stores/sync-ui-store', () => syncUi)
 
 vi.mock('../icons', () => ({
   DeviceSync: () => <span>icon</span>,

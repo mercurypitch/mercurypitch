@@ -371,7 +371,7 @@ export default defineConfig(({ command, mode }) => {
             // standalone page executes the whole app to read one signal
             // — the QrCode failure all over again.
             if (
-              id.includes('/src/stores/sync-ui.') ||
+              id.includes('/src/stores/sync-ui-store.') ||
               id.includes('/src/components/sync/SyncHost.')
             ) {
               return 'sync-ui'

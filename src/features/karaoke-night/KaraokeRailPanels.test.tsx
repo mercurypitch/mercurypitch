@@ -68,7 +68,7 @@ vi.mock('@/stores/sync-store', () => syncStore)
 // The dialog mounts at page scope (KaraokeNightApp → SyncHost); the
 // rail only rings the bell, so the mock is the bell.
 const syncUi = vi.hoisted(() => ({ openSyncModal: vi.fn() }))
-vi.mock('@/stores/sync-ui', () => syncUi)
+vi.mock('@/stores/sync-ui-store', () => syncUi)
 vi.mock('./karaoke-account', () => ({
   credits: () => [],
   refreshCredits: vi.fn(),

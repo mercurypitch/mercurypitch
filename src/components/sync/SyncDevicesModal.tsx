@@ -26,7 +26,7 @@ import { useFocusTrap } from '@/lib/use-focus-trap'
 // Importing from the module that DEFINES a thing keeps this graph to
 // stores the build can color independently of the app shell.
 import type { SyncTransfer } from '@/stores/sync-store'
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncRole, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, isLiveTransfer, sendSongToPeer, startSyncReceive, startSyncSend, stopQueue, stopSync, syncBusy, syncError, syncOwnRoom, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncRole, syncRoomId, syncState, syncTransfers, takeSyncCodeToJoin, } from '@/stores/sync-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive, getGroupsReactive, } from '@/stores/uvr-store'
 import { DeviceSync } from '../icons'
@@ -146,7 +146,13 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
     )
       void startSyncReceive()
     // A scanned code is a complete one, so there is nothing left to ask.
-    if (scanned !== null && !jamSignalingIsMocked()) join()
+    // Same idle guard as the receive branch above, and for the same
+    // reason: a session now outlives this dialog, so a QR scanned while
+    // one is running behind the corner chip would switch rooms under a
+    // still-connected peer — the new device is then discarded by
+    // first-device-wins and the old transfer dies with the room.
+    if (scanned !== null && syncState() === 'idle' && !jamSignalingIsMocked())
+      join()
   })
 
   const enterReceive = (): void => {
@@ -168,7 +174,11 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
       props.initialSessionId !== undefined
     ) {
       initialSent = true
-      void sendSongToPeer(props.initialSessionId)
+      // Queued, not sent directly: `sendSongToPeer` refuses outright
+      // while anything else is in flight, and this one-shot has nowhere
+      // to put that refusal — no row, no message, no retry, so the song
+      // the user explicitly asked for would vanish. The queue waits.
+      enqueueSongs([props.initialSessionId])
     }
   })
 
@@ -201,16 +211,27 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
    * here with tooBigForPeer, and for the same TDZ reason: memos below
    * call it as they are made.
    */
-  const peerHas = (session: UvrSession): boolean => {
-    const hash = session.fileHash ?? ''
-    if (syncPeerSongs()?.has(hash) === true) return true
-    return syncTransfers().some(
-      (t) =>
-        t.direction === 'out' &&
-        t.fileHash === hash &&
-        (t.status === 'done' || t.status === 'already'),
-    )
-  }
+  const peerHeld = createMemo(
+    () => {
+      const held = new Set(syncPeerSongs() ?? [])
+      for (const t of syncTransfers()) {
+        if (t.status === 'done' || t.status === 'already') held.add(t.fileHash)
+      }
+      return held
+    },
+    undefined,
+    {
+      // `syncTransfers` is republished on every 16KB chunk, and this memo
+      // feeds the send list's sort. Without an equality check the whole
+      // library re-sorted thousands of times per song — and a row whose
+      // transfer had just finished slid out from under a tapping finger.
+      equals: (a, b) =>
+        a.size === b.size && [...a].every((hash) => b.has(hash)),
+    },
+  )
+
+  const peerHas = (session: UvrSession): boolean =>
+    peerHeld().has(session.fileHash ?? '')
 
   /** True when the far device has less room than a typical song needs. */
   const lowOnRoom = (): boolean => {
@@ -220,6 +241,10 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
   const sendable = createMemo<UvrSession[]>(() => {
     const group = groupFilter()
+    // Read here, in the memo's own scope, rather than from inside the
+    // comparator: the sort runs synchronously either way, but a
+    // comparator that reads reactivity reads as if it might not.
+    const held = peerHeld()
     return getAllUvrSessionsReactive()
       .filter(
         (s) =>
@@ -236,8 +261,8 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
         if (aFits !== bFits) return aFits - bFits
         // Among those, the ones already over there sink below the ones
         // that are missing — the list leads with what a send is FOR.
-        const aHeld = peerHas(a) ? 1 : 0
-        const bHeld = peerHas(b) ? 1 : 0
+        const aHeld = held.has(a.fileHash ?? '') ? 1 : 0
+        const bHeld = held.has(b.fileHash ?? '') ? 1 : 0
         if (aHeld !== bHeld) return aHeld - bHeld
         return b.createdAt - a.createdAt
       })
@@ -771,13 +796,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
                           {transferStateLabel(t)}
                         </span>
                       </div>
-                      <Show
-                        when={
-                          t.status === 'packing' ||
-                          t.status === 'preparing' ||
-                          t.status === 'transferring'
-                        }
-                      >
+                      <Show when={isLiveTransfer(t)}>
                         <div class={styles.bar}>
                           <div
                             class={styles.barFill}
@@ -811,17 +830,7 @@ export const SyncDevicesModal: Component<SyncDevicesModalProps> = (props) => {
 
             {/* Said exactly when somebody is deciding whether they may
                 leave: mid-transfer. The chip it promises is SyncHost's. */}
-            <Show
-              when={
-                syncBusy() ||
-                syncTransfers().some(
-                  (t) =>
-                    t.status === 'packing' ||
-                    t.status === 'preparing' ||
-                    t.status === 'transferring',
-                )
-              }
-            >
+            <Show when={syncBusy() || syncTransfers().some(isLiveTransfer)}>
               <p class={styles.hint}>
                 Closing this window stops nothing — the transfer keeps going
                 behind a small chip in the corner, and the devices stay

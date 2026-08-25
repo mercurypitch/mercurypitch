@@ -7,21 +7,24 @@
 // own, because a mis-tap here must cost nothing.
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { createMemo, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import type { SyncTransfer } from '@/stores/sync-store'
-import { syncPeerLabel, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
-import { openSyncModal } from '@/stores/sync-ui'
+import { isLiveTransfer, syncPeerLabel, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { openSyncModal } from '@/stores/sync-ui-store'
 import { DeviceSync } from '../icons'
 import styles from './SyncTransferChip.module.css'
 
-const isLive = (t: SyncTransfer): boolean =>
-  t.status === 'packing' ||
-  t.status === 'preparing' ||
-  t.status === 'transferring'
-
 export const SyncTransferChip: Component = () => {
-  const current = (): SyncTransfer | undefined => syncTransfers().find(isLive)
+  // Memos, not plain calls: `syncTransfers` is republished on every 16KB
+  // chunk, and the chip is always on screen while one is moving. The
+  // percentage only changes a hundred times a transfer, so gating the
+  // DOM write on the rounded value is the difference between ~100
+  // updates and several thousand.
+  const current = createMemo<SyncTransfer | undefined>(() =>
+    syncTransfers().find(isLiveTransfer),
+  )
+  const pct = createMemo(() => Math.round((current()?.ratio ?? 0) * 100))
 
   const label = (): string => {
     const t = current()
@@ -35,9 +38,8 @@ export const SyncTransferChip: Component = () => {
               ? 'Sending'
               : 'Receiving'
       // `preparing` has no honest number behind it — see `sync-preparing`.
-      const pct =
-        t.status === 'preparing' ? '' : ` — ${Math.round(t.ratio * 100)}%`
-      return `${verb} “${t.title}”${pct}`
+      const suffix = t.status === 'preparing' ? '' : ` — ${pct()}%`
+      return `${verb} “${t.title}”${suffix}`
     }
     if (syncState() === 'connected') {
       return `Sync ready: ${syncPeerLabel() ?? 'another device'}`
@@ -66,19 +68,16 @@ export const SyncTransferChip: Component = () => {
             </Show>
           </span>
         </span>
-        <Show
-          when={current() !== undefined && current()!.status !== 'preparing'}
-        >
-          <span class={styles.bar}>
-            <span
-              class={styles.barFill}
-              style={{ width: `${Math.round((current()?.ratio ?? 0) * 100)}%` }}
-            />
-          </span>
+        <Show when={current()} keyed>
+          {(t) => (
+            <Show when={t.status !== 'preparing'}>
+              <span class={styles.bar}>
+                <span class={styles.barFill} style={{ width: `${pct()}%` }} />
+              </span>
+            </Show>
+          )}
         </Show>
       </button>
     </Portal>
   )
 }
-
-export default SyncTransferChip

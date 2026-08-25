@@ -75,7 +75,7 @@ vi.mock('@/stores/sync-store', () => ({
 // The dialog itself mounts in the app shell (SyncHost); this panel only
 // rings the bell, so the mock is the bell.
 const syncUi = vi.hoisted(() => ({ openSyncModal: vi.fn() }))
-vi.mock('@/stores/sync-ui', () => ({
+vi.mock('@/stores/sync-ui-store', () => ({
   openSyncModal: syncUi.openSyncModal,
   syncModalOpen: () => false,
 }))
