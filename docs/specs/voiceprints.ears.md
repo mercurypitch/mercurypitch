@@ -109,12 +109,40 @@ voiceprint section shall show a notice ("keep these on this account?") with
 explicit accept and "Not now" actions. **When** accepted, those records are
 retagged to the account and uploaded (retag-first, so a failed upload is
 recovered by the next ordinary sync; already-known `takenAt` are skipped).
-**When** a password account is REGISTERED on this device, unclaimed records
-are adopted automatically — creating the account at the onboarding keep beat
-is the consent the notice would ask for; Google and existing-account
-sign-ins stay prompt-gated. Records tagged to a **different** account are
-never offered and never adopted — their owner sees them by signing in;
-everyone sees them signed out.
+**When** an account is CREATED on this device, unclaimed records are adopted
+automatically — creating the account at the onboarding keep beat is the
+consent the notice would ask for. Existing-account sign-ins stay
+prompt-gated. Records tagged to a **different** account are never offered
+and never adopted — their owner sees them by signing in; everyone sees them
+signed out.
+
+Creation, not provider, is what decides (amended 2026-08-25). The rule
+originally said "a password account is REGISTERED", with Google grouped
+alongside existing-account sign-ins as prompt-gated. That was not a policy
+about Google; it was the shape of the code. `registerWithPassword`
+resolving is proof an account was made, so AuthModal could adopt inline —
+whereas Google leaves the page, and one button both registers and signs in,
+so nothing on the client knew which had happened.
+
+The consequence was silent and one-sided: of the accounts created on
+production between 2026-08-07 and 2026-08-24, password sign-ups kept their
+onboarding voiceprint 10 times in 11, and Google sign-ups 4 times in 21.
+The visitor was promised "keep this take" at the keep beat and, two thirds
+of the time, chose the button that dropped it.
+
+**When** the sign-in that resolves is a Google redirect, the worker's
+`isNew` — already returned by `resolveGoogleUser` and already carried back
+as `gauth_new=1` for the signup funnel — is what stands in for
+`registerWithPassword` resolving. `isNew` is false for a returning Google
+user and for the verified-email auto-link to an existing password account,
+so both of those remain prompt-gated exactly as before; it is true only for
+a brand-new account and for the in-place upgrade of this device's anonymous
+row, which are the two ways Google creates one.
+
+**Not** covered: Karaoke Night's standalone account UI. It is a separate
+Vite entry that never imports the IndexedDB layer, and adoption would pull
+that layer into an ad landing page's bundle. A Google sign-up there still
+leaves takes for the Settings notice.
 
 Records tagged with this **device's own id** are treated as unclaimed: an
 anonymous identity's id IS the device id (the worker keys

@@ -20,7 +20,7 @@
 
 import { getDb } from '@/db'
 import type { Voiceprint, VoiceprintSource } from '@/db/entities'
-import { hasUpgradedAccount, hasValidToken } from '@/db/services/auth-service'
+import { hasUpgradedAccount, hasValidToken, takeGoogleAccountCreated, } from '@/db/services/auth-service'
 import { getDeviceId, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import type { MirrorSummary } from '@/lib/mirror/metrics'
@@ -524,4 +524,38 @@ export async function adoptDeviceVoiceprints(): Promise<number> {
     // Covered by the retag-first note above.
   }
   return adoptable.length
+}
+
+/**
+ * Adopt this device's unclaimed takes when the Google redirect that just
+ * landed CREATED the account — the Google half of REQ-VPR-014.
+ *
+ * The password path adopts inline in AuthModal, because `registerWithPassword`
+ * resolving IS the proof an account was made. Google cannot do that: one
+ * button both registers and signs in, and which one happened is only known
+ * server-side. So the proof arrives as `gauth_new=1` on the return fragment
+ * and is read here.
+ *
+ * Consent is account CREATION, exactly as on the password path — not being
+ * inside the onboarding flow. A visitor who measured a voiceprint in the
+ * Voice Mirror and then made their first account from Settings has given the
+ * same consent as one who did it at the keep beat, and the shipped password
+ * branch has always treated those alike. Signing in to an account that
+ * already existed still adopts nothing: `isNew` is false for a returning
+ * Google user and for the verified-email auto-link, so both stay behind the
+ * Settings notice.
+ *
+ * Never rejects — every path inside `adoptDeviceVoiceprints` already swallows
+ * its own failures, and a floating promise at app boot must not become an
+ * unhandled rejection.
+ */
+export async function adoptAfterGoogleSignup(): Promise<number> {
+  if (!takeGoogleAccountCreated()) return 0
+  try {
+    return await adoptDeviceVoiceprints()
+  } catch {
+    // Retag-first means a failure here still leaves the takes own-tagged
+    // for the next ordinary sync.
+    return 0
+  }
 }
