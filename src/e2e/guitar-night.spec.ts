@@ -1645,6 +1645,9 @@ test('imports authored drums into a backing-only free-play room @smoke', async (
       exact: true,
     }),
   ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Drums to follow', exact: true }),
+  ).toBeVisible()
   await expect(page).toHaveURL(/\/guitar-night\?song=/)
   expect(
     await page.evaluate(
