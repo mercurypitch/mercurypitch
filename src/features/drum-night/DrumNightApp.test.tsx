@@ -1637,6 +1637,10 @@ describe('DrumNightApp', () => {
     expect(
       timelineControls.getByRole('slider', { name: 'Loop start marker' }),
     ).toHaveAttribute('aria-valuenow', '0')
+    fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
+    expect(
+      screen.getByRole('status', { name: 'Practice loop in score' }),
+    ).toHaveTextContent('A · Beat 1')
 
     const seek = timelineControls.getByRole('slider', {
       name: 'Drum part position',
@@ -1658,6 +1662,9 @@ describe('DrumNightApp', () => {
     ).toBeVisible()
     expect(timelineControls.getByText(/Beat 1 – Beat/)).toBeVisible()
     expect(screen.getByText(/A–B loop set from beat 1 to beat /)).toBeVisible()
+    expect(
+      screen.getByRole('status', { name: 'Practice loop in score' }),
+    ).toHaveTextContent(/A · Beat 1 → B · Beat/)
 
     fireEvent.click(
       timelineControls.getByRole('button', {
@@ -1670,6 +1677,9 @@ describe('DrumNightApp', () => {
     expect(markB).toHaveAttribute('aria-pressed', 'false')
     expect(
       timelineControls.queryByRole('slider', { name: /Loop .* marker/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('status', { name: 'Practice loop in score' }),
     ).not.toBeInTheDocument()
   })
 

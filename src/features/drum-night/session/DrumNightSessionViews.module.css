@@ -167,6 +167,39 @@
   font-variant-numeric: tabular-nums;
 }
 
+.scoreLoopRegion {
+  fill: rgb(102 213 205 / 7%);
+  stroke: rgb(102 213 205 / 24%);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.scoreLoopBoundary path {
+  fill: none;
+  stroke: var(--session-cyan);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.scoreLoopBoundary rect {
+  fill: var(--session-cyan);
+}
+
+.scoreLoopBoundary text {
+  fill: var(--session-room);
+  font-size: 10px;
+  font-weight: 820;
+}
+
+.scoreLoopBoundaryB path {
+  stroke: var(--session-amber);
+}
+
+.scoreLoopBoundaryB rect {
+  fill: var(--session-amber);
+}
+
 .scoreMeterSummary {
   display: flex;
   flex-wrap: wrap;
@@ -223,6 +256,34 @@
   stroke: var(--session-cyan);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
+}
+
+.scoreLoopContext {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 18px;
+  border-top: 1px solid var(--session-line);
+  color: var(--session-muted);
+  background: rgb(102 213 205 / 4%);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.scoreLoopContext strong {
+  flex: 0 0 auto;
+  color: var(--session-cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreLoopContext[data-state='pending'] {
+  background: rgb(231 173 82 / 4%);
+}
+
+.scoreLoopContext[data-state='pending'] strong {
+  color: var(--session-amber);
 }
 
 .scoreFigure figcaption {
@@ -695,6 +756,13 @@
     padding: 11px 14px;
   }
 
+  .scoreLoopContext {
+    align-items: start;
+    flex-direction: column;
+    gap: 2px;
+    padding-inline: 14px;
+  }
+
   .seatHud {
     top: 126px;
     right: auto;
@@ -781,6 +849,7 @@
   }
 
   .scoreFigure figcaption,
+  .scoreLoopContext,
   .semanticEvents,
   .mappingNotice,
   .scoreMeterSummary {
