@@ -104,15 +104,15 @@
   height: 46px;
   margin: 12px auto 18px;
   place-items: center;
+  border: 1px solid rgb(238 231 219 / 12%);
   border-radius: 13px;
-  color: var(--room);
-  background: var(--vellum);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 24%);
+  background: rgb(238 231 219 / 3%);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
 }
 
-.brandMark svg {
-  width: 27px;
-  height: 27px;
+.brandMark img {
+  width: 29px;
+  height: 29px;
 }
 
 .railNav {
@@ -622,150 +622,198 @@
   color: #f0c886;
 }
 
-.pocketRing {
-  width: min(100%, 1120px);
-  height: min(100%, 680px);
-  margin-top: 46px;
-  overflow: visible;
-}
-
-.ringGeometry ellipse,
-.ringGeometry path {
-  fill: none;
-  stroke: url('#drum-arc-fade');
-  stroke-width: 1.2;
-}
-
-.ringGeometry ellipse:nth-child(2),
-.ringGeometry ellipse:nth-child(4) {
-  stroke-opacity: 0.5;
-}
-
-.ringGeometry .subdivision {
-  stroke: rgb(238 231 219 / 12%);
-  stroke-dasharray: 1 58;
-  stroke-width: 9;
-  stroke-linecap: round;
-}
-
-.ringGeometry .strikeArc {
-  stroke: rgb(231 173 82 / 82%);
-  stroke-width: 2;
-  filter: drop-shadow(0 4px 8px rgb(231 173 82 / 28%));
-}
-
-.ringGeometry .scanArc {
-  stroke: var(--cyan);
-  stroke-width: 2.2;
-  stroke-dasharray: 32 1240;
-  stroke-linecap: round;
-  opacity: 0.9;
-  filter: drop-shadow(0 3px 7px rgb(102 213 205 / 42%));
-}
-
-.kitAnchors circle {
-  fill: var(--room);
-  stroke: var(--cyan);
-  stroke-width: 2;
-}
-
-.kitAnchors text {
-  fill: var(--vellum-muted);
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 760;
-  letter-spacing: 0.07em;
-  text-anchor: middle;
-}
-
-.event rect {
-  fill: var(--vellum);
-  opacity: 0.9;
-}
-
-.eventHat rect,
-.eventRide rect {
-  fill: var(--cyan);
-}
-
-.eventSnare rect,
-.eventCrash rect {
-  fill: var(--amber);
-}
-
-.eventTom rect {
-  fill: var(--coral);
-}
-
-.shell[data-playing='true'] .scanArc {
-  animation: scanRing 3.5s linear infinite;
-}
-
-.shell[data-playing='true'] .event {
-  animation: eventBreathe 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-  animation-delay: var(--event-delay);
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.nowCapsule {
+.pocketHitMap {
   position: absolute;
-  bottom: 8%;
-  left: 50%;
-  display: flex;
-  min-width: 116px;
-  height: 48px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px;
-  border: 1px solid rgb(238 231 219 / 30%);
-  border-radius: 13px;
-  background: rgb(7 8 10 / 88%);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 35%);
-  transform: translateX(-50%);
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
 }
 
-.nowPulse {
-  width: 23px;
-  height: 23px;
-  border: 2px solid var(--cyan);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 6px rgb(102 213 205 / 8%);
-}
-
-.shell[data-playing='true'] .nowPulse {
-  animation: nowPulse 1s ease-out infinite;
-}
-
-.nowCapsule > span:nth-child(2) {
+.pocketHit {
+  position: absolute;
   display: grid;
+  width: clamp(54px, 6vw, 82px);
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid rgb(238 231 219 / 24%);
+  border-radius: 50%;
+  color: rgb(238 231 219 / 68%);
+  background: rgb(6 7 8 / 13%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 20%);
+  opacity: 0.52;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 150ms ease-out,
+    border-color 150ms ease-out,
+    background 150ms ease-out,
+    transform 150ms ease-out;
+}
+
+.pocketHit:hover,
+.pocketHit:focus-visible {
+  border-color: rgb(102 213 205 / 78%);
+  background: rgb(5 9 10 / 42%);
+  opacity: 1;
+}
+
+.pocketHit:active,
+.pocketHit.isHit {
+  border-color: var(--amber);
+  background: rgb(231 173 82 / 22%);
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.pocketHit span {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgb(5 6 7 / 52%);
+  font-size: 9px;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+}
+
+.pocketHit[data-pad='crash'] {
+  top: 24%;
+  left: 40%;
+}
+
+.pocketHit[data-pad='hi-hat'] {
+  top: 45%;
+  left: 27%;
+}
+
+.pocketHit[data-pad='snare'] {
+  top: 64%;
+  left: 44%;
+}
+
+.pocketHit[data-pad='tom'] {
+  top: 43%;
+  left: 59%;
+}
+
+.pocketHit[data-pad='ride'] {
+  top: 43%;
+  left: 84%;
+}
+
+.pocketHit[data-pad='kick'] {
+  top: 79%;
+  left: 66%;
+}
+
+.pocketGuide {
+  position: absolute;
+  z-index: 5;
+  top: 106px;
+  right: 18px;
+  display: grid;
+  width: min(302px, calc(100% - 36px));
+  gap: 9px;
+  padding: 12px 13px 11px;
+  border: 1px solid rgb(238 231 219 / 18%);
+  border-radius: 12px;
+  background: rgb(7 8 10 / 83%);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 31%);
+  pointer-events: none;
+}
+
+.pocketGuide header {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.guideSignal {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 2px 7px rgb(102 213 205 / 42%);
+}
+
+.pocketGuide header > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
   gap: 1px;
 }
 
-.nowCapsule small {
+.pocketGuide header small,
+.pocketGuide > small {
   color: var(--vellum-muted);
-  font-size: 11px;
-}
-.nowCapsule strong {
-  font-family: var(--serif);
-  font-size: 15px;
-}
-.nowCapsule b {
-  margin-left: auto;
-  color: var(--amber);
-  font-size: 12px;
+  font-size: 9px;
 }
 
-.syntheticLabel {
-  position: absolute;
-  bottom: 12px;
-  left: 15px;
-  padding: 5px 7px;
-  border-radius: 5px;
-  color: rgb(238 231 219 / 52%);
-  background: rgb(4 5 6 / 56%);
+.pocketGuide header strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pocketGuide header b {
+  color: var(--amber);
   font-size: 10px;
-  line-height: 1.35;
+}
+
+.guideBeats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.guideBeats i {
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(238 231 219 / 16%);
+  transition:
+    background 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.guideBeats i.isDownbeat {
+  background: rgb(231 173 82 / 34%);
+}
+
+.guideBeats i.isCurrent {
+  background: var(--cyan);
+  transform: scaleY(1.6);
+}
+
+.guideBeats i.isCurrent.isDownbeat {
+  background: var(--amber);
+}
+
+.guideSteps {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(2px, 1fr));
+  gap: 3px;
+}
+
+.guideSteps i {
+  height: 7px;
+  border-radius: 2px;
+  background: rgb(238 231 219 / 9%);
+}
+
+.guideSteps i.hasHit {
+  background: rgb(231 173 82 / 48%);
+}
+
+.guideSteps i.isCurrent {
+  box-shadow: inset 0 0 0 1px var(--cyan);
+  background: rgb(102 213 205 / 54%);
+}
+
+.pocketGuide p {
+  margin: 0;
+  color: var(--vellum);
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .scoreView {
@@ -1234,11 +1282,6 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease-out;
-}
-
-.shell[data-drawer-open='true'] .sheetScrim {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .workbench {
@@ -2010,58 +2053,8 @@
 }
 
 .touchKit,
-.drawerTouchKit,
 .mobileNav {
   display: none;
-}
-
-.drawerTouchKit {
-  position: absolute;
-  z-index: 3;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  min-height: 64px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 4px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--line);
-  background: #101318;
-  box-shadow: 0 -12px 30px rgb(0 0 0 / 24%);
-}
-
-.drawerTouchKit button {
-  display: grid;
-  min-width: 0;
-  min-height: 48px;
-  place-items: center;
-  align-content: center;
-  gap: 2px;
-  border: 1px solid rgb(238 231 219 / 15%);
-  border-radius: 9px 9px 13px 13px;
-  background: linear-gradient(180deg, #20252a, #14181c);
-  cursor: pointer;
-}
-
-.drawerTouchKit button:hover,
-.drawerTouchKit button.isHit {
-  border-color: rgb(231 173 82 / 72%);
-  background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
-}
-
-.drawerTouchKit .kickPad {
-  border-color: rgb(238 231 219 / 28%);
-  background: linear-gradient(180deg, #2a2521, #171719);
-}
-
-.drawerTouchKit span {
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.drawerTouchKit small {
-  color: var(--vellum-muted);
-  font-size: 9px;
 }
 
 .consoleBridge {
@@ -2069,15 +2062,30 @@
   z-index: 35;
   display: grid;
   min-width: 0;
-  grid-template-columns:
-    minmax(130px, 0.7fr) minmax(130px, 0.72fr)
-    116px minmax(190px, 1.15fr) minmax(180px, 1fr) minmax(130px, 0.75fr);
+  grid-template-columns: minmax(0, 1fr) 116px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
   border-top: 1px solid var(--line);
   background: #101318;
   box-shadow: 0 -14px 30px rgb(0 0 0 / 26%);
+}
+
+.consoleSide {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.consoleLead {
+  grid-template-columns:
+    minmax(120px, 0.9fr) minmax(110px, 0.8fr)
+    minmax(142px, 1fr);
+}
+
+.consoleTrail {
+  grid-template-columns: minmax(178px, 1.15fr) minmax(178px, 1fr);
 }
 
 .consoleModule {
@@ -2194,7 +2202,7 @@
   position: relative;
   z-index: 2;
   display: grid;
-  height: 76px;
+  height: 72px;
   align-self: stretch;
   place-items: center;
   isolation: isolate;
@@ -2203,26 +2211,28 @@
 .playCradle::before {
   position: absolute;
   z-index: -1;
-  top: -18px;
-  width: 102px;
-  height: 92px;
+  top: -11px;
+  left: 50%;
+  width: 82px;
+  height: 28px;
   border: 1px solid rgb(238 231 219 / 17%);
-  border-bottom-color: rgb(0 0 0 / 52%);
-  border-radius: 52px 52px 15px 15px;
-  background: linear-gradient(180deg, #252b31 0%, #171b20 72%);
+  border-bottom: 0;
+  border-radius: 42px 42px 0 0;
+  background: #171b20;
   box-shadow:
-    0 -12px 28px rgb(0 0 0 / 32%),
+    0 -8px 20px rgb(0 0 0 / 24%),
     inset 0 1px 0 rgb(255 255 255 / 6%);
   content: '';
+  transform: translateX(-50%);
 }
 
 .playButton {
   position: relative;
   z-index: 2;
   display: grid;
-  width: 66px;
-  height: 66px;
-  margin: -19px auto 0;
+  width: 56px;
+  height: 56px;
+  margin-top: -12px;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -2262,19 +2272,20 @@
 
 .stopButton {
   position: absolute;
-  z-index: 3;
-  right: -4px;
-  bottom: -5px;
+  z-index: 2;
+  top: 50%;
+  left: -22px;
   display: grid;
   width: 44px;
   height: 44px;
   place-items: center;
   border: 1px solid var(--line-strong);
-  border-radius: 50%;
+  border-radius: 10px;
   color: var(--vellum-muted);
   background: #161b20;
   box-shadow: 0 5px 12px rgb(0 0 0 / 28%);
   cursor: pointer;
+  transform: translateY(-50%);
 }
 
 .stopButton:hover:not(:disabled) {
@@ -2578,38 +2589,6 @@
   transform: translateY(0);
 }
 
-@keyframes scanRing {
-  to {
-    stroke-dashoffset: -1272;
-  }
-}
-@keyframes eventBreathe {
-  0%,
-  72%,
-  100% {
-    opacity: 0.78;
-    filter: none;
-    transform: scale(1);
-  }
-  82% {
-    opacity: 1;
-    filter: url('#drum-event-soft');
-    transform: scale(1.28);
-  }
-}
-@keyframes nowPulse {
-  0% {
-    box-shadow:
-      inset 0 0 0 6px rgb(102 213 205 / 8%),
-      0 0 0 0 rgb(102 213 205 / 38%);
-  }
-  100% {
-    box-shadow:
-      inset 0 0 0 6px rgb(102 213 205 / 8%),
-      0 0 0 10px rgb(102 213 205 / 0%);
-  }
-}
-
 @keyframes calibrationStrike {
   0% {
     transform: scale(0.72);
@@ -2626,11 +2605,6 @@
   }
   .barMap {
     min-width: 180px;
-  }
-  .consoleBridge {
-    grid-template-columns:
-      126px 126px 98px minmax(170px, 1fr) minmax(160px, 0.9fr)
-      126px;
   }
   .workspaceView {
     gap: 22px;
@@ -2650,7 +2624,7 @@
 
 @media (max-width: 1040px) {
   .roomShell {
-    grid-template-rows: 66px minmax(0, 1fr) 68px 92px;
+    grid-template-rows: 66px minmax(0, 1fr) 92px;
   }
   .barMap {
     display: none;
@@ -2772,117 +2746,31 @@
   .shell[data-drawer-open='true'] .activeLoopControl {
     display: none;
   }
-  .touchKit {
-    position: relative;
-    z-index: 35;
-    display: grid;
-    min-height: 0;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 5px;
-    padding: 7px;
-    border-top: 1px solid var(--line);
-    background: #101318;
-  }
-  .touchKit button {
-    display: grid;
-    min-width: 0;
-    min-height: 52px;
-    place-items: center;
-    align-content: center;
-    gap: 2px;
-    border: 1px solid rgb(238 231 219 / 15%);
-    border-radius: 10px 10px 14px 14px;
-    background: linear-gradient(180deg, #20252a, #14181c);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
-    cursor: pointer;
-  }
-  .touchKit button:hover,
-  .touchKit button.isHit {
-    border-color: rgb(231 173 82 / 72%);
-    background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
-  }
-  .touchKit .kickPad {
-    border-color: rgb(238 231 219 / 28%);
-    background: linear-gradient(180deg, #2a2521, #171719);
-  }
-  .touchKit span {
-    font-size: 10px;
-    font-weight: 800;
-  }
-  .touchKit small {
-    color: var(--vellum-muted);
-    font-size: 9px;
-  }
   .workbench {
     right: 0;
   }
   .consoleBridge {
-    grid-template-columns: 120px 126px 90px minmax(170px, 1fr) minmax(
-        160px,
-        0.9fr
-      );
+    grid-template-columns:
+      minmax(98px, 0.8fr) minmax(92px, 0.7fr) 126px 108px
+      minmax(136px, 1fr) minmax(124px, 0.9fr);
+  }
+  .consoleSide {
+    display: contents;
   }
   .compactModule {
-    display: none;
-  }
-  .drawerTouchKit {
-    display: grid;
-  }
-  .workspaceView {
-    padding-bottom: 84px;
-  }
-}
-
-@media (min-width: 1041px) {
-  .roomShell {
-    grid-template-rows: 66px minmax(0, 1fr) 68px 92px;
-  }
-  .touchKit {
-    position: relative;
-    z-index: 35;
-    display: grid;
-    min-height: 0;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 5px;
-    padding: 7px;
-    border-top: 1px solid var(--line);
-    background: #101318;
-  }
-  .drawerTouchKit {
     display: none;
   }
   .workspaceView {
     padding-bottom: 24px;
   }
-  .touchKit button {
-    display: grid;
-    min-width: 0;
-    min-height: 52px;
-    place-items: center;
-    align-content: center;
-    gap: 2px;
-    border: 1px solid rgb(238 231 219 / 15%);
-    border-radius: 10px 10px 14px 14px;
-    background: linear-gradient(180deg, #20252a, #14181c);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
-    cursor: pointer;
+}
+
+@media (min-width: 1041px) {
+  .roomShell {
+    grid-template-rows: 66px minmax(0, 1fr) 92px;
   }
-  .touchKit button:hover,
-  .touchKit button.isHit {
-    border-color: rgb(231 173 82 / 72%);
-    background: linear-gradient(180deg, rgb(127 57 67 / 62%), #19191a);
-  }
-  .touchKit .kickPad {
-    border-color: rgb(238 231 219 / 28%);
-    background: linear-gradient(180deg, #2a2521, #171719);
-  }
-  .touchKit span {
-    font-size: 10px;
-    font-weight: 800;
-  }
-  .touchKit small {
-    color: var(--vellum-muted);
-    font-size: 9px;
+  .workspaceView {
+    padding-bottom: 24px;
   }
 }
 
@@ -2925,10 +2813,9 @@
     white-space: nowrap;
   }
   .consoleBridge {
-    grid-template-columns: 110px 120px 86px minmax(155px, 1fr);
-  }
-  .consoleBridge > .consoleModule:nth-last-child(2) {
-    display: none;
+    grid-template-columns: 86px 86px 116px 100px minmax(118px, 1fr) 104px;
+    gap: 5px;
+    padding-inline: 6px;
   }
   .kitWorkspace {
     grid-template-columns: minmax(170px, 0.65fr) minmax(300px, 1.35fr);
@@ -2968,13 +2855,10 @@
     font-size: 11px;
     font-weight: 730;
   }
-  .mobileBrand svg {
+  .mobileBrand img {
     width: 25px;
     height: 25px;
-    padding: 4px;
     border-radius: 7px;
-    color: var(--room);
-    background: var(--vellum);
   }
   .sessionIdentity {
     min-width: 0;
@@ -3057,23 +2941,6 @@
     inset: 0;
   }
   .shell[data-view='seat'] .authoredPlaybackNotice {
-    display: none;
-  }
-  .pocketRing {
-    width: 130%;
-    max-width: none;
-    height: 94%;
-    margin-top: 54px;
-    transform: translateX(-1%);
-  }
-  .kitAnchors text {
-    font-size: 10px;
-  }
-  .nowCapsule {
-    bottom: 62px;
-    height: 44px;
-  }
-  .syntheticLabel {
     display: none;
   }
   .coachCue {
@@ -3383,12 +3250,11 @@
   .stageCopy h1 {
     display: none;
   }
-  .pocketRing {
-    height: 112%;
-    margin-top: 24px;
-  }
-  .nowCapsule {
-    bottom: 55px;
+  .pocketGuide {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+    width: min(260px, calc(100% - 16px));
   }
   .touchKit {
     padding-block: 5px;
@@ -3406,10 +3272,13 @@
 
 @media (orientation: landscape) and (max-height: 520px) {
   .roomShell {
-    grid-template-rows: 52px minmax(0, 1fr) 60px 68px;
+    grid-template-rows: 52px minmax(0, 1fr) 68px;
   }
   .consoleBridge {
     padding: 4px 10px;
+  }
+  .playCradle {
+    height: 68px;
   }
   .consoleModule {
     min-height: 56px;
@@ -3472,28 +3341,57 @@
   .sessionStageView {
     padding: 56px 5px 3px;
   }
-  .pocketRing {
-    width: 100%;
-    height: 120%;
-    margin-top: 18px;
+  .pocketGuide {
+    top: auto;
+    right: auto;
+    bottom: 8px;
+    left: 8px;
+    width: 224px;
+    gap: 5px;
+    padding: 8px 9px;
+  }
+  .pocketGuide > p,
+  .pocketGuide > small,
+  .guideSteps {
+    display: none;
   }
   .coachCue {
     right: 8px;
     bottom: 6px;
-    width: 290px;
+    width: 46px;
+    min-height: 46px;
+    grid-template-columns: 1fr;
+    padding: 5px;
+    border-radius: 50%;
+  }
+  .coachCue > span:nth-child(2),
+  .coachCue > svg {
+    display: none;
   }
   .mobileNav {
     min-height: 66px;
   }
   .workbench {
-    height: 84%;
+    height: 100%;
+    min-height: 0;
+  }
+  .touchKit {
+    display: none;
   }
 }
 
-/* Below desktop width the rack is a real viewport modal. Keeping it tied to
-   the stage made short-landscape drawers taller than their containing block,
-   placing tabs above the visible viewport. */
-@media (max-width: 1040px) {
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 720px) {
+  .roomShell {
+    grid-template-rows: 52px minmax(0, 1fr) 60px 68px;
+  }
+  .touchKit {
+    display: grid;
+  }
+}
+
+/* Phone drawers are true viewport modals. Wider layouts keep the rack tethered
+   to the stage so the persistent rail can switch or close workspaces. */
+@media (max-width: 720px) {
   .shell[data-drawer-open='true'] .performanceStage {
     z-index: 60;
     overflow: visible;
@@ -3525,8 +3423,8 @@
 }
 
 /* The photographed Seat is itself the six-surface instrument. Give that view
-   the full stage instead of repeating a detached pad strip and empty coach
-   rail around it. Score and Pocket keep the universal strip. */
+   the full stage instead of repeating the phone fallback strip and empty coach
+   rail around it. */
 .shell[data-view='seat'] .roomShell {
   grid-template-rows: 66px minmax(0, 1fr) 92px;
 }
@@ -3547,6 +3445,37 @@
   }
 }
 
+@media (max-height: 650px) and (max-width: 360px) {
+  .pocketGuide {
+    top: 60px;
+    right: auto;
+    bottom: auto;
+    left: 8px;
+    width: 152px;
+    gap: 5px;
+    padding: 7px 8px;
+    background: rgb(7 8 10 / 76%);
+  }
+  .pocketGuide > p,
+  .pocketGuide > small,
+  .guideSteps {
+    display: none;
+  }
+  .coachCue {
+    right: 8px;
+    bottom: 6px;
+    width: 46px;
+    min-height: 46px;
+    grid-template-columns: 1fr;
+    padding: 5px;
+    border-radius: 50%;
+  }
+  .coachCue > span:nth-child(2),
+  .coachCue > svg {
+    display: none;
+  }
+}
+
 @media (orientation: landscape) and (max-height: 520px) {
   .shell[data-view='seat'] .roomShell {
     grid-template-rows: 52px minmax(0, 1fr) 68px;
@@ -3561,8 +3490,5 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
-  }
-  .scanArc {
-    stroke-dasharray: 76 1240;
   }
 }

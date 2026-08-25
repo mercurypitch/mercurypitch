@@ -17,24 +17,27 @@ export const FIRST_POCKET_DEFAULT_VARIANT = 'source' as const
 export const FIRST_POCKET_VARIANTS = [
   {
     id: 'source',
-    label: 'Source',
-    description: 'The authored pocket, with a restrained push and pull.',
+    label: 'Classic',
+    description:
+      'A familiar two-and-four backbeat with a lifted open-hat turnaround.',
   },
   {
     id: 'tight',
-    label: 'Tight',
-    description: 'The same voices and dynamics locked to the sixteenth grid.',
+    label: 'Funk',
+    description:
+      'Syncopated kicks, ghost notes, and accented sixteenths on a tight grid.',
   },
   {
     id: 'loose',
-    label: 'Loose',
-    description: 'The same phrase with a wider, deliberate laid-back feel.',
+    label: 'Driving',
+    description:
+      'Four-on-the-floor momentum, bright ride motion, and a short tom arrival.',
   },
   {
     id: 'half-time',
     label: 'Half-time',
     description:
-      'A reauthored two-bar pocket with one strong backbeat per bar.',
+      'A spacious rock pocket with the strong backbeat on beat three.',
   },
 ] as const
 
@@ -80,181 +83,211 @@ export interface PreparedDrumGroove {
   readonly pocket: PreparedPocketProjection
 }
 
-interface PreparedHitSeed {
-  readonly id: string
-  readonly gmKey: number
-  readonly velocity: number
-  readonly gridBeat: number
-  readonly writtenDuration: number
-}
-
 const FIRST_POCKET_BPM = 84
 const FIRST_POCKET_DURATION_BEATS = 8
 const POCKET_SUBDIVISION_BEATS = 0.25
 
-const HAT_VELOCITIES = [
+const EIGHTH_HAT_VELOCITIES = [
   92, 64, 78, 60, 86, 66, 80, 58, 94, 65, 80, 62, 88, 68, 82, 72,
 ] as const
-
-const KICK_BEATS = [0, 1.5, 2.75, 3.5, 4, 5.25, 6.5, 7.25] as const
-const KICK_VELOCITIES = [112, 86, 101, 79, 115, 92, 106, 84] as const
-const SNARE_BEATS = [1, 3, 5, 7] as const
-const SNARE_VELOCITIES = [112, 118, 110, 121] as const
-const GHOST_SNARE_BEATS = [2.5, 6.25] as const
-const GHOST_SNARE_VELOCITIES = [44, 48] as const
-
-const SOURCE_HAT_OFFSETS = [
-  0, 0.035, 0, 0.03, -0.012, 0.04, 0, 0.025, -0.01, 0.038, 0, 0.032, -0.014,
-  0.042, 0, 0,
-] as const
-const SOURCE_KICK_OFFSETS = [
-  0, -0.018, 0.012, -0.015, 0, -0.02, 0.014, -0.016,
-] as const
-const SOURCE_SNARE_OFFSETS = [0.028, 0.034, 0.026, 0.036] as const
-const SOURCE_GHOST_OFFSETS = [0.055, 0.045] as const
-
-const LOOSE_HAT_OFFSETS = [
-  0, 0.075, -0.018, 0.068, -0.02, 0.082, -0.016, 0.07, -0.022, 0.084, -0.018,
-  0.074, -0.024, 0.088, -0.016, 0,
-] as const
-const LOOSE_KICK_OFFSETS = [
-  0, -0.042, 0.025, -0.038, -0.012, -0.046, 0.028, -0.04,
-] as const
-const LOOSE_SNARE_OFFSETS = [0.068, 0.076, 0.064, 0.08] as const
-const LOOSE_GHOST_OFFSETS = [0.095, 0.088] as const
 
 function numberedId(prefix: string, index: number): string {
   return `${prefix}-${String(index + 1).padStart(2, '0')}`
 }
 
-function straightPocketSeeds(): PreparedHitSeed[] {
-  const hats = HAT_VELOCITIES.map(
-    (velocity, index): PreparedHitSeed => ({
-      id: numberedId('hat', index),
-      gmKey: index === 7 || index === 15 ? 46 : 42,
-      velocity,
-      gridBeat: index * 0.5,
-      writtenDuration: 0.5,
-    }),
-  )
-  const kicks = KICK_BEATS.map(
-    (gridBeat, index): PreparedHitSeed => ({
-      id: numberedId('kick', index),
-      gmKey: 36,
-      velocity: KICK_VELOCITIES[index] ?? 80,
-      gridBeat,
-      writtenDuration: 0.25,
-    }),
-  )
-  const snares = SNARE_BEATS.map(
-    (gridBeat, index): PreparedHitSeed => ({
-      id: numberedId('snare', index),
-      gmKey: 38,
-      velocity: SNARE_VELOCITIES[index] ?? 110,
-      gridBeat,
-      writtenDuration: 0.25,
-    }),
-  )
-  const ghosts = GHOST_SNARE_BEATS.map(
-    (gridBeat, index): PreparedHitSeed => ({
-      id: numberedId('ghost', index),
-      gmKey: 38,
-      velocity: GHOST_SNARE_VELOCITIES[index] ?? 44,
-      gridBeat,
-      writtenDuration: 0.25,
-    }),
-  )
-  return [...hats, ...kicks, ...snares, ...ghosts]
+function hit(
+  id: string,
+  gmKey: number,
+  velocity: number,
+  startBeat: number,
+  writtenDuration = 0.25,
+): MidiSongPercussionHit {
+  return { id, gmKey, velocity, startBeat, writtenDuration }
 }
 
-function offsetFor(
-  seed: PreparedHitSeed,
-  variantId: 'source' | 'loose',
-): number {
-  const index =
-    Number.parseInt(seed.id.slice(seed.id.lastIndexOf('-') + 1), 10) - 1
-  const arrays =
-    variantId === 'source'
-      ? {
-          hat: SOURCE_HAT_OFFSETS,
-          kick: SOURCE_KICK_OFFSETS,
-          snare: SOURCE_SNARE_OFFSETS,
-          ghost: SOURCE_GHOST_OFFSETS,
-        }
-      : {
-          hat: LOOSE_HAT_OFFSETS,
-          kick: LOOSE_KICK_OFFSETS,
-          snare: LOOSE_SNARE_OFFSETS,
-          ghost: LOOSE_GHOST_OFFSETS,
-        }
-  const family = seed.id.slice(0, seed.id.indexOf('-')) as keyof typeof arrays
-  return arrays[family][index] ?? 0
-}
-
-function feelHits(
-  variantId: 'source' | 'tight' | 'loose',
+function orderedHits(
+  hits: readonly MidiSongPercussionHit[],
 ): MidiSongPercussionHit[] {
-  return straightPocketSeeds()
-    .map(
-      (seed): MidiSongPercussionHit => ({
-        id: seed.id,
-        gmKey: seed.gmKey,
-        velocity: seed.velocity,
-        startBeat:
-          seed.gridBeat +
-          (variantId === 'tight' ? 0 : offsetFor(seed, variantId)),
-        writtenDuration: seed.writtenDuration,
-      }),
-    )
-    .sort((left, right) => left.startBeat - right.startBeat)
+  return [...hits].sort(
+    (left, right) =>
+      left.startBeat - right.startBeat ||
+      (left.id ?? '').localeCompare(right.id ?? ''),
+  )
+}
+
+function eighthHats(
+  options: {
+    readonly prefix?: string
+    readonly openIndexes?: readonly number[]
+    readonly gmKey?: number
+    readonly offsets?: readonly number[]
+  } = {},
+): MidiSongPercussionHit[] {
+  const openIndexes = options.openIndexes ?? []
+  return EIGHTH_HAT_VELOCITIES.map((velocity, index) =>
+    hit(
+      numberedId(options.prefix ?? 'hat', index),
+      openIndexes.includes(index) ? 46 : (options.gmKey ?? 42),
+      velocity,
+      index * 0.5 + (options.offsets?.[index] ?? 0),
+      options.gmKey === 51 ? 0.25 : 0.5,
+    ),
+  )
+}
+
+function classicHits(): MidiSongPercussionHit[] {
+  const hats = eighthHats({
+    openIndexes: [7, 15],
+    offsets: [
+      0, 0.035, 0, 0.03, -0.012, 0.04, 0, 0.025, -0.01, 0.038, 0, 0.032, -0.014,
+      0.042, 0, 0,
+    ],
+  })
+  const kicks = [0, 1.5, 2.75, 3.5, 4, 5.25, 6.5, 7.25].map((beat, index) =>
+    hit(
+      numberedId('kick', index),
+      36,
+      [112, 86, 101, 79, 115, 92, 106, 84][index] ?? 84,
+      beat + [0, -0.018, 0.012, -0.015, 0, -0.02, 0.014, -0.016][index]!,
+    ),
+  )
+  const snares = [1, 3, 5, 7].map((beat, index) =>
+    hit(
+      numberedId('snare', index),
+      38,
+      [112, 118, 110, 121][index] ?? 110,
+      beat + [0.028, 0.034, 0.026, 0.036][index]!,
+    ),
+  )
+  const ghosts = [2.5, 6.25].map((beat, index) =>
+    hit(
+      numberedId('ghost', index),
+      38,
+      [44, 48][index] ?? 44,
+      beat + [0.055, 0.045][index]!,
+    ),
+  )
+  return orderedHits([
+    hit('crash-01', 49, 120, 0, 1),
+    ...hats,
+    ...kicks,
+    ...snares,
+    ...ghosts,
+  ])
+}
+
+function funkHits(): MidiSongPercussionHit[] {
+  const hats = Array.from({ length: 32 }, (_, index) =>
+    hit(
+      numberedId('hat', index),
+      index === 15 || index === 31 ? 46 : 42,
+      index % 4 === 0 ? 96 : index % 2 === 0 ? 74 : index % 8 === 7 ? 62 : 50,
+      index * 0.25,
+      0.25,
+    ),
+  )
+  const kicks = [0, 0.75, 1.75, 2.5, 3.75, 4, 4.75, 5.5, 6.75].map(
+    (beat, index) =>
+      hit(
+        numberedId('kick', index),
+        36,
+        [112, 84, 96, 88, 80, 116, 90, 98, 86][index] ?? 86,
+        beat,
+      ),
+  )
+  const snares = [1, 3, 5, 7].map((beat, index) =>
+    hit(
+      numberedId('snare', index),
+      38,
+      [114, 119, 112, 121][index] ?? 112,
+      beat,
+    ),
+  )
+  const ghosts = [0.5, 1.75, 2.75, 4.5, 5.75, 6.5].map((beat, index) =>
+    hit(
+      numberedId('ghost', index),
+      38,
+      [38, 46, 42, 40, 48, 44][index] ?? 42,
+      beat,
+    ),
+  )
+  return orderedHits([...hats, ...kicks, ...snares, ...ghosts])
+}
+
+function drivingHits(): MidiSongPercussionHit[] {
+  const rides = eighthHats({
+    prefix: 'ride',
+    gmKey: 51,
+    offsets: [
+      0, 0.025, -0.01, 0.03, -0.012, 0.026, -0.008, 0.032, 0, 0.024, -0.012,
+      0.03, -0.01, 0.026, -0.008, 0,
+    ],
+  })
+  const kicks = [0, 1, 2, 3, 4, 5, 6, 7].map((beat, index) =>
+    hit(
+      numberedId('kick', index),
+      36,
+      [116, 90, 104, 92, 118, 94, 108, 96][index] ?? 96,
+      beat + [0, -0.018, 0.012, -0.015, 0, -0.016, 0.01, -0.012][index]!,
+    ),
+  )
+  const snares = [1, 3, 5, 7].map((beat, index) =>
+    hit(
+      numberedId('snare', index),
+      38,
+      [114, 121, 116, 123][index] ?? 114,
+      beat + [0.026, 0.034, 0.028, 0.036][index]!,
+    ),
+  )
+  const tomFill = [
+    hit('tom-high-01', 48, 100, 7.25),
+    hit('tom-mid-01', 47, 106, 7.5),
+    hit('tom-low-01', 45, 116, 7.75),
+  ]
+  return orderedHits([
+    hit('crash-01', 49, 122, 0, 1),
+    hit('crash-02', 49, 116, 4, 1),
+    ...rides,
+    ...kicks,
+    ...snares,
+    ...tomFill,
+  ])
 }
 
 function halfTimeHits(): MidiSongPercussionHit[] {
-  const hats = HAT_VELOCITIES.map(
-    (velocity, index): MidiSongPercussionHit => ({
-      id: numberedId('hat', index),
-      gmKey: index === 7 || index === 15 ? 46 : 42,
-      velocity,
-      startBeat: index * 0.5,
-      writtenDuration: 0.5,
-    }),
+  const hats = eighthHats({ openIndexes: [7, 15] })
+  const kicks = [0, 0.75, 1.5, 3.25, 4, 4.75, 5.5, 7.25].map((beat, index) =>
+    hit(
+      numberedId('kick', index),
+      36,
+      [114, 82, 96, 88, 117, 86, 101, 92][index] ?? 88,
+      beat,
+    ),
   )
-  const kicks = [0, 1.5, 2.5, 3.5, 4, 5.5, 6.5, 7.5].map(
-    (startBeat, index): MidiSongPercussionHit => ({
-      id: numberedId('kick', index),
-      gmKey: 36,
-      velocity: KICK_VELOCITIES[index] ?? 80,
-      startBeat,
-      writtenDuration: 0.25,
-    }),
+  const snares = [2, 6].map((beat, index) =>
+    hit(numberedId('snare', index), 38, [120, 123][index] ?? 120, beat),
   )
-  const snares = [3, 7].map(
-    (startBeat, index): MidiSongPercussionHit => ({
-      id: numberedId('snare', index),
-      gmKey: 38,
-      velocity: [118, 121][index] ?? 110,
-      startBeat,
-      writtenDuration: 0.25,
-    }),
+  const ghosts = [1.75, 5.75].map((beat, index) =>
+    hit(numberedId('ghost', index), 38, [42, 46][index] ?? 42, beat),
   )
-  const ghosts = [2.75, 6.75].map(
-    (startBeat, index): MidiSongPercussionHit => ({
-      id: numberedId('ghost', index),
-      gmKey: 38,
-      velocity: GHOST_SNARE_VELOCITIES[index] ?? 44,
-      startBeat,
-      writtenDuration: 0.25,
-    }),
-  )
-  return [...hats, ...kicks, ...snares, ...ghosts].sort(
-    (left, right) => left.startBeat - right.startBeat,
-  )
+  return orderedHits([
+    hit('crash-01', 49, 118, 0, 1),
+    ...hats,
+    ...kicks,
+    ...snares,
+    ...ghosts,
+    hit('tom-high-01', 48, 98, 7.5),
+    hit('tom-low-01', 45, 112, 7.75),
+  ])
 }
 
 function preparedHits(
   variantId: FirstPocketVariantId,
 ): MidiSongPercussionHit[] {
-  return variantId === 'half-time' ? halfTimeHits() : feelHits(variantId)
+  if (variantId === 'source') return classicHits()
+  if (variantId === 'tight') return funkHits()
+  if (variantId === 'loose') return drivingHits()
+  return halfTimeHits()
 }
 
 function preparedSong(variantId: FirstPocketVariantId): MidiSong {

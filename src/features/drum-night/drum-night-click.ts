@@ -190,8 +190,9 @@ function setRelease(param: AudioParam, now: number): void {
 }
 
 /**
- * Create an off-by-default click that borrows the Drum Night transport and
- * gesture-owned audio route without acquiring either resource itself.
+ * Create an audible count-in plus an off-by-default playback click. Both
+ * borrow the Drum Night transport and gesture-owned audio route without
+ * acquiring either resource themselves.
  */
 export function createDrumNightClickController(
   options: DrumNightClickControllerOptions,
@@ -619,7 +620,7 @@ export function createDrumNightClickController(
   }
 
   const reconcile = (): void => {
-    if (disposed || !enabled) return
+    if (disposed) return
     const nextRevision = options.transport.scheduleRevision()
     if (nextRevision !== currentRevision) {
       currentRevision = nextRevision
@@ -627,8 +628,24 @@ export function createDrumNightClickController(
     }
 
     const transportState = options.transport.state()
-    const running =
-      transportState.phase === 'count-in' || transportState.phase === 'playing'
+    const countInRunning =
+      transportState.phase === 'count-in' && transportState.countInBeats > 0
+    const playbackClickRunning =
+      enabled &&
+      (transportState.phase === 'count-in' ||
+        transportState.phase === 'playing')
+    const running = countInRunning || playbackClickRunning
+    if (!running) {
+      if (graph !== null || voices.size > 0) retireGraph()
+      status = enabled
+        ? activeAudio() === null
+          ? 'waiting-for-audio'
+          : 'ready'
+        : 'disabled'
+      error = null
+      emitIfChanged()
+      return
+    }
     const audio = activeAudio()
     if (audio === null) {
       if (graph !== null || voices.size > 0) retireGraph()
@@ -637,14 +654,6 @@ export function createDrumNightClickController(
       emitIfChanged()
       return
     }
-    if (!running) {
-      if (graph !== null || voices.size > 0) retireGraph()
-      status = 'ready'
-      error = null
-      emitIfChanged()
-      return
-    }
-
     const windows = options.transport.schedulingWindows(lookaheadMs)
     pruneLedger(windows, transportState.phase)
     status = phaseStatus(transportState.phase)
@@ -661,7 +670,9 @@ export function createDrumNightClickController(
     const playbackResult =
       countInResult === 'waiting-for-audio' || countInResult === 'error'
         ? countInResult
-        : schedulePlayback(audio, windows)
+        : enabled
+          ? schedulePlayback(audio, windows)
+          : 'duplicate'
     if (
       countInResult === 'waiting-for-audio' ||
       playbackResult === 'waiting-for-audio'

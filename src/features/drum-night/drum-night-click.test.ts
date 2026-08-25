@@ -296,6 +296,35 @@ describe('Drum Night click controller', () => {
     room.transport.dispose()
   })
 
+  it('sounds the enabled count-in without enabling the playback click', () => {
+    const room = clickHarness({ countInBeats: 2, lookaheadMs: 600 })
+
+    room.transport.start()
+
+    expect(room.click.snapshot()).toMatchObject({
+      status: 'count-in',
+      enabled: false,
+      scheduledClickCount: 2,
+    })
+    expect(room.context.oscillators.map((voice) => voice.starts[0])).toEqual([
+      10, 10.5,
+    ])
+    expect(
+      room.context.oscillators.map((voice) => voice.frequency.value),
+    ).toEqual([1_320, 860])
+
+    room.advance(1_000)
+
+    expect(room.click.snapshot()).toMatchObject({
+      status: 'disabled',
+      enabled: false,
+    })
+    expect(room.context.oscillators).toHaveLength(2)
+
+    room.click.dispose()
+    room.transport.dispose()
+  })
+
   it('places quarter clicks across authored tempo-map windows', () => {
     const room = clickHarness({ lookaheadMs: 2_000 })
     room.transport.setAuthoredTiming({
