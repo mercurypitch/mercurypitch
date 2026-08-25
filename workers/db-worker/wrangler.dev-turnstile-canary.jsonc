@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "mercury-pitch-dev-turnstile-canary",
+  "compatibility_date": "2026-04-30",
+  "workers_dev": false,
+  "services": [
+    {
+      "binding": "DEV_DB",
+      "service": "mercury-pitch-db-dev",
+      "remote": true,
+    },
+  ],
+}
