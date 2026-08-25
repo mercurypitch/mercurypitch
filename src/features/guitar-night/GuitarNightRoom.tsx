@@ -116,7 +116,7 @@ function formatTime(seconds: number): string {
 
 function playLabel(status: GuitarBackingTransportStatus): string {
   if (status === 'playing') return 'Pause backing'
-  if (status === 'loading') return 'Starting backing'
+  if (status === 'loading') return 'Cancel backing start'
   if (status === 'paused') return 'Resume backing'
   if (status === 'complete') return 'Play again'
   return 'Play backing'
@@ -317,7 +317,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   }
 
   const togglePlayback = (): void => {
-    if (isPlaying()) {
+    if (isPlaying() || isLoading()) {
       props.transport.pause()
       return
     }
@@ -748,7 +748,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             type="button"
             aria-label={playLabel(props.transport.status())}
             title={playLabel(props.transport.status())}
-            disabled={props.transport.status() === 'loading' || isCalibrating()}
+            disabled={isCalibrating()}
             data-loading-percent={loadPercent() ?? ''}
             onClick={togglePlayback}
           >

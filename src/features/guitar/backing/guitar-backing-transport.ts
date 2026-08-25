@@ -737,13 +737,7 @@ export function createGuitarBackingTransport(
   const startStreamedAt = async (
     offset: number,
     requestGeneration: number,
-    /**
-     * A seek keeps the room playing. Publishing 'loading' for the length of
-     * the re-prime would disable the transport controls and drop the room's
-     * frame clock for a beat, both for something the player experiences as
-     * one continuous playback.
-     */
-    announceLoading = true,
+    shouldCommit: () => boolean = () => true,
   ): Promise<boolean> => {
     const currentContext = context
     const currentStemsBus = audioGraph?.buses.stems ?? null
@@ -757,13 +751,20 @@ export function createGuitarBackingTransport(
     }
 
     const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
-    if (announceLoading) setStatus('loading')
+    setStatus('loading')
     // A 15 ms linear dip, not an instant zero: short LINEAR dips are fine
     // inside continuous material (the program masks them) — an instant
     // step is a click at any point.
     rampGain(currentStemsBus.gain, 0, currentContext.currentTime, 0.015)
     const started = await currentStreamEngine.play(safeOffset, targetTrackGain)
     if (disposed || requestGeneration !== generation) {
+      currentStreamEngine.pause()
+      return false
+    }
+    // A newer scrub target can arrive while this target is still buffering.
+    // The muted warm-up may finish, but an obsolete target must never publish
+    // `playing` or reopen the bus for even one frame before its replacement.
+    if (!shouldCommit()) {
       currentStreamEngine.pause()
       return false
     }
@@ -860,13 +861,18 @@ export function createGuitarBackingTransport(
    * Move a playing streamed room to `target`, one re-prime at a time. A drag
    * that arrives mid-flight replaces the destination rather than starting a
    * second one, so the room lands exactly once, where the finger stopped.
+   * The transport reports loading while the media window warms; the room's
+   * existing Play spinner is the honest state for an iPhone that cannot yet
+   * play the requested position continuously.
    */
   const seekStreamed = async (
     target: number,
     requestGeneration: number,
   ): Promise<void> => {
     if (streamedSeekTarget !== null) {
-      queuedStreamedSeek = target
+      // Returning to the target already warming cancels an older queued move
+      // and lets this in-flight target commit normally.
+      queuedStreamedSeek = target === streamedSeekTarget ? null : target
       return
     }
     const epoch = playIntentEpoch
@@ -874,8 +880,11 @@ export function createGuitarBackingTransport(
     while (next !== null) {
       streamedSeekTarget = next
       queuedStreamedSeek = null
-      emit()
-      await startStreamedAt(next, requestGeneration, false)
+      await startStreamedAt(
+        next,
+        requestGeneration,
+        () => queuedStreamedSeek === null && streamedSeekTarget === next,
+      )
       if (disposed || requestGeneration !== generation) break
       if (playIntentEpoch !== epoch) {
         // Pause or stop already parked the room where it wanted; undo only
@@ -1067,7 +1076,11 @@ export function createGuitarBackingTransport(
     seek(seconds) {
       if (session === null) return
       const target = clamp(seconds, 0, duration)
-      const wasPlaying = status === 'playing'
+      // A streamed seek deliberately reports `loading` while it primes the
+      // requested media window. Further scrubber input still belongs to the
+      // same playing intent and must replace its queued destination rather
+      // than taking the quiet-seek path.
+      const wasPlaying = status === 'playing' || streamedSeekTarget !== null
       parkedOffset = target
       if (!wasPlaying) {
         void streamEngine?.seek(target)

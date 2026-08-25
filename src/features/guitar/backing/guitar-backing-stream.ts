@@ -51,6 +51,19 @@ const HARD_SEEK_SECONDS = 0.75
 const SEEK_SETTLE_MS = 700
 /** Give up waiting for `seeked` after this; some engines never fire it. */
 const SEEK_TIMEOUT_MS = 1_200
+/** A cold decoder must hold enough music to survive an ordinary network wobble. */
+const PLAYABLE_WINDOW_SECONDS = 5
+/** Do not leave a damaged element holding the room in its loading state forever. */
+const PLAYABLE_WINDOW_TIMEOUT_MS = 15_000
+const PLAYABLE_WINDOW_EVENTS = [
+  'progress',
+  'canplay',
+  'canplaythrough',
+  'loadeddata',
+  'durationchange',
+  'timeupdate',
+  'seeked',
+] as const
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value))
@@ -100,14 +113,20 @@ interface GuitarBackingStreamOptions {
   onInterrupted?: (trackId: string, currentTime: number) => void
   /** Wall clock, injectable so the settle window is testable. */
   now?: () => number
+  /** Buffered music required ahead of a cold start or seek. */
+  playableWindowSeconds?: number
+  /** Escape hatch for media engines that never expose a usable range. */
+  playableWindowTimeoutMs?: number
 }
 
-function setElementTime(element: HTMLMediaElement, seconds: number): void {
+function setElementTime(element: HTMLMediaElement, seconds: number): boolean {
   try {
     element.currentTime = seconds
+    return true
   } catch {
     // Browsers can reject a seek until metadata arrives. play() performs a
     // second alignment pass after the element becomes usable.
+    return false
   }
 }
 
@@ -120,6 +139,28 @@ function mediaDuration(streamed: StreamedTrack): number {
     streamed.element.duration > 0
     ? streamed.element.duration
     : 0
+}
+
+function bufferedAhead(element: HTMLMediaElement, seconds: number): number {
+  const ranges = element.buffered
+  if (ranges === undefined) return 0
+  for (let index = 0; index < ranges.length; index += 1) {
+    const start = ranges.start(index)
+    const end = ranges.end(index)
+    // Container timestamps can put the first decoded frame a few
+    // milliseconds after the requested time. Treat that as the same range.
+    if (seconds >= start - 0.05 && seconds <= end + 0.05) {
+      return Math.max(0, end - seconds)
+    }
+  }
+  return 0
+}
+
+function isAtTime(element: HTMLMediaElement, seconds: number): boolean {
+  return (
+    Number.isFinite(element.currentTime) &&
+    Math.abs(element.currentTime - seconds) <= 0.05
+  )
 }
 
 export function createGuitarBackingStreamEngine(
@@ -135,6 +176,7 @@ export function createGuitarBackingStreamEngine(
   let playbackRate = 1
   let disposed = false
   let settleUntilMs = 0
+  const pendingMediaWaitCancels = new Set<() => void>()
   /**
    * Whether this engine believes the room should be sounding. A `pause` event
    * is queued as a task, so a flag set around our own `element.pause()` call
@@ -144,6 +186,185 @@ export function createGuitarBackingStreamEngine(
   let wantPlaying = false
 
   const now = options.now ?? (() => Date.now())
+  const playableWindowSeconds = Math.max(
+    0,
+    options.playableWindowSeconds ?? PLAYABLE_WINDOW_SECONDS,
+  )
+  const playableWindowTimeoutMs = Math.max(
+    0,
+    options.playableWindowTimeoutMs ?? PLAYABLE_WINDOW_TIMEOUT_MS,
+  )
+
+  const hasPlayableWindow = (
+    streamed: StreamedTrack,
+    offsetSeconds: number,
+  ): boolean => {
+    const duration = mediaDuration(streamed)
+    const remaining =
+      duration > 0 ? Math.max(0, duration - offsetSeconds) : Infinity
+    const required = Math.min(playableWindowSeconds, remaining)
+    return (
+      required <= 0.05 ||
+      bufferedAhead(streamed.element, offsetSeconds) >= required - 0.05
+    )
+  }
+
+  /**
+   * `play()` resolves as soon as WebKit has begun trying to play. On iOS that
+   * can be one decoded frame, while Chromium usually waits long enough that
+   * the difference went unnoticed. Keep the room bus closed until the media
+   * element reports a real near-term window around the requested position.
+   */
+  const waitForPlayableWindow = (
+    streamed: StreamedTrack,
+    offsetSeconds: number,
+    deadlineMs: number,
+  ): Promise<boolean> => {
+    if (hasPlayableWindow(streamed, offsetSeconds)) return Promise.resolve(true)
+    const timeoutMs = Math.max(0, deadlineMs - Date.now())
+    if (timeoutMs === 0) {
+      return Promise.resolve(streamed.element.readyState >= 4)
+    }
+
+    return new Promise<boolean>((resolve) => {
+      const element = streamed.element
+      let timer: ReturnType<typeof setTimeout> | null = null
+      let finished = false
+
+      const finish = (ready: boolean): void => {
+        if (finished) return
+        finished = true
+        for (const event of PLAYABLE_WINDOW_EVENTS) {
+          element.removeEventListener(event, inspect)
+        }
+        element.removeEventListener('error', fail)
+        element.removeEventListener('abort', fail)
+        if (timer !== null) clearTimeout(timer)
+        pendingMediaWaitCancels.delete(cancel)
+        resolve(ready)
+      }
+      const inspect = (): void => {
+        if (hasPlayableWindow(streamed, offsetSeconds)) finish(true)
+      }
+      const fail = (): void => finish(false)
+      const cancel = (): void => finish(false)
+
+      pendingMediaWaitCancels.add(cancel)
+      for (const event of PLAYABLE_WINDOW_EVENTS) {
+        element.addEventListener(event, inspect)
+      }
+      element.addEventListener('error', fail, { once: true })
+      element.addEventListener('abort', fail, { once: true })
+      timer = setTimeout(() => {
+        // HAVE_ENOUGH_DATA is the browser's own stronger promise that the
+        // resource can continue. It is a safe fallback for engines that do
+        // not expose byte ranges for an otherwise playable local blob.
+        finish(
+          hasPlayableWindow(streamed, offsetSeconds) || element.readyState >= 4,
+        )
+      }, timeoutMs)
+      inspect()
+    })
+  }
+
+  /**
+   * Ask for the target without treating a slow, accepted seek as a failure.
+   * Safari may need seconds to finish it; the buffer/settlement stages below
+   * own that wait under the room's shared readiness deadline.
+   */
+  const waitForSeekRequest = (
+    element: HTMLMediaElement,
+    seconds: number,
+    deadlineMs: number,
+  ): Promise<boolean> =>
+    new Promise<boolean>((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | null = null
+      let finished = false
+      const finish = (accepted: boolean): void => {
+        if (finished) return
+        finished = true
+        element.removeEventListener('loadedmetadata', request)
+        element.removeEventListener('durationchange', request)
+        element.removeEventListener('error', fail)
+        element.removeEventListener('abort', fail)
+        if (timer !== null) clearTimeout(timer)
+        pendingMediaWaitCancels.delete(cancel)
+        resolve(accepted)
+      }
+      const request = (): void => {
+        if (setElementTime(element, seconds)) finish(true)
+      }
+      const fail = (): void => finish(false)
+      const cancel = (): void => finish(false)
+      pendingMediaWaitCancels.add(cancel)
+      element.addEventListener('loadedmetadata', request)
+      element.addEventListener('durationchange', request)
+      element.addEventListener('error', fail, { once: true })
+      element.addEventListener('abort', fail, { once: true })
+      timer = setTimeout(
+        () => finish(false),
+        Math.max(0, deadlineMs - Date.now()),
+      )
+      request()
+    })
+
+  /**
+   * Hold until the requested target really lands. When play() already asked
+   * for this target, reuse its in-flight seek instead of restarting Safari's
+   * decoder. If the hidden warm-up advanced after landing, request one final
+   * alignment under the same readiness deadline.
+   */
+  const waitForSeekSettlement = (
+    element: HTMLMediaElement,
+    seconds: number,
+    deadlineMs: number,
+    targetAlreadyRequested: boolean,
+  ): Promise<boolean> => {
+    if (!element.seeking && isAtTime(element, seconds)) {
+      return Promise.resolve(true)
+    }
+    const timeoutMs = Math.max(0, deadlineMs - Date.now())
+    if (timeoutMs === 0) return Promise.resolve(false)
+
+    return new Promise<boolean>((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | null = null
+      let finished = false
+      let reuseInFlight = targetAlreadyRequested
+      const finish = (settled: boolean): void => {
+        if (finished) return
+        finished = true
+        element.removeEventListener('seeked', settle)
+        element.removeEventListener('loadedmetadata', request)
+        element.removeEventListener('durationchange', request)
+        element.removeEventListener('error', fail)
+        element.removeEventListener('abort', fail)
+        if (timer !== null) clearTimeout(timer)
+        pendingMediaWaitCancels.delete(cancel)
+        resolve(settled)
+      }
+      const settle = (): void => {
+        if (isAtTime(element, seconds)) finish(true)
+        else request()
+      }
+      const request = (): void => {
+        if (reuseInFlight && element.seeking) return
+        reuseInFlight = false
+        if (!setElementTime(element, seconds)) return
+        // A seek to where the element already sits fires nothing.
+        if (!element.seeking) finish(isAtTime(element, seconds))
+      }
+      const fail = (): void => finish(false)
+      const cancel = (): void => finish(false)
+      pendingMediaWaitCancels.add(cancel)
+      element.addEventListener('seeked', settle)
+      element.addEventListener('loadedmetadata', request)
+      element.addEventListener('durationchange', request)
+      element.addEventListener('error', fail, { once: true })
+      element.addEventListener('abort', fail, { once: true })
+      timer = setTimeout(() => finish(false), timeoutMs)
+      request()
+    })
+  }
 
   const applyPlaybackRate = (element: HTMLMediaElement): void => {
     element.playbackRate = playbackRate
@@ -174,6 +395,7 @@ export function createGuitarBackingStreamEngine(
     if (pauseTimer !== null) clearTimeout(pauseTimer)
     syncTimer = null
     pauseTimer = null
+    for (const cancel of [...pendingMediaWaitCancels]) cancel()
   }
 
   const pauseNow = (): void => {
@@ -333,8 +555,12 @@ export function createGuitarBackingStreamEngine(
       clearTimers()
       pauseNow()
       clearTrims()
+      const targetRequests = new Map<StreamedTrack, boolean>()
       const starts = streamedTracks.map((streamed) => {
-        setElementTime(streamed.element, offsetSeconds)
+        targetRequests.set(
+          streamed,
+          setElementTime(streamed.element, offsetSeconds),
+        )
         applyPlaybackRate(streamed.element)
         streamed.gain.gain.value = targetGain(streamed.track.id)
         try {
@@ -349,22 +575,81 @@ export function createGuitarBackingStreamEngine(
         return null
       }
 
-      playableIds = new Set(
-        streamedTracks.flatMap((streamed, index) => {
-          if (settled[index].status !== 'fulfilled') {
-            streamed.element.pause()
-            return []
-          }
-          setElementTime(streamed.element, offsetSeconds)
-          return [streamed.track.id]
+      const started = streamedTracks.filter((streamed, index) => {
+        if (settled[index].status === 'fulfilled') return true
+        streamed.element.pause()
+        return false
+      })
+      const readinessDeadlineMs = Date.now() + playableWindowTimeoutMs
+      // iOS can reject `currentTime = offset` until play() has opened the
+      // element and metadata exists. Ask again *before* waiting on a range at
+      // that offset; otherwise a forward seek can buffer from zero forever
+      // while the room waits for bytes the browser was never asked to fetch.
+      const aligned = await Promise.all(
+        started.map((streamed) => {
+          if (targetRequests.get(streamed) === true) return true
+          return waitForSeekRequest(
+            streamed.element,
+            offsetSeconds,
+            readinessDeadlineMs,
+          )
         }),
       )
-      const playable = streamedTracks.filter((streamed) =>
-        playableIds.has(streamed.track.id),
-      )
-      if (playable.length === 0) return null
+      if (disposed || currentGeneration !== generation) {
+        pauseNow()
+        return null
+      }
+      const alignedStarted = started.filter((streamed, index) => {
+        if (aligned[index]) return true
+        streamed.element.pause()
+        return false
+      })
 
-      master = playable.reduce((longest, candidate) =>
+      const ready = await Promise.all(
+        alignedStarted.map((streamed) =>
+          waitForPlayableWindow(streamed, offsetSeconds, readinessDeadlineMs),
+        ),
+      )
+      if (disposed || currentGeneration !== generation) {
+        pauseNow()
+        return null
+      }
+
+      const playable = alignedStarted.filter((streamed, index) => {
+        if (ready[index]) return true
+        streamed.element.pause()
+        return false
+      })
+      // The hidden warm-up above may have advanced while its buffer filled.
+      // Align once more, and this time wait for WebKit's asynchronous seek to
+      // land before the transport opens the room bus.
+      const realigned = await Promise.all(
+        playable.map((streamed) =>
+          waitForSeekSettlement(
+            streamed.element,
+            offsetSeconds,
+            readinessDeadlineMs,
+            true,
+          ),
+        ),
+      )
+      if (disposed || currentGeneration !== generation) {
+        pauseNow()
+        return null
+      }
+
+      const settledPlayable = playable.filter((streamed, index) => {
+        if (realigned[index]) return true
+        streamed.element.pause()
+        return false
+      })
+
+      playableIds = new Set(
+        settledPlayable.map((streamed) => streamed.track.id),
+      )
+      if (settledPlayable.length === 0) return null
+
+      master = settledPlayable.reduce((longest, candidate) =>
         mediaDuration(candidate) > mediaDuration(longest) ? candidate : longest,
       )
       wantPlaying = true
@@ -374,7 +659,7 @@ export function createGuitarBackingStreamEngine(
       beginSync()
       return {
         playableTrackIds: [...playableIds],
-        durationSeconds: Math.max(...playable.map(mediaDuration)),
+        durationSeconds: Math.max(...settledPlayable.map(mediaDuration)),
       }
     },
 
@@ -396,24 +681,12 @@ export function createGuitarBackingStreamEngine(
 
     async seek(seconds) {
       settleUntilMs = now() + SEEK_SETTLE_MS
-      const arrivals = streamedTracks.map(
-        async (streamed) =>
-          new Promise<void>((resolve) => {
-            const element = streamed.element
-            let timer: ReturnType<typeof setTimeout> | null = null
-            const finish = (): void => {
-              element.removeEventListener('seeked', finish)
-              if (timer !== null) clearTimeout(timer)
-              resolve()
-            }
-            element.addEventListener('seeked', finish, { once: true })
-            timer = setTimeout(finish, SEEK_TIMEOUT_MS)
-            setElementTime(element, seconds)
-            // A seek to where the element already sits fires nothing.
-            if (!element.seeking) finish()
-          }),
+      const deadlineMs = Date.now() + SEEK_TIMEOUT_MS
+      await Promise.all(
+        streamedTracks.map((streamed) =>
+          waitForSeekSettlement(streamed.element, seconds, deadlineMs, false),
+        ),
       )
-      await Promise.all(arrivals)
       settleUntilMs = now() + SEEK_SETTLE_MS
     },
 

@@ -1,10 +1,27 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { readFileSync } from 'node:fs'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { GUITAR_NIGHT_SECONDARY_COLLAPSED_STORAGE_KEY, GUITAR_NIGHT_SECONDARY_LAYOUT_STORAGE_KEY, GuitarNightSecondaryPart, } from './GuitarNightSecondaryPart'
 import type { SheetLane } from './sheet/sheet-model'
+
+const secondaryPartCss = readFileSync(
+  'src/features/guitar-night/GuitarNightSecondaryPart.module.css',
+  'utf8',
+)
+
+function cssRuleBody(marker: string): string {
+  const selectorStart = secondaryPartCss.indexOf(marker)
+  if (selectorStart < 0) throw new Error(`Missing CSS rule ${marker}`)
+  const bodyStart = secondaryPartCss.indexOf('{', selectorStart)
+  const bodyEnd = secondaryPartCss.indexOf('}', bodyStart)
+  if (bodyStart < 0 || bodyEnd < 0) {
+    throw new Error(`Incomplete CSS rule ${marker}`)
+  }
+  return secondaryPartCss.slice(bodyStart + 1, bodyEnd)
+}
 
 function note(startBeat: number, fret: number, stringIndex = 0): GuitarNote {
   return {
@@ -119,6 +136,36 @@ describe('GuitarNightSecondaryPart', () => {
         name: 'Resize Rhythm guitar preview horizontally',
       }),
     ).toHaveAttribute('aria-orientation', 'horizontal')
+  })
+
+  it('keeps hover and keyboard emphasis inside the resting chrome footprint', () => {
+    expect(cssRuleBody('.chrome::before')).toMatch(/inset:\s*6px 5px;/)
+
+    for (const marker of [
+      '.chrome:hover::before',
+      '.chrome:focus-within::before',
+    ]) {
+      expect(cssRuleBody(marker)).not.toMatch(
+        /\b(?:inset|top|right|bottom|left|width|height|padding|margin|transform)\s*:/,
+      )
+    }
+
+    const controlEmphasis = cssRuleBody('.reset:hover')
+    expect(controlEmphasis).toMatch(/outline:\s*0;/)
+    expect(controlEmphasis).not.toMatch(
+      /\b(?:background|border|box-shadow|padding|margin|transform|width|height)\s*:/,
+    )
+  })
+
+  it('clips moving frets at the fixed string-label gutter', () => {
+    const { container } = render(() => (
+      <GuitarNightSecondaryPart lane={() => lane()} playheadBeat={() => 0} />
+    ))
+
+    expect(
+      container.querySelectorAll('[data-secondary-part-note-track]'),
+    ).toHaveLength(6)
+    expect(cssRuleBody('.string > div')).toMatch(/overflow:\s*hidden;/)
   })
 
   it('reads that part instead when tapped', () => {

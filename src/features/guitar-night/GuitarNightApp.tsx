@@ -1107,6 +1107,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           >
             Room
           </button>
+          <Suspense>
+            <GuitarNightAccount />
+          </Suspense>
         </div>
       </div>
 
@@ -1211,9 +1214,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             <a class={styles.studioLink} href="/#/guitar">
               Full studio
             </a>
-            <Suspense>
-              <GuitarNightAccount />
-            </Suspense>
           </div>
         </section>
       </aside>

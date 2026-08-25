@@ -220,10 +220,14 @@ core Learn set in
 - Play creates the route-owned Web Audio graph from the initiating gesture.
   Memory-safe mixes decode and start on one shared context epoch. Oversized
   mixes use synchronized media-element streams routed through the same Web
-  Audio buses instead of allocating the full decoded PCM footprint. Unknown
-  compressed formats use a conservative estimate; persisted duration is
-  preferred when available. Pause, resume, pointer seeking, master volume,
-  drift correction, and real per-stem mute controls follow that audio clock.
+  Audio buses instead of allocating the full decoded PCM footprint. A streamed
+  cold start or forward seek keeps the Play control in its loading state until
+  every usable stem has a target-relative forward window and has settled on one
+  common position; near the end, that window contracts to the music remaining.
+  Newer transport intent cancels an older warm-up. Unknown compressed formats
+  use a conservative estimate; persisted duration is preferred when available.
+  Pause, resume, pointer seeking, master volume, drift correction, and real
+  per-stem mute controls follow that audio clock.
 - Playback speed reuses the proven legacy Guitar practice-rate bounds. A
   non-default rate deliberately uses synchronized media-element stems with
   pitch preservation, including a position-preserving live handoff from an
@@ -298,9 +302,11 @@ core Learn set in
   pretending fret space is time. Input,
   instrument, tempo and scored-track changes park at that beat instead of
   resetting or presenting unexplained disabled controls. Per-part mute and solo
-  remain live. Instrument and loop controls keep 44px targets. On a phone, room,
-  Studio and account utilities collapse behind one Room control so the
-  instrument keeps the viewport.
+  remain live. Instrument and loop controls keep 44px targets. Account access
+  remains a separate top-rail action beside Room: desktop shows the player name
+  and credits, while tablet and phone widths retain one compact 44px action and
+  its explicit accessible identity. Studio and room-detail utilities stay in
+  the Room drawer so the instrument keeps the viewport.
 - Explicit Listening upgrades the next authored-score Play into one independent
   live-score take. Its quiet score latch extends the existing stage signal
   faceplate rather than adding a card, modal, arcade HUD, combo, or diagnosis.

@@ -278,30 +278,32 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
               <span>{label}</span>
               <i aria-hidden="true" />
               <div aria-hidden="true" data-testid="guitar-night-tab-note-track">
-                <For each={visibleNotesByString()[stringIndex()] ?? []}>
-                  {(note) => (
-                    <b
-                      classList={{
-                        [styles.stageTabNoteActive]:
-                          props.playheadBeat() !== null &&
-                          note.startBeat <= (props.playheadBeat() ?? 0) &&
-                          note.startBeat + note.duration >
-                            (props.playheadBeat() ?? 0),
-                        [styles.stageTabNotePast]:
-                          props.playheadBeat() !== null &&
-                          note.startBeat + note.duration <=
-                            (props.playheadBeat() ?? 0),
-                        [styles.stageTabNoteBacking]: note.isBacking === true,
-                      }}
-                      data-note-id={note.id}
-                      style={{
-                        left: `${(note.startBeat - timelineOriginBeat()) * 100}%`,
-                      }}
-                    >
-                      {note.fret}
-                    </b>
-                  )}
-                </For>
+                <div class={styles.stageTabNoteFlow}>
+                  <For each={visibleNotesByString()[stringIndex()] ?? []}>
+                    {(note) => (
+                      <b
+                        classList={{
+                          [styles.stageTabNoteActive]:
+                            props.playheadBeat() !== null &&
+                            note.startBeat <= (props.playheadBeat() ?? 0) &&
+                            note.startBeat + note.duration >
+                              (props.playheadBeat() ?? 0),
+                          [styles.stageTabNotePast]:
+                            props.playheadBeat() !== null &&
+                            note.startBeat + note.duration <=
+                              (props.playheadBeat() ?? 0),
+                          [styles.stageTabNoteBacking]: note.isBacking === true,
+                        }}
+                        data-note-id={note.id}
+                        style={{
+                          left: `${(note.startBeat - timelineOriginBeat()) * 100}%`,
+                        }}
+                      >
+                        {note.fret}
+                      </b>
+                    )}
+                  </For>
+                </div>
               </div>
             </div>
           )}

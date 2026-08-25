@@ -478,13 +478,17 @@ describe('GuitarNightRoom', () => {
       />
     ))
 
-    const play = screen.getByRole('button', { name: 'Starting backing' })
-    expect(play).toBeDisabled()
+    const play = screen.getByRole('button', { name: 'Cancel backing start' })
+    expect(play).toBeEnabled()
     expect(play).toHaveAttribute('data-loading-percent', '25')
     expect(play).toHaveTextContent('25%')
     // And the footer says what the wait is for, in megabytes.
     expect(screen.getByText('2.0 MB of 8.0 MB')).toBeInTheDocument()
     expect(screen.getByText('Getting the song ready')).toBeInTheDocument()
+
+    fireEvent.click(play)
+    expect(transport.pause).toHaveBeenCalledTimes(1)
+    expect(transport.play).not.toHaveBeenCalled()
   })
 
   it('shows a turning ring rather than a percentage nobody stated', () => {
@@ -507,7 +511,7 @@ describe('GuitarNightRoom', () => {
       />
     ))
 
-    const play = screen.getByRole('button', { name: 'Starting backing' })
+    const play = screen.getByRole('button', { name: 'Cancel backing start' })
     expect(play).toHaveAttribute('data-loading-percent', '')
     expect(play).not.toHaveTextContent('%')
     expect(screen.getByText('Stem 1 of 2')).toBeInTheDocument()

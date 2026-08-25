@@ -25,6 +25,14 @@ const SEEK_SETTLE_MS = 700
 
 class FakeStemElement extends EventTarget {
   duration = 240
+  /** End of the one buffered range this fake exposes. */
+  bufferedStart = 0
+  bufferedEnd = 240
+  /** Safari can reject currentTime before play() has opened metadata. */
+  rejectSeekWhilePaused = false
+  /** Populate a target-local range when the first usable seek arrives. */
+  bufferAfterAcceptedSeekSeconds = 0
+  readyState = 4
   /** Listeners still attached, by type — teardown has to give them back. */
   readonly listeners = new Map<string, number>()
   /** Report a clock the engine cannot use, the way a torn-down element does. */
@@ -47,6 +55,15 @@ class FakeStemElement extends EventTarget {
     return this.pending !== null
   }
 
+  get buffered(): TimeRanges {
+    const end = this.bufferedEnd
+    return {
+      length: end > this.bufferedStart ? 1 : 0,
+      start: () => this.bufferedStart,
+      end: () => end,
+    }
+  }
+
   get currentTime(): number {
     return this.broken ? Number.NaN : this.position
   }
@@ -62,7 +79,14 @@ class FakeStemElement extends EventTarget {
   }
 
   set currentTime(value: number) {
+    if (this.rejectSeekWhilePaused && this.paused) {
+      throw new DOMException('metadata is not ready', 'InvalidStateError')
+    }
     this.seeks.push(value)
+    if (this.bufferAfterAcceptedSeekSeconds > 0) {
+      this.bufferedStart = value
+      this.bufferedEnd = value + this.bufferAfterAcceptedSeekSeconds
+    }
     if (this.seekLatencyMs <= 0) {
       this.position = value
       return
@@ -143,7 +167,13 @@ interface Rig {
   skipClock(ms: number): void
 }
 
-function rig(trackIds: readonly string[] = ['vocal', 'instrumental']): Rig {
+function rig(
+  trackIds: readonly string[] = ['vocal', 'instrumental'],
+  readiness: {
+    playableWindowSeconds?: number
+    playableWindowTimeoutMs?: number
+  } = {},
+): Rig {
   const elements: FakeStemElement[] = []
   const interrupted = vi.fn()
   let clockMs = 0
@@ -159,6 +189,7 @@ function rig(trackIds: readonly string[] = ['vocal', 'instrumental']): Rig {
     onEnded: vi.fn(),
     onTrackError: vi.fn(),
     onInterrupted: interrupted,
+    ...readiness,
   })
   const context = fakeContext()
   engine.load(
@@ -191,6 +222,10 @@ async function playing(trackIds?: readonly string[]): Promise<Rig> {
   // declared duration, so it is the first.
   for (const element of harness.elements) element.seeks.length = 0
   return harness
+}
+
+async function flushMicrotasks(): Promise<void> {
+  for (let index = 0; index < 8; index += 1) await Promise.resolve()
 }
 
 describe('holding two stems together', () => {
@@ -330,6 +365,216 @@ describe('holding two stems together', () => {
     for (const element of harness.elements) {
       expect(element.currentTime).toBeGreaterThanOrEqual(45)
       expect(element.currentTime).toBeLessThan(46)
+    }
+  })
+
+  it('keeps a cold start pending until every stem has five seconds ahead', async () => {
+    const harness = rig()
+    for (const element of harness.elements) element.bufferedEnd = 1
+    let settled = false
+
+    const start = harness.engine
+      .play(0, () => 1)
+      .then((result) => {
+        settled = true
+        return result
+      })
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(settled).toBe(false)
+
+    harness.elements[0].bufferedEnd = 8
+    harness.elements[0].dispatchEvent(new Event('progress'))
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    harness.elements[1].bufferedEnd = 8
+    harness.elements[1].dispatchEvent(new Event('progress'))
+    await expect(start).resolves.not.toBeNull()
+    expect(settled).toBe(true)
+  })
+
+  it('waits for the accepted common seek before reporting the room ready', async () => {
+    const harness = rig(['instrumental'])
+    harness.elements[0].seekLatencyMs = 400
+    let settled = false
+
+    const start = harness.engine
+      .play(90, () => 1)
+      .then((result) => {
+        settled = true
+        return result
+      })
+    await flushMicrotasks()
+    expect(settled).toBe(false)
+
+    harness.run(250, 50)
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    harness.run(250, 50)
+    await expect(start).resolves.not.toBeNull()
+    // Reuse the accepted in-flight seek instead of restarting the decoder
+    // merely because its buffer was already available.
+    expect(harness.elements[0].seeks).toEqual([90])
+    expect(harness.elements[0].currentTime).toBeGreaterThanOrEqual(90)
+    expect(harness.elements[0].currentTime).toBeLessThan(91)
+  })
+
+  it('spends the remaining readiness budget on a slow final alignment', async () => {
+    const harness = rig(['instrumental'], {
+      playableWindowTimeoutMs: 5000,
+    })
+    const element = harness.elements[0]
+    element.bufferedEnd = 1
+    let settled = false
+
+    const start = harness.engine
+      .play(90, () => 1)
+      .then((result) => {
+        settled = true
+        return result
+      })
+    await flushMicrotasks()
+
+    // Warm-up advances the hidden element before its target range arrives.
+    harness.run(1300, 100)
+    element.seekLatencyMs = 2000
+    element.bufferedStart = 90
+    element.bufferedEnd = 98
+    element.dispatchEvent(new Event('progress'))
+    await flushMicrotasks()
+
+    harness.run(1300, 100)
+    await flushMicrotasks()
+    expect(settled).toBe(false)
+
+    harness.run(900, 100)
+    await expect(start).resolves.not.toBeNull()
+    expect(element.currentTime).toBeGreaterThanOrEqual(90)
+    expect(element.currentTime).toBeLessThan(91)
+  })
+
+  it('clamps the five-second window to the music remaining near the end', async () => {
+    const harness = rig(['instrumental'])
+    harness.elements[0].bufferedEnd = 240
+
+    await expect(harness.engine.play(238, () => 1)).resolves.not.toBeNull()
+  })
+
+  it('requests a forward target again after pre-metadata Safari rejects it', async () => {
+    const harness = rig(['instrumental'])
+    const element = harness.elements[0]
+    element.rejectSeekWhilePaused = true
+    element.bufferedEnd = 1
+    element.bufferAfterAcceptedSeekSeconds = 8
+
+    await expect(harness.engine.play(90, () => 1)).resolves.not.toBeNull()
+
+    // The pre-play assignment threw; the one recorded request is the retry
+    // after play() opened the element. No redundant final seek is needed.
+    expect(element.seeks).toEqual([90])
+    expect(element.bufferedStart).toBe(90)
+    expect(element.bufferedEnd).toBe(98)
+  })
+
+  it('keeps an accepted slow Safari seek inside the readiness budget', async () => {
+    const harness = rig(['instrumental'], {
+      playableWindowTimeoutMs: 5000,
+    })
+    const element = harness.elements[0]
+    element.seekLatencyMs = 2000
+    element.bufferedEnd = 1
+    element.bufferAfterAcceptedSeekSeconds = 8
+    let settled = false
+
+    const start = harness.engine
+      .play(90, () => 1)
+      .then((result) => {
+        settled = true
+        return result
+      })
+    await flushMicrotasks()
+
+    // The old 1.2 second generic seek timeout discarded this otherwise
+    // healthy iOS stem before its five-second target window could arrive.
+    harness.run(1300, 100)
+    await flushMicrotasks()
+    expect(settled).toBe(false)
+    expect(element.paused).toBe(false)
+
+    harness.run(900, 100)
+    await expect(start).resolves.not.toBeNull()
+    expect(element.currentTime).toBeGreaterThanOrEqual(90)
+    expect(element.currentTime).toBeLessThan(91)
+  })
+
+  it('accepts the browser enough-data promise when ranges never materialize', async () => {
+    const harness = rig(['instrumental'], {
+      playableWindowTimeoutMs: 100,
+    })
+    harness.elements[0].bufferedEnd = 0
+    harness.elements[0].readyState = 4
+
+    const start = harness.engine.play(0, () => 1)
+    await flushMicrotasks()
+    vi.advanceTimersByTime(100)
+    await flushMicrotasks()
+
+    await expect(start).resolves.not.toBeNull()
+  })
+
+  it('fails a timed-out element that has neither a window nor enough data', async () => {
+    const harness = rig(['instrumental'], {
+      playableWindowTimeoutMs: 100,
+    })
+    harness.elements[0].bufferedEnd = 0
+    harness.elements[0].readyState = 2
+
+    const start = harness.engine.play(0, () => 1)
+    await flushMicrotasks()
+    vi.advanceTimersByTime(100)
+    await flushMicrotasks()
+
+    await expect(start).resolves.toBeNull()
+    expect(harness.elements[0].paused).toBe(true)
+  })
+
+  it('cancels a pending warm-up when the player pauses', async () => {
+    const harness = rig(['instrumental'])
+    const element = harness.elements[0]
+    const listenerBaseline = new Map(element.listeners)
+    element.bufferedEnd = 1
+
+    const start = harness.engine.play(0, () => 1)
+    await Promise.resolve()
+    harness.engine.pause()
+
+    await expect(start).resolves.toBeNull()
+    expect(element.paused).toBe(true)
+    for (const [type, count] of element.listeners) {
+      expect(count).toBe(listenerBaseline.get(type) ?? 0)
+    }
+  })
+
+  it('cancels the final Safari seek immediately when the player pauses', async () => {
+    const harness = rig(['instrumental'])
+    const element = harness.elements[0]
+    const listenerBaseline = new Map(element.listeners)
+    element.seekLatencyMs = 5000
+
+    const start = harness.engine.play(40, () => 1)
+    await flushMicrotasks()
+    expect(element.seeking).toBe(true)
+
+    harness.engine.pause()
+
+    await expect(start).resolves.toBeNull()
+    expect(element.paused).toBe(true)
+    for (const [type, count] of element.listeners) {
+      expect(count).toBe(listenerBaseline.get(type) ?? 0)
     }
   })
 

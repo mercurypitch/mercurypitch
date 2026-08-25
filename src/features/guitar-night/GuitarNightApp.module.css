@@ -249,6 +249,15 @@
   margin-left: auto;
 }
 
+/* A portrait tablet has room for the action, not an arbitrary-length email
+   local-part. Credits stay visible; the explicit control name carries the
+   account identity for assistive technology. */
+@media (max-width: 900px) {
+  .topbarActions .accountName {
+    display: none;
+  }
+}
+
 /* ── Room drawer ──────────────────────────────────────────
    The venue used to be a native <select> living in this rail, with the
    glass slider and the studio links beside it — and on a phone the whole
@@ -4976,8 +4985,30 @@
   z-index: 1;
   grid-column: 2;
   grid-row: 1;
-  width: var(--stage-tab-track-width, 100%);
+  width: 100%;
   height: var(--stage-tab-note-size);
+  /* Notes move past a fixed instrument label. Clip and softly retire them at
+     the lane boundary so a negative track shift can never paint fret numbers
+     over E-A-D-G-B-E. The string line is a sibling and remains full-length. */
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 min(0.7rem, 8%),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 min(0.7rem, 8%),
+    #000 100%
+  );
+}
+
+.stageTabNoteFlow {
+  position: relative;
+  width: var(--stage-tab-track-width, 100%);
+  height: 100%;
   transform: translate3d(var(--stage-tab-track-shift, 0%), 0, 0);
 }
 
@@ -6390,6 +6421,8 @@
     position: relative;
     order: initial;
     width: auto;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
     margin-top: 0;
     margin-left: auto;
   }
@@ -6398,6 +6431,15 @@
     padding: 0.35rem 0.75rem;
     font-size: 0.68rem;
     font-weight: 700;
+  }
+
+  /* Account remains a single 44px rail action on a phone. Its explicit
+     accessible name keeps the player and credit balance available when the
+     visible email local-part yields to the stage. */
+  .topbarActions .accountChip {
+    min-width: var(--touch-target);
+    justify-content: center;
+    padding-inline: 0.65rem;
   }
 
   /* Full-bleed on a phone: a 27rem panel on a 360px screen would be a

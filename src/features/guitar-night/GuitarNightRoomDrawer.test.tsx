@@ -104,6 +104,18 @@ describe('the top rail', () => {
     expect(roomButton().getAttribute('aria-haspopup')).toBe('dialog')
     expect(railText()).toContain('Velvet Rehearsal')
   })
+
+  it('keeps account access beside Room instead of hiding it in the drawer', async () => {
+    mountRoom()
+
+    const account = await screen.findByRole('link', {
+      name: 'Sign in to MercuryPitch',
+    })
+    expect(screen.getByTestId('guitar-night-topbar')).toContainElement(account)
+
+    fireEvent.click(roomButton())
+    expect(drawer()).not.toContainElement(account)
+  })
 })
 
 describe('the drawer', () => {
