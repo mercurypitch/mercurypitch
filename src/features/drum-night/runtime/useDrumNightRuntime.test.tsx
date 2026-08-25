@@ -219,6 +219,33 @@ describe('useDrumNightRuntime', () => {
     expect(controller.recordedHits()).toBe(capturedReference)
   })
 
+  it('exposes reactive elapsed-time adapters over the route transport', () => {
+    const { controller } = mountRuntime({
+      player: playerHarness(),
+      clock: new FakeClock(),
+      keyboardTarget: null,
+      midiEnvironment: { nowMs: () => 0 },
+    })
+    controller.transportPort.setAuthoredTiming({
+      tempoBpm: 120,
+      tempoChanges: [
+        { beat: 0, usPerBeat: 500_000 },
+        { beat: 2, usPerBeat: 1_000_000 },
+      ],
+      durationBeats: 6,
+    })
+
+    expect(controller.durationSeconds()).toBeCloseTo(5)
+    expect(controller.secondsForBeat(3)).toBeCloseTo(2)
+    expect(controller.beatForSeconds(2)).toBeCloseTo(3)
+
+    controller.setSpeedScale(0.5)
+    expect(controller.durationSeconds()).toBeCloseTo(10)
+    controller.seekSeconds(4)
+    expect(controller.positionSeconds()).toBeCloseTo(4)
+    expect(controller.transportState().positionBeats).toBeCloseTo(3)
+  })
+
   it('pauses and releases voices when the page becomes hidden', async () => {
     const originalVisibility = Object.getOwnPropertyDescriptor(
       document,

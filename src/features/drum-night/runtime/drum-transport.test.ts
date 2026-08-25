@@ -349,6 +349,56 @@ describe('Drum Night transport', () => {
     expect(transport.state().positionBeats).toBeCloseTo(2)
   })
 
+  it('maps authored beats and display seconds exactly through tempo and speed changes', () => {
+    const transport = createDrumTransport({
+      clock: new FakeClock(),
+      countInBeats: 0,
+      authoredTiming: {
+        tempoBpm: 120,
+        tempoChanges: [
+          { beat: 0, usPerBeat: 500_000 },
+          { beat: 2, usPerBeat: 1_000_000 },
+        ],
+        durationBeats: 6,
+      },
+    })
+
+    expect(transport.secondsForBeat(0)).toBe(0)
+    expect(transport.secondsForBeat(2)).toBeCloseTo(1)
+    expect(transport.secondsForBeat(3)).toBeCloseTo(2)
+    expect(transport.beatForSeconds(2)).toBeCloseTo(3)
+    expect(transport.durationSeconds()).toBeCloseTo(5)
+
+    transport.setSpeedScale(0.5)
+    expect(transport.secondsForBeat(3)).toBeCloseTo(4)
+    expect(transport.beatForSeconds(4)).toBeCloseTo(3)
+    expect(transport.durationSeconds()).toBeCloseTo(10)
+
+    transport.seekSeconds(4)
+    expect(transport.state().positionBeats).toBeCloseTo(3)
+  })
+
+  it('clamps finite timeline conversion and stays zero-safe without a duration', () => {
+    const finite = createDrumTransport({
+      clock: new FakeClock(),
+      authoredTiming: { tempoBpm: 60, durationBeats: 4 },
+    })
+    expect(finite.secondsForBeat(-5)).toBe(0)
+    expect(finite.secondsForBeat(99)).toBe(4)
+    expect(finite.beatForSeconds(-5)).toBe(0)
+    expect(finite.beatForSeconds(99)).toBe(4)
+    expect(finite.secondsForBeat(Number.NaN)).toBe(0)
+    expect(finite.beatForSeconds(Number.POSITIVE_INFINITY)).toBe(0)
+
+    const open = createDrumTransport({
+      clock: new FakeClock(),
+      tempoBpm: 120,
+    })
+    expect(open.durationSeconds()).toBe(0)
+    expect(open.secondsForBeat(4)).toBe(2)
+    expect(open.beatForSeconds(2)).toBe(4)
+  })
+
   it('reports validated, omitted and playable-range-adjusted tempo changes', () => {
     const clock = new FakeClock()
     const transport = createDrumTransport({
@@ -564,6 +614,29 @@ describe('Drum Night transport', () => {
       phase: 'playing',
       positionBeats: 7,
     })
+  })
+
+  it('enters a newly committed A/B range atomically unless already inside it', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({
+      clock,
+      countInBeats: 0,
+      authoredTiming: { tempoBpm: 60, durationBeats: 16 },
+    })
+    transport.seek(2)
+    const beforeFirstCommit = transport.scheduleRevision()
+
+    expect(transport.setLoop({ startBeat: 4, endBeat: 8 })).toBe(true)
+    expect(transport.state()).toMatchObject({
+      timelineBeats: 4,
+      positionBeats: 4,
+      loopIteration: 0,
+    })
+    expect(transport.scheduleRevision()).toBe(beforeFirstCommit + 1)
+
+    transport.seek(6)
+    expect(transport.setLoop({ startBeat: 5, endBeat: 9 })).toBe(true)
+    expect(transport.state().positionBeats).toBe(6)
   })
 
   it('cancels its animation ownership when disposed', () => {

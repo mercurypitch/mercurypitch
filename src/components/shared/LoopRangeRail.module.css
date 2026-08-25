@@ -82,7 +82,7 @@
   height: 44px;
   color: var(--loop-range-a);
   cursor: ew-resize;
-  transform: translateX(-50%);
+  transform: translateX(var(--loop-marker-shift, -50%));
   touch-action: none;
 }
 
@@ -90,7 +90,7 @@
   position: absolute;
   top: 0.55rem;
   bottom: 0.35rem;
-  left: 50%;
+  left: var(--loop-marker-anchor, 50%);
   width: 2px;
   border-radius: 2px;
   background: currentColor;
@@ -103,7 +103,7 @@
   position: absolute;
   z-index: 1;
   top: 0;
-  left: 50%;
+  left: var(--loop-marker-anchor, 50%);
   min-width: 1rem;
   padding: 0.08rem 0.22rem;
   border-radius: 0.22rem;
@@ -113,7 +113,7 @@
   font-weight: 800;
   line-height: 1;
   text-align: center;
-  transform: translateX(-50%);
+  transform: translateX(var(--loop-marker-shift, -50%));
   pointer-events: none;
 }
 
