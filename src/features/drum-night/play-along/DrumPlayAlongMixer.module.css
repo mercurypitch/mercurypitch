@@ -340,6 +340,11 @@
   border-top: 1px solid var(--mix-line);
 }
 
+.drumsAccessory {
+  min-width: 0;
+  border-top: 1px solid var(--mix-line);
+}
+
 .trackStrip {
   display: grid;
   min-height: 58px;

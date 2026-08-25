@@ -153,6 +153,75 @@ describe('Drum Night session scheduler', () => {
     )
   })
 
+  it('hot-reindexes an edit without moving or stopping the active take', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture()
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + timestampMs / 1_000,
+    })
+    const endingHit = {
+      id: 'ending-crash',
+      gmKey: 49,
+      startBeat: 8,
+      velocity: 110,
+      writtenDuration: 0.25,
+    }
+    const initial = readyDocumentFixture({
+      song: drumSongFixture({
+        percussionTracks: [percussionTrackFixture({ hits: [endingHit] })],
+      }),
+    })
+    const edited = readyDocumentFixture({
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              {
+                id: 'new-snare',
+                gmKey: 38,
+                startBeat: 2.25,
+                velocity: 105,
+              },
+              endingHit,
+            ],
+          }),
+        ],
+      }),
+    })
+
+    scheduler.setSession(initial)
+    expect(transport.setLoop({ startBeat: 1, endBeat: 5 })).toBe(true)
+    transport.seek(2)
+    transport.setSpeedScale(0.7)
+    transport.start()
+    expect(player.trigger).not.toHaveBeenCalled()
+
+    const revisionBefore = transport.scheduleRevision()
+    scheduler.updateSession(edited)
+
+    expect(transport.state()).toMatchObject({
+      phase: 'playing',
+      positionBeats: 2,
+      speedScale: 0.7,
+      loop: { startBeat: 1, endBeat: 5 },
+    })
+    expect(transport.scheduleRevision()).toBe(revisionBefore)
+    expect(player.panic).toHaveBeenLastCalledWith('authored')
+    expect(player.trigger).toHaveBeenCalledOnce()
+    expect(player.trigger).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gmKey: 38,
+        sourceId: 'authored:drums:new-snare',
+        lane: 'authored',
+      }),
+    )
+  })
+
   it('binary-queries sorted hits across authored tempo changes', () => {
     const clock = new FakeClock()
     const transport = createDrumTransport({ clock, countInBeats: 0 })

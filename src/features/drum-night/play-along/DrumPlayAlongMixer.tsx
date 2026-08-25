@@ -39,6 +39,7 @@ export interface DrumPlayAlongMixerProps {
   you: DrumPlayAlongMixChannel
   click: DrumPlayAlongMixChannel
   tracks: readonly DrumPlayAlongMixTrack[]
+  drumsAccessory?: JSX.Element
   onPresetChange: (preset: DrumPlayAlongMixPreset) => void
   onBusLevelChange: (busId: DrumPlayAlongBusId, level: number) => void
   onBusMuteChange: (busId: DrumPlayAlongBusId, muted: boolean) => void
@@ -271,6 +272,9 @@ export function DrumPlayAlongMixer(
             onLevelChange={props.onBusLevelChange}
             onMuteChange={props.onBusMuteChange}
           />
+          <Show when={!drumsUnavailable() && props.drumsAccessory}>
+            <div class={styles.drumsAccessory}>{props.drumsAccessory}</div>
+          </Show>
           <Show when={!drumsUnavailable() && drumTracks().length > 0}>
             <div class={styles.trackList} aria-label="Source drum tracks">
               <Index each={drumTracks()}>

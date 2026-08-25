@@ -11,6 +11,17 @@ export type EssentialDrumPadId =
   | 'ride'
   | 'crash'
 
+/** Mixable authored-kit families; live input always stays on its own lane. */
+export type DrumKitAuthoredFamily =
+  | 'cymbals'
+  | 'hats'
+  | 'kick'
+  | 'snare'
+  | 'toms'
+
+export const DRUM_KIT_AUTHORED_FAMILIES: readonly DrumKitAuthoredFamily[] =
+  Object.freeze(['kick', 'snare', 'hats', 'toms', 'cymbals'])
+
 export interface EssentialDrumPad {
   readonly id: EssentialDrumPadId
   readonly label: string
@@ -116,4 +127,35 @@ export function drumPadForKeyboardCode(code: string): EssentialDrumPad | null {
 
 export function isGeneralMidiDrumKey(value: number): boolean {
   return normalizeGeneralMidiPercussionKey(value) !== null
+}
+
+/** Group only articulations the shared kit player can represent honestly. */
+export function drumKitAuthoredFamily(
+  gmKey: number,
+): DrumKitAuthoredFamily | null {
+  if (gmKey === 35 || gmKey === 36) return 'kick'
+  if (gmKey >= 37 && gmKey <= 40) return 'snare'
+  if (gmKey === 42 || gmKey === 44 || gmKey === 46) return 'hats'
+  if (
+    gmKey === 41 ||
+    gmKey === 43 ||
+    gmKey === 45 ||
+    gmKey === 47 ||
+    gmKey === 48 ||
+    gmKey === 50
+  ) {
+    return 'toms'
+  }
+  if (
+    gmKey === 49 ||
+    gmKey === 51 ||
+    gmKey === 52 ||
+    gmKey === 53 ||
+    gmKey === 55 ||
+    gmKey === 57 ||
+    gmKey === 59
+  ) {
+    return 'cymbals'
+  }
+  return null
 }

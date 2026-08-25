@@ -955,6 +955,394 @@ test('plays a real prepared groove and changes its authored variation @smoke', a
   ).toHaveAttribute('aria-pressed', 'true')
 })
 
+test('lazy-opens a responsive Groove Rack without undersized or overflowing controls @smoke', async ({
+  page,
+}, testInfo) => {
+  await instrumentFirstPaint(page)
+  const editorResponses: string[] = []
+  page.on('response', (response) => {
+    if (/DrumGrooveEditor-[^/]+\.js(?:$|\?)/.test(response.url())) {
+      editorResponses.push(response.url())
+    }
+  })
+
+  for (const viewport of [
+    { width: 1440, height: 900, visibleSteps: 16 },
+    { width: 768, height: 1024, visibleSteps: 8 },
+    { width: 844, height: 390, visibleSteps: 8 },
+    { width: 390, height: 844, visibleSteps: 4 },
+    { width: 320, height: 568, visibleSteps: 4 },
+  ]) {
+    await page.setViewportSize(viewport)
+    const responseCountBeforeNavigation = editorResponses.length
+    await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+    const editor = page.getByTestId('drum-groove-editor')
+    await expect(editor).toHaveCount(0)
+    if (viewport.width === 1440) {
+      expect(editorResponses).toHaveLength(responseCountBeforeNavigation)
+    }
+    expect((await boundaryCounts(page)).audio).toBe(0)
+
+    await page
+      .getByRole('button', { name: /Groove/ })
+      .filter({ visible: true })
+      .first()
+      .click()
+
+    await expect(editor).toBeVisible()
+    await expect(editor).toHaveAttribute(
+      'data-visible-step-count',
+      String(viewport.visibleSteps),
+    )
+    await expect(
+      editor.getByRole('grid', { name: /exact drum articulations/ }),
+    ).toHaveAttribute('aria-colcount', String(viewport.visibleSteps + 1))
+    if (viewport.width === 1440) {
+      await expect
+        .poll(() => editorResponses.length)
+        .toBeGreaterThan(responseCountBeforeNavigation)
+    }
+
+    const geometry = await editor.evaluate((element) => {
+      const workbench = element.closest<HTMLElement>('#drum-workbench')
+      const workbenchBar = workbench?.firstElementChild as
+        | HTMLElement
+        | undefined
+      const closeButton = workbench?.querySelector<HTMLButtonElement>(
+        'button[aria-label="Close rack drawer"]',
+      )
+      const sessionHeader = workbench?.closest('main')?.querySelector('header')
+      const editorBounds = element.getBoundingClientRect()
+      const closeBounds = closeButton?.getBoundingClientRect()
+      const visibleButtons = [
+        ...(workbench?.querySelectorAll('button') ?? []),
+      ].filter((button) => {
+        const bounds = button.getBoundingClientRect()
+        const style = getComputedStyle(button)
+        return (
+          bounds.width > 0 &&
+          bounds.height > 0 &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden'
+        )
+      })
+      const undersizedButtons = visibleButtons.filter((button) => {
+        const bounds = button.getBoundingClientRect()
+        return Math.round(bounds.width) < 44 || Math.round(bounds.height) < 44
+      })
+      const visibleStepCount = Number(
+        element.getAttribute('data-visible-step-count'),
+      )
+      const rows = Number(
+        element.querySelector('[role="grid"]')?.getAttribute('aria-rowcount') ??
+          0,
+      )
+      return {
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        editorClientWidth: element.clientWidth,
+        editorLeft: editorBounds.left,
+        editorRight: editorBounds.right,
+        editorScrollWidth: element.scrollWidth,
+        closeCenterHit:
+          closeButton !== undefined &&
+          closeButton !== null &&
+          closeBounds !== undefined &&
+          closeBounds !== null &&
+          closeButton.contains(
+            document.elementFromPoint(
+              closeBounds.left + closeBounds.width / 2,
+              closeBounds.top + closeBounds.height / 2,
+            ),
+          ),
+        closeTop: closeBounds?.top ?? Number.NEGATIVE_INFINITY,
+        renderedCellCount:
+          element.querySelectorAll('[data-groove-cell]').length,
+        rows,
+        sessionHeaderBottom:
+          sessionHeader?.getBoundingClientRect().bottom ??
+          Number.POSITIVE_INFINITY,
+        undersizedButtons: undersizedButtons.length,
+        visibleStepCount,
+        viewportWidth: innerWidth,
+        workbenchBarTop:
+          workbenchBar?.getBoundingClientRect().top ?? Number.NEGATIVE_INFINITY,
+        workbenchClientWidth: workbench?.clientWidth ?? 0,
+        workbenchScrollWidth: workbench?.scrollWidth ?? 0,
+      }
+    })
+
+    expect(geometry.documentScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.documentClientWidth,
+    )
+    expect(geometry.editorScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.editorClientWidth,
+    )
+    expect(geometry.workbenchScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.workbenchClientWidth,
+    )
+    expect(
+      geometry.editorLeft,
+      JSON.stringify(viewport),
+    ).toBeGreaterThanOrEqual(0)
+    expect(geometry.editorRight, JSON.stringify(viewport)).toBeLessThanOrEqual(
+      geometry.viewportWidth,
+    )
+    expect(geometry.visibleStepCount, JSON.stringify(viewport)).toBe(
+      viewport.visibleSteps,
+    )
+    expect(geometry.rows, JSON.stringify(viewport)).toBe(7)
+    expect(geometry.renderedCellCount, JSON.stringify(viewport)).toBe(
+      geometry.rows * viewport.visibleSteps,
+    )
+    expect(geometry.undersizedButtons, JSON.stringify(viewport)).toBe(0)
+    expect(geometry.closeTop, JSON.stringify(viewport)).toBeGreaterThanOrEqual(
+      0,
+    )
+    expect(geometry.closeCenterHit, JSON.stringify(viewport)).toBe(true)
+    if (viewport.width === 844 && viewport.height === 390) {
+      expect(
+        geometry.workbenchBarTop,
+        JSON.stringify(viewport),
+      ).toBeGreaterThanOrEqual(geometry.sessionHeaderBottom)
+    }
+    expect((await boundaryCounts(page)).audio).toBe(0)
+
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `drum-night-groove-rack-${viewport.width}x${viewport.height}.png`,
+      ),
+    })
+  }
+})
+
+test('hot-edits a playing A B groove with pointer and keyboard without restarting it @smoke', async ({
+  page,
+}) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  const shell = page.getByTestId('drum-night-shell')
+  const timeline = page.getByTestId('drum-night-timeline')
+  const seek = timeline.getByRole('slider', { name: 'Drum part position' })
+  const markA = timeline.getByRole('button', {
+    name: 'Set loop start A at the playhead',
+  })
+  const markB = timeline.getByRole('button', {
+    name: 'Set loop end B at the playhead',
+  })
+
+  const loopStartPoint = await rangePoint(seek, 0.2)
+  await page.mouse.click(loopStartPoint.x, loopStartPoint.y)
+  await markA.click()
+  const loopEndPoint = await rangePoint(seek, 0.88)
+  await page.mouse.click(loopEndPoint.x, loopEndPoint.y)
+  await markB.click()
+  const playStartPoint = await rangePoint(seek, 0.5)
+  await page.mouse.click(playStartPoint.x, playStartPoint.y)
+  const positionAtPlayStart = Number(await seek.inputValue())
+
+  await expect(timeline).toHaveAttribute('data-loop-state', 'active')
+  const loopStart = timeline.getByRole('slider', { name: 'Loop start marker' })
+  const loopEnd = timeline.getByRole('slider', { name: 'Loop end marker' })
+  const loopStartBefore = await loopStart.getAttribute('aria-valuenow')
+  const loopEndBefore = await loopEnd.getAttribute('aria-valuenow')
+  expect(Number(loopStartBefore)).toBeGreaterThan(0)
+  expect(Number(loopEndBefore)).toBeGreaterThan(Number(loopStartBefore))
+
+  await page.getByRole('button', { name: 'Count-in: 4 audible beats' }).click()
+  await page
+    .getByRole('button', { name: /^Play First Pocket take clock$/ })
+    .filter({ visible: true })
+    .click()
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+  await expect
+    .poll(async () => Number(await seek.inputValue()))
+    .toBeGreaterThan(positionAtPlayStart)
+
+  await page
+    .getByRole('button', { name: /Groove/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const editor = page.getByTestId('drum-groove-editor')
+  await expect(editor).toBeVisible()
+
+  const emptyTom = editor.getByRole('button', {
+    name: 'Add Hi-Mid Tom at bar 1, beat 1 e',
+  })
+  await emptyTom.scrollIntoViewIfNeeded()
+  const emptyTomBounds = await emptyTom.boundingBox()
+  if (emptyTomBounds === null) {
+    throw new Error('Empty tom cell has no real pointer bounds')
+  }
+  const positionBeforeEdit = Number(await seek.inputValue())
+  const audioContextsBeforeEdit = (await boundaryCounts(page)).audio
+  await page.mouse.click(
+    emptyTomBounds.x + emptyTomBounds.width / 2,
+    emptyTomBounds.y + emptyTomBounds.height / 2,
+  )
+
+  await expect(editor).toHaveAttribute('data-dirty', 'true')
+  const addedTom = editor.getByRole('button', {
+    name: /Hi-Mid Tom, at bar 1, beat 1 e, velocity \d+, sounding, selected/,
+  })
+  await expect(addedTom).toBeVisible()
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+  await expect(timeline).toHaveAttribute('data-loop-state', 'active')
+  await expect(loopStart).toHaveAttribute(
+    'aria-valuenow',
+    loopStartBefore ?? '',
+  )
+  await expect(loopEnd).toHaveAttribute('aria-valuenow', loopEndBefore ?? '')
+  await expect(page.getByText(/^Count in$/)).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: 'Count-in: off' }),
+  ).toBeVisible()
+  expect((await boundaryCounts(page)).audio).toBe(audioContextsBeforeEdit)
+
+  const positionAfterEdit = Number(await seek.inputValue())
+  expect(positionAfterEdit).toBeGreaterThan(0)
+  expect(Math.abs(positionAfterEdit - positionBeforeEdit)).toBeLessThan(1)
+
+  const targetTom = editor.getByRole('button', {
+    name: 'Add Hi-Mid Tom at bar 1, beat 1 and',
+  })
+  const [originBounds, targetBounds] = await Promise.all([
+    addedTom.boundingBox(),
+    targetTom.boundingBox(),
+  ])
+  if (originBounds === null || targetBounds === null) {
+    throw new Error('Tom move cells have no real pointer bounds')
+  }
+  await page.mouse.move(
+    originBounds.x + originBounds.width / 2,
+    originBounds.y + originBounds.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    targetBounds.x + targetBounds.width / 2,
+    targetBounds.y + targetBounds.height / 2,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+
+  await expect(
+    editor.getByRole('button', {
+      name: 'Add Hi-Mid Tom at bar 1, beat 1 e',
+    }),
+  ).toBeVisible()
+  await expect(
+    editor.getByRole('button', {
+      name: /Hi-Mid Tom, at bar 1, beat 1 and, velocity \d+, sounding, selected/,
+    }),
+  ).toBeVisible()
+
+  const draggedTom = editor.getByRole('button', {
+    name: /Hi-Mid Tom, at bar 1, beat 1 and, velocity \d+, sounding, selected/,
+  })
+  await draggedTom.focus()
+  await draggedTom.press('Enter')
+  const later = editor.getByRole('button', { name: 'Later', exact: true })
+  await later.focus()
+  await later.press('Enter')
+  await expect(
+    editor.getByRole('button', {
+      name: 'Add Hi-Mid Tom at bar 1, beat 1 and',
+    }),
+  ).toBeVisible()
+  await expect(
+    editor.getByRole('button', {
+      name: /Hi-Mid Tom, at bar 1, beat 1 a, velocity \d+, sounding, selected/,
+    }),
+  ).toBeVisible()
+  await expect(
+    editor.getByRole('button', {
+      name: 'Add Hi-Mid Tom at bar 1, beat 2',
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(/Built-in groove · 32 mapped hits · 84 BPM take clock/),
+  ).toBeVisible()
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+
+  const keyboardCell = editor.locator('[data-gm-key="48"][data-step-index="1"]')
+  await keyboardCell.focus()
+  await keyboardCell.press('Enter')
+  await expect(keyboardCell).toHaveAttribute(
+    'aria-label',
+    /Hi-Mid Tom, at bar 1, beat 1 e, velocity \d+/,
+  )
+  await keyboardCell.press('Delete')
+  await expect(keyboardCell).toHaveAttribute(
+    'aria-label',
+    'Add Hi-Mid Tom at bar 1, beat 1 e',
+  )
+  await keyboardCell.press('Control+z')
+  await expect(keyboardCell).toHaveAttribute(
+    'aria-label',
+    /Hi-Mid Tom, at bar 1, beat 1 e, velocity \d+/,
+  )
+  await keyboardCell.press('Control+z')
+  await expect(keyboardCell).toHaveAttribute(
+    'aria-label',
+    'Add Hi-Mid Tom at bar 1, beat 1 e',
+  )
+
+  await page.getByRole('button', { name: 'Close rack drawer' }).click()
+  await page.getByRole('button', { name: 'Score view' }).click()
+  await expect(
+    page
+      .getByText(/32 mapped hits · authored attack span/)
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible()
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+})
+
+test('mixes an authored kit family without changing the live You bus @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  await page
+    .getByRole('button', { name: /Groove/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const drawer = page.getByRole('region', { name: 'Shape the groove' })
+  await drawer.getByRole('tab', { name: 'Mix' }).click()
+
+  const mixer = page.getByTestId('drum-play-along-mixer')
+  const familyLevel = mixer.getByRole('slider', {
+    name: 'Kick authored level',
+  })
+  const youLevel = mixer.getByRole('slider', { name: 'You level' })
+  const sourceLevel = mixer.getByRole('slider', { name: 'Source Drums level' })
+  const youLevelBefore = await youLevel.inputValue()
+  const sourceLevelBefore = await sourceLevel.inputValue()
+  await familyLevel.scrollIntoViewIfNeeded()
+  const initialFamilyLevel = await familyLevel.inputValue()
+  const familyTarget = await rangePoint(familyLevel, 0.36)
+  await page.mouse.click(familyTarget.x, familyTarget.y)
+
+  await expect(familyLevel).not.toHaveValue(initialFamilyLevel)
+  await mixer.getByRole('button', { name: 'Mute authored Kick' }).click()
+  await expect(
+    mixer.getByRole('button', { name: 'Unmute authored Kick' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(youLevel).toHaveValue(youLevelBefore)
+  await expect(sourceLevel).toHaveValue(sourceLevelBefore)
+  await expect(mixer.getByRole('button', { name: 'Mute You' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+})
+
 test('changes only the visual room and preserves the authored Seat scene @smoke', async ({
   page,
 }) => {

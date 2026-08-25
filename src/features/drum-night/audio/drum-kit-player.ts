@@ -10,6 +10,8 @@ import type { DrumKitPlaybackLane, DrumKitPlayerPort, DrumKitTrigger, } from '@/
 import { drumVoiceForMidi } from '@/lib/drum-voice-map'
 import { triggerDrumVoice } from '@/lib/drum-voices'
 import { normalizeGeneralMidiPercussionKey } from '@/lib/percussion'
+import type { DrumKitAuthoredFamily } from '../runtime/drum-pad-layout'
+import { DRUM_KIT_AUTHORED_FAMILIES, drumKitAuthoredFamily, } from '../runtime/drum-pad-layout'
 import type { DrumKitId, DrumKitManifest, DrumKitSampleResource, } from './drum-kit-manifest'
 import { drumKitManifest, drumKitResourcesForHit, resolveDrumKitAssetUrl, } from './drum-kit-manifest'
 
@@ -53,6 +55,8 @@ export interface DrumKitPlayer extends DrumKitPlayerPort {
   setVolume(volume: number): void
   /** Optional for injected legacy players; the concrete player always provides it. */
   setLaneVolume?(lane: DrumKitPlaybackLane, volume: number): void
+  /** Optional for injected legacy players; affects authored playback only. */
+  setAuthoredFamilyVolume?(family: DrumKitAuthoredFamily, volume: number): void
   snapshot(): DrumKitPlayerSnapshot
   subscribe(listener: () => void): () => void
 }
@@ -60,6 +64,7 @@ export interface DrumKitPlayer extends DrumKitPlayerPort {
 /** Concrete factory result; injected legacy/test players may omit lane mixing. */
 export interface RoutedDrumKitPlayer extends DrumKitPlayer {
   setLaneVolume(lane: DrumKitPlaybackLane, volume: number): void
+  setAuthoredFamilyVolume(family: DrumKitAuthoredFamily, volume: number): void
 }
 
 export interface DrumKitPlayerOptions {
@@ -90,6 +95,7 @@ interface PlayerGraph {
   output: AudioNode
   master: GainNode
   lanes: Readonly<Record<DrumKitPlaybackLane, GainNode>>
+  authoredFamilies: Readonly<Record<DrumKitAuthoredFamily, GainNode>>
 }
 
 interface CachedSample {
@@ -385,6 +391,13 @@ export function createDrumKitPlayer(
     authored: true,
     live: true,
   }
+  const authoredFamilyVolumes: Record<DrumKitAuthoredFamily, number> = {
+    cymbals: 1,
+    hats: 1,
+    kick: 1,
+    snare: 1,
+    toms: 1,
+  }
   let masterOpen = false
   let disposed = false
   let status: DrumKitLoadStatus = 'idle'
@@ -626,6 +639,9 @@ export function createDrumKitPlayer(
     closeMaster(activeGraph, at)
     globalThis.setTimeout(
       () => {
+        for (const family of DRUM_KIT_AUTHORED_FAMILIES) {
+          safeDisconnect(activeGraph.authoredFamilies[family])
+        }
         safeDisconnect(activeGraph.lanes.live)
         safeDisconnect(activeGraph.lanes.authored)
         safeDisconnect(activeGraph.master)
@@ -645,8 +661,36 @@ export function createDrumKitPlayer(
     laneOpen.authored = true
     live.connect(master)
     authored.connect(master)
+    const authoredFamilies = {} as Record<DrumKitAuthoredFamily, GainNode>
+    for (const family of DRUM_KIT_AUTHORED_FAMILIES) {
+      const familyGain = context.createGain()
+      familyGain.gain.setValueAtTime(
+        authoredFamilyVolumes[family],
+        context.currentTime,
+      )
+      familyGain.connect(authored)
+      authoredFamilies[family] = familyGain
+    }
     master.connect(output)
-    return { context, output, master, lanes: { authored, live } }
+    return {
+      context,
+      output,
+      master,
+      lanes: { authored, live },
+      authoredFamilies,
+    }
+  }
+
+  const triggerDestination = (
+    activeGraph: PlayerGraph,
+    lane: DrumKitPlaybackLane,
+    gmKey: number,
+  ): AudioNode => {
+    if (lane === 'live') return activeGraph.lanes.live
+    const family = drumKitAuthoredFamily(gmKey)
+    return family === null
+      ? activeGraph.lanes.authored
+      : activeGraph.authoredFamilies[family]
   }
 
   const acquireGraph = async (): Promise<PlayerGraph> => {
@@ -883,6 +927,7 @@ export function createDrumKitPlayer(
   const playSample = (
     resource: DrumKitSampleResource,
     cached: CachedSample,
+    gmKey: number,
     velocity: number,
     atContextTime?: number,
     lane: DrumKitPlaybackLane = 'live',
@@ -916,7 +961,7 @@ export function createDrumKitPlayer(
         at + SAMPLE_ATTACK_SECONDS,
       )
       source.connect(gain)
-      gain.connect(activeGraph.lanes[lane])
+      gain.connect(triggerDestination(activeGraph, lane, gmKey))
       const startedVoice: SampleVoice = {
         sequence: ++voiceSequence,
         source,
@@ -966,7 +1011,7 @@ export function createDrumKitPlayer(
         activeGraph.context,
         at,
         clamp(velocity, 1, 127) / 127,
-        activeGraph.lanes[lane],
+        triggerDestination(activeGraph, lane, gmKey),
       )
       return 'synth-fallback'
     } catch {
@@ -1006,7 +1051,14 @@ export function createDrumKitPlayer(
           const cached = cachedSample(resource)
           if (
             cached !== undefined &&
-            playSample(resource, cached, velocity, hit.atContextTime, lane)
+            playSample(
+              resource,
+              cached,
+              gmKey,
+              velocity,
+              hit.atContextTime,
+              lane,
+            )
           ) {
             return 'sampled'
           }
@@ -1118,6 +1170,26 @@ export function createDrumKitPlayer(
         )
       } catch {
         // A closing route no longer needs lane automation.
+      }
+    },
+    setAuthoredFamilyVolume(
+      family: DrumKitAuthoredFamily,
+      nextVolume: number,
+    ): void {
+      authoredFamilyVolumes[family] = clamp(nextVolume, 0, 1)
+      const activeGraph = graph
+      if (activeGraph === null) return
+      const at = activeGraph.context.currentTime
+      const parameter = activeGraph.authoredFamilies[family].gain
+      holdParameter(parameter, at)
+      try {
+        parameter.setTargetAtTime(
+          authoredFamilyVolumes[family],
+          at,
+          LANE_LEVEL_TIME_CONSTANT_SECONDS,
+        )
+      } catch {
+        // A closing route no longer needs family automation.
       }
     },
     snapshot(): DrumKitPlayerSnapshot {
