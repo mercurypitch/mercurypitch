@@ -2,18 +2,21 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { ChevronLeft, Metronome, Pause, Play, Square } from '@/components/icons'
+import { LoopRangeRail } from '@/components/shared/LoopRangeRail'
 import type { GuitarRoomBandPercussionHit } from '@/features/guitar/backing/guitar-room-band'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 import type { SheetLane } from './sheet/sheet-model'
-import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { useGuitarNightLoopController } from './useGuitarNightLoopController'
+import { percussionDurationBeats, SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 interface GuitarNightPercussionRoomProps {
   reference: Accessor<GuitarNightReference>
@@ -35,13 +38,27 @@ function formatTime(seconds: number): string {
   return `${minutes}:${String(wholeSeconds % 60).padStart(2, '0')}`
 }
 
+/** Beats are counted from one on screen, the way a player counts them. */
+function formatBeat(beat: number): string {
+  const countedBeat = Math.max(0, beat) + 1
+  const label = Number.isInteger(countedBeat)
+    ? String(countedBeat)
+    : countedBeat.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+  return `beat ${label}`
+}
+
 export function GuitarNightPercussionRoom(
   props: GuitarNightPercussionRoomProps,
 ) {
   let roomHeading!: HTMLHeadingElement
   const [sessionPanelOpen, setSessionPanelOpen] = createSignal(false)
+  const loopLimitBeats = createMemo(() =>
+    Math.max(1, Math.ceil(percussionDurationBeats(props.backingPercussion()))),
+  )
+  const loop = useGuitarNightLoopController({ limit: loopLimitBeats })
   const room = useGuitarNightScoreRoomController({
     reference: () => props.reference(),
+    loop: loop.span,
     backingPercussion: () => props.backingPercussion(),
     audiblePercussionTrackIds: () => props.audibleBackingTrackIds(),
     defaultHearScore: () => false,
@@ -76,6 +93,68 @@ export function GuitarNightPercussionRoom(
       tempoBpm: room.tempoBpm,
     },
   }
+  let scrubbing = false
+  let resumeAfterScrub = false
+  let ownedSongId = untrack(() => props.reference().songId)
+
+  /** Whole-beat marks keep every scheduler lap on the same downbeat. */
+  const snapLoopBeat = (beat: number, mark: 'A' | 'B'): number => {
+    if (
+      mark === 'B' &&
+      room.durationBeats() > 0 &&
+      beat >= room.durationBeats() - 0.01
+    ) {
+      return loopLimitBeats()
+    }
+    return Math.round(beat)
+  }
+
+  const markLoopAtPlayhead = (mark: 'A' | 'B'): void => {
+    const fallback = mark === 'A' ? 0 : loopLimitBeats()
+    const visibleBeat = room.playheadBeat()
+    const beat = snapLoopBeat(visibleBeat ?? fallback, mark)
+    if (mark === 'A') loop.markStart(beat)
+    else loop.markEnd(beat)
+    void room.applyLoopSpan(loop.span())
+  }
+
+  const moveLoopBoundary = (mark: 'A' | 'B', beat: number): void => {
+    loop.moveMark(mark, snapLoopBeat(beat, mark))
+  }
+
+  const commitLoopBoundary = (): void => {
+    void room.applyLoopSpan(loop.span())
+  }
+
+  const clearLoop = (): void => {
+    loop.clear()
+    void room.applyLoopSpan(null)
+  }
+
+  const beginScrub = (): void => {
+    if (scrubbing) return
+    scrubbing = true
+    const currentStatus = room.status()
+    resumeAfterScrub =
+      currentStatus === 'starting' ||
+      currentStatus === 'count-in' ||
+      currentStatus === 'playing'
+    room.pause()
+  }
+
+  const finishScrub = (): void => {
+    if (!scrubbing) return
+    const shouldResume = resumeAfterScrub
+    scrubbing = false
+    resumeAfterScrub = false
+    if (
+      shouldResume &&
+      room.status() === 'paused' &&
+      props.suspended?.() !== true
+    ) {
+      void room.start()
+    }
+  }
 
   const leaveRoom = (): void => {
     room.stop()
@@ -84,6 +163,16 @@ export function GuitarNightPercussionRoom(
 
   createEffect(() => {
     if (props.suspended?.() === true) room.pause()
+  })
+
+  createEffect(() => {
+    const songId = props.reference().songId
+    if (songId === ownedSongId) return
+    ownedSongId = songId
+    scrubbing = false
+    resumeAfterScrub = false
+    loop.clear()
+    room.stop()
   })
 
   onMount(() => {
@@ -219,32 +308,67 @@ export function GuitarNightPercussionRoom(
         />
       </Show>
 
-      <div class={styles.transportDeck} data-testid="guitar-night-score-deck">
-        <div class={styles.transportIdentity}>
+      <div
+        class={`${styles.transportDeck} ${styles.percussionTransportDeck}`}
+        data-testid="guitar-night-score-deck"
+      >
+        <div class={styles.percussionTransportIdentity}>
           <span>Authored drum clock · no guitar score or neck grading</span>
         </div>
         <div class={styles.timeRail}>
           <output aria-label="Elapsed backing time">
             {formatTime(room.displayPositionSeconds())}
           </output>
-          <input
-            type="range"
-            min="0"
-            max={room.durationSeconds() > 0 ? room.durationSeconds() : 1}
-            step={Math.max(0.05, 15 / room.tempoBpm())}
-            value={room.displayPositionSeconds()}
-            aria-label="Backing position"
-            aria-valuetext={`${formatTime(room.displayPositionSeconds())} of ${formatTime(room.durationSeconds())}`}
-            onInput={(event) =>
-              room.seekSeconds(Number(event.currentTarget.value))
+          <LoopRangeRail
+            axisDomain={() => ({
+              start: 0,
+              end: room.durationSeconds() > 0 ? room.durationSeconds() : 1,
+            })}
+            axisValue={room.displayPositionSeconds}
+            markDomain={() => ({ start: 0, end: loopLimitBeats() })}
+            markA={loop.markA}
+            markB={loop.markB}
+            toAxis={room.secondsForBeat}
+            fromAxis={room.beatForSeconds}
+            active={loop.isLooping}
+            axisStep={() => Math.max(0.05, 15 / room.tempoBpm())}
+            markStep={() => 1}
+            minimumMarkGap={() => 1}
+            formatAxisValue={(seconds) =>
+              `${formatTime(seconds)} of ${formatTime(room.durationSeconds())} · ${formatBeat(room.beatForSeconds(seconds))}`
             }
+            formatMarkValue={formatBeat}
+            seekLabel="Drum backing position"
+            onSeek={room.seekSeconds}
+            onScrubStart={beginScrub}
+            onScrubEnd={finishScrub}
+            snapMarkValue={snapLoopBeat}
+            onMoveMarkA={(beat) => moveLoopBoundary('A', beat)}
+            onMoveMarkB={(beat) => moveLoopBoundary('B', beat)}
+            onCommitMark={commitLoopBoundary}
+            testIdPrefix="guitar-night-percussion"
           />
           <output aria-label="Backing duration">
             {formatTime(room.durationSeconds())}
           </output>
         </div>
 
-        <div class={styles.transportControls}>
+        <div class={styles.percussionRailLoop}>
+          <GuitarNightLoopControls
+            span={loop.span()}
+            pending={loop.isPending()}
+            hasStart={loop.markA() !== null}
+            hasEnd={loop.markB() !== null}
+            format={formatBeat}
+            onMarkStart={() => markLoopAtPlayhead('A')}
+            onMarkEnd={() => markLoopAtPlayhead('B')}
+            onClear={clearLoop}
+          />
+        </div>
+
+        <div
+          class={`${styles.transportControls} ${styles.percussionTransportControls}`}
+        >
           <button
             class={styles.playControl}
             type="button"

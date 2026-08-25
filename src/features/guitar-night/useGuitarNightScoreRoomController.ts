@@ -421,6 +421,12 @@ export function useGuitarNightScoreRoomController(
       tempoChanges: configuredTempoChanges(),
     }),
   )
+  const configuredDurationBeats = createMemo(() =>
+    Math.max(
+      scoreDurationBeats(options.reference()),
+      percussionDurationBeats(options.backingPercussion?.() ?? []),
+    ),
+  )
   const scoreTempo = createMemo(
     () => runningTake()?.scoreTempoBpm ?? configuredScoreTempo(),
   )
@@ -443,12 +449,7 @@ export function useGuitarNightScoreRoomController(
       configuredTempoBpm(),
   )
   const durationBeats = createMemo(
-    () =>
-      runningTake()?.durationBeats ??
-      Math.max(
-        scoreDurationBeats(options.reference()),
-        percussionDurationBeats(options.backingPercussion?.() ?? []),
-      ),
+    () => runningTake()?.durationBeats ?? configuredDurationBeats(),
   )
   // Deliberately not guarded by `takePinsSetup`: a completed take is reviewed
   // against the score it actually sounded, not against whatever is loaded now.
@@ -506,7 +507,7 @@ export function useGuitarNightScoreRoomController(
     ) {
       return
     }
-    const maximumBeat = scoreDurationBeats(options.reference())
+    const maximumBeat = configuredDurationBeats()
     const beat = Math.min(maximumBeat, Math.max(0, parkedBeat()))
     if (beat !== parkedBeat()) setParkedBeat(beat)
     setPositionSeconds(configuredBeatToSeconds()(beat))
@@ -787,10 +788,15 @@ export function useGuitarNightScoreRoomController(
         )) !== null
       )
     }
+    // The scheduler owns whole exercise beats. A percussion attack at beat 2
+    // gives the one-shot run a 2.001-beat audible horizon but still belongs in
+    // the full [0, 3) loop selected by a B marker at the rail's right edge.
+    // Clamping to the shorter one-shot horizon before whole-beat quantization
+    // would silently turn B=3 into B=2 and drop that final attack.
     const normalized = normalizeLoopSpan(
       next.start,
       next.end,
-      run.durationBeats,
+      run.exerciseBeats,
     )
     if (normalized === null) return false
     const activatedLoop = resolveBandLoop(
@@ -901,7 +907,7 @@ export function useGuitarNightScoreRoomController(
     }
     const beat = parkedBeat()
     setRunningTake(null)
-    const maximumBeat = scoreDurationBeats(options.reference())
+    const maximumBeat = configuredDurationBeats()
     const parked = Math.min(maximumBeat, Math.max(0, beat))
     setParkedBeat(parked)
     setPositionSeconds(configuredBeatToSeconds()(parked))
@@ -912,10 +918,8 @@ export function useGuitarNightScoreRoomController(
   const secondsForBeat = (value: number): number => {
     const run = runningTake()
     const currentReference = run?.reference ?? options.reference()
-    if (currentReference === null || currentReference.notes.length === 0)
-      return 0
-    const maximumBeat =
-      run?.durationBeats ?? scoreDurationBeats(currentReference)
+    if (currentReference === null) return 0
+    const maximumBeat = run?.durationBeats ?? configuredDurationBeats()
     const requestedBeat = Number.isFinite(value) ? value : 0
     const targetBeat = Math.min(maximumBeat, Math.max(0, requestedBeat))
     return (run?.beatToSeconds ?? configuredBeatToSeconds())(targetBeat)
@@ -925,10 +929,8 @@ export function useGuitarNightScoreRoomController(
   const beatForSeconds = (value: number): number => {
     const run = runningTake()
     const currentReference = run?.reference ?? options.reference()
-    if (currentReference === null || currentReference.notes.length === 0)
-      return 0
-    const maximumBeat =
-      run?.durationBeats ?? scoreDurationBeats(currentReference)
+    if (currentReference === null) return 0
+    const maximumBeat = run?.durationBeats ?? configuredDurationBeats()
     const beatToSeconds = run?.beatToSeconds ?? configuredBeatToSeconds()
     const secondsToBeat = run?.secondsToBeat ?? configuredSecondsToBeat()
     const maximumSeconds = run?.durationSeconds ?? beatToSeconds(maximumBeat)
