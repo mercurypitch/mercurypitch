@@ -102,6 +102,45 @@
   color: var(--accent, currentColor);
 }
 
+.moreRoomLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 10px 12px;
+  border-radius: var(--radius-lg, 12px);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--text-primary, inherit);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.moreRoomLink:active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.moreRoomLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.moreRoomCopy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.moreRoomCopy strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.moreRoomCopy small {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
 .moreIcon {
   display: inline-flex;
   align-items: center;

@@ -48,6 +48,20 @@ describe('AppNavTabs group collapse', () => {
     expect(label?.getAttribute('aria-expanded')).toBe('true')
   })
 
+  it('keeps the standalone Drum Night door inside the Play group', () => {
+    const { container } = renderBar()
+    const play = groupEl(container, 'play')
+    const roomLink = play.querySelector<HTMLAnchorElement>(
+      '[data-testid="nav-drum-night"]',
+    )
+
+    expect(roomLink?.getAttribute('href')).toBe('/drum-night')
+    expect(roomLink?.getAttribute('aria-label')).toBe(
+      'Drums — open Drum Night room',
+    )
+    expect(roomLink?.textContent).toContain('Drums')
+  })
+
   it('collapses the group on click and remembers it', () => {
     const { container } = renderBar()
     const group = groupEl(container, 'you')
