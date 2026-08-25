@@ -99,7 +99,7 @@ describe('the boot path and the sign-in button are wired to it', () => {
   it('AuthModal arms the marker before leaving for Google', () => {
     const source = readFileSync('src/components/account/AuthModal.tsx', 'utf8')
     const arm = source.indexOf('armOnboardingResume()')
-    const go = source.indexOf('startGoogleSignIn()')
+    const go = source.indexOf('startGoogleSignIn({')
     expect(arm).toBeGreaterThan(-1)
     expect(go).toBeGreaterThan(arm)
   })
