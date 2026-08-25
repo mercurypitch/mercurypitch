@@ -72,6 +72,14 @@ describe('background catalog', () => {
       'midnight-rain-stage',
       'karaoke-floating-orb',
       'karaoke-nordic-amphitheatre',
+      'karaoke-broadway-theater',
+      'karaoke-jazz-club',
+      'karaoke-nordic-amphitheater',
+      'karaoke-rooftop-skyline',
+      'karaoke-rustic-coffeehouse',
+      'karaoke-speakeasy-vault',
+      'karaoke-starlight-solarium',
+      'karaoke-synthwave-80s',
     ])
     expect(listBackgrounds('piano').map((background) => background.id)).toEqual(
       [
@@ -106,6 +114,12 @@ describe('background catalog', () => {
       'piano-coastal-fog-pavilion',
       'piano-manor-library',
       'piano-parisian-salon',
+      'piano-1950s-jazz-lounge',
+      'piano-acoustic-chamber',
+      'piano-alpine-villa',
+      'piano-coastal-sunset',
+      'piano-grand-hall',
+      'piano-moonlit-conservatory',
     ])
   })
 
