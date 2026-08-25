@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/google-sign-in', () => ({
   startGoogleSignIn: vi.fn(async () => null),
   googleSignInPending: () => false,
+  googleSignInUnavailableReason: null,
 }))
 vi.mock('@/db/services/auth-service', () => ({
   loginWithPassword: vi.fn(),
