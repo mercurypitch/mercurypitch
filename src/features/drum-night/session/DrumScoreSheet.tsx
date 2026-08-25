@@ -20,6 +20,12 @@ import { DrumSessionStateView } from './DrumSessionStateView'
 const MIN_BAR_WIDTH = 176
 const SCORE_LEFT = 64
 const SCORE_HEIGHT = 244
+const LOOP_OVERLAY_TOP = 42
+const LOOP_OVERLAY_BOTTOM = 194
+const LOOP_LABEL_WIDTH = 24
+const LOOP_LABEL_HEIGHT = 18
+const LOOP_LABEL_GAP = 4
+const WINDOW_EDGE_EPSILON = 1e-9
 
 export interface DrumScoreSheetProps {
   session: Accessor<DrumSessionImportState>
@@ -28,6 +34,87 @@ export interface DrumScoreSheetProps {
   scoreIndex?: Accessor<DrumScoreIndex | null>
   /** Pass a responsive accessor: four bars on desktop, two at phone width. */
   visibleBarCount?: Accessor<2 | 4>
+  /** Authored-beat A/B marks from the shared song timeline. Read-only here. */
+  markA?: Accessor<number | null>
+  markB?: Accessor<number | null>
+}
+
+type ScoreLoopMark = 'A' | 'B'
+
+interface ScoreLoopBoundary {
+  readonly mark: ScoreLoopMark
+  readonly beat: number
+  readonly x: number
+}
+
+interface ScoreLoopRegion {
+  readonly x: number
+  readonly width: number
+  readonly clippedStart: boolean
+  readonly clippedEnd: boolean
+}
+
+interface ScoreLoopContext {
+  readonly state: 'pending' | 'active'
+  readonly lead: string
+  readonly detail: string
+}
+
+function finiteLoopMark(value: number | null | undefined): number | null {
+  return value !== null && value !== undefined && Number.isFinite(value)
+    ? Math.max(0, value)
+    : null
+}
+
+/** Beats are counted from one on screen, the way a player counts them. */
+function formatCountedBeat(beat: number): string {
+  const counted = Math.round((Math.max(0, beat) + 1) * 100) / 100
+  return `Beat ${counted}`
+}
+
+function loopBoundaryIsInWindow(
+  beat: number,
+  window: DrumScoreWindow,
+): boolean {
+  return (
+    beat >= window.startBeat - WINDOW_EDGE_EPSILON &&
+    beat <= window.endBeat + WINDOW_EDGE_EPSILON
+  )
+}
+
+function loopContext(
+  markA: number | null,
+  markB: number | null,
+): ScoreLoopContext | null {
+  if (markA !== null && markB !== null && markB > markA) {
+    return {
+      state: 'active',
+      lead: `A · ${formatCountedBeat(markA)} → B · ${formatCountedBeat(markB)}`,
+      detail: 'Read-only in Score; adjust it on the song timeline.',
+    }
+  }
+  if (markA !== null && markB === null) {
+    return {
+      state: 'pending',
+      lead: `A · ${formatCountedBeat(markA)}`,
+      detail: 'Set B on the song timeline to finish the loop.',
+    }
+  }
+  if (markA === null && markB !== null) {
+    return {
+      state: 'pending',
+      lead: `B · ${formatCountedBeat(markB)}`,
+      detail: 'Set A on the song timeline to finish the loop.',
+    }
+  }
+  if (markA !== null && markB !== null) {
+    return {
+      state: 'pending',
+      lead: `A · ${formatCountedBeat(markA)} · B · ${formatCountedBeat(markB)}`,
+      detail: 'B must follow A; adjust the marks on the song timeline.',
+    }
+  }
+  return null
 }
 
 function staffY(event: DrumScoreEvent): number {
@@ -368,6 +455,74 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
             {(currentWindow) => {
               const omitted = omissionCopy(currentScore, currentWindow)
               const meters = meterMarks(currentScore, currentWindow)
+              const loopMarks = createMemo(() => ({
+                a: finiteLoopMark(props.markA?.()),
+                b: finiteLoopMark(props.markB?.()),
+              }))
+              const projectedLoopContext = createMemo(() =>
+                loopContext(loopMarks().a, loopMarks().b),
+              )
+              const loopRegion = createMemo((): ScoreLoopRegion | null => {
+                const marks = loopMarks()
+                if (
+                  marks.a === null ||
+                  marks.b === null ||
+                  marks.b <= marks.a
+                ) {
+                  return null
+                }
+                const startBeat = Math.max(currentWindow.startBeat, marks.a)
+                const endBeat = Math.min(currentWindow.endBeat, marks.b)
+                if (endBeat <= startBeat) return null
+                const startX = drumScoreWindowBeatX(
+                  currentWindow,
+                  startBeat,
+                  barWidth(),
+                  SCORE_LEFT,
+                )
+                const endX = drumScoreWindowBeatX(
+                  currentWindow,
+                  endBeat,
+                  barWidth(),
+                  SCORE_LEFT,
+                )
+                return {
+                  x: startX,
+                  width: Math.max(0, endX - startX),
+                  clippedStart: marks.a < currentWindow.startBeat,
+                  clippedEnd: marks.b > currentWindow.endBeat,
+                }
+              })
+              const loopBoundaries = createMemo(
+                (): readonly ScoreLoopBoundary[] => {
+                  const marks = loopMarks()
+                  const boundaries: ScoreLoopBoundary[] = []
+                  const addBoundary = (
+                    mark: ScoreLoopMark,
+                    beat: number | null,
+                  ): void => {
+                    if (
+                      beat === null ||
+                      !loopBoundaryIsInWindow(beat, currentWindow)
+                    ) {
+                      return
+                    }
+                    boundaries.push({
+                      mark,
+                      beat,
+                      x: drumScoreWindowBeatX(
+                        currentWindow,
+                        beat,
+                        barWidth(),
+                        SCORE_LEFT,
+                      ),
+                    })
+                  }
+                  addBoundary('A', marks.a)
+                  addBoundary('B', marks.b)
+                  return boundaries
+                },
+              )
               const meterDescription = meters
                 .map(
                   (meter) =>
@@ -410,8 +565,28 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                           {currentWindow.events.length} indexed authored
                           percussion hits. Note size reflects source velocity.
                           The cyan line follows the shared session playhead.
+                          <Show when={projectedLoopContext() !== null}>
+                            {' '}
+                            A and B project the read-only practice loop from the
+                            song timeline.
+                          </Show>{' '}
                           Meter: {meterDescription}.
                         </desc>
+                        <Show when={loopRegion()} keyed>
+                          {(region) => (
+                            <rect
+                              class={styles.scoreLoopRegion}
+                              data-testid="drum-score-loop-region"
+                              data-clipped-start={region.clippedStart}
+                              data-clipped-end={region.clippedEnd}
+                              x={region.x}
+                              y={LOOP_OVERLAY_TOP}
+                              width={region.width}
+                              height={LOOP_OVERLAY_BOTTOM - LOOP_OVERLAY_TOP}
+                              aria-hidden="true"
+                            />
+                          )}
+                        </Show>
                         <For each={currentWindow.bars}>
                           {(bar, localIndex) => {
                             const x = () =>
@@ -471,6 +646,49 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                             />
                           )}
                         </For>
+                        <For each={loopBoundaries()}>
+                          {(boundary) => {
+                            const labelX =
+                              boundary.mark === 'A'
+                                ? boundary.x +
+                                  LOOP_LABEL_GAP +
+                                  LOOP_LABEL_WIDTH / 2
+                                : boundary.x -
+                                  LOOP_LABEL_GAP -
+                                  LOOP_LABEL_WIDTH / 2
+                            return (
+                              <g
+                                class={styles.scoreLoopBoundary}
+                                classList={{
+                                  [styles.scoreLoopBoundaryB]:
+                                    boundary.mark === 'B',
+                                }}
+                                data-mark={boundary.mark}
+                                data-beat={boundary.beat}
+                                data-testid={`drum-score-loop-boundary-${boundary.mark.toLowerCase()}`}
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d={`M${boundary.x} ${LOOP_OVERLAY_TOP}V${LOOP_OVERLAY_BOTTOM}`}
+                                />
+                                <rect
+                                  x={labelX - LOOP_LABEL_WIDTH / 2}
+                                  y={LOOP_OVERLAY_TOP}
+                                  width={LOOP_LABEL_WIDTH}
+                                  height={LOOP_LABEL_HEIGHT}
+                                  rx="4"
+                                />
+                                <text
+                                  x={labelX}
+                                  y={LOOP_OVERLAY_TOP + 12.5}
+                                  text-anchor="middle"
+                                >
+                                  {boundary.mark}
+                                </text>
+                              </g>
+                            )
+                          }}
+                        </For>
                         <path
                           class={styles.scorePlayhead}
                           d={`M${playheadX()} 54V194`}
@@ -478,6 +696,20 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                         />
                       </svg>
                     </div>
+                    <Show when={projectedLoopContext()} keyed>
+                      {(context) => (
+                        <p
+                          class={styles.scoreLoopContext}
+                          data-state={context.state}
+                          role="status"
+                          aria-label="Practice loop in score"
+                          aria-atomic="true"
+                        >
+                          <strong>{context.lead}</strong>
+                          <span>{context.detail}</span>
+                        </p>
+                      )}
+                    </Show>
                     <figcaption>
                       <span>{nowCopy(currentIndex, props.playheadBeat())}</span>
                       <span aria-live="polite">

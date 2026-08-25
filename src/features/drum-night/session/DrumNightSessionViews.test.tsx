@@ -1,6 +1,7 @@
 // Drum Night session view tests — semantic score, kit evidence, and state truth.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumCapturedHit } from './drum-coaching'
 import type { DrumSessionImportState } from './drum-session'
@@ -200,6 +201,141 @@ describe('DrumScoreSheet', () => {
     const liveRegions = view.container.querySelectorAll('[aria-live="polite"]')
     expect(liveRegions).toHaveLength(1)
     expect(liveRegions[0]).toHaveTextContent('Bar 1')
+  })
+
+  it('projects a pending A mark with one-based, read-only score context', () => {
+    const session = readySessionFixture()
+    const view = render(() => (
+      <DrumScoreSheet
+        session={() => session}
+        playheadBeat={() => 0}
+        markA={() => 0}
+        markB={() => null}
+      />
+    ))
+
+    const context = screen.getByRole('status', {
+      name: 'Practice loop in score',
+    })
+    expect(context).toHaveAttribute('data-state', 'pending')
+    expect(context).toHaveTextContent('A · Beat 1')
+    expect(context).toHaveTextContent(
+      'Set B on the song timeline to finish the loop.',
+    )
+    expect(
+      view.container.querySelector(
+        '[data-testid="drum-score-loop-boundary-a"] path',
+      ),
+    ).toHaveAttribute('d', 'M64 42V194')
+    expect(
+      view.container.querySelector(
+        '[data-testid="drum-score-loop-boundary-a"] text',
+      ),
+    ).toHaveTextContent('A')
+    expect(
+      view.container.querySelector('[data-testid="drum-score-loop-region"]'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      /A and B project the read-only practice loop from the song timeline/i,
+    )
+  })
+
+  it('clips a half-open loop across score windows, keeps song-end B on the edge, and clears reactively', () => {
+    vi.stubGlobal('ResizeObserver', undefined)
+    setElementClientWidth(480)
+    const session = readySessionFixture({
+      song: drumSongFixture({
+        percussionTracks: [
+          percussionTrackFixture({
+            hits: [
+              {
+                id: 'opening',
+                gmKey: 36,
+                startBeat: 0,
+                velocity: 100,
+                writtenDuration: 0.25,
+              },
+              {
+                id: 'song-end',
+                gmKey: 38,
+                startBeat: 15.75,
+                velocity: 108,
+                writtenDuration: 0.25,
+              },
+            ],
+          }),
+        ],
+      }),
+    })
+    const [playheadBeat, setPlayheadBeat] = createSignal(4)
+    const [markA, setMarkA] = createSignal<number | null>(4)
+    const [markB, setMarkB] = createSignal<number | null>(16)
+    const view = render(() => (
+      <DrumScoreSheet
+        session={() => session}
+        playheadBeat={playheadBeat}
+        visibleBarCount={() => 2}
+        markA={markA}
+        markB={markB}
+      />
+    ))
+
+    const firstWindowRegion = screen.getByTestId('drum-score-loop-region')
+    expect(firstWindowRegion).toHaveAttribute('x', '240')
+    expect(firstWindowRegion).toHaveAttribute('width', '176')
+    expect(firstWindowRegion).toHaveAttribute('data-clipped-start', 'false')
+    expect(firstWindowRegion).toHaveAttribute('data-clipped-end', 'true')
+    expect(
+      view.container.querySelector(
+        '[data-testid="drum-score-loop-boundary-a"]',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      view.container.querySelector(
+        '[data-testid="drum-score-loop-boundary-b"]',
+      ),
+    ).not.toBeInTheDocument()
+
+    setPlayheadBeat(8)
+
+    const finalWindowRegion = screen.getByTestId('drum-score-loop-region')
+    expect(finalWindowRegion).toHaveAttribute('x', '64')
+    expect(finalWindowRegion).toHaveAttribute('width', '352')
+    expect(finalWindowRegion).toHaveAttribute('data-clipped-start', 'true')
+    expect(finalWindowRegion).toHaveAttribute('data-clipped-end', 'false')
+    expect(
+      view.container.querySelector(
+        '[data-testid="drum-score-loop-boundary-a"]',
+      ),
+    ).not.toBeInTheDocument()
+    expect(
+      view.container.querySelector(
+        '[data-testid="drum-score-loop-boundary-b"] path',
+      ),
+    ).toHaveAttribute('d', 'M416 42V194')
+    const context = screen.getByRole('status', {
+      name: 'Practice loop in score',
+    })
+    expect(context).toHaveAttribute('data-state', 'active')
+    expect(context).toHaveTextContent('A · Beat 5 → B · Beat 17')
+    expect(context).toHaveTextContent(
+      'Read-only in Score; adjust it on the song timeline.',
+    )
+
+    setMarkA(null)
+    setMarkB(null)
+
+    expect(
+      screen.queryByRole('status', { name: 'Practice loop in score' }),
+    ).not.toBeInTheDocument()
+    expect(
+      view.container.querySelector('[data-testid="drum-score-loop-region"]'),
+    ).not.toBeInTheDocument()
+    expect(
+      view.container.querySelector(
+        '[data-testid^="drum-score-loop-boundary-"]',
+      ),
+    ).not.toBeInTheDocument()
   })
 
   it('discloses source events that could not be mapped without hiding retained hits', () => {

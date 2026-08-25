@@ -1668,6 +1668,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   playheadBeat={() => transport().positionBeats}
                   scoreIndex={sessionScoreIndex}
                   visibleBarCount={() => (compactScore() ? 2 : 4)}
+                  markA={loopRange.markA}
+                  markB={loopRange.markB}
                 />
               </Show>
               <p
