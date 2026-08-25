@@ -3259,6 +3259,13 @@
   background: rgba(224, 164, 93, 0.08);
 }
 
+.scoreSessionSettings .countInCycleActive,
+.scoreSessionSettings .countInCycleActive:hover:not(:disabled) {
+  border-color: rgba(106, 202, 189, 0.42);
+  color: #dff7f2;
+  background: rgba(106, 202, 189, 0.12);
+}
+
 .scoreSessionSettings .countInCycle svg {
   width: 0.88rem;
   height: 0.88rem;
@@ -4450,11 +4457,14 @@
 }
 
 .stageTab {
-  --stage-tab-note-size: 1.6rem;
-  --stage-tab-note-font-size: 0.68rem;
+  --stage-tab-note-base-size: 1.6rem;
+  --stage-tab-note-base-font-size: 0.68rem;
+  --stage-tab-note-size: var(--stage-tab-note-base-size);
+  --stage-tab-note-font-size: var(--stage-tab-note-base-font-size);
 
   position: relative;
   display: grid;
+  container: stage-tab / size;
   align-content: center;
   gap: clamp(0.7rem, 2vh, 1.05rem);
   width: 100%;
@@ -4480,6 +4490,155 @@
   padding-top: 0.8rem;
   overflow: hidden;
   touch-action: pan-y;
+}
+
+/* Large is a reading-distance presentation, not a second time zoom. Container
+   caps keep all courses visible when the stage is short or text is magnified;
+   taller rooms progressively open the lane cadence toward the reference. */
+.stageTab[data-tab-size='large'] .stageTabLanes {
+  --stage-tab-note-size: min(
+    calc(var(--stage-tab-note-base-size) + 0.68rem),
+    13cqh
+  );
+  --stage-tab-note-font-size: max(
+    7px,
+    min(calc(var(--stage-tab-note-base-font-size) + 0.2rem), 4.2cqh)
+  );
+
+  gap: clamp(1px, 1cqh, 8px);
+  padding-top: min(0.8rem, 2cqh);
+}
+
+.stageTab[data-tab-size='large'][data-string-count='4'] .stageTabLanes {
+  --stage-tab-note-size: min(
+    calc(var(--stage-tab-note-base-size) + 0.68rem),
+    18cqh
+  );
+  --stage-tab-note-font-size: max(
+    7px,
+    min(calc(var(--stage-tab-note-base-font-size) + 0.2rem), 5.8cqh)
+  );
+}
+
+.stageTab[data-tab-size='large'][data-string-count='5'] .stageTabLanes {
+  --stage-tab-note-size: min(
+    calc(var(--stage-tab-note-base-size) + 0.68rem),
+    15.5cqh
+  );
+  --stage-tab-note-font-size: max(
+    7px,
+    min(calc(var(--stage-tab-note-base-font-size) + 0.2rem), 4.8cqh)
+  );
+}
+
+.stageTab[data-tab-size='large'][data-string-count='7'] .stageTabLanes {
+  --stage-tab-note-size: min(
+    calc(var(--stage-tab-note-base-size) + 0.52rem),
+    11.8cqh
+  );
+  --stage-tab-note-font-size: max(
+    7px,
+    min(calc(var(--stage-tab-note-base-font-size) + 0.16rem), 4.2cqh)
+  );
+}
+
+.stageTab[data-tab-size='large'][data-string-count='8'] .stageTabLanes {
+  --stage-tab-note-size: min(
+    calc(var(--stage-tab-note-base-size) + 0.52rem),
+    10.4cqh
+  );
+  --stage-tab-note-font-size: max(
+    7px,
+    min(calc(var(--stage-tab-note-base-font-size) + 0.16rem), 4.2cqh)
+  );
+}
+
+@container stage-tab (max-height: 279px) {
+  .stageTab[data-tab-size='compact'] .stageTabLanes {
+    --stage-tab-note-size: max(
+      7px,
+      min(var(--stage-tab-note-base-size), 12cqh)
+    );
+    --stage-tab-note-font-size: max(
+      7px,
+      min(var(--stage-tab-note-base-font-size), 3.8cqh)
+    );
+
+    gap: 1px;
+    padding-top: min(0.8rem, 2cqh);
+    transform: translateY(-8px);
+  }
+
+  .stageTab[data-tab-size='compact'][data-string-count='4'] .stageTabLanes {
+    --stage-tab-note-size: max(
+      7px,
+      min(var(--stage-tab-note-base-size), 17cqh)
+    );
+  }
+
+  .stageTab[data-tab-size='compact'][data-string-count='5'] .stageTabLanes {
+    --stage-tab-note-size: max(
+      7px,
+      min(var(--stage-tab-note-base-size), 14cqh)
+    );
+  }
+
+  .stageTab[data-tab-size='compact'][data-string-count='7'] .stageTabLanes {
+    --stage-tab-note-size: max(7px, min(var(--stage-tab-note-base-size), 8cqh));
+  }
+
+  .stageTab[data-tab-size='compact'][data-string-count='8'] .stageTabLanes {
+    --stage-tab-note-size: max(7px, min(var(--stage-tab-note-base-size), 7cqh));
+  }
+
+  .stageTab[data-tab-size='compact'] .stageTabString > span {
+    font-size: min(0.67rem, var(--stage-tab-note-font-size));
+  }
+
+  .stageTab[data-tab-size='large'] .stageTabLanes {
+    transform: translateY(-8px);
+  }
+
+  .stageTab[data-tab-size='large'][data-string-count='7'] .stageTabLanes {
+    --stage-tab-note-size: max(
+      7px,
+      min(calc(var(--stage-tab-note-base-size) + 0.52rem), 9cqh)
+    );
+  }
+
+  .stageTab[data-tab-size='large'][data-string-count='8'] .stageTabLanes {
+    --stage-tab-note-size: max(
+      7px,
+      min(calc(var(--stage-tab-note-base-size) + 0.52rem), 7.8cqh)
+    );
+    --stage-tab-note-font-size: max(
+      7px,
+      min(calc(var(--stage-tab-note-base-font-size) + 0.16rem), 4.2cqh)
+    );
+  }
+}
+
+@container stage-tab (min-height: 280px) {
+  .stageTab[data-tab-size='large'] .stageTabLanes {
+    gap: clamp(8px, 2.9cqh, 20px);
+    transform: translateY(-24px);
+  }
+
+  .stageTab[data-tab-size='large'][data-string-count='7'] .stageTabLanes,
+  .stageTab[data-tab-size='large'][data-string-count='8'] .stageTabLanes {
+    gap: clamp(6px, 1.8cqh, 16px);
+  }
+}
+
+@container stage-tab (min-height: 560px) {
+  .stageTab[data-tab-size='large'] .stageTabLanes {
+    gap: clamp(12px, 3.2cqh, 28px);
+  }
+
+  .stageTab[data-tab-size='large'][data-string-count='7'] .stageTabLanes,
+  .stageTab[data-tab-size='large'][data-string-count='8'] .stageTabLanes {
+    gap: clamp(10px, 2.4cqh, 20px);
+  }
 }
 
 /* Tab has a label gutter; keeping every time overlay inside this inset makes
@@ -4801,6 +4960,10 @@
   font-size: 0.67rem;
 }
 
+.stageTab[data-tab-size='large'] .stageTabString > span {
+  font-size: min(0.67rem, var(--stage-tab-note-font-size));
+}
+
 .stageTabString > i {
   grid-column: 2;
   grid-row: 1;
@@ -4834,20 +4997,83 @@
   transform: translateX(-50%);
 }
 
-/* A tactile velvet faceplate keeps Tab spacing available without entering the
-   transport or borrowing the 3D camera controls. The native range preserves
-   keyboard semantics and gives touch users a dependable pinch alternative. */
-.stageTabZoom {
+/* One quiet reading cluster keeps vertical size distinct from the beat window.
+   Both controls remain physical-size targets without entering the transport or
+   borrowing the 3D camera controls. */
+.stageTabControls {
   position: absolute;
   z-index: 4;
   right: clamp(0.75rem, 2vw, 1.35rem);
   bottom: clamp(0.65rem, 1.7vh, 1.05rem);
+  display: flex;
+  align-items: stretch;
+  gap: 0.42rem;
+  width: min(22.5rem, calc(100% - 1.5rem));
+}
+
+.stageTabSizeToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-width: 5.55rem;
+  min-height: var(--touch-target);
+  padding: 0.42rem 0.64rem;
+  border: 1px solid rgba(216, 200, 175, 0.16);
+  border-radius: 0.8rem;
+  color: rgba(244, 234, 219, 0.72);
+  background:
+    linear-gradient(135deg, rgba(106, 202, 189, 0.045), transparent 52%),
+    rgba(10, 8, 7, 0.8);
+  box-shadow:
+    0 0.85rem 2.4rem rgba(0, 0, 0, 0.24),
+    inset 0 1px rgba(255, 255, 255, 0.035);
+  -webkit-backdrop-filter: blur(calc(14px * var(--gn-blur-scale)));
+  backdrop-filter: blur(calc(14px * var(--gn-blur-scale)));
+  font: inherit;
+  cursor: pointer;
+}
+
+.stageTabSizeToggle span {
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.stageTabSizeToggle:hover {
+  border-color: rgba(244, 234, 219, 0.25);
+  color: #fdf3e4;
+  background: rgba(244, 234, 219, 0.08);
+}
+
+.stageTabSizeToggle[aria-pressed='true'] {
+  border-color: rgba(224, 164, 93, 0.42);
+  color: #fdf3e4;
+  background:
+    linear-gradient(135deg, rgba(224, 164, 93, 0.16), transparent 58%),
+    rgba(10, 8, 7, 0.86);
+  box-shadow:
+    0 0 1rem rgba(224, 164, 93, 0.13),
+    inset 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.stageTabSizeToggle:focus-visible {
+  outline: 2px solid rgba(224, 164, 93, 0.82);
+  outline-offset: 2px;
+}
+
+/* The native range preserves keyboard semantics and gives touch users a
+   dependable pinch alternative. */
+.stageTabZoom {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(5rem, 8.5rem) auto;
   grid-template-rows: auto auto;
   align-items: center;
   column-gap: 0.58rem;
-  width: min(16.5rem, calc(100% - 1.5rem));
+  width: min(16.5rem, 100%);
+  min-width: 0;
   min-height: var(--touch-target);
   padding: 0.42rem 0.62rem;
   border: 1px solid rgba(216, 200, 175, 0.16);
@@ -4961,16 +5187,37 @@
     padding-bottom: max(3.15rem, calc(var(--touch-target) + 0.5rem));
   }
 
+  .stageTabControls {
+    right: max(0.5rem, var(--safe-right));
+    bottom: max(0.3rem, var(--safe-bottom));
+    gap: 0.32rem;
+    width: min(15.25rem, calc(100% - 1rem));
+  }
+
+  .stageTabSizeToggle {
+    display: grid;
+    grid-template-rows: auto auto;
+    flex: 0 0 var(--touch-target);
+    gap: 1px;
+    min-width: var(--touch-target);
+    padding: 0;
+  }
+
+  .stageTabSizeToggle span {
+    font-size: 0.42rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+
   .stageTabZoom {
+    flex: 1 1 auto;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: 1fr;
     column-gap: 0.4rem;
-    width: min(12rem, calc(100% - 1rem));
+    width: auto;
     min-width: 0;
     min-height: var(--touch-target);
     padding: 0.16rem 0.48rem;
-    right: max(0.5rem, var(--safe-right));
-    bottom: max(0.3rem, var(--safe-bottom));
   }
 
   .stageTabZoom > span,

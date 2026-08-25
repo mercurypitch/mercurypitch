@@ -509,7 +509,7 @@ describe('useGuitarNightScoreRoomController', () => {
     })
   })
 
-  it('pauses at the exact audio position and resumes without another count-in', async () => {
+  it('keeps an internal parked resume count-in-free for scrub recovery', async () => {
     await createRoot(async (dispose) => {
       const { band, clock, getOptions } = bandHarness()
       const frames = frameHarness()
@@ -537,6 +537,37 @@ describe('useGuitarNightScoreRoomController', () => {
       await room.start()
       expect(getOptions()?.startBeat).toBeCloseTo(1.5, 5)
       expect(getOptions()?.countInBeats).toBe(0)
+      dispose()
+    })
+  })
+
+  it('runs the selected count-in when Play explicitly resumes a paused rehearsal', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+      getOptions()?.onExerciseStart?.(0, 10)
+      clock.currentTime = 11
+      frames.pump()
+      room.setCountInBeats(2)
+      expect(room.countInBeats()).toBe(4)
+      expect(room.configuredCountInBeats()).toBe(2)
+      room.pause()
+
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+      room.toggle()
+      await vi.waitFor(() => expect(band.start).toHaveBeenCalledTimes(2))
+
+      expect(getOptions()?.startBeat).toBeCloseTo(1.5, 5)
+      expect(getOptions()?.countInBeats).toBe(2)
+      expect(room.countInBeats()).toBe(2)
       dispose()
     })
   })

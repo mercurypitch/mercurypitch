@@ -1001,6 +1001,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     room.setCountInBeats(nextScoreCountIn(room.configuredCountInBeats()))
   }
 
+  const countInEnabled = createMemo(() => room.configuredCountInBeats() > 0)
+
   const countInBlockedReason = createMemo(() => {
     if (room.status() === 'starting' || room.status() === 'count-in') {
       return 'Pause before changing the launch count-in'
@@ -1803,6 +1805,10 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   <button
                     type="button"
                     class={styles.countInCycle}
+                    classList={{
+                      [styles.countInCycleActive]: countInEnabled(),
+                    }}
+                    aria-pressed={countInEnabled()}
                     aria-label={`Count-in ${formatCountInChoice(room.configuredCountInBeats())} before playback. ${scoreCountInControlDisabled(room.status(), toolTransitionPending()) ? 'Pause to change count-in' : 'Change count-in'}`}
                     title={
                       scoreCountInControlDisabled(
@@ -2379,6 +2385,10 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             <button
               type="button"
               class={styles.scoreRailToggle}
+              classList={{
+                [styles.scoreRailToggleActive]: countInEnabled(),
+              }}
+              aria-pressed={countInEnabled()}
               aria-label={`Count-in ${formatCountInChoice(room.configuredCountInBeats())} before playback. ${scoreCountInControlDisabled(room.status(), toolTransitionPending()) ? 'Pause to change count-in' : 'Change count-in'}`}
               title={
                 scoreCountInControlDisabled(

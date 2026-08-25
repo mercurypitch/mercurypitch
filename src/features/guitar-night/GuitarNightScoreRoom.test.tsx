@@ -6,6 +6,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
+import styles from './GuitarNightApp.module.css'
 import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreCountInControlDisabled, scoreEndControlState, scoreLiveRange, scoreLoopPendingRestart, scorePlaybackControlLabel, scoreRecoveryRange, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
@@ -145,13 +146,38 @@ describe('GuitarNightScoreRoom', () => {
       name: 'Turn playback click off',
     })
 
+    expect(countIn).toHaveAttribute('aria-pressed', 'true')
+    expect(countIn).toHaveClass(styles.scoreRailToggleActive)
     fireEvent.click(countIn)
 
     expect(countIn).toHaveAccessibleName(
       'Count-in Off before playback. Change count-in',
     )
+    expect(countIn).toHaveAttribute('aria-pressed', 'false')
+    expect(countIn).not.toHaveClass(styles.scoreRailToggleActive)
     expect(click).toHaveAttribute('aria-pressed', 'true')
     expect(click).toHaveAttribute('title', 'Playback click on')
+
+    const summary = screen.getByLabelText('Session controls')
+    fireEvent.click(summary)
+    const details = summary.closest('details')
+    expect(details).toBeTruthy()
+    if (details === null) return
+    const sessionCountIn = within(details).getByRole('button', {
+      name: 'Count-in Off before playback. Change count-in',
+    })
+    expect(sessionCountIn).toHaveAttribute('aria-pressed', 'false')
+    expect(sessionCountIn).not.toHaveClass(styles.countInCycleActive)
+
+    fireEvent.click(sessionCountIn)
+
+    expect(sessionCountIn).toHaveAccessibleName(
+      'Count-in 1 beat before playback. Change count-in',
+    )
+    expect(sessionCountIn).toHaveAttribute('aria-pressed', 'true')
+    expect(sessionCountIn).toHaveClass(styles.countInCycleActive)
+    expect(countIn).toHaveAttribute('aria-pressed', 'true')
+    expect(countIn).toHaveClass(styles.scoreRailToggleActive)
   })
 
   it('keeps mobile Session tempo and volume on the same rehearsal controls', () => {

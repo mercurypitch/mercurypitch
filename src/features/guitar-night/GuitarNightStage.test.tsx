@@ -10,7 +10,7 @@ import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import type { DisplaySettings, TabPresentation, TabSceneLoopSpan, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
-import { GUITAR_NIGHT_TAB_ZOOM_KEY } from './GuitarNightMovingTab'
+import { GUITAR_NIGHT_TAB_SIZE_KEY, GUITAR_NIGHT_TAB_ZOOM_KEY, } from './GuitarNightMovingTab'
 import { GUITAR_NIGHT_CAMERA_PRESET_KEY, GUITAR_NIGHT_EFFECTS_KEY, GUITAR_NIGHT_FLOW_PRESENTATION_KEY, GUITAR_NIGHT_HANDEDNESS_KEY, GuitarNightStage, } from './GuitarNightStage'
 
 vi.mock('@/features/guitar/ui/Guitar3DStage', () => ({
@@ -71,6 +71,7 @@ describe('GuitarNightStage views', () => {
     GUITAR_NIGHT_CAMERA_PRESET_KEY,
     GUITAR_NIGHT_HANDEDNESS_KEY,
     GUITAR_NIGHT_EFFECTS_KEY,
+    GUITAR_NIGHT_TAB_SIZE_KEY,
     GUITAR_NIGHT_TAB_ZOOM_KEY,
   ] as const
 

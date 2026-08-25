@@ -197,9 +197,13 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   drags, or uses the keyboard on an authored-score timeline, the room shall
   park at that exact fractional beat through the complete tempo map without
   opening audio. WHEN an active take is paused or scrubbed, the scheduler shall
-  silence its lookahead immediately and resume once from the parked position
-  on the same audio context, without replaying past note attacks or adding a
-  second count-in. A parked pre-play position shall not lock setup controls.
+  silence its lookahead immediately and preserve the exact parked position on
+  the same audio context without replaying past note attacks. WHEN a scrub of
+  an active take ends, its automatic resume shall not add a second count-in.
+  WHEN the player deliberately resumes an ordinary paused rehearsal with Play,
+  Space, or a voice command, the currently selected count-in shall lead into
+  that parked position. A parked pre-play position shall not lock setup
+  controls.
 - **REQ-GN-RUNTIME-016 — Control-state truth:** WHEN a route-owned transport
   survives room navigation, every visible transport control shall be restored
   from that transport's current state rather than from a presentation default.
@@ -921,9 +925,13 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   distinct onset density, keep that window within 1.75–10 beats, and offer one
   persisted Tab-only zoom from 75–300% through an accessible range, wheel input
   over the lanes, and a two-pointer pinch. New players shall begin at 125%.
-  Notes and visible A/B context shall share the exact same window. `Highway`
-  and `Grid` camera framing shall remain unchanged, and free play shall not
-  expose an inert Tab-zoom control.
+  The same control cluster shall offer an independent persisted Compact/Large
+  reading-distance presentation; Large shall increase note diameter and string
+  cadence without changing the beat window, and shall remain bounded by the
+  available stage for 4–8 strings and magnified text. Notes and visible A/B
+  context shall share the exact same window. `Highway` and `Grid` camera
+  framing shall remain unchanged, and free play shall not expose inert Tab
+  reading controls.
 - **REQ-GN-STAGE-020 — Dense-score work bounds:** WHILE a long authored score
   plays, Guitar Night shall preserve keyed moving-Tab note elements between
   animation frames, query precompiled score indexes rather than repeatedly
