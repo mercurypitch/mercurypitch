@@ -65,6 +65,19 @@ export type SyncWireMessage =
       songHashes?: string[]
     }
   /**
+   * "Somebody is still looking at me."
+   *
+   * The idle stop exists so a session nobody is using cannot sit open for
+   * ever, but it can only see THIS device's dialog. The far device
+   * sitting in its open send dialog — freeing space, because our own
+   * refusal told it to — looked exactly like an abandoned session, and
+   * got cut off mid-use at ten minutes. This frame is that missing half:
+   * presence, sent while a dialog is open, treated as activity by the
+   * receiver. Builds that predate it simply never send one, which reads
+   * as "not looking", the old behaviour.
+   */
+  | { type: 'sync-active' }
+  /**
    * "I have started packing a song for you."
    *
    * `sync-offer` cannot be sent until the bundle exists, because it
@@ -582,6 +595,7 @@ export function isSyncWireMessage(
     typeof value['type'] === 'string' &&
     [
       'sync-hello',
+      'sync-active',
       'sync-preparing',
       'sync-cancelled',
       'sync-offer',

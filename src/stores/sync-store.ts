@@ -15,7 +15,7 @@
 //
 // See docs/plans/device-sync.md (Phase 5).
 
-import { createEffect, createRoot, createSignal } from 'solid-js'
+import { createEffect, createMemo, createRoot, createSignal, onCleanup, } from 'solid-js'
 import { storageEstimate } from '@/db/durable-write'
 import { requestPersistentStorage } from '@/db/persistent-storage'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
@@ -31,7 +31,7 @@ import { createSyncPeer } from '@/lib/sync/sync-peer'
 import type { BundleReceiver, BundleSender, SyncWireMessage, } from '@/lib/sync/sync-protocol'
 import { isSyncWireMessage, receiveBundleOverWire, sendBundleOverWire, } from '@/lib/sync/sync-protocol'
 import { showNotification } from '@/stores/notifications-store'
-import { registerSyncUiLifecycle, setSyncSessionLive, syncModalOpen, } from '@/stores/sync-ui'
+import { registerSyncUiLifecycle, setSyncSessionLive, syncModalOpen, } from '@/stores/sync-ui-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessions, getUvrSession, initSessionStore, } from '@/stores/uvr-store'
 
@@ -80,6 +80,21 @@ export interface SyncTransfer {
   elapsedMs?: number
   mbps?: number
   message?: string
+}
+
+/**
+ * Is this transfer still moving? The one place that decides, because the
+ * answer drives four unrelated things — the wake lock, the idle
+ * countdown, the corner chip and the dialog's closing hint. Five
+ * hand-copied versions of this list meant a new status could desync any
+ * one of them silently (only a rename would be compiler-caught).
+ */
+export function isLiveTransfer(t: SyncTransfer): boolean {
+  return (
+    t.status === 'packing' ||
+    t.status === 'preparing' ||
+    t.status === 'transferring'
+  )
 }
 
 const [syncState, setSyncState] = createSignal<SyncSessionState>('idle')
@@ -236,10 +251,45 @@ export function estimatePackedBytes(session: UvrSession): number {
 /** The default portable tier's bitrate, for the estimate above. */
 const PORTABLE_BITRATE = 192_000
 
+/**
+ * Remember that the far device holds this song.
+ *
+ * The hello is a snapshot taken once, at connect. Without this the two
+ * ways a song arrives over there mid-session are both invisible: clearing
+ * finished rows drops the only other evidence, so "Select missing"
+ * re-picks and re-packs everything just delivered; and a song the far
+ * device sent US is in neither the snapshot nor any outgoing row, so the
+ * same button offers it straight back to the device it came from.
+ *
+ * Null stays null: a peer that announced nothing must keep meaning
+ * "unknown", never "has exactly this one".
+ */
+function notePeerHasSong(fileHash: string): void {
+  if (fileHash === '') return
+  setSyncPeerSongs((prev) => {
+    if (prev === null) return null
+    if (prev.has(fileHash)) return prev
+    const next = new Set(prev)
+    next.add(fileHash)
+    return next
+  })
+}
+
 /** Tell the far device who we are, our room, and our library's hashes. */
 async function announceSelf(peerId: string): Promise<void> {
   const room = await ownRoom()
   setSyncOwnRoom(room)
+  // Who we are and what we can hold goes FIRST, on its own. The far
+  // device's pre-pack capacity check reads `freeBytes` and silently
+  // passes when it is null, so a hello delayed behind a cold Dexie open
+  // (minutes, on a big library) means the other phone spends that time
+  // packing a song we could never hold — the exact failure that check
+  // exists to prevent.
+  peer?.sendControl(peerId, {
+    type: 'sync-hello',
+    label: syncDeviceLabel(),
+    ...(room === null ? {} : { freeBytes: room.freeBytes, quota: room.quota }),
+  })
   // The library must actually be loaded before its hashes are read: a
   // receiver opened straight from a QR scan can get here before any tab
   // has initialised the session store, and announcing an empty library
@@ -256,6 +306,9 @@ async function announceSelf(peerId: string): Promise<void> {
         .filter((h): h is string => h !== undefined && h !== ''),
     ),
   ].slice(0, 2000)
+  // Second hello, carrying only the library. Re-sending label and room is
+  // harmless (the far side just re-applies them) and keeps the frame one
+  // self-contained shape.
   peer?.sendControl(peerId, {
     type: 'sync-hello',
     label: syncDeviceLabel(),
@@ -389,9 +442,28 @@ function ensurePeer(): SyncPeer {
             ? null
             : { freeBytes: msg.freeBytes, quota: msg.quota ?? 0 },
         )
+        // `isSyncWireMessage` vouches for `type` and nothing else, and
+        // this is the first field that reaches a constructor: `new
+        // Set(42)` throws mid-hello, leaving it half-applied, and the
+        // throw lands in the data channel's catch written for JSON parse
+        // failures — silent. A string is worse than a throw: it builds a
+        // Set of single characters that quietly marks songs as already
+        // over there. Null keeps "said nothing" distinct from "said none".
         setSyncPeerSongs(
-          msg.songHashes === undefined ? null : new Set(msg.songHashes),
+          Array.isArray(msg.songHashes)
+            ? new Set(
+                msg.songHashes.filter(
+                  (h): h is string => typeof h === 'string' && h !== '',
+                ),
+              )
+            : null,
         )
+        return
+      }
+      if (msg.type === 'sync-active') {
+        // Somebody is looking at the far device. That is activity, even
+        // though nothing is moving and our own dialog is hidden.
+        if (!syncModalOpen() && syncState() !== 'idle') armIdleStop()
         return
       }
       if (msg.type === 'sync-preparing') {
@@ -784,6 +856,7 @@ export async function sendSongToPeer(sessionId: string): Promise<SendResult> {
     const elapsedMs = Date.now() - startedAt
 
     if (outcome.outcome === 'sent') {
+      notePeerHasSong(fileHash)
       const mbps =
         elapsedMs > 0 ? bytes / (1024 * 1024) / (elapsedMs / 1000) : 0
       upsertTransfer(fileHash, {
@@ -800,6 +873,7 @@ export async function sendSongToPeer(sessionId: string): Promise<SendResult> {
       showNotification(`“${title}” is now on the other device.`, 'success')
       return 'sent'
     } else if (outcome.outcome === 'already-there') {
+      notePeerHasSong(fileHash)
       upsertTransfer(fileHash, { status: 'already', ratio: 1 })
       return 'already'
     } else {
@@ -1004,6 +1078,8 @@ function handleIncomingOffer(manifest: unknown): void {
     .then((outcome) => {
       const elapsedMs = Date.now() - startedAt
       if (outcome.outcome === 'imported') {
+        // They sent it, so they have it — and now so do we.
+        notePeerHasSong(fileHash)
         const mbps =
           elapsedMs > 0 ? bytes / (1024 * 1024) / (elapsedMs / 1000) : 0
         upsertTransfer(fileHash, { status: 'done', ratio: 1, elapsedMs, mbps })
@@ -1064,6 +1140,7 @@ function resetSync(notice: string | null): void {
   // `sendSongToPeer` would refuse against the same stale figure.
   setSyncPeerRoom(null)
   setSyncPeerSongs(null)
+  cancelOrphanGrace()
   setSyncOwnRoom(null)
   setSyncQueue([])
   setSyncTransfers([])
@@ -1085,19 +1162,20 @@ export function stopSync(): void {
   setSyncError(null)
 }
 
-/** True while anything is packing, being prepared, or on the wire. */
-function transferMoving(): boolean {
-  return (
+/**
+ * True while anything is packing, being prepared, or on the wire.
+ *
+ * A memo, not a plain call: `syncTransfers` is republished on every 16KB
+ * chunk, and every subscriber below (wake lock, idle countdown, chip)
+ * would otherwise re-run thousands of times per song. The boolean's
+ * default equality gates all of that down to real transitions.
+ */
+export const transferMoving = createMemo(
+  () =>
     syncBusy() ||
     syncQueue().length > 0 ||
-    syncTransfers().some(
-      (t) =>
-        t.status === 'packing' ||
-        t.status === 'preparing' ||
-        t.status === 'transferring',
-    )
-  )
-}
+    syncTransfers().some(isLiveTransfer),
+)
 
 /**
  * How long a hidden-but-connected session may sit with nothing moving
@@ -1134,21 +1212,68 @@ function armIdleStop(): void {
   }, SYNC_IDLE_STOP_MS)
 }
 
+/**
+ * How long a peerless session may stay open behind a hidden dialog.
+ *
+ * Two failures meet at this number. Stop instantly and pressing X during
+ * a two-second Wi-Fi wobble destroys the pairing the reconnect
+ * (REQ-SYNC-035) is two seconds from rebuilding. Keep it for the full
+ * idle ten minutes and a room whose code left the screen long ago is
+ * still joinable — and the first stranger to join is auto-accepted and
+ * told our device name, our free space and up to 2000 library hashes.
+ * 45s clears the 2s/8s reconnect attempts with room to spare and closes
+ * the exposure the rest of the way.
+ */
+const SYNC_ORPHAN_GRACE_MS = 45_000
+
+/**
+ * How often an open dialog tells the far device somebody is here.
+ * Comfortably inside the ten-minute idle stop it refreshes, so a single
+ * dropped frame cannot end a session that is genuinely in use.
+ */
+const SYNC_ACTIVE_PING_MS = 30_000
+
+let orphanGraceTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelOrphanGrace(): void {
+  if (orphanGraceTimer !== null) {
+    clearTimeout(orphanGraceTimer)
+    orphanGraceTimer = null
+  }
+}
+
 // ── The dialog is a view; the session is not ─────────────────────────
 // Closing the dialog keeps a connected session — and anything it is
-// moving — alive behind the corner chip (REQ-SYNC-030). A session still
-// being set up dies with it: its code is on screen nowhere once the
-// dialog is gone, so nobody could ever join, and a half-open room left
-// behind would be exactly the leak the old close-means-stop prevented.
+// moving — alive behind the corner chip (REQ-SYNC-030). A session with
+// nobody on the other end gets a short grace instead: long enough for a
+// dropped pair to rebuild itself, short enough that a room whose code is
+// on screen nowhere cannot quietly wait for a stranger.
 registerSyncUiLifecycle({
-  onForeground: cancelIdleStop,
+  onForeground: () => {
+    cancelIdleStop()
+    cancelOrphanGrace()
+  },
   onBackground: () => {
     if (syncState() === 'idle') return
     if (syncState() === 'connected' || transferMoving()) {
       armIdleStop()
       return
     }
-    stopSync()
+    cancelOrphanGrace()
+    orphanGraceTimer = setTimeout(() => {
+      orphanGraceTimer = null
+      // Re-checked, not assumed: the reconnect may have landed, the user
+      // may have reopened the dialog, or a send may have started.
+      if (
+        syncModalOpen() ||
+        syncState() === 'idle' ||
+        syncState() === 'connected' ||
+        transferMoving()
+      ) {
+        return
+      }
+      stopSync()
+    }, SYNC_ORPHAN_GRACE_MS)
   },
 })
 
@@ -1181,5 +1306,21 @@ createRoot(() => {
     } else if (!syncModalOpen() && syncState() !== 'idle') {
       armIdleStop()
     }
+  })
+
+  // The other half of the idle rule. Our countdown can only see OUR
+  // dialog, so a peer reading its open send dialog — freeing space,
+  // because our refusal told it to — used to look abandoned and get cut
+  // off at ten minutes. While our dialog is open we say so, and the far
+  // device counts it as activity (`sync-active`).
+  createEffect(() => {
+    if (!syncModalOpen() || syncState() !== 'connected') return
+    const announce = (): void => {
+      const target = activePeerId
+      if (target !== null) peer?.sendControl(target, { type: 'sync-active' })
+    }
+    announce()
+    const beat = setInterval(announce, SYNC_ACTIVE_PING_MS)
+    onCleanup(() => clearInterval(beat))
   })
 })

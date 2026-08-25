@@ -52,11 +52,7 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
       onPeerJoined: (peer: JamPeer) => {
         if (disposed) return
         displayNames.set(peer.id, peer.displayName)
-        // Same glare rule as the jam room: the peer with the greater id
-        // initiates, and if ours is not known yet we initiate anyway and
-        // let handleOffer's rollback resolve the collision.
-        const myId = signaling.getPeerId()
-        if (myId === null || myId === '' || myId > peer.id) {
+        if (shouldInitiate(peer.id)) {
           initiateNewPeer(peer.id).catch((err) =>
             console.warn('[sync:peer] initiate failed', err),
           )
@@ -114,6 +110,8 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
   function leaveRoom(): void {
     resetIceServers()
     iceServers = FALLBACK_ICE_SERVERS
+    cancelReconnects()
+    reconnectAttempts.clear()
     for (const id of [...peerConnections.keys()]) dropPeer(id)
     signaling.leaveRoom()
   }
@@ -125,6 +123,39 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     peerConnections.delete(peerId)
     pendingCandidates.delete(peerId)
     displayNames.delete(peerId)
+  }
+
+  /**
+   * Same glare rule as the jam room: the peer with the greater id
+   * initiates, and if ours is not known yet we initiate anyway and let
+   * handleOffer's rollback resolve the collision. Written once because
+   * the reconnect path needs the identical answer — two copies that
+   * drift mean either both sides initiate after a blip, or neither does
+   * and the rebuild silently never happens.
+   */
+  function shouldInitiate(peerId: string): boolean {
+    const myId = signaling.getPeerId()
+    return myId === null || myId === '' || myId > peerId
+  }
+
+  /**
+   * How many rebuilds one dropped pair gets before we stop trying.
+   *
+   * Without a ceiling this is not "twice" but forever: each rebuilt
+   * connection that fails ICE re-enters losePeer(retry), which schedules
+   * two more, and nothing upstream stops it — the arrival deadline only
+   * writes a message and the idle stop is skipped while the dialog is
+   * open. Two devices on different networks (no TURN) can never connect,
+   * so that loop is the default outcome, not the rare one.
+   */
+  const RECONNECT_ATTEMPT_LIMIT = 2
+  const reconnectAttempts = new Map<string, number>()
+  const reconnectTimers = new Set<ReturnType<typeof setTimeout>>()
+
+  /** Drop every armed rebuild; a departure outranks a pending retry. */
+  function cancelReconnects(): void {
+    for (const timer of reconnectTimers) clearTimeout(timer)
+    reconnectTimers.clear()
   }
 
   /**
@@ -148,7 +179,15 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     // the pairing is warm state now (REQ-SYNC-030), and nobody should
     // retype a code over a two-second blip. Signaling-level departures
     // do not retry: an offer to a peer that left the room lands nowhere.
-    if (retry) scheduleReconnect(peerId, displayName)
+    if (retry) {
+      scheduleReconnect(peerId, displayName)
+      return
+    }
+    // A signaling-level departure is final, and it can arrive AFTER the
+    // channel's own close already armed retries. Left alone those timers
+    // rebuild a connection to a peer that is no longer in the room and
+    // leave the zombie map entry this function exists to prevent.
+    cancelReconnects()
   }
 
   /**
@@ -162,15 +201,22 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
    * PAIRING, never the song).
    */
   function scheduleReconnect(peerId: string, displayName: string): void {
+    const attempt = (reconnectAttempts.get(peerId) ?? 0) + 1
+    if (attempt > RECONNECT_ATTEMPT_LIMIT) {
+      console.info('[sync:peer] giving up rebuilding the pair')
+      return
+    }
+    reconnectAttempts.set(peerId, attempt)
     for (const delay of [2_000, 8_000]) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        reconnectTimers.delete(timer)
         if (disposed || peerConnections.has(peerId)) return
         displayNames.set(peerId, displayName)
-        const myId = signaling.getPeerId()
-        if (myId === null || myId === '' || myId > peerId) {
+        if (shouldInitiate(peerId)) {
           initiateNewPeer(peerId).catch(() => {})
         }
       }, delay)
+      reconnectTimers.add(timer)
     }
   }
 
@@ -298,6 +344,10 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
     // a Blob in some browsers and an ArrayBuffer in others.
     dc.binaryType = 'arraybuffer'
     dc.onopen = () => {
+      // A pair that came back is a pair with a full retry budget again;
+      // otherwise a device that blips once a week eventually exhausts a
+      // counter that never resets and stops rebuilding for good.
+      reconnectAttempts.delete(peerId)
       cb.onChannelReady(peerId, displayNames.get(peerId) ?? 'Another device')
     }
     // A closed channel is the death every transfer actually notices: the
@@ -344,6 +394,8 @@ export function createSyncPeer(cb: SyncPeerCallbacks) {
 
   function dispose(): void {
     disposed = true
+    cancelReconnects()
+    reconnectAttempts.clear()
     for (const id of [...peerConnections.keys()]) dropPeer(id)
     resetIceServers()
     signaling.disconnect()

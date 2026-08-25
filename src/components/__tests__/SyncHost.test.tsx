@@ -7,16 +7,16 @@
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { closeSyncModal, openSyncModal, setSyncSessionLive, takeSyncModalSessionId, } from '@/stores/sync-ui'
+import { closeSyncModal, openSyncModal, setSyncSessionLive, takeSyncModalSessionId, } from '@/stores/sync-ui-store'
 import { SyncHost } from '../sync/SyncHost'
 
 vi.mock('@/components/sync/SyncDevicesModal', () => ({
-  default: (props: { initialSessionId?: string }) => (
+  SyncDevicesModal: (props: { initialSessionId?: string }) => (
     <div data-testid="modal" data-initial={props.initialSessionId ?? ''} />
   ),
 }))
 vi.mock('@/components/sync/SyncTransferChip', () => ({
-  default: () => <div data-testid="chip" />,
+  SyncTransferChip: () => <div data-testid="chip" />,
 }))
 
 describe('SyncHost', () => {

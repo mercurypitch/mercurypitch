@@ -88,8 +88,8 @@ vi.mock('@/db/persistent-storage', () => ({
   requestPersistentStorage: () => Promise.resolve(true),
 }))
 
-import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerRoom, syncPeerSongs, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
-import { closeSyncModal, openSyncModal } from '@/stores/sync-ui'
+import { clearFinishedTransfers, enqueueSongs, estimatePackedBytes, sendSongToPeer, startSyncReceive, stopQueue, stopSync, syncBusy, syncError, syncPeerLabel, syncPeerRoom, syncPeerSongs, syncQueue, syncState, syncTransfers, } from '@/stores/sync-store'
+import { closeSyncModal, openSyncModal } from '@/stores/sync-ui-store'
 import type { UvrSession } from '@/stores/uvr-store'
 
 /** Drive the store to a live room with a connected peer. */
@@ -705,6 +705,9 @@ describe('the dialog is a view; the session is not', () => {
     // dialog "open"; every test here starts with it hidden.
     closeSyncModal()
     notes.showNotification.mockClear()
+    // A previous test's teardown disposes too; "was this session torn
+    // down" is only a question about this test.
+    peerMock.dispose.mockClear()
   })
 
   it('REQ-SYNC-030: hiding the dialog keeps a connected session', async () => {
@@ -717,16 +720,40 @@ describe('the dialog is a view; the session is not', () => {
     expect(peerMock.dispose).not.toHaveBeenCalled()
   })
 
-  it('REQ-SYNC-030: hiding a session still being set up tears it down', async () => {
+  it('REQ-SYNC-030: hiding a session still being set up closes it, after a grace', async () => {
     await startSyncReceive()
     expect(syncState()).toBe('waiting')
+    vi.useFakeTimers()
 
     closeSyncModal()
 
-    // A waiting room whose code is on screen nowhere can never be
-    // joined; keeping it would be a leak, not a feature.
+    // Not instantly: a two-second Wi-Fi wobble puts a live pair in
+    // exactly this state, and the reconnect is seconds from rebuilding
+    // it (REQ-SYNC-035).
+    expect(syncState()).toBe('waiting')
+    expect(peerMock.dispose).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(45_000)
+
+    // But a waiting room whose code is on screen nowhere can never be
+    // joined by anyone the user meant to reach; keeping it open only
+    // leaves the door ajar for whoever finds the code.
     expect(syncState()).toBe('idle')
     expect(peerMock.dispose).toHaveBeenCalled()
+  })
+
+  it('REQ-SYNC-030: reopening inside the grace keeps the setup alive', async () => {
+    await startSyncReceive()
+    vi.useFakeTimers()
+
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(20_000)
+    openSyncModal()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(syncState()).toBe('waiting')
+    expect(peerMock.dispose).not.toHaveBeenCalled()
+    closeSyncModal()
   })
 
   it('REQ-SYNC-032: a hidden idle session closes after ten minutes', async () => {
@@ -756,6 +783,41 @@ describe('the dialog is a view; the session is not', () => {
     closeSyncModal()
   })
 
+  it('REQ-SYNC-032: an open dialog tells the far device somebody is here', async () => {
+    await connect()
+    vi.useFakeTimers()
+    const pings = (): number =>
+      peerMock.sendControl.mock.calls.filter(
+        (call) => (call[1] as { type?: string }).type === 'sync-active',
+      ).length
+
+    openSyncModal()
+    expect(pings()).toBe(1)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(pings()).toBe(2)
+
+    // Hidden again, we are no longer the one keeping it alive.
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(pings()).toBe(2)
+  })
+
+  it('REQ-SYNC-032: the far dialog being open rewinds our countdown', async () => {
+    await connect()
+    vi.useFakeTimers()
+
+    closeSyncModal()
+    await vi.advanceTimersByTimeAsync(9 * 60 * 1000)
+    // Nothing has moved for nine minutes, but the peer is sitting in
+    // its own open dialog — freeing space, because our refusal told it
+    // to. That is use, not abandonment.
+    peerMock.handlers?.onControl('peer-1', { type: 'sync-active' })
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000)
+
+    expect(syncState()).toBe('connected')
+  })
+
   it('REQ-SYNC-033: holds the wake lock while a song moves, then lets go', async () => {
     await connect()
     expect(wake.enable).not.toHaveBeenCalled()
@@ -782,9 +844,13 @@ describe('what each device knows about the far library', () => {
     await connect()
 
     await vi.waitFor(() => {
+      // Two hellos go out: one immediately, so the far device has a
+      // name to show, and one once the local library has been read.
+      // The library is in the last of them.
       const hello = peerMock.sendControl.mock.calls
         .map((call) => call[1] as { type?: string; songHashes?: string[] })
-        .find((msg) => msg.type === 'sync-hello')
+        .filter((msg) => msg.type === 'sync-hello')
+        .at(-1)
       expect(hello?.songHashes).toEqual(['hash-1'])
     })
   })
@@ -808,6 +874,38 @@ describe('what each device knows about the far library', () => {
     await connect()
     peerMock.handlers?.onControl('peer-1', { type: 'sync-hello', label: 'TV' })
     expect(syncPeerSongs()).toBeNull()
+  })
+
+  it('a hello whose library is not a list is treated as unknown', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'TV',
+      // A string is the dangerous shape: `new Set('abc')` succeeds and
+      // builds a set of characters, so songs get marked already-there by
+      // coincidence. A number throws where the throw is swallowed.
+      songHashes: 'hash-1',
+    })
+    expect(syncPeerSongs()).toBeNull()
+
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'TV',
+      songHashes: 42,
+    })
+    expect(syncPeerSongs()).toBeNull()
+    // The rest of the hello still landed: a bad field is not a bad frame.
+    expect(syncPeerLabel()).toBe('TV')
+  })
+
+  it('a hello keeps only the hashes that could name a song', async () => {
+    await connect()
+    peerMock.handlers?.onControl('peer-1', {
+      type: 'sync-hello',
+      label: 'TV',
+      songHashes: ['h9', '', null, 7, 'h10'],
+    })
+    expect([...(syncPeerSongs() ?? [])]).toEqual(['h9', 'h10'])
   })
 
   it('REQ-SYNC-035: a peer that comes back is welcomed behind a hidden dialog', async () => {

@@ -27,7 +27,7 @@ const sync = vi.hoisted(() => {
     startSyncSend: vi.fn(() => Promise.resolve()),
     stopQueue: vi.fn(),
     stopSync: vi.fn(),
-    takeSyncCodeToJoin: vi.fn(() => null),
+    takeSyncCodeToJoin: vi.fn((): string | null => null),
     estimatePackedBytes: vi.fn(() => 5 * 1024 * 1024),
   }
 })
@@ -44,6 +44,10 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@/stores/sync-store', () => ({
   ...sync,
+  isLiveTransfer: (t: SyncTransfer) =>
+    t.status === 'packing' ||
+    t.status === 'preparing' ||
+    t.status === 'transferring',
   syncBusy: () => false,
   syncError: () => null,
   syncOwnRoom: () => null,
@@ -322,6 +326,31 @@ describe('closing, and what it must not do', () => {
     state.role = 'receive'
     render(() => <SyncDevicesModal onClose={() => {}} />)
     expect(sync.startSyncReceive).not.toHaveBeenCalled()
+  })
+
+  it('a scanned code does not switch rooms under a live session', () => {
+    sync.takeSyncCodeToJoin.mockReturnValueOnce('ABCD2345')
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    // Joining here would hand the room away: the far device is
+    // discarded by first-device-wins and the running transfer dies
+    // with the room it was moving through.
+    expect(sync.startSyncSend).not.toHaveBeenCalled()
+  })
+
+  it('a scanned code joins when there is nothing to lose', () => {
+    state.syncState = 'idle'
+    sync.takeSyncCodeToJoin.mockReturnValueOnce('ABCD2345')
+    render(() => <SyncDevicesModal onClose={() => {}} />)
+    expect(sync.startSyncSend).toHaveBeenCalledWith('ABCD2345')
+  })
+
+  it('the song the dialog was opened for goes through the queue', () => {
+    state.sessions = [song()]
+    render(() => <SyncDevicesModal onClose={() => {}} initialSessionId="s1" />)
+    // Not sendSongToPeer: that one refuses outright while anything else
+    // is in flight, and this one-shot has nowhere to put the refusal.
+    expect(sync.enqueueSongs).toHaveBeenCalledWith(['s1'])
+    expect(sync.sendSongToPeer).not.toHaveBeenCalled()
   })
 
   it('says mid-transfer that closing stops nothing', () => {
