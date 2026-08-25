@@ -135,7 +135,6 @@ export function GuitarNightListeningCycle(
     }
     return `${state}. ${nextActionLabel(controlledSelection())}`
   })
-
   const selectNext = (): void => {
     if (blocked()) return
 
@@ -164,26 +163,36 @@ export function GuitarNightListeningCycle(
   }
 
   return (
-    <button
-      type="button"
-      class={styles.cycle}
-      data-state={selection() ?? 'off'}
-      data-status={props.status()}
-      data-active={active()}
-      data-pending={pending()}
-      aria-label={accessibleLabel()}
-      aria-busy={pending()}
-      disabled={blocked()}
-      title={accessibleLabel()}
-      onClick={selectNext}
-    >
-      <span class={styles.icon} aria-hidden="true">
-        {routeIcon(selection(), pending())}
+    <>
+      <button
+        type="button"
+        class={styles.cycle}
+        data-state={selection() ?? 'off'}
+        data-status={props.status()}
+        data-active={active()}
+        data-pending={pending()}
+        aria-label={accessibleLabel()}
+        aria-busy={pending()}
+        aria-disabled={blocked()}
+        title={accessibleLabel()}
+        onClick={selectNext}
+      >
+        <span class={styles.icon} aria-hidden="true">
+          {routeIcon(selection(), pending())}
+        </span>
+        <span class={styles.copy} aria-hidden="true">
+          <span class={styles.eyebrow}>Listening</span>
+          <strong>{selectionLabel(selection())}</strong>
+        </span>
+      </button>
+      <span
+        class={styles.visuallyHidden}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {accessibleLabel()}
       </span>
-      <span class={styles.copy} aria-hidden="true">
-        <span class={styles.eyebrow}>Listening</span>
-        <strong>{selectionLabel(selection())}</strong>
-      </span>
-    </button>
+    </>
   )
 }

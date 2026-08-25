@@ -147,6 +147,8 @@ const COMPLETED_FREE_PLAY_TAKE: GuitarTakeSnapshot = {
   durationFrames: 1_000,
   filteredBeforeStart: 0,
   filteredAfterEnd: 0,
+  rejectedAfterEnd: 0,
+  retractedAfterEnd: 0,
   truncated: false,
   droppedEventCount: 0,
   inputHealth: {

@@ -288,6 +288,8 @@ describe('createGuitarTakeRecorder', () => {
     expect(completed.events).toHaveLength(1)
     expect(completed.filteredBeforeStart).toBe(1)
     expect(completed.filteredAfterEnd).toBe(2)
+    expect(completed.rejectedAfterEnd).toBe(0)
+    expect(completed.retractedAfterEnd).toBe(2)
     expect(take.append(exactCapture(11))).toBeNull()
   })
 
@@ -311,6 +313,8 @@ describe('createGuitarTakeRecorder', () => {
     expect(take.snapshot()).toMatchObject({
       lifecycle: 'recording',
       filteredAfterEnd: 2,
+      rejectedAfterEnd: 2,
+      retractedAfterEnd: 0,
     })
     const completed = take.complete(13)
     expect(completed.durationFrames).toBe(96_000)

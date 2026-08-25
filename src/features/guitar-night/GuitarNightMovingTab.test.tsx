@@ -3,7 +3,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { GUITAR_NIGHT_TAB_ZOOM_KEY, GuitarNightMovingTab, } from './GuitarNightMovingTab'
@@ -44,6 +44,7 @@ describe('GuitarNightMovingTab', () => {
   afterEach(() => {
     cleanup()
     localStorage.removeItem(GUITAR_NIGHT_TAB_ZOOM_KEY)
+    vi.useRealTimers()
   })
 
   function mount(hasGuide = true) {
@@ -79,7 +80,15 @@ describe('GuitarNightMovingTab', () => {
     fireEvent.input(slider, { target: { value: '145' } })
 
     expect((slider as HTMLInputElement).value).toBe('145')
+    expect(localStorage.getItem(GUITAR_NIGHT_TAB_ZOOM_KEY)).toBeNull()
+
+    fireEvent.change(slider)
+
     expect(localStorage.getItem(GUITAR_NIGHT_TAB_ZOOM_KEY)).toBe('1.45')
+    expect(slider.closest('label')).toHaveAttribute(
+      'title',
+      'Scroll over the tab, pinch with two fingers on touch, or drag this control.',
+    )
   })
 
   it('does not offer an inert reading-scale control in free play', () => {
@@ -123,6 +132,28 @@ describe('GuitarNightMovingTab', () => {
     expect(Number((slider as HTMLInputElement).value)).toBeGreaterThan(100)
   })
 
+  it('persists wheel zoom once the gesture has gone idle', () => {
+    vi.useFakeTimers()
+    mount()
+    const lanes = screen.getByTestId('guitar-night-moving-tab')
+
+    lanes.dispatchEvent(
+      new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -100,
+      }),
+    )
+
+    expect(localStorage.getItem(GUITAR_NIGHT_TAB_ZOOM_KEY)).toBeNull()
+    vi.advanceTimersByTime(179)
+    expect(localStorage.getItem(GUITAR_NIGHT_TAB_ZOOM_KEY)).toBeNull()
+    vi.advanceTimersByTime(1)
+    expect(
+      Number(localStorage.getItem(GUITAR_NIGHT_TAB_ZOOM_KEY)),
+    ).toBeGreaterThan(1)
+  })
+
   it('leaves browser magnification gestures untouched', () => {
     mount()
     const lanes = screen.getByTestId('guitar-night-moving-tab')
@@ -154,6 +185,9 @@ describe('GuitarNightMovingTab', () => {
 
     expect(Number((slider as HTMLInputElement).value)).toBeGreaterThan(100)
     lanes.dispatchEvent(pointer('pointerup', 1, 130))
+    expect(
+      Number(localStorage.getItem(GUITAR_NIGHT_TAB_ZOOM_KEY)),
+    ).toBeGreaterThan(1)
     lanes.dispatchEvent(pointer('pointerup', 2, 260))
   })
 
@@ -163,6 +197,15 @@ describe('GuitarNightMovingTab', () => {
     const first = lanes.querySelector<HTMLElement>('[data-note-id="first"]')
     const observer = new MutationObserver(() => undefined)
     observer.observe(lanes, { childList: true, subtree: true })
+    const firstStyle = first?.getAttribute('style')
+    const trackShift = lanes.style.getPropertyValue('--stage-tab-track-shift')
+    const styleObserver = new MutationObserver(() => undefined)
+    if (first !== null) {
+      styleObserver.observe(first, {
+        attributes: true,
+        attributeFilter: ['style'],
+      })
+    }
 
     setPlayheadBeat(4.05)
     await Promise.resolve()
@@ -172,6 +215,12 @@ describe('GuitarNightMovingTab', () => {
       .filter((record) => record.type === 'childList')
     expect(lanes.querySelector('[data-note-id="first"]')).toBe(first)
     expect(childChanges).toHaveLength(0)
+    expect(first?.getAttribute('style')).toBe(firstStyle)
+    expect(styleObserver.takeRecords()).toHaveLength(0)
+    expect(lanes.style.getPropertyValue('--stage-tab-track-shift')).not.toBe(
+      trackShift,
+    )
     observer.disconnect()
+    styleObserver.disconnect()
   })
 })

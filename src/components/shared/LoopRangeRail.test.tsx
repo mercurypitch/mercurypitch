@@ -156,6 +156,22 @@ describe('LoopRangeRail', () => {
     expect(onCommit).toHaveBeenLastCalledWith('A')
   })
 
+  it('measures a marker rail once per pointer gesture', () => {
+    mount({ a: 2, b: 8 })
+    const marker = screen.getByLabelText('Loop start marker')
+    installPointerCapture(marker)
+    const rectSpy = vi.mocked(HTMLElement.prototype.getBoundingClientRect)
+    rectSpy.mockClear()
+
+    sendPointer(marker, 'pointerdown', 150)
+    sendPointer(marker, 'pointermove', 160)
+    sendPointer(marker, 'pointermove', 170)
+    sendPointer(marker, 'pointermove', 180)
+    sendPointer(marker, 'pointerup', 180)
+
+    expect(rectSpy).toHaveBeenCalledTimes(1)
+  })
+
   it('coalesces keyboard repeats and keeps native seek scrubbing open through keyup', () => {
     const onCommit = vi.fn()
     const onScrubStart = vi.fn()

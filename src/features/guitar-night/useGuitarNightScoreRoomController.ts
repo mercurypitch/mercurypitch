@@ -9,7 +9,7 @@
 // that clock to refresh the signal — it never defines the beat.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
 import type { GuitarRoomBand, GuitarRoomBandNote, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
@@ -18,6 +18,7 @@ import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock, createSecondsToBeatClock } from '@/lib/midi-song'
 import { createPersistedSignal } from '@/lib/storage'
+import { GUITAR_NIGHT_SCORE_MAX_COUNT_IN_BEATS } from './guitar-night-score-count-in'
 import type { GuitarNightReference } from './reference-port'
 
 export type GuitarNightScoreRoomStatus =
@@ -31,10 +32,11 @@ export type GuitarNightScoreRoomStatus =
 
 export const SCORE_ROOM_MIN_TEMPO = 40
 export const SCORE_ROOM_MAX_TEMPO = GUITAR_ROOM_BAND_MAX_TEMPO_BPM
-export const SCORE_ROOM_MAX_COUNT_IN = 8
+export const SCORE_ROOM_MAX_COUNT_IN = GUITAR_NIGHT_SCORE_MAX_COUNT_IN_BEATS
 export const GUITAR_NIGHT_SCORE_CHANNEL = 'guitar-night-score'
 export const GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY =
   'mercurypitch.guitar-night.score-mix-volume.v1'
+const MASTER_VOLUME_PERSIST_IDLE_MS = 180
 
 interface GuitarNightScoreRoomControllerOptions {
   reference: Accessor<GuitarNightReference | null>
@@ -52,7 +54,7 @@ interface GuitarNightScoreRoomControllerOptions {
    */
   backingMelody?: Accessor<readonly GuitarRoomBandNote[]>
   /** Which backing lanes are open now; gain changes are safe during playback. */
-  audibleBackingTrackIds?: Accessor<readonly string[]>
+  audibleBackingTrackIds?: Accessor<readonly string[] | undefined>
   /**
    * Whether the scored part sounds when the player has not said either way.
    * A tab with a band behind it hands that part to the player; a tab with one
@@ -224,17 +226,47 @@ export function useGuitarNightScoreRoomController(
     options.cancelFrame ?? ((handle: number) => cancelAnimationFrame(handle))
 
   const band = options.createBand?.() ?? createGuitarRoomBand()
-  const [masterVolume, setMasterVolumeSignal] = createPersistedSignal<number>(
-    GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY,
-    0.76,
-    {
+  const [persistedMasterVolume, persistMasterVolume] =
+    createPersistedSignal<number>(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, 0.76, {
       validator: (value): value is number =>
         typeof value === 'number' &&
         Number.isFinite(value) &&
         value >= 0 &&
         value <= 1,
-    },
+    })
+  const [masterVolume, setMasterVolumeSignal] = createSignal(
+    persistedMasterVolume(),
   )
+  let pendingMasterVolume: number | null = null
+  let masterVolumePersistTimer: ReturnType<typeof setTimeout> | null = null
+
+  const flushMasterVolumePersistence = (): void => {
+    if (masterVolumePersistTimer !== null) {
+      clearTimeout(masterVolumePersistTimer)
+      masterVolumePersistTimer = null
+    }
+    const pending = pendingMasterVolume
+    pendingMasterVolume = null
+    if (pending !== null && pending !== untrack(persistedMasterVolume)) {
+      persistMasterVolume(pending)
+    }
+  }
+
+  const scheduleMasterVolumePersistence = (next: number): void => {
+    if (masterVolumePersistTimer !== null) {
+      clearTimeout(masterVolumePersistTimer)
+      masterVolumePersistTimer = null
+    }
+    if (next === untrack(persistedMasterVolume)) {
+      pendingMasterVolume = null
+      return
+    }
+    pendingMasterVolume = next
+    masterVolumePersistTimer = setTimeout(
+      flushMasterVolumePersistence,
+      MASTER_VOLUME_PERSIST_IDLE_MS,
+    )
+  }
   // Held against the part it was chosen for, so scoring a different part gets
   // the default that suits it rather than the last part's answer.
   const [hearScoreOverride, setHearScoreOverride] = createSignal<{
@@ -256,16 +288,25 @@ export function useGuitarNightScoreRoomController(
 
   // This signal changes only through `setMasterVolume`; seed the dormant graph
   // once, then let that setter schedule exactly one live ramp per gesture.
-  band.setMasterLevel(masterVolume())
+  band.setMasterLevel(untrack(masterVolume))
+  createEffect(() => {
+    const hydrated = persistedMasterVolume()
+    if (pendingMasterVolume !== null || hydrated === untrack(masterVolume)) {
+      return
+    }
+    setMasterVolumeSignal(hydrated)
+    band.setMasterLevel(hydrated)
+  })
   createEffect(() => {
     band.setMelodyChannelLevel(
       GUITAR_NIGHT_SCORE_CHANNEL,
       configuredHearScore() ? 1 : 0,
     )
+    const configuredAudibleBackingTracks = options.audibleBackingTrackIds?.()
     const audible =
-      options.audibleBackingTrackIds === undefined
+      configuredAudibleBackingTracks === undefined
         ? null
-        : new Set(options.audibleBackingTrackIds())
+        : new Set(configuredAudibleBackingTracks)
     const channelIds = new Set(
       (options.backingMelody?.() ?? [])
         .map((note) => note.channelId)
@@ -652,7 +693,15 @@ export function useGuitarNightScoreRoomController(
           ),
         ),
       )
-      return (await launch({ ...run, loop: null }, restartBeat, 0)) !== null
+      return (
+        (await launch(
+          { ...run, loop: null },
+          restartBeat,
+          currentStatus === 'starting' || currentStatus === 'count-in'
+            ? run.countInBeats
+            : 0,
+        )) !== null
+      )
     }
     const normalized = normalizeLoopSpan(
       next.start,
@@ -701,7 +750,13 @@ export function useGuitarNightScoreRoomController(
       return true
     }
     return (
-      (await launch({ ...run, loop: activatedLoop }, restartBeat, 0)) !== null
+      (await launch(
+        { ...run, loop: activatedLoop },
+        restartBeat,
+        currentStatus === 'starting' || currentStatus === 'count-in'
+          ? run.countInBeats
+          : 0,
+      )) !== null
     )
   }
 
@@ -746,6 +801,7 @@ export function useGuitarNightScoreRoomController(
    * back to beat one.
    */
   const parkForConfiguration = (): void => {
+    const enteredComplete = status() === 'complete'
     if (
       status() === 'starting' ||
       status() === 'count-in' ||
@@ -765,7 +821,7 @@ export function useGuitarNightScoreRoomController(
     const parked = Math.min(maximumBeat, Math.max(0, beat))
     setParkedBeat(parked)
     setPositionSeconds(configuredBeatToSeconds()(parked))
-    setStatus('paused')
+    setStatus(enteredComplete ? 'complete' : 'paused')
   }
 
   /** Exact authored beat → timeline seconds for rails and marker placement. */
@@ -984,11 +1040,15 @@ export function useGuitarNightScoreRoomController(
 
   const setMasterVolume = (value: number): void => {
     const next = Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0))
-    setMasterVolumeSignal(next)
-    band.setMasterLevel(next)
+    if (next !== masterVolume()) {
+      setMasterVolumeSignal(next)
+      band.setMasterLevel(next)
+    }
+    scheduleMasterVolumePersistence(next)
   }
 
   onCleanup(() => {
+    flushMasterVolumePersistence()
     startGeneration += 1
     stopFrames()
     void band.dispose()
@@ -1034,6 +1094,7 @@ export function useGuitarNightScoreRoomController(
     setCountInBeats,
     masterVolume,
     setMasterVolume,
+    flushMasterVolumePersistence,
     /** Whether the room sounds the score; its gain changes during playback. */
     hearScore,
     setHearScore,

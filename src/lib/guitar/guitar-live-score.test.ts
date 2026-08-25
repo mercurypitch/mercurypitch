@@ -66,6 +66,8 @@ function take(
     durationFrames?: number | null
     droppedEventCount?: number
     filteredAfterEnd?: number
+    rejectedAfterEnd?: number
+    retractedAfterEnd?: number
   } = {},
 ): GuitarTakeSnapshot {
   const kind = options.kind ?? 'midi'
@@ -96,6 +98,8 @@ function take(
     durationFrames: options.durationFrames ?? null,
     filteredBeforeStart: 0,
     filteredAfterEnd: options.filteredAfterEnd ?? 0,
+    rejectedAfterEnd: options.rejectedAfterEnd ?? 0,
+    retractedAfterEnd: options.retractedAfterEnd ?? 0,
     truncated: (options.droppedEventCount ?? 0) > 0,
     droppedEventCount: options.droppedEventCount ?? 0,
     inputHealth: {
@@ -283,6 +287,7 @@ describe('createGuitarLiveScoreEngine', () => {
         lifecycle: 'completed',
         durationFrames: 3_250,
         filteredAfterEnd: 1,
+        rejectedAfterEnd: 1,
       }),
       3_250,
       'good',
@@ -326,6 +331,7 @@ describe('createGuitarLiveScoreEngine', () => {
         lifecycle: 'completed',
         durationFrames: 3_250,
         filteredAfterEnd: 1,
+        retractedAfterEnd: 1,
       }),
       3_250,
       'good',
@@ -346,6 +352,42 @@ describe('createGuitarLiveScoreEngine', () => {
         (judgment) => judgment.targetId === 'target-before-end',
       ),
     ).toMatchObject({ outcome: 'miss', eventId: null })
+  })
+
+  it('still detects an unseen recorder drop when pinEnd also retracts evidence', () => {
+    const score = engine([target(0), target(1), target(2), target(3)])
+    const first = event('event-0', 0, 60)
+    const laterRetracted = event('event-after-end', 3_300, 63)
+
+    score.sample(take([first, laterRetracted]), 200, 'good')
+    const result = score.sample(
+      take([first], {
+        lifecycle: 'completed',
+        durationFrames: 3_250,
+        droppedEventCount: 1,
+        filteredAfterEnd: 1,
+        retractedAfterEnd: 1,
+      }),
+      3_250,
+      'good',
+    )
+
+    expect(result).toMatchObject({
+      phase: 'completed',
+      evidenceStatus: 'event-gap',
+      detectedGapCount: 1,
+      totals: {
+        judgedTargets: 1,
+        hitTargets: 1,
+        missedTargets: 0,
+        skippedTargets: 3,
+      },
+    })
+    expect(
+      result.recentJudgments.filter(
+        (judgment) => judgment.skipReason === 'event-gap',
+      ),
+    ).toHaveLength(3)
   })
 
   it('scores MIDI chord onsets and passages faster than the acoustic pitch window', () => {

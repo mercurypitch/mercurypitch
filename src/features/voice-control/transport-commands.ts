@@ -17,7 +17,7 @@ import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardSh
 import { tryDismissModal } from '@/features/keyboard/useKeyboardShortcuts'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import * as transportStore from '@/stores/transport-store'
-import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STOP_PHRASES, } from './shared-phrases'
+import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, COUNT_IN_OFF_PHRASES, COUNT_IN_ON_PHRASES, COUNT_IN_SET_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STOP_PHRASES, } from './shared-phrases'
 import type { VoiceCommand, VoiceCommandResult } from './types'
 import { voiceFailure } from './types'
 
@@ -537,14 +537,14 @@ export function createTransportVoiceCommands(
     {
       id: 'countIn.on',
       label: 'Count-in on',
-      phrases: ['count in on', 'count in', 'count me in', 'enable count in'],
+      phrases: COUNT_IN_ON_PHRASES,
       available: seekableTab,
       run: () => setCountInBars(2),
     },
     {
       id: 'countIn.off',
       label: 'Count-in off',
-      phrases: ['count in off', 'no count in', 'disable count in'],
+      phrases: COUNT_IN_OFF_PHRASES,
       available: seekableTab,
       run: () => setCountInBars(0),
     },
@@ -552,7 +552,7 @@ export function createTransportVoiceCommands(
       id: 'countIn.bars',
       label: 'Count-in',
       phrases: [
-        'count in <n>',
+        ...COUNT_IN_SET_PHRASES,
         'count in <n> bars',
         'count in <n> bar',
         '<n> bar count in',

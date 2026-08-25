@@ -1053,6 +1053,7 @@ export function PianoNightApp(): JSX.Element {
                 onInput={(event) =>
                   controller.setMasterVolume(Number(event.currentTarget.value))
                 }
+                onChange={controller.flushMasterVolumePersistence}
               />
               <output aria-hidden="true">
                 {Math.round(controller.masterVolume() * 100)}%
@@ -1408,6 +1409,7 @@ export function PianoNightApp(): JSX.Element {
                       Number(event.currentTarget.value),
                     )
                   }
+                  onChange={controller.flushMasterVolumePersistence}
                 />
                 <strong aria-hidden="true">
                   {Math.round(controller.masterVolume() * 100)}%

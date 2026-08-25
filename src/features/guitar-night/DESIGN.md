@@ -78,7 +78,7 @@ core Learn set in
   nothing requests capture or sounds until that action or a reference-string
   action.
 - The tuner follows the current 4–8-string guitar or bass tuning, including
-  source pitches and capo, and offers honest Room mic / Plugged in routes. MIDI
+  source pitches and capo, and offers honest Room mic / Direct input routes. MIDI
   is never presented as a pitch measurement route. Automatic targeting remains
   gated to nearby open strings, while the gauge keeps edge direction from
   farther evidence instead of hiding the player's position. Selecting anywhere
@@ -87,7 +87,7 @@ core Learn set in
 - Opening Tune parks playback without resetting the backing mix, score position,
   or A/B loop. Reference sound and capture are mutually exclusive. A reference
   requested while the tuner is listening parks capture and restores it after
-  the tone; changing Room mic / Plugged in transfers that same explicit
+  the tone; changing Room mic / Direct input transfers that same explicit
   listening intent to the new route. An explicit Stop, Back, or Escape cancels
   any pending restart. Back or Escape restores the Tune trigger, and the hidden
   transport does not own Space while the tuner is open.
@@ -292,9 +292,15 @@ core Learn set in
   microphone/interface chords and too-close notes are excluded. Listening never
   acts as a mix preset: compact Target and Backing controls retain their current
   state across Room mic, Direct input, and MIDI, while Click and per-track M/S
-  remain independently live. Room mic visibly recommends headphones whenever
-  pitched playback is audible. Jam Doctor remains the separate quiet action for
-  phrase evidence, explanation, and recovery.
+  remain independently live. Room mic plus nonzero master output and any audible
+  Target, Backing, or Click is a known speaker-bleed risk. Before the first
+  scored take with that risk in a mounted room, the player must explicitly
+  continue knowing the score may be inaccurate, choose to mute room audio, or
+  cancel. Browsers cannot reliably tell headphones from speakers, so the room
+  warns from its known mix without claiming output-route detection. It never
+  auto-mutes or silently excludes score evidence solely for that risk. Jam
+  Doctor remains the separate quiet action for phrase evidence, explanation,
+  and recovery.
 - The top-level Score action opens a calm objective take ledger rather than a
   diagnosis dashboard. It shows the latest completed cumulative grade and
   scalar outcomes, may hold the current session's partial result without saving

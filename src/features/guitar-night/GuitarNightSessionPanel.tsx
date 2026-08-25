@@ -51,14 +51,6 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
 
   onMount(() => {
     closeButton.focus({ preventScroll: true })
-    const handlePointerDown = (event: PointerEvent): void => {
-      const target = event.target
-      if (!(target instanceof Node) || dialog.contains(target)) return
-      // Close at pointer start so a stage/highway gesture is not mistaken for
-      // interaction with the modal. Do not cancel it: the underlying surface
-      // remains free to handle the player's intended gesture.
-      props.onClose()
-    }
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -81,10 +73,8 @@ export function GuitarNightSessionPanel(props: GuitarNightSessionPanelProps) {
         first?.focus()
       }
     }
-    document.addEventListener('pointerdown', handlePointerDown, true)
     document.addEventListener('keydown', handleKeyDown, true)
     onCleanup(() => {
-      document.removeEventListener('pointerdown', handlePointerDown, true)
       document.removeEventListener('keydown', handleKeyDown, true)
     })
   })

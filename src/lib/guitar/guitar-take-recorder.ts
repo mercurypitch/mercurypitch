@@ -55,6 +55,10 @@ export interface GuitarTakeSnapshot {
   durationFrames: number | null
   filteredBeforeStart: number
   filteredAfterEnd: number
+  /** Captures first observed after the pinned half-open end. */
+  rejectedAfterEnd: number
+  /** Previously exposed captures removed when an earlier end is pinned. */
+  retractedAfterEnd: number
   truncated: boolean
   droppedEventCount: number
   /** Aggregated states only; no samples or raw input ever enter the take. */
@@ -208,6 +212,8 @@ export function createGuitarTakeRecorder(
   let pinnedEndFrame: number | null = null
   let filteredBeforeStart = 0
   let filteredAfterEnd = 0
+  let rejectedAfterEnd = 0
+  let retractedAfterEnd = 0
   let droppedEventCount = 0
   let nextEvent = 1
   let healthReadings = 0
@@ -226,6 +232,8 @@ export function createGuitarTakeRecorder(
     durationFrames,
     filteredBeforeStart,
     filteredAfterEnd,
+    rejectedAfterEnd,
+    retractedAfterEnd,
     truncated: droppedEventCount > 0,
     droppedEventCount,
     inputHealth: {
@@ -249,7 +257,9 @@ export function createGuitarTakeRecorder(
     const retained = events.filter(
       (event) => event.compensatedTransportFrame < endFrame,
     )
-    filteredAfterEnd += events.length - retained.length
+    const retracted = events.length - retained.length
+    filteredAfterEnd += retracted
+    retractedAfterEnd += retracted
     events = retained
   }
 
@@ -281,6 +291,7 @@ export function createGuitarTakeRecorder(
       compensatedTransportFrame >= pinnedEndFrame
     ) {
       filteredAfterEnd += 1
+      rejectedAfterEnd += 1
       return null
     }
 

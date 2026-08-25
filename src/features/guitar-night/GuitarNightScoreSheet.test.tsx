@@ -94,6 +94,7 @@ describe('GuitarNightScoreSheet', () => {
     expect(screen.getByText('4')).toBeTruthy()
     expect(screen.getByText('Previous room')).toBeTruthy()
     expect(screen.getByText('Direct input', { exact: false })).toBeTruthy()
+    expect(screen.getAllByText(/Scored beats 5–8/)).toHaveLength(2)
     expect(
       screen.getByText(/Audio and input device identities are not saved/),
     ).toBeTruthy()

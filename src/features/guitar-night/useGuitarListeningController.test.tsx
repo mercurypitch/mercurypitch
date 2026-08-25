@@ -491,6 +491,8 @@ describe('useGuitarListeningController', () => {
         lifecycle: 'completed',
         durationFrames: 48_000,
         filteredAfterEnd: 1,
+        rejectedAfterEnd: 1,
+        retractedAfterEnd: 0,
       })
       expect(controller.events()).toHaveLength(1)
       expect(controller.events()[0]?.pitch?.midi).toBe(64)

@@ -107,6 +107,8 @@ function take(
     durationFrames: lifecycle === 'recording' ? null : completedDurationFrames,
     filteredBeforeStart: 0,
     filteredAfterEnd: 0,
+    rejectedAfterEnd: 0,
+    retractedAfterEnd: 0,
     truncated: false,
     droppedEventCount: 0,
     inputHealth: {
@@ -320,7 +322,13 @@ describe('useGuitarNightLiveScoreController', () => {
         // pinEnd publishes before completion, and a rejected attack may update
         // recorder diagnostics while the transport advances in the same turn.
         setCurrentTake((snapshot) =>
-          snapshot === null ? null : { ...snapshot, filteredAfterEnd: 1 },
+          snapshot === null
+            ? null
+            : {
+                ...snapshot,
+                filteredAfterEnd: 1,
+                rejectedAfterEnd: 1,
+              },
         )
         setPlayheadBeat(4)
         window.setTimeout(() => {

@@ -79,7 +79,8 @@ describe('GuitarNightListeningCycle', () => {
     const button = screen.getByRole('button')
     fireEvent.click(button)
 
-    expect(button).toBeDisabled()
+    expect(button).not.toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
     expect(button).toHaveAttribute('aria-busy', 'true')
     expect(button).toHaveAccessibleName('Switching Listening to Room mic')
     expect(button).toHaveAttribute('data-state', 'microphone')
@@ -91,7 +92,7 @@ describe('GuitarNightListeningCycle', () => {
     await selection
     await Promise.resolve()
 
-    expect(button).not.toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'false')
     expect(button).toHaveAttribute('aria-busy', 'false')
   })
 
@@ -128,9 +129,13 @@ describe('GuitarNightListeningCycle', () => {
     ))
 
     const button = screen.getByRole('button')
-    expect(button).toBeDisabled()
+    expect(button).not.toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
     expect(button).toHaveAccessibleName('Opening Direct input for Listening')
     expect(button).toHaveAttribute('data-active', 'false')
+
+    button.focus()
+    expect(button).toHaveFocus()
 
     setStatus('calibrating')
     expect(button).toHaveAccessibleName(
@@ -175,12 +180,46 @@ describe('GuitarNightListeningCycle', () => {
     ))
 
     const button = screen.getByRole('button')
-    expect(button).toBeDisabled()
+    expect(button).not.toBeDisabled()
+    expect(button).toHaveAttribute('aria-disabled', 'true')
     expect(button).toHaveAccessibleName(
       'Listening with Room mic. Input changes are unavailable',
     )
     fireEvent.click(button)
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('announces the selected route without moving focus', () => {
+    const [status, setStatus] = createSignal<GuitarListeningStatus>('off')
+    const [profile, setProfile] =
+      createSignal<GuitarInputProfileKind>('microphone')
+
+    render(() => (
+      <GuitarNightListeningCycle
+        status={status}
+        profile={profile}
+        onSelect={(next) => {
+          if (next === null) {
+            setStatus('off')
+            return
+          }
+          setProfile(next)
+          setStatus('listening')
+        }}
+      />
+    ))
+
+    const button = screen.getByRole('button')
+    button.focus()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Listening is off. Switch to Room mic',
+    )
+
+    fireEvent.click(button)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Listening with Room mic. Switch to Direct input',
+    )
+    expect(button).toHaveFocus()
   })
 
   it('exposes the cycle as a tiny pure state machine for integration tests', () => {

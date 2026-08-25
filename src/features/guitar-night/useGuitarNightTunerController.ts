@@ -5,6 +5,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
+import { guitarInputProfileLabel } from '@/lib/guitar/guitar-input-profile'
 import type { GuitarVoice } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
@@ -186,7 +187,9 @@ export function useGuitarNightTunerController(
     clearReferenceTone()
     setLocalError(null)
     if (profile === 'midi') {
-      setLocalError('Choose Room mic or Plugged in to measure tuning.')
+      setLocalError(
+        `Choose ${guitarInputProfileLabel('microphone')} or ${guitarInputProfileLabel('interface')} to measure tuning.`,
+      )
       return false
     }
     return options.listening.start({ purpose: 'tuner' })

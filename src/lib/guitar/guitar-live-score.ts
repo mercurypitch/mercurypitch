@@ -346,7 +346,7 @@ export function createGuitarLiveScoreEngine(
   let lastIngestedTake: GuitarTakeSnapshot | null = null
   let lastThroughFrame = -1
   let lastTotalEventCount = 0
-  let lastFilteredAfterEnd = 0
+  let lastRejectedAfterEnd = 0
   let firstUnresolvedTargetIndex = 0
   let phase: GuitarLiveScorePhase = 'active'
   let judgedTargets = 0
@@ -659,8 +659,8 @@ export function createGuitarLiveScoreEngine(
       if (totalEventCount < lastTotalEventCount) {
         throw new Error('The take event sequence moved backwards.')
       }
-      if (take.filteredAfterEnd < lastFilteredAfterEnd) {
-        throw new Error('The take end-filter sequence moved backwards.')
+      if (take.rejectedAfterEnd < lastRejectedAfterEnd) {
+        throw new Error('The take rejected-after-end sequence moved backwards.')
       }
       let newEventCount = 0
       let oldestNewFrame = Number.POSITIVE_INFINITY
@@ -700,10 +700,10 @@ export function createGuitarLiveScoreEngine(
       // score's evidence window. Keep them in the monotonic recorder count,
       // but do not mistake their diagnostic counter for a missing in-range
       // page.
-      const newlyFilteredAfterEnd = take.filteredAfterEnd - lastFilteredAfterEnd
+      const newlyRejectedAfterEnd = take.rejectedAfterEnd - lastRejectedAfterEnd
       const expectedNewEvents = Math.max(
         0,
-        totalEventCount - lastTotalEventCount - newlyFilteredAfterEnd,
+        totalEventCount - lastTotalEventCount - newlyRejectedAfterEnd,
       )
       if (newEventCount < expectedNewEvents) {
         detectedGapCount += 1
@@ -727,7 +727,7 @@ export function createGuitarLiveScoreEngine(
         }
       }
       lastTotalEventCount = totalEventCount
-      lastFilteredAfterEnd = take.filteredAfterEnd
+      lastRejectedAfterEnd = take.rejectedAfterEnd
       lastIngestedTake = take
     }
 

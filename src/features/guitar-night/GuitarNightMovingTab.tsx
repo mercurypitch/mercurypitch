@@ -2,14 +2,16 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
-import { adaptiveTabWindowBeats, buildStageTabWindowIndex, clampTabZoomMultiplier, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_ZOOM_MULTIPLIER, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabNoteOffsetPercent, tabNoteScale, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
+import { adaptiveTabWindowBeats, buildStageTabWindowIndex, clampTabZoomMultiplier, TAB_DEFAULT_ZOOM_MULTIPLIER, TAB_MAX_ZOOM_MULTIPLIER, TAB_MIN_ZOOM_MULTIPLIER, TAB_PLAYHEAD_RATIO, tabLoopWindow, tabNoteScale, tabWindowNotes, zoomedTabWindowBeats, } from './tab-window'
 
 export const GUITAR_NIGHT_TAB_ZOOM_KEY = 'guitar-night-tab-zoom-v1'
+
+const WHEEL_ZOOM_PERSIST_IDLE_MS = 180
 
 interface GuitarNightMovingTabProps {
   notes: Accessor<readonly GuitarNote[]>
@@ -36,18 +38,25 @@ function formatBeatSpan(beats: number): string {
 
 export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
   let gestureSurface: HTMLDivElement | undefined
-  const [zoomMultiplier, setZoomMultiplier] = createPersistedSignal<number>(
-    GUITAR_NIGHT_TAB_ZOOM_KEY,
-    TAB_DEFAULT_ZOOM_MULTIPLIER,
-    {
-      validator: (value): value is number =>
-        typeof value === 'number' &&
-        Number.isFinite(value) &&
-        value >= TAB_MIN_ZOOM_MULTIPLIER &&
-        value <= TAB_MAX_ZOOM_MULTIPLIER,
-    },
+  const [persistedZoomMultiplier, setPersistedZoomMultiplier] =
+    createPersistedSignal<number>(
+      GUITAR_NIGHT_TAB_ZOOM_KEY,
+      TAB_DEFAULT_ZOOM_MULTIPLIER,
+      {
+        validator: (value): value is number =>
+          typeof value === 'number' &&
+          Number.isFinite(value) &&
+          value >= TAB_MIN_ZOOM_MULTIPLIER &&
+          value <= TAB_MAX_ZOOM_MULTIPLIER,
+      },
+    )
+  const [zoomMultiplier, setZoomMultiplier] = createSignal(
+    persistedZoomMultiplier(),
   )
+  let zoomDirty = false
+  let wheelPersistTimer: ReturnType<typeof setTimeout> | undefined
   const index = createMemo(() => buildStageTabWindowIndex(props.notes()))
+  const timelineOriginBeat = createMemo(() => index().notes[0]?.startBeat ?? 0)
   const adaptiveWindow = createMemo(() =>
     adaptiveTabWindowBeats(props.notes(), props.tempoBpm()),
   )
@@ -80,10 +89,44 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
     ),
   )
 
+  const tabTrackWidthPercent = createMemo(() => 100 / windowBeats())
+  const tabTrackShiftPercent = createMemo(
+    () =>
+      (timelineOriginBeat() +
+        windowBeats() * TAB_PLAYHEAD_RATIO -
+        (props.playheadBeat() ?? 0)) *
+      100,
+  )
+
+  createEffect(() => {
+    const persisted = persistedZoomMultiplier()
+    if (!zoomDirty) setZoomMultiplier(persisted)
+  })
+
+  const clearWheelPersistTimer = (): void => {
+    if (wheelPersistTimer === undefined) return
+    clearTimeout(wheelPersistTimer)
+    wheelPersistTimer = undefined
+  }
+
+  const persistZoom = (): void => {
+    clearWheelPersistTimer()
+    if (!zoomDirty) return
+    const next = zoomMultiplier()
+    zoomDirty = false
+    setPersistedZoomMultiplier(next)
+  }
+
+  const scheduleWheelZoomPersist = (): void => {
+    clearWheelPersistTimer()
+    wheelPersistTimer = setTimeout(persistZoom, WHEEL_ZOOM_PERSIST_IDLE_MS)
+  }
+
   const updateZoom = (value: number): boolean => {
     const next = clampTabZoomMultiplier(value)
     if (next === zoomMultiplier()) return false
     setZoomMultiplier(next)
+    zoomDirty = true
     return true
   }
 
@@ -121,12 +164,14 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
     updateZoom(pinchStartZoom * (distance / pinchStartDistance))
   }
   const handlePointerEnd = (event: PointerEvent): void => {
+    const wasPinching = pointers.size >= 2 && pinchStartDistance > 0
     if (!pointers.delete(event.pointerId)) return
     if (gestureSurface?.hasPointerCapture?.(event.pointerId) === true) {
       gestureSurface.releasePointerCapture?.(event.pointerId)
     }
     if (pointers.size === 2) beginPinch()
     else pinchStartDistance = 0
+    if (wasPinching && pointers.size < 2) persistZoom()
   }
   const handleWheel = (event: WheelEvent): void => {
     if (event.deltaY === 0 || event.ctrlKey || event.metaKey) return
@@ -137,7 +182,9 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
           ? (gestureSurface?.clientHeight ?? 640)
           : 1
     const next = zoomMultiplier() * Math.exp((-event.deltaY * unit) / 600)
-    if (updateZoom(next)) event.preventDefault()
+    if (!updateZoom(next)) return
+    event.preventDefault()
+    scheduleWheelZoomPersist()
   }
 
   onMount(() => {
@@ -149,6 +196,7 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
     surface.addEventListener('pointercancel', handlePointerEnd)
     surface.addEventListener('wheel', handleWheel, { passive: false })
     onCleanup(() => {
+      persistZoom()
       pointers.clear()
       surface.removeEventListener('pointerdown', handlePointerDown)
       surface.removeEventListener('pointermove', handlePointerMove)
@@ -173,6 +221,10 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
         role="img"
         aria-label={props.summary()}
         data-testid="guitar-night-moving-tab"
+        style={{
+          '--stage-tab-track-width': `${tabTrackWidthPercent()}%`,
+          '--stage-tab-track-shift': `${tabTrackShiftPercent()}%`,
+        }}
       >
         <div class={styles.stageTabGuideLayer} aria-hidden="true">
           <Show when={loop().range}>
@@ -211,7 +263,7 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
             <div class={styles.stageTabString}>
               <span>{label}</span>
               <i aria-hidden="true" />
-              <div aria-hidden="true">
+              <div aria-hidden="true" data-testid="guitar-night-tab-note-track">
                 <For each={visibleNotesByString()[stringIndex()] ?? []}>
                   {(note) => (
                     <b
@@ -229,11 +281,7 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
                       }}
                       data-note-id={note.id}
                       style={{
-                        left: `${tabNoteOffsetPercent(
-                          note.startBeat,
-                          props.playheadBeat(),
-                          windowBeats(),
-                        )}%`,
+                        left: `${(note.startBeat - timelineOriginBeat()) * 100}%`,
                       }}
                     >
                       {note.fret}
@@ -250,7 +298,7 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
         <label
           class={styles.stageTabZoom}
           data-guitar-night-secondary-protected
-          title="Scroll or pinch over the tab, or drag this control."
+          title="Scroll over the tab, pinch with two fingers on touch, or drag this control."
         >
           <span>Tab zoom</span>
           <input
@@ -264,8 +312,12 @@ export function GuitarNightMovingTab(props: GuitarNightMovingTabProps) {
             onInput={(event) =>
               updateZoom(Number(event.currentTarget.value) / 100)
             }
+            onChange={persistZoom}
+            onPointerUp={persistZoom}
+            onPointerCancel={persistZoom}
+            onBlur={persistZoom}
           />
-          <output>{zoomPercent()}%</output>
+          <output aria-hidden="true">{zoomPercent()}%</output>
           <small>{beatSpanLabel()} beats</small>
         </label>
       </Show>

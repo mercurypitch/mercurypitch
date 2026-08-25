@@ -713,16 +713,19 @@ export function useGuitarListeningController(
     stoppingInput = false
   }
 
+  const resetStoppedMidiState = (stoppedMidiRoute: boolean): void => {
+    if (!stoppedMidiRoute) return
+    setMidiInputs([])
+    setMidiConnectionStatus('idle')
+  }
+
   const stop = (): void => {
     generation += 1
     completeTake()
     stopNodes()
     releaseMicHold()
     setStatus('off')
-    if (inputProfile() === 'midi') {
-      setMidiInputs([])
-      setMidiConnectionStatus('idle')
-    }
+    resetStoppedMidiState(inputProfile() === 'midi')
     setCurrentNote(null)
     setDetectedMidi(null)
     setDetectedFrequency(null)
@@ -749,10 +752,7 @@ export function useGuitarListeningController(
     stopNodes()
     releaseMicHold()
     setStatus('off')
-    if (inputProfile() === 'midi') {
-      setMidiInputs([])
-      setMidiConnectionStatus('idle')
-    }
+    resetStoppedMidiState(inputProfile() === 'midi')
     setCurrentNote(null)
     setDetectedMidi(null)
     setDetectedFrequency(null)
@@ -814,6 +814,7 @@ export function useGuitarListeningController(
       (scheduledTakeEndSeconds + settleSeconds - context.currentTime) * 1000,
     )
     const pinnedEndSeconds = scheduledTakeEndSeconds
+    const completingMidiRoute = inputProfile() === 'midi'
     completionTimer = window.setTimeout(() => {
       completionTimer = 0
       if (
@@ -827,6 +828,7 @@ export function useGuitarListeningController(
       stopNodes()
       releaseMicHold()
       setStatus('off')
+      resetStoppedMidiState(completingMidiRoute)
       setCurrentNote(null)
       setDetectedMidi(null)
       setDetectedFrequency(null)

@@ -265,6 +265,7 @@ describe('guitar night score voice commands', () => {
     expect(fire(fixture, 'count in')).toBe('Count-in 1 beat')
     expect(fire(fixture, 'count in two beats')).toBe('Count-in 2 beats')
     expect(fixture.countInBeats()).toBe(2)
+    expect(fire(fixture, 'set count in to four')).toBe('Count-in 4 beats')
     expect(fire(fixture, 'count in three beats')).toBe(
       'Count-in can be off, 1, 2 or 4 beats',
     )
