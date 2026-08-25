@@ -170,6 +170,62 @@ function descriptionFor(background: BackgroundDefinition): string {
       return 'Stacked cabs in a low, dark rehearsal room'
     case 'venice-beach':
       return 'Sun, salt air and an open garage door'
+    case 'alpine-lodge':
+      return 'Timber beams, and mountain light through tall glass'
+    case 'blues-barn':
+      return 'Weathered boards and a tube amp left glowing'
+    case 'high-tech-vault':
+      return 'Glass and steel, lit from below'
+    case 'industrial-loft':
+      return 'Bare brick, black pipework, and a lot of ceiling'
+    case 'metal-sanctuary':
+      return 'A wall of stacked cabinets under crimson light'
+    case 'pedal-lab':
+      return 'A bench of pedals and patch cable everywhere'
+    case 'spanish-courtyard':
+      return 'Whitewashed walls and tiled floor, late afternoon'
+    case 'boho-attic':
+      return 'Rugs, lamps, and a sloped ceiling under the roof'
+    case 'cyber-bunker':
+      return 'Concrete, cable runs, and cold panel light'
+    case 'indie-loft':
+      return 'Red brick and tube amps, with room for four'
+    case 'industrial-soundstage':
+      return 'A working stage with the rigging left visible'
+    case 'japanese-zen':
+      return 'Cedar screens, tatami, and a low sunken floor'
+    case 'retro-analog':
+      return 'Tape machines and a desk with real faders'
+    case 'space-observatory':
+      return 'A glass dome, and the Milky Way above it'
+    case 'broadway-theater':
+      return 'A gilded proscenium arch and an empty house'
+    case 'jazz-club':
+      return 'One brass microphone under an amber spotlight'
+    case 'nordic-amphitheater':
+      return 'Open stone tiers, and a wide northern sky'
+    case 'rooftop-skyline':
+      return 'An open-air stage above a midnight city'
+    case 'rustic-coffeehouse':
+      return 'A corner stage, warm lamps, and low tables'
+    case 'speakeasy-vault':
+      return 'Brick arches below street level'
+    case 'starlight-solarium':
+      return 'A glasshouse open to the stars'
+    case 'synthwave-80s':
+      return 'Grid horizon, chrome, and magenta haze'
+    case '1950s-jazz-lounge':
+      return 'Low light, a small stage, and stained wood'
+    case 'acoustic-chamber':
+      return 'Curved walnut diffusers on every wall'
+    case 'alpine-villa':
+      return 'Concrete, glass, and misted peaks at dawn'
+    case 'coastal-sunset':
+      return 'Open doors onto the sea, late in the day'
+    case 'grand-hall':
+      return 'Chandeliers, and a concert grand beneath them'
+    case 'moonlit-conservatory':
+      return 'A glass conservatory in a single silver beam'
   }
 }
 

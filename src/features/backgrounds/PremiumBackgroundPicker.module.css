@@ -479,6 +479,262 @@
     linear-gradient(145deg, #c09663, #563920 70%);
 }
 
+.edition_alpine-lodge {
+  background:
+    radial-gradient(
+      circle at 6% 19%,
+      rgba(219, 155, 84, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #603315, #101321 70%);
+}
+
+.edition_blues-barn {
+  background:
+    radial-gradient(circle at 31% 6%, rgba(132, 84, 43, 0.48), transparent 24%),
+    linear-gradient(145deg, #4b301d, #0d0804 70%);
+}
+
+.edition_high-tech-vault {
+  background:
+    radial-gradient(
+      circle at 44% 56%,
+      rgba(107, 106, 91, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #30302b, #020a0b 70%);
+}
+
+.edition_industrial-loft {
+  background:
+    radial-gradient(
+      circle at 44% 94%,
+      rgba(162, 120, 85, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #0d476e, #12110d 70%);
+}
+
+.edition_metal-sanctuary {
+  background:
+    radial-gradient(
+      circle at 31% 31%,
+      rgba(105, 103, 94, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #5b2317, #000203 70%);
+}
+
+.edition_pedal-lab {
+  background:
+    radial-gradient(circle at 31% 6%, rgba(97, 92, 137, 0.48), transparent 24%),
+    linear-gradient(145deg, #2e2f38, #170c0a 70%);
+}
+
+.edition_spanish-courtyard {
+  background:
+    radial-gradient(
+      circle at 44% 6%,
+      rgba(189, 154, 126, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #6c4d35, #2b2114 70%);
+}
+
+.edition_boho-attic {
+  background:
+    radial-gradient(
+      circle at 44% 44%,
+      rgba(159, 83, 36, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #392420, #100804 70%);
+}
+
+.edition_cyber-bunker {
+  background:
+    radial-gradient(circle at 6% 6%, rgba(46, 75, 88, 0.48), transparent 24%),
+    linear-gradient(145deg, #21212f, #010306 70%);
+}
+
+.edition_indie-loft {
+  background:
+    radial-gradient(
+      circle at 31% 31%,
+      rgba(166, 93, 40, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #442b1d, #0a0805 70%);
+}
+
+.edition_industrial-soundstage {
+  background:
+    radial-gradient(
+      circle at 94% 81%,
+      rgba(113, 120, 125, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #353330, #0c0f10 70%);
+}
+
+.edition_japanese-zen {
+  background:
+    radial-gradient(
+      circle at 69% 44%,
+      rgba(234, 198, 168, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #65442f, #110a06 70%);
+}
+
+.edition_retro-analog {
+  background:
+    radial-gradient(
+      circle at 31% 31%,
+      rgba(204, 124, 51, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #77390d, #1d0c03 70%);
+}
+
+.edition_space-observatory {
+  background:
+    radial-gradient(
+      circle at 56% 31%,
+      rgba(160, 151, 172, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #2c3040, #0d0d11 70%);
+}
+
+.edition_broadway-theater {
+  background:
+    radial-gradient(
+      circle at 19% 44%,
+      rgba(109, 70, 42, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #3c1c0d, #020000 70%);
+}
+
+.edition_jazz-club {
+  background:
+    radial-gradient(
+      circle at 31% 81%,
+      rgba(118, 65, 27, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #241308, #000000 70%);
+}
+
+.edition_nordic-amphitheater {
+  background:
+    radial-gradient(
+      circle at 31% 81%,
+      rgba(237, 237, 232, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #d6b28c, #0a0200 70%);
+}
+
+.edition_rooftop-skyline {
+  background:
+    radial-gradient(
+      circle at 19% 44%,
+      rgba(56, 86, 118, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #2d2b2b, #121416 70%);
+}
+
+.edition_rustic-coffeehouse {
+  background:
+    radial-gradient(circle at 6% 6%, rgba(150, 105, 57, 0.48), transparent 24%),
+    linear-gradient(145deg, #3d291b, #0a0602 70%);
+}
+
+.edition_speakeasy-vault {
+  background:
+    radial-gradient(circle at 6% 19%, rgba(156, 94, 43, 0.48), transparent 24%),
+    linear-gradient(145deg, #392111, #050301 70%);
+}
+
+.edition_starlight-solarium {
+  background:
+    radial-gradient(circle at 44% 19%, rgba(74, 76, 89, 0.48), transparent 24%),
+    linear-gradient(145deg, #292914, #090a0f 70%);
+}
+
+.edition_synthwave-80s {
+  background:
+    radial-gradient(
+      circle at 19% 19%,
+      rgba(60, 110, 135, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #2e2358, #05011a 70%);
+}
+
+.edition_1950s-jazz-lounge {
+  background:
+    radial-gradient(
+      circle at 56% 44%,
+      rgba(199, 125, 50, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #392514, #0b0603 70%);
+}
+
+.edition_acoustic-chamber {
+  background:
+    radial-gradient(
+      circle at 19% 19%,
+      rgba(137, 93, 60, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #341f12, #040201 70%);
+}
+
+.edition_alpine-villa {
+  background:
+    radial-gradient(
+      circle at 19% 31%,
+      rgba(250, 241, 228, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #9ea9b1, #363129 70%);
+}
+
+.edition_coastal-sunset {
+  background:
+    radial-gradient(
+      circle at 69% 31%,
+      rgba(255, 233, 174, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #b79476, #1d1713 70%);
+}
+
+.edition_grand-hall {
+  background:
+    radial-gradient(
+      circle at 31% 6%,
+      rgba(192, 129, 69, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #52341a, #130702 70%);
+}
+
+.edition_moonlit-conservatory {
+  background:
+    radial-gradient(
+      circle at 44% 94%,
+      rgba(134, 157, 179, 0.48),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #33322d, #020c18 70%);
+}
+
 .lockMark {
   position: absolute;
   z-index: 3;

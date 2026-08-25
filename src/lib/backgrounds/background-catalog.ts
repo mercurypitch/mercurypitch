@@ -102,11 +102,51 @@ export const MERCURY_ROOMS_BACKGROUND_IDS = [
   'guitar-venice-beach',
 ] as const
 
+/**
+ * The Room Library — every remaining mastered supporter room, in one pack.
+ *
+ * Mercury Rooms gave each surface a pair; this is the rest of the shelf,
+ * seven to eight rooms per surface, so the picker stops being a short list
+ * with one obvious choice. Identities only: nothing is visible until Studio
+ * publishes a complete revision for it.
+ */
+export const ROOM_LIBRARY_BACKGROUND_IDS = [
+  'guitar-alpine-lodge',
+  'guitar-blues-barn',
+  'guitar-high-tech-vault',
+  'guitar-industrial-loft',
+  'guitar-metal-sanctuary',
+  'guitar-pedal-lab',
+  'guitar-spanish-courtyard',
+  'jam-boho-attic',
+  'jam-cyber-bunker',
+  'jam-indie-loft',
+  'jam-industrial-soundstage',
+  'jam-japanese-zen',
+  'jam-retro-analog',
+  'jam-space-observatory',
+  'karaoke-broadway-theater',
+  'karaoke-jazz-club',
+  'karaoke-nordic-amphitheater',
+  'karaoke-rooftop-skyline',
+  'karaoke-rustic-coffeehouse',
+  'karaoke-speakeasy-vault',
+  'karaoke-starlight-solarium',
+  'karaoke-synthwave-80s',
+  'piano-1950s-jazz-lounge',
+  'piano-acoustic-chamber',
+  'piano-alpine-villa',
+  'piano-coastal-sunset',
+  'piano-grand-hall',
+  'piano-moonlit-conservatory',
+] as const
+
 /** Every supporter background may also be granted permanently by this id. */
 export const BACKGROUND_PERK_IDS = [
   ...EXISTING_PREMIUM_BACKGROUND_IDS,
   ...NEW_EDITION_BACKGROUND_IDS,
   ...MERCURY_ROOMS_BACKGROUND_IDS,
+  ...ROOM_LIBRARY_BACKGROUND_IDS,
 ] as const
 
 export type FreeBackgroundId = (typeof CURRENT_FREE_BACKGROUND_IDS)[number]
@@ -137,6 +177,34 @@ export type BackgroundEdition =
   | 'parisian-salon'
   | 'british-rock'
   | 'venice-beach'
+  | 'alpine-lodge'
+  | 'blues-barn'
+  | 'high-tech-vault'
+  | 'industrial-loft'
+  | 'metal-sanctuary'
+  | 'pedal-lab'
+  | 'spanish-courtyard'
+  | 'boho-attic'
+  | 'cyber-bunker'
+  | 'indie-loft'
+  | 'industrial-soundstage'
+  | 'japanese-zen'
+  | 'retro-analog'
+  | 'space-observatory'
+  | 'broadway-theater'
+  | 'jazz-club'
+  | 'nordic-amphitheater'
+  | 'rooftop-skyline'
+  | 'rustic-coffeehouse'
+  | 'speakeasy-vault'
+  | 'starlight-solarium'
+  | 'synthwave-80s'
+  | '1950s-jazz-lounge'
+  | 'acoustic-chamber'
+  | 'alpine-villa'
+  | 'coastal-sunset'
+  | 'grand-hall'
+  | 'moonlit-conservatory'
 
 export interface PublicBackgroundSource {
   kind: 'public'
@@ -753,6 +821,317 @@ export const BACKGROUND_CATALOG = [
     assetSource: protectedSource('guitar', 'guitar-venice-beach'),
     focalPoint: { x: 0.5, y: 0.5 },
     treatment: 'light',
+  },
+  {
+    id: 'guitar-alpine-lodge',
+    surface: 'guitar',
+    label: 'Alpine Lodge',
+    description: 'Timber beams, and mountain light through tall glass',
+    edition: 'alpine-lodge',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-alpine-lodge'),
+    assetSource: protectedSource('guitar', 'guitar-alpine-lodge'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-blues-barn',
+    surface: 'guitar',
+    label: 'Blues Barn',
+    description: 'Weathered boards and a tube amp left glowing',
+    edition: 'blues-barn',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-blues-barn'),
+    assetSource: protectedSource('guitar', 'guitar-blues-barn'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-high-tech-vault',
+    surface: 'guitar',
+    label: 'High-Tech Vault',
+    description: 'Glass and steel, lit from below',
+    edition: 'high-tech-vault',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-high-tech-vault'),
+    assetSource: protectedSource('guitar', 'guitar-high-tech-vault'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-industrial-loft',
+    surface: 'guitar',
+    label: 'Industrial Loft',
+    description: 'Bare brick, black pipework, and a lot of ceiling',
+    edition: 'industrial-loft',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-industrial-loft'),
+    assetSource: protectedSource('guitar', 'guitar-industrial-loft'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-metal-sanctuary',
+    surface: 'guitar',
+    label: 'Metal Sanctuary',
+    description: 'A wall of stacked cabinets under crimson light',
+    edition: 'metal-sanctuary',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-metal-sanctuary'),
+    assetSource: protectedSource('guitar', 'guitar-metal-sanctuary'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-pedal-lab',
+    surface: 'guitar',
+    label: 'Pedal Lab',
+    description: 'A bench of pedals and patch cable everywhere',
+    edition: 'pedal-lab',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-pedal-lab'),
+    assetSource: protectedSource('guitar', 'guitar-pedal-lab'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'guitar-spanish-courtyard',
+    surface: 'guitar',
+    label: 'Spanish Courtyard',
+    description: 'Whitewashed walls and tiled floor, late afternoon',
+    edition: 'spanish-courtyard',
+    delivery: 'master-ready',
+    access: supporterAccess('guitar-spanish-courtyard'),
+    assetSource: protectedSource('guitar', 'guitar-spanish-courtyard'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-boho-attic',
+    surface: 'jam',
+    label: 'Boho Attic',
+    description: 'Rugs, lamps, and a sloped ceiling under the roof',
+    edition: 'boho-attic',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-boho-attic'),
+    assetSource: protectedSource('jam', 'jam-boho-attic'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-cyber-bunker',
+    surface: 'jam',
+    label: 'Cyber Bunker',
+    description: 'Concrete, cable runs, and cold panel light',
+    edition: 'cyber-bunker',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-cyber-bunker'),
+    assetSource: protectedSource('jam', 'jam-cyber-bunker'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-indie-loft',
+    surface: 'jam',
+    label: 'Indie Loft',
+    description: 'Red brick and tube amps, with room for four',
+    edition: 'indie-loft',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-indie-loft'),
+    assetSource: protectedSource('jam', 'jam-indie-loft'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-industrial-soundstage',
+    surface: 'jam',
+    label: 'Industrial Soundstage',
+    description: 'A working stage with the rigging left visible',
+    edition: 'industrial-soundstage',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-industrial-soundstage'),
+    assetSource: protectedSource('jam', 'jam-industrial-soundstage'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-japanese-zen',
+    surface: 'jam',
+    label: 'Japanese Zen',
+    description: 'Cedar screens, tatami, and a low sunken floor',
+    edition: 'japanese-zen',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-japanese-zen'),
+    assetSource: protectedSource('jam', 'jam-japanese-zen'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-retro-analog',
+    surface: 'jam',
+    label: 'Retro Analog',
+    description: 'Tape machines and a desk with real faders',
+    edition: 'retro-analog',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-retro-analog'),
+    assetSource: protectedSource('jam', 'jam-retro-analog'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'jam-space-observatory',
+    surface: 'jam',
+    label: 'Space Observatory',
+    description: 'A glass dome, and the Milky Way above it',
+    edition: 'space-observatory',
+    delivery: 'master-ready',
+    access: supporterAccess('jam-space-observatory'),
+    assetSource: protectedSource('jam', 'jam-space-observatory'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-broadway-theater',
+    surface: 'karaoke',
+    label: 'Broadway Theater',
+    description: 'A gilded proscenium arch and an empty house',
+    edition: 'broadway-theater',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-broadway-theater'),
+    assetSource: protectedSource('karaoke', 'karaoke-broadway-theater'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-jazz-club',
+    surface: 'karaoke',
+    label: 'Jazz Club',
+    description: 'One brass microphone under an amber spotlight',
+    edition: 'jazz-club',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-jazz-club'),
+    assetSource: protectedSource('karaoke', 'karaoke-jazz-club'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-nordic-amphitheater',
+    surface: 'karaoke',
+    label: 'Nordic Amphitheater',
+    description: 'Open stone tiers, and a wide northern sky',
+    edition: 'nordic-amphitheater',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-nordic-amphitheater'),
+    assetSource: protectedSource('karaoke', 'karaoke-nordic-amphitheater'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
+    id: 'karaoke-rooftop-skyline',
+    surface: 'karaoke',
+    label: 'Rooftop Skyline',
+    description: 'An open-air stage above a midnight city',
+    edition: 'rooftop-skyline',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-rooftop-skyline'),
+    assetSource: protectedSource('karaoke', 'karaoke-rooftop-skyline'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-rustic-coffeehouse',
+    surface: 'karaoke',
+    label: 'Rustic Coffeehouse',
+    description: 'A corner stage, warm lamps, and low tables',
+    edition: 'rustic-coffeehouse',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-rustic-coffeehouse'),
+    assetSource: protectedSource('karaoke', 'karaoke-rustic-coffeehouse'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-speakeasy-vault',
+    surface: 'karaoke',
+    label: 'Speakeasy Vault',
+    description: 'Brick arches below street level',
+    edition: 'speakeasy-vault',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-speakeasy-vault'),
+    assetSource: protectedSource('karaoke', 'karaoke-speakeasy-vault'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-starlight-solarium',
+    surface: 'karaoke',
+    label: 'Starlight Solarium',
+    description: 'A glasshouse open to the stars',
+    edition: 'starlight-solarium',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-starlight-solarium'),
+    assetSource: protectedSource('karaoke', 'karaoke-starlight-solarium'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'karaoke-synthwave-80s',
+    surface: 'karaoke',
+    label: 'Synthwave 80s',
+    description: 'Grid horizon, chrome, and magenta haze',
+    edition: 'synthwave-80s',
+    delivery: 'master-ready',
+    access: supporterAccess('karaoke-synthwave-80s'),
+    assetSource: protectedSource('karaoke', 'karaoke-synthwave-80s'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-1950s-jazz-lounge',
+    surface: 'piano',
+    label: '1950s Jazz Lounge',
+    description: 'Low light, a small stage, and stained wood',
+    edition: '1950s-jazz-lounge',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-1950s-jazz-lounge'),
+    assetSource: protectedSource('piano', 'piano-1950s-jazz-lounge'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-acoustic-chamber',
+    surface: 'piano',
+    label: 'Acoustic Chamber',
+    description: 'Curved walnut diffusers on every wall',
+    edition: 'acoustic-chamber',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-acoustic-chamber'),
+    assetSource: protectedSource('piano', 'piano-acoustic-chamber'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-alpine-villa',
+    surface: 'piano',
+    label: 'Alpine Villa',
+    description: 'Concrete, glass, and misted peaks at dawn',
+    edition: 'alpine-villa',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-alpine-villa'),
+    assetSource: protectedSource('piano', 'piano-alpine-villa'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
+    id: 'piano-coastal-sunset',
+    surface: 'piano',
+    label: 'Coastal Sunset',
+    description: 'Open doors onto the sea, late in the day',
+    edition: 'coastal-sunset',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-coastal-sunset'),
+    assetSource: protectedSource('piano', 'piano-coastal-sunset'),
+    focalPoint: { x: 0.5, y: 0.5 },
+    treatment: 'light',
+  },
+  {
+    id: 'piano-grand-hall',
+    surface: 'piano',
+    label: 'Grand Hall',
+    description: 'Chandeliers, and a concert grand beneath them',
+    edition: 'grand-hall',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-grand-hall'),
+    assetSource: protectedSource('piano', 'piano-grand-hall'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-moonlit-conservatory',
+    surface: 'piano',
+    label: 'Moonlit Conservatory',
+    description: 'A glass conservatory in a single silver beam',
+    edition: 'moonlit-conservatory',
+    delivery: 'master-ready',
+    access: supporterAccess('piano-moonlit-conservatory'),
+    assetSource: protectedSource('piano', 'piano-moonlit-conservatory'),
+    focalPoint: { x: 0.5, y: 0.5 },
   },
 ] as const satisfies readonly BackgroundDefinition[]
 
