@@ -364,6 +364,14 @@ export default defineConfig(({ command, mode }) => {
             // app library graph (stores, IndexedDB and media code).
             if (id.includes('/src/components/icons.')) return 'shared-icons'
             if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
+            // The shared A/B rail uses this Solid-only pointer primitive, but
+            // the main app also reaches it through library-owned surfaces.
+            // Without its own chunk Rollup files the primitive under
+            // `library`, making Drum Night preload stores, Dexie and media
+            // code just to bind a timeline drag gesture.
+            if (id.includes('/src/components/shared/drag-gesture.')) {
+              return 'drag-gesture'
+            }
             // The synthesized drum recipes are dependency-free Web Audio
             // leaves shared by the main app and Drum Night. Without a pin,
             // Rollup co-locates them with LibraryModal and turns that entire
