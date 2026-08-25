@@ -9,7 +9,7 @@
 // FORM: Pocket Console score view, extending the approved Kit Horizon world.
 
 import type { Accessor, JSX } from 'solid-js'
-import { createMemo, createUniqueId, For, Match, Show, Switch } from 'solid-js'
+import { createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import type { DrumScoreDocument, DrumScoreEvent, DrumScoreIndex, DrumScoreWindow, } from './drum-score'
 import { createDrumScoreIndex, drumScoreEventsNearBeat, drumScoreNextEvent, drumScoreWindow, drumScoreWindowBeatX, } from './drum-score'
 import type { DrumSessionImportState } from './drum-session'
@@ -17,7 +17,7 @@ import { readyDrumSessionDocument } from './drum-session'
 import styles from './DrumNightSessionViews.module.css'
 import { DrumSessionStateView } from './DrumSessionStateView'
 
-const BAR_WIDTH = 220
+const MIN_BAR_WIDTH = 176
 const SCORE_LEFT = 64
 const SCORE_HEIGHT = 244
 
@@ -250,6 +250,9 @@ function meterMarks(
 export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
   const titleId = `drum-score-title-${createUniqueId()}`
   const descriptionId = `drum-score-description-${createUniqueId()}`
+  const [viewportWidth, setViewportWidth] = createSignal(0)
+  let viewportRef: HTMLDivElement | undefined
+  let resizeObserver: ResizeObserver | null = null
   const document = createMemo(() => readyDrumSessionDocument(props.session()))
   const index = createMemo(() => {
     const provided = props.scoreIndex?.()
@@ -276,8 +279,17 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
           barCount: visibleBarCount(),
         })
   })
-  const canvasWidth = createMemo(
-    () => SCORE_LEFT * 2 + (window()?.bars.length ?? 1) * BAR_WIDTH,
+  const renderedBarCount = createMemo(() =>
+    Math.max(1, window()?.bars.length ?? 1),
+  )
+  const canvasWidth = createMemo(() =>
+    Math.max(
+      viewportWidth(),
+      SCORE_LEFT * 2 + renderedBarCount() * MIN_BAR_WIDTH,
+    ),
+  )
+  const barWidth = createMemo(
+    () => (canvasWidth() - SCORE_LEFT * 2) / renderedBarCount(),
   )
   const playheadX = createMemo(() => {
     const current = window()
@@ -286,7 +298,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
       : drumScoreWindowBeatX(
           current,
           props.playheadBeat(),
-          BAR_WIDTH,
+          barWidth(),
           SCORE_LEFT,
         )
   })
@@ -304,6 +316,43 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
     return current === null
       ? null
       : currentBarNumber(current, props.playheadBeat())
+  })
+
+  const measureViewport = (): void => {
+    const width = viewportRef?.clientWidth ?? 0
+    if (!Number.isFinite(width) || width <= 0) return
+    setViewportWidth(Math.round(width))
+  }
+
+  const setViewportRef = (element: HTMLDivElement): void => {
+    if (viewportRef !== undefined && viewportRef !== element) {
+      resizeObserver?.unobserve(viewportRef)
+    }
+    viewportRef = element
+    measureViewport()
+    resizeObserver?.observe(element)
+  }
+
+  onMount(() => {
+    measureViewport()
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width ?? 0
+        if (Number.isFinite(width) && width > 0) {
+          setViewportWidth(Math.round(width))
+          return
+        }
+        measureViewport()
+      })
+    }
+    if (resizeObserver !== null && viewportRef !== undefined) {
+      resizeObserver.observe(viewportRef)
+    }
+    globalThis.window.addEventListener('resize', measureViewport)
+    onCleanup(() => {
+      resizeObserver?.disconnect()
+      globalThis.window.removeEventListener('resize', measureViewport)
+    })
   })
 
   return (
@@ -329,9 +378,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                 <section class={styles.scoreSheet} aria-labelledby={titleId}>
                   <header class={styles.viewHeader}>
                     <div>
-                      <span class={styles.viewKicker}>
-                        Imported percussion score
-                      </span>
+                      <span class={styles.viewKicker}>Percussion score</span>
                       <h2 id={titleId}>{currentScore.title}</h2>
                     </div>
                     <p>
@@ -343,6 +390,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
 
                   <figure class={styles.scoreFigure}>
                     <div
+                      ref={setViewportRef}
                       class={styles.scoreViewport}
                       tabindex="0"
                       aria-label="Windowed percussion score"
@@ -352,6 +400,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                         width={canvasWidth()}
                         height={SCORE_HEIGHT}
                         viewBox={`0 0 ${canvasWidth()} ${SCORE_HEIGHT}`}
+                        preserveAspectRatio="none"
                         role="img"
                         aria-labelledby={`${titleId} ${descriptionId}`}
                       >
@@ -366,13 +415,13 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                         <For each={currentWindow.bars}>
                           {(bar, localIndex) => {
                             const x = () =>
-                              SCORE_LEFT + localIndex() * BAR_WIDTH
+                              SCORE_LEFT + localIndex() * barWidth()
                             return (
                               <g class={styles.scoreBar} aria-hidden="true">
                                 <For each={[94, 114, 134, 154, 174]}>
                                   {(y) => (
                                     <path
-                                      d={`M${x()} ${y}H${x() + BAR_WIDTH}`}
+                                      d={`M${x()} ${y}H${x() + barWidth()}`}
                                     />
                                   )}
                                 </For>
@@ -393,7 +442,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                               class={styles.scoreMeterMark}
                               x={
                                 SCORE_LEFT +
-                                meter.localBarIndex * BAR_WIDTH +
+                                meter.localBarIndex * barWidth() +
                                 12
                               }
                               y="211"
@@ -415,7 +464,7 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                               x={drumScoreWindowBeatX(
                                 currentWindow,
                                 event.hit.startBeat,
-                                BAR_WIDTH,
+                                barWidth(),
                                 SCORE_LEFT,
                               )}
                               active={activeHits().has(event.hit)}

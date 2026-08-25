@@ -9,8 +9,34 @@ import { DrummerSeatView } from './DrummerSeatView'
 import { DrumScoreSheet } from './DrumScoreSheet'
 import { DrumSessionCoach } from './DrumSessionCoach'
 import { drumSessionStateCopy, DrumSessionStateView, } from './DrumSessionStateView'
+import { createFirstPocketGroove } from './prepared-grooves'
 
-afterEach(cleanup)
+let restoreClientWidth: (() => void) | undefined
+
+afterEach(() => {
+  cleanup()
+  restoreClientWidth?.()
+  restoreClientWidth = undefined
+  vi.unstubAllGlobals()
+})
+
+function setElementClientWidth(width: number): void {
+  const original = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'clientWidth',
+  )
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    get: () => width,
+  })
+  restoreClientWidth = () => {
+    if (original === undefined) {
+      Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth')
+      return
+    }
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', original)
+  }
+}
 
 function dispatchSeatPointerDown(
   target: Element,
@@ -105,6 +131,43 @@ describe('Drum session state views', () => {
 })
 
 describe('DrumScoreSheet', () => {
+  it.each([
+    { viewportWidth: 920, expectedCanvasWidth: 920 },
+    { viewportWidth: 360, expectedCanvasWidth: 480 },
+  ])(
+    'fits two bars to a $viewportWidth px viewport while preserving a readable minimum',
+    ({ viewportWidth, expectedCanvasWidth }) => {
+      vi.stubGlobal('ResizeObserver', undefined)
+      setElementClientWidth(viewportWidth)
+      const groove = createFirstPocketGroove('source')
+      const session = {
+        status: 'ready',
+        document: groove.document,
+      } as const
+
+      render(() => (
+        <DrumScoreSheet
+          session={() => session}
+          playheadBeat={() => 0}
+          visibleBarCount={() => 4}
+        />
+      ))
+
+      expect(screen.getByRole('img')).toHaveAttribute(
+        'width',
+        String(expectedCanvasWidth),
+      )
+      expect(screen.getByRole('img')).toHaveAttribute(
+        'viewBox',
+        `0 0 ${expectedCanvasWidth} 244`,
+      )
+      expect(screen.getByRole('img')).toHaveAttribute(
+        'preserveAspectRatio',
+        'none',
+      )
+    },
+  )
+
   it('keeps percussion notation semantic and horizontally contained at phone width', () => {
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,

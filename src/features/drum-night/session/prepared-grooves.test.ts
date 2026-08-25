@@ -16,18 +16,8 @@ class FixedClock implements DrumRuntimeClock {
   cancelFrame = (): void => undefined
 }
 
-function hitIdentity(groove: ReturnType<typeof createFirstPocketGroove>) {
-  return groove.document.percussionTracks[0]?.percussionHits
-    .map((hit) => ({
-      id: hit.id,
-      gmKey: hit.gmKey,
-      velocity: hit.velocity,
-    }))
-    .sort((left, right) => String(left.id).localeCompare(String(right.id)))
-}
-
 describe('prepared Drum Night grooves', () => {
-  it('publishes four deterministic variants with Source as the default', () => {
+  it('publishes four deterministic variants with Classic as the default', () => {
     expect(FIRST_POCKET_DEFAULT_VARIANT).toBe('source')
     expect(FIRST_POCKET_VARIANTS.map((variant) => variant.id)).toEqual([
       'source',
@@ -36,9 +26,9 @@ describe('prepared Drum Night grooves', () => {
       'half-time',
     ])
     expect(FIRST_POCKET_VARIANTS.map((variant) => variant.label)).toEqual([
-      'Source',
-      'Tight',
-      'Loose',
+      'Classic',
+      'Funk',
+      'Driving',
       'Half-time',
     ])
     expect(isFirstPocketVariantId('half-time')).toBe(true)
@@ -88,7 +78,7 @@ describe('prepared Drum Night grooves', () => {
       )
 
       for (const hit of hits) {
-        expect([36, 38, 42, 46]).toContain(hit.gmKey)
+        expect([36, 38, 42, 45, 46, 47, 48, 49, 51]).toContain(hit.gmKey)
         expect(hit.velocity).toBeGreaterThanOrEqual(1)
         expect(hit.velocity).toBeLessThanOrEqual(127)
         expect(hit.source).toBeUndefined()
@@ -106,35 +96,46 @@ describe('prepared Drum Night grooves', () => {
     },
   )
 
-  it('materially reauthors timing while retaining Source identities in Tight and Loose', () => {
-    const source = createFirstPocketGroove('source')
-    const tight = createFirstPocketGroove('tight')
-    const loose = createFirstPocketGroove('loose')
+  it('authors four musically distinct beginner grooves with an honest half-time backbeat', () => {
+    const classic = createFirstPocketGroove('source')
+    const funk = createFirstPocketGroove('tight')
+    const driving = createFirstPocketGroove('loose')
     const halfTime = createFirstPocketGroove('half-time')
 
-    expect(hitIdentity(tight)).toEqual(hitIdentity(source))
-    expect(hitIdentity(loose)).toEqual(hitIdentity(source))
-    expect(tight.pocket.offGridHitCount).toBe(0)
-    expect(source.pocket.offGridHitCount).toBeGreaterThan(0)
-    expect(loose.pocket.offGridHitCount).toBeGreaterThan(
-      source.pocket.offGridHitCount,
-    )
+    expect(funk.pocket.offGridHitCount).toBe(0)
+    expect(classic.pocket.offGridHitCount).toBeGreaterThan(0)
+    expect(driving.pocket.offGridHitCount).toBeGreaterThan(0)
 
-    const timingSignature = (
+    const voiceKeys = (groove: ReturnType<typeof createFirstPocketGroove>) =>
+      new Set(groove.pocket.hits.map((hit) => hit.gmKey))
+    expect(voiceKeys(classic)).toEqual(new Set([36, 38, 42, 46, 49]))
+    expect(voiceKeys(funk)).toEqual(new Set([36, 38, 42, 46]))
+    expect(voiceKeys(driving)).toEqual(new Set([36, 38, 45, 47, 48, 49, 51]))
+    expect(voiceKeys(halfTime)).toEqual(new Set([36, 38, 42, 45, 46, 48, 49]))
+
+    const grooveSignature = (
       groove: ReturnType<typeof createFirstPocketGroove>,
-    ) => groove.pocket.hits.map((hit) => `${hit.id}@${hit.beat}`).join('|')
+    ) =>
+      groove.pocket.hits
+        .map((hit) => `${hit.gmKey}@${hit.beat}:${hit.velocity}`)
+        .join('|')
     expect(
       new Set(
-        [source, tight, loose, halfTime].map((groove) =>
-          timingSignature(groove),
+        [classic, funk, driving, halfTime].map((groove) =>
+          grooveSignature(groove),
         ),
       ).size,
     ).toBe(4)
 
+    const classicBackbeats = classic.pocket.hits
+      .filter((hit) => hit.gmKey === 38 && hit.velocity >= 100)
+      .map((hit) => Math.round(hit.beat * 4) / 4)
+    expect(classicBackbeats).toEqual([1, 3, 5, 7])
+
     const halfTimeSnares = halfTime.pocket.hits
       .filter((hit) => hit.gmKey === 38 && hit.velocity >= 100)
       .map((hit) => hit.beat)
-    expect(halfTimeSnares).toEqual([3, 7])
+    expect(halfTimeSnares).toEqual([2, 6])
   })
 
   it('feeds the existing scheduler without creating another clock', () => {

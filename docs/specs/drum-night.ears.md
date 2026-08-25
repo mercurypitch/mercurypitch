@@ -70,8 +70,8 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   expose one primary Play/Pause owner. Opening Coach, input details, or a rack
   drawer shall not create a second clock or transport.
 - **REQ-DN-STAGE-005 — Contextual depth:** Groove, Kit, Mix, Room, Songs,
-  Learn, and Coach depth shall open in one rack drawer or mobile sheet rather
-  than compete with the performance surface.
+  Learn, and Coach depth shall open in one tethered desktop/tablet workbench or
+  one modal phone sheet rather than compete with the performance surface.
 - **REQ-DN-STAGE-006 — Semantic implementation:** The production shell shall
   recreate the composition with semantic Solid, HTML, CSS, SVG, and responsive
   image assets; it shall not embed a screenshot, iframe, or exported mock UI.
@@ -81,6 +81,20 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-STAGE-008 — Durable contrast:** Musical information and controls
   shall remain legible through authored contrast layers if local image
   brightness changes or a room asset fails to decode.
+- **REQ-DN-STAGE-009 — Branded home:** The room rail and compact header shall
+  use the canonical MercuryPitch mark rather than a generic planet glyph. The
+  rail mark shall link home with an outcome-aligned accessible name.
+- **REQ-DN-STAGE-010 — Switchable tethered workbench:** WHILE the
+  desktop/tablet workbench is open, its room-rail launchers shall remain
+  operable. Activating a different launcher shall replace the workbench content
+  in place, activating its selected launcher shall close it, and activating
+  Pocket shall close it and restore the performance surface.
+- **REQ-DN-STAGE-011 — Quiet Pocket guide:** Pocket shall present current beat,
+  phrase-step, and current/next authored-attack guidance from the route-owned
+  transport. Idle markers shall remain still; any state change shall pause,
+  seek, loop, and stop with that transport. Pocket shall not run an
+  unsynchronised scan, breathe, pulse, or other decorative timing loop and
+  shall not imply that it owns a second metronome.
 
 ## Visual room catalog — `DN-ROOM-*`
 
@@ -116,13 +130,15 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ## Live kit and input — `DN-INPUT-*`
 
-- **REQ-DN-INPUT-001 — Six immediate pads:** Drum Night shall expose playable
-  closed-hi-hat, snare, kick, tom, ride, and crash surfaces mapped to their
-  declared General MIDI articulations.
+- **REQ-DN-INPUT-001 — Six immediate surfaces:** Drum Night shall expose
+  playable closed-hi-hat, snare, kick, tom, ride, and crash surfaces mapped to
+  their declared General MIDI articulations. Pocket Console and Drummer Seat
+  shall use authored kit-aligned hit zones; phone Pocket and Score layouts
+  shall additionally retain a dedicated six-pad fallback.
 - **REQ-DN-INPUT-002 — Pointer velocity:** WHEN a primary pointer strikes a
-  pad, Drum Night shall put one bounded 1–127 velocity event on the shared
-  performance timeline; non-primary and non-left-button pointer events shall
-  not trigger a hit.
+  playable surface, Drum Night shall put one bounded 1–127 velocity event on
+  the shared performance timeline; non-primary and non-left-button pointer
+  events shall not trigger a hit.
 - **REQ-DN-INPUT-003 — Keyboard kit:** WHERE no editable control is active,
   top-row or numpad keys 1–6 shall trigger the six immediate pads. Modified,
   repeated, already-handled, and editable-field keystrokes shall be ignored.
@@ -242,8 +258,9 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   accents, source evidence, and the shared playhead; it shall not reinterpret
   General MIDI drum keys as pitched melody.
 - **REQ-DN-SESSION-003 — Drummer-seat reading:** Drummer Seat shall place
-  authored targets on stable physical kit zones and shall visually distinguish
-  the authored target from a current live hit.
+  authored targets on stable physical kit zones, make those zones directly
+  pointer-playable, and visually distinguish the authored target from a
+  current live hit.
 - **REQ-DN-SESSION-004 — Bounded views:** Score and Drummer Seat shall query
   only the visible or current authored range and shall keep rendered and
   semantic event counts bounded independently from the canonical session.
@@ -276,10 +293,11 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-PLAYBACK-002 — Authored timing:** Playback shall follow the source
   tempo map, meter-aligned position, written trailing duration, user speed,
   count-in, and any valid bounded loop without mutating the canonical session.
-- **REQ-DN-PLAYBACK-003 — Count-in:** WHEN count-in is enabled, Drum Night shall
-  always present it visually and may schedule the optional click when the user
-  has explicitly enabled that source. An authored attack at beat zero may be
-  prepared once for the playback boundary but shall not double-trigger.
+- **REQ-DN-PLAYBACK-003 — Audible count-in:** WHEN count-in is enabled and the
+  user starts playback, Drum Night shall present it visually and schedule its
+  audible count-in cue on the route clock whether or not the optional
+  continuous click is enabled. An authored attack at beat zero may be prepared
+  once for the playback boundary but shall not double-trigger.
 - **REQ-DN-PLAYBACK-004 — Pause and replay:** WHEN playback pauses, stops,
   seeks, changes session, or changes scheduling authority, queued drum voices
   shall be invalidated. WHEN a completed session is played again, it shall
@@ -312,11 +330,17 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   count, Coach shall use only the retained window, and clearing or replacing
   the take shall reset both values.
 - **REQ-DN-PLAYBACK-012 — Optional click:** Drum Night shall expose one
-  off-by-default metronome click in Mix. Enabling or changing it before Play
-  shall remain audio-inert; while transport runs it shall follow count-in,
-  authored meter, tempo changes, speed, loops, invalidation, and teardown on the
-  route clock. Backing and guide controls shall not be presented until those
-  sources exist.
+  off-by-default continuous playback click. Enabling or changing it before
+  Play shall remain audio-inert; while transport runs it shall follow authored
+  meter, tempo changes, speed, loops, invalidation, and teardown on the route
+  clock. Its enabled state shall not gate the audible count-in. Backing controls
+  shall not be presented until that source exists.
+- **REQ-DN-PLAYBACK-013 — Deferred flexible timeline:** This pilot shall not
+  claim a flexible loaded-song timeline or user-positioned A/B loop markers.
+  WHERE that later slice is implemented, Drum Night shall first consume the
+  shared rail landed by MercuryPitch PR #632, with elapsed seconds as its seek
+  axis and authored beats as its A/B axis; it shall not copy a branch-local
+  rail or create another scheduler.
 
 ## Interaction and accessibility — `DN-A11Y-*`
 
@@ -327,7 +351,7 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-A11Y-003 — Visible focus:** Keyboard focus shall remain visibly
   distinguishable across photographic rooms, notation, kit zones, and smoked
   control surfaces.
-- **REQ-DN-A11Y-004 — Dialog focus:** WHEN a drawer, mobile sheet, or input
+- **REQ-DN-A11Y-004 — Modal focus:** WHEN the phone workbench sheet or an input
   dialog opens, it shall take and contain focus, identify itself as modal,
   close on Escape or its scrim where applicable, and restore focus to its
   opener.
@@ -342,18 +366,27 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   and transport state remain legible.
 - **REQ-DN-A11Y-008 — Non-colour meaning:** Timing, selected, input, kit,
   fallback, and transport state shall not depend on colour alone.
+- **REQ-DN-A11Y-009 — Tethered-workbench semantics:** The desktop/tablet
+  workbench shall identify itself as a nonmodal labelled region and shall not
+  trap focus or make its room rail inert. Each launcher shall expose its
+  expanded and selected state, and Escape shall close the workbench without
+  losing a useful focus position.
 
 ## Responsive composition — `DN-RESPONSIVE-*`
 
-- **REQ-DN-RESPONSIVE-001 — Desktop geometry:** Desktop shall keep a narrow
-  room rail, compact session bar, full performance stage, bounded coach, and
-  bottom console without overlap or page overflow.
+- **REQ-DN-RESPONSIVE-001 — Wide-screen geometry:** Desktop and tablet shall
+  keep a narrow room rail, compact session bar, full performance stage, bounded
+  coach, and one single-row bottom console without overlap or page overflow.
+  They shall not reserve a detached persistent six-pad strip beneath the stage.
 - **REQ-DN-RESPONSIVE-002 — Compact composition:** Phone portrait and compact
   landscape shall preserve the performance stage, six playable hit surfaces,
   contextual navigation, and one raised Play control without clipping.
-- **REQ-DN-RESPONSIVE-003 — Carried kit:** The six immediate hit surfaces shall
-  remain available in Pocket, Score, and Drummer Seat views; opening contextual
-  depth shall not replace the underlying live-kit capability.
+- **REQ-DN-RESPONSIVE-003 — Carried kit:** On phone, the dedicated six-pad
+  fallback shall remain available in Pocket and Score whenever a modal layer
+  is closed; Drummer Seat shall instead carry its six mapped photo zones at a
+  playable size. On desktop/tablet, Pocket Console and Drummer Seat shall carry
+  pointer-playable kit zones without a detached pad strip; keyboard and
+  connected e-kit input shall remain available in every view.
 - **REQ-DN-RESPONSIVE-004 — Viewport coverage:** At 320×568, 390×844,
   844×390, 768×1024, 1024×768, and 1440×900 CSS pixels, Drum Night shall have
   no horizontal or vertical page overflow and no clipped primary control.
@@ -365,18 +398,19 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 This pilot does not include room-microphone capture or analysis; limb,
 sticking, grip, or technique inference; backing or guide tracks; Groove Mirror
 generation; imported-session, recorded-take, or coaching history persistence;
-public indexing; or production deployment. The locally retained kit choice,
-Drum room choice, and device-scoped MIDI learn map are preferences, not session
-or performance persistence.
+flexible loaded-song timeline or A/B authoring; public indexing; or production
+deployment. The locally retained kit choice, Drum room choice, and
+device-scoped MIDI learn map are preferences, not session or performance
+persistence.
 
 ## Verification map
 
-| Requirement area            | Minimum evidence                                                                                                                                                             |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                             |
-| `DN-STAGE`, `DN-RESPONSIVE` | Pocket/Score/Seat state-retention tests; landscape/portrait asset assertions; desktop, phone, tablet, and compact-landscape overflow and target-size smoke                   |
-| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke   |
-| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry |
-| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests             |
-| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for count-in, authored tempo, duration, pause/replay, loop identity, dedupe, capacity, unsupported hits, and fallback truth        |
-| `DN-A11Y`                   | Accessible-name/state assertions; dialog focus trap/restore checks; composite keyboard behavior; reduced-motion and non-colour review                                        |
+| Requirement area            | Minimum evidence                                                                                                                                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DN-ROUTE`, `DN-ACTIVATE`   | Direct dev/build route assertions; canonical/noindex/sitemap and standalone service-worker checks; instrumented silent-first-paint browser smoke                                                           |
+| `DN-STAGE`, `DN-RESPONSIVE` | Brand-asset and workbench-switching assertions; Pocket/Score/Seat state-retention tests; route-clock Pocket-guide checks; desktop single-console, phone-pad, orientation, overflow, and target-size smoke  |
+| `DN-ROOM`                   | Typed catalog/default and storage-key tests; public-file shape and size checks; protected allowlist/migration parity; silent-first gallery and visual-only selection smoke                                 |
+| `DN-INPUT`, `DN-KIT`        | Pointer/keyboard/WebMIDI integration tests; permission and hotplug state tests; device-scoped learn/calibration tests; manifest integrity, lazy-loading, fallback, and retry                               |
+| `DN-IMPORT`, `DN-SESSION`   | MIDI and Guitar Pro parser fixtures; mixed/percussion/no-drums/error/stale import tests; whole-song index, late-range, Score, Seat, coaching, and omission tests                                           |
+| `DN-PLAYBACK`               | Deterministic transport/audio-clock tests for audible count-in with continuous click off/on, authored tempo, duration, pause/replay, loop identity, dedupe, capacity, unsupported hits, and fallback truth |
+| `DN-A11Y`                   | Accessible-name/state assertions; nonmodal workbench and modal-sheet focus checks; composite keyboard behavior; reduced-motion and non-colour review                                                       |
