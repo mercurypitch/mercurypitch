@@ -448,6 +448,10 @@ ${DB_PREVIEW_TEMPLATE.replace(
     expect(BUILD_WORKFLOW).toContain(
       'Preview bundle unexpectedly contains the real Turnstile site key.',
     )
+    expect(BUILD_WORKFLOW).toContain('XXXX.DUMMY.TOKEN.XXXX')
+    expect(BUILD_WORKFLOW).toContain('"$db_preview_url/api/auth/login"')
+    expect(BUILD_WORKFLOW).toContain("preview_auth_status\" != '401'")
+    expect(BUILD_WORKFLOW).toContain('.error == "Invalid email or password"')
   })
 
   it('fails deployment if the paired build points at production', () => {
