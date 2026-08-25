@@ -37,11 +37,11 @@ describe('Home destination gallery', () => {
   it('maps the covers to the canonical app destinations', () => {
     expect(HOME_DESTINATIONS.map((destination) => destination.target)).toEqual([
       { kind: 'tab', tab: TAB_SINGING },
+      { kind: 'tab', tab: TAB_EXERCISES },
       { kind: 'page', href: '/karaoke' },
+      { kind: 'page', href: '/drum-night' },
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
-      { kind: 'page', href: '/drum-night' },
-      { kind: 'tab', tab: TAB_EXERCISES },
       { kind: 'tab', tab: TAB_ANALYSIS },
       { kind: 'tab', tab: TAB_JAM },
     ])
@@ -53,16 +53,16 @@ describe('Home destination gallery', () => {
       (image) => image.getAttribute('src') ?? '',
     )
 
-    // Piano and Guitar ship these as free backdrops inside their own rooms.
-    // Drum Night deliberately uses code-native art until `drum` becomes a
-    // first-class background-catalog surface.
+    // Each room shows a backdrop already available to every user. Supporter
+    // room bytes remain behind the protected room picker and delivery API.
     expect(sources).toContain('/piano-night/afterglow-studio-landscape.webp')
     expect(sources).toContain('/guitar-night/velvet-rehearsal.webp')
+    expect(sources).toContain('/drum-night/pocket-console-landscape.webp')
     for (const source of sources) {
       expect([...FREE_IMAGE_SOURCES]).toContain(source)
     }
     expect(
-      container.querySelector('[data-destination="drumNight"] svg'),
+      container.querySelector('[data-destination="drumNight"] img'),
     ).not.toBeNull()
   })
 

@@ -58,6 +58,15 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     action: 'Open live practice',
   },
   {
+    target: { kind: 'tab', tab: TAB_EXERCISES },
+    visual: 'exercises',
+    eyebrow: 'Pitch, ear and timing',
+    title: 'Exercises',
+    description:
+      'Train intervals, range, agility and control with focused musical drills.',
+    action: 'Browse exercises',
+  },
+  {
     target: { kind: 'page', href: '/karaoke' },
     visual: 'karaoke',
     eyebrow: 'Your song, your stage',
@@ -65,6 +74,15 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     description:
       'Load a song, separate the vocal, and perform with lyrics and scoring.',
     action: 'Enter Karaoke',
+  },
+  {
+    target: { kind: 'page', href: '/drum-night' },
+    visual: 'drumNight',
+    eyebrow: 'New room',
+    title: 'Drum Night',
+    description:
+      'Play four drum-kit flavors with touch, keys or an e-kit. Open MIDI or Guitar Pro percussion in Pocket, Drummer Seat or written Score views.',
+    action: 'Enter Drum Night',
   },
   {
     target: { kind: 'page', href: '/piano-night' },
@@ -83,24 +101,6 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     description:
       'A room for guitarists: play along on a 3D stage, a flat fretboard or written tab, with a tuner and a Jam Doctor that listens phrase by phrase.',
     action: 'Enter Guitar Night',
-  },
-  {
-    target: { kind: 'page', href: '/drum-night' },
-    visual: 'drumNight',
-    eyebrow: 'New room',
-    title: 'Drum Night',
-    description:
-      'Play four drum-kit flavors with touch, keys or an e-kit. Open MIDI or Guitar Pro percussion in Pocket, Drummer Seat or written Score views.',
-    action: 'Enter Drum Night',
-  },
-  {
-    target: { kind: 'tab', tab: TAB_EXERCISES },
-    visual: 'exercises',
-    eyebrow: 'Pitch, ear and timing',
-    title: 'Exercises',
-    description:
-      'Train intervals, range, agility and control with focused musical drills.',
-    action: 'Browse exercises',
   },
   {
     target: { kind: 'tab', tab: TAB_ANALYSIS },
@@ -417,9 +417,9 @@ function KaraokeVisual(): JSX.Element {
 }
 
 /**
- * The two night rooms are the only covers drawn from a photograph rather
- * than from vector art: they are rooms, and the room is the point. Both
- * pictures already ship as free backdrops inside those rooms — the ones a
+ * The three night rooms are the only covers drawn from a photograph rather
+ * than from vector art: they are rooms, and the room is the point. Each
+ * picture already ships as a free backdrop inside that room — the ones a
  * supporter pays for stay behind that door.
  */
 function RoomPhoto(props: {
@@ -468,47 +468,11 @@ function GuitarNightVisual(): JSX.Element {
 
 function DrumNightVisual(): JSX.Element {
   return (
-    <div class={styles.drumNightVisual} aria-hidden="true">
-      <div class={styles.drumRoomGlow} />
-      <svg class={styles.drumKit} viewBox="0 0 720 280" fill="none">
-        <g class={styles.drumPocketRings}>
-          <ellipse cx="360" cy="151" rx="250" ry="92" />
-          <ellipse cx="360" cy="151" rx="208" ry="72" />
-          <ellipse cx="360" cy="151" rx="166" ry="54" />
-        </g>
-
-        <g class={styles.drumHardware}>
-          <path d="M174 86v120m-30 17 30-17 31 17M545 78v128m-31 17 31-17 29 17" />
-          <path d="M274 115v92m172-92v92M238 224l36-17 37 17m98 0 37-17 36 17" />
-          <path d="M360 105v121m-41 18 41-18 42 18" />
-        </g>
-
-        <g class={styles.drumCymbals}>
-          <ellipse cx="174" cy="82" rx="82" ry="14" />
-          <ellipse cx="545" cy="74" rx="92" ry="16" />
-          <ellipse cx="274" cy="111" rx="57" ry="10" />
-          <ellipse cx="446" cy="108" rx="60" ry="11" />
-        </g>
-
-        <g class={styles.drumShells}>
-          <path d="M225 125c0-14 22-25 49-25s49 11 49 25v44c0 15-22 26-49 26s-49-11-49-26v-44Z" />
-          <path d="M397 122c0-15 22-26 49-26s50 11 50 26v47c0 15-23 26-50 26s-49-11-49-26v-47Z" />
-          <path d="M122 151c0-15 26-27 58-27s58 12 58 27v53c0 16-26 28-58 28s-58-12-58-28v-53Z" />
-          <path d="M482 150c0-16 27-28 61-28s61 12 61 28v55c0 16-27 29-61 29s-61-13-61-29v-55Z" />
-          <circle cx="360" cy="193" r="72" />
-          <circle cx="360" cy="193" r="55" />
-        </g>
-
-        <g class={styles.drumTimingMarks}>
-          <path d="M115 140l18 4M164 92l16 8M248 67l5 17M350 57v18M458 68l-6 17M544 96l-16 8M602 143l-18 4" />
-          <path class={styles.drumLateMark} d="M510 220l16 9" />
-          <path class={styles.drumAnchorMark} d="M194 220l18-8" />
-        </g>
-      </svg>
-      <span class={`${styles.visualNugget} ${styles.drumNightNugget}`}>
-        Pocket · kit · score
-      </span>
-    </div>
+    <RoomPhoto
+      src="/drum-night/pocket-console-landscape.webp"
+      className={styles.drumNightVisual}
+      nugget="Pocket · kit · score"
+    />
   )
 }
 
@@ -813,7 +777,7 @@ function MysteryCover(): JSX.Element {
 function DestinationCover(props: {
   destination: HomeDestination
 }): JSX.Element {
-  // Karaoke and the two night rooms are separate documents, so opening one is
+  // Karaoke and the three night rooms are separate documents, so opening one is
   // a full page load — seconds on a slow connection with nothing on screen
   // admitting the tap landed. The arrow becomes a spinner for that wait.
   const navigation = createPendingAction()

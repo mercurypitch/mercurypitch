@@ -1,8 +1,11 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { AppNavOverflowMenu } from '@/components/AppNavOverflowMenu'
+import { Drum } from '@/components/icons'
+import { BusyLink } from '@/components/shared/BusyLink'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
+import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
 import { isTabVisible, MAX_INLINE_GROUP_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -686,6 +689,23 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     </button>
   )
 
+  const drumNightRoomLink = () => (
+    <BusyLink
+      id="nav-drum-night"
+      href={DRUM_NIGHT_PATH}
+      class={`app-tab ${styles.roomLink}`}
+      data-testid="nav-drum-night"
+      aria-label="Drums — open Drum Night room"
+      busyLabel="Opening Drum Night…"
+      title={iconOnly() ? 'Drum Night room' : undefined}
+    >
+      <span class={styles.tabIcon} aria-hidden="true">
+        <Drum />
+      </span>
+      <span class="tab-text">Drums</span>
+    </BusyLink>
+  )
+
   return (
     <nav
       id="app-tabs"
@@ -728,6 +748,7 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
                   onPick={(tab) => void props.handleTabChange(tab)}
                 />
               </Show>
+              <Show when={group.id === 'play'}>{drumNightRoomLink()}</Show>
             </div>
           </Show>
         )}

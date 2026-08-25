@@ -107,23 +107,20 @@
 }
 
 .practice,
-.analysis,
-.jam {
-  grid-column: span 7;
-}
-
-/* The three night rooms make a row of their own, so adding them does not
-   restripe the 7/5 rhythm the other covers are laid out on. */
+.exercises,
+.karaoke,
+.drumNight,
 .pianoNight,
 .guitarNight,
-.drumNight {
-  grid-column: span 4;
+.jam,
+.mystery {
+  grid-column: span 6;
 }
 
-.karaoke,
-.exercises,
-.mystery {
-  grid-column: span 5;
+/* Analysis is the one deliberate pause in the sequence: the instrument and
+   performance rooms pair off above it, then the deeper lab gets the full row. */
+.analysis {
+  grid-column: 1 / -1;
 }
 
 .coverShade {
@@ -223,7 +220,7 @@
 }
 
 /* The only photographic covers. `object-fit: cover` with a bias towards the
-   upper half: both rooms put the instrument there and the floor below it,
+   upper half: all three rooms put the instrument there and the floor below it,
    and the card's own copy sits over the bottom third anyway. */
 .roomPhoto {
   width: 100%;
@@ -245,111 +242,12 @@
 /* A wash in the room's own light, so the photo sits in the same family as
    the drawn covers instead of reading as a pasted-in picture. */
 .pianoNightVisual::after,
-.guitarNightVisual::after {
+.guitarNightVisual::after,
+.drumNightVisual::after {
   content: '';
   position: absolute;
   inset: 0;
   mix-blend-mode: soft-light;
-}
-
-.drumNight {
-  background:
-    radial-gradient(
-      58% 78% at 50% 28%,
-      rgba(231, 173, 82, 0.2),
-      transparent 68%
-    ),
-    radial-gradient(
-      34% 56% at 18% 42%,
-      rgba(127, 57, 67, 0.34),
-      transparent 72%
-    ),
-    linear-gradient(155deg, #1b1715 0%, #0a0d10 52%, #07090b 100%);
-}
-
-.drumNightVisual {
-  overflow: hidden;
-}
-
-.drumRoomGlow {
-  position: absolute;
-  inset: -25% 10% 12%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(231, 173, 82, 0.18),
-    transparent 68%
-  );
-  filter: blur(10px);
-}
-
-.drumKit {
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  width: min(760px, 118%);
-  height: 80%;
-  overflow: visible;
-  filter: drop-shadow(0 20px 22px rgba(0, 0, 0, 0.62));
-  transform: translateX(-50%);
-  transition:
-    filter 240ms ease,
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.cover:hover .drumKit {
-  filter: drop-shadow(0 24px 26px rgba(0, 0, 0, 0.68)) brightness(1.08);
-  transform: translateX(-50%) scale(1.025);
-}
-
-.drumPocketRings {
-  stroke: rgba(102, 213, 205, 0.42);
-  stroke-width: 1.5;
-}
-
-.drumHardware {
-  stroke: #aab3b8;
-  stroke-width: 3;
-  stroke-linecap: round;
-  opacity: 0.72;
-}
-
-.drumCymbals {
-  fill: rgba(177, 117, 50, 0.82);
-  stroke: #e7ad52;
-  stroke-width: 2;
-}
-
-.drumShells {
-  fill: rgba(92, 36, 44, 0.92);
-  stroke: #c1c7c9;
-  stroke-width: 2.2;
-}
-
-.drumShells circle:last-child {
-  fill: rgba(8, 9, 11, 0.72);
-  stroke: rgba(238, 231, 219, 0.46);
-}
-
-.drumTimingMarks {
-  stroke: #66d5cd;
-  stroke-width: 6;
-  stroke-linecap: round;
-}
-
-.drumTimingMarks .drumLateMark {
-  stroke: #c96c70;
-}
-
-.drumTimingMarks .drumAnchorMark {
-  stroke: #e7ad52;
-}
-
-.drumNightNugget {
-  top: 18px;
-  left: 20px;
-  border-color: rgba(231, 173, 82, 0.32);
-  background: rgba(8, 9, 11, 0.68);
 }
 
 .pianoNightVisual::after {
@@ -365,6 +263,14 @@
     72% 60% at 50% 22%,
     rgba(255, 176, 92, 0.3),
     transparent 70%
+  );
+}
+
+.drumNightVisual::after {
+  background: radial-gradient(
+    74% 62% at 50% 20%,
+    rgba(231, 173, 82, 0.22),
+    transparent 72%
   );
 }
 
@@ -989,7 +895,6 @@
   .cover,
   .coverAction svg,
   .practiceInstruments,
-  .drumKit,
   .karaokeVisual,
   .jamVisual,
   .mysteryScene,

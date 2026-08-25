@@ -153,6 +153,96 @@ async function boundaryCounts(
   })
 }
 
+test('pairs the Home rooms and opens Drum Night from the Play group @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE: boolean }).E2E_TEST_MODE = true
+    localStorage.setItem('pitchperfect_welcome_version', '1')
+    localStorage.setItem('pitchperfect_onboarding_done', '1')
+    localStorage.setItem('pitchperfect_focus_mode', 'false')
+  })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/#/home', { waitUntil: 'domcontentloaded' })
+
+  const destinationOrder = await page
+    .locator('[data-destination]')
+    .evaluateAll((destinations) =>
+      destinations.map((destination) =>
+        destination.getAttribute('data-destination'),
+      ),
+    )
+  expect(destinationOrder).toEqual([
+    'practice',
+    'exercises',
+    'karaoke',
+    'drumNight',
+    'pianoNight',
+    'guitarNight',
+    'analysis',
+    'jam',
+    'mystery',
+  ])
+
+  const destinationBoxes = await page
+    .locator('[data-destination]')
+    .evaluateAll((destinations) =>
+      Object.fromEntries(
+        destinations.map((destination) => {
+          const box = destination.getBoundingClientRect()
+          return [
+            destination.getAttribute('data-destination'),
+            { width: box.width, x: box.x, y: box.y },
+          ]
+        }),
+      ),
+    )
+  for (const [left, right] of [
+    ['practice', 'exercises'],
+    ['karaoke', 'drumNight'],
+    ['pianoNight', 'guitarNight'],
+    ['jam', 'mystery'],
+  ] as const) {
+    expect(
+      Math.abs(destinationBoxes[left]!.y - destinationBoxes[right]!.y),
+    ).toBeLessThan(2)
+    expect(destinationBoxes[left]!.width).toBeCloseTo(
+      destinationBoxes[right]!.width,
+      0,
+    )
+    expect(destinationBoxes[left]!.x).toBeLessThan(destinationBoxes[right]!.x)
+  }
+  expect(destinationBoxes.analysis!.width).toBeGreaterThan(
+    destinationBoxes.pianoNight!.width * 1.9,
+  )
+
+  const drumCard = page.locator('[data-destination="drumNight"]')
+  await expect(drumCard).toHaveAttribute('href', '/drum-night')
+  await expect(drumCard.locator('img')).toHaveAttribute(
+    'src',
+    '/drum-night/pocket-console-landscape.webp',
+  )
+
+  const desktopDoor = page.getByRole('link', {
+    name: 'Drums — open Drum Night room',
+  })
+  await expect(desktopDoor).toHaveAttribute('href', '/drum-night')
+  await desktopDoor.click()
+  await expect(page).toHaveURL(/\/drum-night$/)
+  await expect(page.getByTestId('drum-night-shell')).toBeVisible()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/home', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'More tabs' }).click()
+  const mobileDoor = page
+    .getByRole('dialog', { name: 'More tabs' })
+    .getByRole('link', { name: 'Drum Night — open standalone room' })
+  await expect(mobileDoor).toBeVisible()
+  await mobileDoor.click()
+  await expect(page).toHaveURL(/\/drum-night$/)
+  await expect(page.getByTestId('drum-night-shell')).toBeVisible()
+})
+
 test('opens the standalone Pocket Console without activating runtime capabilities @smoke', async ({
   page,
 }) => {

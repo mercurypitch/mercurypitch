@@ -23,10 +23,13 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { TabMeta } from '@/components/AppNavTabs'
 import { TAB_META } from '@/components/AppNavTabs'
+import { Drum } from '@/components/icons'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
-import { isTabVisible, PRIMARY_TABS, TAB_KARAOKE, visibleTabOrder, } from '@/features/tabs/constants'
+import { BusyLink } from '@/components/shared/BusyLink'
+import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
+import { isTabVisible, PRIMARY_TABS, TAB_KARAOKE, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -64,6 +67,10 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
   })
 
   const moreIsActive = (): boolean => moreTabs().includes(props.activeTab())
+
+  const lastVisiblePlayTab = createMemo(() =>
+    moreTabs().findLast((tab) => tabGroupOf(tab)?.id === 'play'),
+  )
 
   const pick = (tab: ActiveTab): void => {
     haptics.tapLight()
@@ -131,29 +138,54 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
         <ul class={styles.moreList}>
           <For each={moreTabs()}>
             {(tab) => (
-              <li>
-                {/* Same `#tab-*` id the bar buttons carry. A tab is either in
+              <>
+                <li>
+                  {/* Same `#tab-*` id the bar buttons carry. A tab is either in
                     the bar or in this sheet, never both, so the ids stay
                     unique — and a tour or audit script that looks for
                     `#tab-exercises` now resolves it once the sheet is open
                     instead of finding nothing on a phone at all. */}
-                <button
-                  id={TAB_META[tab]?.id}
-                  classList={{
-                    [styles.moreRow]: true,
-                    [styles.moreRowActive]: props.activeTab() === tab,
-                    active: props.activeTab() === tab,
-                  }}
-                  onClick={() => pick(tab)}
-                  aria-current={props.activeTab() === tab ? 'page' : undefined}
-                  aria-label={TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)}
-                >
-                  <span class={styles.moreIcon}>
-                    {renderIcon(TAB_META[tab])}
-                  </span>
-                  {props.tabLabel(tab)}
-                </button>
-              </li>
+                  <button
+                    id={TAB_META[tab]?.id}
+                    classList={{
+                      [styles.moreRow]: true,
+                      [styles.moreRowActive]: props.activeTab() === tab,
+                      active: props.activeTab() === tab,
+                    }}
+                    onClick={() => pick(tab)}
+                    aria-current={
+                      props.activeTab() === tab ? 'page' : undefined
+                    }
+                    aria-label={TAB_META[tab]?.ariaLabel ?? props.tabLabel(tab)}
+                  >
+                    <span class={styles.moreIcon}>
+                      {renderIcon(TAB_META[tab])}
+                    </span>
+                    {props.tabLabel(tab)}
+                  </button>
+                </li>
+                <Show when={tab === lastVisiblePlayTab()}>
+                  <li>
+                    <BusyLink
+                      id="nav-drum-night"
+                      href={DRUM_NIGHT_PATH}
+                      class={styles.moreRoomLink}
+                      data-testid="nav-drum-night"
+                      aria-label="Drum Night — open standalone room"
+                      busyLabel="Opening Drum Night…"
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <span class={styles.moreIcon} aria-hidden="true">
+                        <Drum />
+                      </span>
+                      <span class={styles.moreRoomCopy}>
+                        <strong>Drum Night</strong>
+                        <small>Open the standalone room</small>
+                      </span>
+                    </BusyLink>
+                  </li>
+                </Show>
+              </>
             )}
           </For>
         </ul>
