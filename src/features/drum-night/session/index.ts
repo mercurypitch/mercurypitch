@@ -8,10 +8,26 @@ export {
 } from './drum-session'
 export type {
   DrumSessionDocument,
+  DrumSessionImportSourceFormat,
   DrumSessionImportState,
   DrumSessionSourceFormat,
   DrumSessionUnsupportedReason,
 } from './drum-session'
+
+export {
+  createFirstPocketGroove,
+  FIRST_POCKET_DEFAULT_VARIANT,
+  FIRST_POCKET_VARIANTS,
+  isFirstPocketVariantId,
+  projectDrumPocket,
+} from './prepared-grooves'
+export type {
+  FirstPocketVariant,
+  FirstPocketVariantId,
+  PreparedDrumGroove,
+  PreparedPocketHit,
+  PreparedPocketProjection,
+} from './prepared-grooves'
 
 export {
   createDrumSessionImportController,

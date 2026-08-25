@@ -24,6 +24,7 @@ async function instrumentFirstPaint(
       __drumNightIntervals: number
       __drumNightMidiRequests: number
       __drumNightMicRequests: number
+      __drumNightOscillators: number
       __drumNightAnimationFrames: number
       __drumNightTimeouts: number
       __drumNightWorkers: number
@@ -36,6 +37,7 @@ async function instrumentFirstPaint(
     trackedWindow.__drumNightIntervals = 0
     trackedWindow.__drumNightMidiRequests = 0
     trackedWindow.__drumNightMicRequests = 0
+    trackedWindow.__drumNightOscillators = 0
     trackedWindow.__drumNightAnimationFrames = 0
     trackedWindow.__drumNightTimeouts = 0
     trackedWindow.__drumNightWorkers = 0
@@ -79,7 +81,17 @@ async function instrumentFirstPaint(
       const TrackedAudioContext = new Proxy(NativeAudioContext, {
         construct(target, args, newTarget) {
           trackedWindow.__drumNightAudioContexts += 1
-          return Reflect.construct(target, args, newTarget)
+          const context = Reflect.construct(
+            target,
+            args,
+            newTarget,
+          ) as AudioContext
+          const nativeCreateOscillator = context.createOscillator.bind(context)
+          context.createOscillator = () => {
+            trackedWindow.__drumNightOscillators += 1
+            return nativeCreateOscillator()
+          }
+          return context
         },
       })
       trackedWindow.AudioContext = TrackedAudioContext
@@ -133,6 +145,7 @@ async function boundaryCounts(
       interval: trackedWindow.__drumNightIntervals,
       midi: trackedWindow.__drumNightMidiRequests,
       mic: trackedWindow.__drumNightMicRequests,
+      oscillator: trackedWindow.__drumNightOscillators,
       raf: trackedWindow.__drumNightAnimationFrames,
       timeout: trackedWindow.__drumNightTimeouts,
       workers: trackedWindow.__drumNightWorkers,
@@ -173,11 +186,70 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
     interval: 0,
     midi: 0,
     mic: 0,
+    oscillator: 0,
     raf: 0,
     timeout: 0,
     workers: 0,
   })
   expect(pageErrors).toEqual([])
+})
+
+test('plays a real prepared groove and changes its authored variation @smoke', async ({
+  page,
+}) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  await page
+    .getByRole('button', { name: /Groove/ })
+    .filter({ visible: true })
+    .first()
+    .click()
+  const grooveDrawer = page.getByRole('dialog', { name: 'Shape the groove' })
+  await grooveDrawer.getByRole('button', { name: 'Tight' }).click()
+  await expect(
+    grooveDrawer.getByRole('button', { name: 'Tight' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await grooveDrawer.getByRole('tab', { name: 'Mix' }).click()
+  const mixDrawer = page.getByRole('dialog', { name: 'Balance the room' })
+  await mixDrawer.getByRole('button', { name: /Click/ }).click()
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-click-enabled',
+    'true',
+  )
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-click-status',
+    'waiting-for-audio',
+  )
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  await mixDrawer.getByRole('button', { name: 'Close rack drawer' }).click()
+  await expect(
+    page.getByRole('button', {
+      name: /^First Pocket — Tight Built-in groove/,
+    }),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: /^Count-in/ }).click()
+  await page
+    .getByRole('button', { name: /^Play First Pocket — Tight take clock$/ })
+    .filter({ visible: true })
+    .click()
+
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-playing',
+    'true',
+  )
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-click-status',
+    'playing',
+  )
+  await expect
+    .poll(async () => (await boundaryCounts(page)).oscillator)
+    .toBeGreaterThan(0)
+  await expect(
+    page.getByRole('button', { name: /Take events Armed/ }),
+  ).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('changes only the visual room and preserves the authored Seat scene @smoke', async ({
@@ -241,7 +313,7 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
     'score',
   )
   await expect(
-    page.getByRole('button', { name: 'Open a drum part' }),
+    page.getByRole('heading', { name: 'First Pocket' }),
   ).toBeVisible()
 
   const songs = page
@@ -258,13 +330,15 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   })
   await expect(songsDrawer).not.toBeVisible()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
-    'data-session-status',
+    'data-import-status',
     'ready',
   )
   await expect(page.getByText('Imported percussion score')).toBeVisible()
 
   await page.getByRole('button', { name: 'Drummer Seat view' }).click()
-  await expect(page.getByText('Drummer’s seat')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Playable drummer’s seat' }),
+  ).toBeAttached()
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
     'data-view',
     'seat',
@@ -279,7 +353,7 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
     'true',
   )
   await expect(page.getByRole('status')).toContainText(
-    'Starting authored percussion on the shared take clock.',
+    'e2e-pocket is starting on the shared take clock with take events armed.',
   )
 
   const groove = page
@@ -296,6 +370,29 @@ test('imports one drum document across Score, Seat, transport, and the rack draw
   await expect(drawer).not.toBeVisible()
   await expect(page).not.toHaveURL(/drawer=/)
   await expect(groove).toBeFocused()
+})
+
+test('plays the photographed Drummer Seat with a real pointer @smoke', async ({
+  page,
+}) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night?view=seat', { waitUntil: 'domcontentloaded' })
+
+  const snare = page.getByRole('button', { name: /^Play Acoustic snare/i })
+  await expect(snare).toBeVisible()
+  const bounds = await snare.boundingBox()
+  if (bounds === null) throw new Error('Seat snare has no pointer bounds')
+  expect(bounds.width).toBeGreaterThanOrEqual(44)
+  expect(bounds.height).toBeGreaterThanOrEqual(44)
+
+  await page.mouse.click(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  )
+
+  await expect(snare).toHaveAttribute('data-live-active', 'true')
+  expect((await boundaryCounts(page)).audio).toBe(1)
 })
 
 test('moves the live kit level with a real pointer @smoke', async ({
@@ -436,7 +533,7 @@ test('recomposes for phone and short landscape without overflow or clipped prima
     waitUntil: 'domcontentloaded',
   })
   await page
-    .getByRole('button', { name: 'Start silent take clock at 82 BPM' })
+    .getByRole('button', { name: 'Play First Pocket at 84 BPM' })
     .click()
   const activeLoop = page.getByRole('button', {
     name: 'Clear active 8-beat loop',
@@ -473,4 +570,35 @@ test('recomposes for phone and short landscape without overflow or clipped prima
         .filter({ visible: true }),
     ).toBeVisible()
   }
+
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.goto('/drum-night?drawer=groove', {
+    waitUntil: 'domcontentloaded',
+  })
+  const landscapeDrawer = page.getByRole('dialog', {
+    name: 'Shape the groove',
+  })
+  await expect(landscapeDrawer).toBeVisible()
+  await landscapeDrawer.getByRole('tab', { name: 'Kit' }).click()
+  const kitDrawer = page.getByRole('dialog', { name: 'Choose the kit' })
+  await expect(
+    kitDrawer.getByRole('radio', { name: /Mercury Synth/i }),
+  ).toBeVisible()
+  const drawerGeometry = await kitDrawer.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return {
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    }
+  })
+  expect(drawerGeometry.top).toBeGreaterThanOrEqual(0)
+  expect(drawerGeometry.left).toBeGreaterThanOrEqual(0)
+  expect(drawerGeometry.right).toBeLessThanOrEqual(844)
+  expect(drawerGeometry.bottom).toBeLessThanOrEqual(390)
+  expect(drawerGeometry.width).toBeGreaterThan(0)
+  expect(drawerGeometry.height).toBeGreaterThan(0)
 })

@@ -99,6 +99,55 @@ describe('useDrumNightRuntime', () => {
     expect(controller.midiState().status).toBe('no-inputs')
   })
 
+  it('retains e-kit evidence without claiming a MIDI message can unlock audio', async () => {
+    const player = playerHarness()
+    const input: DrumMidiInputPort = {
+      id: 'stage-kit',
+      name: 'Stage Kit',
+      state: 'connected',
+      onmidimessage: null,
+    }
+    const access: DrumMidiAccessPort = {
+      inputs: { values: () => [input][Symbol.iterator]() },
+      onstatechange: null,
+    }
+    const { controller } = mountRuntime({
+      player,
+      clock: new FakeClock(),
+      keyboardTarget: null,
+      midiEnvironment: {
+        requestAccess: async () => access,
+        nowMs: () => 0,
+      },
+    })
+
+    await controller.connectMidi()
+    input.onmidimessage?.({
+      data: new Uint8Array([0x99, 38, 104]),
+      timeStamp: 20,
+    })
+
+    expect(controller.recentHit()).toMatchObject({
+      gmKey: 38,
+      source: 'midi',
+      velocity: 104,
+    })
+    expect(player.activate).not.toHaveBeenCalled()
+    expect(player.trigger).not.toHaveBeenCalled()
+
+    await controller.play()
+    input.onmidimessage?.({
+      data: new Uint8Array([0x99, 38, 96]),
+      timeStamp: 40,
+    })
+
+    expect(player.activate).toHaveBeenCalledOnce()
+    await waitFor(() => expect(player.trigger).toHaveBeenCalledOnce())
+    expect(player.trigger).toHaveBeenCalledWith(
+      expect.objectContaining({ gmKey: 38, velocity: 96 }),
+    )
+  })
+
   it('plays every repeated keyboard and pointer strike and panics on stop', async () => {
     const player = playerHarness()
     const { controller } = mountRuntime({
@@ -266,7 +315,7 @@ describe('useDrumNightRuntime', () => {
     expect(player.dispose).toHaveBeenCalledOnce()
   })
 
-  it('does not trigger a queued hit after cleanup when audio was already active', async () => {
+  it('triggers an already-activated hit synchronously before cleanup', async () => {
     const player = playerHarness()
     const { controller, unmount } = mountRuntime({
       player,
@@ -278,11 +327,34 @@ describe('useDrumNightRuntime', () => {
     await waitFor(() => expect(player.trigger).toHaveBeenCalledOnce())
 
     controller.strikePad('kick')
+    expect(player.trigger).toHaveBeenCalledTimes(2)
     unmount()
-    await Promise.resolve()
-    await Promise.resolve()
 
-    expect(player.trigger).toHaveBeenCalledOnce()
+    expect(player.trigger).toHaveBeenCalledTimes(2)
+  })
+
+  it('collapses a rapid pre-activation burst to its most recent hit', async () => {
+    const activation = deferred<boolean>()
+    const player = playerHarness()
+    player.activate.mockReturnValue(activation.promise)
+    const { controller } = mountRuntime({
+      player,
+      clock: new FakeClock(),
+      keyboardTarget: null,
+      midiEnvironment: { nowMs: () => 0 },
+    })
+
+    controller.strikePad('snare', 72)
+    controller.strikePad('kick', 108)
+    expect(player.activate).toHaveBeenCalledOnce()
+    expect(player.trigger).not.toHaveBeenCalled()
+
+    activation.resolve(true)
+    await activation.promise
+    await waitFor(() => expect(player.trigger).toHaveBeenCalledOnce())
+    expect(player.trigger).toHaveBeenCalledWith(
+      expect.objectContaining({ gmKey: 36, velocity: 108 }),
+    )
   })
 
   it('contains asynchronous player disposal failures during cleanup', async () => {
