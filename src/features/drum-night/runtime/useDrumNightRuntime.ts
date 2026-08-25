@@ -196,6 +196,16 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     }
   }
 
+  const retryPlayerActivation = async (): Promise<boolean> => {
+    if (disposed) return false
+    const pending = playerActivation
+    if (pending !== null) {
+      const settled = await pending
+      if (settled || disposed) return settled && !disposed
+    }
+    return activatePlayer()
+  }
+
   const deliverHit = (rawHit: DrumLiveHit): void => {
     if (disposed) return
     if (
@@ -416,6 +426,13 @@ export function useDrumNightRuntime(options: DrumNightRuntimeOptions = {}) {
     calibrationResult,
     pageVisible,
     prefersReducedMotion,
+    /**
+     * Cross the route's audio boundary from a browser-owned gesture while
+     * keeping the runtime's live-input activation state in sync.
+     */
+    activateAudio: activatePlayer,
+    /** Wait out an already-failing attempt, then make one fresh activation. */
+    retryAudio: retryPlayerActivation,
     connectMidi,
     disconnectMidi: () => midiInput.disconnect(),
     selectMidiInput: (inputId: string) => midiInput.selectInput(inputId),

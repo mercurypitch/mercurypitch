@@ -121,6 +121,31 @@ describe('importDrumSession', () => {
     })
   })
 
+  it('retains a pitched-only file when the play-along boundary opts in', async () => {
+    const song: MidiSong = drumSongFixture({
+      includePitched: true,
+      percussionTracks: [],
+    })
+
+    const state = await importDrumSession(
+      midiFile(new Uint8Array([1]), 'backing.mid'),
+      { parseMidi: () => ({ status: 'parsed', song }) },
+      { allowPitchedOnly: true },
+    )
+
+    expect(state).toEqual(
+      expect.objectContaining({
+        status: 'ready',
+        document: expect.objectContaining({
+          title: 'backing',
+          pitchedTrackCount: 1,
+          hitCount: 0,
+          percussionTracks: [],
+        }),
+      }),
+    )
+  })
+
   it('reports a dropped-only drum track instead of substituting a sound', async () => {
     const song = drumSongFixture({
       percussionTracks: [

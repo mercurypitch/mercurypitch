@@ -8,6 +8,7 @@
 // through when an import carried them; plain MIDI and measured audio remain
 // deliberately silent about details they cannot prove.
 
+import { isGuitarProSongFile, isMidiSongFile, SONG_REFERENCE_FILE_ACCEPT, } from '@/features/play-along/song-import'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -153,14 +154,14 @@ export interface GuitarNightReferencePort {
 }
 
 /** Accepted score files: Guitar Pro tabs and standard MIDI. */
-export const REFERENCE_FILE_ACCEPT = '.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi'
+export const REFERENCE_FILE_ACCEPT = SONG_REFERENCE_FILE_ACCEPT
 
 export function isMidiReferenceFile(fileName: string): boolean {
-  return /\.midi?$/i.test(fileName)
+  return isMidiSongFile(fileName)
 }
 
 export function isGuitarProReferenceFile(fileName: string): boolean {
-  return /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName)
+  return isGuitarProSongFile(fileName)
 }
 
 /**

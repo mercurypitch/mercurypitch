@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createSignal, createUniqueId, Show } from 'solid-js'
-import { GUITAR_NIGHT_IMPORT_DROP_COPY, GUITAR_NIGHT_IMPORT_FORMATS, } from './guitar-night-import'
+import type { UnifiedSongFileDropClasses, UnifiedSongFileDropCopy, } from '@/features/play-along/UnifiedSongFileDrop'
+import { UnifiedSongFileDrop } from '@/features/play-along/UnifiedSongFileDrop'
+import { GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMPORT_DROP_COPY, GUITAR_NIGHT_IMPORT_FORMATS, } from './guitar-night-import'
 import styles from './GuitarNightApp.module.css'
 
 export interface GuitarNightFileDropProps {
@@ -19,123 +20,42 @@ export interface GuitarNightFileDropProps {
   class?: string
 }
 
-function dragHasFiles(event: DragEvent): boolean {
-  return (
-    Array.from(event.dataTransfer?.types ?? []).includes('Files') ||
-    (event.dataTransfer?.files.length ?? 0) > 0
-  )
+const GUITAR_NIGHT_FILE_DROP_COPY: UnifiedSongFileDropCopy = {
+  chooseFile: 'Choose a file',
+  dropAlternative: 'or drop it here',
+  formats: GUITAR_NIGHT_IMPORT_FORMATS,
+  activeDrop: GUITAR_NIGHT_IMPORT_DROP_COPY,
+  oneFile: 'One file at a time',
+  opening: (fileName) => `Opening ${fileName}…`,
+}
+
+const GUITAR_NIGHT_FILE_DROP_CLASSES: UnifiedSongFileDropClasses = {
+  root: styles.guitarNightFileDrop,
+  status: styles.guitarNightFileDropStatus,
+  prompt: styles.guitarNightFileDropPrompt,
+  choose: styles.guitarNightFileDropChoose,
+  dropAlternative: styles.guitarNightFileDropOr,
+  formats: styles.guitarNightFileDropFormats,
+  overlay: styles.guitarNightFileDropOverlay,
 }
 
 export function GuitarNightFileDrop(props: GuitarNightFileDropProps) {
-  const [dragActive, setDragActive] = createSignal(false)
-  const hintId = createUniqueId()
-  let dragDepth = 0
-
-  const opening = () => Boolean(props.openingFileName)
-  const blocked = () => props.disabled === true || opening()
-  const rootClass = () =>
-    [styles.guitarNightFileDrop, props.class].filter(Boolean).join(' ')
-
-  const resetDrag = () => {
-    dragDepth = 0
-    setDragActive(false)
-  }
-
-  const handleDragEnter = (event: DragEvent) => {
-    if (!dragHasFiles(event)) return
-    event.preventDefault()
-    if (blocked()) return
-    dragDepth += 1
-    setDragActive(true)
-  }
-
-  const handleDragOver = (event: DragEvent) => {
-    if (!dragHasFiles(event)) return
-    event.preventDefault()
-    if (blocked()) return
-    if (dragDepth === 0) dragDepth = 1
-    setDragActive(true)
-  }
-
-  const handleDragLeave = (event: DragEvent) => {
-    if (!dragHasFiles(event)) return
-    dragDepth = Math.max(0, dragDepth - 1)
-    if (dragDepth === 0) setDragActive(false)
-  }
-
-  const handleDrop = (event: DragEvent) => {
-    if (!dragHasFiles(event)) return
-    event.preventDefault()
-    const files = Array.from(event.dataTransfer?.files ?? [])
-    resetDrag()
-    if (blocked() || files.length === 0) return
-    if (files.length !== 1) {
-      props.onRejected(files)
-      return
-    }
-    props.onFile(files[0])
-  }
-
   return (
-    <div
-      class={rootClass()}
-      data-testid="guitar-night-file-drop"
-      aria-busy={opening() || props.busy === true ? true : undefined}
-      aria-disabled={blocked() ? true : undefined}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+    <UnifiedSongFileDrop
+      accept={GUITAR_NIGHT_IMPORT_ACCEPT}
+      copy={GUITAR_NIGHT_FILE_DROP_COPY}
+      classes={GUITAR_NIGHT_FILE_DROP_CLASSES}
+      testId="guitar-night-file-drop"
+      class={props.class}
+      disabled={props.disabled}
+      busy={props.busy}
+      openingFileName={props.openingFileName}
+      message={props.message}
+      onChoose={props.onChoose}
+      onFile={props.onFile}
+      onRejected={props.onRejected}
     >
       {props.children}
-
-      <Show when={opening()}>
-        <div
-          class={styles.guitarNightFileDropStatus}
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <span title={props.openingFileName ?? undefined}>
-            Opening {props.openingFileName}…
-          </span>
-        </div>
-      </Show>
-
-      <Show when={props.message}>
-        {(message) => (
-          <div
-            class={styles.guitarNightFileDropStatus}
-            role="alert"
-            aria-atomic="true"
-          >
-            <span>{message()}</span>
-          </div>
-        )}
-      </Show>
-
-      <div class={styles.guitarNightFileDropPrompt}>
-        <button
-          type="button"
-          class={styles.guitarNightFileDropChoose}
-          disabled={blocked()}
-          aria-describedby={hintId}
-          onClick={() => props.onChoose()}
-        >
-          Choose a file
-        </button>
-        <span class={styles.guitarNightFileDropOr}>or drop it here</span>
-        <span id={hintId} class={styles.guitarNightFileDropFormats}>
-          {GUITAR_NIGHT_IMPORT_FORMATS}
-        </span>
-      </div>
-
-      <Show when={dragActive() && !blocked()}>
-        <div class={styles.guitarNightFileDropOverlay} aria-hidden="true">
-          <strong>{GUITAR_NIGHT_IMPORT_DROP_COPY}</strong>
-          <span>One file at a time</span>
-        </div>
-      </Show>
-    </div>
+    </UnifiedSongFileDrop>
   )
 }

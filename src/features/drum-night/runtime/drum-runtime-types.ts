@@ -16,11 +16,16 @@ export interface DrumLiveHit {
   readonly midiChannel?: number
 }
 
+/** Independent gain routes inside the one shared Drum Night kit player. */
+export type DrumKitPlaybackLane = 'authored' | 'live'
+
 export interface DrumKitTrigger {
   readonly gmKey: number
   readonly velocity: number
   readonly atContextTime?: number
   readonly sourceId?: string
+  /** Live input remains the default for every existing caller. */
+  readonly lane?: DrumKitPlaybackLane
 }
 
 /** Player truth retained for authored playback fidelity reporting. */
@@ -38,7 +43,8 @@ export interface DrumKitPlayerPort {
   activate(): boolean | Promise<boolean>
   /** Legacy/test ports may return undefined when routing truth is unavailable. */
   trigger(hit: DrumKitTrigger): DrumKitTriggerOutcome | undefined
-  panic(): void
+  /** Omit the lane to release every voice owned by the player. */
+  panic(lane?: DrumKitPlaybackLane): void
   dispose(): void | Promise<void>
 }
 

@@ -2,16 +2,13 @@
 // Guitar Night import helpers keep audio, MIDI and Guitar Pro entry points aligned.
 // ============================================================
 
-import { acceptsAudioUpload, AUDIO_UPLOAD_ACCEPT, } from '@/lib/audio-upload-contract'
-import { isGuitarProReferenceFile, isMidiReferenceFile, REFERENCE_FILE_ACCEPT, } from './reference-port'
+import type { UnifiedSongImportKind } from '@/features/play-along/song-import'
+import { classifyUnifiedSongImport, UNIFIED_SONG_IMPORT_ACCEPT, } from '@/features/play-along/song-import'
 
-export type GuitarNightImportKind = 'audio' | 'midi' | 'guitar-pro'
+export type { UnifiedSongImportKind as GuitarNightImportKind } from '@/features/play-along/song-import'
 
 /** Ready-to-use accept list for the single Guitar Night file picker. */
-export const GUITAR_NIGHT_IMPORT_ACCEPT = [
-  AUDIO_UPLOAD_ACCEPT,
-  REFERENCE_FILE_ACCEPT,
-].join(',')
+export const GUITAR_NIGHT_IMPORT_ACCEPT = UNIFIED_SONG_IMPORT_ACCEPT
 
 /** Calm, compact copy shared by picker and drop affordances. */
 export const GUITAR_NIGHT_IMPORT_FORMATS =
@@ -28,11 +25,8 @@ export const GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR =
 /** Classify one supported file without coupling the caller to an import UI. */
 export function classifyGuitarNightImport(
   file: File,
-): GuitarNightImportKind | null {
-  if (isMidiReferenceFile(file.name)) return 'midi'
-  if (isGuitarProReferenceFile(file.name)) return 'guitar-pro'
-  if (acceptsAudioUpload(file)) return 'audio'
-  return null
+): UnifiedSongImportKind | null {
+  return classifyUnifiedSongImport(file)
 }
 
 /** Return recovery copy for a file Guitar Night cannot open, otherwise null. */

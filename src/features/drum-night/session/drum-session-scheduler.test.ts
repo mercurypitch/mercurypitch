@@ -110,10 +110,48 @@ describe('Drum Night session scheduler', () => {
         velocity: 111,
         atContextTime: 10,
         sourceId: 'authored:drums:kick',
+        lane: 'authored',
       })
       expect(scheduler.snapshot().triggerCounts.sampled).toBe(1)
     },
   )
+
+  it('invalidates authored audio without releasing a concurrent live lane', () => {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const activeLanes = new Set<'authored' | 'live'>(['live'])
+    const player = {
+      activate: vi.fn<DrumKitPlayerPort['activate']>(() => true),
+      trigger: vi.fn<DrumKitPlayerPort['trigger']>((hit) => {
+        activeLanes.add(hit.lane ?? 'live')
+        return 'sampled'
+      }),
+      panic: vi.fn<DrumKitPlayerPort['panic']>((lane) => {
+        if (lane === undefined) activeLanes.clear()
+        else activeLanes.delete(lane)
+      }),
+      dispose: vi.fn<DrumKitPlayerPort['dispose']>(),
+    } satisfies DrumKitPlayerPort
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      performanceTimestampToContextTime: () => 10,
+    })
+
+    scheduler.setSession(readyDocumentFixture())
+    expect(activeLanes).toEqual(new Set(['live']))
+    expect(player.panic).toHaveBeenLastCalledWith('authored')
+
+    transport.start()
+    expect(activeLanes).toEqual(new Set(['live', 'authored']))
+    scheduler.setSession(readyDocumentFixture())
+    expect(activeLanes).toEqual(new Set(['live', 'authored']))
+    transport.pause()
+    expect(activeLanes).toEqual(new Set(['live']))
+    expect(player.panic.mock.calls.every(([lane]) => lane === 'authored')).toBe(
+      true,
+    )
+  })
 
   it('binary-queries sorted hits across authored tempo changes', () => {
     const clock = new FakeClock()

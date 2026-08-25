@@ -1,29 +1,9 @@
-// Guitar Night band preparation port keeps the second separation pass behind an injectable boundary.
+// Guitar Night band preparation types preserve the feature API over play-along.
 // ============================================================
 
-export type GuitarNightBandPreparationPhase =
-  | 'opening'
-  | 'uploading'
-  | 'processing'
-  | 'saving'
-  | 'opening-song'
-
-export interface GuitarNightBandPreparationUpdate {
-  phase: Exclude<GuitarNightBandPreparationPhase, 'opening' | 'opening-song'>
-  progress: number
-  detail?: string
-}
-
-export interface GuitarNightBandPreparationResult {
-  saved: readonly string[]
-}
-
-export interface GuitarNightBandPreparationPort {
-  prepareBand(
-    sessionId: string,
-    options: {
-      signal: AbortSignal
-      onUpdate(update: GuitarNightBandPreparationUpdate): void
-    },
-  ): Promise<GuitarNightBandPreparationResult>
-}
+export type {
+  PlayAlongBandPreparationPhase as GuitarNightBandPreparationPhase,
+  PlayAlongBandPreparationPort as GuitarNightBandPreparationPort,
+  PlayAlongBandPreparationResult as GuitarNightBandPreparationResult,
+  PlayAlongBandPreparationUpdate as GuitarNightBandPreparationUpdate,
+} from '@/features/play-along/band-preparation-port'

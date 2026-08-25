@@ -354,6 +354,16 @@ export default defineConfig(({ command, mode }) => {
             // chunk and make standalone song pickers download the app UI.
             if (id.includes('/src/lib/audio-upload-contract.'))
               return 'audio-upload-contract'
+            // The native file-picker probe is shared by standalone song
+            // rooms and UvrPanel. Without a dedicated leaf chunk, Rollup can
+            // co-locate it with UvrPanel's broad `advanced` chunk, turning a
+            // permission-free local-file button into a static dependency on
+            // stores, IndexedDB and media tooling.
+            if (id.includes('/src/lib/file-picker.')) return 'file-picker'
+            // Perceptual fader math is another dependency-free leaf shared by
+            // standalone rooms and the full mixer. Pin it before `advanced`
+            // so a route-local gain write cannot preload stores/DB/media.
+            if (id.includes('/src/lib/volume-curve.')) return 'volume-curve'
             // These dependency-free UI leaves are shared by the app and
             // standalone rooms. If Rollup co-locates either one with
             // LibraryModal, a standalone first paint inherits the complete

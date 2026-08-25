@@ -117,9 +117,41 @@ describe('useGuitarNightBandPreparationController', () => {
       cta: { label: 'Sign in', section: 'account' as const },
     }
 
-    it('starts no work at all when the prerequisites are not met', async () => {
+    it('reopens durable parts without account preflight or cloud preparation', async () => {
+      const reusePreparedBand = vi.fn(async () => ({
+        saved: ['drums', 'bass', 'guitar'],
+      }))
       const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
-      const loadPort = vi.fn(async () => ({ prepareBand }))
+      const checkPreflight = vi.fn(() => blocker)
+      const onPrepared = vi.fn(async () => undefined)
+      let controller!: ReturnType<
+        typeof useGuitarNightBandPreparationController
+      >
+      const Harness: Component = () => {
+        controller = useGuitarNightBandPreparationController({
+          loadPort: async () => ({ reusePreparedBand, prepareBand }),
+          checkPreflight,
+          onPrepared,
+        })
+        return null
+      }
+      render(() => <Harness />)
+
+      controller.start('session-room')
+      await waitFor(() => expect(onPrepared).toHaveBeenCalledOnce())
+
+      expect(reusePreparedBand).toHaveBeenCalledWith('session-room', {
+        signal: expect.any(AbortSignal),
+      })
+      expect(checkPreflight).not.toHaveBeenCalled()
+      expect(prepareBand).not.toHaveBeenCalled()
+      expect(controller.state()).toEqual({ kind: 'idle' })
+    })
+
+    it('starts no billable work when the prerequisites are not met', async () => {
+      const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+      const reusePreparedBand = vi.fn(async () => null)
+      const loadPort = vi.fn(async () => ({ reusePreparedBand, prepareBand }))
       let controller!: ReturnType<
         typeof useGuitarNightBandPreparationController
       >
@@ -140,9 +172,13 @@ describe('useGuitarNightBandPreparationController', () => {
           blocker,
         }),
       )
+      expect(reusePreparedBand).toHaveBeenCalledWith('session-room', {
+        signal: expect.any(AbortSignal),
+      })
       expect(prepareBand).not.toHaveBeenCalled()
-      // Not even the port: loading it is what pulls in the upload path.
-      expect(loadPort).not.toHaveBeenCalled()
+      // The port is opened only to look for durable local output. Its cloud
+      // implementation remains behind prepareBand, which cannot run here.
+      expect(loadPort).toHaveBeenCalledOnce()
     })
 
     it('waits for an async answer before deciding', async () => {
