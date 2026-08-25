@@ -346,7 +346,8 @@ async function initializeDrumNightDatabase(
   const loadSavedSongs = drawer.getByRole('button', {
     name: 'Load saved songs',
   })
-  if (await loadSavedSongs.isVisible()) await loadSavedSongs.click()
+  await expect(loadSavedSongs).toBeVisible()
+  await loadSavedSongs.click()
   await expect(drawer.getByText('No prepared backing yet')).toBeVisible()
 }
 
@@ -1227,7 +1228,8 @@ test('keeps a saved two-stem source metadata-only until Play hydrates its audio 
   const loadSavedSongs = songsDrawer.getByRole('button', {
     name: 'Load saved songs',
   })
-  if (await loadSavedSongs.isVisible()) await loadSavedSongs.click()
+  await expect(loadSavedSongs).toBeVisible()
+  await loadSavedSongs.click()
   const song = songsDrawer.getByRole('button', {
     name: /two-stem-drive\.wav.*Load backing/i,
   })
@@ -1316,7 +1318,8 @@ test('hydrates only reconstructed Source Drums and Backing after an inert full-m
   const loadSavedSongs = songsDrawer.getByRole('button', {
     name: 'Load saved songs',
   })
-  if (await loadSavedSongs.isVisible()) await loadSavedSongs.click()
+  await expect(loadSavedSongs).toBeVisible()
+  await loadSavedSongs.click()
   const song = songsDrawer.getByRole('button', {
     name: /full-band-room\.wav.*Load backing/i,
   })
