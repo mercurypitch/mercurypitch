@@ -205,7 +205,7 @@ import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-ser
 import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
 import { authVersion } from '@/db/services/user-service'
-import { syncLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { adoptAfterGoogleSignup, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -2150,12 +2150,19 @@ const AppShell: Component<AppProps> = (props) => {
   // Sync own voiceprints on every auth transition. Uploads only the takes
   // made under the signed-in identity (deduped by takenAt; no-op when
   // empty). Takes made signed-out are deliberately NOT swept up here:
-  // registering a new account adopts them explicitly (AuthModal), and
-  // signing in to an existing account offers them via the Settings notice
-  // instead — owner decision D2, docs/specs/voiceprints.ears.md section 4.
+  // registering a new account adopts them explicitly (AuthModal for the
+  // password path, adoptAfterGoogleSignup for the redirect that cannot run
+  // inline), and signing in to an existing account offers them via the
+  // Settings notice instead — owner decision D2,
+  // docs/specs/voiceprints.ears.md section 4.
+  //
+  // Both are fired, not sequenced: `adoptDeviceVoiceprints` awaits any
+  // sync already in flight for the same account before it reads the cloud
+  // list, so ordering is the service's job rather than this caller's.
   createEffect(() => {
     authVersion()
     void syncLocalVoiceprints()
+    void adoptAfterGoogleSignup()
   })
 
   // Restore the imported song behind the current melody on reload. Melodies

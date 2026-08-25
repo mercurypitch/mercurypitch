@@ -432,6 +432,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm test:coverage` | `vitest run --coverage` |
 | `pnpm test:e2e` | `playwright test` |
 | `pnpm test:e2e:devices` | `playwright test -c playwright.devices.config.ts` |
+| `pnpm test:e2e:cloud` | `playwright test -c playwright.cloud.config.ts` |
 | `pnpm lyrics:compare` | `node scripts/compare-lrc-timing.mjs` |
 | `pnpm marketing:capture` | `node scripts/capture-marketing.mjs` |
 | `pnpm test:tours` | `node scripts/walk-tours.mjs` |

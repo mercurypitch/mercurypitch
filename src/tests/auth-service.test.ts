@@ -14,7 +14,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -353,6 +353,66 @@ describe('Google redirect signup tracking', () => {
     expect(trackEventMock).toHaveBeenCalledTimes(1)
     expect(trackEventMock).toHaveBeenCalledWith('signup')
     expect(window.location.hash).toBe('#/mirror')
+  })
+
+  // The signal voiceprint adoption rides on. A token cannot say whether the
+  // account behind it was just created; gauth_new is the only thing that can.
+  it('REQ-VPR-014 reports account creation when gauth_new=1', () => {
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleAccountCreated()).toBe(true)
+  })
+
+  it('REQ-VPR-014 reports nothing for a returning Google user', () => {
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(null, '', `/#gauth=${makeToken(3600, 'google')}`)
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleAccountCreated()).toBe(false)
+  })
+
+  // One-shot, like its sibling: a second reader must not see a stale true
+  // from a sign-up two navigations ago and adopt somebody else's takes.
+  it('REQ-VPR-014 reports creation exactly once', () => {
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleAccountCreated()).toBe(true)
+    expect(takeGoogleAccountCreated()).toBe(false)
+  })
+
+  it('REQ-VPR-014 reports nothing when the redirect failed', () => {
+    localStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(null, '', '/#gauth_error=expired_state')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleAccountCreated()).toBe(false)
+  })
+
+  // A Drive-connect pass resolves no account at all — it must never look
+  // like a sign-up.
+  it('REQ-VPR-014 reports nothing on a Drive-only return', () => {
+    localStorage.setItem('mp:gauthReturnHash', '#/settings/sync')
+    history.replaceState(null, '', '/#gdrive=1')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleAccountCreated()).toBe(false)
   })
 
   it('shows a human suspension result without exposing the internal error code', () => {

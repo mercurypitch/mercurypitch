@@ -466,6 +466,19 @@ export type GoogleRedirectResult = { ok: true } | { ok: false; error: string }
 let googleRedirectResult: GoogleRedirectResult | null = null
 
 /**
+ * Did the redirect that just landed CREATE the account, rather than sign
+ * in to one that already existed?
+ *
+ * The worker knows — `resolveGoogleUser` returns `isNew`, and the callback
+ * puts it in the fragment as `gauth_new=1` — but the token alone cannot
+ * say. Kept here as a one-shot fact rather than acted on, because the one
+ * thing that cares (voiceprint adoption) lives a layer up and importing it
+ * from here would close a cycle: voiceprint-service already imports this
+ * module. See `adoptAfterGoogleSignup`.
+ */
+let googleAccountCreated = false
+
+/**
  * The app is hash-routed, but the hash can't ride along in `returnTo`:
  * the worker hands the JWT back as its own fragment (`#gauth=…`), and a
  * second `#` would corrupt it. So the current route is stashed here and
@@ -558,7 +571,10 @@ export function consumeGoogleRedirect(): void {
     googleRedirectResult = { ok: true }
     authChanged()
     // gauth_new marks a first-time Google account (set by the worker).
-    if (params.get('gauth_new') === '1') trackEvent('signup')
+    if (params.get('gauth_new') === '1') {
+      trackEvent('signup')
+      googleAccountCreated = true
+    }
   } else if (error != null && error !== '') {
     if (error === ACCOUNT_SUSPENDED_CODE) {
       handleAuthErrorResponse(
@@ -587,6 +603,19 @@ export function takeGoogleRedirectResult(): GoogleRedirectResult | null {
   const result = googleRedirectResult
   googleRedirectResult = null
   return result
+}
+
+/**
+ * One-shot: was the account created by the redirect that just landed?
+ *
+ * One-shot for the same reason its sibling is — the answer describes a
+ * single arrival, and a second reader must not see a stale `true` from a
+ * sign-up two navigations ago.
+ */
+export function takeGoogleAccountCreated(): boolean {
+  const created = googleAccountCreated
+  googleAccountCreated = false
+  return created
 }
 
 // ── Google Drive (sync transport) ────────────────────────────────────

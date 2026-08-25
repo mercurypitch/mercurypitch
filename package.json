@@ -29,6 +29,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:devices": "playwright test -c playwright.devices.config.ts",
+    "test:e2e:cloud": "playwright test -c playwright.cloud.config.ts",
     "lyrics:compare": "node scripts/compare-lrc-timing.mjs",
     "marketing:capture": "node scripts/capture-marketing.mjs",
     "test:tours": "node scripts/walk-tours.mjs",

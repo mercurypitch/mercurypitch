@@ -25,7 +25,8 @@
     "vitest.config.ts",
     "vite.config.ts",
     "playwright.config.ts",
-    "playwright.devices.config.ts"
+    "playwright.devices.config.ts",
+    "playwright.cloud.config.ts"
   ],
   "plugins": [
     {
