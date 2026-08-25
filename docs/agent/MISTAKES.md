@@ -577,6 +577,13 @@ warnings while the same commit passed on CI.
 do not trust the caller's shell environment.
 **See:** `vitest.config.ts`
 
+### Give preview credentials their own Worker identity
+
+**Symptom:** Turnstile showed a green check on dev, but every login failed CAPTCHA after a PR preview and the next dev deploy.
+**Cause:** `versions upload --secrets-file` put the public test secret on the dev Worker. Wrangler preserves omitted secrets from that Worker's newest version, so the next normal dev deploy inherited and activated it even though the preview version was never deployed.
+**Rule:** an immutable version is not a secret-isolation boundary. Preview credentials use a dedicated Worker name and complete preview-only bindings; validate the name before upload and canary dev after deployment.
+**See:** `scripts/assert-pr-preview-isolation.mjs`, `.github/workflows/build.yml`, `.github/workflows/deploy-db.yml`
+
 ### A helper extracted "for testability" has to actually be called
 
 **Symptom:** `buildFinalPartialTimes` sat in `lrc-gen-engine.ts` with five
