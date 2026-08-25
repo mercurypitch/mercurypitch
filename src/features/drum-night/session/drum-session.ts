@@ -8,7 +8,8 @@
 
 import type { MidiSong, MidiSongPercussionTrack, MidiSongTrack, } from '@/lib/midi-song'
 
-export type DrumSessionSourceFormat = 'midi' | 'guitar-pro'
+export type DrumSessionImportSourceFormat = 'midi' | 'guitar-pro'
+export type DrumSessionSourceFormat = DrumSessionImportSourceFormat | 'prepared'
 
 export interface DrumSessionDocument {
   readonly title: string

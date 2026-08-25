@@ -33,6 +33,7 @@ describe('createDrumNightAudioSession', () => {
 
     expect(createContext).not.toHaveBeenCalled()
     expect(session.activeContext()).toBeNull()
+    expect(session.activeOutput()).toBeNull()
     expect(session.performanceTimestampToContextTime(1_000)).toBeNull()
     expect(createContext).not.toHaveBeenCalled()
     expect(session.contextForGesture()).toBe(harness.context)
@@ -53,6 +54,7 @@ describe('createDrumNightAudioSession', () => {
     session.contextForGesture()
 
     expect(session.activeContext()).toBe(harness.context)
+    expect(session.activeOutput()).toBe(harness.output)
     expect(session.performanceTimestampToContextTime(2_250)).toBe(12.75)
     expect(createContext).toHaveBeenCalledOnce()
   })
@@ -71,6 +73,7 @@ describe('createDrumNightAudioSession', () => {
     expect(harness.close).toHaveBeenCalledOnce()
     expect(session.contextForGesture()).toBeNull()
     expect(session.activeContext()).toBeNull()
+    expect(session.activeOutput()).toBeNull()
     expect(session.performanceTimestampToContextTime(1_000)).toBeNull()
   })
 

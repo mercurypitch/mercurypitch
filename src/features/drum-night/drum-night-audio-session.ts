@@ -11,6 +11,8 @@ export interface DrumNightAudioSession {
   outputForGesture(): AudioNode | null
   /** Passive scheduler access; never creates or resumes a context. */
   activeContext(): AudioContext | null
+  /** Passive output access; never creates or resumes an audio graph. */
+  activeOutput(): AudioNode | null
   /** Map a performance timestamp only while the gesture-owned graph exists. */
   performanceTimestampToContextTime(timestampMs: number): number | null
   dispose(): Promise<void>
@@ -83,6 +85,9 @@ export function createDrumNightAudioSession(
     },
     activeContext(): AudioContext | null {
       return context !== null && context.state !== 'closed' ? context : null
+    },
+    activeOutput(): AudioNode | null {
+      return context !== null && context.state !== 'closed' ? output : null
     },
     performanceTimestampToContextTime(timestampMs: number): number | null {
       const activeContext =

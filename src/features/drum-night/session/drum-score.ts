@@ -217,7 +217,21 @@ export function drumScoreVoiceForGmKey(gmKey: number): DrumScoreVoice {
 }
 
 function scoreSpan(document: DrumSessionDocument): number {
-  return Math.max(0.25, document.durationBeats + 0.25)
+  let latestAttackBeat = 0
+  for (const track of document.percussionTracks) {
+    for (const hit of track.percussionHits) {
+      latestAttackBeat = Math.max(latestAttackBeat, hit.startBeat)
+    }
+  }
+  // A written duration that reaches a bar line already closes the authored
+  // phrase there; padding every document by a sixteenth invented an empty
+  // extra bar for exact two-bar grooves. Only a zero-duration attack on the
+  // boundary needs a tiny amount of coverage so it remains queryable.
+  const terminalAttackCoverage =
+    latestAttackBeat >= document.durationBeats
+      ? latestAttackBeat + 0.000_001
+      : document.durationBeats
+  return Math.max(0.25, terminalAttackCoverage)
 }
 
 function lowerBound(values: readonly number[], target: number): number {

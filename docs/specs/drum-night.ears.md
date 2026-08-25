@@ -276,10 +276,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-PLAYBACK-002 — Authored timing:** Playback shall follow the source
   tempo map, meter-aligned position, written trailing duration, user speed,
   count-in, and any valid bounded loop without mutating the canonical session.
-- **REQ-DN-PLAYBACK-003 — Visual count-in:** WHEN count-in is enabled, Drum
-  Night shall present it visually and shall not schedule a metronome click. An
-  authored attack at beat zero may be prepared once for the playback boundary
-  but shall not double-trigger.
+- **REQ-DN-PLAYBACK-003 — Count-in:** WHEN count-in is enabled, Drum Night shall
+  always present it visually and may schedule the optional click when the user
+  has explicitly enabled that source. An authored attack at beat zero may be
+  prepared once for the playback boundary but shall not double-trigger.
 - **REQ-DN-PLAYBACK-004 — Pause and replay:** WHEN playback pauses, stops,
   seeks, changes session, or changes scheduling authority, queued drum voices
   shall be invalidated. WHEN a completed session is played again, it shall
@@ -302,14 +302,21 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-DN-PLAYBACK-009 — Loop identity:** WHILE a loop repeats, each authored
   occurrence shall retain its loop iteration and monotonic timeline identity;
   overlapping lookahead passes shall not double-schedule it.
-- **REQ-DN-PLAYBACK-010 — No accompaniment:** Drum Night shall not schedule a
-  click, backing track, guide track, or other accompaniment in this pilot, and
-  unavailable mixer strips shall remain disabled.
+- **REQ-DN-PLAYBACK-010 — Audible first pocket:** Drum Night shall ship one
+  route-owned, velocity-aware prepared groove with truthful Source, Tight,
+  Loose, and Half-time authored variants. Play shall sound that document through
+  the selected kit on the same clock used by Pocket, Score, Seat, and Coach.
 - **REQ-DN-PLAYBACK-011 — Bounded take evidence:** Drum Night shall retain at
   most 4,096 captured live hits for the current take. IF newer hits replace
   older retained evidence, THEN the route shall expose a durable discarded-hit
   count, Coach shall use only the retained window, and clearing or replacing
   the take shall reset both values.
+- **REQ-DN-PLAYBACK-012 — Optional click:** Drum Night shall expose one
+  off-by-default metronome click in Mix. Enabling or changing it before Play
+  shall remain audio-inert; while transport runs it shall follow count-in,
+  authored meter, tempo changes, speed, loops, invalidation, and teardown on the
+  route clock. Backing and guide controls shall not be presented until those
+  sources exist.
 
 ## Interaction and accessibility — `DN-A11Y-*`
 
@@ -356,11 +363,11 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 ## Pilot exclusions and persistence boundary
 
 This pilot does not include room-microphone capture or analysis; limb,
-sticking, grip, or technique inference; metronome-click audio; backing or guide
-tracks; Groove Mirror generation; imported-session, recorded-take, or coaching
-history persistence; public indexing; or production deployment. The locally
-retained kit choice, Drum room choice, and device-scoped MIDI learn map are
-preferences, not session or performance persistence.
+sticking, grip, or technique inference; backing or guide tracks; Groove Mirror
+generation; imported-session, recorded-take, or coaching history persistence;
+public indexing; or production deployment. The locally retained kit choice,
+Drum room choice, and device-scoped MIDI learn map are preferences, not session
+or performance persistence.
 
 ## Verification map
 
