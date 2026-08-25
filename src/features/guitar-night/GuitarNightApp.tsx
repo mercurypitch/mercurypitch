@@ -11,6 +11,7 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
 import { X } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
+import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
@@ -27,11 +28,15 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar/instrument-tuning'
-import { accountReady, credits, refreshAccount, signedIn, } from '@/lib/standalone-account'
+import { accountReady, credits, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import { cloudSplitBlocker, cloudSplitBlockerHeading, } from '@/lib/uvr-cloud-preflight'
+import { authModalMode, openAuthModal } from '@/stores/ui-store'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { primaryGuitarFirstWinCompletionAction, resolveGuitarFirstWinConfig, } from './first-win-config'
+import type { GuitarNightGoogleSeparationIntent } from './guitar-night-google-separation-intent'
+import { clearGuitarNightGoogleSeparationIntent, guitarNightBackingFingerprint, prepareGuitarNightGoogleSeparationIntent, takeGuitarNightGoogleSeparationIntent, } from './guitar-night-google-separation-intent'
 import { classifyGuitarNightImport, GUITAR_NIGHT_IMPORT_ACCEPT, GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR, GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR, guitarNightImportValidationError, } from './guitar-night-import'
 import { guitarRoomLabel } from './guitar-rooms'
 import styles from './GuitarNightApp.module.css'
@@ -66,6 +71,12 @@ const GuitarNightAccount = lazy(async () => {
   return { default: module.GuitarNightAccount }
 })
 
+/** Shared account forms stay out of the room until someone asks to sign in. */
+const AuthModal = lazy(async () => {
+  const module = await import('@/components/account/AuthModal')
+  return { default: module.AuthModal }
+})
+
 /** The tab-only room brings its own audio clock, so it loads on demand. */
 const GuitarNightScoreRoom = lazy(async () => {
   const module = await import('./GuitarNightScoreRoom')
@@ -96,6 +107,9 @@ type TunerReturnView = Exclude<
   'room' | 'score-room' | LearnActivityView | 'tuner'
 >
 type LearnReturnView = Exclude<EntryView, LearnActivityView | 'tuner'>
+type GuitarNightAuthIntent =
+  | { kind: 'topbar' }
+  | { kind: 'band-preparation'; sessionId: string }
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
@@ -180,6 +194,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const voiceControl = useVoiceControlController()
   useVoiceToggleKey(voiceControl.toggle, () => setShowVoiceHelp(true))
   const [showVoiceHelp, setShowVoiceHelp] = createSignal(false)
+  const [authIntent, setAuthIntent] =
+    createSignal<GuitarNightAuthIntent | null>(null)
+  const [googleSeparationReturn, setGoogleSeparationReturn] =
+    createSignal<GuitarNightGoogleSeparationIntent | null>(null)
+  // A successful sign-in reconciles account state asynchronously. Keep a
+  // non-reactive revision of the backing lease so that leaving or selecting
+  // another song can invalidate that delayed continuation without reading a
+  // Solid accessor after an await.
+  let backingSelectionRevision = 0
   const voiceHelpCommands = createVoiceHelpCommands({
     openVoiceHelp: () => setShowVoiceHelp(true),
   })
@@ -341,6 +364,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     queueMicrotask(() => venueMenuButton?.focus())
   }
 
+  useFocusTrap(() => venueMenu, {
+    isOpen: venueMenuOpen,
+    onClose: closeVenueMenuAndRestoreFocus,
+    initialFocus: () =>
+      venueMenu?.querySelector<HTMLButtonElement>(
+        '[aria-label="Close room settings"]',
+      ) ?? undefined,
+  })
+
   /**
    * Was this the button that opened something, from inside the room drawer?
    *
@@ -410,6 +442,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       focusDetail()
     },
     onBackingWillRelease: () => {
+      backingSelectionRevision += 1
       playbackController.configure(null)
       setVisitedRoomSessionId(null)
     },
@@ -464,6 +497,24 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       }
     },
   })
+  const checkBandPreflight = async (): Promise<CloudSplitBlocker | null> => {
+    const configured = props.checkBandPreflight
+    if (configured !== undefined) return configured()
+    // The account chip is lazy, so on a cold room this state may not have
+    // loaded yet — and refusing from data we do not have would turn away
+    // a signed-in singer. Ask, then decide.
+    if (!accountReady()) await refreshAccount()
+    // `refreshAccount` starts its credits refresh without awaiting it. For
+    // a newly restored account, waiting here is what distinguishes a real
+    // zero balance from the initial unknown value before a billable job.
+    if (signedIn() && credits() === null) await refreshCredits()
+    const balance = credits()
+    return cloudSplitBlocker({
+      signedIn: signedIn(),
+      ...(balance === null ? {} : { balance }),
+    })
+  }
+
   const bandPreparationController = useGuitarNightBandPreparationController({
     loadPort: () => {
       const configuredLoader = props.loadBandPreparationPort
@@ -475,19 +526,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     // source of truth for who is signed in and what credits remain
     // (standalone-account, the same one the account chip reads), so the
     // answer cannot disagree with the chip in the corner.
-    checkPreflight: async () => {
-      const configured = props.checkBandPreflight
-      if (configured !== undefined) return configured()
-      // The account chip is lazy, so on a cold room this state may not have
-      // loaded yet — and refusing from data we do not have would turn away
-      // a signed-in singer. Ask, then decide.
-      if (!accountReady()) await refreshAccount()
-      const balance = credits()
-      return cloudSplitBlocker({
-        signedIn: signedIn(),
-        ...(balance === null ? {} : { balance }),
-      })
-    },
+    checkPreflight: checkBandPreflight,
     onPrepared: async (sessionId, signal) => {
       const refreshed = await songController.refreshLibrary()
       if (signal.aborted) return
@@ -503,9 +542,110 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       await songController.stageSession(sessionId, 'replace', { force: true })
     },
   })
+
+  const openTopbarSignIn = (): void => {
+    // Defensive modal ownership: the drawer normally traps focus, but a
+    // scripted activation or stale assistive-tech cursor must still leave
+    // exactly one aria-modal surface in the document.
+    setVenueMenuOpen(false)
+    setAuthIntent({ kind: 'topbar' })
+    openAuthModal('login')
+  }
+
+  const openBandPreparationSignIn = (sessionId: string): void => {
+    setAuthIntent({ kind: 'band-preparation', sessionId })
+    openAuthModal('login')
+  }
+
+  const handleAuthenticated = (): void => {
+    // The modal closes immediately after this callback. Preserve the exact
+    // song that asked for auth before any awaited account reconciliation.
+    const pendingIntent = authIntent()
+    const pendingBackingSelectionRevision = backingSelectionRevision
+    clearGuitarNightGoogleSeparationIntent()
+    setAuthIntent(null)
+    void (async () => {
+      await refreshAccount()
+      await refreshCredits()
+      if (
+        pendingIntent?.kind === 'band-preparation' &&
+        pendingBackingSelectionRevision === backingSelectionRevision
+      ) {
+        bandPreparationController.start(pendingIntent.sessionId)
+      }
+    })()
+  }
   const activeBacking = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'ready' ? state.lease : null
+  })
+
+  const prepareGoogleRedirect = (): (() => void) | undefined => {
+    // Every Google attempt supersedes an abandoned intent. Only the sign-in
+    // opened from the blocked separation action earns a new return lease.
+    clearGuitarNightGoogleSeparationIntent()
+    const pending = authIntent()
+    const backing = activeBacking()
+    if (
+      pending?.kind !== 'band-preparation' ||
+      backing === null ||
+      backing.sessionId !== pending.sessionId ||
+      backing.defaultMix.kind !== 'mixed-instrumental'
+    ) {
+      return
+    }
+    return prepareGuitarNightGoogleSeparationIntent(backing)
+  }
+
+  const handleGoogleRedirectResult = (result: GoogleRedirectResult): void => {
+    // Consume even failures and expired/invalid values. A later unrelated
+    // authentication can never replay this billable intent.
+    const pending = takeGuitarNightGoogleSeparationIntent()
+    if (!result.ok || pending === null) return
+    setGoogleSeparationReturn(pending)
+  }
+
+  createEffect(() => {
+    const pending = googleSeparationReturn()
+    if (pending === null) return
+
+    const routeSessionId = songController.routeSessionId()
+    if (routeSessionId !== pending.sessionId) {
+      setGoogleSeparationReturn(null)
+      return
+    }
+
+    const selection = songController.selectionState()
+    if (selection.kind === 'idle' || selection.kind === 'loading') return
+    setGoogleSeparationReturn(null)
+    if (
+      selection.kind !== 'ready' ||
+      selection.lease.defaultMix.kind !== 'mixed-instrumental' ||
+      guitarNightBackingFingerprint(selection.lease) !==
+        pending.backingFingerprint
+    ) {
+      return
+    }
+
+    const pendingBackingSelectionRevision = backingSelectionRevision
+    void (async () => {
+      // The standalone account module may have completed its initial refresh
+      // before `consumeGoogleRedirect` installed the returned token. Force a
+      // post-return reconciliation rather than trusting that stale "ready".
+      await refreshAccount()
+      if (pendingBackingSelectionRevision !== backingSelectionRevision) return
+      await refreshCredits()
+      if (pendingBackingSelectionRevision !== backingSelectionRevision) return
+      const blocker = await checkBandPreflight()
+      if (pendingBackingSelectionRevision !== backingSelectionRevision) return
+      if (blocker !== null) {
+        bandPreparationController.block(pending.sessionId, blocker)
+        return
+      }
+      // `start` repeats the same preflight immediately before it loads the
+      // port. The return intent is convenience, never billing authority.
+      bandPreparationController.start(pending.sessionId)
+    })()
   })
   const measuredReference = createMemo(() =>
     measuredReferenceForBacking(
@@ -1108,7 +1248,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             Room
           </button>
           <Suspense>
-            <GuitarNightAccount />
+            <GuitarNightAccount
+              onSignIn={openTopbarSignIn}
+              onGoogleRedirectResult={handleGoogleRedirectResult}
+            />
           </Suspense>
         </div>
       </div>
@@ -1219,10 +1362,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       </aside>
 
       {/* The drawer joins the tuner and the Learn shelf here: while any of
-          the three is open the room behind it is inert, so a Tab out of the
-          panel cannot land on something the scrim is covering. The topbar is
-          deliberately NOT inert for the drawer — the button that closes it
-          lives there. */}
+          the three is open the room behind it is inert. The drawer owns a
+          focus trap, so the non-inert topbar cannot receive focus through the
+          scrim; its Room trigger remains the explicit focus-return target. */}
       <main
         class={styles.main}
         classList={{ [styles.mainRoom]: isStageView() }}
@@ -1386,16 +1528,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           {cloudSplitBlockerHeading(blocked().blocker)}
                         </strong>
                         <span>{blocked().blocker.message}</span>
-                        <Show when={blocked().blocker.cta}>
-                          {(cta) => (
-                            <a
-                              class={styles.bandPreparationAction}
-                              href={`/#/settings/${cta().section}`}
-                            >
-                              {cta().label}
-                            </a>
-                          )}
-                        </Show>
                         <small>
                           Your existing vocals and accompaniment are unchanged,
                           and nothing was charged.
@@ -1897,8 +2029,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </Match>
                   <Match when={bandPreparationBlocked()}>
                     {(blocked) => (
-                      <Show
-                        when={blocked().blocker.cta}
+                      <Switch
                         fallback={
                           <button
                             class={styles.completionAction}
@@ -1909,17 +2040,30 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           </button>
                         }
                       >
-                        {(cta) => (
-                          // A link, not a retry: retrying cannot help until
-                          // the thing it is missing exists.
+                        <Match when={blocked().blocker.reason === 'signed-out'}>
+                          <button
+                            class={styles.completionAction}
+                            type="button"
+                            onClick={() =>
+                              openBandPreparationSignIn(blocked().sessionId)
+                            }
+                          >
+                            Sign in
+                          </button>
+                        </Match>
+                        <Match
+                          when={
+                            blocked().blocker.reason === 'insufficient-credits'
+                          }
+                        >
                           <a
                             class={styles.completionAction}
-                            href={`/#/settings/${cta().section}`}
+                            href="/#/settings/credits"
                           >
-                            {cta().label}
+                            Get credits
                           </a>
-                        )}
-                      </Show>
+                        </Match>
+                      </Switch>
                     )}
                   </Match>
                   <Match when={bandPreparationError()}>
@@ -2167,6 +2311,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       </main>
 
       <Notifications />
+      <Show when={authModalMode() !== null}>
+        <Suspense>
+          <AuthModal
+            tone="guitar-night"
+            onAuthenticated={handleAuthenticated}
+            prepareGoogleRedirect={prepareGoogleRedirect}
+          />
+        </Suspense>
+      </Show>
       <Show when={showVoiceHelp()}>
         <VoiceCommandsOverlay
           tone="velvet"

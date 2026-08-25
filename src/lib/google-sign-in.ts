@@ -20,10 +20,28 @@
 
 import { createSignal } from 'solid-js'
 import { googleSignInUrl } from '@/db/services/auth-service'
+import { IS_PR_PREVIEW } from '@/lib/defaults'
 
 /** Shown when the consent URL could not be fetched. */
 export const GOOGLE_SIGN_IN_UNREACHABLE =
   'Could not reach Google sign-in. Try again.'
+
+/**
+ * Versioned Workers previews cannot use Google's exact-match callback URI.
+ * Email/password auth remains available there; dev and production keep Google.
+ */
+export const GOOGLE_SIGN_IN_PR_PREVIEW_UNAVAILABLE =
+  'Google sign-in is unavailable on pull request previews. Use email and password here, or test Google sign-in on dev.mercurypitch.com.'
+
+export function getGoogleSignInUnavailableReason(
+  isPrPreview: boolean,
+): string | null {
+  return isPrPreview ? GOOGLE_SIGN_IN_PR_PREVIEW_UNAVAILABLE : null
+}
+
+/** A message to show in place of Google sign-in, or `null` when available. */
+export const googleSignInUnavailableReason =
+  getGoogleSignInUnavailableReason(IS_PR_PREVIEW)
 
 // The consent URL is FETCHED (see below), and on a slow connection that
 // round trip took visible seconds during which the button gave no sign it
@@ -39,6 +57,15 @@ export const googleSignInPending = pending
 /** Test seam: in production the page unloads after a successful start. */
 export function resetGoogleSignInPending(): void {
   setPending(false)
+}
+
+export interface GoogleSignInOptions {
+  /**
+   * Called once a Google request starts and before the consent URL is fetched.
+   * A host can persist one narrow return intent here. Return a rollback which
+   * removes it if fetching the URL or navigating to it fails.
+   */
+  prepareRedirect?: () => (() => void) | undefined
 }
 
 // The one production path where the page does NOT unload after a
@@ -65,13 +92,22 @@ if (typeof window !== 'undefined') {
  * device or a 500 can fail, and a click handler that throws leaves the button
  * looking dead.
  */
-export async function startGoogleSignIn(): Promise<string | null> {
+export async function startGoogleSignIn(
+  options: GoogleSignInOptions = {},
+): Promise<string | null> {
+  if (googleSignInUnavailableReason !== null) {
+    return googleSignInUnavailableReason
+  }
   if (pending()) return null
   setPending(true)
+  let rollbackRedirect: (() => void) | undefined
   try {
-    window.location.assign(await googleSignInUrl())
+    rollbackRedirect = options.prepareRedirect?.() ?? undefined
+    const url = await googleSignInUrl()
+    window.location.assign(url)
     return null
   } catch {
+    rollbackRedirect?.()
     setPending(false)
     return GOOGLE_SIGN_IN_UNREACHABLE
   }

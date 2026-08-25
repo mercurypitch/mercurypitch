@@ -114,7 +114,7 @@ describe('useGuitarNightBandPreparationController', () => {
     const blocker = {
       reason: 'signed-out' as const,
       message: 'Separating the band needs an account.',
-      cta: { label: 'Open Account', section: 'account' as const },
+      cta: { label: 'Sign in', section: 'account' as const },
     }
 
     it('starts no work at all when the prerequisites are not met', async () => {

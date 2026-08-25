@@ -2,18 +2,23 @@
 // ============================================================
 //
 // Lazy-loaded so the auth and billing services stay out of the room's first
-// paint. It reports state and links out; it does not carry a sign-in form.
-// Signing in happens in the studio, which owns the shared AuthModal — pulling
-// that modal here would drag the app shell (ui-store, notifications,
-// voiceprints) onto a standalone page that deliberately has none of it.
+// paint. It reports state and delegates sign-in to the route-level host; it
+// does not carry a second form or authentication state machine of its own.
 
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { UserRound } from '@/components/icons'
-import { accountHeld } from '@/db/services/auth-service'
+import type { GoogleRedirectResult } from '@/db/services/auth-service'
+import { accountHeld, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
+import { showNotification } from '@/stores/notifications-store'
 import styles from './GuitarNightApp.module.css'
 
-export function GuitarNightAccount() {
+interface GuitarNightAccountProps {
+  onSignIn: () => void
+  onGoogleRedirectResult?: (result: GoogleRedirectResult) => void
+}
+
+export function GuitarNightAccount(props: GuitarNightAccountProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
   let trigger: HTMLButtonElement | undefined
 
@@ -24,6 +29,16 @@ export function GuitarNightAccount() {
   }
 
   onMount(() => {
+    const googleResult = takeGoogleRedirectResult()
+    if (googleResult !== null) {
+      props.onGoogleRedirectResult?.(googleResult)
+      if (!googleResult.ok) {
+        showNotification(
+          `Google sign-in failed: ${googleResult.error}`,
+          'error',
+        )
+      }
+    }
     void refreshAccount()
     // Any click outside closes the menu: it overlaps the stage, and a menu
     // left open over a moving tab is worse than no menu.
@@ -70,16 +85,17 @@ export function GuitarNightAccount() {
     <Show
       when={accountHeld()}
       fallback={
-        <a
+        <button
+          type="button"
           class={styles.accountChip}
-          href="/#/settings/account"
           aria-label="Sign in to MercuryPitch"
+          onClick={props.onSignIn}
         >
           <span aria-hidden="true">
             <UserRound />
           </span>
           <span class={styles.accountName}>Sign in</span>
-        </a>
+        </button>
       }
     >
       <div class={styles.accountChipWrap}>

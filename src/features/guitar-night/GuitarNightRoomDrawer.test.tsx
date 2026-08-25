@@ -108,7 +108,7 @@ describe('the top rail', () => {
   it('keeps account access beside Room instead of hiding it in the drawer', async () => {
     mountRoom()
 
-    const account = await screen.findByRole('link', {
+    const account = await screen.findByRole('button', {
       name: 'Sign in to MercuryPitch',
     })
     expect(screen.getByTestId('guitar-night-topbar')).toContainElement(account)
@@ -151,6 +151,20 @@ describe('the drawer', () => {
     fireEvent.click(roomButton())
     expect(inert(main as HTMLElement)).toBe(false)
     expect(main?.getAttribute('aria-hidden')).toBeNull()
+  })
+
+  it('cycles focus inside the open drawer instead of onto covered topbar actions', async () => {
+    mountRoom()
+    fireEvent.click(roomButton())
+
+    const fullStudio = screen.getByRole('link', { name: 'Full studio' })
+    fullStudio.focus()
+    fireEvent.keyDown(fullStudio, { key: 'Tab' })
+
+    const close = drawer().querySelector<HTMLButtonElement>(
+      '[aria-label="Close room settings"]',
+    )
+    await waitFor(() => expect(close).toHaveFocus())
   })
 
   it('shows every room as a picture with its access state', () => {

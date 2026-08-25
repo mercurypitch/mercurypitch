@@ -17,6 +17,18 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/db/services/auth-service', () => mocks)
 
+vi.mock('../account/PhoneSignIn', () => ({
+  PhoneSignIn: (props: { onLinked: () => void }) => (
+    <button
+      type="button"
+      data-testid="complete-phone-link"
+      onClick={() => props.onLinked()}
+    >
+      Complete phone link
+    </button>
+  ),
+}))
+
 import { closeAuthModal, openAuthModal } from '@/stores/ui-store'
 import { AuthModal } from '../account/AuthModal'
 
@@ -34,7 +46,8 @@ describe('AuthModal', () => {
 
   it('signs in with email and password, then closes', async () => {
     mocks.loginWithPassword.mockResolvedValue({})
-    render(() => <AuthModal />)
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
 
     openAuthModal('login')
     fireEvent.input(await screen.findByTestId('auth-email'), {
@@ -50,6 +63,7 @@ describe('AuthModal', () => {
       'secret123',
       '',
     )
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
     await waitFor(() =>
       expect(
         screen.queryByTestId('auth-modal-overlay'),
@@ -59,7 +73,8 @@ describe('AuthModal', () => {
 
   it('registers with email, password and display name', async () => {
     mocks.registerWithPassword.mockResolvedValue({})
-    render(() => <AuthModal />)
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
 
     openAuthModal('register')
     fireEvent.input(await screen.findByTestId('auth-display-name'), {
@@ -80,6 +95,48 @@ describe('AuthModal', () => {
         'Maff',
         '',
       ),
+    )
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+  })
+
+  it('uses the requested tone without changing the shared dialog contract', async () => {
+    render(() => <AuthModal tone="guitar-night" />)
+
+    openAuthModal('login')
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByTestId('auth-modal-overlay')).toHaveAttribute(
+      'data-tone',
+      'guitar-night',
+    )
+  })
+
+  it('moves focus into the newly selected account pane', async () => {
+    render(() => <AuthModal tone="guitar-night" />)
+
+    openAuthModal('login')
+    const createAccount = await screen.findByTestId('auth-switch-register')
+    createAccount.focus()
+    fireEvent.click(createAccount)
+
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-display-name')).toHaveFocus(),
+    )
+  })
+
+  it('reconciles account-aware UI when phone linking completes', async () => {
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+
+    openAuthModal('login')
+    fireEvent.click(await screen.findByTestId('auth-phone'))
+    fireEvent.click(await screen.findByTestId('complete-phone-link'))
+
+    expect(onAuthenticated).toHaveBeenCalledTimes(1)
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('auth-modal-overlay'),
+      ).not.toBeInTheDocument(),
     )
   })
 
@@ -121,6 +178,37 @@ describe('AuthModal', () => {
       ),
     )
     expect(await screen.findByTestId('auth-forgot-sent')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('heading')).toHaveFocus())
+  })
+
+  it('can close a stalled request without running its host continuation', async () => {
+    let finishLogin: (() => void) | undefined
+    mocks.loginWithPassword.mockReturnValue(
+      new Promise((resolve) => {
+        finishLogin = () => resolve({})
+      }),
+    )
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    await waitFor(() =>
+      expect(screen.getByRole('dialog')).toHaveAttribute('aria-busy', 'true'),
+    )
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    finishLogin?.()
+    await Promise.resolve()
+    expect(onAuthenticated).not.toHaveBeenCalled()
   })
 
   it('surfaces server errors in the form', async () => {

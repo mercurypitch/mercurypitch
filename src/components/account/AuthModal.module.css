@@ -36,6 +36,27 @@
   animation: authOverlayIn 0.15s ease;
 }
 
+/* The authentication state machine is shared with the standalone rehearsal
+   room. Only its material changes there: charcoal cloth, walnut warmth and
+   the same amber/teal signal pair as Guitar Night's faceplates. Component
+   variables keep that room-specific treatment from leaking into the studio. */
+.overlay[data-tone='guitar-night'] {
+  --bg-primary: #0d0b09;
+  --bg-secondary: #16110e;
+  --bg-tertiary: rgba(244, 234, 219, 0.055);
+  --text-primary: #f4eadb;
+  --text-secondary: #baac99;
+  --text-muted: rgba(244, 234, 219, 0.56);
+  --border: rgba(216, 200, 175, 0.2);
+  --accent: #f0bd78;
+  --green: #6acabd;
+  --red: #ff9a8f;
+
+  background: rgba(7, 6, 5, 0.76);
+  -webkit-backdrop-filter: blur(7px) saturate(0.92);
+  backdrop-filter: blur(7px) saturate(0.92);
+}
+
 .dialog {
   position: relative;
   width: 100%;
@@ -50,6 +71,16 @@
   animation: authDialogIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+.overlay[data-tone='guitar-night'] .dialog {
+  border-color: rgba(224, 164, 93, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%),
+    rgba(22, 17, 14, 0.985);
+  box-shadow:
+    0 1.8rem 5rem rgba(0, 0, 0, 0.58),
+    inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
 /* Logo-palette hairline along the top edge (see displayNamePill). */
 .dialog::before {
   content: '';
@@ -61,6 +92,11 @@
   border-radius: 0 0 2px 2px;
   background: linear-gradient(120deg, #58a6ff, #bc8cff 55%, #2dd4bf);
   opacity: 0.85;
+}
+
+.overlay[data-tone='guitar-night'] .dialog::before {
+  background: linear-gradient(90deg, #e0a45d, #f0bd78 58%, #6acabd);
+  opacity: 0.78;
 }
 
 .head {
@@ -79,11 +115,24 @@
   letter-spacing: 0.1px;
 }
 
+.overlay[data-tone='guitar-night'] .title {
+  font-family:
+    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
 .close {
   display: inline-flex;
+  flex: 0 0 44px;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -126,6 +175,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.15s ease;
+  min-height: 44px;
 }
 
 .googleButton:hover {
@@ -143,6 +193,17 @@
 
 .googleButton + .googleButton {
   margin-top: 10px;
+}
+
+.providerNote {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  color: var(--text-secondary, #8b949e);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* "or use email" — hairline on both sides of a quiet label */
@@ -194,6 +255,7 @@
 
 .input {
   width: 100%;
+  min-height: 44px;
   padding: 9px 11px;
   border-radius: 8px;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
@@ -227,7 +289,7 @@
 .passwordField .input {
   flex: 1;
   min-width: 0;
-  padding-right: 40px;
+  padding-right: 48px;
 }
 
 .revealButton {
@@ -235,10 +297,11 @@
   top: 0;
   right: 0;
   height: 100%;
+  min-width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
+  padding: 0;
   border: none;
   background: none;
   color: var(--text-secondary, #8b949e);
@@ -270,6 +333,7 @@
 
 .submit {
   width: 100%;
+  min-height: 44px;
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid var(--accent, #58a6ff);
@@ -298,9 +362,12 @@
 }
 
 .linkButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   background: none;
   border: none;
-  padding: 0;
+  padding: 0 0.15rem;
   color: var(--accent, #58a6ff);
   font-size: inherit;
   font-weight: 600;

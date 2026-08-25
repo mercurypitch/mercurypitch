@@ -13,10 +13,22 @@ const accountState = vi.hoisted(() => ({
   ready: true,
   credits: 12 as number | null,
   held: true,
+  googleResult: null as { ok: true } | { ok: false; error: string } | null,
 }))
+
+const notifications = vi.hoisted(() => ({ show: vi.fn() }))
 
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => accountState.held,
+  takeGoogleRedirectResult: () => {
+    const result = accountState.googleResult
+    accountState.googleResult = null
+    return result
+  },
+}))
+
+vi.mock('@/stores/notifications-store', () => ({
+  showNotification: notifications.show,
 }))
 
 vi.mock('@/lib/standalone-account', () => ({
@@ -36,11 +48,13 @@ afterEach(() => {
   accountState.ready = true
   accountState.credits = 12
   accountState.held = true
+  accountState.googleResult = null
+  notifications.show.mockClear()
 })
 
 describe('GuitarNightAccount', () => {
   it('uses a disclosure and returns focus when Escape closes it', async () => {
-    render(() => <GuitarNightAccount />)
+    render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
 
     const trigger = screen.getByRole('button', {
       name: 'Account for player, 12 credits remaining',
@@ -60,16 +74,23 @@ describe('GuitarNightAccount', () => {
     await waitFor(() => expect(trigger).toHaveFocus())
   })
 
-  it('keeps sign-in actionable when the compact rail hides its text', () => {
+  it('opens sign-in in the room when the compact rail hides its text', () => {
     accountState.account = { email: null, provider: 'anonymous' }
     accountState.credits = null
     accountState.held = false
+    const onSignIn = vi.fn()
 
-    render(() => <GuitarNightAccount />)
+    render(() => <GuitarNightAccount onSignIn={onSignIn} />)
 
+    const trigger = screen.getByRole('button', {
+      name: 'Sign in to MercuryPitch',
+    })
+    fireEvent.click(trigger)
+
+    expect(onSignIn).toHaveBeenCalledTimes(1)
     expect(
-      screen.getByRole('link', { name: 'Sign in to MercuryPitch' }),
-    ).toHaveAttribute('href', '/#/settings/account')
+      screen.queryByRole('link', { name: 'Sign in to MercuryPitch' }),
+    ).not.toBeInTheDocument()
   })
 
   it('shows held-account access before profile details finish loading', () => {
@@ -77,13 +98,40 @@ describe('GuitarNightAccount', () => {
     accountState.ready = false
     accountState.credits = null
 
-    render(() => <GuitarNightAccount />)
+    render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
 
     expect(
       screen.getByRole('button', { name: 'Open account options' }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('link', { name: 'Sign in to MercuryPitch' }),
+      screen.queryByRole('button', { name: 'Sign in to MercuryPitch' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('surfaces a failed Google return in the standalone room', () => {
+    accountState.googleResult = { ok: false, error: 'access_denied' }
+
+    render(() => <GuitarNightAccount onSignIn={vi.fn()} />)
+
+    expect(notifications.show).toHaveBeenCalledWith(
+      'Google sign-in failed: access_denied',
+      'error',
+    )
+  })
+
+  it('forwards a successful Google return to the room host once', () => {
+    const onGoogleRedirectResult = vi.fn()
+    accountState.googleResult = { ok: true }
+
+    render(() => (
+      <GuitarNightAccount
+        onSignIn={vi.fn()}
+        onGoogleRedirectResult={onGoogleRedirectResult}
+      />
+    ))
+
+    expect(onGoogleRedirectResult).toHaveBeenCalledOnce()
+    expect(onGoogleRedirectResult).toHaveBeenCalledWith({ ok: true })
+    expect(accountState.googleResult).toBeNull()
   })
 })

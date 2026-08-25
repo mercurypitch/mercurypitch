@@ -210,6 +210,14 @@ export function useGuitarNightBandPreparationController(
     void execute(sessionId, currentGeneration, abort)
   }
 
+  /** Surface a freshly checked prerequisite without loading the billable port. */
+  const block = (sessionId: string, blocker: CloudSplitBlocker): void => {
+    generation += 1
+    activeAbort?.abort()
+    activeAbort = null
+    setState({ kind: 'blocked', sessionId, blocker })
+  }
+
   const cancel = (): void => {
     generation += 1
     activeAbort?.abort()
@@ -232,6 +240,7 @@ export function useGuitarNightBandPreparationController(
     state,
     isPreparing: () => state().kind === 'preparing',
     start,
+    block,
     cancel,
     clear,
   }

@@ -25,7 +25,7 @@ describe('cloudSplitBlocker', () => {
   it('blocks a signed-out singer and sends them to Account', () => {
     const blocker = cloudSplitBlocker({ signedIn: false })
     expect(blocker?.reason).toBe('signed-out')
-    expect(blocker?.cta).toEqual({ label: 'Open Account', section: 'account' })
+    expect(blocker?.cta).toEqual({ label: 'Sign in', section: 'account' })
   })
 
   it('blocks an empty balance even when the price is unknown', () => {

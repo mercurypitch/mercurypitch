@@ -233,6 +233,13 @@ jobs:
           preview_database_name="mercurypitch-db-preview"
           db_worker_name="mercury-pitch-db-dev"
           frontend_worker_name="mercurypitch-preview"
+          preview_turnstile_site_key="1x00000000000000000000AA"
+          preview_turnstile_secret="1x0000000000000000000000000000000AA"
+          preview_turnstile_secrets_file="$RUNNER_TEMP/pr-preview-turnstile.env"
+          umask 077
+          printf 'TURNSTILE_SECRET=%s\n' "$preview_turnstile_secret" \
+            > "$preview_turnstile_secrets_file"
+          trap 'rm -f "$preview_turnstile_secrets_file"' EXIT
           database_id=$(
             pnpm exec wrangler d1 list --json \
               | jq -r --arg name "$preview_database_name" \
@@ -272,6 +279,12 @@ jobs:
 
           writeFileSync(process.env.GENERATED_DB_CONFIG, generated)
           NODE
+
+          # This version inherits the dev Worker's secrets, including Resend
+          # when configured. The immutable preview binding is the server-side
+          # fail-closed guard that keeps public test CAPTCHA credentials from
+          # turning the preview into a real email relay.
+          grep -F -q '"PR_PREVIEW": "true"' "$generated_db_config"
 
           # The schema ships as the tracked migration chain (schema.sql was
           # retired by the migration work): wrangler records applied files in
@@ -336,6 +349,7 @@ jobs:
 
           pnpm exec wrangler versions upload \
             --config "$generated_db_config" \
+            --secrets-file "$preview_turnstile_secrets_file" \
             --message "PR #${PR_NUMBER} ${GITHUB_SHA}" \
             2>&1 | tee db-upload.log
 
@@ -361,6 +375,13 @@ jobs:
           jq -e '.exercises | arrays' db-smoke.json > /dev/null
 
           export VITE_API_BASE_URL="$db_preview_url"
+          # A versioned workers.dev hostname changes on every preview upload,
+          # so it cannot be allowlisted on the real Turnstile widget. Pair the
+          # frontend and DB version with Cloudflare's documented always-pass
+          # test credentials. They are scoped to this immutable PR version;
+          # dev and production keep their real credentials unchanged.
+          export VITE_TURNSTILE_SITE_KEY="$preview_turnstile_site_key"
+          export VITE_PR_PREVIEW=true
           # Previews are served WITHOUT the jam signaling worker, so the real
           # client hangs on a WebSocket that never connects and the Jam tab is
           # a dead end. The mock renders the room with invented peers, clearly
@@ -382,6 +403,11 @@ jobs:
           # both sides of the pairing: the generated bundle must point to this
           # PR's immutable DB version and must never point at production.
           grep -R -F -q --include='*.js' "$db_preview_url" dist/assets
+          grep -R -F -q --include='*.js' "$preview_turnstile_site_key" dist/assets
+          if grep -R -F -q --include='*.js' '0x4AAAAAADwxFpbIS2KUOInz' dist/assets; then
+            echo "Preview bundle unexpectedly contains the real Turnstile site key."
+            exit 1
+          fi
           if grep -R -q --include='*.js' 'https://api.mercurypitch.com' dist/assets; then
             echo "Preview bundle unexpectedly targets the production API."
             exit 1

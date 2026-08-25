@@ -65,7 +65,7 @@ export function cloudSplitBlocker(
       reason: 'signed-out',
       message:
         'Separating the band runs on a cloud GPU, which needs an account. Sign in and your credits come with you.',
-      cta: { label: 'Open Account', section: 'account' },
+      cta: { label: 'Sign in', section: 'account' },
     }
   }
   if (facts.hasInstrumental === false) {

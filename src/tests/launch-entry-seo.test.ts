@@ -133,4 +133,13 @@ describe('launch entry documents', () => {
       expect(sitemap).toContain(`<loc>${url}</loc>`)
     })
   }
+
+  it('consumes Guitar Night Google sign-in before restoring the session', () => {
+    const entry = repoFile('src/features/guitar-night/main.tsx')
+    const consume = entry.indexOf('consumeGoogleRedirect()')
+    const restore = entry.indexOf('void restoreAuth()')
+
+    expect(consume).toBeGreaterThan(-1)
+    expect(restore).toBeGreaterThan(consume)
+  })
 })
