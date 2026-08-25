@@ -1863,7 +1863,12 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
   ).toBeVisible()
   await expect(elapsed).toHaveText('0:01')
 
-  await loopControls.getByRole('button', { name: 'A', exact: true }).click()
+  await loopControls
+    .getByRole('button', {
+      name: 'A — start the loop at the playhead',
+      exact: true,
+    })
+    .click()
   const markerA = deck.getByTestId('guitar-night-score-loop-marker-a')
   await expect(markerA).toBeVisible()
   const aBeat = Number(await markerA.getAttribute('aria-valuenow'))
@@ -1875,7 +1880,12 @@ test('activates, edits, and clears an authored A B loop while playing with a rea
   // beat; this smoke test protects the browser gesture and live transport.
   await page.waitForTimeout(2_000)
   const beforeB = Number(await seek.inputValue())
-  await loopControls.getByRole('button', { name: 'B', exact: true }).click()
+  await loopControls
+    .getByRole('button', {
+      name: 'B — end the loop at the playhead',
+      exact: true,
+    })
+    .click()
   const markerB = deck.getByTestId('guitar-night-score-loop-marker-b')
   await expect(markerB).toBeVisible()
   const firstBBeat = Number(await markerB.getAttribute('aria-valuenow'))

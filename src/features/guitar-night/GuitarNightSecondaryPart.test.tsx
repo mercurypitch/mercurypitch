@@ -138,14 +138,107 @@ describe('GuitarNightSecondaryPart', () => {
     expect(onSwap).toHaveBeenCalledWith('track-rhythm')
   })
 
-  it('follows the playhead it was given', () => {
-    const [beat, setBeat] = [() => 0, vi.fn()]
-    void setBeat
+  it('follows the playhead while preserving keyed note elements', async () => {
+    const [beat, setBeat] = createSignal(0)
     const { container } = render(() => (
       <GuitarNightSecondaryPart lane={() => lane()} playheadBeat={beat} />
     ))
-    const first = container.querySelector('b')
-    expect(first?.getAttribute('style')).toContain('left:')
+    const first = container.querySelector('[data-note-id="n0-0"]')
+    const firstLeft = (first as HTMLElement | null)?.style.left
+
+    setBeat(0.5)
+    await Promise.resolve()
+
+    expect(container.querySelector('[data-note-id="n0-0"]')).toBe(first)
+    expect((first as HTMLElement | null)?.style.left).not.toBe(firstLeft)
+  })
+
+  it('reuses its host stage viewport signal without another media listener', () => {
+    const matchMedia = vi.fn()
+    vi.stubGlobal('matchMedia', matchMedia)
+
+    render(() => (
+      <GuitarNightSecondaryPart
+        lane={() => lane()}
+        playheadBeat={() => 0}
+        narrowViewport={() => true}
+      />
+    ))
+
+    expect(matchMedia).not.toHaveBeenCalled()
+    expect(screen.getByTestId('guitar-night-secondary-part')).toHaveAttribute(
+      'data-placement-mode',
+      'docked',
+    )
+  })
+
+  it('ignores preview mutations and observes protected chrome added later', async () => {
+    const observed = vi.fn()
+    class TestResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        void callback
+      }
+      observe = observed
+      unobserve = vi.fn()
+      disconnect = vi.fn()
+    }
+    vi.stubGlobal('ResizeObserver', TestResizeObserver)
+
+    const rect = (width: number, height: number): DOMRect =>
+      ({
+        x: 0,
+        y: 0,
+        top: 0,
+        right: width,
+        bottom: height,
+        left: 0,
+        width,
+        height,
+        toJSON: () => ({}),
+      }) as DOMRect
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.hasAttribute('data-secondary-boundary')) return rect(900, 540)
+        if (
+          this.getAttribute('data-testid') === 'guitar-night-secondary-part'
+        ) {
+          return rect(300, 140)
+        }
+        return rect(0, 0)
+      })
+
+    let boundary: HTMLDivElement | undefined
+    const [beat, setBeat] = createSignal(0)
+    render(() => (
+      <div ref={boundary} data-secondary-boundary>
+        <GuitarNightSecondaryPart
+          lane={() => lane()}
+          playheadBeat={beat}
+          boundaryElement={() => boundary}
+        />
+      </div>
+    ))
+    await waitFor(() =>
+      expect(screen.getByTestId('guitar-night-secondary-part')).toHaveAttribute(
+        'data-positioned',
+        'true',
+      ),
+    )
+
+    rectSpy.mockClear()
+    setBeat(40)
+    await waitFor(() =>
+      expect(screen.queryByText('3', { selector: 'b' })).toBeNull(),
+    )
+    await Promise.resolve()
+    expect(rectSpy).not.toHaveBeenCalled()
+
+    const protectedControl = document.createElement('div')
+    protectedControl.setAttribute('data-guitar-night-secondary-protected', '')
+    boundary?.append(protectedControl)
+
+    await waitFor(() => expect(observed).toHaveBeenCalledWith(protectedControl))
   })
 
   it('moves and resizes from the keyboard, then persists that layout', async () => {

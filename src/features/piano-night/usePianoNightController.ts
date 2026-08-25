@@ -5,7 +5,7 @@
 // The standalone route stays store-free on first paint. Browser capabilities
 // activate only from Play, Connect MIDI, or an on-screen key gesture.
 
-import { batch, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import type { PianoInputSnapshot, PianoInputState, PianoPedalKind, } from '@/features/piano/input/piano-input-state'
 import { createPianoInputState } from '@/features/piano/input/piano-input-state'
 import { createTouchPianoInputPort } from '@/features/piano/input/touch-piano-input-port'
@@ -37,6 +37,7 @@ const MAXIMUM_TEMPO_BPM = 280
 const SAMPLE_WINDOW_BEATS = 4
 const PRACTICE_SPEED_STORAGE_KEY = 'pitchperfect_piano_night_practice_speed'
 const MASTER_VOLUME_STORAGE_KEY = 'pitchperfect_piano_night_master_volume'
+const MASTER_VOLUME_PERSIST_IDLE_MS = 180
 const INSTRUMENT_STORAGE_KEY = 'pitchperfect_piano_night_instrument'
 const SOUND_CHARACTER_STORAGE_KEY = 'pitchperfect_piano_night_character'
 const SOUND_AMBIENCE_STORAGE_KEY = 'pitchperfect_piano_night_ambience'
@@ -153,17 +154,51 @@ export function usePianoNightController() {
     1,
     { validator: isPianoNightPracticeSpeed },
   )
-  const [masterVolume, setMasterVolumeState] = createPersistedSignal<number>(
-    MASTER_VOLUME_STORAGE_KEY,
-    PIANO_NIGHT_DEFAULT_MASTER_VOLUME,
-    {
-      validator: (value): value is number =>
-        typeof value === 'number' &&
-        Number.isFinite(value) &&
-        value >= 0 &&
-        value <= 1,
-    },
+  const [persistedMasterVolume, persistMasterVolume] =
+    createPersistedSignal<number>(
+      MASTER_VOLUME_STORAGE_KEY,
+      PIANO_NIGHT_DEFAULT_MASTER_VOLUME,
+      {
+        validator: (value): value is number =>
+          typeof value === 'number' &&
+          Number.isFinite(value) &&
+          value >= 0 &&
+          value <= 1,
+      },
+    )
+  const [masterVolume, setMasterVolumeState] = createSignal(
+    persistedMasterVolume(),
   )
+  let pendingMasterVolume: number | null = null
+  let masterVolumePersistTimer: ReturnType<typeof setTimeout> | null = null
+
+  const flushMasterVolumePersistence = (): void => {
+    if (masterVolumePersistTimer !== null) {
+      clearTimeout(masterVolumePersistTimer)
+      masterVolumePersistTimer = null
+    }
+    const pending = pendingMasterVolume
+    pendingMasterVolume = null
+    if (pending !== null && pending !== untrack(persistedMasterVolume)) {
+      persistMasterVolume(pending)
+    }
+  }
+
+  const scheduleMasterVolumePersistence = (next: number): void => {
+    if (masterVolumePersistTimer !== null) {
+      clearTimeout(masterVolumePersistTimer)
+      masterVolumePersistTimer = null
+    }
+    if (next === untrack(persistedMasterVolume)) {
+      pendingMasterVolume = null
+      return
+    }
+    pendingMasterVolume = next
+    masterVolumePersistTimer = setTimeout(
+      flushMasterVolumePersistence,
+      MASTER_VOLUME_PERSIST_IDLE_MS,
+    )
+  }
   const stage = () => source().stage
   const arrangement = createMemo(() => createPianoNightArrangement(source()))
   const projectActiveMidis = createMemo(() =>
@@ -182,7 +217,15 @@ export function usePianoNightController() {
     fallback: fallbackSynth,
     preference: 'fallback',
   })
-  instrument.setVolume(masterVolume())
+  instrument.setVolume(untrack(masterVolume))
+  createEffect(() => {
+    const hydrated = persistedMasterVolume()
+    if (pendingMasterVolume !== null || hydrated === untrack(masterVolume)) {
+      return
+    }
+    setMasterVolumeState(hydrated)
+    instrument.setVolume(hydrated)
+  })
   const scheduler = createPianoPerformanceScheduler({
     transport,
     notes: () => arrangement().audibleNotes,
@@ -1120,8 +1163,11 @@ export function usePianoNightController() {
 
   const setMasterVolume = (volume: number): void => {
     const normalized = clampPianoNightMasterVolume(volume)
-    setMasterVolumeState(normalized)
-    instrument.setVolume(normalized)
+    if (normalized !== masterVolume()) {
+      setMasterVolumeState(normalized)
+      instrument.setVolume(normalized)
+    }
+    scheduleMasterVolumePersistence(normalized)
     setStatusMessage(`Piano volume set to ${Math.round(normalized * 100)}%.`)
   }
 
@@ -1474,6 +1520,7 @@ export function usePianoNightController() {
   })
 
   onCleanup(() => {
+    flushMasterVolumePersistence()
     disposed = true
     commandGeneration += 1
     cancelSamplePreparation()
@@ -1542,6 +1589,7 @@ export function usePianoNightController() {
     setPracticeRepeatCount,
     setPracticeSpeed,
     setMasterVolume,
+    flushMasterVolumePersistence,
     loadSampledInstrument,
     setInstrumentPreference,
     setSoundCharacter,

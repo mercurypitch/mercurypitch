@@ -23,7 +23,7 @@
   cursor: pointer;
 }
 
-.cycle:hover:not(:disabled) {
+.cycle:hover:not([aria-disabled='true']) {
   border-color: rgba(224, 164, 93, 0.34);
   color: var(--ivory, #f4eadb);
   background: rgba(224, 164, 93, 0.07);
@@ -49,12 +49,12 @@
     0 0.45rem 1.25rem rgba(224, 164, 93, 0.14);
 }
 
-.cycle:disabled {
+.cycle[aria-disabled='true'] {
   opacity: 0.56;
   cursor: not-allowed;
 }
 
-.cycle[data-pending='true']:disabled {
+.cycle[data-pending='true'][aria-disabled='true'] {
   opacity: 0.78;
   cursor: wait;
 }
@@ -109,6 +109,18 @@
 
 .cycle[data-active='true'] .eyebrow {
   color: rgba(240, 189, 120, 0.68);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* A 320px phone at 200% text cannot hold the long faceplate beside the Play

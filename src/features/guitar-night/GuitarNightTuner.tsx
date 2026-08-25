@@ -8,6 +8,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { CheckSmall, ChevronDown, ChevronLeft, Mic, Volume2, VolumeX, } from '@/components/icons'
+import { guitarInputProfileLabel } from '@/lib/guitar/guitar-input-profile'
 import type { MicPermissionState } from '@/lib/jam/media-errors'
 import styles from './GuitarNightTuner.module.css'
 
@@ -614,7 +615,7 @@ export function GuitarNightTuner(props: GuitarNightTunerProps) {
                     disabled={controlsDisabled()}
                     onClick={() => props.onInputProfileChange?.('interface')}
                   >
-                    Plugged in
+                    {guitarInputProfileLabel('interface')}
                   </button>
                 </div>
               </div>

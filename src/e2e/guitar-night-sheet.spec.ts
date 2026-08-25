@@ -128,14 +128,24 @@ test('seeks and edits a full-width sheet loop without horizontal scroll @smoke',
   })
   const loopControls = deck.getByRole('group', { name: 'Section loop' })
 
-  await loopControls.getByRole('button', { name: 'A', exact: true }).click()
+  await loopControls
+    .getByRole('button', {
+      name: 'A — start the loop at the playhead',
+      exact: true,
+    })
+    .click()
   await scorePosition.focus()
   await page.keyboard.press('End')
   const duration = Number(await scorePosition.getAttribute('max'))
   await expect
     .poll(async () => Number(await scorePosition.inputValue()))
     .toBe(duration)
-  await loopControls.getByRole('button', { name: 'B', exact: true }).click()
+  await loopControls
+    .getByRole('button', {
+      name: 'B — end the loop at the playhead',
+      exact: true,
+    })
+    .click()
 
   await page.getByRole('button', { name: 'Sheet', exact: true }).click()
   const sheet = page.getByTestId('guitar-night-sheet')
@@ -200,8 +210,8 @@ test('seeks and edits a full-width sheet loop without horizontal scroll @smoke',
     .poll(async () => Number(await markerB.getAttribute('aria-valuenow')))
     .toBeLessThan(initialB)
 
-  // The Session sheet is intentionally dismissed at pointer start, leaving
-  // the same gesture free to seek the notation underneath it.
+  // Session is a true modal: the first pointer dismisses its scrim and must
+  // not also seek the covered notation. The next intentional click may seek.
   await page.getByTestId('guitar-night-session-trigger').click()
   await expect(page.getByRole('dialog', { name: 'Loaded score' })).toBeVisible()
   const rowSeek = sheet.getByRole('slider', {
@@ -210,12 +220,18 @@ test('seeks and edits a full-width sheet loop without horizontal scroll @smoke',
   })
   const rowBox = await rowSeek.boundingBox()
   expect(rowBox).not.toBeNull()
+  const beforeDismiss = Number(await scorePosition.inputValue())
   await page.mouse.click(
     (rowBox?.x ?? 0) + (rowBox?.width ?? 0) * 0.22,
     (rowBox?.y ?? 0) + (rowBox?.height ?? 0) / 2,
   )
   await expect(page.getByRole('dialog', { name: 'Loaded score' })).toHaveCount(
     0,
+  )
+  expect(Number(await scorePosition.inputValue())).toBeCloseTo(beforeDismiss, 2)
+  await page.mouse.click(
+    (rowBox?.x ?? 0) + (rowBox?.width ?? 0) * 0.22,
+    (rowBox?.y ?? 0) + (rowBox?.height ?? 0) / 2,
   )
   await expect
     .poll(async () => Number(await scorePosition.inputValue()))

@@ -5,6 +5,7 @@ import { createRoot, createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
+import { onPersistedWrite } from '@/lib/storage'
 import type { GuitarNightReference } from './reference-port'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import { GUITAR_NIGHT_SCORE_CHANNEL, GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY, scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
@@ -353,7 +354,7 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(room.status()).toBe('paused')
       expect(room.setupLocked()).toBe(false)
       expect(room.tempoBpm()).toBe(60)
-      expect(room.configuredCountInBeats()).toBe(8)
+      expect(room.configuredCountInBeats()).toBe(4)
       expect(room.hearScore()).toBe(false)
       expect(room.durationBeats()).toBe(10)
       expect(room.displayReference()?.title).toBe('Next Riff')
@@ -672,10 +673,13 @@ describe('useGuitarNightScoreRoomController', () => {
         }),
       )
 
-      expect(room.status()).toBe('paused')
+      expect(room.status()).toBe('complete')
       expect(room.setupLocked()).toBe(false)
       expect(room.displayReference()?.title).toBe('Short part')
       expect(room.playheadBeat()).toBe(2)
+
+      await room.start()
+      expect(getOptions()?.startBeat).toBe(0)
       dispose()
     })
   })
@@ -698,7 +702,7 @@ describe('useGuitarNightScoreRoomController', () => {
       room.setCountInBeats(-3)
       expect(room.countInBeats()).toBe(0)
       room.setCountInBeats(99)
-      expect(room.countInBeats()).toBe(8)
+      expect(room.countInBeats()).toBe(4)
       dispose()
     })
   })
@@ -1398,8 +1402,11 @@ describe('the tab room sounds the tab', () => {
     })
   })
 
-  it('persists and rehydrates the rehearsal mix volume', () => {
+  it('ramps every rehearsal volume input but coalesces persistence', () => {
     localStorage.removeItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)
+    vi.useFakeTimers()
+    const writes: Array<[string, string]> = []
+    onPersistedWrite((key, value) => writes.push([key, value]))
     try {
       createRoot((dispose) => {
         const { band } = bandHarness()
@@ -1411,10 +1418,32 @@ describe('the tab room sounds the tab', () => {
           cancelFrame: frames.cancelFrame,
         })
 
+        room.setMasterVolume(0.31)
+        room.setMasterVolume(0.34)
         room.setMasterVolume(0.37)
         expect(room.masterVolume()).toBe(0.37)
         expect(band.setMasterLevel).toHaveBeenLastCalledWith(0.37)
+        expect(
+          localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY),
+        ).toBeNull()
+
+        vi.advanceTimersByTime(179)
+        expect(
+          localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY),
+        ).toBeNull()
+        vi.advanceTimersByTime(1)
+        expect(localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)).toBe(
+          '0.37',
+        )
+        expect(
+          writes.filter(([key]) => key === GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY),
+        ).toHaveLength(1)
+
+        room.setMasterVolume(0.41)
         dispose()
+        expect(localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)).toBe(
+          '0.41',
+        )
       })
 
       createRoot((dispose) => {
@@ -1427,11 +1456,13 @@ describe('the tab room sounds the tab', () => {
           cancelFrame: frames.cancelFrame,
         })
 
-        expect(room.masterVolume()).toBe(0.37)
-        expect(band.setMasterLevel).toHaveBeenLastCalledWith(0.37)
+        expect(room.masterVolume()).toBe(0.41)
+        expect(band.setMasterLevel).toHaveBeenLastCalledWith(0.41)
         dispose()
       })
     } finally {
+      onPersistedWrite(null)
+      vi.useRealTimers()
       localStorage.removeItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)
     }
   })

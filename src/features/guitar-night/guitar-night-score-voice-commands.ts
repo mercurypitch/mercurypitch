@@ -7,14 +7,11 @@
 // supplied, so the overlay never advertises a control that cannot do anything.
 
 import type { Accessor } from 'solid-js'
-import { BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, SEEK_START_PHRASES, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
+import { BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, COUNT_IN_OFF_PHRASES, COUNT_IN_ON_PHRASES, COUNT_IN_SET_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, SEEK_START_PHRASES, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
-
-export const GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES = [0, 1, 2, 4] as const
-
-export type GuitarNightScoreCountInBeats =
-  (typeof GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES)[number]
+import type { GuitarNightScoreCountInBeats } from './guitar-night-score-count-in'
+import { isGuitarNightScoreCountInBeats, nextGuitarNightScoreCountIn, } from './guitar-night-score-count-in'
 
 export interface GuitarNightScoreVoiceLoop {
   hasA: Accessor<boolean>
@@ -84,22 +81,18 @@ export interface GuitarNightScoreVoiceDeps {
   available?: Accessor<boolean>
 }
 
-const COUNT_IN_SET_PHRASES = [
-  'count in <n>',
+const COUNT_IN_CYCLE_PHRASES = [
+  ...COUNT_IN_ON_PHRASES,
+  'next count in',
+  'cycle count in',
+]
+
+const SCORE_COUNT_IN_SET_PHRASES = [
+  ...COUNT_IN_SET_PHRASES,
+  'count in <n> beat',
   'count in <n> beats',
-  'set count in <n>',
-  'set count in to <n>',
   'set count in to <n> beats',
 ]
-
-const COUNT_IN_OFF_PHRASES = [
-  'count in off',
-  'turn count in off',
-  'disable count in',
-  'no count in',
-]
-
-const COUNT_IN_CYCLE_PHRASES = ['count in', 'next count in', 'cycle count in']
 
 const CLICK_ON_PHRASES = [
   'click on',
@@ -163,10 +156,6 @@ const SHOW_SCORE_PHRASES = [
   'show results',
   'how did i do',
 ]
-
-function isCountInChoice(value: number): value is GuitarNightScoreCountInBeats {
-  return GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES.some((choice) => choice === value)
-}
 
 function formatCountIn(beats: GuitarNightScoreCountInBeats): string {
   if (beats === 0) return 'Count-in off'
@@ -411,7 +400,7 @@ export function createGuitarNightScoreVoiceCommands(
   const countIn = deps.countIn
   if (countIn !== undefined) {
     const setCountIn = (raw: number | undefined): VoiceCommandResult => {
-      if (raw === undefined || !isCountInChoice(raw)) {
+      if (raw === undefined || !isGuitarNightScoreCountInBeats(raw)) {
         return voiceFailure('Count-in can be off, 1, 2 or 4 beats')
       }
       if (countIn.beats() === raw) {
@@ -430,7 +419,7 @@ export function createGuitarNightScoreVoiceCommands(
     add({
       id: 'guitarNight.score.countInSet',
       label: 'Set count-in',
-      phrases: COUNT_IN_SET_PHRASES,
+      phrases: SCORE_COUNT_IN_SET_PHRASES,
       run: (args) => setCountIn(args.n),
     })
     add({
@@ -438,15 +427,7 @@ export function createGuitarNightScoreVoiceCommands(
       label: 'Next count-in',
       phrases: COUNT_IN_CYCLE_PHRASES,
       run: () => {
-        const index = GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES.indexOf(
-          countIn.beats() as GuitarNightScoreCountInBeats,
-        )
-        const next =
-          GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES[
-            index < 0
-              ? 0
-              : (index + 1) % GUITAR_NIGHT_SCORE_COUNT_IN_CHOICES.length
-          ] ?? 0
+        const next = nextGuitarNightScoreCountIn(countIn.beats())
         countIn.setBeats(next)
         return formatCountIn(next)
       },

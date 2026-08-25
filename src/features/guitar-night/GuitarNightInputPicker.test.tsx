@@ -90,7 +90,7 @@ describe('GuitarNightInputPicker', () => {
     render(() => (
       <GuitarNightInputPicker
         profile={() => 'interface'}
-        profileLabel={() => 'Plugged in'}
+        profileLabel={() => 'Direct input'}
         audioInputs={() => []}
         selectedAudioInputId={() => null}
         midiInputs={() => []}

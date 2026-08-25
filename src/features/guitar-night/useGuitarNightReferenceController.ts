@@ -519,6 +519,13 @@ export function useGuitarNightReferenceController(
   const selectTrack = async (trackId: string): Promise<void> => {
     const current = reference()
     if (current === null || current.trackId === trackId) return
+    // Solo is a live audition of a backing lane, not a hidden preference that
+    // may reappear later. Once that lane becomes the scored part it leaves the
+    // backing bus, so clear the audition rather than reviving it silently when
+    // the player switches back.
+    if (soloedBackingTrackId() === trackId) {
+      setSoloBackingTrack({ songId: current.songId, trackId: null })
+    }
     // Remember what is being left, so the corner offers the way back.
     setPreviousScoredTrack({
       songId: current.songId,

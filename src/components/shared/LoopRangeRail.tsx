@@ -141,12 +141,11 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
   }
   const valueFromPointer = (
     event: PointerEvent,
-    element: HTMLDivElement | undefined,
+    bounds: Pick<DOMRect, 'left' | 'width'> | undefined,
     viewport: LoopRangeDomain,
     mark: 'A' | 'B',
   ): number => {
-    if (element === undefined) return markerBounds(mark).start
-    const bounds = element.getBoundingClientRect()
+    if (bounds === undefined) return markerBounds(mark).start
     const ratio = (event.clientX - bounds.left) / Math.max(1, bounds.width)
     const axisValue = loopRangeValueAtRatio(ratio, viewport)
     return legalMarkValue(props.fromAxis(axisValue), mark)
@@ -195,43 +194,50 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
     mark: 'A' | 'B',
     element: () => HTMLDivElement | undefined,
     precision: boolean,
-  ): DragGestureOptions => ({
-    canStart: () => !markerDisabled(mark),
-    onStart: () => {
-      const current = mark === 'A' ? props.markA() : props.markB()
-      setDragTarget(mark)
-      if (mark === 'A') setPreviewA(current)
-      else setPreviewB(current)
-    },
-    onEnd: (_event, reason) => finishMarker(mark, reason),
-    stopPropagation: true,
-    slider: {
-      getAriaLabel: () =>
-        mark === 'A' ? 'Loop start marker' : 'Loop end marker',
-      getValue: () => shownMark(mark) ?? markerBounds(mark).start,
-      getMin: () => markerBounds(mark).start,
-      getMax: () => markerBounds(mark).end,
-      getStep: () => Math.max(Number.EPSILON, props.markStep?.() ?? 0.25),
-      getPageStep: () => Math.max(props.markStep?.() ?? 0.25, 1),
-      getValueFromPointer: (event) =>
-        valueFromPointer(
-          event,
-          element(),
-          precision ? precisionViewport() : axisDomain(),
-          mark,
-        ),
-      getValueText: () => {
-        const value = shownMark(mark)
-        return value === null ? undefined : props.formatMarkValue(value)
+  ): DragGestureOptions => {
+    let gestureBounds: Pick<DOMRect, 'left' | 'width'> | undefined
+    return {
+      canStart: () => !markerDisabled(mark),
+      onStart: () => {
+        gestureBounds = element()?.getBoundingClientRect()
+        const current = mark === 'A' ? props.markA() : props.markB()
+        setDragTarget(mark)
+        if (mark === 'A') setPreviewA(current)
+        else setPreviewB(current)
       },
-      isDisabled: () => markerDisabled(mark),
-      onChange: (value) => {
-        publishMark(mark, value)
-        markKeyboardDirty(mark)
+      onEnd: (_event, reason) => {
+        gestureBounds = undefined
+        finishMarker(mark, reason)
       },
-      onPointerValue: (value) => previewMark(mark, value),
-    },
-  })
+      stopPropagation: true,
+      slider: {
+        getAriaLabel: () =>
+          mark === 'A' ? 'Loop start marker' : 'Loop end marker',
+        getValue: () => shownMark(mark) ?? markerBounds(mark).start,
+        getMin: () => markerBounds(mark).start,
+        getMax: () => markerBounds(mark).end,
+        getStep: () => Math.max(Number.EPSILON, props.markStep?.() ?? 0.25),
+        getPageStep: () => Math.max(props.markStep?.() ?? 0.25, 1),
+        getValueFromPointer: (event) =>
+          valueFromPointer(
+            event,
+            gestureBounds,
+            precision ? precisionViewport() : axisDomain(),
+            mark,
+          ),
+        getValueText: () => {
+          const value = shownMark(mark)
+          return value === null ? undefined : props.formatMarkValue(value)
+        },
+        isDisabled: () => markerDisabled(mark),
+        onChange: (value) => {
+          publishMark(mark, value)
+          markKeyboardDirty(mark)
+        },
+        onPointerValue: (value) => previewMark(mark, value),
+      },
+    }
+  }
   const markerAOptions = markerOptions('A', () => rail, false)
   const markerBOptions = markerOptions('B', () => rail, false)
   const precisionMarkerAOptions = markerOptions('A', () => precisionRail, true)

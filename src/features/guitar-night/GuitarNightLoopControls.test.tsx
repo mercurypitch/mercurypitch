@@ -21,6 +21,8 @@ function renderControls(
     pending: boolean
     hasStart: boolean
     hasEnd: boolean
+    disabled: boolean
+    blockedReason: string
   }> = {},
 ) {
   const onClear = vi.fn()
@@ -30,6 +32,10 @@ function renderControls(
       pending={overrides.pending ?? false}
       hasStart={overrides.hasStart ?? false}
       hasEnd={overrides.hasEnd ?? false}
+      disabled={overrides.disabled ?? false}
+      {...(overrides.blockedReason === undefined
+        ? {}
+        : { blockedReason: overrides.blockedReason })}
       format={(position) => `${position.toFixed(1)}s`}
       onMarkStart={() => undefined}
       onMarkEnd={() => undefined}
@@ -93,13 +99,25 @@ describe('GuitarNightLoopControls', () => {
   it('reports each mark as pressed or not', () => {
     renderControls({ hasStart: true })
 
-    expect(screen.getByRole('button', { name: 'A' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^A —/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    expect(screen.getByRole('button', { name: 'B' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^B —/ })).toHaveAttribute(
       'aria-pressed',
       'false',
+    )
+  })
+
+  it('explains the actual reason a mark is blocked', () => {
+    renderControls({
+      disabled: true,
+      blockedReason: 'Input calibration is in progress',
+    })
+
+    expect(screen.getByRole('button', { name: /^A —/ })).toHaveAttribute(
+      'title',
+      'Input calibration is in progress',
     )
   })
 })

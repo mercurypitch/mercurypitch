@@ -8,6 +8,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import { guitarInputProfileLabel } from '@/lib/guitar/guitar-input-profile'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import type { TunerTarget } from '@/lib/guitar/tuner'
 import type { MicPermissionState } from '@/lib/jam/media-errors'
@@ -82,9 +83,10 @@ function displayString(target: TunerTarget): DisplayString {
 function inputLabel(
   profile: ReturnType<GuitarNightTunerController['inputProfile']>,
 ): string {
-  if (profile === 'interface') return 'Plugged in'
-  if (profile === 'microphone') return 'Room mic'
-  return 'Choose Room mic or Plugged in'
+  if (profile === 'interface' || profile === 'microphone') {
+    return guitarInputProfileLabel(profile)
+  }
+  return `Choose ${guitarInputProfileLabel('microphone')} or ${guitarInputProfileLabel('interface')}`
 }
 
 /**

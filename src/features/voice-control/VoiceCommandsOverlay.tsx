@@ -18,6 +18,7 @@
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
+import { normalizeUtterance } from './command-grammar'
 import type { VoiceCommand } from './types'
 import { activeVoiceCommands } from './voice-command-registry'
 import styles from './VoiceCommandsOverlay.module.css'
@@ -99,8 +100,7 @@ const groupRank = (title: string): number => {
 const MAX_PHRASES_SHOWN = 3
 
 const normalizeSearchText = (value: string): string =>
-  value
-    .toLowerCase()
+  normalizeUtterance(value)
     .replaceAll('<n>', 'n')
     .replace(/\b\d+(?:\.\d+)?\b/g, 'n')
 

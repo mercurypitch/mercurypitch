@@ -32,6 +32,8 @@ const TAKE: GuitarTakeSnapshot = {
   durationFrames: 48_000,
   filteredBeforeStart: 0,
   filteredAfterEnd: 0,
+  rejectedAfterEnd: 0,
+  retractedAfterEnd: 0,
   truncated: false,
   droppedEventCount: 0,
   inputHealth: {

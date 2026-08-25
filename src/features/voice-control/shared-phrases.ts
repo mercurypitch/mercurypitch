@@ -161,6 +161,26 @@ export const LOOP_CLEAR_PHRASES = [
   'reset loop',
 ]
 
+export const COUNT_IN_ON_PHRASES = [
+  'count in on',
+  'count in',
+  'count me in',
+  'enable count in',
+]
+
+export const COUNT_IN_OFF_PHRASES = [
+  'count in off',
+  'turn count in off',
+  'disable count in',
+  'no count in',
+]
+
+export const COUNT_IN_SET_PHRASES = [
+  'count in <n>',
+  'set count in <n>',
+  'set count in to <n>',
+]
+
 export const LOOP_RANGE_PHRASES = [
   'loop from <n> to <n> seconds',
   'loop from <n> to <n>',

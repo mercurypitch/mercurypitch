@@ -364,10 +364,17 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
 - **REQ-GN-SCORE-007 — Explicit scored-take mix:** Selecting Room mic, Direct
   input, or MIDI shall not mute or restore the authored target, backing parts,
   click, or master output. Those lanes shall remain explicit, independent live
-  controls throughout the scored take. WHILE Room mic is listening and any
-  pitched room playback is audible, Guitar Night shall visibly recommend
-  headphones and explain that speakers can bleed into the score. Phrase review
-  shall remain quiet under REQ-GN-DOCTOR-002.
+  controls throughout the scored take. WHERE Room mic is listening, master
+  output is above the silence floor, and any authored target, backing part, or
+  click is audible, Guitar Night shall classify the mix as a known speaker-bleed
+  risk. BEFORE the first scored take with that risk in the mounted room, Guitar
+  Night shall require an explicit choice to continue while acknowledging that
+  speaker playback can make the score inaccurate, mute the room audio, or
+  cancel. Because a browser cannot reliably distinguish headphones from
+  speakers, the warning shall describe the known app mix and shall not claim to
+  have detected the physical output route. Guitar Night shall not auto-mute the
+  mix or silently exclude score evidence solely because this risk exists.
+  Phrase review shall remain quiet under REQ-GN-DOCTOR-002.
 - **REQ-GN-SCORE-008 — Calm stage latch:** Live score shall extend the existing
   stage signal faceplate with its basis, percentage, and letter rather than add
   a dashboard, modal, streak, combo, celebration, or second coaching cue.
@@ -534,9 +541,15 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   request four fresh open-low-E articulations over percussion-only drums near
   78 BPM and shall pass at three valid hits; one sustained note shall not
   consume multiple targets.
-- **REQ-GN-FIRST-009 — No pitched self-score:** WHILE assessed microphone
-  input is active, all pitched guide, bass, and stem playback shall be silent.
-  Open-speaker full-band scoring shall remain an untrusted profile until
+- **REQ-GN-FIRST-009 — Explicit Room-mic risk:** First-run assessment shall
+  preserve the player's Target, Backing, Click, and master-output choices rather
+  than impose a silent mix. WHERE Room mic is listening, master output is above
+  the silence floor, and any app audio is audible, the first scored take shall
+  require the same explicit speaker-bleed acknowledgement as
+  REQ-GN-SCORE-007. The experience shall recommend headphones without claiming
+  that the browser detected them, shall not auto-mute the chosen mix, and shall
+  not silently exclude evidence solely because speaker bleed may make the score
+  inaccurate. Open-speaker scoring shall remain a user-accepted risk until
   reference-aware bleed rejection passes named acoustic fixtures.
 - **REQ-GN-FIRST-010 — Tab default:** The bundled default tab step shall teach
   that lines represent strings and numbers represent frets, then present a

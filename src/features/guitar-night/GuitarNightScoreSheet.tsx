@@ -47,7 +47,7 @@ function countedBeat(value: number): string {
 }
 
 function rangeLabel(summary: GuitarScoreTakeSummary): string {
-  return `Beats ${countedBeat(summary.range.startBeat + 1)}–${countedBeat(summary.range.endBeat)}`
+  return `Scored beats ${countedBeat(summary.range.startBeat + 1)}–${countedBeat(summary.range.endBeat)}`
 }
 
 function inputLabel(summary: GuitarScoreTakeSummary): string {

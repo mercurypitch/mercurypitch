@@ -52,4 +52,24 @@ describe('VoiceCommandsOverlay', () => {
     expect(screen.getByText('forward N minutes')).toBeVisible()
     unregister()
   })
+
+  it('matches punctuation, diacritics, and a spoken numeric slot together', () => {
+    const unregister = registerVoiceCommands(() => [
+      {
+        id: 'seek.forwardSeconds',
+        label: 'Avánce',
+        phrases: ['avánce <n> secondes'],
+        run: () => undefined,
+      },
+    ])
+    render(() => <VoiceCommandsOverlay close={vi.fn()} />)
+
+    fireEvent.input(
+      screen.getByRole('searchbox', { name: 'Filter commands' }),
+      { target: { value: 'AVANCE, 15 secondes!' } },
+    )
+
+    expect(screen.getByText('avánce N secondes')).toBeVisible()
+    unregister()
+  })
 })

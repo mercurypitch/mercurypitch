@@ -1432,6 +1432,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             <GuitarNightSecondaryPart
               lane={lane}
               playheadBeat={() => actualPlayheadBeat() ?? 0}
+              narrowViewport={narrowViewport}
               layoutKey={() => activeView()}
               {...(props.onSelectTrack === undefined
                 ? {}

@@ -309,6 +309,8 @@ describe('transport voice commands — singing tab', () => {
     expect(countIn()).toBe(2)
     expect(fire(fixture, 'count in off')).toBe('Count-in off')
     expect(countIn()).toBe(0)
+    expect(fire(fixture, 'set count in to two')).toBe('Count-in 2 bars')
+    expect(countIn()).toBe(2)
     expect(fire(fixture, 'count in four bars')).toBe('Count-in 4 bars')
     expect(countIn()).toBe(4)
     expect(fire(fixture, 'count in 3')).toBe('Count-in can be 1, 2 or 4 bars')

@@ -107,7 +107,7 @@ describe('GuitarNightSessionPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 
-  it('closes on an outside pointer start without swallowing the stage gesture', () => {
+  it('dismisses from the scrim without activating the covered stage', () => {
     const onClose = vi.fn()
     const onHighwayPointerDown = vi.fn()
     render(() => (
@@ -126,12 +126,10 @@ describe('GuitarNightSessionPanel', () => {
     expect(
       screen.getByRole('button', { name: 'Close the session details' }),
     ).toHaveFocus()
-    fireEvent.pointerDown(
-      screen.getByRole('button', { name: 'Guitar highway' }),
-    )
+    fireEvent.click(screen.getByTestId('guitar-night-session-scrim'))
 
     expect(onClose).toHaveBeenCalledTimes(1)
-    expect(onHighwayPointerDown).toHaveBeenCalledTimes(1)
+    expect(onHighwayPointerDown).not.toHaveBeenCalled()
   })
 
   it('does not close when the pointer starts inside the dialog', () => {

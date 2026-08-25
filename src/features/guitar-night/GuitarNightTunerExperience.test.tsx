@@ -392,6 +392,7 @@ describe('GuitarNightTunerExperience', () => {
     expect(harness.controller.selectInputProfile).toHaveBeenCalledWith(
       'interface',
     )
+    expect(surface.inputLabel?.()).toBe('Direct input')
     expect(harness.controller.selectPreset).toHaveBeenCalledWith('Drop D')
     expect(recover).toHaveBeenCalledOnce()
 

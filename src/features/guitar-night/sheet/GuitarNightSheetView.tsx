@@ -4,7 +4,7 @@
 // changes. That is the whole performance story.
 
 import type { Accessor, Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { DragGestureEndReason, DragGestureOptions, } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
@@ -150,6 +150,7 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
       y: position.systemIndex * systemHeight(),
     }
   })
+  const playheadSystemIndex = createMemo(() => playhead()?.systemIndex ?? null)
 
   const measure = (): void => {
     const element = scroller
@@ -178,15 +179,21 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
   // to study a bar keeps their place; a reader who did nothing is not left
   // staring at a system the song finished with two rows ago.
   createEffect(() => {
-    const position = playhead()
+    const systemIndex = playheadSystemIndex()
     const element = scroller
-    if (position === null || element === undefined) return
-    const height = systemHeight()
-    const top = position.systemIndex * height
-    const visibleTop = scrollTop()
-    const visibleBottom = visibleTop + viewportHeight()
-    if (top >= visibleTop && top + height <= visibleBottom) return
-    element.scrollTop = Math.max(0, top - height / 2)
+    if (systemIndex === null || element === undefined) return
+
+    // Scroll position and viewport geometry are observations, not follow
+    // triggers. Tracking either would pull the reader back on every manual
+    // scroll or every playhead frame within the same notation row.
+    untrack(() => {
+      const height = systemHeight()
+      const top = systemIndex * height
+      const visibleTop = scrollTop()
+      const visibleBottom = visibleTop + viewportHeight()
+      if (top >= visibleTop && top + height <= visibleBottom) return
+      element.scrollTop = Math.max(0, top - height / 2)
+    })
   })
 
   return (
@@ -311,7 +318,22 @@ interface SheetSystemRowProps {
 /** One horizontal row of bars: the music on a canvas, the names above it. */
 const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
   let canvas: HTMLCanvasElement | undefined
-  let keyboardScrubbing = false
+  let seekActive = false
+  const startSeek = (): void => {
+    if (seekActive) return
+    seekActive = true
+    props.onSeekStart?.()
+  }
+  const endSeek = (): void => {
+    if (!seekActive) return
+    seekActive = false
+    props.onSeekEnd?.()
+  }
+
+  // Virtualization may remove a row while it owns pointer capture or a held
+  // keyboard adjustment. Always release the host's seek lifetime exactly once.
+  onCleanup(endSeek)
+
   const loopX = (fraction: number) => {
     const contentWidth = Math.max(
       1,
@@ -403,27 +425,21 @@ const SheetSystemRow: Component<SheetSystemRowProps> = (props) => {
               Math.max(props.system.startBeat, props.playheadBeat),
             ),
           )}
-          onPointerDown={() => props.onSeekStart?.()}
-          onPointerUp={() => props.onSeekEnd?.()}
-          onPointerCancel={() => props.onSeekEnd?.()}
+          onPointerDown={startSeek}
+          onPointerUp={endSeek}
+          onPointerCancel={endSeek}
           onKeyDown={(event) => {
-            if (!LOOP_MARK_KEYS.has(event.key) || keyboardScrubbing) return
-            keyboardScrubbing = true
-            props.onSeekStart?.()
+            if (!LOOP_MARK_KEYS.has(event.key)) return
+            startSeek()
           }}
           onKeyUp={(event) => {
-            if (!LOOP_MARK_KEYS.has(event.key) || !keyboardScrubbing) return
-            keyboardScrubbing = false
-            props.onSeekEnd?.()
+            if (!LOOP_MARK_KEYS.has(event.key)) return
+            endSeek()
           }}
           onInput={(event) => {
             props.onSeekBeat?.(Number(event.currentTarget.value))
           }}
-          onBlur={() => {
-            if (!keyboardScrubbing) return
-            keyboardScrubbing = false
-            props.onSeekEnd?.()
-          }}
+          onBlur={endSeek}
         />
       </Show>
       <For each={props.loopMarkers}>
@@ -541,6 +557,15 @@ const SheetLoopBoundary: Component<SheetLoopBoundaryProps> = (props) => {
     props.onMove(props.marker.mark, legalBeat(value))
     props.onCommit?.(props.marker.mark)
   }
+
+  // dragGesture releases pointer capture and listeners with this owner. If
+  // virtualization removes an actively edited row, preserve the last visible
+  // marker position instead of silently discarding the player's edit.
+  onCleanup(() => {
+    if (previewBeat() !== null) publish()
+    else keyboardDirty = false
+  })
+
   const finish = (reason: DragGestureEndReason): void => {
     if (reason === 'pointerup') publish()
     else {

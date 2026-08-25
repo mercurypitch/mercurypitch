@@ -6,6 +6,7 @@ import { cleanup, render } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compilePianoTempoMap } from '@/features/piano/runtime/piano-tempo-map'
+import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 import type { PianoNightSource } from './piano-night-source'
 import { usePianoNightController } from './usePianoNightController'
 
@@ -436,6 +437,7 @@ describe('usePianoNightController practice controls', () => {
     controller.setPracticeRepeatCount(12)
     expect(controller.setPracticeSpeed(0.75)).toBe(true)
     controller.setMasterVolume(0.64)
+    controller.flushMasterVolumePersistence()
     controller.seekToBeat(3)
 
     controller.stop()
@@ -487,6 +489,51 @@ describe('usePianoNightController practice controls', () => {
     expect(restored.practiceSpeed()).toBe(1.25)
     expect(restored.masterVolume()).toBe(0.47)
     expect(createAudioContext).not.toHaveBeenCalled()
+  })
+
+  it('updates volume live while coalescing storage and cloud-sync writes', () => {
+    vi.useFakeTimers()
+    const writes: Array<[string, string]> = []
+    onPersistedWrite((key, value) => writes.push([key, value]))
+    try {
+      const controller = mountController()
+
+      controller.setMasterVolume(0.41)
+      controller.setMasterVolume(0.48)
+      controller.setMasterVolume(0.53)
+
+      expect(controller.masterVolume()).toBe(0.53)
+      expect(
+        localStorage.getItem('pitchperfect_piano_night_master_volume'),
+      ).toBeNull()
+
+      vi.advanceTimersByTime(180)
+      expect(
+        localStorage.getItem('pitchperfect_piano_night_master_volume'),
+      ).toBe('0.53')
+      expect(
+        writes.filter(
+          ([key]) => key === 'pitchperfect_piano_night_master_volume',
+        ),
+      ).toHaveLength(1)
+
+      controller.setMasterVolume(0.58)
+      cleanup()
+      expect(
+        localStorage.getItem('pitchperfect_piano_night_master_volume'),
+      ).toBe('0.58')
+    } finally {
+      onPersistedWrite(null)
+      vi.useRealTimers()
+    }
+  })
+
+  it('applies a hydrated master volume to the live controller', () => {
+    const controller = mountController()
+
+    applyPersistedValue('pitchperfect_piano_night_master_volume', '0.42')
+
+    expect(controller.masterVolume()).toBe(0.42)
   })
 
   it('rejects invalid A/B edits and bounds the pass count', () => {

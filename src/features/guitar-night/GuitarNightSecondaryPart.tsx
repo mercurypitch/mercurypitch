@@ -13,11 +13,10 @@ import { dragGesture } from '@/components/shared/drag-gesture'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightSecondaryPart.module.css'
-import type { TabWindowEntry } from './GuitarNightStage'
-import { buildStageTabWindowIndex, tabWindowEntries } from './GuitarNightStage'
 import type { SecondaryPartLayout, SecondaryPartRect, SecondaryPartSize, } from './secondary-part-layout'
 import { resolveSecondaryPartLayout, SECONDARY_PART_LAYOUT_OPTIONS, secondaryPartWidthRange, } from './secondary-part-layout'
 import type { SheetLane } from './sheet/sheet-model'
+import { buildStageTabWindowIndex, tabNoteOffsetPercent, tabWindowNotes, } from './tab-window'
 
 /** The stable opt-in used by stage chrome that the preview must never cover. */
 export const GUITAR_NIGHT_SECONDARY_PROTECTED_SELECTOR =
@@ -138,6 +137,8 @@ export interface GuitarNightSecondaryPartProps {
   protectedRects?: Accessor<readonly SecondaryPartRect[]>
   /** Override only when embedding the component outside Guitar Night. */
   protectedSelector?: string
+  /** Reuse the owning stage's responsive signal instead of adding a listener. */
+  narrowViewport?: Accessor<boolean>
 }
 
 export const GuitarNightSecondaryPart: Component<
@@ -154,6 +155,7 @@ export const GuitarNightSecondaryPart: Component<
     | undefined
   let resizeStart: { clientX: number; layout: SecondaryPartLayout } | undefined
   let interactionMetrics: SecondaryPartMetrics | undefined
+  let lastNarrowViewport: boolean | undefined
 
   const [storedPlacements, setStoredPlacements] =
     createPersistedSignal<StoredSecondaryPartPlacements>(
@@ -172,8 +174,10 @@ export const GuitarNightSecondaryPart: Component<
     y: SECONDARY_PART_LAYOUT_OPTIONS.edgeGap,
     width: DEFAULT_WIDTH,
   })
-  const [narrowViewport, setNarrowViewport] = createSignal(
-    mediaMatches(NARROW_QUERY),
+  const [fallbackNarrowViewport, setFallbackNarrowViewport] = createSignal(
+    untrack(() => props.narrowViewport === undefined)
+      ? mediaMatches(NARROW_QUERY)
+      : false,
   )
   const [positioned, setPositioned] = createSignal(false)
   const [interacting, setInteracting] = createSignal<'move' | 'resize' | null>(
@@ -185,24 +189,34 @@ export const GuitarNightSecondaryPart: Component<
   const windowIndex = createMemo(() =>
     buildStageTabWindowIndex(props.lane().notes as readonly GuitarNote[]),
   )
-  const entries = createMemo(() =>
-    tabWindowEntries(
+  const visibleNotes = createMemo(() =>
+    tabWindowNotes(
       windowIndex(),
       props.playheadBeat(),
       SECONDARY_PART_WINDOW_BEATS,
     ),
   )
   const byString = createMemo(() => {
-    const rows: TabWindowEntry[][] = props.lane().tuning.labels.map(() => [])
-    for (const entry of entries()) {
-      const row = rows[entry.note.stringIndex]
-      if (row !== undefined) row.push(entry)
+    const rows: GuitarNote[][] = props.lane().tuning.labels.map(() => [])
+    for (const note of visibleNotes()) {
+      const row = rows[note.stringIndex]
+      if (row !== undefined) row.push(note)
     }
     return rows
   })
 
+  const narrowViewport = (): boolean =>
+    props.narrowViewport?.() ?? fallbackNarrowViewport()
+
+  const noteActive = (note: GuitarNote): boolean =>
+    note.startBeat <= props.playheadBeat() &&
+    note.startBeat + note.duration > props.playheadBeat()
+
+  const notePast = (note: GuitarNote): boolean =>
+    note.startBeat + note.duration <= props.playheadBeat()
+
   const summary = createMemo(() => {
-    const active = entries().filter((entry) => entry.isActive).length
+    const active = visibleNotes().filter(noteActive).length
     return active === 0
       ? `${props.lane().trackName}, resting`
       : `${props.lane().trackName}, ${active === 1 ? '1 note' : `${active} notes`} sounding`
@@ -213,6 +227,9 @@ export const GuitarNightSecondaryPart: Component<
     (rootElement?.offsetParent instanceof HTMLElement
       ? rootElement.offsetParent
       : (rootElement?.parentElement ?? undefined))
+
+  const protectedSelector = (): string =>
+    props.protectedSelector ?? GUITAR_NIGHT_SECONDARY_PROTECTED_SELECTOR
 
   const boundarySize = (): SecondaryPartSize => {
     const boundary = boundaryElement()
@@ -236,11 +253,11 @@ export const GuitarNightSecondaryPart: Component<
     if (boundary === undefined) return []
     const boundaryRect = boundary.getBoundingClientRect()
     const protectionRoot = boundary.parentElement ?? boundary
-    const selector =
-      props.protectedSelector ?? GUITAR_NIGHT_SECONDARY_PROTECTED_SELECTOR
     let elements: Element[] = []
     try {
-      elements = Array.from(protectionRoot.querySelectorAll(selector))
+      elements = Array.from(
+        protectionRoot.querySelectorAll(protectedSelector()),
+      )
     } catch {
       return []
     }
@@ -578,16 +595,27 @@ export const GuitarNightSecondaryPart: Component<
     queueMicrotask(synchronizeLayout)
   })
 
+  createEffect(() => {
+    const current = narrowViewport()
+    if (lastNarrowViewport === undefined) {
+      lastNarrowViewport = current
+      return
+    }
+    if (current === lastNarrowViewport) return
+    lastNarrowViewport = current
+    pendingPlacement = untrack(storedPlacements)[activeLayoutKey] ?? null
+    lastBoundary = null
+    queueMicrotask(synchronizeLayout)
+  })
+
   onMount(() => {
     const media =
+      props.narrowViewport === undefined &&
       typeof window.matchMedia === 'function'
         ? window.matchMedia(NARROW_QUERY)
         : undefined
     const onMediaChange = (event: MediaQueryListEvent): void => {
-      setNarrowViewport(event.matches)
-      pendingPlacement = untrack(storedPlacements)[activeLayoutKey] ?? null
-      lastBoundary = null
-      queueMicrotask(synchronizeLayout)
+      setFallbackNarrowViewport(event.matches)
     }
     media?.addEventListener('change', onMediaChange)
 
@@ -667,17 +695,47 @@ export const GuitarNightSecondaryPart: Component<
     if (boundary !== undefined) observer?.observe(boundary)
     if (rootElement !== undefined) observer?.observe(rootElement)
     const protectionRoot = boundary?.parentElement ?? boundary
-    for (const element of Array.from(
-      protectionRoot?.querySelectorAll(
-        props.protectedSelector ?? GUITAR_NIGHT_SECONDARY_PROTECTED_SELECTOR,
-      ) ?? [],
-    )) {
-      observer?.observe(element)
+    const observedProtectedElements = new Set<Element>()
+    const observeProtectedElements = (): void => {
+      if (observer === undefined || protectionRoot === undefined) return
+      let elements: Element[] = []
+      try {
+        elements = Array.from(
+          protectionRoot.querySelectorAll(protectedSelector()),
+        )
+      } catch {
+        return
+      }
+      const nextElements = new Set(
+        elements.filter(
+          (element) =>
+            element !== rootElement && rootElement?.contains(element) !== true,
+        ),
+      )
+      for (const element of observedProtectedElements) {
+        if (nextElements.has(element)) continue
+        observer.unobserve(element)
+        observedProtectedElements.delete(element)
+      }
+      for (const element of nextElements) {
+        if (observedProtectedElements.has(element)) continue
+        observer.observe(element)
+        observedProtectedElements.add(element)
+      }
     }
+    observeProtectedElements()
     const mutationObserver =
       typeof MutationObserver === 'undefined' || protectionRoot === undefined
         ? undefined
-        : new MutationObserver(() => {
+        : new MutationObserver((records) => {
+            const hasExternalMutation = records.some(
+              (record) =>
+                rootElement === undefined ||
+                (record.target !== rootElement &&
+                  !rootElement.contains(record.target)),
+            )
+            if (!hasExternalMutation) return
+            observeProtectedElements()
             if (interacting() === null) synchronizeLayout()
           })
     if (mutationObserver !== undefined && protectionRoot !== undefined) {
@@ -722,15 +780,22 @@ export const GuitarNightSecondaryPart: Component<
             <i />
             <div>
               <For each={byString()[stringIndex()] ?? []}>
-                {(entry) => (
+                {(note) => (
                   <b
                     classList={{
-                      [styles.noteActive]: entry.isActive,
-                      [styles.notePast]: entry.isPast,
+                      [styles.noteActive]: noteActive(note),
+                      [styles.notePast]: notePast(note),
                     }}
-                    style={{ left: `${entry.offsetPercent}%` }}
+                    data-note-id={note.id}
+                    style={{
+                      left: `${tabNoteOffsetPercent(
+                        note.startBeat,
+                        props.playheadBeat(),
+                        SECONDARY_PART_WINDOW_BEATS,
+                      )}%`,
+                    }}
                   >
-                    {entry.note.fret}
+                    {note.fret}
                   </b>
                 )}
               </For>

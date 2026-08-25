@@ -155,7 +155,7 @@ describe('useGuitarNightTunerController', () => {
 
       expect(await controller.startListening()).toBe(false)
       expect(controller.error()).toBe(
-        'Choose Room mic or Plugged in to measure tuning.',
+        'Choose Room mic or Direct input to measure tuning.',
       )
       expect(listening.port.start).not.toHaveBeenCalled()
     })

@@ -82,6 +82,6 @@ test('keeps live listening legible and engaged across tuner choices @smoke', asy
   ).toBeVisible({ timeout: 5_000 })
   await expect(stopListening).toBeVisible()
 
-  await tuner.getByRole('button', { name: 'Plugged in' }).click()
+  await tuner.getByRole('button', { name: 'Direct input' }).click()
   await expect(stopListening).toBeVisible()
 })

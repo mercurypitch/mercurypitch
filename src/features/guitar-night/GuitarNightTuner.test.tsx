@@ -468,12 +468,11 @@ describe('GuitarNightTuner', () => {
       'true',
     )
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Plugged in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Direct input' }))
     expect(changeInput).toHaveBeenCalledWith('interface')
-    expect(screen.getByRole('button', { name: 'Plugged in' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Direct input' }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('leaves both physical input profiles unselected for another input route', () => {
@@ -489,10 +488,9 @@ describe('GuitarNightTuner', () => {
       'aria-pressed',
       'false',
     )
-    expect(screen.getByRole('button', { name: 'Plugged in' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Direct input' }),
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('marks completed strings and keeps tuning presets in a disclosure', async () => {

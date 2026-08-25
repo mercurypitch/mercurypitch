@@ -6,9 +6,10 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreLiveRange, scoreLoopPendingRestart, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
+import { GuitarNightScoreRoom, nextScoreCountIn, scoreAssessmentRange, scoreLiveRange, scoreLoopPendingRestart, scoreRecoveryRange, scoreResultIsSettling, scoreVoiceTransportIsPlaying, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
+import { GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY } from './useGuitarNightScoreRoomController'
 
 const VELVET_RIFF: GuitarNightReference = {
   kind: 'authored',
@@ -138,7 +139,17 @@ describe('GuitarNightScoreRoom', () => {
     fireEvent.input(sessionVolume, { target: { value: '0.42' } })
 
     expect(sessionVolume).toHaveValue('0.42')
-    expect(deck.getByLabelText('Rehearsal mix volume')).toHaveValue('0.42')
+    const deckVolume = deck.getByLabelText('Rehearsal mix volume')
+    expect(deckVolume).toHaveValue('0.42')
+    expect(localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)).toBeNull()
+
+    fireEvent.change(sessionVolume)
+    expect(localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)).toBe('0.42')
+
+    fireEvent.input(deckVolume, { target: { value: '0.47' } })
+    expect(localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)).toBe('0.42')
+    fireEvent.change(deckVolume)
+    expect(localStorage.getItem(GUITAR_NIGHT_SCORE_MIX_VOLUME_KEY)).toBe('0.47')
 
     fireEvent.click(
       session.getByRole('button', { name: 'Slow down from 90 BPM' }),
@@ -154,8 +165,8 @@ describe('GuitarNightScoreRoom', () => {
 
     const deck = within(screen.getByTestId('guitar-night-score-deck'))
     const loop = deck.getByRole('group', { name: 'Section loop' })
-    fireEvent.click(within(loop).getByRole('button', { name: 'A' }))
-    fireEvent.click(within(loop).getByRole('button', { name: 'B' }))
+    fireEvent.click(within(loop).getByRole('button', { name: /^A\b/ }))
+    fireEvent.click(within(loop).getByRole('button', { name: /^B\b/ }))
 
     expect(deck.getByLabelText('Loop start marker')).toHaveAttribute(
       'aria-valuenow',
@@ -391,6 +402,15 @@ describe('scoreLiveRange', () => {
     expect(scoreLiveRange(null, 11.5, 12, [0, 4, 8])).toEqual({
       start: 0,
       end: 12,
+    })
+  })
+})
+
+describe('scoreRecoveryRange', () => {
+  it('pins one recovery range to the whole-beat scheduler boundary', () => {
+    expect(scoreRecoveryRange({ start: 59.4, end: 63.9 }, 63.75)).toEqual({
+      start: 59,
+      end: 64,
     })
   })
 })

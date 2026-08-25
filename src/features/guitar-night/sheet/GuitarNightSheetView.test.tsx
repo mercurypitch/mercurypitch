@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
@@ -335,6 +336,36 @@ describe('GuitarNightSheetView', () => {
     }
   })
 
+  it('ends an active row seek when virtualization removes its owner', () => {
+    const restore = sizeThePage(800, 400)
+    const onSeekStart = vi.fn()
+    const onSeekEnd = vi.fn()
+    try {
+      const view = render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(11)] })]}
+          playheadBeat={() => 0}
+          onSeekBeat={() => undefined}
+          onSeekStart={onSeekStart}
+          onSeekEnd={onSeekEnd}
+        />
+      ))
+
+      fireEvent.pointerDown(
+        screen.getByRole('slider', {
+          name: 'Playback position in score row 1',
+        }),
+      )
+      expect(onSeekStart).toHaveBeenCalledOnce()
+      expect(onSeekEnd).not.toHaveBeenCalled()
+
+      view.unmount()
+      expect(onSeekEnd).toHaveBeenCalledOnce()
+    } finally {
+      restore()
+    }
+  })
+
   it('publishes a sheet loop-boundary edit only when the gesture settles', () => {
     const restore = sizeThePage(800, 1_000)
     const onMoveLoopMark = vi.fn()
@@ -361,6 +392,39 @@ describe('GuitarNightSheetView', () => {
       expect(onMoveLoopMark).not.toHaveBeenCalled()
       fireEvent.keyUp(marker, { key: 'ArrowRight' })
 
+      expect(onMoveLoopMark).toHaveBeenCalledWith('A', 7)
+      expect(onCommitLoopMark).toHaveBeenCalledWith('A')
+    } finally {
+      restore()
+    }
+  })
+
+  it('keeps an active loop-boundary edit when virtualization removes its row', () => {
+    const restore = sizeThePage(800, 1_000)
+    const onMoveLoopMark = vi.fn()
+    const onCommitLoopMark = vi.fn()
+    try {
+      const view = render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(20)] })]}
+          playheadBeat={() => 9}
+          loopStart={() => 6}
+          loopEnd={() => 18}
+          loopActive={() => true}
+          onMoveLoopMark={onMoveLoopMark}
+          onCommitLoopMark={onCommitLoopMark}
+        />
+      ))
+
+      fireEvent.keyDown(
+        screen.getByRole('slider', {
+          name: 'Loop start marker on sheet',
+        }),
+        { key: 'ArrowRight' },
+      )
+      expect(onCommitLoopMark).not.toHaveBeenCalled()
+
+      view.unmount()
       expect(onMoveLoopMark).toHaveBeenCalledWith('A', 7)
       expect(onCommitLoopMark).toHaveBeenCalledWith('A')
     } finally {
@@ -409,6 +473,43 @@ describe('GuitarNightSheetView', () => {
         />
       ))
       expect(scrollTop).toBeGreaterThan(0)
+    } finally {
+      if (original !== undefined) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollTop', original)
+      }
+      restore()
+    }
+  })
+
+  it('preserves a manual scroll while the playhead stays in the same system', () => {
+    const restore = sizeThePage(800, 200)
+    const [playheadBeat, setPlayheadBeat] = createSignal(0)
+    let scrollTop = 0
+    const original = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollTop',
+    )
+    Object.defineProperty(HTMLElement.prototype, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value: number) => {
+        scrollTop = value
+      },
+    })
+
+    try {
+      render(() => (
+        <GuitarNightSheetView
+          lanes={() => [lane({ notes: [note(0), note(236)] })]}
+          playheadBeat={playheadBeat}
+        />
+      ))
+      const scroller = screen.getByTestId('guitar-night-sheet-scroll')
+      scrollTop = 80
+      fireEvent.scroll(scroller)
+      setPlayheadBeat(5)
+
+      expect(scrollTop).toBe(80)
     } finally {
       if (original !== undefined) {
         Object.defineProperty(HTMLElement.prototype, 'scrollTop', original)

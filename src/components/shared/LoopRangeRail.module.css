@@ -198,7 +198,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .progress,
   .region,
   .marker {
     transition:

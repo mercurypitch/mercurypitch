@@ -235,6 +235,8 @@ function completedReviewTake(
     durationFrames: lifecycle === 'completed' ? 4_000 : null,
     filteredBeforeStart: 0,
     filteredAfterEnd: 0,
+    rejectedAfterEnd: 0,
+    retractedAfterEnd: 0,
     truncated: false,
     droppedEventCount: 0,
     inputHealth: {
@@ -369,7 +371,7 @@ describe('Guitar Night calibration lock', () => {
 
     expect(
       screen.getByRole('note', {
-        name: /Room mic can hear speaker playback/i,
+        name: /Room mic may score speaker playback/i,
       }),
     ).toBeInTheDocument()
     expect(
@@ -585,7 +587,60 @@ describe('Guitar Night calibration lock', () => {
     expect(scoreRoom.start).not.toHaveBeenCalled()
   })
 
+  it('requires an explicit Room mic bleed acknowledgement before scoring', async () => {
+    listening.status.mockReturnValue('listening')
+    listening.inputProfile.mockReturnValue('microphone')
+    listening.armTakeAt.mockImplementation(() => {
+      listening.take.mockReturnValue(completedReviewTake('recording'))
+      return true
+    })
+    listening.completeTakeAt.mockReturnValue(true)
+    scoreRoom.startLiveScore.mockResolvedValue({
+      id: 'room-mic-score',
+      reference: SCORE_RESTART_REFERENCE,
+      range: { start: 0, end: 6 },
+      tempoBpm: 90,
+      scoreTempoBpm: 90,
+      countInBeats: 4,
+      sampleRate: 1_000,
+      startedAtSeconds: 10,
+      completedAtSeconds: 16,
+      beatToSeconds: (beat: number) => beat,
+    })
+
+    render(() => (
+      <GuitarNightScoreRoom
+        reference={() => SCORE_RESTART_REFERENCE}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Start the count-in'))
+
+    const warning = await screen.findByRole('alertdialog', {
+      name: 'Keep this take honest.',
+    })
+    expect(warning).toHaveTextContent('Speakers can enter the Room mic')
+    expect(scoreRoom.startLiveScore).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Continue with this mix' }),
+    ).toHaveFocus()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Continue with this mix' }),
+    )
+
+    await vi.waitFor(() =>
+      expect(scoreRoom.startLiveScore).toHaveBeenCalledWith({
+        start: 0,
+        end: 6,
+      }),
+    )
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
   it('reopens the selected route after scored Pause and completed Replay', async () => {
+    listening.inputProfile.mockReturnValue('interface')
     const [listeningStatus, setListeningStatus] = createSignal('listening')
     const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(null)
     const [roomStatus, setRoomStatus] = createSignal('quiet')
@@ -606,6 +661,10 @@ describe('Guitar Night calibration lock', () => {
       setTake({
         ...completedReviewTake('recording'),
         id: `score-take-${takeNumber}`,
+        input: {
+          ...completedReviewTake('recording').input,
+          kind: 'interface',
+        },
       })
       return true
     })

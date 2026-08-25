@@ -481,6 +481,10 @@ describe('PianoNightApp', () => {
     fireEvent.input(fallboardVolume, { target: { value: '0.37' } })
 
     expect(fallboardVolume).toHaveValue('0.37')
+    expect(
+      localStorage.getItem('pitchperfect_piano_night_master_volume'),
+    ).toBeNull()
+    fireEvent.change(fallboardVolume)
     expect(localStorage.getItem('pitchperfect_piano_night_master_volume')).toBe(
       '0.37',
     )
@@ -492,9 +496,19 @@ describe('PianoNightApp', () => {
       screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
     )
     const session = screen.getByRole('tabpanel', { name: 'Session' })
-    expect(
-      within(session).getByRole('slider', { name: 'Piano volume' }),
-    ).toHaveValue('0.37')
+    const sessionVolume = within(session).getByRole('slider', {
+      name: 'Piano volume',
+    })
+    expect(sessionVolume).toHaveValue('0.37')
+
+    fireEvent.input(sessionVolume, { target: { value: '0.44' } })
+    expect(localStorage.getItem('pitchperfect_piano_night_master_volume')).toBe(
+      '0.37',
+    )
+    fireEvent.change(sessionVolume)
+    expect(localStorage.getItem('pitchperfect_piano_night_master_volume')).toBe(
+      '0.44',
+    )
     expectSilentBrowserBoundary()
   })
 
