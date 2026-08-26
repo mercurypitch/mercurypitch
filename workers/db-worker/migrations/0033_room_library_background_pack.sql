@@ -76,7 +76,7 @@ VALUES
    'One brass microphone under an amber spotlight.',
    'active', NULL, '2026-08-26T00:00:00.000Z',
    '2026-08-26T00:00:00.000Z', NULL),
-  ('karaoke-nordic-amphitheater', 'karaoke', 'Nordic Amphitheater',
+  ('karaoke-nordic-amphitheater', 'karaoke', 'Nordic Amphitheatre v2',
    'Open stone tiers, and a wide northern sky.',
    'active', NULL, '2026-08-26T00:00:00.000Z',
    '2026-08-26T00:00:00.000Z', NULL),
@@ -165,3 +165,13 @@ SELECT g.id, a.id, '2026-08-26T00:00:00.000Z', NULL
  WHERE g.slug = 'active-supporters'
    AND g.kind = 'automatic'
    AND g.deletedAt IS NULL;
+
+-- The two Nordic Amphitheatres. Different pictures, one letter apart in the
+-- id, and 0032 already named the first one; side by side in the admin gallery
+-- neither row said which was which. Number them until one is retired, and
+-- rename the survivor then.
+UPDATE premiumBackgroundAssets
+   SET title = 'Nordic Amphitheatre v1',
+       updatedAt = '2026-08-26T00:00:00.000Z'
+ WHERE id = 'karaoke-nordic-amphitheatre'
+   AND title = 'Nordic Amphitheatre';
