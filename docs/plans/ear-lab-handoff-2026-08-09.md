@@ -1,9 +1,13 @@
 # Ear Lab — Handoff (2026-08-09)
 
-**Status:** Phases 0-3 built, rebased onto `main`, open as
-**[PR #404](https://github.com/mercurypitch/mercurypitch/pull/404)** (1 commit,
-54 files, +8962/-3). Phase 4 (habit) starts next. One known measurement bug
-(§3) that does not corrupt anything currently recorded.
+**Status (updated 2026-08-27):** Phases 0-4 built, rebased onto `main`
+`8fd7f84f` on 2026-08-27 (five commits, lossless — see §1b), open as
+**[PR #404](https://github.com/mercurypitch/mercurypitch/pull/404)** and
+mergeable. Waiting on the founder's retest. Next body of work is the visual
+polish — plan in `~/.dotfiles/personal/mercurypitch/plans/ear-lab-polish-plan.md`,
+summary in [`ear-training.md`](ear-training.md) §11. One known measurement bug
+(§3) that does not corrupt anything currently recorded; the polish's Phase 3
+removes it.
 
 Plan and research: [`ear-training.md`](ear-training.md) — the single source of
 truth; §10 is the decision log. Hardware script:
@@ -46,6 +50,28 @@ the rebase (2026-08-09). Nothing depends on it; it is a safety net.
 - `pnpm check` clean; full suite **521 files, 6218 passed, 1 skipped, 0 failed**.
 - Pushed with `--force-with-lease` (allowed for rebases per `AGENTS.md` §2;
   plain `--force` is not). PR #404 updated in place.
+
+### 1b. Second rebase (2026-08-27)
+
+`main` had moved another 495 commits. The five commits replayed without a
+squash; only the first and last conflicted.
+
+- The three import-list unions again, plus **`main`'s regrouped tab bar**:
+  `TAB_GROUPS` is now You / Practice / Play / Studio with
+  `MAX_INLINE_GROUP_TABS = 3` and an overflow per group. The Ear Lab sits in
+  the **Practice** group after Exercises — on desktop it is behind that
+  group's More button, on the phone it is in `PRIMARY_TABS`.
+  `src/tests/tab-order.test.ts` pins the group's membership.
+- Two registrations `main` added since the branch point: `SIDEBAR_LAYOUT` in
+  `src/features/sidebar/sidebar-registry.ts` is a full `Record<ActiveTab>`
+  (the Ear Lab gets `['mic', 'activity']`), and `docs/plans/sidebar-per-tab.md`
+  is the matrix that file mirrors.
+- `docs/agent/INDEX.md` regenerated — the gate's first step checks it, and
+  `pnpm check` does not (`pnpm run pr:validate` is the command that mirrors
+  the gate).
+- Verified lossless against tag `ear-lab-pre-rebase-2026-08-27` (branch
+  `backup/ear-lab-pre-rebase-2026-08-27`, local only). Suite: 866 files,
+  10598 passed, 1 skipped.
 
 ---
 
