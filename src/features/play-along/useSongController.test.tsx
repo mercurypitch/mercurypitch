@@ -120,4 +120,37 @@ describe('usePlayAlongSongController', () => {
     cleanup()
     await waitFor(() => expect(release).toHaveBeenCalledOnce())
   })
+
+  it('clears route truth and releases the lease when an audio consumer fails to stand down', async () => {
+    const release = vi.fn(() => {
+      throw new Error('lease cleanup failed')
+    })
+    const onBackingWillRelease = vi.fn(() => {
+      throw new Error('audio consumer failed')
+    })
+    const port: PlayAlongSongPort<'drums'> = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [],
+      openSession: vi.fn(async () => ({
+        ok: true as const,
+        lease: lease('fragile-groove', release),
+      })),
+    }
+    let controller!: ReturnType<typeof usePlayAlongSongController<'drums'>>
+    const Harness: Component = () => {
+      controller = usePlayAlongSongController({
+        loadSongPort: async () => port,
+        onBackingWillRelease,
+      })
+      return null
+    }
+    render(() => <Harness />)
+    await controller.stageSession('fragile-groove')
+
+    expect(() => controller.clearSession('none')).not.toThrow()
+    expect(onBackingWillRelease).toHaveBeenCalledOnce()
+    expect(release).toHaveBeenCalledOnce()
+    expect(controller.routeSessionId()).toBeNull()
+    expect(controller.selectionState()).toEqual({ kind: 'idle' })
+  })
 })

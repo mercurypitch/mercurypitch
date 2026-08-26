@@ -22,6 +22,8 @@ export interface DrumGrooveEditorProps {
   readonly visibleStepCount?: DrumGroovePageSize
   readonly disabled?: boolean
   readonly label?: string
+  /** Host-owned save/project identity; the editor never crosses storage. */
+  readonly projectControls?: JSX.Element
 }
 
 interface GrooveCellModel {
@@ -464,11 +466,14 @@ export function DrumGrooveEditor(props: DrumGrooveEditorProps): JSX.Element {
     >
       <div class={styles.editorHeader}>
         <div class={styles.editorIdentity}>
-          <span>Live edit · session only</span>
+          <span>Live edit · save when ready</span>
           <strong>Shape the pocket.</strong>
           <small>
-            Each variation keeps its draft until you leave Drum Night.
+            Each variation stays here. Save a project to keep it on this device.
           </small>
+          <Show when={props.projectControls !== undefined}>
+            <div class={styles.projectControls}>{props.projectControls}</div>
+          </Show>
         </div>
 
         <div

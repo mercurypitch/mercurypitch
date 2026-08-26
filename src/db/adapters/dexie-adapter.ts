@@ -87,6 +87,12 @@ class DexieDatabase extends DexieDB {
       uvrStemBlobs:
         'id, sessionId, stemType, createdAt, [sessionId+stemType], [sessionId+stemType+createdAt]',
     })
+    // v10: portable Drum Night projects and scalar-only completed take
+    // summaries. Both remain device-local and absent from CLOUD_ENTITIES.
+    this.version(10).stores({
+      drumProjects: 'id, updatedAt, sourceKind, sourceRef',
+      drumTakeSummaries: 'id, projectId, completedAt, [projectId+completedAt]',
+    })
   }
 }
 
@@ -395,6 +401,11 @@ export class DexieAdapter implements DatabaseAdapter {
   /** Delete one local row while preserving IndexedDB failures for the caller. */
   deleteByIdStrict(entityName: string, id: string): Promise<void> {
     return this.db.table(entityName).delete(id)
+  }
+
+  /** Clear one local store while preserving transaction and failure semantics. */
+  clearStrict(entityName: string): Promise<void> {
+    return this.db.table(entityName).clear()
   }
 
   async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
@@ -13,10 +14,55 @@ import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
 import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNightClickSnapshot, } from './drum-night-click'
 import { DrumNightApp } from './DrumNightApp'
+import type { DrumTakeFinishState } from './persistence/drum-persistence-ui'
+import type { DrumProject, HydratedDrumProject, } from './persistence/drum-project'
+import { hydrateDrumProject, serializeDrumProject, } from './persistence/drum-project'
+import type { DrumProjectCapture, DrumProjectController, DrumProjectControllerFailure, DrumProjectControllerOperation, DrumProjectControllerOptions, DrumProjectLibraryState, DrumProjectSaveState, } from './persistence/drum-project-controller'
+import type { DrumTakeHistoryController, DrumTakeHistoryControllerState, } from './persistence/drum-take-history-controller'
+import type { DrumTakeSummary } from './persistence/drum-take-summary'
+import type * as DrumStemPlayAlongModule from './play-along/drum-stem-play-along'
 import type { DrumMidiAccessPort, DrumMidiInputPort, DrumMidiMessageLike, DrumRuntimeClock, } from './runtime'
 import type { DrumScoreIndex, DrumSessionImportController, DrumSessionImportState, } from './session'
 import { createDrumScoreIndex, IDLE_DRUM_SESSION } from './session'
 import { drumSongFixture, percussionTrackFixture, readySessionFixture, } from './session/drum-session.test-fixtures'
+
+const takeSummaryBuilderLoad = vi.hoisted(() => ({
+  entered: vi.fn(),
+  gate: null as Promise<undefined> | null,
+}))
+const stemConfigureFailure = vi.hoisted(() => ({ next: false }))
+
+vi.mock('./play-along/drum-stem-play-along', async (importOriginal) => {
+  const actual = await importOriginal<typeof DrumStemPlayAlongModule>()
+  return {
+    ...actual,
+    createDrumStemPlayAlongController: (
+      options: Parameters<typeof actual.createDrumStemPlayAlongController>[0],
+    ) => {
+      const controller = actual.createDrumStemPlayAlongController(options)
+      return {
+        ...controller,
+        configure: (
+          source: Parameters<typeof controller.configure>[0],
+        ): void => {
+          if (stemConfigureFailure.next) {
+            stemConfigureFailure.next = false
+            throw new Error('stem graph refused release')
+          }
+          controller.configure(source)
+        },
+      }
+    },
+  }
+})
+
+vi.mock('./persistence/drum-take-summary-builder', async (importOriginal) => {
+  takeSummaryBuilderLoad.entered()
+  if (takeSummaryBuilderLoad.gate !== null) {
+    await takeSummaryBuilderLoad.gate
+  }
+  return importOriginal()
+})
 
 class TestClock implements DrumRuntimeClock {
   private timestampMs = 0
@@ -469,6 +515,355 @@ function songPortHarness(
   return { completedSongs, initialize, loadSongPort, openSession, port }
 }
 
+function projectFromCapture(
+  capture: DrumProjectCapture,
+  options: {
+    readonly id?: string
+    readonly title?: string
+    readonly revision?: number
+    readonly updatedAt?: string
+    readonly transform?: (capture: DrumProjectCapture) => DrumProjectCapture
+  } = {},
+): DrumProject {
+  const createdAt = '2026-08-26T08:00:00.000Z'
+  const transformed = options.transform?.(capture) ?? capture
+  return serializeDrumProject({
+    ...transformed,
+    id: options.id ?? 'project-first-pocket',
+    title: options.title ?? 'First Pocket Project',
+    revision: options.revision ?? 0,
+    createdAt,
+    updatedAt: options.updatedAt ?? createdAt,
+  })
+}
+
+/* eslint-disable solid/reactivity -- controller fakes intentionally sample injected accessors per command */
+function projectHarness(
+  options: {
+    readonly projects?: (capture: DrumProjectCapture) => readonly DrumProject[]
+    readonly flush?: boolean | Promise<boolean>
+    readonly beforeOpen?: () => Promise<void>
+    readonly dirtyOnMutation?: boolean
+  } = {},
+) {
+  const [libraryState, setLibraryState] =
+    createSignal<DrumProjectLibraryState>('idle')
+  const [projects, setProjects] = createSignal<readonly DrumProject[]>([])
+  const [currentProject, setCurrentProject] = createSignal<DrumProject | null>(
+    null,
+  )
+  const [dirty, setDirty] = createSignal(false)
+  const [saveState, setSaveState] = createSignal<DrumProjectSaveState>('idle')
+  const [operation, setOperation] =
+    createSignal<DrumProjectControllerOperation>('idle')
+  const [failure, setFailure] =
+    createSignal<DrumProjectControllerFailure | null>(null)
+  let controllerOptions: DrumProjectControllerOptions | null = null
+  let flushResult: boolean | Promise<boolean> = options.flush ?? true
+  let operationGeneration = 0
+  let createOrdinal = 0
+  const captures: DrumProjectCapture[] = []
+  const appliedProjects: HydratedDrumProject[] = []
+
+  const initialize = vi.fn<DrumProjectController['initialize']>(async () => {
+    setLibraryState('loading')
+    await Promise.resolve()
+    setLibraryState('ready')
+    return { ok: true, value: projects() }
+  })
+  const listProjects = vi.fn<DrumProjectController['listProjects']>(
+    async () => {
+      setLibraryState('ready')
+      return { ok: true, value: projects() }
+    },
+  )
+  const createProject = vi.fn<DrumProjectController['createProject']>(
+    async (title) => {
+      if (controllerOptions === null) {
+        return { ok: false, code: 'storage-unavailable' }
+      }
+      const previousProject = currentProject()
+      const capture = controllerOptions.capture()
+      createOrdinal += 1
+      const project = projectFromCapture(capture, {
+        id: `created-project-${createOrdinal}`,
+        title,
+      })
+      setProjects((current) => [
+        project,
+        ...current.filter((candidate) => candidate.id !== project.id),
+      ])
+      setCurrentProject(project)
+      setDirty(false)
+      setSaveState('saved')
+      setLibraryState('ready')
+      controllerOptions.onActiveBoundary?.({
+        reason: 'create',
+        previousProject,
+        currentProject: project,
+      })
+      return { ok: true, value: project }
+    },
+  )
+  const openProject = vi.fn<DrumProjectController['openProject']>(
+    async (projectId) => {
+      if (controllerOptions === null) {
+        return { ok: false, code: 'storage-unavailable' }
+      }
+      const project = projects().find((candidate) => candidate.id === projectId)
+      if (project === undefined) return { ok: false, code: 'not-found' }
+      const generation = ++operationGeneration
+      setOperation('opening')
+      await options.beforeOpen?.()
+      if (generation !== operationGeneration) {
+        setOperation('idle')
+        return { ok: false, code: 'superseded' }
+      }
+      const hydrated = hydrateDrumProject(project)
+      appliedProjects.push(hydrated)
+      const accepted = await controllerOptions.apply(hydrated)
+      setOperation('idle')
+      if (!accepted) return { ok: false, code: 'apply-rejected' }
+      const previousProject = currentProject()
+      setCurrentProject(project)
+      setDirty(false)
+      setSaveState('saved')
+      controllerOptions.onActiveBoundary?.({
+        reason: 'open',
+        previousProject,
+        currentProject: project,
+      })
+      return { ok: true, value: project }
+    },
+  )
+  const renameProject = vi.fn<DrumProjectController['renameProject']>(
+    async (projectId, title) => {
+      const project = projects().find((candidate) => candidate.id === projectId)
+      if (project === undefined) return { ok: false, code: 'not-found' }
+      const renamed = Object.freeze({ ...project, title })
+      setProjects((current) =>
+        current.map((candidate) =>
+          candidate.id === projectId ? renamed : candidate,
+        ),
+      )
+      if (currentProject()?.id === projectId) setCurrentProject(renamed)
+      return { ok: true, value: renamed }
+    },
+  )
+  const deleteProject = vi.fn<DrumProjectController['deleteProject']>(
+    async (projectId) => {
+      const previousProject = currentProject()
+      setProjects((current) =>
+        current.filter((candidate) => candidate.id !== projectId),
+      )
+      if (previousProject?.id === projectId) {
+        setCurrentProject(null)
+        controllerOptions?.onActiveBoundary?.({
+          reason: 'delete',
+          previousProject,
+          currentProject: null,
+        })
+      }
+      return { ok: true, value: undefined }
+    },
+  )
+  const eraseAll = vi.fn<DrumProjectController['eraseAll']>(async () => {
+    const previousProject = currentProject()
+    setProjects([])
+    setCurrentProject(null)
+    controllerOptions?.onActiveBoundary?.({
+      reason: 'erase',
+      previousProject,
+      currentProject: null,
+    })
+    return { ok: true, value: undefined }
+  })
+  const cancelPendingOperation = vi.fn(() => {
+    operationGeneration += 1
+    setOperation('idle')
+  })
+  const detach = vi.fn<DrumProjectController['detach']>(() => {
+    const previousProject = currentProject()
+    setCurrentProject(null)
+    setDirty(false)
+    setSaveState('idle')
+    controllerOptions?.onActiveBoundary?.({
+      reason: 'leave',
+      previousProject,
+      currentProject: null,
+    })
+    return { ok: true, value: undefined }
+  })
+  const markDirty = vi.fn<DrumProjectController['markDirty']>(() => {
+    if (controllerOptions === null || currentProject() === null) {
+      return { ok: false, code: 'not-found' }
+    }
+    captures.push(controllerOptions.capture())
+    if (options.dirtyOnMutation === true) {
+      setDirty(true)
+      setSaveState('dirty')
+    }
+    return { ok: true, value: undefined }
+  })
+  const retrySave = vi.fn<DrumProjectController['retrySave']>(async () => {
+    const project = currentProject()
+    if (project === null) return { ok: false, code: 'not-found' }
+    setDirty(false)
+    setSaveState('saved')
+    return { ok: true, value: project }
+  })
+  const revert = vi.fn<DrumProjectController['revert']>(async () => {
+    const project = currentProject()
+    if (project === null) return { ok: false, code: 'not-found' }
+    if (controllerOptions === null) {
+      return { ok: false, code: 'storage-unavailable' }
+    }
+    const accepted = await controllerOptions.apply(hydrateDrumProject(project))
+    if (!accepted) return { ok: false, code: 'apply-rejected' }
+    setDirty(false)
+    setSaveState('saved')
+    return { ok: true, value: project }
+  })
+  const flush = vi.fn<DrumProjectController['flush']>(async () => flushResult)
+  const dispose = vi.fn()
+  const controller = {
+    libraryState,
+    projects,
+    skippedRecords: () => 0,
+    futureRecords: () => 0,
+    currentProject,
+    dirty,
+    saveState,
+    operation,
+    failure,
+    initialize,
+    listProjects,
+    createProject,
+    openProject,
+    renameProject,
+    deleteProject,
+    eraseAll,
+    cancelPendingOperation,
+    detach,
+    markDirty,
+    retrySave,
+    revert,
+    flush,
+    dispose,
+  } satisfies DrumProjectController
+  const createProjectController = vi.fn(
+    (nextOptions: DrumProjectControllerOptions) => {
+      controllerOptions = nextOptions
+      const seeded = options.projects?.(nextOptions.capture()) ?? []
+      setProjects(seeded)
+      return controller
+    },
+  )
+  return {
+    appliedProjects,
+    cancelPendingOperation,
+    captures,
+    controller,
+    createProjectController,
+    createProject,
+    detach,
+    flush,
+    initialize,
+    markDirty,
+    openProject,
+    options: () => controllerOptions,
+    setFailure,
+    setFlushResult(next: boolean | Promise<boolean>) {
+      flushResult = next
+    },
+  }
+}
+/* eslint-enable solid/reactivity */
+
+function takeHistoryHarness(
+  options: {
+    readonly finish?: readonly (boolean | Promise<boolean>)[]
+    readonly retry?: readonly (boolean | Promise<boolean>)[]
+  } = {},
+) {
+  const [finishState, setFinishState] = createSignal<DrumTakeFinishState>({
+    kind: 'idle',
+  })
+  const [historyState, setHistoryState] =
+    createSignal<DrumTakeHistoryControllerState>({ kind: 'idle' })
+  const finishResults = [...(options.finish ?? [true])]
+  const retryResults = [...(options.retry ?? [true])]
+  let activeProjectId: string | null = null
+  const summaries: DrumTakeSummary[] = []
+  const finish = vi.fn<DrumTakeHistoryController['finish']>(async (summary) => {
+    summaries.push(summary)
+    setFinishState({ kind: 'saving' })
+    const saved = await (finishResults.shift() ?? true)
+    setFinishState(
+      saved
+        ? { kind: 'saved', message: 'Compact summary saved.' }
+        : { kind: 'error', message: 'Local write failed.' },
+    )
+    return saved
+  })
+  const retryFinish = vi.fn<DrumTakeHistoryController['retryFinish']>(
+    async () => {
+      setFinishState({ kind: 'saving' })
+      const saved = await (retryResults.shift() ?? true)
+      setFinishState(
+        saved
+          ? { kind: 'saved', message: 'Compact summary saved.' }
+          : { kind: 'error', message: 'Local write failed.' },
+      )
+      return saved
+    },
+  )
+  const loadHistory = vi.fn<DrumTakeHistoryController['loadHistory']>(
+    async (projectId) => {
+      setHistoryState({
+        kind: 'ready',
+        summaries: summaries.filter(
+          (summary) => summary.projectId === projectId,
+        ),
+        skippedRecords: 0,
+        futureRecords: 0,
+      })
+      return true
+    },
+  )
+  const retryHistory = vi.fn<DrumTakeHistoryController['retryHistory']>(
+    async () => true,
+  )
+  const setActiveProject = vi.fn<DrumTakeHistoryController['setActiveProject']>(
+    (projectId) => {
+      activeProjectId = projectId
+    },
+  )
+  const invalidatePendingTake = vi.fn(() => setFinishState({ kind: 'idle' }))
+  const dispose = vi.fn()
+  const controller = {
+    finishState,
+    historyState,
+    finish,
+    retryFinish,
+    loadHistory,
+    retryHistory,
+    setActiveProject,
+    invalidatePendingTake,
+    dispose,
+  } satisfies DrumTakeHistoryController
+  const createTakeHistoryController = vi.fn(() => controller)
+  return {
+    activeProjectId: () => activeProjectId,
+    controller,
+    createTakeHistoryController,
+    finish,
+    invalidatePendingTake,
+    retryFinish,
+    summaries,
+  }
+}
+
 function renderRoom(options?: {
   readonly access?: DrumMidiAccessPort
   readonly activationResults?: readonly boolean[]
@@ -491,6 +886,8 @@ function renderRoom(options?: {
   readonly requestAccess?: () => Promise<DrumMidiAccessPort>
   readonly schedulerAudioReady?: boolean
   readonly maxRecordedHits?: number
+  readonly project?: ReturnType<typeof projectHarness>
+  readonly takeHistory?: ReturnType<typeof takeHistoryHarness>
 }) {
   const session = sessionHarness(options?.schedulerAudioReady)
   const player = playerHarness('mercury-synth', options?.activationResults)
@@ -505,6 +902,10 @@ function renderRoom(options?: {
       createPlayer={player.createPlayer}
       createScoreIndex={options?.createScoreIndex}
       createSessionController={() => importSession.controller}
+      createProjectController={options?.project?.createProjectController}
+      createTakeHistoryController={
+        options?.takeHistory?.createTakeHistoryController
+      }
       loadSongPort={options?.loadSongPort}
       loadBandPreparationPort={options?.loadBandPreparationPort}
       checkBandPreflight={options?.checkBandPreflight}
@@ -521,6 +922,67 @@ function renderRoom(options?: {
     />
   ))
   return { ...mounted, importSession, player, requestAccess, session }
+}
+
+async function openGrooveDrawer(): Promise<HTMLElement> {
+  fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+  const drawer = screen.getByRole('region', { name: 'Shape the groove' })
+  await within(drawer).findByTestId('drum-groove-editor')
+  return drawer
+}
+
+async function saveCurrentGroove(name: string): Promise<void> {
+  const drawer = await openGrooveDrawer()
+  fireEvent.click(within(drawer).getByRole('button', { name: 'Save project' }))
+  const library = await screen.findByTestId('drum-project-library')
+  const nameInput = within(library).getByRole('textbox', {
+    name: 'Project name',
+  })
+  await waitFor(() => expect(nameInput).toHaveFocus())
+  fireEvent.input(nameInput, { target: { value: name } })
+  fireEvent.click(
+    within(library).getByRole('button', { name: 'Save on this device' }),
+  )
+  await waitFor(() =>
+    expect(within(library).getByText('Saved on this device')).toBeVisible(),
+  )
+}
+
+function singleFileList(file: File): FileList {
+  return {
+    0: file,
+    length: 1,
+    item: () => file,
+  } as unknown as FileList
+}
+
+async function recordOnePreparedHit(clock: TestClock): Promise<void> {
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Count-in: 4 audible beats' }),
+  )
+  fireEvent.click(
+    screen.getAllByRole('button', {
+      name: 'Play First Pocket take clock',
+    })[0],
+  )
+  await waitFor(() =>
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'true',
+    ),
+  )
+  clock.advanceTo(clock.nowMs() + 250)
+  dispatchPointerDown(
+    within(openDrummerSeatKit()).getByRole('button', {
+      name: /Play Acoustic snare/i,
+    }),
+    { button: 0, isPrimary: true, pressure: 0.7 },
+  )
+  await waitFor(() =>
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
+    ),
+  )
 }
 
 let createAudioContext: ReturnType<typeof vi.fn>
@@ -551,6 +1013,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  stemConfigureFailure.next = false
+  takeSummaryBuilderLoad.gate = null
+  takeSummaryBuilderLoad.entered.mockClear()
   cleanup()
   vi.useRealTimers()
   vi.restoreAllMocks()
@@ -582,6 +1047,996 @@ describe('DrumNightApp', () => {
     expect(screen.queryByText('EARLY')).not.toBeInTheDocument()
     expect(screen.queryByText('ON')).not.toBeInTheDocument()
     expect(screen.queryByText('LATE')).not.toBeInTheDocument()
+  })
+
+  it('keeps Projects dormant until explicit intent and contextual to the four-tab Groove rack', async () => {
+    const project = projectHarness()
+    renderRoom({ project })
+
+    expect(project.createProjectController).not.toHaveBeenCalled()
+    const drawer = await openGrooveDrawer()
+    expect(project.createProjectController).not.toHaveBeenCalled()
+    const tabs = within(drawer).getAllByRole('tab')
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'Groove',
+      'Kit',
+      'Mix',
+      'Room',
+    ])
+    expect(within(drawer).queryByRole('tab', { name: 'Projects' })).toBeNull()
+
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    const library = await screen.findByTestId('drum-project-library')
+    await waitFor(() => expect(project.initialize).toHaveBeenCalledOnce())
+    expect(project.createProjectController).toHaveBeenCalledOnce()
+    expect(window.location.search).toBe('?drawer=projects')
+    expect(
+      within(
+        screen.getByRole('complementary', { name: 'Drum Night sections' }),
+      ).getByRole('button', { name: 'Groove' }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(within(library).getByText('No saved grooves yet')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Rack controls' })).toBeVisible()
+    expect(
+      screen.getByRole('navigation', { name: 'Drum Night navigation' }),
+    ).not.toHaveTextContent('Projects')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    expect(
+      screen.getByRole('region', { name: 'Shape the groove' }),
+    ).toBeVisible()
+    expect(window.location.search).toBe('?drawer=groove')
+  })
+
+  it('keeps save-recovery focus on Projects Retry after the drawer handoff settles', async () => {
+    const project = projectHarness()
+    renderRoom({ project })
+    let drawer = await openGrooveDrawer()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    await screen.findByTestId('drum-project-library')
+    await waitFor(() => expect(project.initialize).toHaveBeenCalledOnce())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    drawer = screen.getByRole('region', { name: 'Shape the groove' })
+    await settleMicrotasks()
+    project.setFailure({ action: 'save', code: 'storage-unavailable' })
+    const projects = within(drawer).getByRole('button', { name: 'Projects' })
+    projects.focus()
+    fireEvent.click(projects)
+
+    const retry = await screen.findByRole('button', {
+      name: 'Try save again',
+    })
+    await settleMicrotasks()
+    expect(retry).toHaveFocus()
+    expect(
+      screen.getByRole('button', { name: 'Rack controls' }),
+    ).not.toHaveFocus()
+  })
+
+  it('creates and initializes Projects from Save without applying, resetting, playing, or activating audio', async () => {
+    const project = projectHarness()
+    const room = renderRoom({ project })
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+
+    await saveCurrentGroove('Studio Pocket')
+
+    expect(project.createProjectController).toHaveBeenCalledOnce()
+    expect(project.initialize).toHaveBeenCalled()
+    expect(project.createProject).toHaveBeenCalledWith('Studio Pocket')
+    expect(project.appliedProjects).toHaveLength(0)
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'false',
+    )
+    expect(room.player.activate).not.toHaveBeenCalled()
+    expect(room.session.contextForGesture).not.toHaveBeenCalled()
+  })
+
+  it('plays Learn from the active project without resetting or autosaving its current state', async () => {
+    const project = projectHarness()
+    renderRoom({ project })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learn' }))
+    expect(
+      screen.getByRole('button', { name: 'Play First Pocket at 84 BPM' }),
+    ).toBeVisible()
+
+    await saveCurrentGroove('Learn Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    await waitFor(() => expect(project.markDirty).toHaveBeenCalled())
+    project.markDirty.mockClear()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learn' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Play Learn Pocket' }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+    expect(project.createProject).toHaveBeenCalledOnce()
+    expect(project.controller.currentProject()?.title).toBe('Learn Pocket')
+    expect(
+      within(screen.getByLabelText('Authored tempo')).getByText('86'),
+    ).toBeVisible()
+    expect(project.markDirty).not.toHaveBeenCalled()
+  })
+
+  it('protects navigation only for a dirty active project', async () => {
+    const project = projectHarness({ dirtyOnMutation: true })
+    renderRoom({ project })
+    const dispatchBeforeUnload = (): BeforeUnloadEvent => {
+      const event = new Event('beforeunload', {
+        bubbles: false,
+        cancelable: true,
+      }) as BeforeUnloadEvent
+      window.dispatchEvent(event)
+      return event
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    expect(project.createProjectController).not.toHaveBeenCalled()
+    expect(dispatchBeforeUnload().defaultPrevented).toBe(false)
+
+    await saveCurrentGroove('Navigation Guard Pocket')
+    expect(project.controller.dirty()).toBe(false)
+    expect(dispatchBeforeUnload().defaultPrevented).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    await waitFor(() => expect(project.controller.dirty()).toBe(true))
+    expect(dispatchBeforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('queues the latest saved-project groove, family, tempo, count-in, click, and A B mutations', async () => {
+    const click = clickHarness()
+    const project = projectHarness()
+    renderRoom({ click, project })
+    await saveCurrentGroove('Mutable Pocket')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    const drawer = screen.getByRole('region', { name: 'Shape the groove' })
+    const editor = within(drawer).getByTestId('drum-groove-editor')
+    fireEvent.click(
+      within(editor).getByRole('button', {
+        name: 'Add Hi-Mid Tom at bar 1, beat 1 e',
+      }),
+    )
+    fireEvent.click(within(drawer).getByRole('tab', { name: 'Mix' }))
+    const kickLevel = await within(drawer).findByRole('slider', {
+      name: 'Kick authored level',
+    })
+    fireEvent.input(kickLevel, { target: { value: '55' } })
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Mute authored Kick' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Count-in: 4 audible beats' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Playback click: off' }))
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+
+    await waitFor(() => {
+      const latest = project.captures.at(-1)
+      expect(latest?.drafts.source.revision).toBeGreaterThan(0)
+      expect(latest?.authoredFamilyMix.kick).toEqual({
+        level: 0.55,
+        muted: true,
+      })
+      expect(latest?.tempoBpm).toBe(86)
+      expect(latest?.countInBeats).toBe(0)
+      expect(latest?.clickEnabled).toBe(true)
+      expect(latest?.loopRange).toEqual(
+        expect.objectContaining({ startBeat: 0 }),
+      )
+      expect(latest?.loopRange?.endBeat).toBeGreaterThan(0)
+    })
+    expect(project.markDirty).toHaveBeenCalled()
+  })
+
+  it('opens a hydrated same-variation project as a silent hard boundary', async () => {
+    const clock = new TestClock()
+    const click = clickHarness()
+    const project = projectHarness({
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'hydrated-source-pocket',
+          title: 'Hydrated Pocket',
+          transform: (current) => ({
+            ...current,
+            drafts: {
+              ...current.drafts,
+              source: {
+                ...current.drafts.source,
+                revision: 11,
+                swing: 0.5,
+                density: 0.55,
+              },
+            },
+            authoredFamilyMix: {
+              ...current.authoredFamilyMix,
+              kick: { level: 0.42, muted: true },
+            },
+            tempoBpm: 110,
+            countInBeats: 4,
+            clickEnabled: true,
+            loopRange: null,
+          }),
+        }),
+      ],
+    })
+    const room = renderRoom({ click, clock, project })
+    await recordOnePreparedHit(clock)
+    const activationCount = room.player.activate.mock.calls.length
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+
+    const grooveDrawer = await openGrooveDrawer()
+    fireEvent.click(
+      within(grooveDrawer).getByRole('button', { name: 'Projects' }),
+    )
+    const library = await screen.findByTestId('drum-project-library')
+    fireEvent.click(
+      await within(library).findByRole('button', { name: 'Open' }),
+    )
+    fireEvent.click(
+      within(library).getByRole('button', { name: 'Discard and open' }),
+    )
+
+    await waitFor(() =>
+      expect(project.openProject).toHaveBeenCalledWith(
+        'hydrated-source-pocket',
+      ),
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(project.appliedProjects).toHaveLength(1)
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+      'data-playing',
+      'false',
+    )
+    expect(
+      screen.getByRole('button', { name: 'Count-in: 4 audible beats' }),
+    ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Playback click: on' }),
+    ).toBeVisible()
+    expect(
+      within(screen.getByLabelText('Authored tempo')).getByText('110'),
+    ).toBeVisible()
+    expect(room.player.setAuthoredFamilyVolume).toHaveBeenCalledWith('kick', 0)
+    expect(room.player.activate).toHaveBeenCalledTimes(activationCount)
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    const reopenedDrawer = screen.getByRole('region', {
+      name: 'Shape the groove',
+    })
+    const editor =
+      await within(reopenedDrawer).findByTestId('drum-groove-editor')
+    expect(
+      within(editor).getByRole('button', { name: 'Soft' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(editor).getByRole('button', { name: 'Essential' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps the authored scheduler subscribed after a saved project apply', async () => {
+    const clock = new TestClock()
+    const project = projectHarness({
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'scheduler-project',
+          title: 'Scheduler Pocket',
+        }),
+      ],
+    })
+    const room = renderRoom({ clock, project })
+    const drawer = await openGrooveDrawer()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    const library = await screen.findByTestId('drum-project-library')
+    fireEvent.click(
+      await within(library).findByRole('button', { name: 'Open' }),
+    )
+    await waitFor(() =>
+      expect(project.controller.currentProject()?.id).toBe('scheduler-project'),
+    )
+
+    const editor = await screen.findByTestId('drum-groove-editor')
+    fireEvent.click(
+      within(editor).getByRole('button', {
+        name: 'Add Hi-Mid Tom at bar 1, beat 1',
+      }),
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Built-in groove · 32 mapped hits/),
+      ).toBeVisible(),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Count-in: 4 audible beats' }),
+    )
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play First Pocket take clock',
+      })[0],
+    )
+
+    await waitFor(() =>
+      expect(room.player.trigger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gmKey: 48,
+          sourceId: expect.stringMatching(/^authored:/),
+        }),
+      ),
+    )
+  })
+
+  it('commits a validated project atomically and surfaces degraded playback truth when a collaborator throws', async () => {
+    const clock = new TestClock()
+    const project = projectHarness({
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'fallible-target',
+          title: 'Fallible Half-time',
+          transform: (current) => ({
+            ...current,
+            selectedVariantId: 'half-time',
+            drafts: {
+              ...current.drafts,
+              'half-time': {
+                ...current.drafts['half-time'],
+                revision: 17,
+                swing: 1,
+                density: 1,
+              },
+            },
+            authoredFamilyMix: {
+              ...current.authoredFamilyMix,
+              kick: { level: 0.2, muted: true },
+            },
+            tempoBpm: 112,
+          }),
+        }),
+      ],
+    })
+    const room = renderRoom({ clock, project })
+    await saveCurrentGroove('Original Classic')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    let editor = screen.getByTestId('drum-groove-editor')
+    fireEvent.click(within(editor).getByRole('button', { name: 'Soft' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+    await recordOnePreparedHit(clock)
+
+    const timeline = screen.getByTestId('drum-night-timeline')
+    const timelineControls = within(timeline)
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    const seek = timelineControls.getByRole('slider', {
+      name: 'Drum part position',
+    })
+    fireEvent.input(seek, {
+      target: { value: String(Number(seek.getAttribute('max')) / 2) },
+    })
+    fireEvent.click(
+      timelineControls.getByRole('button', {
+        name: 'Set loop end B at the playhead',
+      }),
+    )
+    expect(timeline).toHaveAttribute('data-loop-state', 'active')
+
+    const drawer = await openGrooveDrawer()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    const library = await screen.findByTestId('drum-project-library')
+    const targetRow = (
+      await within(library).findByText('Fallible Half-time')
+    ).closest('article')!
+    const failingFamilyVolume = vi.fn(() => {
+      throw new Error('family mixer unavailable')
+    })
+    Object.assign(room.player.player, {
+      setAuthoredFamilyVolume: failingFamilyVolume,
+    })
+    fireEvent.click(within(targetRow).getByRole('button', { name: 'Open' }))
+
+    await waitFor(() =>
+      expect(project.openProject).toHaveBeenCalledWith('fallible-target'),
+    )
+    await expect(project.openProject.mock.results[0]?.value).resolves.toEqual(
+      expect.objectContaining({ ok: true }),
+    )
+    expect(failingFamilyVolume).toHaveBeenCalled()
+    expect(project.controller.currentProject()).toEqual(
+      expect.objectContaining({
+        id: 'fallible-target',
+        title: 'Fallible Half-time',
+      }),
+    )
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '0 hits',
+    )
+    expect(timeline).toHaveAttribute('data-loop-state', 'full')
+    expect(
+      screen.getByRole('button', {
+        name: /First Pocket — Half-time Built-in groove/,
+      }),
+    ).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'false',
+      ),
+    )
+    expect(
+      screen.getByText(
+        'Fallible Half-time is on stage, but one playback service needs retry.',
+      ),
+    ).toBeVisible()
+
+    editor = await screen.findByTestId('drum-groove-editor')
+    expect(editor).toHaveAttribute('aria-label', 'Half-time groove editor')
+    expect(
+      within(editor).getByRole('button', { name: 'Triplet' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(editor).getByRole('button', { name: 'All hits' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('detaches a selected song and activates the project when backing release collaborators throw', async () => {
+    const backing = preparedBackingHarness({
+      sessionId: 'fragile-backing',
+      title: 'Fragile Backing',
+      kind: 'two-stem',
+    })
+    const catalog = songPortHarness([backing])
+    const project = projectHarness({
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'detached-project',
+          title: 'Detached Project',
+        }),
+      ],
+    })
+    renderRoom({ loadSongPort: catalog.loadSongPort, project })
+    let drawer = await openGrooveDrawer()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    await screen.findByTestId('drum-project-library')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    fireEvent.click(
+      await within(drawer).findByRole('button', {
+        name: /Fragile Backing.*Two stems.*Load backing/i,
+      }),
+    )
+    await within(drawer).findByText('Backing with drums inside')
+    expect(new URLSearchParams(window.location.search).get('song')).toBe(
+      'fragile-backing',
+    )
+
+    const projectsUrl = new URL(window.location.href)
+    projectsUrl.searchParams.set('drawer', 'projects')
+    window.history.pushState({}, '', projectsUrl)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    const library = await screen.findByTestId('drum-project-library')
+    backing.release.mockImplementationOnce(() => {
+      throw new Error('object URL release failed')
+    })
+    stemConfigureFailure.next = true
+    fireEvent.click(
+      await within(library).findByRole('button', { name: 'Open' }),
+    )
+    fireEvent.click(
+      await within(library).findByRole('button', {
+        name: 'Discard and open',
+      }),
+    )
+
+    await waitFor(() =>
+      expect(project.openProject).toHaveBeenCalledWith('detached-project'),
+    )
+    await expect(project.openProject.mock.results[0]?.value).resolves.toEqual(
+      expect.objectContaining({ ok: true }),
+    )
+    await waitFor(() =>
+      expect(project.controller.currentProject()?.id).toBe('detached-project'),
+    )
+    expect(stemConfigureFailure.next).toBe(false)
+    expect(backing.release).toHaveBeenCalledOnce()
+    expect(new URLSearchParams(window.location.search).get('song')).toBeNull()
+    expect(
+      screen.getByRole('button', {
+        name: /First Pocket.*Built-in groove/,
+      }),
+    ).toBeVisible()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    expect(await within(drawer).findByText('No backing selected')).toBeVisible()
+  })
+
+  it('blocks a source switch on failed project flush and detaches before a successful import', async () => {
+    const project = projectHarness({ flush: false })
+    const importSession = importSessionHarness()
+    renderRoom({ importSession, project })
+    await saveCurrentGroove('Source Guard Pocket')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    let drawer = screen.getByRole('region', { name: 'Bring a song' })
+    const file = new File([new Uint8Array([1, 2, 3])], 'guard.mid', {
+      type: 'audio/midi',
+    })
+    fireEvent.change(
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
+      { target: { files: singleFileList(file) } },
+    )
+
+    await waitFor(() => expect(project.flush).toHaveBeenCalledOnce())
+    expect(project.detach).not.toHaveBeenCalled()
+    expect(importSession.importFile).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('region', { name: 'Saved drum projects' }),
+    ).toBeVisible()
+
+    project.setFlushResult(true)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    fireEvent.change(
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
+      { target: { files: singleFileList(file) } },
+    )
+
+    await waitFor(() =>
+      expect(importSession.importFile).toHaveBeenCalledWith(file),
+    )
+    expect(project.flush).toHaveBeenCalledTimes(2)
+    expect(project.detach).toHaveBeenCalledOnce()
+    expect(project.flush.mock.invocationCallOrder[1]).toBeLessThan(
+      project.detach.mock.invocationCallOrder[0],
+    )
+    expect(project.detach.mock.invocationCallOrder[0]).toBeLessThan(
+      importSession.importFile.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('does not let an older source flush detach or import over a newer opened project', async () => {
+    const flushGate = deferred<boolean>()
+    const project = projectHarness({
+      flush: flushGate.promise,
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'newer-project',
+          title: 'Newer Pocket',
+        }),
+      ],
+    })
+    const importSession = importSessionHarness()
+    renderRoom({ importSession, project })
+    await saveCurrentGroove('Older Pocket')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    let drawer = screen.getByRole('region', { name: 'Bring a song' })
+    const file = new File([new Uint8Array([7])], 'older-intent.mid')
+    fireEvent.change(
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
+      { target: { files: singleFileList(file) } },
+    )
+    await waitFor(() => expect(project.flush).toHaveBeenCalledOnce())
+
+    drawer = await openGrooveDrawer()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    const library = await screen.findByTestId('drum-project-library')
+    const targetRow = (
+      await within(library).findByText('Newer Pocket')
+    ).closest('article')!
+    fireEvent.click(within(targetRow).getByRole('button', { name: 'Open' }))
+    await waitFor(() =>
+      expect(project.openProject).toHaveBeenCalledWith('newer-project'),
+    )
+    await waitFor(() =>
+      expect(project.controller.currentProject()?.id).toBe('newer-project'),
+    )
+
+    flushGate.resolve(true)
+    await settleMicrotasks()
+    expect(project.detach).not.toHaveBeenCalled()
+    expect(importSession.importFile).not.toHaveBeenCalled()
+    expect(project.controller.currentProject()?.id).toBe('newer-project')
+  })
+
+  it('does not apply an older pending project read after a newer authored-file import', async () => {
+    const openGate = deferred<undefined>()
+    const project = projectHarness({
+      beforeOpen: () => openGate.promise,
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'older-project',
+          title: 'Older Pocket',
+        }),
+      ],
+    })
+    const ready = readySessionFixture({ title: 'Newer Imported Pocket' })
+    const importSession = importSessionHarness()
+    importSession.setNextResult(ready)
+    renderRoom({ importSession, project })
+    let drawer = await openGrooveDrawer()
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+    const library = await screen.findByTestId('drum-project-library')
+    fireEvent.click(
+      await within(library).findByRole('button', { name: 'Open' }),
+    )
+    await waitFor(() =>
+      expect(project.openProject).toHaveBeenCalledWith('older-project'),
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    drawer = screen.getByRole('region', { name: 'Bring a song' })
+    const file = new File([new Uint8Array([9])], 'newer-intent.mid')
+    fireEvent.change(
+      await within(drawer).findByTestId('drum-play-along-file-drop-input'),
+      { target: { files: singleFileList(file) } },
+    )
+    await waitFor(() =>
+      expect(importSession.importFile).toHaveBeenCalledWith(file),
+    )
+    openGate.resolve(undefined)
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: 'Newer Imported Pocket' }),
+      ).toBeVisible(),
+    )
+    expect(project.cancelPendingOperation).toHaveBeenCalled()
+    expect(project.appliedProjects).toHaveLength(0)
+    expect(project.controller.currentProject()).toBeNull()
+  })
+
+  it('abandons a Finish paused in lazy preparation when a newer project takes the stage', async () => {
+    const builderGate = deferred<undefined>()
+    takeSummaryBuilderLoad.gate = builderGate.promise
+    const clock = new TestClock()
+    const project = projectHarness({
+      projects: (capture) => [
+        projectFromCapture(capture, {
+          id: 'new-finish-stage',
+          title: 'New Finish Stage',
+          transform: (current) => ({
+            ...current,
+            selectedVariantId: 'half-time',
+          }),
+        }),
+      ],
+    })
+    const takeHistory = takeHistoryHarness()
+    renderRoom({ clock, project, takeHistory })
+    await saveCurrentGroove('Old Finish Stage')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
+    await recordOnePreparedHit(clock)
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+
+    try {
+      await waitFor(() =>
+        expect(takeSummaryBuilderLoad.entered).toHaveBeenCalledOnce(),
+      )
+      expect(screen.getByRole('button', { name: 'Saving take' })).toBeDisabled()
+
+      const drawer = await openGrooveDrawer()
+      fireEvent.click(within(drawer).getByRole('button', { name: 'Projects' }))
+      const library = await screen.findByTestId('drum-project-library')
+      const targetRow = (
+        await within(library).findByText('New Finish Stage')
+      ).closest('article')!
+      fireEvent.click(within(targetRow).getByRole('button', { name: 'Open' }))
+      await waitFor(() =>
+        expect(project.controller.currentProject()?.id).toBe(
+          'new-finish-stage',
+        ),
+      )
+    } finally {
+      takeSummaryBuilderLoad.gate = null
+      builderGate.resolve(undefined)
+    }
+
+    await settleMicrotasks()
+    expect(takeHistory.finish).not.toHaveBeenCalled()
+    expect(project.controller.currentProject()?.id).toBe('new-finish-stage')
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '0 hits',
+    )
+    expect(screen.queryByRole('button', { name: 'Saving take' })).toBeNull()
+    expect(
+      screen.queryByText(/take could not be saved|Local write failed/i),
+    ).toBeNull()
+  })
+
+  it('starts only one Finish pipeline when the control is activated twice rapidly', async () => {
+    const flushGate = deferred<boolean>()
+    const clock = new TestClock()
+    const project = projectHarness({ flush: flushGate.promise })
+    const takeHistory = takeHistoryHarness()
+    renderRoom({ clock, project, takeHistory })
+    await recordOnePreparedHit(clock)
+    await saveCurrentGroove('Single Finish Pocket')
+    const finish = await screen.findByRole('button', { name: 'Finish take' })
+
+    fireEvent.click(finish)
+    fireEvent.click(finish)
+
+    await waitFor(() => expect(project.flush).toHaveBeenCalledOnce())
+    expect(screen.getByRole('button', { name: 'Saving take' })).toBeDisabled()
+    expect(takeHistory.finish).not.toHaveBeenCalled()
+    flushGate.resolve(true)
+
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(takeHistory.summaries).toHaveLength(1)
+  })
+
+  it('offers Finish only after saving and clears evidence only after a successful commit before re-arming next Play', async () => {
+    const clock = new TestClock()
+    const finishGate = deferred<boolean>()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness({
+      finish: [finishGate.promise, true],
+    })
+    const room = renderRoom({ clock, project, takeHistory })
+    await recordOnePreparedHit(clock)
+
+    expect(takeHistory.createTakeHistoryController).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Finish take' })).toBeNull()
+    await saveCurrentGroove('Finished Pocket')
+    const finish = await screen.findByRole('button', { name: 'Finish take' })
+    expect(takeHistory.createTakeHistoryController).not.toHaveBeenCalled()
+    fireEvent.click(finish)
+
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
+    )
+    expect(screen.getByRole('button', { name: 'Saving take' })).toBeDisabled()
+    finishGate.resolve(true)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(takeHistory.summaries).toHaveLength(1)
+    expect(takeHistory.summaries[0]).toEqual(
+      expect.objectContaining({ projectId: 'created-project-1' }),
+    )
+    const takeEvents = screen.getByText('Take events').closest('button')!
+    expect(takeEvents).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Groove' })[0])
+    const audibleCountIn = screen.queryByRole('button', {
+      name: /Count-in: \d+ audible beats/,
+    })
+    if (audibleCountIn !== null) fireEvent.click(audibleCountIn)
+    expect(screen.getByRole('button', { name: 'Count-in: off' })).toBeVisible()
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play First Pocket take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(takeEvents).toHaveAttribute('aria-pressed', 'true'),
+    )
+    expect(takeHistory.invalidatePendingTake).toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+    clock.advanceTo(clock.nowMs() + 250)
+    dispatchPointerDown(
+      within(openDrummerSeatKit()).getByRole('button', {
+        name: /Play Acoustic snare/i,
+      }),
+      { button: 0, isPrimary: true, pressure: 0.8 },
+    )
+    await waitFor(() =>
+      expect(room.player.trigger).toHaveBeenLastCalledWith(
+        expect.objectContaining({ gmKey: 38 }),
+      ),
+    )
+    await waitFor(() => expect(takeEvents).toHaveTextContent('1 hits'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(takeEvents).toHaveTextContent('0 hits'))
+    expect(takeHistory.summaries).toHaveLength(2)
+  })
+
+  it('keeps failed evidence owned by Retry and blocks re-arming until it saves', async () => {
+    const clock = new TestClock()
+    const retryGate = deferred<boolean>()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness({
+      finish: [false],
+      retry: [retryGate.promise],
+    })
+    const room = renderRoom({ clock, project, takeHistory })
+    await saveCurrentGroove('Retry Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Your captured evidence is still here',
+      ),
+    )
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
+    )
+    const takeEvents = screen.getByText('Take events').closest('button')!
+    expect(takeEvents).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(takeEvents)
+    expect(takeEvents).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Play First Pocket take clock',
+      })[0],
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('drum-night-shell')).toHaveAttribute(
+        'data-playing',
+        'true',
+      ),
+    )
+    clock.advanceTo(clock.nowMs() + 250)
+    dispatchPointerDown(
+      within(openDrummerSeatKit()).getByRole('button', {
+        name: /Play Acoustic snare/i,
+      }),
+      { button: 0, isPrimary: true, pressure: 0.8 },
+    )
+    await waitFor(() =>
+      expect(room.player.trigger).toHaveBeenLastCalledWith(
+        expect.objectContaining({ gmKey: 38 }),
+      ),
+    )
+    expect(takeEvents).toHaveTextContent('1 hits')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Your captured evidence is still here',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(takeHistory.retryFinish).toHaveBeenCalledOnce())
+    retryGate.resolve(true)
+
+    await waitFor(() => expect(takeEvents).toHaveTextContent('0 hits'))
+    expect(takeHistory.invalidatePendingTake).not.toHaveBeenCalled()
+    expect(screen.getByText('Compact summary saved.')).toBeVisible()
+  })
+
+  it('keeps a failed take through the first discard step and clears it only after confirmation', async () => {
+    const clock = new TestClock()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness({ finish: [false] })
+    renderRoom({ clock, project, takeHistory })
+    await saveCurrentGroove('Discard Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+    const discard = await screen.findByRole('button', { name: 'Discard take' })
+
+    fireEvent.click(discard)
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
+    )
+    expect(screen.getByRole('button', { name: 'Yes, discard' })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep evidence' }))
+    expect(screen.getByText('Take events').closest('button')).toHaveTextContent(
+      '1 hits',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discard take' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, discard' }))
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(takeHistory.invalidatePendingTake).toHaveBeenCalled()
+  })
+
+  it('clears already-saved raw evidence when only project context changes during the Finish write', async () => {
+    const clock = new TestClock()
+    const finishGate = deferred<boolean>()
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness({ finish: [finishGate.promise] })
+    renderRoom({ clock, project, takeHistory })
+    await saveCurrentGroove('Context Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    await recordOnePreparedHit(clock)
+    fireEvent.click(await screen.findByRole('button', { name: 'Finish take' }))
+    await waitFor(() => expect(takeHistory.finish).toHaveBeenCalledOnce())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    const timeline = screen.getByTestId('drum-night-timeline')
+    fireEvent.click(
+      within(timeline).getByRole('button', {
+        name: 'Set loop start A at the playhead',
+      }),
+    )
+    finishGate.resolve(true)
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Take events').closest('button'),
+      ).toHaveTextContent('0 hits'),
+    )
+    expect(takeHistory.finish).toHaveBeenCalledOnce()
   })
 
   it('changes only the visual room and keeps premium metadata behind Room', async () => {
@@ -2062,6 +3517,43 @@ describe('DrumNightApp', () => {
     expect(createScoreIndex).toHaveBeenCalledOnce()
   })
 
+  it('keeps durable take history reachable from the persistent desktop coach without current evidence', async () => {
+    const project = projectHarness()
+    const takeHistory = takeHistoryHarness()
+    renderRoom({ project, takeHistory })
+
+    expect(
+      screen.queryByRole('button', { name: 'Open take history' }),
+    ).toBeNull()
+    await saveCurrentGroove('History Pocket')
+    fireEvent.click(screen.getByRole('button', { name: 'Rack controls' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
+
+    const persistentCoach = screen.getByLabelText('Session phrase coach')
+    expect(
+      within(persistentCoach).queryByTestId('drum-take-history'),
+    ).toBeNull()
+    const openHistory = within(persistentCoach).getByRole('button', {
+      name: 'Open take history',
+    })
+    expect(openHistory).toBeVisible()
+    fireEvent.click(openHistory)
+
+    const coachWorkspace = await screen.findByRole('region', {
+      name: 'Recover the backbeat',
+    })
+    expect(
+      await within(coachWorkspace).findByRole('heading', {
+        name: 'Recent takes',
+      }),
+    ).toBeVisible()
+    await waitFor(() =>
+      expect(takeHistory.controller.loadHistory).toHaveBeenCalledWith(
+        'created-project-1',
+      ),
+    )
+  })
+
   it('keeps a late indexed phrase visible after the bounded score projection', async () => {
     const clock = new TestClock()
     const earlyHits = Array.from({ length: 2_050 }, (_, index) => ({
@@ -2605,6 +4097,17 @@ describe('DrumNightApp', () => {
     expect(
       screen.getByText(/Recovery loop cleared.*tempo returned to 100%/i),
     ).toBeVisible()
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Set recovery loop to bar 1',
+      }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Increase tempo' }))
+    expect(
+      within(screen.getByLabelText('Authored tempo')).getByText('122'),
+    ).toBeVisible()
+    expect(screen.getByText('Tempo set to 122 BPM.')).toBeVisible()
   })
 
   it('keeps all six live pads available on a phone in Score and Drummer Seat views', () => {

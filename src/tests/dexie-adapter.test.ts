@@ -40,6 +40,18 @@ interface MigrationRec extends DbEntity {
   completedAt: string
 }
 
+interface DrumProjectRec extends DbEntity {
+  title: string
+  sourceKind: string
+  sourceRef: string
+}
+
+interface DrumTakeRec extends DbEntity {
+  projectId: string
+  completedAt: string
+  score: number
+}
+
 describe('DexieAdapter', () => {
   let adapter: DexieAdapter
 
@@ -219,6 +231,43 @@ describe('DexieAdapter', () => {
     ).toEqual([])
   })
 
+  it('exposes strict v10 Drum project and compound take-summary indexes', async () => {
+    const now = new Date().toISOString()
+    const project: DrumProjectRec = {
+      id: 'drum-project-1',
+      createdAt: now,
+      updatedAt: now,
+      title: 'Pocket',
+      sourceKind: 'prepared-first-pocket',
+      sourceRef: 'first-pocket:1',
+    }
+    const take: DrumTakeRec = {
+      id: 'drum-take-1',
+      createdAt: now,
+      updatedAt: now,
+      projectId: project.id,
+      completedAt: now,
+      score: 91,
+    }
+
+    await adapter.putStrict('drumProjects', project)
+    await adapter.putStrict('drumTakeSummaries', take)
+    expect(
+      await adapter.readByIndexStrict<DrumProjectRec>(
+        'drumProjects',
+        'sourceRef',
+        'first-pocket:1',
+      ),
+    ).toEqual([project])
+    expect(
+      await adapter.readByCompoundIndexStrict<DrumTakeRec>(
+        'drumTakeSummaries',
+        '[projectId+completedAt]',
+        [project.id, now],
+      ),
+    ).toEqual([take])
+  })
+
   it('upgrades an existing v6 database without replacing its rows', async () => {
     await adapter.destroy()
     const legacy = new DexieDB('MercuryPitchDB')
@@ -238,5 +287,27 @@ describe('DexieAdapter', () => {
       await adapter.readByIdStrict<Rec>('sessionRecords', existing.id),
     ).toEqual(existing)
     expect(await adapter.readAllStrict<PianoRec>('pianoProjects')).toEqual([])
+  })
+
+  it('upgrades an existing v9 database additively to empty Drum stores', async () => {
+    await adapter.destroy()
+    const legacy = new DexieDB('MercuryPitchDB')
+    legacy.version(9).stores({ sessionRecords: 'id, userId, endedAt' })
+    const existing: Rec = {
+      id: 'before-v10',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      userId: 'local-user',
+      score: 97,
+    }
+    await legacy.table<Rec, string>('sessionRecords').put(existing)
+    legacy.close()
+
+    adapter = new DexieAdapter()
+    expect(
+      await adapter.readByIdStrict<Rec>('sessionRecords', existing.id),
+    ).toEqual(existing)
+    expect(await adapter.readAllStrict('drumProjects')).toEqual([])
+    expect(await adapter.readAllStrict('drumTakeSummaries')).toEqual([])
   })
 })
