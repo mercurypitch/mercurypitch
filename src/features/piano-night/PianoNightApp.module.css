@@ -25,14 +25,32 @@
                            the room behind it resolves rather than smears
        --pn-veil-scale     multiplies the four gradients `.roomGrade` lays
                            over the photograph, in both treatments
-       --pn-key-scale      the keybed and the idle keys, on a deliberately
-                           gentler curve — this is the play surface
+       --pn-keybed-scale   the black bed and its backing, BEHIND the keys
+       --pn-key-scale      the idle keys themselves
 
-     Measured on the HUD's 14px blur at 0.91 alpha, and on a white key:
+     The keybed is painted three layers deep — bed, then backing, then the
+     key — and three stacked alphas do not add up to one. Putting a single
+     scale on all three made the *composite* of a white key `1 - (1 - k)^3`:
+     99% opaque at the default and still 93% at Open, which is why the keys
+     only ever changed shade. The layers are split now, and the two behind
+     the key clear out FIRST, on a curve that reaches zero at glass 0.67, so
+     by the time a key thins there is nothing painted behind it to thin
+     through.
 
-       0     blur 14px    HUD 0.91   key 1.00   the stage as it shipped
-       0.45  blur 8.3px   HUD 0.66   key 0.81   the default
-       1     blur 1.4px   HUD 0.36   key 0.58   as open as it goes
+     Composite opacity of a white key, `1 - (1 - bed)^2 * (1 - key)`:
+
+       0     bed 1.00   key 1.00   composite 1.00   the stage as it shipped
+       0.45  bed 0.33   key 0.69   composite 0.86   the default
+       1     bed 0.00   key 0.32   composite 0.32   the room reads through
+
+     Everything that paints ON the key scales with it too — the inset
+     bevels, the black keys' drop shadow, the bed's own cast shadow —
+     because an unscaled shadow is just another opaque layer.
+
+     Three things deliberately stay solid at every stop, because they are
+     what keeps a see-through keyboard playable: the felt line, the white
+     keys' separators, and the black keys' 1px border. A ghost key still has
+     to be a shape you can aim at.
 
      A key that is being HELD is not on this curve at all: `.keyActive` stays
      fully opaque at every stop, so the answer to "which key just fired" is
@@ -41,7 +59,8 @@
   --pn-surface-scale: calc(1 - var(--pn-glass) * 0.6);
   --pn-blur-scale: calc(1 - var(--pn-glass) * 0.9);
   --pn-veil-scale: calc(1 - var(--pn-glass) * 0.62);
-  --pn-key-scale: calc(1 - var(--pn-glass) * 0.42);
+  --pn-keybed-scale: max(0, 1 - var(--pn-glass) * 1.5);
+  --pn-key-scale: calc(1 - var(--pn-glass) * 0.68);
 
   --ink: #050709;
   --panel: #090b0e;
@@ -1115,12 +1134,14 @@
   left: 0;
   height: var(--keybed-height);
   border-top: 1px solid rgb(235 133 135 / 52%);
-  /* Both of these have to thin together, or the keys go glassy over a black
-     slab and the room stops at the felt line. The border and the felt line
-     stay opaque: they are where the keybed begins, and a landmark that fades
-     is not one. */
-  background: rgb(5 5 5 / var(--pn-key-scale));
-  box-shadow: 0 -18px 48px rgb(0 0 0 / 35%);
+  /* The bed and its backing clear out ahead of the keys, or the keys go
+     glassy over a black slab and the room stops at the felt line. The cast
+     shadow goes with them — left alone it stays a dark band over the room
+     long after the thing casting it is gone. The border and the felt line
+     stay opaque: they are where the keybed begins, and a landmark that
+     fades is not one. */
+  background: rgb(5 5 5 / var(--pn-keybed-scale));
+  box-shadow: 0 -18px 48px rgb(0 0 0 / calc(0.35 * var(--pn-keybed-scale)));
 }
 
 .feltLine {
@@ -1136,7 +1157,7 @@
   position: absolute;
   inset: 4px 0 0;
   overflow: hidden;
-  background: rgb(11 11 10 / var(--pn-key-scale));
+  background: rgb(11 11 10 / var(--pn-keybed-scale));
   touch-action: none;
   user-select: none;
 }
@@ -1164,9 +1185,50 @@
     rgb(255 250 240 / var(--pn-key-scale)) 70%,
     rgb(201 193 181 / var(--pn-key-scale)) 100%
   );
+  /* A bevel is what a solid object looks like, so it leaves when the solid
+     object does — on the bed's curve, not the key's. Left on the key's, the
+     "transparent" ivory kept a shadow along its bottom edge and a bright
+     line up its left, and under a sharp that line read straight through the
+     black key. The 1px separator on the right is NOT scaled: with the fill
+     gone it is the only thing left saying where one key ends. */
   box-shadow:
-    inset 0 -8px 11px rgb(68 58 48 / 22%),
-    inset 1px 0 rgb(255 255 255 / 54%);
+    inset 0 -8px 11px rgb(68 58 48 / calc(0.22 * var(--pn-keybed-scale))),
+    inset 1px 0 rgb(255 255 255 / calc(0.54 * var(--pn-keybed-scale)));
+}
+
+/* ── The seam under a sharp ────────────────────────────────
+   A sharp physically covers the joint between the two white keys it sits
+   between, and while the keys were solid that was true for free. Once they
+   are glass the opaque full-height separator reads straight THROUGH the
+   black key as a dark line down its middle, which no keyboard does.
+
+   So where a sharp covers the seam, the seam is drawn by hand and stops
+   where the sharp starts. The top segment is on the bed's curve, so at
+   glass 0 it is still the same unbroken line that shipped, and by the time
+   the black key is see-through there is nothing behind it to see. The lower
+   39% — the part in front of the sharp — never fades: it is what still says
+   where one white key ends when the fill is gone.
+
+   `E` and `B` have no sharp above them and keep the plain full-height
+   border, which is exactly the landmark you use to find middle C. */
+.whiteKeys button[data-sharp-right='true'] {
+  border-right-color: transparent;
+}
+
+.whiteKeys button[data-sharp-right='true']::before {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    rgb(23 22 20 / var(--pn-keybed-scale)) 0 61%,
+    #171614 61%
+  );
+  content: '';
+  pointer-events: none;
 }
 
 .whiteKeys button.keyActive {
@@ -1205,9 +1267,13 @@
     rgb(37 36 33 / var(--pn-key-scale)) 56%,
     rgb(5 5 5 / var(--pn-key-scale))
   );
+  /* Once the bed clears, this drop shadow falls on the photograph instead of
+     on ivory — a hard black smear under every sharp. A shadow is cast by a
+     solid object, so it leaves with the bed rather than lingering on the
+     key's gentler curve. */
   box-shadow:
-    1px 5px 5px rgb(0 0 0 / 62%),
-    inset 0 -7px 7px rgb(255 255 255 / 4%);
+    1px 5px 5px rgb(0 0 0 / calc(0.62 * var(--pn-keybed-scale))),
+    inset 0 -7px 7px rgb(255 255 255 / calc(0.04 * var(--pn-keybed-scale)));
   pointer-events: auto;
   transform: translateX(-50%);
 }

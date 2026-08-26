@@ -29,6 +29,19 @@ interface PianoKeyHorizonProps {
 const WHITE_KEYS = PIANO_KEYS.filter((key) => !key.black)
 const BLACK_KEYS = PIANO_KEYS.filter((key) => key.black)
 
+/**
+ * The white keys whose right-hand seam a sharp sits on top of.
+ *
+ * Read off the actual black keys rather than from `midi % 12`, so the last
+ * white key of the board cannot claim a sharp that was never rendered.
+ * The stylesheet uses it to stop drawing that seam behind the sharp once the
+ * keys go translucent — solid keys hid it, glass keys showed the line
+ * straight through the black key.
+ */
+const BLACK_KEY_MIDIS = new Set(BLACK_KEYS.map((key) => key.midi))
+const hasSharpToTheRight = (midi: number): boolean =>
+  BLACK_KEY_MIDIS.has(midi + 1)
+
 /** How long the range reads out after it changes, before fading back. */
 const RANGE_READOUT_MS = 1800
 
@@ -130,6 +143,7 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
                 type="button"
                 data-midi={key.midi}
                 data-in-range={inRange(key.midi)}
+                data-sharp-right={hasSharpToTheRight(key.midi)}
                 classList={{
                   [styles.keyActive]: props.activeMidis().has(key.midi),
                 }}

@@ -15,6 +15,14 @@
 // they get their own gentler curve (`--pn-key-scale`) and a struck key never
 // thins at all. Turning the room up should let light through the ivory, not
 // make it harder to see which key just fired.
+//
+// The keybed is also why this needed two tokens rather than one. It is
+// painted three layers deep — bed, backing, key — and three stacked alphas
+// do not add up to one: a single scale on all three left a white key 99%
+// opaque at the default and 93% at Open, so the keys changed shade and never
+// went see-through. `--pn-keybed-scale` clears the two layers behind the key
+// first, on a steeper curve that reaches zero, and only then does the key
+// itself have nothing left to thin through.
 
 import { createClampedPreference } from '@/lib/clamped-preference'
 

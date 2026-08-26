@@ -1332,6 +1332,31 @@ describe('PianoNightApp', () => {
     expect(coach?.className).not.toBe(before)
   })
 
+  it('marks only the white keys a sharp actually sits on top of', () => {
+    // Drives the seam that must not show through a translucent black key.
+    // Read off the rendered black keys rather than `midi % 12`, so the top
+    // white key of the board cannot claim a sharp that was never drawn.
+    render(() => <PianoNightApp />)
+
+    const keyboard = screen.getByTestId('piano-night-keyboard')
+    const marked = (midi: number): string | null =>
+      keyboard
+        .querySelector(`button[data-midi="${midi}"]`)
+        ?.getAttribute('data-sharp-right') ?? null
+
+    // C4 D4 F4 G4 A4 carry a sharp on their right seam.
+    for (const midi of [60, 62, 65, 67, 69]) {
+      expect(marked(midi), `midi ${midi}`).toBe('true')
+    }
+    // E4 and B4 do not — and their full-height seam is the landmark you use
+    // to find middle C.
+    for (const midi of [64, 71]) {
+      expect(marked(midi), `midi ${midi}`).toBe('false')
+    }
+    // The very top key of an 88-key board is C8: nothing above it.
+    expect(marked(108)).toBe('false')
+  })
+
   // ── The room, one press away ───────────────────────────────
   describe('reaching and reading the room', () => {
     const roomButtons = (): HTMLElement[] =>
