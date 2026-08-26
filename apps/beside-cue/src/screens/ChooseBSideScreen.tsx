@@ -8,6 +8,7 @@ interface ChooseBSideScreenProps {
   customText: string
   customSelected: boolean
   error?: string
+  pending: boolean
   onSelect: (text: string) => void
   onSelectCustom: () => void
   onCustomInput: (value: string) => void
@@ -18,10 +19,10 @@ interface ChooseBSideScreenProps {
 export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
   return (
     <main class="setup-screen app-screen">
-      <AppHeader label="Your first cue" onBack={props.onBack} />
+      <AppHeader label="Your first plan" onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="bside-title">
         <p class="step-label step-label--bside">Side B · your chosen turn</p>
-        <h1 id="bside-title">What tiny action belongs beside it?</h1>
+        <h1 id="bside-title">What small action would you rather start?</h1>
         <p>
           When <strong>{props.pullText}</strong> shows up, choose something
           concrete enough to begin without planning.
@@ -85,7 +86,7 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
       </div>
       {props.customSelected ? (
         <label class="text-field">
-          <span>Your B-side</span>
+          <span>Your Side B</span>
           <input
             value={props.customText}
             onInput={(event) => props.onCustomInput(event.currentTarget.value)}
@@ -107,9 +108,10 @@ export function ChooseBSideScreen(props: ChooseBSideScreenProps) {
         <button
           class="primary-button primary-button--wide primary-button--bside"
           type="button"
+          disabled={props.pending}
           onClick={() => props.onContinue()}
         >
-          Keep this beside me
+          {props.pending ? 'Saving…' : 'Save my plan'}
         </button>
       </div>
     </main>

@@ -1,7 +1,7 @@
 import type { PullOption } from './content'
 import { bSideAcknowledgements, cuePhrases, notNowAcknowledgements, pullOptions, } from './content'
-import type { CinematicOnboardingMediaManifest } from './onboarding'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_3, CORKY_ONBOARDING_MEDIA_V0_7, } from './onboarding'
+import type { CinematicOnboardingMediaManifest, LegacyCinematicOnboardingMediaManifestV03, } from './onboarding'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_4, CORKY_ONBOARDING_MEDIA_V0_8, } from './onboarding'
 
 export interface DailyCuePreset {
   readonly id: string
@@ -31,10 +31,17 @@ export type CinematicOnboardingConfig =
       readonly contractVersion: '0.2.0'
     }
   | {
-      /** Approved cinematic delivery requires the complete v0.3 media clock. */
+      /** Deprecated contract shape retained for test/integration migration. */
       readonly delivery: 'cinematic-first-run'
       readonly revision: string
       readonly contractVersion: '0.3.0'
+      readonly media: LegacyCinematicOnboardingMediaManifestV03
+    }
+  | {
+      /** Approved cinematic delivery requires the complete v0.4 media clock. */
+      readonly delivery: 'cinematic-first-run'
+      readonly revision: string
+      readonly contractVersion: '0.4.0'
       readonly media: CinematicOnboardingMediaManifest
     }
 
@@ -57,9 +64,9 @@ export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
   mascotSetId: 'corktop-v1',
   onboarding: Object.freeze({
     delivery: 'cinematic-first-run',
-    revision: CORKY_ONBOARDING_MEDIA_V0_7.revision,
-    contractVersion: CINEMATIC_ONBOARDING_TIMELINE_V0_3.version,
-    media: CORKY_ONBOARDING_MEDIA_V0_7,
+    revision: CORKY_ONBOARDING_MEDIA_V0_8.revision,
+    contractVersion: CINEMATIC_ONBOARDING_TIMELINE_V0_4.version,
+    media: CORKY_ONBOARDING_MEDIA_V0_8,
   }),
   pullOptions,
   cuePhrases,

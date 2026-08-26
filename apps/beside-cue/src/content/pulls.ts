@@ -77,7 +77,7 @@ export const cuePhrases = [
 
 export const bSideAcknowledgements = [
   'The turn is yours now.',
-  'Good. Let the screen go quiet.',
+  'Good. Back to your day.',
   'Coming back matters.',
 ] as const
 

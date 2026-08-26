@@ -21,7 +21,7 @@ describe('mascot stage', () => {
   it('captions the moment so the beat reads without audio', () => {
     render(() => <MascotStage moment="turn.b-side" />)
 
-    expect(screen.getByText('Turn toward your B-side')).toBeTruthy()
+    expect(screen.getByText('Turn toward Side B')).toBeTruthy()
   })
 
   it('composites the pull cue over the notice art', () => {

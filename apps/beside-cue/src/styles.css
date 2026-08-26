@@ -810,10 +810,19 @@ svg {
 .active-sleeve__art {
   position: relative;
   display: grid;
+  overflow: hidden;
+  min-width: 0;
   min-height: 13rem;
   align-items: end;
+  isolation: isolate;
   padding: 1rem 0 1rem 1rem;
   background: var(--paper-deep);
+}
+
+.active-sleeve__art .mascot-stage {
+  max-width: 100%;
+  transform: scale(0.92);
+  transform-origin: left bottom;
 }
 
 .active-sleeve__art .status-chip {
@@ -836,12 +845,19 @@ svg {
 }
 
 .active-sleeve__tracks {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.55rem;
   min-width: 0;
   padding: 1.2rem 1rem 1.2rem 1.25rem;
+  background: var(--orange);
+}
+
+.active-sleeve--paused .active-sleeve__tracks {
+  background: inherit;
 }
 
 .track-line span {
@@ -2400,5 +2416,625 @@ svg {
 
   .cinematic-onboarding__record-control.is-spinning > span {
     animation: none;
+  }
+}
+
+/* Cinematic onboarding v1 keeps the film full-bleed and lets native controls
+   appear only where a real choice is required. */
+.cinematic-onboarding {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: min(100%, 32rem);
+  max-width: 32rem;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--paper-light);
+  color: var(--paper-light);
+  grid-template: 1fr / 1fr;
+}
+
+.cinematic-onboarding__picture,
+.cinematic-onboarding__curtain,
+.cinematic-onboarding__sound-control,
+.cinematic-onboarding__review-tools,
+.cinematic-onboarding__transient-controls,
+.cinematic-onboarding__interaction,
+.cinematic-onboarding__native-overlay,
+.cinematic-onboarding__caption {
+  grid-area: 1 / 1;
+}
+
+.cinematic-onboarding__picture {
+  position: relative;
+  z-index: 0;
+  display: grid;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  background: #1c120f;
+  place-items: center;
+}
+
+.cinematic-onboarding__picture video,
+.cinematic-onboarding__picture img,
+.cinematic-onboarding__picture-fallback {
+  display: block;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  background: #1c120f;
+  object-fit: contain;
+}
+
+.cinematic-onboarding__picture-fallback {
+  display: grid;
+  padding: 2rem;
+  background: var(--paper-light);
+  color: var(--ink);
+  place-items: center;
+}
+
+.cinematic-onboarding__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(20 14 11 / 48%) 0, transparent 18%),
+    linear-gradient(0deg, rgb(20 14 11 / 78%) 0, transparent 42%);
+  pointer-events: none;
+}
+
+.cinematic-onboarding__curtain {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  align-content: center;
+  justify-items: center;
+  gap: 1.4rem;
+  padding: max(2rem, var(--safe-top)) max(1.5rem, var(--safe-right))
+    max(2rem, var(--safe-bottom)) max(1.5rem, var(--safe-left));
+  border: 0;
+  border-radius: 0;
+  background: var(--paper-light);
+  box-shadow: none;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: center;
+}
+
+.cinematic-onboarding__curtain::after {
+  position: absolute;
+  right: 10%;
+  bottom: 12%;
+  left: 10%;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--turquoise);
+  content: '';
+  transform: rotate(-1.5deg) scaleX(0.72);
+}
+
+.cinematic-onboarding__curtain:focus-visible {
+  outline: 0.35rem solid var(--turquoise-dark);
+  outline-offset: -0.7rem;
+}
+
+.cinematic-onboarding__brand-mark {
+  display: flex;
+  align-items: baseline;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 15vw, 5rem);
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+.cinematic-onboarding__brand-side {
+  position: relative;
+}
+
+.cinematic-onboarding__brand-side::after {
+  position: absolute;
+  right: 0.05em;
+  bottom: -0.19em;
+  left: 0.05em;
+  height: 0.09em;
+  border-radius: 999px;
+  background: var(--turquoise);
+  content: '';
+  transform: rotate(-2deg);
+}
+
+.cinematic-onboarding__brand-cue {
+  display: inline-block;
+  color: var(--orange);
+  animation: cinematic-cue-settle 780ms var(--ease-out) 140ms both;
+  transform-origin: 52% 56%;
+}
+
+.cinematic-onboarding__brand-mark--closing .cinematic-onboarding__brand-cue {
+  animation-name: cinematic-cue-close;
+}
+
+.cinematic-onboarding__curtain-line {
+  max-width: 22ch;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 6vw, 2rem);
+  line-height: 1.05;
+}
+
+.cinematic-onboarding__begin-label {
+  display: grid;
+  min-height: 3rem;
+  min-width: min(100%, 15rem);
+  align-items: center;
+  padding: 0.7rem 1.25rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--orange);
+  box-shadow: 0.25rem 0.3rem 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.cinematic-onboarding__curtain-note {
+  max-width: 30ch;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.cinematic-onboarding__sound-control {
+  z-index: 12;
+  align-self: start;
+  justify-self: end;
+  padding: max(0.75rem, var(--safe-top)) max(0.75rem, var(--safe-right)) 0 0;
+  pointer-events: none;
+}
+
+.cinematic-onboarding__sound-control button {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid rgb(255 245 221 / 42%);
+  border-radius: 50%;
+  background: rgb(13 67 54 / 88%);
+  color: var(--paper-light);
+  cursor: pointer;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.cinematic-onboarding__sound-control button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.cinematic-onboarding__sound-control button:focus-visible,
+.cinematic-onboarding__review-tools button:focus-visible,
+.cinematic-onboarding__transient-controls button:focus-visible {
+  outline: 3px solid var(--custard);
+  outline-offset: 2px;
+}
+
+.cinematic-onboarding__speaker-icon {
+  position: relative;
+  display: block;
+  width: 1.35rem;
+  height: 1.2rem;
+}
+
+.cinematic-onboarding__speaker-icon::before {
+  position: absolute;
+  inset: 0.2rem 0.45rem 0.2rem 0;
+  background: currentColor;
+  clip-path: polygon(0 34%, 34% 34%, 100% 0, 100% 100%, 34% 66%, 0 66%);
+  content: '';
+}
+
+.cinematic-onboarding__speaker-icon::after {
+  position: absolute;
+  top: 0.12rem;
+  right: 0;
+  width: 0.52rem;
+  height: 0.9rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-left: 0;
+  border-radius: 0 100% 100% 0;
+  content: '';
+}
+
+.cinematic-onboarding__sound-control
+  button.is-muted
+  .cinematic-onboarding__speaker-icon::after {
+  top: 0.55rem;
+  right: -0.06rem;
+  width: 0.7rem;
+  height: 0;
+  border: 0;
+  border-top: 2px solid currentColor;
+  border-radius: 0;
+  transform: rotate(-45deg);
+}
+
+.cinematic-onboarding__interaction {
+  z-index: 8;
+  align-self: end;
+  display: grid;
+  max-height: none;
+  gap: 0.7rem;
+  margin: 0.75rem;
+  padding: 1rem;
+  overflow: visible;
+  border: 2px solid var(--ink);
+  border-radius: 1rem;
+  background: var(--paper-light);
+  box-shadow:
+    0.35rem 0.45rem 0 var(--ink),
+    0 1rem 2rem rgb(20 14 11 / 22%);
+  color: var(--ink);
+}
+
+.cinematic-onboarding__interaction h2,
+.cinematic-onboarding__native-overlay h2 {
+  max-width: 18ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 7vw, 2.35rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.cinematic-onboarding__interaction h2:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 0.2rem;
+}
+
+.cinematic-onboarding__interaction > p:not(.cinematic-onboarding__eyebrow) {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.cinematic-onboarding__eyebrow {
+  color: var(--orange-dark);
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__b-side-options {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.cinematic-onboarding__b-side-options button {
+  min-height: 3rem;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 0.7rem;
+  background: var(--paper-deep);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.cinematic-onboarding__b-side-options button.is-selected {
+  background: var(--custard);
+  box-shadow: inset 0 0 0 0.2rem var(--orange);
+}
+
+.cinematic-onboarding__plan-pair {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cinematic-onboarding__plan-pair > div {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 2px solid var(--ink);
+  border-radius: 0.7rem;
+  background: var(--paper-deep);
+}
+
+.cinematic-onboarding__plan-pair > div:last-child {
+  background: #f19b7d;
+}
+
+.cinematic-onboarding__plan-pair dt {
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__plan-pair dd {
+  margin-top: 0.2rem;
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.cinematic-onboarding__record-control {
+  display: flex;
+  min-height: 3.4rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--custard);
+  box-shadow: 0.22rem 0.27rem 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.cinematic-onboarding__record-control > span {
+  width: 2rem;
+  height: 2rem;
+  border: 0.38rem solid var(--orange);
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 0.2rem var(--custard);
+}
+
+.cinematic-onboarding__record-control.is-spinning > span {
+  animation: cinematic-record-spin 1.6s linear infinite;
+  background: conic-gradient(
+    var(--ink) 0 70%,
+    var(--paper-deep) 70% 78%,
+    var(--ink) 78%
+  );
+}
+
+.cinematic-onboarding__reminder-field {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cinematic-onboarding__reminder-field input {
+  min-height: 3rem;
+  padding: 0.5rem 0.7rem;
+  border: 2px solid var(--ink);
+  border-radius: 0.7rem;
+  background: var(--paper-light);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.cinematic-onboarding__reminder-actions {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cinematic-onboarding__reminder-actions button,
+.cinematic-onboarding__interaction > .primary-button {
+  min-height: 3rem;
+}
+
+.cinematic-onboarding__inline-status {
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.55rem;
+  background: var(--paper-deep);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cinematic-onboarding__native-overlay {
+  z-index: 7;
+  align-self: end;
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.9rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  background: var(--paper-light);
+  box-shadow:
+    0.35rem 0.45rem 0 var(--ink),
+    0 1rem 2rem rgb(20 14 11 / 22%);
+  color: var(--ink);
+}
+
+.cinematic-onboarding__native-overlay > p:last-child {
+  color: var(--ink-soft);
+  line-height: 1.38;
+}
+
+.cinematic-onboarding__native-overlay--closing {
+  align-self: center;
+  justify-self: center;
+  justify-items: center;
+  width: calc(100% - 2rem);
+  padding: 1.4rem 1rem;
+  text-align: center;
+}
+
+.cinematic-onboarding__native-overlay--closing
+  .cinematic-onboarding__brand-mark {
+  font-size: clamp(2.55rem, 12vw, 4rem);
+}
+
+.cinematic-onboarding__caption {
+  z-index: 10;
+  align-self: start;
+  justify-self: center;
+  max-width: calc(100% - 5.5rem);
+  margin: calc(max(0.75rem, var(--safe-top)) + 0.2rem) 4.5rem 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.4rem;
+  background: rgb(20 14 11 / 88%);
+  color: #fff;
+  font-size: clamp(0.88rem, 3.5vw, 1.02rem);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.cinematic-onboarding__review-tools {
+  z-index: 14;
+  align-self: end;
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.6rem;
+  padding: 0.55rem;
+  border: 1px solid rgb(255 245 221 / 42%);
+  border-radius: 0.75rem;
+  background: rgb(13 67 54 / 94%);
+  color: var(--paper-light);
+}
+
+.cinematic-onboarding__review-tools code {
+  overflow: hidden;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cinematic-onboarding__review-tools > div {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cinematic-onboarding__review-tools button,
+.cinematic-onboarding__transient-controls button {
+  min-height: 3rem;
+  padding: 0.45rem;
+  border: 1px solid rgb(255 245 221 / 42%);
+  border-radius: 0.55rem;
+  background: var(--spruce-deep);
+  color: var(--paper-light);
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.cinematic-onboarding__review-tools button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.cinematic-onboarding__transient-controls {
+  z-index: 15;
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  width: min(calc(100% - 2rem), 20rem);
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  background: rgb(13 67 54 / 96%);
+  box-shadow: 0 1rem 2rem rgb(20 14 11 / 32%);
+}
+
+@keyframes cinematic-cue-settle {
+  0% {
+    transform: rotate(0.5turn);
+  }
+
+  68% {
+    transform: rotate(-0.025turn);
+  }
+
+  100% {
+    transform: rotate(0);
+  }
+}
+
+@keyframes cinematic-cue-close {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  52% {
+    transform: rotate(0.5turn);
+  }
+}
+
+@media (min-width: 42rem) {
+  .cinematic-onboarding,
+  .cinematic-onboarding__picture,
+  .cinematic-onboarding__picture video,
+  .cinematic-onboarding__picture img,
+  .cinematic-onboarding__picture-fallback,
+  .cinematic-onboarding__curtain {
+    height: min(100dvh, 62rem);
+  }
+
+  .cinematic-onboarding__interaction,
+  .cinematic-onboarding__native-overlay {
+    margin: 1rem;
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 23rem) {
+  .cinematic-onboarding__interaction,
+  .cinematic-onboarding__native-overlay {
+    margin: 0.5rem;
+    padding: 0.8rem;
+  }
+
+  .cinematic-onboarding__interaction {
+    gap: 0.55rem;
+  }
+
+  .cinematic-onboarding__plan-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .cinematic-onboarding__caption {
+    margin-top: max(0.65rem, var(--safe-top));
+  }
+}
+
+@media (max-height: 34rem), (orientation: landscape) and (max-height: 42rem) {
+  .cinematic-onboarding {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .cinematic-onboarding__interaction ~ .cinematic-onboarding__caption {
+    display: none;
+  }
+
+  .cinematic-onboarding__caption {
+    align-self: end;
+    margin: 0 0.75rem calc(max(0.5rem, var(--safe-bottom)) + 0.25rem);
   }
 }

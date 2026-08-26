@@ -1,71 +1,136 @@
 // ============================================================
-// Cinematic onboarding director — media, audio, and native holds
+// Cinematic onboarding director — real choices and resilient media
 // ============================================================
 
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { createCinematicOnboardingAudioClock } from './cinematic-onboarding-audio'
 import type { CinematicOnboardingMediaManifest, CinematicOnboardingMode, CinematicOnboardingRuntimeEvent, CinematicOnboardingRuntimeState, CinematicOnboardingSegmentId, } from './index'
-import { CINEMATIC_ONBOARDING_REVIEW_FPS, CINEMATIC_ONBOARDING_TIMELINE_V0_3, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingNativeOverlayDurationMilliseconds, getCinematicOnboardingReducedDwellMilliseconds, getCinematicOnboardingRuntimePosition, resolveCinematicOnboardingMedia, updateCinematicOnboardingRuntime, } from './index'
+import { CINEMATIC_ONBOARDING_PICTURE_FPS, CINEMATIC_ONBOARDING_REVIEW_FPS, CINEMATIC_ONBOARDING_TIMELINE_V0_4, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingRuntimePosition, isCinematicOnboardingPersistenceAllowed, seekCinematicOnboardingRuntimeForReview, updateCinematicOnboardingRuntime, } from './index'
+
+export interface CinematicOnboardingBSideOption {
+  readonly id?: string
+  readonly text: string
+}
+
+export interface CinematicOnboardingPlanSelection {
+  readonly pullId: 'scrolling'
+  readonly pullText: 'Endless scrolling'
+  readonly sideAText: 'Keep scrolling'
+  readonly bSideId?: string
+  readonly bSideText: string
+}
+
+export type CinematicOnboardingSaveResult =
+  | { readonly ok: true; readonly message?: string }
+  | { readonly ok: false; readonly message: string }
+
+export interface CinematicOnboardingReminderResult {
+  readonly ok: boolean
+  readonly message: string
+}
 
 export interface CinematicOnboardingDirectorProps {
   readonly media: CinematicOnboardingMediaManifest
   readonly mode?: CinematicOnboardingMode
+  readonly bSideOptions: readonly CinematicOnboardingBSideOption[]
+  readonly onSavePlan: (
+    selection: CinematicOnboardingPlanSelection,
+  ) => Promise<CinematicOnboardingSaveResult>
+  readonly onSetReminder: (
+    time: string,
+  ) => Promise<CinematicOnboardingReminderResult>
+  readonly onSkipReminder: () => void
   readonly onComplete: (outcome: 'finished' | 'dismissed') => void
+  /** Replays every decision without writing plan or reminder state. */
+  readonly rehearsal?: boolean
 }
+
+const FIXED_PLAN = {
+  pullId: 'scrolling',
+  pullText: 'Endless scrolling',
+  sideAText: 'Keep scrolling',
+} as const
+
+const DEFAULT_B_SIDE_OPTIONS: readonly CinematicOnboardingBSideOption[] = [
+  { text: 'Put the phone in another room' },
+  { text: 'Play one guitar riff' },
+  { text: 'Walk to the end of the street' },
+]
 
 const CAPTIONS: Readonly<
   Partial<Record<CinematicOnboardingSegmentId, string>>
 > = {
   S01_S02_AUTO_ENTRANCE_HELLO: 'Hi there, I am Corky.',
-  S03_AUTO_TRACKED_TRANSITION: 'Come see how a small cue can change direction.',
-  S04_AUTO_CUE_ENTRANCE: 'The Scroll arrives beside Corky.',
-  S04_SIM_CUE_TAP_HOLD: 'Meet the pull you want to notice.',
-  S05_AUTO_REFRAME_SORT: 'The reasons settle into two clear sides.',
-  S05_SIM_SORT_HOLD: 'Both sides can stay visible without judgment.',
+  S03_AUTO_TRACKED_TRANSITION: 'A paper wall reveals the next scene.',
+  S04_AUTO_PULL_ENTRANCE: 'The Scroll arrives beside Corky.',
+  S04_AUTO_PULL_INTRO: 'The Scroll represents the endless-scrolling Pull.',
+  S05_AUTO_REFRAME_SIDE_CHOICE: 'The tray makes room for another choice.',
+  S05_CHOOSE_B_SIDE_HOLD: 'Choose one small action for Side B.',
   S06_AUTO_CORKY_PRESS: 'Corky starts the record.',
-  S06_SIM_USER_SPIN_STOP_HOLD: 'The record is turning. Choose when to stop.',
-  S07_AUTO_STOPPED_ACKNOWLEDGEMENT: 'Corky notices the pause.',
-  S07_AUTO_REMINDER_DIAL_REVEAL: 'A gentle cue can return when you choose.',
-  S07_SIM_REMINDER_HOLD: 'Choose a time, or leave it for later.',
-  S07_AUTO_CONFIRM: 'Nothing is scheduled during this preview.',
-  S08_AUTO_TITLE_CLOSE: 'Keep your better choice beside the moment.',
+  S06_CONFIRM_AND_SAVE_PLAN_HOLD: 'Stop the record to save your plan.',
+  S07_AUTO_STOPPED_ACKNOWLEDGEMENT: 'Corky notices the stop.',
+  S07_REMINDER_HOLD: 'A daily reminder is optional.',
+  S08_AUTO_TITLE_CLOSE: 'Your plan is ready.',
 }
 
 interface NativeOverlayCopy {
   readonly eyebrow: string
   readonly title: string
-  readonly body: string
+  readonly body?: string
+  readonly closing?: boolean
 }
 
-function nativeOverlayCopy(
-  segmentId: CinematicOnboardingSegmentId,
-  reminderChoice: string,
-): NativeOverlayCopy | undefined {
-  if (segmentId === 'S07_AUTO_REMINDER_DIAL_REVEAL') {
-    return {
-      eyebrow: 'Preview only',
-      title: 'When should it come beside you?',
-      body: 'This introduction does not schedule anything.',
-    }
-  }
-  if (segmentId === 'S07_AUTO_CONFIRM') {
-    return {
-      eyebrow: 'Preview only',
-      title:
-        reminderChoice === 'Not now'
-          ? 'Nothing scheduled.'
-          : `${reminderChoice} is only a preview.`,
-      body: 'You can set a private reminder after making your first cue.',
-    }
-  }
-  if (segmentId === 'S08_AUTO_TITLE_CLOSE') {
-    return {
-      eyebrow: 'Beside Cue',
-      title: 'Keep your better choice beside the moment.',
-      body: 'Private by design, ready when a small turn matters.',
-    }
-  }
-  return undefined
+interface NormalizedBSideOption {
+  readonly id?: string
+  readonly text: string
+  readonly key: string
+}
+
+type SaveState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'pending' }
+  | { readonly kind: 'error'; readonly message: string }
+
+type ReminderState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'pending' }
+  | { readonly kind: 'resolved'; readonly message: string }
+
+type MediaRecoveryStage =
+  | 'primary'
+  | 'retry'
+  | 'reduced-still'
+  | 'poster'
+  | 'last-known-good'
+  | 'brand'
+
+interface MediaCandidate {
+  readonly kind: 'video' | 'still' | 'brand'
+  readonly stage: MediaRecoveryStage
+  readonly src?: string
+  readonly poster?: string
+  readonly alt: string
+}
+
+interface MediaRecoveryState {
+  readonly identity: string
+  readonly index: number
+  readonly elapsedMilliseconds: number
+}
+
+interface KnownGoodStill {
+  readonly src: string
+  readonly alt: string
+}
+
+const TIMELINE_POSITIONS = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+  (shot) => shot.segments.map((segment) => ({ shotId: shot.id, segment })),
+)
+
+export function isCinematicOnboardingReviewEnabled(
+  environment: Readonly<Record<string, unknown>>,
+): boolean {
+  return environment.VITE_BESIDE_CUE_ONBOARDING_REVIEW === '1'
 }
 
 function prefersReducedMotion(): boolean {
@@ -76,71 +141,117 @@ function prefersReducedMotion(): boolean {
   )
 }
 
-type SortSide = 'a' | 'b'
+function nativeOverlayCopy(
+  segmentId: CinematicOnboardingSegmentId,
+): NativeOverlayCopy | undefined {
+  if (segmentId === 'S04_AUTO_PULL_INTRO') {
+    return {
+      eyebrow: 'Side A · the Pull',
+      title: 'The Scroll',
+      body: 'Endless scrolling—when the feed keeps going after you meant to leave.',
+    }
+  }
+  if (segmentId === 'S08_AUTO_TITLE_CLOSE') {
+    return {
+      eyebrow: 'Beside Cue',
+      title: 'Your plan is ready.',
+      closing: true,
+    }
+  }
+  return undefined
+}
 
-const SORT_CHIPS = [
-  { id: 'pause', label: 'Pause', color: 'cream' },
-  { id: 'familiar', label: 'Familiar', color: 'coral' },
-  { id: 'ten-minutes', label: 'Ten minutes', color: 'cream' },
-  { id: 'reach-out', label: 'Reach out', color: 'coral' },
-  { id: 'step-away', label: 'Step away', color: 'cream' },
-  { id: 'tomorrow', label: 'Tomorrow', color: 'coral' },
-] as const
+function normalizeBSideOptions(
+  options: readonly CinematicOnboardingBSideOption[],
+): readonly NormalizedBSideOption[] {
+  const seen = new Set<string>()
+  const normalized: NormalizedBSideOption[] = []
+  for (const [index, option] of options.entries()) {
+    const text = option.text.trim()
+    if (text === '' || seen.has(text)) continue
+    seen.add(text)
+    normalized.push({
+      ...(option.id === undefined ? {} : { id: option.id }),
+      text,
+      key: option.id ?? `${index}:${text}`,
+    })
+  }
+  return normalized
+}
 
-type SortChipId = (typeof SORT_CHIPS)[number]['id']
+function formatReminderTime(time: string): string {
+  const [hours = '0', minutes = '00'] = time.split(':')
+  return `${Number(hours)}:${minutes}`
+}
 
-const SORT_SIDE_LABELS: Readonly<Record<SortSide, string>> = {
-  a: 'Side A',
-  b: 'B-side',
+function statePlaybackAttempt(state: CinematicOnboardingRuntimeState): number {
+  return 'playbackAttempt' in state ? state.playbackAttempt : 0
+}
+
+function monotonicNow(): number {
+  return typeof performance === 'undefined' ? Date.now() : performance.now()
+}
+
+function FilmBrandMark(props: { readonly closing?: boolean }) {
+  return (
+    <span
+      class="cinematic-onboarding__brand-mark"
+      classList={{
+        'cinematic-onboarding__brand-mark--closing': props.closing === true,
+      }}
+      role="img"
+      aria-label="Beside Cue"
+    >
+      <span aria-hidden="true">Be</span>
+      <span aria-hidden="true" class="cinematic-onboarding__brand-side">
+        side
+      </span>
+      <span aria-hidden="true" class="cinematic-onboarding__brand-cue">
+        Cue
+      </span>
+    </span>
+  )
+}
+
+function HoldHeading(props: {
+  readonly eyebrow: string
+  readonly children: string
+  readonly headingRef: (element: HTMLHeadingElement) => void
+}) {
+  return (
+    <>
+      <p class="cinematic-onboarding__eyebrow">{props.eyebrow}</p>
+      <h2 ref={props.headingRef} id="cinematic-hold-title" tabIndex={-1}>
+        {props.children}
+      </h2>
+    </>
+  )
 }
 
 interface HoldControlsProps {
   readonly segmentId: CinematicOnboardingSegmentId
-  readonly onEvent: (event: CinematicOnboardingRuntimeEvent) => void
-  readonly onSkip: () => void
-  readonly onReminderChoice: (choice: string) => void
+  readonly bSideOptions: readonly NormalizedBSideOption[]
+  readonly selectedBSide?: NormalizedBSideOption
+  readonly saveState: SaveState
+  readonly reminderState: ReminderState
+  readonly reminderTime: string
+  readonly onChooseBSide: (option: NormalizedBSideOption) => void
+  readonly onConfirmBSide: () => void
+  readonly onSavePlan: () => void
+  readonly onReminderTime: (time: string) => void
+  readonly onSetReminder: () => void
+  readonly onSkipReminder: () => void
 }
 
 function HoldControls(props: HoldControlsProps) {
-  const [selectedChip, setSelectedChip] = createSignal<SortChipId>()
-  const [placements, setPlacements] = createSignal<
-    Readonly<Partial<Record<SortChipId, SortSide>>>
-  >({})
-  const [sortAnnouncement, setSortAnnouncement] = createSignal(
-    'Choose a card, then choose either side.',
-  )
-  const [reminderTime, setReminderTime] = createSignal('09:00')
-  const sortedCount = createMemo(() => Object.keys(placements()).length)
+  const [selectionAnnouncement, setSelectionAnnouncement] = createSignal('')
   let headingElement: HTMLHeadingElement | undefined
 
-  onMount(() => {
-    queueMicrotask(() => headingElement?.focus())
-  })
+  onMount(() => queueMicrotask(() => headingElement?.focus()))
 
-  function placeSelectedChip(side: SortSide): void {
-    const chipId = selectedChip()
-    if (chipId === undefined) return
-    const chip = SORT_CHIPS.find((candidate) => candidate.id === chipId)
-    if (chip === undefined) return
-
-    const nextPlacements = { ...placements(), [chipId]: side }
-    setPlacements(nextPlacements)
-    setSelectedChip(undefined)
-    setSortAnnouncement(
-      `${chip.label} moved to ${SORT_SIDE_LABELS[side]}. ${Object.keys(nextPlacements).length} of ${SORT_CHIPS.length} sorted.`,
-    )
-  }
-
-  function placedChips(side: SortSide) {
-    const current = placements()
-    return SORT_CHIPS.filter((chip) => current[chip.id] === side)
-  }
-
-  function setReminder(): void {
-    const time = reminderTime()
-    if (time === '') return
-    props.onReminderChoice(time)
-    props.onEvent('user_sets_or_skips_reminder')
+  function choose(option: NormalizedBSideOption): void {
+    props.onChooseBSide(option)
+    setSelectionAnnouncement(`${option.text} selected for Side B.`)
   }
 
   return (
@@ -149,166 +260,205 @@ function HoldControls(props: HoldControlsProps) {
       aria-labelledby="cinematic-hold-title"
     >
       <Switch>
-        <Match when={props.segmentId === 'S04_SIM_CUE_TAP_HOLD'}>
-          <p class="cinematic-onboarding__eyebrow">The pull</p>
-          <h2 ref={headingElement} id="cinematic-hold-title" tabIndex={-1}>
-            Meet The Scroll.
-          </h2>
-          <p>Tap the cue to bring it into focus. Nothing is recorded yet.</p>
-          <button
-            class="cinematic-onboarding__cue-token"
-            type="button"
-            onClick={() => props.onEvent('user_taps_or_confirms_the_scroll')}
+        <Match when={props.segmentId === 'S05_CHOOSE_B_SIDE_HOLD'}>
+          <HoldHeading
+            eyebrow="Side B · your choice"
+            headingRef={(element) => {
+              headingElement = element
+            }}
           >
-            <span aria-hidden="true">↳</span>
-            The Scroll
-          </button>
-        </Match>
-
-        <Match when={props.segmentId === 'S05_SIM_SORT_HOLD'}>
-          <p class="cinematic-onboarding__eyebrow">Two sides, both visible</p>
-          <h2 ref={headingElement} id="cinematic-hold-title" tabIndex={-1}>
-            Sort six small pulls.
-          </h2>
-          <p id="cinematic-sort-instructions">
-            Choose a card, then choose either destination. There is no wrong
-            side.
-          </p>
+            What would you rather begin?
+          </HoldHeading>
+          <p>Choose one small action.</p>
           <div
-            class="cinematic-onboarding__sort-chips"
-            aria-describedby="cinematic-sort-instructions"
+            class="cinematic-onboarding__b-side-options"
+            role="group"
+            aria-label="Side B choices"
           >
-            <For each={SORT_CHIPS}>
-              {(chip) => (
+            <For each={props.bSideOptions}>
+              {(option) => (
                 <button
-                  class={`cinematic-onboarding__sort-chip cinematic-onboarding__sort-chip--${chip.color}`}
+                  type="button"
+                  aria-pressed={props.selectedBSide?.key === option.key}
                   classList={{
-                    'is-selected': selectedChip() === chip.id,
-                    'is-sorted': placements()[chip.id] !== undefined,
+                    'is-selected': props.selectedBSide?.key === option.key,
                   }}
-                  type="button"
-                  aria-pressed={selectedChip() === chip.id}
-                  disabled={placements()[chip.id] !== undefined}
-                  onClick={() => setSelectedChip(chip.id)}
+                  onClick={() => choose(option)}
                 >
-                  {chip.label}
+                  {option.text}
                 </button>
               )}
             </For>
           </div>
-          <div class="cinematic-onboarding__sort-wells">
-            <For each={['a', 'b'] as const}>
-              {(side) => (
-                <button
-                  class={`cinematic-onboarding__sort-well cinematic-onboarding__sort-well--${side}`}
-                  type="button"
-                  disabled={selectedChip() === undefined}
-                  aria-label={`Move selected card to ${SORT_SIDE_LABELS[side]}`}
-                  onClick={() => placeSelectedChip(side)}
-                >
-                  <span>{SORT_SIDE_LABELS[side]}</span>
-                  <small>{placedChips(side).length} cards</small>
-                  <span
-                    class="cinematic-onboarding__well-items"
-                    aria-hidden="true"
-                  >
-                    <For each={placedChips(side)}>
-                      {(chip) => <i>{chip.label}</i>}
-                    </For>
-                  </span>
-                </button>
-              )}
-            </For>
-          </div>
-          <p
-            class="cinematic-onboarding__sort-status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {sortAnnouncement()}
+          <p class="visually-hidden" aria-live="polite" aria-atomic="true">
+            {selectionAnnouncement()}
           </p>
           <button
             class="primary-button primary-button--wide"
             type="button"
-            disabled={sortedCount() !== SORT_CHIPS.length}
-            onClick={() => props.onEvent('user_completes_or_skips_sorting')}
+            disabled={props.selectedBSide === undefined}
+            onClick={() => props.onConfirmBSide()}
           >
-            Keep both in view
+            Use this Side B
           </button>
         </Match>
 
-        <Match when={props.segmentId === 'S06_SIM_USER_SPIN_STOP_HOLD'}>
-          <p class="cinematic-onboarding__eyebrow">Your timing</p>
-          <h2 ref={headingElement} id="cinematic-hold-title" tabIndex={-1}>
-            Now choose the stop.
-          </h2>
-          <p>
-            The record is already turning. Pause it when the moment feels right.
-          </p>
+        <Match when={props.segmentId === 'S06_CONFIRM_AND_SAVE_PLAN_HOLD'}>
+          <HoldHeading
+            eyebrow="Your two sides"
+            headingRef={(element) => {
+              headingElement = element
+            }}
+          >
+            Stop the record to save this plan.
+          </HoldHeading>
+          <dl class="cinematic-onboarding__plan-pair">
+            <div>
+              <dt>Side A</dt>
+              <dd>{FIXED_PLAN.sideAText}</dd>
+            </div>
+            <div>
+              <dt>Side B</dt>
+              <dd>{props.selectedBSide?.text ?? 'Choose one small action'}</dd>
+            </div>
+          </dl>
           <button
             class="cinematic-onboarding__record-control is-spinning"
             type="button"
-            onClick={() => props.onEvent('user_spins_and_stops_record')}
+            disabled={
+              props.selectedBSide === undefined ||
+              props.saveState.kind === 'pending'
+            }
+            onClick={() => props.onSavePlan()}
           >
             <span aria-hidden="true" />
-            Stop the record
+            {props.saveState.kind === 'pending'
+              ? 'Saving your plan…'
+              : 'Stop the record'}
           </button>
+          <Show when={props.saveState.kind === 'error'}>
+            <p class="cinematic-onboarding__inline-status" role="alert">
+              {props.saveState.kind === 'error' ? props.saveState.message : ''}
+            </p>
+          </Show>
         </Match>
 
-        <Match when={props.segmentId === 'S07_SIM_REMINDER_HOLD'}>
-          <p class="cinematic-onboarding__eyebrow">Optional reminder</p>
-          <h2 ref={headingElement} id="cinematic-hold-title" tabIndex={-1}>
-            When should it return?
-          </h2>
-          <p>Choose an exact local time, or leave it for later.</p>
-          <label class="cinematic-onboarding__reminder-field">
-            <span>Reminder time</span>
-            <input
-              type="time"
-              value={reminderTime()}
-              onInput={(event) => setReminderTime(event.currentTarget.value)}
-            />
-          </label>
-          <div class="cinematic-onboarding__reminder-actions">
-            <button
-              class="primary-button"
-              type="button"
-              disabled={reminderTime() === ''}
-              onClick={setReminder}
-            >
-              Preview this time
-            </button>
-            <button
-              class="secondary-button"
-              type="button"
-              onClick={() => {
-                props.onReminderChoice('Not now')
-                props.onEvent('user_sets_or_skips_reminder')
-              }}
-            >
-              Not now
-            </button>
-          </div>
+        <Match when={props.segmentId === 'S07_REMINDER_HOLD'}>
+          <HoldHeading
+            eyebrow="Optional"
+            headingRef={(element) => {
+              headingElement = element
+            }}
+          >
+            Want a daily reminder?
+          </HoldHeading>
+          <p>Choose a time, or add one later in Settings.</p>
+          <Show
+            when={props.reminderState.kind !== 'resolved'}
+            fallback={
+              <p class="cinematic-onboarding__inline-status" aria-hidden="true">
+                {props.reminderState.kind === 'resolved'
+                  ? props.reminderState.message
+                  : ''}
+              </p>
+            }
+          >
+            <label class="cinematic-onboarding__reminder-field">
+              <span>Time</span>
+              <input
+                type="time"
+                value={props.reminderTime}
+                disabled={props.reminderState.kind === 'pending'}
+                onInput={(event) =>
+                  props.onReminderTime(event.currentTarget.value)
+                }
+              />
+            </label>
+            <div class="cinematic-onboarding__reminder-actions">
+              <button
+                class="primary-button"
+                type="button"
+                disabled={
+                  props.reminderTime === '' ||
+                  props.reminderState.kind === 'pending'
+                }
+                onClick={() => props.onSetReminder()}
+              >
+                {props.reminderState.kind === 'pending'
+                  ? 'Setting reminder…'
+                  : `Set for ${formatReminderTime(props.reminderTime)}`}
+              </button>
+              <button
+                class="secondary-button"
+                type="button"
+                disabled={props.reminderState.kind === 'pending'}
+                onClick={() => props.onSkipReminder()}
+              >
+                Not now
+              </button>
+            </div>
+          </Show>
         </Match>
       </Switch>
-
-      <button
-        class="text-button cinematic-onboarding__skip-hold"
-        type="button"
-        onClick={() => props.onSkip()}
-      >
-        Skip this moment
-      </button>
     </section>
   )
 }
 
-function monotonicNow(): number {
-  return typeof performance === 'undefined' ? Date.now() : performance.now()
-}
-
-function statePlaybackAttempt(state: CinematicOnboardingRuntimeState): number {
-  return 'playbackAttempt' in state ? state.playbackAttempt : 0
+function buildMediaCandidates(
+  manifest: CinematicOnboardingMediaManifest,
+  segmentId: CinematicOnboardingSegmentId,
+  mode: CinematicOnboardingMode,
+  lastKnownGood: KnownGoodStill | undefined,
+): readonly MediaCandidate[] {
+  const registered = manifest.segments[segmentId]
+  const candidates: MediaCandidate[] = []
+  if (mode === 'normal' && registered.kind === 'automatic') {
+    const video = {
+      kind: 'video' as const,
+      src: registered.video,
+      poster: registered.poster,
+      alt: registered.alt,
+    }
+    candidates.push({ ...video, stage: 'primary' })
+    candidates.push({ ...video, stage: 'retry' })
+    candidates.push({
+      kind: 'still',
+      stage: 'reduced-still',
+      src: registered.reducedStill,
+      alt: registered.alt,
+    })
+  } else {
+    const still = {
+      kind: 'still' as const,
+      src: registered.reducedStill,
+      alt: registered.alt,
+    }
+    candidates.push({ ...still, stage: 'primary' })
+    candidates.push({ ...still, stage: 'retry' })
+  }
+  candidates.push({
+    kind: 'still',
+    stage: 'poster',
+    src: registered.poster,
+    alt: registered.alt,
+  })
+  if (
+    lastKnownGood !== undefined &&
+    !candidates.some((candidate) => candidate.src === lastKnownGood.src)
+  ) {
+    candidates.push({
+      kind: 'still',
+      stage: 'last-known-good',
+      src: lastKnownGood.src,
+      alt: lastKnownGood.alt,
+    })
+  }
+  candidates.push({
+    kind: 'brand',
+    stage: 'brand',
+    alt: 'Beside Cue continues while the scene artwork is unavailable.',
+  })
+  return candidates
 }
 
 export function CinematicOnboardingDirector(
@@ -318,18 +468,43 @@ export function CinematicOnboardingDirector(
     () => props.mode ?? (prefersReducedMotion() ? 'reduced' : 'normal'),
   )
   const mode = untrack(requestedMode)
+  const reviewToolsEnabled = isCinematicOnboardingReviewEnabled(
+    import.meta.env as Readonly<Record<string, unknown>>,
+  )
+  const rehearsal = untrack(() => props.rehearsal === true)
   const [runtime, setRuntime] = createSignal(
-    createCinematicOnboardingRuntime({ mode }),
+    createCinematicOnboardingRuntime({
+      mode,
+      sessionKind: rehearsal || reviewToolsEnabled ? 'review' : 'first_run',
+    }),
   )
   const [begun, setBegun] = createSignal(false)
   const [muted, setMuted] = createSignal(false)
   const [playbackPaused, setPlaybackPaused] = createSignal(false)
-  const [reminderChoice, setReminderChoice] = createSignal('Not now')
+  const [transientControlsVisible, setTransientControlsVisible] =
+    createSignal(false)
   const [audioStatus, setAudioStatus] = createSignal<
     'loading' | 'ready' | 'unavailable'
   >('loading')
   const [documentVisible, setDocumentVisible] = createSignal(true)
+  const [selectedBSide, setSelectedBSide] =
+    createSignal<NormalizedBSideOption>()
+  const [saveState, setSaveState] = createSignal<SaveState>({ kind: 'idle' })
+  const [reminderState, setReminderState] = createSignal<ReminderState>({
+    kind: 'idle',
+  })
+  const [reminderTime, setReminderTime] = createSignal('09:00')
+  const [mediaGeneration, setMediaGeneration] = createSignal(0)
+  const [mediaRecovery, setMediaRecovery] = createSignal<MediaRecoveryState>({
+    identity: '',
+    index: 0,
+    elapsedMilliseconds: 0,
+  })
+  const [readyPresentationKey, setReadyPresentationKey] = createSignal<string>()
+  const [lastKnownGoodStill, setLastKnownGoodStill] =
+    createSignal<KnownGoodStill>()
   const audioClock = createCinematicOnboardingAudioClock()
+
   let videoElement: HTMLVideoElement | undefined
   let imageElement: HTMLImageElement | undefined
   let imagePresentationKey: string | undefined
@@ -338,66 +513,80 @@ export function CinematicOnboardingDirector(
   let dwellRemainingMilliseconds = 0
   let dwellStartedAt: number | undefined
   let visibilityListener: (() => void) | undefined
+  let keydownListener: ((event: KeyboardEvent) => void) | undefined
+  let controlsTimer: ReturnType<typeof setTimeout> | undefined
+  let reminderAdvanceTimer: ReturnType<typeof setTimeout> | undefined
   let videoPlayRequest = 0
+  let activeVideoStartKey: string | undefined
+  let saveRequest = 0
+  let reminderRequest = 0
   let completionDelivered = false
   let mounted = true
+  let audioUnlockFailed = false
 
   const position = createMemo(() =>
     getCinematicOnboardingRuntimePosition(runtime()),
   )
   const segmentId = createMemo(() => position()?.segment.id)
-  const media = createMemo(() => {
-    const id = segmentId()
-    return id === undefined
-      ? undefined
-      : resolveCinematicOnboardingMedia(props.media, id, mode)
-  })
-  const presentationKey = createMemo(() => {
-    const id = segmentId()
-    return id === undefined
-      ? undefined
-      : `${id}|${statePlaybackAttempt(runtime())}`
-  })
-  const shotNumber = createMemo(() => {
-    const shotId = position()?.shotId
-    const index = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.findIndex(
-      (shot) => shot.id === shotId,
-    )
-    return Math.max(0, index) + 1
+  const normalizedBSideOptions = createMemo(() => {
+    const supplied = normalizeBSideOptions(props.bSideOptions)
+    return supplied.length > 0
+      ? supplied
+      : normalizeBSideOptions(DEFAULT_B_SIDE_OPTIONS)
   })
   const overlay = createMemo(() => {
     const id = segmentId()
-    return id === undefined
-      ? undefined
-      : nativeOverlayCopy(id, reminderChoice())
+    return id === undefined ? undefined : nativeOverlayCopy(id)
   })
-  const playbackError = createMemo(() => {
-    const state = runtime()
-    return state.status === 'error' ? state.message : ''
+  const presentationIdentity = createMemo(
+    () =>
+      `${runtime().positionIndex}|${statePlaybackAttempt(runtime())}|${mediaGeneration()}`,
+  )
+  const effectiveRecovery = createMemo<MediaRecoveryState>(() => {
+    const identity = presentationIdentity()
+    const recovery = mediaRecovery()
+    return recovery.identity === identity
+      ? recovery
+      : { identity, index: 0, elapsedMilliseconds: 0 }
+  })
+  const mediaCandidates = createMemo(() => {
+    const id = segmentId()
+    return id === undefined
+      ? []
+      : buildMediaCandidates(props.media, id, mode, lastKnownGoodStill())
+  })
+  const mediaCandidate = createMemo<MediaCandidate | undefined>(() => {
+    const candidates = mediaCandidates()
+    const recovery = effectiveRecovery()
+    return candidates[recovery.index] ?? candidates.at(-1)
+  })
+  const presentationKey = createMemo(() => {
+    const id = segmentId()
+    const candidate = mediaCandidate()
+    return id === undefined || candidate === undefined
+      ? undefined
+      : `${presentationIdentity()}|${effectiveRecovery().index}|${candidate.stage}`
   })
   const canPause = createMemo(() => {
     const status = runtime().status
     return status === 'loading' || status === 'playing'
   })
-  const audioReady = createMemo(() => audioStatus() === 'ready')
+  const persistenceMutationPending = createMemo(
+    () => saveState().kind === 'pending' || reminderState().kind === 'pending',
+  )
+  const reminderOutcomeMessage = createMemo(() => {
+    const state = reminderState()
+    return state.kind === 'resolved' ? state.message : ''
+  })
+  const persistenceAllowed = createMemo(
+    () =>
+      !rehearsal &&
+      !reviewToolsEnabled &&
+      isCinematicOnboardingPersistenceAllowed(runtime()),
+  )
 
   function pauseSound(): void {
     audioClock.pause()
-  }
-
-  function currentDwellDuration(): number | undefined {
-    const state = runtime()
-    return mode === 'reduced'
-      ? getCinematicOnboardingReducedDwellMilliseconds(state)
-      : getCinematicOnboardingNativeOverlayDurationMilliseconds(state)
-  }
-
-  function currentDwellIdentity(): string | undefined {
-    const state = runtime()
-    const id = segmentId()
-    return id === undefined
-      ? undefined
-      : `${state.positionIndex}|${id}|${statePlaybackAttempt(state)}|${mode}`
   }
 
   function resetDwell(): void {
@@ -408,11 +597,37 @@ export function CinematicOnboardingDirector(
     dwellStartedAt = undefined
   }
 
+  function currentDwellDuration(): number | undefined {
+    if (runtime().status !== 'playing' || mediaCandidate()?.kind === 'video') {
+      return undefined
+    }
+    const segment = position()?.segment
+    if (segment?.kind === 'automatic') {
+      return (
+        (segment.mediaDurationFrames / CINEMATIC_ONBOARDING_PICTURE_FPS) * 1_000
+      )
+    }
+    if (segment?.kind === 'automatic_native_overlay') {
+      return (
+        (segment.nativeDurationFrames / CINEMATIC_ONBOARDING_PICTURE_FPS) *
+        1_000
+      )
+    }
+    return undefined
+  }
+
+  function currentDwellIdentity(): string | undefined {
+    return presentationKey()
+  }
+
   function prepareDwell(identity: string, duration: number): void {
     if (dwellIdentity === identity) return
     resetDwell()
     dwellIdentity = identity
-    dwellRemainingMilliseconds = duration
+    dwellRemainingMilliseconds = Math.max(
+      0,
+      duration - effectiveRecovery().elapsedMilliseconds,
+    )
   }
 
   function pauseDwell(): void {
@@ -442,18 +657,20 @@ export function CinematicOnboardingDirector(
 
   function playSoundForCurrentPicture(): void {
     const slice = getCinematicOnboardingAudioClockSlice(runtime())
+    const candidate = mediaCandidate()
     if (
       slice === undefined ||
       slice.behavior !== 'advance_with_picture' ||
-      !audioReady() ||
+      audioStatus() !== 'ready' ||
       muted() ||
       playbackPaused() ||
-      !documentVisible()
+      !documentVisible() ||
+      readyPresentationKey() !== presentationKey()
     ) {
       return
     }
     const mediaOffsetSeconds =
-      media()?.kind === 'video'
+      candidate?.kind === 'video'
         ? (videoElement?.currentTime ?? 0)
         : dwellElapsedMilliseconds() / 1_000
     const offset =
@@ -482,10 +699,83 @@ export function CinematicOnboardingDirector(
     return true
   }
 
+  function isCurrentPresentation(token: string): boolean {
+    return mounted && presentationKey() === token
+  }
+
+  function recordRecovery(
+    event: string,
+    candidate: MediaCandidate,
+    nextCandidate: MediaCandidate,
+  ): void {
+    if (!reviewToolsEnabled && !import.meta.env.DEV) return
+    console.info('[beside-cue:onboarding-media]', {
+      segment: segmentId(),
+      asset: candidate.src ?? 'native-brand',
+      attempt: effectiveRecovery().index,
+      event,
+      platform: navigator.userAgent,
+      fallback: nextCandidate.stage,
+    })
+  }
+
+  function recoverMedia(token: string, event: string): void {
+    if (!isCurrentPresentation(token)) return
+    const candidate = mediaCandidate()
+    const candidates = mediaCandidates()
+    const recovery = effectiveRecovery()
+    const nextIndex = Math.min(recovery.index + 1, candidates.length - 1)
+    const nextCandidate = candidates[nextIndex]
+    if (candidate === undefined || nextCandidate === undefined) return
+
+    recordRecovery(event, candidate, nextCandidate)
+    const elapsedMilliseconds =
+      candidate.kind === 'video'
+        ? Math.max(
+            recovery.elapsedMilliseconds,
+            (videoElement?.currentTime ?? 0) * 1_000,
+          )
+        : recovery.elapsedMilliseconds
+    videoPlayRequest += 1
+    activeVideoStartKey = undefined
+    videoElement?.pause()
+    pauseDwell()
+    pauseSound()
+    setReadyPresentationKey(undefined)
+    setMediaRecovery({
+      identity: recovery.identity,
+      index: nextIndex,
+      elapsedMilliseconds,
+    })
+    queueMicrotask(startCurrentBeat)
+  }
+
+  function reportStillElement(
+    image: HTMLImageElement,
+    id: CinematicOnboardingSegmentId,
+    attempt: number,
+    token: string,
+    candidate: MediaCandidate,
+  ): void {
+    if (!begun() || !isCurrentPresentation(token)) return
+    if (image.naturalWidth <= 0 || candidate.src === undefined) {
+      recoverMedia(token, 'still-empty')
+      return
+    }
+    setLastKnownGoodStill({ src: candidate.src, alt: candidate.alt })
+    setReadyPresentationKey(token)
+    if (runtime().status === 'loading') {
+      dispatch({
+        type: 'MEDIA_READY',
+        segmentId: id,
+        playbackAttempt: attempt,
+      })
+    }
+  }
+
   function armDwell(): void {
     const state = runtime()
     const id = segmentId()
-    const resolved = media()
     const duration = currentDwellDuration()
     const identity = currentDwellIdentity()
     if (
@@ -494,9 +784,9 @@ export function CinematicOnboardingDirector(
       !documentVisible() ||
       state.status !== 'playing' ||
       id === undefined ||
-      resolved?.kind !== 'still' ||
       duration === undefined ||
-      identity === undefined
+      identity === undefined ||
+      readyPresentationKey() !== presentationKey()
     ) {
       return
     }
@@ -504,41 +794,49 @@ export function CinematicOnboardingDirector(
     prepareDwell(identity, duration)
     if (dwellTimer !== undefined) return
     const attempt = state.playbackAttempt
+    const segment = position()?.segment
     dwellStartedAt = monotonicNow()
     dwellTimer = setTimeout(() => {
-      if (dwellIdentity !== identity) return
+      if (dwellIdentity !== identity || presentationKey() !== identity) return
       dwellTimer = undefined
       dwellStartedAt = undefined
       dwellRemainingMilliseconds = 0
       pauseSound()
       resetDwell()
-      const advanced = dispatch(
+      const input =
         mode === 'reduced'
-          ? {
+          ? ({
               type: 'REDUCED_DWELL_ENDED',
               segmentId: id,
               playbackAttempt: attempt,
-            }
-          : {
-              type: 'NATIVE_OVERLAY_ENDED',
-              segmentId: id,
-              playbackAttempt: attempt,
-            },
-      )
-      if (advanced) queueMicrotask(startCurrentBeat)
+            } as const)
+          : segment?.kind === 'automatic'
+            ? ({
+                type: 'MEDIA_ENDED',
+                segmentId: id,
+                playbackAttempt: attempt,
+              } as const)
+            : ({
+                type: 'NATIVE_OVERLAY_ENDED',
+                segmentId: id,
+                playbackAttempt: attempt,
+              } as const)
+      if (dispatch(input)) queueMicrotask(startCurrentBeat)
     }, dwellRemainingMilliseconds)
   }
 
   function startCurrentBeat(): void {
     const state = runtime()
-    const currentMedia = media()
+    const candidate = mediaCandidate()
+    const token = presentationKey()
     const id = segmentId()
     if (
       !begun() ||
       playbackPaused() ||
       !documentVisible() ||
-      id === undefined ||
-      currentMedia === undefined
+      candidate === undefined ||
+      token === undefined ||
+      id === undefined
     ) {
       return
     }
@@ -546,104 +844,62 @@ export function CinematicOnboardingDirector(
       pauseSound()
       return
     }
-    if (state.status !== 'loading') return
+    if (state.status !== 'loading' && state.status !== 'playing') return
 
     const attempt = state.playbackAttempt
-    if (currentMedia.kind === 'video') {
-      const video = videoElement
-      if (video === undefined) return
-      const key = `${id}|${attempt}`
-      const playRequest = ++videoPlayRequest
-      video.load()
-      void video.play().catch(() => {
-        untrack(() => {
-          if (
-            playRequest !== videoPlayRequest ||
-            playbackPaused() ||
-            !documentVisible() ||
-            videoElement !== video ||
-            presentationKey() !== key
-          ) {
-            return
-          }
-          dispatch({
-            type: 'MEDIA_ERROR',
-            segmentId: id,
-            playbackAttempt: attempt,
-            message: 'This scene could not begin on this device.',
-          })
+    if (candidate.kind === 'brand') {
+      setReadyPresentationKey(token)
+      if (state.status === 'loading') {
+        dispatch({
+          type: 'MEDIA_READY',
+          segmentId: id,
+          playbackAttempt: attempt,
         })
+      }
+      queueMicrotask(armDwell)
+      return
+    }
+
+    if (candidate.kind === 'still') {
+      const image = imageElement
+      if (
+        image === undefined ||
+        imagePresentationKey !== token ||
+        !image.complete
+      ) {
+        return
+      }
+      reportStillElement(image, id, attempt, token, candidate)
+      return
+    }
+
+    const video = videoElement
+    if (video === undefined) return
+    if (state.status === 'playing') {
+      void video
+        .play()
+        .catch(() => untrack(() => recoverMedia(token, 'video-resume')))
+      return
+    }
+    if (activeVideoStartKey === token) return
+    activeVideoStartKey = token
+    const playRequest = ++videoPlayRequest
+    video.load()
+    void video.play().catch(() => {
+      untrack(() => {
+        if (
+          playRequest !== videoPlayRequest ||
+          playbackPaused() ||
+          !documentVisible() ||
+          videoElement !== video ||
+          !isCurrentPresentation(token)
+        ) {
+          return
+        }
+        activeVideoStartKey = undefined
+        recoverMedia(token, 'video-start')
       })
-      return
-    }
-
-    const image = imageElement
-    if (
-      image === undefined ||
-      imagePresentationKey !== `${id}|${attempt}` ||
-      !image.complete
-    ) {
-      return
-    }
-    dispatch(
-      image.naturalWidth > 0
-        ? {
-            type: 'MEDIA_READY',
-            segmentId: id,
-            playbackAttempt: attempt,
-          }
-        : {
-            type: 'MEDIA_ERROR',
-            segmentId: id,
-            playbackAttempt: attempt,
-            message: 'This scene image could not be decoded.',
-          },
-    )
-  }
-
-  function reportStillElement(
-    image: HTMLImageElement,
-    id: CinematicOnboardingSegmentId,
-    attempt: number,
-  ): void {
-    if (!begun()) return
-    dispatch(
-      image.naturalWidth > 0
-        ? {
-            type: 'MEDIA_READY',
-            segmentId: id,
-            playbackAttempt: attempt,
-          }
-        : {
-            type: 'MEDIA_ERROR',
-            segmentId: id,
-            playbackAttempt: attempt,
-            message: 'This scene image could not be decoded.',
-          },
-    )
-  }
-
-  function resumeCurrentBeat(): void {
-    const state = runtime()
-    if (!begun() || !documentVisible() || playbackPaused()) return
-    if (state.status === 'loading') {
-      startCurrentBeat()
-      return
-    }
-    if (state.status !== 'playing') return
-    if (media()?.kind === 'video') {
-      void videoElement?.play().catch(() => undefined)
-      return
-    }
-    armDwell()
-  }
-
-  function begin(quiet: boolean): void {
-    if (!quiet) void audioClock.unlock()
-    setMuted(quiet)
-    setPlaybackPaused(false)
-    setBegun(true)
-    startCurrentBeat()
+    })
   }
 
   function completeHold(event: CinematicOnboardingRuntimeEvent): void {
@@ -652,51 +908,306 @@ export function CinematicOnboardingDirector(
     }
   }
 
+  function chooseBSide(option: NormalizedBSideOption): void {
+    setSelectedBSide(option)
+  }
+
+  function confirmBSide(option: NormalizedBSideOption): void {
+    setSelectedBSide(option)
+    setSaveState({ kind: 'idle' })
+    completeHold('user_chooses_b_side')
+  }
+
+  async function savePlan(): Promise<void> {
+    const option = selectedBSide() ?? normalizedBSideOptions()[0]
+    if (
+      option === undefined ||
+      saveState().kind === 'pending' ||
+      runtime().status !== 'holding'
+    ) {
+      return
+    }
+    setSaveState({ kind: 'pending' })
+    const request = ++saveRequest
+    const positionIndex = runtime().positionIndex
+    let result: CinematicOnboardingSaveResult
+    if (!persistenceAllowed()) {
+      result = { ok: true }
+    } else {
+      try {
+        result = await props.onSavePlan({
+          ...FIXED_PLAN,
+          ...(option.id === undefined ? {} : { bSideId: option.id }),
+          bSideText: option.text,
+        })
+      } catch {
+        result = {
+          ok: false,
+          message: 'Your plan was not saved. Try again.',
+        }
+      }
+    }
+    if (
+      !mounted ||
+      request !== saveRequest ||
+      runtime().positionIndex !== positionIndex
+    ) {
+      return
+    }
+    if (!result.ok) {
+      setSaveState({ kind: 'error', message: result.message })
+      return
+    }
+    setSaveState({ kind: 'idle' })
+    completeHold('user_confirms_and_saves_plan')
+  }
+
+  function finishReminder(message: string): void {
+    setReminderState({ kind: 'resolved', message })
+    if (reminderAdvanceTimer !== undefined) clearTimeout(reminderAdvanceTimer)
+    const positionIndex = runtime().positionIndex
+    reminderAdvanceTimer = setTimeout(() => {
+      reminderAdvanceTimer = undefined
+      if (runtime().positionIndex !== positionIndex) return
+      completeHold('user_sets_or_skips_reminder')
+    }, 1_000)
+  }
+
+  function noWriteReminderMessage(): string {
+    return rehearsal
+      ? 'Replay only. Your reminder was not changed.'
+      : 'Review only. No reminder was changed.'
+  }
+
+  async function setReminder(): Promise<void> {
+    const time = reminderTime()
+    if (
+      time === '' ||
+      reminderState().kind === 'pending' ||
+      runtime().status !== 'holding'
+    ) {
+      return
+    }
+    setReminderState({ kind: 'pending' })
+    const request = ++reminderRequest
+    const positionIndex = runtime().positionIndex
+    let result: CinematicOnboardingReminderResult
+    if (!persistenceAllowed()) {
+      result = {
+        ok: true,
+        message: noWriteReminderMessage(),
+      }
+    } else {
+      try {
+        result = await props.onSetReminder(time)
+      } catch {
+        result = {
+          ok: false,
+          message: 'Daily reminder is off. Cue me now still works.',
+        }
+      }
+    }
+    if (
+      !mounted ||
+      request !== reminderRequest ||
+      runtime().positionIndex !== positionIndex
+    ) {
+      return
+    }
+    finishReminder(result.message)
+  }
+
+  function skipReminder(): void {
+    if (
+      reminderState().kind === 'pending' ||
+      reminderState().kind === 'resolved' ||
+      runtime().status !== 'holding'
+    ) {
+      return
+    }
+    reminderRequest += 1
+    if (persistenceAllowed()) props.onSkipReminder()
+    finishReminder(
+      persistenceAllowed()
+        ? 'No reminder set. You can add one later in Settings.'
+        : noWriteReminderMessage(),
+    )
+  }
+
+  function begin(): void {
+    if (begun()) return
+    setMuted(false)
+    setPlaybackPaused(false)
+    setBegun(true)
+    void audioClock
+      .unlock()
+      .then((ready) => {
+        if (!ready && mounted) {
+          audioUnlockFailed = true
+          setAudioStatus('unavailable')
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          audioUnlockFailed = true
+          setAudioStatus('unavailable')
+        }
+      })
+    queueMicrotask(startCurrentBeat)
+  }
+
   function togglePlayback(): void {
     if (!canPause()) return
     const nextPaused = !playbackPaused()
     setPlaybackPaused(nextPaused)
+    setTransientControlsVisible(true)
     if (nextPaused) {
       videoPlayRequest += 1
+      activeVideoStartKey = undefined
       videoElement?.pause()
       pauseDwell()
       pauseSound()
       return
     }
     queueMicrotask(resumeCurrentBeat)
+    scheduleControlsHide()
   }
 
   function toggleSound(): void {
+    if (audioStatus() !== 'ready') return
     const nextMuted = !muted()
-    if (!nextMuted) void audioClock.unlock()
     setMuted(nextMuted)
     if (nextMuted) {
       pauseSound()
+      return
+    }
+    void audioClock.unlock()
+    queueMicrotask(playSoundForCurrentPicture)
+  }
+
+  function resumeCurrentBeat(): void {
+    if (!begun() || !documentVisible() || playbackPaused()) return
+    if (runtime().status === 'loading') {
+      startCurrentBeat()
+      return
+    }
+    if (runtime().status !== 'playing') return
+    if (mediaCandidate()?.kind === 'video') {
+      void videoElement?.play().catch(() =>
+        untrack(() => {
+          const token = presentationKey()
+          if (token !== undefined) recoverMedia(token, 'video-resume')
+        }),
+      )
+      return
+    }
+    armDwell()
+  }
+
+  function scheduleControlsHide(): void {
+    if (controlsTimer !== undefined) clearTimeout(controlsTimer)
+    if (playbackPaused()) return
+    controlsTimer = setTimeout(() => {
+      controlsTimer = undefined
+      setTransientControlsVisible(false)
+    }, 4_000)
+  }
+
+  function revealTransientControls(): void {
+    if (!begun() || reviewToolsEnabled) return
+    setTransientControlsVisible(true)
+    scheduleControlsHide()
+  }
+
+  function resetInteractionStateForReview(targetShotIndex: number): void {
+    saveRequest += 1
+    reminderRequest += 1
+    if (reminderAdvanceTimer !== undefined) clearTimeout(reminderAdvanceTimer)
+    reminderAdvanceTimer = undefined
+    setSaveState({ kind: 'idle' })
+    setReminderState({ kind: 'idle' })
+    if (targetShotIndex <= 3) {
+      setSelectedBSide(undefined)
+    } else if (selectedBSide() === undefined) {
+      setSelectedBSide(normalizedBSideOptions()[0])
     }
   }
 
+  function seekReview(action: 'previous' | 'replay' | 'next'): void {
+    if (persistenceMutationPending()) return
+    const currentShotId = position()?.shotId
+    const currentShotIndex = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.findIndex(
+      (shot) => shot.id === currentShotId,
+    )
+    if (currentShotIndex < 0) return
+    const targetShotIndex =
+      action === 'previous'
+        ? Math.max(0, currentShotIndex - 1)
+        : action === 'next'
+          ? Math.min(
+              CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.length - 1,
+              currentShotIndex + 1,
+            )
+          : currentShotIndex
+    const firstSegment =
+      CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots[targetShotIndex]?.segments[0]
+    if (firstSegment === undefined) return
+
+    videoPlayRequest += 1
+    activeVideoStartKey = undefined
+    videoElement?.pause()
+    resetDwell()
+    pauseSound()
+    setReadyPresentationKey(undefined)
+    setMediaGeneration((value) => value + 1)
+    resetInteractionStateForReview(targetShotIndex)
+    setRuntime(
+      action === 'replay'
+        ? seekCinematicOnboardingRuntimeForReview(runtime(), firstSegment.id)
+        : seekCinematicOnboardingRuntimeForReview(runtime(), firstSegment.id),
+    )
+    queueMicrotask(startCurrentBeat)
+  }
+
+  function dismiss(): void {
+    if (persistenceMutationPending()) return
+    dispatch({ type: 'DISMISS' })
+  }
+
+  createEffect(() => {
+    const identity = presentationIdentity()
+    untrack(() => {
+      if (mediaRecovery().identity === identity) return
+      setMediaRecovery({ identity, index: 0, elapsedMilliseconds: 0 })
+      setReadyPresentationKey(undefined)
+      activeVideoStartKey = undefined
+      resetDwell()
+    })
+  })
+
   createEffect(() => {
     const state = runtime()
-    const resolved = media()
+    const candidate = mediaCandidate()
     const isBegun = begun()
     const isVisible = documentVisible()
     const isPaused = playbackPaused()
+    const ready = readyPresentationKey() === presentationKey()
 
-    if (!isBegun || state.status !== 'playing' || resolved?.kind !== 'still') {
+    if (
+      !isBegun ||
+      state.status !== 'playing' ||
+      candidate?.kind === 'video' ||
+      !ready
+    ) {
       resetDwell()
       return
     }
-
-    const duration =
-      mode === 'reduced'
-        ? getCinematicOnboardingReducedDwellMilliseconds(state)
-        : getCinematicOnboardingNativeOverlayDurationMilliseconds(state)
+    const duration = currentDwellDuration()
     const identity = currentDwellIdentity()
     if (duration === undefined || identity === undefined) {
       resetDwell()
       return
     }
-
     prepareDwell(identity, duration)
     if (!isVisible || isPaused) {
       pauseDwell()
@@ -707,16 +1218,48 @@ export function CinematicOnboardingDirector(
 
   createEffect(() => {
     const shouldPlay =
-      audioReady() &&
+      audioStatus() === 'ready' &&
       begun() &&
       documentVisible() &&
       !playbackPaused() &&
       !muted() &&
-      runtime().status === 'playing'
+      runtime().status === 'playing' &&
+      readyPresentationKey() === presentationKey()
     segmentId()
-    media()
+    mediaCandidate()
     if (shouldPlay) playSoundForCurrentPicture()
     else pauseSound()
+  })
+
+  createEffect(() => {
+    const index = runtime().positionIndex
+    const next = TIMELINE_POSITIONS[index + 1]
+    if (next === undefined || typeof Image === 'undefined') return
+    const registered = props.media.segments[next.segment.id]
+    const preload = new Image()
+    preload.src = registered.reducedStill
+    if (typeof preload.decode === 'function') {
+      void preload.decode().catch(() => undefined)
+    }
+  })
+
+  createEffect(() => {
+    const token = presentationKey()
+    if (
+      !begun() ||
+      token === undefined ||
+      mediaCandidate()?.kind !== 'brand' ||
+      readyPresentationKey() === token
+    ) {
+      return
+    }
+    queueMicrotask(() =>
+      untrack(() => {
+        if (!isCurrentPresentation(token)) return
+        setReadyPresentationKey(token)
+        startCurrentBeat()
+      }),
+    )
   })
 
   onMount(() => {
@@ -725,13 +1268,15 @@ export function CinematicOnboardingDirector(
       .load(props.media.audio.src)
       .catch(() => false)
       .then((ready) => {
-        if (mounted) setAudioStatus(ready ? 'ready' : 'unavailable')
+        if (!mounted || audioUnlockFailed) return
+        setAudioStatus(ready ? 'ready' : 'unavailable')
       })
     visibilityListener = () =>
       untrack(() => {
         if (document.visibilityState === 'hidden') {
           setDocumentVisible(false)
           videoPlayRequest += 1
+          activeVideoStartKey = undefined
           videoElement?.pause()
           pauseDwell()
           pauseSound()
@@ -740,109 +1285,162 @@ export function CinematicOnboardingDirector(
         setDocumentVisible(true)
         if (!playbackPaused()) queueMicrotask(resumeCurrentBeat)
       })
+    keydownListener = (event) =>
+      untrack(() => {
+        if (!begun() || reviewToolsEnabled || event.key !== 'Escape') return
+        event.preventDefault()
+        revealTransientControls()
+      })
     document.addEventListener('visibilitychange', visibilityListener)
+    document.addEventListener('keydown', keydownListener)
   })
 
   onCleanup(() => {
     mounted = false
+    saveRequest += 1
+    reminderRequest += 1
     videoPlayRequest += 1
     resetDwell()
+    if (controlsTimer !== undefined) clearTimeout(controlsTimer)
+    if (reminderAdvanceTimer !== undefined) clearTimeout(reminderAdvanceTimer)
     if (visibilityListener !== undefined) {
       document.removeEventListener('visibilitychange', visibilityListener)
+    }
+    if (keydownListener !== undefined) {
+      document.removeEventListener('keydown', keydownListener)
     }
     videoElement?.pause()
     pauseSound()
     audioClock.dispose()
   })
 
+  const currentShotIndex = createMemo(() =>
+    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.findIndex(
+      (shot) => shot.id === position()?.shotId,
+    ),
+  )
+
   return (
     <main
       class="cinematic-onboarding app-screen"
-      aria-label="Meet Corky and Beside Cue"
+      aria-label="Meet Corky and make your first plan"
     >
-      <div class="cinematic-onboarding__picture">
+      <div
+        class="cinematic-onboarding__picture"
+        onPointerUp={revealTransientControls}
+      >
         <Show
           when={presentationKey()}
-          fallback={<div class="cinematic-onboarding__picture-fallback" />}
+          fallback={
+            <div
+              class="cinematic-onboarding__picture-fallback"
+              role="img"
+              aria-label="Beside Cue opening"
+            >
+              <FilmBrandMark />
+            </div>
+          }
           keyed
         >
-          {(key) => {
-            const [rawId, rawAttempt] = key.split('|')
-            const id = rawId as CinematicOnboardingSegmentId
-            const attempt = Number(rawAttempt)
-            const resolved = resolveCinematicOnboardingMedia(
-              props.media,
-              id,
-              mode,
-            )
-            return resolved.kind === 'video' ? (
-              <video
-                ref={(element) => {
-                  videoElement = element
-                }}
-                src={resolved.src}
-                poster={resolved.poster}
-                aria-label={resolved.alt}
-                playsinline
-                muted
-                preload="auto"
-                onPlay={(event) => {
-                  if (playbackPaused() || !documentVisible()) {
-                    event.currentTarget.pause()
-                    return
-                  }
-                  dispatch({
-                    type: 'MEDIA_READY',
-                    segmentId: id,
-                    playbackAttempt: attempt,
-                  })
-                }}
-                onEnded={() => {
-                  if (
-                    dispatch({
-                      type: 'MEDIA_ENDED',
-                      segmentId: id,
-                      playbackAttempt: attempt,
-                    })
-                  ) {
-                    pauseSound()
+          {(token) => {
+            const id = segmentId()
+            const candidate = mediaCandidate()
+            const attempt = statePlaybackAttempt(runtime())
+            if (id === undefined || candidate === undefined) return null
+            if (candidate.kind === 'brand') {
+              return (
+                <div
+                  class="cinematic-onboarding__picture-fallback"
+                  role="img"
+                  aria-label={candidate.alt}
+                >
+                  <FilmBrandMark />
+                </div>
+              )
+            }
+            if (candidate.kind === 'video') {
+              return (
+                <video
+                  ref={(element) => {
+                    videoElement = element
                     queueMicrotask(startCurrentBeat)
-                  }
-                }}
-                onError={() => {
-                  if (
+                  }}
+                  src={candidate.src}
+                  poster={candidate.poster}
+                  aria-label={candidate.alt}
+                  playsinline
+                  muted
+                  preload="auto"
+                  onLoadedMetadata={(event) => {
+                    const elapsed = effectiveRecovery().elapsedMilliseconds
+                    if (elapsed <= 0 || !isCurrentPresentation(token)) return
+                    try {
+                      event.currentTarget.currentTime = elapsed / 1_000
+                    } catch {
+                      // The stable-plate fallback retains the authored duration.
+                    }
+                  }}
+                  onPlay={(event) => {
+                    if (!isCurrentPresentation(token)) return
+                    if (playbackPaused() || !documentVisible()) {
+                      event.currentTarget.pause()
+                      return
+                    }
+                    setReadyPresentationKey(token)
                     dispatch({
-                      type: 'MEDIA_ERROR',
+                      type: 'MEDIA_READY',
                       segmentId: id,
                       playbackAttempt: attempt,
-                      message: 'This scene could not be decoded.',
                     })
-                  ) {
-                    pauseSound()
-                  }
-                }}
-              />
-            ) : (
+                  }}
+                  onEnded={() => {
+                    if (!isCurrentPresentation(token)) return
+                    if (
+                      dispatch({
+                        type: 'MEDIA_ENDED',
+                        segmentId: id,
+                        playbackAttempt: attempt,
+                      })
+                    ) {
+                      pauseSound()
+                      queueMicrotask(startCurrentBeat)
+                    }
+                  }}
+                  onError={() => recoverMedia(token, 'video-element')}
+                />
+              )
+            }
+            return (
               <img
                 ref={(element) => {
                   imageElement = element
-                  imagePresentationKey = key
+                  imagePresentationKey = token
                   if (element.complete) {
-                    queueMicrotask(() => {
-                      untrack(() => {
-                        reportStillElement(element, id, attempt)
-                      })
-                    })
+                    queueMicrotask(() =>
+                      untrack(() =>
+                        reportStillElement(
+                          element,
+                          id,
+                          attempt,
+                          token,
+                          candidate,
+                        ),
+                      ),
+                    )
                   }
                 }}
-                src={resolved.src}
-                alt={resolved.alt}
-                onLoad={(event) => {
-                  reportStillElement(event.currentTarget, id, attempt)
-                }}
-                onError={(event) => {
-                  reportStillElement(event.currentTarget, id, attempt)
-                }}
+                src={candidate.src}
+                alt={candidate.alt}
+                onLoad={(event) =>
+                  reportStillElement(
+                    event.currentTarget,
+                    id,
+                    attempt,
+                    token,
+                    candidate,
+                  )
+                }
+                onError={() => recoverMedia(token, 'still-element')}
               />
             )
           }}
@@ -851,97 +1449,139 @@ export function CinematicOnboardingDirector(
       </div>
 
       <Show when={!begun()}>
-        <section
-          class="cinematic-onboarding__preroll"
-          aria-labelledby="cinematic-title"
+        <button
+          class="cinematic-onboarding__curtain"
+          type="button"
+          aria-label="Tap to begin"
+          onClick={begin}
         >
-          <p class="cinematic-onboarding__eyebrow">A 31-second pocket film</p>
-          <h1 id="cinematic-title">Meet Corky.</h1>
-          <p>
-            See one pull, one small turn, and how Beside Cue keeps the choice
-            private. Captions stay on throughout.
-          </p>
-          <div class="cinematic-onboarding__preroll-actions">
-            <button
-              class="primary-button primary-button--wide"
-              type="button"
-              disabled={!audioReady()}
-              onClick={() => begin(false)}
-            >
-              {audioStatus() === 'ready'
-                ? 'Begin with sound'
-                : audioStatus() === 'unavailable'
-                  ? 'Sound unavailable'
-                  : 'Preparing sound…'}
-            </button>
-            <button
-              class="secondary-button"
-              type="button"
-              onClick={() => begin(true)}
-            >
-              Watch quietly
-            </button>
-          </div>
-          <Show when={audioStatus() === 'unavailable'}>
-            <p class="cinematic-onboarding__audio-status" role="status">
-              Sound is unavailable on this device. The quiet film is ready.
-            </p>
-          </Show>
-          <button
-            class="text-button"
-            type="button"
-            onClick={() => dispatch({ type: 'DISMISS' })}
-          >
-            Skip introduction
-          </button>
-        </section>
+          <FilmBrandMark />
+          <span class="cinematic-onboarding__curtain-line" aria-hidden="true">
+            One Pull. One chosen turn.
+          </span>
+          <span class="cinematic-onboarding__begin-label" aria-hidden="true">
+            Tap to begin
+          </span>
+          <span class="cinematic-onboarding__curtain-note" aria-hidden="true">
+            Sound starts after your tap. Captions stay on.
+          </span>
+        </button>
       </Show>
 
       <Show when={begun()}>
-        <nav class="cinematic-onboarding__toolbar" aria-label="Film controls">
-          <span
-            aria-label={`Scene ${shotNumber()} of ${CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.length}`}
+        <div class="cinematic-onboarding__sound-control">
+          <button
+            type="button"
+            aria-label={
+              audioStatus() === 'unavailable'
+                ? 'Sound unavailable; captions are on'
+                : muted()
+                  ? 'Unmute audio'
+                  : 'Mute audio'
+            }
+            aria-pressed={muted()}
+            disabled={audioStatus() !== 'ready'}
+            classList={{ 'is-muted': muted() || audioStatus() !== 'ready' }}
+            onClick={toggleSound}
           >
-            {shotNumber()} / {CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.length}
-          </span>
-          <div>
+            <span
+              class="cinematic-onboarding__speaker-icon"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+
+        <Show when={reviewToolsEnabled}>
+          <nav
+            class="cinematic-onboarding__review-tools"
+            aria-label="Onboarding review controls"
+          >
+            <code>{segmentId() ?? 'complete'}</code>
+            <div>
+              <button
+                type="button"
+                disabled={
+                  persistenceMutationPending() || currentShotIndex() <= 0
+                }
+                onClick={() => seekReview('previous')}
+              >
+                ‹ Previous
+              </button>
+              <button
+                type="button"
+                disabled={persistenceMutationPending()}
+                onClick={() => seekReview('replay')}
+              >
+                Replay scene
+              </button>
+              <button
+                type="button"
+                disabled={
+                  persistenceMutationPending() ||
+                  currentShotIndex() >=
+                    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.length - 1
+                }
+                onClick={() => seekReview('next')}
+              >
+                Next ›
+              </button>
+            </div>
+          </nav>
+        </Show>
+
+        <Show when={transientControlsVisible() && !reviewToolsEnabled}>
+          <section
+            class="cinematic-onboarding__transient-controls"
+            aria-label="Temporary film controls"
+          >
             <button
               type="button"
-              aria-pressed={playbackPaused()}
               disabled={!canPause()}
+              aria-pressed={playbackPaused()}
               onClick={togglePlayback}
             >
-              {playbackPaused() ? 'Resume' : 'Pause'}
+              {playbackPaused() ? 'Resume film' : 'Pause film'}
             </button>
             <button
               type="button"
-              aria-pressed={muted()}
-              disabled={!audioReady()}
-              onClick={toggleSound}
+              disabled={persistenceMutationPending()}
+              title={
+                persistenceMutationPending()
+                  ? 'Wait for this change to finish.'
+                  : undefined
+              }
+              onClick={dismiss}
             >
-              {muted() ? 'Sound' : 'Mute'}
+              Leave introduction
             </button>
-            <button type="button" onClick={() => dispatch({ type: 'DISMISS' })}>
-              Skip
+            <button
+              type="button"
+              aria-label="Hide film controls"
+              onClick={() => setTransientControlsVisible(false)}
+            >
+              Close
             </button>
-          </div>
-        </nav>
-
-        <Show when={mode === 'reduced'}>
-          <p class="cinematic-onboarding__motion-note">Reduced motion</p>
+          </section>
         </Show>
 
         <Show when={runtime().status === 'holding' && segmentId()} keyed>
           {(id) => (
             <HoldControls
               segmentId={id}
-              onEvent={completeHold}
-              onSkip={() => {
-                if (dispatch({ type: 'SKIP_CURRENT_HOLD' })) {
-                  queueMicrotask(startCurrentBeat)
-                }
+              bSideOptions={normalizedBSideOptions()}
+              selectedBSide={selectedBSide()}
+              saveState={saveState()}
+              reminderState={reminderState()}
+              reminderTime={reminderTime()}
+              onChooseBSide={chooseBSide}
+              onConfirmBSide={() => {
+                const option = selectedBSide()
+                if (option !== undefined) confirmBSide(option)
               }}
-              onReminderChoice={setReminderChoice}
+              onSavePlan={() => void savePlan()}
+              onReminderTime={setReminderTime}
+              onSetReminder={() => void setReminder()}
+              onSkipReminder={skipReminder}
             />
           )}
         </Show>
@@ -950,46 +1590,30 @@ export function CinematicOnboardingDirector(
           {(copy) => (
             <section
               class="cinematic-onboarding__native-overlay"
+              classList={{
+                'cinematic-onboarding__native-overlay--closing':
+                  copy.closing === true,
+              }}
               aria-live="polite"
             >
+              <Show when={copy.closing}>
+                <FilmBrandMark closing />
+              </Show>
               <p class="cinematic-onboarding__eyebrow">{copy.eyebrow}</p>
               <h2>{copy.title}</h2>
-              <p>{copy.body}</p>
+              <Show when={copy.body}>{(body) => <p>{body()}</p>}</Show>
             </section>
           )}
         </Show>
 
-        <Show when={runtime().status === 'error'}>
-          <section class="cinematic-onboarding__error" role="alert">
-            <p class="cinematic-onboarding__eyebrow">Playback paused</p>
-            <h2>This beat needs another try.</h2>
-            <p>{playbackError()}</p>
-            <div>
-              <button
-                class="primary-button"
-                type="button"
-                onClick={() => {
-                  if (dispatch({ type: 'RETRY' })) {
-                    queueMicrotask(startCurrentBeat)
-                  }
-                }}
-              >
-                Try again
-              </button>
-              <button
-                class="secondary-button"
-                type="button"
-                onClick={() => {
-                  if (dispatch({ type: 'CONTINUE_WITH_POSTER' })) {
-                    queueMicrotask(startCurrentBeat)
-                  }
-                }}
-              >
-                Continue to next scene
-              </button>
-            </div>
-          </section>
-        </Show>
+        <p
+          class="visually-hidden"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {reminderOutcomeMessage()}
+        </p>
 
         <Show when={segmentId()} keyed>
           {(id) => (
@@ -998,7 +1622,7 @@ export function CinematicOnboardingDirector(
               aria-live="polite"
               aria-atomic="true"
             >
-              {CAPTIONS[id] ?? 'Beside Cue keeps the next small turn in view.'}
+              {CAPTIONS[id] ?? 'Beside Cue keeps your chosen action in view.'}
             </p>
           )}
         </Show>

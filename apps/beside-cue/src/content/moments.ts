@@ -51,7 +51,7 @@ export const MOMENTS: Readonly<Record<MomentId, MomentDefinition>> = {
     id: 'turn.b-side',
     characterState: 'turn',
     showsEntity: false,
-    caption: 'Turn toward your B-side',
+    caption: 'Turn toward Side B',
     lineIds: [
       'bside.clean-groove',
       'bside.pressed',

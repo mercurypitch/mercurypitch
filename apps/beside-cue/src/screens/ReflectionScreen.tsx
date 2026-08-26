@@ -36,11 +36,11 @@ export function ReflectionScreen(props: ReflectionScreenProps) {
         <p class="screen-kicker">A record, not a score</p>
         <h1 id="reflection-title">Small turns leave a trace.</h1>
         <p>
-          Your B-side choices are kept here without streaks, targets, or
+          Your Side B choices are kept here without streaks, targets, or
           missed-cue counts.
         </p>
       </section>
-      <section class="reflection-totals" aria-label="B-side choice totals">
+      <section class="reflection-totals" aria-label="Side B choice totals">
         <div>
           <span>Today</span>
           <strong>{props.todayCount}</strong>
@@ -53,8 +53,8 @@ export function ReflectionScreen(props: ReflectionScreenProps) {
       </section>
       <section class="week-grooves" aria-labelledby="week-title">
         <div class="week-grooves__heading">
-          <h2 id="week-title">This quiet week</h2>
-          <span>B-side turns</span>
+          <h2 id="week-title">Past 7 days</h2>
+          <span>Side B choices</span>
         </div>
         <div class="week-grooves__chart">
           <For each={props.days}>

@@ -194,7 +194,7 @@ const lines: readonly Line[] = [
   },
   {
     id: 'core.b-side-meaning',
-    text: "B-side doesn't mean second best. It means the one you chose.",
+    text: "Side B doesn't mean second best. It means the one you chose.",
   },
   { id: 'core.one-turn', text: 'One turn at a time.' },
   { id: 'core.same-record', text: 'Same record. Better side.' },
