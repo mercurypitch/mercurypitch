@@ -83,20 +83,89 @@ describe('the room glass each stage derives', () => {
         ),
       )
     }
+    // The keybed clamps at zero rather than going negative, but it is the
+    // same shape and still multiplies by exactly 1 at glass 0.
+    expect(body).toMatch(
+      /--pn-keybed-scale:\s*max\(0, 1 - var\(--pn-glass\) \* [\d.]+\)/,
+    )
   })
 
-  it('thins the keys more gently than the floating chrome', () => {
-    // The keys are the play surface. They are on the same slider, not the
-    // same curve.
+  it('clears the layers behind a key before the key itself thins', () => {
+    // Three painted layers deep — bed, backing, key — and three stacked
+    // alphas do not add up to one. A single scale on all three left a white
+    // key 99% opaque at the default and 93% at Open: it changed shade and
+    // never went see-through. The two behind it must fall faster, and reach
+    // zero, so the key is the only thing left to thin.
+    const body = ruleBody(piano, '.shell')
+    const factor = (token: string, form: 'calc' | 'max'): number => {
+      const source =
+        form === 'calc'
+          ? `${token}:\\s*calc\\(1 - var\\(--pn-glass\\) \\* ([\\d.]+)\\)`
+          : `${token}:\\s*max\\(0, 1 - var\\(--pn-glass\\) \\* ([\\d.]+)\\)`
+      const found = new RegExp(source).exec(body)
+      expect(found, token).not.toBeNull()
+      return Number(found?.[1])
+    }
+    const bed = factor('--pn-keybed-scale', 'max')
+    const key = factor('--pn-key-scale', 'calc')
+    expect(bed).toBeGreaterThan(key)
+    // Reaches zero somewhere on the slider, so Open has nothing behind it.
+    expect(bed).toBeGreaterThan(1)
+
+    // And the composite the eye actually sees, at Open: 1 - (1-bed)^2(1-key).
+    const at = (glass: number): number => {
+      const b = Math.max(0, 1 - glass * bed)
+      const k = 1 - glass * key
+      return 1 - (1 - b) ** 2 * (1 - k)
+    }
+    expect(at(0)).toBe(1)
+    expect(at(1)).toBeLessThan(0.4)
+  })
+
+  it('thins the keys more gently than the bed behind them', () => {
+    // The keys are the play surface. They are on the same slider as the bed,
+    // not the same curve.
     const body = ruleBody(piano, '.shell')
     const factor = (token: string): number => {
       const found = new RegExp(
-        `${token}:\\s*calc\\(1 - var\\(--pn-glass\\) \\* ([\\d.]+)\\)`,
+        `${token}:\\s*(?:calc|max)\\((?:0, )?1 - var\\(--pn-glass\\) \\* ([\\d.]+)\\)`,
       ).exec(body)
       expect(found, token).not.toBeNull()
       return Number(found?.[1])
     }
-    expect(factor('--pn-key-scale')).toBeLessThan(factor('--pn-surface-scale'))
+    expect(factor('--pn-key-scale')).toBeLessThan(factor('--pn-keybed-scale'))
+  })
+
+  it('stops the white-key seam where a sharp covers it', () => {
+    // A sharp physically covers the joint between its two white keys. Solid
+    // keys hid it for free; a translucent one read the opaque full-height
+    // separator straight through as a line down the middle of the black key.
+    const seam = ruleBody(piano, ".whiteKeys button[data-sharp-right='true']")
+    expect(seam).toMatch(/border-right-color:\s*transparent/)
+
+    const drawn = ruleBody(
+      piano,
+      ".whiteKeys button[data-sharp-right='true']::before",
+    )
+    // The covered part rides the bed's curve — so it is still the unbroken
+    // line that shipped at glass 0, and gone once the sharp is see-through.
+    expect(drawn).toContain('var(--pn-keybed-scale)')
+    // The part IN FRONT of the sharp never fades: with the fill gone it is
+    // all that says where one white key ends.
+    expect(drawn).toMatch(/#171614 61%/)
+  })
+
+  it('lets the bevels leave with the solid key that had them', () => {
+    // A bevel and a cast shadow are what a solid object looks like. Left on
+    // the key's gentler curve they outlived it — a shadow along the bottom
+    // of "transparent" ivory, and a bright line up its left that read
+    // through the sharp above it.
+    for (const selector of ['.whiteKeys button', '.blackKeys button']) {
+      const body = ruleBody(piano, selector)
+      const shadow = /box-shadow:([\s\S]*?);/.exec(body)?.[1] ?? ''
+      expect(shadow, selector).toContain('--pn-keybed-scale')
+      expect(shadow, selector).not.toContain('--pn-key-scale')
+    }
   })
 
   it('never thins a key that is being held', () => {
