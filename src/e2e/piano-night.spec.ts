@@ -1471,12 +1471,26 @@ test('gives the phone rail state, a way back, and a second press @smoke', async 
     const rail = page.getByLabel('Piano Night mobile navigation')
     await expect(rail).toBeVisible()
 
+    // Six since Room got its own button: Stage, Music, Coach, Room, Settings,
+    // Studio. Every one of them still has to be a real tap target — six
+    // across 390px leaves 65px each, and the count is pinned so a seventh
+    // cannot be added without someone re-measuring that.
     const items = rail.locator('button, a')
-    await expect(items).toHaveCount(5)
-    for (let index = 0; index < 5; index += 1) {
+    const expectedItems = 6
+    await expect(items).toHaveCount(expectedItems)
+    for (let index = 0; index < expectedItems; index += 1) {
       const box = await items.nth(index).boundingBox()
       expect(box?.width).toBeGreaterThanOrEqual(44)
       expect(box?.height).toBeGreaterThanOrEqual(44)
+    }
+
+    // The labels must fit the cell they were given, not overflow it.
+    for (const label of ['Stage', 'Music', 'Coach', 'Room', 'Settings']) {
+      const clipped = await rail
+        .locator('span', { hasText: new RegExp(`^${label}$`) })
+        .first()
+        .evaluate((element) => element.scrollWidth > element.clientWidth + 1)
+      expect(clipped, `${label} label is clipped`).toBe(false)
     }
 
     const exit = rail.getByRole('link', {
@@ -1509,6 +1523,27 @@ test('gives the phone rail state, a way back, and a second press @smoke', async 
         name: 'Choose the light around the instrument.',
       }),
     ).toBeHidden()
+
+    // Rooms were a tab behind Settings; on a phone that was three presses
+    // into the only chrome there is. One press now, and the same press puts
+    // it away again.
+    const room = rail.getByRole('button', {
+      name: 'Choose the Piano Night room',
+    })
+    await expect(room).toHaveAttribute('aria-expanded', 'false')
+    await room.click()
+    await expect(room).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByRole('heading', {
+        name: 'Choose the light around the instrument.',
+      }),
+    ).toBeVisible()
+    // Its own button lights, and Settings does not — they used to answer to
+    // the same predicate and both came on at once.
+    await expect(settings).toHaveAttribute('aria-expanded', 'false')
+
+    await room.click()
+    await expect(room).toHaveAttribute('aria-expanded', 'false')
   } finally {
     await context.close()
   }
