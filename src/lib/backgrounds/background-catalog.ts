@@ -744,7 +744,7 @@ export const BACKGROUND_CATALOG = [
   {
     id: 'karaoke-nordic-amphitheatre',
     surface: 'karaoke',
-    label: 'Nordic Amphitheatre',
+    label: 'Nordic Amphitheatre v1',
     description: 'Pale stone tiers under an open northern sky',
     edition: 'nordic-amphitheatre',
     delivery: 'master-ready',
@@ -1001,7 +1001,7 @@ export const BACKGROUND_CATALOG = [
   {
     id: 'karaoke-nordic-amphitheater',
     surface: 'karaoke',
-    label: 'Nordic Amphitheater',
+    label: 'Nordic Amphitheatre v2',
     description: 'Open stone tiers, and a wide northern sky',
     edition: 'nordic-amphitheater',
     delivery: 'master-ready',

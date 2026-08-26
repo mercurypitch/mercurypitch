@@ -86,6 +86,22 @@ describe('the room library', () => {
     }
   })
 
+  it('numbers the two Nordic Amphitheatres so they can be told apart', () => {
+    // Different pictures, one letter apart in the id, and the picker shows
+    // the D1 title rather than the label below — so both have to move
+    // together. 0032 seeded the first one and is applied everywhere, which
+    // leaves renaming its row from here as the only way to do it.
+    const sql = readFileSync(MIGRATION, 'utf8')
+    expect(getBackgroundDefinition('karaoke-nordic-amphitheatre')!.label).toBe(
+      'Nordic Amphitheatre v1',
+    )
+    expect(getBackgroundDefinition('karaoke-nordic-amphitheater')!.label).toBe(
+      'Nordic Amphitheatre v2',
+    )
+    expect(sql).toContain("SET title = 'Nordic Amphitheatre v1'")
+    expect(sql).toContain("WHERE id = 'karaoke-nordic-amphitheatre'")
+  })
+
   it('names each room once, across the whole catalog', () => {
     // The library was assembled from a gallery whose folder names do not all
     // match the ids already shipped; a duplicate id would silently shadow a

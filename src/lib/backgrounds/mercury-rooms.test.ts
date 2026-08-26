@@ -83,11 +83,16 @@ describe('the supporter half', () => {
 
   it('is seeded by the migration, with matching surfaces and titles', () => {
     const sql = readFileSync(MIGRATION, 'utf8')
+    // This migration is applied everywhere and must never be edited, so a
+    // room renamed by a later one is checked against the name 0032 gave it.
+    // The rename itself is pinned in `room-library.test.ts`.
+    const SEEDED_AS = new Map([
+      ['karaoke-nordic-amphitheatre', 'Nordic Amphitheatre'],
+    ])
     for (const id of MERCURY_ROOMS_BACKGROUND_IDS) {
       const background = getBackgroundDefinition(id)!
-      expect(sql).toContain(
-        `('${id}', '${background.surface}', '${background.label}'`,
-      )
+      const title = SEEDED_AS.get(id) ?? background.label
+      expect(sql).toContain(`('${id}', '${background.surface}', '${title}'`)
     }
     // And assigned to the automatic supporter group, or supporters own art
     // nobody can see.
