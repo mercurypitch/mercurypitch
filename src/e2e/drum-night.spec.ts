@@ -968,6 +968,7 @@ test('lazy-opens a responsive Groove Rack without undersized or overflowing cont
 
   for (const viewport of [
     { width: 1440, height: 900, visibleSteps: 16 },
+    { width: 1280, height: 720, visibleSteps: 8 },
     { width: 768, height: 1024, visibleSteps: 8 },
     { width: 844, height: 390, visibleSteps: 8 },
     { width: 390, height: 844, visibleSteps: 4 },
@@ -1003,6 +1004,14 @@ test('lazy-opens a responsive Groove Rack without undersized or overflowing cont
         .poll(() => editorResponses.length)
         .toBeGreaterThan(responseCountBeforeNavigation)
     }
+
+    await page.locator('#drum-workbench').evaluate(async (element) => {
+      await Promise.all(
+        element
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      )
+    })
 
     const geometry = await editor.evaluate((element) => {
       const workbench = element.closest<HTMLElement>('#drum-workbench')
@@ -1101,7 +1110,7 @@ test('lazy-opens a responsive Groove Rack without undersized or overflowing cont
       0,
     )
     expect(geometry.closeCenterHit, JSON.stringify(viewport)).toBe(true)
-    if (viewport.width === 844 && viewport.height === 390) {
+    if (viewport.width > 720) {
       expect(
         geometry.workbenchBarTop,
         JSON.stringify(viewport),
