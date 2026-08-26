@@ -361,6 +361,16 @@ is what made this invisible.
 **See:** `src/components/sync/SyncDevicesModal.tsx`,
 `src/components/__tests__/SyncDevicesModal.test.tsx`
 
+### Cap viewport-sized overlays to their positioned container
+
+**Symptom:** a drawer looked open, but its tabs could not be clicked because a
+fixed header intercepted every pointer attempt at a common desktop viewport.
+**Cause:** the drawer used `vh` height while positioned inside a shorter stage;
+its top extended beneath the higher-z-index header outside that container.
+**Rule:** cap viewport-derived overlay height to `100%` of its containing block,
+then regression-test settled geometry and `elementFromPoint` hit ownership.
+**See:** `src/features/drum-night/DrumNightApp.module.css`
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
