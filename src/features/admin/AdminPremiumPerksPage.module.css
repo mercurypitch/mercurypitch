@@ -293,17 +293,26 @@
   gap: 18px;
 }
 
+/* Wraps, because the five surface buttons are ~460px of nowrap labels and
+   the library column is ~400px wide the moment the two-column grid engages.
+   Unwrapped, the whole shortfall landed on the sentence beside them — it
+   shrank to a sliver and broke a word per line. The strip drops to its own
+   full-width row instead. */
 .surfaceFilter {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px 14px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
 }
 
 .surfaceFilterCopy {
   min-width: 0;
+  /* A basis, not a floor to shrink from: below this the row wraps rather
+     than squeezing the sentence any further. */
+  flex: 1 1 240px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -321,8 +330,11 @@
 }
 
 .surfaceFilterControls {
-  flex: none;
+  /* Never grows, may shrink, and wraps its own buttons when even a full
+     row cannot hold all five. */
+  flex: 0 1 auto;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
   padding: 3px;
@@ -937,9 +949,10 @@
 
 .bulkHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
 }
