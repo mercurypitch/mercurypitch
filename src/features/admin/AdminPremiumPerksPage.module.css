@@ -918,6 +918,109 @@
   padding: 5px 9px;
 }
 
+/* ── Bulk background assignment ──────────────────────────────────────
+   A supporter group takes a whole surface far more often than it takes
+   one room, so the picker is banded by surface and every row is a
+   toggle. The dropdown it replaced made the common case the expensive
+   one. */
+
+.bulkPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: var(--bg-primary, #0c1017);
+}
+
+.bulkHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.bulkCheck {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary, #f4f7fb);
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.bulkCheck input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent, #8b8eff);
+  cursor: pointer;
+}
+
+.bulkCheck span {
+  color: var(--text-muted, #8c96a7);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.surfaceBand {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.perkPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  /* Indented to the checkbox label's text, so a pill reads as belonging
+     to the surface above it rather than to the picker at large. */
+  padding-left: 23px;
+}
+
+.perkPill {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #c4cad4);
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.perkPill:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--accent, #8b8eff) 55%,
+    var(--border, rgba(255, 255, 255, 0.12))
+  );
+  color: var(--text-primary, #f4f7fb);
+}
+
+.perkPillOn {
+  border-color: var(--accent, #8b8eff);
+  background: color-mix(in srgb, var(--accent, #8b8eff) 16%, transparent);
+  color: var(--text-primary, #f4f7fb);
+}
+
+.bulkFoot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
 .memberRow span {
   min-width: 0;
   overflow: hidden;
