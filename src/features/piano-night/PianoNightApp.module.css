@@ -12,6 +12,37 @@
 }
 
 .shell {
+  /* ── Room glass ────────────────────────────────────────────
+     `--pn-glass` is a CLARITY, not an alpha: 0 is the stage exactly as it
+     shipped, 1 is as open as it goes, and the Room panel's slider writes it
+     inline. Four quantities hang off it, because four separate things were
+     between the eye and the photograph and turning one of them down alone
+     does nothing:
+
+       --pn-surface-scale  multiplies the alpha of the chrome that floats
+                           over the room — session HUD, coach, transport
+       --pn-blur-scale     multiplies every blur RADIUS on that chrome, so
+                           the room behind it resolves rather than smears
+       --pn-veil-scale     multiplies the four gradients `.roomGrade` lays
+                           over the photograph, in both treatments
+       --pn-key-scale      the keybed and the idle keys, on a deliberately
+                           gentler curve — this is the play surface
+
+     Measured on the HUD's 14px blur at 0.91 alpha, and on a white key:
+
+       0     blur 14px    HUD 0.91   key 1.00   the stage as it shipped
+       0.45  blur 8.3px   HUD 0.66   key 0.81   the default
+       1     blur 1.4px   HUD 0.36   key 0.58   as open as it goes
+
+     A key that is being HELD is not on this curve at all: `.keyActive` stays
+     fully opaque at every stop, so the answer to "which key just fired" is
+     never a matter of taste. */
+  --pn-glass: 0.45;
+  --pn-surface-scale: calc(1 - var(--pn-glass) * 0.6);
+  --pn-blur-scale: calc(1 - var(--pn-glass) * 0.9);
+  --pn-veil-scale: calc(1 - var(--pn-glass) * 0.62);
+  --pn-key-scale: calc(1 - var(--pn-glass) * 0.42);
+
   --ink: #050709;
   --panel: #090b0e;
   --panel-soft: rgb(9 11 14 / 90%);
@@ -207,36 +238,59 @@
   transform: scale(1.012);
 }
 
+/* The grade is what stops a photograph being a photograph — the HUD and the
+   keybed need something darker than a lit chandelier to sit on. It stays, but
+   it eases off with the glass. */
 .roomGrade {
   z-index: -2;
   background:
-    linear-gradient(180deg, rgb(0 5 9 / 40%) 0%, transparent 24%),
+    linear-gradient(
+      180deg,
+      rgb(0 5 9 / calc(0.4 * var(--pn-veil-scale))) 0%,
+      transparent 24%
+    ),
     linear-gradient(
       90deg,
-      rgb(0 0 0 / 38%) 0%,
+      rgb(0 0 0 / calc(0.38 * var(--pn-veil-scale))) 0%,
       transparent 28%,
       transparent 70%,
-      rgb(0 0 0 / 45%) 100%
+      rgb(0 0 0 / calc(0.45 * var(--pn-veil-scale))) 100%
     ),
-    linear-gradient(0deg, rgb(2 4 6 / 70%) 0%, transparent 36%),
-    radial-gradient(circle at 52% 38%, transparent 25%, rgb(0 0 0 / 20%) 100%);
+    linear-gradient(
+      0deg,
+      rgb(2 4 6 / calc(0.7 * var(--pn-veil-scale))) 0%,
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 52% 38%,
+      transparent 25%,
+      rgb(0 0 0 / calc(0.2 * var(--pn-veil-scale))) 100%
+    );
 }
 
 .shell[data-room-treatment='light'] .roomGrade {
   background:
-    linear-gradient(180deg, rgb(31 23 13 / 42%) 0%, transparent 24%),
+    linear-gradient(
+      180deg,
+      rgb(31 23 13 / calc(0.42 * var(--pn-veil-scale))) 0%,
+      transparent 24%
+    ),
     linear-gradient(
       90deg,
-      rgb(30 20 10 / 35%) 0%,
+      rgb(30 20 10 / calc(0.35 * var(--pn-veil-scale))) 0%,
       transparent 30%,
       transparent 68%,
-      rgb(41 26 12 / 38%) 100%
+      rgb(41 26 12 / calc(0.38 * var(--pn-veil-scale))) 100%
     ),
-    linear-gradient(0deg, rgb(30 20 12 / 70%) 0%, transparent 43%),
+    linear-gradient(
+      0deg,
+      rgb(30 20 12 / calc(0.7 * var(--pn-veil-scale))) 0%,
+      transparent 43%
+    ),
     radial-gradient(
       circle at 52% 36%,
       transparent 22%,
-      rgb(47 29 12 / 18%) 100%
+      rgb(47 29 12 / calc(0.18 * var(--pn-veil-scale))) 100%
     );
 }
 
@@ -261,9 +315,9 @@
   border: 1px solid var(--line);
   border-radius: 20px;
   color: var(--ivory);
-  background: rgb(7 9 11 / 91%);
+  background: rgb(7 9 11 / calc(0.91 * var(--pn-surface-scale)));
   box-shadow: 0 16px 34px rgb(0 0 0 / 35%);
-  backdrop-filter: blur(14px) saturate(0.9);
+  backdrop-filter: blur(calc(14px * var(--pn-blur-scale))) saturate(0.9);
 }
 
 .sessionHud > * + * {
@@ -772,9 +826,9 @@
   border: 1px solid var(--line);
   border-radius: 16px;
   color: var(--ivory);
-  background: rgb(7 9 11 / 92%);
+  background: rgb(7 9 11 / calc(0.92 * var(--pn-surface-scale)));
   box-shadow: 0 20px 42px rgb(0 0 0 / 39%);
-  backdrop-filter: blur(14px) saturate(0.9);
+  backdrop-filter: blur(calc(14px * var(--pn-blur-scale))) saturate(0.9);
 }
 
 .coachTopline {
@@ -1061,7 +1115,11 @@
   left: 0;
   height: var(--keybed-height);
   border-top: 1px solid rgb(235 133 135 / 52%);
-  background: #050505;
+  /* Both of these have to thin together, or the keys go glassy over a black
+     slab and the room stops at the felt line. The border and the felt line
+     stay opaque: they are where the keybed begins, and a landmark that fades
+     is not one. */
+  background: rgb(5 5 5 / var(--pn-key-scale));
   box-shadow: 0 -18px 48px rgb(0 0 0 / 35%);
 }
 
@@ -1078,7 +1136,7 @@
   position: absolute;
   inset: 4px 0 0;
   overflow: hidden;
-  background: #0b0b0a;
+  background: rgb(11 11 10 / var(--pn-key-scale));
   touch-action: none;
   user-select: none;
 }
@@ -1101,10 +1159,10 @@
   border-radius: 0 0 2px 2px;
   background: linear-gradient(
     92deg,
-    #bdb6ab 0%,
-    #f0eadf 20%,
-    #fffaf0 70%,
-    #c9c1b5 100%
+    rgb(189 182 171 / var(--pn-key-scale)) 0%,
+    rgb(240 234 223 / var(--pn-key-scale)) 20%,
+    rgb(255 250 240 / var(--pn-key-scale)) 70%,
+    rgb(201 193 181 / var(--pn-key-scale)) 100%
   );
   box-shadow:
     inset 0 -8px 11px rgb(68 58 48 / 22%),
@@ -1139,7 +1197,14 @@
   padding: 0;
   border: 1px solid #020202;
   border-radius: 0 0 3px 3px;
-  background: linear-gradient(100deg, #050505, #252421 56%, #050505);
+  /* The 1px border stays opaque so a thinned sharp is still a shape you can
+     aim at — a black key that fades into a dark room is an unhittable one. */
+  background: linear-gradient(
+    100deg,
+    rgb(5 5 5 / var(--pn-key-scale)),
+    rgb(37 36 33 / var(--pn-key-scale)) 56%,
+    rgb(5 5 5 / var(--pn-key-scale))
+  );
   box-shadow:
     1px 5px 5px rgb(0 0 0 / 62%),
     inset 0 -7px 7px rgb(255 255 255 / 4%);
@@ -1260,7 +1325,11 @@
   height: var(--fallboard-height);
   place-items: center;
   border-top: 1px solid rgb(224 207 180 / 11%);
-  background: linear-gradient(180deg, #07090b, #020304);
+  background: linear-gradient(
+    180deg,
+    rgb(7 9 11 / var(--pn-key-scale)),
+    rgb(2 3 4 / var(--pn-key-scale))
+  );
   box-shadow: inset 0 1px rgb(255 255 255 / 2%);
 }
 
@@ -1273,7 +1342,7 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   color: var(--muted);
-  background: rgb(12 14 16 / 96%);
+  background: rgb(12 14 16 / calc(0.96 * var(--pn-surface-scale)));
   box-shadow: 0 10px 28px rgb(0 0 0 / 32%);
 }
 
@@ -1438,6 +1507,18 @@
   background: rgb(1 3 5 / 66%);
   cursor: pointer;
   backdrop-filter: blur(2px);
+  transition:
+    background-color 220ms ease-out,
+    backdrop-filter 220ms ease-out;
+}
+
+/* The room picker is the one panel whose whole job is judging what is behind
+   it. A faint wash is still enough to read as "the stage is not listening" —
+   `inert` is what actually makes that true — and it leaves the room legible
+   while you choose. */
+.scrimClear {
+  background: rgb(1 3 5 / 10%);
+  backdrop-filter: none;
 }
 
 .drawer {
@@ -1864,6 +1945,47 @@
   margin-top: 24px;
 }
 
+.roomGlass {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.roomGlassLabel {
+  flex: none;
+  letter-spacing: 0.01em;
+}
+
+.roomGlassSlider {
+  min-width: 0;
+  flex: 1 1 auto;
+  accent-color: var(--brass-soft);
+  cursor: pointer;
+}
+
+/* A fixed basis, so sliding from Focused to Open does not shove the slider
+   left and right under the thumb that is dragging it. */
+.roomGlassValue {
+  flex: 0 0 4.2em;
+  color: var(--brass-soft);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.roomGlassNote {
+  margin: 6px 0 0;
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .previewRow:disabled {
   cursor: not-allowed;
   opacity: 0.72;
@@ -2176,9 +2298,9 @@
     border: 1px solid var(--line);
     border-radius: 14px;
     color: var(--ivory);
-    background: rgb(7 9 11 / 88%);
+    background: rgb(7 9 11 / calc(0.88 * var(--pn-surface-scale)));
     box-shadow: 0 12px 26px rgb(0 0 0 / 24%);
-    backdrop-filter: blur(12px) saturate(0.88);
+    backdrop-filter: blur(calc(12px * var(--pn-blur-scale))) saturate(0.88);
   }
 
   .practiceStrip > * + * {
@@ -2345,7 +2467,11 @@
     left: 0;
     display: grid;
     height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
-    grid-template-columns: repeat(5, 1fr);
+    /* Six now that Room has a place here, and `minmax(0, …)` so the widest
+       label ("Settings") sets the type size rather than the layout — a bare
+       `1fr` takes its floor from content and would push the bar wider than a
+       320px phone. */
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid rgb(181 138 80 / 24%);
     background: rgb(4 6 8 / 97%);
@@ -2355,18 +2481,30 @@
   .mobileNav button,
   .mobileNav a {
     display: flex;
-    min-width: 44px;
+    min-width: 0;
     min-height: 44px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    padding: 0 2px;
     border: 0;
     color: var(--quiet);
     background: transparent;
     cursor: pointer;
     font-size: 9px;
     text-decoration: none;
+  }
+
+  /* The tap target stays 44px tall and a full sixth of the bar wide; only the
+     word is allowed to give. Without this a narrow phone wrapped "Settings"
+     onto two lines and pushed the icons out of alignment across the row. */
+  .mobileNav button > span,
+  .mobileNav a > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mobileNav svg {

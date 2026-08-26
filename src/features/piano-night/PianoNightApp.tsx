@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
-import { ChevronLeft, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, Volume2, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -26,6 +26,7 @@ import styles from './PianoNightApp.module.css'
 import { PianoNightSoundPanel } from './PianoNightSoundPanel'
 import type { PianoNightPerformanceView } from './PianoNightStageViews'
 import { PianoNightStageViews } from './PianoNightStageViews'
+import { formatPianoNightGlassValue, loadPianoNightGlass, persistPianoNightGlass, PIANO_NIGHT_GLASS, PIANO_NIGHT_GLASS_VAR, pianoNightGlassLabel, } from './room-glass'
 import { LEGACY_PIANO_PATH } from './route'
 import { usePianoNightController } from './usePianoNightController'
 
@@ -40,6 +41,15 @@ const COACH_FLASH_MS = 1200
 
 type SettingsSection = 'session' | 'sound' | 'room'
 type DrawerSection = SettingsSection | 'music'
+/**
+ * The sections the Settings button cycles between.
+ *
+ * Music has had its own rail button since the room shipped and Room now has
+ * one too, so neither may be what Settings reopens — otherwise pressing
+ * Settings after picking a room reopens the room picker, and both buttons
+ * light up at once.
+ */
+type PinnedSettingsSection = Exclude<SettingsSection, 'room'>
 
 const VIEW_ORDER: readonly PianoNightPerformanceView[] = [
   'fall',
@@ -343,11 +353,16 @@ export function PianoNightApp(): JSX.Element {
   const [drawerSection, setDrawerSection] =
     createSignal<DrawerSection>('session')
   const [lastSettingsSection, setLastSettingsSection] =
-    createSignal<SettingsSection>('session')
+    createSignal<PinnedSettingsSection>('session')
+  const [roomGlass, setRoomGlass] = createSignal(loadPianoNightGlass())
   const [coachOpen, setCoachOpen] = createSignal(false)
   const [coachFlashing, setCoachFlashing] = createSignal(false)
   const [compactSheets, setCompactSheets] = createSignal(false)
   const [announcement, setAnnouncement] = createSignal('')
+
+  const updateRoomGlass = (value: number): void => {
+    setRoomGlass(persistPianoNightGlass(value))
+  }
 
   let stageElement: HTMLElement | undefined
   let drawerElement: HTMLElement | undefined
@@ -472,7 +487,9 @@ export function PianoNightApp(): JSX.Element {
   const selectDrawerSection = (section: DrawerSection): void => {
     if (musicNavigationLocked() && section !== 'music') return
     setDrawerSection(section)
-    if (section !== 'music') setLastSettingsSection(section)
+    if (section !== 'music' && section !== 'room') {
+      setLastSettingsSection(section)
+    }
     queueMicrotask(() => drawerElement?.scrollTo?.({ top: 0 }))
   }
 
@@ -597,11 +614,12 @@ export function PianoNightApp(): JSX.Element {
     }
   }
 
-  /** True while the drawer is showing anything other than the music panel. */
+  /** True while the drawer is showing a panel no other button owns. */
   const settingsShowing = (): boolean =>
-    drawerOpen() && drawerSection() !== 'music'
+    drawerOpen() && drawerSection() !== 'music' && drawerSection() !== 'room'
   const musicShowing = (): boolean =>
     drawerOpen() && drawerSection() === 'music'
+  const roomShowing = (): boolean => drawerOpen() && drawerSection() === 'room'
 
   // A rail button that opens a surface closes it too. Pressing Settings twice
   // reopening Settings is a dead end on a phone, where the rail is the only
@@ -620,6 +638,17 @@ export function PianoNightApp(): JSX.Element {
       return
     }
     openDrawer('music')
+  }
+
+  // Rooms used to be a tab three presses deep, behind Settings. They are the
+  // one thing here somebody changes on a whim, so they get the same standing
+  // Guitar Night gives them: one press, from the only chrome on screen.
+  const toggleRoom = (): void => {
+    if (roomShowing()) {
+      closeDrawer()
+      return
+    }
+    openDrawer('room')
   }
 
   const toggleCoach = (): void => {
@@ -699,6 +728,7 @@ export function PianoNightApp(): JSX.Element {
       data-view={view()}
       data-room={background.resolved().id}
       data-room-treatment={background.resolved().treatment}
+      style={{ [PIANO_NIGHT_GLASS_VAR]: String(roomGlass()) }}
       data-testid="piano-night-shell"
     >
       <a
@@ -753,6 +783,18 @@ export function PianoNightApp(): JSX.Element {
           >
             <WaveformBars />
             <span>Coach</span>
+          </button>
+          <button
+            class={styles.railButton}
+            type="button"
+            onClick={toggleRoom}
+            aria-label="Choose the Piano Night room"
+            aria-haspopup="dialog"
+            aria-expanded={roomShowing()}
+            aria-controls="piano-night-settings"
+          >
+            <StageCurtains />
+            <span>Room</span>
           </button>
         </nav>
 
@@ -1135,6 +1177,17 @@ export function PianoNightApp(): JSX.Element {
         </button>
         <button
           type="button"
+          onClick={toggleRoom}
+          aria-label="Choose the Piano Night room"
+          aria-haspopup="dialog"
+          aria-expanded={roomShowing()}
+          aria-controls="piano-night-settings"
+        >
+          <StageCurtains />
+          <span>Room</span>
+        </button>
+        <button
+          type="button"
           onClick={toggleSettings}
           aria-label="Open Piano Night settings"
           aria-haspopup="dialog"
@@ -1156,10 +1209,18 @@ export function PianoNightApp(): JSX.Element {
         </a>
       </nav>
 
+      {/* The scrim goes nearly clear while the room picker is up. Picking a
+          room means looking at the room, and a 66% wash plus a 2px blur meant
+          the only way to judge a choice was to close the panel that made it.
+          `inert` on the stage is what actually holds the modality; the wash
+          was only ever saying so. Every other panel keeps the full dim — the
+          track assignment in Music is a form, not a view of the room. */}
       <Show when={blockingModal()}>
         <button
           class={styles.scrim}
+          classList={{ [styles.scrimClear]: roomShowing() }}
           type="button"
+          data-testid="piano-night-scrim"
           onClick={closeDrawer}
           disabled={musicNavigationLocked()}
           aria-label="Close Piano Night controls"
@@ -1628,6 +1689,34 @@ export function PianoNightApp(): JSX.Element {
                 return accepted
               }}
             />
+
+            <label
+              class={styles.roomGlass}
+              title="How much of the room shows through the stage"
+            >
+              <span class={styles.roomGlassLabel}>Room visibility</span>
+              <input
+                type="range"
+                class={styles.roomGlassSlider}
+                min={PIANO_NIGHT_GLASS.min}
+                max={PIANO_NIGHT_GLASS.max}
+                step={PIANO_NIGHT_GLASS.step}
+                value={roomGlass()}
+                aria-label="Room visibility"
+                aria-valuetext={formatPianoNightGlassValue(roomGlass())}
+                data-testid="piano-night-room-glass"
+                onInput={(event) =>
+                  updateRoomGlass(Number(event.currentTarget.value))
+                }
+              />
+              <output class={styles.roomGlassValue} aria-hidden="true">
+                {pianoNightGlassLabel(roomGlass())}
+              </output>
+            </label>
+            <p class={styles.roomGlassNote}>
+              Thins the session panels, the coach and the keys so the room shows
+              through. A key you are holding stays solid.
+            </p>
           </section>
         </Show>
       </aside>
