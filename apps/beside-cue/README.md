@@ -16,7 +16,7 @@ The app stores one portable daily target time. Web previews deliver it only
 while the tab is open; Android delegates the same recurring wall-clock intent
 to one stable local OS notification ID. This avoids alarm buildup and keeps the
 chosen local time after restarts or travel. All notification copy is generic,
-so private pull and B-side text stays off the lock screen.
+so private Pull and Side B text stays off the lock screen.
 
 ## Commands
 

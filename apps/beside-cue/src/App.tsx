@@ -13,6 +13,7 @@ import { ProSection } from './components/ProSection'
 import type { PullOption } from './content'
 import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
+import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
 import { CinematicOnboardingDirector } from './onboarding/CinematicOnboardingDirector'
 import { createProAccess } from './purchases/pro-access'
 import { PRO_DISPLAY_NAME } from './purchases/revenuecat-config'
@@ -89,6 +90,11 @@ function plannedDailyInstant(localTime: string, openedAt: Date): Date {
   return plannedAt
 }
 
+function displayReminderTime(localTime: string): string {
+  const [hours, minutes] = localTime.split(':')
+  return `${String(Number(hours))}:${minutes ?? '00'}`
+}
+
 function itemAt<T>(items: readonly T[], index: number): T {
   const item = items[index % items.length]
   if (item === undefined) {
@@ -112,6 +118,7 @@ function firstRunScreen(
   if (currentCue(state) !== undefined) return 'home'
   if (
     onboarding.delivery === 'cinematic-first-run' &&
+    onboarding.contractVersion === '0.4.0' &&
     validateCinematicOnboardingMediaManifest(onboarding.media).length === 0 &&
     preferences.read(onboarding.revision) === undefined
   ) {
@@ -124,7 +131,8 @@ export function App(props: AppProps) {
   const config = createMemo(() => props.config ?? DEFAULT_BESIDE_CUE_CONFIG)
   const cinematicConfig = createMemo(() => {
     const onboarding = config().onboarding
-    return onboarding.delivery === 'cinematic-first-run'
+    return onboarding.delivery === 'cinematic-first-run' &&
+      onboarding.contractVersion === '0.4.0'
       ? onboarding
       : undefined
   })
@@ -137,6 +145,7 @@ export function App(props: AppProps) {
   const [activeView, setActiveView] = createSignal<MainView>('cue')
   const [settingsReturnView, setSettingsReturnView] =
     createSignal<MainView>('cue')
+  const [cinematicRehearsal, setCinematicRehearsal] = createSignal(false)
   const [setupMode, setSetupMode] = createSignal<SetupMode>('create')
   const [selectedPullId, setSelectedPullId] = createSignal<string>()
   const [customPullText, setCustomPullText] = createSignal('')
@@ -170,6 +179,9 @@ export function App(props: AppProps) {
   let visibilityListener: (() => void) | undefined
   let pendingDailyCue: DailyCueNotificationPayload | undefined
   let notificationListener: LocalNotificationListenerHandle | undefined
+  let onboardingPlanSavePromise:
+    | Promise<CinematicOnboardingSaveResult>
+    | undefined
 
   const cue = createMemo(() => currentCue(appState()))
   const dailyRule = createMemo(() => {
@@ -189,6 +201,16 @@ export function App(props: AppProps) {
   const bSideSuggestions = createMemo(
     () => selectedPull()?.suggestions ?? CUSTOM_PULL_SUGGESTIONS,
   )
+  const cinematicBSideOptions = createMemo<
+    readonly CinematicOnboardingBSideOption[]
+  >(() => {
+    const scrolling = config().pullOptions.find(
+      (option) => option.id === 'scrolling',
+    )
+    return (scrolling?.suggestions ?? []).map((suggestion) => ({
+      text: suggestion.replace(/[.]$/, ''),
+    }))
+  })
   const progress = createMemo(() =>
     aggregateSevenDayBSides(appState(), today()),
   )
@@ -235,6 +257,21 @@ export function App(props: AppProps) {
     }
   }
 
+  async function persistAtomicallyWithRepository(
+    nextState: BesideCueStateV1,
+    repository: BesideCueAppServices['repository'],
+  ): Promise<void> {
+    setStorageError(undefined)
+    try {
+      await repository.saveState(nextState)
+      latestState = nextState
+      setAppState(nextState)
+    } catch (error) {
+      setStorageError('That change could not be saved on this device.')
+      throw error
+    }
+  }
+
   function persist(nextState: BesideCueStateV1): void {
     persistWithRepository(nextState, services().repository)
   }
@@ -273,13 +310,13 @@ export function App(props: AppProps) {
     result: DailyCueReconcileResult,
   ): string | undefined {
     if (result === 'permission-denied') {
-      return 'Your daily cue is saved, but notifications are off on this device.'
+      return 'Daily reminder is off because notifications are off for this app.'
     }
     if (result === 'permission-needed') {
-      return 'Your daily cue is saved, but notification permission still needs your choice.'
+      return 'Daily reminder is off until notification permission is allowed.'
     }
     if (result === 'unsupported') {
-      return 'Your daily cue is saved, but this device cannot deliver it yet.'
+      return 'Daily reminders are not available on this device.'
     }
     return undefined
   }
@@ -303,7 +340,7 @@ export function App(props: AppProps) {
           setStorageError(
             rule === undefined
               ? 'The device reminder could not be removed. Open Settings and try again.'
-              : 'Your daily cue is saved, but the device reminder could not be updated. Open Settings to retry.',
+              : 'Your reminder time is saved, but the device reminder could not be updated. Open Settings to retry.',
           )
         }
         throw error
@@ -431,20 +468,118 @@ export function App(props: AppProps) {
   }
 
   function completeCinematicOnboarding(
-    outcome: 'finished' | 'dismissed',
+    _outcome: 'finished' | 'dismissed',
   ): void {
-    const onboarding = config().onboarding
-    if (onboarding.delivery !== 'cinematic-first-run') {
+    if (cinematicRehearsal()) {
+      setCinematicRehearsal(false)
+      setScreen(currentCue(latestState) === undefined ? 'welcome' : 'settings')
+      return
+    }
+
+    const savedCue = currentCue(latestState)
+    if (savedCue === undefined) {
       setScreen('welcome')
       return
     }
 
-    services().onboardingPreferences.write(
-      onboarding.revision,
-      outcome,
-      services().now,
-    )
-    beginSetup('create')
+    setActiveView('cue')
+    setScreen('home')
+  }
+
+  function saveCinematicPlan(
+    selection: CinematicOnboardingPlanSelection,
+  ): Promise<CinematicOnboardingSaveResult> {
+    if (cinematicRehearsal()) {
+      return Promise.resolve({ ok: true })
+    }
+    if (onboardingPlanSavePromise !== undefined) {
+      return onboardingPlanSavePromise
+    }
+
+    const savePromise = (async (): Promise<CinematicOnboardingSaveResult> => {
+      const appServices = services()
+      const appConfig = config()
+      const onboarding = appConfig.onboarding
+      if (onboarding.delivery !== 'cinematic-first-run') {
+        return {
+          ok: false,
+          message: 'This introduction is not available in this build.',
+        }
+      }
+
+      try {
+        const currentState = latestState
+        const existingCue = currentCue(currentState)
+        const at = appServices.now().toISOString()
+        const cueInput = {
+          id: appServices.createId(),
+          pullCategoryId: selection.pullId,
+          // The saved domain field is the visible Side A response. The fixed
+          // Pull itself remains represented by pullCategoryId.
+          pullText: normalizeCueText(selection.sideAText),
+          ...(selection.bSideId === undefined
+            ? {}
+            : { bSideSuggestionId: selection.bSideId }),
+          bSideText: normalizeCueText(selection.bSideText),
+          mascotSetId: appConfig.mascotSetId,
+          at,
+        }
+        const previousRule =
+          existingCue === undefined
+            ? undefined
+            : enabledDailyRule(currentState, existingCue.id)
+        const setupState =
+          previousRule === undefined
+            ? currentState
+            : removeDailyTargetTimeRule(currentState, {
+                ruleId: previousRule.id,
+                at,
+              }).state
+        const nextState =
+          existingCue === undefined
+            ? activateCue(
+                createCue(setupState, cueInput).state,
+                cueInput.id,
+                at,
+              ).state
+            : replaceCue(setupState, {
+                ...cueInput,
+                replacedCueId: existingCue.id,
+              }).state
+
+        await persistAtomicallyWithRepository(nextState, appServices.repository)
+        appServices.onboardingPreferences.write(
+          onboarding.revision,
+          'finished',
+          appServices.now,
+        )
+        if (previousRule !== undefined) {
+          void reconcileDailyCue(nextState, appConfig, true).catch(
+            () => undefined,
+          )
+        }
+        setScheduleMessage(undefined)
+        setScheduleError(undefined)
+        setActiveView('cue')
+        return { ok: true }
+      } catch (error) {
+        return {
+          ok: false,
+          message:
+            error instanceof RangeError
+              ? 'Choose one small Side B, then try again.'
+              : 'Your plan could not be saved on this device. Try again.',
+        }
+      }
+    })()
+
+    onboardingPlanSavePromise = savePromise
+    void savePromise.then((result) => {
+      if (!result.ok && onboardingPlanSavePromise === savePromise) {
+        onboardingPlanSavePromise = undefined
+      }
+    })
+    return savePromise
   }
 
   function choosePull(pullId: string): void {
@@ -471,7 +606,9 @@ export function App(props: AppProps) {
   }
 
   function finishSetup(): void {
-    const currentState = appState()
+    if (schedulePending()) return
+
+    const currentState = latestState
     const existingCue = currentCue(currentState)
     const appServices = services()
     const appConfig = config()
@@ -517,28 +654,52 @@ export function App(props: AppProps) {
           : activateCue(createCue(setupState, cueInput).state, cueInput.id, now)
               .state
 
-      setSchedulePending(replacing)
-      void persistDurablyWithRepository(nextState, appServices.repository)
-        .then(() =>
-          replacing ? reconcileDailyCue(nextState, appConfig, true) : undefined,
-        )
-        .catch(() => undefined)
-        .finally(() => setSchedulePending(false))
+      setSchedulePending(true)
       setScheduleMessage(undefined)
       setScheduleError(undefined)
-      setActiveView('cue')
-      setScreen('home')
+      void persistAtomicallyWithRepository(nextState, appServices.repository)
+        .then(async () => {
+          if (replacing) {
+            await reconcileDailyCue(nextState, appConfig, true).catch(
+              () => undefined,
+            )
+          }
+          setSchedulePending(false)
+          setActiveView('cue')
+          setScreen('home')
+        })
+        .catch(() => {
+          setSchedulePending(false)
+          setSetupError(
+            replacing
+              ? 'Your current plan is still active. The new plan could not be saved; try again.'
+              : 'Your plan could not be saved on this device. Try again.',
+          )
+        })
+        .finally(() => setSchedulePending(false))
     } catch (error) {
-      setSetupError(messageForValidation(error, 'B-side'))
+      setSetupError(messageForValidation(error, 'Side B'))
     }
   }
 
-  function keepDailyCue(localTime: string): void {
-    if (schedulePending()) return
+  async function setDailyReminder(
+    localTime: string,
+  ): Promise<CinematicOnboardingReminderResult> {
+    if (schedulePending()) {
+      return {
+        ok: false,
+        message: 'A reminder update is already in progress.',
+      }
+    }
 
-    const currentState = appState()
+    const currentState = latestState
     const selectedCue = currentCue(currentState)
-    if (selectedCue?.status !== 'active') return
+    if (selectedCue?.status !== 'active') {
+      return {
+        ok: false,
+        message: 'Resume your plan before setting a daily reminder.',
+      }
+    }
 
     const appServices = services()
     const appConfig = config()
@@ -546,8 +707,6 @@ export function App(props: AppProps) {
     const existingRule = enabledDailyRule(currentState, selectedCue.id)
     const existingRuleId = existingRule?.id
     const ruleId = existingRuleId ?? appServices.createId()
-
-    let intentSaved = false
     const applyRule = (state: BesideCueStateV1) =>
       existingRuleId === undefined
         ? setDailyTargetTimeRule(state, {
@@ -561,58 +720,107 @@ export function App(props: AppProps) {
             localTime,
             at: operationAt,
           })
+
     try {
       applyRule(currentState)
     } catch {
-      setScheduleError('Choose a valid time and try once more.')
+      const message = 'Choose a valid time and try again.'
+      setScheduleError(message)
       setScheduleMessage(undefined)
-      return
+      return { ok: false, message }
+    }
+
+    let savedRuleId: string | undefined
+    const rollbackSavedRule = async (): Promise<void> => {
+      if (savedRuleId === undefined) return
+      const savedRule = latestState.scheduleRules.find(
+        (rule) => rule.id === savedRuleId && rule.cueId === selectedCue.id,
+      )
+      if (savedRule === undefined) return
+
+      const rolledBack =
+        existingRule === undefined
+          ? {
+              ...latestState,
+              scheduleRules: latestState.scheduleRules.filter(
+                (rule) => rule.id !== savedRuleId,
+              ),
+            }
+          : {
+              ...latestState,
+              scheduleRules: latestState.scheduleRules.map((rule) =>
+                rule.id === existingRule.id ? existingRule : rule,
+              ),
+            }
+      await persistAtomicallyWithRepository(rolledBack, appServices.repository)
+      await dailyCueCoordinator.reconcile(existingRule, appConfig.dailyCue)
     }
 
     setSchedulePending(true)
     setScheduleError(undefined)
     setScheduleMessage(undefined)
 
-    void (async () => {
+    try {
       const permission = await dailyCueCoordinator.permission(true)
       if (appServices.platform !== 'web' && permission !== 'granted') {
-        setScheduleError(
-          permission === 'denied'
-            ? 'Notifications are off. The time was not saved, and Cue me now still works.'
-            : permission === 'prompt' || permission === 'prompt-with-rationale'
-              ? 'Notification permission is still waiting. Try this time again when you are ready.'
-              : 'Daily cues are not available on this device yet. Cue me now still works.',
-        )
-        return
+        const message = 'Daily reminder is off. Cue me now still works.'
+        setScheduleError(message)
+        return { ok: false, message }
       }
 
       const rebased = applyRule(latestState)
-      await persistDurablyWithRepository(rebased.state, appServices.repository)
-      intentSaved = true
+      await persistAtomicallyWithRepository(
+        rebased.state,
+        appServices.repository,
+      )
+      savedRuleId = rebased.rule.id
       const result = await dailyCueCoordinator.reconcile(
         rebased.rule,
         appConfig.dailyCue,
       )
       if (result === 'scheduled' || result === 'foreground-only') {
-        setScheduleMessage(
+        const time = displayReminderTime(localTime)
+        const message =
           result === 'foreground-only'
-            ? `Kept for around ${localTime} in this preview. It can cue only while this tab stays open.`
-            : `Kept for around ${localTime}. Notifications stay discreet.`,
-        )
-        return
+            ? `Reminder set for ${time} while Beside Cue is open.`
+            : `Reminder set for ${time}. You can change it in Settings.`
+        setScheduleMessage(message)
+        return { ok: true, message }
       }
 
-      const message = messageForDailyCueResult(result)
-      if (message !== undefined) setScheduleError(message)
-    })()
-      .catch(() => {
-        setScheduleError(
-          intentSaved
-            ? 'Your time is saved, but this device could not update the reminder. Try once more.'
-            : 'That time could not be saved on this device. Try once more.',
-        )
+      await rollbackSavedRule()
+      const message = 'Daily reminder is off. Cue me now still works.'
+      setScheduleError(message)
+      return { ok: false, message }
+    } catch {
+      try {
+        await rollbackSavedRule()
+      } catch {
+        // The storage alert already names the failed recovery. Keep the
+        // reminder result literal so the film can continue with its saved plan.
+      }
+      const message = 'Daily reminder is off. Cue me now still works.'
+      setScheduleError(message)
+      return { ok: false, message }
+    } finally {
+      setSchedulePending(false)
+    }
+  }
+
+  function keepDailyCue(localTime: string): void {
+    void setDailyReminder(localTime)
+  }
+
+  function setCinematicReminder(
+    localTime: string,
+  ): Promise<CinematicOnboardingReminderResult> {
+    if (cinematicRehearsal()) {
+      return Promise.resolve({
+        ok: true,
+        message: 'Rehearsal only. Your reminder has not changed.',
       })
-      .finally(() => setSchedulePending(false))
+    }
+    return setDailyReminder(localTime)
   }
 
   function disableDailyCue(): void {
@@ -644,13 +852,13 @@ export function App(props: AppProps) {
       .then(() => reconcileDailyCue(nextState, appConfig, false))
       .then((result) => {
         if (result !== 'cleared' && result !== 'superseded') {
-          throw new Error('Daily cue clear did not settle.')
+          throw new Error('Daily reminder clear did not settle.')
         }
         setScheduleMessage('Cue me now stays ready whenever you ask.')
       })
       .catch(() => {
         setScheduleError(
-          'The device could not remove that daily cue. Please try again.',
+          'The device could not remove that daily reminder. Please try again.',
         )
       })
       .finally(() => setSchedulePending(false))
@@ -730,7 +938,7 @@ export function App(props: AppProps) {
       .then(() => reconcileDailyCue(result.state, appConfig, true))
       .then((reconcileResult) => {
         setScheduleMessage(
-          resuming ? 'Your cue is available again.' : 'Your cue is resting.',
+          resuming ? 'Your plan is active again.' : 'Your plan is paused.',
         )
         const issue = resuming
           ? messageForDailyCueResult(reconcileResult)
@@ -740,8 +948,8 @@ export function App(props: AppProps) {
       .catch(() => {
         setScheduleError(
           resuming
-            ? 'Your cue changed, but the device reminder could not be restored.'
-            : 'Your cue changed, but the device reminder could not be stopped.',
+            ? 'Your plan is active, but the daily reminder could not be restored.'
+            : 'Your plan is paused, but the daily reminder could not be stopped.',
         )
       })
       .finally(() => setSchedulePending(false))
@@ -762,6 +970,20 @@ export function App(props: AppProps) {
     setScreen('settings')
   }
 
+  function replayIntroduction(): void {
+    if (schedulePending()) return
+    if (cinematicConfig() === undefined) {
+      setStorageError('Corky’s introduction is not available in this build.')
+      return
+    }
+
+    setResetArmed(false)
+    setScheduleMessage(undefined)
+    setScheduleError(undefined)
+    setCinematicRehearsal(true)
+    setScreen('cinematic')
+  }
+
   function resetAllData(): void {
     if (schedulePending()) return
 
@@ -780,6 +1002,8 @@ export function App(props: AppProps) {
         const nextState = createInitialState()
         latestState = nextState
         setAppState(nextState)
+        onboardingPlanSavePromise = undefined
+        setCinematicRehearsal(false)
         resetSetup('create')
         setScheduleMessage(undefined)
         setScheduleError(undefined)
@@ -810,6 +1034,8 @@ export function App(props: AppProps) {
       .loadState()
       .then((storedState) => {
         const nextState = storedState ?? createInitialState()
+        onboardingPlanSavePromise = undefined
+        setCinematicRehearsal(false)
         latestState = nextState
         stateLoaded = true
         setAppState(nextState)
@@ -841,6 +1067,8 @@ export function App(props: AppProps) {
         latestState = nextState
         stateLoaded = true
         setAppState(nextState)
+        onboardingPlanSavePromise = undefined
+        setCinematicRehearsal(false)
         appServices.onboardingPreferences.clear()
         setScreen(
           firstRunScreen(
@@ -907,8 +1135,8 @@ export function App(props: AppProps) {
         <main class="system-screen app-screen" aria-busy="true">
           <BrandMark />
           <div>
-            <p class="screen-kicker">Opening your pocket pressing</p>
-            <h1>Bringing your cue beside you.</h1>
+            <p class="screen-kicker">Opening Beside Cue</p>
+            <h1>Loading your plan…</h1>
           </div>
         </main>
       ) : null}
@@ -920,11 +1148,12 @@ export function App(props: AppProps) {
         >
           <BrandMark />
           <div>
-            <p class="screen-kicker">Local copy unavailable</p>
-            <h1 id="load-error-title">Your cue could not be opened.</h1>
+            <p class="screen-kicker">Saved data unavailable</p>
+            <h1 id="load-error-title">Your saved data could not be opened.</h1>
             <p>
-              Nothing has been sent anywhere. Try again, or clear this
-              unreadable local copy and begin fresh.
+              Try again first. Deleting saved data removes your plan, choice
+              history, reminder settings, and onboarding progress from this
+              device.
             </p>
           </div>
           <div class="system-screen__actions">
@@ -936,7 +1165,7 @@ export function App(props: AppProps) {
               type="button"
               onClick={clearUnreadableData}
             >
-              Clear local copy
+              Delete saved data
             </button>
           </div>
         </main>
@@ -953,7 +1182,12 @@ export function App(props: AppProps) {
         {(onboarding) => (
           <CinematicOnboardingDirector
             media={onboarding.media}
+            bSideOptions={cinematicBSideOptions()}
+            onSavePlan={saveCinematicPlan}
+            onSetReminder={setCinematicReminder}
+            onSkipReminder={() => undefined}
             onComplete={completeCinematicOnboarding}
+            rehearsal={cinematicRehearsal()}
           />
         )}
       </Show>
@@ -984,6 +1218,7 @@ export function App(props: AppProps) {
           customText={customBSideText()}
           customSelected={customBSideSelected()}
           error={setupError()}
+          pending={schedulePending()}
           onSelect={chooseBSide}
           onSelectCustom={() => {
             setCustomBSideSelected(true)
@@ -1074,6 +1309,7 @@ export function App(props: AppProps) {
           scheduleError={scheduleError()}
           onBack={() => changeMainView(settingsReturnView())}
           onPauseToggle={togglePause}
+          onReplayIntroduction={replayIntroduction}
           onReplace={() => beginSetup('replace')}
           onSetSchedule={keepDailyCue}
           onDisableSchedule={disableDailyCue}

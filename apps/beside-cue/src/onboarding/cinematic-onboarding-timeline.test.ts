@@ -1,184 +1,107 @@
-// ============================================================
-// Cinematic onboarding timeline tests — v0.3 picture and runtime gates
-// ============================================================
-
 import { describe, expect, it } from 'vitest'
-import type { CinematicOnboardingRuntimeEvent, CinematicOnboardingRuntimeInput, CinematicOnboardingRuntimeState, CinematicOnboardingSegmentId, } from './cinematic-onboarding-timeline'
-import { CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3, CINEMATIC_ONBOARDING_TIMELINE_V0_2, CINEMATIC_ONBOARDING_TIMELINE_V0_3, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingNativeOverlayDurationMilliseconds, getCinematicOnboardingReducedDwellMilliseconds, getCinematicOnboardingRuntimePosition, updateCinematicOnboardingRuntime, } from './cinematic-onboarding-timeline'
+import type { CinematicOnboardingRuntimeState, CinematicOnboardingSegmentId, } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3, CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4, CINEMATIC_ONBOARDING_TIMELINE_V0_2, CINEMATIC_ONBOARDING_TIMELINE_V0_3, CINEMATIC_ONBOARDING_TIMELINE_V0_4, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingNativeOverlayDurationMilliseconds, getCinematicOnboardingReducedDwellMilliseconds, getCinematicOnboardingRuntimePosition, isCinematicOnboardingPersistenceAllowed, replayCinematicOnboardingRuntimeForReview, seekCinematicOnboardingRuntimeForReview, stepCinematicOnboardingRuntimeForReview, updateCinematicOnboardingRuntime, } from './cinematic-onboarding-timeline'
 
 function currentSegmentId(
   state: CinematicOnboardingRuntimeState,
 ): CinematicOnboardingSegmentId {
-  const segmentId = getCinematicOnboardingRuntimePosition(state)?.segment.id
-  if (segmentId === undefined) {
-    throw new Error('The completed runtime has no current segment.')
-  }
-
-  return segmentId
+  const id = getCinematicOnboardingRuntimePosition(state)?.segment.id
+  if (id === undefined) throw new Error('Complete runtime has no segment.')
+  return id
 }
 
-function currentPlaybackAttempt(
-  state: CinematicOnboardingRuntimeState,
-): number {
+function playbackAttempt(state: CinematicOnboardingRuntimeState): number {
   if (
     state.status !== 'loading' &&
     state.status !== 'playing' &&
     state.status !== 'error'
   ) {
-    throw new Error(`${state.status} has no media playback attempt.`)
+    throw new Error(`${state.status} has no playback attempt.`)
   }
-
   return state.playbackAttempt
 }
 
-function readyCurrentPresentation(
-  state: CinematicOnboardingRuntimeState,
-): CinematicOnboardingRuntimeState {
+function ready(state: CinematicOnboardingRuntimeState) {
   if (state.status !== 'loading') return state
-
   return updateCinematicOnboardingRuntime(state, {
     type: 'MEDIA_READY',
     segmentId: currentSegmentId(state),
-    playbackAttempt: currentPlaybackAttempt(state),
+    playbackAttempt: playbackAttempt(state),
   })
 }
 
-function finishCurrentAutomaticState(
-  state: CinematicOnboardingRuntimeState,
-): CinematicOnboardingRuntimeState {
-  const playing = readyCurrentPresentation(state)
+function finishAutomatic(state: CinematicOnboardingRuntimeState) {
+  const playing = ready(state)
   if (playing.status !== 'playing') {
-    throw new Error(`Expected playing state, received ${playing.status}.`)
+    throw new Error(`Expected playing, received ${playing.status}.`)
   }
-
-  const position = getCinematicOnboardingRuntimePosition(playing)
-  if (
-    position === undefined ||
-    position.segment.kind === 'native_interaction_hold'
-  ) {
-    throw new Error('Expected an automatic runtime position.')
+  const segment = getCinematicOnboardingRuntimePosition(playing)?.segment
+  if (segment === undefined || segment.kind === 'native_interaction_hold') {
+    throw new Error('Expected an automatic segment.')
   }
-
-  const type =
-    playing.mode === 'reduced'
-      ? 'REDUCED_DWELL_ENDED'
-      : position.segment.kind === 'automatic'
-        ? 'MEDIA_ENDED'
-        : 'NATIVE_OVERLAY_ENDED'
-
   return updateCinematicOnboardingRuntime(playing, {
-    type,
-    segmentId: position.segment.id,
+    type:
+      playing.mode === 'reduced'
+        ? 'REDUCED_DWELL_ENDED'
+        : segment.kind === 'automatic'
+          ? 'MEDIA_ENDED'
+          : 'NATIVE_OVERLAY_ENDED',
+    segmentId: segment.id,
     playbackAttempt: playing.playbackAttempt,
   })
 }
 
-function advanceToNextHold(
-  state: CinematicOnboardingRuntimeState,
-): CinematicOnboardingRuntimeState {
-  let current = state
-  for (let step = 0; step < 13; step += 1) {
-    if (current.status === 'holding') return current
-    if (current.status === 'complete' || current.status === 'error') {
-      throw new Error(`Expected another hold, received ${current.status}.`)
-    }
-    current = finishCurrentAutomaticState(current)
-  }
-
-  throw new Error('Runtime did not reach a hold within thirteen states.')
-}
-
-function advanceToSegment(
+function advanceTo(
   target: CinematicOnboardingSegmentId,
   mode: 'normal' | 'reduced' = 'normal',
-): CinematicOnboardingRuntimeState {
-  const events: Partial<
-    Record<CinematicOnboardingSegmentId, CinematicOnboardingRuntimeEvent>
-  > = {
-    S04_SIM_CUE_TAP_HOLD: 'user_taps_or_confirms_the_scroll',
-    S05_SIM_SORT_HOLD: 'user_completes_or_skips_sorting',
-    S06_SIM_USER_SPIN_STOP_HOLD: 'user_spins_and_stops_record',
-    S07_SIM_REMINDER_HOLD: 'user_sets_or_skips_reminder',
-  }
+) {
   let state = createCinematicOnboardingRuntime({ mode })
-
-  for (let step = 0; step < 20; step += 1) {
+  for (let index = 0; index < 20; index += 1) {
     if (currentSegmentId(state) === target) return state
-    if (state.status === 'holding') {
-      const event = events[currentSegmentId(state)]
-      if (event === undefined) throw new Error('Hold has no test event.')
-      state = updateCinematicOnboardingRuntime(state, {
-        type: 'USER_EVENT',
-        event,
-      })
-    } else {
-      state = finishCurrentAutomaticState(state)
-    }
-  }
-
-  throw new Error(`Runtime did not reach ${target}.`)
-}
-
-function completeRuntime(): CinematicOnboardingRuntimeState {
-  let state = createCinematicOnboardingRuntime()
-
-  while (state.status !== 'complete') {
     if (state.status === 'holding') {
       state = updateCinematicOnboardingRuntime(state, {
         type: 'USER_EVENT',
         event: state.expectedEvent,
       })
     } else {
-      state = finishCurrentAutomaticState(state)
+      state = finishAutomatic(state)
     }
   }
-
-  return state
+  throw new Error(`Did not reach ${target}.`)
 }
 
-describe('cinematic onboarding timeline', () => {
-  it('preserves all seven approved picture sources without trimming 746 frames', () => {
-    const frames = CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3.map(
-      (asset) => asset.sourceDurationFrames,
+describe('cinematic onboarding v0.4 contract', () => {
+  it('preserves the complete approved 746-frame picture at 24 fps', () => {
+    const frames = CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4.map(
+      ({ sourceDurationFrames }) => sourceDurationFrames,
     )
 
     expect(frames).toEqual([96, 96, 96, 193, 97, 96, 72])
-    expect(frames.reduce((total, frameCount) => total + frameCount, 0)).toBe(
-      746,
+    expect(frames.reduce((sum, count) => sum + count, 0)).toBe(746)
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_4).toMatchObject({
+      version: '0.4.0',
+      pictureFramesPerSecond: 24,
+      pictureDurationFrames: 746,
+      pictureDurationMilliseconds: 31_083.333333333332,
+      openingGreeting: 'Hi there, I am Corky.',
+      fixedPullId: 'scrolling',
+      fixedPullText: 'Endless scrolling',
+      fixedSideAText: 'Keep scrolling',
+      featuredCharacter: 'The Scroll',
+    })
+    expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3).toBe(
+      CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4,
     )
-    expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3.at(-2)).toEqual({
-      id: 'H07_STOPPED_ACKNOWLEDGEMENT',
-      sourceDurationFrames: 96,
-      runtimePresentation: 'moving_video',
-      deliveryStatus: 'delivery_eligible',
-    })
-    expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3.at(-1)).toMatchObject({
+    expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4.at(-1)).toMatchObject({
       id: 'H08_QUIET_CLOSE',
-      runtimePresentation: 'stable_plate',
+      sourceDurationFrames: 72,
+      runtimePresentation: 'moving_video',
     })
   })
 
-  it('locks the v0.3 picture truth, exact greeting, and prototype audio policy', () => {
-    const timeline = CINEMATIC_ONBOARDING_TIMELINE_V0_3
-
-    expect(timeline.version).toBe('0.3.0')
-    expect(timeline.pictureFramesPerSecond).toBe(24)
-    expect(timeline.pictureDurationFrames).toBe(746)
-    expect(timeline.pictureDurationMilliseconds).toBeCloseTo(31_083.333333, 5)
-    expect(timeline.openingGreeting).toBe('Hi there, I am Corky.')
-    expect(timeline.defaultCue).toBe('The Scroll')
-    expect(timeline.audioClock).toEqual({
-      policy: 'pause_with_picture',
-      status: 'prototype_requires_device_validation',
-      sourceDurationFrames: 746,
-      pauseDuringNativeHolds: true,
-      pauseDuringNonPictureOverlays: true,
-    })
-  })
-
-  it('uses six moving files, three native overlays, and four indefinite holds', () => {
-    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.flatMap(
-      (shot) => shot.segments,
+  it('contains only authored picture, one automatic Pull intro, and three real decisions', () => {
+    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+      ({ segments: shotSegments }) => shotSegments,
     )
 
     expect(
@@ -189,406 +112,257 @@ describe('cinematic onboarding timeline', () => {
           ? segment.mediaDurationFrames
           : segment.kind === 'automatic_native_overlay'
             ? segment.nativeDurationFrames
-            : 'indefinite',
+            : segment.runtimeExitEvent,
       ]),
     ).toEqual([
       ['S01_S02_AUTO_ENTRANCE_HELLO', 'automatic', 96],
       ['S03_AUTO_TRACKED_TRANSITION', 'automatic', 96],
-      ['S04_AUTO_CUE_ENTRANCE', 'automatic', 96],
-      ['S04_SIM_CUE_TAP_HOLD', 'native_interaction_hold', 'indefinite'],
-      ['S05_AUTO_REFRAME_SORT', 'automatic', 193],
-      ['S05_SIM_SORT_HOLD', 'native_interaction_hold', 'indefinite'],
-      ['S06_AUTO_CORKY_PRESS', 'automatic', 97],
-      ['S06_SIM_USER_SPIN_STOP_HOLD', 'native_interaction_hold', 'indefinite'],
-      ['S07_AUTO_STOPPED_ACKNOWLEDGEMENT', 'automatic', 96],
-      ['S07_AUTO_REMINDER_DIAL_REVEAL', 'automatic_native_overlay', 48],
-      ['S07_SIM_REMINDER_HOLD', 'native_interaction_hold', 'indefinite'],
-      ['S07_AUTO_CONFIRM', 'automatic_native_overlay', 24],
-      ['S08_AUTO_TITLE_CLOSE', 'automatic_native_overlay', 72],
-    ])
-    expect(
-      segments.filter((segment) => segment.kind === 'automatic'),
-    ).toHaveLength(6)
-    expect(
-      segments.filter((segment) => segment.kind === 'automatic_native_overlay'),
-    ).toHaveLength(3)
-    expect(
-      segments.filter((segment) => segment.kind === 'native_interaction_hold'),
-    ).toHaveLength(4)
-  })
-
-  it('keeps H01 and H02 as logical cues inside one continuous 96-frame decode', () => {
-    const first = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots[0]?.segments[0]
-
-    expect(first).toEqual({
-      id: 'S01_S02_AUTO_ENTRANCE_HELLO',
-      kind: 'automatic',
-      audioClockBehavior: 'advance_with_picture',
-      pictureAssetId: 'H01_H02_GREETING',
-      mediaDurationFrames: 96,
-      logicalCues: [
-        { id: 'S01_EDGE_ENTRANCE', atMediaFrame: 0 },
-        {
-          id: 'S02_HELLO',
-          atMediaFrame: 48,
-          dialogue: 'Hi there, I am Corky.',
-        },
+      ['S04_AUTO_PULL_ENTRANCE', 'automatic', 96],
+      ['S04_AUTO_PULL_INTRO', 'automatic_native_overlay', 48],
+      ['S05_AUTO_REFRAME_SIDE_CHOICE', 'automatic', 193],
+      [
+        'S05_CHOOSE_B_SIDE_HOLD',
+        'native_interaction_hold',
+        'user_chooses_b_side',
       ],
-    })
+      ['S06_AUTO_CORKY_PRESS', 'automatic', 97],
+      [
+        'S06_CONFIRM_AND_SAVE_PLAN_HOLD',
+        'native_interaction_hold',
+        'user_confirms_and_saves_plan',
+      ],
+      ['S07_AUTO_STOPPED_ACKNOWLEDGEMENT', 'automatic', 96],
+      [
+        'S07_REMINDER_HOLD',
+        'native_interaction_hold',
+        'user_sets_or_skips_reminder',
+      ],
+      ['S08_AUTO_TITLE_CLOSE', 'automatic', 72],
+    ])
+
+    const holds = segments.filter(
+      (segment) => segment.kind === 'native_interaction_hold',
+    )
+    expect(holds).toHaveLength(3)
+    expect(holds.every((hold) => hold.skipAllowed === false)).toBe(true)
+    expect(segments.map(({ id }) => id)).not.toContain('S04_SIM_CUE_TAP_HOLD')
+    expect(segments.map(({ id }) => id)).not.toContain('S07_AUTO_CONFIRM')
   })
 
-  it('advances the continuous audio for exactly the 746 physical picture frames', () => {
-    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.flatMap(
-      (shot) => shot.segments,
+  it('advances audio only for the 746 physical picture frames', () => {
+    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+      ({ segments: shotSegments }) => shotSegments,
     )
-    const advancingFrames = segments.reduce((total, segment) => {
-      if (segment.audioClockBehavior === 'pause') return total
-      return (
-        total +
-        (segment.kind === 'automatic'
-          ? segment.mediaDurationFrames
-          : segment.nativeDurationFrames)
-      )
+    const advancingFrames = segments.reduce((sum, segment) => {
+      if (segment.audioClockBehavior === 'pause') return sum
+      return sum + segment.mediaDurationFrames
     }, 0)
 
     expect(advancingFrames).toBe(746)
     expect(
       segments
-        .filter((segment) => segment.audioClockBehavior === 'pause')
-        .map((segment) => segment.id),
+        .filter(({ audioClockBehavior }) => audioClockBehavior === 'pause')
+        .map(({ id }) => id),
     ).toEqual([
-      'S04_SIM_CUE_TAP_HOLD',
-      'S05_SIM_SORT_HOLD',
-      'S06_SIM_USER_SPIN_STOP_HOLD',
-      'S07_AUTO_REMINDER_DIAL_REVEAL',
-      'S07_SIM_REMINDER_HOLD',
-      'S07_AUTO_CONFIRM',
+      'S04_AUTO_PULL_INTRO',
+      'S05_CHOOSE_B_SIDE_HOLD',
+      'S06_CONFIRM_AND_SAVE_PLAN_HOLD',
+      'S07_REMINDER_HOLD',
     ])
   })
 
-  it('maps every runtime state onto an exact retry-safe continuous-audio slice', () => {
-    const slices: [CinematicOnboardingSegmentId, number, number, string][] = []
+  it('maps every runtime position onto a continuous retry-safe audio slice', () => {
+    const actual: [string, number, number, string][] = []
     let state = createCinematicOnboardingRuntime()
 
     while (state.status !== 'complete') {
       const slice = getCinematicOnboardingAudioClockSlice(state)
-      if (slice === undefined)
-        throw new Error('Runtime state has no audio slice.')
-      slices.push([
+      if (slice === undefined) throw new Error('Expected an audio slice.')
+      actual.push([
         currentSegmentId(state),
         slice.startFrame,
         slice.durationFrames,
         slice.behavior,
       ])
-
-      if (state.status === 'holding') {
-        state = updateCinematicOnboardingRuntime(state, {
-          type: 'USER_EVENT',
-          event: state.expectedEvent,
-        })
-      } else {
-        state = finishCurrentAutomaticState(state)
-      }
+      state =
+        state.status === 'holding'
+          ? updateCinematicOnboardingRuntime(state, {
+              type: 'USER_EVENT',
+              event: state.expectedEvent,
+            })
+          : finishAutomatic(state)
     }
 
-    expect(slices).toEqual([
+    expect(actual).toEqual([
       ['S01_S02_AUTO_ENTRANCE_HELLO', 0, 96, 'advance_with_picture'],
       ['S03_AUTO_TRACKED_TRANSITION', 96, 96, 'advance_with_picture'],
-      ['S04_AUTO_CUE_ENTRANCE', 192, 96, 'advance_with_picture'],
-      ['S04_SIM_CUE_TAP_HOLD', 288, 0, 'pause'],
-      ['S05_AUTO_REFRAME_SORT', 288, 193, 'advance_with_picture'],
-      ['S05_SIM_SORT_HOLD', 481, 0, 'pause'],
+      ['S04_AUTO_PULL_ENTRANCE', 192, 96, 'advance_with_picture'],
+      ['S04_AUTO_PULL_INTRO', 288, 0, 'pause'],
+      ['S05_AUTO_REFRAME_SIDE_CHOICE', 288, 193, 'advance_with_picture'],
+      ['S05_CHOOSE_B_SIDE_HOLD', 481, 0, 'pause'],
       ['S06_AUTO_CORKY_PRESS', 481, 97, 'advance_with_picture'],
-      ['S06_SIM_USER_SPIN_STOP_HOLD', 578, 0, 'pause'],
+      ['S06_CONFIRM_AND_SAVE_PLAN_HOLD', 578, 0, 'pause'],
       ['S07_AUTO_STOPPED_ACKNOWLEDGEMENT', 578, 96, 'advance_with_picture'],
-      ['S07_AUTO_REMINDER_DIAL_REVEAL', 674, 0, 'pause'],
-      ['S07_SIM_REMINDER_HOLD', 674, 0, 'pause'],
-      ['S07_AUTO_CONFIRM', 674, 0, 'pause'],
+      ['S07_REMINDER_HOLD', 674, 0, 'pause'],
       ['S08_AUTO_TITLE_CLOSE', 674, 72, 'advance_with_picture'],
     ])
     expect(getCinematicOnboardingAudioClockSlice(state)).toBeUndefined()
   })
 
-  it('gives every native interaction hold one named exit and an explicit skip', () => {
-    const holds = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots
-      .flatMap((shot) => shot.segments)
-      .filter((segment) => segment.kind === 'native_interaction_hold')
+  it('requires the exact event at every product decision and forbids generic skipping', () => {
+    const sideB = advanceTo('S05_CHOOSE_B_SIDE_HOLD')
+    if (sideB.status !== 'holding') throw new Error('Expected Side B hold.')
 
     expect(
-      holds.map((hold) => [
-        hold.id,
-        hold.runtimeDuration,
-        hold.runtimeExitEvent,
-        hold.skipAllowed,
-      ]),
-    ).toEqual([
-      [
-        'S04_SIM_CUE_TAP_HOLD',
-        'indefinite',
-        'user_taps_or_confirms_the_scroll',
-        true,
-      ],
-      [
-        'S05_SIM_SORT_HOLD',
-        'indefinite',
-        'user_completes_or_skips_sorting',
-        true,
-      ],
-      [
-        'S06_SIM_USER_SPIN_STOP_HOLD',
-        'indefinite',
-        'user_spins_and_stops_record',
-        true,
-      ],
-      [
-        'S07_SIM_REMINDER_HOLD',
-        'indefinite',
-        'user_sets_or_skips_reminder',
-        true,
-      ],
-    ])
-    expect(holds.every((hold) => !('mediaDurationFrames' in hold))).toBe(true)
-  })
-
-  it('retains the disabled v0.2 architecture version for old config readers', () => {
-    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_2).toMatchObject({
-      version: '0.2.0',
-      reviewDurationFrames: 624,
-      reviewDurationMilliseconds: 26_000,
-    })
-  })
-
-  it('defaults normal motion to Cue reflection and forces it off when reduced', () => {
-    const normal = createCinematicOnboardingRuntime()
-    const normalWithoutReflection = createCinematicOnboardingRuntime({
-      cueVerticalReflection: false,
-    })
-    const reduced = createCinematicOnboardingRuntime({
-      mode: 'reduced',
-      cueVerticalReflection: true,
-    })
-
-    expect(normal.mode).toBe('normal')
-    expect(normal.cueVerticalReflectionEnabled).toBe(true)
-    expect(normalWithoutReflection.cueVerticalReflectionEnabled).toBe(false)
-    expect(reduced.mode).toBe('reduced')
-    expect(reduced.cueVerticalReflectionEnabled).toBe(false)
-  })
-
-  it('uses authored video and overlay durations for reduced stable-plate dwells', () => {
-    const opening = readyCurrentPresentation(
-      createCinematicOnboardingRuntime({ mode: 'reduced' }),
-    )
-    const overlay = readyCurrentPresentation(
-      advanceToSegment('S07_AUTO_REMINDER_DIAL_REVEAL', 'reduced'),
-    )
-
-    expect(getCinematicOnboardingReducedDwellMilliseconds(opening)).toBe(4_000)
-    expect(getCinematicOnboardingReducedDwellMilliseconds(overlay)).toBe(2_000)
-    expect(
-      getCinematicOnboardingNativeOverlayDurationMilliseconds(overlay),
-    ).toBeUndefined()
-  })
-
-  it('advances a normal native overlay only for its correlated native completion', () => {
-    const loading = advanceToSegment('S07_AUTO_REMINDER_DIAL_REVEAL')
-    const playing = readyCurrentPresentation(loading)
-    const segmentId = currentSegmentId(playing)
-    const playbackAttempt = currentPlaybackAttempt(playing)
-
-    expect(
-      getCinematicOnboardingNativeOverlayDurationMilliseconds(playing),
-    ).toBe(2_000)
-    expect(
-      updateCinematicOnboardingRuntime(playing, {
-        type: 'MEDIA_ENDED',
-        segmentId,
-        playbackAttempt,
-      }),
-    ).toBe(playing)
-    expect(
-      getCinematicOnboardingRuntimePosition(
-        updateCinematicOnboardingRuntime(playing, {
-          type: 'NATIVE_OVERLAY_ENDED',
-          segmentId,
-          playbackAttempt,
-        }),
-      )?.segment.id,
-    ).toBe('S07_SIM_REMINDER_HOLD')
-  })
-
-  it('does not let a native-overlay completion finish a moving clip', () => {
-    const playing = readyCurrentPresentation(createCinematicOnboardingRuntime())
-
-    const afterWrongCompletion = updateCinematicOnboardingRuntime(playing, {
-      type: 'NATIVE_OVERLAY_ENDED',
-      segmentId: currentSegmentId(playing),
-      playbackAttempt: currentPlaybackAttempt(playing),
-    })
-
-    expect(afterWrongCompletion).toBe(playing)
-    expect(
-      getCinematicOnboardingNativeOverlayDurationMilliseconds(playing),
-    ).toBeUndefined()
-  })
-
-  it('stops at every hold and releases only for its matching user event', () => {
-    const expected: readonly {
-      hold: CinematicOnboardingSegmentId
-      event: CinematicOnboardingRuntimeEvent
-    }[] = [
-      {
-        hold: 'S04_SIM_CUE_TAP_HOLD',
-        event: 'user_taps_or_confirms_the_scroll',
-      },
-      {
-        hold: 'S05_SIM_SORT_HOLD',
-        event: 'user_completes_or_skips_sorting',
-      },
-      {
-        hold: 'S06_SIM_USER_SPIN_STOP_HOLD',
-        event: 'user_spins_and_stops_record',
-      },
-      {
-        hold: 'S07_SIM_REMINDER_HOLD',
-        event: 'user_sets_or_skips_reminder',
-      },
-    ]
-    let state = createCinematicOnboardingRuntime()
-
-    for (const gate of expected) {
-      state = advanceToNextHold(state)
-      expect(currentSegmentId(state)).toBe(gate.hold)
-      const wrongEvent: CinematicOnboardingRuntimeEvent =
-        gate.event === 'user_taps_or_confirms_the_scroll'
-          ? 'user_completes_or_skips_sorting'
-          : 'user_taps_or_confirms_the_scroll'
-      expect(
-        updateCinematicOnboardingRuntime(state, {
-          type: 'USER_EVENT',
-          event: wrongEvent,
-        }),
-      ).toBe(state)
-
-      state = updateCinematicOnboardingRuntime(state, {
+      updateCinematicOnboardingRuntime(sideB, {
         type: 'USER_EVENT',
-        event: gate.event,
-      })
-      expect(state.status).not.toBe('holding')
-    }
+        event: 'user_sets_or_skips_reminder',
+      }),
+    ).toBe(sideB)
+    expect(
+      updateCinematicOnboardingRuntime(sideB, {
+        type: 'SKIP_CURRENT_HOLD',
+      }),
+    ).toBe(sideB)
+    expect(
+      currentSegmentId(
+        updateCinematicOnboardingRuntime(sideB, {
+          type: 'USER_EVENT',
+          event: 'user_chooses_b_side',
+        }),
+      ),
+    ).toBe('S06_AUTO_CORKY_PRESS')
   })
 
-  it('never lets media completion or time release an indefinite hold', () => {
-    const holding = advanceToNextHold(createCinematicOnboardingRuntime())
-    const unrelatedInputs = [
-      {
-        type: 'MEDIA_ENDED',
-        segmentId: 'S04_SIM_CUE_TAP_HOLD',
-        playbackAttempt: 0,
-      },
-      {
-        type: 'NATIVE_OVERLAY_ENDED',
-        segmentId: 'S04_SIM_CUE_TAP_HOLD',
-        playbackAttempt: 0,
-      },
-      {
-        type: 'REDUCED_DWELL_ENDED',
-        segmentId: 'S04_SIM_CUE_TAP_HOLD',
-        playbackAttempt: 0,
-      },
-    ] as const satisfies readonly CinematicOnboardingRuntimeInput[]
+  it('keeps normal and reduced-motion timing deterministic', () => {
+    const intro = ready(advanceTo('S04_AUTO_PULL_INTRO'))
+    const reducedIntro = ready(advanceTo('S04_AUTO_PULL_INTRO', 'reduced'))
+
+    expect(getCinematicOnboardingNativeOverlayDurationMilliseconds(intro)).toBe(
+      2_000,
+    )
+    expect(
+      getCinematicOnboardingReducedDwellMilliseconds(intro),
+    ).toBeUndefined()
+    expect(getCinematicOnboardingReducedDwellMilliseconds(reducedIntro)).toBe(
+      2_000,
+    )
+    expect(reducedIntro.cueVerticalReflectionEnabled).toBe(false)
+  })
+
+  it('plays the 72-frame H08 motion while retaining a three-second reduced dwell', () => {
+    const normalClose = ready(advanceTo('S08_AUTO_TITLE_CLOSE'))
+    const reducedClose = ready(advanceTo('S08_AUTO_TITLE_CLOSE', 'reduced'))
 
     expect(
-      unrelatedInputs.every(
-        (input) => updateCinematicOnboardingRuntime(holding, input) === holding,
-      ),
-    ).toBe(true)
-  })
+      getCinematicOnboardingNativeOverlayDurationMilliseconds(normalClose),
+    ).toBeUndefined()
+    expect(
+      getCinematicOnboardingReducedDwellMilliseconds(normalClose),
+    ).toBeUndefined()
+    expect(getCinematicOnboardingReducedDwellMilliseconds(reducedClose)).toBe(
+      3_000,
+    )
 
-  it('lets an explicit skip release the current hold', () => {
-    const holding = advanceToNextHold(createCinematicOnboardingRuntime())
-
-    const afterSkip = updateCinematicOnboardingRuntime(holding, {
-      type: 'SKIP_CURRENT_HOLD',
+    if (normalClose.status !== 'playing') {
+      throw new Error('Expected the H08 video to be playing.')
+    }
+    const staleOverlayCallback = updateCinematicOnboardingRuntime(normalClose, {
+      type: 'NATIVE_OVERLAY_ENDED',
+      segmentId: 'S08_AUTO_TITLE_CLOSE',
+      playbackAttempt: normalClose.playbackAttempt,
     })
-
-    expect(afterSkip.status).toBe('loading')
-    expect(currentSegmentId(afterSkip)).toBe('S05_AUTO_REFRAME_SORT')
+    expect(staleOverlayCallback).toBe(normalClose)
+    expect(
+      updateCinematicOnboardingRuntime(normalClose, {
+        type: 'MEDIA_ENDED',
+        segmentId: 'S08_AUTO_TITLE_CLOSE',
+        playbackAttempt: normalClose.playbackAttempt,
+      }),
+    ).toMatchObject({ status: 'complete', completion: 'finished' })
   })
 
-  it('surfaces current-presentation errors and retries the same state', () => {
-    const initial = createCinematicOnboardingRuntime()
-
-    const failed = updateCinematicOnboardingRuntime(initial, {
-      type: 'MEDIA_ERROR',
-      segmentId: 'S01_S02_AUTO_ENTRANCE_HELLO',
+  it('correlates media callbacks and retries without skipping a beat', () => {
+    const loading = createCinematicOnboardingRuntime()
+    const wrongReady = updateCinematicOnboardingRuntime(loading, {
+      type: 'MEDIA_READY',
+      segmentId: 'S03_AUTO_TRACKED_TRANSITION',
       playbackAttempt: 0,
-      message: 'Unable to decode the opening clip.',
     })
-    const retried = updateCinematicOnboardingRuntime(failed, { type: 'RETRY' })
+    expect(wrongReady).toBe(loading)
 
+    const playing = ready(loading)
+    if (playing.status !== 'playing') throw new Error('Expected playing.')
+    const failed = updateCinematicOnboardingRuntime(playing, {
+      type: 'MEDIA_ERROR',
+      segmentId: currentSegmentId(playing),
+      playbackAttempt: playing.playbackAttempt,
+      message: 'decode failed',
+    })
     expect(failed).toMatchObject({
       status: 'error',
       positionIndex: 0,
-      message: 'Unable to decode the opening clip.',
-    })
-    expect(retried.status).toBe('loading')
-    expect(currentPlaybackAttempt(retried)).toBe(1)
-    expect(currentSegmentId(retried)).toBe('S01_S02_AUTO_ENTRANCE_HELLO')
-    expect(
-      updateCinematicOnboardingRuntime(retried, {
-        type: 'MEDIA_READY',
-        segmentId: 'S01_S02_AUTO_ENTRANCE_HELLO',
-        playbackAttempt: 0,
-      }),
-    ).toBe(retried)
-  })
-
-  it('continues with a poster after failure and always permits dismiss', () => {
-    const initial = createCinematicOnboardingRuntime()
-    const failed = updateCinematicOnboardingRuntime(initial, {
-      type: 'MEDIA_ERROR',
-      segmentId: 'S01_S02_AUTO_ENTRANCE_HELLO',
       playbackAttempt: 0,
-      message: 'Unable to decode the opening clip.',
+      message: 'decode failed',
     })
-
     expect(
-      currentSegmentId(
-        updateCinematicOnboardingRuntime(failed, {
-          type: 'CONTINUE_WITH_POSTER',
-        }),
-      ),
-    ).toBe('S03_AUTO_TRACKED_TRANSITION')
-    expect(
-      updateCinematicOnboardingRuntime(failed, { type: 'DISMISS' }),
-    ).toMatchObject({ status: 'complete', completion: 'dismissed' })
+      updateCinematicOnboardingRuntime(failed, { type: 'RETRY' }),
+    ).toMatchObject({ status: 'loading', positionIndex: 0, playbackAttempt: 1 })
   })
 
-  it('finishes all thirteen states and keeps completion stable', () => {
-    const complete = completeRuntime()
-    const laterInputs = [
-      {
-        type: 'MEDIA_READY',
-        segmentId: 'S01_S02_AUTO_ENTRANCE_HELLO',
-        playbackAttempt: 0,
-      },
-      { type: 'RETRY' },
-      { type: 'USER_EVENT', event: 'user_sets_or_skips_reminder' },
-      { type: 'SKIP_CURRENT_HOLD' },
-      { type: 'DISMISS' },
-    ] as const satisfies readonly CinematicOnboardingRuntimeInput[]
-
-    expect(complete).toMatchObject({
-      status: 'complete',
-      completion: 'finished',
-    })
-    expect(getCinematicOnboardingRuntimePosition(complete)).toBeUndefined()
+  it('marks seek, step, and replay sessions as review-only for their lifetime', () => {
     expect(
-      laterInputs.every(
-        (input) =>
-          updateCinematicOnboardingRuntime(complete, input) === complete,
+      isCinematicOnboardingPersistenceAllowed(
+        createCinematicOnboardingRuntime({ sessionKind: 'review' }),
+      ),
+    ).toBe(false)
+
+    const firstRun = advanceTo('S06_CONFIRM_AND_SAVE_PLAN_HOLD')
+    expect(isCinematicOnboardingPersistenceAllowed(firstRun)).toBe(true)
+
+    const sought = seekCinematicOnboardingRuntimeForReview(
+      firstRun,
+      'S05_CHOOSE_B_SIDE_HOLD',
+    )
+    expect(sought).toMatchObject({
+      status: 'holding',
+      sessionKind: 'review',
+      expectedEvent: 'user_chooses_b_side',
+    })
+    expect(isCinematicOnboardingPersistenceAllowed(sought)).toBe(false)
+
+    const next = stepCinematicOnboardingRuntimeForReview(sought, 'next')
+    expect(currentSegmentId(next)).toBe('S06_AUTO_CORKY_PRESS')
+    expect(next.sessionKind).toBe('review')
+
+    const replayed = replayCinematicOnboardingRuntimeForReview(ready(next))
+    expect(replayed).toMatchObject({
+      status: 'loading',
+      sessionKind: 'review',
+      playbackAttempt: 0,
+    })
+    expect(currentSegmentId(replayed)).toBe('S06_AUTO_CORKY_PRESS')
+
+    const later = finishAutomatic(replayed)
+    expect(later.sessionKind).toBe('review')
+    expect(isCinematicOnboardingPersistenceAllowed(later)).toBe(false)
+  })
+
+  it('retains deprecated v0.2 and v0.3 identifiers without making them active', () => {
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_2.version).toBe('0.2.0')
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_3).toMatchObject({
+      version: '0.3.0',
+      defaultCue: 'The Scroll',
+      pictureDurationFrames: 746,
+    })
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots).toHaveLength(7)
+    expect(
+      CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.some(({ segments }) =>
+        (segments as readonly { readonly id: string }[]).some(
+          ({ id }) => id === 'S04_SIM_CUE_TAP_HOLD',
+        ),
       ),
     ).toBe(true)
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_4.version).toBe('0.4.0')
   })
 })

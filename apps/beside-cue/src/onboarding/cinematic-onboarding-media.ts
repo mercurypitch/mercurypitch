@@ -1,9 +1,9 @@
 // ============================================================
-// Cinematic onboarding media — portable v0.3 asset boundary
+// Cinematic onboarding media — portable v0.4 asset boundary
 // ============================================================
 
 import type { CinematicOnboardingMode, CinematicOnboardingSegment, CinematicOnboardingSegmentId, CinematicOnboardingTimeline, } from './cinematic-onboarding-timeline'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_3 } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_4 } from './cinematic-onboarding-timeline'
 
 /** Media shared by a moving beat and its stable-plate equivalent. */
 export interface CinematicOnboardingStableMedia {
@@ -51,6 +51,18 @@ export interface CinematicOnboardingMediaManifest {
   readonly segments: Readonly<
     Record<CinematicOnboardingSegmentId, CinematicOnboardingSegmentMedia>
   >
+}
+
+/**
+ * Deprecated manifest shape retained only so a v0.3 config can be inspected
+ * without pretending it satisfies the active v0.4 segment contract.
+ */
+export interface LegacyCinematicOnboardingMediaManifestV03 {
+  readonly revision: string
+  readonly sourceContractVersion: '0.3.0'
+  readonly sourceContractSha256: string
+  readonly audio: CinematicOnboardingContinuousAudioMedia
+  readonly segments: Readonly<Record<string, CinematicOnboardingSegmentMedia>>
 }
 
 export type CinematicOnboardingResolvedMedia =
@@ -170,12 +182,12 @@ function reportUnexpectedKeys(
   }
 }
 
-/** Strict runtime guard for a generated v0.3 delivery manifest. */
+/** Strict runtime guard for a generated v0.4 delivery manifest. */
 export function validateCinematicOnboardingMediaManifest(
   manifest: unknown,
 ): readonly string[] {
   const problems: string[] = []
-  const expectedSegments = CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.flatMap(
+  const expectedSegments = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
     (shot) => shot.segments,
   )
   const expectedIds = new Set(expectedSegments.map((segment) => segment.id))
@@ -194,9 +206,9 @@ export function validateCinematicOnboardingMediaManifest(
   if (typeof revision !== 'string' || revision.trim() === '') {
     problems.push('Media manifest revision is empty.')
   }
-  if (sourceContractVersion !== CINEMATIC_ONBOARDING_TIMELINE_V0_3.version) {
+  if (sourceContractVersion !== CINEMATIC_ONBOARDING_TIMELINE_V0_4.version) {
     problems.push(
-      `Media manifest targets timeline ${String(sourceContractVersion)}, not ${CINEMATIC_ONBOARDING_TIMELINE_V0_3.version}.`,
+      `Media manifest targets timeline ${String(sourceContractVersion)}, not ${CINEMATIC_ONBOARDING_TIMELINE_V0_4.version}.`,
     )
   }
   if (

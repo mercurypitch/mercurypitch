@@ -1,15 +1,15 @@
 // ============================================================
-// Cinematic onboarding media tests — v0.3 package safeguards
+// Cinematic onboarding media tests — v0.4 package safeguards
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
 import type { CinematicOnboardingMediaManifest } from './cinematic-onboarding-media'
 import { resolveCinematicOnboardingMedia, validateCinematicOnboardingMediaManifest, } from './cinematic-onboarding-media'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_3 } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_4 } from './cinematic-onboarding-timeline'
 
 function mediaManifest(): CinematicOnboardingMediaManifest {
   const segments = Object.fromEntries(
-    CINEMATIC_ONBOARDING_TIMELINE_V0_3.shots.flatMap((shot) =>
+    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap((shot) =>
       shot.segments.map((segment) => {
         const stable = {
           poster: `/onboarding/${segment.id}.webp`,
@@ -35,8 +35,8 @@ function mediaManifest(): CinematicOnboardingMediaManifest {
   ) as unknown as CinematicOnboardingMediaManifest['segments']
 
   return {
-    revision: 'test-v0.3',
-    sourceContractVersion: '0.3.0',
+    revision: 'test-v0.4',
+    sourceContractVersion: '0.4.0',
     sourceContractSha256: 'a'.repeat(64),
     audio: {
       kind: 'continuous_review_mix',
@@ -78,40 +78,66 @@ describe('cinematic onboarding media', () => {
     })
   })
 
+  it('resolves the H08 close as moving media only in normal mode', () => {
+    const manifest = mediaManifest()
+
+    expect(
+      resolveCinematicOnboardingMedia(
+        manifest,
+        'S08_AUTO_TITLE_CLOSE',
+        'normal',
+      ),
+    ).toEqual({
+      kind: 'video',
+      src: '/onboarding/S08_AUTO_TITLE_CLOSE.mp4',
+      poster: '/onboarding/S08_AUTO_TITLE_CLOSE.webp',
+      alt: 'Stable scene for S08_AUTO_TITLE_CLOSE',
+    })
+    expect(
+      resolveCinematicOnboardingMedia(
+        manifest,
+        'S08_AUTO_TITLE_CLOSE',
+        'reduced',
+      ),
+    ).toEqual({
+      kind: 'still',
+      src: '/onboarding/S08_AUTO_TITLE_CLOSE-reduced.webp',
+      alt: 'Stable scene for S08_AUTO_TITLE_CLOSE',
+    })
+  })
+
   it('uses the final-state still and no fabricated video for a native overlay', () => {
     const manifest = mediaManifest()
 
     expect(
       resolveCinematicOnboardingMedia(
         manifest,
-        'S07_AUTO_REMINDER_DIAL_REVEAL',
+        'S04_AUTO_PULL_INTRO',
         'normal',
       ),
     ).toEqual({
       kind: 'still',
-      src: '/onboarding/S07_AUTO_REMINDER_DIAL_REVEAL-reduced.webp',
-      alt: 'Stable scene for S07_AUTO_REMINDER_DIAL_REVEAL',
+      src: '/onboarding/S04_AUTO_PULL_INTRO-reduced.webp',
+      alt: 'Stable scene for S04_AUTO_PULL_INTRO',
     })
-    expect('video' in manifest.segments.S07_AUTO_REMINDER_DIAL_REVEAL).toBe(
-      false,
-    )
+    expect('video' in manifest.segments.S04_AUTO_PULL_INTRO).toBe(false)
   })
 
   it('keeps a normal native interaction hold on the preceding final state', () => {
     expect(
       resolveCinematicOnboardingMedia(
         mediaManifest(),
-        'S06_SIM_USER_SPIN_STOP_HOLD',
+        'S06_CONFIRM_AND_SAVE_PLAN_HOLD',
         'normal',
       ),
     ).toEqual({
       kind: 'still',
-      src: '/onboarding/S06_SIM_USER_SPIN_STOP_HOLD-reduced.webp',
-      alt: 'Stable scene for S06_SIM_USER_SPIN_STOP_HOLD',
+      src: '/onboarding/S06_CONFIRM_AND_SAVE_PLAN_HOLD-reduced.webp',
+      alt: 'Stable scene for S06_CONFIRM_AND_SAVE_PLAN_HOLD',
     })
   })
 
-  it('accepts the exact complete v0.3 manifest and continuous audio contract', () => {
+  it('accepts the exact complete v0.4 manifest and continuous audio contract', () => {
     const manifest = mediaManifest()
 
     expect(validateCinematicOnboardingMediaManifest(manifest)).toEqual([])
@@ -142,7 +168,7 @@ describe('cinematic onboarding media', () => {
     const problems = validateCinematicOnboardingMediaManifest(invalid)
 
     expect(problems).toContain(
-      'Media manifest targets timeline 0.2.0, not 0.3.0.',
+      'Media manifest targets timeline 0.2.0, not 0.4.0.',
     )
     expect(problems).toContain(
       'Media for "S01_S02_AUTO_ENTRANCE_HELLO" is hold, expected automatic.',
@@ -159,12 +185,12 @@ describe('cinematic onboarding media', () => {
       extraTopLevel: true,
       segments: {
         ...valid.segments,
-        S07_AUTO_REMINDER_DIAL_REVEAL: {
-          ...valid.segments.S07_AUTO_REMINDER_DIAL_REVEAL,
+        S04_AUTO_PULL_INTRO: {
+          ...valid.segments.S04_AUTO_PULL_INTRO,
           video: '/onboarding/fake-overlay.mp4',
         },
-        S06_SIM_USER_SPIN_STOP_HOLD: {
-          ...valid.segments.S06_SIM_USER_SPIN_STOP_HOLD,
+        S06_CONFIRM_AND_SAVE_PLAN_HOLD: {
+          ...valid.segments.S06_CONFIRM_AND_SAVE_PLAN_HOLD,
           loop: true,
         },
       },
@@ -176,10 +202,10 @@ describe('cinematic onboarding media', () => {
       'Media manifest has unexpected field "extraTopLevel".',
     )
     expect(problems).toContain(
-      'Media for "S07_AUTO_REMINDER_DIAL_REVEAL" has unexpected field "video".',
+      'Media for "S04_AUTO_PULL_INTRO" has unexpected field "video".',
     )
     expect(problems).toContain(
-      'Media for "S06_SIM_USER_SPIN_STOP_HOLD" has unexpected field "loop".',
+      'Media for "S06_CONFIRM_AND_SAVE_PLAN_HOLD" has unexpected field "loop".',
     )
   })
 

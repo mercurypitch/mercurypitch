@@ -50,7 +50,7 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
           type="button"
           onClick={() => props.onChooseBSide()}
         >
-          Choose the B-side
+          Choose Side B
         </button>
         <button
           class="quiet-button"

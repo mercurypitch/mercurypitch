@@ -22,14 +22,14 @@ export function HomeScreen(props: HomeScreenProps) {
     <main class="home-screen app-screen app-screen--with-nav">
       <AppHeader actionLabel="Settings" onAction={props.onOpenSettings} />
       <section class="home-screen__intro" aria-labelledby="home-title">
-        <p class="screen-kicker">Your active pressing</p>
+        <p class="screen-kicker">Your current plan</p>
         <h1 id="home-title">A better choice, kept close.</h1>
       </section>
 
       <section
         class="active-sleeve"
         classList={{ 'active-sleeve--paused': props.paused }}
-        aria-label="Your active cue"
+        aria-label="Your current plan"
       >
         <div class="active-sleeve__art">
           <MascotStage state={props.paused ? 'quiet' : 'rest'} compact />
@@ -64,8 +64,8 @@ export function HomeScreen(props: HomeScreenProps) {
           <strong>Cue me now</strong>
           <small>
             {props.paused
-              ? 'Resume this cue first'
-              : 'Bring the B-side into focus'}
+              ? 'Resume this plan first'
+              : 'Show the action I chose'}
           </small>
         </span>
       </button>
@@ -74,7 +74,7 @@ export function HomeScreen(props: HomeScreenProps) {
         <div>
           <span>Today</span>
           <strong>{props.todayCount}</strong>
-          <small>B-side {props.todayCount === 1 ? 'turn' : 'turns'}</small>
+          <small>Side B {props.todayCount === 1 ? 'choice' : 'choices'}</small>
         </div>
         <div>
           <span>Seven days</span>
@@ -91,15 +91,15 @@ export function HomeScreen(props: HomeScreenProps) {
           onClick={() => props.onPauseToggle()}
         >
           {props.cueStatePending
-            ? 'Updating cue…'
+            ? 'Updating plan…'
             : props.paused
-              ? 'Resume cue'
-              : 'Pause cue'}
+              ? 'Resume this plan'
+              : 'Pause this plan'}
         </button>
         {props.paused ? (
           <p id="paused-note">
-            This cue and its history are still here. Scheduled and manual cues
-            stay quiet.
+            Your plan and history are still here. The daily reminder and Cue me
+            now stay off until you resume it.
           </p>
         ) : null}
       </div>

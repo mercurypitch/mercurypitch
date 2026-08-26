@@ -15,6 +15,7 @@ interface SettingsScreenProps {
   scheduleError?: string
   onBack: () => void
   onPauseToggle: () => void
+  onReplayIntroduction: () => void
   onReplace: () => void
   onSetSchedule: (localTime: string) => void
   onDisableSchedule: () => void
@@ -28,30 +29,30 @@ export function SettingsScreen(props: SettingsScreenProps) {
     <main class="settings-screen app-screen">
       <AppHeader label="Settings" onBack={props.onBack} />
       <section class="settings-screen__intro">
-        <p class="screen-kicker">Your cue, your control</p>
+        <p class="screen-kicker">Your plan, your control</p>
         <h1>Keep only what helps.</h1>
         <p>
-          This prototype stores your cue and reflection on this device. Nothing
-          is sent to an account or analytics service.
+          Your plan and choice history stay on this device. Notification
+          permission is requested only if you set a reminder.
         </p>
       </section>
       <section class="settings-group" aria-labelledby="daily-cue-title">
         <div class="settings-group__heading">
           <div>
             <p class="screen-kicker">Optional</p>
-            <h2 id="daily-cue-title">One gentle cue a day</h2>
+            <h2 id="daily-cue-title">Daily reminder</h2>
           </div>
           {props.scheduleTime === undefined ? (
-            <span>Manual</span>
+            <span>No daily reminder</span>
           ) : (
             <strong>{props.scheduleTime}</strong>
           )}
         </div>
         <p class="settings-group__intro">
-          Android can place one discreet cue around this time. Your pull and
-          B-side stay off the lock screen.
+          Beside Cue can send one discreet reminder at this time. Your Pull and
+          Side B stay off the lock screen.
         </p>
-        <div class="schedule-options" aria-label="Daily cue time">
+        <div class="schedule-options" aria-label="Daily reminder time">
           <button
             class="schedule-option"
             classList={{
@@ -64,7 +65,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
           >
             <span>
               <strong>Only when I ask</strong>
-              <small>No automatic cue</small>
+              <small>No automatic reminder</small>
             </span>
             <span class="schedule-option__mark" aria-hidden="true" />
           </button>
@@ -99,7 +100,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
           }}
         >
           <label for="custom-cue-time">
-            <span>Another time</span>
+            <span>Custom time</span>
             <input
               id="custom-cue-time"
               type="time"
@@ -114,13 +115,13 @@ export function SettingsScreen(props: SettingsScreenProps) {
             type="submit"
             disabled={props.paused || props.schedulePending}
           >
-            {props.schedulePending ? 'Keeping…' : 'Keep this time'}
+            {props.schedulePending ? 'Setting…' : 'Set reminder'}
           </button>
         </form>
         {props.paused ? (
           <p class="schedule-status">
-            This time is resting with your cue. Resume the cue to change it or
-            receive reminders.
+            This reminder stays off while your plan is paused. Resume the plan
+            to change it or receive reminders.
           </p>
         ) : null}
         {props.scheduleMessage !== undefined ? (
@@ -135,7 +136,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
         ) : null}
       </section>
       <section class="settings-group" aria-labelledby="cue-settings-title">
-        <h2 id="cue-settings-title">Active cue</h2>
+        <h2 id="cue-settings-title">Current plan</h2>
         <button
           class="settings-row"
           type="button"
@@ -143,11 +144,13 @@ export function SettingsScreen(props: SettingsScreenProps) {
           onClick={() => props.onPauseToggle()}
         >
           <span>
-            <strong>{props.paused ? 'Resume cue' : 'Pause cue'}</strong>
+            <strong>
+              {props.paused ? 'Resume this plan' : 'Pause this plan'}
+            </strong>
             <small>
               {props.paused
-                ? 'Make manual cues available again.'
-                : 'Keep the cue and history, but stop cue moments.'}
+                ? 'Make reminders and Cue me now available again.'
+                : 'Keep the plan and history, but stop reminders and Cue me now.'}
             </small>
           </span>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -161,14 +164,28 @@ export function SettingsScreen(props: SettingsScreenProps) {
           onClick={() => props.onReplace()}
         >
           <span>
-            <strong>Replace this cue</strong>
+            <strong>Change this plan</strong>
             <small>
-              Choose a new pull and B-side. Previous turns stay in reflection.
+              Choose a new Pull and Side B. Your current plan stays active until
+              the new one is saved.
             </small>
           </span>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 5 7 7-7 7" />
           </svg>
+        </button>
+        <button
+          class="settings-row"
+          type="button"
+          disabled={props.schedulePending}
+          onClick={() => props.onReplayIntroduction()}
+        >
+          <span>
+            <strong>Watch Corky’s introduction again</strong>
+            <small>
+              Replay the film without changing your plan, history, or reminder.
+            </small>
+          </span>
         </button>
       </section>
       {props.proSection}
@@ -177,7 +194,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
         <div class="privacy-note">
           <strong>On this device only</strong>
           <p>
-            Pull text, B-side text, settings, and outcomes stay local in this
+            Pull text, Side B text, settings, and choices stay local in this
             build.
           </p>
         </div>
@@ -191,12 +208,13 @@ export function SettingsScreen(props: SettingsScreenProps) {
         </button>
         {props.resetArmed ? (
           <p class="reset-warning" role="alert">
-            This removes your cue and every local reflection. Press confirm
-            reset once more to continue.
+            This deletes your saved plan, choice history, reminder settings, and
+            onboarding progress from this device. Press Confirm reset to
+            continue.
           </p>
         ) : null}
       </section>
-      <p class="settings-screen__version">Beside Cue · Pocket pressing 01</p>
+      <p class="settings-screen__version">Beside Cue · version 0.1</p>
     </main>
   )
 }

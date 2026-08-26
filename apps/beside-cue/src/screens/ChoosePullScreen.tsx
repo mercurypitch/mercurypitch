@@ -18,10 +18,10 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
 
   return (
     <main class="setup-screen app-screen">
-      <AppHeader label="Your first cue" onBack={props.onBack} />
+      <AppHeader label="Your first plan" onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="pull-title">
         <p class="step-label">Side A · the familiar pull</p>
-        <h1 id="pull-title">Which moment would you like less of?</h1>
+        <h1 id="pull-title">Which Pull do you want to notice sooner?</h1>
         <p>
           Choose a starting point. You can use your own words, and they stay on
           this device.
@@ -105,7 +105,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
           type="button"
           onClick={() => props.onContinue()}
         >
-          Choose my B-side
+          Choose what I’ll do instead
         </button>
       </div>
     </main>

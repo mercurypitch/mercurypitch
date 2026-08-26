@@ -10,7 +10,7 @@ export function QuietScreen(props: QuietScreenProps) {
   return (
     <main class="quiet-screen app-screen" aria-labelledby="quiet-title">
       <p class="quiet-screen__label">
-        {props.choseBSide ? 'Side B is yours' : 'No score kept'}
+        {props.choseBSide ? 'Side B is yours' : 'Not now is okay'}
       </p>
       <MascotStage state={props.choseBSide ? 'turn' : 'quiet'} />
       <section class="quiet-screen__copy" aria-live="polite">
@@ -26,7 +26,7 @@ export function QuietScreen(props: QuietScreenProps) {
         type="button"
         onClick={() => props.onDone()}
       >
-        Let the screen go quiet
+        Back to home
       </button>
     </main>
   )
