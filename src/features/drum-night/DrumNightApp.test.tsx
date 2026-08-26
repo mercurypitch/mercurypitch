@@ -1031,7 +1031,7 @@ describe('DrumNightApp', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('makes the phone rack a truthful modal and releases the stage on close', () => {
+  it('makes the phone rack a truthful modal and releases the stage on close', async () => {
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,
       value: 390,
@@ -1052,7 +1052,7 @@ describe('DrumNightApp', () => {
     expect(skipLink).toHaveAttribute('aria-hidden', 'true')
     expect(backgroundPads!.inert).toBe(true)
 
-    const sourceVariation = within(drawer).getByRole('button', {
+    const sourceVariation = await within(drawer).findByRole('button', {
       name: 'Classic Editing',
     })
     expect(sourceVariation).toHaveAttribute('aria-pressed', 'true')
