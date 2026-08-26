@@ -983,8 +983,8 @@ describe('PianoNightApp', () => {
     fireEvent.click(
       screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
     )
-    fireEvent.click(screen.getByRole('tab', { name: 'Room' }))
-    expect(screen.getByRole('tab', { name: 'Room' })).toHaveAttribute(
+    fireEvent.click(screen.getByRole('tab', { name: 'Sound' }))
+    expect(screen.getByRole('tab', { name: 'Sound' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -1009,7 +1009,7 @@ describe('PianoNightApp', () => {
     fireEvent.click(
       screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
     )
-    expect(screen.getByRole('tab', { name: 'Room' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Sound' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -1330,5 +1330,107 @@ describe('PianoNightApp', () => {
     // button that does nothing.
     await waitFor(() => expect(coach).toHaveFocus())
     expect(coach?.className).not.toBe(before)
+  })
+
+  // ── The room, one press away ───────────────────────────────
+  describe('reaching and reading the room', () => {
+    const roomButtons = (): HTMLElement[] =>
+      screen.getAllByRole('button', { name: 'Choose the Piano Night room' })
+
+    it('opens the room picker from the rail, without going through Settings', () => {
+      render(() => <PianoNightApp />)
+
+      fireEvent.click(roomButtons()[0]!)
+
+      expect(screen.getByRole('tabpanel', { name: 'Room' })).toBeInTheDocument()
+      expect(screen.getByRole('tab', { name: 'Room' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+    })
+
+    it('puts the room away when the same button is pressed again', () => {
+      render(() => <PianoNightApp />)
+
+      fireEvent.click(roomButtons()[0]!)
+      expect(roomButtons()[0]).toHaveAttribute('aria-expanded', 'true')
+
+      fireEvent.click(roomButtons()[0]!)
+      expect(roomButtons()[0]).toHaveAttribute('aria-expanded', 'false')
+      expect(
+        screen.queryByRole('tabpanel', { name: 'Room' }),
+      ).not.toBeInTheDocument()
+    })
+
+    it('lights only its own button, never Settings as well', () => {
+      // Both used to answer to the same `drawerSection() !== 'music'`, so
+      // opening the room lit two buttons at once and Settings then reopened
+      // the room instead of the last settings panel.
+      render(() => <PianoNightApp />)
+
+      fireEvent.click(roomButtons()[0]!)
+
+      expect(roomButtons()[0]).toHaveAttribute('aria-expanded', 'true')
+      expect(
+        screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+      ).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    it('does not let the room become what Settings reopens', () => {
+      render(() => <PianoNightApp />)
+
+      fireEvent.click(roomButtons()[0]!)
+      fireEvent.click(
+        within(
+          screen.getByRole('dialog', { name: 'Piano Night controls' }),
+        ).getByRole('button', { name: 'Close Piano Night controls' }),
+      )
+      fireEvent.click(
+        screen.getAllByRole('button', {
+          name: 'Open Piano Night settings',
+        })[0]!,
+      )
+
+      expect(screen.getByRole('tab', { name: 'Session' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+    })
+
+    it('leaves the room legible while it is being picked', () => {
+      // A scrim over the room is a scrim over the only thing that answers
+      // "is this the one?". The dim comes back for every other panel.
+      render(() => <PianoNightApp />)
+
+      fireEvent.click(roomButtons()[0]!)
+      expect(screen.getByTestId('piano-night-scrim').className).toContain(
+        'scrimClear',
+      )
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Session' }))
+      expect(screen.getByTestId('piano-night-scrim').className).not.toContain(
+        'scrimClear',
+      )
+    })
+
+    it('carries a room-visibility slider that survives a reload', () => {
+      render(() => <PianoNightApp />)
+      fireEvent.click(roomButtons()[0]!)
+
+      const slider = screen.getByTestId('piano-night-room-glass')
+      expect(slider).toHaveAttribute(
+        'aria-valuetext',
+        expect.stringContaining('room visibility'),
+      )
+
+      fireEvent.input(slider, { target: { value: '0.9' } })
+
+      expect(
+        document
+          .querySelector<HTMLElement>('[data-testid="piano-night-shell"]')
+          ?.style.getPropertyValue('--pn-glass'),
+      ).toBe('0.9')
+      expect(localStorage.getItem('pitchperfect_pn_room_glass')).toBe('0.9')
+    })
   })
 })

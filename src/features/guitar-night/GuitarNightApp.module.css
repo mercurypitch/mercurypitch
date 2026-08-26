@@ -288,6 +288,11 @@
   color: #fdf3e4;
 }
 
+/* Barely there, on purpose. This scrim only ever backs the Room panel, and
+   that panel's whole job is judging the photograph behind it — at 62% and a
+   2px blur the only way to see the room you had just picked was to close the
+   thing you picked it in. The modality is held by `inert` on `.main`, not by
+   this; the wash is only saying so, and a faint one says it well enough. */
 .roomScrim {
   position: fixed;
   z-index: 60;
@@ -295,10 +300,8 @@
   width: 100%;
   height: 100%;
   border: 0;
-  background: rgba(4, 3, 2, 0.62);
+  background: rgba(4, 3, 2, 0.1);
   cursor: pointer;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
 }
 
 .venueMenu {
