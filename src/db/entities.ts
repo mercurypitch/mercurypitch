@@ -572,6 +572,22 @@ export interface PianoProjectMigrationRecord extends DbEntity {
   completedAt: string
 }
 
+// ── Drum Projects (device-local authored state and take summaries) ────────
+
+/** Indexed wrapper around one validated, portable Drum Night project. */
+export interface DrumProjectRecord<TProject = unknown> extends DbEntity {
+  sourceKind: string
+  sourceRef: string
+  project: TProject
+}
+
+/** Indexed wrapper around one validated, scalar-only completed take. */
+export interface DrumTakeSummaryRecord<TSummary = unknown> extends DbEntity {
+  projectId: string
+  completedAt: string
+  summary: TSummary
+}
+
 // ── Song manifests: the library without the audio ────────────────
 
 /** The quality the audio behind a manifest was last shared at. */

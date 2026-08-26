@@ -70,9 +70,20 @@ export function usePlayAlongSongController<
     requestGeneration += 1
     activeAbort?.abort()
     activeAbort = null
-    if (activeLease !== null) options.onBackingWillRelease?.(activeLease)
-    activeLease?.release()
+    const lease = activeLease
     activeLease = null
+    if (lease === null) return
+    try {
+      options.onBackingWillRelease?.(lease)
+    } catch {
+      // The selected-song authority is already detached. Continue releasing
+      // its owned URLs even when an audio consumer fails to stand down.
+    }
+    try {
+      lease.release()
+    } catch {
+      // A best-effort resource cleanup cannot leave route selection stale.
+    }
   }
 
   const ensurePort =

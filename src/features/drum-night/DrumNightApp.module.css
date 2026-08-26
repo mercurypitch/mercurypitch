@@ -1018,6 +1018,47 @@
   width: 100%;
 }
 
+.takeHistoryLink {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--vellum-muted);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    background 140ms ease-out;
+}
+
+.takeHistoryLink > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.takeHistoryLink > span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.takeHistoryLink:hover {
+  border-color: var(--line-strong);
+  color: var(--vellum);
+  background: rgb(238 231 219 / 4%);
+}
+
+.takeHistoryLink:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
 .coachHeading {
   display: flex;
   align-items: center;
@@ -1812,6 +1853,35 @@
   padding: 14px 18px 118px;
 }
 
+.projectWorkspace {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  padding: 14px 18px 24px;
+}
+
+.grooveProjectControls {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.grooveProjectControls > span {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--vellum-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grooveProjectControls .saveProjectAction {
+  border-color: rgb(231 173 82 / 54%);
+  background: rgb(231 173 82 / 15%);
+}
+
 .grooveReadOnly {
   display: grid;
   width: min(620px, 100%);
@@ -2041,6 +2111,13 @@
 
 .sessionCoachWorkspace > * {
   width: min(100%, 760px);
+}
+
+.coachWorkspaceStack {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  gap: 18px;
 }
 
 .largeRecovery,
@@ -2742,7 +2819,8 @@
 
 @media (min-width: 721px) {
   .workbench[data-workspace='songs'],
-  .workbench[data-workspace='groove'] {
+  .workbench[data-workspace='groove'],
+  .workbench[data-workspace='projects'] {
     height: min(76vh, 720px);
     max-height: 100%;
   }
@@ -3337,7 +3415,8 @@
     min-height: 0;
   }
   .workbench[data-workspace='songs'],
-  .workbench[data-workspace='groove'] {
+  .workbench[data-workspace='groove'],
+  .workbench[data-workspace='projects'] {
     height: 100%;
   }
   .touchKit {

@@ -56,6 +56,16 @@ export interface DrumGrooveDraftController {
     variantId: FirstPocketVariantId,
   ) => EditableDrumGrooveState
   readonly documentFor: (variantId: FirstPocketVariantId) => DrumSessionDocument
+  /** Validate a complete prepared draft set without changing live editor state. */
+  readonly canReplaceDrafts: (
+    drafts: Readonly<Record<FirstPocketVariantId, EditableDrumGrooveState>>,
+    activeVariantId: FirstPocketVariantId,
+  ) => boolean
+  /** Replace every prepared draft after a fully validated project restore. */
+  readonly replaceDrafts: (
+    drafts: Readonly<Record<FirstPocketVariantId, EditableDrumGrooveState>>,
+    activeVariantId: FirstPocketVariantId,
+  ) => boolean
   readonly selectVariant: (variantId: FirstPocketVariantId) => void
   readonly selectHit: (hitId: string | null) => boolean
   readonly setPageSize: (pageSize: DrumGroovePageSize) => void
@@ -159,6 +169,43 @@ export function createDrumGrooveDraftController(
     requestedVariantId: FirstPocketVariantId,
   ): DrumSessionDocument {
     return materializeDrumGrooveDocument(draftFor(requestedVariantId))
+  }
+
+  function canReplaceDrafts(
+    nextDrafts: Readonly<Record<FirstPocketVariantId, EditableDrumGrooveState>>,
+    activeVariantId: FirstPocketVariantId,
+  ): boolean {
+    if (!VARIANT_IDS.has(activeVariantId)) return false
+    for (const candidateVariantId of VARIANT_IDS) {
+      const candidate = nextDrafts[candidateVariantId]
+      if (
+        candidate === undefined ||
+        candidate.sourceDocument.sourceFormat !== 'prepared'
+      ) {
+        return false
+      }
+      try {
+        materializeDrumGrooveDocument(candidate)
+      } catch {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  function replaceDrafts(
+    nextDrafts: Readonly<Record<FirstPocketVariantId, EditableDrumGrooveState>>,
+    activeVariantId: FirstPocketVariantId,
+  ): boolean {
+    if (!canReplaceDrafts(nextDrafts, activeVariantId)) return false
+
+    setDrafts({ ...nextDrafts })
+    setVariantId(activeVariantId)
+    setSelectedHitId(null)
+    setMovePreview(null)
+    setPageIndexSignal(0)
+    return true
   }
 
   function selectVariant(nextVariantId: FirstPocketVariantId): void {
@@ -343,6 +390,8 @@ export function createDrumGrooveDraftController(
     dirty,
     draftFor,
     documentFor,
+    canReplaceDrafts,
+    replaceDrafts,
     selectVariant,
     selectHit,
     setPageSize,

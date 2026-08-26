@@ -9,8 +9,8 @@
 // browser activation gesture.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { batch, createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
+import { AudioWave, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
@@ -32,7 +32,10 @@ import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNig
 import { createDrumNightClickController } from './drum-night-click'
 import styles from './DrumNightApp.module.css'
 import { DrumNightTimeline } from './DrumNightTimeline'
-import { createDrumGrooveDraftController } from './groove'
+import { createDrumGrooveDraftController, materializeDrumGrooveDocument, } from './groove'
+import type { HydratedDrumProject } from './persistence/drum-project'
+import type { DrumProjectCapture, DrumProjectController, DrumProjectControllerOptions, } from './persistence/drum-project-controller'
+import type { DrumTakeHistoryController, DrumTakeHistoryControllerOptions, } from './persistence/drum-take-history-controller'
 import type { DrumPlayAlongBusId, DrumPlayAlongMixPreset, DrumPlayAlongSnapshot, DrumStemPlayAlongSnapshot, } from './play-along'
 import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangement-player'
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
@@ -41,7 +44,7 @@ import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-a
 import type { DrumKitAuthoredFamily, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
-import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumScoreSheet, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
+import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
 
 const PremiumBackgroundPicker = lazy(() =>
   import('@/features/backgrounds/PremiumBackgroundPicker').then((module) => ({
@@ -73,10 +76,38 @@ const DrumPlayAlongStage = lazy(() =>
     default: module.DrumPlayAlongStage,
   })),
 )
+const DrumScoreSheet = lazy(() =>
+  import('./session/DrumScoreSheet').then((module) => ({
+    default: module.DrumScoreSheet,
+  })),
+)
+const DrumProjectLibraryHost = lazy(() =>
+  import('./persistence/DrumProjectLibraryHost').then((module) => ({
+    default: module.DrumProjectLibraryHost,
+  })),
+)
+const DrumTakeHistoryHost = lazy(() =>
+  import('./persistence/DrumTakeHistoryHost').then((module) => ({
+    default: module.DrumTakeHistoryHost,
+  })),
+)
 
 type StageView = 'pocket' | 'seat' | 'score'
-type Workspace = 'groove' | 'kit' | 'mix' | 'room' | 'learn' | 'songs' | 'coach'
+type Workspace =
+  | 'groove'
+  | 'kit'
+  | 'mix'
+  | 'room'
+  | 'learn'
+  | 'songs'
+  | 'coach'
+  | 'projects'
 type PadId = EssentialDrumPadId
+
+interface RawTakeEvidenceIdentity {
+  readonly hits: readonly object[]
+  readonly omittedHitCount: number
+}
 
 interface DrumNightAppProps {
   readonly createAudioSession?: () => DrumNightAudioSession
@@ -91,6 +122,12 @@ interface DrumNightAppProps {
   readonly checkBandPreflight?: (
     sessionId: string,
   ) => CloudSplitBlocker | null | Promise<CloudSplitBlocker | null>
+  readonly createProjectController?: (
+    options: DrumProjectControllerOptions,
+  ) => DrumProjectController
+  readonly createTakeHistoryController?: (
+    options?: DrumTakeHistoryControllerOptions,
+  ) => DrumTakeHistoryController
   /** Optional observer for the route-owned imported-session lifecycle. */
   readonly onReadySessionChange?: (document: DrumSessionDocument | null) => void
   readonly runtimeOptions?: Omit<DrumNightRuntimeOptions, 'player'>
@@ -114,6 +151,7 @@ const WORKBENCH_TABS: readonly Workspace[] = ['groove', 'kit', 'mix', 'room']
 const KIT_STORAGE_KEY = 'mp.drumNight.kit.v1'
 const CALIBRATION_STRIKES = 5
 const INITIAL_KIT_VOLUME = 82
+const FIRST_POCKET_TEMPO_BPM = 84
 const WORKSPACE_TITLES: Record<Workspace, string> = {
   groove: 'Shape the groove',
   kit: 'Choose the kit',
@@ -122,6 +160,7 @@ const WORKSPACE_TITLES: Record<Workspace, string> = {
   learn: 'Build the first pocket',
   songs: 'Bring a song',
   coach: 'Recover the backbeat',
+  projects: 'Saved drum projects',
 }
 
 const cx = (...names: Array<keyof typeof styles | false | undefined>): string =>
@@ -179,9 +218,23 @@ function formatSessionTime(seconds: number): string {
   return `${minutes}:${String(bounded % 60).padStart(2, '0')}`
 }
 
+function formatTempoBpm(tempoBpm: number): string {
+  const bounded = Number.isFinite(tempoBpm) ? tempoBpm : 0
+  return String(Math.round(bounded * 10) / 10)
+}
+
 function formatCountedBeat(beat: number): number {
   const bounded = Math.max(0, Number.isFinite(beat) ? beat : 0)
   return Math.round((bounded + 1) * 100) / 100
+}
+
+function createDrumPersistenceId(prefix: string): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return `${prefix}-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2)}`
 }
 
 function transportIsRunning(state: DrumTransportState): boolean {
@@ -395,6 +448,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     snare: { level: 1, muted: false },
     toms: { level: 1, muted: false },
   })
+  const [projectController, setProjectController] =
+    createSignal<DrumProjectController | null>(null)
+  const [projectIntentGranted, setProjectIntentGranted] = createSignal(false)
+  const [projectSavePromptOpen, setProjectSavePromptOpen] = createSignal(false)
+  const [takeHistoryController, setTakeHistoryController] =
+    createSignal<DrumTakeHistoryController | null>(null)
   const [calibrationRunning, setCalibrationRunning] = createSignal(false)
   const [calibrationCue, setCalibrationCue] = createSignal(0)
   const [calibrationAwaiting, setCalibrationAwaiting] = createSignal(false)
@@ -506,6 +565,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     onBackingWillRelease: () => stemPlayAlong.configure(null),
   })
   let sourceIntentGeneration = 0
+  let projectApplyIntentGeneration: number | null = null
   let activeBandIntent: {
     readonly generation: number
     readonly sessionId: string
@@ -651,8 +711,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   let scheduledDocument: DrumSessionDocument | null = null
   let scheduledPreparedVariation: FirstPocketVariantId | null = null
   let scheduledBackingSource: PlayAlongBackingSource<'drums'> | null = null
+  let projectControllerPromise: Promise<DrumProjectController> | null = null
+  let takeHistoryControllerPromise: Promise<DrumTakeHistoryController> | null =
+    null
+  let projectStateApplying = false
+  let projectApplyDegraded = false
+  let lastQueuedProjectSignature = ''
+  let takeFinishEvidence: RawTakeEvidenceIdentity | null = null
+  let routeDisposed = false
 
   const transport = runtime.transportState
+  const [authoredTempoBpm, setAuthoredTempoBpm] = createSignal(
+    transport().tempoBpm,
+  )
+  const [takeFinishPreparing, setTakeFinishPreparing] = createSignal(false)
   const isPlaying = createMemo(() => transportIsRunning(transport()))
   const clickStatusCopy = createMemo(() => {
     const snapshot = clickSnapshot()
@@ -788,9 +860,62 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       ? `${retained} hits`
       : `${retained} hits · ${omitted} older not retained`
   })
+  const activeProject = createMemo(
+    () => projectController()?.currentProject() ?? null,
+  )
+  const activeProjectId = createMemo(() => activeProject()?.id ?? null)
+  const unsavedProjectDirty = createMemo(() => {
+    if (
+      FIRST_POCKET_VARIANTS.some(
+        (variant) => grooveDrafts.draftFor(variant.id).revision > 0,
+      )
+    ) {
+      return true
+    }
+    if (variation() !== FIRST_POCKET_DEFAULT_VARIANT) return true
+    if (
+      authoredTempoBpm() !== FIRST_POCKET_TEMPO_BPM ||
+      transport().countInBeats !== 4
+    ) {
+      return true
+    }
+    if (clickSnapshot().enabled || loopRange.span() !== null) return true
+    return DRUM_KIT_AUTHORED_FAMILIES.some((family) => {
+      const value = authoredFamilyMix()[family]
+      return value.muted || value.level !== 1
+    })
+  })
+  const liveProjectSignature = createMemo(() =>
+    JSON.stringify({
+      selectedVariantId: variation(),
+      variants: FIRST_POCKET_VARIANTS.map((variant) => [
+        variant.id,
+        grooveDrafts.draftFor(variant.id).revision,
+      ]),
+      familyMix: DRUM_KIT_AUTHORED_FAMILIES.map((family) => [
+        family,
+        authoredFamilyMix()[family].level,
+        authoredFamilyMix()[family].muted,
+      ]),
+      tempoBpm: authoredTempoBpm(),
+      countInBeats: transport().countInBeats,
+      clickEnabled: clickSnapshot().enabled,
+      loopRange: loopRange.span(),
+    }),
+  )
   const sessionTitle = createMemo(
     () => selectedBackingSource()?.title ?? readySession().title,
   )
+  const projectSaveStatusCopy = createMemo(() => {
+    const controller = projectController()
+    if (controller === null || controller.currentProject() === null) {
+      return 'Not saved'
+    }
+    const state = controller.saveState()
+    if (state === 'saving' || state === 'dirty') return 'Saving locally…'
+    if (state === 'saved') return 'Saved on this device'
+    return 'Not saved · retry'
+  })
   const transportClockLabel = createMemo(() =>
     usingStemBacking() ? 'song clock' : 'take clock',
   )
@@ -816,7 +941,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         : document.sourceFormat === 'guitar-pro'
           ? 'Guitar Pro'
           : 'Built-in groove'
-    return `${source} · ${document.hitCount} mapped hits · ${transport().tempoBpm} BPM take clock`
+    return `${source} · ${document.hitCount} mapped hits · ${formatTempoBpm(transport().tempoBpm)} BPM take clock`
   })
   const sessionImportCopy = createMemo(() => {
     const state = sessionState()
@@ -1097,7 +1222,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const invalidateSourceIntent = (): number => {
     sourceIntentGeneration += 1
     activeBandIntent = null
+    projectApplyIntentGeneration = null
+    projectController()?.cancelPendingOperation()
     return sourceIntentGeneration
+  }
+
+  const beginProjectIntent = (): number => {
+    const generation = invalidateSourceIntent()
+    projectApplyDegraded = false
+    projectApplyIntentGeneration = generation
+    bandPreparation.cancel()
+    sessionController.cancel()
+    return generation
+  }
+
+  const projectIntentIsCurrent = (generation: number): boolean =>
+    projectApplyIntentGeneration === generation &&
+    sourceIntentGeneration === generation
+
+  const finishProjectIntent = (generation: number): void => {
+    if (projectApplyIntentGeneration === generation) {
+      projectApplyIntentGeneration = null
+    }
   }
 
   const selectPreparedSession = (
@@ -1105,12 +1251,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     historyMode: 'push' | 'replace' | 'none' = 'push',
     force = false,
   ): void => {
-    invalidateSourceIntent()
-    bandPreparation.cancel()
-    sessionController.cancel()
-    setImportedDocument(null)
-    setSessionFileMessage(null)
-    void songController.stageSession(sessionId, historyMode, { force })
+    const intentGeneration = invalidateSourceIntent()
+    void (async () => {
+      if (!(await leaveSavedProjectForSource(intentGeneration))) return
+      if (intentGeneration !== sourceIntentGeneration) return
+      bandPreparation.cancel()
+      sessionController.cancel()
+      setImportedDocument(null)
+      setSessionFileMessage(null)
+      await songController.stageSession(sessionId, historyMode, { force })
+    })()
   }
 
   const clearPreparedSession = (
@@ -1158,8 +1308,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         ? (requestedView as StageView)
         : 'pocket'
     const requestedDrawer = params.get('drawer')
-    const nextDrawer =
-      requestedDrawer !== null && requestedDrawer in WORKSPACE_TITLES
+    const protectedProjectIntent =
+      requestedDrawer === 'projects' && !projectIntentGranted()
+    const nextDrawer = protectedProjectIntent
+      ? 'groove'
+      : requestedDrawer !== null && requestedDrawer in WORKSPACE_TITLES
         ? (requestedDrawer as Workspace)
         : null
     const drawerWorkspaceChanged =
@@ -1182,7 +1335,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         }
       })
     }
-    if (legacyKitView) updateUrl(nextView, nextDrawer, 'replace')
+    if (legacyKitView || protectedProjectIntent) {
+      updateUrl(nextView, nextDrawer, 'replace')
+    }
     if (nextSongSessionId === null) {
       if (songController.routeSessionId() !== null) {
         clearPreparedSession('none')
@@ -1211,6 +1366,243 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setLiveMessage(message)
   }
 
+  function captureProjectState(): DrumProjectCapture {
+    return {
+      selectedVariantId: variation(),
+      drafts: {
+        source: grooveDrafts.draftFor('source'),
+        tight: grooveDrafts.draftFor('tight'),
+        loose: grooveDrafts.draftFor('loose'),
+        'half-time': grooveDrafts.draftFor('half-time'),
+      },
+      authoredFamilyMix: authoredFamilyMix(),
+      tempoBpm: authoredTempoBpm(),
+      countInBeats: transport().countInBeats === 4 ? 4 : 0,
+      clickEnabled: clickSnapshot().enabled,
+      loopRange: loopRange.span(),
+    }
+  }
+
+  function applyHydratedProject(hydrated: HydratedDrumProject): boolean {
+    const intentGeneration = projectApplyIntentGeneration
+    if (
+      intentGeneration === null ||
+      !projectIntentIsCurrent(intentGeneration)
+    ) {
+      return false
+    }
+    let document: DrumSessionDocument
+    try {
+      for (const variant of FIRST_POCKET_VARIANTS) {
+        materializeDrumGrooveDocument(hydrated.drafts[variant.id])
+      }
+      document = materializeDrumGrooveDocument(
+        hydrated.drafts[hydrated.project.selectedVariantId],
+      )
+      const loop = hydrated.project.loopRange
+      if (
+        loop !== null &&
+        (loop.startBeat < 0 ||
+          loop.endBeat <= loop.startBeat ||
+          loop.endBeat > document.durationBeats + 0.000_001)
+      ) {
+        return false
+      }
+      if (
+        !grooveDrafts.canReplaceDrafts(
+          hydrated.drafts,
+          hydrated.project.selectedVariantId,
+        )
+      ) {
+        return false
+      }
+    } catch {
+      return false
+    }
+
+    projectStateApplying = true
+    let committed = false
+    let degraded = false
+    try {
+      batch(() => {
+        if (
+          !grooveDrafts.replaceDrafts(
+            hydrated.drafts,
+            hydrated.project.selectedVariantId,
+          )
+        ) {
+          return
+        }
+        committed = true
+        scheduledDocument = document
+        scheduledPreparedVariation = hydrated.project.selectedVariantId
+        scheduledBackingSource = null
+        setImportedDocument(null)
+        setSessionFileMessage(null)
+        setRecordingChoiceMade(false)
+        setRecoveryLoopActive(false)
+        setAuthoredFamilyMix(hydrated.project.authoredFamilyMix)
+        setAuthoredTempoBpm(hydrated.project.tempoBpm)
+      })
+    } catch {
+      // The batch callback installs every authoritative target signal before
+      // Solid flushes dependent effects. A consumer failure during that flush
+      // degrades reconciliation but must not split stage and project identity.
+      if (committed) degraded = true
+    }
+    if (!committed) {
+      projectStateApplying = false
+      return false
+    }
+
+    const reconcile = (action: () => void): void => {
+      try {
+        action()
+      } catch {
+        degraded = true
+      }
+    }
+
+    // The validated draft set now authoritatively owns the stage. Reconcile
+    // each fallible runtime collaborator independently so a graph/listener
+    // failure cannot reject the durable project identity or skip later cleanup.
+    reconcile(() => bandPreparation.cancel())
+    reconcile(() => sessionController.cancel())
+    reconcile(() => songController.clearSession('replace'))
+    reconcile(() => stemPlayAlong.configure(null))
+    reconcile(() => runtime.stop())
+    reconcile(() => runtime.clearRecording())
+    reconcile(() => runtime.setSpeedScale(1))
+    reconcile(() => sessionScheduler.setSession(document))
+    reconcile(() => authoredPlayAlong.setSession(document))
+    reconcile(() =>
+      runtime.transportPort.setAuthoredTiming({
+        tempoBpm: hydrated.project.tempoBpm,
+        durationBeats: document.durationBeats,
+      }),
+    )
+    reconcile(() => runtime.transportPort.seek(0))
+    reconcile(() => runtime.setCountInBeats(hydrated.project.countInBeats))
+    reconcile(() => clickController.enable(hydrated.project.clickEnabled))
+    reconcile(() => {
+      if (!loopRange.setSpan(hydrated.project.loopRange)) {
+        throw new Error('The saved project loop could not be applied.')
+      }
+    })
+    for (const family of DRUM_KIT_AUTHORED_FAMILIES) {
+      const familyMix = hydrated.project.authoredFamilyMix[family]
+      reconcile(() =>
+        player.setAuthoredFamilyVolume?.(
+          family,
+          familyMix.muted ? 0 : familyMix.level,
+        ),
+      )
+    }
+    projectApplyDegraded = degraded
+    return true
+  }
+
+  async function ensureProjectController(): Promise<DrumProjectController> {
+    const existing = projectController()
+    if (existing !== null) return existing
+    if (projectControllerPromise !== null) return projectControllerPromise
+
+    const options: DrumProjectControllerOptions = {
+      capture: captureProjectState,
+      apply: applyHydratedProject,
+      onActiveBoundary: (change) => {
+        projectStateApplying = false
+        lastQueuedProjectSignature = ''
+        takeFinishEvidence = null
+        takeHistoryController()?.setActiveProject(
+          change.currentProject?.id ?? null,
+        )
+        takeHistoryController()?.invalidatePendingTake()
+      },
+    }
+    const pending = (async () => {
+      const controller =
+        props.createProjectController?.(options) ??
+        (
+          await import('./persistence/drum-project-controller')
+        ).createDrumProjectController(options)
+      if (routeDisposed) {
+        controller.dispose()
+        throw new Error('Drum Night closed before Projects opened.')
+      }
+      setProjectController(controller)
+      return controller
+    })()
+    projectControllerPromise = pending
+    try {
+      return await pending
+    } finally {
+      if (projectControllerPromise === pending) projectControllerPromise = null
+    }
+  }
+
+  async function ensureTakeHistoryController(): Promise<DrumTakeHistoryController> {
+    const existing = takeHistoryController()
+    if (existing !== null) return existing
+    if (takeHistoryControllerPromise !== null) {
+      return takeHistoryControllerPromise
+    }
+
+    const pending = (async () => {
+      const controller =
+        props.createTakeHistoryController?.() ??
+        (
+          await import('./persistence/drum-take-history-controller')
+        ).createDrumTakeHistoryController()
+      if (routeDisposed) {
+        controller.dispose()
+        throw new Error('Drum Night closed before take history opened.')
+      }
+      controller.setActiveProject(
+        projectController()?.currentProject()?.id ?? null,
+      )
+      setTakeHistoryController(controller)
+      return controller
+    })()
+    takeHistoryControllerPromise = pending
+    try {
+      return await pending
+    } finally {
+      if (takeHistoryControllerPromise === pending) {
+        takeHistoryControllerPromise = null
+      }
+    }
+  }
+
+  async function leaveSavedProjectForSource(
+    intentGeneration: number,
+  ): Promise<boolean> {
+    const controller = projectController()
+    if (controller === null || controller.currentProject() === null) {
+      return intentGeneration === sourceIntentGeneration
+    }
+    if (!(await controller.flush())) {
+      if (intentGeneration !== sourceIntentGeneration) return false
+      setProjectIntentGranted(true)
+      setProjectSavePromptOpen(false)
+      setWorkspace('projects')
+      setDrawerOpen(true)
+      updateUrl(view(), 'projects')
+      queueMicrotask(focusDrawerPrimary)
+      showToast(
+        'This project is not saved yet. Retry the local save before changing sources.',
+      )
+      return false
+    }
+    if (intentGeneration !== sourceIntentGeneration) return false
+    const detached = controller.detach()
+    if (!detached.ok) {
+      showToast('Finish saving this project before changing sources.')
+      return false
+    }
+    return intentGeneration === sourceIntentGeneration
+  }
+
   const selectView = (nextView: StageView): void => {
     setView(nextView)
     updateUrl(nextView, drawerOpen() ? workspace() : null)
@@ -1233,6 +1625,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return
     }
     const activeElement = document.activeElement
+    const switchingFromDrawer =
+      activeElement instanceof HTMLElement &&
+      drawerRef !== undefined &&
+      drawerRef.contains(activeElement)
+    const projectSurfaceOwnsEntryFocus =
+      nextWorkspace === 'projects' &&
+      (projectSavePromptOpen() ||
+        projectController()?.failure()?.action === 'save')
     if (
       activeElement instanceof HTMLElement &&
       (drawerRef === undefined || !drawerRef.contains(activeElement))
@@ -1241,7 +1641,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
     setWorkspace(nextWorkspace)
     setDrawerOpen(true)
+    if (switchingFromDrawer && !projectSurfaceOwnsEntryFocus) {
+      queueMicrotask(focusDrawerPrimary)
+    }
     if (nextWorkspace === 'songs') songController.initialize()
+    if (nextWorkspace === 'projects') {
+      setProjectIntentGranted(true)
+      void ensureProjectController()
+        .then((controller) => controller.initialize())
+        .catch(() => {
+          showToast(
+            'Projects could not be opened. Your live groove is still here.',
+          )
+        })
+    }
     updateUrl(view(), nextWorkspace)
   }
 
@@ -1263,14 +1676,401 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
   }
 
+  const saveCurrentProject = (name: string): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const result = await controller.createProject(name)
+        if (!result.ok || !projectIntentIsCurrent(intentGeneration)) return
+        setProjectSavePromptOpen(false)
+        showToast(`${result.value.title} saved on this device.`)
+      })
+      .catch(() => {
+        showToast(
+          'The project could not be saved. Your live groove is still here.',
+        )
+      })
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const announceAppliedProject = (title: string, successCopy: string): void => {
+    const degraded = projectApplyDegraded
+    projectApplyDegraded = false
+    showToast(
+      degraded
+        ? `${title} is on stage, but one playback service needs retry.`
+        : successCopy,
+    )
+  }
+
+  const openSavedProject = (projectId: string): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const result = await controller.openProject(projectId)
+        if (!result.ok || !projectIntentIsCurrent(intentGeneration)) {
+          projectStateApplying = false
+          projectApplyDegraded = false
+          return
+        }
+        setProjectSavePromptOpen(false)
+        setWorkspace('groove')
+        updateUrl(view(), 'groove')
+        queueMicrotask(focusDrawerPrimary)
+        announceAppliedProject(
+          result.value.title,
+          `${result.value.title} is on stage. Audio remains off.`,
+        )
+      })
+      .catch(() => {
+        showToast('That project could not be opened. The stage was unchanged.')
+      })
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const saveCurrentThenOpen = (
+    projectId: string,
+    requestedName: string,
+  ): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const current = controller.currentProject()
+        const saved =
+          current === null
+            ? await controller.createProject(requestedName)
+            : await controller.renameProject(current.id, requestedName)
+        if (!saved.ok || !projectIntentIsCurrent(intentGeneration)) return
+        const opened = await controller.openProject(projectId)
+        if (!opened.ok || !projectIntentIsCurrent(intentGeneration)) {
+          projectStateApplying = false
+          projectApplyDegraded = false
+          return
+        }
+        setProjectSavePromptOpen(false)
+        setWorkspace('groove')
+        updateUrl(view(), 'groove')
+        queueMicrotask(focusDrawerPrimary)
+        announceAppliedProject(
+          opened.value.title,
+          `${opened.value.title} is on stage. Audio remains off.`,
+        )
+      })
+      .catch(() => {
+        showToast(
+          'The project switch did not finish. Your live groove remains.',
+        )
+      })
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const discardCurrentThenOpen = (projectId: string): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        if (controller.currentProject() !== null && controller.dirty()) {
+          const reverted = await controller.revert()
+          if (!reverted.ok || !projectIntentIsCurrent(intentGeneration)) {
+            projectStateApplying = false
+            projectApplyDegraded = false
+            return
+          }
+          const detached = controller.detach()
+          if (!detached.ok) return
+        }
+        const opened = await controller.openProject(projectId)
+        if (!opened.ok || !projectIntentIsCurrent(intentGeneration)) {
+          projectStateApplying = false
+          projectApplyDegraded = false
+          return
+        }
+        setProjectSavePromptOpen(false)
+        setWorkspace('groove')
+        updateUrl(view(), 'groove')
+        queueMicrotask(focusDrawerPrimary)
+        announceAppliedProject(
+          opened.value.title,
+          `${opened.value.title} is on stage. Audio remains off.`,
+        )
+      })
+      .catch(() => {
+        showToast(
+          'The project switch did not finish. Your live groove remains.',
+        )
+      })
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const renameSavedProject = (projectId: string, name: string): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const result = await controller.renameProject(projectId, name)
+        if (result.ok && projectIntentIsCurrent(intentGeneration)) {
+          showToast(`Project renamed ${result.value.title}.`)
+        }
+      })
+      .catch(() => showToast('The project name could not be saved.'))
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const deleteSavedProject = (projectId: string): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const onStage = controller.currentProject()?.id === projectId
+        const result = await controller.deleteProject(projectId)
+        if (!result.ok || !projectIntentIsCurrent(intentGeneration)) return
+        if (onStage) {
+          takeHistoryController()?.setActiveProject(null)
+          takeHistoryController()?.invalidatePendingTake()
+        }
+        showToast(
+          onStage
+            ? 'Saved project deleted. The live groove stays on stage.'
+            : 'Saved project deleted from this device.',
+        )
+      })
+      .catch(() => showToast('The saved project could not be deleted.'))
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const retryProjectSave = (): void => {
+    const controller = projectController()
+    if (controller === null) return
+    void controller.retrySave().then((result) => {
+      if (result.ok) showToast('Project saved on this device.')
+    })
+  }
+
+  const captureRawTakeEvidence = (): RawTakeEvidenceIdentity => ({
+    hits: [...runtime.recordedHits()],
+    omittedHitCount: omittedTakeHitCount(),
+  })
+
+  const rawTakeEvidenceMatches = (
+    identity: RawTakeEvidenceIdentity,
+  ): boolean => {
+    const currentHits = runtime.recordedHits()
+    return (
+      identity.omittedHitCount === omittedTakeHitCount() &&
+      identity.hits.length === currentHits.length &&
+      identity.hits.every((hit, index) => hit === currentHits[index])
+    )
+  }
+
+  const finishTake = (): void => {
+    if (takeFinishPreparing()) return
+    const projects = projectController()
+    const project = projects?.currentProject() ?? null
+    const document = activeDocument()
+    if (
+      projects === null ||
+      project === null ||
+      document.sourceFormat !== 'prepared' ||
+      usingStemBacking()
+    ) {
+      showToast('Save this First Pocket as a project before finishing a take.')
+      return
+    }
+    const capturedHits = [...capturedSessionHits()]
+    const omittedCaptureHitCount = omittedTakeHitCount()
+    if (capturedHits.length + omittedCaptureHitCount < 1) return
+    const scoreIndex = sessionScoreIndex() ?? undefined
+    const tempoBpm = transport().localTempoBpm
+    const speedScale = transport().speedScale
+    const signature = liveProjectSignature()
+    const evidence = captureRawTakeEvidence()
+    const boundaryGeneration = sourceIntentGeneration
+    const projectId = project.id
+    setTakeFinishPreparing(true)
+    runtime.pause()
+    runtime.setRecording(false)
+    setRecordingChoiceMade(true)
+
+    void (async () => {
+      try {
+        if (!(await projects.flush())) {
+          showToast(
+            'The project must finish saving before this take can be kept.',
+          )
+          return
+        }
+        const durableProject = projects.currentProject()
+        if (
+          boundaryGeneration !== sourceIntentGeneration ||
+          durableProject === null ||
+          durableProject.id !== projectId ||
+          signature !== untrack(liveProjectSignature) ||
+          !rawTakeEvidenceMatches(evidence)
+        ) {
+          showToast(
+            'The groove changed while the take was finishing. Your evidence is still here.',
+          )
+          return
+        }
+        const [{ buildDrumTakeSummary }, historyController] = await Promise.all(
+          [
+            import('./persistence/drum-take-summary-builder'),
+            ensureTakeHistoryController(),
+          ],
+        )
+        const currentProject = projects.currentProject()
+        if (
+          boundaryGeneration !== sourceIntentGeneration ||
+          currentProject?.id !== projectId ||
+          !rawTakeEvidenceMatches(evidence)
+        ) {
+          return
+        }
+        const summary = buildDrumTakeSummary({
+          id: createDrumPersistenceId('drum-take'),
+          completedAt: new Date().toISOString(),
+          project: durableProject,
+          document,
+          capturedHits,
+          omittedCaptureHitCount,
+          tempoBpm,
+          speedScale,
+          ...(scoreIndex === undefined ? {} : { scoreIndex }),
+        })
+        takeFinishEvidence = evidence
+        const saved = await historyController.finish(summary)
+        if (
+          !saved ||
+          takeFinishEvidence !== evidence ||
+          !rawTakeEvidenceMatches(evidence)
+        ) {
+          return
+        }
+        runtime.clearRecording()
+        setRecordingChoiceMade(false)
+        takeFinishEvidence = null
+        showToast('Take saved on this device.')
+      } finally {
+        setTakeFinishPreparing(false)
+      }
+    })().catch(() => {
+      setTakeFinishPreparing(false)
+      showToast(
+        'The take could not be saved. Your captured evidence is still here.',
+      )
+    })
+  }
+
+  const retryFinishTake = (): void => {
+    const evidence = takeFinishEvidence
+    void ensureTakeHistoryController()
+      .then(async (controller) => {
+        const saved = await controller.retryFinish()
+        if (!saved || evidence === null) return
+        if (
+          takeFinishEvidence === evidence &&
+          rawTakeEvidenceMatches(evidence)
+        ) {
+          runtime.clearRecording()
+          setRecordingChoiceMade(false)
+          takeFinishEvidence = null
+          return
+        }
+        // The frozen failed summary was saved, but a newer take has already
+        // begun. Keep that live evidence and return the Finish surface to its
+        // ready state instead of leaving the stale Saved branch on screen.
+        controller.invalidatePendingTake()
+        takeFinishEvidence = null
+      })
+      .catch(() => {
+        showToast(
+          'The take could not be saved. Your captured evidence is still here.',
+        )
+      })
+  }
+
+  const discardFailedTake = (): void => {
+    const controller = takeHistoryController()
+    if (controller?.finishState().kind !== 'error') return
+    controller.invalidatePendingTake()
+    takeFinishEvidence = null
+    runtime.clearRecording()
+    setRecordingChoiceMade(false)
+    showToast('Unsaved take discarded. Start another whenever you are ready.')
+  }
+
+  const revertCurrentProject = (): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const restored = await controller.revert()
+        if (!restored.ok || !projectIntentIsCurrent(intentGeneration)) {
+          projectStateApplying = false
+          projectApplyDegraded = false
+          return
+        }
+        setWorkspace('groove')
+        updateUrl(view(), 'groove')
+        queueMicrotask(focusDrawerPrimary)
+        announceAppliedProject(
+          restored.value.title,
+          'Last saved project restored. Audio remains off.',
+        )
+      })
+      .catch(() => {
+        showToast(
+          'The saved version could not be restored. Your live groove remains.',
+        )
+      })
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const eraseDrumProjectsAndTakes = (): void => {
+    const intentGeneration = beginProjectIntent()
+    void ensureProjectController()
+      .then(async (controller) => {
+        if (!projectIntentIsCurrent(intentGeneration)) return
+        const erased = await controller.eraseAll()
+        if (!erased.ok || !projectIntentIsCurrent(intentGeneration)) return
+        takeHistoryController()?.setActiveProject(null)
+        takeHistoryController()?.invalidatePendingTake()
+        setProjectSavePromptOpen(false)
+        showToast('Drum projects and take history erased from this device.')
+      })
+      .catch(() => {
+        showToast('Drum projects and take history could not be erased.')
+      })
+      .finally(() => finishProjectIntent(intentGeneration))
+  }
+
+  const loadTakeHistory = (): void => {
+    const projectId = activeProject()?.id
+    if (projectId === undefined) return
+    void ensureTakeHistoryController()
+      .then((controller) => controller.loadHistory(projectId))
+      .catch(() => showToast('Take history could not be opened.'))
+  }
+
+  const retryTakeHistory = (): void => {
+    void ensureTakeHistoryController()
+      .then((controller) => controller.retryHistory())
+      .catch(() => showToast('Take history could not be opened.'))
+  }
+
   const importSessionFile = (file: File | undefined): void => {
     if (file === undefined) return
     const intentGeneration = invalidateSourceIntent()
-    bandPreparation.cancel()
-    setSessionFileMessage(null)
-    void sessionController
-      .importFile(file)
-      .then((attempt) => {
+    void (async () => {
+      if (!(await leaveSavedProjectForSource(intentGeneration))) return
+      if (intentGeneration !== sourceIntentGeneration) return
+      bandPreparation.cancel()
+      setSessionFileMessage(null)
+      try {
+        const attempt = await sessionController.importFile(file)
         if (
           attempt.status === 'stale' ||
           intentGeneration !== sourceIntentGeneration
@@ -1291,14 +2091,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           drumSessionStateCopy(attempt.state)?.title ??
             'The selected drum part was not applied.',
         )
-      })
-      .catch(() => {
+      } catch {
         if (intentGeneration !== sourceIntentGeneration) return
         setSessionFileMessage(
           'The authored arrangement could not be opened. Choose the file again.',
         )
         showToast('The drum part could not be opened. Choose the file again.')
-      })
+      }
+    })()
   }
 
   const clearImportedSession = (): void => {
@@ -1365,6 +2165,16 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return
     }
     if (playRequestPending()) return
+    if (
+      !usingStemBacking() &&
+      takeHistoryController()?.finishState().kind === 'saved'
+    ) {
+      // A successful summary remains visible until the user deliberately
+      // starts the next take. At that boundary the same history controller
+      // returns to Ready without touching its already-durable history row.
+      takeHistoryController()?.invalidatePendingTake()
+      takeFinishEvidence = null
+    }
     if (!usingStemBacking() && !recordingChoiceMade()) {
       runtime.setRecording(true)
     }
@@ -1427,8 +2237,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       showToast('Prepared audio keeps its recorded timing and pitch.')
       return
     }
+    if (recoveryLoopActive()) runtime.setSpeedScale(1)
     const nextTempo = Math.max(40, Math.min(280, transport().tempoBpm + delta))
     runtime.setTempoBpm(nextTempo)
+    setAuthoredTempoBpm(nextTempo)
     setRecoveryLoopActive(false)
     showToast(`Tempo set to ${nextTempo} BPM.`)
   }
@@ -1438,13 +2250,24 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   const startFirstPocket = (): void => {
+    if (activeProject() !== null) {
+      setDrawerOpen(false)
+      updateUrl(view(), null)
+      togglePlaying()
+      return
+    }
     invalidateSourceIntent()
     bandPreparation.cancel()
     songController.clearSession('replace')
     setImportedDocument(null)
     sessionController.cancel()
     setVariation(FIRST_POCKET_DEFAULT_VARIANT)
-    runtime.setSpeedScale(1)
+    runtime.transportPort.setAuthoredTiming({
+      tempoBpm: FIRST_POCKET_TEMPO_BPM,
+      durationBeats: grooveDrafts.documentFor(FIRST_POCKET_DEFAULT_VARIANT)
+        .durationBeats,
+    })
+    setAuthoredTempoBpm(FIRST_POCKET_TEMPO_BPM)
     setRecoveryLoopActive(false)
     runtime.setCountInBeats(4)
     loopRange.clear()
@@ -1470,6 +2293,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const leaveRecoveryTempo = (): void => {
     if (!recoveryLoopActive()) return
     runtime.setSpeedScale(1)
+    setAuthoredTempoBpm(transport().localTempoBpm)
     setRecoveryLoopActive(false)
   }
 
@@ -1507,7 +2331,10 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const clearPracticeLoop = (): void => {
     const clearedRecovery = recoveryLoopActive()
     loopRange.clear()
-    if (clearedRecovery) runtime.setSpeedScale(1)
+    if (clearedRecovery) {
+      runtime.setSpeedScale(1)
+      setAuthoredTempoBpm(transport().localTempoBpm)
+    }
     setRecoveryLoopActive(false)
     showToast(
       clearedRecovery
@@ -1517,6 +2344,23 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   }
 
   const toggleRecording = (): void => {
+    const finishState = takeHistoryController()?.finishState().kind ?? 'idle'
+    if (
+      takeFinishPreparing() ||
+      finishState === 'saving' ||
+      finishState === 'error'
+    ) {
+      showToast(
+        finishState === 'error'
+          ? 'Retry or discard the unsaved take before arming another.'
+          : 'This take is still being saved. Wait before arming another.',
+      )
+      return
+    }
+    if (finishState === 'saved') {
+      takeHistoryController()?.invalidatePendingTake()
+      takeFinishEvidence = null
+    }
     const recording = !transport().recording
     setRecordingChoiceMade(true)
     runtime.setRecording(recording)
@@ -1731,6 +2575,53 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     }
   })
 
+  createEffect(() => {
+    const controller = projectController()
+    const project = controller?.currentProject() ?? null
+    const liveSignature = liveProjectSignature()
+    if (
+      controller === null ||
+      project === null ||
+      projectStateApplying ||
+      importedDocument() !== null ||
+      usingStemBacking()
+    ) {
+      if (project === null) lastQueuedProjectSignature = ''
+      return
+    }
+    const durableSignature = JSON.stringify({
+      selectedVariantId: project.selectedVariantId,
+      variants: FIRST_POCKET_VARIANTS.map((variant) => [
+        variant.id,
+        project.variants[variant.id].revision,
+      ]),
+      familyMix: DRUM_KIT_AUTHORED_FAMILIES.map((family) => [
+        family,
+        project.authoredFamilyMix[family].level,
+        project.authoredFamilyMix[family].muted,
+      ]),
+      tempoBpm: project.tempoBpm,
+      countInBeats: project.countInBeats,
+      clickEnabled: project.clickEnabled,
+      loopRange: project.loopRange,
+    })
+    if (
+      liveSignature === durableSignature ||
+      liveSignature === lastQueuedProjectSignature
+    ) {
+      lastQueuedProjectSignature = liveSignature
+      return
+    }
+    lastQueuedProjectSignature = liveSignature
+    controller.markDirty()
+  })
+
+  createEffect(() => {
+    const controller = takeHistoryController()
+    if (controller === null) return
+    controller.setActiveProject(activeProjectId())
+  })
+
   const selectKit = (kitId: DrumKitId): void => {
     const manifest = drumKitManifest(kitId)
     setSelectedKitId(kitId)
@@ -1901,6 +2792,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const document = backingSource === null ? readySession() : null
     const preparedVariation =
       document?.sourceFormat === 'prepared' ? variation() : null
+    // Keep the source/document subscriptions alive while the project commit
+    // owns reconciliation. The plain commit guard does not itself retrigger a
+    // Solid effect, so reading these first is what lets the next edit or source
+    // switch reach the scheduler after the saved project is on stage.
+    if (projectStateApplying) return
     const hotPreparedRevision =
       backingSource === null &&
       scheduledBackingSource === null &&
@@ -1924,6 +2820,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       scheduledDocument = document
       scheduledPreparedVariation = preparedVariation
       scheduledBackingSource = backingSource
+      takeFinishEvidence = null
+      takeHistoryController()?.invalidatePendingTake()
       // An imported document owns its own take evidence and practice range.
       // Crossing that boundary must never coach or loop against the previous
       // document, even when the old loop happens to fit the new duration.
@@ -1956,6 +2854,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           durationBeats: arrangement?.durationBeats ?? document.durationBeats,
         })
         runtime.transportPort.seek(0)
+        if (
+          document.sourceFormat === 'prepared' &&
+          activeProject() === null &&
+          !projectStateApplying
+        ) {
+          setAuthoredTempoBpm(document.canonicalSong.bpm)
+        }
       }
     }
   })
@@ -1983,6 +2888,24 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return
     }
     scheduleCalibrationCue(650)
+  })
+
+  createEffect(() => {
+    const controller = projectController()
+    const protect =
+      controller !== null &&
+      controller.currentProject() !== null &&
+      controller.dirty()
+    if (!protect) return
+
+    const protectUnsavedProject = (event: BeforeUnloadEvent): void => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', protectUnsavedProject)
+    onCleanup(() =>
+      window.removeEventListener('beforeunload', protectUnsavedProject),
+    )
   })
 
   onMount(() => {
@@ -2020,7 +2943,6 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       event.preventDefault()
       closeWorkspace()
     }
-
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', closeTetheredWorkbenchOnEscape)
     window.addEventListener('popstate', syncStateFromUrl)
@@ -2035,6 +2957,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   })
 
   onCleanup(() => {
+    routeDisposed = true
     unsubscribeClick()
     unsubscribeKit()
     unsubscribeSession()
@@ -2046,6 +2969,8 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     sessionScheduler.dispose()
     clickController.dispose()
     sessionController.dispose()
+    projectController()?.dispose()
+    takeHistoryController()?.dispose()
     cancelCalibration()
     if (toastTimer !== undefined) window.clearTimeout(toastTimer)
     if (hitTimer !== undefined) window.clearTimeout(hitTimer)
@@ -2126,10 +3051,15 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <button
             class={cx(
               'railAction',
-              drawerOpen() && workspace() === 'groove' && 'isActive',
+              drawerOpen() &&
+                (workspace() === 'groove' || workspace() === 'projects') &&
+                'isActive',
             )}
             type="button"
-            aria-expanded={drawerOpen() && workspace() === 'groove'}
+            aria-expanded={
+              drawerOpen() &&
+              (workspace() === 'groove' || workspace() === 'projects')
+            }
             aria-controls="drum-workbench"
             onClick={() => openWorkspace('groove')}
           >
@@ -2349,6 +3279,48 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     scoreIndex={sessionScoreIndex}
                     onRequestRecoveryLoop={applyRecoveryLoop}
                   />
+                  <Show when={activeProject() !== null}>
+                    <button
+                      class={styles.takeHistoryLink}
+                      type="button"
+                      onClick={() => openWorkspace('coach')}
+                    >
+                      <History aria-hidden="true" />
+                      <span>Open take history</span>
+                    </button>
+                  </Show>
+                  <Show
+                    when={
+                      activeProject() !== null &&
+                      (retainedTakeHitCount() + omittedTakeHitCount() > 0 ||
+                        (takeHistoryController()?.finishState().kind ??
+                          'idle') !== 'idle')
+                    }
+                  >
+                    <DrumTakeHistoryHost
+                      mode="compact"
+                      controller={takeHistoryController()}
+                      capturedHitCount={
+                        retainedTakeHitCount() + omittedTakeHitCount()
+                      }
+                      eligible={
+                        activeProject() !== null &&
+                        !usingStemBacking() &&
+                        activeDocument().sourceFormat === 'prepared'
+                      }
+                      unavailableReason={
+                        activeProject() === null
+                          ? 'Save this First Pocket as a project before finishing a take.'
+                          : 'Only prepared First Pocket projects keep take history.'
+                      }
+                      preparing={takeFinishPreparing()}
+                      onFinishTake={finishTake}
+                      onRetryFinish={retryFinishTake}
+                      onDiscardFailedTake={discardFailedTake}
+                      onLoadHistory={loadTakeHistory}
+                      onRetryHistory={retryTakeHistory}
+                    />
+                  </Show>
                 </aside>
 
                 <button
@@ -2368,13 +3340,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                           ? 'Arm Take events, then press Play.'
                           : 'Press Play, then answer the phrase.'
                         : omittedTakeHitCount() === 0
-                          ? `${retainedTakeHitCount()} strikes ready to compare.`
+                          ? activeProject() === null
+                            ? `${retainedTakeHitCount()} strikes ready to compare.`
+                            : `${retainedTakeHitCount()} strikes ready · Review and finish.`
                           : `${retainedTakeHitCount()} strikes ready · ${omittedTakeHitCount()} older not retained.`}
                     </strong>
                     <small>
                       {retainedTakeHitCount() === 0
                         ? 'Take events arms automatically on the first Play.'
-                        : 'Uses authored attacks and captured event timing.'}
+                        : activeProject() === null
+                          ? 'Uses authored attacks and captured event timing.'
+                          : 'Finish saves only a compact local summary.'}
                     </small>
                   </span>
                   <ChevronDown />
@@ -2575,9 +3551,86 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         <DrumGrooveEditor
                           controller={grooveDrafts}
                           label={`${preparedGroove().variant.label} groove editor`}
+                          projectControls={
+                            <div class={styles.grooveProjectControls}>
+                              <button
+                                type="button"
+                                onClick={() => openWorkspace('projects')}
+                              >
+                                Projects
+                              </button>
+                              <Show
+                                when={activeProject()}
+                                fallback={
+                                  <button
+                                    class={styles.saveProjectAction}
+                                    type="button"
+                                    onClick={() => {
+                                      setProjectSavePromptOpen(true)
+                                      openWorkspace('projects')
+                                    }}
+                                  >
+                                    Save project
+                                  </button>
+                                }
+                              >
+                                <span>{projectSaveStatusCopy()}</span>
+                                <Show
+                                  when={
+                                    projectController()?.saveState() ===
+                                      'conflict' ||
+                                    projectController()?.saveState() ===
+                                      'storage-full' ||
+                                    projectController()?.saveState() ===
+                                      'storage-unavailable' ||
+                                    projectController()?.saveState() === 'error'
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={retryProjectSave}
+                                  >
+                                    Try save again
+                                  </button>
+                                </Show>
+                              </Show>
+                            </div>
+                          }
                         />
                       </Match>
                     </Switch>
+                  </Show>
+                </div>
+              </Match>
+              <Match when={workspace() === 'projects'}>
+                <div class={cx('workspaceView', 'projectWorkspace')}>
+                  <Show when={drawerOpen() && projectIntentGranted()}>
+                    <DrumProjectLibraryHost
+                      controller={projectController()}
+                      selectedVariantId={variation()}
+                      unsavedDirty={unsavedProjectDirty()}
+                      savePromptOpen={projectSavePromptOpen()}
+                      onLoad={() => {
+                        void ensureProjectController()
+                          .then((controller) => controller.initialize())
+                          .catch(() => undefined)
+                      }}
+                      onRetry={() => {
+                        void ensureProjectController()
+                          .then((controller) => controller.listProjects())
+                          .catch(() => undefined)
+                      }}
+                      onSaveCurrent={saveCurrentProject}
+                      onRetrySave={retryProjectSave}
+                      onRevertCurrent={revertCurrentProject}
+                      onCancelSavePrompt={() => setProjectSavePromptOpen(false)}
+                      onOpenProject={openSavedProject}
+                      onSaveCurrentThenOpen={saveCurrentThenOpen}
+                      onDiscardCurrentThenOpen={discardCurrentThenOpen}
+                      onRenameProject={renameSavedProject}
+                      onDeleteProject={deleteSavedProject}
+                      onEraseAll={eraseDrumProjectsAndTakes}
+                    />
                   </Show>
                 </div>
               </Match>
@@ -2840,7 +3893,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     type="button"
                     onClick={startFirstPocket}
                   >
-                    Play First Pocket at 84 BPM
+                    {activeProject() === null
+                      ? 'Play First Pocket at 84 BPM'
+                      : `Play ${activeProject()?.title ?? 'saved pocket'}`}
                   </button>
                 </div>
               </Match>
@@ -2903,13 +3958,38 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </Match>
               <Match when={workspace() === 'coach'}>
                 <div class={cx('workspaceView', 'sessionCoachWorkspace')}>
-                  <DrumSessionCoach
-                    session={activeSessionState}
-                    playheadBeat={() => transport().positionBeats}
-                    capturedHits={capturedSessionHits}
-                    scoreIndex={sessionScoreIndex}
-                    onRequestRecoveryLoop={applyRecoveryLoop}
-                  />
+                  <div class={styles.coachWorkspaceStack}>
+                    <DrumSessionCoach
+                      session={activeSessionState}
+                      playheadBeat={() => transport().positionBeats}
+                      capturedHits={capturedSessionHits}
+                      scoreIndex={sessionScoreIndex}
+                      onRequestRecoveryLoop={applyRecoveryLoop}
+                    />
+                    <DrumTakeHistoryHost
+                      mode="expanded"
+                      controller={takeHistoryController()}
+                      capturedHitCount={
+                        retainedTakeHitCount() + omittedTakeHitCount()
+                      }
+                      eligible={
+                        activeProject() !== null &&
+                        !usingStemBacking() &&
+                        activeDocument().sourceFormat === 'prepared'
+                      }
+                      unavailableReason={
+                        activeProject() === null
+                          ? 'Save this First Pocket as a project before finishing a take.'
+                          : 'Only prepared First Pocket projects keep take history.'
+                      }
+                      preparing={takeFinishPreparing()}
+                      onFinishTake={finishTake}
+                      onRetryFinish={retryFinishTake}
+                      onDiscardFailedTake={discardFailedTake}
+                      onLoadHistory={loadTakeHistory}
+                      onRetryHistory={retryTakeHistory}
+                    />
+                  </div>
                 </div>
               </Match>
             </Switch>
@@ -3038,7 +4118,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </button>
               <span>
                 <strong>
-                  {usingStemBacking() ? '1×' : transport().tempoBpm}
+                  {usingStemBacking()
+                    ? '1×'
+                    : formatTempoBpm(transport().tempoBpm)}
                 </strong>
                 <small>{usingStemBacking() ? 'Song' : 'BPM'}</small>
               </span>

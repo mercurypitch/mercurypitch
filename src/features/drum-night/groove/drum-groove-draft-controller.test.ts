@@ -133,4 +133,58 @@ describe('createDrumGrooveDraftController', () => {
       drafts.state().hits.some((candidate) => candidate.id === hit.id),
     ).toBe(true)
   })
+
+  it('atomically restores validated project drafts without reporting an edit', () => {
+    const onChange = vi.fn()
+    const source = controller()
+    source.addHit(51, 2)
+    source.selectVariant('tight')
+    source.addHit(48, 3)
+
+    const restored = controller({ onChange })
+    expect(
+      restored.replaceDrafts(
+        {
+          source: source.draftFor('source'),
+          tight: source.draftFor('tight'),
+          loose: source.draftFor('loose'),
+          'half-time': source.draftFor('half-time'),
+        },
+        'tight',
+      ),
+    ).toBe(true)
+
+    expect(restored.variantId()).toBe('tight')
+    expect(restored.state().hits).toContainEqual(
+      expect.objectContaining({ id: 'editor:0001', gmKey: 48, stepIndex: 3 }),
+    )
+    expect(restored.draftFor('source').hits).toContainEqual(
+      expect.objectContaining({ id: 'editor:0001', gmKey: 51, stepIndex: 2 }),
+    )
+    expect(restored.selectedHitId()).toBeNull()
+    expect(restored.pageIndex()).toBe(0)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('leaves every live draft untouched when a restore candidate is invalid', () => {
+    const drafts = controller()
+    const before = drafts.document()
+    const invalid = {
+      source: drafts.draftFor('source'),
+      tight: drafts.draftFor('tight'),
+      loose: drafts.draftFor('loose'),
+      'half-time': {
+        ...drafts.draftFor('half-time'),
+        sourceDocument: {
+          ...drafts.draftFor('half-time').sourceDocument,
+          sourceFormat: 'midi' as const,
+        },
+      },
+    }
+
+    expect(drafts.canReplaceDrafts(invalid, 'source')).toBe(false)
+    expect(drafts.replaceDrafts(invalid, 'source')).toBe(false)
+    expect(drafts.document()).toBe(before)
+    expect(drafts.variantId()).toBe('source')
+  })
 })

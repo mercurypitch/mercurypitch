@@ -18,8 +18,8 @@
 //              auth keys. The on-device database rows are owned by that
 //              identity — wiping it while keeping the rows would strand every
 //              song and melody under an id the fresh visitor no longer has.
-//   database   the on-device database (songs, stems, melodies, piano
-//              projects, playlists) and the model cache. Settings and
+//   database   the on-device database (songs, stems, melodies, piano/drum
+//              projects, drum take summaries, playlists) and the model cache. Settings and
 //              sign-in are kept; pointers to deleted rows (a last-opened
 //              session, say) dangle harmlessly — the app already tolerates
 //              missing rows, it must for sync.
@@ -46,7 +46,7 @@ const CLOSE_STEP: ResetStep = {
 }
 const DELETE_DB_STEP: ResetStep = {
   id: 'delete-db',
-  label: 'Deleting stored songs, stems, and melodies…',
+  label: 'Deleting stored songs, stems, projects, takes, and melodies…',
 }
 const DELETE_MODELS_STEP: ResetStep = {
   id: 'delete-models',
