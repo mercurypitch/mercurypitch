@@ -381,6 +381,15 @@ export default defineConfig(({ command, mode }) => {
             // turns those chunks into static Piano Night dependencies.
             if (id.includes('/src/lib/note-utils.')) return 'note-utils'
             if (id.includes('/src/lib/audio-unlock.')) return 'audio-unlock'
+            // Same shape, found the same way (2026-08-26): the clamp behind
+            // Karaoke Night's stage alpha, Guitar Night's room clarity, Piano
+            // Night's room glass AND the stem mixer's music level. It depends
+            // on nothing, but the mixer's copy lives in 'library'/'advanced',
+            // so the first Piano Night import of it made those two chunks a
+            // static Piano Night dependency and dragged in twenty-odd stores.
+            if (id.includes('/src/lib/clamped-preference.')) {
+              return 'clamped-preference'
+            }
             // Imported by every entry (standalone rooms included) AND by the
             // stem mixer inside 'advanced'. device-tier depends only on
             // solid-js and frame-rate-limiter on nothing; without a pin,
