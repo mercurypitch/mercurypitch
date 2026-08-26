@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/t
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminPremiumPerksPage } from '@/features/admin/AdminPremiumPerksPage'
 import type { AdminPremiumBackground, AdminPremiumCapability, PremiumPerksSnapshot, SupporterGroup, } from '@/features/admin/premium-perks-admin-service'
-import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
+import type { BackgroundPerkId, BackgroundSurface, } from '@/lib/backgrounds/background-catalog'
 import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
 
 /** Derived, so a new surface arrives here without anyone remembering to. */
@@ -537,13 +537,263 @@ describe('AdminPremiumPerksPage', () => {
     await screen.findByText('Draft revisions')
     fireEvent.click(screen.getByRole('tab', { name: 'Supporter access' }))
 
-    expect(screen.getByLabelText('Shipped background')).toBeEnabled()
+    // Both offered, each under its own surface: a shipped revision stays
+    // assignable while its replacement is still a draft.
     expect(
-      screen.getByRole('option', { name: 'Jam — Golden Stage' }),
+      screen.getByRole('button', { name: 'Golden Stage', pressed: false }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('option', { name: 'Piano Night — Velvet Recital' }),
+      screen.getByRole('button', { name: 'Velvet Recital', pressed: false }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Select every Jam background'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Select every Piano Night background'),
+    ).toBeInTheDocument()
+  })
+
+  // ── Bulk background assignment ──────────────────────────────────────
+  // The Room Library took the supporter shelf past fifty rooms. One
+  // dropdown and one Assign button meant a group took fifty round trips,
+  // so the picker assigns sets: everything, a whole surface, or whatever
+  // another group already has.
+  describe('assigning backgrounds in bulk', () => {
+    /** Four rooms across two surfaces, none of them assigned yet. */
+    const shelf = (): PremiumPerksSnapshot =>
+      snapshot({
+        backgrounds: [
+          background({
+            id: 'golden-stage',
+            label: 'Golden Stage',
+            surface: 'jam',
+            lifecycle: 'published',
+            draftVersion: null,
+            draftRevisionId: null,
+            assignedGroupIds: [],
+          }),
+          background({
+            id: 'aurora-loft',
+            label: 'Aurora Loft',
+            surface: 'jam',
+            lifecycle: 'published',
+            draftVersion: null,
+            draftRevisionId: null,
+            assignedGroupIds: [],
+          }),
+          pianoBackground({
+            id: 'piano-velvet-recital',
+            label: 'Velvet Recital',
+            lifecycle: 'published',
+            draftVersion: null,
+            draftRevisionId: null,
+          }),
+          pianoBackground({
+            id: 'piano-aurora-loft',
+            label: 'Aurora Loft (Piano)',
+            lifecycle: 'published',
+            draftVersion: null,
+            draftRevisionId: null,
+          }),
+        ],
+        groups: [
+          group({
+            id: 'founders',
+            slug: 'founders',
+            name: 'Founders',
+            kind: 'manual',
+            memberCount: 1,
+            backgroundIds: [],
+            featureIds: [],
+          }),
+        ],
+      })
+
+    const openSupporterAccess = async (): Promise<void> => {
+      render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
+      await screen.findByText('Draft revisions')
+      fireEvent.click(screen.getByRole('tab', { name: 'Supporter access' }))
+    }
+
+    beforeEach(() => {
+      serviceMocks.loadPremiumPerks.mockResolvedValue({
+        ok: true,
+        value: shelf(),
+      })
+      serviceMocks.assignBackgroundToGroup.mockImplementation(
+        (_key: string, groupId: string, backgroundId: BackgroundPerkId) =>
+          Promise.resolve({
+            ok: true,
+            value: group({
+              id: groupId,
+              slug: 'founders',
+              name: 'Founders',
+              kind: 'manual',
+              backgroundIds: [backgroundId],
+              featureIds: [],
+            }),
+          }),
+      )
+    })
+
+    it('assigns a whole surface from one checkbox', async () => {
+      await openSupporterAccess()
+
+      fireEvent.click(screen.getByLabelText('Select every Jam background'))
+      // The count is the promise the button makes, so it is part of the test.
+      const assign = screen.getByRole('button', {
+        name: 'Assign 2 backgrounds',
+      })
+      fireEvent.click(assign)
+
+      await waitFor(() =>
+        expect(serviceMocks.assignBackgroundToGroup).toHaveBeenCalledTimes(2),
+      )
+      expect(
+        serviceMocks.assignBackgroundToGroup.mock.calls.map((c) => c[2]).sort(),
+      ).toEqual(['aurora-loft', 'golden-stage'])
+      // Piano was never ticked and must not have been swept up.
+      expect(
+        serviceMocks.assignBackgroundToGroup.mock.calls.map((c) => c[2]),
+      ).not.toContain('piano-velvet-recital')
+    })
+
+    it('assigns every unassigned background from the header row', async () => {
+      await openSupporterAccess()
+
+      fireEvent.click(
+        screen.getByLabelText('Select every unassigned background'),
+      )
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Assign 4 backgrounds' }),
+      )
+
+      await waitFor(() =>
+        expect(serviceMocks.assignBackgroundToGroup).toHaveBeenCalledTimes(4),
+      )
+      expect(
+        await screen.findByText(
+          '4 backgrounds assigned to the supporter group.',
+        ),
+      ).toBeInTheDocument()
+    })
+
+    it('copies what another group already has', async () => {
+      serviceMocks.loadPremiumPerks.mockResolvedValue({
+        ok: true,
+        value: {
+          ...shelf(),
+          groups: [
+            group({
+              id: 'founders',
+              slug: 'founders',
+              name: 'Founders',
+              kind: 'manual',
+              backgroundIds: [],
+              featureIds: [],
+            }),
+            group({
+              id: 'active-supporters',
+              name: 'Active Supporters',
+              kind: 'automatic',
+              backgroundIds: ['golden-stage', 'piano-velvet-recital'],
+              featureIds: [],
+            }),
+          ],
+        },
+      })
+      await openSupporterAccess()
+      // The page opens on the automatic group; the copy target is the
+      // manual one that has nothing yet.
+      fireEvent.click(screen.getByRole('button', { name: /Founders/ }))
+
+      fireEvent.change(
+        screen.getByLabelText('Copy assignments from another group'),
+        { target: { value: 'active-supporters' } },
+      )
+
+      // Exactly the two that group has — not its surfaces, not everything.
+      expect(
+        screen.getByRole('button', { name: 'Assign 2 backgrounds' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Golden Stage', pressed: true }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Aurora Loft', pressed: false }),
+      ).toBeInTheDocument()
+    })
+
+    it('says what landed when one of a batch fails', async () => {
+      // No bulk endpoint behind this, so a batch is a loop and a loop can
+      // fail halfway. Silence would leave the rest of the shelf a guess.
+      serviceMocks.assignBackgroundToGroup.mockImplementation(
+        (_key: string, groupId: string, backgroundId: BackgroundPerkId) =>
+          backgroundId === 'aurora-loft'
+            ? Promise.resolve({ ok: false, error: 'Conflict' })
+            : Promise.resolve({
+                ok: true,
+                value: group({
+                  id: groupId,
+                  slug: 'founders',
+                  name: 'Founders',
+                  kind: 'manual',
+                  backgroundIds: [backgroundId],
+                  featureIds: [],
+                }),
+              }),
+      )
+      await openSupporterAccess()
+
+      fireEvent.click(screen.getByLabelText('Select every Jam background'))
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Assign 2 backgrounds' }),
+      )
+
+      expect(
+        await screen.findByText(
+          'Assigned 1 of 2. Still unassigned: Aurora Loft.',
+        ),
+      ).toBeInTheDocument()
+      // The one that failed stays ticked, so a retry is one click.
+      expect(
+        screen.getByRole('button', { name: 'Aurora Loft', pressed: true }),
+      ).toBeInTheDocument()
+    })
+
+    it('offers nothing to add once the group holds everything', async () => {
+      serviceMocks.loadPremiumPerks.mockResolvedValue({
+        ok: true,
+        value: {
+          ...shelf(),
+          groups: [
+            group({
+              id: 'founders',
+              slug: 'founders',
+              name: 'Founders',
+              kind: 'manual',
+              backgroundIds: [
+                'golden-stage',
+                'aurora-loft',
+                'piano-velvet-recital',
+                'piano-aurora-loft',
+              ],
+              featureIds: [],
+            }),
+          ],
+        },
+      })
+      await openSupporterAccess()
+
+      expect(
+        screen.getByText(
+          'Every shipped background is already assigned to this group.',
+        ),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByLabelText('Select every unassigned background'),
+      ).toBeNull()
+    })
   })
 
   it('reports local group edits to the studio leave guard', async () => {

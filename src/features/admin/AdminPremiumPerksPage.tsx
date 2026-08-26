@@ -75,6 +75,35 @@ const BACKGROUND_SURFACE_FILTERS = [
   { id: 'guitar', label: 'Guitar Night' },
 ] as const satisfies readonly BackgroundSurfaceFilterOption[]
 
+/**
+ * A checkbox that can also say "some of these".
+ *
+ * `indeterminate` is a DOM property with no attribute behind it, so JSX
+ * cannot set it; it has to be written to the element again after every
+ * change, which is what the effect is for. Without it a half-ticked surface
+ * band reads as fully unticked.
+ */
+const TriStateCheckbox: Component<{
+  checked: boolean
+  indeterminate: boolean
+  label: string
+  onToggle: (checked: boolean) => void
+}> = (props) => {
+  let input!: HTMLInputElement
+  createEffect(() => {
+    input.indeterminate = props.indeterminate
+  })
+  return (
+    <input
+      ref={input}
+      type="checkbox"
+      aria-label={props.label}
+      checked={props.checked}
+      onChange={(event) => props.onToggle(event.currentTarget.checked)}
+    />
+  )
+}
+
 const EMPTY_GROUP_DRAFT: SupporterGroupDraft = {
   name: '',
   description: '',
@@ -191,9 +220,12 @@ export function AdminPremiumPerksPage(
     createSignal<SupporterGroupDraft>(EMPTY_GROUP_DRAFT)
   const [groupFormDirty, setGroupFormDirty] = createSignal(false)
   const [memberEmail, setMemberEmail] = createSignal('')
-  const [perkToAssign, setPerkToAssign] = createSignal<BackgroundPerkId | ''>(
-    '',
-  )
+  // A set, not a single id: the picker below assigns in bulk, and the whole
+  // point of it is that a supporter group takes thirty rooms at once rather
+  // than thirty round trips through a dropdown.
+  const [perksToAssign, setPerksToAssign] = createSignal<
+    ReadonlySet<BackgroundPerkId>
+  >(new Set<BackgroundPerkId>())
   const [featureToAssign, setFeatureToAssign] = createSignal<
     SupporterFeaturePerkId | ''
   >('')
@@ -291,6 +323,63 @@ export function AdminPremiumPerksPage(
         !group.backgroundIds.includes(background.id),
     )
   })
+  /**
+   * The picker's rows, banded by surface in the filter bar's order.
+   *
+   * Surfaces with nothing left to assign are dropped rather than rendered
+   * empty: a band that says "all 0" is a row of furniture between the
+   * administrator and the rooms they came for.
+   */
+  const assignableBySurface = createMemo(() => {
+    const available = assignableBackgrounds()
+    return BACKGROUND_SURFACE_FILTERS.filter(
+      (option) => option.id !== 'all',
+    ).flatMap((option) => {
+      const rooms = available.filter(
+        (background) => background.surface === option.id,
+      )
+      return rooms.length === 0 ? [] : [{ surface: option.id, rooms }]
+    })
+  })
+
+  /**
+   * Ticks that still mean something.
+   *
+   * A refresh can assign or retire a background under the selection, so
+   * every read is intersected with what is assignable now. Otherwise the
+   * count promises more than the Assign button can deliver.
+   */
+  const selectedAssignable = createMemo(() => {
+    const chosen = perksToAssign()
+    return assignableBackgrounds().filter((background) =>
+      chosen.has(background.id),
+    )
+  })
+
+  /** Shipped and not retired — the pool every group draws from. */
+  const shippedBackgroundCount = createMemo(
+    () =>
+      backgrounds().filter(
+        (background) =>
+          background.publishedVersion !== null &&
+          background.lifecycle !== 'retired',
+      ).length,
+  )
+
+  /** Groups worth copying from: another group that has something this one lacks. */
+  const copyableGroups = createMemo(() => {
+    const group = selectedGroup()
+    if (group === null) return []
+    const assignable = new Set(
+      assignableBackgrounds().map((background) => background.id),
+    )
+    return groups().filter(
+      (candidate) =>
+        candidate.id !== group.id &&
+        candidate.backgroundIds.some((id) => assignable.has(id)),
+    )
+  })
+
   const assignableFeatures = createMemo(() => {
     const group = selectedGroup()
     if (group === null) return []
@@ -735,7 +824,7 @@ export function AdminPremiumPerksPage(
     const perform = (): void => {
       setSelectedGroupId(id)
       setMemberEmail('')
-      setPerkToAssign('')
+      setPerksToAssign(new Set<BackgroundPerkId>())
       setFeatureToAssign('')
       closeGroupForm()
     }
@@ -836,16 +925,85 @@ export function AdminPremiumPerksPage(
     })
   }
 
-  const assignPerk = async (): Promise<void> => {
-    const group = selectedGroup()
-    const backgroundId = perkToAssign()
-    if (group === null || backgroundId === '') return
-    const completed = await runGroupAction(
-      `assign:${backgroundId}`,
-      () => assignBackgroundToGroup(props.adminKey, group.id, backgroundId),
-      'Background assigned to the supporter group.',
+  const togglePerk = (backgroundId: BackgroundPerkId): void => {
+    setPerksToAssign((current) => {
+      const next = new Set<BackgroundPerkId>(current)
+      if (!next.delete(backgroundId)) next.add(backgroundId)
+      return next
+    })
+  }
+
+  /** Tick or clear a whole set at once — a surface band, or everything. */
+  const setPerkSelection = (
+    ids: readonly BackgroundPerkId[],
+    selected: boolean,
+  ): void => {
+    setPerksToAssign((current) => {
+      const next = new Set<BackgroundPerkId>(current)
+      for (const id of ids) {
+        if (selected) next.add(id)
+        else next.delete(id)
+      }
+      return next
+    })
+  }
+
+  const copyPerksFromGroup = (groupId: string): void => {
+    const source = groups().find((item) => item.id === groupId)
+    if (source === undefined) return
+    const assignable = new Set(
+      assignableBackgrounds().map((background) => background.id),
     )
-    if (completed) setPerkToAssign('')
+    setPerkSelection(
+      source.backgroundIds.filter((id) => assignable.has(id)),
+      true,
+    )
+  }
+
+  /**
+   * Assign every ticked background, one call each.
+   *
+   * There is no bulk endpoint, so this is a loop — and a loop can fail
+   * halfway. It keeps going, keeps the group in step after each success, and
+   * reports what actually landed: stopping at the first failure would leave
+   * the administrator guessing which of thirty rooms went through.
+   */
+  const assignSelectedPerks = async (): Promise<void> => {
+    const group = selectedGroup()
+    const chosen = selectedAssignable()
+    if (group === null || chosen.length === 0 || busyAction() !== '') return
+    setBusyAction('assign-selected')
+    setError('')
+    setNotice('')
+    const failed: string[] = []
+    let assigned = 0
+    for (const background of chosen) {
+      const result = await assignBackgroundToGroup(
+        props.adminKey,
+        group.id,
+        background.id,
+      )
+      if (result.ok) {
+        replaceGroup(result.value)
+        assigned += 1
+        setPerkSelection([background.id], false)
+      } else {
+        failed.push(background.label)
+      }
+    }
+    setBusyAction('')
+    if (failed.length > 0) {
+      setError(
+        `Assigned ${assigned} of ${chosen.length}. ` +
+          `Still unassigned: ${failed.join(', ')}.`,
+      )
+      return
+    }
+    setNotice(
+      assigned === 1
+        ? 'Background assigned to the supporter group.'
+        : `${assigned} backgrounds assigned to the supporter group.`,
+    )
   }
 
   const requestRemovePerk = (backgroundId: BackgroundPerkId): void => {
@@ -1486,48 +1644,164 @@ export function AdminPremiumPerksPage(
                                     </p>
                                   </Show>
                                 </div>
-                                <div class={styles.inlineAction}>
-                                  <select
-                                    aria-label="Shipped background"
-                                    value={perkToAssign()}
-                                    disabled={
-                                      assignableBackgrounds().length === 0
-                                    }
-                                    onChange={(event) =>
-                                      setPerkToAssign(
-                                        event.currentTarget.value as
-                                          | BackgroundPerkId
-                                          | '',
-                                      )
-                                    }
-                                  >
-                                    <option value="">
-                                      {assignableBackgrounds().length === 0
-                                        ? 'No unassigned shipped backgrounds'
-                                        : 'Choose a shipped background'}
-                                    </option>
-                                    <For each={assignableBackgrounds()}>
-                                      {(background) => (
-                                        <option value={background.id}>
-                                          {backgroundSurfaceLabel(
-                                            background.surface,
-                                          )}{' '}
-                                          — {background.label}
-                                        </option>
-                                      )}
+                                <Show
+                                  when={assignableBackgrounds().length > 0}
+                                  fallback={
+                                    <p class={styles.inlineEmpty}>
+                                      {shippedBackgroundCount() === 0
+                                        ? 'No shipped backgrounds to assign yet.'
+                                        : 'Every shipped background is already assigned to this group.'}
+                                    </p>
+                                  }
+                                >
+                                  {/* Bulk by default. A group takes a whole
+                                      surface at a time far more often than it
+                                      takes one room, and the old single
+                                      dropdown made the common case the
+                                      expensive one. */}
+                                  <div class={styles.bulkPicker}>
+                                    <div class={styles.bulkHeader}>
+                                      <label class={styles.bulkCheck}>
+                                        <TriStateCheckbox
+                                          label="Select every unassigned background"
+                                          checked={
+                                            selectedAssignable().length ===
+                                            assignableBackgrounds().length
+                                          }
+                                          indeterminate={
+                                            selectedAssignable().length > 0 &&
+                                            selectedAssignable().length <
+                                              assignableBackgrounds().length
+                                          }
+                                          onToggle={(checked) =>
+                                            setPerkSelection(
+                                              assignableBackgrounds().map(
+                                                (background) => background.id,
+                                              ),
+                                              checked,
+                                            )
+                                          }
+                                        />
+                                        <span>
+                                          All {assignableBackgrounds().length}{' '}
+                                          unassigned
+                                        </span>
+                                      </label>
+                                      <Show when={copyableGroups().length > 0}>
+                                        <select
+                                          aria-label="Copy assignments from another group"
+                                          value=""
+                                          onChange={(event) => {
+                                            copyPerksFromGroup(
+                                              event.currentTarget.value,
+                                            )
+                                            event.currentTarget.value = ''
+                                          }}
+                                        >
+                                          <option value="">
+                                            Copy from group…
+                                          </option>
+                                          <For each={copyableGroups()}>
+                                            {(candidate) => (
+                                              <option value={candidate.id}>
+                                                {candidate.name}
+                                              </option>
+                                            )}
+                                          </For>
+                                        </select>
+                                      </Show>
+                                    </div>
+
+                                    <For each={assignableBySurface()}>
+                                      {(band) => {
+                                        const ids = (): BackgroundPerkId[] =>
+                                          band.rooms.map((room) => room.id)
+                                        const chosen = (): number =>
+                                          band.rooms.filter((room) =>
+                                            perksToAssign().has(room.id),
+                                          ).length
+                                        return (
+                                          <div class={styles.surfaceBand}>
+                                            <label class={styles.bulkCheck}>
+                                              <TriStateCheckbox
+                                                label={`Select every ${backgroundSurfaceLabel(band.surface)} background`}
+                                                checked={
+                                                  chosen() === band.rooms.length
+                                                }
+                                                indeterminate={
+                                                  chosen() > 0 &&
+                                                  chosen() < band.rooms.length
+                                                }
+                                                onToggle={(checked) =>
+                                                  setPerkSelection(
+                                                    ids(),
+                                                    checked,
+                                                  )
+                                                }
+                                              />
+                                              <strong>
+                                                {backgroundSurfaceLabel(
+                                                  band.surface,
+                                                )}
+                                              </strong>
+                                              <span>
+                                                all {band.rooms.length}
+                                              </span>
+                                            </label>
+                                            <div class={styles.perkPills}>
+                                              <For each={band.rooms}>
+                                                {(room) => (
+                                                  <button
+                                                    type="button"
+                                                    class={styles.perkPill}
+                                                    classList={{
+                                                      [styles.perkPillOn]:
+                                                        perksToAssign().has(
+                                                          room.id,
+                                                        ),
+                                                    }}
+                                                    aria-pressed={
+                                                      perksToAssign().has(
+                                                        room.id,
+                                                      )
+                                                        ? 'true'
+                                                        : 'false'
+                                                    }
+                                                    onClick={() =>
+                                                      togglePerk(room.id)
+                                                    }
+                                                  >
+                                                    {room.label}
+                                                  </button>
+                                                )}
+                                              </For>
+                                            </div>
+                                          </div>
+                                        )
+                                      }}
                                     </For>
-                                  </select>
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      perkToAssign() === '' ||
-                                      busyAction() !== ''
-                                    }
-                                    onClick={() => void assignPerk()}
-                                  >
-                                    Assign
-                                  </button>
-                                </div>
+
+                                    <div class={styles.bulkFoot}>
+                                      <button
+                                        type="button"
+                                        class={styles.primaryButton}
+                                        disabled={
+                                          selectedAssignable().length === 0 ||
+                                          busyAction() !== ''
+                                        }
+                                        onClick={() =>
+                                          void assignSelectedPerks()
+                                        }
+                                      >
+                                        {busyAction() === 'assign-selected'
+                                          ? 'Assigning…'
+                                          : selectedAssignable().length === 1
+                                            ? 'Assign 1 background'
+                                            : `Assign ${selectedAssignable().length} backgrounds`}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </Show>
                               </section>
 
                               <section class={styles.accessSection}>
