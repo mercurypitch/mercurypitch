@@ -1,6 +1,7 @@
 // Drum Night smoke coverage protects silent first paint and the live-kit boundary.
 // ============================================================
 
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 
@@ -494,6 +495,342 @@ async function rangePoint(
       Math.max(0, bounds.width - thumbInset * 2) * fraction,
     y: bounds.y + bounds.height / 2,
   }
+}
+
+async function clickWithRealMouse(page: Page, target: Locator): Promise<void> {
+  await target.scrollIntoViewIfNeeded()
+  const bounds = await target.boundingBox()
+  if (bounds === null) throw new Error('Pointer target has no visible bounds')
+  await page.mouse.click(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  )
+}
+
+async function loadedDrumPersistenceAssets(page: Page): Promise<string[]> {
+  const resources = await page.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .filter((name) => name.includes('/assets/')),
+  )
+  return resources.filter((name) =>
+    /\/(?:drum-project-controller|drum-library-service|drum-take-history-controller|vendor-db)-/.test(
+      name,
+    ),
+  )
+}
+
+async function openDrumGrooveRack(page: Page): Promise<Locator> {
+  const editor = page.getByTestId('drum-groove-editor')
+  if (await editor.isVisible()) return editor
+  const trigger = page
+    .getByRole('button', { name: 'Groove', exact: true })
+    .filter({ visible: true })
+    .first()
+  await clickWithRealMouse(page, trigger)
+  await expect(editor).toBeVisible()
+  return editor
+}
+
+async function saveCurrentDrumProject(page: Page, name: string): Promise<void> {
+  const editor = page.getByTestId('drum-groove-editor')
+  await clickWithRealMouse(
+    page,
+    editor.getByRole('button', { name: 'Save project', exact: true }),
+  )
+  const library = page.getByTestId('drum-project-library')
+  await expect(library).toBeVisible()
+  const nameInput = library.getByRole('textbox', { name: 'Project name' })
+  await expect(nameInput).toBeFocused()
+  await nameInput.fill(name)
+  await clickWithRealMouse(
+    page,
+    library.getByRole('button', { name: 'Save on this device' }),
+  )
+  await expect(library.getByRole('heading', { name })).toBeVisible()
+  await expect(
+    library.getByText('Saved on this device', { exact: true }),
+  ).toBeVisible()
+}
+
+interface DrumProjectProbe {
+  readonly revision: number
+  readonly title: string
+  readonly selectedVariantId: string
+  readonly tempoBpm: number
+  readonly countInBeats: number
+  readonly clickEnabled: boolean
+  readonly loopRange: {
+    readonly startBeat: number
+    readonly endBeat: number
+  } | null
+  readonly hats: { readonly level: number; readonly muted: boolean }
+  readonly variants: Record<
+    string,
+    {
+      readonly swing: number
+      readonly density: number
+      readonly tomSteps: readonly number[]
+    }
+  >
+}
+
+async function readDrumProjectProbe(
+  page: Page,
+  title: string,
+): Promise<DrumProjectProbe | null> {
+  return page.evaluate(
+    async (requestedTitle): Promise<DrumProjectProbe | null> =>
+      new Promise((resolve, reject) => {
+        const open = window.indexedDB.open('MercuryPitchDB')
+        open.onerror = () => reject(open.error)
+        open.onsuccess = () => {
+          const database = open.result
+          if (!database.objectStoreNames.contains('drumProjects')) {
+            database.close()
+            resolve(null)
+            return
+          }
+          const transaction = database.transaction('drumProjects', 'readonly')
+          const read = transaction.objectStore('drumProjects').getAll()
+          read.onerror = () => {
+            database.close()
+            reject(read.error)
+          }
+          read.onsuccess = () => {
+            type PersistedProject = {
+              readonly revision: number
+              readonly title: string
+              readonly selectedVariantId: string
+              readonly tempoBpm: number
+              readonly countInBeats: number
+              readonly clickEnabled: boolean
+              readonly loopRange: {
+                readonly startBeat: number
+                readonly endBeat: number
+              } | null
+              readonly authoredFamilyMix: Record<
+                string,
+                { readonly level: number; readonly muted: boolean }
+              >
+              readonly variants: Record<
+                string,
+                {
+                  readonly swing: number
+                  readonly density: number
+                  readonly hits: readonly {
+                    readonly gmKey: number
+                    readonly stepIndex: number
+                  }[]
+                }
+              >
+            }
+            const row = (
+              read.result as readonly { readonly project?: PersistedProject }[]
+            ).find((candidate) => candidate.project?.title === requestedTitle)
+            const project = row?.project
+            if (project === undefined) {
+              database.close()
+              resolve(null)
+              return
+            }
+            const variants = Object.fromEntries(
+              Object.entries(project.variants).map(([id, variant]) => [
+                id,
+                {
+                  swing: variant.swing,
+                  density: variant.density,
+                  tomSteps: variant.hits
+                    .filter((hit) => hit.gmKey === 48)
+                    .map((hit) => hit.stepIndex)
+                    .sort((left, right) => left - right),
+                },
+              ]),
+            )
+            database.close()
+            resolve({
+              revision: project.revision,
+              title: project.title,
+              selectedVariantId: project.selectedVariantId,
+              tempoBpm: project.tempoBpm,
+              countInBeats: project.countInBeats,
+              clickEnabled: project.clickEnabled,
+              loopRange: project.loopRange,
+              hats: project.authoredFamilyMix.hats!,
+              variants,
+            })
+          }
+        }
+      }),
+    title,
+  )
+}
+
+async function instrumentTakeWriteFailure(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const trackedWindow = window as unknown as {
+      __drumNightFailTakeWrites: number
+    }
+    trackedWindow.__drumNightFailTakeWrites = 0
+    const nativeAdd = IDBObjectStore.prototype.add
+    IDBObjectStore.prototype.add = function (...args) {
+      if (
+        this.name === 'drumTakeSummaries' &&
+        trackedWindow.__drumNightFailTakeWrites > 0
+      ) {
+        trackedWindow.__drumNightFailTakeWrites -= 1
+        throw new DOMException(
+          'Injected take write failure',
+          'QuotaExceededError',
+        )
+      }
+      return nativeAdd.apply(this, args)
+    }
+  })
+}
+
+async function failNextTakeWrite(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    ;(
+      window as unknown as {
+        __drumNightFailTakeWrites: number
+      }
+    ).__drumNightFailTakeWrites += 1
+  })
+}
+
+async function instrumentProjectWriteFailure(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const trackedWindow = window as unknown as {
+      __drumNightFailProjectWrites: number
+    }
+    trackedWindow.__drumNightFailProjectWrites = 0
+    const nativePut = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function (...args) {
+      if (
+        this.name === 'drumProjects' &&
+        trackedWindow.__drumNightFailProjectWrites > 0
+      ) {
+        trackedWindow.__drumNightFailProjectWrites -= 1
+        throw new DOMException(
+          'Injected project write failure',
+          'QuotaExceededError',
+        )
+      }
+      return nativePut.apply(this, args)
+    }
+  })
+}
+
+async function failNextProjectWrite(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    ;(
+      window as unknown as {
+        __drumNightFailProjectWrites: number
+      }
+    ).__drumNightFailProjectWrites += 1
+  })
+}
+
+interface ScopedDrumStorageProbe {
+  readonly projects: number
+  readonly takes: number
+  readonly unrelatedSettingPresent: boolean
+}
+
+async function seedScopedEraseSentinels(page: Page): Promise<void> {
+  await page.evaluate(
+    async (): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const open = window.indexedDB.open('MercuryPitchDB')
+        open.onerror = () => reject(open.error)
+        open.onsuccess = () => {
+          const database = open.result
+          const transaction = database.transaction(
+            ['drumTakeSummaries', 'userSettings'],
+            'readwrite',
+          )
+          const timestamp = '2026-08-26T12:00:00.000Z'
+          transaction.objectStore('drumTakeSummaries').put({
+            id: 'e2e-drum-summary-sentinel',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            projectId: 'e2e-drum-project-sentinel',
+            completedAt: timestamp,
+            summary: { schemaVersion: 99 },
+          })
+          transaction.objectStore('userSettings').put({
+            id: 'e2e-unrelated-setting',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            userId: 'e2e-user',
+            key: 'e2e-unrelated',
+            value: JSON.stringify({ retained: true }),
+          })
+          transaction.oncomplete = () => {
+            database.close()
+            resolve()
+          }
+          transaction.onerror = () => {
+            database.close()
+            reject(transaction.error)
+          }
+          transaction.onabort = () => {
+            database.close()
+            reject(transaction.error)
+          }
+        }
+      }),
+  )
+  await page.evaluate(() => {
+    localStorage.setItem('mp.drumNight.kit.v1', 'classic-gm')
+    localStorage.setItem('pitchperfect_drum_background', 'drum-tape-room')
+    localStorage.setItem(
+      'mp.drumNight.midiMapping.v2',
+      JSON.stringify({ version: 2, profiles: [] }),
+    )
+  })
+}
+
+async function readScopedDrumStorageProbe(
+  page: Page,
+): Promise<ScopedDrumStorageProbe> {
+  return page.evaluate(
+    async (): Promise<ScopedDrumStorageProbe> =>
+      new Promise((resolve, reject) => {
+        const open = window.indexedDB.open('MercuryPitchDB')
+        open.onerror = () => reject(open.error)
+        open.onsuccess = () => {
+          const database = open.result
+          const transaction = database.transaction(
+            ['drumProjects', 'drumTakeSummaries', 'userSettings'],
+            'readonly',
+          )
+          const projects = transaction.objectStore('drumProjects').count()
+          const takes = transaction.objectStore('drumTakeSummaries').count()
+          const unrelated = transaction
+            .objectStore('userSettings')
+            .get('e2e-unrelated-setting')
+          transaction.oncomplete = () => {
+            database.close()
+            resolve({
+              projects: projects.result,
+              takes: takes.result,
+              unrelatedSettingPresent: unrelated.result !== undefined,
+            })
+          }
+          transaction.onerror = () => {
+            database.close()
+            reject(transaction.error)
+          }
+          transaction.onabort = () => {
+            database.close()
+            reject(transaction.error)
+          }
+        }
+      }),
+  )
 }
 
 test('pairs the Home rooms and opens Drum Night from the Play group @smoke', async ({
@@ -2349,4 +2686,832 @@ test('recomposes for phone and short landscape without overflow or clipped prima
   expect(drawerGeometry.bottom).toBeLessThanOrEqual(390)
   expect(drawerGeometry.width).toBeGreaterThan(0)
   expect(drawerGeometry.height).toBeGreaterThan(0)
+})
+
+test('keeps Drum projects lazy until explicit pointer intent and opens them audio-inert @smoke', async ({
+  page,
+}, testInfo) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night?drawer=projects', {
+    waitUntil: 'domcontentloaded',
+  })
+
+  await expect(page).toHaveURL(/drawer=groove/)
+  await expect(page.getByTestId('drum-groove-editor')).toBeVisible()
+  await expect(page.getByTestId('drum-project-library')).toHaveCount(0)
+  expect(await loadedDrumPersistenceAssets(page)).toEqual([])
+  expect(await boundaryCounts(page)).toEqual({
+    audio: 0,
+    database: 0,
+    fetch: 0,
+    interval: 0,
+    midi: 0,
+    mic: 0,
+    oscillator: 0,
+    raf: 0,
+    timeout: 0,
+    workers: 0,
+  })
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-first-paint-1440x900.png'),
+  })
+
+  await clickWithRealMouse(
+    page,
+    page
+      .getByTestId('drum-groove-editor')
+      .getByRole('button', { name: 'Projects', exact: true }),
+  )
+
+  const library = page.getByTestId('drum-project-library')
+  await expect(library).toBeVisible()
+  await expect(page).toHaveURL(/drawer=projects/)
+  await expect(
+    page.getByRole('button', { name: 'Rack controls' }),
+  ).toBeFocused()
+  await expect(library.getByText('No saved grooves yet')).toBeVisible()
+  const counts = await boundaryCounts(page)
+  expect(counts.database).toBeGreaterThan(0)
+  expect(await loadedDrumPersistenceAssets(page)).not.toEqual([])
+  expect(counts.audio).toBe(0)
+  expect(counts.fetch).toBe(0)
+  expect(counts.midi).toBe(0)
+  expect(counts.mic).toBe(0)
+  expect(counts.oscillator).toBe(0)
+  expect(counts.workers).toBe(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-explicit-open-1440x900.png'),
+  })
+})
+
+test('saves four prepared drafts, autosaves settings, and silently restores exact state @smoke', async ({
+  page,
+}, testInfo) => {
+  const projectName = 'E2E Pocket Archive'
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+  const editor = await openDrumGrooveRack(page)
+  const variationButtons = editor.getByRole('group', {
+    name: 'Prepared groove variation',
+  })
+  const editedTomSteps: Record<string, number> = {}
+
+  for (const [label, variantId] of [
+    ['Classic', 'source'],
+    ['Funk', 'tight'],
+    ['Driving', 'loose'],
+    ['Half-time', 'half-time'],
+  ] as const) {
+    await clickWithRealMouse(
+      page,
+      variationButtons.getByRole('button', { name: new RegExp(`^${label}`) }),
+    )
+    const emptyTom = editor
+      .locator('[data-gm-key="48"]:not([data-hit-id])')
+      .first()
+    const stepIndex = Number(await emptyTom.getAttribute('data-step-index'))
+    expect(Number.isSafeInteger(stepIndex)).toBe(true)
+    editedTomSteps[variantId] = stepIndex
+    await clickWithRealMouse(page, emptyTom)
+    await expect(
+      editor.locator(
+        `[data-gm-key="48"][data-step-index="${stepIndex}"][data-hit-id]`,
+      ),
+    ).toBeVisible()
+  }
+
+  await clickWithRealMouse(
+    page,
+    editor
+      .getByRole('group', { name: 'Swing amount' })
+      .getByRole('button', { name: 'Triplet' }),
+  )
+  await clickWithRealMouse(
+    page,
+    editor
+      .getByRole('group', { name: 'Groove density' })
+      .getByRole('button', { name: 'Essential' }),
+  )
+  await saveCurrentDrumProject(page, projectName)
+  const initialProject = await readDrumProjectProbe(page, projectName)
+  if (initialProject === null) {
+    throw new Error('Saved project was not written to IndexedDB')
+  }
+
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Rack controls' }),
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Close rack drawer' }),
+  )
+  await expect(page.locator('#drum-workbench')).toHaveAttribute(
+    'aria-hidden',
+    'true',
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Increase tempo' }),
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Increase tempo' }),
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Count-in: 4 audible beats' }),
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Playback click: off' }),
+  )
+
+  const timeline = page.getByTestId('drum-night-timeline')
+  const seek = timeline.getByRole('slider', { name: 'Drum part position' })
+  const markA = timeline.getByRole('button', {
+    name: 'Set loop start A at the playhead',
+  })
+  const markB = timeline.getByRole('button', {
+    name: 'Set loop end B at the playhead',
+  })
+  const loopStartPoint = await rangePoint(seek, 0.25)
+  await page.mouse.click(loopStartPoint.x, loopStartPoint.y)
+  await clickWithRealMouse(page, markA)
+  const loopEndPoint = await rangePoint(seek, 0.75)
+  await page.mouse.click(loopEndPoint.x, loopEndPoint.y)
+  await clickWithRealMouse(page, markB)
+
+  await openDrumGrooveRack(page)
+  const workbench = page.locator('#drum-workbench')
+  await clickWithRealMouse(page, workbench.getByRole('tab', { name: 'Mix' }))
+  const hatsFamily = workbench
+    .getByRole('group', { name: 'Kit pieces' })
+    .getByRole('button', { name: /Hats/ })
+  await clickWithRealMouse(page, hatsFamily)
+  const hatsLevel = workbench.getByRole('slider', {
+    name: 'Hats authored level',
+  })
+  const hatsBounds = await hatsLevel.boundingBox()
+  if (hatsBounds === null) throw new Error('Hats level has no pointer bounds')
+  await page.mouse.move(
+    hatsBounds.x + hatsBounds.width,
+    hatsBounds.y + hatsBounds.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    hatsBounds.x + hatsBounds.width * 0.37,
+    hatsBounds.y + hatsBounds.height / 2,
+    { steps: 6 },
+  )
+  await page.mouse.up()
+  const expectedHatsPercent = Number(await hatsLevel.inputValue())
+  await clickWithRealMouse(
+    page,
+    workbench.getByRole('button', { name: 'Mute authored Hats' }),
+  )
+  await clickWithRealMouse(page, workbench.getByRole('tab', { name: 'Groove' }))
+  const liveEditor = page.getByTestId('drum-groove-editor')
+  const extraTom = liveEditor
+    .locator('[data-gm-key="48"]:not([data-hit-id])')
+    .first()
+  const extraTomStep = Number(await extraTom.getAttribute('data-step-index'))
+  await clickWithRealMouse(page, extraTom)
+
+  await expect
+    .poll(
+      async () =>
+        (await readDrumProjectProbe(page, projectName))?.revision ?? -1,
+    )
+    .toBeGreaterThan(initialProject.revision)
+  const persisted = await readDrumProjectProbe(page, projectName)
+  if (persisted === null || persisted.loopRange === null) {
+    throw new Error('Autosaved project did not retain its A/B range')
+  }
+  expect(persisted).toMatchObject({
+    title: projectName,
+    selectedVariantId: 'half-time',
+    tempoBpm: 88,
+    countInBeats: 0,
+    clickEnabled: true,
+    hats: {
+      level: expectedHatsPercent / 100,
+      muted: true,
+    },
+  })
+  for (const [variantId, stepIndex] of Object.entries(editedTomSteps)) {
+    expect(persisted.variants[variantId]?.tomSteps).toContain(stepIndex)
+  }
+  expect(persisted.variants['half-time']?.tomSteps).toContain(extraTomStep)
+  expect(persisted.variants['half-time']).toMatchObject({
+    swing: 1,
+    density: 0.55,
+  })
+
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-autosaved-1440x900.png'),
+  })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  expect((await boundaryCounts(page)).database).toBe(0)
+  expect((await boundaryCounts(page)).audio).toBe(0)
+
+  await openDrumGrooveRack(page)
+  expect((await boundaryCounts(page)).database).toBe(0)
+  await clickWithRealMouse(
+    page,
+    page
+      .getByTestId('drum-groove-editor')
+      .getByRole('button', { name: 'Projects', exact: true }),
+  )
+  const library = page.getByTestId('drum-project-library')
+  const savedRow = library
+    .getByRole('list', { name: 'Saved drum projects' })
+    .getByRole('listitem')
+    .filter({ hasText: projectName })
+  await clickWithRealMouse(
+    page,
+    savedRow.getByRole('button', { name: 'Open', exact: true }),
+  )
+
+  await expect(page).toHaveURL(/drawer=groove/)
+  await expect(
+    page.locator('#drum-workbench').getByRole('tab', { name: 'Groove' }),
+  ).toBeFocused()
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-playing',
+    'false',
+  )
+  await expect(
+    page.getByRole('button', { name: 'Count-in: off' }),
+  ).toHaveAttribute('aria-pressed', 'false')
+  await expect(
+    page.getByRole('button', { name: 'Playback click: on' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('[aria-label="Authored tempo"] strong')).toHaveText(
+    '88',
+  )
+  await expect(
+    timeline.getByRole('slider', { name: 'Loop start marker' }),
+  ).toHaveAttribute('aria-valuenow', String(persisted.loopRange.startBeat))
+  await expect(
+    timeline.getByRole('slider', { name: 'Loop end marker' }),
+  ).toHaveAttribute('aria-valuenow', String(persisted.loopRange.endBeat))
+
+  const restoredEditor = page.getByTestId('drum-groove-editor')
+  await expect(
+    restoredEditor
+      .getByRole('group', { name: 'Prepared groove variation' })
+      .getByRole('button', { name: /^Half-time/ }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    restoredEditor
+      .getByRole('group', { name: 'Swing amount' })
+      .getByRole('button', { name: 'Triplet' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    restoredEditor
+      .getByRole('group', { name: 'Groove density' })
+      .getByRole('button', { name: 'Essential' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+
+  for (const [label, variantId] of [
+    ['Classic', 'source'],
+    ['Funk', 'tight'],
+    ['Driving', 'loose'],
+    ['Half-time', 'half-time'],
+  ] as const) {
+    await clickWithRealMouse(
+      page,
+      restoredEditor
+        .getByRole('group', { name: 'Prepared groove variation' })
+        .getByRole('button', { name: new RegExp(`^${label}`) }),
+    )
+    await expect(
+      restoredEditor.locator(
+        `[data-gm-key="48"][data-step-index="${editedTomSteps[variantId]}"][data-hit-id]`,
+      ),
+    ).toBeVisible()
+  }
+
+  await clickWithRealMouse(page, workbench.getByRole('tab', { name: 'Mix' }))
+  await clickWithRealMouse(
+    page,
+    workbench
+      .getByRole('group', { name: 'Kit pieces' })
+      .getByRole('button', { name: /Hats/ }),
+  )
+  await expect(
+    workbench.getByRole('slider', { name: 'Hats authored level' }),
+  ).toHaveValue(String(expectedHatsPercent))
+  await expect(
+    workbench.getByRole('button', { name: 'Unmute authored Hats' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-restored-1440x900.png'),
+  })
+})
+
+test('recovers a failed autosave by retry or confirmed restore without activating audio @smoke', async ({
+  page,
+}, testInfo) => {
+  const projectName = 'Autosave Recovery Pocket'
+  await instrumentFirstPaint(page)
+  await instrumentProjectWriteFailure(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+  await openDrumGrooveRack(page)
+  await saveCurrentDrumProject(page, projectName)
+  const created = await readDrumProjectProbe(page, projectName)
+  if (created === null) throw new Error('Recovery project was not created')
+
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Rack controls' }),
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Close rack drawer' }),
+  )
+  await failNextProjectWrite(page)
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Increase tempo' }),
+  )
+  await openDrumGrooveRack(page)
+  const editor = page.getByTestId('drum-groove-editor')
+  await expect(editor.getByText('Not saved · retry')).toBeVisible()
+  const retry = editor.getByRole('button', { name: 'Try save again' })
+  await expect(retry).toBeVisible()
+  await clickWithRealMouse(page, retry)
+  await expect(editor.getByText('Saved on this device')).toBeVisible()
+  await expect
+    .poll(async () => (await readDrumProjectProbe(page, projectName))?.tempoBpm)
+    .toBe(86)
+
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Close rack drawer' }),
+  )
+  await failNextProjectWrite(page)
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Increase tempo' }),
+  )
+  await openDrumGrooveRack(page)
+  await expect(editor.getByText('Not saved · retry')).toBeVisible()
+  await clickWithRealMouse(
+    page,
+    editor.getByRole('button', { name: 'Projects', exact: true }),
+  )
+  const recoveryLibrary = page.getByTestId('drum-project-library')
+  await expect(recoveryLibrary).toBeVisible()
+  const recoveryRetry = recoveryLibrary.getByRole('button', {
+    name: 'Try save again',
+  })
+  await expect(recoveryRetry).toBeFocused()
+  await expect(recoveryRetry).toBeVisible()
+  const restore = recoveryLibrary.getByRole('button', {
+    name: 'Restore last saved',
+  })
+  await expect(restore).toBeVisible()
+  await clickWithRealMouse(page, restore)
+
+  const restoreDialog = recoveryLibrary.getByRole('alertdialog', {
+    name: 'Restore last saved version?',
+  })
+  await expect(restoreDialog).toBeVisible()
+  await expect(
+    restoreDialog.getByRole('button', { name: 'Restore saved version' }),
+  ).toBeFocused()
+  await clickWithRealMouse(
+    page,
+    restoreDialog.getByRole('button', { name: 'Keep unsaved changes' }),
+  )
+  await expect(restoreDialog).toHaveCount(0)
+  await expect(restore).toBeFocused()
+  await expect(page.locator('[aria-label="Authored tempo"] strong')).toHaveText(
+    '88',
+  )
+  await expect(recoveryRetry).toBeVisible()
+
+  await clickWithRealMouse(page, restore)
+  await clickWithRealMouse(
+    page,
+    restoreDialog.getByRole('button', { name: 'Restore saved version' }),
+  )
+  await expect(restoreDialog).toHaveCount(0)
+  await expect(page.locator('[aria-label="Authored tempo"] strong')).toHaveText(
+    '86',
+  )
+  await expect(editor.getByText('Saved on this device')).toBeVisible()
+  await expect(
+    page.locator('#drum-workbench').getByRole('tab', { name: 'Groove' }),
+  ).toBeFocused()
+  const restored = await readDrumProjectProbe(page, projectName)
+  if (restored === null) throw new Error('Restored project row disappeared')
+  expect(restored).toMatchObject({ tempoBpm: 86 })
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-autosave-recovery-1440x900.png'),
+  })
+})
+
+test('erases only Drum projects and take history after scoped confirmation @smoke', async ({
+  page,
+}, testInfo) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+  await openDrumGrooveRack(page)
+  await saveCurrentDrumProject(page, 'Scoped Erase Pocket')
+  await seedScopedEraseSentinels(page)
+  expect(await readScopedDrumStorageProbe(page)).toEqual({
+    projects: 1,
+    takes: 1,
+    unrelatedSettingPresent: true,
+  })
+
+  const library = page.getByTestId('drum-project-library')
+  const erase = library.getByRole('button', {
+    name: 'Erase Drum projects and takes',
+  })
+  await clickWithRealMouse(page, erase)
+  const eraseDialog = library.getByRole('alertdialog', {
+    name: 'Erase Drum projects and take history?',
+  })
+  await expect(eraseDialog).toBeVisible()
+  await expect(
+    eraseDialog.getByRole('button', { name: 'Erase Drum data' }),
+  ).toBeFocused()
+  await clickWithRealMouse(
+    page,
+    eraseDialog.getByRole('button', { name: 'Keep Drum data' }),
+  )
+  await expect(eraseDialog).toHaveCount(0)
+  await expect(erase).toBeFocused()
+  expect(await readScopedDrumStorageProbe(page)).toEqual({
+    projects: 1,
+    takes: 1,
+    unrelatedSettingPresent: true,
+  })
+
+  await clickWithRealMouse(page, erase)
+  await clickWithRealMouse(
+    page,
+    eraseDialog.getByRole('button', { name: 'Erase Drum data' }),
+  )
+  await expect(library.getByText('No saved grooves yet')).toBeVisible()
+  await expect(erase).toBeFocused()
+  await expect
+    .poll(async () => readScopedDrumStorageProbe(page))
+    .toEqual({
+      projects: 0,
+      takes: 0,
+      unrelatedSettingPresent: true,
+    })
+  expect(
+    await page.evaluate(() => ({
+      background: localStorage.getItem('pitchperfect_drum_background'),
+      kit: localStorage.getItem('mp.drumNight.kit.v1'),
+      midiMap: localStorage.getItem('mp.drumNight.midiMapping.v2'),
+    })),
+  ).toEqual({
+    background: 'drum-tape-room',
+    kit: 'classic-gm',
+    midiMap: JSON.stringify({ version: 2, profiles: [] }),
+  })
+  expect((await boundaryCounts(page)).audio).toBe(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-scoped-erase-1440x900.png'),
+  })
+})
+
+test('keeps imported MIDI outside the prepared-project boundary @smoke', async ({
+  page,
+}, testInfo) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night?view=score', {
+    waitUntil: 'domcontentloaded',
+  })
+  await clickWithRealMouse(
+    page,
+    page
+      .getByRole('button', { name: 'Songs', exact: true })
+      .filter({ visible: true })
+      .first(),
+  )
+  const songs = page.getByRole('region', { name: 'Bring a song' })
+  await songs.getByTestId('drum-play-along-file-drop-input').setInputFiles({
+    name: 'ephemeral-drums.mid',
+    mimeType: 'audio/midi',
+    buffer: DRUM_SESSION_MIDI,
+  })
+  await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
+    'data-import-status',
+    'ready',
+  )
+
+  await clickWithRealMouse(
+    page,
+    page
+      .getByRole('button', { name: 'Groove', exact: true })
+      .filter({ visible: true })
+      .first(),
+  )
+  const workbench = page.locator('#drum-workbench')
+  await expect(workbench.getByText('Read-only imported part')).toBeVisible()
+  await expect(page.getByTestId('drum-groove-editor')).toHaveCount(0)
+  await expect(
+    workbench.getByRole('button', { name: 'Save project', exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    workbench.getByRole('button', { name: 'Projects', exact: true }),
+  ).toHaveCount(0)
+  await expect(page).toHaveURL(/drawer=groove/)
+  const counts = await boundaryCounts(page)
+  // Songs intentionally initializes the shared, DB-backed source library.
+  // The imported-part guard must not cross the separate Drum project/take
+  // controllers merely because an authored source became active.
+  expect(
+    (await loadedDrumPersistenceAssets(page)).filter(
+      (asset) => !/\/vendor-db-/.test(asset),
+    ),
+  ).toEqual([])
+  expect(counts.audio).toBe(0)
+  await page.screenshot({
+    path: testInfo.outputPath('drum-project-import-guard-1440x900.png'),
+  })
+})
+
+test('retains failed take evidence through retry and clears only a confirmed discard @smoke', async ({
+  page,
+}, testInfo) => {
+  await instrumentTakeWriteFailure(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+  await openDrumGrooveRack(page)
+  await saveCurrentDrumProject(page, 'Take Recovery Pocket')
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Rack controls' }),
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Close rack drawer' }),
+  )
+  await expect(page.locator('#drum-workbench')).toHaveAttribute(
+    'aria-hidden',
+    'true',
+  )
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Count-in: 4 audible beats' }),
+  )
+
+  const shell = page.getByTestId('drum-night-shell')
+  const photoSnare = page
+    .locator('[aria-label="Pocket Console drum kit"]')
+    .getByRole('button', { name: /^Acoustic snare, key/i })
+  const play = page
+    .getByRole('button', { name: /^Play First Pocket take clock$/ })
+    .filter({ visible: true })
+  await clickWithRealMouse(page, play)
+  await expect(shell).toHaveAttribute('data-playing', 'true')
+  await clickWithRealMouse(page, photoSnare)
+  await clickWithRealMouse(
+    page,
+    page
+      .getByRole('button', { name: /^Pause First Pocket take clock$/ })
+      .filter({ visible: true }),
+  )
+
+  const compactHistory = page
+    .getByTestId('drum-take-history')
+    .filter({ visible: true })
+    .first()
+  await expect(
+    compactHistory.getByRole('button', { name: 'Finish take' }),
+  ).toBeVisible()
+  await failNextTakeWrite(page)
+  await clickWithRealMouse(
+    page,
+    compactHistory.getByRole('button', { name: 'Finish take' }),
+  )
+  await expect(compactHistory.getByText('TAKE NOT SAVED')).toBeVisible()
+  await expect(
+    compactHistory.getByText('Your captured evidence is still here.'),
+  ).toBeVisible()
+  await expect(
+    compactHistory.getByRole('button', { name: 'Try again' }),
+  ).toBeVisible()
+
+  await clickWithRealMouse(
+    page,
+    compactHistory.getByRole('button', { name: 'Try again' }),
+  )
+  await expect(
+    compactHistory.getByText('TAKE SAVED', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    compactHistory.getByRole('heading', {
+      name: 'Take saved on this device.',
+    }),
+  ).toBeVisible()
+
+  await clickWithRealMouse(
+    page,
+    page
+      .getByRole('button', { name: /^Play First Pocket take clock$/ })
+      .filter({ visible: true }),
+  )
+  await clickWithRealMouse(page, photoSnare)
+  await clickWithRealMouse(
+    page,
+    page
+      .getByRole('button', { name: /^Pause First Pocket take clock$/ })
+      .filter({ visible: true }),
+  )
+  await expect(
+    compactHistory.getByRole('button', { name: 'Finish take' }),
+  ).toBeVisible()
+  await failNextTakeWrite(page)
+  await clickWithRealMouse(
+    page,
+    compactHistory.getByRole('button', { name: 'Finish take' }),
+  )
+  await expect(compactHistory.getByText('TAKE NOT SAVED')).toBeVisible()
+  await clickWithRealMouse(
+    page,
+    compactHistory.getByRole('button', { name: 'Discard take' }),
+  )
+  await expect(
+    compactHistory.getByText('Discard this unsaved take?'),
+  ).toBeVisible()
+  await clickWithRealMouse(
+    page,
+    compactHistory.getByRole('button', { name: 'Yes, discard' }),
+  )
+  await expect(compactHistory).toHaveCount(0)
+  await expect(page.locator('#drum-workbench')).toHaveAttribute(
+    'aria-hidden',
+    'true',
+  )
+
+  await clickWithRealMouse(
+    page,
+    page.getByRole('button', { name: 'Open take history' }),
+  )
+  const expandedHistory = page
+    .getByTestId('drum-take-history')
+    .filter({ visible: true })
+    .last()
+  await expect(
+    expandedHistory.getByText('No take waiting to finish'),
+  ).toBeVisible()
+  const recentTakes = expandedHistory.getByRole('list', {
+    name: 'Recent finished drum takes',
+  })
+  await expect(recentTakes).toBeVisible()
+  await expect(recentTakes.getByRole('listitem')).toHaveCount(1)
+  await recentTakes.scrollIntoViewIfNeeded()
+  await page.screenshot({
+    path: testInfo.outputPath('drum-take-retry-discard-1440x900.png'),
+  })
+})
+
+test('keeps Projects pointer-safe, focused, and URL-synced across room sizes @smoke', async ({
+  page,
+}, testInfo) => {
+  await instrumentFirstPaint(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+  await openDrumGrooveRack(page)
+  await saveCurrentDrumProject(page, 'Responsive Pocket')
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 320, height: 568 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+    const editor = await openDrumGrooveRack(page)
+    await clickWithRealMouse(
+      page,
+      editor.getByRole('button', { name: 'Projects', exact: true }),
+    )
+
+    const drawer = page.locator('#drum-workbench')
+    const library = page.getByTestId('drum-project-library')
+    const back = page.getByRole('button', { name: 'Rack controls' })
+    await expect(library).toBeVisible()
+    await expect(page).toHaveURL(/drawer=projects/)
+    await expect(back).toBeFocused()
+    await expect(
+      library.getByRole('heading', { name: 'Responsive Pocket' }),
+    ).toBeVisible()
+    const openSavedProject = library.getByRole('button', {
+      name: 'Open',
+      exact: true,
+    })
+    await openSavedProject.scrollIntoViewIfNeeded()
+    const openBounds = await openSavedProject.boundingBox()
+    if (openBounds === null) {
+      throw new Error(
+        `Saved-project action is unreachable at ${JSON.stringify(viewport)}`,
+      )
+    }
+    expect(
+      Math.round(openBounds.width),
+      JSON.stringify(viewport),
+    ).toBeGreaterThanOrEqual(44)
+    expect(
+      Math.round(openBounds.height),
+      JSON.stringify(viewport),
+    ).toBeGreaterThanOrEqual(44)
+    expect(openBounds.y, JSON.stringify(viewport)).toBeGreaterThanOrEqual(0)
+    expect(
+      openBounds.y + openBounds.height,
+      JSON.stringify(viewport),
+    ).toBeLessThanOrEqual(viewport.height)
+
+    await drawer.evaluate(async (element) => {
+      await Promise.all(
+        element
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      )
+    })
+    const geometry = await library.evaluate((element) => {
+      const drawer = element.closest<HTMLElement>('#drum-workbench')
+      const drawerBounds = drawer?.getBoundingClientRect()
+      const visibleButtons = [...element.querySelectorAll('button')].filter(
+        (button) => {
+          const bounds = button.getBoundingClientRect()
+          const style = window.getComputedStyle(button)
+          return (
+            bounds.width > 0 &&
+            bounds.height > 0 &&
+            bounds.bottom > 0 &&
+            bounds.right > 0 &&
+            bounds.top < window.innerHeight &&
+            bounds.left < window.innerWidth &&
+            style.display !== 'none' &&
+            style.visibility !== 'hidden'
+          )
+        },
+      )
+      return {
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        drawerBottom: drawerBounds?.bottom ?? Number.POSITIVE_INFINITY,
+        drawerLeft: drawerBounds?.left ?? Number.NEGATIVE_INFINITY,
+        drawerRight: drawerBounds?.right ?? Number.POSITIVE_INFINITY,
+        drawerTop: drawerBounds?.top ?? Number.NEGATIVE_INFINITY,
+        libraryClientWidth: element.clientWidth,
+        libraryScrollWidth: element.scrollWidth,
+        undersizedButtons: visibleButtons.filter((button) => {
+          const bounds = button.getBoundingClientRect()
+          return Math.round(bounds.width) < 44 || Math.round(bounds.height) < 44
+        }).length,
+      }
+    })
+    expect(geometry.documentScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.documentClientWidth,
+    )
+    expect(geometry.libraryScrollWidth, JSON.stringify(viewport)).toBe(
+      geometry.libraryClientWidth,
+    )
+    expect(geometry.drawerTop, JSON.stringify(viewport)).toBeGreaterThanOrEqual(
+      0,
+    )
+    expect(
+      geometry.drawerLeft,
+      JSON.stringify(viewport),
+    ).toBeGreaterThanOrEqual(0)
+    expect(geometry.drawerRight, JSON.stringify(viewport)).toBeLessThanOrEqual(
+      viewport.width,
+    )
+    expect(geometry.drawerBottom, JSON.stringify(viewport)).toBeLessThanOrEqual(
+      viewport.height,
+    )
+    expect(geometry.undersizedButtons, JSON.stringify(viewport)).toBe(0)
+    expect((await boundaryCounts(page)).audio).toBe(0)
+
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `drum-projects-${viewport.width}x${viewport.height}.png`,
+      ),
+    })
+    await clickWithRealMouse(page, back)
+    const grooveTab = drawer.getByRole('tab', { name: 'Groove' })
+    await expect(page).toHaveURL(/drawer=groove/)
+    await expect(grooveTab).toHaveAttribute('aria-selected', 'true')
+    await expect(grooveTab).toBeFocused()
+  }
 })

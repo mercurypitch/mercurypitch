@@ -59,6 +59,18 @@ function dispatchPointer(
 }
 
 describe('DrumGrooveEditor', () => {
+  it('renders host-owned project controls without crossing persistence itself', () => {
+    const drafts = createDrumGrooveDraftController()
+    render(() => (
+      <DrumGrooveEditor
+        controller={drafts}
+        projectControls={<button type="button">Save project</button>}
+      />
+    ))
+
+    expect(screen.getByRole('button', { name: 'Save project' })).toBeVisible()
+  })
+
   it('shows exact source and essential GM rows and adds into an empty one', () => {
     const { controller } = renderEditor()
 
