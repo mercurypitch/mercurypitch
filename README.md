@@ -6,14 +6,18 @@
 
 <p align="center">
   <strong>See your voice. Sing your songs. Share the room.</strong><br />
-  A free, open-source singing studio for the browser, with Karaoke Night,
-  playful voice mirrors, live Jam Rooms, and private on-device pitch feedback.
+  A free, open-source music studio for the browser, with Karaoke Night, rooms
+  for piano and guitar, live Jam Rooms, and private on-device pitch feedback.
 </p>
 
 <p align="center">
   <a href="https://mercurypitch.com/"><strong>Launch the app</strong></a>
   ·
   <a href="https://mercurypitch.com/karaoke-night">Karaoke Night</a>
+  ·
+  <a href="https://mercurypitch.com/piano-night">Piano Night</a>
+  ·
+  <a href="https://mercurypitch.com/guitar-night">Guitar Night</a>
   ·
   <a href="https://mercurypitch.com/mirror">Voice Mirror</a>
   ·
@@ -37,6 +41,8 @@ is time to sing.
 ## Sing your way
 
 - **Karaoke Night** — follow the words and pitch, shape the mix, and step into a distraction-free stage.
+- **Piano Night** — a study on the stand, notes falling toward a full keyboard, and a coach that frames one phrase at a time.
+- **Guitar Night** — a tab that becomes a highway, a tuner preflight, and live listening on every string.
 - **Voice Mirror** — turn three short vocal tasks into a visual profile of your range, accuracy, steadiness, and voice twin.
 - **Glass** — sing toward a resonant note, hear your takes back, and build enough resonance to shatter the mirror.
 - **Jam Rooms** — invite singers, divide the lyrics, share playback controls, and follow each part on its own pitch lane.
@@ -68,17 +74,30 @@ Create a room, invite singers, divide the lyrics, and keep the performance
 moving with shared host controls. Every singer can follow their own pitch lane,
 and a host-selected room scene sets the mood for everyone.
 
-## Build the next note
+## Bring your own instrument
 
-![MercuryPitch Singing Practice showing a C major scale across live vocal pitch lanes](assets/BasicMelodyPractice_Singing.jpg)
+<a href="https://mercurypitch.com/piano-night">
+  <img src="docs/assets/showcase/piano-night.webp" alt="MercuryPitch Piano Night with falling notes above a full keyboard and the phrase coach open" />
+</a>
 
-Singing Practice pairs editable melody targets with live pitch and timing
-feedback, loops, a metronome, and a focused performance monitor.
+Piano Night puts a study on the stand and streams its notes down to a full
+keyboard. Read the same passage as falling notes, as a staff, or as hands on
+the keys; the coach frames one phrase at a time with its own focus, dynamics,
+and pedal prompt. Import a MIDI file and pick the track you are learning — the
+rest plays underneath while one lane is measured.
 
-![MercuryPitch Piano Practice showing a C major scale above an interactive keyboard](assets/BasicMelodyPractice_Piano.jpg)
+<a href="https://mercurypitch.com/guitar-night">
+  <img src="docs/assets/showcase/guitar-night.webp" alt="MercuryPitch Guitar Night with fret numbers travelling down a 3D fretboard highway toward the hit line" />
+</a>
 
-Voice, piano, and guitar practice share the same musical workspace: build an
-exercise, slow down a difficult passage, loop it, and keep the result.
+Guitar Night turns a tab into a highway: every note travels toward the string
+and fret that plays it. Tune up in the room, then turn on Listening and the
+room scores what it hears from your guitar. Highway, Grid, Tab, Neck, and Sheet
+are five readings of the same part, and the band plays under all of them.
+
+Voice, piano, and guitar practice also share one musical workspace in the
+Practice Studio: build an exercise, slow a difficult passage down, loop it, and
+keep the result.
 
 ## Free, private, and open
 
@@ -87,9 +106,10 @@ runs on your device, and MercuryPitch does not retain microphone audio by
 default. Accounts, sharing, Jam signalling, and optional cloud stem separation
 are used only when you choose those features.
 
-Supporter editions add optional cosmetic Karaoke stages and Jam Room scenes as
-they are released. When a host selects a Jam scene, everyone in the room can
-enjoy it; the singing tools never sit behind that cosmetic layer.
+Supporter editions add optional cosmetic scenes — Karaoke stages, Jam Rooms,
+and the piano and guitar rooms — as they are released. When a host selects a
+Jam scene, everyone in the room can enjoy it; the playing and singing tools
+never sit behind that cosmetic layer.
 
 ## Run locally
 
