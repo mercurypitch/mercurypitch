@@ -20,7 +20,7 @@ const base = {
 }
 
 describe('cue moment screen', () => {
-  it('shows the pull its own creature, not the generic token', () => {
+  it('uses current Corky with the pull-specific creature, not the generic token', () => {
     // The notice render deliberately carries no cue, and MascotStage only draws
     // one when it is told which pull the beat is about. This screen is the only
     // place in the app that knows, so if it stops passing the id the seven
@@ -30,7 +30,7 @@ describe('cue moment screen', () => {
     ))
 
     expect(sources(container)).toEqual([
-      expect.stringMatching(/corky-notice/u) as unknown as string,
+      expect.stringMatching(/corky-home-rest-v0_23/u) as unknown as string,
       expect.stringMatching(/notice-cue-snacking/u) as unknown as string,
     ])
   })
@@ -39,7 +39,7 @@ describe('cue moment screen', () => {
     const { container } = render(() => <CueMomentScreen {...base} />)
 
     expect(sources(container)).toEqual([
-      expect.stringMatching(/corky-notice/u) as unknown as string,
+      expect.stringMatching(/corky-home-rest-v0_23/u) as unknown as string,
       expect.stringMatching(/notice-cue-generic/u) as unknown as string,
     ])
   })

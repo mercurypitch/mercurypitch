@@ -1,4 +1,5 @@
 import { MascotStage } from '@/components/MascotStage'
+import { CORKY_V023_REST_ART } from '@/content'
 
 interface CueMomentScreenProps {
   pullText: string
@@ -34,6 +35,7 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
       </div>
       <MascotStage
         state="notice"
+        artOverride={CORKY_V023_REST_ART}
         {...(props.pullId === undefined ? {} : { pullId: props.pullId })}
       />
       <section class="cue-moment__copy">

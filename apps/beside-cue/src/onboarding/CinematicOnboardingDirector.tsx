@@ -75,7 +75,7 @@ const CAPTIONS: Readonly<
 }
 
 interface NativeOverlayCopy {
-  readonly eyebrow: string
+  readonly eyebrow?: string
   readonly title: string
   readonly body?: string
   readonly closing?: boolean
@@ -154,7 +154,6 @@ function nativeOverlayCopy(
   }
   if (segmentId === 'S08_AUTO_TITLE_CLOSE') {
     return {
-      eyebrow: 'Beside Cue',
       title: 'Your plan is ready.',
       closing: true,
     }
@@ -1745,7 +1744,11 @@ export function CinematicOnboardingDirector(
               <Show when={copy.closing}>
                 <FilmBrandMark closing />
               </Show>
-              <p class="cinematic-onboarding__eyebrow">{copy.eyebrow}</p>
+              <Show when={copy.eyebrow}>
+                {(eyebrow) => (
+                  <p class="cinematic-onboarding__eyebrow">{eyebrow()}</p>
+                )}
+              </Show>
               <h2>{copy.title}</h2>
               <Show when={copy.body}>{(body) => <p>{body()}</p>}</Show>
             </section>
