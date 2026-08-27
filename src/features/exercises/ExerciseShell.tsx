@@ -408,6 +408,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         ? `Next hold · ${next} of ${total}`
         : `Retry hold · ${next} of ${total}`
     }
+    const prescribedRun = props.guidedPractice === undefined ? repRun() : null
+    if (prescribedRun !== null) {
+      return `Start run ${prescribedRun.next} of ${prescribedRun.reps}`
+    }
     return 'Try Again'
   }
 

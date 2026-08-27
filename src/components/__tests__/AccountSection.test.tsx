@@ -7,6 +7,8 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as BillingService from '@/db/services/billing-service'
+import type * as BackgroundAccess from '@/lib/backgrounds/background-access'
 import type * as Defaults from '@/lib/defaults'
 import { resetGoogleSignInPending } from '@/lib/google-sign-in'
 
@@ -30,6 +32,8 @@ const mocks = vi.hoisted(() => ({
   // the whole module, so anything the panel reaches transitively has to
   // be listed here or the call throws.
   hasValidToken: vi.fn(() => false),
+  fetchBillingMe: vi.fn(async () => null),
+  fetchPerksMe: vi.fn(async () => null),
 }))
 
 const dbMocks = vi.hoisted(() => {
@@ -58,6 +62,14 @@ vi.mock('@/db/services/auth-service', () => ({
   fetchMe: mocks.fetchMe,
   logout: mocks.logout,
   googleSignInUrl: mocks.googleSignInUrl,
+}))
+vi.mock('@/db/services/billing-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof BillingService>()),
+  fetchBillingMe: mocks.fetchBillingMe,
+}))
+vi.mock('@/lib/backgrounds/background-access', async (importOriginal) => ({
+  ...(await importOriginal<typeof BackgroundAccess>()),
+  fetchPerksMe: mocks.fetchPerksMe,
 }))
 vi.mock('@/stores/ui-store', () => ({
   openAuthModal: mocks.openAuthModal,
