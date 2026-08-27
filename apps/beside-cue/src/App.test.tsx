@@ -1,4 +1,5 @@
 import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
+import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
@@ -84,6 +85,7 @@ interface MemoryRepository extends ResettableBesideCueRepository {
   snapshot(): BesideCueStateV1 | null
   saveCalls(): number
   failNextSave(): void
+  deferNextSave(): Deferred
 }
 
 const WELCOME_ONLY_TEST_CONFIG: BesideCueAppConfig = {
@@ -151,10 +153,13 @@ const LEGACY_V0_4_CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
   },
 }
 
-function createMemoryRepository(): MemoryRepository {
-  let state: BesideCueStateV1 | null = null
+function createMemoryRepository(
+  initialState: BesideCueStateV1 | null = null,
+): MemoryRepository {
+  let state = initialState === null ? null : structuredClone(initialState)
   let saves = 0
   let rejectNextSave = false
+  let nextSaveGate: Deferred | undefined
 
   return {
     async loadState() {
@@ -162,6 +167,9 @@ function createMemoryRepository(): MemoryRepository {
     },
     async saveState(nextState) {
       saves += 1
+      const saveGate = nextSaveGate
+      nextSaveGate = undefined
+      if (saveGate !== undefined) await saveGate.promise
       if (rejectNextSave) {
         rejectNextSave = false
         throw new Error('Injected save failure.')
@@ -180,6 +188,11 @@ function createMemoryRepository(): MemoryRepository {
     failNextSave() {
       rejectNextSave = true
     },
+    deferNextSave() {
+      const saveGate = deferred()
+      nextSaveGate = saveGate
+      return saveGate
+    },
   }
 }
 
@@ -194,6 +207,58 @@ function deferred(): Deferred {
     resolve = nextResolve
   })
   return { promise, resolve }
+}
+
+function stateWithActiveCue(options: {
+  readonly bSideText: string
+  readonly bSideSuggestionId?: string
+  readonly hapticsEnabled?: boolean
+}): BesideCueStateV1 {
+  const initial = createInitialState()
+  const at = '2026-08-06T08:00:00.000Z'
+
+  return {
+    ...initial,
+    cues: [
+      {
+        id: 'seed-cue',
+        status: 'active',
+        pullCategoryId: 'scrolling',
+        pullText: 'Keep scrolling',
+        ...(options.bSideSuggestionId === undefined
+          ? {}
+          : { bSideSuggestionId: options.bSideSuggestionId }),
+        bSideText: options.bSideText,
+        mascotSetId: 'corktop-v1',
+        createdAt: at,
+        updatedAt: at,
+      },
+    ],
+    settings: {
+      ...initial.settings,
+      hapticsEnabled: options.hapticsEnabled ?? true,
+    },
+  }
+}
+
+function withDailyRule(state: BesideCueStateV1): BesideCueStateV1 {
+  const at = '2026-08-06T08:00:00.000Z'
+
+  return {
+    ...state,
+    scheduleRules: [
+      {
+        id: 'seed-daily-rule',
+        cueId: 'seed-cue',
+        kind: 'target_time',
+        localTime: '09:00',
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        enabled: true,
+        createdAt: at,
+        updatedAt: at,
+      },
+    ],
+  }
 }
 
 function createTestServices(
@@ -254,6 +319,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
 })
@@ -751,6 +817,7 @@ describe('Beside Cue app', () => {
         { state: 'resolved', outcome: 'b_side' },
       ]),
     )
+    await screen.findByText('Side B is yours')
     fireEvent.click(screen.getByRole('button', { name: /back to home/iu }))
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
 
@@ -878,6 +945,7 @@ describe('Beside Cue app', () => {
     await waitFor(() =>
       expect(repository.snapshot()?.occurrences).toHaveLength(1),
     )
+    await screen.findByText('Not now is okay')
     fireEvent.click(screen.getByRole('button', { name: /back to home/iu }))
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     fireEvent.click(
@@ -890,9 +958,11 @@ describe('Beside Cue app', () => {
     )
     const cancellationCount = probe.calls.cancelled.length
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /reset all local data/iu }),
-    )
+    const resetButton = screen.getByRole('button', {
+      name: /reset all local data/iu,
+    })
+    await waitFor(() => expect(resetButton).toBeEnabled())
+    fireEvent.click(resetButton)
     expect(repository.snapshot()?.cues).toHaveLength(1)
     expect(screen.getByRole('alert')).toHaveTextContent(
       /deletes your saved plan, choice history, reminder settings/iu,
@@ -936,6 +1006,7 @@ describe('Beside Cue app', () => {
       ])
     })
 
+    await screen.findByText('Side B is yours')
     fireEvent.click(screen.getByRole('button', { name: /back to home/iu }))
     fireEvent.click(screen.getByRole('button', { name: /reflection/iu }))
     expect(
@@ -947,6 +1018,312 @@ describe('Beside Cue app', () => {
     expect(screen.getByText('Past 7 days')).toBeInTheDocument()
     expect(screen.getByText('Side B choices')).toBeInTheDocument()
   })
+
+  it('waits for the durable choice commit and ignores rapid decisions while saving', async () => {
+    const repository = createMemoryRepository()
+    const probe = createMobileRuntimeProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { runtime: probe.runtime })}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
+    await screen.findByRole('heading', {
+      name: /put the phone in another room/iu,
+    })
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'presented' },
+    ])
+
+    const saveGate = repository.deferNextSave()
+    const saveCallsBeforeChoice = repository.saveCalls()
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Saving your choice on this device…',
+    )
+    const chooseButton = screen.getByRole('button', {
+      name: /saving your choice/iu,
+    })
+    const notNowButton = screen.getByRole('button', { name: 'Saving…' })
+    const closeButton = screen.getByRole('button', { name: /close cue/iu })
+    expect(chooseButton).toBeDisabled()
+    expect(notNowButton).toBeDisabled()
+    expect(closeButton).toBeDisabled()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'presented' },
+    ])
+    expect(probe.calls.hapticNotifications).toEqual([])
+
+    fireEvent.click(chooseButton)
+    fireEvent.click(notNowButton)
+    fireEvent.click(closeButton)
+    expect(repository.saveCalls()).toBe(saveCallsBeforeChoice + 1)
+
+    saveGate.resolve()
+    expect(await screen.findByText('Side B is yours')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(probe.calls.hapticNotifications).toEqual(['success']),
+    )
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved', outcome: 'b_side' },
+    ])
+    expect(repository.snapshot()?.occurrences).toHaveLength(1)
+  })
+
+  it('keeps the cue actionable after a failed choice save and retries once', async () => {
+    const repository = createMemoryRepository()
+    const probe = createMobileRuntimeProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { runtime: probe.runtime })}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
+    await screen.findByRole('heading', {
+      name: /put the phone in another room/iu,
+    })
+    repository.failNextSave()
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your choice could not be saved on this device. Please try again.',
+    )
+    expect(
+      screen.getByRole('button', { name: /choose side b/iu }),
+    ).toBeEnabled()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'presented' },
+    ])
+    expect(probe.calls.hapticNotifications).toEqual([])
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    expect(await screen.findByText('Side B is yours')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(probe.calls.hapticNotifications).toEqual(['success']),
+    )
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved', outcome: 'b_side' },
+    ])
+    expect(repository.snapshot()?.occurrences).toHaveLength(1)
+  })
+
+  it('commits Not now before its neutral handoff without offering a starter', async () => {
+    const repository = createMemoryRepository()
+    const probe = createMobileRuntimeProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { runtime: probe.runtime })}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(await screen.findByRole('button', { name: /not now/iu }))
+
+    expect(await screen.findByText('Not now is okay')).toBeInTheDocument()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved', outcome: 'not_now' },
+    ])
+    expect(repository.snapshot()?.occurrences).toHaveLength(1)
+    expect(screen.queryByText('Your Side B')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /start .* timer/iu }),
+    ).not.toBeInTheDocument()
+    expect(probe.calls.hapticNotifications).toEqual([])
+  })
+
+  it('offers a canonical timer only after saving and reports one enabled completion haptic', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.step-outside',
+        bSideText: 'Step outside for three minutes.',
+      }),
+    )
+    const probe = createMobileRuntimeProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { runtime: probe.runtime })}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    const startTimer = await screen.findByRole('button', {
+      name: 'Start 3-minute timer',
+    })
+    await waitFor(() =>
+      expect(probe.calls.hapticNotifications).toEqual(['success']),
+    )
+    const savedChoice = structuredClone(repository.snapshot())
+    const saveCallsAfterChoice = repository.saveCalls()
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-28T12:00:00Z'))
+    fireEvent.click(startTimer)
+    expect(screen.getByRole('timer')).toHaveTextContent('03:00')
+
+    vi.advanceTimersByTime(180_000)
+    await vi.runAllTicks()
+    await Promise.resolve()
+
+    expect(
+      screen.getByRole('heading', { name: 'Timer finished' }),
+    ).toBeInTheDocument()
+    expect(probe.calls.hapticNotifications).toEqual(['success', 'success'])
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.advanceTimersByTime(180_000)
+    expect(probe.calls.hapticNotifications).toEqual(['success', 'success'])
+    expect(repository.saveCalls()).toBe(saveCallsAfterChoice)
+    expect(repository.snapshot()).toEqual(savedChoice)
+  })
+
+  it('does not play choice or timer-completion haptics when they are disabled', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.step-outside',
+        bSideText: 'Step outside for three minutes.',
+        hapticsEnabled: false,
+      }),
+    )
+    const probe = createMobileRuntimeProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { runtime: probe.runtime })}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    const startTimer = await screen.findByRole('button', {
+      name: 'Start 3-minute timer',
+    })
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-28T12:00:00Z'))
+    fireEvent.click(startTimer)
+    vi.advanceTimersByTime(180_000)
+    await vi.runAllTicks()
+    await Promise.resolve()
+
+    expect(
+      screen.getByRole('heading', { name: 'Timer finished' }),
+    ).toBeInTheDocument()
+    expect(probe.calls.impacts).toEqual([])
+    expect(probe.calls.hapticNotifications).toEqual([])
+  })
+
+  it('does not restore an ephemeral running timer after a process relaunch', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.step-outside',
+        bSideText: 'Step outside for three minutes.',
+      }),
+    )
+    const view = render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Start 3-minute timer',
+      }),
+    )
+    expect(screen.getByRole('timer')).toHaveTextContent('03:00')
+    const saveCallsWhileRunning = repository.saveCalls()
+
+    view.unmount()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /a better choice, kept close/iu,
+      }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument()
+    expect(repository.saveCalls()).toBe(saveCallsWhileRunning)
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved', outcome: 'b_side' },
+    ])
+    expect(repository.snapshot()?.occurrences).toHaveLength(1)
+  })
+
+  it('offers a timer for a known legacy Side B label without a saved id', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideText: 'Step outside for three minutes.',
+      }),
+    )
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Start 3-minute timer',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it.each([
+    [
+      'an unknown stable id',
+      'bside.not-in-this-version',
+      'Step outside for three minutes.',
+    ],
+    ['custom text', undefined, 'Put one clean plate away.'],
+  ] as const)(
+    'falls back to the exact instruction for %s',
+    async (_caseName, bSideSuggestionId, bSideText) => {
+      const repository = createMemoryRepository(
+        stateWithActiveCue({ bSideSuggestionId, bSideText }),
+      )
+      render(() => (
+        <App
+          config={WELCOME_ONLY_TEST_CONFIG}
+          services={createTestServices(repository)}
+        />
+      ))
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: /cue me now/iu }),
+      )
+      fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+
+      await screen.findByText('Your Side B')
+      expect(
+        screen.getByRole('heading', { name: bSideText }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /start .* timer/iu }),
+      ).not.toBeInTheDocument()
+    },
+  )
 
   it('cancels a closed cue without recording Not now', async () => {
     const repository = createMemoryRepository()
@@ -1046,6 +1423,101 @@ describe('Beside Cue app', () => {
     ).toBeInTheDocument()
     expect(repository.snapshot()?.occurrences).toMatchObject([
       { source: 'scheduled', state: 'presented' },
+    ])
+  })
+
+  it('starts a scheduled cue with fresh starter and timer-completion state', async () => {
+    const repository = createMemoryRepository(
+      withDailyRule(
+        stateWithActiveCue({
+          bSideSuggestionId: 'bside.step-outside',
+          bSideText: 'Step outside for three minutes.',
+        }),
+      ),
+    )
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, {
+          platform: 'android',
+          runtime: probe.runtime,
+        })}
+      />
+    ))
+
+    await waitFor(() => expect(probe.calls.scheduled.at(-1)).toHaveLength(1))
+    const scheduled = probe.calls.scheduled.at(-1)?.[0]
+    if (scheduled === undefined) throw new Error('Expected a notification.')
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    const firstTimer = await screen.findByRole('button', {
+      name: 'Start 3-minute timer',
+    })
+    await waitFor(() =>
+      expect(probe.calls.hapticNotifications).toEqual(['success']),
+    )
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-28T12:00:00Z'))
+    fireEvent.click(firstTimer)
+    vi.advanceTimersByTime(180_000)
+    await vi.runAllTicks()
+    await Promise.resolve()
+    expect(probe.calls.hapticNotifications).toEqual(['success', 'success'])
+    vi.useRealTimers()
+
+    fireEvent.click(screen.getByRole('button', { name: /back to home/iu }))
+    await probe.emitNotificationAction({
+      notificationId: scheduled.id,
+      actionId: 'open',
+      extra: scheduled.extra,
+    })
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Step outside for three minutes.',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /start .* timer/iu }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    const scheduledTimer = await screen.findByRole('button', {
+      name: 'Start 3-minute timer',
+    })
+    await waitFor(() =>
+      expect(probe.calls.hapticNotifications).toEqual([
+        'success',
+        'success',
+        'success',
+      ]),
+    )
+    const saveCallsBeforeTimer = repository.saveCalls()
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-28T13:00:00Z'))
+    fireEvent.click(scheduledTimer)
+    vi.advanceTimersByTime(180_000)
+    await vi.runAllTicks()
+    await Promise.resolve()
+
+    expect(
+      screen.getByRole('heading', { name: 'Timer finished' }),
+    ).toBeInTheDocument()
+    expect(probe.calls.hapticNotifications).toEqual([
+      'success',
+      'success',
+      'success',
+      'success',
+    ])
+    expect(repository.saveCalls()).toBe(saveCallsBeforeTimer)
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { source: 'manual', state: 'resolved', outcome: 'b_side' },
+      { source: 'scheduled', state: 'resolved', outcome: 'b_side' },
     ])
   })
 
