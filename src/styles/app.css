@@ -460,6 +460,19 @@ select option:disabled {
   }
 }
 
+/* The Ear Lab's bench is a room with its own scroller and console bridge;
+   it fills the content area edge to edge. */
+.main-content:has(#ear-lab-page) {
+  padding-bottom: 0;
+}
+
+#ear-lab-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ===== Canvas container ===== */
 #canvas-container {
   flex: 1;

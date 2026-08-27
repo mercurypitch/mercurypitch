@@ -243,11 +243,21 @@
 /* A wash in the room's own light, so the photo sits in the same family as
    the drawn covers instead of reading as a pasted-in picture. */
 .pianoNightVisual::after,
-.guitarNightVisual::after {
+.guitarNightVisual::after,
+.earLabVisual::after {
   content: '';
   position: absolute;
   inset: 0;
   mix-blend-mode: soft-light;
+}
+
+/* Brass lamplight from above, the Regulator Room's own light. */
+.earLabVisual::after {
+  background: radial-gradient(
+    72% 60% at 50% 18%,
+    rgba(231, 198, 125, 0.34),
+    transparent 70%
+  );
 }
 
 .pianoNightVisual::after {

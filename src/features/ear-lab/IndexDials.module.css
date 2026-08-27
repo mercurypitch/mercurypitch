@@ -1,0 +1,232 @@
+.dials {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  gap: 18px 22px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mainDial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mainSvg {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  filter: drop-shadow(0 16px 30px rgb(0 0 0 / 50%));
+}
+
+.mainRim {
+  fill: #0b0d10;
+  stroke: var(--ear-brass);
+  stroke-width: 3;
+}
+
+.mainFace {
+  fill: #0d1014;
+  stroke: rgb(201 164 94 / 28%);
+  stroke-width: 1;
+}
+
+.ticks line {
+  stroke: var(--ear-brass);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.ticks .tickMajor {
+  stroke-width: 2.2;
+  opacity: 1;
+}
+
+.needle {
+  transform-box: view-box;
+  transform-origin: 100px 100px;
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.needle line {
+  stroke: var(--ear-mercury);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.needle circle {
+  fill: var(--ear-brass-bright);
+}
+
+.needleIdle {
+  opacity: 0.35;
+}
+
+.mainLabel {
+  font-size: 7px;
+  letter-spacing: 0.24em;
+  fill: var(--ear-brass);
+}
+
+.mainValue {
+  font-family: var(--ear-serif);
+  font-size: 30px;
+  fill: var(--ear-mercury);
+  font-variant-numeric: tabular-nums;
+}
+
+.mainNote {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ear-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.deltaUp {
+  color: var(--ear-signal);
+  font-weight: 600;
+}
+
+.deltaDown {
+  color: var(--ear-garnet-bright);
+  font-weight: 600;
+}
+
+.unmarked,
+.unmeasured {
+  font-style: italic;
+  font-size: 0.72rem;
+  color: var(--ear-ink-muted);
+}
+
+.estimateLine {
+  color: var(--ear-ink);
+}
+
+.subDials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 10px;
+}
+
+.subDial {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.subSvg {
+  width: 56px;
+  height: 56px;
+}
+
+.subRim {
+  fill: #0d1014;
+  stroke: var(--ear-brass);
+  stroke-width: 2;
+}
+
+.subRimBlank {
+  stroke: rgb(201 164 94 / 35%);
+  stroke-dasharray: 3 3;
+}
+
+.subDot {
+  fill: var(--ear-brass);
+  opacity: 0.7;
+}
+
+.subNeedle {
+  transform-box: view-box;
+  transform-origin: 40px 40px;
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.subNeedle line {
+  stroke: var(--ear-mercury);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.subNeedle circle {
+  fill: var(--ear-brass-bright);
+}
+
+.subNeedleEstimate line {
+  stroke: var(--ear-mercury-deep);
+  stroke-dasharray: 3 2;
+}
+
+.subName {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ear-ink-brass);
+}
+
+.subReading {
+  font-family: var(--ear-serif);
+  font-size: 0.98rem;
+  color: var(--ear-ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.subReading small {
+  font-family: inherit;
+  font-size: 0.7rem;
+  color: var(--ear-ink-muted);
+}
+
+@container (max-width: 860px) {
+  .dials {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .mainDial {
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .mainSvg {
+    width: 132px;
+    flex: 0 0 auto;
+  }
+
+  .mainNote {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .subSvg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .subDials {
+    gap: 12px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .needle,
+  .subNeedle {
+    transition: none;
+  }
+}

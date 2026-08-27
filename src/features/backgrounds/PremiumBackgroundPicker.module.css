@@ -353,6 +353,17 @@
     linear-gradient(145deg, #28445a, #171526 72%);
 }
 
+/* The Ear Lab's rooms: brass lamplight on slate, before the plate loads. */
+.edition_ear-rooms {
+  background:
+    radial-gradient(
+      circle at 62% 22%,
+      rgba(231, 198, 125, 0.38),
+      transparent 28%
+    ),
+    linear-gradient(145deg, #1f252d, #0c0e11 72%);
+}
+
 .edition_cedar-listening-room {
   background:
     radial-gradient(

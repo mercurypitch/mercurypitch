@@ -1,0 +1,222 @@
+/* ── The bench: one scrolling surface inside the room ─────────── */
+
+.bench {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 34px 40px;
+  min-height: 100%;
+}
+
+/* Nothing on the bench shrinks: the strip scrolls sideways, so its
+   min-height would otherwise collapse inside the flex column. */
+.bench > * {
+  flex: 0 0 auto;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 60ch;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ear-ink-brass);
+}
+
+.kicker i {
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  background: var(--ear-ink-brass);
+}
+
+.title {
+  margin: 6px 0 10px;
+  max-width: 46ch;
+  font-family: var(--ear-serif);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 2.6cqi, 2.3rem);
+  line-height: 1.12;
+  letter-spacing: -0.005em;
+  color: var(--ear-ink);
+  text-shadow: var(--ear-ink-halo);
+}
+
+.lede {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ear-ink-muted);
+  text-shadow: var(--ear-ink-halo);
+}
+
+/* ── The grid: Regulator, dials, regulation ──────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr) minmax(
+      240px,
+      270px
+    );
+  grid-template-areas: 'regulator dials regulation';
+  gap: 28px;
+  align-items: stretch;
+}
+
+.regulatorCell {
+  grid-area: regulator;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.dialsCell {
+  grid-area: dials;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.regulationCell {
+  grid-area: regulation;
+  min-width: 0;
+  outline: none;
+}
+
+/* ── The instrument strip: one unbroken line under the stage ──── */
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--ear-brass-line);
+  border-bottom: 1px solid var(--ear-brass-line);
+  background: linear-gradient(180deg, rgb(20 23 28 / 70%), rgb(10 11 13 / 72%));
+}
+
+.instrument {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 108px;
+  padding: 14px 16px 12px;
+  border: 0;
+  border-right: 1px solid var(--ear-line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.instrument:last-child {
+  border-right: 0;
+}
+
+.instrument:hover {
+  background: rgb(201 164 94 / 7%);
+}
+
+.instrumentIcon {
+  color: var(--ear-brass);
+}
+
+.instrumentName {
+  font-family: var(--ear-serif);
+  font-size: 1rem;
+  color: var(--ear-parchment);
+}
+
+.instrumentMeasures {
+  font-size: 0.68rem;
+  color: var(--ear-muted);
+}
+
+.instrumentReading {
+  font-size: 0.8rem;
+  color: var(--ear-mercury);
+  font-variant-numeric: tabular-nums;
+}
+
+.instrumentReading small {
+  color: var(--ear-muted);
+}
+
+.instrumentEmpty {
+  font-size: 0.76rem;
+  font-style: italic;
+  color: var(--ear-muted);
+}
+
+.instrumentSeal {
+  background: rgb(201 164 94 / 5%);
+}
+
+.instrumentSeal .instrumentName {
+  color: var(--ear-brass-bright);
+}
+
+/* ── Compact: the bench narrower than a desk ─────────────────── */
+
+@container (max-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+    grid-template-areas:
+      'regulator dials'
+      'regulation regulation';
+  }
+
+  .strip {
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
+    overflow-x: auto;
+  }
+}
+
+@container (max-width: 860px) {
+  .bench {
+    gap: 18px;
+    padding: 18px 16px 24px;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    max-width: 22ch;
+  }
+
+  .lede {
+    font-size: 0.8rem;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'regulator'
+      'dials'
+      'regulation';
+    gap: 18px;
+  }
+
+  .regulatorCell {
+    justify-content: center;
+  }
+
+  .strip {
+    grid-template-columns: repeat(7, minmax(132px, 1fr));
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .instrument {
+    scroll-snap-align: start;
+    min-height: 96px;
+  }
+}

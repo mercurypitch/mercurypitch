@@ -1,0 +1,848 @@
+/* ── The Regulator Room: tokens ─────────────────────────────── */
+
+.shell {
+  --ear-room: #0a0b0d;
+  --ear-slate: #14171c;
+  --ear-raised: #1b2027;
+  --ear-brass: #c9a45e;
+  --ear-brass-bright: #e7c67d;
+  --ear-brass-line: rgb(201 164 94 / 32%);
+  --ear-mercury: #c5ced8;
+  --ear-mercury-deep: #8f9daf;
+  --ear-signal: #5fc7b8;
+  --ear-garnet: #a3454f;
+  --ear-garnet-bright: #d0707a;
+  --ear-parchment: #efe6d6;
+  --ear-muted: #b9b1a4;
+  --ear-line: rgb(239 230 214 / 14%);
+  --ear-serif:
+    'Iowan Old Style', 'Palatino Linotype', Baskerville, Georgia,
+    'Times New Roman', serif;
+  --ear-shadow: 0 18px 40px rgb(0 0 0 / 55%);
+  --ear-touch: var(--touch-target, 44px);
+  /* Ink: text written straight on the room rather than on a plate — the
+     bench headline, the dial captions, the column's legend. Parchment on
+     a dark room; a light room (the Glasshouse Bench) inverts it below,
+     while every plate keeps its parchment. */
+  --ear-ink: var(--ear-parchment);
+  --ear-ink-muted: var(--ear-muted);
+  --ear-ink-brass: var(--ear-brass);
+  --ear-ink-halo: 0 2px 18px rgb(0 0 0 / 55%);
+  --ear-glass: 0.55;
+
+  position: relative;
+  isolation: isolate;
+  container: ear-shell / size;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* One column that can never outgrow the shell: a nowrap session meta
+     would otherwise size the track past a phone's width. */
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--ear-room);
+  color: var(--ear-parchment);
+  font-variant-numeric: tabular-nums;
+}
+
+.shell :where(button) {
+  font: inherit;
+  color: inherit;
+}
+
+.shell :where(button):focus-visible,
+.shell :where(input):focus-visible {
+  outline: 2px solid var(--ear-signal);
+  outline-offset: 3px;
+}
+
+/* ── The room: plate, grade, vignette. One number opens all three. ── */
+
+.roomPlate,
+.roomShade,
+.roomVignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.roomPlate {
+  z-index: -3;
+  background-color: var(--ear-room);
+  background-image: var(--mp-stage-image);
+  background-position: var(--mp-stage-position, center 42%);
+  background-size: cover;
+  transform: scale(1.012);
+}
+
+.roomShade {
+  z-index: -2;
+  background: linear-gradient(
+    180deg,
+    rgb(10 11 13 / calc(0.7 - var(--ear-glass) * 0.42)) 0%,
+    rgb(10 11 13 / calc(0.42 - var(--ear-glass) * 0.3)) 32%,
+    rgb(10 11 13 / calc(0.5 - var(--ear-glass) * 0.3)) 70%,
+    rgb(10 11 13 / calc(0.92 - var(--ear-glass) * 0.3)) 100%
+  );
+}
+
+.roomVignette {
+  z-index: -1;
+  background: radial-gradient(
+    120% 90% at 50% 45%,
+    transparent 55%,
+    rgb(10 11 13 / calc(0.62 - var(--ear-glass) * 0.34)) 100%
+  );
+}
+
+.shell[data-room-treatment='light'] .roomShade {
+  background: linear-gradient(
+    180deg,
+    rgb(31 23 13 / calc(0.62 - var(--ear-glass) * 0.36)) 0%,
+    rgb(31 23 13 / calc(0.36 - var(--ear-glass) * 0.24)) 32%,
+    rgb(31 23 13 / calc(0.44 - var(--ear-glass) * 0.24)) 70%,
+    rgb(20 14 8 / calc(0.9 - var(--ear-glass) * 0.28)) 100%
+  );
+}
+
+/* A light room: ink on glass, with a pale halo instead of a dark one. */
+.shell[data-room-treatment='light'] {
+  --ear-ink: #1d1811;
+  --ear-ink-muted: #4a4033;
+  --ear-ink-brass: #7a5a1d;
+  --ear-ink-halo: 0 1px 14px rgb(255 255 255 / 55%);
+}
+
+/* ── Session bar ─────────────────────────────────────────────── */
+
+.sessionBar {
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 60px;
+  padding: 10px 22px;
+  background: linear-gradient(180deg, rgb(10 11 13 / 92%), rgb(10 11 13 / 72%));
+  border-bottom: 1px solid var(--ear-line);
+}
+
+.sessionCopy {
+  min-width: 0;
+}
+
+.sessionTitle {
+  margin: 0;
+  font-family: var(--ear-serif);
+  font-weight: 400;
+  font-size: 1.15rem;
+  line-height: 1.15;
+  color: var(--ear-parchment);
+}
+
+.sessionMeta {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+  color: var(--ear-muted);
+}
+
+.sessionMeta b {
+  color: var(--ear-mercury);
+  font-weight: 650;
+}
+
+.sessionMeta i {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin: 0 8px 2px;
+  border-radius: 50%;
+  background: var(--ear-brass);
+}
+
+.sessionChips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ear-touch);
+  padding: 6px 12px;
+  border: 1px solid var(--ear-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 78%);
+  color: var(--ear-parchment);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.chip:hover {
+  background: rgb(27 32 39 / 90%);
+  border-color: var(--ear-brass-line);
+}
+
+.chipCopy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.chipCopy b {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chipCopy small {
+  font-size: 0.66rem;
+  color: var(--ear-muted);
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ear-muted);
+  box-shadow: 0 0 0 2px rgb(185 177 164 / 18%);
+  flex: 0 0 auto;
+}
+
+.chipDotOn {
+  background: var(--ear-signal);
+  box-shadow: 0 0 0 2px rgb(95 199 184 / 22%);
+}
+
+.chipDotWarn {
+  background: var(--ear-brass-bright);
+  box-shadow: 0 0 0 2px rgb(231 198 125 / 22%);
+}
+
+.chipIcon {
+  color: var(--ear-brass);
+  flex: 0 0 auto;
+}
+
+.chipText {
+  font-size: 0.8rem;
+}
+
+.roomChip {
+  padding-left: 6px;
+}
+
+.roomThumb {
+  width: 34px;
+  height: 24px;
+  border-radius: 3px;
+  border: 1px solid var(--ear-brass-line);
+  background-color: var(--ear-slate);
+  background-image: var(--mp-stage-image);
+  background-position: var(--mp-stage-position, center);
+  background-size: cover;
+  flex: 0 0 auto;
+}
+
+/* ── Stage: the one scrolling surface ───────────────────────── */
+
+.stage {
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* ── Console bridge ──────────────────────────────────────────── */
+
+.bridge {
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: 'today primary right';
+  align-items: center;
+  gap: 16px;
+  min-height: 92px;
+  padding: 12px 22px;
+  background: linear-gradient(180deg, #111318, #0b0c0f);
+  border-top: 1px solid var(--ear-brass-line);
+  box-shadow: 0 -12px 30px rgb(0 0 0 / 40%);
+}
+
+.bridgeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ear-touch);
+  padding: 8px 14px;
+  border: 1px solid var(--ear-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 70%);
+  color: var(--ear-parchment);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.bridgeButton:hover {
+  background: rgb(27 32 39 / 90%);
+  border-color: var(--ear-brass-line);
+}
+
+.bridgeButton svg {
+  color: var(--ear-brass);
+}
+
+.bridgeToday {
+  grid-area: today;
+  justify-self: start;
+}
+
+.bridgeInstruments,
+.bridgeReport {
+  grid-area: right;
+}
+
+.bridgeReport {
+  justify-self: end;
+}
+
+.bridgeInstruments {
+  justify-self: end;
+  margin-right: 124px;
+}
+
+.primary {
+  grid-area: primary;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 22px 8px 16px;
+  border: 1px solid #f0d08a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e7c67d, #c9a45e);
+  color: #1a1408;
+  box-shadow:
+    0 10px 24px rgb(231 198 125 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.primary:hover {
+  box-shadow:
+    0 14px 30px rgb(231 198 125 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
+}
+
+.primary:active {
+  transform: translateY(1px);
+}
+
+.primaryIcon {
+  color: #1a1408;
+  flex: 0 0 auto;
+}
+
+.primaryCopy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.primaryCopy b {
+  font-family: var(--ear-serif);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.primaryShort {
+  display: none;
+}
+
+.primaryCopy small {
+  font-size: 0.7rem;
+  color: rgb(26 20 8 / 78%);
+}
+
+/* ── Rack drawer ─────────────────────────────────────────────── */
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgb(5 6 8 / 55%);
+}
+
+.rack {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  width: min(420px, 92%);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #14171c, #0d0f12);
+  border-left: 1px solid var(--ear-brass-line);
+  box-shadow: var(--ear-shadow);
+  transform: translateX(104%);
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: auto;
+  overscroll-behavior: contain;
+  visibility: hidden;
+}
+
+.rackOpen {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.rackHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--ear-line);
+}
+
+.rackKicker {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ear-brass);
+}
+
+.rackTitle {
+  margin: 4px 0 0;
+  font-family: var(--ear-serif);
+  font-weight: 400;
+  font-size: 1.3rem;
+  color: var(--ear-parchment);
+}
+
+.rackClose {
+  display: grid;
+  place-items: center;
+  width: var(--ear-touch);
+  height: var(--ear-touch);
+  border: 1px solid var(--ear-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 70%);
+  cursor: pointer;
+}
+
+.rackClose:hover {
+  border-color: var(--ear-brass-line);
+}
+
+.rackList {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0 12px;
+}
+
+.rackRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--ear-line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.rackRow:hover {
+  background: rgb(201 164 94 / 7%);
+}
+
+.rackRowSeal .rackRowName {
+  color: var(--ear-brass-bright);
+}
+
+.rackRowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rackRowName {
+  font-family: var(--ear-serif);
+  font-size: 1.02rem;
+  color: var(--ear-parchment);
+}
+
+.rackRowMeasures {
+  font-size: 0.7rem;
+  color: var(--ear-muted);
+}
+
+.rackRowReading {
+  font-family: var(--ear-serif);
+  font-size: 1.02rem;
+  color: var(--ear-mercury);
+  white-space: nowrap;
+}
+
+.rackRowReading small {
+  font-family: inherit;
+  font-size: 0.7rem;
+  color: var(--ear-muted);
+}
+
+.rackRowEmpty {
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--ear-muted);
+  white-space: nowrap;
+}
+
+.rackPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 18px 24px;
+}
+
+/* The app's latency wizard, skinned through the tokens it already reads:
+   brass for its accent, parchment for its type, dark text on the brass
+   button so the pad reads like the bench's amber control. */
+.readinessWizard {
+  --bg-secondary: rgb(20 23 28 / 70%);
+  --bg-card: rgb(239 230 214 / 6%);
+  --border: var(--ear-brass-line);
+  --text-primary: var(--ear-parchment);
+  --text-muted: var(--ear-muted);
+  --accent: var(--ear-brass);
+  --accent-dim: rgb(201 164 94 / 35%);
+  --danger: var(--ear-garnet-bright);
+  --mic-wizard-primary-fg: #141210;
+
+  border-radius: 6px;
+}
+
+.rackNote {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ear-muted);
+}
+
+.roomPicker {
+  min-width: 0;
+}
+
+.plate p {
+  margin: 0;
+  font-family: var(--ear-serif);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--ear-parchment);
+}
+
+.plate p + p {
+  margin-top: -4px;
+  color: var(--ear-muted);
+}
+
+.glass {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 6px;
+  background: rgb(27 32 39 / 60%);
+}
+
+.glassLabel {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ear-brass);
+}
+
+.glassSlider {
+  width: 100%;
+  min-height: var(--ear-touch);
+  accent-color: var(--ear-brass-bright);
+  cursor: pointer;
+}
+
+.glassValue {
+  font-family: var(--ear-serif);
+  font-size: 0.95rem;
+  color: var(--ear-parchment);
+  min-width: 5.5ch;
+  text-align: right;
+}
+
+.voices {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 6px;
+  background: rgb(27 32 39 / 60%);
+}
+
+.voiceRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.voice {
+  display: grid;
+  gap: 3px;
+  min-height: var(--ear-touch);
+  padding: 8px 10px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 6px;
+  background: rgb(10 11 13 / 55%);
+  color: var(--ear-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.voice b {
+  font-family: var(--ear-serif);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--ear-parchment);
+}
+
+.voice small {
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.voice:hover {
+  border-color: var(--ear-brass);
+}
+
+.voice[aria-checked='true'] {
+  border-color: var(--ear-brass-bright);
+  color: var(--ear-parchment);
+  box-shadow: inset 0 0 0 1px var(--ear-brass-bright);
+}
+
+.voice:focus-visible {
+  outline: 2px solid var(--ear-brass-bright);
+  outline-offset: 2px;
+}
+
+/* ── The tap check: the rhythm seam tried by hand ─────────────── */
+
+.tapCheck {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 6px;
+  background: rgb(27 32 39 / 60%);
+  /* The tap pad is a stage control; give it the stage's tokens here. */
+  --stage-brass: var(--ear-brass);
+  --stage-brass-bright: var(--ear-brass-bright);
+  --stage-parchment: var(--ear-parchment);
+  --stage-muted: var(--ear-muted);
+  --stage-line-strong: rgb(239 230 214 / 22%);
+  --stage-serif: var(--ear-serif);
+}
+
+.tapReading {
+  margin: 0;
+  font-family: var(--ear-serif);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--ear-parchment);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Compact: the bench narrower than a desk ─────────────────── */
+
+@container (max-width: 860px) {
+  .sessionBar {
+    min-height: 56px;
+    padding: 8px 14px;
+    gap: 10px;
+  }
+
+  .sessionTitle {
+    font-size: 1.02rem;
+  }
+
+  .sessionCopy {
+    flex: 1 1 auto;
+  }
+
+  /* Block flow, so the ellipsis applies to the one line. */
+  .sessionMeta {
+    display: block;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .metaExtra {
+    display: none;
+  }
+
+  .chip {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .chipText,
+  .roomChip .chipCopy {
+    display: none;
+  }
+
+  .chip .chipCopy small {
+    display: none;
+  }
+
+  .bridge {
+    grid-template-columns:
+      minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1fr)
+      minmax(0, 1fr);
+    grid-template-areas: 'today primary instruments report';
+    gap: 6px;
+    min-height: 66px;
+    padding: 6px 8px;
+  }
+
+  .bridgeButton {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 6px 4px;
+    border: 0;
+    background: none;
+    font-size: 0.62rem;
+    color: var(--ear-muted);
+  }
+
+  .bridgeButton:hover {
+    background: none;
+  }
+
+  .bridgeToday,
+  .bridgeInstruments,
+  .bridgeReport {
+    justify-self: stretch;
+    margin: 0;
+  }
+
+  .bridgeInstruments {
+    grid-area: instruments;
+  }
+
+  .bridgeReport {
+    grid-area: report;
+  }
+
+  .primary {
+    justify-content: center;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 6px;
+    gap: 5px;
+    border-radius: 8px;
+  }
+
+  .primaryCopy {
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .primaryCopy b {
+    font-size: 0.82rem;
+  }
+
+  .primaryCopy small,
+  .primaryLong {
+    display: none;
+  }
+
+  .primaryShort {
+    display: inline;
+  }
+
+  .rack {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 80%;
+    border-left: 0;
+    border-top: 1px solid var(--ear-brass-line);
+    border-radius: 12px 12px 0 0;
+    transform: translateY(104%);
+  }
+
+  .rackOpen {
+    transform: translateY(0);
+  }
+}
+
+/* The app's own tab bar overlays the bottom of the viewport on phones. */
+@media (max-width: 768px) {
+  .shell {
+    padding-bottom: var(--tabbar-total, 54px);
+  }
+
+  /* The voice-control pill floats bottom-left above the tab bar. */
+  .bridge {
+    padding-left: 64px;
+  }
+
+  .rack {
+    bottom: var(--tabbar-total, 54px);
+    padding-bottom: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rack,
+  .chip,
+  .bridgeButton,
+  .primary {
+    transition: none;
+  }
+}

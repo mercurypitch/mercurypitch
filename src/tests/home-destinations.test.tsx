@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DestinationGallery, HOME_DESTINATIONS, } from '@/features/home/DestinationGallery'
-import { TAB_ANALYSIS, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
 import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 
@@ -41,6 +41,7 @@ describe('Home destination gallery', () => {
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
       { kind: 'tab', tab: TAB_EXERCISES },
+      { kind: 'tab', tab: TAB_EAR_LAB },
       { kind: 'tab', tab: TAB_ANALYSIS },
       { kind: 'tab', tab: TAB_JAM },
     ])

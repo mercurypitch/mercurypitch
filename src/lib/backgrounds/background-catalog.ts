@@ -6,7 +6,7 @@
 // shared runtime resolves those keys through the authenticated background
 // endpoint and exposes only a short-lived object URL to the renderer.
 
-export type BackgroundSurface = 'karaoke' | 'jam' | 'piano' | 'guitar'
+export type BackgroundSurface = 'karaoke' | 'jam' | 'piano' | 'guitar' | 'ear'
 
 export function isBackgroundSurface(
   value: unknown,
@@ -15,7 +15,8 @@ export function isBackgroundSurface(
     value === 'karaoke' ||
     value === 'jam' ||
     value === 'piano' ||
-    value === 'guitar'
+    value === 'guitar' ||
+    value === 'ear'
   )
 }
 
@@ -44,6 +45,10 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   'jam-velvet-lounge',
   'piano-ambient-led-studio',
   'guitar-midnight-canyon',
+  // The Ear Lab's one free room until its pack lands (ear-lab-polish-plan
+  // Phase 6). A ~1K stand-in pair, not a master.
+  'ear-regulator-room',
+  'ear-glasshouse-bench',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -141,12 +146,23 @@ export const ROOM_LIBRARY_BACKGROUND_IDS = [
   'piano-moonlit-conservatory',
 ] as const
 
+/** The Ear Lab's supporter rooms (ear-lab-polish-plan Phase 6): four
+ *  rooms of the Regulator Room's world, delivered from R2 like every
+ *  other supporter identity. The two free rooms ship from `public/`. */
+export const EAR_ROOMS_BACKGROUND_IDS = [
+  'ear-transit-observatory',
+  'ear-bell-loft',
+  'ear-planetarium',
+  'ear-anechoic-booth',
+] as const
+
 /** Every supporter background may also be granted permanently by this id. */
 export const BACKGROUND_PERK_IDS = [
   ...EXISTING_PREMIUM_BACKGROUND_IDS,
   ...NEW_EDITION_BACKGROUND_IDS,
   ...MERCURY_ROOMS_BACKGROUND_IDS,
   ...ROOM_LIBRARY_BACKGROUND_IDS,
+  ...EAR_ROOMS_BACKGROUND_IDS,
 ] as const
 
 export type FreeBackgroundId = (typeof CURRENT_FREE_BACKGROUND_IDS)[number]
@@ -205,6 +221,7 @@ export type BackgroundEdition =
   | 'coastal-sunset'
   | 'grand-hall'
   | 'moonlit-conservatory'
+  | 'ear-rooms'
 
 export interface PublicBackgroundSource {
   kind: 'public'
@@ -1133,6 +1150,81 @@ export const BACKGROUND_CATALOG = [
     assetSource: protectedSource('piano', 'piano-moonlit-conservatory'),
     focalPoint: { x: 0.5, y: 0.5 },
   },
+  {
+    id: 'ear-regulator-room',
+    surface: 'ear',
+    label: 'Regulator Room',
+    description: 'A chronometer workshop after hours, one lamp on the bench',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/ear-lab/regulator-room-landscape.webp',
+      undefined,
+      '/ear-lab/regulator-room-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.42 },
+  },
+  {
+    id: 'ear-glasshouse-bench',
+    surface: 'ear',
+    label: 'Glasshouse Bench',
+    description: 'The same bench in a Victorian glasshouse at morning',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/ear-lab/glasshouse-bench-landscape.webp',
+      undefined,
+      '/ear-lab/glasshouse-bench-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.45 },
+    treatment: 'light',
+  },
+  {
+    id: 'ear-transit-observatory',
+    surface: 'ear',
+    label: 'Transit Observatory',
+    description: 'A dome slit open to a cobalt sky, Mercury low on the horizon',
+    edition: 'ear-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('ear-transit-observatory'),
+    assetSource: protectedSource('ear', 'ear-transit-observatory'),
+    focalPoint: { x: 0.5, y: 0.45 },
+  },
+  {
+    id: 'ear-bell-loft',
+    surface: 'ear',
+    label: 'Bell Loft',
+    description: 'Bronze bells at dusk, light through timber louvres',
+    edition: 'ear-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('ear-bell-loft'),
+    assetSource: protectedSource('ear', 'ear-bell-loft'),
+    focalPoint: { x: 0.5, y: 0.45 },
+  },
+  {
+    id: 'ear-planetarium',
+    surface: 'ear',
+    label: 'Planetarium',
+    description: 'A star projector under a ruled dome at blue hour',
+    edition: 'ear-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('ear-planetarium'),
+    assetSource: protectedSource('ear', 'ear-planetarium'),
+    focalPoint: { x: 0.5, y: 0.45 },
+  },
+  {
+    id: 'ear-anechoic-booth',
+    surface: 'ear',
+    label: 'Anechoic Booth',
+    description: 'Wedge foam, one chair, a headphone stand in even light',
+    edition: 'ear-rooms',
+    delivery: 'master-ready',
+    access: supporterAccess('ear-anechoic-booth'),
+    assetSource: protectedSource('ear', 'ear-anechoic-booth'),
+    focalPoint: { x: 0.5, y: 0.45 },
+  },
 ] as const satisfies readonly BackgroundDefinition[]
 
 export const DEFAULT_BACKGROUND_IDS = {
@@ -1140,6 +1232,7 @@ export const DEFAULT_BACKGROUND_IDS = {
   jam: 'room-stage',
   piano: 'piano-afterglow',
   guitar: 'velvet-rehearsal',
+  ear: 'ear-regulator-room',
 } as const satisfies Record<BackgroundSurface, FreeBackgroundId>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(

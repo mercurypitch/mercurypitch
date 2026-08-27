@@ -131,6 +131,9 @@ export class AudioEngine {
   private isPlaying = false
   private callbacks: AudioEngineCallbacks = {}
   private volume = 0.8
+  /** A surface's own level on top of the user's volume (the Ear Lab's
+   *  stage volume). 1 is no trim; playTone multiplies it in. */
+  private toneTrim = 1
   private metronomeVolume = 0.8
   private currentInstrument: InstrumentType = 'sine'
   private bufferSize = 2048
@@ -512,6 +515,17 @@ export class AudioEngine {
     } catch {
       param.value = value
     }
+  }
+
+  /** Trim every tone from here on by a surface's own level (0-1). The
+   *  Ear Lab sets its stage volume through this and resets it to 1 on
+   *  the way out, so the slider in Settings keeps meaning what it says. */
+  setToneTrim(value: number): void {
+    this.toneTrim = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1
+  }
+
+  getToneTrim(): number {
+    return this.toneTrim
   }
 
   setVolume(value: number): void {
@@ -1208,7 +1222,7 @@ export class AudioEngine {
     const userGain = this.audioCtx.createGain()
     userGain.gain.setValueAtTime(0, startTime)
     userGain.gain.linearRampToValueAtTime(
-      this.volume * activeVolumeMultiplier,
+      this.volume * activeVolumeMultiplier * this.toneTrim,
       startTime + 0.003,
     )
     masterGain.connect(userGain)

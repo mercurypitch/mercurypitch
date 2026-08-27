@@ -99,7 +99,7 @@
 .primary {
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--mic-wizard-primary-fg, #fff);
 }
 
 .primary:hover {

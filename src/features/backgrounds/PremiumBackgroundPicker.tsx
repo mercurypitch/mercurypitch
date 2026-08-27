@@ -64,6 +64,14 @@ const PICKER_COPY = {
     description: 'Included rooms and supporter editions for Guitar Night.',
     busy: 'Preparing your room…',
   },
+  ear: {
+    trigger: 'Choose Ear Lab room background',
+    dialog: 'Choose your Ear Lab room',
+    heading: 'Choose your room',
+    description:
+      'The room is visual only. It never changes a sound or a reading.',
+    busy: 'Preparing your room…',
+  },
 } as const satisfies Record<
   BackgroundSurface,
   {

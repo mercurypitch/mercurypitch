@@ -64,4 +64,14 @@ describe('the premium background surface constraint', () => {
   it('accepts guitar, which is what 0031 was for', () => {
     expect(currentSurfaceCheck()).toContain("'guitar'")
   })
+
+  it('accepts ear, which is what 0034 was for', () => {
+    expect(currentSurfaceCheck()).toContain("'ear'")
+  })
+
+  // The shared preview database already holds Drum Night's rows; a rebuild
+  // that cannot copy them back fails the migration (2026-08-27).
+  it('keeps accepting drum, which the preview database already stores', () => {
+    expect(currentSurfaceCheck()).toContain("'drum'")
+  })
 })

@@ -1,0 +1,212 @@
+/* ── EarReport: the report stage inside the room ─────────────── */
+
+/* The stage's tokens (--stage-*) come from EarStage.module.css's
+   .stage, which the report's root also carries. */
+.report {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 30px 40px;
+}
+
+.rangeRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* The range control: a segmented brass switch, the Garmin pattern. */
+.range {
+  display: inline-flex;
+  margin-left: auto;
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 70%);
+}
+
+.range button {
+  min-height: var(--stage-touch);
+  padding: 6px 14px;
+  border: 0;
+  border-right: 1px solid var(--stage-line);
+  background: none;
+  color: var(--stage-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
+}
+
+.range button:last-child {
+  border-right: 0;
+}
+
+.range button:hover {
+  color: var(--stage-parchment);
+}
+
+.range button[aria-pressed='true'] {
+  color: var(--stage-brass-bright);
+  background: rgb(201 164 94 / 14%);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+/* An engraved plate: one reading, or one map. */
+.plate {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgb(20 23 28 / 82%), rgb(12 14 17 / 86%));
+  box-shadow:
+    inset 0 1px 0 rgb(239 230 214 / 6%),
+    0 18px 40px rgb(0 0 0 / 35%);
+}
+
+.plateTitle {
+  margin: 0;
+  font-family: var(--stage-serif);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--stage-brass-bright);
+}
+
+.note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--stage-muted);
+}
+
+.note b {
+  color: var(--stage-parchment);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.foot {
+  margin: 4px 0 0;
+  font-size: 0.76rem;
+  color: var(--stage-muted);
+}
+
+.sentences {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--stage-muted);
+}
+
+.sentences b {
+  color: var(--stage-parchment);
+}
+
+/* The matrix scrolls inside its plate; the page never does. */
+.matrixScroll {
+  max-width: 100%;
+  padding-bottom: 4px;
+  overflow-x: auto;
+}
+
+.matrix {
+  display: grid;
+  gap: 3px;
+  min-width: min-content;
+  font-variant-numeric: tabular-nums;
+}
+
+.matrixRow {
+  display: contents;
+}
+
+.corner {
+  min-width: 34px;
+}
+
+.head {
+  display: grid;
+  place-items: center;
+  min-height: 28px;
+  padding: 0 4px;
+  font-family: var(--stage-serif);
+  font-size: 0.78rem;
+  color: var(--stage-brass-bright);
+  white-space: nowrap;
+}
+
+.cell {
+  --heat: 0;
+
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  min-height: 28px;
+  border-radius: 2px;
+  background: rgb(239 230 214 / 4%);
+  font-size: 0.72rem;
+  color: var(--stage-muted);
+}
+
+.cellMiss {
+  background: rgb(163 69 79 / calc(16% + var(--heat) * 44%));
+  color: var(--stage-parchment);
+}
+
+.cellHit {
+  background: rgb(95 199 184 / calc(14% + var(--heat) * 34%));
+  color: var(--stage-parchment);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@container (max-width: 860px) {
+  .body {
+    gap: 12px;
+    padding: 12px 12px 28px;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .plate {
+    padding: 14px 14px 16px;
+  }
+
+  .range {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .range button {
+    flex: 1 1 0;
+    padding: 6px 8px;
+  }
+}

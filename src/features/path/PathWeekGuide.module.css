@@ -184,6 +184,20 @@
   background: rgba(245, 158, 11, 0.2);
 }
 
+/* Brass on the bench's dark, so an Ear Lab chip reads as the Regulator
+   Room's measurement rather than as another singing drill. */
+.earChip {
+  border-color: rgb(201 164 94 / 45%);
+  color: #efe6d6;
+  background: rgb(201 164 94 / 12%);
+  font-variant-numeric: tabular-nums;
+}
+
+.earChip:hover {
+  border-color: rgb(231 198 125 / 75%);
+  background: rgb(201 164 94 / 22%);
+}
+
 .chip:focus-visible,
 .cta:focus-visible,
 .resLink:focus-visible {

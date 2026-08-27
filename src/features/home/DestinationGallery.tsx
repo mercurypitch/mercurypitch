@@ -14,7 +14,7 @@ import { Mascot } from '@/components/Mascot'
 import { clickNavigatesThisPage, createPendingAction, } from '@/components/shared/pending-action'
 import { Spinner } from '@/components/shared/Spinner'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { setActiveTab } from '@/stores/ui-store'
 import styles from './DestinationGallery.module.css'
@@ -25,6 +25,7 @@ export type DestinationVisual =
   | 'pianoNight'
   | 'guitarNight'
   | 'exercises'
+  | 'earLab'
   | 'analysis'
   | 'jam'
   // Not a Home card — the Ascent lives on its own tab. The artwork
@@ -91,6 +92,15 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     description:
       'Train intervals, range, agility and control with focused musical drills.',
     action: 'Browse exercises',
+  },
+  {
+    target: { kind: 'tab', tab: TAB_EAR_LAB },
+    visual: 'earLab',
+    eyebrow: 'Measured, not scored',
+    title: 'Ear Lab',
+    description:
+      'A chronometer workshop for the ear: thresholds in cents and milliseconds, chords named, one number that moves only when your ear does.',
+    action: 'Open the Ear Lab',
   },
   {
     target: { kind: 'tab', tab: TAB_ANALYSIS },
@@ -446,6 +456,16 @@ function PianoNightVisual(): JSX.Element {
   )
 }
 
+function EarLabVisual(): JSX.Element {
+  return (
+    <RoomPhoto
+      src="/ear-lab/regulator-room-landscape.webp"
+      className={styles.earLabVisual}
+      nugget="Cents · milliseconds · chords"
+    />
+  )
+}
+
 function GuitarNightVisual(): JSX.Element {
   return (
     <RoomPhoto
@@ -689,6 +709,9 @@ export function DestinationArtwork(props: {
         </Match>
         <Match when={props.visual === 'exercises'}>
           <ExercisesVisual />
+        </Match>
+        <Match when={props.visual === 'earLab'}>
+          <EarLabVisual />
         </Match>
         <Match when={props.visual === 'analysis'}>
           <AnalysisVisual />
