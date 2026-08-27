@@ -5,7 +5,9 @@
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "scripts": {
+    "predev": "node scripts/sync-ort-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/sync-ort-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
@@ -24,6 +26,7 @@
     "@fontsource/saira-condensed": "^5.3.0",
     "@irchiinnuss/beside-cue-core": "workspace:*",
     "@irchiinnuss/mobile-runtime": "workspace:*",
+    "@irchiinnuss/pitch-engine": "workspace:*",
     "@revenuecat/purchases-capacitor": "^13.4.0",
     "@revenuecat/purchases-capacitor-ui": "^13.4.0",
     "solid-js": "^1.9.12"

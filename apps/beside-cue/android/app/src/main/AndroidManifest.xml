@@ -28,4 +28,8 @@
 
         </activity>
     </application>
+
+    <!-- B-side games: on-device pitch detection while a game is open -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>

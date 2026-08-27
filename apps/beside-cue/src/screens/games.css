@@ -1,0 +1,155 @@
+/* B-side games list (paper world) + the full-screen stage wrapper. */
+
+.games-screen__intro {
+  margin-top: 0.6rem;
+}
+
+.games-screen__sub {
+  margin: 0.6rem 0 0;
+  max-width: 42ch;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.game-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  margin-top: 1.6rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: 15px;
+  background: var(--paper-light);
+  color: var(--ink);
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+.game-card__art {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  object-fit: cover;
+  background: #0b0b16;
+}
+
+.game-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.game-card__name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.game-card__chip {
+  padding: 0.05rem 0.4rem;
+  border: 1.5px solid var(--turquoise);
+  border-radius: 7px;
+  color: var(--turquoise-dark);
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.game-card__blurb {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.game-card__go {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.games-screen__note {
+  margin: 1.4rem 0 0;
+  max-width: 46ch;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* Full-screen stage: the game owns the viewport; one paper chip leads back. */
+.games-stage {
+  position: fixed;
+  inset: 0;
+}
+
+.games-leave {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.8rem 0.45rem 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
+}
+
+.games-leave svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.games-leave:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(36 25 19 / 55%);
+}
+
+.games-leave:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card:active,
+  .games-leave:active {
+    transform: none;
+  }
+}

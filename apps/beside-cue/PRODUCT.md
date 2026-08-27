@@ -29,6 +29,10 @@ Beside Cue helps someone notice an unhelpful pull and begin one tiny action they
 - An optional **BeSideCue Pro** purchase supports the work. It gates nothing:
   every part of the plan-and-cue loop stays free, and the app never asks for a purchase
   outside Settings. Entitlements are held by the store, not by this device.
+- **B-side games**: small optional sung mini-games (first: Merc's Journey),
+  reachable from a discreet Home entry. They are free, unscored, gate nothing,
+  and can serve as someone's chosen Side B action. The microphone is used only
+  while a game is open, analyzed on-device, and never recorded or uploaded.
 - The app is not treatment, diagnosis, abstinence monitoring, or a medical device.
 
 ## Initial implementation slice
