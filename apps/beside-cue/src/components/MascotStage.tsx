@@ -1,6 +1,6 @@
 import { Show } from 'solid-js'
 import { AssetStage } from '@/components/AssetStage'
-import type { CharacterStateId, ContentPack, MomentId } from '@/content'
+import type { AssetSlot, CharacterStateId, ContentPack, MomentId, } from '@/content'
 import { DEFAULT_CONTENT_PACK, MOMENTS, resolveMoment } from '@/content'
 
 // Kept as the app's name for the mascot's four presentation states. The art,
@@ -19,6 +19,8 @@ interface MascotStageProps {
   rotation?: number
   compact?: boolean
   pack?: ContentPack
+  /** Surface-specific art, while the named state still owns copy and motion. */
+  artOverride?: AssetSlot
 }
 
 const STATE_MOMENTS: Readonly<Record<MascotState, MomentId>> = {
@@ -47,7 +49,7 @@ export function MascotStage(props: MascotStageProps) {
       <div class="mascot-stage__sleeve">
         <AssetStage
           class="mascot-stage__art"
-          slot={presentation().art}
+          slot={props.artOverride ?? presentation().art}
           size={1024}
         />
         <Show when={presentation().entity}>

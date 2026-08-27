@@ -18,6 +18,26 @@ describe('mascot stage', () => {
     ])
   })
 
+  it('accepts surface-specific art without changing the named state', () => {
+    const { container } = render(() => (
+      <MascotStage
+        state="quiet"
+        artOverride={{
+          still: '/art/corky/corky-home-rest-v0_23-1024.webp',
+          alt: 'Corky settled beside the current plan.',
+        }}
+      />
+    ))
+
+    expect(container.querySelector('figure')).toHaveAttribute(
+      'data-state',
+      'quiet',
+    )
+    expect(sources(container)).toEqual([
+      expect.stringMatching(/corky-home-rest-v0_23/u) as unknown as string,
+    ])
+  })
+
   it('captions the moment so the beat reads without audio', () => {
     render(() => <MascotStage moment="turn.b-side" />)
 

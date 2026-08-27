@@ -340,6 +340,9 @@ describe('Beside Cue app', () => {
     expect(tracks).not.toBeNull()
     expect(art).not.toBeNull()
     expect(tracks?.contains(art)).toBe(false)
+    expect(art?.querySelector('img')?.getAttribute('src')).toContain(
+      'corky-home-rest-v0_23-1024.webp',
+    )
   })
 
   it('sets a real onboarding reminder only after the user asks', async () => {
