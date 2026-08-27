@@ -66,6 +66,30 @@
   line-height: 1.45;
   margin-bottom: 2px;
 }
+.link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Only one bullet in the whole changelog has a second paragraph, but it read
+   as a run-on when the wrapped lines were finally joined back up. */
+.entryParagraph {
+  margin: 6px 0 0;
+}
+
+/* Sub-bullets. These were dropped entirely by the old parser, so nothing had
+   ever needed to style them. */
+.subEntries {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  list-style: circle;
+}
+
+.subEntries li {
+  margin-bottom: 2px;
+}
+
 .code {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.76em;
