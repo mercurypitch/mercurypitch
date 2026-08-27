@@ -62,6 +62,7 @@ const PAGE_TOURS = [
   'Community',
   'Leaderboard',
   'Challenges',
+  'Ear Lab',
 ]
 
 const launchOpts = {}

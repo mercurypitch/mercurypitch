@@ -16,8 +16,9 @@ LAN), open the **Ear Lab** tab.
 
 The number every millisecond drill will subtract. Speakers up, room quiet.
 
-1. On the Ear Lab dashboard, find the **Timing calibration** card. It should
-   read **Not measured** on first run.
+1. In the Ear Lab's session bar, press the **Round trip** chip (it reads
+   **unmeasured** on first run). The readiness panel opens in the rack with
+   the **Timing calibration** card.
 2. Press **Measure round trip**. You will hear five short clicks over about
    3 seconds while it listens through the mic.
 3. Expect a result like **"140 ms ± 3"** on the card badge.
@@ -105,7 +106,7 @@ Three button drills, 12 rounds each, all sharing one engine.
 
 ## 2d. Ear Report — NEW in Phase 3
 
-1. After playing the drills above, open **Ear Report** from the dashboard.
+1. After playing the drills above, open **Ear Report** from the bridge.
 2. **Thresholds over time**: sparklines for Hairline and The Grid. The
    line should RISE as your readings fall (it is plotted inverted on
    purpose — rising must mean improving). Check the "best" figure.
@@ -123,9 +124,11 @@ Three button drills, 12 rounds each, all sharing one engine.
 The habit loop. Everything here is local and same-day, so the quickest
 way through it is to just play the three drills it names.
 
-1. On the dashboard, find **Today's sprint** above the drill cards. It
-   should list **three** drills, each with a reason chip — on a fresh
-   profile all three read **Never measured**.
+1. On the bench, find **Today's regulation** — the engraved plate at the
+   right of the Regulator on a desk, below the dials on a phone (the
+   bridge's **Today** button scrolls to it). It should list **three**
+   drills, each with a reason — on a fresh profile all three read
+   **Never measured**.
 2. Check the reasons are honest: after you have readings for everything,
    two slots should say **Your weakest** and exactly one **Keeping it
    fresh**. The weakest two must match the lowest faculty numbers in the

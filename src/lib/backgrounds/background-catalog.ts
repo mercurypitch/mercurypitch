@@ -6,7 +6,7 @@
 // shared runtime resolves those keys through the authenticated background
 // endpoint and exposes only a short-lived object URL to the renderer.
 
-export type BackgroundSurface = 'karaoke' | 'jam' | 'piano' | 'guitar'
+export type BackgroundSurface = 'karaoke' | 'jam' | 'piano' | 'guitar' | 'ear'
 
 export function isBackgroundSurface(
   value: unknown,
@@ -15,7 +15,8 @@ export function isBackgroundSurface(
     value === 'karaoke' ||
     value === 'jam' ||
     value === 'piano' ||
-    value === 'guitar'
+    value === 'guitar' ||
+    value === 'ear'
   )
 }
 
@@ -44,6 +45,9 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   'jam-velvet-lounge',
   'piano-ambient-led-studio',
   'guitar-midnight-canyon',
+  // The Ear Lab's one free room until its pack lands (ear-lab-polish-plan
+  // Phase 6). A ~1K stand-in pair, not a master.
+  'ear-regulator-room',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -1133,6 +1137,21 @@ export const BACKGROUND_CATALOG = [
     assetSource: protectedSource('piano', 'piano-moonlit-conservatory'),
     focalPoint: { x: 0.5, y: 0.5 },
   },
+  {
+    id: 'ear-regulator-room',
+    surface: 'ear',
+    label: 'Regulator Room',
+    description: 'A chronometer workshop after hours, one lamp on the bench',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/ear-lab/regulator-room-landscape.webp',
+      undefined,
+      '/ear-lab/regulator-room-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.42 },
+  },
 ] as const satisfies readonly BackgroundDefinition[]
 
 export const DEFAULT_BACKGROUND_IDS = {
@@ -1140,6 +1159,7 @@ export const DEFAULT_BACKGROUND_IDS = {
   jam: 'room-stage',
   piano: 'piano-afterglow',
   guitar: 'velvet-rehearsal',
+  ear: 'ear-regulator-room',
 } as const satisfies Record<BackgroundSurface, FreeBackgroundId>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(

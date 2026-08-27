@@ -1724,7 +1724,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'One score over faculties measured in different units — cents, milliseconds, chord qualities. It only moves when a Calibration marks it, so it cannot drift upward on a good day.',
     targetSelector: '[data-tour="ear.index"]',
-    placement: 'left',
+    placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
   {
@@ -1732,7 +1732,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Resolution, Function, Shape, Colour, Time and In The Wild. Anything you have never measured says "Unmeasured" rather than pretending to be a zero — missing data is not a bad ear.',
     targetSelector: '[data-tour="ear.faculties"]',
-    placement: 'left',
+    placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
   {
@@ -1740,7 +1740,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Three drills, about five minutes, chosen from your own readings — and each one tells you why it was picked. Finish a drill anywhere in the Lab and it ticks off here.',
     targetSelector: '[data-tour="ear.sprint"]',
-    placement: 'top',
+    placement: 'left',
     requiredTab: TAB_EAR_LAB,
   },
   {
@@ -1748,7 +1748,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'About three minutes. Three separate measurements run interleaved and are averaged together — that pooling is what makes the reading precise enough to keep. Practice runs never mark the column.',
     targetSelector: '[data-tour="ear.actions"]',
-    placement: 'left',
+    placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },
   {
@@ -1764,7 +1764,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Measures the round trip from your speakers back to your microphone, so millisecond drills can subtract your hardware instead of blaming your ear for it.',
     targetSelector: '[data-tour="ear.latency"]',
-    placement: 'top',
+    placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
   {
@@ -1772,7 +1772,7 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Every other trainer holds you near 75% correct forever, so the score can never show growth. Here the units are real and the item difficulties are frozen — the number moves only when your ear does.',
     targetSelector: '[data-tour="ear.rulers"]',
-    placement: 'top',
+    placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
 ]

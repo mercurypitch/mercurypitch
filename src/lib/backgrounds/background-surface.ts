@@ -605,6 +605,7 @@ const SURFACE_CONTROLLERS = {
   jam: createBackgroundSurfaceController('jam'),
   piano: createBackgroundSurfaceController('piano'),
   guitar: createBackgroundSurfaceController('guitar'),
+  ear: createBackgroundSurfaceController('ear'),
 } as const satisfies Record<BackgroundSurface, BackgroundSurfaceController>
 
 export function backgroundSurfaceController(

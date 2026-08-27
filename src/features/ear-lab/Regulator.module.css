@@ -1,0 +1,160 @@
+.regulator {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.svg {
+  width: 100%;
+  max-width: 230px;
+  height: auto;
+  /* Fit the first viewport on a desk: the shell is a size container. */
+  max-height: min(520px, calc(100cqh - 436px));
+  filter: drop-shadow(0 22px 40px rgb(0 0 0 / 55%));
+}
+
+.case {
+  fill: #101317;
+  stroke: var(--ear-brass-line);
+  stroke-width: 1;
+}
+
+.caseInner {
+  fill: #0c0e11;
+  stroke: rgb(239 230 214 / 6%);
+  stroke-width: 1;
+}
+
+.dial {
+  fill: #0b0d10;
+  stroke: var(--ear-brass);
+  stroke-width: 2.5;
+}
+
+.ticks line {
+  stroke: var(--ear-brass);
+  stroke-width: 1;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.ticks .tickMajor {
+  stroke-width: 2;
+  opacity: 1;
+}
+
+.dialLabel {
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  fill: var(--ear-brass);
+}
+
+.dialValue {
+  font-family: var(--ear-serif);
+  font-size: 26px;
+  fill: var(--ear-mercury);
+  font-variant-numeric: tabular-nums;
+}
+
+.brass {
+  fill: var(--ear-brass);
+}
+
+.rod {
+  stroke: var(--ear-brass);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.jar {
+  fill: rgb(197 206 216 / 6%);
+  stroke: var(--ear-mercury-deep);
+  stroke-width: 1.2;
+}
+
+.meniscus {
+  stroke: var(--ear-brass-bright);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.cap {
+  stroke: var(--ear-muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.etch line {
+  stroke: var(--ear-parchment);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.etch text {
+  font-size: 7.5px;
+  fill: var(--ear-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  font-size: 7.5px;
+  letter-spacing: 0.2em;
+  fill: var(--ear-brass);
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 32ch;
+  text-align: center;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--ear-muted);
+}
+
+.legend b {
+  color: var(--ear-parchment);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendMissing {
+  color: var(--ear-muted);
+  font-style: italic;
+}
+
+/* The pendulum swings at rest tempo; the pivot is the dial's centre. */
+.pendulum {
+  transform-box: view-box;
+  transform-origin: 120px 92px;
+  animation: ear-regulator-swing 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite
+    alternate;
+}
+
+@keyframes ear-regulator-swing {
+  from {
+    transform: rotate(-2.4deg);
+  }
+
+  to {
+    transform: rotate(2.4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pendulum {
+    animation: none;
+  }
+}
+
+/* On a phone the bench scrolls, so the Regulator keeps its full height. */
+@container (max-width: 860px) {
+  .svg {
+    max-width: 200px;
+    max-height: none;
+  }
+}

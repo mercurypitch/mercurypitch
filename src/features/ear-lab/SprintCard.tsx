@@ -1,7 +1,7 @@
 // ============================================================
-// SprintCard — today's five minutes, and why.
+// SprintCard — today's regulation, and why.
 //
-// The card shows the scheduler's reasoning rather than hiding it:
+// The plate shows the scheduler's reasoning rather than hiding it:
 // each drill carries the reason it was picked, so a user can see
 // that Stack is here because it is currently their weakest and
 // that the choice will move on once it is not. A recommendation
@@ -19,6 +19,7 @@ import { findIdentificationDrill, findThresholdDrill } from '@/lib/ear/drills'
 import type { SprintSegment } from '@/lib/ear/sprint'
 import { SPRINT_REASON_LABEL } from '@/lib/ear/sprint'
 import { completeSprint, isSprintComplete, sprintProgress, sprintStreak, todaysSprint, } from '@/stores/ear-lab-store'
+import { IconCheck, IconSeal } from './ear-icons'
 import type { EarLabView } from './EarLabDashboard'
 import styles from './SprintCard.module.css'
 
@@ -67,22 +68,17 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
   })
 
   return (
-    <section class={styles.card} data-tour="ear.sprint">
+    <section
+      class={styles.card}
+      data-tour="ear.sprint"
+      aria-label="Today's regulation"
+    >
       <header class={styles.head}>
-        <div>
-          <h3 class={styles.title}>Today's sprint</h3>
-          <p class={styles.sub}>
-            <Show
-              when={remaining() > 0}
-              fallback="Done for today — the column keeps what you earned."
-            >
-              Three drills, about five minutes. Picked from your own readings.
-            </Show>
-          </p>
-        </div>
+        <span class={styles.title}>Today's regulation</span>
         <Show when={streak() > 0}>
-          <span class={styles.streak} title="Consecutive days with a sprint">
-            {streak()} day{streak() === 1 ? '' : 's'}
+          <span class={styles.seal} title="Consecutive days with a sprint">
+            <IconSeal size={12} />
+            Day {streak()}
           </span>
         </Show>
       </header>
@@ -94,32 +90,18 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
               class={styles.row}
               classList={{ [styles.rowDone]: done().has(segment.drillId) }}
             >
-              <div class={styles.rowMain}>
+              <span class={styles.rowMain}>
                 <span class={styles.drill}>{drillName(segment.drillId)}</span>
                 <span class={styles.reason}>
                   {SPRINT_REASON_LABEL[segment.reason]} ·{' '}
                   {segmentLength(segment)}
                 </span>
-              </div>
+              </span>
               <Show
                 when={!done().has(segment.drillId)}
                 fallback={
                   <span class={styles.doneMark} aria-label="Finished">
-                    <svg
-                      viewBox="0 0 16 16"
-                      width="16"
-                      height="16"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M3 8.5l3.2 3.2L13 5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
+                    <IconCheck size={14} />
                   </span>
                 }
               >
@@ -138,6 +120,16 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
           )}
         </For>
       </ol>
+
+      <p class={styles.note}>
+        <Show
+          when={remaining() > 0}
+          fallback="Done for today — the glass keeps what you earned."
+        >
+          Two slots go to what is neediest, the third rotates. Finish a drill
+          anywhere in the Lab and it ticks here.
+        </Show>
+      </p>
     </section>
   )
 }

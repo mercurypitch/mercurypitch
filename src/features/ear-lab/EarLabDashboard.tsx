@@ -1,21 +1,26 @@
 // ============================================================
-// EarLabDashboard — the Mercury Column and the way into the
-// drills. The layout enforces the product's honesty rule in
-// pixels: the calibrated number is large and solid, the practice
-// estimate is smaller and explicitly labelled an estimate, and
-// unmeasured faculties say "Unmeasured" instead of pretending
-// to be zeros.
+// EarLabDashboard — the bench. The Regulator (the Mercury Column
+// as a regulator's pendulum jar), the Index dial with the six
+// faculty sub-dials, today's regulation, and the instrument strip.
+// The layout enforces the product's honesty rule in pixels: the
+// calibrated number is the solid fill and the big needle, the
+// practice estimate is a fainter line explicitly labelled, and an
+// unmeasured faculty is a blank dial that says "Unmeasured" rather
+// than a needle at zero.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { FacultyId } from '@/lib/ear/drills'
-import { FACULTY_LABEL, findThresholdDrill } from '@/lib/ear/drills'
-import { isProvisional } from '@/lib/ear/elo'
-import { calibrationHistory, earPlayerRating, latestCalibration, latestThresholdReading, practiceIndexEstimate, } from '@/stores/ear-lab-store'
+import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
+import { IconArc, IconFork, IconGears, IconLattice, IconLoupe, IconSeal, IconStylus, } from './ear-icons'
 import styles from './EarLabDashboard.module.css'
-import { LatencyWizard } from './LatencyWizard'
-import { MercuryColumn } from './MercuryColumn'
+import { EarRoomShell } from './EarRoomShell'
+import type { FacultyDial } from './IndexDials'
+import { IndexDials } from './IndexDials'
+import type { Instrument, InstrumentView } from './instruments'
+import { dateLabel, facultyReadout, instrumentReading, INSTRUMENTS, } from './instruments'
+import { Regulator } from './Regulator'
 import { SprintCard } from './SprintCard'
 
 export type EarLabView =
@@ -42,131 +47,78 @@ const FACULTY_ORDER: FacultyId[] = [
   'wild',
 ]
 
-interface DrillCardDef {
-  view: EarLabView
-  title: string
-  blurb: string
-  /** One-line stat, or null for "not played yet". */
-  stat: () => string | null
-  emptyStat: string
+const INSTRUMENT_ICON: Record<
+  InstrumentView,
+  (p: { size?: number; class?: string }) => JSX.Element
+> = {
+  hairline: IconLoupe,
+  home: IconFork,
+  grid: IconLattice,
+  leap: IconArc,
+  stack: IconGears,
+  contour: IconStylus,
+  calibration: IconSeal,
 }
 
-function ratingStat(drillId: string): string | null {
-  const rating = earPlayerRating(drillId)
-  if (rating.attempts === 0) return null
-  return `Rating ${Math.round(rating.rating)}${
-    isProvisional(rating) ? ' · settling' : ''
-  }`
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+function monthLabel(at: number): string {
+  return new Date(at).toLocaleDateString(undefined, { month: 'long' })
 }
 
-function thresholdStat(drillId: string): string | null {
-  const reading = latestThresholdReading(drillId)
-  if (!reading) return null
-  const unit = findThresholdDrill(drillId)?.unitShort ?? ''
-  const decimals = unit === 'ms' ? 0 : 1
-  return `Latest ${reading.value.toFixed(decimals)}${unit}`
+interface Headline {
+  lead: string
+  rest: string
+  lede: string
 }
 
-const DRILL_CARDS: DrillCardDef[] = [
-  {
-    view: 'hairline',
-    title: 'Hairline',
-    blurb:
-      'Two tones, ever closer — the finest gap your ear still resolves, in cents.',
-    stat: () => thresholdStat('hairline'),
-    emptyStat: 'No reading yet',
-  },
-  {
-    view: 'home',
-    title: 'Home',
-    blurb:
-      'A cadence plants the key, one note sounds — name the degree, by tap or by voice. The hearing that transfers.',
-    stat: () => {
-      const ear = ratingStat('home')
-      const voice = earPlayerRating('home-sing')
-      if (ear === null) return null
-      return voice.attempts > 0
-        ? `${ear} · voice ${Math.round(voice.rating)}`
-        : ear
-    },
-    emptyStat: 'Unrated',
-  },
-  {
-    view: 'grid',
-    title: 'The Grid',
-    blurb:
-      'Six clicks, one off the lattice — the finest timing flaw you still catch, in milliseconds.',
-    stat: () => thresholdStat('the-grid'),
-    emptyStat: 'No reading yet',
-  },
-  {
-    view: 'leap',
-    title: 'Leap',
-    blurb: 'Name the interval. The supporting vocabulary drill behind Home.',
-    stat: () => ratingStat('leap'),
-    emptyStat: 'Unrated',
-  },
-  {
-    view: 'stack',
-    title: 'Stack',
-    blurb: 'One chord, roved root — name its quality. Colour hearing opens.',
-    stat: () => ratingStat('stack'),
-    emptyStat: 'Unrated',
-  },
-  {
-    view: 'contour',
-    title: 'Contour',
-    blurb:
-      'Up, down or same, fast — down to quarter-tone gaps at the top tier.',
-    stat: () => ratingStat('contour'),
-    emptyStat: 'Unrated',
-  },
-]
+/** The coach's line: the number that matters most right now, in its
+ *  own unit, and how it has moved. Never a percent, never a streak. */
+function headline(): Headline {
+  const sealed = latestCalibration()
+  const runs = calibrationHistory()
+  if (sealed) {
+    const previous = runs.at(1)
+    const rest =
+      previous !== undefined
+        ? `In ${monthLabel(previous.at)} it was ${previous.index}.`
+        : `Sealed ${dateLabel(sealed.at)}.`
+    return {
+      lead: `Index ${sealed.index}.`,
+      rest,
+      lede: 'Your ear, in units that cannot flatter you. The mercury moves only when a sealed calibration says so.',
+    }
+  }
+  const hairline = thresholdHistory('hairline')
+  const latest = hairline.at(0)
+  if (latest !== undefined) {
+    const earliest = hairline.at(-1)
+    const rounded = Math.round(latest.value)
+    const rest =
+      earliest !== undefined &&
+      earliest !== latest &&
+      latest.at - earliest.at >= WEEK_MS
+        ? `In ${monthLabel(earliest.at)} it was ${Math.round(earliest.value)}.`
+        : 'Run a calibration to mark the glass.'
+    return {
+      lead: `${rounded} cent${rounded === 1 ? '' : 's'}.`,
+      rest,
+      lede: 'The finest gap your ear still resolves. Practice draws the fainter line; only a sealed calibration marks the glass.',
+    }
+  }
+  return {
+    lead: 'Nothing measured yet.',
+    rest: 'Two minutes on Hairline is a first reading.',
+    lede: 'Your ear, in units that cannot flatter you. The mercury moves only when a sealed calibration says so.',
+  }
+}
 
 export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
   const calibrated = () => latestCalibration()
-  // Memoized: the hero reads it three times per render and it walks
+  // Memoized: the bench reads it several times per render and it walks
   // every drill's readings and ratings to build the composite.
   const estimate = createMemo(() => practiceIndexEstimate())
-
-  const facultyReadout = (faculty: FacultyId): string | null => {
-    switch (faculty) {
-      case 'resolution':
-        return thresholdStat('hairline')?.replace('Latest ', '') ?? null
-      case 'time':
-        return thresholdStat('the-grid')?.replace('Latest ', '') ?? null
-      case 'function': {
-        const rating = earPlayerRating('home')
-        if (rating.attempts === 0) return null
-        const provisional = isProvisional(rating) ? ' · settling' : ''
-        const voice = earPlayerRating('home-sing')
-        const voicePart =
-          voice.attempts > 0 ? ` · voice ${Math.round(voice.rating)}` : ''
-        return `${Math.round(rating.rating)}${provisional}${voicePart}`
-      }
-      case 'shape': {
-        // Leap and Contour average into the faculty; the readout
-        // shows whichever exist.
-        const parts = ['leap', 'contour']
-          .map((id) => ({ id, rating: earPlayerRating(id) }))
-          .filter((p) => p.rating.attempts > 0)
-        if (parts.length === 0) return null
-        const mean =
-          parts.reduce((sum, p) => sum + p.rating.rating, 0) / parts.length
-        const settling = parts.some((p) => isProvisional(p.rating))
-        return `${Math.round(mean)}${settling ? ' · settling' : ''}`
-      }
-      case 'colour': {
-        const rating = earPlayerRating('stack')
-        if (rating.attempts === 0) return null
-        return `${Math.round(rating.rating)}${
-          isProvisional(rating) ? ' · settling' : ''
-        }`
-      }
-      default:
-        return null
-    }
-  }
+  const line = createMemo(() => headline())
 
   const delta = (): number | null => {
     const runs = calibrationHistory()
@@ -174,143 +126,133 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
     return runs[0].index - runs[1].index
   }
 
+  const deltaSince = (): string | null => {
+    const runs = calibrationHistory()
+    return runs.length < 2 ? null : dateLabel(runs[1].at)
+  }
+
+  const faculties = createMemo((): FacultyDial[] => {
+    const sealedParts = calibrated()?.parts ?? {}
+    const estimateParts = estimate().parts
+    return FACULTY_ORDER.map((faculty) => {
+      const sealedScore = sealedParts[faculty]
+      const estimated = estimateParts[faculty]
+      return {
+        faculty,
+        score: sealedScore ?? estimated ?? null,
+        reading: facultyReadout(faculty),
+        estimated: sealedScore === undefined && estimated !== undefined,
+      }
+    })
+  })
+
+  let regulationCard: HTMLDivElement | undefined
+
+  const showToday = () => {
+    regulationCard?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    regulationCard?.focus({ preventScroll: true })
+  }
+
+  const openInstrument = (instrument: Instrument) =>
+    props.onNavigate(instrument.view)
+
   return (
-    <div class={styles.dashboard} id="ear-lab-panel">
-      <header class={styles.header}>
-        <h2>Ear Lab</h2>
-        <p>Your ear, measured — in units that cannot flatter you.</p>
-      </header>
+    <EarRoomShell onNavigate={props.onNavigate} onToday={showToday}>
+      <div class={styles.bench} id="ear-lab-panel">
+        <div class={styles.heading}>
+          <span class={styles.kicker}>
+            <i aria-hidden="true" /> At the bench
+          </span>
+          <h1 class={styles.title}>
+            {line().lead}
+            <br />
+            {line().rest}
+          </h1>
+          <p class={styles.lede}>{line().lede}</p>
+        </div>
 
-      <section class={styles.hero} data-tour="ear.column">
-        <MercuryColumn
-          calibrated={calibrated()?.index ?? null}
-          estimate={estimate().value}
-          marks={calibrationHistory().map((run) => ({
-            at: run.at,
-            index: run.index,
-          }))}
-          missingCount={estimate().missing.length}
-        />
-
-        <div class={styles.heroSide}>
-          <div class={styles.indexBlock} data-tour="ear.index">
-            <span class={styles.indexLabel}>Mercury Index</span>
-            <Show
-              when={calibrated()}
-              fallback={<span class={styles.indexEmpty}>Not yet marked</span>}
-            >
-              {(run) => (
-                <>
-                  <span class={styles.indexValue}>{run().index}</span>
-                  <Show when={delta() !== null}>
-                    <span
-                      class={
-                        (delta() ?? 0) >= 0 ? styles.deltaUp : styles.deltaDown
-                      }
-                    >
-                      {(delta() ?? 0) >= 0 ? '+' : ''}
-                      {delta()} since last calibration
-                    </span>
-                  </Show>
-                </>
-              )}
-            </Show>
-            <Show when={estimate().value > 0}>
-              <span class={styles.estimateLine}>
-                Practice estimate: {estimate().value}
-              </span>
-            </Show>
+        <div class={styles.grid}>
+          <div class={styles.regulatorCell} data-tour="ear.column">
+            <Regulator
+              calibrated={calibrated()?.index ?? null}
+              estimate={estimate().value}
+              marks={calibrationHistory().map((run) => ({
+                at: run.at,
+                index: run.index,
+              }))}
+              missingCount={estimate().missing.length}
+            />
           </div>
 
-          <ul class={styles.facultyList} data-tour="ear.faculties">
-            <For each={FACULTY_ORDER}>
-              {(faculty) => (
-                <li class={styles.facultyRow}>
-                  <span class={styles.facultyName}>
-                    {FACULTY_LABEL[faculty]}
+          <div class={styles.dialsCell}>
+            <IndexDials
+              calibrated={calibrated()?.index ?? null}
+              delta={delta()}
+              deltaSince={deltaSince()}
+              estimate={estimate().value}
+              faculties={faculties()}
+            />
+          </div>
+
+          <div class={styles.regulationCell} ref={regulationCard} tabIndex={-1}>
+            <SprintCard onNavigate={props.onNavigate} />
+          </div>
+        </div>
+
+        <div
+          class={styles.strip}
+          role="list"
+          aria-label="The instruments"
+          data-tour="ear.drills"
+        >
+          <For each={INSTRUMENTS}>
+            {(instrument) => {
+              const Icon = INSTRUMENT_ICON[instrument.view]
+              const reading = () => instrumentReading(instrument)
+              return (
+                <button
+                  type="button"
+                  role="listitem"
+                  class={styles.instrument}
+                  classList={{
+                    [styles.instrumentSeal]: instrument.view === 'calibration',
+                  }}
+                  onClick={() => openInstrument(instrument)}
+                  aria-label={`${instrument.name} — ${instrument.measures}`}
+                >
+                  <Icon size={30} class={styles.instrumentIcon} />
+                  <span class={styles.instrumentName}>{instrument.name}</span>
+                  <span class={styles.instrumentMeasures}>
+                    {instrument.measures}
                   </span>
                   <Show
-                    when={facultyReadout(faculty)}
-                    fallback={<span class={styles.unmeasured}>Unmeasured</span>}
+                    when={reading()}
+                    fallback={
+                      <span class={styles.instrumentEmpty}>
+                        {instrument.view === 'calibration'
+                          ? 'Unsealed'
+                          : 'Unmeasured'}
+                      </span>
+                    }
                   >
-                    {(readout) => (
-                      <span class={styles.facultyValue}>{readout()}</span>
+                    {(value) => (
+                      <span class={styles.instrumentReading}>
+                        {value().value}
+                        <Show when={value().unit}>
+                          <small> {value().unit}</small>
+                        </Show>
+                        <Show when={value().settling}>
+                          <small> · settling</small>
+                        </Show>
+                      </span>
                     )}
                   </Show>
-                </li>
-              )}
-            </For>
-          </ul>
-
-          <div class={styles.heroActions} data-tour="ear.actions">
-            <button
-              type="button"
-              class={styles.calibrateBtn}
-              onClick={() => props.onNavigate('calibration')}
-            >
-              Run Calibration
-            </button>
-            <button
-              type="button"
-              class={styles.reportBtn}
-              onClick={() => props.onNavigate('report')}
-            >
-              Ear Report
-            </button>
-          </div>
-          <p class={styles.calibrateNote}>
-            About 3 minutes. Three separate measurements run at once, shuffled
-            trial by trial and averaged — the only reading that marks the
-            column.
-          </p>
+                </button>
+              )
+            }}
+          </For>
         </div>
-      </section>
-
-      <SprintCard onNavigate={props.onNavigate} />
-
-      <section class={styles.drills} data-tour="ear.drills">
-        <For each={DRILL_CARDS}>
-          {(card) => (
-            <article class={styles.drillCard}>
-              <h3>{card.title}</h3>
-              <p>{card.blurb}</p>
-              <div class={styles.drillStats}>
-                <Show
-                  when={card.stat()}
-                  fallback={
-                    <span class={styles.unmeasured}>{card.emptyStat}</span>
-                  }
-                >
-                  {(stat) => <span>{stat()}</span>}
-                </Show>
-              </div>
-              <button
-                type="button"
-                class={styles.drillStartBtn}
-                onClick={() => props.onNavigate(card.view)}
-              >
-                Open
-              </button>
-            </article>
-          )}
-        </For>
-      </section>
-
-      <section class={styles.drills} data-tour="ear.latency">
-        <LatencyWizard />
-      </section>
-
-      <section class={styles.rulers} data-tour="ear.rulers">
-        <h4>Why there is no percent here</h4>
-        <p>
-          Adaptive drills hold everyone near 75% correct forever, so a score can
-          never show growth. The Ear Lab reports thresholds in real units
-          (cents, milliseconds, notes) that keep falling, and ratings against
-          items of frozen difficulty that keep rising. Calibration re-measures
-          you on a sealed protocol — the marks on the column are earned, not
-          estimated.
-        </p>
-      </section>
-    </div>
+      </div>
+    </EarRoomShell>
   )
 }
