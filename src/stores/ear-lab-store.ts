@@ -69,23 +69,13 @@ const [confusions, setConfusions] = createPersistedSignal<
   Record<string, number>
 >(`${KEY_PREFIX}confusions`, {})
 
-export interface LatencyEntry {
-  /** Round-trip audio latency, milliseconds (median over clicks). */
-  medianMs: number
-  /** MAD spread of the measurement, ms. */
-  spreadMs: number
-  at: number
-}
-
-const [latency, setLatency] = createPersistedSignal<LatencyEntry | null>(
-  `${KEY_PREFIX}latency`,
-  null,
-)
-
-/** Device round-trip latency, or null before the wizard has run.
- *  Millisecond drills subtract this; they stay locked while null. */
-export function earLatency(): LatencyEntry | null {
-  return latency()
+// The Ear Lab measured its own round trip until Polish Phase 3; the
+// app's shared measurement (mic-latency-store) serves every surface
+// now, so the old key is retired rather than read.
+try {
+  localStorage.removeItem(`${KEY_PREFIX}latency`)
+} catch {
+  // Storage may be unavailable (private mode); nothing to retire then.
 }
 
 /** How Home takes its answers. Persisted here rather than in the
@@ -98,13 +88,6 @@ const [homeMode, setHomeMode] = createPersistedSignal<'tap' | 'mic'>(
 
 export const homeAnswerMode = homeMode
 export const setHomeAnswerMode = setHomeMode
-
-export function recordLatencyReading(reading: {
-  medianMs: number
-  spreadMs: number
-}): void {
-  setLatency({ ...reading, at: Date.now() })
-}
 
 // ── Ratings (Ruler B) ───────────────────────────────────────────
 

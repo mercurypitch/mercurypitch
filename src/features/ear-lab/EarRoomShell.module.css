@@ -514,6 +514,23 @@
   padding: 16px 18px 24px;
 }
 
+/* The app's latency wizard, skinned through the tokens it already reads:
+   brass for its accent, parchment for its type, dark text on the brass
+   button so the pad reads like the bench's amber control. */
+.readinessWizard {
+  --bg-secondary: rgb(20 23 28 / 70%);
+  --bg-card: rgb(239 230 214 / 6%);
+  --border: var(--ear-brass-line);
+  --text-primary: var(--ear-parchment);
+  --text-muted: var(--ear-muted);
+  --accent: var(--ear-brass);
+  --accent-dim: rgb(201 164 94 / 35%);
+  --danger: var(--ear-garnet-bright);
+  --mic-wizard-primary-fg: #141210;
+
+  border-radius: 6px;
+}
+
 .rackNote {
   margin: 0;
   font-size: 0.82rem;

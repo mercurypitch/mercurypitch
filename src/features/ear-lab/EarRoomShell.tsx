@@ -13,16 +13,18 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import { MAX_TRUSTED_SPREAD_MS } from '@/lib/ear/latency'
-import { earLatency, latestCalibration } from '@/stores/ear-lab-store'
+import { calibrationDueAt } from '@/lib/ear/calibration'
+import { STEADY_LATENCY_SPREAD_MS } from '@/lib/mic-latency'
+import { latestCalibration } from '@/stores/ear-lab-store'
+import { micLatencyMs, micLatencySpreadMs } from '@/stores/mic-latency-store'
 import { EAR_GLASS, EAR_GLASS_VAR, earGlassLabel, formatEarGlassValue, loadEarGlass, persistEarGlass, } from './ear-glass'
 import { IconClose, IconInfo, IconRack, IconReport, IconSeal, IconToday, } from './ear-icons'
 import type { EarLabView } from './EarLabDashboard'
 import styles from './EarRoomShell.module.css'
 import { dateLabel, instrumentReading, INSTRUMENTS } from './instruments'
-import { LatencyWizard } from './LatencyWizard'
 
 export type RackPanel = 'instruments' | 'room' | 'readiness' | 'rulers'
 
@@ -68,10 +70,18 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
   })
 
   const sealed = () => latestCalibration()
-  const latency = () => earLatency()
-  const latencySteady = () => {
-    const entry = latency()
-    return entry !== null && entry.spreadMs <= MAX_TRUSTED_SPREAD_MS
+  /** The app's one round-trip number; zero means never measured. */
+  const latencyMs = () => micLatencyMs()
+  const measured = () => latencyMs() > 0
+  /** null: an older measurement with no spread, so no steadiness claim. */
+  const latencySteady = (): boolean | null => {
+    const spread = micLatencySpreadMs()
+    return spread === null ? null : spread <= STEADY_LATENCY_SPREAD_MS
+  }
+  const latencyWord = () => {
+    const steady = latencySteady()
+    if (steady === null) return 'measured'
+    return steady ? 'steady' : 'unsteady'
   }
 
   const shellStyle = (): ShellStyle => ({
@@ -142,6 +152,8 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
                   Index <b>{run().index}</b>
                   <span class={styles.metaExtra}>
                     <i aria-hidden="true" /> sealed {dateLabel(run().at)}
+                    <i aria-hidden="true" /> due{' '}
+                    {dateLabel(calibrationDueAt(run().at))}
                   </span>
                 </span>
               )}
@@ -156,29 +168,27 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
             data-tour="ear.latency"
             onClick={() => open('readiness')}
             aria-label={
-              latency()
-                ? `Round trip ${Math.round(latency()?.medianMs ?? 0)} milliseconds, ${
-                    latencySteady() ? 'steady' : 'unsteady'
-                  }. Open the readiness panel`
+              measured()
+                ? `Round trip ${latencyMs()} milliseconds, ${latencyWord()}. Open the readiness panel`
                 : 'Round trip not measured. Open the readiness panel'
             }
           >
             <span
               class={styles.chipDot}
               classList={{
-                [styles.chipDotOn]: latencySteady(),
-                [styles.chipDotWarn]: latency() !== null && !latencySteady(),
+                [styles.chipDotOn]: measured() && latencySteady() !== false,
+                [styles.chipDotWarn]: measured() && latencySteady() === false,
               }}
             />
             <span class={styles.chipCopy}>
               <b>
-                <Show when={latency()} fallback="Round trip">
-                  {(entry) => `${Math.round(entry().medianMs)} ms`}
+                <Show when={measured()} fallback="Round trip">
+                  {latencyMs()} ms
                 </Show>
               </b>
               <small>
-                <Show when={latency()} fallback="unmeasured">
-                  round trip · {latencySteady() ? 'steady' : 'unsteady'}
+                <Show when={measured()} fallback="unmeasured">
+                  round trip · {latencyWord()}
                 </Show>
               </small>
             </span>
@@ -382,11 +392,13 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
         <Show when={panel() === 'readiness'}>
           <div class={styles.rackPanel}>
             <p class={styles.rackNote}>
-              The round trip from your speakers back to your microphone. Tap
-              drills subtract it so the number is your ear, not your hardware.
-              Nothing here listens until you start the measurement.
+              The round trip from your speakers back to your microphone — one
+              number for the whole app, the same one Settings shows. Tap drills
+              subtract it so the reading is your ear, not your hardware. Nothing
+              listens until you press Start, and the microphone is asked for
+              only then.
             </p>
-            <LatencyWizard />
+            <MicLatencyWizard class={styles.readinessWizard} onClose={close} />
           </div>
         </Show>
 

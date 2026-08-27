@@ -1,0 +1,43 @@
+/* ── ReadingTrace: a reading over time, in the room's grammar ── */
+
+.trace {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grid line {
+  stroke: rgb(239 230 214 / 12%);
+  stroke-width: 1;
+}
+
+.axis text {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  fill: var(--ear-brass, #c9a45e);
+  font-variant-numeric: tabular-nums;
+}
+
+.practice {
+  fill: none;
+  stroke: var(--ear-mercury-deep, #8f9daf);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  stroke-linejoin: round;
+}
+
+.sealed {
+  fill: none;
+  stroke: var(--ear-brass-bright, #e7c67d);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.dot {
+  fill: var(--ear-mercury-deep, #8f9daf);
+}
+
+.mark {
+  fill: var(--ear-brass-bright, #e7c67d);
+}

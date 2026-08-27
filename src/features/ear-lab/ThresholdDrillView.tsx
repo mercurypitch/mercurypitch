@@ -16,14 +16,21 @@
 
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
+import { calibrationDueAt } from '@/lib/ear/calibration'
 import { IconPlay, IconSeal } from './ear-icons'
 import type { StageKey } from './EarStage'
 import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, } from './EarStage'
+import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
 import { TrackPendulums } from './TrackPendulums'
+import { useCompactStage } from './use-compact-stage'
 import type { ThresholdRunMode, useThresholdRun } from './use-threshold-run'
 
 const TRACK_NAMES = ['A', 'B', 'C']
+
+/** The protocol, said once at the top of the ritual. */
+const RITUAL_STATUS =
+  'Three separate measurements run at once, shuffled trial by trial and pooled. Only this reading marks the glass.'
 
 interface ThresholdDrillViewProps {
   title: string
@@ -49,6 +56,9 @@ interface ThresholdDrillViewProps {
   unitShort: string
   /** Newest stored reading, or null before the first run. */
   latestValue: () => number | null
+  /** The bench's amber control: open in the sealed protocol, with no
+   *  practice offered. Begin starts the three-track calibration. */
+  ritual?: boolean
   run: ReturnType<typeof useThresholdRun>
   /** The drill's instrument, reactive to the run. */
   instrument: () => JSX.Element
@@ -67,23 +77,34 @@ export function ThresholdDrillView(
   const phase = () => props.run.phase()
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const calibrating = () => props.run.mode() === 'calibration'
+  const ritual = () => props.ritual === true
+  const compact = useCompactStage()
 
+  const name = () => (ritual() ? 'Calibration' : props.title)
   const mode = () => {
+    if (ritual()) return props.title
     if (phase() === 'idle') return 'on the bench'
     return calibrating() ? 'sealed calibration' : 'practice'
   }
 
   const progress = () => {
     if (!running()) {
+      if (ritual() && phase() === 'idle') {
+        return 'Three tracks, interleaved · about three minutes'
+      }
       const latest = props.latestValue()
       return latest === null
         ? 'Unmeasured'
         : `Latest reading ${props.formatValue(latest)}${props.unitShort}`
     }
-    const track = calibrating()
-      ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
-      : ''
-    return `${track}${props.levelCaption} ${props.levelLabel()} · reversal ${props.run.reversalsDone()} of ${props.run.reversalTarget()}`
+    if (calibrating()) {
+      // Per track, so the line still reads on a phone, where the
+      // pendulums step aside for the loupe during the trials.
+      const track = props.run.activeTrack()
+      const turns = props.run.trackReversals()[track] ?? 0
+      return `Track ${TRACK_NAMES[track] ?? ''} · ${props.levelCaption} ${props.levelLabel()} · reversal ${turns} of ${props.run.trackTarget()}`
+    }
+    return `${props.levelCaption} ${props.levelLabel()} · reversal ${props.run.reversalsDone()} of ${props.run.reversalTarget()}`
   }
 
   const status = () => {
@@ -95,7 +116,7 @@ export function ThresholdDrillView(
       case 'reveal':
         return props.revealLine()
       default:
-        return props.prompt
+        return ritual() ? RITUAL_STATUS : props.prompt
     }
   }
 
@@ -108,7 +129,8 @@ export function ThresholdDrillView(
 
   const keys = (): StageKey[] => {
     if (phase() === 'idle') {
-      return [{ key: 'Space', action: () => props.run.start('practice') }]
+      const mode: ThresholdRunMode = ritual() ? 'calibration' : 'practice'
+      return [{ key: 'Space', action: () => props.run.start(mode) }]
     }
     if (phase() === 'answer') return props.keys()
     return []
@@ -120,7 +142,7 @@ export function ThresholdDrillView(
   return (
     <EarStage
       drillId={props.drillId}
-      name={props.title}
+      name={name()}
       mode={mode()}
       progress={progress()}
       status={status()}
@@ -133,8 +155,13 @@ export function ThresholdDrillView(
       done={() => phase() === 'done'}
       instrument={() => (
         <>
-          {props.instrument()}
-          <Show when={running() && calibrating()}>
+          {/* At rest in the ritual the pendulums stand alone, as the
+              mock's calibration stage does; the loupe joins them once
+              the trials sound. */}
+          <Show when={!(ritual() && phase() === 'idle')}>
+            {props.instrument()}
+          </Show>
+          <Show when={running() && calibrating() && !compact()}>
             <TrackPendulums
               counts={props.run.trackReversals()}
               target={props.run.trackTarget()}
@@ -143,31 +170,61 @@ export function ThresholdDrillView(
               sealed={false}
             />
           </Show>
+          <Show when={ritual() && phase() === 'idle'}>
+            <TrackPendulums
+              counts={[0, 0, 0]}
+              target={props.run.trackTarget()}
+              active={-1}
+              running={false}
+              sealed={false}
+              tall
+            />
+          </Show>
         </>
       )}
       console={() => (
         <Show
           when={running()}
           fallback={
-            <>
+            <Show
+              when={ritual()}
+              fallback={
+                <>
+                  <ConsoleLead>
+                    <PlayPad
+                      label="Practice run"
+                      sub="about a minute"
+                      keycap="Space"
+                      icon={<IconPlay size={20} />}
+                      onClick={() => props.run.start('practice')}
+                    />
+                    <PlayPad
+                      amber
+                      label="Calibration"
+                      sub="3 tracks · about 3 min"
+                      icon={<IconSeal size={20} />}
+                      onClick={() => props.run.start('calibration')}
+                    />
+                  </ConsoleLead>
+                  <ConsoleNote>{props.description}</ConsoleNote>
+                </>
+              }
+            >
               <ConsoleLead>
                 <PlayPad
-                  label="Practice run"
-                  sub="about a minute"
-                  keycap="Space"
-                  icon={<IconPlay size={20} />}
-                  onClick={() => props.run.start('practice')}
-                />
-                <PlayPad
                   amber
-                  label="Calibration"
+                  label="Begin"
                   sub="3 tracks · about 3 min"
+                  keycap="Space"
                   icon={<IconSeal size={20} />}
                   onClick={() => props.run.start('calibration')}
                 />
               </ConsoleLead>
-              <ConsoleNote>{props.description}</ConsoleNote>
-            </>
+              <ConsoleNote>
+                No hints, no retries, no adaptation beyond the staircase itself.
+                Abandoning it marks nothing.
+              </ConsoleNote>
+            </Show>
           }
         >
           <PlayPad
@@ -193,6 +250,7 @@ export function ThresholdDrillView(
                   : 'Stopped before the staircase turned — nothing to read yet, and nothing marked.'
               }
               onAgain={() => props.run.start(again())}
+              againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
               onBack={props.onBack}
             />
           }
@@ -224,13 +282,29 @@ export function ThresholdDrillView(
                     <b>
                       {dateLabel(Date.now())} · {marked()}
                     </b>
-                    .
+                    . Next calibration due{' '}
+                    {dateLabel(calibrationDueAt(Date.now()))}.
                   </Show>
                 }
                 onAgain={() => props.run.start(again())}
                 againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
                 onBack={props.onBack}
               >
+                <Show when={marked() !== undefined}>
+                  <div class={styles.plateFigure}>
+                    <TrackPendulums
+                      counts={[
+                        props.run.trackTarget(),
+                        props.run.trackTarget(),
+                        props.run.trackTarget(),
+                      ]}
+                      target={props.run.trackTarget()}
+                      active={-1}
+                      running={false}
+                      sealed
+                    />
+                  </div>
+                </Show>
                 <Show when={pooled()}>
                   {(spread) => (
                     <PlateLine>

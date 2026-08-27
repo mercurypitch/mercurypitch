@@ -1,7 +1,7 @@
 // ============================================================
 // click-synth — sample-accurate clicks on the AudioContext clock.
 //
-// Shared by the latency wizard and The Grid: both live or die on
+// The Grid's click (the app's latency wizard has its own): it lives or dies on
 // onset precision, so clicks are scheduled with osc.start(t) and
 // a 1 ms attack (sharp enough to detect, no speaker pop), wired
 // straight to ctx.destination past the engine's effects chain.

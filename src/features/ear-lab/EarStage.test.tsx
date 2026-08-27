@@ -115,9 +115,19 @@ describe('EarStage with Hairline', () => {
     const Engine = withEngine(fakeEngine())
     render(() => (
       <Engine>
-        <HairlineDrill onBack={() => undefined} autoStartMode="calibration" />
+        <HairlineDrill onBack={() => undefined} ritual />
       </Engine>
     ))
+    // The sealed protocol opens at rest: the pendulums, the protocol
+    // line, an amber Begin instead of Practice.
+    expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
+      'Three tracks',
+    )
+    expect(
+      document.querySelector('[data-instrument="pendulums"]'),
+    ).not.toBeNull()
+    expect(screen.queryByText('Practice run')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
     expect(screen.getByLabelText('Abandon')).toBeTruthy()
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Track',

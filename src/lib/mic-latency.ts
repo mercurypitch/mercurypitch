@@ -42,6 +42,13 @@ export const MIN_LATENCY_HITS = 4
  */
 export const MAX_LATENCY_MS = 500
 
+/**
+ * Spread (interquartile, ms) under which a measurement reads as steady. Above
+ * it the offset still compensates playback, but a readiness display should
+ * say so and suggest a quieter re-run rather than present the number as fact.
+ */
+export const STEADY_LATENCY_SPREAD_MS = 25
+
 /** Why a run produced no number. Each maps to its own thing to tell the user. */
 export type LatencyFailure =
   /** The clicks never came back — headphones on, mic muted, volume down. */

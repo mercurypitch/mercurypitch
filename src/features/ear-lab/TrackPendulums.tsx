@@ -20,6 +20,9 @@ interface TrackPendulumsProps {
   active: number
   running: boolean
   sealed: boolean
+  /** Standing alone at rest (the ritual's idle): long rods, so the
+   *  strip is an instrument in its own right rather than a footer. */
+  tall?: boolean
 }
 
 const TRACKS = ['A', 'B', 'C']
@@ -36,10 +39,16 @@ export function TrackPendulums(props: TrackPendulumsProps): JSX.Element {
           (name, i) => `${name} ${props.counts[i] ?? 0} of ${props.target}`,
         ).join(', ')}`
 
+  const tall = () => props.tall === true
+  const rodEnd = () => (tall() ? 230 : 110)
+  const bobY = () => (tall() ? 240 : 120)
+  const bobR = () => (tall() ? 16 : 14)
+  const captionY = () => (tall() ? 285 : 152)
+
   return (
     <svg
       class={styles.instrument}
-      viewBox="0 0 640 160"
+      viewBox={tall() ? '0 0 640 300' : '0 0 640 160'}
       role="img"
       aria-label={label()}
       data-instrument="pendulums"
@@ -70,13 +79,13 @@ export function TrackPendulums(props: TrackPendulumsProps): JSX.Element {
                 x1={rodX(i())}
                 y1="20"
                 x2={rodX(i())}
-                y2="110"
+                y2={rodEnd()}
                 class={styles.calRod}
               />
               <circle
                 cx={rodX(i())}
-                cy="120"
-                r="14"
+                cy={bobY()}
+                r={bobR()}
                 class={styles.calBob}
                 classList={{
                   [styles.calBobActive]:
@@ -87,9 +96,10 @@ export function TrackPendulums(props: TrackPendulumsProps): JSX.Element {
             </g>
             <text
               x={rodX(i())}
-              y="152"
+              y={captionY()}
               class={styles.caption}
               classList={{ [styles.captionBrass]: props.sealed }}
+              style={{ 'font-size': tall() ? '15px' : undefined }}
               text-anchor="middle"
             >
               {name} · {props.counts[i()] ?? 0}/{props.target}

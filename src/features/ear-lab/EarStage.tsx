@@ -64,6 +64,51 @@ function isTypingTarget(target: EventTarget | null): boolean {
   )
 }
 
+interface StageBarProps {
+  name: string
+  /** Shown small beside the name; the report has none. */
+  mode?: string
+  progress: string
+  onBack: () => void
+  /** The right-hand control: Stop while a run can be stopped, the
+   *  report's range control. */
+  aside?: JSX.Element
+}
+
+/** The drill bar — back, identity, the live line, one control. Shared
+ *  by every stage and by the Ear Report, so the room's bars match. */
+export function StageBar(props: StageBarProps): JSX.Element {
+  return (
+    <div class={styles.bar}>
+      <button
+        type="button"
+        class={styles.back}
+        onClick={() => props.onBack()}
+        aria-label="Back to the bench"
+      >
+        <IconBack size={18} />
+      </button>
+      <div class={styles.identity}>
+        <span class={styles.name}>
+          {props.name}
+          <Show when={props.mode}>
+            {(mode) => (
+              <>
+                {' '}
+                <small class={styles.mode}>· {mode()}</small>
+              </>
+            )}
+          </Show>
+        </span>
+        <span class={styles.progress} data-testid="ear-stage-progress">
+          {props.progress}
+        </span>
+      </div>
+      {props.aside}
+    </div>
+  )
+}
+
 export function EarStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
 
@@ -104,35 +149,25 @@ export function EarStage(props: EarStageProps): JSX.Element {
       data-testid="ear-stage"
       aria-label={props.name}
     >
-      <div class={styles.bar}>
-        <button
-          type="button"
-          class={styles.back}
-          onClick={() => props.onBack()}
-          aria-label="Back to the bench"
-        >
-          <IconBack size={18} />
-        </button>
-        <div class={styles.identity}>
-          <span class={styles.name}>
-            {props.name} <small class={styles.mode}>· {props.mode}</small>
-          </span>
-          <span class={styles.progress} data-testid="ear-stage-progress">
-            {props.progress}
-          </span>
-        </div>
-        <Show when={props.onStop}>
-          <button
-            type="button"
-            class={styles.stop}
-            onClick={() => props.onStop?.()}
-            aria-label={props.stopLabel ?? 'Stop'}
-          >
-            <IconStop size={18} />
-            <span class={styles.stopLabel}>{props.stopLabel ?? 'Stop'}</span>
-          </button>
-        </Show>
-      </div>
+      <StageBar
+        name={props.name}
+        mode={props.mode}
+        progress={props.progress}
+        onBack={props.onBack}
+        aside={
+          <Show when={props.onStop}>
+            <button
+              type="button"
+              class={styles.stop}
+              onClick={() => props.onStop?.()}
+              aria-label={props.stopLabel ?? 'Stop'}
+            >
+              <IconStop size={18} />
+              <span class={styles.stopLabel}>{props.stopLabel ?? 'Stop'}</span>
+            </button>
+          </Show>
+        }
+      />
 
       <Show
         when={props.done?.() === true}

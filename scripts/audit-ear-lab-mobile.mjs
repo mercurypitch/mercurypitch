@@ -73,6 +73,77 @@ function seed(version) {
     ]) {
       localStorage.setItem(`pitchperfect_page_tour_offered_${t}`, 'true')
     }
+    // A short history, so the report has traces and a map to draw and
+    // the bench has a sealed index to show.
+    const now = Date.now()
+    const day = 86400000
+    const reading = (value, daysAgo, source) => ({
+      drillId: 'hairline',
+      value,
+      spread: 1.2,
+      tracks: source === 'calibration' ? 3 : 1,
+      source,
+      at: now - daysAgo * day,
+    })
+    localStorage.setItem(
+      'mercurypitch_ear_readings',
+      JSON.stringify([
+        reading(9.4, 2, 'calibration'),
+        reading(11.2, 5, 'practice'),
+        reading(14, 12, 'practice'),
+        reading(17.5, 20, 'practice'),
+        reading(22, 33, 'calibration'),
+        reading(27, 41, 'practice'),
+        reading(31, 50, 'practice'),
+        {
+          drillId: 'the-grid',
+          value: 34,
+          spread: 3,
+          tracks: 1,
+          source: 'practice',
+          at: now - 8 * day,
+        },
+      ]),
+    )
+    localStorage.setItem(
+      'mercurypitch_ear_calibrations',
+      JSON.stringify([
+        {
+          at: now - 2 * day,
+          index: 618,
+          parts: { resolution: 618 },
+          readings: [{ drillId: 'hairline', value: 9.4, spread: 1.2 }],
+        },
+        {
+          at: now - 33 * day,
+          index: 580,
+          parts: { resolution: 580 },
+          readings: [{ drillId: 'hairline', value: 22, spread: 2 }],
+        },
+      ]),
+    )
+    // Tap attempts per Home item, so the map has a diagonal and rates.
+    localStorage.setItem(
+      'mercurypitch_ear_items',
+      JSON.stringify({
+        'home:deg-1': { rating: 1000, attempts: 8 },
+        'home:deg-2': { rating: 1120, attempts: 7 },
+        'home:deg-3': { rating: 1100, attempts: 6 },
+        'home:deg-4': { rating: 1180, attempts: 9 },
+        'home:deg-5': { rating: 1060, attempts: 8 },
+        'home:deg-6': { rating: 1150, attempts: 7 },
+        'home:deg-7': { rating: 1220, attempts: 6 },
+      }),
+    )
+    localStorage.setItem(
+      'mercurypitch_ear_confusions',
+      JSON.stringify({
+        'home|deg-4>deg-5': 3,
+        'home|deg-7>deg-1': 2,
+        'home|deg-6>deg-7': 2,
+        'home|deg-2>deg-3': 1,
+      }),
+    )
   } catch {
     /* storage may be unavailable; the audit still runs */
   }
@@ -264,6 +335,41 @@ function measureStage() {
 /** Open Hairline from the strip, run one practice trial to its pads,
  *  stop onto the plate; then Home to its ladder. Layout only — the
  *  fake audio device makes the tones inaudible, not absent. */
+/** The report's layout facts, read in one evaluate. */
+function measureReport() {
+  const doc = document.documentElement
+  const root = document.querySelector('[data-testid="ear-report"]')
+  const plates = root ? root.querySelectorAll('[data-plate]').length : 0
+  const traces = root
+    ? root.querySelectorAll('[data-testid="ear-trace"]').length
+    : 0
+  const matrixSpills = [
+    ...(root?.querySelectorAll('[role="table"]') ?? []),
+  ].some((table) => {
+    const box = table.parentElement
+    const plate = box?.closest('[data-plate]')
+    if (!box || !plate) return false
+    return (
+      box.getBoundingClientRect().right >
+      plate.getBoundingClientRect().right + 1
+    )
+  })
+  const range = root?.querySelector('[role="group"][aria-label="Range"]')
+  const rangeRect = range?.getBoundingClientRect()
+  const rangeVisible =
+    !!rangeRect &&
+    rangeRect.width > 0 &&
+    rangeRect.top >= 0 &&
+    rangeRect.bottom <= window.innerHeight
+  return {
+    overflowX: doc.scrollWidth > doc.clientWidth + 1,
+    plates,
+    traces,
+    matrixSpills,
+    rangeVisible,
+  }
+}
+
 async function auditStage(page, name) {
   const results = {}
   const openFromStrip = async (label) => {
@@ -340,6 +446,85 @@ async function auditStage(page, name) {
   await page.getByLabel('Stop').click()
   await page.waitForTimeout(300)
   await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+
+  // The readiness panel: the app's one latency number, in the rack.
+  await page.getByLabel(/Open the readiness panel/).click()
+  await page.waitForTimeout(450)
+  await page.screenshot({ path: `${OUT}/${name}-rack-readiness.png` })
+  const startVisible = await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Start' })
+    .isVisible()
+    .catch(() => false)
+  if (!startVisible)
+    fail(`${name} readiness`, 'no Start control in the readiness panel')
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+
+  // Calibration as a ritual: at rest, running, abandoned.
+  // The bridge's primary reads "Run Calibration" on a desk and
+  // "Calibrate" on a phone; the sub-line is the same on both.
+  await page
+    .locator('[data-tour="ear.actions"]', { hasText: 'marks the glass' })
+    .first()
+    .click()
+  await page.locator('[data-ear-drill="hairline"]').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(500)
+  results.calibrationIdle = await checkStage(
+    'calibration idle',
+    'stage-calibration-idle',
+  )
+  const begin = page.getByRole('button', { name: /Begin/ })
+  if (!(await begin.isVisible().catch(() => false)))
+    fail(`${name} calibration`, 'no Begin pad on the sealed protocol')
+  await begin.click()
+  const calArmed = await page
+    .locator('button:not([disabled])', { hasText: 'The first' })
+    .waitFor({ timeout: 8000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!calArmed)
+    fail(`${name} calibration`, 'the calibration never armed its pads')
+  results.calibrationRun = await checkStage(
+    'calibration run',
+    'stage-calibration-run',
+  )
+  await page.getByLabel('Abandon').click()
+  await page
+    .locator('[data-testid="ear-stage-plate"]')
+    .waitFor({ timeout: 4000 })
+  await page.waitForTimeout(300)
+  await page.screenshot({
+    path: `${OUT}/${name}-stage-calibration-plate.png`,
+  })
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(300)
+
+  // The Ear Report inside the room.
+  await page.getByRole('button', { name: 'Ear Report' }).first().click()
+  await page.locator('[data-testid="ear-report"]').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(500)
+  const report = await page.evaluate(measureReport)
+  await page.screenshot({ path: `${OUT}/${name}-report.png` })
+  if (report.overflowX)
+    fail(`${name} report`, 'horizontal overflow on the page')
+  if (report.plates < 6)
+    fail(`${name} report`, `only ${report.plates} plates on the report`)
+  if (report.traces < 3)
+    fail(`${name} report`, `only ${report.traces} traces drawn from the seed`)
+  if (report.matrixSpills)
+    fail(`${name} report`, 'a confusion matrix spills past its plate')
+  if (!report.rangeVisible)
+    fail(`${name} report`, 'the range control is not on screen')
+  await page
+    .locator('[data-testid="ear-report"] [data-plate="confusion-home"]')
+    .scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: `${OUT}/${name}-report-map.png` })
+  results.report = report
+  await page.getByLabel('Back to the bench').click()
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
 
   return results

@@ -12,28 +12,35 @@ LAN), open the **Ear Lab** tab.
 
 ---
 
-## 1. Timing calibration (the latency wizard) — NEW in Phase 2
+## 1. Timing calibration — the app's one round-trip number
 
-The number every millisecond drill will subtract. Speakers up, room quiet.
+The Ear Lab no longer measures latency itself (Polish Phase 3). The
+**Round trip** chip in the session bar reads the same number Settings →
+Microphone → **Round-trip offset** does, and the readiness panel hosts that
+same wizard. Speakers up, room quiet.
 
-1. In the Ear Lab's session bar, press the **Round trip** chip (it reads
-   **unmeasured** on first run). The readiness panel opens in the rack with
-   the **Timing calibration** card.
-2. Press **Measure round trip**. You will hear five short clicks over about
-   3 seconds while it listens through the mic.
-3. Expect a result like **"140 ms ± 3"** on the card badge.
+1. Press the **Round trip** chip (it reads **unmeasured** on a fresh
+   device). The readiness panel opens in the rack: a note that says why,
+   then the wizard. Nothing listens yet.
+2. Press **Start**. The microphone is asked for only now. Eight clicks
+   play over about six seconds while it listens.
+3. Expect **"N ms round trip"** with "Matched 8 of 8 clicks, spread x ms".
+   Press **Use this**: the rack closes and the chip reads **N ms · steady**
+   (spread of 25 ms or less) or **unsteady**.
    - Wired speakers/headphones + built-in mic typically read ~20-120 ms.
    - Bluetooth output typically reads 150-350 ms. Both are fine — the point
      is the number, not its size.
-4. Press **Re-measure** twice more. The three medians should agree within
-   roughly ±10 ms. If the card warns "unsteady", the room was noisy — retry.
+4. Open Settings → Microphone: **Round-trip offset** shows the same number.
+   Measure there instead; the chip follows.
 5. Failure cases to try deliberately:
-   - Volume muted → expect "Could not hear the clicks", no value stored.
-   - Deny mic permission → expect the mic-unavailable message.
+   - Volume muted → "The clicks never came back…", **Try again**, no value
+     stored, chip unchanged.
+   - Deny mic permission → the wizard's microphone error, chip unchanged.
 6. Phone repeat: same steps; expect a larger but stable number.
 
-Report: the three medians, the spread, device + output (e.g. "laptop
-speakers + built-in mic").
+Report: the medians, the spread, device + output (e.g. "laptop speakers +
+built-in mic"). The old Ear Lab wizard's constant over-read (handoff §3,
+274 ms against main's ~150 ms) went with the wizard.
 
 ## 2. Home in Sing-or-play mode — NEW in Phase 2
 
@@ -110,20 +117,31 @@ Three button drills, 12 rounds each, all sharing one engine.
 5. Dashboard check: Shape should now read a number (Leap and Contour
    averaged), Colour should read Stack's rating.
 
-## 2d. Ear Report — NEW in Phase 3
+## 2d. Ear Report — in the room since Polish Phase 3
 
-1. After playing the drills above, open **Ear Report** from the bridge.
-2. **Thresholds over time**: sparklines for Hairline and The Grid. The
-   line should RISE as your readings fall (it is plotted inverted on
-   purpose — rising must mean improving). Check the "best" figure.
-3. **Confusion maps**: one section per drill. Expect sentences like _"You
-   answer Fa (4) as Sol (5) on 33% of attempts"_ and a heatmap where rows
-   are what played and columns are what you answered.
-4. Deliberately miss the same degree the same way 3-4 times in Home, then
+1. After playing the drills above, open **Ear Report** from the bridge. It
+   opens as a stage inside the room: the drill bar with a range control
+   (**4 wk / 12 wk / All**), then engraved plates.
+2. **Mercury Index · sealed calibrations**: brass marks, one per sealed
+   calibration, on a 0-1000 axis; the note reads "Sealed {date} at {index}
+   of 1000 · {delta} since {date}". Without a calibration the plate says
+   so.
+3. **Hairline / The Grid · threshold**: the practice line is silver and
+   dashed, sealed calibrations are brass marks. The line RISES as your
+   readings fall — plotted inverted on purpose — and the axis labels are
+   printed honestly: the smallest value sits at the top. Check "best".
+4. **Range**: 4 wk / 12 wk / All re-scale the traces' x axis; the default
+   is 12 wk. Confusions are not dated, so the maps do not change — the
+   foot line says so.
+5. **Confusion maps**: one plate per drill. Rows are what played, columns
+   what you answered; the diagonal (right answers) is signal green, misses
+   are garnet, darker with count. Expect sentences like _"You answer Fa (4)
+   as Sol (5) on 33% of attempts"_.
+6. Deliberately miss the same degree the same way 3-4 times in Home, then
    re-open the report — that pair should top the list.
-5. Sections with no misses should say so, not render an empty grid.
-6. Phone: the heatmap scrolls horizontally inside its own box; the page
-   itself must not scroll sideways.
+7. Plates with nothing to show say so in words, not an empty grid.
+8. Phone: the range control sits under the drill bar; a matrix scrolls
+   sideways inside its plate; the page itself must not scroll sideways.
 
 ## 2e. The Daily Sprint — NEW in Phase 4
 
@@ -214,8 +232,13 @@ bench's bridge was.
    trials feel quicker than before (audio was tightened ~15%).
 2. **Home tap mode** — one run: cadence noticeably slower/roomier than the
    first build; still comfortable.
-3. **Calibration** — one run: three interleaved tracks, pooled reading,
-   column marks. Abandoning it mid-run must NOT mark the column.
+3. **Calibration** — from the bench's amber control: the Hairline stage
+   opens in its sealed protocol (pendulums at rest, the protocol in the
+   status line, an amber **Begin**). One run: three interleaved tracks,
+   pooled reading, the plate shows the pendulums in phase, the etched
+   index and "Next calibration due {date}" (fourteen days); the session
+   bar reads "sealed … · due …". **Abandon** mid-run must NOT mark the
+   column.
 4. **Mercury Column on the phone** — after the fixes: no white blob at the
    tube top, the dashed cap floats above the glass, tube centred, column no
    longer fills the whole first screen.

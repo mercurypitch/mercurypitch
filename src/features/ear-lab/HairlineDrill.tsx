@@ -11,7 +11,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createSignal, onMount } from 'solid-js'
+import { createSignal } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { HAIRLINE_TIMING } from '@/lib/ear/timing'
@@ -19,15 +19,14 @@ import { latestThresholdReading } from '@/stores/ear-lab-store'
 import type { PadState } from './EarStage'
 import { Pads, StagePad } from './EarStage'
 import { ThresholdDrillView } from './ThresholdDrillView'
-import type { ThresholdRunMode } from './use-threshold-run'
 import { useThresholdRun } from './use-threshold-run'
 import { VernierLoupe } from './VernierLoupe'
 
 interface HairlineDrillProps {
   onBack: () => void
-  /** When set, the run starts immediately in this mode (the
-   *  bench's Run Calibration control jumps straight in). */
-  autoStartMode?: ThresholdRunMode
+  /** The bench's amber control: open in the sealed protocol — the
+   *  pendulums at rest, Begin instead of Practice. */
+  ritual?: boolean
 }
 
 /** Rove the base log-uniformly across A3..A5. */
@@ -65,10 +64,6 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
     { cancelStimulus: () => audioEngine.stopTone(60) },
   )
 
-  onMount(() => {
-    if (props.autoStartMode) run.start(props.autoStartMode)
-  })
-
   const answer = (choice: 1 | 2) => {
     if (run.phase() !== 'answer') return
     setPicked(choice)
@@ -103,6 +98,7 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       unitLabel="cents"
       unitShort="¢"
       latestValue={() => latestThresholdReading('hairline')?.value ?? null}
+      ritual={props.ritual}
       run={run}
       instrument={() => (
         <VernierLoupe

@@ -80,15 +80,3 @@ export const REVEAL_TIMING = {
   /** Longer, because a miss replays the sound. */
   identificationWrongMs: 1500,
 } as const
-
-/** The latency wizard's click train. */
-export const LATENCY_TIMING = {
-  clicks: 5,
-  spacingS: 0.6,
-  /** Settle time before the first click is scheduled. */
-  settleS: 0.35,
-  /** Recording tail after the last click. */
-  tailS: 0.7,
-  /** Hard cap on the capture, so a dead mic cannot hang the wizard. */
-  captureTimeoutMs: 12000,
-} as const

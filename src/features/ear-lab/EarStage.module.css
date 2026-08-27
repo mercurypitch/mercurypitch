@@ -610,11 +610,8 @@
     z-index: 2;
     padding: 8px 12px;
     gap: 10px;
-    background: linear-gradient(
-      180deg,
-      rgb(10 11 13 / 92%),
-      rgb(10 11 13 / 78%)
-    );
+    /* Opaque: a sticky bar over scrolling plates must not ghost. */
+    background: #0a0b0d;
   }
 
   .name {
@@ -643,6 +640,8 @@
     font-size: 0.96rem;
   }
 
+  /* Sticky over scrolling content, so both stay near-opaque: nothing
+     may ghost through the bar or the console. */
   .console {
     position: sticky;
     bottom: 0;
@@ -651,6 +650,7 @@
     gap: 10px;
     margin: 0 10px 12px;
     padding: 10px;
+    background: #0c0e11;
   }
 
   .lead > * {
@@ -707,4 +707,38 @@
   .stop {
     transition: none;
   }
+}
+
+/* Two instruments share the figure on the sealed protocol: under the
+   loupe the pendulums stay short, and the loupe gives up room to them.
+   Standing alone (the ritual at rest) they take the ordinary budget. */
+.figure > svg + svg[data-instrument='pendulums'] {
+  max-width: 520px;
+  max-height: 130px;
+}
+
+.figure:has(svg[data-instrument='pendulums'])
+  > svg:not([data-instrument='pendulums']) {
+  max-height: clamp(150px, calc(100cqh - 480px), 320px);
+}
+
+@container (max-width: 860px) {
+  .figure > svg + svg[data-instrument='pendulums'] {
+    max-height: 100px;
+  }
+
+  .figure:has(svg[data-instrument='pendulums'])
+    > svg:not([data-instrument='pendulums']) {
+    max-height: clamp(130px, calc(100cqh - 450px), 240px);
+  }
+}
+
+/* A small instrument on the plate: the sealed pendulums in phase. */
+.plateFigure {
+  width: min(100%, 300px);
+  margin: 0 auto;
+}
+
+.plateFigure > * {
+  width: 100%;
 }

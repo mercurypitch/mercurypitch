@@ -3,7 +3,7 @@
 //
 // Six clicks on a steady lattice, one of the last four nudged off
 // it by the staircase's current level; say which. Perception only
-// — no tapping — so the round trip the latency wizard measures
+// — no tapping — so the round trip the app's latency wizard measures
 // never contaminates the reading: the stimulus is scheduled
 // sample-accurately on the audio clock (click-synth) and the
 // answer is a button.

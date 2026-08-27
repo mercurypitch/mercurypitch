@@ -49,6 +49,9 @@ const FAILURE_COPY: Record<string, string> = {
 
 export interface MicLatencyWizardProps {
   onClose: () => void
+  /** Extra class on the root, for a host that restyles the panel through
+   *  the tokens it reads (--accent, --border, --bg-secondary, ...). */
+  class?: string
 }
 
 export function MicLatencyWizard(props: MicLatencyWizardProps) {
@@ -214,7 +217,11 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
 
   return (
     <div
-      class={styles.wizard}
+      class={
+        props.class === undefined
+          ? styles.wizard
+          : `${styles.wizard} ${props.class}`
+      }
       role="group"
       aria-label="Microphone latency calibration"
     >

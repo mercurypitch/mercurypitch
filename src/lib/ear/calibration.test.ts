@@ -5,7 +5,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CALIBRATION_TRACKS, calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, poolThresholds, recordCalibrationTrial, } from './calibration'
+import { CALIBRATION_DUE_DAYS, CALIBRATION_TRACKS, calibrationDueAt, calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, poolThresholds, recordCalibrationTrial, } from './calibration'
 import type { ThresholdEstimate } from './staircase'
 import { createStaircase, DEFAULT_STAIRCASE, recordTrial, thresholdOf, } from './staircase'
 import { rng } from './test-rng'
@@ -197,5 +197,13 @@ describe('a full calibration run', () => {
     expect(after.median).toBeLessThan(before.median)
     const gap = (before.median - after.median) / before.median
     expect(gap).toBeGreaterThan(0.25)
+  })
+})
+
+describe('calibrationDueAt', () => {
+  it('falls due fourteen days after the seal', () => {
+    const sealed = Date.UTC(2026, 7, 21)
+    expect(CALIBRATION_DUE_DAYS).toBe(14)
+    expect(calibrationDueAt(sealed)).toBe(Date.UTC(2026, 8, 4))
   })
 })

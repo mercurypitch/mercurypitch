@@ -149,3 +149,13 @@ export function calibrationReading(
     mode,
   )
 }
+
+/** How long a seal stays current. Two weeks: long enough that the next
+ *  reading is a change worth marking, short enough that the column never
+ *  rests on a stale ear. */
+export const CALIBRATION_DUE_DAYS = 14
+
+/** When the next calibration falls due, given the last seal. */
+export function calibrationDueAt(sealedAt: number): number {
+  return sealedAt + CALIBRATION_DUE_DAYS * 24 * 60 * 60 * 1000
+}
