@@ -602,6 +602,60 @@ async function auditStage(page, name) {
   await page.getByText('Back to the bench').click()
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
+  // Pulse: the answer opens as the call ends, on a pad a thumb can hit;
+  // three taps land on the drum at the reveal.
+  await openFromStrip('Pulse')
+  results.pulseIdle = await checkStage('pulse idle', 'stage-pulse-idle')
+  await page.getByText('Begin').click()
+  const pulsePad = page.locator('[data-testid="ear-tap-pad"]:not([disabled])')
+  const pulseArmed = await pulsePad
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!pulseArmed) fail(`${name} pulse`, 'the response bar never armed the pad')
+  else {
+    const padBox = await pulsePad.boundingBox()
+    if (!padBox || padBox.height < 44)
+      fail(
+        `${name} pulse`,
+        `tap pad is ${Math.round(padBox?.height ?? 0)}px tall`,
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-pulse-answer.png` })
+    for (let i = 0; i < 3; i++) {
+      await pulsePad.dispatchEvent('pointerdown', { button: 0 })
+      await page.waitForTimeout(600)
+    }
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Clean|Not quite/,
+      })
+      .waitFor({ timeout: 8000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} pulse`, 'the take was never judged')
+    const drumMarks = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="drum"]')
+      return svg
+        ? {
+            onsets: svg.querySelectorAll('[data-part="onset"]').length,
+            taps:
+              svg.querySelectorAll('[data-part="tap"]').length +
+              svg.querySelectorAll('[data-part="extra"]').length,
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-pulse-reveal.png` })
+    if (!drumMarks || drumMarks.onsets < 3 || drumMarks.taps < 1)
+      fail(
+        `${name} pulse`,
+        `reveal shows ${drumMarks?.onsets ?? 0} onsets and ${drumMarks?.taps ?? 0} taps on the drum`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
 
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
