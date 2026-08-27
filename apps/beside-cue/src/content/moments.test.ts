@@ -12,7 +12,8 @@ describe('moment engine', () => {
     expect(shown.art.still).toMatch(/corky-notice/u)
     expect(shown.caption).toBe('One cue, no argument')
     expect(shown.line.text.length).toBeGreaterThan(0)
-    expect(shown.entity?.name).toBe('Sugar Cube')
+    expect(shown.pullCharacter?.name).toBe('Sugarlump')
+    expect(shown.entity).toBe(shown.pullCharacter)
   })
 
   it('rotates lines deterministically', () => {
@@ -46,8 +47,11 @@ describe('moment engine', () => {
     // Someone who named their own moment still needs something to look at.
     const shown = resolveMoment(pack, 'cue.open', { pullId: 'custom' })
 
-    expect(shown.entity?.id).toBe('generic')
-    expect(shown.entity?.noticeOverlay.still).toMatch(/notice-cue-generic/u)
+    expect(shown.pullCharacter?.id).toBe('generic')
+    expect(shown.pullCharacter?.noticeOverlay.still).toMatch(
+      /notice-cue-generic/u,
+    )
+    expect(shown.entity).toBe(shown.pullCharacter)
   })
 
   it('shows no cue at a beat that is not about one', () => {

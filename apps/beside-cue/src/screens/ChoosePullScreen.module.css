@@ -1,0 +1,277 @@
+/* Image-led Pull choices preserve the app's tactile paper-and-record language. */
+.pullGrid {
+  display: grid;
+  gap: clamp(0.75rem, 2.8vw, 1rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pullCard {
+  position: relative;
+  display: block;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.pullRadio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pullCardSurface {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  min-height: 100%;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper-light);
+  box-shadow: 0.26rem 0.32rem 0 var(--ink);
+  grid-template-rows: auto 1fr;
+  transition:
+    transform 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out);
+}
+
+.pullArtwork {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  min-height: 7.7rem;
+  place-items: center;
+  padding: 0.45rem 0.45rem 0;
+  background: var(--paper-deep);
+}
+
+.pullArtwork::after {
+  position: absolute;
+  right: 8%;
+  bottom: -0.9rem;
+  left: 8%;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: rgb(36 25 19 / 13%);
+  content: '';
+  filter: blur(0.35rem);
+  transform: scaleY(0.46);
+}
+
+.pullAsset {
+  z-index: 1;
+  width: min(100%, 9.2rem);
+  transition: transform 220ms var(--ease-out);
+}
+
+.artFallback {
+  z-index: 1;
+  width: min(70%, 5.8rem);
+  border: 0.9rem solid var(--ink);
+  border-radius: 50%;
+  background: var(--turquoise);
+  aspect-ratio: 1;
+}
+
+.artFallback::after {
+  display: block;
+  width: 0.55rem;
+  margin: calc(50% - 0.275rem) auto 0;
+  border-radius: 50%;
+  background: var(--paper-light);
+  content: '';
+  aspect-ratio: 1;
+}
+
+.pullCopy {
+  display: grid;
+  align-content: start;
+  gap: 0.38rem;
+  min-width: 0;
+  padding: 0.85rem 0.85rem 1rem;
+}
+
+.pullCopy strong {
+  font-size: clamp(1rem, 3.6vw, 1.12rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.pullCopy small {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+
+.selectionMark {
+  position: absolute;
+  z-index: 2;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: grid;
+  width: 1.8rem;
+  border: 2px solid rgb(36 25 19 / 46%);
+  border-radius: 50%;
+  background: rgb(255 245 221 / 88%);
+  place-items: center;
+  aspect-ratio: 1;
+  transition:
+    background-color 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.selectionMark::after {
+  width: 0.68rem;
+  height: 0.36rem;
+  border-bottom: 0.17rem solid transparent;
+  border-left: 0.17rem solid transparent;
+  content: '';
+  transform: translateY(-0.06rem) rotate(-45deg);
+}
+
+.pullCard:hover .pullCardSurface {
+  transform: translateY(-0.12rem);
+}
+
+.pullCard:hover .pullAsset {
+  transform: translateY(-0.12rem) scale(1.025);
+}
+
+.pullCard:active .pullCardSurface {
+  box-shadow: 0.1rem 0.14rem 0 var(--ink);
+  transform: translate(0.14rem, 0.16rem);
+}
+
+.pullRadio:focus-visible + .pullCardSurface {
+  outline: 3px solid var(--turquoise-dark);
+  outline-offset: 4px;
+}
+
+.pullCardSelected .pullCardSurface {
+  border-color: var(--turquoise-dark);
+  background: var(--paper-deep);
+  box-shadow: 0.35rem 0.42rem 0 var(--turquoise-dark);
+}
+
+.pullCardSelected .selectionMark {
+  border-color: var(--turquoise-dark);
+  background: var(--turquoise-dark);
+  transform: scale(1.08);
+}
+
+.pullCardSelected .selectionMark::after {
+  border-color: var(--paper-light);
+}
+
+.selectionPreview {
+  display: flex;
+  min-height: 4.8rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.3rem;
+  padding: 1rem 0;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid rgb(36 25 19 / 32%);
+  scroll-margin-block: 1rem calc(7rem + env(safe-area-inset-bottom));
+}
+
+.previewCopy {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.previewCopy > p:first-child {
+  color: var(--turquoise-dark);
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.previewCopy h2 {
+  font-size: 1.12rem;
+  line-height: 1.18;
+}
+
+.previewCopy > p:last-child {
+  max-width: 52ch;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.38;
+}
+
+.hearButton {
+  min-width: max-content;
+  min-height: 3rem;
+  padding: 0.65rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper-light);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+
+.hearButton:hover {
+  background: var(--ink);
+  color: var(--paper-light);
+}
+
+.hearButton:focus-visible {
+  outline: 3px solid var(--turquoise-dark);
+  outline-offset: 3px;
+}
+
+@media (min-width: 42rem) {
+  .pullGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pullArtwork {
+    min-height: 9.5rem;
+  }
+}
+
+@media (max-width: 22rem) {
+  .pullGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 30rem) {
+  .selectionPreview {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hearButton {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pullCardSurface,
+  .pullAsset,
+  .selectionMark {
+    transition: none;
+  }
+
+  .pullCard:hover .pullCardSurface,
+  .pullCard:hover .pullAsset,
+  .pullCard:active .pullCardSurface {
+    transform: none;
+  }
+}

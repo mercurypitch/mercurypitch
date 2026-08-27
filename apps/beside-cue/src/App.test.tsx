@@ -2,7 +2,7 @@ import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
@@ -12,11 +12,15 @@ import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARD
 import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 
 interface DirectorHarnessProps {
-  readonly bSideOptions: readonly { readonly text: string }[]
+  readonly bSideOptions: readonly {
+    readonly id?: string
+    readonly text: string
+  }[]
   readonly onSavePlan: (selection: {
     readonly pullId: 'scrolling'
     readonly pullText: 'Endless scrolling'
     readonly sideAText: 'Keep scrolling'
+    readonly bSideId?: string
     readonly bSideText: string
   }) => Promise<{ readonly ok: boolean; readonly message?: string }>
   readonly onSetReminder: (
@@ -29,16 +33,20 @@ interface DirectorHarnessProps {
 
 vi.mock('./onboarding/CinematicOnboardingDirector', () => ({
   CinematicOnboardingDirector: (props: DirectorHarnessProps) => {
-    const selection = (bSideText: string) => ({
+    const selection = (option: {
+      readonly id?: string
+      readonly text: string
+    }) => ({
       pullId: 'scrolling' as const,
       pullText: 'Endless scrolling' as const,
       sideAText: 'Keep scrolling' as const,
-      bSideText,
+      ...(option.id === undefined ? {} : { bSideId: option.id }),
+      bSideText: option.text,
     })
     const firstSideB = () =>
-      props.bSideOptions[0]?.text ?? 'Put the phone in another room'
+      props.bSideOptions[0] ?? { text: 'Put the phone in another room' }
     const secondSideB = () =>
-      props.bSideOptions[1]?.text ?? 'Play one guitar riff'
+      props.bSideOptions[1] ?? { text: 'Play one guitar riff' }
 
     return (
       <main
@@ -95,6 +103,32 @@ const CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
     contractVersion: '0.5.0',
     media: CORKY_ONBOARDING_MEDIA_V0_9,
   },
+}
+
+const LEGACY_STRING_PULL_OPTIONS: BesideCueAppConfig['pullOptions'] =
+  DEFAULT_BESIDE_CUE_CONFIG.pullOptions.map((option) =>
+    option.id === 'scrolling'
+      ? {
+          id: option.id,
+          label: option.label,
+          moment: option.moment,
+          defaultSideAText: option.defaultSideAText,
+          suggestions: [
+            'Stretch both arms for one breath.',
+            'Look out the window for a moment.',
+          ],
+        }
+      : option,
+  )
+
+const LEGACY_STRING_SETUP_TEST_CONFIG: BesideCueAppConfig = {
+  ...WELCOME_ONLY_TEST_CONFIG,
+  pullOptions: LEGACY_STRING_PULL_OPTIONS,
+}
+
+const LEGACY_STRING_CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
+  ...CINEMATIC_TEST_CONFIG,
+  pullOptions: LEGACY_STRING_PULL_OPTIONS,
 }
 
 const LEGACY_CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
@@ -209,7 +243,101 @@ async function saveFirstPlanFromWelcome(): Promise<void> {
   })
 }
 
+beforeEach(() => {
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: vi.fn(),
+  })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+})
+
 describe('Beside Cue app', () => {
+  it('starts character voice on and persists the quieter Settings choice', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    expect(repository.snapshot()?.settings.voiceEnabled).toBe(true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    const voiceSwitch = screen.getByRole('switch', { name: /voice is on/iu })
+    expect(voiceSwitch).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(voiceSwitch)
+
+    expect(
+      screen.getByRole('switch', { name: /voice is muted/iu }),
+    ).toHaveAttribute('aria-checked', 'false')
+    await waitFor(() =>
+      expect(repository.snapshot()?.settings.voiceEnabled).toBe(false),
+    )
+  })
+
+  it('persists a built-in Side B by stable id and keeps its visible label', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+
+    expect(repository.snapshot()?.cues).toMatchObject([
+      {
+        pullCategoryId: 'scrolling',
+        pullText: 'Keep scrolling',
+        bSideSuggestionId: 'bside.phone-away',
+        bSideText: 'Put the phone in another room.',
+      },
+    ])
+  })
+
+  it('preserves an unresolved injected string choice without inventing an id', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={LEGACY_STRING_SETUP_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /choose what i’ll do instead/iu }),
+    )
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: /look out the window for a moment/iu,
+      }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
+
+    await screen.findByRole('heading', {
+      name: /a better choice, kept close/iu,
+    })
+    const savedCue = repository.snapshot()?.cues[0]
+    expect(savedCue).toMatchObject({
+      pullCategoryId: 'scrolling',
+      pullText: 'Keep scrolling',
+      bSideText: 'Look out the window for a moment.',
+    })
+    expect(savedCue).not.toHaveProperty('bSideSuggestionId')
+  })
+
   it('fails closed to setup for a deprecated cinematic contract', async () => {
     const repository = createMemoryRepository()
     render(() => (
@@ -276,6 +404,7 @@ describe('Beside Cue app', () => {
           status: 'active',
           pullCategoryId: 'scrolling',
           pullText: 'Keep scrolling',
+          bSideSuggestionId: 'bside.phone-away',
           bSideText: 'Put the phone in another room',
         },
       ])
@@ -303,6 +432,29 @@ describe('Beside Cue app', () => {
       }),
     ).toBeInTheDocument()
     expect(screen.queryByText('Your first plan')).not.toBeInTheDocument()
+  })
+
+  it('preserves unresolved injected scrolling choices in cinematic onboarding', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={LEGACY_STRING_CINEMATIC_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /save second side b/iu }),
+    )
+
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    const savedCue = repository.snapshot()?.cues[0]
+    expect(savedCue).toMatchObject({
+      pullCategoryId: 'scrolling',
+      pullText: 'Keep scrolling',
+      bSideText: 'Look out the window for a moment.',
+    })
+    expect(savedCue).not.toHaveProperty('bSideSuggestionId')
   })
 
   it('finishes the film directly on Home and leaves no reminder when skipped', async () => {
@@ -549,7 +701,10 @@ describe('Beside Cue app', () => {
     })
     const cues = repository.snapshot()?.cues ?? []
     expect(cues.filter((cue) => cue.status === 'active')).toMatchObject([
-      { pullCategoryId: 'snacking', pullText: 'Automatic snacking' },
+      {
+        pullCategoryId: 'snacking',
+        pullText: 'Reach for a snack automatically',
+      },
     ])
     expect(cues.filter((cue) => cue.status === 'archived')).toHaveLength(1)
   })
@@ -653,6 +808,30 @@ describe('Beside Cue app', () => {
     )
     expect(screen.getByText('Past 7 days')).toBeInTheDocument()
     expect(screen.getByText('Side B choices')).toBeInTheDocument()
+  })
+
+  it('cancels a closed cue without recording Not now', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    await saveFirstPlanFromWelcome()
+    fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /close cue/iu }))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /a better choice, kept close/iu,
+      }),
+    ).toBeInTheDocument()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { source: 'manual', state: 'cancelled' },
+    ])
+    expect(repository.snapshot()?.occurrences[0]).not.toHaveProperty('outcome')
   })
 
   it('keeps empty onboarding neutral and validates before continuing', async () => {

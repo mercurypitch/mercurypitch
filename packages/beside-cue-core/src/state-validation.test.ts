@@ -105,6 +105,10 @@ function expectDomainErrorCode(
 }
 
 describe('assertStateIdentityInvariants', () => {
+  it('enables local character voice for fresh installs', () => {
+    expect(createInitialState().settings.voiceEnabled).toBe(true)
+  })
+
   it('accepts joined emoji and complete archived cue history', () => {
     expect(() => assertStateIdentityInvariants(validState())).not.toThrow()
   })
