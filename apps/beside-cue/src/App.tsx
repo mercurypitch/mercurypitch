@@ -2,6 +2,8 @@ import type { BesideCueStateV1, Cue, CueOccurrenceOutcome, LocalDate, TargetTime
 import { activateCue, aggregateSevenDayBSides, cancelCueOccurrence, createCue, createInitialState, createManualOccurrence, createScheduledOccurrence, isDailyTargetTimeRule, normalizeCueText, pauseCue, presentCueOccurrence, recordOccurrenceOutcome, removeDailyTargetTimeRule, replaceCue, resumeCue, setDailyTargetTimeRule, updateDailyTargetTimeRule, } from '@irchiinnuss/beside-cue-core'
 import type { LocalNotificationListenerHandle, MobileRuntime, } from '@irchiinnuss/mobile-runtime'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import type { LocalActionStarter } from './action-starters/action-starter'
+import { resolveLocalActionStarter } from './action-starters/action-starter'
 import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
@@ -195,6 +197,8 @@ export function App(props: AppProps) {
   const [cuePhrase, setCuePhrase] = createSignal('')
   const [quietMessage, setQuietMessage] = createSignal('')
   const [quietChoseBSide, setQuietChoseBSide] = createSignal(false)
+  const [quietStarter, setQuietStarter] = createSignal<LocalActionStarter>()
+  const [cueResolutionPending, setCueResolutionPending] = createSignal(false)
   const [storageError, setStorageError] = createSignal<string>()
   const [resetArmed, setResetArmed] = createSignal(false)
   const [schedulePending, setSchedulePending] = createSignal(false)
@@ -218,6 +222,8 @@ export function App(props: AppProps) {
   let pendingDailyCue: DailyCueNotificationPayload | undefined
   let notificationListener: LocalNotificationListenerHandle | undefined
   let pullPreviewRequest = 0
+  let cueResolutionInFlight = false
+  let timerCompletionHapticPlayed = false
   let onboardingPlanSavePromise:
     | Promise<CinematicOnboardingSaveResult>
     | undefined
@@ -404,6 +410,12 @@ export function App(props: AppProps) {
     playHapticWithRuntime(enabled, kind, services().runtime)
   }
 
+  function prepareCueMomentEntry(): void {
+    setCueResolutionPending(false)
+    setQuietStarter(undefined)
+    timerCompletionHapticPlayed = false
+  }
+
   function dailyRuleForState(
     state: BesideCueStateV1,
   ): TargetTimeScheduleRule | undefined {
@@ -469,6 +481,7 @@ export function App(props: AppProps) {
       pendingDailyCue = payload
       return
     }
+    if (cueResolutionInFlight) return
 
     const state = latestState
     const selectedCue = currentCue(state)
@@ -519,6 +532,7 @@ export function App(props: AppProps) {
       }
 
       const phraseIndex = nextState.occurrences.length - 1
+      prepareCueMomentEntry()
       persistWithRepository(nextState, appServices.repository)
       setToday(localDate(openedAt))
       setActiveOccurrenceId(presentedId)
@@ -1088,6 +1102,7 @@ export function App(props: AppProps) {
     })
     const phraseIndex = result.state.occurrences.length - 1
 
+    prepareCueMomentEntry()
     persist(result.state)
     setToday(localDate(appServices.now()))
     setActiveOccurrenceId(result.occurrence.id)
@@ -1096,7 +1111,9 @@ export function App(props: AppProps) {
     setScreen('cue-moment')
   }
 
-  function resolveCue(outcome: CueOccurrenceOutcome): void {
+  async function resolveCue(outcome: CueOccurrenceOutcome): Promise<void> {
+    if (cueResolutionInFlight) return
+
     const currentState = appState()
     const occurrenceId = activeOccurrenceId()
     if (occurrenceId === undefined) {
@@ -1104,32 +1121,62 @@ export function App(props: AppProps) {
       return
     }
 
-    const now = services().now()
-    const result = recordOccurrenceOutcome(currentState, {
-      occurrenceId,
-      outcome,
-      outcomeAt: now.toISOString(),
-      outcomeLocalDate: localDate(now),
-    })
-    const acknowledgementIndex = result.state.occurrences.length - 1
-    const choseBSide = outcome === 'b_side'
-    const acknowledgements = choseBSide
-      ? config().bSideAcknowledgements
-      : config().notNowAcknowledgements
+    cueResolutionInFlight = true
+    setCueResolutionPending(true)
 
-    persist(result.state)
-    setToday(localDate(now))
-    setActiveOccurrenceId(undefined)
-    setQuietChoseBSide(choseBSide)
-    setQuietMessage(itemAt(acknowledgements, acknowledgementIndex))
-    playHaptic(
-      currentState.settings.hapticsEnabled,
-      choseBSide ? 'success' : 'quiet',
-    )
-    setScreen('quiet')
+    try {
+      const appServices = services()
+      const now = appServices.now()
+      const result = recordOccurrenceOutcome(currentState, {
+        occurrenceId,
+        outcome,
+        outcomeAt: now.toISOString(),
+        outcomeLocalDate: localDate(now),
+      })
+      const acknowledgementIndex = result.state.occurrences.length - 1
+      const choseBSide = outcome === 'b_side'
+      const acknowledgements = choseBSide
+        ? config().bSideAcknowledgements
+        : config().notNowAcknowledgements
+      const occurrenceCue = result.state.cues.find(
+        (candidate) => candidate.id === result.occurrence.cueId,
+      )
+      const starter =
+        choseBSide && occurrenceCue !== undefined
+          ? resolveLocalActionStarter(occurrenceCue)
+          : undefined
+
+      await persistAtomicallyWithRepository(
+        result.state,
+        appServices.repository,
+      )
+      if (disposed) return
+
+      setToday(localDate(now))
+      setActiveOccurrenceId(undefined)
+      setQuietChoseBSide(choseBSide)
+      setQuietMessage(itemAt(acknowledgements, acknowledgementIndex))
+      setQuietStarter(starter)
+      playHaptic(
+        currentState.settings.hapticsEnabled,
+        choseBSide ? 'success' : 'quiet',
+      )
+      setScreen('quiet')
+    } catch {
+      if (!disposed) {
+        setStorageError(
+          'Your choice could not be saved on this device. Please try again.',
+        )
+      }
+    } finally {
+      cueResolutionInFlight = false
+      if (!disposed) setCueResolutionPending(false)
+    }
   }
 
   function cancelCueMoment(): void {
+    if (cueResolutionInFlight) return
+
     const occurrenceId = activeOccurrenceId()
     if (occurrenceId === undefined) {
       setScreen('home')
@@ -1139,6 +1186,17 @@ export function App(props: AppProps) {
     const result = cancelCueOccurrence(appState(), { occurrenceId })
     persist(result.state)
     setActiveOccurrenceId(undefined)
+    setScreen('home')
+  }
+
+  function completeQuietTimer(): void {
+    if (timerCompletionHapticPlayed) return
+    timerCompletionHapticPlayed = true
+    playHaptic(latestState.settings.hapticsEnabled, 'success')
+  }
+
+  function finishQuietScreen(): void {
+    setQuietStarter(undefined)
     setScreen('home')
   }
 
@@ -1531,11 +1589,12 @@ export function App(props: AppProps) {
           bSideText={cue()?.bSideText ?? ''}
           cueContextText={cue()?.cueContextText}
           phrase={cuePhrase()}
+          pending={cueResolutionPending()}
           {...(cue()?.pullCategoryId === undefined
             ? {}
             : { pullId: cue()?.pullCategoryId })}
-          onChooseBSide={() => resolveCue('b_side')}
-          onNotNow={() => resolveCue('not_now')}
+          onChooseBSide={() => void resolveCue('b_side')}
+          onNotNow={() => void resolveCue('not_now')}
           onClose={cancelCueMoment}
         />
       ) : null}
@@ -1544,7 +1603,9 @@ export function App(props: AppProps) {
         <QuietScreen
           choseBSide={quietChoseBSide()}
           message={quietMessage()}
-          onDone={() => setScreen('home')}
+          starter={quietStarter()}
+          onTimerComplete={completeQuietTimer}
+          onDone={finishQuietScreen}
         />
       ) : null}
 

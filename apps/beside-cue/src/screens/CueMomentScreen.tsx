@@ -6,6 +6,7 @@ interface CueMomentScreenProps {
   bSideText: string
   cueContextText?: string
   phrase: string
+  pending: boolean
   /**
    * The pull category this cue is about, so the mascot shows that pull's own
    * creature rather than the generic token. Absent for a self-named pull,
@@ -19,12 +20,17 @@ interface CueMomentScreenProps {
 
 export function CueMomentScreen(props: CueMomentScreenProps) {
   return (
-    <main class="cue-moment app-screen" aria-labelledby="cue-title">
+    <main
+      class="cue-moment app-screen"
+      aria-labelledby="cue-title"
+      aria-busy={props.pending}
+    >
       <button
         class="icon-button cue-moment__close"
         type="button"
         onClick={() => props.onClose()}
         aria-label="Close cue"
+        disabled={props.pending}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m6 6 12 12M18 6 6 18" />
@@ -56,19 +62,24 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
         </dl>
       </section>
       <div class="cue-moment__actions">
+        {props.pending ? (
+          <p role="status">Saving your choice on this device…</p>
+        ) : null}
         <button
           class="primary-button primary-button--wide primary-button--bside"
           type="button"
           onClick={() => props.onChooseBSide()}
+          disabled={props.pending}
         >
-          Choose Side B
+          {props.pending ? 'Saving your choice…' : 'Choose Side B'}
         </button>
         <button
           class="quiet-button"
           type="button"
           onClick={() => props.onNotNow()}
+          disabled={props.pending}
         >
-          Not now
+          {props.pending ? 'Saving…' : 'Not now'}
         </button>
       </div>
     </main>
