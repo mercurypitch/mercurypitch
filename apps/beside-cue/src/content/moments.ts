@@ -11,8 +11,8 @@
 // hearing the same line twice running, and a test can assert an exact string.
 
 import type { AssetSlot } from './assets'
-import type { Character, CharacterStateId, ContentPack, CueEntity, Line, } from './pack'
-import { findCharacter, findCueEntity, GENERIC_CUE_ENTITY } from './pack'
+import type { Character, CharacterStateId, ContentPack, Line, PullCharacter, } from './pack'
+import { findCharacter, findPullCharacter, GENERIC_PULL_CHARACTER, } from './pack'
 
 export type MomentId =
   | 'cue.open'
@@ -129,8 +129,10 @@ export interface MomentPresentation {
   readonly characterState: CharacterStateId
   readonly art: AssetSlot
   readonly line: Line
-  /** Present only when the beat shows one and the pull has one. */
-  readonly entity?: CueEntity
+  /** Present only when the beat brings a Pull character into view. */
+  readonly pullCharacter?: PullCharacter
+  /** @deprecated Use `pullCharacter`; retained for V1 stage components. */
+  readonly entity?: PullCharacter
 }
 
 function itemAt<T>(items: readonly T[], index: number): T {
@@ -169,11 +171,11 @@ export function resolveMoment(
     )
   }
 
-  // A beat about a cue always shows one. Someone who named their own moment
-  // has no creature, and a blank space where Corky is plainly looking would
-  // read as a missing image rather than a design choice.
-  const entity = definition.showsEntity
-    ? (findCueEntity(pack, context.pullId) ?? GENERIC_CUE_ENTITY)
+  // A cue-arrival beat can bring the matching Pull character into focus.
+  // Someone who named their own Pull has no authored creature, and a blank
+  // space where Corky is plainly looking would read as a missing image.
+  const pullCharacter = definition.showsEntity
+    ? (findPullCharacter(pack, context.pullId) ?? GENERIC_PULL_CHARACTER)
     : undefined
 
   return {
@@ -183,6 +185,8 @@ export function resolveMoment(
     characterState: definition.characterState,
     art: character.states[definition.characterState],
     line,
-    ...(entity === undefined ? {} : { entity }),
+    ...(pullCharacter === undefined
+      ? {}
+      : { pullCharacter, entity: pullCharacter }),
   }
 }

@@ -7,6 +7,7 @@ interface SettingsScreenProps {
   /** Purchase surface, supplied by the shell so this screen stays store-free. */
   proSection?: JSX.Element
   paused: boolean
+  voiceEnabled: boolean
   resetArmed: boolean
   dailyCuePresets: readonly DailyCuePreset[]
   scheduleTime?: string
@@ -15,6 +16,7 @@ interface SettingsScreenProps {
   scheduleError?: string
   onBack: () => void
   onPauseToggle: () => void
+  onVoiceToggle: () => void
   onReplayIntroduction: () => void
   onReplace: () => void
   onSetSchedule: (localTime: string) => void
@@ -134,6 +136,27 @@ export function SettingsScreen(props: SettingsScreenProps) {
             {props.scheduleError}
           </p>
         ) : null}
+      </section>
+      <section class="settings-group" aria-labelledby="voice-settings-title">
+        <h2 id="voice-settings-title">Character voice</h2>
+        <button
+          class="settings-row"
+          type="button"
+          role="switch"
+          aria-checked={props.voiceEnabled}
+          onClick={() => props.onVoiceToggle()}
+        >
+          <span>
+            <strong>
+              {props.voiceEnabled ? 'Voice is on' : 'Voice is muted'}
+            </strong>
+            <small>
+              Character captions always remain visible. This setting only
+              changes whether their recorded lines play.
+            </small>
+          </span>
+          <span aria-hidden="true">{props.voiceEnabled ? 'On' : 'Off'}</span>
+        </button>
       </section>
       <section class="settings-group" aria-labelledby="cue-settings-title">
         <h2 id="cue-settings-title">Current plan</h2>
