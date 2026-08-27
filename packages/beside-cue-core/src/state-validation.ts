@@ -74,6 +74,18 @@ function assertOptionalNonEmptyString(
   }
 }
 
+function assertOptionalCanonicalString(
+  record: UnknownRecord,
+  field: string,
+  path: string,
+): void {
+  if (record[field] === undefined) return
+  const value = requireNonEmptyString(record[field], `${path}.${field}`)
+  if (value.trim() !== value) {
+    invalidState(`${path}.${field}`, 'expected a canonical string.')
+  }
+}
+
 function assertCanonicalCueText(value: unknown, path: string): void {
   const text = requireNonEmptyString(value, path)
   let normalized: string
@@ -115,6 +127,17 @@ function assertCueShape(value: unknown, index: number): void {
   assertCanonicalCueText(cue.pullText, `${path}.pullText`)
   assertOptionalNonEmptyString(cue, 'bSideSuggestionId', path)
   assertCanonicalCueText(cue.bSideText, `${path}.bSideText`)
+  assertOptionalCanonicalString(cue, 'cueContextSuggestionId', path)
+  if (cue.cueContextText === undefined) {
+    if (cue.cueContextSuggestionId !== undefined) {
+      invalidState(
+        `${path}.cueContextText`,
+        'a cue context suggestion requires cue context text.',
+      )
+    }
+  } else {
+    assertCanonicalCueText(cue.cueContextText, `${path}.cueContextText`)
+  }
   requireNonEmptyString(cue.mascotSetId, `${path}.mascotSetId`)
   requireInstant(cue.createdAt, `${path}.createdAt`)
   requireInstant(cue.updatedAt, `${path}.updatedAt`)

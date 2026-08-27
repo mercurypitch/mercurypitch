@@ -31,6 +31,7 @@ const silentPresentations: readonly PullChoicePresentation[] = [
 function noop(): void {}
 
 const base = {
+  headerLabel: 'Your first plan',
   options,
   presentations: silentPresentations,
   customText: '',
@@ -194,22 +195,37 @@ describe('choose Pull screen', () => {
   })
 
   it('selects without confirming until the separate action is pressed', () => {
-    const onSelect = vi.fn()
+    const [selectedId, setSelectedId] = createSignal<string>()
+    const onSelect = vi.fn((id: string) => setSelectedId(id))
     const onContinue = vi.fn()
     render(() => (
-      <ChoosePullScreen {...base} onSelect={onSelect} onContinue={onContinue} />
+      <ChoosePullScreen
+        {...base}
+        selectedId={selectedId()}
+        onSelect={onSelect}
+        onContinue={onContinue}
+      />
     ))
 
+    expect(
+      screen.getByRole('button', { name: /confirm your pull/iu }),
+    ).toBeDisabled()
     fireEvent.click(screen.getByRole('radio', { name: /automatic snacking/iu }))
     expect(onSelect).toHaveBeenCalledWith('snacking')
     expect(onContinue).not.toHaveBeenCalled()
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /choose what I’ll do instead/iu,
+        name: /confirm automatic snacking/iu,
       }),
     )
     expect(onContinue).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the supplied setup label', () => {
+    render(() => <ChoosePullScreen {...base} headerLabel="Change plan" />)
+
+    expect(screen.getByText('Change plan')).toBeInTheDocument()
   })
 
   it('keeps a custom Pull editable and private', () => {

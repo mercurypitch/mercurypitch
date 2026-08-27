@@ -12,6 +12,8 @@ export interface CreateCueInput {
   readonly pullText: string
   readonly bSideSuggestionId?: string
   readonly bSideText: string
+  readonly cueContextSuggestionId?: string
+  readonly cueContextText?: string
   readonly mascotSetId?: string
   readonly at: Instant
 }
@@ -78,12 +80,32 @@ function validateNewCueId(state: BesideCueStateV1, cueId: CueId): void {
   }
 }
 
+function validateCueContextSuggestionId(
+  suggestionId: string | undefined,
+): string | undefined {
+  if (suggestionId === undefined) return undefined
+  if (suggestionId.trim() === '' || suggestionId.trim() !== suggestionId) {
+    throw new CueDomainError(
+      'invalid_cue_context_suggestion_id',
+      'Cue context suggestion id must be a non-empty canonical string.',
+    )
+  }
+  return suggestionId
+}
+
 function buildCue(
   state: BesideCueStateV1,
   input: CreateCueInput,
   status: Cue['status'],
 ): Cue {
   validateNewCueId(state, input.id)
+  const cueContextSuggestionId = validateCueContextSuggestionId(
+    input.cueContextSuggestionId,
+  )
+  const cueContextText =
+    cueContextSuggestionId === undefined && input.cueContextText === undefined
+      ? undefined
+      : normalizeCueText(input.cueContextText ?? '')
 
   return {
     id: input.id,
@@ -96,6 +118,8 @@ function buildCue(
       ? {}
       : { bSideSuggestionId: input.bSideSuggestionId }),
     bSideText: normalizeCueText(input.bSideText),
+    ...(cueContextSuggestionId === undefined ? {} : { cueContextSuggestionId }),
+    ...(cueContextText === undefined ? {} : { cueContextText }),
     mascotSetId: input.mascotSetId ?? 'corktop-v1',
     createdAt: input.at,
     updatedAt: input.at,

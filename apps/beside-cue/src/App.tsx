@@ -23,6 +23,8 @@ import { createDailyCueCoordinator } from './scheduling/daily-cue-coordinator'
 import type { DailyCueNotificationPayload } from './scheduling/daily-cue-plan'
 import { decodeDailyCueNotificationPayload } from './scheduling/daily-cue-plan'
 import { ChooseBSideScreen } from './screens/ChooseBSideScreen'
+import type { CueContextSelection } from './screens/ChooseCueContextScreen'
+import { ChooseCueContextScreen } from './screens/ChooseCueContextScreen'
 import type { PullChoicePresentation } from './screens/ChoosePullScreen'
 import { ChoosePullScreen } from './screens/ChoosePullScreen'
 import { CueMomentScreen } from './screens/CueMomentScreen'
@@ -39,6 +41,7 @@ type AppScreen =
   | 'cinematic'
   | 'welcome'
   | 'choose-pull'
+  | 'choose-cue-context'
   | 'choose-b-side'
   | 'home'
   | 'cue-moment'
@@ -180,6 +183,9 @@ export function App(props: AppProps) {
   const [selectedPullId, setSelectedPullId] = createSignal<string>()
   const [playedPullPreviewId, setPlayedPullPreviewId] = createSignal<string>()
   const [customPullText, setCustomPullText] = createSignal('')
+  const [cueContextSelection, setCueContextSelection] =
+    createSignal<CueContextSelection>()
+  const [customCueContextText, setCustomCueContextText] = createSignal('')
   const [selectedBSideKey, setSelectedBSideKey] = createSignal<string>()
   const [selectedBSideText, setSelectedBSideText] = createSignal('')
   const [customBSideText, setCustomBSideText] = createSignal('')
@@ -266,6 +272,12 @@ export function App(props: AppProps) {
     selectedPullId() === 'custom'
       ? customPullText()
       : (selectedPull()?.defaultSideAText ?? selectedPull()?.label ?? ''),
+  )
+  const cueContextChoices = createMemo(() =>
+    (selectedPull()?.anchorSuggestions ?? []).map((suggestion) => ({
+      id: suggestion.id,
+      label: suggestion.text,
+    })),
   )
   const bSideChoices = createMemo<readonly BSideChoice[]>(() => {
     const pull = selectedPull()
@@ -551,6 +563,8 @@ export function App(props: AppProps) {
     setSelectedPullId(undefined)
     stopPullPreview()
     setCustomPullText('')
+    setCueContextSelection(undefined)
+    setCustomCueContextText('')
     setSelectedBSideKey(undefined)
     setSelectedBSideText('')
     setCustomBSideText('')
@@ -679,6 +693,14 @@ export function App(props: AppProps) {
   }
 
   function choosePull(pullId: string): void {
+    if (selectedPullId() !== pullId) {
+      setCueContextSelection(undefined)
+      setCustomCueContextText('')
+      setSelectedBSideKey(undefined)
+      setSelectedBSideText('')
+      setCustomBSideText('')
+      setCustomBSideSelected(false)
+    }
     setSelectedPullId(pullId)
     setSetupError(undefined)
     playPullPreview(pullId)
@@ -717,15 +739,48 @@ export function App(props: AppProps) {
   function continueFromPull(): void {
     try {
       normalizeCueText(selectedPullLabel())
-      const firstChoice = bSideChoices()[0]
-      setSelectedBSideKey(firstChoice?.key)
-      setSelectedBSideText(firstChoice?.label ?? '')
-      setCustomBSideSelected(false)
       setSetupError(undefined)
       stopPullPreview()
-      setScreen('choose-b-side')
+      setScreen('choose-cue-context')
     } catch (error) {
       setSetupError(messageForValidation(error, 'Side A'))
+    }
+  }
+
+  function continueFromCueContext(): void {
+    const selection = cueContextSelection()
+    if (selection === undefined) {
+      setSetupError('Choose a cue moment, or choose Not sure yet.')
+      return
+    }
+
+    try {
+      if (selection.kind === 'suggested') {
+        const suggestion = selectedPull()?.anchorSuggestions?.find(
+          (candidate) => candidate.id === selection.id,
+        )
+        if (suggestion === undefined) {
+          setSetupError('Choose one of the cue moments shown here.')
+          return
+        }
+        normalizeCueText(suggestion.text)
+      } else if (selection.kind === 'custom') {
+        normalizeCueText(customCueContextText())
+      }
+
+      const selectedChoice = bSideChoices().find(
+        (choice) => choice.key === selectedBSideKey(),
+      )
+      if (selectedChoice === undefined && !customBSideSelected()) {
+        const firstChoice = bSideChoices()[0]
+        setSelectedBSideKey(firstChoice?.key)
+        setSelectedBSideText(firstChoice?.label ?? '')
+        setCustomBSideSelected(false)
+      }
+      setSetupError(undefined)
+      setScreen('choose-b-side')
+    } catch (error) {
+      setSetupError(messageForValidation(error, 'Your cue'))
     }
   }
 
@@ -755,6 +810,19 @@ export function App(props: AppProps) {
       const selectedChoice = bSideChoices().find(
         (choice) => choice.key === selectedBSideKey(),
       )
+      const selectedContext = cueContextSelection()
+      const suggestedContext =
+        selectedContext?.kind === 'suggested'
+          ? selectedPull()?.anchorSuggestions?.find(
+              (suggestion) => suggestion.id === selectedContext.id,
+            )
+          : undefined
+      const normalizedCueContext =
+        selectedContext?.kind === 'custom'
+          ? normalizeCueText(customCueContextText())
+          : suggestedContext === undefined
+            ? undefined
+            : normalizeCueText(suggestedContext.text)
       const cueInput = {
         id: appServices.createId(),
         ...(selectedPullId() === 'custom'
@@ -765,6 +833,12 @@ export function App(props: AppProps) {
           ? {}
           : { bSideSuggestionId: selectedChoice.suggestionId }),
         bSideText: normalizedBSide,
+        ...(suggestedContext === undefined
+          ? {}
+          : { cueContextSuggestionId: suggestedContext.id }),
+        ...(normalizedCueContext === undefined
+          ? {}
+          : { cueContextText: normalizedCueContext }),
         mascotSetId: appConfig.mascotSetId,
         at: now,
       }
@@ -1356,6 +1430,9 @@ export function App(props: AppProps) {
 
       {screen() === 'choose-pull' ? (
         <ChoosePullScreen
+          headerLabel={
+            setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
+          }
           options={config().pullOptions}
           presentations={pullChoicePresentations()}
           selectedId={selectedPullId()}
@@ -1376,8 +1453,37 @@ export function App(props: AppProps) {
         />
       ) : null}
 
+      {screen() === 'choose-cue-context' ? (
+        <ChooseCueContextScreen
+          headerLabel={
+            setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
+          }
+          pullLabel={selectedPullLabel()}
+          suggestions={cueContextChoices()}
+          selection={cueContextSelection()}
+          customText={customCueContextText()}
+          error={setupError()}
+          onSelect={(selection) => {
+            setCueContextSelection(selection)
+            setSetupError(undefined)
+          }}
+          onCustomInput={(value) => {
+            setCustomCueContextText(value)
+            setSetupError(undefined)
+          }}
+          onBack={() => {
+            setSetupError(undefined)
+            setScreen('choose-pull')
+          }}
+          onContinue={continueFromCueContext}
+        />
+      ) : null}
+
       {screen() === 'choose-b-side' ? (
         <ChooseBSideScreen
+          headerLabel={
+            setupMode() === 'replace' ? 'Change plan' : 'Your first plan'
+          }
           pullText={selectedPullLabel()}
           suggestions={bSideChoices()}
           selectedKey={selectedBSideKey()}
@@ -1394,7 +1500,10 @@ export function App(props: AppProps) {
             setCustomBSideText(value)
             setSetupError(undefined)
           }}
-          onBack={() => setScreen('choose-pull')}
+          onBack={() => {
+            setSetupError(undefined)
+            setScreen('choose-cue-context')
+          }}
           onContinue={finishSetup}
         />
       ) : null}
@@ -1403,6 +1512,7 @@ export function App(props: AppProps) {
         <HomeScreen
           pullText={cue()?.pullText ?? ''}
           bSideText={cue()?.bSideText ?? ''}
+          cueContextText={cue()?.cueContextText}
           todayCount={progress().today}
           weekCount={progress().total}
           paused={cue()?.status === 'paused'}
@@ -1419,6 +1529,7 @@ export function App(props: AppProps) {
         <CueMomentScreen
           pullText={cue()?.pullText ?? ''}
           bSideText={cue()?.bSideText ?? ''}
+          cueContextText={cue()?.cueContextText}
           phrase={cuePhrase()}
           {...(cue()?.pullCategoryId === undefined
             ? {}

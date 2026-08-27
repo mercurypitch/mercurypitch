@@ -235,8 +235,10 @@ async function saveFirstPlanFromWelcome(): Promise<void> {
   )
   fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
   fireEvent.click(
-    screen.getByRole('button', { name: /choose what i’ll do instead/iu }),
+    screen.getByRole('button', { name: /confirm endless scrolling/iu }),
   )
+  fireEvent.click(screen.getByRole('radio', { name: /not sure yet/iu }))
+  fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
   fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
   await screen.findByRole('heading', {
     name: /a better choice, kept close/iu,
@@ -301,6 +303,126 @@ describe('Beside Cue app', () => {
         bSideText: 'Put the phone in another room.',
       },
     ])
+    expect(repository.snapshot()?.cues[0]).not.toHaveProperty(
+      'cueContextSuggestionId',
+    )
+    expect(repository.snapshot()?.cues[0]).not.toHaveProperty('cueContextText')
+  })
+
+  it('saves the exact suggested cue context and keeps it visible with the plan', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: /when i get into bed with my phone/iu,
+      }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
+
+    await screen.findByRole('heading', {
+      name: /a better choice, kept close/iu,
+    })
+    expect(repository.snapshot()?.cues[0]).toMatchObject({
+      cueContextSuggestionId: 'anchor.scrolling.in-bed',
+      cueContextText: 'When I get into bed with my phone.',
+    })
+    expect(screen.getByLabelText('Your cue')).toHaveTextContent(
+      'When I get into bed with my phone.',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
+    expect(screen.getByText('When I get into bed with my phone.')).toBeVisible()
+  })
+
+  it('saves a private custom cue context without inventing a suggestion id', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /write my own/iu }))
+    fireEvent.input(screen.getByLabelText('Your cue'), {
+      target: { value: '  After   lunch  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
+
+    await screen.findByRole('heading', {
+      name: /a better choice, kept close/iu,
+    })
+    const savedCue = repository.snapshot()?.cues[0]
+    expect(savedCue).toMatchObject({ cueContextText: 'After lunch' })
+    expect(savedCue).not.toHaveProperty('cueContextSuggestionId')
+  })
+
+  it('preserves a cue choice when going back and clears it after changing Pull', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    const inBed = screen.getByRole('radio', {
+      name: /when i get into bed with my phone/iu,
+    })
+    fireEvent.click(inBed)
+    fireEvent.click(screen.getByRole('button', { name: /back/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
+    )
+    expect(
+      screen.getByRole('radio', {
+        name: /when i get into bed with my phone/iu,
+      }),
+    ).toBeChecked()
+
+    fireEvent.click(screen.getByRole('button', { name: /back/iu }))
+    fireEvent.click(screen.getByRole('radio', { name: /automatic snacking/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /confirm automatic snacking/iu }),
+    )
+    expect(
+      screen.queryByRole('radio', {
+        name: /when i get into bed with my phone/iu,
+      }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /choose side b/iu }),
+    ).toBeDisabled()
+    expect(repository.snapshot()).toBeNull()
   })
 
   it('preserves an unresolved injected string choice without inventing an id', async () => {
@@ -317,8 +439,10 @@ describe('Beside Cue app', () => {
     )
     fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
     fireEvent.click(
-      screen.getByRole('button', { name: /choose what i’ll do instead/iu }),
+      screen.getByRole('button', { name: /confirm endless scrolling/iu }),
     )
+    fireEvent.click(screen.getByRole('radio', { name: /not sure yet/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
     fireEvent.click(
       screen.getByRole('radio', {
         name: /look out the window for a moment/iu,
@@ -669,6 +793,12 @@ describe('Beside Cue app', () => {
     await saveFirstPlanFromWelcome()
     const original = structuredClone(repository.snapshot())
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(
+      screen.getByText(/choose a new pull, cue, and side b/iu),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/pull, cue, and side b text.*stay local/iu),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /change this plan/iu }))
     await screen.findByRole('heading', {
       name: /which pull do you want to notice sooner/iu,
@@ -685,8 +815,14 @@ describe('Beside Cue app', () => {
     })
     fireEvent.click(screen.getByRole('radio', { name: /automatic snacking/iu }))
     fireEvent.click(
-      screen.getByRole('button', { name: /choose what i’ll do instead/iu }),
+      screen.getByRole('button', { name: /confirm automatic snacking/iu }),
     )
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: /when i walk into the kitchen without a plan/iu,
+      }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
     repository.failNextSave()
     fireEvent.click(screen.getByRole('button', { name: /save my plan/iu }))
 
@@ -704,6 +840,8 @@ describe('Beside Cue app', () => {
       {
         pullCategoryId: 'snacking',
         pullText: 'Reach for a snack automatically',
+        cueContextSuggestionId: 'anchor.snacking.enter-kitchen',
+        cueContextText: 'When I walk into the kitchen without a plan.',
       },
     ])
     expect(cues.filter((cue) => cue.status === 'archived')).toHaveLength(1)
@@ -846,13 +984,9 @@ describe('Beside Cue app', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /set up my first plan/iu }),
     )
-    fireEvent.click(
-      screen.getByRole('button', { name: /choose what i’ll do instead/iu }),
-    )
-
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Side A needs between 1 and 120 characters.',
-    )
+    expect(
+      screen.getByRole('button', { name: /confirm your pull/iu }),
+    ).toBeDisabled()
     expect(repository.snapshot()).toBeNull()
   })
 
