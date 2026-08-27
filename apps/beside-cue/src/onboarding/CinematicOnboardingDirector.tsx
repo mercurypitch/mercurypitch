@@ -5,7 +5,7 @@
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { createCinematicOnboardingAudioClock } from './cinematic-onboarding-audio'
 import type { CinematicOnboardingMediaManifest, CinematicOnboardingMode, CinematicOnboardingRuntimeEvent, CinematicOnboardingRuntimeState, CinematicOnboardingSegmentId, } from './index'
-import { CINEMATIC_ONBOARDING_PICTURE_FPS, CINEMATIC_ONBOARDING_REVIEW_FPS, CINEMATIC_ONBOARDING_TIMELINE_V0_4, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingRuntimePosition, isCinematicOnboardingPersistenceAllowed, seekCinematicOnboardingRuntimeForReview, updateCinematicOnboardingRuntime, } from './index'
+import { CINEMATIC_ONBOARDING_PICTURE_FPS, CINEMATIC_ONBOARDING_REVIEW_FPS, CINEMATIC_ONBOARDING_TIMELINE_V0_5, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingRuntimePosition, isCinematicOnboardingPersistenceAllowed, seekCinematicOnboardingRuntimeForReview, updateCinematicOnboardingRuntime, } from './index'
 
 export interface CinematicOnboardingBSideOption {
   readonly id?: string
@@ -67,6 +67,7 @@ const CAPTIONS: Readonly<
   S05_AUTO_REFRAME_SIDE_CHOICE: 'The tray makes room for another choice.',
   S05_CHOOSE_B_SIDE_HOLD: 'Choose one small action for Side B.',
   S06_AUTO_CORKY_PRESS: 'Corky starts the record.',
+  S06_AUTO_RECORD_SPIN_BREATH: 'The record spins for one more beat.',
   S06_CONFIRM_AND_SAVE_PLAN_HOLD: 'Stop the record to save your plan.',
   S07_AUTO_STOPPED_ACKNOWLEDGEMENT: 'Corky notices the stop.',
   S07_REMINDER_HOLD: 'A daily reminder is optional.',
@@ -123,7 +124,7 @@ interface KnownGoodStill {
   readonly alt: string
 }
 
-const TIMELINE_POSITIONS = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+const TIMELINE_POSITIONS = CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.flatMap(
   (shot) => shot.segments.map((segment) => ({ shotId: shot.id, segment })),
 )
 
@@ -503,6 +504,16 @@ export function CinematicOnboardingDirector(
   const [readyPresentationKey, setReadyPresentationKey] = createSignal<string>()
   const [lastKnownGoodStill, setLastKnownGoodStill] =
     createSignal<KnownGoodStill>()
+  const initialMedia = untrack(
+    () => props.media.segments.S01_S02_AUTO_ENTRANCE_HELLO,
+  )
+  const [transitionBridge, setTransitionBridge] = createSignal<
+    KnownGoodStill | undefined
+  >({
+    src: initialMedia.poster,
+    alt: initialMedia.alt,
+  })
+  const [revealedVideoKey, setRevealedVideoKey] = createSignal<string>()
   const audioClock = createCinematicOnboardingAudioClock()
 
   let videoElement: HTMLVideoElement | undefined
@@ -517,12 +528,15 @@ export function CinematicOnboardingDirector(
   let controlsTimer: ReturnType<typeof setTimeout> | undefined
   let reminderAdvanceTimer: ReturnType<typeof setTimeout> | undefined
   let videoPlayRequest = 0
+  let videoFrameRequest = 0
+  let pendingVideoFrameKey: string | undefined
   let activeVideoStartKey: string | undefined
   let saveRequest = 0
   let reminderRequest = 0
   let completionDelivered = false
   let mounted = true
   let audioUnlockFailed = false
+  const preloadedStillSources = new Set<string>()
 
   const position = createMemo(() =>
     getCinematicOnboardingRuntimePosition(runtime()),
@@ -703,6 +717,88 @@ export function CinematicOnboardingDirector(
     return mounted && presentationKey() === token
   }
 
+  function preloadStill(src: string): void {
+    if (typeof Image === 'undefined' || preloadedStillSources.has(src)) return
+    preloadedStillSources.add(src)
+    const image = new Image()
+    image.src = src
+    if (typeof image.decode === 'function') {
+      void image.decode().catch(() => undefined)
+    }
+  }
+
+  function stageCurrentFinalBridge(): void {
+    const id = segmentId()
+    if (id === undefined) return
+    const registered = props.media.segments[id]
+    preloadStill(registered.reducedStill)
+    setTransitionBridge({
+      src: registered.reducedStill,
+      alt: registered.alt,
+    })
+  }
+
+  function invalidatePendingVideoFrame(): void {
+    videoFrameRequest += 1
+    pendingVideoFrameKey = undefined
+  }
+
+  function revealVideoPresentation(
+    video: HTMLVideoElement,
+    id: CinematicOnboardingSegmentId,
+    attempt: number,
+    token: string,
+  ): void {
+    if (
+      !isCurrentPresentation(token) ||
+      videoElement !== video ||
+      playbackPaused() ||
+      !documentVisible() ||
+      video.seeking ||
+      revealedVideoKey() === token ||
+      pendingVideoFrameKey === token
+    ) {
+      return
+    }
+
+    const request = ++videoFrameRequest
+    pendingVideoFrameKey = token
+    const reveal = () =>
+      untrack(() => {
+        if (
+          request !== videoFrameRequest ||
+          pendingVideoFrameKey !== token ||
+          !isCurrentPresentation(token) ||
+          videoElement !== video ||
+          playbackPaused() ||
+          !documentVisible()
+        ) {
+          return
+        }
+        pendingVideoFrameKey = undefined
+        setRevealedVideoKey(token)
+        setReadyPresentationKey(token)
+        if (runtime().status === 'loading') {
+          dispatch({
+            type: 'MEDIA_READY',
+            segmentId: id,
+            playbackAttempt: attempt,
+          })
+        }
+      })
+
+    if (typeof video.requestVideoFrameCallback === 'function') {
+      video.requestVideoFrameCallback(() => reveal())
+      return
+    }
+    reveal()
+  }
+
+  function retireTransitionBridge(token: string): void {
+    if (!isCurrentPresentation(token) || revealedVideoKey() !== token) return
+    setTransitionBridge(undefined)
+  }
+
   function recordRecovery(
     event: string,
     candidate: MediaCandidate,
@@ -736,7 +832,10 @@ export function CinematicOnboardingDirector(
             (videoElement?.currentTime ?? 0) * 1_000,
           )
         : recovery.elapsedMilliseconds
+    if (transitionBridge() === undefined) stageCurrentFinalBridge()
     videoPlayRequest += 1
+    invalidatePendingVideoFrame()
+    setRevealedVideoKey(undefined)
     activeVideoStartKey = undefined
     videoElement?.pause()
     pauseDwell()
@@ -764,6 +863,7 @@ export function CinematicOnboardingDirector(
     }
     setLastKnownGoodStill({ src: candidate.src, alt: candidate.alt })
     setReadyPresentationKey(token)
+    setTransitionBridge(undefined)
     if (runtime().status === 'loading') {
       dispatch({
         type: 'MEDIA_READY',
@@ -803,6 +903,7 @@ export function CinematicOnboardingDirector(
       dwellRemainingMilliseconds = 0
       pauseSound()
       resetDwell()
+      stageCurrentFinalBridge()
       const input =
         mode === 'reduced'
           ? ({
@@ -849,6 +950,7 @@ export function CinematicOnboardingDirector(
     const attempt = state.playbackAttempt
     if (candidate.kind === 'brand') {
       setReadyPresentationKey(token)
+      setTransitionBridge(undefined)
       if (state.status === 'loading') {
         dispatch({
           type: 'MEDIA_READY',
@@ -884,7 +986,6 @@ export function CinematicOnboardingDirector(
     if (activeVideoStartKey === token) return
     activeVideoStartKey = token
     const playRequest = ++videoPlayRequest
-    video.load()
     void video.play().catch(() => {
       untrack(() => {
         if (
@@ -903,6 +1004,7 @@ export function CinematicOnboardingDirector(
   }
 
   function completeHold(event: CinematicOnboardingRuntimeEvent): void {
+    stageCurrentFinalBridge()
     if (dispatch({ type: 'USER_EVENT', event })) {
       queueMicrotask(startCurrentBeat)
     }
@@ -1063,6 +1165,7 @@ export function CinematicOnboardingDirector(
     setTransientControlsVisible(true)
     if (nextPaused) {
       videoPlayRequest += 1
+      invalidatePendingVideoFrame()
       activeVideoStartKey = undefined
       videoElement?.pause()
       pauseDwell()
@@ -1136,7 +1239,7 @@ export function CinematicOnboardingDirector(
   function seekReview(action: 'previous' | 'replay' | 'next'): void {
     if (persistenceMutationPending()) return
     const currentShotId = position()?.shotId
-    const currentShotIndex = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.findIndex(
+    const currentShotIndex = CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.findIndex(
       (shot) => shot.id === currentShotId,
     )
     if (currentShotIndex < 0) return
@@ -1145,15 +1248,18 @@ export function CinematicOnboardingDirector(
         ? Math.max(0, currentShotIndex - 1)
         : action === 'next'
           ? Math.min(
-              CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.length - 1,
+              CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.length - 1,
               currentShotIndex + 1,
             )
           : currentShotIndex
     const firstSegment =
-      CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots[targetShotIndex]?.segments[0]
+      CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots[targetShotIndex]?.segments[0]
     if (firstSegment === undefined) return
 
     videoPlayRequest += 1
+    invalidatePendingVideoFrame()
+    stageCurrentFinalBridge()
+    setRevealedVideoKey(undefined)
     activeVideoStartKey = undefined
     videoElement?.pause()
     resetDwell()
@@ -1180,6 +1286,8 @@ export function CinematicOnboardingDirector(
       if (mediaRecovery().identity === identity) return
       setMediaRecovery({ identity, index: 0, elapsedMilliseconds: 0 })
       setReadyPresentationKey(undefined)
+      invalidatePendingVideoFrame()
+      setRevealedVideoKey(undefined)
       activeVideoStartKey = undefined
       resetDwell()
     })
@@ -1233,13 +1341,12 @@ export function CinematicOnboardingDirector(
 
   createEffect(() => {
     const index = runtime().positionIndex
-    const next = TIMELINE_POSITIONS[index + 1]
-    if (next === undefined || typeof Image === 'undefined') return
-    const registered = props.media.segments[next.segment.id]
-    const preload = new Image()
-    preload.src = registered.reducedStill
-    if (typeof preload.decode === 'function') {
-      void preload.decode().catch(() => undefined)
+    for (const targetIndex of [index, index + 1]) {
+      const target = TIMELINE_POSITIONS[targetIndex]
+      if (target === undefined) continue
+      const registered = props.media.segments[target.segment.id]
+      preloadStill(registered.poster)
+      preloadStill(registered.reducedStill)
     }
   })
 
@@ -1276,6 +1383,7 @@ export function CinematicOnboardingDirector(
         if (document.visibilityState === 'hidden') {
           setDocumentVisible(false)
           videoPlayRequest += 1
+          invalidatePendingVideoFrame()
           activeVideoStartKey = undefined
           videoElement?.pause()
           pauseDwell()
@@ -1300,6 +1408,7 @@ export function CinematicOnboardingDirector(
     saveRequest += 1
     reminderRequest += 1
     videoPlayRequest += 1
+    invalidatePendingVideoFrame()
     resetDwell()
     if (controlsTimer !== undefined) clearTimeout(controlsTimer)
     if (reminderAdvanceTimer !== undefined) clearTimeout(reminderAdvanceTimer)
@@ -1315,7 +1424,7 @@ export function CinematicOnboardingDirector(
   })
 
   const currentShotIndex = createMemo(() =>
-    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.findIndex(
+    CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.findIndex(
       (shot) => shot.id === position()?.shotId,
     ),
   )
@@ -1329,6 +1438,16 @@ export function CinematicOnboardingDirector(
         class="cinematic-onboarding__picture"
         onPointerUp={revealTransientControls}
       >
+        <Show when={transitionBridge()} keyed>
+          {(bridge) => (
+            <img
+              class="cinematic-onboarding__transition-bridge"
+              src={bridge.src}
+              alt=""
+              aria-hidden="true"
+            />
+          )}
+        </Show>
         <Show
           when={presentationKey()}
           fallback={
@@ -1361,6 +1480,10 @@ export function CinematicOnboardingDirector(
             if (candidate.kind === 'video') {
               return (
                 <video
+                  classList={{
+                    'cinematic-onboarding__media--revealed':
+                      revealedVideoKey() === token,
+                  }}
                   ref={(element) => {
                     videoElement = element
                     queueMicrotask(startCurrentBeat)
@@ -1380,21 +1503,40 @@ export function CinematicOnboardingDirector(
                       // The stable-plate fallback retains the authored duration.
                     }
                   }}
+                  onLoadedData={(event) =>
+                    revealVideoPresentation(
+                      event.currentTarget,
+                      id,
+                      attempt,
+                      token,
+                    )
+                  }
                   onPlay={(event) => {
                     if (!isCurrentPresentation(token)) return
                     if (playbackPaused() || !documentVisible()) {
                       event.currentTarget.pause()
-                      return
                     }
-                    setReadyPresentationKey(token)
-                    dispatch({
-                      type: 'MEDIA_READY',
-                      segmentId: id,
-                      playbackAttempt: attempt,
-                    })
                   }}
+                  onPlaying={(event) =>
+                    revealVideoPresentation(
+                      event.currentTarget,
+                      id,
+                      attempt,
+                      token,
+                    )
+                  }
+                  onSeeked={(event) =>
+                    revealVideoPresentation(
+                      event.currentTarget,
+                      id,
+                      attempt,
+                      token,
+                    )
+                  }
+                  onTransitionEnd={() => retireTransitionBridge(token)}
                   onEnded={() => {
                     if (!isCurrentPresentation(token)) return
+                    stageCurrentFinalBridge()
                     if (
                       dispatch({
                         type: 'MEDIA_ENDED',
@@ -1412,6 +1554,10 @@ export function CinematicOnboardingDirector(
             }
             return (
               <img
+                classList={{
+                  'cinematic-onboarding__media--revealed':
+                    readyPresentationKey() === token,
+                }}
                 ref={(element) => {
                   imageElement = element
                   imagePresentationKey = token
@@ -1519,7 +1665,7 @@ export function CinematicOnboardingDirector(
                 disabled={
                   persistenceMutationPending() ||
                   currentShotIndex() >=
-                    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.length - 1
+                    CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.length - 1
                 }
                 onClick={() => seekReview('next')}
               >

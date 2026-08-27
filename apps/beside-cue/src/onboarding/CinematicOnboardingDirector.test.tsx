@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CinematicOnboardingMediaManifest } from './cinematic-onboarding-media'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_4 } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_5 } from './cinematic-onboarding-timeline'
 import type { CinematicOnboardingDirectorProps, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './CinematicOnboardingDirector'
 import { CinematicOnboardingDirector, isCinematicOnboardingReviewEnabled, } from './CinematicOnboardingDirector'
 
@@ -25,7 +25,7 @@ const B_SIDE_OPTIONS = [
 
 function mediaManifest(): CinematicOnboardingMediaManifest {
   const segments = Object.fromEntries(
-    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap((shot) =>
+    CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.flatMap((shot) =>
       shot.segments.map((segment) => {
         const stable = {
           alt: `Stable scene for ${segment.id}`,
@@ -52,13 +52,13 @@ function mediaManifest(): CinematicOnboardingMediaManifest {
   ) as unknown as CinematicOnboardingMediaManifest['segments']
 
   return {
-    revision: 'director-test-v0.8',
-    sourceContractVersion: '0.4.0',
+    revision: 'director-test-v0.9',
+    sourceContractVersion: '0.5.0',
     sourceContractSha256: 'a'.repeat(64),
     audio: {
       kind: 'continuous_review_mix',
       src: '/onboarding/review-mix.m4a',
-      sourceDurationFrames: 746,
+      sourceDurationFrames: 788,
       clockPolicy: 'pause_with_picture',
     },
     segments,
@@ -137,11 +137,20 @@ function currentVideo(): HTMLVideoElement {
 }
 
 function currentImage(): HTMLImageElement {
-  const image = document.querySelector('.cinematic-onboarding__picture img')
+  const image = document.querySelector(
+    '.cinematic-onboarding__picture > img:not(.cinematic-onboarding__transition-bridge)',
+  )
   if (!(image instanceof HTMLImageElement)) {
     throw new TypeError('Expected the current beat to use an image element.')
   }
   return image
+}
+
+function currentTransitionBridge(): HTMLImageElement | null {
+  const image = document.querySelector(
+    '.cinematic-onboarding__transition-bridge',
+  )
+  return image instanceof HTMLImageElement ? image : null
 }
 
 async function flushMicrotasks(): Promise<void> {
@@ -157,6 +166,8 @@ async function beginFilm(): Promise<void> {
 async function finishCurrentVideo(): Promise<HTMLVideoElement> {
   const video = currentVideo()
   fireEvent.play(video)
+  fireEvent.loadedData(video)
+  fireEvent.playing(video)
   fireEvent.ended(video)
   await flushMicrotasks()
   return video
@@ -185,6 +196,15 @@ async function chooseGuitarAndReachSaveHold(): Promise<void> {
   fireEvent.click(screen.getByRole('button', { name: 'Use this Side B' }))
   await flushMicrotasks()
   await finishCurrentVideo()
+  expect(screen.getByText('The record spins for one more beat.')).toBeVisible()
+  expect(
+    screen.queryByRole('heading', {
+      name: 'Stop the record to save this plan.',
+    }),
+  ).not.toBeInTheDocument()
+  expect(currentVideo().src).toContain('S06_AUTO_RECORD_SPIN_BREATH.mp4')
+  await finishCurrentVideo()
+  expect(audioClock.start).toHaveBeenLastCalledWith(578 / 24)
   expect(
     screen.getByRole('heading', {
       name: 'Stop the record to save this plan.',
@@ -265,10 +285,176 @@ describe('cinematic onboarding director', () => {
       screen.queryByRole('button', { name: /Skip/u }),
     ).not.toBeInTheDocument()
 
-    fireEvent.play(currentVideo())
+    const openingVideo = currentVideo()
+    fireEvent.play(openingVideo)
+    fireEvent.loadedData(openingVideo)
+    await flushMicrotasks()
     expect(screen.getByText('Hi there, I am Corky.')).toBeVisible()
     expect(audioClock.start).toHaveBeenCalled()
+    expect(HTMLMediaElement.prototype.load).not.toHaveBeenCalled()
     expect(harness.onComplete).not.toHaveBeenCalled()
+  })
+
+  it('keeps the outgoing plate until the incoming video presents a decoded frame', async () => {
+    renderDirector()
+    await beginFilm()
+
+    const openingVideo = currentVideo()
+    fireEvent.loadedData(openingVideo)
+    await flushMicrotasks()
+    fireEvent.ended(openingVideo)
+    await flushMicrotasks()
+
+    const incomingVideo = currentVideo()
+    const bridge = currentTransitionBridge()
+    expect(incomingVideo).not.toBe(openingVideo)
+    expect(incomingVideo).not.toHaveClass(
+      'cinematic-onboarding__media--revealed',
+    )
+    expect(bridge?.src).toContain('S01_S02_AUTO_ENTRANCE_HELLO-reduced.webp')
+    expect(bridge).toHaveAttribute('aria-hidden', 'true')
+
+    const audioStartsBeforePlay = audioClock.start.mock.calls.length
+    fireEvent.play(incomingVideo)
+    await flushMicrotasks()
+    expect(incomingVideo).not.toHaveClass(
+      'cinematic-onboarding__media--revealed',
+    )
+    expect(currentTransitionBridge()).toBe(bridge)
+    expect(audioClock.start).toHaveBeenCalledTimes(audioStartsBeforePlay)
+
+    fireEvent.loadedData(incomingVideo)
+    await flushMicrotasks()
+    expect(incomingVideo).toHaveClass('cinematic-onboarding__media--revealed')
+    expect(currentTransitionBridge()).toBe(bridge)
+    expect(audioClock.start.mock.calls.length).toBeGreaterThan(
+      audioStartsBeforePlay,
+    )
+
+    fireEvent.transitionEnd(incomingVideo, { propertyName: 'opacity' })
+    expect(currentTransitionBridge()).not.toBeInTheDocument()
+  })
+
+  it('keeps the outgoing automatic plate visible until a slow hold still loads', async () => {
+    vi.useFakeTimers()
+    renderDirector()
+    await reachSideBHold()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Play one guitar riff' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Use this Side B' }))
+    await flushMicrotasks()
+    await finishCurrentVideo()
+
+    const breathingVideo = currentVideo()
+    fireEvent.play(breathingVideo)
+    fireEvent.loadedData(breathingVideo)
+    fireEvent.playing(breathingVideo)
+    completeGetter.mockReturnValue(false)
+    fireEvent.ended(breathingVideo)
+    await flushMicrotasks()
+
+    const holdStill = currentImage()
+    const bridge = currentTransitionBridge()
+    expect(holdStill).not.toHaveClass('cinematic-onboarding__media--revealed')
+    expect(bridge?.src).toContain('S06_AUTO_RECORD_SPIN_BREATH-reduced.webp')
+
+    fireEvent.load(holdStill)
+    expect(holdStill).toHaveClass('cinematic-onboarding__media--revealed')
+    expect(currentTransitionBridge()).not.toBeInTheDocument()
+  })
+
+  it('preserves the outgoing bridge while a failed hold still falls back to its poster', async () => {
+    vi.useFakeTimers()
+    renderDirector()
+    await reachSideBHold()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Play one guitar riff' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Use this Side B' }))
+    await flushMicrotasks()
+    await finishCurrentVideo()
+
+    const breathingVideo = currentVideo()
+    fireEvent.play(breathingVideo)
+    fireEvent.loadedData(breathingVideo)
+    fireEvent.playing(breathingVideo)
+    completeGetter.mockReturnValue(false)
+    fireEvent.ended(breathingVideo)
+    await flushMicrotasks()
+
+    const outgoingBridgeSrc = currentTransitionBridge()?.src
+    expect(outgoingBridgeSrc).toContain(
+      'S06_AUTO_RECORD_SPIN_BREATH-reduced.webp',
+    )
+
+    const primaryHoldStill = currentImage()
+    expect(primaryHoldStill.src).toContain(
+      'S06_CONFIRM_AND_SAVE_PLAN_HOLD-reduced.webp',
+    )
+    fireEvent.error(primaryHoldStill)
+    await flushMicrotasks()
+    expect(currentImage()).not.toBe(primaryHoldStill)
+    expect(currentImage().src).toContain(
+      'S06_CONFIRM_AND_SAVE_PLAN_HOLD-reduced.webp',
+    )
+    expect(currentTransitionBridge()?.src).toBe(outgoingBridgeSrc)
+
+    fireEvent.error(currentImage())
+    await flushMicrotasks()
+    const posterFallback = currentImage()
+    expect(posterFallback.src).toContain('S06_CONFIRM_AND_SAVE_PLAN_HOLD.webp')
+    expect(currentTransitionBridge()?.src).toBe(outgoingBridgeSrc)
+
+    fireEvent.load(posterFallback)
+    expect(posterFallback).toHaveClass('cinematic-onboarding__media--revealed')
+    expect(currentTransitionBridge()).not.toBeInTheDocument()
+  })
+
+  it('ignores a stale slow-hold load after the next automatic beat starts', async () => {
+    vi.useFakeTimers()
+    renderDirector()
+    await reachSideBHold()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Play one guitar riff' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Use this Side B' }))
+    await flushMicrotasks()
+    await finishCurrentVideo()
+
+    const breathingVideo = currentVideo()
+    fireEvent.play(breathingVideo)
+    fireEvent.loadedData(breathingVideo)
+    fireEvent.playing(breathingVideo)
+    completeGetter.mockReturnValue(false)
+    fireEvent.ended(breathingVideo)
+    await flushMicrotasks()
+
+    const staleHoldStill = currentImage()
+    fireEvent.click(screen.getByRole('button', { name: 'Stop the record' }))
+    await flushMicrotasks()
+
+    const incomingVideo = currentVideo()
+    const incomingBridge = currentTransitionBridge()
+    const audioStartsBeforeStaleLoad = audioClock.start.mock.calls.length
+    expect(incomingVideo).not.toHaveClass(
+      'cinematic-onboarding__media--revealed',
+    )
+    expect(incomingBridge?.src).toContain(
+      'S06_CONFIRM_AND_SAVE_PLAN_HOLD-reduced.webp',
+    )
+
+    fireEvent.load(staleHoldStill)
+    expect(currentTransitionBridge()).toBe(incomingBridge)
+    expect(incomingVideo).not.toHaveClass(
+      'cinematic-onboarding__media--revealed',
+    )
+    expect(audioClock.start).toHaveBeenCalledTimes(audioStartsBeforeStaleLoad)
+
+    fireEvent.loadedData(incomingVideo)
+    await flushMicrotasks()
+    expect(incomingVideo).toHaveClass('cinematic-onboarding__media--revealed')
+    expect(currentTransitionBridge()).toBe(incomingBridge)
   })
 
   it('continues with captions when audio is unavailable', async () => {
@@ -279,7 +465,7 @@ describe('cinematic onboarding director', () => {
 
     expect(screen.getByRole('button', { name: 'Tap to begin' })).toBeEnabled()
     await beginFilm()
-    fireEvent.play(currentVideo())
+    fireEvent.loadedData(currentVideo())
 
     expect(
       screen.getByRole('button', {
@@ -452,6 +638,8 @@ describe('cinematic onboarding director', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next ›' }))
     await flushMicrotasks()
     expect(screen.getByText('S06_AUTO_CORKY_PRESS')).toBeVisible()
+    await finishCurrentVideo()
+    expect(screen.getByText('S06_AUTO_RECORD_SPIN_BREATH')).toBeVisible()
     await finishCurrentVideo()
     fireEvent.click(screen.getByRole('button', { name: 'Stop the record' }))
     await flushMicrotasks()

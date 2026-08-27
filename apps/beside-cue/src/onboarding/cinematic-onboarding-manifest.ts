@@ -1,11 +1,12 @@
 // ============================================================
-// Cinematic onboarding manifests — approved picture plus v0.4 runtime mapping
+// Cinematic onboarding manifests — approved picture plus v0.5 runtime mapping
 // ============================================================
 
-import type { CinematicOnboardingMediaManifest, LegacyCinematicOnboardingMediaManifestV03, } from './cinematic-onboarding-media'
+import type { CinematicOnboardingMediaManifest, LegacyCinematicOnboardingMediaManifestV03, LegacyCinematicOnboardingMediaManifestV04, } from './cinematic-onboarding-media'
 
 const ROOT = '/onboarding/corky-v0.7'
 const H08_V0_8_ROOT = '/onboarding/corky-v0.8'
+const V0_9_ROOT = '/onboarding/corky-v0.9'
 
 const stills = {
   greeting: {
@@ -131,7 +132,7 @@ export const CORKY_ONBOARDING_MEDIA_V0_7: LegacyCinematicOnboardingMediaManifest
  * Active v0.4 runtime mapping. H01/H02-H07 retain the approved v0.7 bytes;
  * H08 adds the visually approved, deterministic eye-only v0.8 close.
  */
-export const CORKY_ONBOARDING_MEDIA_V0_8: CinematicOnboardingMediaManifest =
+export const CORKY_ONBOARDING_MEDIA_V0_8: LegacyCinematicOnboardingMediaManifestV04 =
   Object.freeze({
     revision: 'corky-onboarding-v0.8',
     sourceContractVersion: '0.4.0',
@@ -207,5 +208,54 @@ export const CORKY_ONBOARDING_MEDIA_V0_8: CinematicOnboardingMediaManifest =
         video: `${H08_V0_8_ROOT}/picture/h08-quiet-close-eye-ack.mp4`,
         alt: 'Corky gives a calm blink beside the stopped record for the Beside Cue close.',
       }),
+    }),
+  })
+
+/**
+ * Active v0.5 runtime mapping. The v0.9 delivery inserts an authored 42-frame
+ * record-spin breath and its matching score/foley slice without modifying the
+ * approved v0.7 press or v0.8 closing bytes.
+ */
+export const CORKY_ONBOARDING_MEDIA_V0_9: CinematicOnboardingMediaManifest =
+  Object.freeze({
+    revision: 'corky-onboarding-v0.9',
+    sourceContractVersion: '0.5.0',
+    sourceContractSha256:
+      '3ba3aa19b34de0ce8c3b306cf967c6f1579f25817bcdb612dab8fef26f5f98ad',
+    audio: Object.freeze({
+      kind: 'continuous_review_mix',
+      src: `${V0_9_ROOT}/audio/review-mix-continuous-788f.m4a`,
+      sourceDurationFrames: 788,
+      clockPolicy: 'pause_with_picture',
+    }),
+    segments: Object.freeze({
+      S01_S02_AUTO_ENTRANCE_HELLO:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S01_S02_AUTO_ENTRANCE_HELLO,
+      S03_AUTO_TRACKED_TRANSITION:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S03_AUTO_TRACKED_TRANSITION,
+      S04_AUTO_PULL_ENTRANCE:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S04_AUTO_PULL_ENTRANCE,
+      S04_AUTO_PULL_INTRO:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S04_AUTO_PULL_INTRO,
+      S05_AUTO_REFRAME_SIDE_CHOICE:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S05_AUTO_REFRAME_SIDE_CHOICE,
+      S05_CHOOSE_B_SIDE_HOLD:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S05_CHOOSE_B_SIDE_HOLD,
+      S06_AUTO_CORKY_PRESS:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S06_AUTO_CORKY_PRESS,
+      S06_AUTO_RECORD_SPIN_BREATH: Object.freeze({
+        kind: 'automatic',
+        poster: stills.press.reducedStill,
+        reducedStill: stills.press.reducedStill,
+        video: `${V0_9_ROOT}/picture/h06-record-spin-breath-42f.mp4`,
+        alt: 'The record keeps spinning while Corky lets the moment breathe.',
+      }),
+      S06_CONFIRM_AND_SAVE_PLAN_HOLD:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S06_CONFIRM_AND_SAVE_PLAN_HOLD,
+      S07_AUTO_STOPPED_ACKNOWLEDGEMENT:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S07_AUTO_STOPPED_ACKNOWLEDGEMENT,
+      S07_REMINDER_HOLD: CORKY_ONBOARDING_MEDIA_V0_8.segments.S07_REMINDER_HOLD,
+      S08_AUTO_TITLE_CLOSE:
+        CORKY_ONBOARDING_MEDIA_V0_8.segments.S08_AUTO_TITLE_CLOSE,
     }),
   })

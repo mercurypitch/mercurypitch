@@ -1,8 +1,9 @@
 # Cinematic onboarding runtime
 
-Status: **v0.7 picture plus the additive v0.8 eye-only H08 close are approved
-and packaged; V1 product/runtime contract 0.4.0 is wired as media revision
-v0.8; interactive device validation is pending.**
+Status: **v0.7 picture plus the additive v0.8 eye-only H08 close and v0.9
+record-spin breathing beat are approved and packaged; V1 product/runtime
+contract 0.5.0 is wired as media revision v0.9; interactive device validation
+is pending.**
 The app architecture must not be
 described as release-ready until the automated gates and the Android/iOS
 device checks below pass.
@@ -10,21 +11,23 @@ device checks below pass.
 ## Approved picture truth
 
 The old 624-frame / 26-second value was a planning estimate. The approved
-linear picture is exactly `746` frames at `24 fps` (`31.083333 s`) and must not
-be trimmed to match that estimate.
+linear picture plus the approved breathing beat is exactly `788` frames at
+`24 fps` (`32.833333 s`) and must not be trimmed to match that estimate.
 
-The eight storyboard beats use seven picture assets because H01 and H02 share
-one uninterrupted clip:
+The eight storyboard beats use eight picture assets: H01 and H02 share one
+uninterrupted clip, while the H06 press now resolves through one additive
+record-spin clip before the real save hold:
 
-| Beat                        | Inclusive source frames | Frames | App presentation                                           |
-| --------------------------- | ----------------------: | -----: | ---------------------------------------------------------- |
-| H01 entrance + H02 greeting |                  `1-96` |     96 | Moving clip; H02 is a logical cue at local frame 48.       |
-| H03 table reveal            |                `97-192` |     96 | Moving clip.                                               |
-| H04 Scroll arrival          |               `193-288` |     96 | Moving clip, then a short automatic Pull introduction.     |
-| H05 side choice             |               `289-481` |    193 | Moving clip, then a real Side B choice on the final plate. |
-| H06 press and play          |               `482-578` |     97 | Moving clip, then `Stop record` saves the real plan.       |
-| H07 stopped acknowledgement |               `579-674` |     96 | Moving clip, then a real reminder-or-not-now choice.       |
-| H08 quiet close             |               `675-746` |     72 | Eye-only moving clip beneath the native closing BrandMark. |
+| Beat                        | Inclusive source frames | Frames | App presentation                                                               |
+| --------------------------- | ----------------------: | -----: | ------------------------------------------------------------------------------ |
+| H01 entrance + H02 greeting |                  `1-96` |     96 | Moving clip; H02 is a logical cue at local frame 48.                           |
+| H03 table reveal            |                `97-192` |     96 | Moving clip.                                                                   |
+| H04 Scroll arrival          |               `193-288` |     96 | Moving clip, then a short automatic Pull introduction.                         |
+| H05 side choice             |               `289-481` |    193 | Moving clip, then a real Side B choice on the final plate.                     |
+| H06 press and play          |               `482-578` |     97 | Moving clip; Corky starts the record.                                          |
+| H06 record-spin breath      |               `579-620` |     42 | Record-only motion keeps picture and music alive for 1.75 seconds before save. |
+| H07 stopped acknowledgement |               `621-716` |     96 | Moving clip, then a real reminder-or-not-now choice.                           |
+| H08 quiet close             |               `717-788` |     72 | Eye-only moving clip beneath the native closing BrandMark.                     |
 
 H07 is the user-approved deterministic stopped-player take. Its authored
 motion is confined to Corky's eye matte, while the player, record, tonearm,
@@ -39,19 +42,27 @@ quiet title hold.
 
 ## Runtime shape
 
-Contract `0.4.0` expands the linear picture into 11 ordered runtime states:
+Contract `0.5.0` expands the linear picture into 12 ordered runtime states:
 
-- 7 moving automatic states play once and advance only from the matching
+- 8 moving automatic states play once and advance only from the matching
   segment and playback-attempt callback. A late callback from an earlier clip
   cannot advance the current state.
 - 3 native interaction holds wait indefinitely for a real Side B choice,
   plan confirmation, and reminder choice. They never advance on a timer and
-  their wait time is not part of the 31.083333-second picture duration.
+  their wait time is not part of the 32.833333-second picture duration.
 - 1 automatic native overlay uses a stable plate instead of fake repeated-frame
   video: the short H04 Pull introduction.
 - The H04 introduction pauses the authored picture/audio clock. The moving H08
   clip advances its final 72-frame source slice while the native closing
   BrandMark remains overlaid by segment identity.
+- The H06 press advances frames `481-577` on the zero-based audio clock. The
+  42-frame record-spin breath then advances its own inserted score/foley slice
+  at frames `578-619`; only after that exact 1.75-second beat does the save
+  hold appear and request a clock pause. H07's intentional start remains frame
+  `620` after the hold. The outgoing source uses the clock's pop-safe gain
+  release and stops within about `240 ms`; that bounded fading tail can expose
+  a brief part of the following mix content, which is heard again when H07
+  starts, but the mix never continues to run freely across the decision.
 - Normal moving states advance on correlated `MEDIA_ENDED`; reduced-motion
   states use authored stable stills and correlated dwell completion instead.
 
@@ -71,32 +82,36 @@ is available only in review builds and must never persist product choices.
 
 The unchanged picture package remains under `public/onboarding/corky-v0.7/`.
 The approved additive H08 clip lives under
-`public/onboarding/corky-v0.8/picture/`; active runtime/media mapping
-`CORKY_ONBOARDING_MEDIA_V0_8` versions the product contract without relabeling
-the v0.7 bytes. The package contains only delivery media:
+`public/onboarding/corky-v0.8/picture/`. The additive H06 breathing clip and
+extended mix live under `public/onboarding/corky-v0.9/`; active runtime/media
+mapping `CORKY_ONBOARDING_MEDIA_V0_9` versions the product contract without
+relabeling the v0.7 or v0.8 bytes. The package contains only delivery media:
 
-- 7 silent, one-shot H.264/yuv420p portrait clips: the unchanged v0.7 H01/H02
-  through H07 files plus the additive 72-frame v0.8 H08 eye-only close;
+- 8 silent, one-shot H.264/yuv420p portrait clips: the unchanged v0.7 H01/H02
+  through H07 files, the additive 72-frame v0.8 H08 eye-only close, and the
+  additive 42-frame v0.9 H06 record-spin breath;
 - 12 WebP plates: poster and reduced-motion states for H01/H02 through H07;
   H08 deliberately reuses H07's exact final-authority still so there is no
   independently encoded cut;
-- 1 continuous 746-frame AAC review mix; and
+- 1 continuous 788-frame AAC review mix; and
 - revision-local `SHA256SUMS` files for byte provenance.
 
-`CORKY_ONBOARDING_MEDIA_V0_8` maps all 11 states to those shared picture
+`CORKY_ONBOARDING_MEDIA_V0_9` maps all 12 states to those shared picture
 assets. The strict manifest guard rejects an incorrect contract version, a
 malformed source SHA-256, missing or extra states, a state with the wrong
 media kind, empty descriptions, unexpected fields, and paths outside packaged
 `onboarding/` assets. A static integrity test pins the default manifest to the
-actual timeline bytes and all 20 referenced media hashes. The H08 integrity
+actual timeline bytes and all 21 referenced media hashes. The H08 integrity
 test also parses its ISO BMFF sample tables and pins H.264 `avc1.64001f`,
-`720x1280`, `72` frames at `24 fps`, and a three-second duration. Moving files never
-loop.
+`720x1280`, `72` frames at `24 fps`, and a three-second duration. The same
+delivery inspection pins the H06 breath to `720x1280`, exactly `42` frames at
+`24 fps`, and its approved SHA-256. Moving files never loop.
 
 The source-authoring authority remains in dotfiles at
 `besidecue/assets/onboarding-video-edit-v0_1/`, including the Blender project,
 selected inputs, prompts, lossless proofs, diagnostics, source manifests, and
-`exports/app-source-v0_2/`. Do not copy `.blend` files, rigs, frame sequences,
+`exports/app-source-v0_2/` plus
+`exports/h06-record-spin-breath-v0_1/`. Do not copy `.blend` files, rigs, frame sequences,
 lossless intermediates, generated-source audio, or workstation paths into the
 app. App delivery does not make generated-shot anatomy a Corky model
 authority.
@@ -105,9 +120,13 @@ authority.
 
 The first interactive architecture uses the continuous review mix through Web
 Audio, not a second `<audio>` media element. Each advancing picture state
-starts its exact slice of the 746-frame source clock; the H04 Pull introduction
+starts its exact slice of the 788-frame source clock; the H04 Pull introduction
 and three interaction holds pause it, and the next advancing state resumes from
-the next authored frame. Per-source gain envelopes soften starts and stops.
+the next authored frame. A pause starts a pop-safe gain release rather than
+hard-stopping at the boundary: the outgoing source is stopped within about
+`240 ms`, so a bounded fading tail may enter the hold and briefly expose content
+that H07 intentionally starts again from frame `620`. Per-source gain envelopes
+soften starts and stops; they do not provide sample-exact hold boundaries.
 
 This `pause_with_picture` policy is intentionally marked
 `prototype_requires_device_validation`. It preserves authored cue alignment,
@@ -151,7 +170,8 @@ letting the fixed linear mix drift freely.
 ## Integration and device gate
 
 The v0.7 source Blender project, connected review render, additive
-`app-source-v0_2` export, and deterministic v0.8 H08 proof have passed their
+`app-source-v0_2` export, deterministic v0.8 H08 proof, and v0.9 42-frame H06
+breathing package have passed their
 independent structural, stream, frame-count, checksum, sample-clock,
 continuity, matte-containment, and preservation validators. That proves the
 authored media package; it does not prove the app experience.
@@ -175,6 +195,6 @@ Before calling `cinematic-first-run` validated or merging it as release-ready:
    not scroll at normal text size, Home text is not covered by the record art,
    and no visual media element is duplicated on a surface.
 
-Until those checks are recorded, runtime v0.4/media revision v0.8 over the
-approved v0.7 picture plus additive H08 motion is the current first app
-architecture—not a device-validated onboarding release.
+Until those checks are recorded, runtime v0.5/media revision v0.9 over the
+approved v0.7 picture plus additive H08 and H06 breathing motion is the current
+first app architecture—not a device-validated onboarding release.

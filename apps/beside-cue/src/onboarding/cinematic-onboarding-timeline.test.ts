@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CinematicOnboardingRuntimeState, CinematicOnboardingSegmentId, } from './cinematic-onboarding-timeline'
-import { CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3, CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4, CINEMATIC_ONBOARDING_TIMELINE_V0_2, CINEMATIC_ONBOARDING_TIMELINE_V0_3, CINEMATIC_ONBOARDING_TIMELINE_V0_4, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingNativeOverlayDurationMilliseconds, getCinematicOnboardingReducedDwellMilliseconds, getCinematicOnboardingRuntimePosition, isCinematicOnboardingPersistenceAllowed, replayCinematicOnboardingRuntimeForReview, seekCinematicOnboardingRuntimeForReview, stepCinematicOnboardingRuntimeForReview, updateCinematicOnboardingRuntime, } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3, CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4, CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_5, CINEMATIC_ONBOARDING_TIMELINE_V0_2, CINEMATIC_ONBOARDING_TIMELINE_V0_3, CINEMATIC_ONBOARDING_TIMELINE_V0_4, CINEMATIC_ONBOARDING_TIMELINE_V0_5, createCinematicOnboardingRuntime, getCinematicOnboardingAudioClockSlice, getCinematicOnboardingNativeOverlayDurationMilliseconds, getCinematicOnboardingReducedDwellMilliseconds, getCinematicOnboardingRuntimePosition, isCinematicOnboardingPersistenceAllowed, replayCinematicOnboardingRuntimeForReview, seekCinematicOnboardingRuntimeForReview, stepCinematicOnboardingRuntimeForReview, updateCinematicOnboardingRuntime, } from './cinematic-onboarding-timeline'
 
 function currentSegmentId(
   state: CinematicOnboardingRuntimeState,
@@ -70,19 +70,19 @@ function advanceTo(
   throw new Error(`Did not reach ${target}.`)
 }
 
-describe('cinematic onboarding v0.4 contract', () => {
-  it('preserves the complete approved 746-frame picture at 24 fps', () => {
-    const frames = CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4.map(
+describe('cinematic onboarding v0.5 contract', () => {
+  it('preserves the approved picture plus the 42-frame breath at 24 fps', () => {
+    const frames = CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_5.map(
       ({ sourceDurationFrames }) => sourceDurationFrames,
     )
 
-    expect(frames).toEqual([96, 96, 96, 193, 97, 96, 72])
-    expect(frames.reduce((sum, count) => sum + count, 0)).toBe(746)
-    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_4).toMatchObject({
-      version: '0.4.0',
+    expect(frames).toEqual([96, 96, 96, 193, 97, 42, 96, 72])
+    expect(frames.reduce((sum, count) => sum + count, 0)).toBe(788)
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_5).toMatchObject({
+      version: '0.5.0',
       pictureFramesPerSecond: 24,
-      pictureDurationFrames: 746,
-      pictureDurationMilliseconds: 31_083.333333333332,
+      pictureDurationFrames: 788,
+      pictureDurationMilliseconds: 32_833.333333333336,
       openingGreeting: 'Hi there, I am Corky.',
       fixedPullId: 'scrolling',
       fixedPullText: 'Endless scrolling',
@@ -92,7 +92,7 @@ describe('cinematic onboarding v0.4 contract', () => {
     expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3).toBe(
       CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4,
     )
-    expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4.at(-1)).toMatchObject({
+    expect(CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_5.at(-1)).toMatchObject({
       id: 'H08_QUIET_CLOSE',
       sourceDurationFrames: 72,
       runtimePresentation: 'moving_video',
@@ -100,7 +100,7 @@ describe('cinematic onboarding v0.4 contract', () => {
   })
 
   it('contains only authored picture, one automatic Pull intro, and three real decisions', () => {
-    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.flatMap(
       ({ segments: shotSegments }) => shotSegments,
     )
 
@@ -126,6 +126,7 @@ describe('cinematic onboarding v0.4 contract', () => {
         'user_chooses_b_side',
       ],
       ['S06_AUTO_CORKY_PRESS', 'automatic', 97],
+      ['S06_AUTO_RECORD_SPIN_BREATH', 'automatic', 42],
       [
         'S06_CONFIRM_AND_SAVE_PLAN_HOLD',
         'native_interaction_hold',
@@ -149,8 +150,8 @@ describe('cinematic onboarding v0.4 contract', () => {
     expect(segments.map(({ id }) => id)).not.toContain('S07_AUTO_CONFIRM')
   })
 
-  it('advances audio only for the 746 physical picture frames', () => {
-    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+  it('advances audio only for the 788 physical picture frames', () => {
+    const segments = CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.flatMap(
       ({ segments: shotSegments }) => shotSegments,
     )
     const advancingFrames = segments.reduce((sum, segment) => {
@@ -158,7 +159,7 @@ describe('cinematic onboarding v0.4 contract', () => {
       return sum + segment.mediaDurationFrames
     }, 0)
 
-    expect(advancingFrames).toBe(746)
+    expect(advancingFrames).toBe(788)
     expect(
       segments
         .filter(({ audioClockBehavior }) => audioClockBehavior === 'pause')
@@ -201,10 +202,11 @@ describe('cinematic onboarding v0.4 contract', () => {
       ['S05_AUTO_REFRAME_SIDE_CHOICE', 288, 193, 'advance_with_picture'],
       ['S05_CHOOSE_B_SIDE_HOLD', 481, 0, 'pause'],
       ['S06_AUTO_CORKY_PRESS', 481, 97, 'advance_with_picture'],
-      ['S06_CONFIRM_AND_SAVE_PLAN_HOLD', 578, 0, 'pause'],
-      ['S07_AUTO_STOPPED_ACKNOWLEDGEMENT', 578, 96, 'advance_with_picture'],
-      ['S07_REMINDER_HOLD', 674, 0, 'pause'],
-      ['S08_AUTO_TITLE_CLOSE', 674, 72, 'advance_with_picture'],
+      ['S06_AUTO_RECORD_SPIN_BREATH', 578, 42, 'advance_with_picture'],
+      ['S06_CONFIRM_AND_SAVE_PLAN_HOLD', 620, 0, 'pause'],
+      ['S07_AUTO_STOPPED_ACKNOWLEDGEMENT', 620, 96, 'advance_with_picture'],
+      ['S07_REMINDER_HOLD', 716, 0, 'pause'],
+      ['S08_AUTO_TITLE_CLOSE', 716, 72, 'advance_with_picture'],
     ])
     expect(getCinematicOnboardingAudioClockSlice(state)).toBeUndefined()
   })
@@ -248,6 +250,13 @@ describe('cinematic onboarding v0.4 contract', () => {
       2_000,
     )
     expect(reducedIntro.cueVerticalReflectionEnabled).toBe(false)
+
+    const reducedBreath = ready(
+      advanceTo('S06_AUTO_RECORD_SPIN_BREATH', 'reduced'),
+    )
+    expect(getCinematicOnboardingReducedDwellMilliseconds(reducedBreath)).toBe(
+      1_750,
+    )
   })
 
   it('plays the 72-frame H08 motion while retaining a three-second reduced dwell', () => {
@@ -348,7 +357,7 @@ describe('cinematic onboarding v0.4 contract', () => {
     expect(isCinematicOnboardingPersistenceAllowed(later)).toBe(false)
   })
 
-  it('retains deprecated v0.2 and v0.3 identifiers without making them active', () => {
+  it('retains deprecated v0.2-v0.4 identifiers without making them active', () => {
     expect(CINEMATIC_ONBOARDING_TIMELINE_V0_2.version).toBe('0.2.0')
     expect(CINEMATIC_ONBOARDING_TIMELINE_V0_3).toMatchObject({
       version: '0.3.0',
@@ -364,5 +373,7 @@ describe('cinematic onboarding v0.4 contract', () => {
       ),
     ).toBe(true)
     expect(CINEMATIC_ONBOARDING_TIMELINE_V0_4.version).toBe('0.4.0')
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_4.pictureDurationFrames).toBe(746)
+    expect(CINEMATIC_ONBOARDING_TIMELINE_V0_5.version).toBe('0.5.0')
   })
 })
