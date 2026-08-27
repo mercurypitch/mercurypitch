@@ -1,8 +1,8 @@
 // ============================================================
-// Cinematic onboarding timeline — the v0.4 product/runtime contract
+// Cinematic onboarding timeline — the v0.5 product/runtime contract
 // ============================================================
 //
-// The 746-frame picture edit and the interactive runtime are deliberately
+// The 788-frame picture edit and the interactive runtime are deliberately
 // separate clocks. Moving clips contribute source-picture frames; native
 // overlays can share those moving beats; interaction holds remain indefinite.
 
@@ -20,6 +20,7 @@ export type CinematicOnboardingPictureAssetId =
   | 'H04_SCROLL_ARRIVAL'
   | 'H05_SORT_SIDES'
   | 'H06_PRESS_AND_PLAY'
+  | 'H06_RECORD_SPIN_BREATH'
   | 'H07_STOPPED_ACKNOWLEDGEMENT'
   | 'H08_QUIET_CLOSE'
 
@@ -77,6 +78,17 @@ export const CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4 = [
   },
 ] as const satisfies readonly CinematicOnboardingPictureAssetContract[]
 
+export const CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_5 = [
+  ...CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4.slice(0, 5),
+  {
+    id: 'H06_RECORD_SPIN_BREATH',
+    sourceDurationFrames: 42,
+    runtimePresentation: 'moving_video',
+    deliveryStatus: 'delivery_eligible',
+  },
+  ...CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4.slice(5),
+] as const satisfies readonly CinematicOnboardingPictureAssetContract[]
+
 /** @deprecated Picture bytes are unchanged; use the v0.4 contract name. */
 export const CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_3 =
   CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_4
@@ -100,6 +112,7 @@ export type CinematicOnboardingSegmentId =
   | 'S05_AUTO_REFRAME_SIDE_CHOICE'
   | 'S05_CHOOSE_B_SIDE_HOLD'
   | 'S06_AUTO_CORKY_PRESS'
+  | 'S06_AUTO_RECORD_SPIN_BREATH'
   | 'S06_CONFIRM_AND_SAVE_PLAN_HOLD'
   | 'S07_AUTO_STOPPED_ACKNOWLEDGEMENT'
   | 'S07_REMINDER_HOLD'
@@ -160,15 +173,15 @@ export interface CinematicOnboardingAudioClockContract {
   /** First prototype preserves authored cues by pausing audio with picture. */
   readonly policy: 'pause_with_picture'
   readonly status: 'prototype_requires_device_validation'
-  readonly sourceDurationFrames: 746
+  readonly sourceDurationFrames: 788
   readonly pauseDuringNativeHolds: true
   readonly pauseDuringNonPictureOverlays: true
 }
 
 export interface CinematicOnboardingTimeline {
-  readonly version: '0.4.0'
+  readonly version: '0.5.0'
   readonly pictureFramesPerSecond: 24
-  readonly pictureDurationFrames: 746
+  readonly pictureDurationFrames: 788
   readonly pictureDurationMilliseconds: number
   readonly openingGreeting: 'Hi there, I am Corky.'
   /** Fixed first-run domain choice; The Scroll remains a separate character. */
@@ -310,7 +323,31 @@ const SHOTS_V0_4 = [
   },
 ] as const satisfies readonly CinematicOnboardingShot[]
 
-export const CINEMATIC_ONBOARDING_TIMELINE_V0_4: CinematicOnboardingTimeline = {
+const SHOTS_V0_5 = SHOTS_V0_4.map((shot) => {
+  if (shot.id !== 'S06_CONFIRM_PLAN') return shot
+
+  const [press, hold] = shot.segments
+  if (press === undefined || hold === undefined) {
+    throw new Error('The S06 contract requires its press and save hold.')
+  }
+  return {
+    ...shot,
+    segments: [
+      press,
+      {
+        id: 'S06_AUTO_RECORD_SPIN_BREATH',
+        kind: 'automatic',
+        audioClockBehavior: 'advance_with_picture',
+        pictureAssetId: 'H06_RECORD_SPIN_BREATH',
+        mediaDurationFrames: 42,
+      },
+      hold,
+    ],
+  }
+}) satisfies readonly CinematicOnboardingShot[]
+
+/** @deprecated Frozen pre-breath contract retained for v0.8 provenance. */
+export const CINEMATIC_ONBOARDING_TIMELINE_V0_4 = {
   version: '0.4.0',
   pictureFramesPerSecond: CINEMATIC_ONBOARDING_PICTURE_FPS,
   pictureDurationFrames: 746,
@@ -331,17 +368,38 @@ export const CINEMATIC_ONBOARDING_TIMELINE_V0_4: CinematicOnboardingTimeline = {
   shots: SHOTS_V0_4,
 } as const
 
+export const CINEMATIC_ONBOARDING_TIMELINE_V0_5: CinematicOnboardingTimeline = {
+  version: '0.5.0',
+  pictureFramesPerSecond: CINEMATIC_ONBOARDING_PICTURE_FPS,
+  pictureDurationFrames: 788,
+  pictureDurationMilliseconds: (788 / CINEMATIC_ONBOARDING_PICTURE_FPS) * 1_000,
+  openingGreeting: 'Hi there, I am Corky.',
+  fixedPullId: 'scrolling',
+  fixedPullText: 'Endless scrolling',
+  fixedSideAText: 'Keep scrolling',
+  featuredCharacter: 'The Scroll',
+  audioClock: {
+    policy: 'pause_with_picture',
+    status: 'prototype_requires_device_validation',
+    sourceDurationFrames: 788,
+    pauseDuringNativeHolds: true,
+    pauseDuringNonPictureOverlays: true,
+  },
+  pictureAssets: CINEMATIC_ONBOARDING_PICTURE_ASSETS_V0_5,
+  shots: SHOTS_V0_5,
+} as const
+
 interface TimelinePosition {
   readonly shotId: CinematicOnboardingShotId
   readonly segment: CinematicOnboardingSegment
 }
 
-const POSITIONS: readonly TimelinePosition[] = SHOTS_V0_4.flatMap((shot) =>
+const POSITIONS: readonly TimelinePosition[] = SHOTS_V0_5.flatMap((shot) =>
   shot.segments.map((segment) => ({ shotId: shot.id, segment })),
 )
 
 export interface CinematicOnboardingAudioClockSlice {
-  /** Zero-based frame in the continuous 746-frame mix. */
+  /** Zero-based frame in the continuous 788-frame mix. */
   readonly startFrame: number
   readonly durationFrames: number
   readonly behavior: 'advance_with_picture' | 'pause'
@@ -912,7 +970,7 @@ const LEGACY_SHOTS_V0_3 = [
 
 /**
  * @deprecated Frozen compatibility metadata for integrations that still
- * identify the preceding contract. Runtime/media delivery targets v0.4.
+ * identify the preceding contract. Runtime/media delivery targets v0.5.
  */
 export const CINEMATIC_ONBOARDING_TIMELINE_V0_3 = {
   version: '0.3.0',

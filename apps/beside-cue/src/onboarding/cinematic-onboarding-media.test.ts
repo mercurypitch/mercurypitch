@@ -1,15 +1,15 @@
 // ============================================================
-// Cinematic onboarding media tests — v0.4 package safeguards
+// Cinematic onboarding media tests — v0.5 package safeguards
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
 import type { CinematicOnboardingMediaManifest } from './cinematic-onboarding-media'
 import { resolveCinematicOnboardingMedia, validateCinematicOnboardingMediaManifest, } from './cinematic-onboarding-media'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_4 } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_5 } from './cinematic-onboarding-timeline'
 
 function mediaManifest(): CinematicOnboardingMediaManifest {
   const segments = Object.fromEntries(
-    CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap((shot) =>
+    CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.flatMap((shot) =>
       shot.segments.map((segment) => {
         const stable = {
           poster: `/onboarding/${segment.id}.webp`,
@@ -35,13 +35,13 @@ function mediaManifest(): CinematicOnboardingMediaManifest {
   ) as unknown as CinematicOnboardingMediaManifest['segments']
 
   return {
-    revision: 'test-v0.4',
-    sourceContractVersion: '0.4.0',
+    revision: 'test-v0.5',
+    sourceContractVersion: '0.5.0',
     sourceContractSha256: 'a'.repeat(64),
     audio: {
       kind: 'continuous_review_mix',
-      src: '/onboarding/audio/review-mix-continuous-746f.m4a',
-      sourceDurationFrames: 746,
+      src: '/onboarding/audio/review-mix-continuous-788f.m4a',
+      sourceDurationFrames: 788,
       clockPolicy: 'pause_with_picture',
     },
     segments,
@@ -137,14 +137,14 @@ describe('cinematic onboarding media', () => {
     })
   })
 
-  it('accepts the exact complete v0.4 manifest and continuous audio contract', () => {
+  it('accepts the exact complete v0.5 manifest and continuous audio contract', () => {
     const manifest = mediaManifest()
 
     expect(validateCinematicOnboardingMediaManifest(manifest)).toEqual([])
     expect(manifest.audio).toEqual({
       kind: 'continuous_review_mix',
-      src: '/onboarding/audio/review-mix-continuous-746f.m4a',
-      sourceDurationFrames: 746,
+      src: '/onboarding/audio/review-mix-continuous-788f.m4a',
+      sourceDurationFrames: 788,
       clockPolicy: 'pause_with_picture',
     })
   })
@@ -168,7 +168,7 @@ describe('cinematic onboarding media', () => {
     const problems = validateCinematicOnboardingMediaManifest(invalid)
 
     expect(problems).toContain(
-      'Media manifest targets timeline 0.2.0, not 0.4.0.',
+      'Media manifest targets timeline 0.2.0, not 0.5.0.',
     )
     expect(problems).toContain(
       'Media for "S01_S02_AUTO_ENTRANCE_HELLO" is hold, expected automatic.',
@@ -243,7 +243,7 @@ describe('cinematic onboarding media', () => {
     expect(
       validateCinematicOnboardingMediaManifest(invalid).join('\n'),
     ).toMatch(
-      /unexpected field "gain".*expected continuous_review_mix.*expected 746.*expected pause_with_picture.*non-packaged/isu,
+      /unexpected field "gain".*expected continuous_review_mix.*expected 788.*expected pause_with_picture.*non-packaged/isu,
     )
   })
 

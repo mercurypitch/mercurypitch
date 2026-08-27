@@ -1,9 +1,9 @@
 // ============================================================
-// Cinematic onboarding media — portable v0.4 asset boundary
+// Cinematic onboarding media — portable v0.5 asset boundary
 // ============================================================
 
 import type { CinematicOnboardingMode, CinematicOnboardingSegment, CinematicOnboardingSegmentId, CinematicOnboardingTimeline, } from './cinematic-onboarding-timeline'
-import { CINEMATIC_ONBOARDING_TIMELINE_V0_4 } from './cinematic-onboarding-timeline'
+import { CINEMATIC_ONBOARDING_TIMELINE_V0_5 } from './cinematic-onboarding-timeline'
 
 /** Media shared by a moving beat and its stable-plate equivalent. */
 export interface CinematicOnboardingStableMedia {
@@ -37,6 +37,13 @@ export type CinematicOnboardingSegmentMedia =
 export interface CinematicOnboardingContinuousAudioMedia {
   readonly kind: 'continuous_review_mix'
   readonly src: string
+  readonly sourceDurationFrames: 788
+  readonly clockPolicy: 'pause_with_picture'
+}
+
+export interface LegacyCinematicOnboardingContinuousAudioMediaV04 {
+  readonly kind: 'continuous_review_mix'
+  readonly src: string
   readonly sourceDurationFrames: 746
   readonly clockPolicy: 'pause_with_picture'
 }
@@ -46,7 +53,7 @@ export interface CinematicOnboardingMediaManifest {
   readonly revision: string
   readonly sourceContractVersion: CinematicOnboardingTimeline['version']
   readonly sourceContractSha256: string
-  /** Silent picture files share this one authored 746-frame audio clock. */
+  /** Silent picture files share this one authored 788-frame audio clock. */
   readonly audio: CinematicOnboardingContinuousAudioMedia
   readonly segments: Readonly<
     Record<CinematicOnboardingSegmentId, CinematicOnboardingSegmentMedia>
@@ -55,13 +62,21 @@ export interface CinematicOnboardingMediaManifest {
 
 /**
  * Deprecated manifest shape retained only so a v0.3 config can be inspected
- * without pretending it satisfies the active v0.4 segment contract.
+ * without pretending it satisfies the active v0.5 segment contract.
  */
 export interface LegacyCinematicOnboardingMediaManifestV03 {
   readonly revision: string
   readonly sourceContractVersion: '0.3.0'
   readonly sourceContractSha256: string
-  readonly audio: CinematicOnboardingContinuousAudioMedia
+  readonly audio: LegacyCinematicOnboardingContinuousAudioMediaV04
+  readonly segments: Readonly<Record<string, CinematicOnboardingSegmentMedia>>
+}
+
+export interface LegacyCinematicOnboardingMediaManifestV04 {
+  readonly revision: string
+  readonly sourceContractVersion: '0.4.0'
+  readonly sourceContractSha256: string
+  readonly audio: LegacyCinematicOnboardingContinuousAudioMediaV04
   readonly segments: Readonly<Record<string, CinematicOnboardingSegmentMedia>>
 }
 
@@ -182,12 +197,12 @@ function reportUnexpectedKeys(
   }
 }
 
-/** Strict runtime guard for a generated v0.4 delivery manifest. */
+/** Strict runtime guard for a generated v0.5 delivery manifest. */
 export function validateCinematicOnboardingMediaManifest(
   manifest: unknown,
 ): readonly string[] {
   const problems: string[] = []
-  const expectedSegments = CINEMATIC_ONBOARDING_TIMELINE_V0_4.shots.flatMap(
+  const expectedSegments = CINEMATIC_ONBOARDING_TIMELINE_V0_5.shots.flatMap(
     (shot) => shot.segments,
   )
   const expectedIds = new Set(expectedSegments.map((segment) => segment.id))
@@ -206,9 +221,9 @@ export function validateCinematicOnboardingMediaManifest(
   if (typeof revision !== 'string' || revision.trim() === '') {
     problems.push('Media manifest revision is empty.')
   }
-  if (sourceContractVersion !== CINEMATIC_ONBOARDING_TIMELINE_V0_4.version) {
+  if (sourceContractVersion !== CINEMATIC_ONBOARDING_TIMELINE_V0_5.version) {
     problems.push(
-      `Media manifest targets timeline ${String(sourceContractVersion)}, not ${CINEMATIC_ONBOARDING_TIMELINE_V0_4.version}.`,
+      `Media manifest targets timeline ${String(sourceContractVersion)}, not ${CINEMATIC_ONBOARDING_TIMELINE_V0_5.version}.`,
     )
   }
   if (
@@ -229,9 +244,9 @@ export function validateCinematicOnboardingMediaManifest(
         `Media manifest audio is ${String(audio.kind)}, expected continuous_review_mix.`,
       )
     }
-    if (audio.sourceDurationFrames !== 746) {
+    if (audio.sourceDurationFrames !== 788) {
       problems.push(
-        `Media manifest audio has ${String(audio.sourceDurationFrames)} source frames, expected 746.`,
+        `Media manifest audio has ${String(audio.sourceDurationFrames)} source frames, expected 788.`,
       )
     }
     if (audio.clockPolicy !== 'pause_with_picture') {

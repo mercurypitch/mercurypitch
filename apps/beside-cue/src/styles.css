@@ -809,8 +809,11 @@ svg {
 
 .active-sleeve__art {
   position: relative;
+  z-index: 2;
   display: grid;
-  overflow: hidden;
+  /* Keep the compact record visible over the Side A/B sleeve without letting
+     it reach the plan copy. */
+  overflow: visible;
   min-width: 0;
   min-height: 13rem;
   align-items: end;
@@ -823,6 +826,17 @@ svg {
   max-width: 100%;
   transform: scale(0.92);
   transform-origin: left bottom;
+}
+
+.active-sleeve__art .mascot-stage__record {
+  z-index: 2;
+  top: -21%;
+  right: -10%;
+  width: 46%;
+}
+
+.active-sleeve__art .mascot-stage__sleeve {
+  z-index: 1;
 }
 
 .active-sleeve__art .status-chip {
@@ -2417,6 +2431,15 @@ svg {
   .cinematic-onboarding__record-control.is-spinning > span {
     animation: none;
   }
+
+  .cinematic-onboarding__curtain::after,
+  .cinematic-onboarding__curtain .cinematic-onboarding__brand-mark,
+  .cinematic-onboarding__curtain-line,
+  .cinematic-onboarding__begin-label,
+  .cinematic-onboarding__curtain-note,
+  .cinematic-onboarding__brand-cue {
+    animation-delay: 0ms !important;
+  }
 }
 
 /* Cinematic onboarding v1 keeps the film full-bleed and lets native controls
@@ -2469,6 +2492,41 @@ svg {
   object-fit: contain;
 }
 
+.cinematic-onboarding__transition-bridge {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cinematic-onboarding__picture > video,
+.cinematic-onboarding__picture
+  > img:not(.cinematic-onboarding__transition-bridge),
+.cinematic-onboarding__picture-fallback {
+  position: relative;
+  z-index: 1;
+}
+
+.cinematic-onboarding__picture > video {
+  opacity: 0;
+  transition: opacity 110ms linear;
+}
+
+/* An undecoded hold image still paints its opaque background above the bridge.
+   Reveal it only after the correlated load handler confirms real pixels. */
+.cinematic-onboarding__picture
+  > img:not(.cinematic-onboarding__transition-bridge) {
+  opacity: 0;
+}
+
+.cinematic-onboarding__picture > img.cinematic-onboarding__media--revealed {
+  opacity: 1;
+}
+
+.cinematic-onboarding__picture > video.cinematic-onboarding__media--revealed {
+  opacity: 1;
+}
+
 .cinematic-onboarding__picture-fallback {
   display: grid;
   padding: 2rem;
@@ -2479,6 +2537,7 @@ svg {
 
 .cinematic-onboarding__shade {
   position: absolute;
+  z-index: 2;
   inset: 0;
   background:
     linear-gradient(180deg, rgb(20 14 11 / 48%) 0, transparent 18%),
@@ -2516,7 +2575,8 @@ svg {
   border-radius: 999px;
   background: var(--turquoise);
   content: '';
-  transform: rotate(-1.5deg) scaleX(0.72);
+  animation: cinematic-curtain-rule-reveal 720ms var(--ease-out) 1.05s both;
+  transform-origin: center;
 }
 
 .cinematic-onboarding__curtain:focus-visible {
@@ -2532,6 +2592,10 @@ svg {
   font-size: clamp(3rem, 15vw, 5rem);
   letter-spacing: -0.03em;
   line-height: 0.9;
+}
+
+.cinematic-onboarding__curtain .cinematic-onboarding__brand-mark {
+  animation: cinematic-brand-reveal 980ms var(--ease-out) 120ms both;
 }
 
 .cinematic-onboarding__brand-side {
@@ -2553,12 +2617,12 @@ svg {
 .cinematic-onboarding__brand-cue {
   display: inline-block;
   color: var(--orange);
-  animation: cinematic-cue-settle 780ms var(--ease-out) 140ms both;
+  animation: cinematic-cue-settle 1.6s var(--ease-out) 320ms both;
   transform-origin: 52% 56%;
 }
 
 .cinematic-onboarding__brand-mark--closing .cinematic-onboarding__brand-cue {
-  animation-name: cinematic-cue-close;
+  animation: cinematic-cue-close 1.85s var(--ease-out) 180ms both;
 }
 
 .cinematic-onboarding__curtain-line {
@@ -2567,6 +2631,7 @@ svg {
   font-family: var(--font-display);
   font-size: clamp(1.45rem, 6vw, 2rem);
   line-height: 1.05;
+  animation: cinematic-curtain-copy-reveal 680ms var(--ease-out) 1.05s both;
 }
 
 .cinematic-onboarding__begin-label {
@@ -2583,6 +2648,7 @@ svg {
   font-family: var(--font-label);
   font-size: 1rem;
   font-weight: 800;
+  animation: cinematic-curtain-action-reveal 720ms var(--ease-out) 1.28s both;
 }
 
 .cinematic-onboarding__curtain-note {
@@ -2590,6 +2656,7 @@ svg {
   color: var(--ink-soft);
   font-size: 0.82rem;
   line-height: 1.4;
+  animation: cinematic-curtain-copy-reveal 620ms var(--ease-out) 1.48s both;
 }
 
 .cinematic-onboarding__sound-control {
@@ -2960,28 +3027,99 @@ svg {
   box-shadow: 0 1rem 2rem rgb(20 14 11 / 32%);
 }
 
-@keyframes cinematic-cue-settle {
+@keyframes cinematic-brand-reveal {
   0% {
-    transform: rotate(0.5turn);
-  }
-
-  68% {
-    transform: rotate(-0.025turn);
+    filter: blur(0.18rem);
+    opacity: 0;
+    transform: translateY(0.3rem) scale(0.975);
   }
 
   100% {
-    transform: rotate(0);
+    filter: blur(0);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cinematic-curtain-copy-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cinematic-curtain-action-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(0.45rem) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cinematic-curtain-rule-reveal {
+  0% {
+    opacity: 0;
+    transform: rotate(-1.5deg) scaleX(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: rotate(-1.5deg) scaleX(0.72);
+  }
+}
+
+@keyframes cinematic-cue-settle {
+  0% {
+    transform: rotate(0.5turn) scale(0.96);
+  }
+
+  58% {
+    transform: rotate(-0.035turn) scale(1.025);
+  }
+
+  76% {
+    transform: rotate(0.014turn) scale(1);
+  }
+
+  89% {
+    transform: rotate(-0.006turn) scale(1);
+  }
+
+  100% {
+    transform: rotate(0) scale(1);
   }
 }
 
 @keyframes cinematic-cue-close {
   0%,
-  100% {
+  14% {
     transform: rotate(0);
   }
 
-  52% {
+  52%,
+  66% {
     transform: rotate(0.5turn);
+  }
+
+  75% {
+    transform: rotate(0.485turn);
+  }
+
+  84% {
+    transform: rotate(0.515turn);
+  }
+
+  100% {
+    transform: rotate(1turn);
   }
 }
 

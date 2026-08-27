@@ -8,7 +8,7 @@ import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
-import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, } from './onboarding'
+import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARDING_MEDIA_V0_9, } from './onboarding'
 import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 
 interface DirectorHarnessProps {
@@ -91,9 +91,9 @@ const CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
   ...DEFAULT_BESIDE_CUE_CONFIG,
   onboarding: {
     delivery: 'cinematic-first-run',
-    revision: CORKY_ONBOARDING_MEDIA_V0_8.revision,
-    contractVersion: '0.4.0',
-    media: CORKY_ONBOARDING_MEDIA_V0_8,
+    revision: CORKY_ONBOARDING_MEDIA_V0_9.revision,
+    contractVersion: '0.5.0',
+    media: CORKY_ONBOARDING_MEDIA_V0_9,
   },
 }
 
@@ -104,6 +104,16 @@ const LEGACY_CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
     revision: CORKY_ONBOARDING_MEDIA_V0_7.revision,
     contractVersion: '0.3.0',
     media: CORKY_ONBOARDING_MEDIA_V0_7,
+  },
+}
+
+const LEGACY_V0_4_CINEMATIC_TEST_CONFIG: BesideCueAppConfig = {
+  ...DEFAULT_BESIDE_CUE_CONFIG,
+  onboarding: {
+    delivery: 'cinematic-first-run',
+    revision: CORKY_ONBOARDING_MEDIA_V0_8.revision,
+    contractVersion: '0.4.0',
+    media: CORKY_ONBOARDING_MEDIA_V0_8,
   },
 }
 
@@ -219,6 +229,25 @@ describe('Beside Cue app', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('fails closed rather than running the pre-breath v0.4 delivery', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={LEGACY_V0_4_CINEMATIC_TEST_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /keep your better choice beside the moment/iu,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: /corky’s introduction/iu }),
+    ).not.toBeInTheDocument()
+  })
+
   it('saves exactly one real plan at Stop and reopens Home after a crash', async () => {
     const preferenceValues = new Map<string, string>()
     const onboardingPreferences = createCinematicOnboardingPreferenceStore({
@@ -254,7 +283,7 @@ describe('Beside Cue app', () => {
     expect(repository.saveCalls()).toBe(1)
     await waitFor(() =>
       expect(
-        onboardingPreferences.read(CORKY_ONBOARDING_MEDIA_V0_8.revision),
+        onboardingPreferences.read(CORKY_ONBOARDING_MEDIA_V0_9.revision),
       ).toMatchObject({ outcome: 'finished' }),
     )
 

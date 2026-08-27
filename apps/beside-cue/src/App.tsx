@@ -118,7 +118,7 @@ function firstRunScreen(
   if (currentCue(state) !== undefined) return 'home'
   if (
     onboarding.delivery === 'cinematic-first-run' &&
-    onboarding.contractVersion === '0.4.0' &&
+    onboarding.contractVersion === '0.5.0' &&
     validateCinematicOnboardingMediaManifest(onboarding.media).length === 0 &&
     preferences.read(onboarding.revision) === undefined
   ) {
@@ -132,7 +132,7 @@ export function App(props: AppProps) {
   const cinematicConfig = createMemo(() => {
     const onboarding = config().onboarding
     return onboarding.delivery === 'cinematic-first-run' &&
-      onboarding.contractVersion === '0.4.0'
+      onboarding.contractVersion === '0.5.0'
       ? onboarding
       : undefined
   })

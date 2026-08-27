@@ -1,17 +1,17 @@
 // ============================================================
-// Corky v0.8 runtime manifest tests — approved paths and byte provenance
+// Corky v0.9 runtime manifest tests — approved paths and byte provenance
 // ============================================================
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, } from './cinematic-onboarding-manifest'
+import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARDING_MEDIA_V0_9, } from './cinematic-onboarding-manifest'
 import { validateCinematicOnboardingMediaManifest } from './cinematic-onboarding-media'
 
 const EXPECTED_ASSET_SHA256 = Object.freeze({
-  '/onboarding/corky-v0.7/audio/review-mix-continuous-746f.m4a':
-    'c0e179b01a252e9f2260c55a82db4a419a306e80af1d6361aa35f68044cbe5b8',
+  '/onboarding/corky-v0.9/audio/review-mix-continuous-788f.m4a':
+    '6ec94545f851beec203b1b1baebb6693dcde57c1313359e616a96080dca26013',
   '/onboarding/corky-v0.7/picture/h01-h02-greeting.mp4':
     '392f9188d3148ccb1dcf6c1d1a68e619693c38b834e02fbe65bd2821190d7ad5',
   '/onboarding/corky-v0.7/picture/h03-table-reveal.mp4':
@@ -26,6 +26,8 @@ const EXPECTED_ASSET_SHA256 = Object.freeze({
     '91b65a79c00217f5c9da961b2e5e5d54a464fe05bf2592ede4ad8140327d4345',
   '/onboarding/corky-v0.8/picture/h08-quiet-close-eye-ack.mp4':
     'f9880b297c0204dc87111c5cfb57bedb715d9836d6c01774afbe9f60e511387c',
+  '/onboarding/corky-v0.9/picture/h06-record-spin-breath-42f.mp4':
+    '141193ea98f45e722928201b7fd90adaa919b2e0818268160251b182ca1f72cf',
   '/onboarding/corky-v0.7/stills/h01-h02-greeting-poster.webp':
     'ab899d614098b852efdbddfddd5bc68f11a89bcbd584e1905dc6cae639310266',
   '/onboarding/corky-v0.7/stills/h01-h02-greeting-reduced.webp':
@@ -225,8 +227,8 @@ function inspectH264Delivery(bytes: Buffer) {
 }
 
 function referencedAssetPaths(): readonly string[] {
-  const paths = new Set<string>([CORKY_ONBOARDING_MEDIA_V0_8.audio.src])
-  for (const media of Object.values(CORKY_ONBOARDING_MEDIA_V0_8.segments)) {
+  const paths = new Set<string>([CORKY_ONBOARDING_MEDIA_V0_9.audio.src])
+  for (const media of Object.values(CORKY_ONBOARDING_MEDIA_V0_9.segments)) {
     paths.add(media.poster)
     paths.add(media.reducedStill)
     if (media.kind === 'automatic') paths.add(media.video)
@@ -234,22 +236,22 @@ function referencedAssetPaths(): readonly string[] {
   return [...paths].sort()
 }
 
-describe('Corky v0.8 cinematic onboarding manifest', () => {
-  it('maps the complete v0.4 product flow onto the approved picture', () => {
-    expect(CORKY_ONBOARDING_MEDIA_V0_8).toMatchObject({
-      revision: 'corky-onboarding-v0.8',
-      sourceContractVersion: '0.4.0',
+describe('Corky v0.9 cinematic onboarding manifest', () => {
+  it('maps the complete v0.5 product flow onto the approved picture', () => {
+    expect(CORKY_ONBOARDING_MEDIA_V0_9).toMatchObject({
+      revision: 'corky-onboarding-v0.9',
+      sourceContractVersion: '0.5.0',
       audio: {
         kind: 'continuous_review_mix',
-        sourceDurationFrames: 746,
+        sourceDurationFrames: 788,
         clockPolicy: 'pause_with_picture',
       },
     })
     expect(
-      validateCinematicOnboardingMediaManifest(CORKY_ONBOARDING_MEDIA_V0_8),
+      validateCinematicOnboardingMediaManifest(CORKY_ONBOARDING_MEDIA_V0_9),
     ).toEqual([])
     expect(
-      CORKY_ONBOARDING_MEDIA_V0_8.segments.S08_AUTO_TITLE_CLOSE,
+      CORKY_ONBOARDING_MEDIA_V0_9.segments.S08_AUTO_TITLE_CLOSE,
     ).toMatchObject({
       kind: 'automatic',
       video: '/onboarding/corky-v0.8/picture/h08-quiet-close-eye-ack.mp4',
@@ -257,6 +259,14 @@ describe('Corky v0.8 cinematic onboarding manifest', () => {
         '/onboarding/corky-v0.7/stills/h07-stop-and-acknowledge-reduced.webp',
       reducedStill:
         '/onboarding/corky-v0.7/stills/h07-stop-and-acknowledge-reduced.webp',
+    })
+    expect(
+      CORKY_ONBOARDING_MEDIA_V0_9.segments.S06_AUTO_RECORD_SPIN_BREATH,
+    ).toMatchObject({
+      kind: 'automatic',
+      poster: '/onboarding/corky-v0.7/stills/h06-press-and-play-reduced.webp',
+      reducedStill:
+        '/onboarding/corky-v0.7/stills/h06-press-and-play-reduced.webp',
     })
   })
 
@@ -271,7 +281,7 @@ describe('Corky v0.8 cinematic onboarding manifest', () => {
   })
 
   it('pins the exact H08 H.264 stream, frame count, dimensions, and rate', () => {
-    const media = CORKY_ONBOARDING_MEDIA_V0_8.segments.S08_AUTO_TITLE_CLOSE
+    const media = CORKY_ONBOARDING_MEDIA_V0_9.segments.S08_AUTO_TITLE_CLOSE
     if (media.kind !== 'automatic') {
       throw new Error('H08 must be packaged as moving media.')
     }
@@ -297,12 +307,39 @@ describe('Corky v0.8 cinematic onboarding manifest', () => {
     })
   })
 
-  it('pins the source contract to the checked-in v0.4 timeline bytes', () => {
+  it('pins the exact 42-frame H06 breathing stream', () => {
+    const media =
+      CORKY_ONBOARDING_MEDIA_V0_9.segments.S06_AUTO_RECORD_SPIN_BREATH
+    if (media.kind !== 'automatic') {
+      throw new Error('The H06 breathing beat must be moving media.')
+    }
+    const bytes = readFileSync(resolve(PACKAGE_ROOT, `public${media.video}`))
+
+    expect(bytes).toHaveLength(165_849)
+    expect(sha256(bytes)).toBe(
+      '141193ea98f45e722928201b7fd90adaa919b2e0818268160251b182ca1f72cf',
+    )
+    expect(inspectH264Delivery(bytes)).toEqual({
+      trackCount: 1,
+      videoTrackCount: 1,
+      codec: 'avc1',
+      mimeCodec: 'avc1.64001f',
+      width: 720,
+      height: 1280,
+      sampleCount: 42,
+      timingSampleCount: 42,
+      timescale: 12_288,
+      duration: 21_504,
+      framesPerSecond: 24,
+    })
+  })
+
+  it('pins the source contract to the checked-in v0.5 timeline bytes', () => {
     const timelineBytes = readFileSync(
       resolve(PACKAGE_ROOT, 'src/onboarding/cinematic-onboarding-timeline.ts'),
     )
 
-    expect(CORKY_ONBOARDING_MEDIA_V0_8.sourceContractSha256).toBe(
+    expect(CORKY_ONBOARDING_MEDIA_V0_9.sourceContractSha256).toBe(
       sha256(timelineBytes),
     )
   })
@@ -314,6 +351,17 @@ describe('Corky v0.8 cinematic onboarding manifest', () => {
     })
     expect(
       validateCinematicOnboardingMediaManifest(CORKY_ONBOARDING_MEDIA_V0_7),
+    ).not.toEqual([])
+  })
+
+  it('retains the v0.8 manifest as deprecated pre-breath provenance only', () => {
+    expect(CORKY_ONBOARDING_MEDIA_V0_8).toMatchObject({
+      revision: 'corky-onboarding-v0.8',
+      sourceContractVersion: '0.4.0',
+      audio: { sourceDurationFrames: 746 },
+    })
+    expect(
+      validateCinematicOnboardingMediaManifest(CORKY_ONBOARDING_MEDIA_V0_8),
     ).not.toEqual([])
   })
 })
