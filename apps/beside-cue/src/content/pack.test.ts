@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { assetUrls } from './assets'
 import { MOMENTS } from './moments'
-import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, findCharacter, findCueEntity, findLine, GENERIC_CUE_ENTITY, validateContentPack, } from './pack'
+import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, findCharacter, findCueEntity, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, validateContentPack, } from './pack'
 import { pullOptions } from './pulls'
 
 describe('content pack', () => {
@@ -20,16 +20,25 @@ describe('content pack', () => {
     }
   })
 
-  it('gives every built-in pull a cue entity', () => {
-    // A custom pull deliberately has none; the built-in six must not.
+  it('gives every built-in Pull its own character', () => {
+    // A custom Pull deliberately has none; the built-in six must not.
     for (const option of pullOptions) {
-      expect(findCueEntity(DEFAULT_CONTENT_PACK, option.id)).toBeDefined()
+      expect(findPullCharacter(DEFAULT_CONTENT_PACK, option.id)).toBeDefined()
     }
   })
 
-  it('has no entity for a pull that does not exist', () => {
-    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'custom')).toBeUndefined()
-    expect(findCueEntity(DEFAULT_CONTENT_PACK, undefined)).toBeUndefined()
+  it('has no authored character for a custom Pull', () => {
+    expect(findPullCharacter(DEFAULT_CONTENT_PACK, 'custom')).toBeUndefined()
+    expect(findPullCharacter(DEFAULT_CONTENT_PACK, undefined)).toBeUndefined()
+  })
+
+  it('keeps the V1 cue-entity API as an alias', () => {
+    expect(DEFAULT_CONTENT_PACK.cueEntities).toBe(
+      DEFAULT_CONTENT_PACK.pullCharacters,
+    )
+    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'snacking')).toBe(
+      findPullCharacter(DEFAULT_CONTENT_PACK, 'snacking'),
+    )
   })
 
   it('defines every line that a moment references', () => {
@@ -46,20 +55,31 @@ describe('content pack', () => {
     }
   })
 
+  it('defines the exact Meet caption for every built-in Pull preview', () => {
+    for (const option of pullOptions) {
+      expect(
+        findLine(DEFAULT_CONTENT_PACK, option.previewLineId),
+        `Pull "${option.id}" references missing preview line "${option.previewLineId}"`,
+      ).toBeDefined()
+    }
+  })
+
   it('reports every fault at once rather than the first', () => {
+    const invalidPullCharacters = [
+      ...DEFAULT_CONTENT_PACK.pullCharacters,
+      {
+        id: 'not-a-pull',
+        name: 'Ghost',
+        token: { still: '/x.webp', alt: '' },
+        noticeOverlay: { still: '/y.webp', alt: '' },
+        voiceNote: '',
+      },
+    ]
     const problems = validateContentPack({
       ...DEFAULT_CONTENT_PACK,
       leadCharacterId: 'nobody',
-      cueEntities: [
-        ...DEFAULT_CONTENT_PACK.cueEntities,
-        {
-          id: 'not-a-pull',
-          name: 'Ghost',
-          token: { still: '/x.webp', alt: '' },
-          noticeOverlay: { still: '/y.webp', alt: '' },
-          voiceNote: '',
-        },
-      ],
+      pullCharacters: invalidPullCharacters,
+      cueEntities: invalidPullCharacters,
       lines: [
         ...DEFAULT_CONTENT_PACK.lines,
         { id: 'core.two-sides', text: 'Duplicate.' },
@@ -87,9 +107,13 @@ describe('content pack', () => {
       ...DEFAULT_CONTENT_PACK.characters.flatMap((character) =>
         CHARACTER_STATES.map((state) => character.states[state]),
       ),
-      ...[...DEFAULT_CONTENT_PACK.cueEntities, GENERIC_CUE_ENTITY].flatMap(
-        (cueEntity) => [cueEntity.token, cueEntity.noticeOverlay],
-      ),
+      ...[
+        ...DEFAULT_CONTENT_PACK.pullCharacters,
+        GENERIC_PULL_CHARACTER,
+      ].flatMap((pullCharacter) => [
+        pullCharacter.token,
+        pullCharacter.noticeOverlay,
+      ]),
     ]
 
     const missing = slots
@@ -104,9 +128,15 @@ describe('content pack', () => {
     expect(slots.length).toBeGreaterThan(0)
   })
 
-  it('keeps runtime art honest while authored readiness stays with its source', () => {
-    for (const cueEntity of DEFAULT_CONTENT_PACK.cueEntities) {
-      expect(cueEntity.token.alt).toMatch(/standing in/iu)
+  it('uses the approved versioned Pull studies with literal descriptions', () => {
+    for (const pullCharacter of DEFAULT_CONTENT_PACK.pullCharacters) {
+      expect(pullCharacter.token.still).toMatch(
+        /[/]art[/]pulls[/]pull-.+-nanobanana-v0_1-512[.]webp$/u,
+      )
+      expect(pullCharacter.token.alt).toMatch(
+        new RegExp(`^${pullCharacter.name}`, 'u'),
+      )
+      expect(pullCharacter.token.alt).not.toMatch(/standing in|placeholder/iu)
     }
   })
 
@@ -117,10 +147,10 @@ describe('content pack', () => {
         option.moment,
         ...option.suggestions,
       ]),
-      ...DEFAULT_CONTENT_PACK.cueEntities.flatMap((entity) => [
-        entity.name,
-        entity.token.alt,
-        entity.voiceNote,
+      ...DEFAULT_CONTENT_PACK.pullCharacters.flatMap((character) => [
+        character.name,
+        character.token.alt,
+        character.voiceNote,
       ]),
     ].join('\n')
 
@@ -128,22 +158,22 @@ describe('content pack', () => {
   })
 
   it('maps unpublished legacy pull ids to the neutral cast', () => {
-    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'alcohol-ritual')?.id).toBe(
+    expect(findPullCharacter(DEFAULT_CONTENT_PACK, 'alcohol-ritual')?.id).toBe(
       'familiar-ritual',
     )
-    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'smoking-vaping')?.id).toBe(
+    expect(findPullCharacter(DEFAULT_CONTENT_PACK, 'smoking-vaping')?.id).toBe(
       'two-minute-pause',
     )
-    expect(findCueEntity(DEFAULT_CONTENT_PACK, 'takeaway')?.id).toBe(
+    expect(findPullCharacter(DEFAULT_CONTENT_PACK, 'takeaway')?.id).toBe(
       'one-tap-convenience',
     )
   })
 
-  it('keeps a spoken line free of the pull it belongs to', () => {
-    // Shipped constraint: private text stays off the lock screen, and audio
-    // played from a phone speaker in a quiet room deserves the same care.
-    const pullWords =
-      /scroll|snack|drink|alcohol|smok|vap|takeaway|procrastinat/iu
+  it('keeps spoken character lines free of sensitive legacy interpretations', () => {
+    // Pull characters may name themselves after a deliberate in-app selection,
+    // but neutral V2 profiles must never reveal the unpublished substance- or
+    // purchase-specific interpretations that used to sit behind three ids.
+    const pullWords = /alcohol|smok|vap|takeaway/iu
     for (const line of DEFAULT_CONTENT_PACK.lines) {
       expect(line.text, `line "${line.id}" names a pull`).not.toMatch(pullWords)
     }
