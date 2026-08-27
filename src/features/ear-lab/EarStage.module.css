@@ -326,8 +326,9 @@
 
 .consoleLink {
   align-self: center;
-  min-height: 32px;
-  padding: 0;
+  /* A link in the console is still a touch target: 44px like a pad. */
+  min-height: 44px;
+  padding: 4px 0;
   border: 0;
   background: none;
   font: inherit;

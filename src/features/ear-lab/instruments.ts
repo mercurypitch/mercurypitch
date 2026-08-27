@@ -8,6 +8,7 @@
 import type { FacultyId } from '@/lib/ear/drills'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
+import { clearedSubdivision } from '@/lib/ear/rhythm-take'
 import { earPlayerRating, latestCalibration, latestThresholdReading, } from '@/stores/ear-lab-store'
 
 export type InstrumentView =
@@ -17,6 +18,7 @@ export type InstrumentView =
   | 'leap'
   | 'stack'
   | 'contour'
+  | 'pulse'
   | 'calibration'
 
 export interface Instrument {
@@ -90,6 +92,14 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'Up, down or level — fast',
   },
   {
+    view: 'pulse',
+    drillId: 'pulse',
+    name: 'Pulse',
+    faculty: 'time',
+    measures: 'Time · rhythm',
+    answer: 'A bar of onsets — tap it back on the beat',
+  },
+  {
     view: 'calibration',
     drillId: null,
     name: 'Calibration',
@@ -144,6 +154,12 @@ export function instrumentReading(
     case 'stack':
     case 'contour':
       return ratingReading(instrument.drillId ?? '')
+    case 'pulse': {
+      const rating = ratingReading('pulse')
+      if (rating === null) return null
+      const cleared = clearedSubdivision(earPlayerRating('pulse').rating)
+      return cleared ? { ...rating, unit: `· ${cleared}` } : rating
+    }
     case 'calibration': {
       const sealed = latestCalibration()
       if (!sealed) return null

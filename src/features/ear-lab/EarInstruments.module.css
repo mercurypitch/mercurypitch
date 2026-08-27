@@ -444,6 +444,40 @@
     cy 400ms ease;
 }
 
+/* ── The rhythm drum (Pulse) ──────────────────────────────────── */
+
+.beatLamp {
+  fill: var(--inst-line);
+  stroke: var(--inst-brass-line);
+  stroke-width: 1;
+}
+
+.beatLampLit {
+  fill: var(--inst-brass-bright);
+}
+
+.onset {
+  stroke: var(--inst-brass);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.onsetMissed {
+  stroke: var(--inst-garnet);
+  stroke-dasharray: 3 3;
+}
+
+.tapMark {
+  stroke: var(--inst-signal);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.tapMarkExtra {
+  stroke: var(--inst-muted);
+  opacity: 0.7;
+}
+
 /* ── The track pendulums ─────────────────────────────────────── */
 
 .calPendulum {

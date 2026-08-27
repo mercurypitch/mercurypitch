@@ -124,3 +124,10 @@ update item difficulties; difficulties freeze at 200 attempts; pacing lives
 in `timing.ts`; Stop cancels the run; Ear Lab drills stay out of
 `ExerciseType`. New here: the Field Book and the desk read on their own
 plates and never move the Index.
+
+## Log
+
+| Date       | Item                                                                                                                                                                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-28 | Item 1 — the four supporter rooms published to dev from the `v6` pack (`sync-dev.mjs --apply --publish`, 12 variants verified, receipt `receipts/dev-2026-08-27T23-34-25-373Z.json`).                                                  |
+| 2026-08-28 | Item 2 — Pulse: `PULSE_BANK` (12 patterns), `PULSE_TIMING`, `lib/ear/rhythm-take.ts` (finest grid → tolerance, the take judged in order, the rung the rating clears), `RhythmDrum`, `PulseDrill`; in the sprint, the strip, the audit. |

@@ -202,6 +202,99 @@ export const CONTOUR_BANK: readonly EarBankItem[] = [
   },
 ]
 
+// ── Pulse: rhythm dictation, tapped back ────────────────────────
+
+/** Onsets in beats within one bar of four. Seeds climb with the
+ *  finest subdivision in the pattern (quarters, eighths, triplets,
+ *  sixteenths) and with the count of onsets; `rhythm-take.ts` reads
+ *  the tolerance tier straight off the payload. */
+export const PULSE_BANK: readonly EarBankItem[] = [
+  {
+    itemId: 'p-q3',
+    label: '3 quarters',
+    name: 'Three quarters',
+    seed: 900,
+    payload: [0, 1, 2],
+  },
+  {
+    itemId: 'p-q4',
+    label: '4 quarters',
+    name: 'Four quarters',
+    seed: 950,
+    payload: [0, 1, 2, 3],
+  },
+  {
+    itemId: 'p-q-rest',
+    label: 'rest on 2',
+    name: 'A rest on two',
+    seed: 1000,
+    payload: [0, 2, 3],
+  },
+  {
+    itemId: 'p-e-and',
+    label: 'and of 2',
+    name: 'The and of two',
+    seed: 1100,
+    payload: [0, 1, 1.5, 2],
+  },
+  {
+    itemId: 'p-e-one',
+    label: 'eighths on 1',
+    name: 'Eighths on one',
+    seed: 1150,
+    payload: [0, 0.5, 1, 2, 3],
+  },
+  {
+    itemId: 'p-e-off',
+    label: 'off the beat',
+    name: 'Off the beat',
+    seed: 1250,
+    payload: [0.5, 1, 2.5, 3],
+  },
+  {
+    itemId: 'p-e-run',
+    label: 'eighth run',
+    name: 'An eighth run',
+    seed: 1300,
+    payload: [0, 0.5, 1, 1.5, 2, 3],
+  },
+  {
+    itemId: 'p-t-one',
+    label: 'triplet on 1',
+    name: 'A triplet on one',
+    seed: 1400,
+    payload: [0, 1 / 3, 2 / 3, 1],
+  },
+  {
+    itemId: 'p-t-two',
+    label: 'triplet on 2',
+    name: 'A triplet on two',
+    seed: 1500,
+    payload: [0, 1, 4 / 3, 5 / 3, 2],
+  },
+  {
+    itemId: 'p-s-one',
+    label: '16ths on 1',
+    name: 'Sixteenths on one',
+    seed: 1550,
+    payload: [0, 0.25, 0.5, 1],
+  },
+  {
+    itemId: 'p-s-gallop',
+    label: 'gallop',
+    name: 'A gallop',
+    seed: 1600,
+    payload: [0, 0.75, 1, 2],
+  },
+  {
+    itemId: 'p-s-mixed',
+    label: 'mixed',
+    name: 'Mixed subdivisions',
+    seed: 1700,
+    payload: [0, 0.5, 0.75, 1, 2.5],
+  },
+]
+
 // ── Generic state + picker ──────────────────────────────────────
 
 /** An item's current rating: stored override or fresh at the seed. */

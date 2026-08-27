@@ -347,6 +347,31 @@ generated through the dotfiles background pipeline (masters at 3840x2160 /
   Retest finding 2026-08-27: the parchment was invisible on the glass. The
   audit measures the bench title's luminance in that room.
 
+## 2m. Pulse — rhythm dictation — follow-up item 2
+
+The first rhythm drill on the seam of §2k. Bench strip → _Pulse_ (Time ·
+rhythm). Begin: four soft clicks count you in, a bar of onsets sounds in
+the room's click voice, and the next bar is yours — a soft click keeps the
+beat while you tap the call back on the wide pad (Space or Enter work
+too). The take is judged when the bar and its grace have passed: every
+onset met in order inside the pattern's tolerance (quarters 100 ms,
+eighths 80, triplets 65, sixteenths 50), nothing extra.
+
+- **What to check on hardware:** the count-in, the call and your bar sit
+  on one steady grid — no gap or hitch between bars; the pad registers
+  every tap (the status counts them); the reveal draws the call's onsets
+  on the upper rule and your taps under them, signal where met, garnet
+  dashed where missed, muted for an extra. With the round trip measured
+  (§1), a take you know was tight should come back _Clean_; the
+  progress line drops its _raw_ word.
+- **The reading:** the bench tile shows the rating and, once the rating
+  clears a rung, the finest subdivision it clears (_· eighths_). No
+  percent anywhere; the plate says _n of 12 calls tapped back clean_.
+- **Latency gate:** with the round trip unmeasured the idle console links
+  to the readiness panel and the run is marked _raw_; nothing is locked.
+- Stop mid-call silences the clicks already on the audio clock and lands
+  on the plate; the tap pad is disabled outside your bar.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

@@ -80,3 +80,15 @@ export const REVEAL_TIMING = {
   /** Longer, because a miss replays the sound. */
   identificationWrongMs: 1500,
 } as const
+
+/** Pulse — a call of onsets over one bar, tapped back over the next. */
+export const PULSE_TIMING = {
+  /** Beats per bar; the count-in, the call and the response each
+   *  take one. */
+  beats: 4,
+  periodMs: 600,
+  /** Lead before the count-in, so the first click is never late. */
+  leadS: 0.6,
+  /** Grace after the response bar before the take is judged. */
+  tailMs: 350,
+} as const

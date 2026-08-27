@@ -20,6 +20,7 @@ import { GridDrill } from '@/features/ear-lab/GridDrill'
 import { HairlineDrill } from '@/features/ear-lab/HairlineDrill'
 import { HomeDrill } from '@/features/ear-lab/HomeDrill'
 import { LeapDrill } from '@/features/ear-lab/LeapDrill'
+import { PulseDrill } from '@/features/ear-lab/PulseDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
 
@@ -64,6 +65,9 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'contour'}>
           <ContourDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'pulse'}>
+          <PulseDrill onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />
