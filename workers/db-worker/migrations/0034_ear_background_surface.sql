@@ -13,6 +13,14 @@
 -- No identities are seeded. The art does not exist yet, and a row here with no
 -- published revision is invisible to runtime delivery anyway; seeding names
 -- ahead of the images would only put empty rooms in the admin library.
+--
+-- The set also carries `drum`. Drum Night's own surface migration is already
+-- applied on the shared preview database (its branch deployed there first),
+-- and a rebuild copies every existing row back verbatim — a CHECK that
+-- rejects a value already stored fails the whole migration, which is how the
+-- PR #404 preview deploy died on 2026-08-27. Prod and dev hold no drum rows;
+-- accepting the value ahead of that branch costs nothing and keeps the two
+-- branches from breaking each other's preview.
 
 -- D1 runs migrations inside a transaction and keeps foreign keys enabled.
 -- Deferral is transaction-local; the explicit drop order avoids firing the
@@ -43,7 +51,7 @@ DROP TABLE premiumBackgroundAssets;
 CREATE TABLE premiumBackgroundAssets (
   id TEXT PRIMARY KEY,
   surface TEXT NOT NULL
-    CHECK (surface IN ('karaoke', 'jam', 'piano', 'guitar', 'ear')),
+    CHECK (surface IN ('karaoke', 'jam', 'piano', 'guitar', 'drum', 'ear')),
   title TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'active'
