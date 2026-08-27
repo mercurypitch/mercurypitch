@@ -20,6 +20,14 @@
     'Times New Roman', serif;
   --ear-shadow: 0 18px 40px rgb(0 0 0 / 55%);
   --ear-touch: var(--touch-target, 44px);
+  /* Ink: text written straight on the room rather than on a plate — the
+     bench headline, the dial captions, the column's legend. Parchment on
+     a dark room; a light room (the Glasshouse Bench) inverts it below,
+     while every plate keeps its parchment. */
+  --ear-ink: var(--ear-parchment);
+  --ear-ink-muted: var(--ear-muted);
+  --ear-ink-brass: var(--ear-brass);
+  --ear-ink-halo: 0 2px 18px rgb(0 0 0 / 55%);
   --ear-glass: 0.55;
 
   position: relative;
@@ -97,6 +105,14 @@
     rgb(31 23 13 / calc(0.44 - var(--ear-glass) * 0.24)) 70%,
     rgb(20 14 8 / calc(0.9 - var(--ear-glass) * 0.28)) 100%
   );
+}
+
+/* A light room: ink on glass, with a pale halo instead of a dark one. */
+.shell[data-room-treatment='light'] {
+  --ear-ink: #1d1811;
+  --ear-ink-muted: #4a4033;
+  --ear-ink-brass: #7a5a1d;
+  --ear-ink-halo: 0 1px 14px rgb(255 255 255 / 55%);
 }
 
 /* ── Session bar ─────────────────────────────────────────────── */

@@ -309,6 +309,34 @@ async function auditViewport(browser, name, contextOptions) {
     if (box < 44)
       fail(`${name} rack`, `a click voice pad is ${Math.round(box)}px tall`)
   }
+  // The light room inks what is written on the room; the plates keep
+  // parchment. Measured on the bench title: dark ink, not parchment.
+  await page.getByRole('button', { name: /Glasshouse Bench/ }).click()
+  await page.waitForTimeout(400)
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+  const light = await page.evaluate(() => {
+    const shell = document.querySelector('[data-room-treatment]')
+    const title = document.querySelector('[data-testid="ear-bench-title"]')
+    const color = title ? getComputedStyle(title).color : ''
+    const [r, g, b] = (color.match(/\d+/g) ?? ['255', '255', '255']).map(Number)
+    return {
+      treatment: shell?.getAttribute('data-room-treatment') ?? null,
+      luminance: (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255,
+    }
+  })
+  await page.screenshot({ path: `${OUT}/${name}-bench-light.png` })
+  if (light.treatment !== 'light')
+    fail(`${name} light room`, `shell treatment is ${light.treatment}`)
+  if (light.luminance > 0.35)
+    fail(
+      `${name} light room`,
+      `bench title is not inked (luminance ${light.luminance.toFixed(2)})`,
+    )
+  await page.getByTestId('ear-room-chip').click()
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: /Regulator Room/ }).click()
+  await page.waitForTimeout(300)
   await page.keyboard.press('Escape')
   await page.waitForTimeout(300)
 

@@ -144,6 +144,15 @@ describe('EarLabDashboard', () => {
     )
   })
 
+  it('inks the bench when a light room is chosen', () => {
+    const { container } = render(() => <Bench />)
+    const shell = container.querySelector('[data-room-treatment]')
+    expect(shell?.getAttribute('data-room-treatment')).toBe('dark')
+    fireEvent.click(screen.getByTestId('ear-room-chip'))
+    fireEvent.click(screen.getByRole('button', { name: /Glasshouse Bench/ }))
+    expect(shell?.getAttribute('data-room-treatment')).toBe('light')
+  })
+
   it('carries the stage volume to the engine and offers three click voices', () => {
     render(() => <Bench />)
     expect(engine.setToneTrim).toHaveBeenLastCalledWith(0.7)

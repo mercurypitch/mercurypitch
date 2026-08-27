@@ -28,14 +28,14 @@
   font-size: 0.7rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ear-brass);
+  color: var(--ear-ink-brass);
 }
 
 .kicker i {
   display: inline-block;
   width: 18px;
   height: 1px;
-  background: var(--ear-brass);
+  background: var(--ear-ink-brass);
 }
 
 .title {
@@ -46,8 +46,8 @@
   font-size: clamp(1.7rem, 2.6cqi, 2.3rem);
   line-height: 1.12;
   letter-spacing: -0.005em;
-  color: var(--ear-parchment);
-  text-shadow: 0 2px 18px rgb(0 0 0 / 55%);
+  color: var(--ear-ink);
+  text-shadow: var(--ear-ink-halo);
 }
 
 .lede {
@@ -55,8 +55,8 @@
   max-width: 52ch;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: var(--ear-muted);
-  text-shadow: 0 1px 12px rgb(0 0 0 / 55%);
+  color: var(--ear-ink-muted);
+  text-shadow: var(--ear-ink-halo);
 }
 
 /* ── The grid: Regulator, dials, regulation ──────────────────── */

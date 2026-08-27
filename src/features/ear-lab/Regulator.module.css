@@ -113,17 +113,17 @@
   text-align: center;
   font-size: 0.74rem;
   line-height: 1.4;
-  color: var(--ear-muted);
+  color: var(--ear-ink-muted);
 }
 
 .legend b {
-  color: var(--ear-parchment);
+  color: var(--ear-ink);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .legendMissing {
-  color: var(--ear-muted);
+  color: var(--ear-ink-muted);
   font-style: italic;
 }
 

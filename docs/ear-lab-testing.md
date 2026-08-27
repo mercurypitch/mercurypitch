@@ -325,6 +325,13 @@ generated through the dotfiles background pipeline (masters at 3840x2160 /
   bare end; the Anechoic Booth's wire floor is the one plate the gate flagged
   as busy at the bottom, and the Glasshouse Bench is bright in the centre by
   design.
+- **Light rooms ink the bench.** In the Glasshouse Bench everything written
+  straight on the room — the headline and its note, the faculty dial
+  captions and readings, "Not yet marked", the column's legend — turns to
+  ink with a pale halo; the plates (the column, the index dial, the
+  regulation card, the strip, the bridge, the rack) keep their parchment.
+  Retest finding 2026-08-27: the parchment was invisible on the glass. The
+  audit measures the bench title's luminance in that room.
 
 ## 3. Phase 1 regression (quick pass)
 

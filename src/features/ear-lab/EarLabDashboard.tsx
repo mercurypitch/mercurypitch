@@ -156,7 +156,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         <span class={styles.kicker}>
           <i aria-hidden="true" /> At the bench
         </span>
-        <h1 class={styles.title}>
+        <h1 class={styles.title} data-testid="ear-bench-title">
           {line().lead}
           <br />
           {line().rest}

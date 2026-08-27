@@ -86,7 +86,7 @@
   gap: 2px;
   text-align: center;
   font-size: 0.78rem;
-  color: var(--ear-muted);
+  color: var(--ear-ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -104,11 +104,11 @@
 .unmeasured {
   font-style: italic;
   font-size: 0.72rem;
-  color: var(--ear-muted);
+  color: var(--ear-ink-muted);
 }
 
 .estimateLine {
-  color: var(--ear-parchment);
+  color: var(--ear-ink);
 }
 
 .subDials {
@@ -175,13 +175,13 @@
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ear-brass);
+  color: var(--ear-ink-brass);
 }
 
 .subReading {
   font-family: var(--ear-serif);
   font-size: 0.98rem;
-  color: var(--ear-parchment);
+  color: var(--ear-ink);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
@@ -189,7 +189,7 @@
 .subReading small {
   font-family: inherit;
   font-size: 0.7rem;
-  color: var(--ear-muted);
+  color: var(--ear-ink-muted);
 }
 
 @container (max-width: 860px) {
