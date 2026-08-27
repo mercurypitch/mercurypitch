@@ -86,8 +86,6 @@
      rendered as bare text. Aliased to theme tokens so they follow the
      active theme; --accent-hover follows the light theme below. */
   --border-color: var(--border);
-  --border-light: var(--border-subtle);
-  --border-mid: var(--border);
   --accent-color: var(--accent);
   --accent-hover: #79b8ff;
   --bg-accent: var(--accent-surface);

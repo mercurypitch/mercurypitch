@@ -72,8 +72,6 @@ const SEMANTIC_TOKENS = [
 
 const COMPATIBILITY_TOKENS = [
   '--border-color',
-  '--border-light',
-  '--border-mid',
   '--accent-color',
   '--bg-accent',
   '--text-accent',
