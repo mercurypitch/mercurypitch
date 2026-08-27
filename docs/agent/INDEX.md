@@ -197,8 +197,8 @@ These are the rules that break things when ignored.
 | [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 450 | Ear Lab store — readings, ratings and calibration history. |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
+| [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 250 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
-| [theme-store.ts](../../src/stores/theme-store.ts) | 250 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 200 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 200 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
