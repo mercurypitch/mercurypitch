@@ -226,6 +226,8 @@ function descriptionFor(background: BackgroundDefinition): string {
       return 'Chandeliers, and a concert grand beneath them'
     case 'moonlit-conservatory':
       return 'A glass conservatory in a single silver beam'
+    case 'ear-rooms':
+      return "The Regulator Room's world, one room at a time"
   }
 }
 

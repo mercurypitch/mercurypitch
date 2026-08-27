@@ -302,6 +302,32 @@ What can be tested is the seam they will stand on:
 - Taps register on pointer down and on Space / Enter; a held key does not
   repeat. Closing the rack mid-take silences the clicks.
 
+## 2l. The rooms — Polish Phase 6
+
+Six rooms of the Regulator Room's world, two free and four supporter,
+generated through the dotfiles background pipeline (masters at 3840x2160 /
+2160x3840, detail ratios 1.66-2.09 against the 1.30 gate).
+
+- **Free, live on any deploy of the branch:** _Regulator Room_ (the default;
+  its Phase 1 stand-in is replaced by the master of the same room) and
+  _Glasshouse Bench_ (a light room). Room chip → the rack → pick one; the
+  choice persists on the device; portrait and landscape are separate
+  renders, so turn a phone and the bench should still sit low in the frame.
+- **Supporter:** _Transit Observatory_, _Bell Loft_, _Planetarium_,
+  _Anechoic Booth_. They appear as locked tiles with a brass-on-slate wash
+  until their identities exist on the environment: migration
+  `0035_ear_rooms_background_pack.sql` seeds them, and the art is published
+  from `~/.dotfiles/personal/mercurypitch/assets/premium-backgrounds/v6/`
+  with `sync-dev.mjs --apply --publish` once `0035` is on dev. On dev they
+  then show for supporter accounts; prod is a deliberate separate upload.
+- What to judge: the centre band under the Regulator and the bottom third
+  under the console must stay calm with the room visibility slider at its
+  bare end; the Anechoic Booth's wire floor is the one plate the gate flagged
+  as busy at the bottom, and the Glasshouse Bench is bright in the centre by
+  design.
+
+## 3. Phase 1 regression (quick pass)
+
 1. **Hairline practice** — one run: lands near your previous readings,
    trials feel quicker than before (audio was tightened ~15%).
 2. **Home tap mode** — one run: cadence noticeably slower/roomier than the
