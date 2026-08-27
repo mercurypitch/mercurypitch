@@ -2,12 +2,7 @@ import { AppHeader } from '@/components/AppHeader'
 import type { MainView } from '@/components/BottomNav'
 import { BottomNav } from '@/components/BottomNav'
 import { MascotStage } from '@/components/MascotStage'
-import type { AssetSlot } from '@/content'
-
-const HOME_CORKY_V023: AssetSlot = {
-  still: '/art/corky/corky-home-rest-v0_23-1024.webp',
-  alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
-}
+import { CORKY_V023_REST_ART } from '@/content'
 
 interface HomeScreenProps {
   pullText: string
@@ -40,7 +35,7 @@ export function HomeScreen(props: HomeScreenProps) {
         <div class="active-sleeve__art">
           <MascotStage
             state={props.paused ? 'quiet' : 'rest'}
-            artOverride={HOME_CORKY_V023}
+            artOverride={CORKY_V023_REST_ART}
             compact
           />
           <span class="status-chip">{props.paused ? 'Paused' : 'Ready'}</span>

@@ -68,6 +68,11 @@ export interface ContentPack {
 
 const ART = `${import.meta.env.BASE_URL}art`
 
+export const CORKY_V023_REST_ART: AssetSlot = {
+  still: `${ART}/corky/corky-home-rest-v0_23-1024.webp`,
+  alt: 'Corky, a rose-plum cork character with eight tubular limbs, settled beside the current plan.',
+}
+
 /**
  * Debug APKs from the unpublished content-spine branch may already have saved
  * one of these technical ids. Keep compatibility private while every new cue

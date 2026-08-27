@@ -586,6 +586,10 @@ describe('cinematic onboarding director', () => {
     expect(
       screen.getByRole('heading', { name: 'Your plan is ready.' }),
     ).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Beside Cue' })).toBeVisible()
+    expect(
+      screen.queryByText('Beside Cue', { selector: 'p' }),
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(
       'Reminder set for 13:30. You can change it in Settings.',
     )
