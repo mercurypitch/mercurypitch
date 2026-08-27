@@ -11,7 +11,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createContext, createEffect, createMemo, createSignal, For, onCleanup, Show, useContext, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
@@ -26,18 +26,17 @@ import type { ClickVoice } from './click-synth'
 import { scheduleClick } from './click-synth'
 import { EAR_GLASS, EAR_GLASS_VAR, earGlassLabel, formatEarGlassValue, loadEarGlass, persistEarGlass, } from './ear-glass'
 import { IconClose, IconInfo, IconRack, IconReport, IconSeal, IconToday, } from './ear-icons'
+import type { EarRoomApi, RackPanel } from './ear-room-context'
+import { EarRoomContext } from './ear-room-context'
 import { CLICK_VOICES, EAR_VOLUME, earClickVoice, formatEarVolume, loadEarVolume, persistEarVolume, setEarClickVoice, } from './ear-sound'
 import type { EarLabView } from './EarLabDashboard'
 import styles from './EarRoomShell.module.css'
+import { TapCheck } from './TapCheck'
+
+export type { EarRoomApi, RackPanel } from './ear-room-context'
+export { useEarRoom } from './ear-room-context'
 import { dateLabel, instrumentReading, INSTRUMENTS } from './instruments'
 import { SprintCard } from './SprintCard'
-
-export type RackPanel =
-  | 'today'
-  | 'instruments'
-  | 'room'
-  | 'readiness'
-  | 'rulers'
 
 interface EarRoomShellProps {
   onNavigate: (view: EarLabView) => void
@@ -56,25 +55,6 @@ const PANEL_TITLES: Record<RackPanel, { kicker: string; title: string }> = {
 }
 
 type ShellStyle = JSX.CSSProperties & Record<typeof EAR_GLASS_VAR, string>
-
-/** What the room lends the drills inside it: its rack, and its sound. */
-export interface EarRoomApi {
-  /** Open a rack panel — a drill can send the player to the room's sound. */
-  openPanel: (panel: RackPanel) => void
-  /** The bench's level, 0-1, on top of the app's own volume. */
-  volume: () => number
-  clickVoice: () => ClickVoice
-}
-
-const EarRoomContext = createContext<EarRoomApi>({
-  openPanel: () => undefined,
-  volume: () => EAR_VOLUME.defaultValue,
-  clickVoice: earClickVoice,
-})
-
-export function useEarRoom(): EarRoomApi {
-  return useContext(EarRoomContext)
-}
 
 export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
   const background = useBackgroundSurfaceController('ear')
@@ -530,6 +510,7 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
                 class={styles.readinessWizard}
                 onClose={close}
               />
+              <TapCheck />
             </div>
           </Show>
 

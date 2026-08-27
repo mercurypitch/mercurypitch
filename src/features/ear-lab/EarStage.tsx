@@ -16,10 +16,10 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { unlockAudio } from '@/lib/audio-unlock'
-import { IconBack, IconCheck, IconClose, IconStop } from './ear-icons'
+import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
@@ -262,6 +262,63 @@ export function ConsoleLead(props: { children: JSX.Element }): JSX.Element {
 
 export function ConsoleNote(props: { children: JSX.Element }): JSX.Element {
   return <p class={styles.consoleNote}>{props.children}</p>
+}
+
+interface TapPadProps {
+  label: string
+  sub?: string
+  /** Lit while a take is on: the pad is listening for taps. */
+  armed?: boolean
+  disabled?: boolean
+  /** A tap, with the page-clock time of the pointer or key event —
+   *  the event's own stamp, not a later performance.now(), so the
+   *  rhythm seam measures the touch and not the render. */
+  onTap: (atMs: number) => void
+}
+
+/** The rhythm seam's input: one wide pad that takes taps on pointer
+ *  down (a click would arrive a frame or two late) and on Space or
+ *  Enter, and flashes brass for each. */
+export function TapPad(props: TapPadProps): JSX.Element {
+  const [hit, setHit] = createSignal(false)
+  let flash: ReturnType<typeof setTimeout> | undefined
+  onCleanup(() => clearTimeout(flash))
+  const register = (atMs: number) => {
+    props.onTap(atMs)
+    setHit(true)
+    clearTimeout(flash)
+    flash = setTimeout(() => setHit(false), 110)
+  }
+  return (
+    <button
+      type="button"
+      class={styles.tapPad}
+      classList={{
+        [styles.tapPadArmed]: props.armed === true,
+        [styles.tapPadHit]: hit(),
+      }}
+      disabled={props.disabled === true}
+      data-testid="ear-tap-pad"
+      onPointerDown={(event) => {
+        // Secondary mouse buttons are not taps; touch and pen report 0.
+        if (event.button > 0) return
+        event.preventDefault()
+        register(event.timeStamp)
+      }}
+      onKeyDown={(event) => {
+        if (event.repeat) return
+        if (event.key !== ' ' && event.key !== 'Enter') return
+        event.preventDefault()
+        register(event.timeStamp)
+      }}
+    >
+      <IconTap size={22} />
+      <span>{props.label}</span>
+      <Show when={props.sub}>
+        <small>{props.sub}</small>
+      </Show>
+    </button>
+  )
 }
 
 /** A quiet link in the console — to the room's sound, say. */

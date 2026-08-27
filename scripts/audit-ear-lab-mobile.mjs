@@ -600,6 +600,16 @@ async function auditStage(page, name) {
   await page.getByLabel(/Open the readiness panel/).click()
   await page.waitForTimeout(450)
   await page.screenshot({ path: `${OUT}/${name}-rack-readiness.png` })
+  // The rhythm seam's input sits under the wizard: a tap pad, touch-sized.
+  const tapPad = page.getByTestId('ear-tap-pad')
+  const tapPadHeight = await tapPad
+    .evaluate((el) => el.getBoundingClientRect().height)
+    .catch(() => 0)
+  if (tapPadHeight < 44)
+    fail(
+      `${name} readiness`,
+      `tap pad missing or ${Math.round(tapPadHeight)}px tall`,
+    )
   const startVisible = await page
     .getByRole('dialog')
     .getByRole('button', { name: 'Start' })

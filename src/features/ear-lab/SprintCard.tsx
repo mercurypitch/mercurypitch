@@ -19,6 +19,7 @@ import { findIdentificationDrill, findThresholdDrill } from '@/lib/ear/drills'
 import type { SprintSegment } from '@/lib/ear/sprint'
 import { SPRINT_REASON_LABEL } from '@/lib/ear/sprint'
 import { completeSprint, isSprintComplete, sprintProgress, sprintStreak, todaysSprint, } from '@/stores/ear-lab-store'
+import { VIEW_FOR_DRILL } from './drill-views'
 import { IconCheck, IconSeal } from './ear-icons'
 import type { EarLabView } from './EarLabDashboard'
 import styles from './SprintCard.module.css'
@@ -27,16 +28,6 @@ interface SprintCardProps {
   /** In the rack's Today panel: the bench's copy keeps the tour hook. */
   rack?: boolean
   onNavigate: (view: EarLabView) => void
-}
-
-/** Drill ids do not all match their view names ('the-grid' → 'grid'). */
-const VIEW_FOR_DRILL: Record<string, EarLabView> = {
-  hairline: 'hairline',
-  home: 'home',
-  'the-grid': 'grid',
-  leap: 'leap',
-  stack: 'stack',
-  contour: 'contour',
 }
 
 function drillName(drillId: string): string {

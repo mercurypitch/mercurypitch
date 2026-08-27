@@ -109,6 +109,18 @@ export function IconSeal(p: IconProps): JSX.Element {
   )
 }
 
+/** A fingertip meeting the beat: the tap pad. */
+export function IconTap(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11" />
+      <path d="M12 10.5a1.5 1.5 0 0 1 3 0V13" />
+      <path d="M15 12a1.5 1.5 0 0 1 3 0v4a5 5 0 0 1-5 5h-1.5a5 5 0 0 1-4.3-2.4L4.6 14a1.4 1.4 0 0 1 2.2-1.7L9 14.5V11" />
+      <path d="M6 5.5a4.5 4.5 0 0 1 3-3.9M14 1.6a4.5 4.5 0 0 1 3 3.9" />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

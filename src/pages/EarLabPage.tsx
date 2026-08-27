@@ -11,6 +11,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
+import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
 import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
 import { EarReport } from '@/features/ear-lab/EarReport'
@@ -21,16 +22,6 @@ import { HomeDrill } from '@/features/ear-lab/HomeDrill'
 import { LeapDrill } from '@/features/ear-lab/LeapDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
-
-/** Drill ids do not all match their view names ('the-grid' → 'grid'). */
-const VIEW_FOR_DRILL: Record<string, EarLabView> = {
-  hairline: 'hairline',
-  home: 'home',
-  'the-grid': 'grid',
-  leap: 'leap',
-  stack: 'stack',
-  contour: 'contour',
-}
 
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')

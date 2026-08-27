@@ -648,6 +648,33 @@
   outline-offset: 2px;
 }
 
+/* ── The tap check: the rhythm seam tried by hand ─────────────── */
+
+.tapCheck {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--ear-brass-line);
+  border-radius: 6px;
+  background: rgb(27 32 39 / 60%);
+  /* The tap pad is a stage control; give it the stage's tokens here. */
+  --stage-brass: var(--ear-brass);
+  --stage-brass-bright: var(--ear-brass-bright);
+  --stage-parchment: var(--ear-parchment);
+  --stage-muted: var(--ear-muted);
+  --stage-line-strong: rgb(239 230 214 / 22%);
+  --stage-serif: var(--ear-serif);
+}
+
+.tapReading {
+  margin: 0;
+  font-family: var(--ear-serif);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--ear-parchment);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Compact: the bench narrower than a desk ─────────────────── */
 
 @container (max-width: 860px) {

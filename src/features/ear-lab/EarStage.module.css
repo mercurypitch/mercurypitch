@@ -260,6 +260,70 @@
   color: var(--stage-muted);
 }
 
+/* ── The tap pad: the rhythm seam's one input ────────────────── */
+
+.tapPad {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 96px;
+  padding: 14px 18px;
+  border: 1px solid var(--stage-line-strong);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #232930, #171b20);
+  color: var(--stage-parchment);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.tapPad > svg {
+  grid-row: 1 / span 2;
+  color: var(--stage-brass);
+}
+
+.tapPad > span {
+  font-family: var(--stage-serif);
+  font-size: 1.05rem;
+}
+
+.tapPad > small {
+  font-size: 0.74rem;
+  color: var(--stage-muted);
+}
+
+.tapPadArmed {
+  border-color: var(--stage-brass);
+  box-shadow: inset 0 0 0 1px rgb(201 164 94 / 35%);
+}
+
+.tapPadHit {
+  border-color: var(--stage-brass-bright);
+  box-shadow:
+    inset 0 0 0 1px var(--stage-brass-bright),
+    0 0 18px rgb(231 198 125 / 25%);
+  transition: none;
+}
+
+.tapPad:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.tapPad:focus-visible {
+  outline: 2px solid var(--stage-brass-bright);
+  outline-offset: 2px;
+}
+
 .consoleLink {
   align-self: center;
   min-height: 32px;

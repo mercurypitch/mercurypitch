@@ -284,7 +284,23 @@ shell will need.
   from the room master; nothing references it yet (the Ear Lab is a tab, not
   an entry), so no PNG ships until a share route or landing section wants it.
 
-## 3. Phase 1 regression (quick pass)
+## 2k. The rhythm seam — Polish Phase 5
+
+The rhythm drills are designed, not built (`docs/plans/ear-rhythm-drills.md`).
+What can be tested is the seam they will stand on:
+
+- **Tap check** in the readiness panel (Round-trip chip → the rack). Press
+  the pad: eight clicks at 100 BPM in the room's click voice at the stage
+  volume. Tap with them. The reading gives the mean (negative is early),
+  the spread, how many clicks were met, and whether the round trip was
+  subtracted. Run it once with the round trip unmeasured and once after the
+  wizard: the mean should move by about the round trip, and a steady tapper
+  should sit within ±20 ms with a spread under 25 ms once it is subtracted.
+  A large residual is the honest number to bring back — the subtraction
+  uses the speaker-to-microphone trip as a stand-in for output + touch
+  latency, and the residual on your hardware is what Pulse will inherit.
+- Taps register on pointer down and on Space / Enter; a held key does not
+  repeat. Closing the rack mid-take silences the clicks.
 
 1. **Hairline practice** — one run: lands near your previous readings,
    trials feel quicker than before (audio was tightened ~15%).
