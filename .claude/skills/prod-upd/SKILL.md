@@ -15,6 +15,17 @@ of pushing — a bad tag is a prod deploy.
 
 ## Steps
 
+0. **Cut the release notes** (on the release PR, before the commit reaches
+   `main`). Three files, three audiences — see
+   **[Writing the release notes](#writing-the-release-notes)** below for the
+   bar each one has to clear:
+   - `CHANGELOG.md` — what a **user** gets. Short. This is the one that goes
+     wrong; read that section before writing a line of it.
+   - `dev-changelog.md` — the engineering history. Everything cut from
+     `CHANGELOG.md` lands here, at whatever length it needs.
+   - `src/features/whats-new/whats-new-content.tsx` — only on a new
+     `major.minor` line, which is the only thing the panel announces.
+
 1. **Sync `main`.**
    - `git fetch origin --tags --prune`
    - `git checkout main`
@@ -29,6 +40,12 @@ of pushing — a bad tag is a prod deploy.
      file. Extract `X.Y.Z`; the tag is `vX.Y.Z`.
    - Sanity check: `X.Y.Z` should equal the `"version"` in `package.json`. If
      they differ, **stop and ask** which is correct — do not guess.
+   - **Read the entry as a user would**, in the app: `pnpm test` covers the
+     changelog modal, and `scripts/changelog-stats.mjs` prints the numbers.
+     A newest entry averaging much over ~180 characters a bullet has
+     engineering detail in it that belongs in `dev-changelog.md` — fix it on
+     the release PR and merge that first. A tag is not the place to discover
+     this.
 
 3. **Guard against re-tagging.**
    - `git tag -l vX.Y.Z` and `git ls-remote --tags origin vX.Y.Z`.
@@ -56,6 +73,59 @@ of pushing — a bad tag is a prod deploy.
    - If a DB migration is pending for this release (check project memory, e.g.
      the prod-db-migration note), surface it now — a tag deploy ships code, not
      schema.
+
+## Writing the release notes
+
+Three files. Getting this wrong is not cosmetic: `CHANGELOG.md` is rendered
+verbatim in the app's Changelog modal, so whatever is written there is what a
+user reads.
+
+### `CHANGELOG.md` — the user-facing one
+
+**The bar: every bullet is one to three short sentences, and a stranger can
+tell what changed for them without knowing how the app is built.**
+
+`0.9.0` is what going wrong looks like — 110 bullets averaging 347 characters,
+full of internal module names and rationale nobody outside the repo needs.
+**`0.8.0` is the model**: 61 bullets, ~142 characters each. Aim there.
+
+Write it like this:
+
+- **Open with a bold sentence that is the whole point.** "**The rest of the
+  band plays.**" Then at most two sentences on what it means for the reader.
+  Many entries need nothing after the bold sentence at all.
+- **Say what a person gets, not what was built.** "Every part you choose,
+  stacked a few bars to a row" — not "a pure-geometry layout pass shared by
+  two painters".
+- **Cut every trace of the work itself**: PR numbers, issue numbers, file paths,
+  function and module names, store names, migration numbers, plan documents,
+  "refactored", "extracted", "now uses". None of it belongs here.
+- **Concrete nouns over adjectives.** No marketing, no superlatives, no
+  "seamless" or "powerful". Never claim AI.
+- **Fold the small ones together.** A closing "**Smaller things.**" bullet
+  holding five one-clause fixes beats five bullets nobody reads.
+- **Only the markdown the modal renders**: `**bold**`, `_italic_`, `` `code` ``,
+  `[label](url)`, and one level of indented sub-bullets. Hard-wrap at 78
+  columns — continuation lines are indented two spaces and carry no marker.
+- **Do not drop anything.** Everything cut for length moves to
+  `dev-changelog.md` in the same commit; the detail is worth keeping, it is
+  just not worth a user's evening.
+
+If a change genuinely needs a paragraph of explanation, that is a sign it
+wants a **What's New** entry — not a longer changelog bullet.
+
+### `dev-changelog.md` — the engineering one
+
+No length limit and no audience problem: PR numbers, plan documents, the
+reasoning, the traps found on the way. Same version heading and date as
+`CHANGELOG.md`, sectioned however the release is easiest to follow.
+
+### `src/features/whats-new/whats-new-content.tsx` — the release page
+
+Only touched when the `major.minor` line changes — the panel announces once
+per release line, so a patch never gets one. Six to eight highlights, chosen
+from the changelog's own entries: what it is, and the shortest real path to
+trying it. Every `tryIt` must be followable by looking at the app.
 
 ## Notes
 

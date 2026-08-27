@@ -8,20 +8,46 @@
 // silently dropped: 228 of 464 bullets ended mid-clause, and 48,842
 // characters never reached the app. It looked like corrupted release notes.
 //
-// These tests run against the REAL CHANGELOG.md rather than a fixture — the
-// bug was a mismatch between the parser and the file's actual shape, and a
-// fixture written by the same hand as the parser would have agreed with it.
+// Two kinds of test, deliberately:
+//
+//   * the shapes the parser has to survive — a wrapped bullet, a sub-bullet,
+//     a second paragraph — are checked against a fixture, because they are
+//     properties of markdown rather than of this week's release notes. The
+//     first version of these tests quoted real entries and broke the moment
+//     the changelog was rewritten, which taught nobody anything.
+//   * the whole-file checks still run against the REAL CHANGELOG.md, because
+//     the bug was a mismatch between the parser and the file's actual shape,
+//     and they must keep holding for whatever the file says next.
 
 import { cleanup, render, screen, within } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it } from 'vitest'
 import rawChangelog from '../../../CHANGELOG.md?raw'
-import { ChangelogModal } from '../ChangelogModal'
+import { ChangelogModal, parseChangelog } from '../ChangelogModal'
 
 afterEach(cleanup)
 
 const openModal = (): void => {
   render(() => <ChangelogModal open onClose={() => {}} />)
 }
+
+/** Every markdown shape a changelog entry is allowed to take. */
+const FIXTURE = `## [9.9.9] - 2026-01-01
+
+### Added
+
+- **A bullet that runs past the wrap.** The rest of the sentence sits on a
+  second physical line, indented, carrying no marker of its own.
+- **A bullet with a list under it.**
+  - the first sub-bullet
+  - the second sub-bullet
+- **A bullet with two paragraphs.** This one is the first.
+
+  And this one is the second, after a blank line.
+
+### Fixed
+
+- One short bullet.
+`
 
 /**
  * Every run of prose the file contains, as its own string.
@@ -88,21 +114,65 @@ function proseFromFile(): string[] {
   return out
 }
 
+/** Markdown as the reader sees it, so a run can be looked for in the DOM. */
+function plain(markdown: string): string {
+  return markdown
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/(?<![\w*])_([^_\n]+)_(?![\w*])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+describe('the changelog parser', () => {
+  const added = parseChangelog(FIXTURE)[0]!.sections[0]!
+
+  it('joins a bullet that wraps onto the next line', () => {
+    // The reported symptom, in miniature: this used to stop at "on a".
+    expect(added.items[0]!.paragraphs).toEqual([
+      '**A bullet that runs past the wrap.** The rest of the sentence sits on a second physical line, indented, carrying no marker of its own.',
+    ])
+  })
+
+  it('keeps an indented sub-bullet as a child, not as prose', () => {
+    // Sub-bullets matched neither `^- ` nor a heading, so they were dropped
+    // without trace. They must not be swallowed into the parent either.
+    expect(added.items[1]!.children).toEqual([
+      'the first sub-bullet',
+      'the second sub-bullet',
+    ])
+    expect(added.items[1]!.paragraphs).toHaveLength(1)
+  })
+
+  it('reads a blank line as a paragraph break, not the end of the bullet', () => {
+    expect(added.items[2]!.paragraphs).toEqual([
+      '**A bullet with two paragraphs.** This one is the first.',
+      'And this one is the second, after a blank line.',
+    ])
+  })
+
+  it('still ends a bullet at the next heading', () => {
+    const sections = parseChangelog(FIXTURE)[0]!.sections
+    expect(sections.map((section) => section.label)).toEqual(['Added', 'Fixed'])
+    expect(sections[1]!.items).toHaveLength(1)
+  })
+})
+
 describe('the changelog modal', () => {
-  it('does not cut a bullet at the line wrap', () => {
-    // The exact symptom that was reported, on the version it was reported on:
-    // this bullet used to render as "...Four rooms ship as" and stop.
+  it('does not cut the most heavily wrapped bullet in the file', () => {
+    // Whichever entry the file currently spreads over the most lines: the
+    // longest run is where a truncation is most likely and most obvious.
     openModal()
 
-    const entries = [...document.querySelectorAll('li')].map((li) =>
-      (li.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    const longest = proseFromFile().reduce((a, b) =>
+      b.length > a.length ? b : a,
     )
-    const slider = entries.find((text) =>
-      text.startsWith('Guitar Night has a room visibility slider.'),
-    )
-    expect(slider).toBeDefined()
-    expect(slider).toContain('Velvet Rehearsal')
-    expect(slider).toMatch(/the room exactly as it was\.$/)
+    expect(longest.length).toBeGreaterThan(120)
+    const rendered = (
+      screen.getByRole('dialog', { name: 'Changelog' }).textContent ?? ''
+    ).replace(/\s+/g, ' ')
+    expect(rendered).toContain(plain(longest))
   })
 
   it('never ends an entry mid-clause', () => {
@@ -133,17 +203,11 @@ describe('the changelog modal', () => {
       screen.getByRole('dialog', { name: 'Changelog' }).textContent ?? ''
     ).replace(/\s+/g, ' ')
     const prose = proseFromFile()
-    expect(prose.length).toBeGreaterThan(400)
+    // A floor on the extractor itself, not on how long the notes are: if this
+    // ever returns nothing, the check below passes for the wrong reason.
+    expect(prose.length).toBeGreaterThan(200)
 
-    const missing = prose.filter((run) => {
-      const plain = run
-        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/`([^`]+)`/g, '$1')
-        .replace(/\s+/g, ' ')
-        .trim()
-      return !rendered.includes(plain)
-    })
+    const missing = prose.filter((run) => !rendered.includes(plain(run)))
 
     expect(
       missing,
@@ -154,9 +218,8 @@ describe('the changelog modal', () => {
   })
 
   it('keeps the sub-bullets that used to vanish', () => {
-    // Indented sub-bullets matched neither `^- ` nor a heading, so they were
-    // dropped without trace — including the four that describe what Karaoke
-    // Night actually does.
+    // The real file's sub-bullets, in the app — including the ones that say
+    // what Karaoke Night actually does.
     openModal()
 
     const rendered = (
@@ -167,19 +230,37 @@ describe('the changelog modal', () => {
     expect(rendered).toContain('Jump over from the studio')
   })
 
-  it('keeps a second paragraph as its own block', () => {
-    // One bullet in 0.8.0 runs to two paragraphs. A blank line must not be
-    // read as the end of the bullet, or the second half is lost.
+  it('never shows raw markdown to the reader', () => {
+    // The truncation was the loud half of the same problem: the file is
+    // markdown, and anything the renderer does not understand arrives as
+    // punctuation. `_next_` sat in the release notes as literal underscores
+    // until italics were taught, and the next `**` or `[label](url)` would
+    // do the same.
     openModal()
 
-    const entry = [...document.querySelectorAll('li')].find((li) =>
-      (li.textContent ?? '').startsWith(
-        'The tabs are grouped by what you came',
-      ),
+    const rendered = (
+      screen.getByRole('dialog', { name: 'Changelog' }).textContent ?? ''
+    ).replace(/\s+/g, ' ')
+
+    const raw = [
+      ...rendered.matchAll(/\*\*|`|\]\([^)]*\)|(?<![\w*])_[^_\n]+_(?![\w*])/g),
+    ].map((match) =>
+      rendered.slice(Math.max(0, match.index - 40), match.index + 40),
     )
-    expect(entry).toBeDefined()
-    expect(entry?.textContent).toContain('It also fits the window now.')
-    expect(entry?.querySelectorAll('p')).toHaveLength(1)
+
+    expect(
+      raw,
+      `raw markdown reached the reader:\n${raw.slice(0, 3).join('\n')}`,
+    ).toHaveLength(0)
+  })
+
+  it('renders emphasis as emphasis', () => {
+    openModal()
+
+    const emphasised = [...document.querySelectorAll('em')].map(
+      (em) => em.textContent,
+    )
+    expect(emphasised).toContain('each')
   })
 
   it('still labels each version and its sections', () => {

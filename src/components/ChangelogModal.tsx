@@ -18,12 +18,12 @@ import styles from './ChangelogModal.module.css'
  * and `children` holds the indented sub-bullets, which used to vanish
  * outright.
  */
-interface ChangelogItem {
+export interface ChangelogItem {
   paragraphs: string[]
   children: string[]
 }
 
-interface VersionEntry {
+export interface VersionEntry {
   version: string
   date: string
   sections: { label: string; items: ChangelogItem[] }[]
@@ -32,6 +32,7 @@ interface VersionEntry {
 type TextSegment =
   | { type: 'text'; text: string }
   | { type: 'bold'; text: string }
+  | { type: 'italic'; text: string }
   | { type: 'code'; text: string }
   | { type: 'link'; text: string; href: string }
 
@@ -44,9 +45,13 @@ type TextSegment =
  * parser, and a module-level `/g` regex carries `lastIndex` across calls, so
  * one shared instance would have the nested call eat the outer one's place
  * in the string.
+ *
+ * Italics come last and only outside a word: `_next_` is emphasis, but the
+ * `_admin_` inside `pitchperfect_admin_key` is a name. Code spans are matched
+ * before this, so an underscore inside backticks is never reached.
  */
 const inlineMarkdownRegex = (): RegExp =>
-  /\[([^\]]+)\]\(([^)]+)\)|\*\*(.*?)\*\*|`([^`]+)`/g
+  /\[([^\]]+)\]\(([^)]+)\)|\*\*(.*?)\*\*|`([^`]+)`|(?<![\w*])_([^_\n]+)_(?![\w*])/g
 
 /** Our own changelog, imported at build time — but not a reason to emit any
  *  scheme a future edit might paste in. */
@@ -56,7 +61,14 @@ function safeHref(href: string): string | null {
   return null
 }
 
-function parseChangelog(md: string): VersionEntry[] {
+/**
+ * Exported for the tests: the shapes this has to survive (a bullet wrapped
+ * across lines, a sub-bullet, a second paragraph) are properties of markdown,
+ * not of whatever CHANGELOG.md happens to say this week. Tests pinned to real
+ * entries go red the next time the release notes are edited, which teaches
+ * nobody anything.
+ */
+export function parseChangelog(md: string): VersionEntry[] {
   const versions: VersionEntry[] = []
   const lines = md.split('\n')
   let currentVersion: VersionEntry | null = null
@@ -164,8 +176,10 @@ function parseInlineMarkdown(text: string): TextSegment[] {
       )
     } else if (match[3] !== undefined) {
       segments.push({ type: 'bold', text: match[3] })
-    } else {
+    } else if (match[4] !== undefined) {
       segments.push({ type: 'code', text: match[4] })
+    } else {
+      segments.push({ type: 'italic', text: match[5] })
     }
     lastIndex = match.index + match[0].length
   }
@@ -181,6 +195,8 @@ function renderSegment(seg: TextSegment) {
   switch (seg.type) {
     case 'bold':
       return <strong>{seg.text}</strong>
+    case 'italic':
+      return <em>{seg.text}</em>
     case 'code':
       return <code class={styles.code}>{seg.text}</code>
     case 'link':

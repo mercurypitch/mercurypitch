@@ -1,7 +1,10 @@
 # Developer Changelog
 
-Detailed engineering history. The concise, user-facing summary shown in the
-app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
+Detailed engineering history — PR numbers, plan documents, the reasoning and
+the traps. Everything cut from the user-facing notes for length belongs here.
+
+The short, user-facing summary rendered in the app's Changelog modal lives in
+[`CHANGELOG.md`](./CHANGELOG.md).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
