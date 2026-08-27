@@ -23,7 +23,7 @@
 .overlay[data-tone='velvet'] {
   --bg-card: #17120f;
   --border: rgb(244 234 219 / 18%);
-  --text: #f4eadb;
+  --text-primary: #f4eadb;
   --text-muted: #c7baa7;
   --accent: #e0a45d;
 

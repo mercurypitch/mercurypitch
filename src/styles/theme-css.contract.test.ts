@@ -55,6 +55,14 @@ function referencesToken(source: string, token: string): boolean {
   return new RegExp(`var\\(\\s*${escaped}(?=[\\s,)])`).test(source)
 }
 
+/** A declaration of a retired name — the half a reference scan cannot see.
+ * A local block that still sets one leaves a token nothing consumes, so the
+ * surface it was art-directing silently falls back to the global palette. */
+function declaresToken(source: string, token: string): boolean {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?:^|[;{\\s])${escaped}(?![\\w-])\\s*:`, 'm').test(source)
+}
+
 function cssBlock(source: string, selector: string): string {
   const selectorStart = source.indexOf(`${selector} {`)
   if (selectorStart < 0) throw new Error(`missing CSS block ${selector}`)
@@ -145,6 +153,19 @@ describe('theme CSS contract', () => {
       const source = readFileSync(path, 'utf8')
       return RETIRED_UNDEFINED_TOKENS.flatMap((token) =>
         referencesToken(source, token)
+          ? [`${relative(SRC_DIR, path)}: ${token}`]
+          : [],
+      )
+    })
+
+    expect(offenders).toEqual([])
+  })
+
+  it('never declares them either, so no local block art-directs a dead name', () => {
+    const offenders = productionSourceFiles(SRC_DIR).flatMap((path) => {
+      const source = readFileSync(path, 'utf8')
+      return RETIRED_UNDEFINED_TOKENS.flatMap((token) =>
+        declaresToken(source, token)
           ? [`${relative(SRC_DIR, path)}: ${token}`]
           : [],
       )
