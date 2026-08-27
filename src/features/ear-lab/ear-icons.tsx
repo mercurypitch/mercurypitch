@@ -185,3 +185,36 @@ export function IconCheck(p: IconProps): JSX.Element {
     </svg>
   )
 }
+
+export function IconBack(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M15 5l-7 7 7 7" />
+    </svg>
+  )
+}
+
+export function IconStop(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+    </svg>
+  )
+}
+
+export function IconPlay(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M8 5.5v13l10-6.5z" />
+    </svg>
+  )
+}
+
+export function IconEar(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 3-2 3.5-2.5 5.5S13.5 20 11.5 20" />
+      <path d="M9.5 10.5a2.5 2.5 0 0 1 5 0c0 1.5-1 2-1.5 3" />
+    </svg>
+  )
+}

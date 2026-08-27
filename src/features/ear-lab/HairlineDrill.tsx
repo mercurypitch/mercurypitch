@@ -5,29 +5,28 @@
 // higher-first at a coin flip, base pitch roved log-uniformly so
 // absolute pitch memory cannot substitute for discrimination.
 //
-// The stage shows two mercury beads whose separation tracks the
-// gap: as the ear sharpens they close in until they nearly merge.
-// They deliberately sit at the SAME height — showing which tone
-// was higher would answer the question for the eye instead of the
-// ear. The gap in cents is displayed openly (it is the
-// difficulty, not the answer).
+// The instrument is a vernier under a loupe: the two tones are two
+// hairlines whose gap is the difficulty (shown openly — it is not
+// the answer). Which tone was higher stays hidden until the reveal.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createMemo, onMount } from 'solid-js'
+import { createSignal, onMount } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { HAIRLINE_TIMING } from '@/lib/ear/timing'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
-import styles from './EarDrill.module.css'
+import type { PadState } from './EarStage'
+import { Pads, StagePad } from './EarStage'
 import { ThresholdDrillView } from './ThresholdDrillView'
 import type { ThresholdRunMode } from './use-threshold-run'
 import { useThresholdRun } from './use-threshold-run'
+import { VernierLoupe } from './VernierLoupe'
 
 interface HairlineDrillProps {
   onBack: () => void
   /** When set, the run starts immediately in this mode (the
-   *  dashboard's Calibrate CTA jumps straight in). */
+   *  bench's Run Calibration control jumps straight in). */
   autoStartMode?: ThresholdRunMode
 }
 
@@ -41,31 +40,28 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
   const drill = findThresholdDrill('hairline')
   if (!drill) throw new Error('hairline drill missing from catalogue')
 
-  let higherFirst = false
+  const [higherFirst, setHigherFirst] = createSignal(false)
+  const [picked, setPicked] = createSignal<1 | 2 | null>(null)
 
   const run = useThresholdRun(
     drill,
     async (level, api) => {
       const base = roveBaseFreq(Math.random)
-      higherFirst = Math.random() < 0.5
+      const first = Math.random() < 0.5
+      setHigherFirst(first)
+      setPicked(null)
       const higher = base * 2 ** (level / 1200)
 
       api.step(1)
-      await audioEngine.playTone(
-        higherFirst ? higher : base,
-        HAIRLINE_TIMING.toneMs,
-      )
+      await audioEngine.playTone(first ? higher : base, HAIRLINE_TIMING.toneMs)
       if (api.cancelled()) return
       await new Promise((resolve) => setTimeout(resolve, HAIRLINE_TIMING.gapMs))
       if (api.cancelled()) return
       api.step(2)
-      await audioEngine.playTone(
-        higherFirst ? base : higher,
-        HAIRLINE_TIMING.toneMs,
-      )
+      await audioEngine.playTone(first ? base : higher, HAIRLINE_TIMING.toneMs)
     },
     // Stop cuts the tone that is already sounding; without this the
-    // drill keeps playing after the end card appears.
+    // drill keeps playing after the plate appears.
     { cancelStimulus: () => audioEngine.stopTone(60) },
   )
 
@@ -73,74 +69,75 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
     if (props.autoStartMode) run.start(props.autoStartMode)
   })
 
-  /** Bead separation from the staircase level, log-scaled across
-   *  the drill's floor..ceiling so early coarse steps stay on
-   *  screen. */
-  const separation = createMemo(() => {
-    const { min, max } = drill.staircase
-    const t =
-      (Math.log(run.level()) - Math.log(min)) / (Math.log(max) - Math.log(min))
-    return 10 + Math.max(0, Math.min(1, t)) * 110
-  })
+  const answer = (choice: 1 | 2) => {
+    if (run.phase() !== 'answer') return
+    setPicked(choice)
+    run.answerCorrect(choice === (higherFirst() ? 1 : 2))
+  }
 
-  const beadClass = (step: number) =>
-    `${styles.bead} ${
-      run.phase() === 'stimulus' && run.stimulusStep() === step
-        ? styles.active
-        : ''
-    }`
+  const higherWord = () => (higherFirst() ? 'first' : 'second')
+  const gap = () => `${run.level().toFixed(1)}¢`
+
+  const padState = (choice: 1 | 2): PadState => {
+    if (run.phase() !== 'reveal') return null
+    if (choice === (higherFirst() ? 1 : 2)) return 'right'
+    if (choice === picked()) return 'wrong'
+    return null
+  }
+
+  const sounding = () =>
+    run.phase() === 'stimulus' ? (run.stimulusStep() as 0 | 1 | 2) : 0
 
   return (
     <ThresholdDrillView
       title="Hairline"
       drillId="hairline"
-      description="Two tones. Pick the higher one. The gap between them keeps shrinking toward the finest difference your ear can still resolve — that number, in cents, is your reading. It falls as you improve, and there is no ceiling to park at."
+      measures="Resolution · cents"
+      description="Two tones; pick the higher one. The gap keeps shrinking toward the finest difference your ear still resolves — that number, in cents, is your reading. It falls as you improve, and there is no ceiling to park at."
+      prompt="Two tones — which one was higher?"
       listenHint="Listen…"
-      answerHint="Which tone was higher?"
+      answerHint="Which tone was higher — the first, or the second?"
       levelCaption="Gap"
-      levelLabel={() => `${run.level().toFixed(1)}¢`}
+      levelLabel={gap}
       formatValue={(value) => value.toFixed(1)}
       unitLabel="cents"
       unitShort="¢"
       latestValue={() => latestThresholdReading('hairline')?.value ?? null}
       run={run}
-      stage={() => (
-        <svg class={styles.beads} viewBox="0 0 320 90" aria-hidden="true">
-          <line class={styles.beadRail} x1="30" x2="290" y1="45" y2="45" />
-          <circle
-            class={beadClass(1)}
-            cx={160 - separation() / 2}
-            cy="45"
-            r="14"
-          />
-          <circle
-            class={beadClass(2)}
-            cx={160 + separation() / 2}
-            cy="45"
-            r="14"
-          />
-        </svg>
+      instrument={() => (
+        <VernierLoupe
+          gap={run.level()}
+          sounding={sounding()}
+          reveal={run.phase() === 'reveal' ? higherWord() : null}
+        />
       )}
-      answers={() => (
-        <div class={styles.answerRow}>
-          <button
-            type="button"
-            class={styles.answerBtn}
+      pads={() => (
+        <Pads columns={2} label="Which tone was higher?">
+          <StagePad
+            keycap="1"
+            label="The first"
+            state={padState(1)}
             disabled={run.phase() !== 'answer'}
-            onClick={() => run.answerCorrect(higherFirst)}
-          >
-            First was higher
-          </button>
-          <button
-            type="button"
-            class={styles.answerBtn}
+            onClick={() => answer(1)}
+          />
+          <StagePad
+            keycap="2"
+            label="The second"
+            state={padState(2)}
             disabled={run.phase() !== 'answer'}
-            onClick={() => run.answerCorrect(!higherFirst)}
-          >
-            Second was higher
-          </button>
-        </div>
+            onClick={() => answer(2)}
+          />
+        </Pads>
       )}
+      keys={() => [
+        { key: '1', action: () => answer(1) },
+        { key: '2', action: () => answer(2) },
+      ]}
+      revealLine={() =>
+        run.lastCorrect() === true
+          ? `Right — the ${higherWord()} was higher by ${gap()}.`
+          : `The ${higherWord()} was higher by ${gap()}. The gap widens.`
+      }
       onBack={props.onBack}
     />
   )

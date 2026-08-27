@@ -1,0 +1,710 @@
+/* ── EarStage: the drill bar, the instrument, the console, the plate ── */
+
+.stage {
+  --stage-brass: var(--ear-brass, #c9a45e);
+  --stage-brass-bright: var(--ear-brass-bright, #e7c67d);
+  --stage-brass-line: var(--ear-brass-line, rgb(201 164 94 / 32%));
+  --stage-mercury: var(--ear-mercury, #c5ced8);
+  --stage-signal: var(--ear-signal, #5fc7b8);
+  --stage-garnet: var(--ear-garnet-bright, #d0707a);
+  --stage-parchment: var(--ear-parchment, #efe6d6);
+  --stage-muted: var(--ear-muted, #b9b1a4);
+  --stage-line: var(--ear-line, rgb(239 230 214 / 14%));
+  --stage-line-strong: rgb(239 230 214 / 22%);
+  --stage-serif: var(
+    --ear-serif,
+    'Iowan Old Style',
+    'Palatino Linotype',
+    Baskerville,
+    Georgia,
+    serif
+  );
+  --stage-touch: var(--ear-touch, 44px);
+
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 100%;
+  color: var(--stage-parchment);
+  font-variant-numeric: tabular-nums;
+}
+
+.stage :where(button) {
+  font: inherit;
+  color: inherit;
+}
+
+.stage :where(button):focus-visible {
+  outline: 2px solid var(--stage-signal);
+  outline-offset: 3px;
+}
+
+/* ── Drill bar ───────────────────────────────────────────────── */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--stage-line);
+  background: linear-gradient(180deg, rgb(10 11 13 / 70%), rgb(10 11 13 / 20%));
+}
+
+.back,
+.stop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: var(--stage-touch);
+  min-height: var(--stage-touch);
+  padding: 8px 12px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 70%);
+  color: var(--stage-parchment);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.back:hover {
+  border-color: var(--stage-brass-line);
+}
+
+.stop {
+  margin-left: auto;
+  color: var(--stage-garnet);
+  border-color: rgb(163 69 79 / 50%);
+}
+
+.stop:hover {
+  background: rgb(163 69 79 / 18%);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--stage-serif);
+  font-size: 1.12rem;
+  color: var(--stage-parchment);
+}
+
+.mode {
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--stage-brass-bright);
+}
+
+.progress {
+  font-size: 0.74rem;
+  color: var(--stage-muted);
+}
+
+/* ── The instrument ──────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 34px 14px;
+  min-height: 0;
+}
+
+.figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 0;
+}
+
+.figure > svg {
+  width: 100%;
+  max-width: 860px;
+  height: auto;
+  /* The shell is a size container; leave room for the bar, the status
+     line and the console before the stage has to scroll. */
+  max-height: clamp(150px, calc(100cqh - 330px), 420px);
+  filter: drop-shadow(0 18px 32px rgb(0 0 0 / 50%));
+}
+
+.status {
+  max-width: 56ch;
+  min-height: 1.5em;
+  margin: 0;
+  text-align: center;
+  font-family: var(--stage-serif);
+  font-size: 1.08rem;
+  line-height: 1.4;
+  color: var(--stage-parchment);
+}
+
+.statusRight {
+  color: var(--stage-signal);
+}
+
+.statusWrong {
+  color: var(--stage-garnet);
+}
+
+/* ── The answer console ──────────────────────────────────────── */
+
+.console {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  margin: 0 34px 26px;
+  padding: 12px;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(20 23 28 / 92%), rgb(10 11 13 / 94%));
+  box-shadow: 0 14px 36px rgb(0 0 0 / 45%);
+}
+
+.consoleSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.playPad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 128px;
+  min-height: 76px;
+  padding: 10px 16px;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 6px;
+  background: rgb(201 164 94 / 10%);
+  color: var(--stage-brass-bright);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 90ms ease;
+}
+
+.playPad small,
+.playPad kbd {
+  font: inherit;
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: var(--stage-muted);
+}
+
+.playPad:not(:disabled):hover {
+  background: rgb(201 164 94 / 20%);
+}
+
+.playPad:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.playPad:disabled {
+  cursor: default;
+}
+
+.playPadSounding {
+  background: rgb(95 199 184 / 14%);
+  border-color: rgb(95 199 184 / 50%);
+  color: var(--stage-signal);
+}
+
+.playPadArmed {
+  background: rgb(231 198 125 / 12%);
+  border-color: var(--stage-brass-line);
+  color: var(--stage-brass-bright);
+}
+
+.playPadAmber {
+  background: linear-gradient(180deg, #e7c67d, #c9a45e);
+  color: #1a1408;
+  border-color: #f0d08a;
+  box-shadow: 0 10px 24px rgb(231 198 125 / 22%);
+}
+
+.playPadAmber small,
+.playPadAmber kbd {
+  color: rgb(26 20 8 / 75%);
+}
+
+.playPadAmber:not(:disabled):hover {
+  background: linear-gradient(180deg, #f0d08a, #d1ab63);
+}
+
+.consoleNote {
+  margin: 0;
+  align-self: center;
+  max-width: 52ch;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--stage-muted);
+}
+
+.consoleStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pads {
+  display: grid;
+  grid-template-columns: repeat(var(--pad-columns, 2), minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.pad {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 10px 14px;
+  border: 1px solid var(--stage-line-strong);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #232930, #171b20);
+  color: var(--stage-parchment);
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgb(239 230 214 / 8%),
+    0 4px 0 #0a0b0d;
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease,
+    border-color 140ms ease,
+    background 140ms ease,
+    opacity 140ms ease;
+}
+
+.pad:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.pad:not(:disabled):hover {
+  border-color: var(--stage-brass-line);
+}
+
+.pad:not(:disabled):active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 0 rgb(239 230 214 / 8%),
+    0 1px 0 #0a0b0d;
+}
+
+.padHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.padKey {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 3px;
+  color: var(--stage-brass-bright);
+  font-size: 0.72rem;
+}
+
+.padMark {
+  margin-left: auto;
+  display: inline-flex;
+}
+
+.padLabel {
+  font-family: var(--stage-serif);
+  font-size: 1.02rem;
+}
+
+.padSub {
+  font-size: 0.68rem;
+  color: var(--stage-muted);
+}
+
+.padRight {
+  opacity: 1;
+  border-color: var(--stage-signal);
+  background: linear-gradient(
+    180deg,
+    rgb(95 199 184 / 26%),
+    rgb(43 111 102 / 30%)
+  );
+}
+
+.padRight .padKey,
+.padRight .padMark {
+  border-color: var(--stage-signal);
+  color: var(--stage-signal);
+}
+
+.padWrong {
+  opacity: 1;
+  border-color: var(--stage-garnet);
+  background: linear-gradient(
+    180deg,
+    rgb(163 69 79 / 28%),
+    rgb(163 69 79 / 12%)
+  );
+}
+
+.padWrong .padKey,
+.padWrong .padMark {
+  border-color: var(--stage-garnet);
+  color: var(--stage-garnet);
+}
+
+/* Rungs: many narrow pads in one row (Home's ladder, Leap's twelve). */
+.padsCompact .pad {
+  align-items: center;
+  text-align: center;
+  padding: 8px 4px;
+  min-height: 64px;
+  gap: 2px;
+}
+
+.padsCompact .padHead {
+  justify-content: center;
+  width: auto;
+}
+
+.padsCompact .padMark {
+  margin-left: 0;
+}
+
+.padsCompact .padLabel {
+  font-size: 1.1rem;
+}
+
+/* ── The end plate ───────────────────────────────────────────── */
+
+.plateHost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 26px 34px;
+  overflow: auto;
+}
+
+.plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 560px);
+  padding: 24px 26px 22px;
+  text-align: center;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(20 23 28 / 92%), rgb(10 11 13 / 94%));
+  box-shadow: 0 18px 40px rgb(0 0 0 / 55%);
+}
+
+.plateSealed {
+  border-color: var(--stage-brass-bright);
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 55%),
+    0 0 0 1px rgb(231 198 125 / 25%);
+}
+
+.plateKicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stage-brass);
+}
+
+.plateSealed .plateKicker {
+  color: var(--stage-brass-bright);
+}
+
+.plateValue {
+  margin: 2px 0 0;
+  font-family: var(--stage-serif);
+  font-size: 2.8rem;
+  line-height: 1;
+  color: var(--stage-mercury);
+}
+
+.plateUnit {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: var(--stage-brass-bright);
+}
+
+.plateNote {
+  margin: 4px 0 0;
+  max-width: 46ch;
+  font-family: var(--stage-serif);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--stage-parchment);
+}
+
+.plateNote b {
+  color: var(--stage-brass-bright);
+  font-weight: 600;
+}
+
+.plateLine {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--stage-muted);
+}
+
+.plateBadge {
+  padding: 3px 8px;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stage-brass-bright);
+}
+
+.plateDelta {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.deltaUp {
+  color: var(--stage-signal);
+}
+
+.deltaDown {
+  color: var(--stage-garnet);
+}
+
+.plateActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.quiet {
+  min-height: var(--stage-touch);
+  padding: 8px 16px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgb(27 32 39 / 60%);
+  color: var(--stage-parchment);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.quiet:hover {
+  border-color: var(--stage-brass-line);
+}
+
+.quietPrimary {
+  border-color: var(--stage-brass-line);
+  color: var(--stage-brass-bright);
+  background: rgb(201 164 94 / 10%);
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--stage-signal);
+}
+
+.dotMiss {
+  background: var(--stage-garnet);
+}
+
+.dotSkip {
+  background: transparent;
+  border: 1px solid var(--stage-line-strong);
+}
+
+/* ── Small controls the consoles share ───────────────────────── */
+
+.toggle {
+  display: inline-flex;
+  align-self: center;
+  border: 1px solid var(--stage-line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.toggleOption {
+  min-height: var(--stage-touch);
+  padding: 8px 18px;
+  border: 0;
+  background: none;
+  color: var(--stage-muted);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.toggleOn {
+  color: var(--stage-brass-bright);
+  background: rgb(201 164 94 / 14%);
+}
+
+.warn {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--stage-brass-bright);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Compact: the stage narrower than a desk ─────────────────── */
+
+@container (max-width: 860px) {
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 8px 12px;
+    gap: 10px;
+    background: linear-gradient(
+      180deg,
+      rgb(10 11 13 / 92%),
+      rgb(10 11 13 / 78%)
+    );
+  }
+
+  .name {
+    font-size: 1rem;
+  }
+
+  .stopLabel {
+    display: none;
+  }
+
+  .body {
+    padding: 14px 14px 10px;
+  }
+
+  .figure {
+    gap: 10px;
+  }
+
+  /* Budget: bar, status, console and the pill band, so the stage need
+     not scroll on a phone. */
+  .figure > svg {
+    max-height: clamp(140px, calc(100cqh - 360px), 300px);
+  }
+
+  .status {
+    font-size: 0.96rem;
+  }
+
+  .console {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 0 10px 12px;
+    padding: 10px;
+  }
+
+  .lead > * {
+    width: 100%;
+  }
+
+  .playPad {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 8px 12px;
+  }
+
+  .playPad kbd {
+    display: none;
+  }
+
+  .pad {
+    min-height: 64px;
+    padding: 8px 10px;
+  }
+
+  .padsCompact .padKey {
+    display: none;
+  }
+
+  .consoleNote {
+    display: none;
+  }
+
+  .plateHost {
+    padding: 16px 12px;
+  }
+
+  .plateValue {
+    font-size: 2.3rem;
+  }
+}
+
+/* The voice-control pill floats bottom-left above the app's tab bar. */
+@media (max-width: 768px) {
+  .console {
+    bottom: 46px;
+    margin-bottom: 46px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pad,
+  .playPad,
+  .back,
+  .stop {
+    transition: none;
+  }
+}

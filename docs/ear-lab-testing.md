@@ -39,10 +39,11 @@ speakers + built-in mic").
 
 The ear-vs-voice diagnostic. Needs a mic; works sung or on any instrument.
 
-1. Open **Home**, switch the toggle under the description to
-   **Sing or play**, press Start. Grant mic access.
+1. Open **Home**, switch the console's toggle to **Sing or play**, press
+   **Begin**. Grant mic access.
 2. After each cadence + probe, sing (or play) the degree you heard — any
-   octave. The buttons are disabled in this mode; your voice is the answer.
+   octave. The ladder's rungs are disabled in this mode and the fork shows
+   a dashed listening ring; your voice is the answer.
 3. Expect on a clear take: the reveal names what you sang and its
    intonation, e.g. **"Yes — Sol (5), 12¢ sharp"** or "dead in tune" when
    within 8¢.
@@ -83,9 +84,11 @@ scheduled sample-accurately on the audio clock).
 4. Sanity check: at the opening offset (80 ms) the nudge should be
    _obvious_. If even those feel random, flag it — that points at audio
    scheduling, not your ear.
-5. Watch the six dots pulse: they must light in a perfectly even rhythm
-   regardless of which click was displaced. If the dots visibly reveal the
-   answer, that is a bug.
+5. Watch the chase light step along the six pallets: it must step in a
+   perfectly even rhythm regardless of which click was displaced. Only the
+   reveal pushes the off pallet out of line (early left, late right). If
+   the lattice visibly gives the answer away before you answer, that is a
+   bug.
 
 ## 2c. Leap / Stack / Contour — NEW in Phase 3
 
@@ -98,9 +101,12 @@ Three button drills, 12 rounds each, all sharing one engine.
    the block.
 3. **Contour** — up / down / same, fast. Deliberately easy at first; as
    the rating climbs the gaps shrink toward quarter-tones.
-4. For each: the reveal should colour the correct button green (and your
-   wrong pick red), and the end card should show the rating with its
-   session delta.
+4. For each: the reveal should colour the correct pad green with a tick
+   (and your wrong pick garnet with a cross), say it in words on the status
+   line, and the instrument should show the truth — the index arc sweeps
+   to the interval, the gear train sets the chord's wheels, the stylus
+   draws the second segment. The plate should show the rating with its
+   delta this run.
 5. Dashboard check: Shape should now read a number (Leap and Contour
    averaged), Colour should read Stack's rating.
 
@@ -168,6 +174,40 @@ way through it is to just play the three drills it names.
 4. Press Back to the dashboard, then switch tabs away and return — you
    should land on the dashboard, not be bounced into the drill again.
 
+## 2h. The instruments on the stage — NEW in Polish Phase 2
+
+Every drill now opens inside the Regulator Room on a stage: the session bar
+stays, a drill bar carries the name, the mode and the live progress (gap and
+reversal, or round and rating), the instrument sits in the centre with a
+status line under it, and the answer console sits at the bottom where the
+bench's bridge was.
+
+1. From the bench, open each instrument from the strip (or the rack):
+   Hairline shows a vernier under a loupe, Home a tuning fork on its box, The
+   Grid an escapement lattice, Leap an index arc, Stack a gear train, Contour
+   a drum recorder. Nothing sounds until you press a console pad.
+2. **Hairline**: the console offers **Practice run** and the amber
+   **Calibration**. During a trial the loupe's readout is the gap; the
+   second hairline always sits to the right until the reveal, which swings
+   it to the true side. A calibration adds three track pendulums under the
+   loupe, one per interleaved track, with their reversal counts.
+3. **Keyboard**: Space begins a run from the idle console; digits answer
+   (1/2 on Hairline, 3–6 on The Grid, 1–7 on Home, 1–6 on Stack, 1–3 on
+   Contour; Leap has no keycaps). Focus lands on the first pad as the
+   answer phase opens.
+4. **Reveal**: the right pad turns signal green with a tick, a wrong pick
+   garnet with a cross, and the status line says the same in words — never
+   colour alone. A short sound plays with every reveal.
+5. **Plate**: Stop or the last reversal lands on an engraved plate:
+   "Reading" with the number and its unit (marked provisional when short),
+   "Sealed" after a full calibration ("etched on the glass as {date} ·
+   {index}"), or "Stopped" with "nothing was marked". Run again / Back to
+   the bench.
+6. **Phone**: the console is fixed at the bottom above the app's tab bar,
+   pads are at least 44px tall, and the voice-control pill does not cover
+   a pad. Reduced motion: the chase light, the hunting needle, the wheels
+   and the pendulums stop; every reading still reads.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
@@ -187,7 +227,7 @@ playing, then the question came back. Worth re-checking on every drill.
 
 1. In **each** of Hairline, The Grid, Home and Leap/Stack/Contour: start a
    run and press **Stop while the sound is still playing**.
-2. Expect: audio cuts within a beat, the end card appears, and **nothing
+2. Expect: audio cuts within a beat, the plate appears, and **nothing
    comes back** — no returning question, no further sounds.
 3. Press **Back** mid-run on one drill too: same silence.
 4. A stopped _practice_ run should still show a reading (marked

@@ -12,6 +12,8 @@
 //   • the instrument strip collapsed (its flex min-height) or the
 //     Regulator vanished
 //   • opening the rack leaves no visible Close control
+//   • a drill stage's console is off-screen, its pads shorter than a
+//     finger, or a practice run never arms them
 //
 // Usage:
 //   pnpm run build:tours && pnpm dlx serve dist -l 3005 &   # local-mode bundle
@@ -81,6 +83,7 @@ async function launch() {
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',
     '--ignore-certificate-errors',
+    '--autoplay-policy=no-user-gesture-required',
   ]
   if (process.env.CHROMIUM) {
     return chromium.launch({ executablePath: process.env.CHROMIUM, args })
@@ -215,8 +218,131 @@ async function auditViewport(browser, name, contextOptions) {
     fail(`${name} rack`, 'room glass slider missing')
   await page.keyboard.press('Escape')
 
-  report.push({ viewport: name, ...bench, rackVisible })
+  const stage = await auditStage(page, name)
+
+  report.push({ viewport: name, ...bench, rackVisible, stage })
   await context.close()
+}
+
+/** Everything the stage audit measures, read in one evaluate. */
+function measureStage() {
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const rectOf = (el) => {
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { x: r.left, y: r.top, w: r.width, h: r.height, bottom: r.bottom }
+  }
+  const visible = (r) =>
+    r !== null &&
+    r.w > 0 &&
+    r.h > 0 &&
+    r.y >= 0 &&
+    r.bottom <= vh + 1 &&
+    r.x >= 0 &&
+    r.x + r.w <= vw + 1
+  const consoleEl = document.querySelector('[data-testid="ear-stage-console"]')
+  const consoleRect = rectOf(consoleEl)
+  const tabBar = rectOf(document.querySelector('#app-tabs'))
+  const instrument = rectOf(
+    document.querySelector('[data-testid="ear-stage"] figure > svg'),
+  )
+  const pads = [...(consoleEl?.querySelectorAll('button') ?? [])].map(rectOf)
+  return {
+    consoleVisible: visible(consoleRect),
+    consoleUnderTabBar:
+      consoleRect !== null &&
+      tabBar !== null &&
+      tabBar.y > consoleRect.y &&
+      consoleRect.bottom > tabBar.y + 1,
+    instrumentHeight: instrument?.h ?? 0,
+    shortestPad: pads.length ? Math.min(...pads.map((r) => r.h)) : 0,
+    padCount: pads.length,
+  }
+}
+
+/** Open Hairline from the strip, run one practice trial to its pads,
+ *  stop onto the plate; then Home to its ladder. Layout only — the
+ *  fake audio device makes the tones inaudible, not absent. */
+async function auditStage(page, name) {
+  const results = {}
+  const openFromStrip = async (label) => {
+    await page
+      .locator('[data-tour="ear.drills"] button', { hasText: label })
+      .first()
+      .click()
+    await page.locator('[data-testid="ear-stage"]').waitFor({ timeout: 8000 })
+    await page.waitForTimeout(500)
+  }
+  const checkStage = async (screen, shot) => {
+    const m = await page.evaluate(measureStage)
+    await page.screenshot({ path: `${OUT}/${name}-${shot}.png` })
+    if (!m.consoleVisible)
+      fail(`${name} ${screen}`, 'console is not fully on screen')
+    if (m.consoleUnderTabBar)
+      fail(`${name} ${screen}`, 'console sits under the app tab bar')
+    if (m.instrumentHeight < 120)
+      fail(
+        `${name} ${screen}`,
+        `instrument too small (${Math.round(m.instrumentHeight)}px)`,
+      )
+    if (m.padCount > 0 && m.shortestPad < 44)
+      fail(
+        `${name} ${screen}`,
+        `a pad is shorter than 44px (${Math.round(m.shortestPad)}px)`,
+      )
+    return m
+  }
+
+  await openFromStrip('Hairline')
+  results.hairlineIdle = await checkStage(
+    'hairline idle',
+    'stage-hairline-idle',
+  )
+
+  await page.getByText('Practice run').click()
+  const armed = await page
+    .locator('button:not([disabled])', { hasText: 'The first' })
+    .waitFor({ timeout: 8000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!armed)
+    fail(`${name} hairline run`, 'a practice run never armed its pads')
+  results.hairlineRun = await checkStage('hairline run', 'stage-hairline-run')
+  if (armed) {
+    await page.getByRole('button', { name: 'The first' }).click()
+    await page.waitForTimeout(150)
+    await page.screenshot({ path: `${OUT}/${name}-stage-hairline-reveal.png` })
+  }
+  await page.getByLabel('Stop').click()
+  await page
+    .locator('[data-testid="ear-stage-plate"]')
+    .waitFor({ timeout: 4000 })
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: `${OUT}/${name}-stage-hairline-plate.png` })
+  const plateBack = page.getByText('Back to the bench')
+  if (!(await plateBack.isVisible().catch(() => false)))
+    fail(`${name} hairline plate`, 'no visible Back on the plate')
+  await plateBack.click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  await openFromStrip('Home')
+  results.homeIdle = await checkStage('home idle', 'stage-home-idle')
+  await page.getByText('Begin').click()
+  await page.waitForTimeout(700)
+  results.homeRun = await checkStage('home run', 'stage-home-ladder')
+  if (results.homeRun.padCount < 8)
+    fail(
+      `${name} home run`,
+      `ladder has ${results.homeRun.padCount - 1} rungs, expected 7`,
+    )
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+
+  return results
 }
 
 const browser = await launch()

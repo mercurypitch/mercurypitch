@@ -77,6 +77,9 @@ export function useThresholdRun(
   const [stimulusStep, setStimulusStep] = createSignal(0)
   const [lastCorrect, setLastCorrect] = createSignal<boolean | null>(null)
   const [result, setResult] = createSignal<ThresholdRunResult | null>(null)
+  /** Calibration only: reversals per interleaved track, for the strip. */
+  const [trackReversals, setTrackReversals] = createSignal<number[]>([])
+  const [activeTrack, setActiveTrack] = createSignal(0)
 
   let single: StaircaseState | null = null
   let tracks: CalibrationTrack[] = []
@@ -118,6 +121,8 @@ export function useThresholdRun(
       single = null
       tracks = createCalibrationTracks(drill.id, drill.staircase)
     }
+    setTrackReversals(tracks.map(() => 0))
+    setActiveTrack(0)
     void playRound()
   }
 
@@ -131,6 +136,7 @@ export function useThresholdRun(
         return
       }
       activeTrackIndex = index
+      setActiveTrack(index)
     } else if (!single || single.done) {
       finish()
       return
@@ -162,6 +168,7 @@ export function useThresholdRun(
       setReversalsDone(
         tracks.reduce((sum, t) => sum + t.state.reversals.length, 0),
       )
+      setTrackReversals(tracks.map((t) => t.state.reversals.length))
     }
 
     playTierSfx(
@@ -277,6 +284,10 @@ export function useThresholdRun(
     trials,
     reversalsDone,
     reversalTarget,
+    /** Reversals each calibration track needs before it stops. */
+    trackTarget: () => drill.staircase.reversalsToStop,
+    trackReversals,
+    activeTrack,
     level,
     stimulusStep,
     lastCorrect,

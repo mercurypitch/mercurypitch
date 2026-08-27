@@ -30,6 +30,9 @@ interface EarRoomShellProps {
   onNavigate: (view: EarLabView) => void
   /** Brings today's regulation into view (the bench scrolls on phones). */
   onToday: () => void
+  /** False while a drill stage is open: its console takes the bridge's
+   *  row, so the bench's controls step aside. Defaults to true. */
+  bridge?: boolean
   children: JSX.Element
 }
 
@@ -215,50 +218,52 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
 
       <div class={styles.stage}>{props.children}</div>
 
-      <div class={styles.bridge}>
-        <button
-          type="button"
-          class={`${styles.bridgeButton} ${styles.bridgeToday}`}
-          onClick={() => props.onToday()}
-        >
-          <IconToday size={20} />
-          <span>Today</span>
-        </button>
+      <Show when={props.bridge !== false}>
+        <div class={styles.bridge}>
+          <button
+            type="button"
+            class={`${styles.bridgeButton} ${styles.bridgeToday}`}
+            onClick={() => props.onToday()}
+          >
+            <IconToday size={20} />
+            <span>Today</span>
+          </button>
 
-        <button
-          type="button"
-          class={styles.primary}
-          data-tour="ear.actions"
-          onClick={() => go('calibration')}
-        >
-          <IconSeal size={22} class={styles.primaryIcon} />
-          <span class={styles.primaryCopy}>
-            <b>
-              <span class={styles.primaryLong}>Run Calibration</span>
-              <span class={styles.primaryShort}>Calibrate</span>
-            </b>
-            <small>about 3 min · marks the glass</small>
-          </span>
-        </button>
+          <button
+            type="button"
+            class={styles.primary}
+            data-tour="ear.actions"
+            onClick={() => go('calibration')}
+          >
+            <IconSeal size={22} class={styles.primaryIcon} />
+            <span class={styles.primaryCopy}>
+              <b>
+                <span class={styles.primaryLong}>Run Calibration</span>
+                <span class={styles.primaryShort}>Calibrate</span>
+              </b>
+              <small>about 3 min · marks the glass</small>
+            </span>
+          </button>
 
-        <button
-          type="button"
-          class={`${styles.bridgeButton} ${styles.bridgeInstruments}`}
-          onClick={() => open('instruments')}
-        >
-          <IconRack size={20} />
-          <span>Instruments</span>
-        </button>
+          <button
+            type="button"
+            class={`${styles.bridgeButton} ${styles.bridgeInstruments}`}
+            onClick={() => open('instruments')}
+          >
+            <IconRack size={20} />
+            <span>Instruments</span>
+          </button>
 
-        <button
-          type="button"
-          class={`${styles.bridgeButton} ${styles.bridgeReport}`}
-          onClick={() => go('report')}
-        >
-          <IconReport size={20} />
-          <span>Ear Report</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            class={`${styles.bridgeButton} ${styles.bridgeReport}`}
+            onClick={() => go('report')}
+          >
+            <IconReport size={20} />
+            <span>Ear Report</span>
+          </button>
+        </div>
+      </Show>
 
       <Show when={panel() !== null}>
         <div class={styles.scrim} onClick={close} aria-hidden="true" />

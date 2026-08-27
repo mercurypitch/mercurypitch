@@ -1,12 +1,13 @@
 // ============================================================
 // HomeDrill — scale-degree identification, the Ear Lab's spine.
 //
-// A cadence plants the key (four dots light as the chords land), a
-// probe note sounds, and the answer comes by tap (seven buttons) or
-// by mic — sing or play the degree on any instrument. The reveal
-// colours the truth: the correct degree goes green; a wrong pick
-// goes red beside it while the probe replays and falls to the
-// tonic. Mic answers add the production half of the diagnostic:
+// A cadence plants the key (the four lamps on the fork's box light
+// as the chords land), a probe note sets the fork ringing, and the
+// answer comes by tap — the seven rungs of the ladder in the console
+// — or by mic: sing or play the degree on any instrument. The reveal
+// colours the truth: the correct rung goes signal green; a wrong
+// pick goes garnet beside it while the probe replays and falls to
+// the tonic. Mic answers add the production half of the diagnostic:
 // "Yes — Sol, 12¢ sharp."
 //
 // The component owns the microphone lifecycle (micManager + f0
@@ -14,7 +15,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { isProvisional } from '@/lib/ear/elo'
 import { HOME_DEGREES, HOME_DRILL_ID, HOME_SING_DRILL_ID, } from '@/lib/ear/item-bank'
@@ -22,7 +23,10 @@ import { micManager } from '@/lib/mic-manager'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ear-lab-store'
-import styles from './EarDrill.module.css'
+import { IconMic, IconPlay } from './ear-icons'
+import type { PadState, StageKey } from './EarStage'
+import { ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { TuningFork } from './TuningFork'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
 import { useHomeController } from './use-home-controller'
 
@@ -30,8 +34,12 @@ interface HomeDrillProps {
   onBack: () => void
 }
 
-const CADENCE_LABELS = ['I', 'IV', 'V', 'I']
 const MIC_CONSUMER = 'ear-home-drill'
+
+const MODES: ReadonlyArray<{ id: HomeAnswerMode; label: string }> = [
+  { id: 'tap', label: 'Tap' },
+  { id: 'mic', label: 'Sing or play' },
+]
 
 export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const { audioEngine } = useEngines()
@@ -84,15 +92,10 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     controller.start(mode)
   }
 
-  const running = () =>
-    controller.phase() !== 'idle' && controller.phase() !== 'done'
-
-  const stageClass = createMemo(() => {
-    if (controller.phase() !== 'reveal') return styles.stage
-    const correct =
-      controller.answeredDegree() === controller.currentDegree()?.degree
-    return `${styles.stage} ${correct ? styles.correct : styles.wrong}`
-  })
+  const phase = () => controller.phase()
+  const running = () => phase() !== 'idle' && phase() !== 'done'
+  const target = () => controller.currentDegree()
+  const correct = () => controller.answeredDegree() === target()?.degree
 
   const centsLabel = (): string => {
     const cents = controller.lastCents()
@@ -101,8 +104,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     return `, ${Math.abs(cents)}¢ ${cents > 0 ? 'sharp' : 'flat'}`
   }
 
-  const stageHint = () => {
-    switch (controller.phase()) {
+  const status = () => {
+    switch (phase()) {
       case 'cadence':
         return 'Planting the key…'
       case 'probe':
@@ -110,197 +113,61 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       case 'answer':
         if (controller.mode() === 'mic') {
           return controller.unclear()
-            ? 'Did not catch that — once more, louder and steadier'
+            ? 'Did not catch that — once more, louder and steadier.'
             : 'Sing or play the degree you heard…'
         }
         return 'Which degree was that?'
       case 'reveal': {
-        const target = controller.currentDegree()
-        if (!target) return ''
+        const degree = target()
+        if (!degree) return ''
         if (controller.answeredDegree() === null) {
-          return `No clear take — that was ${target.solfege} (${target.degree}). Round skipped, rating untouched.`
+          return `No clear take — that was ${degree.solfege} (${degree.degree}). Round skipped, rating untouched.`
         }
-        const correct = controller.answeredDegree() === target.degree
-        return correct
-          ? `Yes — ${target.solfege} (${target.degree})${centsLabel()}`
-          : `That was ${target.solfege} (${target.degree}) — hear it fall home`
+        return correct()
+          ? `Yes — ${degree.solfege} (${degree.degree})${centsLabel()}.`
+          : `That was ${degree.solfege} (${degree.degree}) — hear it fall home.`
       }
       default:
-        return ''
+        return 'A cadence plants the key, then one note sounds — name its degree.'
     }
   }
 
-  function degreeClass(degree: number): string {
-    if (controller.phase() !== 'reveal') return styles.degreeBtn
-    const target = controller.currentDegree()?.degree
-    const picked = controller.answeredDegree()
-    if (degree === target) return `${styles.degreeBtn} ${styles.correctPick}`
-    if (degree === picked) return `${styles.degreeBtn} ${styles.wrongPick}`
-    return styles.degreeBtn
+  const tone = () => {
+    if (phase() !== 'reveal' || controller.answeredDegree() === null) {
+      return 'neutral' as const
+    }
+    return correct() ? ('right' as const) : ('wrong' as const)
   }
 
-  return (
-    <div class={styles.drill} data-ear-drill="home">
-      <div class={styles.header}>
-        <button
-          type="button"
-          class={styles.backBtn}
-          onClick={() => props.onBack()}
-        >
-          Back
-        </button>
-        <h2>Home</h2>
-        <span class={styles.modeChip}>
-          {controller.mode() === 'mic' && running() ? 'Voice · ' : ''}
-          Rating {Math.round(controller.rating().rating)}
-          {isProvisional(controller.rating()) ? ' · settling' : ''}
-        </span>
-      </div>
+  const ratingLine = () =>
+    `${controller.mode() === 'mic' && running() ? 'Voice · ' : ''}Rating ${Math.round(
+      controller.rating().rating,
+    )}${isProvisional(controller.rating()) ? ' · settling' : ''}`
 
-      <Show when={running()}>
-        <div class={styles.status}>
-          <span>
-            Round{' '}
-            <span class={styles.statusValue}>
-              {Math.min(controller.round() + 1, controller.totalRounds)} /{' '}
-              {controller.totalRounds}
-            </span>
-          </span>
-          <div class={styles.progressTrack}>
-            <div
-              class={styles.progressFill}
-              style={{
-                width: `${(controller.round() / controller.totalRounds) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-      </Show>
+  const progress = () =>
+    running()
+      ? `Round ${Math.min(controller.round() + 1, controller.totalRounds)} of ${
+          controller.totalRounds
+        } · ${ratingLine()}`
+      : ratingLine()
 
-      <Show
-        when={controller.phase() !== 'done'}
-        fallback={
-          <HomeDone
-            controller={controller}
-            onBack={props.onBack}
-            onAgain={() => void handleStart()}
-          />
-        }
-      >
-        <div class={stageClass()}>
-          <Show
-            when={running()}
-            fallback={
-              <div class={styles.idleCard}>
-                <p>
-                  A short cadence tells your ear where home is. Then one note
-                  sounds — name its scale degree. This is the hearing that
-                  transfers to real music: not "a major sixth", but "that note
-                  is La, and it wants to fall to Sol".
-                </p>
+  const padState = (degree: number): PadState => {
+    if (phase() !== 'reveal') return null
+    if (degree === target()?.degree) return 'right'
+    if (degree === controller.answeredDegree()) return 'wrong'
+    return null
+  }
 
-                <div class={styles.modeToggle} role="radiogroup">
-                  <button
-                    type="button"
-                    class={`${styles.modeOption} ${
-                      homeAnswerMode() === 'tap' ? styles.modeActive : ''
-                    }`}
-                    role="radio"
-                    aria-checked={homeAnswerMode() === 'tap'}
-                    onClick={() => setHomeAnswerMode('tap')}
-                  >
-                    Tap
-                  </button>
-                  <button
-                    type="button"
-                    class={`${styles.modeOption} ${
-                      homeAnswerMode() === 'mic' ? styles.modeActive : ''
-                    }`}
-                    role="radio"
-                    aria-checked={homeAnswerMode() === 'mic'}
-                    onClick={() => setHomeAnswerMode('mic')}
-                  >
-                    Sing or play
-                  </button>
-                </div>
-                <Show when={homeAnswerMode() === 'mic'}>
-                  <p>
-                    Mic mode answers by ear alone — no buttons to luck into —
-                    and reads your intonation on every note. Octave does not
-                    matter; sing or play the degree anywhere comfortable.
-                  </p>
-                </Show>
-                <Show when={micError() !== ''}>
-                  <p class={styles.micError}>{micError()}</p>
-                </Show>
-
-                <button
-                  type="button"
-                  class={styles.primaryBtn}
-                  onClick={() => void handleStart()}
-                >
-                  Start (12 rounds)
-                </button>
-              </div>
-            }
-          >
-            <div class={styles.cadenceDots}>
-              <For each={CADENCE_LABELS}>
-                {(label, i) => (
-                  <div
-                    class={`${styles.cadenceDot} ${
-                      controller.phase() !== 'cadence' ||
-                      i() < controller.cadenceStep()
-                        ? styles.lit
-                        : ''
-                    }`}
-                    title={label}
-                  />
-                )}
-              </For>
-            </div>
-
-            <p class={styles.stageHint}>{stageHint()}</p>
-
-            <div class={styles.degreeGrid}>
-              <For each={HOME_DEGREES}>
-                {(degree) => (
-                  <button
-                    type="button"
-                    class={degreeClass(degree.degree)}
-                    disabled={
-                      controller.phase() !== 'answer' ||
-                      controller.mode() === 'mic'
-                    }
-                    onClick={() => controller.answer(degree.degree)}
-                  >
-                    <span class={styles.degreeNumber}>{degree.degree}</span>
-                    <span class={styles.degreeSolfege}>{degree.solfege}</span>
-                  </button>
-                )}
-              </For>
-            </div>
-
-            <button
-              type="button"
-              class={styles.secondaryBtn}
-              onClick={() => controller.stop()}
-            >
-              Stop
-            </button>
-          </Show>
-        </div>
-      </Show>
-    </div>
-  )
-}
-
-function HomeDone(props: {
-  controller: ReturnType<typeof useHomeController>
-  onBack: () => void
-  onAgain: () => void
-}): JSX.Element {
-  const result = () => props.controller.result()
+  const keys = (): StageKey[] => {
+    if (phase() === 'idle') {
+      return [{ key: 'Space', action: () => void handleStart() }]
+    }
+    if (phase() !== 'answer' || controller.mode() !== 'tap') return []
+    return HOME_DEGREES.map((degree) => ({
+      key: String(degree.degree),
+      action: () => controller.answer(degree.degree),
+    }))
+  }
 
   /** The ear-vs-voice line, once both modes have been rated. */
   const earVsVoice = (): string | null => {
@@ -315,84 +182,177 @@ function HomeDone(props: {
   }
 
   return (
-    <div class={styles.stage}>
-      <div class={styles.doneCard}>
-        <Show when={result()}>
-          {(r) => (
+    <EarStage
+      drillId="home"
+      name="Home"
+      mode={
+        phase() === 'idle'
+          ? 'on the bench'
+          : controller.mode() === 'mic'
+            ? 'sung answers'
+            : 'rating run'
+      }
+      progress={progress()}
+      status={status()}
+      tone={tone()}
+      keys={keys}
+      focusConsole={() => phase() === 'answer' && controller.mode() === 'tap'}
+      onBack={props.onBack}
+      onStop={running() ? () => controller.stop() : undefined}
+      done={() => phase() === 'done'}
+      instrument={() => (
+        <TuningFork
+          cadenceStep={
+            phase() === 'cadence'
+              ? controller.cadenceStep()
+              : phase() === 'idle' || phase() === 'done'
+                ? 0
+                : 4
+          }
+          ringing={phase() === 'probe'}
+          listening={phase() === 'answer' && controller.mode() === 'mic'}
+          reveal={
+            phase() === 'reveal' && target()
+              ? {
+                  degree: target()?.degree ?? 0,
+                  solfege: target()?.solfege ?? '',
+                  correct:
+                    controller.answeredDegree() === null ? null : correct(),
+                }
+              : null
+          }
+        />
+      )}
+      console={() => (
+        <Show
+          when={running()}
+          fallback={
             <>
-              <div>
-                <span class={styles.reading}>
-                  {Math.round(r().rating.rating)}
-                </span>{' '}
-                <span class={styles.readingUnit}>
-                  {r().mode === 'mic' ? 'Voice rating' : 'Function rating'}
-                </span>
-              </div>
-              <span
-                class={r().ratingDelta >= 0 ? styles.deltaUp : styles.deltaDown}
-              >
-                {r().ratingDelta >= 0 ? '+' : ''}
-                {r().ratingDelta} this session
-              </span>
-              <Show when={isProvisional(r().rating)}>
-                <span class={styles.provisionalBadge}>
-                  Provisional — keeps settling for {10 - r().rating.attempts}{' '}
-                  more answers
-                </span>
-              </Show>
-              <p class={styles.stageHint}>
-                {r().correct} of {r().total} named correctly
-                {r().skipped > 0 ? ` · ${r().skipped} skipped (unclear)` : ''}
-                {r().medianAbsCents !== null
-                  ? ` · voice typically ${r().medianAbsCents}¢ off when right`
-                  : ''}
-              </p>
-              <Show when={earVsVoice()}>
-                {(line) => <p class={styles.stageHint}>{line()}</p>}
-              </Show>
-              <div class={styles.outcomeDots}>
-                <For each={r().outcomes}>
-                  {(outcome) => (
-                    <div
-                      class={`${styles.outcomeDot} ${
-                        outcome.correct
-                          ? ''
-                          : outcome.answered === 0
-                            ? styles.skip
-                            : styles.miss
-                      }`}
-                      title={`Degree ${outcome.degree}${
-                        outcome.correct
-                          ? ''
-                          : outcome.answered === 0
-                            ? ' — skipped'
-                            : ` — answered ${outcome.answered}`
-                      }`}
-                    />
-                  )}
-                </For>
-              </div>
+              <PlayPad
+                label="Begin"
+                sub={`${controller.totalRounds} rounds`}
+                keycap="Space"
+                icon={
+                  homeAnswerMode() === 'mic' ? (
+                    <IconMic size={20} />
+                  ) : (
+                    <IconPlay size={20} />
+                  )
+                }
+                onClick={() => void handleStart()}
+              />
+              <ConsoleStack>
+                <ModeToggle
+                  label="How to answer"
+                  value={homeAnswerMode()}
+                  options={MODES}
+                  onChange={setHomeAnswerMode}
+                />
+                <ConsoleNote>
+                  <Show
+                    when={homeAnswerMode() === 'mic'}
+                    fallback="A short cadence tells your ear where home is. Then one note sounds — name its scale degree. This is the hearing that transfers to real music: not “a major sixth”, but “that note is La, and it wants to fall to Sol”."
+                  >
+                    Mic mode answers by ear alone — no buttons to luck into —
+                    and reads your intonation on every note. Octave does not
+                    matter; sing or play the degree anywhere comfortable.
+                  </Show>
+                </ConsoleNote>
+                <Show when={micError() !== ''}>
+                  <ConsoleWarning>{micError()}</ConsoleWarning>
+                </Show>
+              </ConsoleStack>
             </>
+          }
+        >
+          <PlayPad
+            state={phase() === 'answer' ? 'armed' : 'sounding'}
+            label={
+              phase() === 'answer'
+                ? controller.mode() === 'mic'
+                  ? 'Listening'
+                  : 'Your call'
+                : phase() === 'cadence'
+                  ? 'The key'
+                  : 'The note'
+            }
+            sub={
+              controller.mode() === 'mic'
+                ? 'sing or play it'
+                : 'Function · degree'
+            }
+            icon={
+              controller.mode() === 'mic' && phase() === 'answer' ? (
+                <IconMic size={20} />
+              ) : undefined
+            }
+          />
+          <Pads columns={7} compact label="Which degree was that?">
+            <For each={HOME_DEGREES}>
+              {(degree) => (
+                <StagePad
+                  keycap={String(degree.degree)}
+                  label={String(degree.degree)}
+                  sub={degree.solfege}
+                  state={padState(degree.degree)}
+                  disabled={phase() !== 'answer' || controller.mode() === 'mic'}
+                  onClick={() => controller.answer(degree.degree)}
+                />
+              )}
+            </For>
+          </Pads>
+        </Show>
+      )}
+      plate={() => (
+        <Show when={controller.result()}>
+          {(result) => (
+            <EndPlate
+              kicker="Rating"
+              value={String(Math.round(result().rating.rating))}
+              unit={
+                result().mode === 'mic' ? 'Voice rating' : 'Function rating'
+              }
+              note={
+                <PlateDelta delta={result().ratingDelta} label="this run" />
+              }
+              onAgain={() => void handleStart()}
+              onBack={props.onBack}
+            >
+              <Show when={isProvisional(result().rating)}>
+                <PlateBadge>
+                  Provisional — settling for {10 - result().rating.attempts}{' '}
+                  more answers
+                </PlateBadge>
+              </Show>
+              <PlateLine>
+                {result().correct} of {result().total} named correctly
+                {result().skipped > 0
+                  ? ` · ${result().skipped} skipped (unclear)`
+                  : ''}
+                {result().medianAbsCents !== null
+                  ? ` · voice typically ${result().medianAbsCents}¢ off when right`
+                  : ''}
+              </PlateLine>
+              <Show when={earVsVoice()}>
+                {(line) => <PlateLine>{line()}</PlateLine>}
+              </Show>
+              <OutcomeDots
+                outcomes={result().outcomes.map((outcome) => ({
+                  correct: outcome.correct,
+                  skipped: !outcome.correct && outcome.answered === 0,
+                  title: `Degree ${outcome.degree}${
+                    outcome.correct
+                      ? ''
+                      : outcome.answered === 0
+                        ? ' — skipped'
+                        : ` — answered ${outcome.answered}`
+                  }`,
+                }))}
+              />
+            </EndPlate>
           )}
         </Show>
-
-        <div class={styles.answerRow}>
-          <button
-            type="button"
-            class={styles.primaryBtn}
-            onClick={() => props.onAgain()}
-          >
-            Run again
-          </button>
-          <button
-            type="button"
-            class={styles.secondaryBtn}
-            onClick={() => props.onBack()}
-          >
-            Back to Ear Lab
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    />
   )
 }

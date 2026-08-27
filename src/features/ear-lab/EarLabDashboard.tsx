@@ -10,12 +10,11 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createMemo, For, onMount, Show } from 'solid-js'
 import type { FacultyId } from '@/lib/ear/drills'
 import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
 import { IconArc, IconFork, IconGears, IconLattice, IconLoupe, IconSeal, IconStylus, } from './ear-icons'
 import styles from './EarLabDashboard.module.css'
-import { EarRoomShell } from './EarRoomShell'
 import type { FacultyDial } from './IndexDials'
 import { IndexDials } from './IndexDials'
 import type { Instrument, InstrumentView } from './instruments'
@@ -36,6 +35,9 @@ export type EarLabView =
 
 interface EarLabDashboardProps {
   onNavigate: (view: EarLabView) => void
+  /** The room's Today control lives on the shell; the bench hands it
+   *  the scroll that brings today's regulation into view. */
+  registerToday?: (show: () => void) => void
 }
 
 const FACULTY_ORDER: FacultyId[] = [
@@ -156,103 +158,103 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
   const openInstrument = (instrument: Instrument) =>
     props.onNavigate(instrument.view)
 
+  onMount(() => props.registerToday?.(showToday))
+
   return (
-    <EarRoomShell onNavigate={props.onNavigate} onToday={showToday}>
-      <div class={styles.bench} id="ear-lab-panel">
-        <div class={styles.heading}>
-          <span class={styles.kicker}>
-            <i aria-hidden="true" /> At the bench
-          </span>
-          <h1 class={styles.title}>
-            {line().lead}
-            <br />
-            {line().rest}
-          </h1>
-          <p class={styles.lede}>{line().lede}</p>
+    <div class={styles.bench} id="ear-lab-panel">
+      <div class={styles.heading}>
+        <span class={styles.kicker}>
+          <i aria-hidden="true" /> At the bench
+        </span>
+        <h1 class={styles.title}>
+          {line().lead}
+          <br />
+          {line().rest}
+        </h1>
+        <p class={styles.lede}>{line().lede}</p>
+      </div>
+
+      <div class={styles.grid}>
+        <div class={styles.regulatorCell} data-tour="ear.column">
+          <Regulator
+            calibrated={calibrated()?.index ?? null}
+            estimate={estimate().value}
+            marks={calibrationHistory().map((run) => ({
+              at: run.at,
+              index: run.index,
+            }))}
+            missingCount={estimate().missing.length}
+          />
         </div>
 
-        <div class={styles.grid}>
-          <div class={styles.regulatorCell} data-tour="ear.column">
-            <Regulator
-              calibrated={calibrated()?.index ?? null}
-              estimate={estimate().value}
-              marks={calibrationHistory().map((run) => ({
-                at: run.at,
-                index: run.index,
-              }))}
-              missingCount={estimate().missing.length}
-            />
-          </div>
-
-          <div class={styles.dialsCell}>
-            <IndexDials
-              calibrated={calibrated()?.index ?? null}
-              delta={delta()}
-              deltaSince={deltaSince()}
-              estimate={estimate().value}
-              faculties={faculties()}
-            />
-          </div>
-
-          <div class={styles.regulationCell} ref={regulationCard} tabIndex={-1}>
-            <SprintCard onNavigate={props.onNavigate} />
-          </div>
+        <div class={styles.dialsCell}>
+          <IndexDials
+            calibrated={calibrated()?.index ?? null}
+            delta={delta()}
+            deltaSince={deltaSince()}
+            estimate={estimate().value}
+            faculties={faculties()}
+          />
         </div>
 
-        <div
-          class={styles.strip}
-          role="list"
-          aria-label="The instruments"
-          data-tour="ear.drills"
-        >
-          <For each={INSTRUMENTS}>
-            {(instrument) => {
-              const Icon = INSTRUMENT_ICON[instrument.view]
-              const reading = () => instrumentReading(instrument)
-              return (
-                <button
-                  type="button"
-                  role="listitem"
-                  class={styles.instrument}
-                  classList={{
-                    [styles.instrumentSeal]: instrument.view === 'calibration',
-                  }}
-                  onClick={() => openInstrument(instrument)}
-                  aria-label={`${instrument.name} — ${instrument.measures}`}
-                >
-                  <Icon size={30} class={styles.instrumentIcon} />
-                  <span class={styles.instrumentName}>{instrument.name}</span>
-                  <span class={styles.instrumentMeasures}>
-                    {instrument.measures}
-                  </span>
-                  <Show
-                    when={reading()}
-                    fallback={
-                      <span class={styles.instrumentEmpty}>
-                        {instrument.view === 'calibration'
-                          ? 'Unsealed'
-                          : 'Unmeasured'}
-                      </span>
-                    }
-                  >
-                    {(value) => (
-                      <span class={styles.instrumentReading}>
-                        {value().value}
-                        <Show when={value().unit}>
-                          <small> {value().unit}</small>
-                        </Show>
-                        <Show when={value().settling}>
-                          <small> · settling</small>
-                        </Show>
-                      </span>
-                    )}
-                  </Show>
-                </button>
-              )
-            }}
-          </For>
+        <div class={styles.regulationCell} ref={regulationCard} tabIndex={-1}>
+          <SprintCard onNavigate={props.onNavigate} />
         </div>
       </div>
-    </EarRoomShell>
+
+      <div
+        class={styles.strip}
+        role="list"
+        aria-label="The instruments"
+        data-tour="ear.drills"
+      >
+        <For each={INSTRUMENTS}>
+          {(instrument) => {
+            const Icon = INSTRUMENT_ICON[instrument.view]
+            const reading = () => instrumentReading(instrument)
+            return (
+              <button
+                type="button"
+                role="listitem"
+                class={styles.instrument}
+                classList={{
+                  [styles.instrumentSeal]: instrument.view === 'calibration',
+                }}
+                onClick={() => openInstrument(instrument)}
+                aria-label={`${instrument.name} — ${instrument.measures}`}
+              >
+                <Icon size={30} class={styles.instrumentIcon} />
+                <span class={styles.instrumentName}>{instrument.name}</span>
+                <span class={styles.instrumentMeasures}>
+                  {instrument.measures}
+                </span>
+                <Show
+                  when={reading()}
+                  fallback={
+                    <span class={styles.instrumentEmpty}>
+                      {instrument.view === 'calibration'
+                        ? 'Unsealed'
+                        : 'Unmeasured'}
+                    </span>
+                  }
+                >
+                  {(value) => (
+                    <span class={styles.instrumentReading}>
+                      {value().value}
+                      <Show when={value().unit}>
+                        <small> {value().unit}</small>
+                      </Show>
+                      <Show when={value().settling}>
+                        <small> · settling</small>
+                      </Show>
+                    </span>
+                  )}
+                </Show>
+              </button>
+            )
+          }}
+        </For>
+      </div>
+    </div>
   )
 }

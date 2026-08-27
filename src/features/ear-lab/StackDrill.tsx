@@ -5,6 +5,9 @@
 // augmented, sus4 or dominant 7. A wrong answer replays the chord
 // broken then re-stacked — hearing the members one at a time is
 // how the quality's colour gets learned, not just tested.
+//
+// The instrument is a gear train seen end-on: the chord's tones are
+// wheels on one axle, and the reveal sets them at their intervals.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -13,6 +16,7 @@ import { STACK_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { STACK_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
+import { GearTrain } from './GearTrain'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
@@ -63,10 +67,16 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
     cancelAudio: () => audioEngine.stopTone(60),
   })
 
+  const itemOf = (id: string | null) =>
+    STACK_BANK.find((item) => item.itemId === id) ?? null
+
   return (
     <IdentificationDrillView
       title="Stack"
+      drillId="stack"
+      measures="Colour · chord quality"
       description="One chord, roved root — name its quality. Colour hearing starts here: major and minor first, then the qualities that take years by accident and weeks on purpose."
+      prompt="One chord — name its quality."
       listenHint="Listen to the stack…"
       answerHint="Which quality was that?"
       choices={STACK_BANK.map((item) => ({
@@ -76,9 +86,23 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
       }))}
       columns={3}
       controller={controller}
-      revealName={(id) =>
-        STACK_BANK.find((item) => item.itemId === id)?.name ?? id
-      }
+      revealName={(id) => itemOf(id)?.name ?? id}
+      instrument={() => {
+        const expected = () => itemOf(controller.expectedId())
+        return (
+          <GearTrain
+            sounding={controller.phase() === 'playing'}
+            reveal={
+              controller.phase() === 'reveal' && expected()
+                ? {
+                    intervals: expected()?.payload ?? [],
+                    name: expected()?.name ?? '',
+                  }
+                : null
+            }
+          />
+        )
+      }}
       onBack={props.onBack}
     />
   )

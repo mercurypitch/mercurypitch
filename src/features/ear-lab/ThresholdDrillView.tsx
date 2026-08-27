@@ -1,243 +1,259 @@
 // ============================================================
-// ThresholdDrillView — shared chrome for every Ruler-A drill.
+// ThresholdDrillView — every Ruler-A drill on the stage.
 //
-// Hairline and The Grid differ only in their stage visual, their
-// answer buttons and their unit; everything else — the header,
-// the level/trial/reversal strip, the practice-vs-calibration
-// idle card, and the end card with its reading, spread, grade and
-// column mark — is identical and lives here once.
+// Hairline and The Grid differ only in their instrument, their pads
+// and their unit; the run itself — practice staircase or the
+// three-track calibration, progress, stop semantics, the reading —
+// is the same and is laid out here once on EarStage: the drill bar
+// carries the live level and reversal count, the instrument sits in
+// the centre, the console offers Practice or Calibration at idle and
+// the pads once a trial has sounded, and the plate reports the
+// reading in the drill's unit. A calibration adds the three track
+// pendulums under the instrument and, sealed, etches the glass.
 //
-// Mirrors IdentificationDrillView on the Ruler-B side, so adding
-// a drill stays a thin spec rather than another copy of the shell.
+// Mirrors IdentificationDrillView on the Ruler-B side.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
-import styles from './EarDrill.module.css'
-import type { useThresholdRun } from './use-threshold-run'
+import { IconPlay, IconSeal } from './ear-icons'
+import type { StageKey } from './EarStage'
+import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, } from './EarStage'
+import { dateLabel } from './instruments'
+import { TrackPendulums } from './TrackPendulums'
+import type { ThresholdRunMode, useThresholdRun } from './use-threshold-run'
+
+const TRACK_NAMES = ['A', 'B', 'C']
 
 interface ThresholdDrillViewProps {
   title: string
-  /** Drill id for the DOM hook (tests, future tour steps). */
+  /** Drill id for the DOM hook (tests, the audit). */
   drillId: string
+  /** The bench caption: what the instrument measures. */
+  measures: string
+  /** One paragraph for the idle console. */
   description: string
+  /** The task in one line, shown at idle. */
+  prompt: string
   listenHint: string
   answerHint: string
   /** The live staircase level, pre-formatted with its unit. */
   levelLabel: () => string
-  /** Caption for that strip, e.g. "Gap" or "Offset". */
+  /** Caption for that level, e.g. "Gap" or "Offset". */
   levelCaption: string
   /** A reading formatted for display (no unit). */
   formatValue: (value: number) => string
-  /** Unit shown large on the end card, e.g. "cents". */
+  /** Unit shown under the reading, e.g. "cents". */
   unitLabel: string
-  /** Unit shown inline, e.g. "¢" or "ms". */
+  /** Unit shown inline, e.g. "¢" or " ms". */
   unitShort: string
   /** Newest stored reading, or null before the first run. */
   latestValue: () => number | null
   run: ReturnType<typeof useThresholdRun>
-  /** The drill's own stage visual (beads, dots…). */
-  stage: () => JSX.Element
-  /** The drill's answer buttons. */
-  answers: () => JSX.Element
+  /** The drill's instrument, reactive to the run. */
+  instrument: () => JSX.Element
+  /** The drill's answer pads. */
+  pads: () => JSX.Element
+  /** Keys that answer while the pads are armed. */
+  keys: () => StageKey[]
+  /** The reveal sentence: what was true, and which way the level moves. */
+  revealLine: () => string
   onBack: () => void
 }
 
 export function ThresholdDrillView(
   props: ThresholdDrillViewProps,
 ): JSX.Element {
-  const running = () =>
-    props.run.phase() !== 'idle' && props.run.phase() !== 'done'
+  const phase = () => props.run.phase()
+  const running = () => phase() !== 'idle' && phase() !== 'done'
+  const calibrating = () => props.run.mode() === 'calibration'
 
-  const stageClass = () => {
-    if (props.run.phase() !== 'reveal') return styles.stage
-    return `${styles.stage} ${
-      props.run.lastCorrect() === true ? styles.correct : styles.wrong
-    }`
+  const mode = () => {
+    if (phase() === 'idle') return 'on the bench'
+    return calibrating() ? 'sealed calibration' : 'practice'
+  }
+
+  const progress = () => {
+    if (!running()) {
+      const latest = props.latestValue()
+      return latest === null
+        ? 'Unmeasured'
+        : `Latest reading ${props.formatValue(latest)}${props.unitShort}`
+    }
+    const track = calibrating()
+      ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
+      : ''
+    return `${track}${props.levelCaption} ${props.levelLabel()} · reversal ${props.run.reversalsDone()} of ${props.run.reversalTarget()}`
+  }
+
+  const status = () => {
+    switch (phase()) {
+      case 'stimulus':
+        return props.listenHint
+      case 'answer':
+        return props.answerHint
+      case 'reveal':
+        return props.revealLine()
+      default:
+        return props.prompt
+    }
+  }
+
+  const tone = () => {
+    if (phase() !== 'reveal') return 'neutral' as const
+    return props.run.lastCorrect() === true
+      ? ('right' as const)
+      : ('wrong' as const)
+  }
+
+  const keys = (): StageKey[] => {
+    if (phase() === 'idle') {
+      return [{ key: 'Space', action: () => props.run.start('practice') }]
+    }
+    if (phase() === 'answer') return props.keys()
+    return []
   }
 
   const estimate = () => props.run.result()?.estimate ?? null
+  const again = (): ThresholdRunMode => props.run.result()?.mode ?? 'practice'
 
   return (
-    <div class={styles.drill} data-ear-drill={props.drillId}>
-      <div class={styles.header}>
-        <button
-          type="button"
-          class={styles.backBtn}
-          onClick={() => props.onBack()}
-        >
-          Back
-        </button>
-        <h2>{props.title}</h2>
-        <Show when={running()}>
-          <span
-            class={`${styles.modeChip} ${
-              props.run.mode() === 'calibration' ? styles.calibration : ''
-            }`}
-          >
-            {props.run.mode() === 'calibration' ? 'Calibration' : 'Practice'}
-          </span>
-        </Show>
-      </div>
-
-      <Show when={running()}>
-        <div class={styles.status}>
-          <span>
-            {props.levelCaption}{' '}
-            <span class={styles.statusValue}>{props.levelLabel()}</span>
-          </span>
-          <span>
-            Trial{' '}
-            <span class={styles.statusValue}>{props.run.trials() + 1}</span>
-          </span>
-          <div
-            class={styles.progressTrack}
-            title={`${props.run.reversalsDone()} of ${props.run.reversalTarget()} reversals`}
-          >
-            <div
-              class={styles.progressFill}
-              style={{
-                width: `${Math.min(
-                  100,
-                  (props.run.reversalsDone() / props.run.reversalTarget()) *
-                    100,
-                )}%`,
-              }}
+    <EarStage
+      drillId={props.drillId}
+      name={props.title}
+      mode={mode()}
+      progress={progress()}
+      status={status()}
+      tone={tone()}
+      keys={keys}
+      focusConsole={() => phase() === 'answer'}
+      onBack={props.onBack}
+      onStop={running() ? () => props.run.stop() : undefined}
+      stopLabel={calibrating() ? 'Abandon' : 'Stop'}
+      done={() => phase() === 'done'}
+      instrument={() => (
+        <>
+          {props.instrument()}
+          <Show when={running() && calibrating()}>
+            <TrackPendulums
+              counts={props.run.trackReversals()}
+              target={props.run.trackTarget()}
+              active={props.run.activeTrack()}
+              running
+              sealed={false}
             />
-          </div>
-        </div>
-      </Show>
-
-      <Show
-        when={props.run.phase() !== 'done'}
-        fallback={
-          <div class={styles.stage}>
-            <div class={styles.doneCard}>
-              <Show
-                when={estimate()}
-                fallback={
-                  <p class={styles.stageHint}>
-                    Stopped before the tracks could finish — a calibration only
-                    counts when all three run to the end, so nothing was marked.
-                  </p>
-                }
-              >
-                {(reading) => (
-                  <>
-                    <div>
-                      <span class={styles.reading}>
-                        {props.formatValue(reading().value)}
-                      </span>{' '}
-                      <span class={styles.readingUnit}>{props.unitLabel}</span>
-                    </div>
-                    <Show when={'standardError' in reading()}>
-                      <span class={styles.readingSpread}>
-                        ±{' '}
-                        {props.formatValue(
-                          (reading() as { standardError: number })
-                            .standardError,
-                        )}
-                        {props.unitShort} across 3 pooled tracks
-                      </span>
-                    </Show>
-                    <Show when={reading().provisional}>
-                      <span class={styles.provisionalBadge}>
-                        Provisional — short run
-                      </span>
-                    </Show>
-                    <Show when={props.run.grade()}>
-                      {(grade) => (
-                        <p class={styles.stageHint}>
-                          Grade {grade()} · {props.run.trials()} trials
-                        </p>
-                      )}
-                    </Show>
-                    <Show when={props.run.result()?.markedIndex !== undefined}>
-                      <p class={styles.stageHint}>
-                        Mercury Column marked at{' '}
-                        <strong>{props.run.result()?.markedIndex}</strong>
-                      </p>
-                    </Show>
-                  </>
-                )}
-              </Show>
-
-              <div class={styles.answerRow}>
-                <button
-                  type="button"
-                  class={styles.primaryBtn}
-                  onClick={() =>
-                    props.run.start(props.run.result()?.mode ?? 'practice')
-                  }
-                >
-                  Run again
-                </button>
-                <button
-                  type="button"
-                  class={styles.secondaryBtn}
-                  onClick={() => props.onBack()}
-                >
-                  Back to Ear Lab
-                </button>
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <div class={stageClass()}>
-          <Show
-            when={running()}
-            fallback={
-              <div class={styles.idleCard}>
-                <p>{props.description}</p>
-                <Show when={props.latestValue() !== null}>
-                  <p>
-                    Latest reading:{' '}
-                    <strong>
-                      {props.formatValue(props.latestValue() ?? 0)}
-                      {props.unitShort}
-                    </strong>
-                  </p>
-                </Show>
-                <div class={styles.answerRow}>
-                  <button
-                    type="button"
-                    class={styles.primaryBtn}
-                    onClick={() => props.run.start('practice')}
-                  >
-                    Practice run (about a minute)
-                  </button>
-                  <button
-                    type="button"
-                    class={styles.secondaryBtn}
-                    onClick={() => props.run.start('calibration')}
-                  >
-                    Calibration (3 tracks, about 3 minutes)
-                  </button>
-                </div>
-              </div>
-            }
-          >
-            {props.stage()}
-
-            <p class={styles.stageHint}>
-              {props.run.phase() === 'answer'
-                ? props.answerHint
-                : props.listenHint}
-            </p>
-
-            {props.answers()}
-
-            <button
-              type="button"
-              class={styles.secondaryBtn}
-              onClick={() => props.run.stop()}
-            >
-              Stop
-            </button>
           </Show>
-        </div>
-      </Show>
-    </div>
+        </>
+      )}
+      console={() => (
+        <Show
+          when={running()}
+          fallback={
+            <>
+              <ConsoleLead>
+                <PlayPad
+                  label="Practice run"
+                  sub="about a minute"
+                  keycap="Space"
+                  icon={<IconPlay size={20} />}
+                  onClick={() => props.run.start('practice')}
+                />
+                <PlayPad
+                  amber
+                  label="Calibration"
+                  sub="3 tracks · about 3 min"
+                  icon={<IconSeal size={20} />}
+                  onClick={() => props.run.start('calibration')}
+                />
+              </ConsoleLead>
+              <ConsoleNote>{props.description}</ConsoleNote>
+            </>
+          }
+        >
+          <PlayPad
+            state={phase() === 'answer' ? 'armed' : 'sounding'}
+            label={phase() === 'answer' ? 'Your call' : 'Listening'}
+            sub={
+              phase() === 'answer' ? props.measures : `${props.levelLabel()}`
+            }
+          />
+          {props.pads()}
+        </Show>
+      )}
+      plate={() => (
+        <Show
+          when={estimate()}
+          fallback={
+            <EndPlate
+              kicker="Stopped"
+              value="—"
+              note={
+                calibrating()
+                  ? 'Stopped before the tracks could finish — a calibration only counts when all three run to the end, so nothing was marked.'
+                  : 'Stopped before the staircase turned — nothing to read yet, and nothing marked.'
+              }
+              onAgain={() => props.run.start(again())}
+              onBack={props.onBack}
+            />
+          }
+        >
+          {(reading) => {
+            const marked = () => props.run.result()?.markedIndex
+            const pooled = () =>
+              'standardError' in reading()
+                ? (reading() as { standardError: number }).standardError
+                : null
+            return (
+              <EndPlate
+                kicker={marked() !== undefined ? 'Sealed' : 'Reading'}
+                sealed={marked() !== undefined}
+                value={props.formatValue(reading().value)}
+                unit={`${props.unitLabel}${
+                  marked() !== undefined
+                    ? ' · pooled from three tracks'
+                    : reading().provisional
+                      ? ' · provisional'
+                      : ''
+                }`}
+                note={
+                  <Show
+                    when={marked() !== undefined}
+                    fallback="Practice run — the glass is not marked. A sealed calibration marks it."
+                  >
+                    Etched on the glass as{' '}
+                    <b>
+                      {dateLabel(Date.now())} · {marked()}
+                    </b>
+                    .
+                  </Show>
+                }
+                onAgain={() => props.run.start(again())}
+                againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
+                onBack={props.onBack}
+              >
+                <Show when={pooled()}>
+                  {(spread) => (
+                    <PlateLine>
+                      ± {props.formatValue(spread())}
+                      {props.unitShort} across 3 pooled tracks
+                    </PlateLine>
+                  )}
+                </Show>
+                <Show when={reading().provisional && marked() === undefined}>
+                  <PlateBadge>Provisional — short run</PlateBadge>
+                </Show>
+                <Show when={props.run.grade()}>
+                  {(grade) => (
+                    <PlateLine>
+                      Grade {grade()} · {props.run.trials()} trials
+                    </PlateLine>
+                  )}
+                </Show>
+              </EndPlate>
+            )
+          }}
+        </Show>
+      )}
+    />
   )
 }

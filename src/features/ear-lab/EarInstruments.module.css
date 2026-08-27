@@ -1,0 +1,514 @@
+/* ── The bench instruments: one SVG per drill, drawn in the room's
+   vocabulary. Colours come from the room's tokens with literal
+   fallbacks, so an instrument also renders outside the shell. ── */
+
+.instrument {
+  --inst-brass: var(--ear-brass, #c9a45e);
+  --inst-brass-bright: var(--ear-brass-bright, #e7c67d);
+  --inst-brass-line: var(--ear-brass-line, rgb(201 164 94 / 32%));
+  --inst-mercury: var(--ear-mercury, #c5ced8);
+  --inst-mercury-deep: var(--ear-mercury-deep, #8f9daf);
+  --inst-signal: var(--ear-signal, #5fc7b8);
+  --inst-garnet: var(--ear-garnet-bright, #d0707a);
+  --inst-parchment: var(--ear-parchment, #efe6d6);
+  --inst-muted: var(--ear-muted, #b9b1a4);
+  --inst-line: var(--ear-line, rgb(239 230 214 / 14%));
+  --inst-serif: var(
+    --ear-serif,
+    'Iowan Old Style',
+    'Palatino Linotype',
+    Baskerville,
+    Georgia,
+    serif
+  );
+
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  font-size: 11px;
+  fill: var(--inst-muted);
+}
+
+.captionBrass {
+  fill: var(--inst-brass-bright);
+}
+
+.captionSignal {
+  fill: var(--inst-signal);
+}
+
+.captionGarnet {
+  fill: var(--inst-garnet);
+}
+
+.readout {
+  font-family: var(--inst-serif);
+  font-size: 22px;
+  fill: var(--inst-mercury);
+}
+
+.nameplate {
+  font-family: var(--inst-serif);
+  font-size: 18px;
+  fill: var(--inst-mercury);
+}
+
+.nameplateSignal {
+  fill: var(--inst-signal);
+}
+
+.nameplateGarnet {
+  fill: var(--inst-garnet);
+}
+
+.frame {
+  fill: rgb(20 23 28 / 85%);
+  stroke: var(--inst-brass-line);
+  stroke-width: 1;
+}
+
+.brassLine {
+  stroke: var(--inst-brass);
+  stroke-linecap: round;
+}
+
+.faintLine {
+  stroke: var(--inst-line);
+  stroke-linecap: round;
+}
+
+/* ── Vernier under a loupe ───────────────────────────────────── */
+
+.tick {
+  stroke: var(--inst-brass);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.tickMajor {
+  stroke-width: 2;
+}
+
+.hair {
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition:
+    x1 260ms ease,
+    x2 260ms ease,
+    stroke-width 120ms ease;
+}
+
+.hairA {
+  stroke: var(--inst-mercury);
+}
+
+.hairB {
+  stroke: var(--inst-brass-bright);
+}
+
+.hairMag {
+  stroke-width: 3;
+}
+
+.hairLit {
+  stroke-width: 4;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.hairA.hairLit {
+  color: var(--inst-mercury);
+}
+
+.hairB.hairLit {
+  color: var(--inst-brass-bright);
+}
+
+.loupe {
+  transition: transform 260ms ease;
+}
+
+.loupeDisc {
+  fill: #0f1216;
+  fill-opacity: 0.96;
+  stroke: var(--inst-brass);
+  stroke-width: 3;
+}
+
+.loupeGlass {
+  stroke: rgb(201 164 94 / 35%);
+  stroke-width: 1;
+}
+
+/* ── The escapement lattice ──────────────────────────────────── */
+
+.pallet {
+  fill: #1e242b;
+  stroke: rgb(239 230 214 / 22%);
+  stroke-width: 1;
+  transition:
+    transform 300ms ease,
+    fill 140ms ease,
+    stroke 140ms ease;
+}
+
+.palletLit {
+  fill: var(--inst-signal);
+  stroke: var(--inst-signal);
+  filter: drop-shadow(0 0 10px rgb(95 199 184 / 55%));
+}
+
+.palletOff {
+  fill: var(--inst-garnet);
+  stroke: var(--inst-garnet);
+}
+
+.palletEarly {
+  transform: translateX(-10px);
+}
+
+.palletLate {
+  transform: translateX(10px);
+}
+
+.chase {
+  fill: var(--inst-signal);
+  opacity: 0;
+  transition:
+    transform 90ms linear,
+    opacity 200ms ease;
+}
+
+.chaseOn {
+  opacity: 1;
+}
+
+/* ── The tuning fork on its box ──────────────────────────────── */
+
+.box {
+  fill: #2a2119;
+  stroke: var(--inst-brass-line);
+  stroke-width: 1;
+}
+
+.boxGrain {
+  stroke: rgb(239 230 214 / 6%);
+  stroke-width: 1;
+}
+
+.lamp {
+  fill: #151a20;
+  stroke: rgb(239 230 214 / 18%);
+  stroke-width: 1;
+  transition:
+    fill 140ms ease,
+    stroke 140ms ease;
+}
+
+.lampLit {
+  fill: var(--inst-signal);
+  stroke: var(--inst-signal);
+  filter: drop-shadow(0 0 6px rgb(95 199 184 / 55%));
+}
+
+.fork {
+  fill: none;
+  stroke: var(--inst-mercury);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.forkStem {
+  stroke: var(--inst-brass);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--inst-signal);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.ringOn {
+  animation: inst-ring 900ms ease-out infinite;
+}
+
+.ringListen {
+  stroke: var(--inst-brass-bright);
+  stroke-dasharray: 3 4;
+  animation: inst-ring 1400ms ease-out infinite;
+}
+
+@keyframes inst-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+.ringGroup {
+  transform-box: view-box;
+  transform-origin: 180px 80px;
+}
+
+/* ── The index arc ───────────────────────────────────────────── */
+
+.arc {
+  fill: none;
+  stroke: var(--inst-brass);
+  stroke-width: 2.5;
+}
+
+.needle {
+  stroke: var(--inst-signal);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-box: view-box;
+  transform-origin: 260px 250px;
+  transition: transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.needleHunting {
+  stroke: var(--inst-mercury-deep);
+  stroke-dasharray: 6 5;
+  animation: inst-hunt 2.4s ease-in-out infinite alternate;
+}
+
+.needleGhost {
+  stroke: var(--inst-garnet);
+  stroke-dasharray: 5 5;
+}
+
+.needleIdle {
+  stroke: var(--inst-mercury-deep);
+  opacity: 0.4;
+}
+
+@keyframes inst-hunt {
+  from {
+    transform: rotate(12deg);
+  }
+
+  to {
+    transform: rotate(168deg);
+  }
+}
+
+.rootIndex {
+  fill: var(--inst-brass);
+  transition: fill 140ms ease;
+}
+
+.rootIndexLit {
+  fill: var(--inst-signal);
+  filter: drop-shadow(0 0 6px rgb(95 199 184 / 55%));
+}
+
+/* ── The gear train ──────────────────────────────────────────── */
+
+.wheel {
+  transform-box: view-box;
+  transition: transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.wheelSpin {
+  animation: inst-spin 6s linear infinite;
+}
+
+.wheelSpinReverse {
+  animation-direction: reverse;
+}
+
+@keyframes inst-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rim {
+  fill: rgb(20 23 28 / 70%);
+  stroke: var(--inst-mercury-deep);
+  stroke-width: 2;
+  transition: stroke 140ms ease;
+}
+
+.rimGhost {
+  stroke: rgb(143 157 175 / 45%);
+  stroke-dasharray: 4 5;
+}
+
+.rimTrue {
+  stroke: var(--inst-signal);
+}
+
+.teeth {
+  fill: none;
+  stroke: var(--inst-brass);
+  stroke-width: 5;
+}
+
+.teethGhost {
+  stroke: rgb(201 164 94 / 35%);
+}
+
+.teethTrue {
+  stroke: var(--inst-brass-bright);
+}
+
+.hub {
+  fill: var(--inst-brass);
+}
+
+.axle {
+  stroke: var(--inst-brass-line);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+/* ── The drum recorder ───────────────────────────────────────── */
+
+.drum {
+  fill: #171b20;
+  stroke: var(--inst-brass-line);
+  stroke-width: 1;
+}
+
+.drumRule {
+  stroke: rgb(239 230 214 / 7%);
+  stroke-width: 1;
+}
+
+.trace {
+  fill: none;
+  stroke: var(--inst-mercury);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.traceTrue {
+  stroke: var(--inst-signal);
+  stroke-width: 3;
+}
+
+.traceGhost {
+  stroke: var(--inst-garnet);
+  stroke-dasharray: 6 5;
+}
+
+.traceDrawing {
+  stroke-dasharray: 140;
+  stroke-dashoffset: 140;
+  animation: inst-draw 330ms linear forwards;
+}
+
+@keyframes inst-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.stylus {
+  stroke: var(--inst-brass);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition:
+    x2 400ms ease,
+    y2 400ms ease;
+}
+
+.stylusPivot {
+  fill: var(--inst-brass-bright);
+}
+
+/* ── The track pendulums ─────────────────────────────────────── */
+
+.calPendulum {
+  transform-box: view-box;
+}
+
+.calSwing {
+  animation: inst-cal-swing 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite
+    alternate;
+  animation-delay: calc(var(--phase) * -0.45s);
+}
+
+.calSealed {
+  animation-delay: 0s;
+}
+
+@keyframes inst-cal-swing {
+  from {
+    transform: rotate(-9deg);
+  }
+
+  to {
+    transform: rotate(9deg);
+  }
+}
+
+.calRod {
+  stroke: var(--inst-brass);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.calBob {
+  fill: var(--inst-mercury);
+  transition: fill 140ms ease;
+}
+
+.calBobActive {
+  fill: var(--inst-signal);
+  filter: drop-shadow(0 0 8px rgb(95 199 184 / 55%));
+}
+
+.calBobSealed {
+  fill: var(--inst-brass-bright);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hair,
+  .loupe,
+  .pallet,
+  .chase,
+  .lamp,
+  .needle,
+  .wheel,
+  .rim,
+  .stylus,
+  .calBob {
+    transition: none;
+  }
+
+  .ringOn,
+  .ringListen,
+  .needleHunting,
+  .wheelSpin,
+  .traceDrawing,
+  .calSwing {
+    animation: none;
+  }
+
+  .ringOn,
+  .ringListen {
+    opacity: 0.7;
+  }
+
+  .needleHunting {
+    transform: rotate(90deg);
+  }
+
+  .traceDrawing {
+    stroke-dashoffset: 0;
+  }
+}
