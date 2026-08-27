@@ -1,4 +1,4 @@
-import { render } from '@solidjs/testing-library'
+import { render, screen } from '@solidjs/testing-library'
 import { describe, expect, it } from 'vitest'
 import { CueMomentScreen } from './CueMomentScreen'
 
@@ -42,5 +42,22 @@ describe('cue moment screen', () => {
       expect.stringMatching(/corky-home-rest-v0_23/u) as unknown as string,
       expect.stringMatching(/notice-cue-generic/u) as unknown as string,
     ])
+  })
+
+  it('keeps an optional named cue visible without implying detection', () => {
+    render(() => (
+      <CueMomentScreen
+        {...base}
+        cueContextText="When I get into bed with my phone."
+      />
+    ))
+
+    expect(screen.getByText('Your cue')).toBeInTheDocument()
+    expect(
+      screen.getByText('When I get into bed with my phone.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/detected|noticed for you/iu),
+    ).not.toBeInTheDocument()
   })
 })

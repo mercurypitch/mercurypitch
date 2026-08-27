@@ -15,6 +15,7 @@ export interface PullChoicePresentation {
 }
 
 interface ChoosePullScreenProps {
+  headerLabel: string
   options: readonly PullOption[]
   presentations: readonly PullChoicePresentation[]
   selectedId?: string
@@ -151,7 +152,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
     // makes sure its element exists without delaying the reveal to a new frame.
     queueMicrotask(() => {
       if (request !== selectionScrollRequest) return
-      previewElement?.scrollIntoView({
+      previewElement?.scrollIntoView?.({
         block: 'center',
         behavior: prefersReducedMotion() ? 'auto' : 'smooth',
       })
@@ -160,7 +161,7 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
 
   return (
     <main class="setup-screen app-screen">
-      <AppHeader label="Your first plan" onBack={props.onBack} />
+      <AppHeader label={props.headerLabel} onBack={props.onBack} />
       <section class="setup-screen__intro" aria-labelledby="pull-title">
         <p class="step-label">Your Pull · the familiar pattern</p>
         <h1
@@ -265,9 +266,10 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
         <button
           class="primary-button primary-button--wide"
           type="button"
+          disabled={props.selectedId === undefined}
           onClick={() => props.onContinue()}
         >
-          Choose what I’ll do instead
+          Confirm {selectedLabel()}
         </button>
       </div>
     </main>

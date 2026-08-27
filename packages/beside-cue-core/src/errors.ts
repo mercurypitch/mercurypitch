@@ -7,6 +7,7 @@ export type CueDomainErrorCode =
   | 'cue_id_conflict'
   | 'cue_not_found'
   | 'invalid_cue_id'
+  | 'invalid_cue_context_suggestion_id'
   | 'invalid_cue_transition'
   | 'invalid_day_offset'
   | 'invalid_local_date'

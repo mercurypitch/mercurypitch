@@ -4,6 +4,7 @@ import { CORKY_V023_REST_ART } from '@/content'
 interface CueMomentScreenProps {
   pullText: string
   bSideText: string
+  cueContextText?: string
   phrase: string
   /**
    * The pull category this cue is about, so the mascot shows that pull's own
@@ -41,10 +42,18 @@ export function CueMomentScreen(props: CueMomentScreenProps) {
       <section class="cue-moment__copy">
         <p>{props.phrase}</p>
         <h1 id="cue-title">{props.bSideText}</h1>
-        <div class="cue-moment__context">
-          <span>Instead of</span>
-          <strong>{props.pullText}</strong>
-        </div>
+        <dl class="cue-moment__context">
+          <div>
+            <dt>Instead of</dt>
+            <dd>{props.pullText}</dd>
+          </div>
+          {props.cueContextText === undefined ? null : (
+            <div>
+              <dt>Your cue</dt>
+              <dd>{props.cueContextText}</dd>
+            </div>
+          )}
+        </dl>
       </section>
       <div class="cue-moment__actions">
         <button
