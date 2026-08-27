@@ -59,6 +59,11 @@ describe('EarLabDashboard', () => {
   beforeEach(() => {
     localStorage.clear()
     resetEarLabStore()
+    // Play pads prime the audio session through a silent <audio>; jsdom
+    // has no media playback and would log "Not implemented" per click.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() =>
+      Promise.resolve(),
+    )
   })
 
   afterEach(() => {

@@ -1712,9 +1712,9 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
 
 const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
   {
-    title: 'The Mercury Column',
+    title: 'The Regulator',
     description:
-      'Your ear as one number out of 1000. The solid line is what Calibration proved; the lighter level above it is what practice suggests. Every dated mark is a measurement you actually earned.',
+      'Your ear as one number out of 1000, read off a mercury column. The solid level is what Calibration proved; the fainter level above it is what practice suggests. Every dated mark on the glass is a measurement you actually earned.',
     targetSelector: '[data-tour="ear.column"]',
     placement: 'right',
     requiredTab: TAB_EAR_LAB,
@@ -1736,33 +1736,33 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: "Today's sprint",
+    title: "Today's regulation",
     description:
-      'Three drills, about five minutes, chosen from your own readings — and each one tells you why it was picked. Finish a drill anywhere in the Lab and it ticks off here.',
+      'Three drills, about five minutes, chosen from your own readings — and each one says why it was picked. Finish a drill anywhere in the Lab and it is ticked here; the Today button on the bridge opens the same three.',
     targetSelector: '[data-tour="ear.sprint"]',
     placement: 'left',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: 'Calibration marks the column',
+    title: 'Calibration marks the glass',
     description:
-      'About three minutes. Three separate measurements run interleaved and are averaged together — that pooling is what makes the reading precise enough to keep. Practice runs never mark the column.',
+      'About three minutes. Three separate measurements run interleaved and are pooled — that pooling is what makes the reading precise enough to etch. Practice runs never mark the glass, and a mark comes due again after fourteen days.',
     targetSelector: '[data-tour="ear.actions"]',
     placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: 'The drills',
+    title: 'The instruments',
     description:
-      'Hairline splits two tones in cents, Home names scale degrees by tap or by voice, The Grid catches a click off the beat, and Leap, Stack and Contour cover intervals, chords and direction.',
+      'Each drill is a bench instrument. Hairline splits two tones in cents, Home names scale degrees by tap or by voice, The Grid catches a click off the lattice, and Leap, Stack and Contour cover intervals, chords and direction.',
     targetSelector: '[data-tour="ear.drills"]',
     placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: 'Timing calibration',
+    title: 'Round trip',
     description:
-      'Measures the round trip from your speakers back to your microphone, so millisecond drills can subtract your hardware instead of blaming your ear for it.',
+      'The one latency number for the whole app: the round trip from your speakers back to your microphone. Tap drills subtract it, so a millisecond reading is your ear and not your hardware.',
     targetSelector: '[data-tour="ear.latency"]',
     placement: 'bottom',
     requiredTab: TAB_EAR_LAB,

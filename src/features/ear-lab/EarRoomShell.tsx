@@ -15,6 +15,7 @@ import { createContext, createEffect, createMemo, createSignal, For, onCleanup, 
 import { useEngines } from '@/contexts/EngineContext'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
+import { unlockAudio } from '@/lib/audio-unlock'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { calibrationDueAt } from '@/lib/ear/calibration'
@@ -157,6 +158,7 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
     await audioEngine.resume()
     const ctx = audioEngine.getAudioContext()
     if (!ctx) return
+    unlockAudio(ctx)
     scheduleClick(ctx, ctx.currentTime + 0.04, {
       voice,
       gainLevel: volume() * audioEngine.getVolume(),

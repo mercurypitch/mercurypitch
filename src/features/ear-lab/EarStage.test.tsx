@@ -45,6 +45,7 @@ const pad = (label: string) =>
 
 describe('EarStage with Hairline', () => {
   beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     localStorage.clear()
     resetEarLabStore()
   })
@@ -143,6 +144,7 @@ describe('EarStage with Hairline', () => {
 
 describe('EarStage with Home', () => {
   beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     localStorage.clear()
     resetEarLabStore()
   })

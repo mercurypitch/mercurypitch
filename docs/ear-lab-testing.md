@@ -256,6 +256,34 @@ the ear is yours.
    same three drills as the bench's card); Start opens the drill and closes
    the rack. Before: it scrolled the bench, invisible on a desk.
 
+## 2j. Doors and native readiness — Polish Phase 4
+
+Nothing new to measure; this phase is how you get in, and what a native
+shell will need.
+
+- **Home.** The destination gallery has an Ear Lab card (the Regulator Room
+  under brass lamplight, eyebrow _Measured, not scored_) between Exercises
+  and Analysis. It opens the tab.
+- **The tour.** _Guide_ on the bench speaks the bench's words now: the
+  Regulator, Today's regulation, Calibration marks the glass, the
+  instruments, Round trip. Eight steps, same hooks.
+- **The Ascent, Week 4.** The Ear Lab chips are brass on the week card
+  (they were quicksilver) and still open the drill straight from the path.
+- **Audio unlock.** Every play pad (Begin, Practice run, Calibration) primes
+  the audio session inside the tap (`unlockAudio`), and so does choosing a
+  click in the room panel. On an iPhone with the ring switch on silent the
+  bench should still sound; before, a context born suspended could stay so.
+- **Native readiness on this surface** (`docs/plans/mobile-native/capacitor-readiness.md`
+  A1-A4): `viewport-fit=cover` is on `index.html` and the app root sizes with
+  `dvh`; the Ear Lab has no bare `100vh` and no `@capacitor/*` import; the
+  room is fetched only when the tab mounts, at the phone's portrait size.
+- **E2E.** `src/e2e/ear-lab.spec.ts` (`@smoke`): open the tab, Hairline from
+  the strip, a practice run arms its pads, Stop lands on the end plate, Back
+  returns to the bench. Run it with `VITE_E2E_PORT` set to a free port.
+- **Share card.** `scripts/generate-ear-lab-og.mjs` renders a 1200x630 card
+  from the room master; nothing references it yet (the Ear Lab is a tab, not
+  an entry), so no PNG ships until a share route or landing section wants it.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

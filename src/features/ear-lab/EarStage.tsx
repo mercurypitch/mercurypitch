@@ -16,7 +16,9 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
+import { EngineContext } from '@/contexts/EngineContext'
+import { unlockAudio } from '@/lib/audio-unlock'
 import { IconBack, IconCheck, IconClose, IconStop } from './ear-icons'
 import styles from './EarStage.module.css'
 
@@ -223,6 +225,7 @@ interface PlayPadProps {
 /** The lead pad of a console: Begin, Practice, Calibrate — or, once a
  *  run is on, the lamp that says whether to listen or to answer. */
 export function PlayPad(props: PlayPadProps): JSX.Element {
+  const engines = useContext(EngineContext)
   return (
     <button
       type="button"
@@ -233,7 +236,12 @@ export function PlayPad(props: PlayPadProps): JSX.Element {
         [styles.playPadArmed]: props.state === 'armed',
       }}
       disabled={props.disabled === true || props.state !== undefined}
-      onClick={() => props.onClick?.()}
+      onClick={() => {
+        // Still inside the tap: iOS only un-suspends a context, and only
+        // promotes the page to the audible session, from a gesture.
+        unlockAudio(engines?.audioEngine.getAudioContext())
+        props.onClick?.()
+      }}
     >
       {props.icon}
       <span>{props.label}</span>
