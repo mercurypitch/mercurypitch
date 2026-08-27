@@ -256,6 +256,22 @@ export function ConsoleNote(props: { children: JSX.Element }): JSX.Element {
   return <p class={styles.consoleNote}>{props.children}</p>
 }
 
+/** A quiet link in the console — to the room's sound, say. */
+export function ConsoleLink(props: {
+  onClick: () => void
+  children: JSX.Element
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      class={styles.consoleLink}
+      onClick={() => props.onClick()}
+    >
+      {props.children}
+    </button>
+  )
+}
+
 /** Free-form column beside the lead pad (mode toggles, warnings). */
 export function ConsoleStack(props: { children: JSX.Element }): JSX.Element {
   return <div class={styles.consoleStack}>{props.children}</div>

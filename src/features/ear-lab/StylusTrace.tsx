@@ -16,6 +16,9 @@ export type ContourDirection = 'up' | 'down' | 'same'
 interface StylusTraceProps {
   /** Which tone is sounding: 1, 2, or 0. */
   sounding: 0 | 1 | 2
+  /** The answer phase: both tones have sounded, the first segment
+   *  stays drawn and the stylus waits at its end. */
+  armed: boolean
   reveal: { direction: ContourDirection; wrong: ContourDirection | null } | null
 }
 
@@ -38,9 +41,11 @@ const WORD: Record<ContourDirection, string> = {
 }
 
 export function StylusTrace(props: StylusTraceProps): JSX.Element {
-  const tipX = () => (props.reveal || props.sounding === 2 ? MID_X : START_X)
+  /** Anything on the drum yet: from the first tone to the reveal. */
+  const traced = () =>
+    props.sounding >= 1 || props.armed || props.reveal !== null
   const tip = () => ({
-    x: props.reveal ? END_X : props.sounding >= 1 ? MID_X : tipX(),
+    x: props.reveal ? END_X : traced() ? MID_X : START_X,
     y: props.reveal ? endY(props.reveal.direction) : BASE_Y,
   })
 
@@ -70,7 +75,7 @@ export function StylusTrace(props: StylusTraceProps): JSX.Element {
       </For>
 
       {/* the first segment: level, drawn as the first tone sounds */}
-      <Show when={props.sounding >= 1 || props.reveal !== null}>
+      <Show when={traced()}>
         <line
           x1={START_X}
           y1={BASE_Y}

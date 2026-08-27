@@ -10,7 +10,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, onMount, Show } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import type { FacultyId } from '@/lib/ear/drills'
 import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
 import { IconArc, IconFork, IconGears, IconLattice, IconLoupe, IconSeal, IconStylus, } from './ear-icons'
@@ -37,7 +37,6 @@ interface EarLabDashboardProps {
   onNavigate: (view: EarLabView) => void
   /** The room's Today control lives on the shell; the bench hands it
    *  the scroll that brings today's regulation into view. */
-  registerToday?: (show: () => void) => void
 }
 
 const FACULTY_ORDER: FacultyId[] = [
@@ -116,6 +115,9 @@ function headline(): Headline {
 }
 
 export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
+  const openInstrument = (instrument: Instrument) =>
+    props.onNavigate(instrument.view)
+
   const calibrated = () => latestCalibration()
   // Memoized: the bench reads it several times per render and it walks
   // every drill's readings and ratings to build the composite.
@@ -147,18 +149,6 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
       }
     })
   })
-
-  let regulationCard: HTMLDivElement | undefined
-
-  const showToday = () => {
-    regulationCard?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    regulationCard?.focus({ preventScroll: true })
-  }
-
-  const openInstrument = (instrument: Instrument) =>
-    props.onNavigate(instrument.view)
-
-  onMount(() => props.registerToday?.(showToday))
 
   return (
     <div class={styles.bench} id="ear-lab-panel">
@@ -197,7 +187,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
           />
         </div>
 
-        <div class={styles.regulationCell} ref={regulationCard} tabIndex={-1}>
+        <div class={styles.regulationCell}>
           <SprintCard onNavigate={props.onNavigate} />
         </div>
       </div>

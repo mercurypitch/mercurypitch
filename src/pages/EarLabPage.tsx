@@ -35,7 +35,6 @@ const VIEW_FOR_DRILL: Record<string, EarLabView> = {
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')
   const back = () => setView('dashboard')
-  let showToday: (() => void) | null = null
 
   // A drill asked for from elsewhere (The Ascent's ear week). Cleared
   // as it is consumed, so coming back to the tab later lands on the
@@ -50,18 +49,9 @@ export function EarLabPage(): JSX.Element {
 
   return (
     <div id="ear-lab-page">
-      <EarRoomShell
-        onNavigate={setView}
-        onToday={() => showToday?.()}
-        bridge={view() === 'dashboard'}
-      >
+      <EarRoomShell onNavigate={setView} bridge={view() === 'dashboard'}>
         <Show when={view() === 'dashboard'}>
-          <EarLabDashboard
-            onNavigate={setView}
-            registerToday={(show) => {
-              showToday = show
-            }}
-          />
+          <EarLabDashboard onNavigate={setView} />
         </Show>
         <Show when={view() === 'hairline'}>
           <HairlineDrill onBack={back} />

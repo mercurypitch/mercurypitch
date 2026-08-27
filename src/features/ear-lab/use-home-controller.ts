@@ -134,22 +134,18 @@ export function useHomeController(
     })
   }
 
+  /** The chord as a chord: every member a full voice of the engine's
+   *  instrument, started together. (The engine's own chord members are
+   *  faint sines meant to colour one note, not to carry a cadence —
+   *  through them a cadence came out as four bare roots.) playTone
+   *  resolves once the tone is scheduled, so the chord's length is
+   *  waited out here: the lamp lit for it stays lit exactly as long as
+   *  it sounds, and the next chord waits its turn. */
   async function playChord(midis: number[], ms: number): Promise<void> {
-    const [root, ...rest] = midis
-    const intervals = rest.map((m) => m - root)
-    await audioEngine.playTone(
-      midiToFreq(root),
-      ms,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      intervals,
+    await Promise.all(
+      midis.map((midi) => audioEngine.playTone(midiToFreq(midi), ms)),
     )
+    await wait(ms)
   }
 
   function start(runMode: HomeAnswerMode): void {
@@ -206,6 +202,9 @@ export function useHomeController(
       midiToFreq(probeMidi(rootMidi, pick.degree.degree)),
       HOME_TIMING.probeMs,
     )
+    // The answer opens once the probe has died away, so a sung answer
+    // is never captured over the probe still sounding from the speakers.
+    await wait(HOME_TIMING.probeMs)
     // Stop may have landed while the probe was sounding; arming the
     // answer here would resurrect a finished run.
     if (cancelled) return
@@ -319,11 +318,13 @@ export function useHomeController(
       midiToFreq(probeMidi(rootMidi, degree)),
       HOME_TIMING.resolutionProbeMs,
     )
+    await wait(HOME_TIMING.resolutionProbeMs)
     if (cancelled) return
     await audioEngine.playTone(
       midiToFreq(rootMidi),
       HOME_TIMING.resolutionTonicMs,
     )
+    await wait(HOME_TIMING.resolutionTonicMs)
   }
 
   function finish(): void {

@@ -226,6 +226,36 @@ bench's bridge was.
    a pad. Reduced motion: the chase light, the hunting needle, the wheels
    and the pendulums stop; every reading still reads.
 
+## 2i. Sound, Today, and the retest fixes — Polish retest 2026-08-27
+
+The founder's first hardware pass on Polish Phases 2-3 found five things.
+Each now has a hook the audit script checks (`scripts/audit-ear-lab-mobile.mjs`);
+the ear is yours.
+
+1. **Stage volume and the click voice.** Open the rack from the room chip.
+   Under _Room visibility_: _Stage volume_ (default 70%) and _The Grid's
+   click_ — Wood (default), Tick, Soft. Choosing a click plays it once at the
+   stage volume. The Grid's clicks and every tone on the bench follow the
+   slider on top of the app's own volume (Settings); leaving the Ear Lab
+   resets the trim, so the rest of the app is unchanged. The Grid's idle
+   console says which click is set and links to the room. Expected: no
+   piercing 2 kHz click at full level on earbuds — Wood is a 1 kHz knock at
+   about half the old level.
+2. **Home cadence.** I-IV-V-I sound as three-note chords (each member a full
+   instrument voice), one after the other, and the lamp for each is lit for
+   exactly as long as the chord sounds; the probe follows, and the answer
+   opens only once the probe has died away. Before: four bare roots 130 ms
+   apart with the probe over them — heard as a five-note scale.
+3. **Contour.** After the second tone, the first tone's trace stays on the
+   drum and the stylus rests at its end until you answer. Before: the trace
+   vanished and only the arm remained.
+4. **Stack.** The reveal's wheels mesh side by side (even left, odd right of
+   the arbor), so a suspended 4th's 5 and 7 are neighbours; captions sit in a
+   column to the right and the nameplate keeps clear of the root wheel.
+5. **Today.** The bridge's Today button opens the regulation in the rack (the
+   same three drills as the bench's card); Start opens the drill and closes
+   the rack. Before: it scrolled the bench, invisible on a desk.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

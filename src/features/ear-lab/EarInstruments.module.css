@@ -200,9 +200,10 @@
   fill: #151a20;
   stroke: rgb(239 230 214 / 18%);
   stroke-width: 1;
+  /* Lit on the chord's onset — no fade, or the eye reads it late. */
   transition:
-    fill 140ms ease,
-    stroke 140ms ease;
+    fill 40ms linear,
+    stroke 40ms linear;
 }
 
 .lampLit {
@@ -419,8 +420,9 @@
 
 .stylus {
   stroke: var(--inst-brass);
-  stroke-width: 3;
+  stroke-width: 2.2;
   stroke-linecap: round;
+  opacity: 0.85;
   transition:
     x2 400ms ease,
     y2 400ms ease;

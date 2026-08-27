@@ -26,8 +26,10 @@ import { GRID_TIMING } from '@/lib/ear/timing'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
+import { CLICK_VOICES, formatEarVolume } from './ear-sound'
+import { useEarRoom } from './EarRoomShell'
 import type { PadState } from './EarStage'
-import { Pads, StagePad } from './EarStage'
+import { ConsoleLink, Pads, StagePad } from './EarStage'
 import { EscapementLattice } from './EscapementLattice'
 import { ThresholdDrillView } from './ThresholdDrillView'
 import type { StimulusApi } from './use-threshold-run'
@@ -53,6 +55,7 @@ const ORDINALS: Record<number, string> = {
 
 export function GridDrill(props: GridDrillProps): JSX.Element {
   const { audioEngine } = useEngines()
+  const room = useEarRoom()
   const drill = findThresholdDrill('the-grid')
   if (!drill) throw new Error('the-grid drill missing from catalogue')
 
@@ -83,9 +86,15 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
     setPattern(current)
     setPicked(null)
     const start = ctx.currentTime + GRID_TIMING.leadInS
+    // Clicks bypass the engine, so the room's level is applied here:
+    // the stage volume on top of the app's, the same as every tone.
+    const click = {
+      voice: room.clickVoice(),
+      gainLevel: room.volume() * audioEngine.getVolume(),
+    }
 
     for (const [i, offset] of current.clickTimes.entries()) {
-      scheduled.push(scheduleClick(ctx, start + offset))
+      scheduled.push(scheduleClick(ctx, start + offset, click))
       // The chase light rides on setTimeout — close enough for eyes;
       // only the audio needs (and gets) the sample-accurate clock.
       stepTimers.push(
@@ -126,6 +135,9 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
 
   const early = () => (pattern()?.shiftMs ?? 0) < 0
   const offset = () => `${run.level().toFixed(0)} ms`
+  const voiceLabel = () =>
+    CLICK_VOICES.find((voice) => voice.id === room.clickVoice())?.label ??
+    'Wood'
 
   return (
     <ThresholdDrillView
@@ -142,6 +154,12 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
       unitLabel="ms"
       unitShort=" ms"
       latestValue={() => latestThresholdReading('the-grid')?.value ?? null}
+      idleAside={
+        <ConsoleLink onClick={() => room.openPanel('room')}>
+          Click: {voiceLabel()} at {formatEarVolume(room.volume())} — change it
+          in the room
+        </ConsoleLink>
+      }
       run={run}
       instrument={() => (
         <EscapementLattice

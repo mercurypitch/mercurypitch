@@ -287,7 +287,40 @@ async function auditViewport(browser, name, contextOptions) {
   const slider = page.getByTestId('ear-room-glass')
   if (!(await slider.isVisible().catch(() => false)))
     fail(`${name} rack`, 'room glass slider missing')
+  // The bench's sound lives in the same panel: one level, three clicks.
+  if (
+    !(await page
+      .getByTestId('ear-room-volume')
+      .isVisible()
+      .catch(() => false))
+  )
+    fail(`${name} rack`, 'stage volume slider missing')
+  const voices = page
+    .getByRole('radiogroup', { name: "The Grid's click" })
+    .getByRole('radio')
+  if ((await voices.count()) !== 3)
+    fail(
+      `${name} rack`,
+      `expected 3 click voices, found ${await voices.count()}`,
+    )
+  for (const box of await voices.evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().height),
+  )) {
+    if (box < 44)
+      fail(`${name} rack`, `a click voice pad is ${Math.round(box)}px tall`)
+  }
   await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+
+  // Today opens the regulation in the rack — it used to scroll the bench.
+  await page.getByRole('button', { name: 'Today' }).click()
+  await page.waitForTimeout(450)
+  await page.screenshot({ path: `${OUT}/${name}-rack-today.png` })
+  const todaySlots = page.getByRole('dialog').locator('button[data-drill]')
+  if ((await todaySlots.count()) === 0)
+    fail(`${name} rack`, "Today's regulation has no drill slots in the rack")
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
 
   const stage = await auditStage(page, name)
 
@@ -336,6 +369,57 @@ function measureStage() {
  *  stop onto the plate; then Home to its ladder. Layout only — the
  *  fake audio device makes the tones inaudible, not absent. */
 /** The report's layout facts, read in one evaluate. */
+/** The Contour instrument's lines, by their viewBox coordinates. */
+function measureStylus() {
+  const svg = document.querySelector('svg[data-instrument="stylus"]')
+  if (!svg) return null
+  const lines = [...svg.querySelectorAll('line')].map((line) =>
+    ['x1', 'y1', 'x2', 'y2'].map((key) => Number(line.getAttribute(key))),
+  )
+  const segment = lines.some(([x1, , x2]) => x1 === 120 && x2 === 250)
+  const arm = lines.find(([x1, y1]) => x1 === 470 && y1 === 30)
+  return { segment, armTipX: arm ? arm[2] : null }
+}
+
+/** The Stack's wheels (the toothed circles) and captions, in viewBox
+ *  units: the smallest gap between any two wheels, and whether any
+ *  caption's box touches a wheel. */
+function measureGears() {
+  const svg = document.querySelector('svg[data-instrument="gears"]')
+  if (!svg) return null
+  const wheels = [...svg.querySelectorAll('circle')]
+    .map((c) => ({
+      cx: Number(c.getAttribute('cx')),
+      cy: Number(c.getAttribute('cy')),
+      r: Number(c.getAttribute('r')),
+    }))
+    .filter((c) => c.r >= 34)
+  let minGap = Infinity
+  for (let i = 0; i < wheels.length; i++)
+    for (let j = i + 1; j < wheels.length; j++) {
+      const d = Math.hypot(
+        wheels[i].cx - wheels[j].cx,
+        wheels[i].cy - wheels[j].cy,
+      )
+      minGap = Math.min(minGap, d - wheels[i].r - wheels[j].r)
+    }
+  const texts = [...svg.querySelectorAll('text')].map((t) => {
+    const b = t.getBBox()
+    return { x: b.x, y: b.y, w: b.width, h: b.height, text: t.textContent }
+  })
+  const hits = (w, t) => {
+    const nx = Math.max(t.x, Math.min(w.cx, t.x + t.w))
+    const ny = Math.max(t.y, Math.min(w.cy, t.y + t.h))
+    return Math.hypot(w.cx - nx, w.cy - ny) < w.r
+  }
+  return {
+    wheels: wheels.length,
+    minGap,
+    textHit: texts.some((t) => wheels.some((w) => hits(w, t))),
+    texts: texts.map((t) => t.text),
+  }
+}
+
 function measureReport() {
   const doc = document.documentElement
   const root = document.querySelector('[data-testid="ear-report"]')
@@ -443,6 +527,70 @@ async function auditStage(page, name) {
       `${name} home run`,
       `ladder has ${results.homeRun.padCount - 1} rungs, expected 7`,
     )
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Contour: while the answer waits, the first tone's trace stays on
+  // the drum and the stylus rests at its end — not a bare arm.
+  await openFromStrip('Contour')
+  await page.getByText('Begin').click()
+  const contourArmed = await page
+    .locator('[data-testid="ear-stage-pads"] button:not([disabled])', {
+      hasText: 'Up',
+    })
+    .waitFor({ timeout: 10000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!contourArmed) fail(`${name} contour`, 'the answer never armed')
+  const stylus = await page.evaluate(measureStylus)
+  await page.screenshot({ path: `${OUT}/${name}-stage-contour-answer.png` })
+  if (!stylus) fail(`${name} contour`, 'no stylus trace on the stage')
+  else if (!stylus.segment || stylus.armTipX !== 250)
+    fail(
+      `${name} contour`,
+      `answer phase shows segment=${stylus.segment}, arm tip at ${stylus.armTipX}`,
+    )
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Stack: the reveal's wheels mesh side by side; none may overlap,
+  // and the nameplate keeps clear of the root wheel.
+  await openFromStrip('Stack')
+  await page.getByText('Begin').click()
+  const stackPad = page
+    .locator('[data-testid="ear-stage-pads"] button:not([disabled])')
+    .first()
+  const stackArmed = await stackPad
+    .waitFor({ timeout: 10000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!stackArmed) fail(`${name} stack`, 'the answer never armed')
+  else {
+    await stackPad.click()
+    await page.waitForTimeout(250)
+    const gears = await page.evaluate(measureGears)
+    await page.screenshot({ path: `${OUT}/${name}-stage-stack-reveal.png` })
+    if (!gears || gears.wheels < 3)
+      fail(`${name} stack`, `reveal shows ${gears?.wheels ?? 0} wheels`)
+    else {
+      if (gears.minGap < -0.5)
+        fail(
+          `${name} stack`,
+          `wheels overlap by ${(-gears.minGap).toFixed(1)}px`,
+        )
+      if (gears.textHit)
+        fail(
+          `${name} stack`,
+          `a caption sits on a wheel (${gears.texts.join(' / ')})`,
+        )
+    }
+  }
   await page.getByLabel('Stop').click()
   await page.waitForTimeout(300)
   await page.getByText('Back to the bench').click()

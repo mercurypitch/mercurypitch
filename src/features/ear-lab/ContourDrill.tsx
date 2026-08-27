@@ -93,6 +93,7 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
       instrument={() => (
         <StylusTrace
           sounding={controller.phase() === 'playing' ? sounding() : 0}
+          armed={controller.phase() === 'answer'}
           reveal={
             controller.phase() === 'reveal' &&
             asDirection(controller.expectedId()) !== null

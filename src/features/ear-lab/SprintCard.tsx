@@ -24,6 +24,8 @@ import type { EarLabView } from './EarLabDashboard'
 import styles from './SprintCard.module.css'
 
 interface SprintCardProps {
+  /** In the rack's Today panel: the bench's copy keeps the tour hook. */
+  rack?: boolean
   onNavigate: (view: EarLabView) => void
 }
 
@@ -70,7 +72,7 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
   return (
     <section
       class={styles.card}
-      data-tour="ear.sprint"
+      data-tour={props.rack === true ? undefined : 'ear.sprint'}
       aria-label="Today's regulation"
     >
       <header class={styles.head}>
@@ -108,6 +110,7 @@ export function SprintCard(props: SprintCardProps): JSX.Element {
                 <button
                   type="button"
                   class={styles.go}
+                  data-drill={segment.drillId}
                   onClick={() => {
                     const view = VIEW_FOR_DRILL[segment.drillId]
                     if (view) props.onNavigate(view)

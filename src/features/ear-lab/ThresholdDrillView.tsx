@@ -40,6 +40,8 @@ interface ThresholdDrillViewProps {
   measures: string
   /** One paragraph for the idle console. */
   description: string
+  /** Under the description at idle: a drill's link to its sound. */
+  idleAside?: JSX.Element
   /** The task in one line, shown at idle. */
   prompt: string
   listenHint: string
@@ -207,6 +209,7 @@ export function ThresholdDrillView(
                     />
                   </ConsoleLead>
                   <ConsoleNote>{props.description}</ConsoleNote>
+                  {props.idleAside}
                 </>
               }
             >
