@@ -34,6 +34,7 @@ import type { GuitarNightListeningSelection } from './GuitarNightListeningCycle'
 import { GuitarNightListeningCycle } from './GuitarNightListeningCycle'
 import { GuitarNightLiveScore } from './GuitarNightLiveScore'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
+import { GuitarNightScoreDebugDock } from './GuitarNightScoreDebug'
 import { GuitarNightScoreSheet } from './GuitarNightScoreSheet'
 import { GuitarNightSessionPanel } from './GuitarNightSessionPanel'
 import { GuitarNightStage } from './GuitarNightStage'
@@ -830,8 +831,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     setDoctorOpen(false)
     sessionDetails.open = false
     try {
-      const inputReady =
-        listening.status() === 'listening' || (await listening.start())
+      const inputReady = await listening.start()
       if (!inputReady || disposed) return false
 
       const boundary = await room.startAssessment(range)
@@ -1051,8 +1051,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         await listening.selectInputProfile(replay.inputKind)
         if (!stillCurrent()) return
       }
-      const inputReady =
-        listening.status() === 'listening' || (await listening.start())
+      const inputReady = await listening.start()
       if (!inputReady || !stillCurrent()) return
       await startLiveScoreWithRoomMicConsent(replay.range)
     } finally {
@@ -1093,8 +1092,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     sessionDetails.open = false
     setDoctorOpen(false)
     try {
-      const inputReady =
-        listening.status() === 'listening' || (await listening.start())
+      const inputReady = await listening.start()
       if (!inputReady || !stillCurrent()) return
       const admission = await startLiveScoreWithRoomMicConsent(range)
       if (admission === 'failed' && stillCurrent()) {
@@ -1236,8 +1234,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         )
       }
       if (review.recovery.kind === 'calibrate') {
-        const opened =
-          listening.status() === 'listening' || (await listening.start())
+        const opened = await listening.start()
         if (
           !opened ||
           disposed ||
@@ -2548,6 +2545,12 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           ? { onReviewPhrase: reviewFromScore }
           : {})}
       />
+      <Show when={import.meta.env.DEV}>
+        <GuitarNightScoreDebugDock
+          model={liveScore.debugModel}
+          playheadSeconds={liveScore.debugPlayheadSeconds}
+        />
+      </Show>
     </section>
   )
 }

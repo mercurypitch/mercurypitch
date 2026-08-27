@@ -41,11 +41,12 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildClickSchedule } from '@/lib/tap-calibration'
 import { micLatencyMsForDevice, micLatencySpreadMsForDevice, setMicLatencyMeasurementForDevice, } from '@/stores/mic-latency-store'
+import { recordGuitarDetectCost, resetGuitarAnalysisCost, } from './guitar-analysis-cost'
 import { buildGuitarTakeEvidenceReport, downloadGuitarInputEvidenceReport, guitarInputEvidenceExportEnabled, } from './guitar-input-evidence-export'
+import { guitarPerformanceAnalyserSize } from './guitar-score-tuning'
 
 const CONSUMER_ID = 'guitar-night-listening'
 const MAX_EVENTS = 256
-const PERFORMANCE_ANALYSER_SIZE = 2048
 const TUNER_ANALYSER_SIZE = 8192
 const PERFORMANCE_MIN_FREQUENCY = 55
 const TUNER_MIN_FREQUENCY = 25
@@ -513,6 +514,7 @@ export function useGuitarListeningController(
     generation += 1
     completeTake()
     stopNodes()
+    resetGuitarAnalysisCost()
     releaseMicHold()
     setCurrentNote(null)
     setDetectedMidi(null)
@@ -946,7 +948,17 @@ export function useGuitarListeningController(
     startOptions: GuitarListeningStartOptions = {},
   ): Promise<boolean> => {
     if (disposed) return false
-    if (status() !== 'off' && status() !== 'error') return true
+    if (status() !== 'off' && status() !== 'error') {
+      // Whoever opened the mic first pinned the analyser window for the whole
+      // session. The tuner asks for 8192 samples and a 25 Hz floor; capture
+      // asks for a quarter of that. Silently inheriting the other one changes
+      // both the MPM cost (sixteen-fold) and the window origin a pitch reading
+      // is stamped with, so reopen on the tuning that was actually requested.
+      const activePurpose = lastStartOptions.purpose ?? 'performance'
+      const requestedPurpose = startOptions.purpose ?? 'performance'
+      if (activePurpose === requestedPurpose) return true
+      stop()
+    }
     lastStartOptions =
       startOptions.purpose === undefined
         ? {}
@@ -954,7 +966,7 @@ export function useGuitarListeningController(
     const analyserSize =
       startOptions.purpose === 'tuner'
         ? TUNER_ANALYSER_SIZE
-        : PERFORMANCE_ANALYSER_SIZE
+        : guitarPerformanceAnalyserSize()
     const minimumFrequency =
       startOptions.purpose === 'tuner'
         ? TUNER_MIN_FREQUENCY
@@ -1197,7 +1209,14 @@ export function useGuitarListeningController(
         }
         lastFrameAt = now
 
+        // Timed only on a development build: the branch folds away in
+        // production, so the frame loop pays nothing for the measurement.
+        const detectStartedAt = import.meta.env.DEV ? performance.now() : 0
         const detected = detector.detect(samples)
+        if (import.meta.env.DEV) {
+          const detectEndedAt = performance.now()
+          recordGuitarDetectCost(detectEndedAt - detectStartedAt, detectEndedAt)
+        }
         if (detected.frequency > 0 && detected.clarity >= 0.38) {
           const midi = Math.round(69 + 12 * Math.log2(detected.frequency / 440))
           const label = `${detected.noteName}${detected.octave}`

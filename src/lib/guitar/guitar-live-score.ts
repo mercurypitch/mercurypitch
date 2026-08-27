@@ -47,8 +47,51 @@ export interface CreateGuitarLiveScoreEngineOptions {
   targets: readonly GuitarLiveScoreTargetInput[]
   inputKind: GuitarInputProfileKind
   matchToleranceMs?: number
+  /**
+   * How late a strike may land and still prove a target. Separate from the
+   * early side because the two are not symmetric in nature: capture and output
+   * delay can only ever make a player look LATE, never early, and while that
+   * delay is unmeasured half a symmetric window is dead space. Widening it is
+   * an association decision, not a timing claim — the score stays 100 either
+   * way. Defaults to `matchToleranceMs`.
+   */
+  lateToleranceMs?: number
+  /**
+   * Accept the target's pitch class in an adjacent octave. On the low strings
+   * the second harmonic routinely exceeds the fundamental, so a mono detector
+   * reporting the octave above is a physical certainty rather than a player
+   * error. Guitar Practice already folds mic input to pitch class for exactly
+   * this reason. Defaults to off, which keeps MIDI exact.
+   */
+  octaveTolerantPitch?: boolean
+  /**
+   * Let a pitch change prove a target, not only a picked attack.
+   *
+   * The attack detector compares against a delayed peak envelope, so it misses
+   * same-strength repeated picking faster than the string decays — measured on
+   * two real takes of a fast piece, it fired 6 times in 34 seconds and 37 in
+   * 61, against 202 and 286 pitch changes over the same spans. Only attacks
+   * could score, so the run graded 0% and 6% while the pitch path was tracking
+   * 85-94% of the authored notes correctly.
+   *
+   * A hammer-on, pull-off or slide is also a note the tab asks for, and it
+   * never produces an attack by design. Excluding pitch changes made the score
+   * a measure of picking transients rather than of notes played.
+   */
+  matchPitchChanges?: boolean
+  /**
+   * Onset spacing under which acoustic targets are excluded rather than
+   * judged. Defaults to twice the pitch-attachment window.
+   */
+  denseTargetSpacingMs?: number
   minimumPitchClarity?: number
   instrumentation?: GuitarLiveScoreInstrumentation
+  /**
+   * Retain every judgment and expose the pinned target frames for the
+   * development overlay. Off in production builds: an uncapped judgment log on
+   * a long score is memory the player never asked to spend.
+   */
+  debug?: boolean
 }
 
 export type GuitarLiveScoreSkipReason =
@@ -129,6 +172,38 @@ export type GuitarLiveScoreHealth =
   | GuitarInputHealthReading
   | null
 
+/** One target exactly as the engine pinned it, for the development overlay. */
+export interface GuitarLiveScoreDebugTarget {
+  id: string
+  midi: number
+  startBeat: number
+  onsetFrame: number
+  skipReason: GuitarLiveScoreSkipReason | null
+}
+
+/**
+ * Everything the engine decided, unabridged. This is deliberately raw: the
+ * production display withholds claims it cannot support, and that is right,
+ * but a diagnosis needs the numbers the withholding hides.
+ */
+export interface GuitarLiveScoreDebugSnapshot {
+  sampleRate: number
+  durationFrames: number
+  toleranceFrames: number
+  lateToleranceFrames: number
+  pitchGraceFrames: number
+  minimumPitchClarity: number
+  inputKind: GuitarInputProfileKind
+  /** Whether pitch changes, not only picked attacks, could prove a target. */
+  matchPitchChanges: boolean
+  throughFrame: number
+  /** Recorder pages the engine never saw; each one skips the targets it spans. */
+  detectedGapCount: number
+  targets: readonly GuitarLiveScoreDebugTarget[]
+  /** Every judgment this run has made, not the rolling window. */
+  judgments: readonly GuitarLiveScoreJudgment[]
+}
+
 export interface GuitarLiveScoreEngine {
   sample(
     take: GuitarTakeSnapshot,
@@ -136,6 +211,8 @@ export interface GuitarLiveScoreEngine {
     health: GuitarLiveScoreHealth,
   ): GuitarLiveScoreDisplay
   snapshot(): GuitarLiveScoreDisplay
+  /** Null unless the engine was created with `debug: true`. */
+  debugSnapshot(): GuitarLiveScoreDebugSnapshot | null
 }
 
 interface TargetFrame extends GuitarLiveScoreTargetInput {
@@ -258,7 +335,11 @@ function createTargets(
       left.onsetFrame - right.onsetFrame || left.id.localeCompare(right.id),
   )
 
-  if (options.inputKind !== 'midi') {
+  const denseTargetSpacingMs =
+    options.denseTargetSpacingMs ?? PITCH_ATTACH_WINDOW_MS * 2
+  // Zero disables exclusion outright, so a development run can see what the
+  // excluded targets would have scored instead of only that they were skipped.
+  if (options.inputKind !== 'midi' && denseTargetSpacingMs > 0) {
     const groups = new Map<number, TargetFrame[]>()
     for (const target of targets) {
       const group = groups.get(target.onsetFrame)
@@ -267,7 +348,7 @@ function createTargets(
     }
     const onsetFrames = [...groups.keys()].sort((left, right) => left - right)
     const minimumSpacingFrames = Math.round(
-      ((PITCH_ATTACH_WINDOW_MS * 2) / 1000) * options.sampleRate,
+      (denseTargetSpacingMs / 1000) * options.sampleRate,
     )
     for (let index = 0; index < onsetFrames.length; index += 1) {
       const onsetFrame = onsetFrames[index]
@@ -304,12 +385,17 @@ export function createGuitarLiveScoreEngine(
   }
   const matchToleranceMs =
     options.matchToleranceMs ?? GUITAR_LIVE_SCORE_MATCH_TOLERANCE_MS
+  const lateToleranceMs = options.lateToleranceMs ?? matchToleranceMs
   const minimumPitchClarity =
     options.minimumPitchClarity ?? GUITAR_LIVE_SCORE_MINIMUM_PITCH_CLARITY
   assertFinite(matchToleranceMs, 'matchToleranceMs')
+  assertFinite(lateToleranceMs, 'lateToleranceMs')
   assertFinite(minimumPitchClarity, 'minimumPitchClarity')
   if (matchToleranceMs <= 0) {
     throw new RangeError('matchToleranceMs must be positive.')
+  }
+  if (lateToleranceMs <= 0) {
+    throw new RangeError('lateToleranceMs must be positive.')
   }
   if (minimumPitchClarity < 0 || minimumPitchClarity > 1) {
     throw new RangeError('minimumPitchClarity must be between zero and one.')
@@ -335,6 +421,25 @@ export function createGuitarLiveScoreEngine(
     1,
     Math.round((matchToleranceMs / 1000) * options.sampleRate),
   )
+  const lateToleranceFrames = Math.max(
+    1,
+    Math.round((lateToleranceMs / 1000) * options.sampleRate),
+  )
+  /** The widest either side reaches; used for retention and gap overlap. */
+  const spanToleranceFrames = Math.max(toleranceFrames, lateToleranceFrames)
+  const octaveTolerantPitch = options.octaveTolerantPitch === true
+  const matchPitchChanges = options.matchPitchChanges === true
+  const scorableKind = (kind: GuitarTakeEvent['kind']): boolean =>
+    kind === 'attack' || (matchPitchChanges && kind === 'pitch-change')
+  const pitchMatches = (heard: number, authored: number): boolean => {
+    if (heard === authored) return true
+    if (!octaveTolerantPitch) return false
+    const delta = heard - authored
+    return Math.abs(delta) <= 12 && delta % 12 === 0
+  }
+  /** Signed: negative is early, positive is late. */
+  const withinWindow = (offsetFrames: number): boolean =>
+    offsetFrames >= -toleranceFrames && offsetFrames <= lateToleranceFrames
   const pitchGraceFrames = Math.max(
     1,
     Math.round((PITCH_ATTACH_WINDOW_MS / 1000) * options.sampleRate),
@@ -358,6 +463,7 @@ export function createGuitarLiveScoreEngine(
   let bestStreak = 0
   let detectedGapCount = 0
   let recentJudgments: readonly GuitarLiveScoreJudgment[] = []
+  const debugJudgments: GuitarLiveScoreJudgment[] = []
   let rollingJudgments: readonly GuitarLiveScoreJudgment[] = []
   const consumedEventIds = new Set<string>()
   const activeEvents = new Map<string, GuitarTakeEvent>()
@@ -366,6 +472,7 @@ export function createGuitarLiveScoreEngine(
 
   const appendJudgment = (judgment: GuitarLiveScoreJudgment): void => {
     const frozen = freezeJudgment(judgment)
+    if (options.debug === true) debugJudgments.push(frozen)
     recentJudgments = Object.freeze(
       [...recentJudgments, frozen].slice(-GUITAR_LIVE_SCORE_ROLLING_TARGETS),
     )
@@ -391,8 +498,8 @@ export function createGuitarLiveScoreEngine(
   const overlapsGap = (target: TargetFrame): boolean =>
     gapIntervals.some(
       (gap) =>
-        target.onsetFrame + toleranceFrames >= gap.startFrame &&
-        target.onsetFrame - toleranceFrames <= gap.endFrame,
+        target.onsetFrame + spanToleranceFrames >= gap.startFrame &&
+        target.onsetFrame - spanToleranceFrames <= gap.endFrame,
     )
 
   const matchingEvent = (
@@ -404,14 +511,13 @@ export function createGuitarLiveScoreEngine(
     for (const event of activeEvents.values()) {
       if (
         consumedEventIds.has(event.id) ||
-        event.kind !== 'attack' ||
+        !scorableKind(event.kind) ||
         event.source !== options.inputKind ||
         event.compensatedTransportFrame > throughFrame ||
         event.compensatedTransportFrame >= durationFrames ||
-        Math.abs(event.compensatedTransportFrame - target.onsetFrame) >
-          toleranceFrames ||
+        !withinWindow(event.compensatedTransportFrame - target.onsetFrame) ||
         event.pitch === null ||
-        event.pitch.midi !== target.midi ||
+        !pitchMatches(event.pitch.midi, target.midi) ||
         (options.inputKind !== 'midi' &&
           event.pitch.clarity < minimumPitchClarity)
       ) {
@@ -438,12 +544,11 @@ export function createGuitarLiveScoreEngine(
     [...activeEvents.values()].some((event) => {
       if (
         consumedEventIds.has(event.id) ||
-        event.kind !== 'attack' ||
+        !scorableKind(event.kind) ||
         event.source !== options.inputKind ||
         event.compensatedTransportFrame > throughFrame ||
         event.compensatedTransportFrame >= durationFrames ||
-        Math.abs(event.compensatedTransportFrame - target.onsetFrame) >
-          toleranceFrames
+        !withinWindow(event.compensatedTransportFrame - target.onsetFrame)
       ) {
         return false
       }
@@ -472,7 +577,7 @@ export function createGuitarLiveScoreEngine(
         firstUnresolvedTargetIndex = targets.length
         break
       }
-      const expired = throughFrame > target.onsetFrame + toleranceFrames
+      const expired = throughFrame > target.onsetFrame + lateToleranceFrames
       if (!finalize && !expired) break
 
       if (target.skipReason !== null) {
@@ -559,7 +664,7 @@ export function createGuitarLiveScoreEngine(
     const oldestUsefulFrame =
       nextTarget === undefined
         ? throughFrame
-        : nextTarget.onsetFrame - toleranceFrames
+        : nextTarget.onsetFrame - spanToleranceFrames
     for (const [eventId, event] of activeEvents) {
       if (
         consumedEventIds.has(eventId) ||
@@ -686,7 +791,10 @@ export function createGuitarLiveScoreEngine(
           eventIdentities.delete(event.id)
           eventIdentities.set(event.id, identity)
         }
-        activeEvents.set(event.id, event)
+        // Consumed events are deliberately dropped by `prune`. Re-adding them
+        // here would undo that every snapshot and grow the retained page back
+        // to the full recorder page on each sample.
+        if (!consumedEventIds.has(event.id)) activeEvents.set(event.id, event)
       }
       while (eventIdentities.size > RECENT_EVENT_IDENTITIES) {
         const oldestId = eventIdentities.keys().next().value as
@@ -747,7 +855,7 @@ export function createGuitarLiveScoreEngine(
       }
     }
     const effectiveThroughFrame = finalize
-      ? Math.max(throughFrame, finalDurationFrames + toleranceFrames + 1)
+      ? Math.max(throughFrame, finalDurationFrames + lateToleranceFrames + 1)
       : throughFrame
     judgeThrough(effectiveThroughFrame, health, finalize, finalDurationFrames)
     prune(effectiveThroughFrame)
@@ -756,5 +864,29 @@ export function createGuitarLiveScoreEngine(
     return display()
   }
 
-  return { sample, snapshot: display }
+  const debugSnapshot = (): GuitarLiveScoreDebugSnapshot | null => {
+    if (options.debug !== true) return null
+    return {
+      sampleRate: options.sampleRate,
+      durationFrames,
+      toleranceFrames,
+      lateToleranceFrames,
+      pitchGraceFrames,
+      minimumPitchClarity,
+      inputKind: options.inputKind,
+      matchPitchChanges,
+      throughFrame: lastThroughFrame,
+      detectedGapCount,
+      targets: targets.map((target) => ({
+        id: target.id,
+        midi: target.midi,
+        startBeat: target.startBeat,
+        onsetFrame: target.onsetFrame,
+        skipReason: target.skipReason,
+      })),
+      judgments: [...debugJudgments],
+    }
+  }
+
+  return { sample, snapshot: display, debugSnapshot }
 }

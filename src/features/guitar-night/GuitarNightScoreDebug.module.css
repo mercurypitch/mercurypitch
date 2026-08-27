@@ -1,0 +1,370 @@
+/* Development-only diagnosis surface. Density over beauty: this exists to
+   answer "why did that note not count", not to be lived in. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(8, 10, 16, 0.92);
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.chipLabel {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.chipValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.chipAlert {
+  background: rgba(248, 113, 113, 0.16);
+  color: #fca5a5;
+}
+
+.chipAlert .chipLabel {
+  color: #fca5a5;
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: #cbd5e1;
+  user-select: none;
+}
+
+.toggle input {
+  margin: 0;
+  accent-color: #38bdf8;
+}
+
+.rangeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+}
+
+.rangeToggle input {
+  width: 90px;
+  accent-color: #38bdf8;
+}
+
+.canvasWrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(2, 6, 12, 0.9);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.inspectorHead {
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.inspectorMuted {
+  color: #94a3b8;
+}
+
+.breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.breakdownItem {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.empty {
+  padding: 18px 12px;
+  text-align: center;
+  color: #64748b;
+}
+
+/* Fixed, not in flow: the score room is `height: 100%; overflow: hidden`, so a
+   panel appended as the last flex child is clipped to nothing. Floating means
+   it can cover the transport, so it snaps to corners and drags by its bar. */
+.dock {
+  position: fixed;
+  /* Above every app layer, including the consent banner at 2147483000. A debug
+     surface that the sign-in row or a room chip can steal clicks from is not a
+     debug surface. */
+  z-index: 2147483001;
+  width: max-content;
+  max-width: min(920px, calc(100vw - 24px));
+  border: 1px dashed rgba(56, 189, 248, 0.45);
+  border-radius: 10px;
+  background: rgba(2, 6, 12, 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.dockOpen {
+  width: min(920px, calc(100vw - 24px));
+  max-height: 78vh;
+  overflow: auto;
+}
+
+.dockBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 8px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.dockBar:active {
+  cursor: grabbing;
+}
+
+.dockToggle {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7dd3fc;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.dockGrip {
+  flex: 1 1 auto;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #475569;
+  text-align: center;
+  user-select: none;
+}
+
+.dockCorners {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dockCornerButton {
+  display: inline-flex;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+}
+
+.dockCornerButton:hover {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.dockCornerActive {
+  color: #38bdf8;
+}
+
+.dockBody {
+  padding: 0 8px 8px;
+}
+
+.tuning {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.tuningHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.tuningGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 6px 14px;
+}
+
+.tuningRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #cbd5e1;
+}
+
+.tuningRow input[type='range'] {
+  flex: 1 1 70px;
+  min-width: 60px;
+  accent-color: #fbbf24;
+}
+
+.tuningValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  min-width: 52px;
+  text-align: right;
+}
+
+.tuningReset {
+  padding: 2px 8px;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 999px;
+  background: transparent;
+  color: #fbbf24;
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.tuningNote {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.breakdownExcluded {
+  background: rgba(251, 191, 36, 0.14);
+  color: #fcd34d;
+}
+
+.analyserWarn {
+  color: #fca5a5;
+}
+
+.exportRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.exportButton {
+  padding: 3px 9px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: #7dd3fc;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.exportButton:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.exportNote {
+  font-size: 10px;
+  color: #64748b;
+}
