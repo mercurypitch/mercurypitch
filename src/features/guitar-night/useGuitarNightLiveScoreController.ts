@@ -10,9 +10,12 @@ import { createEffect, createMemo, createSignal } from 'solid-js'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
 import type { GuitarLiveScoreDisplay, GuitarLiveScoreEngine, GuitarLiveScoreGrade, } from '@/lib/guitar/guitar-live-score'
 import { createGuitarLiveScoreEngine } from '@/lib/guitar/guitar-live-score'
-import type { GuitarTakeSnapshot } from '@/lib/guitar/guitar-take-recorder'
+import type { GuitarScoreDebugModel } from '@/lib/guitar/guitar-score-debug'
+import { buildGuitarScoreDebugModel } from '@/lib/guitar/guitar-score-debug'
+import type { GuitarTakeEvent, GuitarTakeSnapshot, } from '@/lib/guitar/guitar-take-recorder'
 import type { GuitarInputHealthReading } from '@/lib/guitar/input-events'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
+import { guitarScoreEngineTuning } from './guitar-score-tuning'
 import type { GuitarListeningStatus } from './useGuitarListeningController'
 import type { GuitarNightScoreLiveBoundary, GuitarNightScoreRoomStatus, } from './useGuitarNightScoreRoomController'
 
@@ -54,7 +57,16 @@ function retainedHealth(
   live: GuitarInputHealthReading | null,
 ): GuitarInputHealthReading | null {
   const observed = take.inputHealth
-  if (observed.states.clipping > 0) {
+  // Prevalence, not presence. These counters accumulate for the whole take, so
+  // testing `> 0` made one transient peak — trivially reached with AGC off —
+  // skip every remaining target for the rest of the run. `noisy` and
+  // `uncertain` already used a ratio and recovered on their own; `clipping`
+  // never did, which is why a take could stop scoring halfway through and
+  // report "this input could not prove these notes".
+  if (
+    observed.states.clipping >= 3 &&
+    observed.states.clipping / Math.max(1, observed.readings) >= 0.2
+  ) {
     return { state: 'clipping', hint: 'The input clipped during this take.' }
   }
   if (
@@ -130,6 +142,14 @@ export function useGuitarNightLiveScoreController(
   const [scoringInputKind, setScoringInputKind] =
     createSignal<GuitarInputProfileKind | null>(null)
   const [finishing, setFinishing] = createSignal(false)
+  // Development only. The engine keeps no judgment log unless asked, so this
+  // stays null — and costs nothing — in a production build.
+  const [debugModel, setDebugModel] =
+    createSignal<GuitarScoreDebugModel | null>(null)
+  // The recorder's page is bounded and, on a dense passage, fills with
+  // pitch-change frames — so reading the current page alone shows a keyhole
+  // rather than the take. Keep every event the overlay has ever seen.
+  const observedDebugEvents = new Map<string, GuitarTakeEvent>()
   let engine: GuitarLiveScoreEngine | null = null
   let takeId: string | null = null
   let finishingTakeId: string | null = null
@@ -159,6 +179,26 @@ export function useGuitarNightLiveScoreController(
     return Math.floor(transportFrame() / quantum) * quantum
   })
 
+  const refreshDebugModel = (
+    currentEngine: GuitarLiveScoreEngine,
+    currentTake: GuitarTakeSnapshot,
+  ): void => {
+    if (!import.meta.env.DEV) return
+    const snapshot = currentEngine.debugSnapshot()
+    if (snapshot === null) {
+      setDebugModel(null)
+      return
+    }
+    for (const event of currentTake.events) {
+      observedDebugEvents.set(event.id, event)
+    }
+    const observed = [...observedDebugEvents.values()].sort(
+      (left, right) =>
+        left.compensatedTransportFrame - right.compensatedTransportFrame,
+    )
+    setDebugModel(buildGuitarScoreDebugModel(snapshot, currentTake, observed))
+  }
+
   const sampleCurrentTake = (): void => {
     const currentEngine = engine
     const currentTake = options.take()
@@ -183,6 +223,7 @@ export function useGuitarNightLiveScoreController(
         retainedHealth(currentTake, options.health()),
       ),
     )
+    refreshDebugModel(currentEngine, currentTake)
   }
 
   createEffect(() => {
@@ -219,6 +260,7 @@ export function useGuitarNightLiveScoreController(
         retainedHealth(take, options.health()),
       ),
     )
+    refreshDebugModel(currentEngine, take)
     finishingTakeId = null
     setHoldReason(null)
     setFinishing(false)
@@ -392,6 +434,8 @@ export function useGuitarNightLiveScoreController(
     setHoldReason(null)
     setStartedAt(null)
     setScoringInputKind(null)
+    observedDebugEvents.clear()
+    setDebugModel(null)
     finishingTakeId = null
     setFinishing(false)
   }
@@ -435,6 +479,8 @@ export function useGuitarNightLiveScoreController(
           startBeat: note.startBeat,
         })),
         inputKind,
+        ...guitarScoreEngineTuning(inputKind),
+        debug: import.meta.env.DEV,
       })
       if (!options.completeTakeAt(run.completedAtSeconds)) {
         options.stopInput()
@@ -505,6 +551,13 @@ export function useGuitarNightLiveScoreController(
   }
 
   return {
+    /** Development-only diagnosis of this run; null in production builds. */
+    debugModel,
+    debugPlayheadSeconds: () => {
+      const run = boundary()
+      if (run === null) return null
+      return transportFrame() / run.sampleRate
+    },
     visible: () => true,
     captureActive: () =>
       // An active display can only exist with an engine. Keeping this accessor
