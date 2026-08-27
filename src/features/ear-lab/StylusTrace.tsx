@@ -5,6 +5,12 @@
 // and then waits — the second segment's direction is the answer, so
 // it stays undrawn until the reveal, when it goes up, down or level
 // in signal green with a garnet ghost for a wrong pick.
+//
+// The stylus is a pen carriage on a rail inside the drum, its nib
+// straight down to the paper. It used to be a lever arm pivoted
+// outside the drum, which on the answer screen was a brass line
+// rising to the upper right — a slope on the one screen that asks
+// which way the tone went. Nothing about the pen may slope.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -27,6 +33,10 @@ const START_X = 120
 const MID_X = 250
 const END_X = 380
 const RULES = [70, 90, 110, 130, 150, 170, 190]
+/** The carriage rail, between the drum's top edge and the first rule. */
+const RAIL_Y = 58
+/** Where the nib leaves the carriage. */
+const NIB_TOP = RAIL_Y + 6
 
 function endY(direction: ContourDirection): number {
   if (direction === 'up') return BASE_Y - 50
@@ -69,6 +79,7 @@ export function StylusTrace(props: StylusTraceProps): JSX.Element {
         height="160"
         rx="18"
         class={styles.drum}
+        data-part="drum"
       />
       <For each={RULES}>
         {(y) => <line x1="80" y1={y} x2="440" y2={y} class={styles.drumRule} />}
@@ -110,9 +121,42 @@ export function StylusTrace(props: StylusTraceProps): JSX.Element {
         )}
       </Show>
 
-      {/* the stylus arm */}
-      <line x1="470" y1="30" x2={tip().x} y2={tip().y} class={styles.stylus} />
-      <circle cx="470" cy="30" r="6" class={styles.stylusPivot} />
+      {/* the pen: a carriage on its rail, the nib straight down */}
+      <line
+        x1="84"
+        y1={RAIL_Y}
+        x2="436"
+        y2={RAIL_Y}
+        class={styles.stylusRail}
+        data-part="rail"
+      />
+      <rect
+        x={tip().x - 7}
+        y={RAIL_Y - 6}
+        width="14"
+        height="12"
+        rx="3"
+        class={styles.stylusCarriage}
+        data-part="carriage"
+      />
+      <rect
+        x={tip().x - 1.1}
+        y={NIB_TOP}
+        width="2.2"
+        height={tip().y - NIB_TOP}
+        rx="1.1"
+        class={styles.stylus}
+        data-part="nib"
+        data-tip-x={tip().x}
+        data-tip-y={tip().y}
+      />
+      <circle
+        cx={tip().x}
+        cy={tip().y}
+        r="3"
+        class={styles.stylusTip}
+        data-part="tip"
+      />
 
       <Show when={props.reveal}>
         {(reveal) => (

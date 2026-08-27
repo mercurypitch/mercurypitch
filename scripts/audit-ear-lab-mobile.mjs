@@ -397,7 +397,10 @@ function measureStage() {
  *  stop onto the plate; then Home to its ladder. Layout only — the
  *  fake audio device makes the tones inaudible, not absent. */
 /** The report's layout facts, read in one evaluate. */
-/** The Contour instrument's lines, by their viewBox coordinates. */
+/** The Contour instrument, by its viewBox coordinates: the first
+ *  segment, where the pen's nib rests, and whether every part of the
+ *  pen sits inside the drum — a pivoted arm reaching in from outside
+ *  once read as a rising line on the answer screen. */
 function measureStylus() {
   const svg = document.querySelector('svg[data-instrument="stylus"]')
   if (!svg) return null
@@ -405,8 +408,21 @@ function measureStylus() {
     ['x1', 'y1', 'x2', 'y2'].map((key) => Number(line.getAttribute(key))),
   )
   const segment = lines.some(([x1, , x2]) => x1 === 120 && x2 === 250)
-  const arm = lines.find(([x1, y1]) => x1 === 470 && y1 === 30)
-  return { segment, armTipX: arm ? arm[2] : null }
+  const nib = svg.querySelector('[data-part="nib"]')
+  const drum = svg.querySelector('[data-part="drum"]')
+  if (!nib || !drum) return { segment, tipX: null, inside: false }
+  const bounds = drum.getBBox()
+  const inside = ['rail', 'carriage', 'nib', 'tip'].every((part) => {
+    const box = svg.querySelector(`[data-part="${part}"]`)?.getBBox()
+    return (
+      box !== undefined &&
+      box.x >= bounds.x &&
+      box.y >= bounds.y &&
+      box.x + box.width <= bounds.x + bounds.width &&
+      box.y + box.height <= bounds.y + bounds.height
+    )
+  })
+  return { segment, tipX: Number(nib.getAttribute('data-tip-x')), inside }
 }
 
 /** The Stack's wheels (the toothed circles) and captions, in viewBox
@@ -576,10 +592,10 @@ async function auditStage(page, name) {
   const stylus = await page.evaluate(measureStylus)
   await page.screenshot({ path: `${OUT}/${name}-stage-contour-answer.png` })
   if (!stylus) fail(`${name} contour`, 'no stylus trace on the stage')
-  else if (!stylus.segment || stylus.armTipX !== 250)
+  else if (!stylus.segment || stylus.tipX !== 250 || !stylus.inside)
     fail(
       `${name} contour`,
-      `answer phase shows segment=${stylus.segment}, arm tip at ${stylus.armTipX}`,
+      `answer phase shows segment=${stylus.segment}, nib at ${stylus.tipX}, pen inside the drum=${stylus.inside}`,
     )
   await page.getByLabel('Stop').click()
   await page.waitForTimeout(300)

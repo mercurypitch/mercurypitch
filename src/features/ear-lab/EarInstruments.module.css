@@ -418,18 +418,30 @@
   }
 }
 
-.stylus {
+.stylusRail {
   stroke: var(--inst-brass);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  opacity: 0.85;
-  transition:
-    x2 400ms ease,
-    y2 400ms ease;
+  stroke-width: 1.2;
+  opacity: 0.45;
 }
 
-.stylusPivot {
+.stylusCarriage {
   fill: var(--inst-brass-bright);
+  transition: x 400ms ease;
+}
+
+.stylus {
+  fill: var(--inst-brass);
+  opacity: 0.85;
+  transition:
+    x 400ms ease,
+    height 400ms ease;
+}
+
+.stylusTip {
+  fill: var(--inst-brass-bright);
+  transition:
+    cx 400ms ease,
+    cy 400ms ease;
 }
 
 /* ── The track pendulums ─────────────────────────────────────── */
@@ -488,6 +500,8 @@
   .wheel,
   .rim,
   .stylus,
+  .stylusCarriage,
+  .stylusTip,
   .calBob {
     transition: none;
   }

@@ -248,7 +248,12 @@ the ear is yours.
    apart with the probe over them — heard as a five-note scale.
 3. **Contour.** After the second tone, the first tone's trace stays on the
    drum and the stylus rests at its end until you answer. Before: the trace
-   vanished and only the arm remained.
+   vanished and only the arm remained. The stylus is a pen carriage on a
+   rail inside the drum with the nib straight down (2026-08-28): the old
+   lever arm pivoted outside the drum and, on the answer screen, was a brass
+   line rising to the upper right — a slope on the one screen that asks
+   which way the tone went. The audit checks every part of the pen sits
+   inside the drum.
 4. **Stack.** The reveal's wheels mesh side by side (even left, odd right of
    the arbor), so a suspended 4th's 5 and 7 are neighbours; captions sit in a
    column to the right and the nameplate keeps clear of the root wheel.
