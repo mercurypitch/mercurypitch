@@ -314,12 +314,21 @@ generated through the dotfiles background pipeline (masters at 3840x2160 /
   choice persists on the device; portrait and landscape are separate
   renders, so turn a phone and the bench should still sit low in the frame.
 - **Supporter:** _Transit Observatory_, _Bell Loft_, _Planetarium_,
-  _Anechoic Booth_. They appear as locked tiles with a brass-on-slate wash
-  until their identities exist on the environment: migration
-  `0035_ear_rooms_background_pack.sql` seeds them, and the art is published
+  _Anechoic Booth_. The picker lists only rooms with a published revision on
+  the environment, so they are absent until two things have happened:
+  migration `0035_ear_rooms_background_pack.sql` has seeded their identities
+  (the dev deploy after merge applies it), and the art has been published
   from `~/.dotfiles/personal/mercurypitch/assets/premium-backgrounds/v6/`
-  with `sync-dev.mjs --apply --publish` once `0035` is on dev. On dev they
-  then show for supporter accounts; prod is a deliberate separate upload.
+  with `sync-dev.mjs --apply --publish`. They then show unlocked for
+  supporter accounts and as locked tiles with the brass-on-slate wash for
+  everyone else; prod is a deliberate separate upload.
+- **Publishing from the console instead of the sync tool:** Admin Studio →
+  Premium perks → surface filter _Ear Lab_ → pick a room → _Create
+  replacement_ → _Upload_ `landscape-2k.webp`, `landscape-4k.webp` and
+  `portrait-2k.webp` from `v6/variants/ear/<room-id>/` → _Validate and
+  ship_. Four rooms, twelve files. The `active-supporters` assignment is
+  seeded by `0035`, so nothing needs ticking; a supporter account on dev
+  then sees the four tiles unlock in the Room panel.
 - What to judge: the centre band under the Regulator and the bottom third
   under the console must stay calm with the room visibility slider at its
   bare end; the Anechoic Booth's wire floor is the one plate the gate flagged
