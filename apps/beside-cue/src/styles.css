@@ -885,6 +885,32 @@ svg {
   background: inherit;
 }
 
+.plan-cue-note {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 1.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgb(36 25 19 / 28%);
+  border-radius: 12px;
+  background: rgb(255 250 238 / 74%);
+  color: var(--ink);
+}
+
+.plan-cue-note span {
+  color: var(--ink-soft);
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.plan-cue-note p {
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .track-line span {
   display: block;
   color: var(--paper-light);
@@ -1186,23 +1212,31 @@ svg {
 }
 
 .cue-moment__context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem;
+  display: grid;
+  gap: 0.55rem;
   margin-top: 0.8rem;
   color: #ffe9b9;
 }
 
-.cue-moment__context span {
+.cue-moment__context > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.cue-moment__context dt {
   font-family: var(--font-label);
   font-size: 0.76rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.cue-moment__context strong {
+.cue-moment__context dd {
+  margin: 0;
   color: var(--paper-light);
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .cue-moment__actions {

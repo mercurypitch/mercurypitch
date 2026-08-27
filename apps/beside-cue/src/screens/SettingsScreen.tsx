@@ -189,8 +189,8 @@ export function SettingsScreen(props: SettingsScreenProps) {
           <span>
             <strong>Change this plan</strong>
             <small>
-              Choose a new Pull and Side B. Your current plan stays active until
-              the new one is saved.
+              Choose a new Pull, cue, and Side B. Your current plan stays active
+              until the new one is saved.
             </small>
           </span>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -217,7 +217,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
         <div class="privacy-note">
           <strong>On this device only</strong>
           <p>
-            Pull text, Side B text, settings, and choices stay local in this
+            Pull, cue, and Side B text, settings, and choices stay local in this
             build.
           </p>
         </div>
