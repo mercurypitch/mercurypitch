@@ -163,6 +163,13 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
       columns={7}
       controller={controller}
       revealName={nameOf}
+      answerVerb="tapped"
+      slipNote={() => {
+        const result = verdict()
+        return result !== null && !result.correct && result.firstMiss !== null
+          ? `first slip at root ${result.firstMiss + 1}`
+          : undefined
+      }}
       answerConsole={() => (
         <PhraseConsole
           expectedLength={line().length}

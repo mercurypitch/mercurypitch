@@ -225,6 +225,13 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
       columns={8}
       controller={controller}
       revealName={nameOf}
+      answerVerb={sungRun() ? 'sang' : 'tapped'}
+      slipNote={() => {
+        const result = verdict()
+        return result !== null && !result.correct && result.firstMiss !== null
+          ? `first slip at note ${result.firstMiss + 1}`
+          : undefined
+      }}
       onStart={() => void handleStart()}
       runMode={() => (sungRun() ? 'sung answers' : 'rating run')}
       idleAside={

@@ -315,7 +315,11 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
           return `Held — all ${count} notes, ${solfegeOf(phrase())}. The phrase grows.`
         }
         const slip = result?.firstMiss ?? 0
-        return `Slipped at note ${slip + 1} of ${count} — it was ${solfegeOf(phrase())}. The phrase shortens.`
+        const back =
+          answered().length > 0
+            ? `, you ${sungRun() ? 'sang' : 'tapped'} ${solfegeOf(answered())}`
+            : ''
+        return `Slipped at note ${slip + 1} of ${count} — it was ${solfegeOf(phrase())}${back}. The phrase shortens.`
       }}
       onBack={props.onBack}
     />
