@@ -211,6 +211,15 @@ export function IconBassLine(p: IconProps): JSX.Element {
   )
 }
 
+export function IconMetre(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 5v14M9 8v8M15 8v8M21 8v8" />
+      <circle cx="3" cy="19" r="1.6" />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

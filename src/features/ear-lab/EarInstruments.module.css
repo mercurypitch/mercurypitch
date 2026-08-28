@@ -682,6 +682,19 @@
   fill: var(--inst-parchment);
 }
 
+/* ── Metre lattice (Subdivide) ────────────────────────────── */
+
+.barLine {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 2.2;
+}
+
+.lampAccent {
+  fill: var(--inst-brass-bright);
+  stroke: var(--inst-brass-bright);
+  filter: drop-shadow(0 0 6px rgb(214 176 96 / 55%));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bead,
   .trainWheel,

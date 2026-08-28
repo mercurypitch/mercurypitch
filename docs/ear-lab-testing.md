@@ -497,6 +497,25 @@ _Cadence_ (Function · progression) and _Bassline_ (Function · root motion).
 - Stop mid-strum pulls the master gain to silence and disposes the voices —
   nothing keeps ringing after the stage closes.
 
+## 2r. Subdivide — name the metre — follow-up item 7
+
+The kit's drill on the Time dial. Bench strip → _Subdivide_ (Time · metre).
+Two bars on the drum voices (`drum-voices.ts`) through one master gain at
+the stage's level: 3/4, 4/4, 5/4, 6/8 or 7/8, two patterns each, the kick on
+one and louder. Four pads out of the five metres, the answer among three
+others drawn fresh each round (keys 1–4). A miss plays the bars again,
+slower.
+
+- **What to check on hardware:** quarters at 120, eighths at 240; the kick
+  on one is plainly the accent; the lattice has one pallet per step and the
+  lamps chase them through both bars with no bar line and no accent until
+  the reveal, which lights beat one brass, draws the bar line and names the
+  metre; 6/8 reads as two threes, 7/8 limps, 5/4 leans.
+- **The reading:** a rating on the Time dial's row. The plan's alternative
+  answer — tapping where beat one falls in the odd metres — is not built;
+  naming the metre is the drill, and the tap ledger stays with Pulse.
+- Stop pulls the master gain to silence and clears the lamps.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

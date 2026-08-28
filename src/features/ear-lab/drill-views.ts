@@ -27,6 +27,7 @@ export const VIEW_FOR_DRILL: Readonly<Record<string, EarLabView>> = {
   'the-pull': 'the-pull',
   cadence: 'cadence',
   bassline: 'bassline',
+  subdivide: 'subdivide',
 }
 
 export function viewForDrill(drillId: string): EarLabView | undefined {

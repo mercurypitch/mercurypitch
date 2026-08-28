@@ -171,3 +171,14 @@ export const BASSLINE_TIMING = {
   tailMs: 250,
   replayRootMs: 850,
 } as const
+
+/** Subdivide — two bars on the kit, the kick on one. */
+export const SUBDIVIDE_TIMING = {
+  leadInS: 0.15,
+  /** A quarter at 120; eighth-note metres run at half this. */
+  quarterMs: 500,
+  bars: 2,
+  tailMs: 250,
+  /** The wrong-answer replay, slower. */
+  replayQuarterMs: 620,
+} as const
