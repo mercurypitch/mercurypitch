@@ -38,6 +38,7 @@ const COMPLETED_DISPLAY: GuitarLiveScoreDisplay = {
       eventId: 'private-event-one',
       timingOffsetMs: -18,
       skipReason: null,
+      reclaimedFrom: null,
     },
     {
       targetId: 'private-target-two',
@@ -48,6 +49,7 @@ const COMPLETED_DISPLAY: GuitarLiveScoreDisplay = {
       eventId: null,
       timingOffsetMs: null,
       skipReason: null,
+      reclaimedFrom: null,
     },
     {
       targetId: 'private-target-three',
@@ -58,6 +60,7 @@ const COMPLETED_DISPLAY: GuitarLiveScoreDisplay = {
       eventId: null,
       timingOffsetMs: null,
       skipReason: 'fast-passage',
+      reclaimedFrom: null,
     },
   ],
 }

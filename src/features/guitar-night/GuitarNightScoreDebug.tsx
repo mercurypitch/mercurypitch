@@ -617,6 +617,27 @@ export function GuitarNightScoreDebug(props: GuitarNightScoreDebugProps) {
               {guitarScoreTuning().denseTargetSpacingMs} ms
             </span>
           </label>
+          <label
+            class={styles.toggle}
+            title={
+              'Evidence-first judges a chord or a dense run against what was ' +
+              'actually heard. Off reverts to excluding them before any event ' +
+              'is read, which is what reported 95% while grading 22% of a take.'
+            }
+          >
+            <input
+              type="checkbox"
+              checked={guitarScoreTuning().scorePolicy === 'evidence-first'}
+              onChange={(commit) =>
+                setGuitarScoreTuning({
+                  scorePolicy: commit.currentTarget.checked
+                    ? 'evidence-first'
+                    : 'exclude-first',
+                })
+              }
+            />
+            Judge hard passages, do not skip them
+          </label>
           <label class={styles.toggle}>
             <input
               type="checkbox"
