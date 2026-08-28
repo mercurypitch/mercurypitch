@@ -553,7 +553,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('menuitem', { name: 'Export' }).click()
   const exportedTake = await downloadPromise
   expect(exportedTake.suggestedFilename()).toMatch(
-    /^MercuryPitch - Room and waveform check - Take 1\.(?:m4a|wav)$/,
+    /^MercuryPitch_Room_and_waveform_check_Take_1\.(?:m4a|wav)$/,
   )
 
   await page.getByRole('button', { name: 'Record another take' }).click()
