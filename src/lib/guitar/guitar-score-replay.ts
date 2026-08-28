@@ -14,7 +14,7 @@
 //
 // Development tooling. Nothing in the app imports it.
 
-import type { CreateGuitarLiveScoreEngineOptions, GuitarLiveScoreDisplay, GuitarLiveScoreJudgment, } from './guitar-live-score'
+import type { CreateGuitarLiveScoreEngineOptions, GuitarLiveScoreDisplay, GuitarLiveScoreHealth, GuitarLiveScoreJudgment, } from './guitar-live-score'
 import { createGuitarLiveScoreEngine } from './guitar-live-score'
 import type { GuitarTakeEvent, GuitarTakeSnapshot, } from './guitar-take-recorder'
 
@@ -208,6 +208,13 @@ function replayTake(exported: GuitarScoreExport): GuitarTakeSnapshot {
 export function replayGuitarScoreExport(
   exported: GuitarScoreExport,
   overrides: Partial<CreateGuitarLiveScoreEngineOptions> = {},
+  /**
+   * The health verdict to replay under. The export carries only a tally of
+   * skip reasons, not the readings behind them, so a take that was thrown out
+   * for clipping cannot reproduce itself from its own file — the caller has to
+   * say what the room was doing.
+   */
+  health: GuitarLiveScoreHealth = 'good',
 ): GuitarScoreReplayResult {
   const { model } = exported
   const beats = model.rows.map((row) => row.startBeat)
@@ -236,7 +243,7 @@ export function replayGuitarScoreExport(
   const display = engine.sample(
     replayTake(exported),
     model.throughFrame,
-    'good',
+    health,
   )
   const judgments = engine.debugSnapshot()?.judgments ?? []
   const skipReasons: Record<string, number> = {}
