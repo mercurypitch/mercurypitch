@@ -137,6 +137,9 @@ export function PullDrill(props: { onBack: () => void }): JSX.Element {
       listenHint="Listen to the two notes…"
       answerHint="Which note leans harder — the first, or the second?"
       choices={CHOICES}
+      padLamp={(id) =>
+        phase() === 'playing' && sounding() === (id === 'first' ? 1 : 2)
+      }
       columns={2}
       controller={controller}
       revealName={nameOf}

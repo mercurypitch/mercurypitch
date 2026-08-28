@@ -145,6 +145,7 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
                 keycap={String(i() + 1)}
                 label={entry.label}
                 state={padState(entry.id)}
+                lamp={run.phase() === 'stimulus' && sounding() === i() + 1}
                 disabled={run.phase() !== 'answer'}
                 onClick={() => answer(entry.id)}
               />

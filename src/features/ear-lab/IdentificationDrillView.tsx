@@ -35,6 +35,8 @@ interface IdentificationDrillViewProps {
   listenHint: string
   answerHint: string
   choices: IdentificationChoice[]
+  /** A lamp per pad, lit while its stimulus sounds (The Pull). */
+  padLamp?: (choiceId: string) => boolean
   /** Pads per row (6 for Leap, 3 for Stack and Contour). */
   columns: number
   /** Narrow rungs in one row rather than labelled pads. */
@@ -251,6 +253,7 @@ export function IdentificationDrillView(
                       label={choice.label}
                       sub={choice.sub}
                       state={padState(choice.id)}
+                      lamp={props.padLamp?.(choice.id)}
                       disabled={phase() !== 'answer'}
                       onClick={() => props.controller.answer(choice.id)}
                     />

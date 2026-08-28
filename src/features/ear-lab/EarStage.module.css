@@ -707,6 +707,20 @@
   font-size: 0.72rem;
 }
 
+/* The stimulus lamp on a first/second pad. */
+.padLamp {
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgb(95 199 184 / 45%);
+  border-radius: 50%;
+  background: rgb(95 199 184 / 14%);
+}
+
+.padLampOn {
+  background: var(--stage-signal);
+  box-shadow: 0 0 8px var(--stage-signal);
+}
+
 .padMark {
   margin-left: auto;
   display: inline-flex;
