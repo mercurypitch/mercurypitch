@@ -92,3 +92,29 @@ export const PULSE_TIMING = {
   /** Grace after the response bar before the take is judged. */
   tailMs: 350,
 } as const
+
+/** Echo — melodic dictation: a cadence, the phrase, the ladder. */
+export const ECHO_TIMING = {
+  /** Cadence chords that plant the key. */
+  chordMs: 380,
+  chordGapMs: 90,
+  /** Silence between the cadence and the phrase. */
+  restMs: 260,
+  noteMs: 380,
+  gapMs: 120,
+  /** The wrong-answer replay, slower. */
+  replayNoteMs: 560,
+  replayGapMs: 180,
+  /** After the last note, before the ladder opens. */
+  tailMs: 200,
+} as const
+
+/** Span — the phrase at the staircase's length. */
+export const SPAN_TIMING = {
+  chordMs: 380,
+  chordGapMs: 90,
+  restMs: 260,
+  noteMs: 340,
+  gapMs: 110,
+  tailMs: 200,
+} as const

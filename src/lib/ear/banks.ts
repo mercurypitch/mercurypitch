@@ -295,6 +295,114 @@ export const PULSE_BANK: readonly EarBankItem[] = [
   },
 ]
 
+// ── Echo: phrases as scale degrees, 8 the tonic above ─────────────
+//
+// Fourteen phrases of three to six notes. The seed rises with length
+// and with the widest leap: steps and triads first, then turns and
+// scales, then the phrases that leap a sixth or fall from the octave.
+// The name is the phrase in solfège, which is what the reveal says.
+
+export const ECHO_BANK: readonly EarBankItem[] = [
+  {
+    itemId: 'e-steps-up',
+    label: '3 · steps',
+    name: 'Do Re Mi',
+    seed: 900,
+    payload: [1, 2, 3],
+  },
+  {
+    itemId: 'e-triad-up',
+    label: '3 · triad',
+    name: 'Do Mi Sol',
+    seed: 950,
+    payload: [1, 3, 5],
+  },
+  {
+    itemId: 'e-steps-down',
+    label: '3 · steps down',
+    name: 'Mi Re Do',
+    seed: 950,
+    payload: [3, 2, 1],
+  },
+  {
+    itemId: 'e-turn',
+    label: '4 · turn',
+    name: 'Do Re Mi Do',
+    seed: 1050,
+    payload: [1, 2, 3, 1],
+  },
+  {
+    itemId: 'e-scale-down',
+    label: '5 · scale down',
+    name: 'Sol Fa Mi Re Do',
+    seed: 1100,
+    payload: [5, 4, 3, 2, 1],
+  },
+  {
+    itemId: 'e-walk-up',
+    label: '4 · walk up',
+    name: 'Mi Fa Sol La',
+    seed: 1150,
+    payload: [3, 4, 5, 6],
+  },
+  {
+    itemId: 'e-fifth-turn',
+    label: '4 · fifth',
+    name: 'Do Sol La Sol',
+    seed: 1200,
+    payload: [1, 5, 6, 5],
+  },
+  {
+    itemId: 'e-arch',
+    label: '5 · arch',
+    name: 'Do Mi Sol Mi Do',
+    seed: 1250,
+    payload: [1, 3, 5, 3, 1],
+  },
+  {
+    itemId: 'e-lead-home',
+    label: '4 · to home',
+    name: 'Sol La Ti Do′',
+    seed: 1300,
+    payload: [5, 6, 7, 8],
+  },
+  {
+    itemId: 'e-leap-seven',
+    label: '4 · leaps',
+    name: 'Do Fa Ti Do′',
+    seed: 1400,
+    payload: [1, 4, 7, 8],
+  },
+  {
+    itemId: 'e-fall',
+    label: '5 · fall',
+    name: 'La Fa Re Mi Do',
+    seed: 1500,
+    payload: [6, 4, 2, 3, 1],
+  },
+  {
+    itemId: 'e-sixth',
+    label: '6 · sixth',
+    name: 'Do Mi La Do′ Sol Mi',
+    seed: 1600,
+    payload: [1, 3, 6, 8, 5, 3],
+  },
+  {
+    itemId: 'e-cascade',
+    label: '6 · cascade',
+    name: 'Do′ Sol Re Sol Mi Do',
+    seed: 1650,
+    payload: [8, 5, 2, 5, 3, 1],
+  },
+  {
+    itemId: 'e-wide',
+    label: '6 · wide',
+    name: 'Do La Re Do′ Fa Do',
+    seed: 1750,
+    payload: [1, 6, 2, 8, 4, 1],
+  },
+]
+
 // ── Generic state + picker ──────────────────────────────────────
 
 /** An item's current rating: stored override or fresh at the seed. */

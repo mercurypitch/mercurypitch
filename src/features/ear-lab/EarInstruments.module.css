@@ -524,7 +524,56 @@
   fill: var(--inst-brass-bright);
 }
 
+/* ── Bead chain (Echo, Span) ─────────────────────────────── */
+
+.bead {
+  fill: var(--inst-muted);
+  opacity: 0.55;
+  transition:
+    fill 120ms ease,
+    opacity 120ms ease;
+}
+
+.beadSounded {
+  fill: var(--inst-mercury);
+  opacity: 0.8;
+}
+
+.beadLit {
+  fill: var(--inst-brass-bright);
+  opacity: 1;
+}
+
+.beadTrue {
+  fill: var(--inst-brass);
+  opacity: 1;
+}
+
+.chainLine {
+  fill: none;
+  stroke: var(--inst-brass);
+  stroke-width: 1.4;
+  opacity: 0.7;
+}
+
+.beadRight {
+  fill: none;
+  stroke: var(--inst-signal);
+  stroke-width: 1.6;
+}
+
+.beadWrong {
+  fill: none;
+  stroke: var(--inst-garnet);
+  stroke-width: 1.6;
+}
+
+.beadMissing {
+  stroke-dasharray: 3 3;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .bead,
   .hair,
   .loupe,
   .pallet,

@@ -19,6 +19,8 @@ export const VIEW_FOR_DRILL: Readonly<Record<string, EarLabView>> = {
   stack: 'stack',
   contour: 'contour',
   pulse: 'pulse',
+  echo: 'echo',
+  span: 'span',
 }
 
 export function viewForDrill(drillId: string): EarLabView | undefined {

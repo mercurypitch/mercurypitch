@@ -121,6 +121,32 @@ export function IconTap(p: IconProps): JSX.Element {
   )
 }
 
+export function IconChain(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 16.5 8 11l4 3.5 4.5-6L21 12" />
+      <circle cx="3" cy="16.5" r="1.6" />
+      <circle cx="8" cy="11" r="1.6" />
+      <circle cx="12" cy="14.5" r="1.6" />
+      <circle cx="16.5" cy="8.5" r="1.6" />
+      <circle cx="21" cy="12" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconSpan(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 12h4.5l3-4 3 8 3-4H21" />
+      <path d="M17.5 8.5 21 12l-3.5 3.5" />
+      <circle cx="3" cy="12" r="1.6" />
+      <circle cx="7.5" cy="12" r="1.6" />
+      <circle cx="10.5" cy="8" r="1.6" />
+      <circle cx="13.5" cy="16" r="1.6" />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

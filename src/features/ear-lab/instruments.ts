@@ -18,6 +18,8 @@ export type InstrumentView =
   | 'leap'
   | 'stack'
   | 'contour'
+  | 'echo'
+  | 'span'
   | 'pulse'
   | 'calibration'
 
@@ -92,6 +94,22 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'Up, down or level — fast',
   },
   {
+    view: 'echo',
+    drillId: 'echo',
+    name: 'Echo',
+    faculty: 'shape',
+    measures: 'Shape · dictation',
+    answer: 'A phrase in a planted key — tap it back in order',
+  },
+  {
+    view: 'span',
+    drillId: 'span',
+    name: 'Span',
+    faculty: 'shape',
+    measures: 'Shape · span',
+    answer: 'The phrase grows a note at a time — how many hold?',
+  },
+  {
     view: 'pulse',
     drillId: 'pulse',
     name: 'Pulse',
@@ -141,6 +159,7 @@ export function instrumentReading(
   switch (instrument.view) {
     case 'hairline':
     case 'grid':
+    case 'span':
       return thresholdReading(instrument.drillId ?? '')
     case 'home': {
       const ear = ratingReading('home')
@@ -153,6 +172,7 @@ export function instrumentReading(
     case 'leap':
     case 'stack':
     case 'contour':
+    case 'echo':
       return ratingReading(instrument.drillId ?? '')
     case 'pulse': {
       const rating = ratingReading('pulse')
@@ -180,9 +200,10 @@ export function facultyReadout(faculty: FacultyId): InstrumentReading | null {
     case 'colour':
       return ratingReading('stack')
     case 'shape': {
-      // Leap and Contour average into the faculty; the readout shows
-      // whichever exist.
-      const parts = ['leap', 'contour']
+      // Leap, Contour and Echo average into the faculty; the readout
+      // shows whichever exist. Span reads in notes, so it stays on its
+      // own instrument.
+      const parts = ['leap', 'contour', 'echo']
         .map((id) => earPlayerRating(id))
         .filter((rating) => rating.attempts > 0)
       if (parts.length === 0) return null
