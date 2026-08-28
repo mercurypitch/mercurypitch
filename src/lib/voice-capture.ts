@@ -2,8 +2,8 @@
 // Voice Capture — shared, on-device session recording primitives
 // ============================================================
 
-/** Preference order: Opus/WebM (Chrome/Firefox/Android), MP4 (Safari). */
-const MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm']
+/** Prefer portable AAC/MP4 where supported; Opus/WebM remains the fallback. */
+const MIME_CANDIDATES = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']
 
 const DEFAULT_PEAK_BUCKETS = 72
 

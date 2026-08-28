@@ -32,11 +32,13 @@ import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { EXERCISE_PITCH_HOLD } from '@/lib/domain/exercise-contracts'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { GuidedEvidence } from '@/lib/guided-voice'
-import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
+import { isMediaPlaybackActive } from '@/lib/media-progress-loop'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
 import { startExercise } from '@/stores/ui-store'
+import type { DecodedVoicePlayback } from './decoded-voice-playback'
+import { attemptDecodedVoicePlayback } from './decoded-voice-playback'
 import type { FreeformThreadTarget } from './freeform-voice-take'
 import { createFreeformThreadTarget } from './freeform-voice-take'
 import type { FreeformRecorderCloseRequester } from './FreeformVoiceRecorder'
@@ -50,8 +52,10 @@ import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import { bindListeningRoomSettings } from './listening-room-settings'
 import { PracticeLoomPanel } from './PracticeLoomPanel'
 import { buildPracticeLoomRenderModel, buildVoiceAtlasRenderModel, } from './voice-atlas-model'
+import { createVoiceMediaProgressLoop } from './voice-media-progress'
 import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
 import { createVoiceReflection, parseVoiceReflections, } from './voice-reflections'
+import { downloadPreparedVoiceTake, prepareVoiceTakeExport, } from './voice-take-export'
 import { VoiceAtlasPanel } from './VoiceAtlasPanel'
 import styles from './VoiceHistoryPage.module.css'
 import { VoicePlaybackTransport } from './VoicePlaybackTransport'
@@ -356,6 +360,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   const [playing, setPlaying] = createSignal(false)
   const [progress, setProgress] = createSignal(0)
   const [playerError, setPlayerError] = createSignal<string | null>(null)
+  const [exportNotice, setExportNotice] = createSignal<string | null>(null)
+  const [exportingTakeId, setExportingTakeId] = createSignal<string | null>(
+    null,
+  )
   const [recorderTarget, setRecorderTarget] =
     createSignal<FreeformThreadTarget | null>(null)
   const [localDraftTitle, setLocalDraftTitle] = createSignal('')
@@ -407,6 +415,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   let listeningContext: AudioContext | null = null
   let listeningSource: MediaElementAudioSourceNode | null = null
   let listeningRack: FxRack | null = null
+  let decodedPlayback: DecodedVoicePlayback | null = null
   let uninstallAudioUnlock = (): void => undefined
   let recordLaunchButton: HTMLButtonElement | undefined
   let guidedLaunchButton: HTMLButtonElement | undefined
@@ -429,7 +438,12 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   let playbackIsCurrent = (): boolean => false
   const playbackRequests = createPlaybackRequestGate()
   const reflectionMutations = createTakeMutationQueue()
-  const playbackProgress = createMediaProgressLoop(setProgress)
+  const playbackProgress = createVoiceMediaProgressLoop(setProgress, () => {
+    const currentAudio = audio
+    if (currentAudio !== null && playbackIsCurrent()) {
+      finishHtmlPlayback(currentAudio)
+    }
+  })
 
   const threads = createMemo<VoiceThread[]>(() => buildVoiceThreads(takes()))
 
@@ -645,10 +659,30 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     }
   }
 
+  function commitPlaybackEnded(): void {
+    setPlaying(false)
+    setProgress(1)
+    if (comparisonPendingComplete) {
+      comparisonPendingComplete = false
+      trackEvent('voice_compare_complete')
+    }
+  }
+
+  function finishHtmlPlayback(candidate: HTMLAudioElement): void {
+    if (!playbackIsCurrent() || audio !== candidate) return
+    playbackProgress.stop()
+    // Safari can reach the media duration without promptly exposing `ended`.
+    // Pause that terminal transport so a resolved play cannot leave stale UI.
+    if (!candidate.ended && !candidate.paused) candidate.pause()
+    commitPlaybackEnded()
+  }
+
   function disposeAudio(): void {
     playbackRequests.cancel()
     playbackIsCurrent = () => false
     playbackProgress.stop()
+    decodedPlayback?.dispose()
+    decodedPlayback = null
     audio?.pause()
     audio = null
     disposeListeningGraph()
@@ -834,7 +868,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   // The helper establishes its own createEffect and reads this accessor there.
   // eslint-disable-next-line solid/reactivity
-  bindListeningRoomSettings(roomSettings, () => listeningRack)
+  bindListeningRoomSettings(
+    roomSettings,
+    () => decodedPlayback ?? listeningRack,
+  )
 
   function playTake(take: VoiceTakeRecord, fromComparison = false): void {
     unlockAudio(ensureListeningContext())
@@ -940,6 +977,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     fromComparison = false,
   ): void {
     unlockAudio(ensureListeningContext())
+    if (activeId() === take.id && decodedPlayback !== null) {
+      decodedPlayback.seek(nextProgress)
+      return
+    }
     if (activeId() === take.id && audio !== null) {
       applyPlaybackSeek(audio, take, nextProgress)
       if (playing()) playbackProgress.start(audio)
@@ -964,11 +1005,33 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
       comparisonPendingComplete = true
       trackEvent('voice_compare_start')
     }
+    if (isCurrentTake && decodedPlayback !== null) {
+      const currentPlayback = decodedPlayback
+      if (currentPlayback.playing) {
+        currentPlayback.pause()
+      } else {
+        const started = await currentPlayback.play()
+        if (
+          !started &&
+          playbackIsCurrent() &&
+          decodedPlayback === currentPlayback
+        ) {
+          setPlayerError(
+            'Playback was blocked. Tap play again to start the recording.',
+          )
+        }
+      }
+      return
+    }
     if (isCurrentTake && audio !== null) {
       const currentAudio = audio
       const requestIsCurrent = playbackIsCurrent
       if (currentAudio.paused) {
         try {
+          if (currentAudio.ended || progress() >= 1) {
+            currentAudio.currentTime = 0
+            setProgress(0)
+          }
           await currentAudio.play()
           if (
             !requestIsCurrent() ||
@@ -1018,6 +1081,60 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
       )
       return
     }
+    const decodedResult = await attemptDecodedVoicePlayback({
+      context: ensureListeningContext(),
+      blob,
+      persistedMimeType: take.mimeType,
+      settings: roomSettings(),
+      autoplay,
+      requestedProgress: options.requestedProgress,
+      isCurrent: requestIsCurrent,
+      onPrepared: (nextPlayback) => {
+        decodedPlayback = nextPlayback
+        setActiveId(takeId)
+      },
+      onDiscarded: (discardedPlayback) => {
+        if (decodedPlayback === discardedPlayback) decodedPlayback = null
+        setPlaying(false)
+      },
+      onProgress: (currentPlayback, nextProgress) => {
+        if (requestIsCurrent() && decodedPlayback === currentPlayback) {
+          setProgress(nextProgress)
+        }
+      },
+      onPlayingChange: (currentPlayback, nextPlaying) => {
+        if (requestIsCurrent() && decodedPlayback === currentPlayback) {
+          setPlaying(nextPlaying)
+        }
+      },
+      onEnded: (currentPlayback) => {
+        if (requestIsCurrent() && decodedPlayback === currentPlayback) {
+          commitPlaybackEnded()
+        }
+      },
+      onError: (currentPlayback) => {
+        if (requestIsCurrent() && decodedPlayback === currentPlayback) {
+          setPlayerError(
+            'Playback stopped unexpectedly. Tap play to try this take again.',
+          )
+        }
+      },
+    })
+    if (decodedResult.status === 'cancelled') return
+    if (decodedResult.status === 'handled') {
+      if (
+        decodedResult.started === false &&
+        requestIsCurrent() &&
+        decodedPlayback === decodedResult.playback
+      ) {
+        setPlayerError(
+          'Playback was blocked. Tap play again to start the recording.',
+        )
+      }
+      return
+    }
+    // A browser that cannot decode this WebM can still try its native media
+    // element. That preserves dry playback as the final fallback.
     const nextAudioUrl = URL.createObjectURL(blob)
     const nextAudio = new Audio(nextAudioUrl)
     if (!autoplay) nextAudio.preload = 'metadata'
@@ -1042,13 +1159,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     })
     nextAudio.addEventListener('ended', () => {
       if (!requestIsCurrent() || audio !== nextAudio) return
-      playbackProgress.stop()
-      setPlaying(false)
-      setProgress(1)
-      if (comparisonPendingComplete) {
-        comparisonPendingComplete = false
-        trackEvent('voice_compare_complete')
-      }
+      finishHtmlPlayback(nextAudio)
     })
     nextAudio.addEventListener('error', () => {
       if (!requestIsCurrent() || audio !== nextAudio) return
@@ -1089,33 +1200,52 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     }
   }
 
-  async function exportTake(take: VoiceTakeRecord): Promise<void> {
-    let blob: Blob | null
+  async function exportTake(
+    take: VoiceTakeRecord,
+    threadTitle: string,
+    ordinal: number,
+  ): Promise<void> {
+    if (exportingTakeId() !== null) return
+    setExportingTakeId(take.id)
+    setPlayerError(null)
     try {
-      blob = await getVoiceTakeBlob(take.id)
-    } catch {
-      setPlayerError(
-        'This take could not be opened from local storage and cannot be exported right now.',
-      )
-      return
+      setExportNotice('Preparing a compatible audio file…')
+      let blob: Blob | null
+      try {
+        blob = await getVoiceTakeBlob(take.id)
+      } catch {
+        setExportNotice(null)
+        setPlayerError(
+          'This take could not be opened from local storage and cannot be exported right now.',
+        )
+        return
+      }
+      if (blob === null) {
+        setExportNotice(null)
+        setPlayerError('This take’s audio is missing and cannot be exported.')
+        return
+      }
+      try {
+        const prepared = await prepareVoiceTakeExport(blob, {
+          threadTitle,
+          ordinal,
+          mimeType: take.mimeType,
+        })
+        downloadPreparedVoiceTake(prepared.file)
+        setTakeMenuId(null)
+        setExportNotice(
+          prepared.usedOriginalWebmFallback
+            ? 'This browser could not turn this older WebM take into a WAV file. The original WebM recording was downloaded instead; some iPhone apps may list it as video.'
+            : null,
+        )
+        trackEvent('voice_export')
+      } catch {
+        setExportNotice(null)
+        setPlayerError('This take could not be prepared for export right now.')
+      }
+    } finally {
+      if (exportingTakeId() === take.id) setExportingTakeId(null)
     }
-    if (blob === null) {
-      setPlayerError('This take’s audio is missing and cannot be exported.')
-      return
-    }
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    const extension = take.mimeType.includes('mp4') ? 'm4a' : 'webm'
-    anchor.href = url
-    anchor.download = `${
-      take.title
-        .replace(/[^a-z0-9]+/gi, '-')
-        .replace(/^-|-$/g, '')
-        .toLowerCase() || 'voice-take'
-    }-${take.capturedAt.slice(0, 10)}.${extension}`
-    anchor.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-    trackEvent('voice_export')
   }
 
   function removeTake(take: VoiceTakeRecord): void {
@@ -1744,6 +1874,15 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
         <div class={styles.alert} role="alert">
           {playerError()}
           <button type="button" onClick={() => setPlayerError(null)}>
+            Dismiss
+          </button>
+        </div>
+      </Show>
+
+      <Show when={exportNotice()}>
+        <div class={styles.alert} role="status">
+          {exportNotice()}
+          <button type="button" onClick={() => setExportNotice(null)}>
             Dismiss
           </button>
         </div>
@@ -2568,12 +2707,28 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                                 <button
                                                   type="button"
                                                   role="menuitem"
+                                                  disabled={
+                                                    exportingTakeId() !== null
+                                                  }
+                                                  aria-busy={
+                                                    exportingTakeId() ===
+                                                    take.id
+                                                  }
                                                   onClick={() => {
-                                                    setTakeMenuId(null)
-                                                    void exportTake(take)
+                                                    const ordinal =
+                                                      thread.takes.indexOf(
+                                                        take,
+                                                      ) + 1
+                                                    void exportTake(
+                                                      take,
+                                                      thread.title,
+                                                      ordinal,
+                                                    )
                                                   }}
                                                 >
-                                                  Export
+                                                  {exportingTakeId() === take.id
+                                                    ? 'Preparing…'
+                                                    : 'Export'}
                                                 </button>
                                                 <button
                                                   type="button"

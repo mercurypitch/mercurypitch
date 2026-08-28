@@ -69,6 +69,43 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
     timeout: 15000,
   })
+  const temporaryScrubber = page.getByTestId('freeform-preview-scrubber')
+  await expect(temporaryScrubber).toBeVisible()
+  const temporaryBounds = await temporaryScrubber.boundingBox()
+  if (temporaryBounds === null) {
+    throw new Error('Temporary replay has no scrub bounds')
+  }
+  const temporaryY = temporaryBounds.y + temporaryBounds.height / 2
+  await page.mouse.move(
+    temporaryBounds.x + temporaryBounds.width * 0.45,
+    temporaryY,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    temporaryBounds.x + temporaryBounds.width * 0.62,
+    temporaryY,
+    { steps: 4 },
+  )
+  await page.mouse.up()
+  const temporaryMaximum = Number(await temporaryScrubber.getAttribute('max'))
+  await expect
+    .poll(
+      async () =>
+        Number(await temporaryScrubber.inputValue()) / temporaryMaximum,
+    )
+    .toBeGreaterThan(0.58)
+  await expect(page.getByRole('button', { name: 'Play replay' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Pause replay' })).toHaveCount(
+    0,
+  )
+  await temporaryScrubber.focus()
+  await page.keyboard.press('Home')
+  await expect(temporaryScrubber).toHaveValue('0')
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(async () => Number(await temporaryScrubber.inputValue()))
+    .toBeGreaterThanOrEqual(Math.min(1, temporaryMaximum) - 0.02)
+  await expect(page.getByRole('button', { name: 'Play replay' })).toBeVisible()
   await page.getByRole('button', { name: 'Keep Take' }).click()
   await page.setViewportSize({ width: 1280, height: 900 })
 
@@ -506,6 +543,18 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   ).toBeFocused()
 
   await page.setViewportSize({ width: 1500, height: 1000 })
+
+  await page.getByRole('button', { name: 'All takes', exact: false }).click()
+  const latestTakeActions = page
+    .getByRole('button', { name: 'Actions for Room and waveform check' })
+    .last()
+  await latestTakeActions.click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: 'Export' }).click()
+  const exportedTake = await downloadPromise
+  expect(exportedTake.suggestedFilename()).toMatch(
+    /^MercuryPitch - Room and waveform check - Take 1\.(?:m4a|wav)$/,
+  )
 
   await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()
