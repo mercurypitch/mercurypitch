@@ -122,7 +122,22 @@ describe('Home destination gallery', () => {
     }
   })
 
-  it('opens voice history from the veiled cover', () => {
+  it('gives every cover a span class, so none collapses into one column', () => {
+    // The cover's grid placement comes from a class named after its
+    // visual; a visual with no class renders "cover undefined" and the
+    // card shrinks to a twelfth of the gallery (the Ear Lab, 2026-08-28).
+    const { container } = render(() => <DestinationGallery />)
+    // Tabs render as buttons, pages as links; the teaser is a button too.
+    const covers = [...container.querySelectorAll('a, button')]
+    expect(covers.length).toBeGreaterThanOrEqual(HOME_DESTINATIONS.length)
+    for (const cover of covers) {
+      expect(cover.className, cover.textContent ?? '').not.toContain(
+        'undefined',
+      )
+    }
+  })
+
+  it('keeps the teaser un-navigable and toggles its reveal on tap', () => {
     const { container } = render(() => <DestinationGallery />)
     const teaser = container.querySelector<HTMLElement>(
       '[data-destination="mystery"]',
