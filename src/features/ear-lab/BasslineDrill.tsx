@@ -18,7 +18,7 @@ import { roveRootMidi } from '@/lib/ear/item-bank'
 import type { PhraseVerdict } from '@/lib/ear/phrase'
 import { judgePhrase } from '@/lib/ear/phrase'
 import { BASSLINE_BANK, bassRootMidi, degreeChordMidis, progressionName, romanOf, } from '@/lib/ear/progressions'
-import { BASSLINE_TIMING } from '@/lib/ear/timing'
+import { BASSLINE_TIMING, LADDER_TIMING } from '@/lib/ear/timing'
 import { BeadChain } from './BeadChain'
 import { useEarRoom } from './ear-room-context'
 import type { Strummer } from './guitar-chords'
@@ -116,8 +116,21 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
   )
   const phase = () => controller.phase()
 
+  /** A tapped rung sounds its root on the bass, short. */
+  const soundRoot = (degree: number) => {
+    const ctx = audioEngine.getAudioContext()
+    if (!ctx) return
+    strummer ??= createStrummer(ctx, room.volume() * audioEngine.getVolume())
+    strummer.strum(
+      [bassRootMidi(rootMidi, degree)],
+      ctx.currentTime,
+      LADDER_TIMING.tapMs / 1000,
+    )
+  }
+
   const tap = (degree: number) => {
     if (phase() !== 'answer') return
+    soundRoot(degree)
     const next = [...answered(), degree]
     setAnswered(next)
     if (next.length < line().length) return
@@ -155,7 +168,7 @@ export function BasslineDrill(props: { onBack: () => void }): JSX.Element {
           expectedLength={line().length}
           answered={answered()}
           armed={phase() === 'answer'}
-          label="Tap the roots back"
+          label={`Tap the ${line().length} roots back`}
           degrees={BASS_DEGREES}
           words={romanOf}
           onTap={tap}

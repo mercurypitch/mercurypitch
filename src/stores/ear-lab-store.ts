@@ -123,6 +123,30 @@ export function clampRevealHold(ms: number): number {
 
 export const earRevealHoldMs = (): number => clampRevealHold(revealHold())
 
+// ── One-time re-seed ────────────────────────────────────────────
+
+/** The ladder drills' tap items were rated while the ladder was
+ *  silent, so their difficulties describe a guessing game. Dropped
+ *  once, the day the ladder began to sound; the Elo ratings stay. */
+const RESEED_KEY = `${KEY_PREFIX}items_reseed`
+const RESEED_STAMP = 'ladder-sounds'
+const SILENT_LADDER_ITEMS = ['e-', 'bassline:']
+
+export function reseedSilentLadderItems(): boolean {
+  if (localStorage.getItem(RESEED_KEY) === RESEED_STAMP) return false
+  setItemStates((states) =>
+    Object.fromEntries(
+      Object.entries(states).filter(
+        ([id]) => !SILENT_LADDER_ITEMS.some((prefix) => id.startsWith(prefix)),
+      ),
+    ),
+  )
+  localStorage.setItem(RESEED_KEY, RESEED_STAMP)
+  return true
+}
+
+reseedSilentLadderItems()
+
 // ── The instrument card ─────────────────────────────────────────
 
 /** Which drills keep their instrument card unfolded. Folded is the

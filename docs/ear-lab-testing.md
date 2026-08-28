@@ -760,6 +760,21 @@ overlaps. Contour — both tones the same length.
 3. Home with seven degrees reads "1–7 on the keyboard"; Gravity "1–=";
    the Begin and Next pads still show their Space keycap.
 
+### 2ad. Retest fixes — the ladder sounds
+
+1. Echo, Begin. Once the ladder opens, every rung you tap sounds its
+   note — short, the drill's own voice, in the planted key — and the pads
+   are labelled "Tap the 3 notes back" (the phrase's length), with the
+   strip counting "1 of 3" under the chips. Under the rungs one line
+   explains the top rung: 1′ is home again, an octave up.
+2. Span and the Field Book's Echo do the same; Bassline's rungs strum
+   their root on the bass and read "Tap the 4 roots back".
+3. Sung answers are untouched: the mic strip fills without a ladder.
+4. First open after the update: Echo's and Bassline's item difficulties
+   learned on the silent ladder are dropped once
+   (`mercurypitch_ear_items_reseed` = `ladder-sounds`); ratings, readings
+   and the Column keep their values.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

@@ -35,6 +35,7 @@ import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
 import { IdentificationDrillView } from './IdentificationDrillView'
+import { soundRung } from './ladder-voice'
 import { PhraseConsole, SungStrip } from './PhraseConsole'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
@@ -150,6 +151,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
 
   const tap = (degree: number) => {
     if (phase() !== 'answer' || sungRun()) return
+    soundRung(audioEngine, rootMidi, degree)
     const next = [...answered(), degree]
     setAnswered(next)
     if (next.length < phrase().length) return
@@ -301,7 +303,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
               expectedLength={phrase().length}
               answered={answered()}
               armed={phase() === 'answer'}
-              label="Tap the phrase back"
+              label={`Tap the ${phrase().length} notes back`}
               onTap={tap}
               onUndo={undo}
             />

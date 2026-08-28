@@ -118,6 +118,11 @@ export const ECHO_TIMING = {
 } as const
 
 /** Span — the phrase at the staircase's length. */
+/** The ladder: a tapped rung sounds its note, short. */
+export const LADDER_TIMING = {
+  tapMs: 220,
+} as const
+
 export const SPAN_TIMING = {
   chordMs: 380,
   chordGapMs: 90,

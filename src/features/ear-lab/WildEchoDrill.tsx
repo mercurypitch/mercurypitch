@@ -25,6 +25,7 @@ import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
 import { IdentificationDrillView } from './IdentificationDrillView'
+import { soundRung } from './ladder-voice'
 import { PhraseConsole, SungStrip } from './PhraseConsole'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
@@ -112,6 +113,7 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
 
   const tap = (tapped: number) => {
     if (phase() !== 'answer' || sungRun()) return
+    soundRung(audioEngine, rootMidi, tapped)
     const next = [...answered(), tapped === 8 ? 1 : tapped]
     setAnswered(next)
     if (next.length < phrase().length) return
@@ -254,7 +256,7 @@ export function WildEchoDrill(props: WildDrillProps): JSX.Element {
               expectedLength={phrase().length}
               answered={answered()}
               armed={phase() === 'answer'}
-              label="Tap the phrase back"
+              label={`Tap the ${phrase().length} notes back`}
               words={word}
               onTap={tap}
               onUndo={undo}
