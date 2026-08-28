@@ -279,6 +279,18 @@
   color: var(--stage-muted);
 }
 
+/* A key the browser took: said once, under the headline. */
+.swallowed {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed var(--stage-brass-line);
+  border-radius: 4px;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--stage-parchment);
+}
+
 /* ── The answer console ──────────────────────────────────────── */
 
 .console {
