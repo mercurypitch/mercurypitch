@@ -206,6 +206,7 @@ function round(value: number, places = 1): number {
 function emptySkipReasons(): Record<GuitarLiveScoreSkipReason, number> {
   return {
     'polyphonic-onset': 0,
+    'unheard-voice': 0,
     'fast-passage': 0,
     'input-clipping': 0,
     'input-noisy': 0,
@@ -531,6 +532,8 @@ export function describeGuitarScoreDiagnosis(row: GuitarScoreDebugRow): string {
           return 'Excluded: the room was nearly as loud as the guitar'
         case 'input-uncertain':
           return 'Excluded: pitch was not stable enough to name'
+        case 'unheard-voice':
+          return 'Another voice of this chord was scored; one detector hears one pitch'
         case 'event-gap':
           return 'Excluded: a recorder page went missing across this note'
         default:

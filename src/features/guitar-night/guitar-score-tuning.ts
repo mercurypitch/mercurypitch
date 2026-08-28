@@ -13,6 +13,7 @@
 
 import { createSignal } from 'solid-js'
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
+import type { GuitarLiveScorePolicy } from '@/lib/guitar/guitar-live-score'
 import { GUITAR_LIVE_SCORE_MATCH_TOLERANCE_MS, GUITAR_LIVE_SCORE_MINIMUM_PITCH_CLARITY, } from '@/lib/guitar/guitar-live-score'
 import { PITCH_ATTACH_WINDOW_MS } from '@/lib/guitar/input-events'
 
@@ -33,6 +34,11 @@ export interface GuitarScoreTuning {
   judgeDenseTargets: boolean
   /** Let a pitch change prove a note, not only a picked attack. */
   matchPitchChanges: boolean
+  /**
+   * Whether a chord or a dense run is excluded before the evidence is read, or
+   * judged against it like any other note.
+   */
+  scorePolicy: GuitarLiveScorePolicy
   /**
    * Samples the performance analyser reads per detection. 2048 at 48 kHz is a
    * 42.7 ms window, which holds only about 2.3 periods of low E (82.4 Hz) —
@@ -70,6 +76,13 @@ export const GUITAR_SCORE_TUNING_DEFAULTS: Readonly<GuitarScoreTuning> = {
   // pitch path covered 85% and 94%. Replaying those takes with pitch changes
   // admitted moved the graded result from 0% and 6% to 66% and 66%.
   matchPitchChanges: true,
+  // Evidence-first. Measured by replaying a real take of a fast piece through
+  // the engine: exclude-first refused to judge 317 of 406 targets and reported
+  // 95% on the 96 it graded; evidence-first judges 349 of them and reports
+  // 63%, which is what the playing actually was. Only one of the 91 hits the
+  // old policy found changed, and the hit predicate is untouched — the change
+  // is which targets are allowed to ask, not what counts as a hit.
+  scorePolicy: 'evidence-first',
   // 4096. MPM correlates to a lag of half the buffer, so the deepest pitch a
   // window can even represent is sampleRate / (bufferSize / 2): 46.9 Hz here,
   // against 93.8 Hz at 2048 once the shrinking NSDF window is accounted for.
@@ -138,6 +151,7 @@ export function guitarScoreEngineTuning(inputKind: GuitarInputProfileKind): {
   denseTargetSpacingMs: number
   octaveTolerantPitch: boolean
   matchPitchChanges: boolean
+  scorePolicy: GuitarLiveScorePolicy
 } {
   const current = import.meta.env.DEV ? tuning() : GUITAR_SCORE_TUNING_DEFAULTS
   const acoustic = inputKind !== 'midi'
@@ -154,6 +168,10 @@ export function guitarScoreEngineTuning(inputKind: GuitarInputProfileKind): {
     // MIDI already reports one event per note played; admitting pitch changes
     // there would only double-count.
     matchPitchChanges: acoustic && current.matchPitchChanges,
+    // MIDI reports one event per note played, so it can judge every voice of a
+    // chord independently and has nothing to reclaim. An explicit ternary
+    // rather than `acoustic && ...`, which would yield `false`, not a policy.
+    scorePolicy: acoustic ? current.scorePolicy : 'exclude-first',
   }
 }
 

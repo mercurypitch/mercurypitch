@@ -22,6 +22,8 @@ const RECENT_EVENT_IDENTITIES = 512
 
 export type GuitarLiveScoreGrade = 'S' | 'A' | 'B' | 'C' | 'D'
 
+export type GuitarLiveScorePolicy = 'exclude-first' | 'evidence-first'
+
 export interface GuitarLiveScoreTargetInput {
   id: string
   midi: number
@@ -80,6 +82,21 @@ export interface CreateGuitarLiveScoreEngineOptions {
    */
   matchPitchChanges?: boolean
   /**
+   * Whether a hard passage is excluded before the evidence is read, or judged
+   * against it like any other note.
+   *
+   * 'exclude-first' is the original behaviour: a target on a chord or inside a
+   * dense run is skipped at construction time and never compared against a
+   * single input event. Measured on a real take, that discarded 317 of 406
+   * targets, 218 of which had the authored pitch detected inside the match
+   * window — the score then read 92% while grading 22% of what was played.
+   *
+   * 'evidence-first' keeps every predicate identical and only changes which
+   * targets are allowed to ask. Exclusion still exists, but it means the
+   * evidence is missing or untrustworthy, never that the music was difficult.
+   */
+  scorePolicy?: GuitarLiveScorePolicy
+  /**
    * Onset spacing under which acoustic targets are excluded rather than
    * judged. Defaults to twice the pitch-attachment window.
    */
@@ -96,6 +113,13 @@ export interface CreateGuitarLiveScoreEngineOptions {
 
 export type GuitarLiveScoreSkipReason =
   | 'polyphonic-onset'
+  /**
+   * A voice of a chord that a mono pitch detector cannot reach. One onset
+   * yields one pitch, so a second authored voice at the same instant is
+   * unprovable by construction — not something the player failed to do. The
+   * chord is judged once, through whichever voice was heard.
+   */
+  | 'unheard-voice'
   | 'fast-passage'
   | 'input-clipping'
   | 'input-noisy'
@@ -112,6 +136,12 @@ export type GuitarLiveScoreJudgment = Readonly<
       eventId: string
       timingOffsetMs: number
       skipReason: null
+      /**
+       * The exclusion this target carried and was judged anyway. Null for a
+       * target nothing ever proposed excluding. Present so a recovered hit is
+       * auditable rather than merely a larger number.
+       */
+      reclaimedFrom: GuitarLiveScoreSkipReason | null
     }
   | {
       targetId: string
@@ -122,6 +152,7 @@ export type GuitarLiveScoreJudgment = Readonly<
       eventId: null
       timingOffsetMs: null
       skipReason: null
+      reclaimedFrom: GuitarLiveScoreSkipReason | null
     }
   | {
       targetId: string
@@ -132,6 +163,7 @@ export type GuitarLiveScoreJudgment = Readonly<
       eventId: null
       timingOffsetMs: null
       skipReason: GuitarLiveScoreSkipReason
+      reclaimedFrom: null
     }
 >
 
@@ -221,6 +253,8 @@ interface TargetFrame extends GuitarLiveScoreTargetInput {
     GuitarLiveScoreSkipReason,
     'polyphonic-onset' | 'fast-passage'
   > | null
+  /** How many authored voices share this exact onset. One unless a chord. */
+  onsetGroupSize: number
 }
 
 interface GapInterval {
@@ -328,6 +362,7 @@ function createTargets(
         Math.round((targetSeconds - rangeStartSeconds) * options.sampleRate),
       ),
       skipReason: null,
+      onsetGroupSize: 1,
     })
   }
   targets.sort(
@@ -362,7 +397,10 @@ function createTargets(
         (next !== undefined && next - onsetFrame < minimumSpacingFrames)
       const skipReason =
         group.length > 1 ? 'polyphonic-onset' : tooClose ? 'fast-passage' : null
-      for (const target of group) target.skipReason = skipReason
+      for (const target of group) {
+        target.skipReason = skipReason
+        target.onsetGroupSize = group.length
+      }
     }
   }
   return targets
@@ -444,6 +482,8 @@ export function createGuitarLiveScoreEngine(
     1,
     Math.round((PITCH_ATTACH_WINDOW_MS / 1000) * options.sampleRate),
   )
+  const evidenceFirst =
+    (options.scorePolicy ?? 'exclude-first') === 'evidence-first'
   const onRetainedEventVisit = options.instrumentation?.onRetainedEventVisit
   const onTargetVisit = options.instrumentation?.onTargetVisit
 
@@ -540,8 +580,8 @@ export function createGuitarLiveScoreEngine(
   const hasProvisionalCandidate = (
     target: TargetFrame,
     throughFrame: number,
-  ): boolean =>
-    [...activeEvents.values()].some((event) => {
+  ): boolean => {
+    for (const event of activeEvents.values()) {
       if (
         consumedEventIds.has(event.id) ||
         !scorableKind(event.kind) ||
@@ -550,17 +590,21 @@ export function createGuitarLiveScoreEngine(
         event.compensatedTransportFrame >= durationFrames ||
         !withinWindow(event.compensatedTransportFrame - target.onsetFrame)
       ) {
-        return false
+        continue
       }
       const pitchIsProvisional =
         event.pitch === null ||
         (options.inputKind !== 'midi' &&
           event.pitch.clarity < minimumPitchClarity)
-      return (
+      if (
         pitchIsProvisional &&
         throughFrame <= event.compensatedTransportFrame + pitchGraceFrames
-      )
-    })
+      ) {
+        return true
+      }
+    }
+    return false
+  }
 
   const judgeThrough = (
     throughFrame: number,
@@ -580,7 +624,11 @@ export function createGuitarLiveScoreEngine(
       const expired = throughFrame > target.onsetFrame + lateToleranceFrames
       if (!finalize && !expired) break
 
-      if (target.skipReason !== null) {
+      // Under 'exclude-first' a chord or dense-run target is resolved here,
+      // before a single event is looked at. Left byte-identical on purpose:
+      // the property check replays both policies over the same input, so the
+      // baseline has to stay reachable in the same binary.
+      if (!evidenceFirst && target.skipReason !== null) {
         appendJudgment({
           targetId: target.id,
           midi: target.midi,
@@ -590,6 +638,7 @@ export function createGuitarLiveScoreEngine(
           eventId: null,
           timingOffsetMs: null,
           skipReason: target.skipReason,
+          reclaimedFrom: null,
         })
         firstUnresolvedTargetIndex += 1
         continue
@@ -604,6 +653,7 @@ export function createGuitarLiveScoreEngine(
           eventId: null,
           timingOffsetMs: null,
           skipReason: 'event-gap',
+          reclaimedFrom: null,
         })
         firstUnresolvedTargetIndex += 1
         continue
@@ -618,8 +668,113 @@ export function createGuitarLiveScoreEngine(
           eventId: null,
           timingOffsetMs: null,
           skipReason: badHealthReason,
+          reclaimedFrom: null,
         })
         firstUnresolvedTargetIndex += 1
+        continue
+      }
+
+      // A chord is one thing the player either played or did not, and a mono
+      // detector returns one pitch per onset. Judging each voice separately
+      // therefore guarantees a miss for every voice past the first, which is
+      // an accusation the analysis cannot support. So the onset is resolved
+      // once, through whichever voice was actually heard, and the remaining
+      // voices are named unprovable rather than wrong.
+      //
+      // Gated on the pinned reason rather than on group size, so setting
+      // denseTargetSpacingMs to 0 still judges every voice independently and
+      // can measure the ceiling.
+      if (evidenceFirst && target.skipReason === 'polyphonic-onset') {
+        const group: TargetFrame[] = []
+        for (
+          let index = firstUnresolvedTargetIndex;
+          index < targets.length;
+          index += 1
+        ) {
+          const member = targets[index]
+          if (member === undefined || member.onsetFrame !== target.onsetFrame) {
+            break
+          }
+          group.push(member)
+        }
+        // Defer the whole onset while any voice still has a strike whose pitch
+        // has not arrived; resolving half a chord early would burn the event.
+        if (
+          !finalize &&
+          group.some((member) => hasProvisionalCandidate(member, throughFrame))
+        ) {
+          break
+        }
+        let provenIndex = -1
+        let provenEvent: GuitarTakeEvent | null = null
+        let provenExact = false
+        for (let index = 0; index < group.length; index += 1) {
+          const member = group[index]
+          if (member === undefined) continue
+          const candidate = matchingEvent(member, throughFrame)
+          if (candidate === null) continue
+          // Prefer the voice whose pitch matches outright. Spending the one
+          // available credit on an octave-tolerant match while the note the
+          // player actually fretted goes unclaimed would be the wrong voice.
+          const exact = candidate.pitch?.midi === member.midi
+          if (provenEvent === null || (exact && !provenExact)) {
+            provenIndex = index
+            provenEvent = candidate
+            provenExact = exact
+          }
+        }
+        if (provenEvent !== null) consumedEventIds.add(provenEvent.id)
+        // Nothing heard: the onset still has to answer for itself, so its
+        // first voice carries the miss. One judged unit either way — the
+        // chord can fail, which is what keeps the percentage honest.
+        const answeringIndex = provenIndex >= 0 ? provenIndex : 0
+        for (let index = 0; index < group.length; index += 1) {
+          const member = group[index]
+          if (member === undefined) continue
+          if (index !== answeringIndex) {
+            appendJudgment({
+              targetId: member.id,
+              midi: member.midi,
+              onsetFrame: member.onsetFrame,
+              outcome: 'skipped',
+              score: null,
+              eventId: null,
+              timingOffsetMs: null,
+              skipReason: 'unheard-voice',
+              reclaimedFrom: null,
+            })
+            continue
+          }
+          if (provenEvent === null) {
+            appendJudgment({
+              targetId: member.id,
+              midi: member.midi,
+              onsetFrame: member.onsetFrame,
+              outcome: 'miss',
+              score: 0,
+              eventId: null,
+              timingOffsetMs: null,
+              skipReason: null,
+              reclaimedFrom: 'polyphonic-onset',
+            })
+            continue
+          }
+          const offsetFrames =
+            provenEvent.compensatedTransportFrame - member.onsetFrame
+          appendJudgment({
+            targetId: member.id,
+            midi: member.midi,
+            onsetFrame: member.onsetFrame,
+            outcome: 'hit',
+            score: 100,
+            eventId: provenEvent.id,
+            timingOffsetMs:
+              Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
+            skipReason: null,
+            reclaimedFrom: 'polyphonic-onset',
+          })
+        }
+        firstUnresolvedTargetIndex += group.length
         continue
       }
 
@@ -640,6 +795,7 @@ export function createGuitarLiveScoreEngine(
           timingOffsetMs:
             Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
           skipReason: null,
+          reclaimedFrom: target.skipReason,
         })
         firstUnresolvedTargetIndex += 1
         continue
@@ -654,6 +810,7 @@ export function createGuitarLiveScoreEngine(
         eventId: null,
         timingOffsetMs: null,
         skipReason: null,
+        reclaimedFrom: target.skipReason,
       })
       firstUnresolvedTargetIndex += 1
     }

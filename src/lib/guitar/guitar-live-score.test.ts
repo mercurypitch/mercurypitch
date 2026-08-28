@@ -124,6 +124,7 @@ function engine(
     onRetainedEventVisit?(): void
     onTargetVisit?(): void
   },
+  overrides: Partial<Parameters<typeof createGuitarLiveScoreEngine>[0]> = {},
 ) {
   const finalBeat = Math.max(1, ...targets.map((note) => note.startBeat + 1))
   return createGuitarLiveScoreEngine({
@@ -137,6 +138,7 @@ function engine(
     targets,
     inputKind,
     instrumentation,
+    ...overrides,
   })
 }
 
@@ -449,6 +451,126 @@ describe('createGuitarLiveScoreEngine', () => {
         (judgment) => judgment.skipReason === 'fast-passage',
       ),
     ).toHaveLength(2)
+  })
+
+  it('judges an excluded onset against the evidence and still misses when there is none', () => {
+    const targets = [
+      { id: 'fast-d', midi: 62, startBeat: 1 },
+      { id: 'fast-f', midi: 65, startBeat: 1.1 },
+      { id: 'slow-g', midi: 67, startBeat: 2 },
+    ]
+    const score = engine(targets, 'microphone', undefined, {
+      scorePolicy: 'evidence-first',
+    })
+    const result = score.sample(
+      take(
+        [
+          event('fast-d-event', 1_000, 62, 'microphone'),
+          event('slow-g-event', 2_000, 67, 'microphone'),
+        ],
+        { kind: 'microphone' },
+      ),
+      2_181,
+      'good',
+    )
+
+    // fast-d was played and is now credited; fast-f was not played and is now
+    // a miss rather than a shrug. Under exclude-first both were skipped, and
+    // the run reported 100% off the single note it was willing to grade.
+    expect(result.totals).toMatchObject({
+      judgedTargets: 3,
+      hitTargets: 2,
+      missedTargets: 1,
+      skippedTargets: 0,
+    })
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'fast-d'),
+    ).toMatchObject({ outcome: 'hit', reclaimedFrom: 'fast-passage' })
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'fast-f'),
+    ).toMatchObject({ outcome: 'miss', reclaimedFrom: 'fast-passage' })
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'slow-g'),
+    ).toMatchObject({ outcome: 'hit', reclaimedFrom: null })
+  })
+
+  it('judges a chord once, through the voice it heard', () => {
+    const targets = [
+      { id: 'chord-c', midi: 60, startBeat: 0 },
+      { id: 'chord-g', midi: 67, startBeat: 0 },
+    ]
+    const score = engine(targets, 'microphone', undefined, {
+      scorePolicy: 'evidence-first',
+    })
+    const result = score.sample(
+      take([event('chord-event', 0, 67, 'microphone')], {
+        kind: 'microphone',
+      }),
+      1_181,
+      'good',
+    )
+
+    // One detector hears one pitch, so the second voice is unprovable rather
+    // than wrong. Exactly one judged unit, and it is a hit.
+    expect(result.totals).toMatchObject({
+      judgedTargets: 1,
+      hitTargets: 1,
+      missedTargets: 0,
+      skippedTargets: 1,
+    })
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'chord-g'),
+    ).toMatchObject({ outcome: 'hit', reclaimedFrom: 'polyphonic-onset' })
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'chord-c'),
+    ).toMatchObject({ outcome: 'skipped', skipReason: 'unheard-voice' })
+  })
+
+  it('lets a chord miss, so reclaiming cannot only ever raise the score', () => {
+    const targets = [
+      { id: 'chord-c', midi: 60, startBeat: 0 },
+      { id: 'chord-g', midi: 67, startBeat: 0 },
+    ]
+    const score = engine(targets, 'microphone', undefined, {
+      scorePolicy: 'evidence-first',
+    })
+    const result = score.sample(take([], { kind: 'microphone' }), 1_181, 'good')
+
+    expect(result.totals).toMatchObject({
+      judgedTargets: 1,
+      hitTargets: 0,
+      missedTargets: 1,
+      skippedTargets: 1,
+    })
+  })
+
+  it('spends a chord credit on the voice it matched outright, not an octave away', () => {
+    const targets = [
+      { id: 'chord-low', midi: 60, startBeat: 0 },
+      { id: 'chord-high', midi: 67, startBeat: 0 },
+    ]
+    const score = engine(targets, 'microphone', undefined, {
+      scorePolicy: 'evidence-first',
+      octaveTolerantPitch: true,
+    })
+    // 72 is an octave above chord-low and an exact match for nothing; 67 is
+    // chord-high outright. The exact voice has to win, or the one available
+    // credit is spent on a harmonic while the fretted note goes unclaimed.
+    const result = score.sample(
+      take(
+        [
+          event('octave-event', 0, 72, 'microphone'),
+          event('exact-event', 10, 67, 'microphone'),
+        ],
+        { kind: 'microphone' },
+      ),
+      1_181,
+      'good',
+    )
+
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'chord-high'),
+    ).toMatchObject({ outcome: 'hit', eventId: 'exact-event' })
   })
 
   it.each(['clipping', 'noisy', 'uncertain'] as const)(
