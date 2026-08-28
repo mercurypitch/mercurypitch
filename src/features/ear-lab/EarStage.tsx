@@ -543,6 +543,9 @@ interface StagePadProps {
   label: string
   sub?: string
   state?: PadState
+  /** A lamp on the pad, lit while the stimulus it stands for sounds —
+   *  "the first" has a referent on screen. Absent: no lamp. */
+  lamp?: boolean
   disabled?: boolean
   onClick: () => void
 }
@@ -561,8 +564,18 @@ export function StagePad(props: StagePadProps): JSX.Element {
       disabled={props.disabled === true}
       onClick={() => props.onClick()}
       data-state={props.state ?? undefined}
+      data-lamp={
+        props.lamp === undefined ? undefined : props.lamp ? 'on' : 'off'
+      }
     >
       <span class={styles.padHead}>
+        <Show when={props.lamp !== undefined}>
+          <span
+            class={styles.padLamp}
+            classList={{ [styles.padLampOn]: props.lamp === true }}
+            aria-hidden="true"
+          />
+        </Show>
         <Show when={props.keycap}>
           <kbd class={styles.padKey}>{props.keycap}</kbd>
         </Show>

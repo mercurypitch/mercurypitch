@@ -169,6 +169,7 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
             keycap="1"
             label="The first"
             state={padState(1)}
+            lamp={run.phase() === 'stimulus' && sounding() === 1}
             disabled={run.phase() !== 'answer'}
             onClick={() => answer(1)}
           />
@@ -176,6 +177,7 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
             keycap="2"
             label="The second"
             state={padState(2)}
+            lamp={run.phase() === 'stimulus' && sounding() === 2}
             disabled={run.phase() !== 'answer'}
             onClick={() => answer(2)}
           />

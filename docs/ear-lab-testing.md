@@ -813,6 +813,14 @@ overlaps. Contour — both tones the same length.
 2. Without an extension no note ever shows: a key pressed during the
    stimulus and released once the pads armed is not a swallowed one.
 
+### 2ai. Retest fixes — the first and the second, as lamps
+
+1. The Pull, Beat Hunt, Weight: while the two stimuli sound, the pad for
+   the one sounding carries a lit lamp — "the first" then "the second" —
+   so the question "which was…" has a referent on screen. Both lamps are
+   dark once the pads arm, and through the reveal.
+2. The other drills' pads carry no lamp.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
