@@ -138,3 +138,15 @@ export const DRIFT_TIMING = {
   driftClicks: 6,
   tailMs: 250,
 } as const
+
+/** The Pull — a cadence, two degrees, which leans harder. */
+export const PULL_TIMING = {
+  chordMs: 380,
+  chordGapMs: 90,
+  restMs: 240,
+  probeMs: 700,
+  probeGapMs: 220,
+  tailMs: 200,
+  /** The wrong-answer replay: the lean, then its resolution. */
+  replayMs: 900,
+} as const

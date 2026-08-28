@@ -20,7 +20,11 @@ interface TuningForkProps {
   /** The microphone window is open. */
   listening: boolean
   /** The degree, once told; `correct` is null for a skipped round. */
-  reveal: { degree: number; solfege: string; correct: boolean | null } | null
+  reveal: {
+    degree: number | string
+    solfege: string
+    correct: boolean | null
+  } | null
 }
 
 const CADENCE = ['I', 'IV', 'V', 'I']

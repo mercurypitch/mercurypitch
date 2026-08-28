@@ -888,6 +888,117 @@ async function auditStage(page, name) {
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
+  // Gravity: twelve rungs, each a thumb can hit, armed only after the
+  // probe; the reveal engraves the chromatic label.
+  await openFromStrip('Gravity')
+  results.gravityIdle = await checkStage('gravity idle', 'stage-gravity-idle')
+  await page.getByText('Begin').click()
+  const gravityRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const gravityArmed = await gravityRungs
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!gravityArmed) fail(`${name} gravity`, 'the pads never armed')
+  else {
+    const rungCount = await gravityRungs.count()
+    if (rungCount !== 12)
+      fail(`${name} gravity`, `${rungCount} pads armed, expected 12`)
+    const rungBox = await gravityRungs.first().boundingBox()
+    if (!rungBox || rungBox.height < 44)
+      fail(
+        `${name} gravity`,
+        `a pad is ${Math.round(rungBox?.height ?? 0)}px tall`,
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-gravity-answer.png` })
+    await gravityRungs.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} gravity`, 'the answer was never judged')
+    await page.screenshot({ path: `${OUT}/${name}-stage-gravity-reveal.png` })
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // The Pull: the beam stays level through both notes and tips only at
+  // the reveal, toward the pan the nameplate names.
+  await openFromStrip('The Pull')
+  results.pullIdle = await checkStage('the-pull idle', 'stage-the-pull-idle')
+  await page.getByText('Begin').click()
+  const pullPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const pullArmed = await pullPads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!pullArmed) fail(`${name} the-pull`, 'the pads never armed')
+  else {
+    const tiltEarly = await page.evaluate(
+      () =>
+        document
+          .querySelector('svg[data-instrument="beam"] [data-part="beam"]')
+          ?.getAttribute('data-tilt') ?? null,
+    )
+    if (tiltEarly !== '0')
+      fail(`${name} the-pull`, `the beam tilts ${tiltEarly} before the reveal`)
+    await page.screenshot({ path: `${OUT}/${name}-stage-the-pull-answer.png` })
+    await pullPads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} the-pull`, 'the answer was never judged')
+    const beam = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="beam"]')
+      return svg
+        ? {
+            tilt: Number(
+              svg
+                .querySelector('[data-part="beam"]')
+                ?.getAttribute('data-tilt'),
+            ),
+            leaning: svg
+              .querySelector('[data-leaning="true"]')
+              ?.getAttribute('data-side'),
+            plate:
+              svg.querySelector('[data-part="nameplate"]')?.textContent ?? '',
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-the-pull-reveal.png` })
+    const tiltsRight = beam ? (beam.leaning === '2') === beam.tilt > 0 : false
+    if (
+      !beam ||
+      beam.tilt === 0 ||
+      !tiltsRight ||
+      !/leaning to/.test(beam.plate)
+    )
+      fail(
+        `${name} the-pull`,
+        `beam tilts ${beam?.tilt ?? 0} with pan ${beam?.leaning ?? 'none'} leaning, plate "${beam?.plate ?? ''}"`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
   await openFromStrip('Stack')

@@ -279,7 +279,11 @@ export function calibrationHistory(): CalibrationRunEntry[] {
  *  streak, exactly like exercise runs — but they never enter the
  *  vocal exercise history; the two progressions stay separate. */
 export function creditEarSession(durationMs: number): void {
-  if (durationMs > 0) void addScoredMs(durationMs)
+  // Crediting minutes must never take a drill down with it: the
+  // streak read is async and can fail (storage blocked, a stage
+  // unmounted mid-flight), and a rejection nobody holds is fatal
+  // under test and noise in the field.
+  if (durationMs > 0) void addScoredMs(durationMs).catch(() => undefined)
   trackEvent('session_complete')
   recordActivity()
 }

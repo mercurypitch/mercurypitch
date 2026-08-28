@@ -18,7 +18,8 @@ import type { JSX } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { isProvisional } from '@/lib/ear/elo'
-import { HOME_DEGREES, HOME_DRILL_ID, HOME_SING_DRILL_ID, } from '@/lib/ear/item-bank'
+import type { DegreeSet } from '@/lib/ear/item-bank'
+import { degreeLabel, HOME_SET } from '@/lib/ear/item-bank'
 import { micManager } from '@/lib/mic-manager'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
@@ -30,11 +31,42 @@ import { TuningFork } from './TuningFork'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
 import { useHomeController } from './use-home-controller'
 
-interface HomeDrillProps {
-  onBack: () => void
+/** The words and shape a degree drill puts on the stage: Home's by
+ *  default, Gravity's over the chromatic twelve. */
+export interface HomeDrillCopy {
+  drillId: string
+  name: string
+  measures: string
+  /** Mic-manager consumer id, one per drill. */
+  micConsumer: string
+  padLabel: string
+  columns: number
+  prompt: string
+  description: string
+  ratingUnit: string
+  /** Keycaps per degree, when the digit does not fit (twelve pads). */
+  keycaps?: readonly string[]
 }
 
-const MIC_CONSUMER = 'ear-home-drill'
+export const HOME_COPY: HomeDrillCopy = {
+  drillId: 'home',
+  name: 'Home',
+  measures: 'Function · degree',
+  micConsumer: 'ear-home-drill',
+  padLabel: 'Which degree was that?',
+  columns: 7,
+  prompt: 'A cadence plants the key, then one note sounds — name its degree.',
+  description:
+    'A short cadence tells your ear where home is. Then one note sounds — name its scale degree. This is the hearing that transfers to real music: not “a major sixth”, but “that note is La, and it wants to fall to Sol”.',
+  ratingUnit: 'Function rating',
+}
+
+interface HomeDrillProps {
+  onBack: () => void
+  /** The degrees to run over; Home's seven unless told otherwise. */
+  set?: DegreeSet
+  copy?: HomeDrillCopy
+}
 
 const MODES: ReadonlyArray<{ id: HomeAnswerMode; label: string }> = [
   { id: 'tap', label: 'Tap' },
@@ -43,6 +75,14 @@ const MODES: ReadonlyArray<{ id: HomeAnswerMode; label: string }> = [
 
 export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const { audioEngine } = useEngines()
+  // The set and the copy are fixed for the drill's life: a stage is
+  // mounted per drill, never re-pointed.
+  // eslint-disable-next-line solid/reactivity
+  const set = props.set ?? HOME_SET
+  // eslint-disable-next-line solid/reactivity
+  const copy = props.copy ?? HOME_COPY
+  const labelOf = (degree: number): string =>
+    degreeLabel(set.degrees.find((d) => d.degree === degree))
   const [micError, setMicError] = createSignal('')
 
   let f0: F0Stream | null = null
@@ -57,12 +97,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   const controller = useHomeController(audioEngine, capture, {
     cancelAudio: () => audioEngine.stopTone(60),
+    set,
   })
 
   function releaseMic(): void {
     f0?.dispose()
     f0 = null
-    micManager.release(MIC_CONSUMER)
+    micManager.release(copy.micConsumer)
   }
   // The controller registers its own cleanup; this one owns the mic.
   onCleanup(releaseMic)
@@ -76,7 +117,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         await audioEngine.resume()
         const ctx = audioEngine.getAudioContext()
         if (!ctx) throw new Error('Audio engine has no context')
-        const stream = await micManager.acquire(MIC_CONSUMER)
+        const stream = await micManager.acquire(copy.micConsumer)
         f0 = createF0Stream(ctx, stream)
       } catch {
         setMicError(
@@ -116,19 +157,19 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             ? 'Did not catch that — once more, louder and steadier.'
             : 'Sing or play the degree you heard…'
         }
-        return 'Which degree was that?'
+        return copy.padLabel
       case 'reveal': {
         const degree = target()
         if (!degree) return ''
         if (controller.answeredDegree() === null) {
-          return `No clear take — that was ${degree.solfege} (${degree.degree}). Round skipped, rating untouched.`
+          return `No clear take — that was ${degree.solfege} (${degreeLabel(degree)}). Round skipped, rating untouched.`
         }
         return correct()
-          ? `Yes — ${degree.solfege} (${degree.degree})${centsLabel()}.`
-          : `That was ${degree.solfege} (${degree.degree}) — hear it fall home.`
+          ? `Yes — ${degree.solfege} (${degreeLabel(degree)})${centsLabel()}.`
+          : `That was ${degree.solfege} (${degreeLabel(degree)}) — hear it fall home.`
       }
       default:
-        return 'A cadence plants the key, then one note sounds — name its degree.'
+        return copy.prompt
     }
   }
 
@@ -163,16 +204,16 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       return [{ key: 'Space', action: () => void handleStart() }]
     }
     if (phase() !== 'answer' || controller.mode() !== 'tap') return []
-    return HOME_DEGREES.map((degree) => ({
-      key: String(degree.degree),
+    return set.degrees.map((degree, i) => ({
+      key: copy.keycaps?.[i] ?? String(degree.degree),
       action: () => controller.answer(degree.degree),
     }))
   }
 
   /** The ear-vs-voice line, once both modes have been rated. */
   const earVsVoice = (): string | null => {
-    const ear = earPlayerRating(HOME_DRILL_ID)
-    const voice = earPlayerRating(HOME_SING_DRILL_ID)
+    const ear = earPlayerRating(set.tapDrillId)
+    const voice = earPlayerRating(set.micDrillId)
     if (ear.attempts === 0 || voice.attempts === 0) return null
     const gap = Math.round(ear.rating - voice.rating)
     if (Math.abs(gap) < 40) return 'Ear and voice are moving together.'
@@ -183,8 +224,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   return (
     <EarStage
-      drillId="home"
-      name="Home"
+      drillId={copy.drillId}
+      name={copy.name}
       mode={
         phase() === 'idle'
           ? 'on the bench'
@@ -214,7 +255,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           reveal={
             phase() === 'reveal' && target()
               ? {
-                  degree: target()?.degree ?? 0,
+                  degree: degreeLabel(target()),
                   solfege: target()?.solfege ?? '',
                   correct:
                     controller.answeredDegree() === null ? null : correct(),
@@ -251,7 +292,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 <ConsoleNote>
                   <Show
                     when={homeAnswerMode() === 'mic'}
-                    fallback="A short cadence tells your ear where home is. Then one note sounds — name its scale degree. This is the hearing that transfers to real music: not “a major sixth”, but “that note is La, and it wants to fall to Sol”."
+                    fallback={copy.description}
                   >
                     Mic mode answers by ear alone — no buttons to luck into —
                     and reads your intonation on every note. Octave does not
@@ -277,9 +318,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   : 'The note'
             }
             sub={
-              controller.mode() === 'mic'
-                ? 'sing or play it'
-                : 'Function · degree'
+              controller.mode() === 'mic' ? 'sing or play it' : copy.measures
             }
             icon={
               controller.mode() === 'mic' && phase() === 'answer' ? (
@@ -287,12 +326,12 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
               ) : undefined
             }
           />
-          <Pads columns={7} compact label="Which degree was that?">
-            <For each={HOME_DEGREES}>
-              {(degree) => (
+          <Pads columns={copy.columns} compact label={copy.padLabel}>
+            <For each={set.degrees}>
+              {(degree, i) => (
                 <StagePad
-                  keycap={String(degree.degree)}
-                  label={String(degree.degree)}
+                  keycap={copy.keycaps?.[i()] ?? String(degree.degree)}
+                  label={degreeLabel(degree)}
                   sub={degree.solfege}
                   state={padState(degree.degree)}
                   disabled={phase() !== 'answer' || controller.mode() === 'mic'}
@@ -309,9 +348,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             <EndPlate
               kicker="Rating"
               value={String(Math.round(result().rating.rating))}
-              unit={
-                result().mode === 'mic' ? 'Voice rating' : 'Function rating'
-              }
+              unit={result().mode === 'mic' ? 'Voice rating' : copy.ratingUnit}
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }
@@ -340,12 +377,12 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 outcomes={result().outcomes.map((outcome) => ({
                   correct: outcome.correct,
                   skipped: !outcome.correct && outcome.answered === 0,
-                  title: `Degree ${outcome.degree}${
+                  title: `Degree ${labelOf(outcome.degree)}${
                     outcome.correct
                       ? ''
                       : outcome.answered === 0
                         ? ' — skipped'
-                        : ` — answered ${outcome.answered}`
+                        : ` — answered ${labelOf(outcome.answered)}`
                   }`,
                 }))}
               />

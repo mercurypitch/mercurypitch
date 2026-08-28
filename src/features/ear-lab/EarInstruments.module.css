@@ -641,8 +641,33 @@
   stroke: rgb(239 230 214 / 34%);
 }
 
+/* ── Balance beam (The Pull) ──────────────────────────────── */
+
+.beamArm {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  transition:
+    x1 300ms ease,
+    y1 300ms ease,
+    x2 300ms ease,
+    y2 300ms ease;
+}
+
+.pan {
+  fill: none;
+  stroke: var(--inst-brass);
+  stroke-width: 1.4;
+}
+
+.panLeaning {
+  stroke: var(--inst-garnet);
+  stroke-width: 2;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bead,
+  .beamArm,
   .rod,
   .bob,
   .metronomeArm,

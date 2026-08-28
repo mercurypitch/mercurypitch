@@ -168,6 +168,27 @@ export function IconMetronome(p: IconProps): JSX.Element {
   )
 }
 
+export function IconTwelve(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v3M21 12h-3M12 21v-3M3 12h3" />
+      <path d="M18.4 5.6l-2.1 2.1M18.4 18.4l-2.1-2.1M5.6 18.4l2.1-2.1M5.6 5.6l2.1 2.1" />
+      <circle cx="12" cy="12" r="1.6" />
+    </svg>
+  )
+}
+
+export function IconBalance(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M12 4v16M8 20h8" />
+      <path d="M3 8h18" />
+      <path d="M3 8l-1.5 6a3 3 0 0 0 6 0L6 8M18 8l-1.5 6a3 3 0 0 0 6 0L21 8" />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

@@ -437,6 +437,37 @@ Calibration like Hairline and The Grid.
   plate shows the threshold and its unit.
 - Stop mid-pair or mid-train cancels the tones already on the audio clock.
 
+## 2p. Gravity and The Pull — function past the seven — follow-up item 5
+
+Two more Function drills beside Home. Bench strip → _Gravity_ (Function ·
+chromatic) and _The Pull_ (Function · tendency).
+
+- **Gravity** is Home over the chromatic twelve: the same cadence, the same
+  controller and mic path, but the probe can land on any of the twelve and
+  the pads are twelve in two rows — the diatonic seven by number, the rest
+  by their leaning (♭2, ♭3, ♯4, ♭6, ♭7). Keys run along the keyboard row
+  (1–9, 0, −, =). Tap answers rate under `gravity` with a 1/12 floor; _Sing
+  or play_ answers under `gravity-sing` with none, the yardsticks untouched,
+  the same separation Home keeps. Item ids live in their own namespace
+  (`gravity:deg-N`), so Home's Elo state is not shared or disturbed.
+  - **What to check on hardware:** the reveal says _Yes — Le (♭6)._ with
+    the label, not a bare number; a miss plays the note and then home; the
+    twelve pads stay ≥ 44 px on the phone; the bench tile shows Gravity's
+    rating (with _· voice N_ once the mic mode has been rated) and the
+    Function dial keeps reading Home.
+- **The Pull:** a cadence, then two degrees one after the other. _Which
+  note leans harder — the first, or the second?_ The table: 7 up to home
+  hardest, 4 down to 3, then 6 and 2; 1, 3, 5 rest. Pairs come from a bank
+  of sixteen (each restless degree against each stable one, then 7 v 6,
+  7 v 2, 4 v 6, 4 v 2 — 6 v 2 and 7 v 4 are left out as contestable); the
+  order the two sound in is a coin flip. Rated with a 1/2 floor.
+  - **What to check on hardware:** the balance stays level through both
+    notes with only the pan's lamp lit; the reveal tips it toward the
+    leaning pan, farther for a harder lean, the pan garnet, the plate
+    _Ti leaning to Do′_; a miss replays the leaning note and lets it
+    resolve (Ti then Do′, Fa then Mi). The plate's dots name each pair.
+- No percent anywhere; both tiles show ratings.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
