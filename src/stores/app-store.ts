@@ -1760,6 +1760,14 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_EAR_LAB,
   },
   {
+    title: 'The Field Book',
+    description:
+      'Your own separated songs, read once for the degrees the voice lands on, the phrases it sings and the roots that move under it. Drills on real music, rated on their own tracks — the Column never moves for them.',
+    targetSelector: '[data-tour="ear.fieldBook"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
     title: 'Round trip',
     description:
       'The one latency number for the whole app: the round trip from your speakers back to your microphone. Tap drills subtract it, so a millisecond reading is your ear and not your hardware.',

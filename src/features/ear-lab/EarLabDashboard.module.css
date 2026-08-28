@@ -220,3 +220,8 @@
     min-height: 96px;
   }
 }
+
+/* The Field Book sits under the strip, a plate of its own. */
+.fieldBook {
+  margin-top: 24px;
+}

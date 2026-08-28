@@ -528,6 +528,73 @@ async function auditStage(page, name) {
     return m
   }
 
+  // The Field Book: the card on the bench lists the library's finished
+  // separations (the tours build seeds Karaoke Night's examples) or, on
+  // an empty library, points at Karaoke Night; either way its control is
+  // a 44px button. With a song, the page reads it for real — notes, key,
+  // chords — and Home in the Wild opens on the reading.
+  const fieldBook = page.locator('[data-tour="ear.fieldBook"]')
+  if ((await fieldBook.count()) !== 1) {
+    fail(`${name} field book`, 'the Field Book card is missing from the bench')
+  } else {
+    await fieldBook.scrollIntoViewIfNeeded()
+    const control = fieldBook.getByRole('button').first()
+    const box = await control.boundingBox()
+    if (!box || box.height < 44) {
+      fail(
+        `${name} field book`,
+        `the card's button is ${box ? Math.round(box.height) : 0}px tall, expected 44`,
+      )
+    }
+    await fieldBook.screenshot({ path: `${OUT}/${name}-field-book.png` })
+    const opens = fieldBook.getByRole('button', { name: 'Open' })
+    if ((await opens.count()) > 0) {
+      await opens.first().click()
+      await page.locator('[data-testid="ear-stage"]').waitFor({ timeout: 8000 })
+      const statusText = page.getByTestId('ear-stage-status')
+      const deadline = Date.now() + 120_000
+      let text = ''
+      while (Date.now() < deadline) {
+        text = (await statusText.textContent()) ?? ''
+        if (/landings|could not|not be read|no vocal/i.test(text)) break
+        await page.waitForTimeout(1000)
+      }
+      const read = /landings/.test(text)
+      console.log(`  ${name} field book: ${text}`)
+      if (!read) fail(`${name} field book`, `the song never read: "${text}"`)
+      await checkStage('field book', 'stage-field-book')
+      if (read) {
+        // Whichever drill the song yielded items for opens on the reading.
+        const wildPads = page.locator(
+          '[data-testid="ear-stage-console"] button:not([disabled])',
+        )
+        const wildPad = wildPads.filter({ hasText: /in the Wild/ }).first()
+        if ((await wildPad.count()) === 0) {
+          fail(
+            `${name} field book`,
+            `no drill opened on the reading: "${text}"`,
+          )
+        } else {
+          const padName = (await wildPad.textContent()) ?? ''
+          await wildPad.click()
+          await page.waitForTimeout(400)
+          await checkStage('wild drill idle', 'stage-wild-idle')
+          console.log(
+            `  ${name} field book opened: ${padName.trim().slice(0, 40)}`,
+          )
+          await page.getByRole('button', { name: 'Back to the page' }).click()
+          await page.waitForTimeout(300)
+        }
+      }
+      await page
+        .getByRole('button', { name: 'Back to the bench' })
+        .first()
+        .click()
+      await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+      await page.waitForTimeout(400)
+    }
+  }
+
   await openFromStrip('Hairline')
   results.hairlineIdle = await checkStage(
     'hairline idle',

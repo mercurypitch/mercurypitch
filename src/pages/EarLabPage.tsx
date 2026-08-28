@@ -21,6 +21,7 @@ import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
 import { EarReport } from '@/features/ear-lab/EarReport'
 import { EarRoomShell } from '@/features/ear-lab/EarRoomShell'
 import { EchoDrill } from '@/features/ear-lab/EchoDrill'
+import { FieldBookView } from '@/features/ear-lab/FieldBookView'
 import { GravityDrill } from '@/features/ear-lab/GravityDrill'
 import { GridDrill } from '@/features/ear-lab/GridDrill'
 import { HairlineDrill } from '@/features/ear-lab/HairlineDrill'
@@ -104,6 +105,9 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'subdivide'}>
           <SubdivideDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'field-book'}>
+          <FieldBookView onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />

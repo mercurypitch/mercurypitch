@@ -548,6 +548,43 @@ Checks: the toggle is a radiogroup with two radios on both idle consoles; the
 Listening pad is at least 44 px tall; no percent anywhere; the chain shows
 nothing before the reveal.
 
+### 2t. The Field Book — In The Wild, follow-up item 9
+
+The bench carries **The Field Book** under the instrument strip: every
+finished separation in the karaoke library is a page. With no songs the card
+says so and its **Open Karaoke Night** button goes to the upload; with
+songs it lists up to six, newest first, with what has been read of each.
+
+- **Open** a song: the Field Book page reads it once (the status walks
+  through opening the stems, listening to the vocal, reading the chords; the
+  page's brass rule fills). The reading is the vocal's notes
+  (`detectNotes`), the key they imply (`detectKeyFromNotes`) and the chords
+  under them (STFT → NNLS chroma → `detectChords`, on the bass part when the
+  song had a stem split, else the instrumental). Once read, the status names
+  the key and the counts — landings, phrases, root motions — and the three
+  play pads open.
+- **Home in the Wild** (`1`): the song's tonic triad plants the key, then an
+  excerpt of the vocal over the instrumental plays up to a note the singer
+  held; seven degree pads, the fork on the drum. **Echo in the Wild** (`2`):
+  a phrase the singer sang, three to six notes, tapped back on the ladder —
+  1′ counts as 1; the beads light on the notes' own onsets. **Bassline in
+  the Wild** (`3`): two chords of the song, the first root named in the
+  question; answer the degree the root moved to on seven numeral pads; the
+  gear train turns a wheel per chord. A miss replays the excerpt.
+- Ratings live under `wild-home` / `wild-echo` / `wild-bassline`: the sixth
+  dial on the bench (In The Wild) reads their mean and the card wears it as
+  a seal, but the Column is five faculties — a wild reading never enters the
+  composite and In The Wild no longer counts as a missing faculty. Item
+  difficulties are never refined (the items are one song).
+- Degrees are named in the song's own mode, do-based: a minor song's third
+  is Me, its seventh Te, and the numerals are i, ii°, III… The stems play at
+  the room's level; Stop silences the excerpt.
+
+Checks: the card is on the bench with a 44 px button in its empty state (the
+audit walks this); no percent on screen while reading; the page shows counts
+and the key, never an answer; the three drills' stages pass the same walk as
+their catalogue cousins.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

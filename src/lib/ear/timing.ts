@@ -190,3 +190,13 @@ export const SUBDIVIDE_TIMING = {
   /** The wrong-answer replay, slower. */
   replayQuarterMs: 620,
 } as const
+
+/** The Field Book — excerpts of the user's own song. */
+export const WILD_TIMING = {
+  /** The tonic chord that plants the song's key before an excerpt. */
+  plantMs: 650,
+  plantGapMs: 180,
+  /** A wrong answer replays this much of the excerpt's end. */
+  replayTailS: 1.6,
+  tailMs: 220,
+} as const

@@ -111,7 +111,7 @@ describe('mercuryIndex', () => {
       reading('resolution', 10, CENTS),
       reading('shape', 6, SPAN),
     ])
-    expect(index.missing.sort()).toEqual(['colour', 'function', 'time', 'wild'])
+    expect(index.missing.sort()).toEqual(['colour', 'function', 'time'])
   })
 
   it('rises monotonically as every faculty improves', () => {

@@ -51,6 +51,7 @@ const TOUR_HOOKS = [
   'ear.sprint',
   'ear.actions',
   'ear.drills',
+  'ear.fieldBook',
   'ear.latency',
   'ear.rulers',
 ] as const

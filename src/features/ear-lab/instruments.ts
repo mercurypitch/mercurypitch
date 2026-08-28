@@ -8,7 +8,9 @@
 import type { FacultyId } from '@/lib/ear/drills'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
+import { scoreReading } from '@/lib/ear/mercury-index'
 import { clearedSubdivision } from '@/lib/ear/rhythm-take'
+import { WILD_DRILLS, WILD_TRACKS } from '@/lib/ear/wild'
 import { earPlayerRating, latestCalibration, latestThresholdReading, } from '@/stores/ear-lab-store'
 
 export type InstrumentView =
@@ -287,7 +289,35 @@ export function facultyReadout(faculty: FacultyId): InstrumentReading | null {
         settling: parts.some((rating) => isProvisional(rating)),
       }
     }
-    case 'wild':
-      return null
+    case 'wild': {
+      const mean = wildMeanRating()
+      if (mean === null) return null
+      return {
+        value: String(Math.round(mean)),
+        unit: '',
+        settling: WILD_TRACKS.map((track) => earPlayerRating(track)).some(
+          (rating) => rating.attempts > 0 && isProvisional(rating),
+        ),
+      }
+    }
   }
+}
+
+/** The Field Book's own rating: the mean of the wild tracks played so
+ *  far, or null. It reads on the sixth dial and never in the Column. */
+export function wildMeanRating(): number | null {
+  const played = WILD_TRACKS.map((track) => earPlayerRating(track)).filter(
+    (rating) => rating.attempts > 0,
+  )
+  if (played.length === 0) return null
+  return played.reduce((sum, rating) => sum + rating.rating, 0) / played.length
+}
+
+/** The dial's needle for In The Wild, on the Elo scale the wild drills
+ *  borrow from Home. */
+export function wildFacultyScore(): number | null {
+  const mean = wildMeanRating()
+  return mean === null
+    ? null
+    : scoreReading(mean, WILD_DRILLS['wild-home'].scale)
 }
