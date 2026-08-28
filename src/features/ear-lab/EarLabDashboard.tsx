@@ -13,13 +13,13 @@ import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { FacultyId } from '@/lib/ear/drills'
 import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
-import { IconArc, IconBalance, IconBassLine, IconBeats, IconChain, IconDesk, IconFork, IconGears, IconLattice, IconLoupe, IconMetre, IconMetronome, IconNumerals, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
 import styles from './EarLabDashboard.module.css'
 import { EarPath } from './EarPath'
 import { FieldBookCard } from './FieldBookCard'
 import type { FacultyDial } from './IndexDials'
 import { IndexDials } from './IndexDials'
-import type { Instrument, InstrumentView } from './instruments'
+import { INSTRUMENT_ICON } from './instrument-icons'
+import type { Instrument } from './instruments'
 import { dateLabel, facultyReadout, instrumentReading, INSTRUMENTS, wildFacultyScore, } from './instruments'
 import { Regulator } from './Regulator'
 import { SprintCard } from './SprintCard'
@@ -62,30 +62,6 @@ const FACULTY_ORDER: FacultyId[] = [
   'time',
   'wild',
 ]
-
-const INSTRUMENT_ICON: Record<
-  InstrumentView,
-  (p: { size?: number; class?: string }) => JSX.Element
-> = {
-  hairline: IconLoupe,
-  home: IconFork,
-  grid: IconLattice,
-  leap: IconArc,
-  stack: IconGears,
-  desk: IconDesk,
-  contour: IconStylus,
-  pulse: IconTap,
-  echo: IconChain,
-  span: IconSpan,
-  'beat-hunt': IconBeats,
-  drift: IconMetronome,
-  gravity: IconTwelve,
-  'the-pull': IconBalance,
-  cadence: IconNumerals,
-  bassline: IconBassLine,
-  subdivide: IconMetre,
-  calibration: IconSeal,
-}
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 

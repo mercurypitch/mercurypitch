@@ -123,6 +123,26 @@ export function clampRevealHold(ms: number): number {
 
 export const earRevealHoldMs = (): number => clampRevealHold(revealHold())
 
+// ── The instrument card ─────────────────────────────────────────
+
+/** Which drills keep their instrument card unfolded. Folded is the
+ *  default: one row on a phone, three lines and More on a desk. */
+const [infoOpen, setInfoOpen] = createPersistedSignal<Record<string, boolean>>(
+  `${KEY_PREFIX}info_open`,
+  {},
+  {
+    validator: (value): value is Record<string, boolean> =>
+      typeof value === 'object' && value !== null && !Array.isArray(value),
+  },
+)
+
+export const earInfoOpen = (drillId: string): boolean =>
+  infoOpen()[drillId] === true
+
+export function setEarInfoOpen(drillId: string, open: boolean): void {
+  setInfoOpen((prev) => ({ ...prev, [drillId]: open }))
+}
+
 /** Returns what was kept. */
 export function setEarRevealHoldMs(ms: number): number {
   const kept = clampRevealHold(ms)
@@ -495,4 +515,5 @@ export function resetEarLabStore(): void {
   setSprintDays([])
   setAutoAdvance(true)
   setRevealHold(REVEAL_HOLD.defaultMs)
+  setInfoOpen({})
 }

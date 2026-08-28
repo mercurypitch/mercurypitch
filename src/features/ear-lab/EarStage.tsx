@@ -22,6 +22,7 @@ import { unlockAudio } from '@/lib/audio-unlock'
 import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
+import { InstrumentCard } from './InstrumentCard'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
 
@@ -52,6 +53,13 @@ interface EarStageProps {
   /** The live line under the name: gap, turns, round, rating. */
   progress: string
   progressAside?: JSX.Element
+  /** The bench caption and the drill's paragraph, hung on the stage
+   *  as the instrument card; no card without a description. */
+  measures?: string
+  description?: string
+  /** The card's name when the bar says something else (the ritual
+   *  bars "Calibration" over Hairline's plate). */
+  cardName?: string
   /** The instrument's spoken line; announced politely as it changes. */
   status: string
   tone?: StageTone
@@ -236,6 +244,16 @@ export function EarStage(props: EarStageProps): JSX.Element {
         fallback={
           <>
             <div class={styles.body}>
+              <Show when={props.description}>
+                {(description) => (
+                  <InstrumentCard
+                    drillId={props.drillId}
+                    name={props.cardName ?? props.name}
+                    measures={props.measures}
+                    description={description()}
+                  />
+                )}
+              </Show>
               <figure class={styles.figure}>
                 {props.instrument()}
                 <figcaption

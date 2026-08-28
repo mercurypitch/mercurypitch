@@ -728,6 +728,25 @@ overlaps. Contour — both tones the same length.
    questions left the same way.
 4. The stop control is the square alone, in practice and in calibration.
 
+### 2ab. Retest fixes — the instrument card
+
+1. Open any drill from the bench. The paragraph that sat under the play
+   pads is gone from the console; it hangs on the stage instead, at the
+   top left under the bar: an engraved plate with the instrument's icon,
+   its name, what it measures ("Resolution · cents") and the text clamped
+   to three lines. "More" unfolds it, "Less" folds it. The console keeps
+   the lead pads, the question and the answer pads.
+2. On a phone the plate is one row — "About Hairline" with a chevron —
+   and a tap unfolds it over the instrument, caption and all; a second tap
+   folds it. The state is per drill and survives a reload
+   (`mercurypitch_ear_info_open`); every drill opens folded the first time.
+3. The card stays through a run; the end plate replaces it with the
+   reading. In the calibration ritual the bar says Calibration and the
+   card still says Hairline.
+4. The Field Book's wild drills carry their bench twin's glyph (Echo's
+   chain for Echo in the Wild); Pulse and Home carry theirs; the desk's
+   drills the desk's.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

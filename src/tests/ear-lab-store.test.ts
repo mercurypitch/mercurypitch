@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { calibrationHistory, completeCalibrationRun, completeSprint, earAutoAdvance, earConfusions, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
+import { calibrationHistory, completeCalibrationRun, completeSprint, earAutoAdvance, earConfusions, earInfoOpen, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarInfoOpen, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
 
 function answerHome(correct: boolean, expected = 'deg-4', answered = 'deg-5') {
   return recordIdentificationAnswer({
@@ -258,5 +258,22 @@ describe('pacing', () => {
     resetEarLabStore()
     expect(earAutoAdvance()).toBe(true)
     expect(earRevealHoldMs()).toBe(REVEAL_HOLD.defaultMs)
+  })
+})
+
+describe('the instrument card', () => {
+  it('is folded until a drill unfolds it, and remembers per drill', () => {
+    expect(earInfoOpen('hairline')).toBe(false)
+    setEarInfoOpen('hairline', true)
+    expect(earInfoOpen('hairline')).toBe(true)
+    expect(earInfoOpen('leap')).toBe(false)
+    expect(
+      JSON.parse(localStorage.getItem('mercurypitch_ear_info_open') ?? '{}'),
+    ).toEqual({ hairline: true })
+    setEarInfoOpen('hairline', false)
+    expect(earInfoOpen('hairline')).toBe(false)
+    setEarInfoOpen('hairline', true)
+    resetEarLabStore()
+    expect(earInfoOpen('hairline')).toBe(false)
   })
 })

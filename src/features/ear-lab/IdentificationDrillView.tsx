@@ -13,7 +13,7 @@ import { createEffect, For, Show, untrack } from 'solid-js'
 import { isProvisional } from '@/lib/ear/elo'
 import { IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { ConsoleNote, EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import type { useIdentificationController } from './use-identification-controller'
 
@@ -171,6 +171,8 @@ export function IdentificationDrillView(
     <EarStage
       drillId={props.drillId}
       name={props.title}
+      measures={props.measures}
+      description={props.description}
       mode={
         phase() === 'idle'
           ? 'on the bench'
@@ -199,7 +201,6 @@ export function IdentificationDrillView(
                 icon={<IconPlay size={20} />}
                 onClick={() => start()}
               />
-              <ConsoleNote>{props.description}</ConsoleNote>
               {props.idleAside}
             </>
           }

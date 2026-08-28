@@ -177,6 +177,9 @@ export function ThresholdDrillView(
     <EarStage
       drillId={props.drillId}
       name={name()}
+      cardName={props.title}
+      measures={props.measures}
+      description={props.description}
       mode={mode()}
       progress={progress()}
       progressAside={
@@ -252,7 +255,6 @@ export function ThresholdDrillView(
                       />
                     </Show>
                   </ConsoleLead>
-                  <ConsoleNote>{props.description}</ConsoleNote>
                   {props.idleAside}
                 </>
               }
