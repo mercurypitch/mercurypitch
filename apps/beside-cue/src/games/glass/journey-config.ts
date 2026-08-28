@@ -67,6 +67,20 @@ export const JOURNEY_CONFIG = {
     fallMs: 900,
   },
 
+  /** Shared pane feel (gate, wall, hidden door). */
+  pane: {
+    /** Merc hovers this far before a pane while charging it, world units.
+     * Every approach spot must sit over a platform — breathing while
+     * charging is always safe. */
+    approachBack: 0.7,
+    /** Post-burst grace: for this long after a pane shatters, silence
+     * glides Merc to the nearest perch instead of dropping him into the
+     * void. The perch stays unlit — its note still must be sung. */
+    rescueMs: 2600,
+    /** Rescue glide x lerp per frame. */
+    rescueLerp: 0.1,
+  },
+
   /** Melody bridge over the void. */
   bridge: {
     /** Step notes, semitones above the ground note (sung in order). */

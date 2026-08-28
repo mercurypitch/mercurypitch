@@ -117,6 +117,7 @@ export const JourneyPrototype: Component = () => {
   let mercY = 0.8
   let falling = false
   let fallenMs = 0
+  let rescueMs = 0
   let trail: { wx: number; y: number }[] = []
   let puff: { x: number; y: number; vx: number; vy: number; r: number }[] = []
   let puffT = -1
@@ -192,7 +193,9 @@ export const JourneyPrototype: Component = () => {
     const g = groundMidi
     const ground = P(g, 0.5, 3, 'stone', { lit: true, dwell: 9999 })
     const p1 = P(g + 2, 3, 5.5, 'glass')
-    const p2 = P(g + 4, 5.5, 8, 'stone')
+    // p2 reaches under the gate's approach spot (pane 9.2 − approachBack)
+    // so a breath while charging the gate always finds stone below.
+    const p2 = P(g + 4, 5.5, 8.6, 'stone')
     const ledge = P(g + 2, 8.7, 10.3, 'stone')
     const [s1, s2, s3] = C.bridge.stepOffsets
     const step1 = P(g + s1, 11, 12.5, 'glass', { hum: true })
@@ -211,7 +214,8 @@ export const JourneyPrototype: Component = () => {
     // Act D — the whisper passage floor (stone: resting is safe, noise isn't)
     const hushA = P(g + 5, 29.2, 31.2, 'stone')
     const hushB = P(g + 4, 31.4, 33.4, 'stone')
-    const hushExit = P(g + 5, 33.8, 35.2, 'stone')
+    // reaches under the hidden door's approach spot (36.2 − approachBack)
+    const hushExit = P(g + 5, 33.8, 35.7, 'stone')
 
     // Act F — the chandelier arena floor
     const arena = P(g + 3, 37, 41.2, 'stone')
@@ -354,6 +358,7 @@ export const JourneyPrototype: Component = () => {
     trail = []
     falling = false
     fallenMs = 0
+    rescueMs = 0
     restIdx = null
   }
 
@@ -404,6 +409,7 @@ export const JourneyPrototype: Component = () => {
       mercY = yFor(cp.p.midi) - 0.035
       falling = false
       fallenMs = 0
+      rescueMs = 0
       restIdx = null
       shownMidi = null
       advanceTo(lastCheckpointIdx + 1)
@@ -592,6 +598,7 @@ export const JourneyPrototype: Component = () => {
           }
           if (pane.res >= 1) {
             pane.burstT = 0
+            rescueMs = C.pane.rescueMs
             const gy = yFor(pane.midi)
             pane.shards = Array.from({ length: 26 }, (_, i) => ({
               x: pane.wx,
@@ -636,6 +643,7 @@ export const JourneyPrototype: Component = () => {
 
     // --- merc: fly with the voice, rest on what's below, or fall ---
     if (p === 'play' || p === 'fallen') {
+      rescueMs = Math.max(0, rescueMs - dt)
       if (falling) {
         mercY += (C.fall.speed * dt) / 1000
         if (mercY > C.fall.yGone) {
@@ -660,7 +668,32 @@ export const JourneyPrototype: Component = () => {
             }
           }
           restIdx = best
-          if (restIdx === null) falling = true // nothing below: the void
+          if (restIdx === null) {
+            if (rescueMs > 0) {
+              // Post-burst grace: the success breath must never kill.
+              // Glide to the nearest intact perch; it stays unlit until
+              // its note is actually sung.
+              let t: Platform | null = null
+              let td = Infinity
+              for (const pl of platforms) {
+                if (pl.broken) continue
+                const d = Math.abs((pl.x0 + pl.x1) / 2 - mercWX)
+                if (d < td) {
+                  td = d
+                  t = pl
+                }
+              }
+              if (t !== null) {
+                const tx = Math.min(Math.max(mercWX, t.x0 + 0.2), t.x1 - 0.2)
+                mercWX += (tx - mercWX) * C.pane.rescueLerp
+                mercY += (yFor(t.midi) - 0.035 - mercY) * C.view.restLerp
+              } else {
+                falling = true
+              }
+            } else {
+              falling = true // nothing below: the void
+            }
+          }
         }
         if (restIdx !== null) {
           const pl = platforms[restIdx]
@@ -714,7 +747,7 @@ export const JourneyPrototype: Component = () => {
             n.t === 'land'
               ? (n.p.x0 + n.p.x1) / 2
               : n.t === 'pane'
-                ? n.pane.wx - 0.7
+                ? n.pane.wx - C.pane.approachBack
                 : n.t === 'whisper'
                   ? quiet
                     ? n.z.x1 + 0.6

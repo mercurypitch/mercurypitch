@@ -67,7 +67,10 @@ wall, glass-crumble fall and both orientations.
 - Games gate nothing and are gated by nothing; BeSideCue Pro stays
   support-only.
 - Silence is rest, not failure — only glass platforms give way, after their
-  configured timeout.
+  configured timeout. This holds at the moment of success too: every pane
+  approach spot sits over a platform, and for `pane.rescueMs` after a pane
+  bursts, silence glides Merc to the nearest perch instead of dropping him.
+  The perch stays unlit — its note still has to be sung to land and advance.
 - Planned input modes beyond voice (tap rhythm, hear-and-select) are specced
   in [input-modes.md](input-modes.md); the mechanics library and the Merc's
   Journey spec live in [game-design.md](game-design.md).
