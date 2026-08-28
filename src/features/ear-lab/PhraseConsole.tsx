@@ -11,6 +11,8 @@
 import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { degreeSolfege, PHRASE_DEGREES } from '@/lib/ear/phrase'
+import { micLevelFraction } from '@/lib/mic-level'
+import { IconMic } from './ear-icons'
 import { ConsoleLink, Pads, StagePad } from './EarStage'
 import styles from './EarStage.module.css'
 
@@ -64,5 +66,46 @@ export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
         </For>
       </Pads>
     </>
+  )
+}
+
+interface SungStripProps {
+  /** The notes the mic has heard so far, as degrees. */
+  degrees: readonly number[]
+  expectedLength: number
+  words?: (degree: number) => string
+  /** Input level 0..1 (RMS); the lamp glows with it. */
+  level: number
+  /** The window is open: the lamp is lit. */
+  listening: boolean
+}
+
+/** The same strip a tapped answer fills, filled live by the mic: a
+ *  lamp that glows with the input, then each note heard, in solfège. */
+export function SungStrip(props: SungStripProps): JSX.Element {
+  const word = (degree: number) => (props.words ?? degreeSolfege)(degree)
+  return (
+    <div
+      class={styles.phraseStrip}
+      data-testid="ear-phrase-strip"
+      aria-live="polite"
+      aria-label="What the mic has heard so far"
+    >
+      <span
+        class={styles.micLamp}
+        classList={{ [styles.micLampOn]: props.listening }}
+        style={{ '--mic-level': String(micLevelFraction(props.level)) }}
+        data-testid="ear-mic-lamp"
+        aria-hidden="true"
+      >
+        <IconMic size={14} />
+      </span>
+      <For each={props.degrees}>
+        {(degree) => <span class={styles.phraseChip}>{word(degree)}</span>}
+      </For>
+      <span class={styles.phraseCount}>
+        {props.degrees.length} of {props.expectedLength}
+      </span>
+    </div>
   )
 }

@@ -12,33 +12,34 @@
 // Rated like the other button drills (useIdentificationController):
 // the item is the phrase, the answer is whether the whole of it came
 // back. Sing mode answers the same trial through the pitch pipeline
-// Home listens with: the phrase's notes get windows on the grid the
-// phrase itself sounded on, the median f0 in each names the sung
-// note, and the run rates under 'echo-sing' with no guess floor —
-// the item difficulties stay tap-set, the separation Home keeps
-// between ear and voice.
+// Home listens with, in free time: the frames are cut into notes as
+// they are sung (sung-notes.ts), the strip shows each one, the
+// window closes on silence or Done, and the run rates under
+// 'echo-sing' with no guess floor — the item difficulties stay
+// tap-set, the separation Home keeps between ear and voice.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { ECHO_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { cadenceChordMidis, roveRootMidi } from '@/lib/ear/item-bank'
 import type { PhraseVerdict } from '@/lib/ear/phrase'
-import { judgePhrase, nearestDegree, phraseMidis, solfegeOf, } from '@/lib/ear/phrase'
-import { noteWindows, scorePhrase } from '@/lib/ear/phrase-score'
+import { judgePhrase, phraseMidis, solfegeOf } from '@/lib/ear/phrase'
+import { scorePhraseFree, sungDegrees } from '@/lib/ear/sung-notes'
 import { ECHO_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
 import { IdentificationDrillView } from './IdentificationDrillView'
-import { PhraseConsole } from './PhraseConsole'
+import { PhraseConsole, SungStrip } from './PhraseConsole'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 import { useSingCapture } from './use-sing-capture'
+import { useSungAnswer } from './use-sung-answer'
 
 type AnswerMode = 'tap' | 'mic'
 
@@ -47,14 +48,10 @@ const MODES: { id: AnswerMode; label: string }[] = [
   { id: 'mic', label: 'Sing or play' },
 ]
 
-/** The sung phrase's window: a breath, the phrase at its own pace,
- *  grace at the end. */
-export function echoListeningMs(count: number): number {
-  return (
-    ECHO_TIMING.singLeadMs +
-    count * (ECHO_TIMING.noteMs + ECHO_TIMING.gapMs) +
-    ECHO_TIMING.singTailMs
-  )
+/** The phrase's own length; the sung window's ceiling is twice it
+ *  plus three seconds (use-sung-answer). */
+export function echoPhraseMs(count: number): number {
+  return count * (ECHO_TIMING.noteMs + ECHO_TIMING.gapMs)
 }
 
 export function EchoDrill(props: { onBack: () => void }): JSX.Element {
@@ -71,7 +68,6 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
   const capture = useSingCapture(audioEngine, 'ear-echo-drill')
   let cancelled = false
   let rootMidi = 48
-  let singTimer: ReturnType<typeof setTimeout> | undefined
 
   function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -79,7 +75,6 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
 
   function cancelAudio(): void {
     cancelled = true
-    clearTimeout(singTimer)
     audioEngine.stopTone(60)
     setSounding(0)
   }
@@ -172,50 +167,32 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     setAnswered((list) => list.slice(0, -1))
   }
 
-  /** Score the sung window now — at its end, or when the singer
-   *  presses the pad because they are done. */
-  function judgeNow(): void {
-    clearTimeout(singTimer)
-    if (phase() !== 'answer' || !sungRun()) return
-    const expected = phrase()
-    const score = scorePhrase(
-      capture.takeFrames(),
-      rootMidi,
-      expected,
-      noteWindows(
-        expected.length,
-        ECHO_TIMING.noteMs,
-        ECHO_TIMING.gapMs,
-        ECHO_TIMING.singLeadMs,
-      ),
-    )
-    const sung = score.notes.map((note) =>
-      note.sungMidi === null ? 0 : nearestDegree(note.sungMidi - rootMidi),
-    )
-    setAnswered(sung)
-    setVerdict({
-      correct: score.correct,
-      perNote: score.notes.map((note) => note.met),
-      firstMiss: score.firstMiss,
-    })
-    controller.answer(
-      score.correct
-        ? (controller.expectedId() ?? '')
-        : score.voicedNotes === 0
-          ? 'nothing the mic could hear'
-          : solfegeOf(sung.filter((degree) => degree > 0)),
-    )
-  }
-
-  createEffect(
-    on(phase, (current) => {
-      clearTimeout(singTimer)
-      if (current !== 'answer' || !sungRun()) return
-      capture.startWindow()
-      singTimer = setTimeout(judgeNow, echoListeningMs(phrase().length))
-    }),
-  )
-  onCleanup(() => clearTimeout(singTimer))
+  /** The sung window: the strip fills as the mic hears notes, and it
+   *  closes itself on silence, at the ceiling, or on Done. */
+  const sung = useSungAnswer({
+    capture,
+    open: () => phase() === 'answer' && sungRun(),
+    rootMidi: () => rootMidi,
+    phraseMs: () => echoPhraseMs(phrase().length),
+    onJudge: (notes) => {
+      if (phase() !== 'answer' || !sungRun()) return
+      const score = scorePhraseFree(notes, phrase(), rootMidi)
+      const heard = sungDegrees(notes, rootMidi)
+      setAnswered(heard)
+      setVerdict({
+        correct: score.correct,
+        perNote: score.notes.map((note) => note.met),
+        firstMiss: score.firstMiss,
+      })
+      controller.answer(
+        score.correct
+          ? (controller.expectedId() ?? '')
+          : notes.length === 0
+            ? 'nothing the mic could hear'
+            : solfegeOf(heard),
+      )
+    },
+  })
 
   async function handleStart(): Promise<void> {
     setMicError('')
@@ -249,8 +226,8 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     const current = phase()
     if (current === 'answer') {
       return {
-        label: 'Listening',
-        sub: 'press when you are done',
+        label: 'Done',
+        sub: 'or wait — silence closes it',
         state: undefined,
       }
     }
@@ -263,7 +240,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
     }
     return {
       label: 'Sing or play it back',
-      sub: 'when the console says now',
+      sub: 'the mic opens after the phrase',
       state: 'sounding',
     }
   }
@@ -286,7 +263,7 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
       listenHint="Listen to the phrase…"
       answerHint={
         sungRun()
-          ? 'Sing or play it back — now, at the pace it sounded.'
+          ? 'Sing or play it back — at your own pace, then a breath.'
           : 'Tap it back on the ladder, note by note.'
       }
       choices={[]}
@@ -305,10 +282,10 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
           />
           <Show when={answerMode() === 'mic'}>
             <ConsoleNote>
-              Sing or play the phrase back at the pace it sounded, starting when
-              the console says now — each note is judged in its own window.
-              Voice runs rate on their own track; the phrases keep the
-              difficulty tapping set.
+              Sing or play the phrase back at your own pace once it has sounded:
+              the strip shows each note the mic hears, and the answer closes
+              itself after a moment's silence, or on Done. Voice runs rate on
+              their own track; the phrases keep the difficulty tapping set.
             </ConsoleNote>
           </Show>
           <Show when={micError() !== ''}>
@@ -330,21 +307,29 @@ export function EchoDrill(props: { onBack: () => void }): JSX.Element {
             />
           }
         >
-          <PlayPad
-            label={listeningPad().label}
-            sub={listeningPad().sub}
-            keycap="Space"
-            state={listeningPad().state}
-            icon={<IconMic size={20} />}
-            onClick={judgeNow}
-          />
+          <ConsoleStack>
+            <SungStrip
+              degrees={sung.degrees()}
+              expectedLength={phrase().length}
+              level={sung.level()}
+              listening={phase() === 'answer'}
+            />
+            <PlayPad
+              label={listeningPad().label}
+              sub={listeningPad().sub}
+              keycap="Space"
+              state={listeningPad().state}
+              icon={<IconMic size={20} />}
+              onClick={sung.judgeNow}
+            />
+          </ConsoleStack>
         </Show>
       )}
       answerKeys={() =>
         phase() !== 'answer'
           ? []
           : sungRun()
-            ? [{ key: 'Space', action: judgeNow }]
+            ? [{ key: 'Space', action: sung.judgeNow }]
             : ladderKeys()
       }
       instrument={() => (
