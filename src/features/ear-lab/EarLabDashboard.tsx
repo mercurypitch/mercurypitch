@@ -13,7 +13,7 @@ import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import type { FacultyId } from '@/lib/ear/drills'
 import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
-import { IconArc, IconBalance, IconBeats, IconChain, IconFork, IconGears, IconLattice, IconLoupe, IconMetronome, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
+import { IconArc, IconBalance, IconBassLine, IconBeats, IconChain, IconFork, IconGears, IconLattice, IconLoupe, IconMetronome, IconNumerals, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
 import styles from './EarLabDashboard.module.css'
 import type { FacultyDial } from './IndexDials'
 import { IndexDials } from './IndexDials'
@@ -38,6 +38,8 @@ export type EarLabView =
   | 'drift'
   | 'gravity'
   | 'the-pull'
+  | 'cadence'
+  | 'bassline'
   | 'report'
 
 interface EarLabDashboardProps {
@@ -72,6 +74,8 @@ const INSTRUMENT_ICON: Record<
   drift: IconMetronome,
   gravity: IconTwelve,
   'the-pull': IconBalance,
+  cadence: IconNumerals,
+  bassline: IconBassLine,
   calibration: IconSeal,
 }
 

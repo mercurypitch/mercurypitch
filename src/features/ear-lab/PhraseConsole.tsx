@@ -19,11 +19,17 @@ interface PhraseConsoleProps {
   answered: readonly number[]
   armed: boolean
   label: string
+  /** The rungs; eight, 1 to the tonic above, unless told otherwise. */
+  degrees?: readonly number[]
+  /** The word under a rung and in the strip; solfège unless told. */
+  words?: (degree: number) => string
   onTap: (degree: number) => void
   onUndo: () => void
 }
 
 export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
+  const degrees = () => props.degrees ?? PHRASE_DEGREES
+  const word = (degree: number) => (props.words ?? degreeSolfege)(degree)
   return (
     <>
       <div
@@ -33,9 +39,7 @@ export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
         aria-label="Your phrase so far"
       >
         <For each={props.answered}>
-          {(degree) => (
-            <span class={styles.phraseChip}>{degreeSolfege(degree)}</span>
-          )}
+          {(degree) => <span class={styles.phraseChip}>{word(degree)}</span>}
         </For>
         <span class={styles.phraseCount}>
           {props.answered.length} of {props.expectedLength}
@@ -46,13 +50,13 @@ export function PhraseConsole(props: PhraseConsoleProps): JSX.Element {
           </ConsoleLink>
         </Show>
       </div>
-      <Pads columns={8} compact label={props.label}>
-        <For each={PHRASE_DEGREES}>
+      <Pads columns={degrees().length} compact label={props.label}>
+        <For each={degrees()}>
           {(degree) => (
             <StagePad
               keycap={String(degree)}
               label={degree === 8 ? '1′' : String(degree)}
-              sub={degreeSolfege(degree)}
+              sub={word(degree)}
               disabled={!props.armed}
               onClick={() => props.onTap(degree)}
             />

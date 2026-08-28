@@ -665,8 +665,26 @@
   stroke-width: 2;
 }
 
+/* ── Going train (Cadence) ────────────────────────────────── */
+
+.trainWheel {
+  transition: transform 500ms linear;
+}
+
+.trainWheelTurning {
+  transform: rotate(30deg);
+}
+
+.wheelNumeral {
+  font-family: var(--font-display, serif);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  fill: var(--inst-parchment);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bead,
+  .trainWheel,
   .beamArm,
   .rod,
   .bob,

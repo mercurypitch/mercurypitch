@@ -24,6 +24,8 @@ export type InstrumentView =
   | 'drift'
   | 'gravity'
   | 'the-pull'
+  | 'cadence'
+  | 'bassline'
   | 'pulse'
   | 'calibration'
 
@@ -88,6 +90,22 @@ export const INSTRUMENTS: readonly Instrument[] = [
     faculty: 'function',
     measures: 'Function · tendency',
     answer: 'Two degrees — which one leans harder',
+  },
+  {
+    view: 'cadence',
+    drillId: 'cadence',
+    name: 'Cadence',
+    faculty: 'function',
+    measures: 'Function · progression',
+    answer: 'A progression on the guitar — name it in numerals',
+  },
+  {
+    view: 'bassline',
+    drillId: 'bassline',
+    name: 'Bassline',
+    faculty: 'function',
+    measures: 'Function · root motion',
+    answer: 'Four bass roots under a held tonic — tap them back',
   },
   {
     view: 'grid',
@@ -213,6 +231,8 @@ export function instrumentReading(
     case 'contour':
     case 'echo':
     case 'the-pull':
+    case 'cadence':
+    case 'bassline':
       return ratingReading(instrument.drillId ?? '')
     case 'pulse': {
       const rating = ratingReading('pulse')
