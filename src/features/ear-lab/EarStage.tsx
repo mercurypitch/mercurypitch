@@ -23,7 +23,7 @@ import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
 import { InstrumentCard } from './InstrumentCard'
-import { formatKeyHint } from './key-hint'
+import { formatKeyHint, keyMatches } from './key-hint'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
 
@@ -190,7 +190,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
       // A focused button already fires on Space; let the browser have it.
       if (isSpace && event.target instanceof HTMLButtonElement) return
       const match = keys.find((entry) =>
-        entry.key === 'Space' ? isSpace : entry.key === event.key,
+        entry.key === 'Space' ? isSpace : keyMatches(entry.key, event),
       )
       if (!match) return
       event.preventDefault()
