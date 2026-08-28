@@ -25,15 +25,19 @@ import { batch, createSignal, onCleanup } from 'solid-js'
 import { gradeForScore } from '@/features/exercises/feedback'
 import { playTierSfx } from '@/features/exercises/feedback'
 import type { CalibrationTrack, PooledThreshold } from '@/lib/ear/calibration'
-import { calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, recordCalibrationTrial, } from '@/lib/ear/calibration'
+import { CALIBRATION_STAIRCASE, calibrationConfig, calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, recordCalibrationTrial, } from '@/lib/ear/calibration'
 import type { ThresholdDrill } from '@/lib/ear/drills'
 import { INDEX_MAX, scoreReading } from '@/lib/ear/mercury-index'
 import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
-import { completeCalibrationRun, creditEarSession, markSprintSegmentDone, recordThresholdReading, } from '@/stores/ear-lab-store'
+import { completeCalibrationRun, creditEarSession, latestThresholdReading, markSprintSegmentDone, recordThresholdReading, } from '@/stores/ear-lab-store'
 import { createRevealPacer } from './reveal-pacing'
 
 export type ThresholdRunMode = 'practice' | 'calibration'
+
+/** Trials a 2-down-1-up track spends per turn, until the run shows
+ *  its own pace. */
+const PRIOR_TRIALS_PER_TURN = 2.5
 
 export type ThresholdRunPhase =
   | 'idle'
@@ -99,10 +103,36 @@ export function useThresholdRun(
     cancelled: () => cancelled,
   }
 
-  /** Total reversals a full run needs (progress display). */
+  /** Turns each track needs: the sealed protocol's six, or the
+   *  drill's own for practice. */
+  function trackTarget(): number {
+    return mode() === 'calibration'
+      ? CALIBRATION_STAIRCASE.reversalsToStop
+      : drill.staircase.reversalsToStop
+  }
+
+  /** Total turns a full run needs (progress display). */
   function reversalTarget(): number {
-    const per = drill.staircase.reversalsToStop
-    return mode() === 'calibration' ? per * 3 : per
+    return mode() === 'calibration' ? trackTarget() * 3 : trackTarget()
+  }
+
+  /** About how many questions remain: the turns still needed at the
+   *  run's own pace so far (a prior of two and a half trials a turn
+   *  until it has turned twice), never more than the caps allow. */
+  function questionsLeft(): number {
+    const turnsLeft = Math.max(0, reversalTarget() - reversalsDone())
+    const pace =
+      reversalsDone() >= 2 ? trials() / reversalsDone() : PRIOR_TRIALS_PER_TURN
+    const live =
+      mode() === 'calibration'
+        ? tracks.map((t) => t.state)
+        : single
+          ? [single]
+          : []
+    const capacity = live
+      .filter((state) => !state.done)
+      .reduce((sum, state) => sum + (state.config.maxTrials - state.trials), 0)
+    return Math.min(Math.round(turnsLeft * pace), capacity)
   }
 
   function currentStaircase(): StaircaseState | null {
@@ -132,7 +162,13 @@ export function useThresholdRun(
       tracks = []
     } else {
       single = null
-      tracks = createCalibrationTracks(drill.id, drill.staircase)
+      tracks = createCalibrationTracks(
+        drill.id,
+        calibrationConfig(
+          drill.staircase,
+          latestThresholdReading(drill.id)?.value ?? null,
+        ),
+      )
     }
     setTrackReversals(tracks.map(() => 0))
     setActiveTrack(0)
@@ -296,8 +332,8 @@ export function useThresholdRun(
     trials,
     reversalsDone,
     reversalTarget,
-    /** Reversals each calibration track needs before it stops. */
-    trackTarget: () => drill.staircase.reversalsToStop,
+    trackTarget,
+    questionsLeft,
     trackReversals,
     activeTrack,
     level,

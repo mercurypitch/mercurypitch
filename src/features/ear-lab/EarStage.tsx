@@ -49,8 +49,9 @@ interface EarStageProps {
   name: string
   /** Shown small beside the name: "practice", "calibration", "rating". */
   mode: string
-  /** The live line under the name: gap, reversal, round, rating. */
+  /** The live line under the name: gap, turns, round, rating. */
   progress: string
+  progressAside?: JSX.Element
   /** The instrument's spoken line; announced politely as it changes. */
   status: string
   tone?: StageTone
@@ -87,6 +88,8 @@ interface StageBarProps {
   /** Shown small beside the name; the report has none. */
   mode?: string
   progress: string
+  /** Under the live line: the calibration's three-track strip. */
+  progressAside?: JSX.Element
   onBack: () => void
   /** Where back goes when not the bench: "Back to the page". */
   backLabel?: string
@@ -123,6 +126,7 @@ export function StageBar(props: StageBarProps): JSX.Element {
         <span class={styles.progress} data-testid="ear-stage-progress">
           {props.progress}
         </span>
+        {props.progressAside}
       </div>
       {props.aside}
     </div>
@@ -206,6 +210,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
         name={props.name}
         mode={props.mode}
         progress={props.progress}
+        progressAside={props.progressAside}
         onBack={props.onBack}
         backLabel={props.backLabel}
         aside={
@@ -657,5 +662,42 @@ export function OutcomeDots(props: { outcomes: OutcomeDot[] }): JSX.Element {
         )}
       </For>
     </div>
+  )
+}
+
+interface TurnsStripProps {
+  /** Turns recorded per track. */
+  counts: readonly number[]
+  /** Turns each track needs. */
+  target: number
+  /** The track whose trial is sounding. */
+  active: number
+}
+
+/** The calibration's three tracks as three short bars under the live
+ *  line — the whole run at a glance, on a phone too, where the
+ *  pendulums step aside for the instrument. */
+export function TurnsStrip(props: TurnsStripProps): JSX.Element {
+  return (
+    <span
+      class={styles.turns}
+      role="img"
+      aria-label={`Tracks: ${props.counts
+        .map((count) => `${count} of ${props.target} turns`)
+        .join(', ')}`}
+      data-testid="ear-turns-strip"
+    >
+      <For each={props.counts}>
+        {(count, i) => (
+          <span
+            class={styles.turnsTrack}
+            classList={{ [styles.turnsActive]: i() === props.active }}
+            style={{
+              '--fill': String(Math.min(1, count / Math.max(1, props.target))),
+            }}
+          />
+        )}
+      </For>
+    </span>
   )
 }

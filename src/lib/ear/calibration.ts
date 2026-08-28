@@ -22,6 +22,43 @@ import { createStaircase, recordTrial, thresholdOf } from './staircase'
  *  curve: ±16% for ~90 trials, roughly a minute of drilling. */
 export const CALIBRATION_TRACKS = 3
 
+/** The sealed protocol's staircase, on top of the drill's own steps:
+ *  six turns a track (eighteen in all), the last four averaged — the
+ *  two coarse ones dropped, as the practice run drops its two of
+ *  eight — and a cap of forty trials a track so a run always ends. */
+export const CALIBRATION_STAIRCASE = {
+  reversalsToStop: 6,
+  reversalsToAverage: 4,
+  maxTrials: 40,
+} as const
+
+/** Each track opens one and a half times easier than the latest
+ *  reading, practice or sealed, instead of at the catalogue's wide
+ *  start — the first ten trials are no longer spent walking down
+ *  from 50¢. Clamped to the drill's range; the catalogue's start when
+ *  there is no reading yet. */
+export const WARM_START_FACTOR = 1.5
+
+export function calibrationConfig(
+  config: StaircaseConfig,
+  latestReading: number | null,
+): StaircaseConfig {
+  const warm =
+    latestReading !== null &&
+    Number.isFinite(latestReading) &&
+    latestReading > 0
+      ? config.harderIs === 'lower'
+        ? latestReading * WARM_START_FACTOR
+        : latestReading / WARM_START_FACTOR
+      : config.start
+  const start = Math.min(config.max, Math.max(config.min, warm))
+  return {
+    ...config,
+    ...CALIBRATION_STAIRCASE,
+    start: config.stepMode === 'linear' ? Math.round(start) : start,
+  }
+}
+
 export interface PooledThreshold {
   /** The reading, pooled across tracks, in the drill's unit. */
   value: number

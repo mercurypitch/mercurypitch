@@ -180,6 +180,36 @@
   color: var(--stage-muted);
 }
 
+/* The calibration's three tracks, as bars that fill with their turns. */
+.turns {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 34px);
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.turnsTrack {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(239 230 214 / 12%);
+  overflow: hidden;
+}
+
+.turnsTrack::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left;
+  background: var(--stage-mercury);
+  transition: transform 220ms ease;
+}
+
+.turnsActive::after {
+  background: var(--stage-brass-bright);
+}
+
 /* ── The instrument ──────────────────────────────────────────── */
 
 .body {

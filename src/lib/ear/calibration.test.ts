@@ -5,7 +5,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CALIBRATION_DUE_DAYS, CALIBRATION_TRACKS, calibrationDueAt, calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, poolThresholds, recordCalibrationTrial, } from './calibration'
+import { CALIBRATION_DUE_DAYS, CALIBRATION_STAIRCASE, CALIBRATION_TRACKS, calibrationConfig, calibrationDueAt, calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, poolThresholds, recordCalibrationTrial, WARM_START_FACTOR, } from './calibration'
 import type { ThresholdEstimate } from './staircase'
 import { createStaircase, DEFAULT_STAIRCASE, recordTrial, thresholdOf, } from './staircase'
 import { rng } from './test-rng'
@@ -205,5 +205,69 @@ describe('calibrationDueAt', () => {
     const sealed = Date.UTC(2026, 7, 21)
     expect(CALIBRATION_DUE_DAYS).toBe(14)
     expect(calibrationDueAt(sealed)).toBe(Date.UTC(2026, 8, 4))
+  })
+})
+
+describe('calibrationConfig', () => {
+  it('opens each track one and a half times easier than the latest reading', () => {
+    const config = calibrationConfig(DEFAULT_STAIRCASE, 12)
+    expect(config.start).toBeCloseTo(12 * WARM_START_FACTOR)
+    expect(config.reversalsToStop).toBe(CALIBRATION_STAIRCASE.reversalsToStop)
+    expect(config.reversalsToAverage).toBe(
+      CALIBRATION_STAIRCASE.reversalsToAverage,
+    )
+    expect(config.maxTrials).toBe(CALIBRATION_STAIRCASE.maxTrials)
+    // The drill's own steps and range are untouched.
+    expect(config.coarseStep).toBe(DEFAULT_STAIRCASE.coarseStep)
+    expect(config.min).toBe(DEFAULT_STAIRCASE.min)
+  })
+
+  it('keeps the catalogue start with no reading, and clamps a wild one', () => {
+    expect(calibrationConfig(DEFAULT_STAIRCASE, null).start).toBe(
+      DEFAULT_STAIRCASE.start,
+    )
+    expect(calibrationConfig(DEFAULT_STAIRCASE, 0).start).toBe(
+      DEFAULT_STAIRCASE.start,
+    )
+    expect(calibrationConfig(DEFAULT_STAIRCASE, 500).start).toBe(
+      DEFAULT_STAIRCASE.max,
+    )
+  })
+
+  it('opens a count staircase shorter, on a whole number', () => {
+    const span = {
+      ...DEFAULT_STAIRCASE,
+      start: 3,
+      min: 2,
+      max: 16,
+      harderIs: 'higher' as const,
+      stepMode: 'linear' as const,
+    }
+    expect(calibrationConfig(span, 9).start).toBe(6)
+    expect(calibrationConfig(span, 2).start).toBe(2)
+  })
+
+  it('runs to the end inside the cap on a listener who never settles', () => {
+    let tracks = createCalibrationTracks(
+      'hairline',
+      calibrationConfig(DEFAULT_STAIRCASE, 12),
+    )
+    const random = rng(11)
+    let trials = 0
+    for (;;) {
+      const index = nextTrackIndex(tracks, random)
+      if (index === null) break
+      tracks = recordCalibrationTrial(tracks, index, random() < 0.5)
+      trials++
+    }
+    expect(isCalibrationComplete(tracks)).toBe(true)
+    expect(trials).toBeLessThanOrEqual(
+      CALIBRATION_STAIRCASE.maxTrials * CALIBRATION_TRACKS,
+    )
+    for (const track of tracks) {
+      expect(track.state.reversals.length).toBeLessThanOrEqual(
+        CALIBRATION_STAIRCASE.reversalsToStop,
+      )
+    }
   })
 })
