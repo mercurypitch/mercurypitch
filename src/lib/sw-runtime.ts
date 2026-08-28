@@ -116,6 +116,10 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/piano-night.html',
   '/drum-night',
   '/drum-night.html',
+  // The Ear Lab is a tab of the studio with a page of its own, like Jam:
+  // served from ear-lab.html so a share unfurls with its card.
+  '/ear-lab',
+  '/ear-lab.html',
   // Jam is the one entry that boots the SHARED studio rather than a mini-app,
   // so the shell would at least be the right product. It still belongs here:
   // the shell is cached under '/', which carries no '#/jam', so the visitor
