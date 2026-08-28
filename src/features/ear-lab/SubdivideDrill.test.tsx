@@ -12,7 +12,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type * as Banks from '@/lib/ear/banks'
 import type { EarBankItem } from '@/lib/ear/banks'
-import { REVEAL_TIMING, SUBDIVIDE_TIMING } from '@/lib/ear/timing'
+import { REVEAL_HOLD, SUBDIVIDE_TIMING } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -146,9 +146,7 @@ describe('SubdivideDrill', () => {
     const slowBar = hits[12].at - hits[8].at
     expect(slowBar).toBeGreaterThan(BAR / 1000)
     // The next round waits for the slow bars to finish, then the hold.
-    await vi.advanceTimersByTimeAsync(
-      REVEAL_TIMING.identificationWrongMs + 12000,
-    )
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 12000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )

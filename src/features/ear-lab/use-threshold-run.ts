@@ -30,8 +30,8 @@ import type { ThresholdDrill } from '@/lib/ear/drills'
 import { INDEX_MAX, scoreReading } from '@/lib/ear/mercury-index'
 import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
-import { REVEAL_TIMING } from '@/lib/ear/timing'
 import { completeCalibrationRun, creditEarSession, markSprintSegmentDone, recordThresholdReading, } from '@/stores/ear-lab-store'
+import { createRevealPacer } from './reveal-pacing'
 
 export type ThresholdRunMode = 'practice' | 'calibration'
 
@@ -86,7 +86,13 @@ export function useThresholdRun(
   let activeTrackIndex = 0
   let startedAt = 0
   let cancelled = false
-  let timer: ReturnType<typeof setTimeout> | undefined
+  const pacer = createRevealPacer(
+    () => {
+      setLastCorrect(null)
+      void playRound()
+    },
+    () => cancelled,
+  )
 
   const api: StimulusApi = {
     step: setStimulusStep,
@@ -190,11 +196,9 @@ export function useThresholdRun(
       setPhase('reveal')
     })
 
-    timer = setTimeout(() => {
-      if (cancelled) return
-      setLastCorrect(null)
-      void playRound()
-    }, REVEAL_TIMING.thresholdMs)
+    // The verdict is on the stage; the pacer decides when the next
+    // trial sounds — the rack's hold, or Next.
+    pacer.hold()
   }
 
   function finish(): void {
@@ -246,7 +250,7 @@ export function useThresholdRun(
     // resolves, and without it the run would re-arm its question
     // after the user has already seen the end card.
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelStimulus?.()
 
     if (mode() === 'practice' || isCalibrationComplete(tracks)) {
@@ -259,7 +263,7 @@ export function useThresholdRun(
 
   function reset(): void {
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelStimulus?.()
     setPhase('idle')
     setResult(null)
@@ -268,7 +272,7 @@ export function useThresholdRun(
 
   function dispose(): void {
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelStimulus?.()
   }
 
@@ -299,6 +303,12 @@ export function useThresholdRun(
     level,
     stimulusStep,
     lastCorrect,
+    /** Where this track's level goes after the verdict — the Last
+     *  call plate's consequence line. Null before the first trial. */
+    nextLevel: () => currentStaircase()?.level ?? null,
+    /** Auto-advance off: the run waits on the verdict for next(). */
+    parked: pacer.parked,
+    next: pacer.next,
     result,
     grade,
     start,

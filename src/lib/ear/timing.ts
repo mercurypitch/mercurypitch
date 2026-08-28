@@ -72,13 +72,17 @@ export const CONTOUR_TIMING = {
   replayGapMs: 180,
 } as const
 
-/** How long the reveal holds before the next round. */
-export const REVEAL_TIMING = {
-  /** Threshold drills: right/wrong is a colour flash, no replay. */
-  thresholdMs: 420,
-  identificationCorrectMs: 650,
-  /** Longer, because a miss replays the sound. */
-  identificationWrongMs: 1500,
+/** The verdict's hold before the next trial, when auto-advance is on.
+ *  A preference rather than a number — the rack's Sound panel has the
+ *  slider — so what lives here is its range. Identification drills
+ *  count it from the end of a miss's replay, threshold drills from the
+ *  verdict; one rule for every drill, since a pause between trials
+ *  does not bias a threshold. */
+export const REVEAL_HOLD = {
+  min: 1000,
+  max: 10000,
+  step: 500,
+  defaultMs: 1500,
 } as const
 
 /** Pulse — a call of onsets over one bar, tapped back over the next. */

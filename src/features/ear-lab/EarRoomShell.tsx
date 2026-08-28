@@ -19,8 +19,9 @@ import { unlockAudio } from '@/lib/audio-unlock'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { calibrationDueAt } from '@/lib/ear/calibration'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { STEADY_LATENCY_SPREAD_MS } from '@/lib/mic-latency'
-import { latestCalibration } from '@/stores/ear-lab-store'
+import { earRevealHoldMs, latestCalibration, setEarRevealHoldMs, } from '@/stores/ear-lab-store'
 import { micLatencyMs, micLatencySpreadMs } from '@/stores/mic-latency-store'
 import type { ClickVoice } from './click-synth'
 import { scheduleClick } from './click-synth'
@@ -31,6 +32,8 @@ import { EarRoomContext } from './ear-room-context'
 import { CLICK_VOICES, EAR_VOLUME, earClickVoice, formatEarVolume, loadEarVolume, persistEarVolume, setEarClickVoice, } from './ear-sound'
 import type { EarLabView } from './EarLabDashboard'
 import styles from './EarRoomShell.module.css'
+import { AutoAdvanceSwitch } from './EarStage'
+import { formatRevealHold } from './reveal-pacing'
 import { TapCheck } from './TapCheck'
 
 export type { EarRoomApi, RackPanel } from './ear-room-context'
@@ -464,6 +467,40 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
                   {formatEarVolume(volume())}
                 </output>
               </label>
+              <div class={styles.pace}>
+                <span class={styles.glassLabel}>Between trials</span>
+                <div class={styles.paceSwitch}>
+                  <AutoAdvanceSwitch label="Auto-advance" />
+                </div>
+                <label
+                  class={styles.paceHold}
+                  title="How long the verdict holds before the next trial sounds"
+                >
+                  <span class={styles.paceSub}>Hold after the verdict</span>
+                  <input
+                    type="range"
+                    class={styles.glassSlider}
+                    min={REVEAL_HOLD.min}
+                    max={REVEAL_HOLD.max}
+                    step={REVEAL_HOLD.step}
+                    value={earRevealHoldMs()}
+                    aria-label="Hold after the verdict"
+                    aria-valuetext={formatRevealHold(earRevealHoldMs())}
+                    data-testid="ear-room-hold"
+                    onInput={(event) =>
+                      setEarRevealHoldMs(Number(event.currentTarget.value))
+                    }
+                  />
+                  <output class={styles.glassValue} aria-hidden="true">
+                    {formatRevealHold(earRevealHoldMs())}
+                  </output>
+                </label>
+                <p class={styles.paceNote}>
+                  On, the next trial follows the verdict after the hold; off,
+                  every drill parks on its verdict until Next. The switch in
+                  each stage bar is this one.
+                </p>
+              </div>
               <div class={styles.voices}>
                 <span class={styles.glassLabel} id="ear-click-voice-label">
                   The Grid's click

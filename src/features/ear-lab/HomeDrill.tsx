@@ -15,7 +15,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { isProvisional } from '@/lib/ear/elo'
 import type { DegreeSet } from '@/lib/ear/item-bank'
@@ -27,6 +27,7 @@ import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ea
 import { IconMic, IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { useLastCall } from './reveal-pacing'
 import { TuningFork } from './TuningFork'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
 import { useHomeController } from './use-home-controller'
@@ -199,10 +200,14 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     return null
   }
 
+  /** Auto-advance off: the verdict waits for the Next pad. */
+  const parked = () => controller.parked()
+
   const keys = (): StageKey[] => {
     if (phase() === 'idle') {
       return [{ key: 'Space', action: () => void handleStart() }]
     }
+    if (parked()) return [{ key: 'Space', action: () => controller.next() }]
     if (phase() !== 'answer' || controller.mode() !== 'tap') return []
     return set.degrees.map((degree, i) => ({
       key: copy.keycaps?.[i] ?? String(degree.degree),
@@ -222,6 +227,31 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       : `Your voice (sing ${Math.round(voice.rating)}) leads your ear (tap ${Math.round(ear.rating)}) — rare, and worth more tap rounds.`
   }
 
+  let ratingBefore = 0
+  createEffect(() => {
+    if (phase() === 'cadence') {
+      ratingBefore = untrack(() => controller.rating().rating)
+    }
+  })
+
+  const lastCall = useLastCall(phase, () => {
+    const answered = controller.answeredDegree()
+    const degree = target()
+    const move = `Rating ${Math.round(ratingBefore)} → ${Math.round(
+      controller.rating().rating,
+    )}`
+    const named =
+      answered !== null && degree && answered !== degree.degree
+        ? `You named ${labelOf(answered)} · `
+        : ''
+    return {
+      correct: answered !== null && correct(),
+      line: status(),
+      consequence: answered === null ? 'Rating untouched' : `${named}${move}`,
+      label: `Round ${controller.round() + 1}`,
+    }
+  })
+
   return (
     <EarStage
       drillId={copy.drillId}
@@ -237,9 +267,12 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       status={status()}
       tone={tone()}
       keys={keys}
-      focusConsole={() => phase() === 'answer' && controller.mode() === 'tap'}
+      focusConsole={() =>
+        (phase() === 'answer' && controller.mode() === 'tap') || parked()
+      }
       onBack={props.onBack}
       onStop={running() ? () => controller.stop() : undefined}
+      lastCall={lastCall}
       done={() => phase() === 'done'}
       instrument={() => (
         <TuningFork
@@ -306,26 +339,45 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             </>
           }
         >
-          <PlayPad
-            state={phase() === 'answer' ? 'armed' : 'sounding'}
-            label={
-              phase() === 'answer'
-                ? controller.mode() === 'mic'
-                  ? 'Listening'
-                  : 'Your call'
-                : phase() === 'cadence'
-                  ? 'The key'
-                  : 'The note'
+          <Show
+            when={parked()}
+            fallback={
+              <PlayPad
+                state={phase() === 'answer' ? 'armed' : 'sounding'}
+                label={
+                  phase() === 'answer'
+                    ? controller.mode() === 'mic'
+                      ? 'Listening'
+                      : 'Your call'
+                    : phase() === 'cadence'
+                      ? 'The key'
+                      : phase() === 'reveal'
+                        ? 'Next'
+                        : 'The note'
+                }
+                sub={
+                  phase() === 'reveal'
+                    ? 'follows in a moment'
+                    : controller.mode() === 'mic'
+                      ? 'sing or play it'
+                      : copy.measures
+                }
+                icon={
+                  controller.mode() === 'mic' && phase() === 'answer' ? (
+                    <IconMic size={20} />
+                  ) : undefined
+                }
+              />
             }
-            sub={
-              controller.mode() === 'mic' ? 'sing or play it' : copy.measures
-            }
-            icon={
-              controller.mode() === 'mic' && phase() === 'answer' ? (
-                <IconMic size={20} />
-              ) : undefined
-            }
-          />
+          >
+            <PlayPad
+              label="Next"
+              sub="the next round"
+              keycap="Space"
+              icon={<IconPlay size={20} />}
+              onClick={() => controller.next()}
+            />
+          </Show>
           <Pads columns={copy.columns} compact label={copy.padLabel}>
             <For each={set.degrees}>
               {(degree, i) => (

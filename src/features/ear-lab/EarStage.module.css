@@ -72,14 +72,87 @@
   border-color: var(--stage-brass-line);
 }
 
-.stop {
+.controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
+}
+
+.stop {
+  padding: 8px;
   color: var(--stage-garnet);
   border-color: rgb(163 69 79 / 50%);
 }
 
 .stop:hover {
   background: rgb(163 69 79 / 18%);
+}
+
+/* The auto-advance switch: a brass lamp on a short track. */
+.auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--stage-touch);
+  padding: 6px 10px;
+  border: 1px solid var(--stage-line);
+  border-radius: 6px;
+  background: rgb(20 23 28 / 70%);
+  color: var(--stage-muted);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.auto:hover {
+  border-color: var(--stage-brass-line);
+}
+
+.auto[aria-checked='true'] {
+  color: var(--stage-brass-bright);
+}
+
+.autoLabel {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.autoTrack {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  border: 1px solid var(--stage-line);
+  border-radius: 999px;
+  background: rgb(10 11 13 / 80%);
+  transition: background 140ms ease;
+}
+
+.autoKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--stage-muted);
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.auto[aria-checked='true'] .autoTrack {
+  border-color: var(--stage-brass-line);
+  background: rgb(201 164 94 / 22%);
+}
+
+.auto[aria-checked='true'] .autoKnob {
+  transform: translateX(14px);
+  background: var(--stage-brass-bright);
+  box-shadow: 0 0 8px rgb(231 198 125 / 55%);
 }
 
 .identity {
@@ -257,6 +330,79 @@
   max-width: 52ch;
   font-size: 0.78rem;
   line-height: 1.45;
+  color: var(--stage-muted);
+}
+
+/* ── Last call: the verdict kept under the pads ──────────────── */
+
+.lastCall {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-areas:
+    'mark kicker'
+    'mark line'
+    'mark note';
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: start;
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--stage-brass-line);
+  border-radius: 4px;
+  background: rgb(239 230 214 / 4%);
+}
+
+.lastCallRight {
+  border-left-color: var(--stage-signal);
+}
+
+.lastCallWrong {
+  border-left-color: var(--stage-garnet);
+}
+
+.lastCallMark {
+  grid-area: mark;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+}
+
+.lastCallRight .lastCallMark {
+  color: var(--stage-signal);
+}
+
+.lastCallWrong .lastCallMark {
+  color: var(--stage-garnet);
+}
+
+.lastCallKicker {
+  grid-area: kicker;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stage-brass);
+}
+
+.lastCallLine {
+  grid-area: line;
+  margin: 0;
+  font-family: var(--stage-serif);
+  font-size: 0.98rem;
+  line-height: 1.35;
+  color: var(--stage-parchment);
+}
+
+.lastCallNote {
+  grid-area: note;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
   color: var(--stage-muted);
 }
 
@@ -734,8 +880,14 @@
     font-size: 1rem;
   }
 
-  .stopLabel {
+  /* The switch keeps its track and its aria-label; the word would
+     push the live line onto two rows. The rack spells it out. */
+  .autoLabel {
     display: none;
+  }
+
+  .auto {
+    padding: 6px 8px;
   }
 
   .body {
@@ -820,7 +972,10 @@
   .pad,
   .playPad,
   .back,
-  .stop {
+  .stop,
+  .auto,
+  .autoTrack,
+  .autoKnob {
     transition: none;
   }
 }

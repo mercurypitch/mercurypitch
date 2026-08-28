@@ -11,7 +11,7 @@ import { createRoot } from 'solid-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useThresholdRun } from '@/features/ear-lab/use-threshold-run'
 import { findThresholdDrill } from '@/lib/ear/drills'
-import { REVEAL_TIMING } from '@/lib/ear/timing'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { latestThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
 
 const drill = findThresholdDrill('hairline')
@@ -169,7 +169,7 @@ describe('a run that finishes normally', () => {
             await vi.advanceTimersByTimeAsync(1)
           } else if (run.phase() === 'answer') {
             run.answerCorrect(i % 3 !== 2)
-            await vi.advanceTimersByTimeAsync(REVEAL_TIMING.thresholdMs + 5)
+            await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
           } else {
             await vi.advanceTimersByTimeAsync(5)
           }
