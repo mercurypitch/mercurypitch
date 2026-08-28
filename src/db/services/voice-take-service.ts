@@ -7,8 +7,8 @@ import type { DurableWriteResult } from '@/db/durable-write'
 import { durableWrite, hasRoomFor } from '@/db/durable-write'
 import type { VoiceTakeAudioRecord, VoiceTakeContourRecord, VoiceTakeRecord, VoiceTakeSource, } from '@/db/entities'
 import type { DatabaseAdapter } from '@/db/types'
-import type { VoiceReflection } from '@/features/voice-history/voice-reflections'
-import { serializeVoiceReflections, VOICE_REFLECTIONS_VERSION, } from '@/features/voice-history/voice-reflections'
+import type { VoiceReflection } from '@/lib/domain/voice-reflections'
+import { serializeVoiceReflections, VOICE_REFLECTIONS_VERSION, } from '@/lib/domain/voice-reflections'
 import type { DecodedVoiceAtlasContour, VoiceAtlasContourPayloadV1, } from '@/lib/voice-contour'
 import { decodeVoiceAtlasContour } from '@/lib/voice-contour'
 
@@ -138,6 +138,7 @@ export async function listVoiceTakes(): Promise<VoiceTakeRecord[]> {
   return db.getRepository<VoiceTakeRecord>('voiceTakes').findAll({
     orderBy: 'capturedAt',
     orderDir: 'desc',
+    throwOnError: true,
   })
 }
 
@@ -145,12 +146,16 @@ export async function getVoiceTakeBlob(takeId: string): Promise<Blob | null> {
   const db = await getDb()
   const rows = await db
     .getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
-    .findAll({ where: { takeId }, limit: 1 })
+    .findAll({ where: { takeId }, limit: 1, throwOnError: true })
   const row = rows[0]
   return row === undefined ? null : new Blob([row.data], { type: row.mimeType })
 }
 
-/** Load and validate one take's optional local Voice Atlas contour. */
+/**
+ * Load and validate one take's optional local Voice Atlas contour.
+ * Missing, corrupt, or unreadable analysis stays best-effort and returns null;
+ * the authoritative take metadata and audio readers reject storage failures.
+ */
 export async function getVoiceTakeContour(
   takeId: string,
 ): Promise<DecodedVoiceAtlasContour | null> {
@@ -158,11 +163,13 @@ export async function getVoiceTakeContour(
     const db = await getDb()
     const rows = await db
       .getRepository<VoiceTakeContourRecord>('voiceTakeContours')
-      .findAll({ where: { takeId }, limit: 1 })
+      .findAll({ where: { takeId }, limit: 1, throwOnError: true })
     return rows[0] === undefined
       ? null
       : decodeVoiceAtlasContour(rows[0].payloadJson)
   } catch {
+    // Atlas analysis is optional replay decoration. Keep the take playable
+    // when that auxiliary store is unavailable or its payload is invalid.
     return null
   }
 }
@@ -211,7 +218,10 @@ export async function renameFreeformVoiceThread(
     await localTransaction(db, async (transactionDb) => {
       const takeRepo =
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
-      const takes = await takeRepo.findAll({ where: { comparisonKey } })
+      const takes = await takeRepo.findAll({
+        where: { comparisonKey },
+        throwOnError: true,
+      })
       if (
         takes.length === 0 ||
         takes.some((take) => take.source !== 'freeform')
@@ -257,9 +267,18 @@ export async function deleteVoiceTake(takeId: string): Promise<boolean> {
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
       const contourRepo =
         transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
-      const rows = await audioRepo.findAll({ where: { takeId } })
+      // Resolve every dependent row before the first mutation. In addition to
+      // the transaction rollback, this prevents a failed authoritative read
+      // from being mistaken for an empty store and leaving an orphaned take.
+      const rows = await audioRepo.findAll({
+        where: { takeId },
+        throwOnError: true,
+      })
+      const contours = await contourRepo.findAll({
+        where: { takeId },
+        throwOnError: true,
+      })
       for (const row of rows) await audioRepo.delete(row.id)
-      const contours = await contourRepo.findAll({ where: { takeId } })
       for (const contour of contours) await contourRepo.delete(contour.id)
       await transactionDb
         .getRepository<VoiceTakeRecord>('voiceTakes')
@@ -285,18 +304,32 @@ export async function deleteVoiceThread(
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
       const contourRepo =
         transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
-      const takes = await takeRepo.findAll({ where: { comparisonKey } })
+      const takes = await takeRepo.findAll({
+        where: { comparisonKey },
+        throwOnError: true,
+      })
       if (takes.length === 0) throw new Error('Voice thread not found')
 
+      const dependentRows: Array<{
+        take: VoiceTakeRecord
+        audio: VoiceTakeAudioRecord[]
+        contours: VoiceTakeContourRecord[]
+      }> = []
       for (const take of takes) {
         const audioRows = await audioRepo.findAll({
           where: { takeId: take.id },
+          throwOnError: true,
         })
-        for (const row of audioRows) await audioRepo.delete(row.id)
         const contourRows = await contourRepo.findAll({
           where: { takeId: take.id },
+          throwOnError: true,
         })
-        for (const row of contourRows) await contourRepo.delete(row.id)
+        dependentRows.push({ take, audio: audioRows, contours: contourRows })
+      }
+
+      for (const { take, audio, contours } of dependentRows) {
+        for (const row of audio) await audioRepo.delete(row.id)
+        for (const row of contours) await contourRepo.delete(row.id)
         await takeRepo.delete(take.id)
       }
     })
@@ -316,11 +349,11 @@ export async function wipeVoiceTakes(): Promise<boolean> {
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
       const contourRepo =
         transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
-      // Keep both store reads in an explicit sequence; deletion must not rely
+      // Keep every store read in an explicit sequence; deletion must not rely
       // on parallel jobs retaining the same active IndexedDB transaction.
-      const takes = await takeRepo.findAll()
-      const audioRows = await audioRepo.findAll()
-      const contourRows = await contourRepo.findAll()
+      const takes = await takeRepo.findAll({ throwOnError: true })
+      const audioRows = await audioRepo.findAll({ throwOnError: true })
+      const contourRows = await contourRepo.findAll({ throwOnError: true })
       for (const row of audioRows) await audioRepo.delete(row.id)
       for (const row of contourRows) await contourRepo.delete(row.id)
       for (const take of takes) await takeRepo.delete(take.id)

@@ -89,6 +89,11 @@ export function useFocusTrap(
           : null
       if (eventModal !== null && eventModal !== root) return
 
+      // A modal is the active keyboard surface. Keep app-level shortcuts from
+      // mutating obscured controls while preserving native behavior inside
+      // the dialog and allowing this trap to handle Tab and Escape below.
+      e.stopPropagation()
+
       if (e.key === 'Escape') {
         e.preventDefault()
         opts.onClose?.()

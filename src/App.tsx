@@ -249,6 +249,7 @@ import { registerVoiceCommands } from '@/features/voice-control/voice-command-re
 import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { currentGuidedPracticeLaunch, returnFromGuidedPractice, } from '@/features/voice-history/guided-practice-handoff'
+import type { VoiceHistoryLeaveRequester } from '@/features/voice-history/VoiceHistoryPage'
 import { VoiceHistoryPage } from '@/features/voice-history/VoiceHistoryPage'
 import { createWhatsNewController } from '@/features/whats-new/use-whats-new'
 import { RELEASE_0_9_0 } from '@/features/whats-new/whats-new-content'
@@ -260,7 +261,8 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { navigateTo, parseHash } from '@/lib/hash-router'
+import { navigateTo, parseHash, replaceHash } from '@/lib/hash-router'
+import { isLocalSaveNavigationLocked, vetoNavigationDuringLocalSave, } from '@/lib/local-save-navigation-lock'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -273,6 +275,7 @@ import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melod
 import { createPersistedSignal } from '@/lib/storage'
 import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
+import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { fitPhraseToRange, pickVocalRangeMelody } from '@/lib/vocal-range'
@@ -425,6 +428,7 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Local UI state ──────────────────────────────────────────
   const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
+  useBeforeUnloadGuard(isLocalSaveNavigationLocked)
 
   // Store-backed (ui-store) so the tour engine can open the mobile sidebar
   // and expand the desktop-collapsed rail (sidebarCollapsed lives there too).
@@ -901,18 +905,20 @@ const AppShell: Component<AppProps> = (props) => {
       showNotification('Shared melody is empty or invalid', 'warning')
       return
     }
-    // Land the shared notes in a melody actually CALLED that — setMelody
-    // would have kept whatever name was open, so the toast and the header
-    // disagreed about what had just been loaded.
-    melodyStore.loadImportedMelody(items, name, { bpm: bpmVal })
-    // Drum-kit share links restore the drum preset (legacy links carry no
-    // dk field and default to melody).
-    melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
-    if (bpmVal > 0) setBpm(bpmVal)
-    if (keyVal != null && keyVal !== '') setKeyName(keyVal)
-    if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
-    setActiveTab(TAB_COMPOSE)
-    showNotification(`Loaded shared melody: ${name}`, 'info')
+    handleTabChange(TAB_COMPOSE, (accepted) => {
+      if (!accepted) return
+      // Land the shared notes in a melody actually CALLED that — setMelody
+      // would have kept whatever name was open, so the toast and the header
+      // disagreed about what had just been loaded.
+      melodyStore.loadImportedMelody(items, name, { bpm: bpmVal })
+      // Drum-kit share links restore the drum preset (legacy links carry no
+      // dk field and default to melody).
+      melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
+      if (bpmVal > 0) setBpm(bpmVal)
+      if (keyVal != null && keyVal !== '') setKeyName(keyVal)
+      if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
+      showNotification(`Loaded shared melody: ${name}`, 'info')
+    })
   }
 
   const handleShareExercise = (payload: string) => {
@@ -923,10 +929,12 @@ const AppShell: Component<AppProps> = (props) => {
       showNotification('Shared exercise is invalid', 'warning')
       return
     }
-    setActiveTab(TAB_EXERCISES)
-    setSelectedExercise(data.e as ExerciseType)
-    setAutoStartExercise(true)
-    showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
+    handleTabChange(TAB_EXERCISES, (accepted) => {
+      if (!accepted) return
+      setSelectedExercise(data.e as ExerciseType)
+      setAutoStartExercise(true)
+      showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
+    })
   }
 
   const handleShareRoutine = (payload: string) => {
@@ -958,17 +966,19 @@ const AppShell: Component<AppProps> = (props) => {
         }
       }),
     }
-    const hadProgress = loadSharedRoutine(routine)
-    setActiveTab(TAB_EXERCISES)
-    setAutoStartExercise(true)
-    if (hadProgress) {
-      showNotification(
-        `Loaded shared routine. Your previous progress was replaced.`,
-        'warning',
-      )
-    } else {
-      showNotification(`Loaded shared routine: ${decoded.n ?? name}`, 'info')
-    }
+    handleTabChange(TAB_EXERCISES, (accepted) => {
+      if (!accepted) return
+      const hadProgress = loadSharedRoutine(routine)
+      setAutoStartExercise(true)
+      if (hadProgress) {
+        showNotification(
+          `Loaded shared routine. Your previous progress was replaced.`,
+          'warning',
+        )
+      } else {
+        showNotification(`Loaded shared routine: ${decoded.n ?? name}`, 'info')
+      }
+    })
   }
 
   const handleShareFallback = (_shareType: string, _shareId: string) => {
@@ -1092,8 +1102,70 @@ const AppShell: Component<AppProps> = (props) => {
     }
   }
 
+  let requestVoiceHistoryLeave: VoiceHistoryLeaveRequester | null = null
+  let pendingVoiceHistoryTab: ActiveTab | null = null
+  const [voiceHistoryDraftTitle, setVoiceHistoryDraftTitle] = createSignal('')
+
+  const requestActiveTabChange = (
+    newTab: ActiveTab,
+    onResolved: (accepted: boolean) => void,
+  ): void => {
+    if (
+      vetoNavigationDuringLocalSave({
+        onBlocked: () =>
+          showNotification(
+            'Please wait while this take finishes saving on this device.',
+            'info',
+            { channel: 'voice-take-save' },
+          ),
+        onResolved,
+      })
+    ) {
+      return
+    }
+    if (newTab === activeTab()) {
+      onResolved(true)
+      return
+    }
+    if (
+      activeTab() === TAB_VOICE_HISTORY &&
+      requestVoiceHistoryLeave !== null
+    ) {
+      if (pendingVoiceHistoryTab !== null) {
+        onResolved(false)
+        return
+      }
+      pendingVoiceHistoryTab = newTab
+      requestVoiceHistoryLeave((closed) => {
+        const destinationMatches = pendingVoiceHistoryTab === newTab
+        pendingVoiceHistoryTab = null
+        onResolved(closed && destinationMatches)
+      })
+      return
+    }
+    onResolved(true)
+  }
+
+  function handleTabChange(
+    newTab: ActiveTab,
+    onResolved?: (accepted: boolean) => void,
+  ): void {
+    requestActiveTabChange(newTab, (accepted) => {
+      if (accepted) {
+        setActiveTab(newTab)
+      } else {
+        const route = parseHash(window.location.hash)
+        if (route.type === 'share-load' || route.type === 'share-short') {
+          replaceHash({ type: 'tab', tab: activeTab() })
+        }
+      }
+      onResolved?.(accepted)
+    })
+  }
+
   useHashRouter({
     setActiveTab,
+    requestActiveTabChange,
     setInitialUvrView,
     setInitialUvrSessionId,
     setActiveUvrSessionId,
@@ -1720,10 +1792,6 @@ const AppShell: Component<AppProps> = (props) => {
     guitarCtx.guitar.applyGuitarInputDevice()
   }
 
-  const handleTabChange = (newTab: ActiveTab) => {
-    setActiveTab(newTab)
-  }
-
   // Compose autosave is silent: melodyStore.setMelody persists (debounced
   // inside the store), and a per-edit "Melody saved!" toast was pure noise —
   // every drag ended in one.
@@ -2057,6 +2125,7 @@ const AppShell: Component<AppProps> = (props) => {
   const navigationVoiceCommands = createNavigationVoiceCommands({
     suspended: () => transportShortcutHandlers.isSuspended?.() === true,
     openVoiceHelp: () => setShowVoiceHelp(true),
+    navigateToTab: handleTabChange,
   })
   onCleanup(registerVoiceCommands(() => navigationVoiceCommands))
   const mercurySingCommands = createMercurySingVoiceCommands()
@@ -3788,7 +3857,13 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_VOICE_HISTORY}>
                 <TabErrorBoundary tabName={tabLabel(TAB_VOICE_HISTORY)}>
-                  <VoiceHistoryPage />
+                  <VoiceHistoryPage
+                    draftTitle={voiceHistoryDraftTitle()}
+                    onDraftTitleChange={setVoiceHistoryDraftTitle}
+                    onLeaveRequestReady={(request) => {
+                      requestVoiceHistoryLeave = request
+                    }}
+                  />
                 </TabErrorBoundary>
               </Show>
 

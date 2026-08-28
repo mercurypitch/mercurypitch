@@ -8,6 +8,7 @@ import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { analysisFps, presentationFps, recordAnimationFrame, } from '@/lib/device-tier'
 import type { DownloadProgress } from '@/lib/fetch-progress'
 import { aggregateProgress, fetchArrayBufferWithProgress, } from '@/lib/fetch-progress'
+import { rmsOfTimeData } from '@/lib/mic-level'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
@@ -1278,14 +1279,10 @@ export const useStemMixerAudioController = (
                     octave: mp.octave,
                   })
                 }
-                let sumSquares = 0
-                for (const sample of micTimeData) {
-                  sumSquares += sample * sample
-                }
                 deps.onMicFrame?.({
                   f0: micFreq,
                   conf: mp?.clarity ?? 0,
-                  rms: Math.sqrt(sumSquares / micTimeData.length),
+                  rms: rmsOfTimeData(micTimeData),
                 })
                 deps.pushComparison(elapsedTime, stemFreq, micFreq)
               }

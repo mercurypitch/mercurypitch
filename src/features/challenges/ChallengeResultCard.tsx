@@ -13,6 +13,8 @@ import { createEffect, createSignal, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
 import { closeChallengeStage, openChallengeStage, openSingingZen, } from '@/stores/ui-store'
 import { challengeResultArt } from './challenge-result-art'
@@ -53,6 +55,14 @@ export const ChallengeResultCard: Component = () => {
   >('idle')
   let voiceResultKey: string | null = null
   let voiceResultGeneration = 0
+  let voiceKeepAttemptGeneration = 0
+  let dialogRef: HTMLDivElement | undefined
+  let primaryActionRef: HTMLButtonElement | undefined
+  const voiceSaveInFlight = (): boolean => voiceKeepState() === 'saving'
+  useLocalSaveNavigationLock(
+    voiceSaveInFlight,
+    'weekly challenge voice-take keep',
+  )
 
   createEffect(() => {
     const result = lastChallengeResult()
@@ -107,6 +117,7 @@ export const ChallengeResultCard: Component = () => {
   }
 
   const keepVoiceTake = (): void => {
+    if (voiceSaveInFlight()) return
     const result = lastChallengeResult()
     const capture = result?.voiceCapture
     if (result === null || capture?.state !== 'ready') return
@@ -119,6 +130,7 @@ export const ChallengeResultCard: Component = () => {
       tier: result.tier,
     }
     const resultGeneration = voiceResultGeneration
+    voiceKeepAttemptGeneration++
     setVoiceKeepState('saving')
     trackEvent('voice_keep_attempt')
 
@@ -126,10 +138,9 @@ export const ChallengeResultCard: Component = () => {
       try {
         const saveResult = await keepWeeklyLegendVoiceTake({ context, take })
         if (saveResult.ok) {
-          if (resultGeneration === voiceResultGeneration) {
-            setVoiceKeepState('saved')
-          }
           trackEvent('voice_keep_success')
+          if (resultGeneration !== voiceResultGeneration) return
+          setVoiceKeepState('saved')
           showNotification(
             'Legend take kept in Hear Yourself on this device.',
             'success',
@@ -138,10 +149,9 @@ export const ChallengeResultCard: Component = () => {
           return
         }
 
-        if (resultGeneration === voiceResultGeneration) {
-          setVoiceKeepState('error')
-        }
         trackEvent('voice_keep_failure')
+        if (resultGeneration !== voiceResultGeneration) return
+        setVoiceKeepState('error')
         if (saveResult.quotaExceeded || !saveResult.roomAvailable) {
           trackEvent('voice_storage_warning')
           showNotification(
@@ -157,10 +167,9 @@ export const ChallengeResultCard: Component = () => {
           )
         }
       } catch {
-        if (resultGeneration === voiceResultGeneration) {
-          setVoiceKeepState('error')
-        }
         trackEvent('voice_keep_failure')
+        if (resultGeneration !== voiceResultGeneration) return
+        setVoiceKeepState('error')
         showNotification(
           'The Legend take could not be kept. Retry or discard its temporary copy.',
           'error',
@@ -171,9 +180,23 @@ export const ChallengeResultCard: Component = () => {
   }
 
   const goAgain = async (): Promise<void> => {
+    if (voiceSaveInFlight()) return
     const result = lastChallengeResult()
     if (result === null) return
+    const resultGeneration = voiceResultGeneration
+    const keepAttemptGeneration = voiceKeepAttemptGeneration
     const challenge = await getActiveWeekly()
+    // The weekly lookup is asynchronous. A Keep, dismissal, or replacement
+    // result can happen while it is pending; none of those may be overwritten
+    // by the stale relaunch once the request resolves.
+    if (
+      voiceSaveInFlight() ||
+      resultGeneration !== voiceResultGeneration ||
+      keepAttemptGeneration !== voiceKeepAttemptGeneration ||
+      lastChallengeResult() !== result
+    ) {
+      return
+    }
     if (challenge === null || challenge.id !== result.challengeId) {
       showNotification(
         'That Legend has rotated out — a new one is waiting on the board.',
@@ -202,6 +225,7 @@ export const ChallengeResultCard: Component = () => {
   }
 
   const practiseInZen = (): void => {
+    if (voiceSaveInFlight()) return
     const result = lastChallengeResult()
     if (result?.targetItems === undefined) return
     const exercise = challengeToZenExercise({
@@ -225,9 +249,26 @@ export const ChallengeResultCard: Component = () => {
   }
 
   const closeResultAndStage = (): void => {
+    if (voiceSaveInFlight()) return
     clearChallengeResult()
     closeChallengeStage()
   }
+
+  const reviewPitchLine = (): void => {
+    if (voiceSaveInFlight()) return
+    clearChallengeResult()
+  }
+
+  const discardVoiceTake = (): void => {
+    if (voiceSaveInFlight()) return
+    discardChallengeVoiceCapture()
+  }
+
+  useFocusTrap(() => dialogRef, {
+    isOpen: () => lastChallengeResult() !== null,
+    onClose: reviewPitchLine,
+    initialFocus: () => primaryActionRef,
+  })
 
   return (
     <>
@@ -257,11 +298,14 @@ export const ChallengeResultCard: Component = () => {
         {(result) => (
           <Portal>
             <div
+              ref={dialogRef}
               class={styles.overlay}
               role="dialog"
               aria-modal="true"
               aria-label="Challenge result"
-              onClick={clearChallengeResult}
+              aria-busy={voiceSaveInFlight()}
+              tabindex="-1"
+              onClick={reviewPitchLine}
             >
               <div class={styles.card} onClick={(e) => e.stopPropagation()}>
                 <img
@@ -321,7 +365,7 @@ export const ChallengeResultCard: Component = () => {
                             type="button"
                             class={styles.discardVoice}
                             disabled={voiceKeepState() === 'saving'}
-                            onClick={discardChallengeVoiceCapture}
+                            onClick={discardVoiceTake}
                           >
                             Discard
                           </button>
@@ -333,7 +377,8 @@ export const ChallengeResultCard: Component = () => {
                     <button
                       type="button"
                       class={styles.primary}
-                      ref={(element) => queueMicrotask(() => element.focus())}
+                      disabled={voiceSaveInFlight()}
+                      ref={primaryActionRef}
                       onClick={() => void goAgain()}
                     >
                       {passed() ? 'Sing it again' : 'Try the Legend again'}
@@ -345,6 +390,7 @@ export const ChallengeResultCard: Component = () => {
                         <button
                           type="button"
                           class={styles.secondary}
+                          disabled={voiceSaveInFlight()}
                           onClick={practiseInZen}
                         >
                           Practise in Zen
@@ -353,13 +399,15 @@ export const ChallengeResultCard: Component = () => {
                       <button
                         type="button"
                         class={styles.secondary}
-                        onClick={clearChallengeResult}
+                        disabled={voiceSaveInFlight()}
+                        onClick={reviewPitchLine}
                       >
                         Review pitch line
                       </button>
                       <button
                         type="button"
                         class={styles.secondary}
+                        disabled={voiceSaveInFlight()}
                         onClick={closeResultAndStage}
                       >
                         Close

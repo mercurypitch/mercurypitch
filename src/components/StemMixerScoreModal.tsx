@@ -8,9 +8,10 @@
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
-import type { KaraokeVoiceCaptureState } from '@/features/stem-mixer/useKaraokeVoiceCaptureController'
 import type { MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
+import { useFocusTrap } from '@/lib/use-focus-trap'
+import type { KaraokeVoiceCaptureState } from '@/lib/use-karaoke-voice-capture-controller'
 
 interface StemMixerScoreModalProps {
   showScore: Accessor<boolean>
@@ -33,7 +34,22 @@ const GRADE_LABEL: Record<MicScore['grade'], string> = {
 export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   props,
 ) => {
+  let dialogRef: HTMLDivElement | undefined
   let viewedScore: MicScore | null = null
+  const isOpen = (): boolean => props.showScore() && props.score() !== null
+  const takeState = (): KaraokeVoiceCaptureState =>
+    props.voiceTakeState ?? 'idle'
+  const dismissalLocked = (): boolean => takeState() === 'saving'
+  const requestClose = (): void => {
+    if (dismissalLocked()) return
+    props.onClose()
+  }
+
+  useFocusTrap(() => dialogRef, {
+    isOpen,
+    onClose: requestClose,
+  })
+
   createEffect(() => {
     const score = props.score()
     if (
@@ -47,8 +63,6 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
     props.onViewed?.(score)
   })
 
-  const takeState = (): KaraokeVoiceCaptureState =>
-    props.voiceTakeState ?? 'idle'
   const showTakeStatus = (): boolean =>
     !['idle', 'recording', 'paused'].includes(takeState())
   const showKeepAction = (): boolean =>
@@ -67,12 +81,23 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   }
 
   return (
-    <Show when={props.showScore() && props.score()}>
-      <div class="sm-mic-score-overlay" onClick={() => props.onClose()}>
-        <div class="sm-mic-score-card" onClick={(e) => e.stopPropagation()}>
+    <Show when={isOpen()}>
+      <div class="sm-mic-score-overlay" onClick={requestClose}>
+        <div
+          ref={dialogRef}
+          class="sm-mic-score-card"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Karaoke score"
+          aria-busy={dismissalLocked()}
+          tabindex="-1"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
+            type="button"
             class="sm-mic-score-close"
-            onClick={() => props.onClose()}
+            disabled={dismissalLocked()}
+            onClick={requestClose}
             aria-label="Close score"
           >
             <svg
@@ -185,7 +210,8 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
             <button
               type="button"
               class="sm-mic-score-ok-btn"
-              onClick={() => props.onClose()}
+              disabled={dismissalLocked()}
+              onClick={requestClose}
             >
               {takeState() === 'ready' ? 'Not now' : 'Close'}
             </button>

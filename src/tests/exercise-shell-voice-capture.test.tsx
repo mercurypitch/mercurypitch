@@ -3,6 +3,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseShell } from '@/features/exercises/ExerciseShell'
 import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureState, } from '@/features/exercises/use-base-exercise'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 const { keepMock, notificationMock, trackMock } = vi.hoisted(() => ({
@@ -36,7 +37,10 @@ function makeVoiceTake(): ExerciseSessionVoiceTake {
   }
 }
 
-function renderCompleteCapture() {
+function renderCompleteCapture(
+  onTryAgain: () => void = () => {},
+  onBack: () => void = () => {},
+) {
   const voiceTake = makeVoiceTake()
   let discardCalls = 0
 
@@ -61,12 +65,12 @@ function renderCompleteCapture() {
         currentScore={() => 84}
         resultScore={() => 84}
         voiceCapture={voiceCapture}
-        onBack={() => {}}
+        onBack={onBack}
         onStart={() => {}}
         activeContent={<div>active</div>}
         onStop={() => {}}
         resultSummary={<>Steady zone 78%</>}
-        onTryAgain={() => {}}
+        onTryAgain={onTryAgain}
         onChangeTarget={() => {}}
       />
     )
@@ -114,36 +118,111 @@ describe('ExerciseShell voice capture', () => {
     expect(screen.getByText('84%')).toBeInTheDocument()
   })
 
-  it('does not let an earlier save mark the next run as already kept', async () => {
-    let resolveKeep:
-      | ((result: {
-          ok: boolean
-          quotaExceeded: boolean
-          roomAvailable: boolean
-          value: object
-        }) => void)
-      | undefined
+  it('leaves Space with the Keep and Discard actions', async () => {
+    const onTryAgain = vi.fn()
+    renderCompleteCapture(onTryAgain)
+    await Promise.resolve()
+
+    for (const name of ['Keep Take', 'Discard']) {
+      const action = screen.getByRole('button', { name })
+      action.focus()
+      const space = new KeyboardEvent('keydown', {
+        key: ' ',
+        code: 'Space',
+        bubbles: true,
+        cancelable: true,
+      })
+
+      action.dispatchEvent(space)
+
+      expect(space.defaultPrevented).toBe(false)
+      expect(onTryAgain).not.toHaveBeenCalled()
+    }
+
+    const shellSpace = new KeyboardEvent('keydown', {
+      key: ' ',
+      code: 'Space',
+      bubbles: true,
+      cancelable: true,
+    })
+    screen.getByRole('button', { name: 'Try Again' }).dispatchEvent(shellSpace)
+
+    expect(shellSpace.defaultPrevented).toBe(true)
+    expect(onTryAgain).toHaveBeenCalledOnce()
+  })
+
+  it('blocks restart, back, and discard until a failed Keep offers Retry', async () => {
+    let resolveKeep!: (result: {
+      ok: boolean
+      quotaExceeded: boolean
+      roomAvailable: boolean
+      value: object | null
+    }) => void
     keepMock.mockReturnValue(
       new Promise((resolve) => {
         resolveKeep = resolve
       }),
     )
-    const firstTake = makeVoiceTake()
-    const take = () => firstTake
     const onTryAgain = vi.fn()
+    const onBack = vi.fn()
+    const { discardCalls } = renderCompleteCapture(onTryAgain, onBack)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
+    expect(isLocalSaveNavigationLocked()).toBe(true)
+    for (const name of ['Saving', 'Discard', 'Try Again', /Back/]) {
+      expect(screen.getByRole('button', { name })).toBeDisabled()
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try Again' }))
+    fireEvent.click(screen.getByRole('button', { name: /Back/ }))
+    expect(discardCalls()).toBe(0)
+    expect(onTryAgain).not.toHaveBeenCalled()
+    expect(onBack).not.toHaveBeenCalled()
+
+    resolveKeep({
+      ok: false,
+      quotaExceeded: false,
+      roomAvailable: true,
+      value: null,
+    })
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Retry Keep' })).toBeEnabled(),
+    )
+    expect(isLocalSaveNavigationLocked()).toBe(false)
+    expect(
+      screen.getByText(/temporary replay is still available/i),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Try Again' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Back/ })).toBeEnabled()
+  })
+
+  it('does not show stale success copy after an external run transition', async () => {
+    let resolveKeep!: (result: {
+      ok: boolean
+      quotaExceeded: boolean
+      roomAvailable: boolean
+      value: object
+    }) => void
+    keepMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveKeep = resolve
+      }),
+    )
+    const voiceTake = makeVoiceTake()
+    const [status, setStatus] = createSignal<'active' | 'complete'>('complete')
     const voiceCapture: ExerciseVoiceCaptureController = {
       state: () => 'ready',
-      take,
-      awaitOutcome: async () => ({ state: 'ready', take: take()! }),
+      take: () => voiceTake,
+      awaitOutcome: async () => ({ state: 'ready', take: voiceTake }),
       discard: vi.fn(),
     }
-    // Keep the result surface mounted after the restart callback so the
-    // shell's private generation guard remains observable through its label.
     render(() => (
       <ExerciseShell
         type="long-note"
         title="Long Note Practice"
-        status={() => 'complete'}
+        status={status}
         currentScore={() => 84}
         resultScore={() => 84}
         voiceCapture={voiceCapture}
@@ -152,15 +231,14 @@ describe('ExerciseShell voice capture', () => {
         activeContent={<div>active</div>}
         onStop={() => {}}
         resultSummary={<>Steady zone 78%</>}
-        onTryAgain={onTryAgain}
+        onTryAgain={() => {}}
         onChangeTarget={() => {}}
       />
     ))
 
     fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Try Again' }))
-    expect(onTryAgain).toHaveBeenCalledOnce()
-    resolveKeep?.({
+    setStatus('active')
+    resolveKeep({
       ok: true,
       quotaExceeded: false,
       roomAvailable: true,
@@ -169,10 +247,16 @@ describe('ExerciseShell voice capture', () => {
     await waitFor(() =>
       expect(trackMock).toHaveBeenCalledWith('voice_keep_success'),
     )
+    setStatus('complete')
 
     expect(screen.getByRole('button', { name: 'Keep Take' })).toBeEnabled()
     expect(
       screen.queryByRole('button', { name: 'Kept' }),
     ).not.toBeInTheDocument()
+    expect(notificationMock).not.toHaveBeenCalledWith(
+      expect.stringMatching(/kept in Hear Yourself/i),
+      'success',
+      expect.anything(),
+    )
   })
 })

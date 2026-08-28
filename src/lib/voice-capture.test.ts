@@ -115,6 +115,96 @@ describe('createTakeRecorder', () => {
     await vi.advanceTimersByTimeAsync(1000)
     await expect(pauseReady).resolves.toBe(false)
   })
+
+  it('keeps delayed final data from a replaced recorder out of the new take', async () => {
+    vi.useFakeTimers()
+    class DelayedMediaRecorder extends MockMediaRecorder {
+      static instances: DelayedMediaRecorder[] = []
+      readonly takeNumber: number
+
+      constructor() {
+        super()
+        DelayedMediaRecorder.instances.push(this)
+        this.takeNumber = DelayedMediaRecorder.instances.length
+      }
+
+      emitData(value: string): void {
+        this.ondataavailable?.({
+          data: new Blob([value], { type: 'audio/webm' }),
+        } as BlobEvent)
+      }
+
+      override stop(): void {
+        this.state = 'inactive'
+        setTimeout(() => {
+          this.emitData(`take-${this.takeNumber}-final`)
+          this.dispatchEvent(new Event('stop'))
+          this.onstop?.()
+        }, 25)
+      }
+    }
+    vi.stubGlobal('MediaRecorder', DelayedMediaRecorder)
+
+    const recorder = createTakeRecorder({} as MediaStream)!
+    expect(recorder.start()).toBe(true)
+    expect(recorder.start()).toBe(true)
+    DelayedMediaRecorder.instances[1]!.emitData('take-2-live')
+
+    await vi.advanceTimersByTimeAsync(25)
+    const newTake = recorder.stop()
+    await vi.advanceTimersByTimeAsync(25)
+
+    await expect(newTake.then((blob) => blob?.size)).resolves.toBe(
+      new Blob(['take-2-live', 'take-2-final']).size,
+    )
+  })
+
+  it('keeps a pending stop bound to its own recorder generation', async () => {
+    vi.useFakeTimers()
+    class DelayedMediaRecorder extends MockMediaRecorder {
+      static instances: DelayedMediaRecorder[] = []
+      readonly takeNumber: number
+
+      constructor() {
+        super()
+        DelayedMediaRecorder.instances.push(this)
+        this.takeNumber = DelayedMediaRecorder.instances.length
+      }
+
+      emitData(value: string): void {
+        this.ondataavailable?.({
+          data: new Blob([value], { type: 'audio/webm' }),
+        } as BlobEvent)
+      }
+
+      override stop(): void {
+        this.state = 'inactive'
+        setTimeout(() => {
+          this.emitData(`take-${this.takeNumber}-final`)
+          this.dispatchEvent(new Event('stop'))
+          this.onstop?.()
+        }, 25)
+      }
+    }
+    vi.stubGlobal('MediaRecorder', DelayedMediaRecorder)
+
+    const recorder = createTakeRecorder({} as MediaStream)!
+    expect(recorder.start()).toBe(true)
+    const firstTake = recorder.stop()
+    expect(recorder.start()).toBe(true)
+    DelayedMediaRecorder.instances[1]!.emitData('take-2-live')
+
+    await vi.advanceTimersByTimeAsync(25)
+    await expect(firstTake.then((blob) => blob?.size)).resolves.toBe(
+      new Blob(['take-1-final']).size,
+    )
+
+    const secondTake = recorder.stop()
+    await vi.advanceTimersByTimeAsync(25)
+    await expect(secondTake.then((blob) => blob?.size)).resolves.toBe(
+      new Blob(['take-2-live', 'take-2-final']).size,
+    )
+  })
 })
 
 describe('inspectVoiceTake', () => {

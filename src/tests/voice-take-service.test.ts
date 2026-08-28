@@ -56,6 +56,24 @@ beforeEach(async () => {
   vi.mocked(ensurePersistentStorage).mockClear()
 })
 
+function breakDexieTableReads(dexie: DexieAdapter, entity: string) {
+  // Exercise DexieRepository's real swallow-or-rethrow branch. Stubbing
+  // findAll itself would reject regardless of whether the service requested
+  // an authoritative read, so it would not protect the throwOnError contract.
+  const repository = dexie.getRepository(entity) as unknown as {
+    table: Record<'where' | 'orderBy' | 'toCollection', () => unknown>
+  }
+  const fail = (): never => {
+    throw new Error('UnknownError: voice history is not readable')
+  }
+  const spies = [
+    vi.spyOn(repository.table, 'where').mockImplementation(fail),
+    vi.spyOn(repository.table, 'orderBy').mockImplementation(fail),
+    vi.spyOn(repository.table, 'toCollection').mockImplementation(fail),
+  ]
+  return { restore: () => spies.forEach((spy) => spy.mockRestore()) }
+}
+
 describe('voice take persistence', () => {
   it('round-trips metadata and its separate audio payload', async () => {
     const result = await saveVoiceTake(draft())
@@ -288,6 +306,103 @@ describe('voice take persistence', () => {
   })
 })
 
+describe('voice take authoritative IndexedDB reads', () => {
+  let dexie: DexieAdapter
+
+  beforeEach(() => {
+    dexie = new DexieAdapter()
+    getDbMock.mockResolvedValue(dexie)
+  })
+
+  afterEach(async () => {
+    await dexie.destroy()
+  })
+
+  it('rejects failed metadata and audio reads but keeps optional Atlas data best-effort', async () => {
+    const saved = await saveVoiceTake(draft())
+    expect(saved.ok).toBe(true)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    const metadataFailure = breakDexieTableReads(dexie, 'voiceTakes')
+    await expect(listVoiceTakes()).rejects.toThrow(/not readable/)
+    metadataFailure.restore()
+
+    const audioFailure = breakDexieTableReads(dexie, 'voiceTakeAudio')
+    await expect(getVoiceTakeBlob(saved.value!.id)).rejects.toThrow(
+      /not readable/,
+    )
+    audioFailure.restore()
+
+    const contourFailure = breakDexieTableReads(dexie, 'voiceTakeContours')
+    await expect(getVoiceTakeContour(saved.value!.id)).resolves.toBeNull()
+    contourFailure.restore()
+    warn.mockRestore()
+  })
+
+  it('does not report a take deletion or remove related rows when a dependency read fails', async () => {
+    const saved = await saveVoiceTake(draft())
+    expect(saved.ok).toBe(true)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const contourFailure = breakDexieTableReads(dexie, 'voiceTakeContours')
+
+    await expect(deleteVoiceTake(saved.value!.id)).resolves.toBe(false)
+
+    contourFailure.restore()
+    warn.mockRestore()
+    await expect(listVoiceTakes()).resolves.toHaveLength(1)
+    await expect(getVoiceTakeBlob(saved.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeContour(saved.value!.id)).resolves.not.toBeNull()
+  })
+
+  it('keeps a complete thread when one of its dependency reads fails', async () => {
+    const comparisonKey = 'freeform:strict-thread:v1'
+    const first = await saveVoiceTake({
+      ...draft('2026-08-01T12:00:00.000Z'),
+      source: 'freeform',
+      comparisonKey,
+    })
+    const second = await saveVoiceTake({
+      ...draft('2026-08-02T12:00:00.000Z'),
+      source: 'freeform',
+      comparisonKey,
+    })
+    expect(first.ok).toBe(true)
+    expect(second.ok).toBe(true)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const contourFailure = breakDexieTableReads(dexie, 'voiceTakeContours')
+
+    await expect(deleteVoiceThread(comparisonKey)).resolves.toBe(false)
+
+    contourFailure.restore()
+    warn.mockRestore()
+    const remaining = await listVoiceTakes()
+    expect(remaining).toHaveLength(2)
+    await expect(getVoiceTakeBlob(first.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeBlob(second.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeContour(first.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeContour(second.value!.id)).resolves.not.toBeNull()
+  })
+
+  it('does not report a wipe or partially clear history when a store read fails', async () => {
+    const first = await saveVoiceTake(draft())
+    const second = await saveVoiceTake(draft('2026-08-02T12:00:00.000Z'))
+    expect(first.ok).toBe(true)
+    expect(second.ok).toBe(true)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const contourFailure = breakDexieTableReads(dexie, 'voiceTakeContours')
+
+    await expect(wipeVoiceTakes()).resolves.toBe(false)
+
+    contourFailure.restore()
+    warn.mockRestore()
+    await expect(listVoiceTakes()).resolves.toHaveLength(2)
+    await expect(getVoiceTakeBlob(first.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeBlob(second.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeContour(first.value!.id)).resolves.not.toBeNull()
+    await expect(getVoiceTakeContour(second.value!.id)).resolves.not.toBeNull()
+  })
+})
+
 describe('voice take Dexie schema', () => {
   let dexie: DexieAdapter
 
@@ -299,7 +414,7 @@ describe('voice take Dexie schema', () => {
     await dexie.destroy()
   })
 
-  it('creates the v8 metadata, audio, and contour stores', async () => {
+  it('creates the v9 metadata, audio, and contour stores', async () => {
     const take = await dexie
       .getRepository<VoiceTakeRecord>('voiceTakes')
       .create({

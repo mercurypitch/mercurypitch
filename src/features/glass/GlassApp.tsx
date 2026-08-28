@@ -41,6 +41,7 @@ import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
+import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import { showNotification } from '@/stores/notifications-store'
 import { glassShareText, renderShatterCard } from './card-renderer'
@@ -56,7 +57,7 @@ import { playGlassShatter } from './sfx'
 import type { TakeRecorder } from './take-recorder'
 import { createTakeRecorder } from './take-recorder'
 import type { GlassTake } from './take-strip'
-import { computePeaks, TakeStrip } from './take-strip'
+import { computePeaks, hasSavingGlassTake, TakeStrip } from './take-strip'
 
 const MIC_CONSUMER_ID = 'glass'
 // A live mic never reads exactly zero (room noise floors ~1e-3); dead zeros
@@ -163,6 +164,9 @@ export const GlassApp: Component = () => {
   const [takes, setTakes] = createSignal<GlassTake[]>([])
   const [playingTakeId, setPlayingTakeId] = createSignal<number | null>(null)
   const [takeProgress, setTakeProgress] = createSignal(0)
+  const takeSaveInFlight = (): boolean => hasSavingGlassTake(takes())
+
+  useBeforeUnloadGuard(takeSaveInFlight)
 
   let audioContext: AudioContext | null = null
   let f0: F0Stream | null = null
@@ -425,6 +429,9 @@ export const GlassApp: Component = () => {
 
   /** Drop a take's audio; metrics and the on-device delta are untouched. */
   function removeTake(id: number): void {
+    if (takes().some((take) => take.id === id && take.saveState === 'saving')) {
+      return
+    }
     if (playingTakeId() === id) stopTakePlayback()
     takeBuffers.delete(id)
     setTakes((prev) => prev.filter((t) => t.id !== id))
@@ -434,7 +441,13 @@ export const GlassApp: Component = () => {
     const take = takes().find((candidate) => candidate.id === id)
     const state = session()
     const targetMidi = state.targetMidi
-    if (take === undefined || targetMidi === null) return
+    if (
+      take === undefined ||
+      targetMidi === null ||
+      (take.saveState !== 'idle' && take.saveState !== 'error')
+    ) {
+      return
+    }
 
     const target = midiToNoteNameOctave(targetMidi)
     const durationMs = Math.round(
@@ -452,58 +465,76 @@ export const GlassApp: Component = () => {
     trackEvent('voice_keep_attempt')
 
     void (async () => {
-      const result = await saveVoiceTake({
-        source: 'glass',
-        comparisonKey: `glass:target-midi:${targetMidi}:v1`,
-        contextVersion: 1,
-        durationMs,
-        blob: take.blob,
-        peaks,
-        contour: take.contour,
-        title: `Glass · ${target} · Take ${take.rep}`,
-        context: {
-          targetMidi,
-          targetLabel: target,
-          rep: take.rep,
-          shattered: take.shattered,
-        },
-        metrics: {
-          meanAbsCents: metrics.meanAbsCents,
-          bestLockSec: metrics.bestLockSec,
-          inBandPct: metrics.inBandPct,
-          peakResonance: metrics.peakResonance,
-        },
-        metricsVersion: 1,
-      })
-      setTakes((current) =>
-        current.map((candidate) =>
-          candidate.id === id
-            ? {
-                ...candidate,
-                saveState: result.ok ? 'saved' : 'error',
-              }
-            : candidate,
-        ),
-      )
-      if (result.ok) {
-        trackEvent('voice_keep_success')
-        showNotification(
-          'Take kept in Hear Yourself on this device.',
-          'success',
-          { channel: 'voice-take-save' },
+      try {
+        const result = await saveVoiceTake({
+          source: 'glass',
+          comparisonKey: `glass:target-midi:${targetMidi}:v1`,
+          contextVersion: 1,
+          durationMs,
+          blob: take.blob,
+          peaks,
+          contour: take.contour,
+          title: `Glass · ${target} · Take ${take.rep}`,
+          context: {
+            targetMidi,
+            targetLabel: target,
+            rep: take.rep,
+            shattered: take.shattered,
+          },
+          metrics: {
+            meanAbsCents: metrics.meanAbsCents,
+            bestLockSec: metrics.bestLockSec,
+            inBandPct: metrics.inBandPct,
+            peakResonance: metrics.peakResonance,
+          },
+          metricsVersion: 1,
+        })
+        if (cancelled) return
+        setTakes((current) =>
+          current.map((candidate) =>
+            candidate.id === id
+              ? {
+                  ...candidate,
+                  saveState: result.ok ? 'saved' : 'error',
+                }
+              : candidate,
+          ),
         )
-        return
-      }
+        if (result.ok) {
+          trackEvent('voice_keep_success')
+          showNotification(
+            'Take kept in Hear Yourself on this device.',
+            'success',
+            { channel: 'voice-take-save' },
+          )
+          return
+        }
 
-      trackEvent('voice_keep_failure')
-      if (result.quotaExceeded || !result.roomAvailable) {
-        trackEvent('voice_storage_warning')
-        showNotification(
-          'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
-          'warning',
-          { channel: 'voice-take-save' },
+        trackEvent('voice_keep_failure')
+        if (result.quotaExceeded || !result.roomAvailable) {
+          trackEvent('voice_storage_warning')
+          showNotification(
+            'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
+            'warning',
+            { channel: 'voice-take-save' },
+          )
+        } else {
+          showNotification(
+            'The take could not be kept. Your session copy is still here; retry before leaving Glass.',
+            'error',
+            { channel: 'voice-take-save' },
+          )
+        }
+      } catch {
+        if (cancelled) return
+        setTakes((current) =>
+          current.map((candidate) =>
+            candidate.id === id
+              ? { ...candidate, saveState: 'error' }
+              : candidate,
+          ),
         )
-      } else {
+        trackEvent('voice_keep_failure')
         showNotification(
           'The take could not be kept. Your session copy is still here; retry before leaving Glass.',
           'error',
@@ -564,6 +595,7 @@ export const GlassApp: Component = () => {
   }
 
   function resetAll(): void {
+    if (takeSaveInFlight()) return
     teardownAudio()
     disposeTakes() // a new session is a new glass — old takes go with it
     flowGen++
@@ -1345,6 +1377,11 @@ export const GlassApp: Component = () => {
     setShareStatus(copyOutcomeMessage(outcome))
   }
 
+  function guardTakeSaveNavigation(event: MouseEvent): void {
+    if (!takeSaveInFlight()) return
+    event.preventDefault()
+  }
+
   return (
     <div class="glass-shell">
       <div class="glass-cosmos" aria-hidden="true" />
@@ -1679,6 +1716,7 @@ export const GlassApp: Component = () => {
                 <ResultsPanel
                   session={session()}
                   fatigue={physics.fatigue}
+                  saveInFlight={takeSaveInFlight()}
                   sinceLine={sinceLine()}
                   shareStatus={shareStatus()}
                   storyFormat={cardFormat() === 'story'}
@@ -1711,6 +1749,8 @@ export const GlassApp: Component = () => {
           class="glass-foot-link"
           href="/mirror"
           busyLabel="Opening the Voice Mirror…"
+          aria-disabled={takeSaveInFlight()}
+          onClick={guardTakeSaveNavigation}
         >
           Voice Mirror
         </BusyLink>
@@ -1721,6 +1761,8 @@ export const GlassApp: Component = () => {
           class="glass-foot-link"
           href="/karaoke-night"
           busyLabel="Opening Karaoke Night…"
+          aria-disabled={takeSaveInFlight()}
+          onClick={guardTakeSaveNavigation}
         >
           Karaoke Night
         </BusyLink>
@@ -1979,6 +2021,7 @@ const MicPanel: Component<{
 const ResultsPanel: Component<{
   session: GlassSessionState
   fatigue: number
+  saveInFlight: boolean
   /** Cross-visit baseline delta ("Since Tue: lock +0.8s"), if any. */
   sinceLine: string | null
   shareStatus: string | null
@@ -2018,7 +2061,10 @@ const ResultsPanel: Component<{
   return (
     // Overlay ON the pane (a sibling of the stage host — the renderer's
     // mount() replaceChildren()s the host, so this can't live inside it).
-    <div class="glass-results-overlay glass-panel-clear">
+    <div
+      class="glass-results-overlay glass-panel-clear"
+      aria-busy={props.saveInFlight}
+    >
       <p class="glass-dim glass-announce-eyebrow">
         {shattered() ? 'the glass gave way' : 'the glass held — this time'}
       </p>
@@ -2102,6 +2148,7 @@ const ResultsPanel: Component<{
       <div class="glass-actions">
         <button
           class="glass-cta glass-cta-secondary"
+          disabled={props.saveInFlight}
           onClick={() => props.onAgain()}
         >
           Sing it again

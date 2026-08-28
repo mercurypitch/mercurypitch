@@ -20,15 +20,15 @@ import { Loop, Pause, Play, Trophy, Volume2, VolumeX, X, } from '@/components/ic
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { MicTroubleshooting } from '@/components/MicTroubleshooting'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
-import type { ExerciseResult } from '@/features/exercises/types'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
-import { useDryVoiceCapture } from '@/features/voice-history/useDryVoiceCapture'
+import type { ExerciseResult } from '@/lib/domain/exercise-contracts'
 import { midiToFrequency, midiToNoteName } from '@/lib/frequency-to-note'
 import { micManager } from '@/lib/mic-manager'
 import { midiToNote } from '@/lib/scale-data'
+import { useDryVoiceCapture } from '@/lib/use-dry-voice-capture'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { ChallengeStageLaunch } from '@/stores/ui-store'
@@ -40,6 +40,8 @@ import { CHALLENGE_LEAD_IN_BEATS, challengeTargetHighlights, challengeToZenExerc
 import { recordChallengeStageResult } from './challenge-stage-voice-take'
 import styles from './ChallengeStage.module.css'
 import { clearWeeklyAttempt } from './weekly-attempt'
+
+let weeklyLegendCaptureInstance = 0
 
 interface ChallengeStageProps {
   launch: ChallengeStageLaunch
@@ -110,7 +112,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
   let voiceCaptureStart: Promise<boolean> | null = null
 
   const voiceCapture = useDryVoiceCapture({
-    consumerId: `weekly-legend:${launch.challengeId}`,
+    consumerId: `weekly-legend:${launch.challengeId}:${++weeklyLegendCaptureInstance}`,
   })
 
   const session = useZenPitchSession({

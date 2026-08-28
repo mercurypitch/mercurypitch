@@ -7,11 +7,14 @@
 // the panel still opens and closes.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { InfoPopover } from '@/components/InfoPopover'
 
 describe('InfoPopover', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+  })
 
   it('draws the glyph rather than typing it', () => {
     const { getByRole } = render(() => (
@@ -59,5 +62,29 @@ describe('InfoPopover', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(screen.queryByRole('tooltip')).toBeNull()
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('ignores the activation scroll before closing on later scrolling', () => {
+    let armScrollClose: FrameRequestCallback | undefined
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      armScrollClose = callback
+      return 1
+    })
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined)
+
+    const { getByRole } = render(() => (
+      <InfoPopover label="How the streak works">
+        Sing for 5 minutes.
+      </InfoPopover>
+    ))
+    const trigger = getByRole('button', { name: 'How the streak works' })
+
+    trigger.click()
+    window.dispatchEvent(new Event('scroll'))
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+
+    armScrollClose?.(0)
+    window.dispatchEvent(new Event('scroll'))
+    expect(screen.queryByRole('tooltip')).toBeNull()
   })
 })

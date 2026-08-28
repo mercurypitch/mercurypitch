@@ -114,8 +114,8 @@ hear in their own recordings.
 - Existing exercise, scoring, challenge, and journey implementations in `src/features/exercises/`, `src/features/challenges/`, and related database workers
 - Mystery teaser: `src/features/home/DestinationGallery.tsx` and
   `public/home/hear-yourself-tease.webp`
-- Existing local real-voice capture and playback:
-  `src/features/glass/take-recorder.ts` and
+- Shared local real-voice capture plus Glass compatibility and playback:
+  `src/lib/voice-capture.ts`, `src/features/glass/take-recorder.ts`, and
   `src/features/glass/take-strip.tsx`
 - Versioned Voice Atlas contour codec and shared render model:
   `src/lib/voice-contour.ts` and

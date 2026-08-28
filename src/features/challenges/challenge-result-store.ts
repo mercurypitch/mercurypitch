@@ -8,7 +8,7 @@
 // frozen trace; another scored attempt must be armed explicitly.
 
 import { createSignal } from 'solid-js'
-import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
+import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import type { MelodyItem } from '@/types'
 import type { WeeklyTier } from './weekly-attempt'
 

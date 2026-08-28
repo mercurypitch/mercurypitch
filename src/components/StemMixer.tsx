@@ -15,7 +15,6 @@ import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
-import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/features/stem-mixer/useKaraokeVoiceCaptureController'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
@@ -31,6 +30,7 @@ import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
@@ -43,6 +43,7 @@ import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
+import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
@@ -305,16 +306,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       'bottom',
     )
 
-  // Esc key to exit focus mode
-  createEffect(() => {
-    if (!karaokeFocus()) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setKaraokeFocus(false)
-    }
-    document.addEventListener('keydown', handler)
-    onCleanup(() => document.removeEventListener('keydown', handler))
-  })
-
   const PITCH_WINDOW_FILL_RATIO = 0.75
 
   const lrclibSearchUrl = () => {
@@ -444,6 +435,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getAudioCtx: () => audioCtxForMic.getAudioCtx(),
     ensureAudioCtx: () => audioCtxForMic.ensureAudioCtx(),
   })
+  const scoreModalOpen = (): boolean => mic.showScore() && mic.score() !== null
+
+  // Escape exits focus mode only when the score dialog is not the active
+  // surface. The dialog owns Escape while open, closes itself, and restores
+  // focus to the control that launched it.
+  createEffect(() => {
+    if (!karaokeFocus() || scoreModalOpen()) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !scoreModalOpen()) setKaraokeFocus(false)
+    }
+    document.addEventListener('keydown', handler)
+    onCleanup(() => document.removeEventListener('keydown', handler))
+  })
+
   let micGrantedReported = false
   createEffect(
     on(mic.micActive, (active) => {
@@ -463,6 +468,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getAudioContext: () => audioCtxForMic.getAudioCtx() ?? null,
   })
   /* eslint-enable solid/reactivity */
+  useLocalSaveNavigationLock(
+    () => karaokeVoiceCapture.state() === 'saving',
+    'karaoke voice-take keep',
+  )
 
   // Mutable holders — backfilled after canvas/lyrics controllers are created.
   // Audio controller accesses these dynamically (not at construction time), so
@@ -1968,6 +1977,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
+      // The score dialog owns keyboard input while it is open. Without this
+      // guard Space restarted playback and letter shortcuts mutated the mixer
+      // behind the singer's keep-or-close decision.
+      if (scoreModalOpen()) return
+
       // Ignore when typing in inputs
       if (
         e.target instanceof HTMLInputElement ||
@@ -2220,6 +2234,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleScoreClose = (): void => {
+    if (karaokeVoiceCapture.state() === 'saving') return
     mic.setShowScore(false)
     karaokeVoiceCapture.dismiss()
     if (playlist.isPlaylistActive() && pendingAdvance) {

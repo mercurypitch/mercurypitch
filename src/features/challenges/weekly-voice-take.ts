@@ -4,7 +4,7 @@
 
 import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
 import { saveVoiceTake } from '@/db/services/voice-take-service'
-import type { ExerciseSessionVoiceTake } from '@/features/exercises/use-base-exercise'
+import type { ExerciseSessionVoiceTake } from '@/lib/domain/exercise-voice-capture'
 import type { WeeklyTier } from './weekly-attempt'
 
 const WEEKLY_CONTEXT_VERSION = 1

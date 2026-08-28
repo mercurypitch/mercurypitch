@@ -1,14 +1,14 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **local vault, Glass, repeatable Exercise, Weekly Legend, Karaoke,
-direct freeform capture, listening-studio polish, and the first Voice Atlas
-layers are implemented on PR #364**, updated 2026-08-05. Voice Atlas v1 adds
-Take Topography, shared-scale Twin Trails, subjective Reflection Beacons, and a
-three-take Practice Loom. The next Atlas layer adds neutral contour and tone
-traits by reusing Vocal Analysis DSP. Karaoke prepares dry mic-only replays
-beside its existing score and keeps them explicitly in stable per-song threads.
-The remaining local-release gate is browser validation, especially the real
-iPhone Safari recording path.
+Status: **the local vault, Glass, repeatable Exercise, Weekly Legend, Karaoke,
+direct freeform capture, listening-studio polish, Voice Atlas traits, and the
+first guided Pitch Centre loop are implemented on PR #364**, updated
+2026-08-28. Voice Atlas includes Take Topography, shared-scale Twin Trails,
+Reflection Beacons, a three-take Practice Loom, and neutral contour/tone traits
+that reuse Vocal Analysis DSP. Karaoke prepares dry mic-only replays beside its
+existing score and keeps them explicitly in stable per-song threads. The
+remaining local-release gates are integrated dev-domain validation and browser
+validation, especially the real iPhone Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -106,7 +106,7 @@ feature from feeling like a generic voice-memo library.
      metric schema.
 4. **Storage and privacy**
    - Used space, browser-reported availability when known, persistence status,
-     export-all, and wipe-all.
+     per-take export, and wipe-all.
    - Future sync settings will live here without replacing the local controls.
 
 ### Comparison behavior
@@ -237,8 +237,9 @@ scope.
 - Practice-thread overview and detail.
 - Same-context Earlier/Later comparison.
 - Storage estimate, quota errors, and best-effort persistent-storage request.
-- Feature flag and conversion of the homepage teaser from reveal-only to
-  navigable when the release gate opens.
+- A navigable homepage entry and Hear Yourself tab, reviewed and shipped as
+  one coherent local-only slice. A dedicated rollout flag remains optional if
+  a staged public beta is needed after integrated dev validation.
 
 ### Recommended capture sequence
 
@@ -293,7 +294,13 @@ Do not put large audio payloads on records used to render the journal. A list
 query must not hydrate every recording into memory.
 
 ```ts
-type VoiceTakeSource = 'glass' | 'exercise' | 'legend' | 'karaoke' | 'freeform'
+type VoiceTakeSource =
+  | 'glass'
+  | 'exercise'
+  | 'legend'
+  | 'karaoke'
+  | 'freeform'
+  | 'guided'
 
 interface VoiceTakeRecord extends DbEntity {
   source: VoiceTakeSource
@@ -333,19 +340,24 @@ interface VoiceTakeContourRecord extends DbEntity {
 }
 ```
 
-Implemented incremental Dexie version (rebased after v6 introduced the audio
-stores):
+The current v9 schema reconciles preview histories that reached v8 through
+different main/feature paths. It preserves the complete local voice store set
+alongside the current main stores:
 
 ```ts
-this.version(7).stores({
+this.version(9).stores({
+  voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+  voiceTakeAudio: 'id, &takeId',
   voiceTakeContours: 'id, &takeId',
+  // plus the current main local stores
 })
 ```
 
 The compact v1 payload stores bounded tuples of time, MIDI cents or a voiced
 gap, confidence, and level at a target 30 Hz. Metadata, audio, and the optional
 contour are committed in the same local transaction and removed together.
-Existing v6 records require no migration row and fall back to cached waveforms.
+Existing v6/v7 voice records require no migration row and fall back to cached
+waveforms when no contour exists.
 
 ### Comparison keys
 
@@ -370,19 +382,24 @@ instead of making old and new results appear directly equivalent.
 Add a dedicated service under `src/db/services/voice-take-service.ts`. UI and
 capture surfaces do not access Dexie repositories directly.
 
+The implemented local v1 boundary is:
+
 ```ts
 saveVoiceTake(draft): Promise<SaveVoiceTakeResult>
-listVoiceTakes(query?): Promise<VoiceTakeRecord[]>
-getVoiceTake(id): Promise<VoiceTakeRecord | null>
+listVoiceTakes(): Promise<VoiceTakeRecord[]>
 getVoiceTakeBlob(id): Promise<Blob | null>
-updateVoiceTake(id, patch): Promise<Result>
-deleteVoiceTake(id): Promise<Result>
-deleteVoiceThread(comparisonKey): Promise<Result>
-exportVoiceTake(id): Promise<File | null>
-exportAllVoiceTakes(): Promise<Blob>
+getVoiceTakeContour(id): Promise<DecodedVoiceAtlasContour | null>
+updateVoiceTake(id, patch): Promise<VoiceTakeRecord | null>
+updateVoiceTakeReflections(id, reflections): Promise<VoiceTakeRecord | null>
+renameFreeformVoiceThread(comparisonKey, title): Promise<boolean>
+deleteVoiceTake(id): Promise<boolean>
+deleteVoiceThread(comparisonKey): Promise<boolean>
 getVoiceStorageSnapshot(): Promise<VoiceStorageSnapshot>
-wipeVoiceTakes(): Promise<Result>
+wipeVoiceTakes(): Promise<boolean>
 ```
+
+The history page reconstructs the original local blob for per-take download.
+Bulk export remains a storage follow-on rather than part of this service.
 
 Required service behavior:
 
@@ -398,7 +415,8 @@ Required service behavior:
 - request persistent storage after the first successful explicit keep;
 - generalize the existing stem-specific persistence notification rather than
   showing stem copy for voice takes;
-- make deletion and wipe-all transactional and report partial failure;
+- make deletion and wipe-all transactional and report failure without leaving
+  partial deletions;
 - never auto-delete a favorite or any other take.
 
 ### Recorder extraction
@@ -428,7 +446,7 @@ Implementation touchpoints include:
 - `src/lib/hash-router.ts` and routing tests;
 - `src/components/AppNavTabs.tsx` and mobile nav metadata;
 - `src/App.tsx`: lazy/page render within `TabErrorBoundary`;
-- home destination card: reveal-only before the flag, navigable afterward;
+- home destination card: navigable into the local Hear Yourself surface;
 - tour coverage only after the navigation and empty state are stable.
 
 The tab belongs to the singing practice scope and the **You** group beside
@@ -440,7 +458,7 @@ primary practice destination.
 
 ### Release control
 
-The first local slice is review-controlled by draft PR #364 instead of adding a
+The first local slice is review-controlled by PR #364 instead of adding a
 second client-side feature flag. The mystery card, history tab, and Glass keep
 action ship as one coherent unit. If a staged beta is needed after review, add
 a dedicated `voiceHistoryEnabled` flag across all three entry points rather
@@ -544,7 +562,8 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 
 - Durable `PRODUCT.md`.
 - This product, UX, data, rollout, and verification plan.
-- Dexie v6 entities, local-only routing, and atomic durable voice-take writes.
+- Dexie v9 entities, including divergent-preview migration coverage,
+  local-only routing, and atomic durable voice-take writes.
 - Glass **Keep** adapter with explicit consent and retry/storage feedback.
 - Shared dry mic capture for all 18 repeatable exercise runners, capped at five
   minutes and discarded unless the singer explicitly keeps the result.
@@ -612,9 +631,8 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   and unlocks Earlier/Later after **Record another take** in the same thread.
 - Open the beta only after the two-take flow passes on Chromium and Safari.
 
-### PR 5 — source expansion
+### Follow-on — storage refinements
 
-- Karaoke take adapter.
 - Storage-management refinements from measured take sizes and failure rates,
   including bulk export and richer quota/usage controls.
 - Jam remains excluded until multi-party consent is designed.
@@ -630,7 +648,8 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 
 ### Unit and service tests
 
-- Dexie v5 to v6 upgrade preserves all existing tables and rows.
+- Dexie upgrades through v9 preserve existing tables and rows, including both
+  preview histories that independently introduced voice and sync stores.
 - Metadata queries do not read audio payloads.
 - Save is atomic under metadata failure, blob failure, and quota failure.
 - Durable write retry does not duplicate a take.
@@ -652,7 +671,8 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Listening-room presets and custom sends stay within safe bounds.
 - Live visualization keeps bounded waveform/pitch history and treats uncertain
   pitch frames as gaps.
-- Feature flag keeps teaser, route, and capture actions consistent.
+- Homepage, tab, deep-link, and capture entry points remain mutually
+  consistent without relying on a partially enabled client-side flag.
 
 ### End-to-end checks
 
@@ -676,15 +696,17 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Verify existing Glass in-memory playback remains unchanged when a user does
   not keep a take.
 
-Before every implementation PR:
+Before the first push for an implementation work item:
 
 ```bash
-pnpm check
-pnpm test:run
+pnpm pr:prepare
+pnpm typecheck # or the affected workspace typecheck
 ```
 
-Run the focused browser suites for any PR touching mic, playback, navigation,
-or IndexedDB.
+Run focused tests while developing and the focused browser suites for changes
+touching mic, playback, pointer controls, navigation, or IndexedDB. After the
+PR exists, its CI gate is authoritative; diagnose failures with the targeted
+command rather than rerunning every local suite.
 
 ## 12. Risks and mitigations
 
@@ -704,13 +726,12 @@ or IndexedDB.
 
 These do not block the local foundation:
 
-1. Final public name, navigation label, and teaser copy.
-2. Maximum take duration and any per-source keep guidance.
-3. Whether freeform capture belongs in the first public beta or follows it.
-4. Final position in desktop and mobile navigation.
-5. Whether comparison switches from the beginning or preserves relative
+1. Final public name and teaser copy.
+2. Whether comparison switches from the beginning or preserves relative
    playhead position after user testing.
-6. Cloud allowance, pricing, encryption model, and retention policy.
+3. Whether the first public beta needs a dedicated rollout flag after dev and
+   Safari validation.
+4. Cloud allowance, pricing, encryption model, and retention policy.
 
 The most important implementation gate is not a name decision. It is proving
 that two locally stored takes from one stable context produce a comparison

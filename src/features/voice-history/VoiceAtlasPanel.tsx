@@ -805,6 +805,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   return (
     <section
       class={styles.atlas}
+      data-testid="voice-atlas"
       classList={{
         [styles.inspectorOpen]: inspector() !== null && !mobileInspector(),
       }}

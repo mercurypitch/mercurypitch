@@ -16,8 +16,9 @@ import { getUserId } from '@/db/services/user-service'
 import { fingerprintOf } from '@/features/community/share-identity'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import type { ExerciseType } from '@/features/exercises/types'
-import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
 import { trackEvent } from '@/lib/analytics'
+import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
+import { activeWeeklyAttempt, clearActiveWeeklyAttempt, setActiveWeeklyAttempt, } from '@/lib/domain/weekly-attempt-context'
 import { removeNotification, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import type { MelodyItem } from '@/types'
@@ -63,11 +64,6 @@ export function weeklyAttemptComparabilityKey(
   return `voice:weekly:${target.challengeId}:v${WEEKLY_ATTEMPT_SOURCE_VERSION}:${signature}`
 }
 
-interface ActiveWeeklyAttempt extends WeeklyAttemptTarget {
-  ownerId: string
-}
-
-const [active, setActive] = createSignal<ActiveWeeklyAttempt | null>(null)
 const [version, setVersion] = createSignal(0)
 
 /**
@@ -79,18 +75,18 @@ const [version, setVersion] = createSignal(0)
 let lastConsumed: { title: string; exercise: ExerciseType } | null = null
 let practiceHintShown = false
 
-export const activeWeeklyAttempt = active
+export { activeWeeklyAttempt }
 /** Bumped after every recorded attempt so the hero reloads the board. */
 export const weeklyAttemptVersion = version
 
 export function beginWeeklyAttempt(target: WeeklyAttemptTarget): void {
-  setActive({ ...target, ownerId: getUserId() })
-  armScoredAttempt('weekly', () => setActive(null))
+  setActiveWeeklyAttempt({ ...target, ownerId: getUserId() })
+  armScoredAttempt('weekly', clearActiveWeeklyAttempt)
   trackEvent('weekly_join')
 }
 
 export function clearWeeklyAttempt(): void {
-  setActive(null)
+  clearActiveWeeklyAttempt()
   disarmScoredAttempt('weekly')
 }
 
@@ -126,7 +122,7 @@ export async function recordWeeklyAttempt(entry: {
   metrics?: Readonly<Record<string, number>>
   voiceCapture?: ExerciseVoiceCaptureOutcome
 }): Promise<boolean> {
-  const a = active()
+  const a = activeWeeklyAttempt()
   if (a === null) {
     // Nothing armed. If this run's type matches the attempt just
     // consumed, the singer probably hit "try again" expecting it to

@@ -3,8 +3,8 @@ import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-
 import { IconLock } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
-import { launchGuidedPractice, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { exerciseLaunchGuidedPractice, exerciseLaunchTargetNote, } from '@/lib/domain/exercise-launch'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import { PITCH_CENTRE_PILOT_THRESHOLDS_V1 } from '@/lib/guided-voice'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -55,13 +55,14 @@ export function shouldRecordOrdinaryPitchHoldProgress(
 
 const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   const noteOptions = getNoteOptions(vocalRangePreset())
-  const requestedGuidedPractice = launchGuidedPractice(EXERCISE_PITCH_HOLD)
+  const requestedGuidedPractice =
+    exerciseLaunchGuidedPractice(EXERCISE_PITCH_HOLD)
   const guidedPractice = isSupportedGuidedPitchHoldLaunch(
     requestedGuidedPractice,
   )
     ? requestedGuidedPractice
     : undefined
-  const requestedTarget = launchTargetNote(EXERCISE_PITCH_HOLD)
+  const requestedTarget = exerciseLaunchTargetNote(EXERCISE_PITCH_HOLD)
   const guidedTarget =
     guidedPractice === undefined
       ? undefined

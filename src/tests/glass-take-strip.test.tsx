@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GlassTake } from '@/features/glass/take-strip'
-import { TakeStrip } from '@/features/glass/take-strip'
+import { hasSavingGlassTake, TakeStrip } from '@/features/glass/take-strip'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 function take(saveState: GlassTake['saveState'] = 'idle'): GlassTake {
@@ -65,5 +65,50 @@ describe('Glass TakeStrip local keep control', () => {
     expect(
       screen.getByRole('button', { name: 'Kept take 2 in voice history' }),
     ).toBeDisabled()
+  })
+
+  it('locks removal while Keep is saving', () => {
+    const onRemove = vi.fn()
+    const savingTake = take('saving')
+    render(() => (
+      <TakeStrip
+        takes={[savingTake]}
+        playingId={null}
+        progress={0}
+        disabled={false}
+        onToggle={vi.fn()}
+        onKeep={vi.fn()}
+        onRemove={onRemove}
+      />
+    ))
+
+    expect(hasSavingGlassTake([savingTake])).toBe(true)
+    expect(screen.getByRole('listitem')).toHaveAttribute('aria-busy', 'true')
+    const remove = screen.getByRole('button', { name: 'Remove take 2' })
+    expect(remove).toBeDisabled()
+    fireEvent.click(remove)
+    expect(onRemove).not.toHaveBeenCalled()
+  })
+
+  it('offers Retry without losing the session take after a failed Keep', () => {
+    const onKeep = vi.fn()
+    render(() => (
+      <TakeStrip
+        takes={[take('error')]}
+        playingId={null}
+        progress={0}
+        disabled={false}
+        onToggle={vi.fn()}
+        onKeep={onKeep}
+        onRemove={vi.fn()}
+      />
+    ))
+
+    const retry = screen.getByRole('button', {
+      name: 'Retry keeping take 2 in voice history',
+    })
+    expect(retry).toBeEnabled()
+    fireEvent.click(retry)
+    expect(onKeep).toHaveBeenCalledWith(1)
   })
 })

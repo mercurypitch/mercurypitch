@@ -5,7 +5,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DryVoiceCaptureController } from '@/features/voice-history/useDryVoiceCapture'
+import type { DryVoiceCaptureController } from '@/lib/use-dry-voice-capture'
 import type { ChallengeStageLaunch } from '@/stores/ui-store'
 import type { MelodyItem, NoteName } from '@/types'
 import type { ResolvedZenTarget, ZenPitchRun } from '../zen/types'
@@ -14,14 +14,18 @@ import { ChallengeStage } from './ChallengeStage'
 
 const harness = vi.hoisted(() => ({
   capture: undefined as unknown,
+  captureConsumerIds: [] as string[],
   events: [] as string[],
   recordResult: vi.fn(),
   session: undefined as unknown,
   sessionOptions: undefined as unknown,
 }))
 
-vi.mock('@/features/voice-history/useDryVoiceCapture', () => ({
-  useDryVoiceCapture: () => harness.capture,
+vi.mock('@/lib/use-dry-voice-capture', () => ({
+  useDryVoiceCapture: (options: { consumerId: string }) => {
+    harness.captureConsumerIds.push(options.consumerId)
+    return harness.capture
+  },
 }))
 
 vi.mock('../zen/useZenPitchSession', () => ({
@@ -131,6 +135,7 @@ describe('ChallengeStage weekly voice handoff', () => {
 
   beforeEach(() => {
     harness.events = []
+    harness.captureConsumerIds = []
     harness.recordResult.mockReset()
     harness.recordResult.mockImplementation(
       () =>
@@ -234,5 +239,31 @@ describe('ChallengeStage weekly voice handoff', () => {
     await waitFor(() => expect(sessionStart).toHaveBeenCalledTimes(2))
     expect(captureStart).toHaveBeenCalledOnce()
     expect(harness.recordResult).toHaveBeenCalledOnce()
+  })
+
+  it('uses an instance-scoped mic lease when the same challenge remounts', () => {
+    const props = {
+      launch,
+      subscribeFrames: () => () => undefined,
+      micActive: () => false,
+      micError: () => null,
+      getMicLevel: () => 0,
+      isDetecting: () => false,
+      startMic: () => Promise.resolve(true),
+      stopMic: () => undefined,
+      playTone: () => Promise.resolve(),
+      stopTone: () => undefined,
+      onClose: () => undefined,
+    }
+    const first = render(() => <ChallengeStage {...props} />)
+    first.unmount()
+    render(() => <ChallengeStage {...props} />)
+
+    expect(harness.captureConsumerIds).toHaveLength(2)
+    expect(harness.captureConsumerIds[0]).toMatch(/^weekly-legend:week-31:/)
+    expect(harness.captureConsumerIds[1]).toMatch(/^weekly-legend:week-31:/)
+    expect(harness.captureConsumerIds[0]).not.toBe(
+      harness.captureConsumerIds[1],
+    )
   })
 })

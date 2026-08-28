@@ -9,26 +9,21 @@
 // `launchDifficulty` / `launchTargetNote`. Cleared on a normal launch or
 // when the exercise is exited so it never leaks into the next session.
 
-import { createSignal } from 'solid-js'
 import type { ExerciseConfig, ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
+import { clearExerciseLaunchOverride, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchPattern, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
 import { clampDifficulty } from './adaptive-difficulty'
 import { getDifficulty } from './difficulty-store'
-
-const [override, setOverride] = createSignal<{
-  type: ExerciseType
-  config: ExerciseConfig
-} | null>(null)
 
 /** Set (or clear, when config is undefined) the override for the next launch. */
 export function setLaunchOverride(
   type: ExerciseType,
   config: ExerciseConfig | undefined,
 ): void {
-  setOverride(config ? { type, config } : null)
+  setExerciseLaunchOverride(type, config)
 }
 
 export function clearLaunchOverride(): void {
-  setOverride(null)
+  clearExerciseLaunchOverride()
 }
 
 /**
@@ -37,36 +32,29 @@ export function clearLaunchOverride(): void {
  * scale their parameters by.
  */
 export function launchDifficulty(type: ExerciseType): number {
-  const o = override()
-  if (o && o.type === type && o.config.difficulty != null) {
-    return clampDifficulty(o.config.difficulty)
-  }
+  const requested = exerciseLaunchDifficulty(type)
+  if (requested !== undefined) return clampDifficulty(requested)
   return getDifficulty(type)
 }
 
 /** Target note a drill requested for `type`, if any (else undefined). */
 export function launchTargetNote(type: ExerciseType): string | undefined {
-  const o = override()
-  if (!o || o.type !== type) return undefined
-  return o.config.targetNote ?? o.config.targetNotes?.[0]
+  return exerciseLaunchTargetNote(type)
 }
 
 /** Full target-note sequence a drill requested for `type` (else undefined). */
 export function launchTargetNotes(type: ExerciseType): string[] | undefined {
-  const o = override()
-  return o && o.type === type ? o.config.targetNotes : undefined
+  return exerciseLaunchTargetNotes(type)
 }
 
 /** Step-pattern a launch requested for `type` (e.g. warmup block), if any. */
 export function launchPattern(type: ExerciseType): string | undefined {
-  const o = override()
-  return o && o.type === type ? o.config.pattern : undefined
+  return exerciseLaunchPattern(type)
 }
 
 /** Reviewed guided-practice prescription attached to this one launch. */
 export function launchGuidedPractice(
   type: ExerciseType,
 ): GuidedPracticeLaunchConfig | undefined {
-  const o = override()
-  return o && o.type === type ? o.config.guidedPractice : undefined
+  return exerciseLaunchGuidedPractice(type)
 }

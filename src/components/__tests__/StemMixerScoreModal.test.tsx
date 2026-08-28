@@ -98,6 +98,7 @@ describe('StemMixerScoreModal voice keep action', () => {
   })
 
   it('keeps the disabled keep action in place while saving', () => {
+    const onClose = vi.fn()
     render(() => (
       <StemMixerScoreModal
         showScore={() => true}
@@ -105,13 +106,22 @@ describe('StemMixerScoreModal voice keep action', () => {
         voiceTakeState="saving"
         voiceTakeMessage="Saving locally"
         onKeepVoiceTake={vi.fn()}
-        onClose={vi.fn()}
+        onClose={onClose}
       />
     ))
 
     const keep = screen.getByRole('button', { name: 'Keeping take' })
     expect(keep).toBeDisabled()
     expect(keep).toHaveAttribute('aria-busy', 'true')
+
+    const dialog = screen.getByRole('dialog', { name: 'Karaoke score' })
+    expect(dialog).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('button', { name: 'Close score' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled()
+
+    fireEvent.click(dialog.parentElement!)
+    fireEvent.keyDown(dialog, { key: 'Escape', bubbles: true })
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('requires an explicit keep after the replay is ready', async () => {
@@ -135,5 +145,69 @@ describe('StemMixerScoreModal voice keep action', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
     expect(onClose).toHaveBeenCalledOnce()
+  })
+})
+
+describe('StemMixerScoreModal keyboard ownership', () => {
+  it('traps focus, closes on Escape, and restores the opener', async () => {
+    const [showScore, setShowScore] = createSignal(false)
+    const onClose = vi.fn(() => setShowScore(false))
+
+    render(() => (
+      <>
+        <button type="button" onClick={() => setShowScore(true)}>
+          Show score
+        </button>
+        <StemMixerScoreModal
+          showScore={showScore}
+          score={() => VOICE_SCORE}
+          voiceTakeState="ready"
+          voiceTakeMessage="Replay ready"
+          onKeepVoiceTake={vi.fn()}
+          onClose={onClose}
+        />
+      </>
+    ))
+
+    const opener = screen.getByRole('button', { name: 'Show score' })
+    opener.focus()
+    await fireEvent.click(opener)
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Karaoke score',
+    })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+
+    const close = screen.getByRole('button', { name: 'Close score' })
+    const notNow = screen.getByRole('button', { name: 'Not now' })
+    await waitFor(() => expect(close).toHaveFocus())
+
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
+    expect(notNow).toHaveFocus()
+    fireEvent.keyDown(notNow, { key: 'Tab' })
+    expect(close).toHaveFocus()
+
+    const leakedToPage = vi.fn()
+    document.addEventListener('keydown', leakedToPage)
+    fireEvent.keyDown(close, { key: 'm', bubbles: true })
+    expect(leakedToPage).not.toHaveBeenCalled()
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    close.dispatchEvent(escape)
+    document.removeEventListener('keydown', leakedToPage)
+
+    expect(escape.defaultPrevented).toBe(true)
+    expect(leakedToPage).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledOnce()
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('dialog', { name: 'Karaoke score' }),
+      ).not.toBeInTheDocument()
+      expect(opener).toHaveFocus()
+    })
   })
 })

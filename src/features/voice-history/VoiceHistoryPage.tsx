@@ -27,9 +27,9 @@ import { InfoPopover } from '@/components/InfoPopover'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, getVoiceTakeContour, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, updateVoiceTakeReflections, wipeVoiceTakes, } from '@/db/services/voice-take-service'
-import { EXERCISE_PITCH_HOLD } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import { EXERCISE_PITCH_HOLD } from '@/lib/domain/exercise-contracts'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { GuidedEvidence } from '@/lib/guided-voice'
 import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
@@ -331,7 +331,17 @@ function savedFocusEvidenceMoments(
   })
 }
 
-export function VoiceHistoryPage(): JSX.Element {
+export type VoiceHistoryLeaveRequester = (
+  onResolved: (closed: boolean) => void,
+) => void
+
+interface VoiceHistoryPageProps {
+  draftTitle?: string
+  onDraftTitleChange?: (title: string) => void
+  onLeaveRequestReady?: (request: VoiceHistoryLeaveRequester | null) => void
+}
+
+export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   const [takes, setTakes] = createSignal<VoiceTakeRecord[]>([])
   const [loading, setLoading] = createSignal(true)
   const [loadFailed, setLoadFailed] = createSignal(false)
@@ -348,7 +358,13 @@ export function VoiceHistoryPage(): JSX.Element {
   const [playerError, setPlayerError] = createSignal<string | null>(null)
   const [recorderTarget, setRecorderTarget] =
     createSignal<FreeformThreadTarget | null>(null)
-  const [newThreadDraftTitle, setNewThreadDraftTitle] = createSignal('')
+  const [localDraftTitle, setLocalDraftTitle] = createSignal('')
+  const newThreadDraftTitle = (): string =>
+    props.draftTitle ?? localDraftTitle()
+  const updateNewThreadDraftTitle = (title: string): void => {
+    setLocalDraftTitle(title)
+    props.onDraftTitleChange?.(title)
+  }
   const [guidedProtocol, setGuidedProtocol] = createSignal<
     GuidedPracticeHandoff['retake'] | null
   >(null)
@@ -1612,6 +1628,48 @@ export function VoiceHistoryPage(): JSX.Element {
     })
   }
 
+  function requestPageLeave(onResolved: (closed: boolean) => void): void {
+    const resolveAfterChildCloses = (closed: boolean): void => {
+      if (!closed) {
+        onResolved(false)
+        return
+      }
+      // Child close requesters resolve immediately before updating this page's
+      // recorder/guide signal. Let that synchronous close finish before App
+      // unmounts Hear Yourself for the requested tab.
+      queueMicrotask(() => onResolved(true))
+    }
+
+    if (recorderTarget() !== null) {
+      if (requestRecorderClose === null) {
+        onResolved(false)
+        return
+      }
+      requestRecorderClose(resolveAfterChildCloses)
+      return
+    }
+    if (guidedOpen()) {
+      if (requestGuidedClose === null) {
+        onResolved(false)
+        return
+      }
+      requestGuidedClose(resolveAfterChildCloses)
+      return
+    }
+    onResolved(true)
+  }
+
+  createEffect(() => {
+    const register = props.onLeaveRequestReady
+    if (register === undefined) return
+    // App navigation asks this page to close any temporary capture before it
+    // changes tabs. The recorder and guide retain ownership of their exact
+    // Keep/Discard confirmation rules.
+    // eslint-disable-next-line solid/reactivity
+    register((onResolved) => requestPageLeave(onResolved))
+    onCleanup(() => register(null))
+  })
+
   function selectAllTake(id: string): void {
     if (allTakesSelectedId() === id) return
     if (activeId() !== null) disposeAudio()
@@ -1767,9 +1825,7 @@ export function VoiceHistoryPage(): JSX.Element {
                       onCloseRequestReady={(request) => {
                         requestRecorderClose = request
                       }}
-                      onDraftTitleChange={(title) =>
-                        setNewThreadDraftTitle(title)
-                      }
+                      onDraftTitleChange={updateNewThreadDraftTitle}
                       onKept={handleFreeformKept}
                       onStartNewThread={openNewRecorder}
                     />
@@ -2555,9 +2611,7 @@ export function VoiceHistoryPage(): JSX.Element {
                         onCloseRequestReady={(request) => {
                           requestRecorderClose = request
                         }}
-                        onDraftTitleChange={(title) =>
-                          setNewThreadDraftTitle(title)
-                        }
+                        onDraftTitleChange={updateNewThreadDraftTitle}
                         onKept={handleFreeformKept}
                         onStartNewThread={openNewRecorder}
                       />
