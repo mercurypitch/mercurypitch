@@ -797,6 +797,12 @@ overlaps. Contour — both tones the same length.
    the progression both ways as before; the desk's Colour and Weight say
    the band and the dB; the threshold drills say where the level goes.
 
+### 2ag. Retest fixes — keys by their place
+
+1. Hairline, pads armed: the numpad's 1 and 2 answer, Num Lock on or off;
+   a shifted digit answers; a layout that moves the top row answers by
+   the physical key. Space still starts and steps.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

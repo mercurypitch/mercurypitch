@@ -275,3 +275,29 @@ describe('the question as the headline', () => {
     expect(pad('Your call').textContent).toBe('Your call')
   })
 })
+
+describe('keys by code', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+
+  afterEach(() => cleanup())
+
+  it('answers on a numpad digit', async () => {
+    const Engine = withEngine(fakeEngine())
+    render(() => (
+      <Engine>
+        <HairlineDrill onBack={() => undefined} />
+      </Engine>
+    ))
+    fireEvent.click(pad('Practice run'))
+    await waitFor(() => expect(pad('The first').disabled).toBe(false), {
+      timeout: 3000,
+    })
+    fireEvent.keyDown(document, { key: 'End', code: 'Numpad1' })
+    expect(pad('The first').disabled).toBe(true)
+    expect(pad('The first').getAttribute('data-state')).not.toBeNull()
+  })
+})
