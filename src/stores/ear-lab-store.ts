@@ -19,6 +19,7 @@ import type { FacultyReading, MercuryIndex } from '@/lib/ear/mercury-index'
 import { mercuryIndex, scoreReading } from '@/lib/ear/mercury-index'
 import type { SprintCandidate, SprintSegment } from '@/lib/ear/sprint'
 import { planDailySprint, SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordActivity } from './usage-store'
 
@@ -88,6 +89,46 @@ const [homeMode, setHomeMode] = createPersistedSignal<'tap' | 'mic'>(
 
 export const homeAnswerMode = homeMode
 export const setHomeAnswerMode = setHomeMode
+
+// ── Pacing ──────────────────────────────────────────────────────
+
+/** One rule for every drill: after the verdict the run either holds
+ *  for `revealHoldMs` and sounds the next trial by itself, or — with
+ *  auto-advance off — parks until Next. The switch in every stage
+ *  bar and the one in the rack are this same signal. */
+const [autoAdvance, setAutoAdvance] = createPersistedSignal<boolean>(
+  `${KEY_PREFIX}auto_advance`,
+  true,
+  { validator: (value): value is boolean => typeof value === 'boolean' },
+)
+const [revealHold, setRevealHold] = createPersistedSignal<number>(
+  `${KEY_PREFIX}reveal_hold_ms`,
+  REVEAL_HOLD.defaultMs,
+  {
+    validator: (value): value is number =>
+      typeof value === 'number' && Number.isFinite(value),
+  },
+)
+
+export const earAutoAdvance = autoAdvance
+export const setEarAutoAdvance = setAutoAdvance
+
+/** Snapped to the slider's step and clamped to its range, so a stale
+ *  stored value can never stall a run or rush it. */
+export function clampRevealHold(ms: number): number {
+  if (!Number.isFinite(ms)) return REVEAL_HOLD.defaultMs
+  const stepped = Math.round(ms / REVEAL_HOLD.step) * REVEAL_HOLD.step
+  return Math.min(REVEAL_HOLD.max, Math.max(REVEAL_HOLD.min, stepped))
+}
+
+export const earRevealHoldMs = (): number => clampRevealHold(revealHold())
+
+/** Returns what was kept. */
+export function setEarRevealHoldMs(ms: number): number {
+  const kept = clampRevealHold(ms)
+  setRevealHold(kept)
+  return kept
+}
 
 // ── Ratings (Ruler B) ───────────────────────────────────────────
 
@@ -452,4 +493,6 @@ export function resetEarLabStore(): void {
   setConfusions({})
   setSprintDay(null)
   setSprintDays([])
+  setAutoAdvance(true)
+  setRevealHold(REVEAL_HOLD.defaultMs)
 }

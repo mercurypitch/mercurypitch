@@ -6,7 +6,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
-import { calibrationHistory, completeCalibrationRun, completeSprint, earConfusions, earPlayerRating, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
+import { calibrationHistory, completeCalibrationRun, completeSprint, earAutoAdvance, earConfusions, earPlayerRating, earRevealHoldMs, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, setEarAutoAdvance, setEarRevealHoldMs, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
 
 function answerHome(correct: boolean, expected = 'deg-4', answered = 'deg-5') {
   return recordIdentificationAnswer({
@@ -232,5 +233,30 @@ describe('finishing a sprint', () => {
     completeSprint()
     const today = sprintProgress().day
     expect(sprintStreak(shiftDay(today, 2))).toBe(0)
+  })
+})
+
+describe('pacing', () => {
+  it('starts with auto-advance on and the default hold', () => {
+    expect(earAutoAdvance()).toBe(true)
+    expect(earRevealHoldMs()).toBe(REVEAL_HOLD.defaultMs)
+  })
+
+  it('snaps the hold to the slider step and clamps it to the range', () => {
+    expect(setEarRevealHoldMs(2750)).toBe(3000)
+    expect(earRevealHoldMs()).toBe(3000)
+    expect(setEarRevealHoldMs(100)).toBe(REVEAL_HOLD.min)
+    expect(setEarRevealHoldMs(99999)).toBe(REVEAL_HOLD.max)
+    expect(setEarRevealHoldMs(Number.NaN)).toBe(REVEAL_HOLD.defaultMs)
+  })
+
+  it('persists both and comes back with reset', () => {
+    setEarAutoAdvance(false)
+    setEarRevealHoldMs(4000)
+    expect(localStorage.getItem('mercurypitch_ear_auto_advance')).toBe('false')
+    expect(localStorage.getItem('mercurypitch_ear_reveal_hold_ms')).toBe('4000')
+    resetEarLabStore()
+    expect(earAutoAdvance()).toBe(true)
+    expect(earRevealHoldMs()).toBe(REVEAL_HOLD.defaultMs)
   })
 })

@@ -10,7 +10,7 @@ import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { BEAT_TIMING, DRIFT_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
+import { BEAT_TIMING, DRIFT_TIMING, REVEAL_HOLD } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -147,7 +147,7 @@ describe('BeatHuntDrill', () => {
     expect(status()).toMatch(
       /The first pair was beating, .* The detune widens\.$/,
     )
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.thresholdMs + 5)
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
     await vi.advanceTimersByTimeAsync(0)
     expect(screen.getByTestId('ear-stage-progress').textContent).not.toContain(
       '40.0¢',

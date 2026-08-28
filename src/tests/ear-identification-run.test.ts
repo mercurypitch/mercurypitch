@@ -15,7 +15,7 @@ import { IDENTIFICATION_ROUNDS, useIdentificationController, } from '@/features/
 import type { EarBankItem } from '@/lib/ear/banks'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
-import { REVEAL_TIMING } from '@/lib/ear/timing'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import { earPlayerRating, resetEarLabStore } from '@/stores/ear-lab-store'
 
 vi.mock('@/features/exercises/feedback', () => ({ playTierSfx: vi.fn() }))
@@ -96,9 +96,7 @@ describe('a round', () => {
       expect(run.rating().rating).toBeGreaterThan(before)
       expect(trials.replays).toHaveLength(0)
 
-      await vi.advanceTimersByTimeAsync(
-        REVEAL_TIMING.identificationCorrectMs - 1,
-      )
+      await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs - 1)
       expect(run.phase()).toBe('reveal')
       await vi.advanceTimersByTimeAsync(1)
       await flush()
@@ -109,7 +107,7 @@ describe('a round', () => {
     })
   })
 
-  it('replays a miss slowly, rates it down, and holds the longer reveal', async () => {
+  it('replays a miss slowly, rates it down, and holds the reveal after it', async () => {
     await createRoot(async (dispose) => {
       const trials = instantTrials()
       const run = useIdentificationController(
@@ -130,12 +128,11 @@ describe('a round', () => {
       expect(run.rating().rating).toBeLessThan(before)
       expect(trials.replays).toEqual([expected])
 
-      await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationCorrectMs)
+      // The replay is instant here, so the hold starts at once and is
+      // the same hold a right answer gets: one rule for every verdict.
+      await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs - 1)
       expect(run.phase()).toBe('reveal')
-      await vi.advanceTimersByTimeAsync(
-        REVEAL_TIMING.identificationWrongMs -
-          REVEAL_TIMING.identificationCorrectMs,
-      )
+      await vi.advanceTimersByTimeAsync(1)
       await flush()
       expect(run.round()).toBe(1)
 
@@ -184,7 +181,7 @@ describe('a run', () => {
         const expected = run.expectedId() as string
         // Miss every third round so both tallies are exercised.
         run.answer(i % 3 === 2 ? `not-${expected}` : expected)
-        await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationWrongMs)
+        await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
       }
 
       expect(run.phase()).toBe('done')
@@ -216,7 +213,7 @@ describe('a run', () => {
       for (let i = 0; i < IDENTIFICATION_ROUNDS; i++) {
         await flush()
         run.answer(run.expectedId() as string)
-        await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationCorrectMs)
+        await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
       }
 
       expect(trials.items).toHaveLength(IDENTIFICATION_ROUNDS)

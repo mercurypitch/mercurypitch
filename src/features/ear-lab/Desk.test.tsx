@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type * as Banks from '@/lib/ear/banks'
-import { REVEAL_TIMING } from '@/lib/ear/timing'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { earPlayerRating, latestThresholdReading, practiceIndexEstimate, resetEarLabStore, } from '@/stores/ear-lab-store'
@@ -137,7 +137,7 @@ describe('the desk', () => {
       trial < 70 && !screen.queryByTestId('ear-stage-plate');
       trial++
     ) {
-      await vi.advanceTimersByTimeAsync(REVEAL_TIMING.thresholdMs)
+      await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
       if (screen.queryByTestId('ear-stage-plate')) break
       await reach('Which band was boosted?')
       fireEvent.click(

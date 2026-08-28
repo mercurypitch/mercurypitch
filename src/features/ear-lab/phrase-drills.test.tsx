@@ -14,7 +14,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type * as Banks from '@/lib/ear/banks'
 import type { EarBankItem } from '@/lib/ear/banks'
-import { ECHO_TIMING, REVEAL_TIMING, SPAN_TIMING } from '@/lib/ear/timing'
+import { ECHO_TIMING, REVEAL_HOLD, SPAN_TIMING } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -155,9 +155,7 @@ describe('EchoDrill', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(engine.playTone).toHaveBeenCalledTimes(16)
     // The next round waits for the slow replay to finish, then the hold.
-    await vi.advanceTimersByTimeAsync(
-      REVEAL_TIMING.identificationWrongMs + 4000,
-    )
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 4000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )
@@ -226,7 +224,7 @@ describe('SpanDrill', () => {
       'Slipped at note 2 of 3 — it was Do Sol Do. The phrase shortens.',
     )
     expect(parts('wrong')).toBe(1)
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.thresholdMs + 5)
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
     await vi.advanceTimersByTimeAsync(0)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       '2 notes',

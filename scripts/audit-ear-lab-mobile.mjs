@@ -647,10 +647,41 @@ async function auditStage(page, name) {
   if (!armed)
     fail(`${name} hairline run`, 'a practice run never armed its pads')
   results.hairlineRun = await checkStage('hairline run', 'stage-hairline-run')
+  const autoSwitch = page.getByRole('switch', { name: 'Auto-advance' })
+  if (!(await autoSwitch.isVisible().catch(() => false)))
+    fail(`${name} hairline bar`, 'no auto-advance switch in the stage bar')
   if (armed) {
     await page.getByRole('button', { name: 'The first' }).click()
     await page.waitForTimeout(150)
     await page.screenshot({ path: `${OUT}/${name}-stage-hairline-reveal.png` })
+    // The Last call plate outlives the hold: the next pair sounds and
+    // the verdict is still under the pads.
+    const lastCall = page.locator('[data-testid="ear-stage-last-call"]')
+    const plateUp = await lastCall
+      .waitFor({ timeout: 2000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!plateUp) fail(`${name} hairline last call`, 'no Last call plate')
+    // During the reveal the pads are disabled but coloured; the next
+    // pair is sounding once they are disabled and bare again.
+    const rearmed = await page
+      .locator(
+        '[data-testid="ear-stage-pads"] button[disabled]:not([data-state])',
+        {
+          hasText: 'The first',
+        },
+      )
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!rearmed)
+      fail(`${name} hairline last call`, 'the next trial never sounded')
+    if (!(await lastCall.isVisible().catch(() => false)))
+      fail(`${name} hairline last call`, 'the plate left with the next trial')
+    await page.waitForTimeout(150)
+    await page.screenshot({
+      path: `${OUT}/${name}-stage-hairline-lastcall.png`,
+    })
   }
   await page.getByLabel('Stop').click()
   await page
@@ -1426,7 +1457,7 @@ async function auditStage(page, name) {
     'calibration run',
     'stage-calibration-run',
   )
-  await page.getByLabel('Abandon').click()
+  await page.getByLabel('Stop').click()
   await page
     .locator('[data-testid="ear-stage-plate"]')
     .waitFor({ timeout: 4000 })

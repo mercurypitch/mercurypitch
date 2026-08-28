@@ -675,6 +675,27 @@ nothing; the pads arm the moment it ends. Echo — a wrong phrase: the slow
 replay plays through, then the hold, then the next cadence; nothing
 overlaps. Contour — both tones the same length.
 
+### 2y. Retest fixes — the verdict stays, auto-advance is a switch, the hold is a setting
+
+1. Any drill, any run: after an answer a **Last call** plate sits under the
+   pads — the mark (check or cross), the verdict sentence, and a consequence
+   line: threshold drills say where the level goes ("Gap 12.0¢ → 9.5¢",
+   with the track letter in a calibration), identification drills the
+   rating's move and, on a miss, what you named. It stays through the next
+   trial and is replaced by the next verdict; the pads keep their colouring
+   only until the next trial arms.
+2. The stage bar, while a run is on: the **Auto** switch and the stop square
+   (icon only — no "Abandon"). Auto on (the default): the verdict holds,
+   then the next trial sounds by itself. Off: the run parks on the verdict
+   and the lead pad becomes **Next** (Space); flipping the switch on while
+   parked resumes after one hold. Calibration obeys the same switch.
+3. The rack's Sound panel, **Between trials**: the same switch, and **Hold
+   after the verdict** from 1 s to 10 s in half-second steps (default
+   1.5 s). Identification drills count the hold from the end of a miss's
+   replay; Home from the end of the resolution.
+4. Stop while parked lands on the plate as before; nothing is marked by a
+   stopped calibration. Both preferences survive a reload.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
@@ -686,7 +707,7 @@ overlaps. Contour — both tones the same length.
    status line, an amber **Begin**). One run: three interleaved tracks,
    pooled reading, the plate shows the pendulums in phase, the etched
    index and "Next calibration due {date}" (fourteen days); the session
-   bar reads "sealed … · due …". **Abandon** mid-run must NOT mark the
+   bar reads "sealed … · due …". **Stop** mid-run must NOT mark the
    column.
 4. **Mercury Column on the phone** — after the fixes: no white blob at the
    tube top, the dashed cap floats above the glass, tube centred, column no

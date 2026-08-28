@@ -129,14 +129,14 @@ describe('EarStage with Hairline', () => {
     ).not.toBeNull()
     expect(screen.queryByText('Practice run')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
-    expect(screen.getByLabelText('Abandon')).toBeTruthy()
+    expect(screen.getByLabelText('Stop')).toBeTruthy()
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Track',
     )
     await waitFor(() => expect(pad('The first').disabled).toBe(false), {
       timeout: 3000,
     })
-    fireEvent.click(screen.getByLabelText('Abandon'))
+    fireEvent.click(screen.getByLabelText('Stop'))
     const plate = screen.getByTestId('ear-stage-plate')
     expect(plate.textContent).toContain('nothing was marked')
   })

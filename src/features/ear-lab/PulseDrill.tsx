@@ -17,7 +17,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createEffect, createSignal, Show, untrack } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { PULSE_BANK } from '@/lib/ear/banks'
@@ -32,6 +32,7 @@ import { scheduleClick } from './click-synth'
 import { IconPlay } from './ear-icons'
 import { useEarRoom } from './ear-room-context'
 import { ConsoleLink, ConsoleNote, EarStage, EndPlate, OutcomeDots, PlateBadge, PlateDelta, PlateLine, PlayPad, TapPad, } from './EarStage'
+import { useLastCall } from './reveal-pacing'
 import type { DrumBar, DrumReveal } from './RhythmDrum'
 import { RhythmDrum } from './RhythmDrum'
 import type { IdentificationTrial } from './use-identification-controller'
@@ -230,6 +231,24 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
         : ('wrong' as const)
 
   const cleared = () => clearedSubdivision(controller.rating().rating)
+  /** Auto-advance off: the verdict waits for the Next pad. */
+  const parked = () => controller.parked()
+
+  let ratingBefore = 0
+  createEffect(() => {
+    if (phase() === 'playing') {
+      ratingBefore = untrack(() => controller.rating().rating)
+    }
+  })
+
+  const lastCall = useLastCall(phase, () => ({
+    correct: take()?.correct === true,
+    line: status(),
+    consequence: `Rating ${Math.round(ratingBefore)} → ${Math.round(
+      controller.rating().rating,
+    )}`,
+    label: `Call ${controller.round() + 1}`,
+  }))
 
   return (
     <EarStage
@@ -242,11 +261,14 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
       keys={() =>
         phase() === 'idle'
           ? [{ key: 'Space', action: () => controller.start() }]
-          : []
+          : parked()
+            ? [{ key: 'Space', action: () => controller.next() }]
+            : []
       }
-      focusConsole={() => phase() === 'answer'}
+      focusConsole={() => phase() === 'answer' || parked()}
       onBack={props.onBack}
       onStop={running() ? () => controller.stop() : undefined}
+      lastCall={lastCall}
       done={() => phase() === 'done'}
       instrument={() => (
         <RhythmDrum
@@ -290,29 +312,42 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
             </>
           }
         >
-          <TapPad
-            label={
-              phase() === 'answer'
-                ? 'Tap'
-                : phase() === 'reveal'
-                  ? take()?.correct === true
-                    ? 'Clean'
-                    : 'Not quite'
-                  : 'Listen'
+          <Show
+            when={parked()}
+            fallback={
+              <TapPad
+                label={
+                  phase() === 'answer'
+                    ? 'Tap'
+                    : phase() === 'reveal'
+                      ? take()?.correct === true
+                        ? 'Clean'
+                        : 'Not quite'
+                      : 'Listen'
+                }
+                sub={
+                  phase() === 'answer'
+                    ? 'the call, on the beat'
+                    : phase() === 'reveal'
+                      ? 'next call coming'
+                      : bar() === 'count'
+                        ? 'count-in'
+                        : 'the call'
+                }
+                armed={phase() === 'answer'}
+                disabled={phase() !== 'answer'}
+                onTap={onTap}
+              />
             }
-            sub={
-              phase() === 'answer'
-                ? 'the call, on the beat'
-                : phase() === 'reveal'
-                  ? 'next call coming'
-                  : bar() === 'count'
-                    ? 'count-in'
-                    : 'the call'
-            }
-            armed={phase() === 'answer'}
-            disabled={phase() !== 'answer'}
-            onTap={onTap}
-          />
+          >
+            <PlayPad
+              label="Next"
+              sub="the next call"
+              keycap="Space"
+              icon={<IconPlay size={20} />}
+              onClick={() => controller.next()}
+            />
+          </Show>
         </Show>
       )}
       plate={() => (

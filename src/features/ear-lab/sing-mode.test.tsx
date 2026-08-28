@@ -12,7 +12,7 @@ import type * as Banks from '@/lib/ear/banks'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import type * as ItemBank from '@/lib/ear/item-bank'
 import type * as Phrase from '@/lib/ear/phrase'
-import { ECHO_TIMING, REVEAL_TIMING, SPAN_TIMING } from '@/lib/ear/timing'
+import { ECHO_TIMING, REVEAL_HOLD, SPAN_TIMING } from '@/lib/ear/timing'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -169,7 +169,7 @@ describe('sing mode', () => {
 
     // Round two: the second note sung a fourth up — wrong, and the chain
     // marks that bead.
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationCorrectMs)
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
     await reach('Sing or play it back')
     mic.frames = sungFrames(
       [60, 65, 64],
@@ -231,7 +231,7 @@ describe('sing mode', () => {
     )
 
     // Next trial: the middle note missing — slipped at note 2.
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.thresholdMs)
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
     await reach('Sing or play it back')
     mic.frames = sungFrames(
       [60, 0, 60],

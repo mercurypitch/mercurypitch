@@ -22,9 +22,10 @@ import type { Rating } from '@/lib/ear/elo'
 import type { HomeDegree } from '@/lib/ear/item-bank'
 import type { DegreeSet } from '@/lib/ear/item-bank'
 import { cadenceChordMidis, HOME_SET, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
-import { HOME_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
+import { HOME_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
   | 'idle'
@@ -131,6 +132,13 @@ export function useHomeController(
   let startedAt = 0
   let cancelled = false
   let timer: ReturnType<typeof setTimeout> | undefined
+  const pacer = createRevealPacer(
+    () => {
+      setRound((r) => r + 1)
+      void playRound()
+    },
+    () => cancelled,
+  )
 
   function wait(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -255,11 +263,7 @@ export function useHomeController(
       setAnsweredDegree(null)
       setPhase('reveal')
     })
-    timer = setTimeout(() => {
-      if (cancelled) return
-      setRound((r) => r + 1)
-      void playRound()
-    }, REVEAL_TIMING.identificationWrongMs)
+    pacer.hold()
   }
 
   function submit(degree: number, centsOff?: number): void {
@@ -300,18 +304,17 @@ export function useHomeController(
       setPhase('reveal')
     })
 
-    if (!correct) void playResolution(target.degree)
-
-    timer = setTimeout(
-      () => {
+    // A miss hears the probe fall home first; the hold — and the next
+    // round — count from the end of that, or the two would overlap.
+    const resolution = correct
+      ? Promise.resolve()
+      : playResolution(target.degree)
+    void resolution
+      .catch(() => undefined)
+      .then(() => {
         if (cancelled) return
-        setRound((r) => r + 1)
-        void playRound()
-      },
-      correct
-        ? REVEAL_TIMING.identificationCorrectMs
-        : REVEAL_TIMING.identificationWrongMs,
-    )
+        pacer.hold()
+      })
   }
 
   /** Tap answer (the seven buttons). */
@@ -371,12 +374,14 @@ export function useHomeController(
     // phase after the end card is already showing.
     cancelled = true
     clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
     finish()
   }
 
   function reset(): void {
     clearTimeout(timer)
+    pacer.cancel()
     setPhase('idle')
     setResult(null)
     setCurrentDegree(null)
@@ -386,6 +391,7 @@ export function useHomeController(
   function dispose(): void {
     cancelled = true
     clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
   }
 
@@ -403,6 +409,9 @@ export function useHomeController(
     unclear,
     rating,
     result,
+    /** Auto-advance off: the run waits on the verdict for next(). */
+    parked: pacer.parked,
+    next: pacer.next,
     start,
     answer,
     stop,

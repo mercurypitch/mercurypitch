@@ -15,7 +15,7 @@ import type * as Banks from '@/lib/ear/banks'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { drawOptions } from '@/lib/ear/draw-options'
 import { CADENCE_BANK } from '@/lib/ear/progressions'
-import { BASSLINE_TIMING, CADENCE_TIMING, REVEAL_TIMING, } from '@/lib/ear/timing'
+import { BASSLINE_TIMING, CADENCE_TIMING, REVEAL_HOLD } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -191,9 +191,7 @@ describe('CadenceDrill', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(struck).toHaveLength(24)
     // The next round waits for the slow strum to finish, then the hold.
-    await vi.advanceTimersByTimeAsync(
-      REVEAL_TIMING.identificationWrongMs + 6000,
-    )
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 6000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )

@@ -16,7 +16,7 @@ import { useHomeController } from '@/features/ear-lab/use-home-controller'
 import type { SungFrame } from '@/lib/ear/degree-detect'
 import type * as ItemBank from '@/lib/ear/item-bank'
 import { HOME_DRILL_ID, HOME_SING_DRILL_ID, homeItemId, probeMidi, } from '@/lib/ear/item-bank'
-import { HOME_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
+import { HOME_TIMING, REVEAL_HOLD } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { earItemStates, earPlayerRating, resetEarLabStore, } from '@/stores/ear-lab-store'
 
@@ -89,7 +89,7 @@ describe('a tap round', () => {
       expect(home.rating().rating).toBeGreaterThan(before)
       expect(earItemStates()[homeItemId(degree as number)]).toBeDefined()
 
-      await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationCorrectMs)
+      await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
       expect(home.round()).toBe(1)
       expect(home.phase()).toBe('cadence')
 
@@ -118,6 +118,14 @@ describe('a tap round', () => {
       const tonic = audio.playTone.mock.calls[calls + 1]
       expect(tonic[1]).toBe(HOME_TIMING.resolutionTonicMs)
       expect(tonic[0]).toBeCloseTo(midiToFreq(ROOT))
+
+      // The hold counts from the end of the resolution, not the miss.
+      await vi.advanceTimersByTimeAsync(
+        HOME_TIMING.resolutionTonicMs + REVEAL_HOLD.defaultMs - 5,
+      )
+      expect(home.round()).toBe(0)
+      await vi.advanceTimersByTimeAsync(10)
+      expect(home.round()).toBe(1)
 
       dispose()
     })

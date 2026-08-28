@@ -22,6 +22,7 @@ import type { StageKey } from './EarStage'
 import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, } from './EarStage'
 import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
+import { useLastCall } from './reveal-pacing'
 import { TrackPendulums } from './TrackPendulums'
 import { useCompactStage } from './use-compact-stage'
 import type { ThresholdRunMode, useThresholdRun } from './use-threshold-run'
@@ -90,6 +91,8 @@ export function ThresholdDrillView(
   }
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const calibrating = () => props.run.mode() === 'calibration'
+  /** Auto-advance off: the verdict waits for the Next pad. */
+  const parked = () => props.run.parked()
   const ritual = () => props.ritual === true
   const compact = useCompactStage()
 
@@ -145,9 +148,28 @@ export function ThresholdDrillView(
       const mode: ThresholdRunMode = ritual() ? 'calibration' : 'practice'
       return [{ key: 'Space', action: () => start(mode) }]
     }
+    if (parked()) return [{ key: 'Space', action: () => props.run.next() }]
     if (phase() === 'answer') return props.keys()
     return []
   }
+
+  /** "Gap 12.0¢ → 9.5¢": where this track's level goes next. */
+  const consequence = (): string | undefined => {
+    const next = props.run.nextLevel()
+    if (next === null) return undefined
+    const track = calibrating()
+      ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
+      : ''
+    const unit = props.unitShort
+    return `${track}${props.levelCaption} ${props.formatValue(props.run.level())}${unit} → ${props.formatValue(next)}${unit}`
+  }
+
+  const lastCall = useLastCall(phase, () => ({
+    correct: props.run.lastCorrect() === true,
+    line: props.revealLine(),
+    consequence: consequence(),
+    label: `Trial ${props.run.trials()}`,
+  }))
 
   const estimate = () => props.run.result()?.estimate ?? null
   const again = (): ThresholdRunMode => props.run.result()?.mode ?? 'practice'
@@ -161,11 +183,11 @@ export function ThresholdDrillView(
       status={status()}
       tone={tone()}
       keys={keys}
-      focusConsole={() => phase() === 'answer'}
+      focusConsole={() => phase() === 'answer' || parked()}
       onBack={props.onBack}
       backLabel={props.backLabel}
       onStop={running() ? () => props.run.stop() : undefined}
-      stopLabel={calibrating() ? 'Abandon' : 'Stop'}
+      lastCall={lastCall}
       done={() => phase() === 'done'}
       instrument={() => (
         <>
@@ -239,18 +261,41 @@ export function ThresholdDrillView(
               </ConsoleLead>
               <ConsoleNote>
                 No hints, no retries, no adaptation beyond the staircase itself.
-                Abandoning it marks nothing.
+                Stopping it marks nothing.
               </ConsoleNote>
             </Show>
           }
         >
-          <PlayPad
-            state={phase() === 'answer' ? 'armed' : 'sounding'}
-            label={phase() === 'answer' ? 'Your call' : 'Listening'}
-            sub={
-              phase() === 'answer' ? props.measures : `${props.levelLabel()}`
+          <Show
+            when={parked()}
+            fallback={
+              <PlayPad
+                state={phase() === 'answer' ? 'armed' : 'sounding'}
+                label={
+                  phase() === 'answer'
+                    ? 'Your call'
+                    : phase() === 'reveal'
+                      ? 'Next'
+                      : 'Listening'
+                }
+                sub={
+                  phase() === 'answer'
+                    ? props.measures
+                    : phase() === 'reveal'
+                      ? 'follows in a moment'
+                      : `${props.levelLabel()}`
+                }
+              />
             }
-          />
+          >
+            <PlayPad
+              label="Next"
+              sub="the next trial"
+              keycap="Space"
+              icon={<IconPlay size={20} />}
+              onClick={() => props.run.next()}
+            />
+          </Show>
           {props.pads()}
         </Show>
       )}

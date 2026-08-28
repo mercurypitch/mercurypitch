@@ -12,7 +12,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type * as Banks from '@/lib/ear/banks'
 import type { EarBankItem } from '@/lib/ear/banks'
-import { PULL_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
+import { PULL_TIMING, REVEAL_HOLD } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -138,9 +138,7 @@ describe('PullDrill', () => {
     // Ti, then Do′: two replay tones.
     expect(engine.playTone).toHaveBeenCalledTimes(16)
     // The next round waits for the replay's tail, then the hold.
-    await vi.advanceTimersByTimeAsync(
-      REVEAL_TIMING.identificationWrongMs + 2000,
-    )
+    await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 2000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )

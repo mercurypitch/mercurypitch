@@ -19,6 +19,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { EngineContext } from '@/contexts/EngineContext'
 import { unlockAudio } from '@/lib/audio-unlock'
+import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
 
@@ -28,6 +29,18 @@ export interface StageKey {
   /** `event.key` to match ('1'…'9'), or 'Space' for the space bar. */
   key: string
   action: () => void
+}
+
+/** The verdict the Last call plate keeps until the next one. */
+export interface LastCall {
+  correct: boolean
+  /** The verdict sentence — what was true. */
+  line: string
+  /** The consequence: where the level goes, the rating's move, what
+   *  was answered on a miss. */
+  consequence?: string
+  /** "Trial 7", "Round 3" — where in the run it was called. */
+  label?: string
 }
 
 interface EarStageProps {
@@ -46,9 +59,11 @@ interface EarStageProps {
   /** True once the run is over; the plate replaces instrument + console. */
   done?: () => boolean
   plate?: () => JSX.Element
-  /** Set while a run can be stopped; the control shows only then. */
+  /** Set while a run can be stopped; the stop square and the
+   *  auto-advance switch show only then. */
   onStop?: () => void
-  stopLabel?: string
+  /** The last verdict, kept under the pads until the next one. */
+  lastCall?: () => LastCall | null
   onBack: () => void
   backLabel?: string
   keys?: () => StageKey[]
@@ -114,6 +129,39 @@ export function StageBar(props: StageBarProps): JSX.Element {
   )
 }
 
+interface AutoAdvanceSwitchProps {
+  /** "Auto" in the bar, "Auto-advance" in the rack. */
+  label?: string
+}
+
+/** The one switch behind every drill's pacing: on, the verdict holds
+ *  for the rack's setting and the next trial follows by itself; off,
+ *  the run parks on the verdict until Next. The bar and the rack
+ *  both render it, and both read the same persisted signal. */
+export function AutoAdvanceSwitch(props: AutoAdvanceSwitchProps): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="switch"
+      class={styles.auto}
+      aria-checked={earAutoAdvance()}
+      aria-label="Auto-advance"
+      title={
+        earAutoAdvance()
+          ? 'Auto-advance on: the next trial follows the verdict'
+          : 'Auto-advance off: each verdict waits for Next'
+      }
+      data-testid="ear-auto-advance"
+      onClick={() => setEarAutoAdvance(!earAutoAdvance())}
+    >
+      <span class={styles.autoLabel}>{props.label ?? 'Auto'}</span>
+      <span class={styles.autoTrack} aria-hidden="true">
+        <span class={styles.autoKnob} />
+      </span>
+    </button>
+  )
+}
+
 export function EarStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
 
@@ -162,15 +210,18 @@ export function EarStage(props: EarStageProps): JSX.Element {
         backLabel={props.backLabel}
         aside={
           <Show when={props.onStop}>
-            <button
-              type="button"
-              class={styles.stop}
-              onClick={() => props.onStop?.()}
-              aria-label={props.stopLabel ?? 'Stop'}
-            >
-              <IconStop size={18} />
-              <span class={styles.stopLabel}>{props.stopLabel ?? 'Stop'}</span>
-            </button>
+            <div class={styles.controls}>
+              <AutoAdvanceSwitch />
+              <button
+                type="button"
+                class={styles.stop}
+                onClick={() => props.onStop?.()}
+                aria-label="Stop"
+                title="Stop the run"
+              >
+                <IconStop size={18} />
+              </button>
+            </div>
           </Show>
         }
       />
@@ -201,6 +252,39 @@ export function EarStage(props: EarStageProps): JSX.Element {
               data-testid="ear-stage-console"
             >
               {props.console()}
+              <Show when={props.lastCall?.()}>
+                {(call) => (
+                  <aside
+                    class={styles.lastCall}
+                    classList={{
+                      [styles.lastCallRight]: call().correct,
+                      [styles.lastCallWrong]: !call().correct,
+                    }}
+                    data-testid="ear-stage-last-call"
+                    data-verdict={call().correct ? 'right' : 'wrong'}
+                  >
+                    <span class={styles.lastCallMark} aria-hidden="true">
+                      <Show
+                        when={call().correct}
+                        fallback={<IconClose size={13} />}
+                      >
+                        <IconCheck size={13} />
+                      </Show>
+                    </span>
+                    <span class={styles.lastCallKicker}>
+                      {call().label === undefined
+                        ? 'Last call'
+                        : `Last call · ${call().label}`}
+                    </span>
+                    <p class={styles.lastCallLine}>{call().line}</p>
+                    <Show when={call().consequence}>
+                      {(consequence) => (
+                        <p class={styles.lastCallNote}>{consequence()}</p>
+                      )}
+                    </Show>
+                  </aside>
+                )}
+              </Show>
             </div>
           </>
         }

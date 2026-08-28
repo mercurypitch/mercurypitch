@@ -17,8 +17,8 @@ import { bankItemState, pickBankItem } from '@/lib/ear/banks'
 import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
-import { REVEAL_TIMING } from '@/lib/ear/timing'
 import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { createRevealPacer } from './reveal-pacing'
 
 export type IdentificationPhase =
   | 'idle'
@@ -95,7 +95,13 @@ export function useIdentificationController(
   let ratingAtStart = 0
   let startedAt = 0
   let cancelled = false
-  let timer: ReturnType<typeof setTimeout> | undefined
+  const pacer = createRevealPacer(
+    () => {
+      setRound((r) => r + 1)
+      void playRound()
+    },
+    () => cancelled,
+  )
 
   function start(): void {
     cancelled = false
@@ -170,8 +176,9 @@ export function useIdentificationController(
     })
 
     // A miss replays the item slowly; the hold — and the next round —
-    // wait for the replay to finish, or the two would sound over each
-    // other. Stop still cuts it: cancelled is checked after the replay.
+    // count from the end of the replay, or the two would sound over
+    // each other. Stop still cuts it: cancelled is checked after the
+    // replay, and the pacer checks it again when the hold ends.
     const replay =
       !correct && trial?.replayOnWrong
         ? trial.replayOnWrong()
@@ -182,16 +189,7 @@ export function useIdentificationController(
       .then(() => {
         setReplaying(false)
         if (cancelled) return
-        timer = setTimeout(
-          () => {
-            if (cancelled) return
-            setRound((r) => r + 1)
-            void playRound()
-          },
-          correct
-            ? REVEAL_TIMING.identificationCorrectMs
-            : REVEAL_TIMING.identificationWrongMs,
-        )
+        pacer.hold()
       })
   }
 
@@ -213,14 +211,14 @@ export function useIdentificationController(
     if (phase() === 'idle' || phase() === 'done') return
     // Cancel FIRST — see playRound()'s post-await guard.
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
     finish()
   }
 
   function dispose(): void {
     cancelled = true
-    clearTimeout(timer)
+    pacer.cancel()
     options?.cancelAudio?.()
   }
 
@@ -235,6 +233,9 @@ export function useIdentificationController(
     rating,
     result,
     replaying,
+    /** Auto-advance off: the run waits on the verdict for next(). */
+    parked: pacer.parked,
+    next: pacer.next,
     track: () => runTrack,
     start,
     answer,

@@ -9,11 +9,12 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createEffect, For, Show, untrack } from 'solid-js'
 import { isProvisional } from '@/lib/ear/elo'
 import { IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
 import { ConsoleNote, EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { useLastCall } from './reveal-pacing'
 import type { useIdentificationController } from './use-identification-controller'
 
 export interface IdentificationChoice {
@@ -72,6 +73,8 @@ export function IdentificationDrillView(
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const correct = () =>
     props.controller.answeredId() === props.controller.expectedId()
+  /** Auto-advance off: the verdict waits for the Next pad. */
+  const parked = () => props.controller.parked()
 
   const ratingLine = () =>
     `Rating ${Math.round(props.controller.rating().rating)}${
@@ -126,6 +129,9 @@ export function IdentificationDrillView(
     if (phase() === 'idle') {
       return [{ key: 'Space', action: () => start() }]
     }
+    if (parked()) {
+      return [{ key: 'Space', action: () => props.controller.next() }]
+    }
     if (props.answerKeys) return props.answerKeys()
     if (phase() !== 'answer' || props.choices.length > 9) return []
     return props.choices.map((choice, i) => ({
@@ -133,6 +139,33 @@ export function IdentificationDrillView(
       action: () => props.controller.answer(choice.id),
     }))
   }
+
+  // The rating as the round opened, so the plate can say where the
+  // answer moved it.
+  let ratingBefore = 0
+  createEffect(() => {
+    if (phase() === 'playing') {
+      ratingBefore = untrack(() => props.controller.rating().rating)
+    }
+  })
+
+  const lastCall = useLastCall(phase, () => {
+    const expected = props.controller.expectedId()
+    const answered = props.controller.answeredId()
+    const move = `Rating ${Math.round(ratingBefore)} → ${Math.round(
+      props.controller.rating().rating,
+    )}`
+    const named =
+      !correct() && answered !== null && answered !== expected
+        ? `You named ${props.revealName(answered)} · `
+        : ''
+    return {
+      correct: correct(),
+      line: status(),
+      consequence: `${named}${move}`,
+      label: `Round ${props.controller.round() + 1}`,
+    }
+  })
 
   return (
     <EarStage
@@ -147,10 +180,11 @@ export function IdentificationDrillView(
       status={status()}
       tone={tone()}
       keys={keys}
-      focusConsole={() => phase() === 'answer'}
+      focusConsole={() => phase() === 'answer' || parked()}
       onBack={props.onBack}
       backLabel={props.backLabel}
       onStop={running() ? () => props.controller.stop() : undefined}
+      lastCall={lastCall}
       done={() => phase() === 'done'}
       instrument={props.instrument}
       console={() => (
@@ -170,11 +204,36 @@ export function IdentificationDrillView(
             </>
           }
         >
-          <PlayPad
-            state={phase() === 'answer' ? 'armed' : 'sounding'}
-            label={phase() === 'answer' ? 'Your call' : 'Listening'}
-            sub={props.measures}
-          />
+          <Show
+            when={parked()}
+            fallback={
+              <PlayPad
+                state={phase() === 'answer' ? 'armed' : 'sounding'}
+                label={
+                  phase() === 'answer'
+                    ? 'Your call'
+                    : phase() === 'reveal' && !props.controller.replaying()
+                      ? 'Next'
+                      : 'Listening'
+                }
+                sub={
+                  phase() === 'reveal'
+                    ? props.controller.replaying()
+                      ? 'the slow replay'
+                      : 'follows in a moment'
+                    : props.measures
+                }
+              />
+            }
+          >
+            <PlayPad
+              label="Next"
+              sub="the next round"
+              keycap="Space"
+              icon={<IconPlay size={20} />}
+              onClick={() => props.controller.next()}
+            />
+          </Show>
           <Show
             when={props.answerConsole}
             fallback={
