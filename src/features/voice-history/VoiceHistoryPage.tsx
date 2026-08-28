@@ -22,8 +22,10 @@ import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconMic } from '@/components/exercise-icons'
-import { ChevronLeft, MoreVertical, Sparkles } from '@/components/icons'
+import { ChevronLeft, Sparkles } from '@/components/icons'
 import { InfoPopover } from '@/components/InfoPopover'
+import type { OverflowMenuItem } from '@/components/OverflowMenu'
+import { OverflowMenu } from '@/components/OverflowMenu'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, getVoiceTakeContour, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, updateVoiceTakeReflections, wipeVoiceTakes, } from '@/db/services/voice-take-service'
@@ -55,7 +57,8 @@ import { buildPracticeLoomRenderModel, buildVoiceAtlasRenderModel, } from './voi
 import { createVoiceMediaProgressLoop } from './voice-media-progress'
 import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
 import { createVoiceReflection, parseVoiceReflections, } from './voice-reflections'
-import { downloadPreparedVoiceTake, prepareVoiceTakeExport, } from './voice-take-export'
+import type { PreparedVoiceTakeExport } from './voice-take-export'
+import { canSharePreparedVoiceTake, deliverPreparedVoiceTake, prepareVoiceTakeExport, } from './voice-take-export'
 import { VoiceAtlasPanel } from './VoiceAtlasPanel'
 import styles from './VoiceHistoryPage.module.css'
 import { VoicePlaybackTransport } from './VoicePlaybackTransport'
@@ -364,6 +367,12 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   const [exportingTakeId, setExportingTakeId] = createSignal<string | null>(
     null,
   )
+  const [preparedExport, setPreparedExport] = createSignal<{
+    key: string
+    takeId: string
+    prepared: PreparedVoiceTakeExport
+  } | null>(null)
+  const [failedExportId, setFailedExportId] = createSignal<string | null>(null)
   const [recorderTarget, setRecorderTarget] =
     createSignal<FreeformThreadTarget | null>(null)
   const [localDraftTitle, setLocalDraftTitle] = createSignal('')
@@ -403,8 +412,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   const [contoursLoading, setContoursLoading] = createSignal(false)
   const [activeView, setActiveView] = createSignal<ListeningDeskView>('compare')
   const [mobileDetailOpen, setMobileDetailOpen] = createSignal(false)
-  const [threadMenuOpen, setThreadMenuOpen] = createSignal(false)
-  const [takeMenuId, setTakeMenuId] = createSignal<string | null>(null)
   const [allTakesSelectedId, setAllTakesSelectedId] = createSignal<
     string | null
   >(null)
@@ -430,10 +437,10 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   let recorderOpenedFromThread = false
   let threadDetailHeading: HTMLHeadingElement | undefined
   let renameInput: HTMLInputElement | undefined
-  let threadMenuButton: HTMLButtonElement | undefined
   let comparisonStarted = false
   let comparisonPendingComplete = false
   let contourLoadGeneration = 0
+  let exportPreparationGeneration = 0
   let playbackTakeId: string | null = null
   let playbackIsCurrent = (): boolean => false
   const playbackRequests = createPlaybackRequestGate()
@@ -697,7 +704,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   function changeActiveView(nextView: ListeningDeskView): void {
     if (activeView() === nextView) return
     disposeAudio()
-    closeActionMenus()
     setActiveView(nextView)
   }
 
@@ -822,8 +828,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     trackEvent('voice_history_open')
     uninstallAudioUnlock = installAudioUnlock(() => listeningContext)
     window.addEventListener('keydown', togglePlaybackWithSpace, true)
-    document.addEventListener('pointerdown', closeMenusFromOutsidePointer)
-    document.addEventListener('keydown', closeMenusWithEscape)
     const guidedReturn = consumeGuidedPracticeReturn()
     if (guidedReturn === null) {
       void refresh()
@@ -859,8 +863,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   })
   onCleanup(() => {
     window.removeEventListener('keydown', togglePlaybackWithSpace, true)
-    document.removeEventListener('pointerdown', closeMenusFromOutsidePointer)
-    document.removeEventListener('keydown', closeMenusWithEscape)
     uninstallAudioUnlock()
     disposeAudio()
     disposeListeningContext()
@@ -918,37 +920,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
       take,
       activeView() !== 'takes' && (thread?.comparisonTakes.length ?? 0) >= 2,
     )
-  }
-
-  function closeActionMenus(): void {
-    setThreadMenuOpen(false)
-    setTakeMenuId(null)
-  }
-
-  function closeMenusFromOutsidePointer(event: PointerEvent): void {
-    const target = event.target
-    if (
-      target instanceof Element &&
-      target.closest('[data-voice-action-menu]') !== null
-    ) {
-      return
-    }
-    closeActionMenus()
-  }
-
-  function closeMenusWithEscape(event: KeyboardEvent): void {
-    if (
-      event.key !== 'Escape' ||
-      (!threadMenuOpen() && takeMenuId() === null)
-    ) {
-      return
-    }
-    const trigger = document.querySelector<HTMLButtonElement>(
-      '[data-voice-action-menu] > button[aria-expanded="true"]',
-    )
-    event.preventDefault()
-    closeActionMenus()
-    queueMicrotask(() => trigger?.focus())
   }
 
   function applyPlaybackSeek(
@@ -1200,28 +1171,44 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     }
   }
 
-  async function exportTake(
+  function takeExportKey(
     take: VoiceTakeRecord,
     threadTitle: string,
     ordinal: number,
-  ): Promise<void> {
-    if (exportingTakeId() !== null) return
+  ): string {
+    return `${take.id}\n${threadTitle}\n${ordinal}\n${take.mimeType}`
+  }
+
+  function prepareTakeExport(
+    take: VoiceTakeRecord,
+    threadTitle: string,
+    ordinal: number,
+  ): void {
+    const key = takeExportKey(take, threadTitle, ordinal)
+    if (preparedExport()?.key === key || exportingTakeId() !== null) return
+    const generation = ++exportPreparationGeneration
+    setPreparedExport(null)
+    setFailedExportId(null)
     setExportingTakeId(take.id)
     setPlayerError(null)
-    try {
-      setExportNotice('Preparing a compatible audio file…')
+    setExportNotice('Preparing a compatible audio file…')
+    void (async () => {
       let blob: Blob | null
       try {
         blob = await getVoiceTakeBlob(take.id)
       } catch {
+        if (generation !== exportPreparationGeneration) return
         setExportNotice(null)
+        setFailedExportId(take.id)
         setPlayerError(
           'This take could not be opened from local storage and cannot be exported right now.',
         )
         return
       }
       if (blob === null) {
+        if (generation !== exportPreparationGeneration) return
         setExportNotice(null)
+        setFailedExportId(take.id)
         setPlayerError('This take’s audio is missing and cannot be exported.')
         return
       }
@@ -1231,21 +1218,128 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
           ordinal,
           mimeType: take.mimeType,
         })
-        downloadPreparedVoiceTake(prepared.file)
-        setTakeMenuId(null)
+        if (generation !== exportPreparationGeneration) return
+        setPreparedExport({ key, takeId: take.id, prepared })
+        setExportNotice(null)
+      } catch {
+        if (generation !== exportPreparationGeneration) return
+        setExportNotice(null)
+        setFailedExportId(take.id)
+        setPlayerError('This take could not be prepared for export right now.')
+      }
+    })().finally(() => {
+      if (generation === exportPreparationGeneration) {
+        setExportingTakeId(null)
+      }
+    })
+  }
+
+  function deliverTakeExport(
+    take: VoiceTakeRecord,
+    threadTitle: string,
+    ordinal: number,
+  ): void {
+    const key = takeExportKey(take, threadTitle, ordinal)
+    const current = preparedExport()
+    if (current?.key !== key) {
+      prepareTakeExport(take, threadTitle, ordinal)
+      return
+    }
+
+    setExportingTakeId(take.id)
+    setPlayerError(null)
+    setExportNotice(null)
+    let delivery: ReturnType<typeof deliverPreparedVoiceTake>
+    try {
+      // This call must stay in the menu item's tap handler. iOS expires its
+      // native-share permission if preparation is awaited before share().
+      delivery = deliverPreparedVoiceTake(current.prepared.file)
+    } catch {
+      setExportingTakeId(null)
+      setPlayerError('This take could not be saved or shared right now.')
+      return
+    }
+    void delivery
+      .then((outcome) => {
+        if (outcome === 'dismissed') return
+        // Export actions are single-flight, so this is still the prepared file
+        // selected synchronously above. Avoid reading reactive state after the
+        // async share/download boundary.
+        setPreparedExport(null)
         setExportNotice(
-          prepared.usedOriginalWebmFallback
-            ? 'This browser could not turn this older WebM take into a WAV file. The original WebM recording was downloaded instead; some iPhone apps may list it as video.'
+          current.prepared.usedOriginalWebmFallback
+            ? 'This browser could not turn this older WebM take into a WAV file. The original WebM recording was saved instead; some iPhone apps may list it as video.'
             : null,
         )
         trackEvent('voice_export')
-      } catch {
-        setExportNotice(null)
-        setPlayerError('This take could not be prepared for export right now.')
-      }
-    } finally {
-      if (exportingTakeId() === take.id) setExportingTakeId(null)
+      })
+      .catch(() => {
+        setPlayerError('This take could not be saved or shared right now.')
+      })
+      .finally(() => {
+        setExportingTakeId(null)
+      })
+  }
+
+  function threadActionItems(thread: VoiceThread): OverflowMenuItem[] {
+    const items: OverflowMenuItem[] = []
+    if (thread.source === 'freeform') {
+      items.push({
+        key: 'rename-thread',
+        label: 'Rename thread',
+        onSelect: () => startRenaming(thread),
+      })
     }
+    items.push({
+      key: 'delete-thread',
+      label: 'Delete this thread',
+      destructive: true,
+      onSelect: () => removeThread(thread),
+    })
+    return items
+  }
+
+  function takeActionItems(
+    take: VoiceTakeRecord,
+    thread: VoiceThread,
+    ordinal: number,
+  ): OverflowMenuItem[] {
+    const key = takeExportKey(take, thread.title, ordinal)
+    const prepared = preparedExport()
+    const ready = prepared?.key === key
+    const preparing = exportingTakeId() === take.id && !ready
+    const nativeShare =
+      prepared?.key === key && canSharePreparedVoiceTake(prepared.prepared.file)
+    return [
+      {
+        key: 'favorite-take',
+        label: take.favorite ? 'Remove favorite' : 'Mark favorite',
+        onSelect: () => toggleFavorite(take),
+      },
+      {
+        key: 'export-take',
+        label: preparing
+          ? 'Preparing audio…'
+          : ready
+            ? nativeShare
+              ? 'Save or share audio'
+              : 'Download audio'
+            : failedExportId() === take.id
+              ? 'Prepare audio again'
+              : 'Prepare audio',
+        disabled: exportingTakeId() !== null,
+        onSelect: () =>
+          ready
+            ? deliverTakeExport(take, thread.title, ordinal)
+            : prepareTakeExport(take, thread.title, ordinal),
+      },
+      {
+        key: 'delete-take',
+        label: 'Delete',
+        destructive: true,
+        onSelect: () => removeTake(take),
+      },
+    ]
   }
 
   function removeTake(take: VoiceTakeRecord): void {
@@ -1478,7 +1572,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   function openNewRecorder(): void {
     disposeAudio()
-    closeActionMenus()
     setActiveView('compare')
     recorderReturnFocus =
       document.activeElement instanceof HTMLElement
@@ -1493,7 +1586,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   function openThreadRecorder(thread: VoiceThread): void {
     disposeAudio()
-    closeActionMenus()
     setActiveView('compare')
     recorderReturnFocus =
       document.activeElement instanceof HTMLElement
@@ -1551,7 +1643,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   function openGuidedCheck(): void {
     disposeAudio()
-    closeActionMenus()
     guidedReturnTarget = 'launch'
     setRecorderTarget(null)
     setGuidedProtocol(null)
@@ -1562,7 +1653,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   function openSavedGuidedRetake(focus: SavedGuidedFocus): void {
     disposeAudio()
-    closeActionMenus()
     guidedReturnTarget = 'saved-focus'
     setRecorderTarget(null)
     setGuidedProtocol(focus.context.reading.recommendation.retake)
@@ -1573,7 +1663,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   function startSavedGuidedPractice(focus: SavedGuidedFocus): void {
     disposeAudio()
-    closeActionMenus()
     const recommendation = focus.context.reading.recommendation
     const guidedPractice =
       guidedPracticeLaunchFromRecommendation(recommendation)
@@ -1686,7 +1775,11 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     setRenameTitle('')
     setRenameError(null)
     setRenameSaving(false)
-    queueMicrotask(() => threadMenuButton?.focus())
+    queueMicrotask(() =>
+      document
+        .querySelector<HTMLButtonElement>('button[aria-label="Thread actions"]')
+        ?.focus(),
+    )
   }
 
   function submitRename(event: SubmitEvent): void {
@@ -1723,7 +1816,6 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   function commitThreadSelection(key: string): void {
     disposeAudio()
-    closeActionMenus()
     setRenamingKey(null)
     setRenameError(null)
     comparisonStarted = false
@@ -1803,13 +1895,11 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
   function selectAllTake(id: string): void {
     if (allTakesSelectedId() === id) return
     if (activeId() !== null) disposeAudio()
-    closeActionMenus()
     setAllTakesSelectedId(id)
   }
 
   function returnToThreadList(): void {
     disposeAudio()
-    closeActionMenus()
     setRenamingKey(null)
     setRenameError(null)
     setMobileDetailOpen(false)
@@ -2099,9 +2189,19 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                     <span>
                                       {threadSourceLabel(thread.source)} thread
                                     </span>
-                                    <h2 ref={threadDetailHeading} tabindex="-1">
-                                      {thread.title}
-                                    </h2>
+                                    <div class={styles.threadTitleRow}>
+                                      <h2
+                                        ref={threadDetailHeading}
+                                        tabindex="-1"
+                                      >
+                                        {thread.title}
+                                      </h2>
+                                      <OverflowMenu
+                                        label="Thread actions"
+                                        items={threadActionItems(thread)}
+                                        triggerClass={styles.moreButton}
+                                      />
+                                    </div>
                                     <p>
                                       {formatDate(thread.takes[0]!.capturedAt)}{' '}
                                       to{' '}
@@ -2173,8 +2273,8 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                               </Show>
 
                               <Show when={renamingKey() !== thread.key}>
-                                <div class={styles.workspaceActions}>
-                                  <Show when={thread.source === 'freeform'}>
+                                <Show when={thread.source === 'freeform'}>
+                                  <div class={styles.workspaceActions}>
                                     <button
                                       type="button"
                                       class={styles.recordAnother}
@@ -2184,62 +2284,8 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                       <IconMic size={16} />
                                       Record another take
                                     </button>
-                                  </Show>
-                                  <div
-                                    class={styles.actionMenuRoot}
-                                    data-voice-action-menu
-                                  >
-                                    <button
-                                      ref={threadMenuButton}
-                                      type="button"
-                                      class={styles.moreButton}
-                                      aria-label="Thread actions"
-                                      aria-haspopup="menu"
-                                      aria-expanded={threadMenuOpen()}
-                                      aria-controls="voice-thread-actions-menu"
-                                      onClick={() => {
-                                        setTakeMenuId(null)
-                                        setThreadMenuOpen((open) => !open)
-                                      }}
-                                    >
-                                      <MoreVertical size={18} />
-                                    </button>
-                                    <Show when={threadMenuOpen()}>
-                                      <div
-                                        id="voice-thread-actions-menu"
-                                        class={styles.actionMenu}
-                                        role="menu"
-                                        aria-label="Thread actions"
-                                      >
-                                        <Show
-                                          when={thread.source === 'freeform'}
-                                        >
-                                          <button
-                                            type="button"
-                                            role="menuitem"
-                                            onClick={() => {
-                                              setThreadMenuOpen(false)
-                                              startRenaming(thread)
-                                            }}
-                                          >
-                                            Rename thread
-                                          </button>
-                                        </Show>
-                                        <button
-                                          type="button"
-                                          role="menuitem"
-                                          class={styles.destructiveMenuItem}
-                                          onClick={() => {
-                                            setThreadMenuOpen(false)
-                                            removeThread(thread)
-                                          }}
-                                        >
-                                          Delete this thread
-                                        </button>
-                                      </div>
-                                    </Show>
                                   </div>
-                                </div>
+                                </Show>
                               </Show>
                             </div>
 
@@ -2659,92 +2705,24 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                               </small>
                                             </span>
                                           </button>
-                                          <div
-                                            class={styles.takeActionMenu}
-                                            data-voice-action-menu
-                                          >
-                                            <button
-                                              type="button"
-                                              class={styles.moreButton}
-                                              aria-label={`Actions for ${take.title}`}
-                                              aria-haspopup="menu"
-                                              aria-expanded={
-                                                takeMenuId() === take.id
-                                              }
-                                              aria-controls={`voice-take-actions-${take.id}`}
-                                              onClick={() => {
-                                                setThreadMenuOpen(false)
-                                                setTakeMenuId((current) =>
-                                                  current === take.id
-                                                    ? null
-                                                    : take.id,
+                                          <div class={styles.takeActionMenu}>
+                                            <OverflowMenu
+                                              label={`Actions for ${take.title}`}
+                                              items={takeActionItems(
+                                                take,
+                                                thread,
+                                                thread.takes.indexOf(take) + 1,
+                                              )}
+                                              onOpen={() =>
+                                                prepareTakeExport(
+                                                  take,
+                                                  thread.title,
+                                                  thread.takes.indexOf(take) +
+                                                    1,
                                                 )
-                                              }}
-                                            >
-                                              <MoreVertical size={18} />
-                                            </button>
-                                            <Show
-                                              when={takeMenuId() === take.id}
-                                            >
-                                              <div
-                                                id={`voice-take-actions-${take.id}`}
-                                                class={`${styles.actionMenu} ${styles.takeMenu}`}
-                                                role="menu"
-                                                aria-label={`Actions for ${take.title}`}
-                                              >
-                                                <button
-                                                  type="button"
-                                                  role="menuitem"
-                                                  onClick={() => {
-                                                    setTakeMenuId(null)
-                                                    toggleFavorite(take)
-                                                  }}
-                                                >
-                                                  {take.favorite
-                                                    ? 'Remove favorite'
-                                                    : 'Mark favorite'}
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  role="menuitem"
-                                                  disabled={
-                                                    exportingTakeId() !== null
-                                                  }
-                                                  aria-busy={
-                                                    exportingTakeId() ===
-                                                    take.id
-                                                  }
-                                                  onClick={() => {
-                                                    const ordinal =
-                                                      thread.takes.indexOf(
-                                                        take,
-                                                      ) + 1
-                                                    void exportTake(
-                                                      take,
-                                                      thread.title,
-                                                      ordinal,
-                                                    )
-                                                  }}
-                                                >
-                                                  {exportingTakeId() === take.id
-                                                    ? 'Preparing…'
-                                                    : 'Export'}
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  role="menuitem"
-                                                  class={
-                                                    styles.destructiveMenuItem
-                                                  }
-                                                  onClick={() => {
-                                                    setTakeMenuId(null)
-                                                    removeTake(take)
-                                                  }}
-                                                >
-                                                  Delete
-                                                </button>
-                                              </div>
-                                            </Show>
+                                              }
+                                              triggerClass={styles.moreButton}
+                                            />
                                           </div>
                                         </article>
                                       )}

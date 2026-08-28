@@ -8,6 +8,8 @@
 
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
+import type { AudioBufferPlayback } from '@/lib/audio-buffer-playback'
+import { createAudioBufferPlayback } from '@/lib/audio-buffer-playback'
 import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -165,6 +167,29 @@ function createCaptureAudioContext(): AudioContext | null {
   }
 }
 
+/**
+ * Ask WebKit to restore the analysis context without holding mic capture
+ * hostage to that promise. iOS can leave `resume()` pending after its
+ * permission sheet, and exposes the non-standard `interrupted` state as well
+ * as `suspended`; MediaRecorder can still begin while the analyser catches up.
+ */
+function requestCaptureContextResume(context: AudioContext | null): void {
+  if (
+    context === null ||
+    context.state === 'running' ||
+    context.state === 'closed'
+  ) {
+    return
+  }
+  try {
+    void context.resume().catch(() => {
+      // The next user gesture or the app-wide audio unlock can retry analysis.
+    })
+  } catch {
+    // MediaRecorder does not depend on this analysis/playback context.
+  }
+}
+
 /** Stop one contour stream, preserving its raw frames before graph teardown. */
 export function drainPitchStream(stream: F0Stream | null): PitchFrame[] {
   if (stream === null) return []
@@ -185,6 +210,7 @@ export function useDryVoiceCapture(
   const [previewProgress, setPreviewProgress] = createSignal(0)
   const [previewCurrentTimeMs, setPreviewCurrentTimeMs] = createSignal(0)
   const [previewDurationMs, setPreviewDurationMs] = createSignal(0)
+  let previewPlayback: AudioBufferPlayback | null = null
   let previewAudio: HTMLAudioElement | null = null
   const previewProgressLoop = createMediaProgressLoop((progress) => {
     setPreviewProgress(progress)
@@ -248,6 +274,8 @@ export function useDryVoiceCapture(
   }
 
   function clearPreview(): void {
+    previewPlayback?.dispose()
+    previewPlayback = null
     previewProgressLoop.stop()
     previewAudio?.pause()
     previewAudio = null
@@ -259,6 +287,47 @@ export function useDryVoiceCapture(
     setPreviewCurrentTimeMs(0)
     setPreviewDurationMs(0)
     pendingPreviewSeekSec = null
+  }
+
+  function prepareDecodedPreview(
+    context: AudioContext,
+    buffer: AudioBuffer,
+    durationMs: number,
+  ): boolean {
+    if (context.state === 'closed') return false
+    try {
+      let nextPlayback: AudioBufferPlayback | null = null
+      nextPlayback = createAudioBufferPlayback({
+        context,
+        buffer,
+        output: context.destination,
+        onProgress: (progress) => {
+          if (previewPlayback !== nextPlayback) return
+          setPreviewProgress(progress)
+          setPreviewCurrentTimeMs(progress * durationMs)
+        },
+        onPlayingChange: (playing) => {
+          if (previewPlayback === nextPlayback) setPreviewPlaying(playing)
+        },
+        onEnded: () => {
+          if (previewPlayback !== nextPlayback) return
+          setPreviewPlaying(false)
+          setPreviewProgress(1)
+          setPreviewCurrentTimeMs(durationMs)
+        },
+        onError: () => {
+          if (previewPlayback !== nextPlayback) return
+          setMessage(
+            'This browser could not replay the temporary take, but you can still keep the original audio.',
+          )
+        },
+      })
+      previewPlayback = nextPlayback
+      return true
+    } catch {
+      previewPlayback = null
+      return false
+    }
   }
 
   function resetCaptureData(): void {
@@ -285,8 +354,8 @@ export function useDryVoiceCapture(
     disposeContinuityMonitor()
     disposePitchStream()
     releaseMic()
-    closeCaptureContext()
     clearPreview()
+    closeCaptureContext()
     resetCaptureData()
     setMessage(null)
     setState('idle')
@@ -319,8 +388,8 @@ export function useDryVoiceCapture(
     disposeContinuityMonitor()
     disposePitchStream()
     releaseMic()
-    closeCaptureContext()
     clearPreview()
+    closeCaptureContext()
     unregisterMicIndicator()
   })
 
@@ -333,12 +402,19 @@ export function useDryVoiceCapture(
     let nextContinuityMonitor: CaptureContinuityMonitor | null = null
 
     try {
-      if (context?.state === 'suspended') await context.resume()
+      // Call synchronously while the Start gesture is still live, but do not
+      // await: on iOS this promise may remain pending through the permission
+      // sheet even though microphone recording itself is ready to begin.
+      requestCaptureContextResume(context)
       const stream = await micManager.acquire(options.consumerId)
       if (run !== activeRun) {
         releaseMic()
         return false
       }
+      // The permission sheet can move WebKit from running to either suspended
+      // or its non-standard interrupted state. A second best-effort request
+      // restores live F0 frames without delaying MediaRecorder startup.
+      requestCaptureContextResume(context)
       nextContinuityMonitor = monitorCaptureContinuity(stream)
       continuityMonitor = nextContinuityMonitor
 
@@ -508,12 +584,12 @@ export function useDryVoiceCapture(
         closeCaptureContext(context)
         return null
       }
-      closeCaptureContext(context)
       const inspectedDurationMs =
         Number.isFinite(inspection.durationMs) && inspection.durationMs > 0
           ? inspection.durationMs
           : fallbackDurationMs
       if (blob.size === 0 || inspectedDurationMs <= 0) {
+        closeCaptureContext(context)
         setElapsedMs(0)
         setState('idle')
         setMessage(
@@ -521,6 +597,16 @@ export function useDryVoiceCapture(
         )
         return null
       }
+
+      const decodedPreviewReady =
+        context !== null && inspection.decodedBuffer != null
+          ? prepareDecodedPreview(
+              context,
+              inspection.decodedBuffer,
+              inspectedDurationMs,
+            )
+          : false
+      if (!decodedPreviewReady) closeCaptureContext(context)
 
       const frames = takeSegments.flatMap((segment) =>
         segment.frames.map((frame) => ({
@@ -615,6 +701,27 @@ export function useDryVoiceCapture(
   }
 
   function togglePreview(): void {
+    const currentPlayback = previewPlayback
+    if (currentPlayback !== null) {
+      if (currentPlayback.playing) {
+        currentPlayback.pause()
+        return
+      }
+      void currentPlayback
+        .play()
+        .then((started) => {
+          if (previewPlayback !== currentPlayback || started) return
+          setMessage('Playback was blocked. Tap play again to hear the take.')
+        })
+        .catch(() => {
+          if (previewPlayback !== currentPlayback) return
+          setMessage(
+            'This browser could not replay the temporary take, but you can still keep the original audio.',
+          )
+        })
+      return
+    }
+
     const currentAudio = ensurePreviewAudio()
     if (currentAudio === null) return
     if (!currentAudio.paused) {
@@ -649,6 +756,11 @@ export function useDryVoiceCapture(
       0,
       durationSec > 0 ? Math.min(timeSec, durationSec) : timeSec,
     )
+    const currentPlayback = previewPlayback
+    if (currentPlayback !== null && durationSec > 0) {
+      currentPlayback.seek(targetSec / durationSec)
+      return true
+    }
     const currentAudio = ensurePreviewAudio()
     if (currentAudio === null) return false
     try {

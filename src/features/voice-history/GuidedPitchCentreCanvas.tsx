@@ -7,7 +7,7 @@
 // pointer seeking never starts playback.
 
 import type { Component } from 'solid-js'
-import { createEffect, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, For, onCleanup, Show } from 'solid-js'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import styles from './GuidedPitchCentreCanvas.module.css'
@@ -31,6 +31,8 @@ interface GuidedPitchCentreCanvasProps {
   targetMidi: number
   targetSummary?: string
   frame: () => PitchFrame | null
+  /** Live task window, so a complete short landing fills its canvas. */
+  liveWindowMs?: number
   phaseLabel: string
   segments?: readonly GuidedCanvasSegment[]
   durationMs?: number
@@ -46,7 +48,7 @@ interface RenderPoint {
   targetMidi: number
 }
 
-const LIVE_WINDOW_MS = 3_400
+const DEFAULT_LIVE_WINDOW_MS = 3_400
 const CENTS_WINDOW = 300
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -76,9 +78,13 @@ export const GuidedPitchCentreCanvas: Component<
   let livePoints: RenderPoint[] = []
   let lastFrameTime = -1
   let lastTarget: number | null = null
+  let wasActive = false
   const reducedMotion =
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // The parent supplies a compound reactive expression. Resolve that lazy
+  // prop while this component owns the computation, not inside the RAF loop.
+  const isActive = createMemo(() => props.active)
 
   const resultPoints = (): RenderPoint[] =>
     (props.segments ?? []).flatMap((segment) =>
@@ -104,7 +110,7 @@ export const GuidedPitchCentreCanvas: Component<
     }
     return {
       points: livePoints,
-      durationMs: LIVE_WINDOW_MS,
+      durationMs: Math.max(1, props.liveWindowMs ?? DEFAULT_LIVE_WINDOW_MS),
       live: true,
     }
   }
@@ -219,7 +225,7 @@ export const GuidedPitchCentreCanvas: Component<
 
   const loop = (): void => {
     animationFrame = null
-    if (!props.active) return
+    if (!isActive()) return
     if (props.targetMidi !== lastTarget) {
       livePoints = []
       lastFrameTime = -1
@@ -234,7 +240,9 @@ export const GuidedPitchCentreCanvas: Component<
         level: levelFromFrame(frame),
         targetMidi: props.targetMidi,
       })
-      const cutoff = frame.t * 1000 - LIVE_WINDOW_MS
+      const cutoff =
+        frame.t * 1000 -
+        Math.max(1, props.liveWindowMs ?? DEFAULT_LIVE_WINDOW_MS)
       livePoints = livePoints.filter((point) => point.timeMs >= cutoff)
     }
     draw()
@@ -250,7 +258,16 @@ export const GuidedPitchCentreCanvas: Component<
     void props.segments
     void props.durationMs
     void props.selectedEvidenceId
-    if (props.active) {
+    const active = isActive()
+    if (!active && wasActive) {
+      // Each landing owns one trace. Clear as soon as its recorded window
+      // closes so a same-note rehearsal or the next target never inherits it.
+      livePoints = []
+      lastFrameTime = -1
+      lastTarget = null
+    }
+    wasActive = active
+    if (active) {
       stopLoop()
       animationFrame = requestAnimationFrame(loop)
     } else {

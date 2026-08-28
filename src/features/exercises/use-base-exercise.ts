@@ -26,6 +26,13 @@ interface BaseExerciseDeps {
   config: ExerciseConfig | (() => ExerciseConfig)
 }
 
+export interface BaseExerciseStartOptions {
+  /** Optional preparation window after mic acquisition, before capture. */
+  leadInMs?: number
+  /** Remaining preparation time, updated while the lead-in is visible. */
+  onLeadInProgress?: (remainingMs: number) => void
+}
+
 /**
  * Shared exercise infrastructure. Wraps the practice engine's pitch detection
  * and mic lifecycle so individual exercise controllers only define scoring.
@@ -75,6 +82,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let pendingVoiceOutcome: Promise<ExerciseVoiceCaptureOutcome> | null = null
   let voiceCaptureTimer: ReturnType<typeof setTimeout> | undefined
   let voiceCaptureGeneration = 0
+  let cancelLeadInWait: (() => void) | null = null
   let activeVoiceConfig: ExerciseConfig | null = null
   let voiceContourFrames: VoiceAtlasRawFrame[] = []
   let cappedVoiceContourFrames: VoiceAtlasRawFrame[] | null = null
@@ -121,6 +129,41 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   const clearVoiceCaptureTimer = (): void => {
     if (voiceCaptureTimer !== undefined) clearTimeout(voiceCaptureTimer)
     voiceCaptureTimer = undefined
+  }
+
+  const waitForLeadIn = (
+    options: BaseExerciseStartOptions,
+  ): Promise<boolean> => {
+    const durationMs = options.leadInMs ?? 0
+    if (!Number.isFinite(durationMs) || durationMs <= 0) {
+      return Promise.resolve(true)
+    }
+
+    return new Promise((resolve) => {
+      const deadline = performance.now() + durationMs
+      let settled = false
+
+      const settle = (completed: boolean): void => {
+        if (settled) return
+        settled = true
+        clearInterval(ticker)
+        clearTimeout(finishTimer)
+        if (cancelLeadInWait === cancel) cancelLeadInWait = null
+        if (completed) options.onLeadInProgress?.(0)
+        resolve(completed)
+      }
+      const cancel = (): void => settle(false)
+      const update = (): void => {
+        const remainingMs = Math.max(0, deadline - performance.now())
+        options.onLeadInProgress?.(remainingMs)
+        if (remainingMs <= 0) settle(true)
+      }
+
+      const ticker = setInterval(update, 100)
+      const finishTimer = setTimeout(() => settle(true), durationMs)
+      cancelLeadInWait = cancel
+      options.onLeadInProgress?.(durationMs)
+    })
   }
 
   function finishVoiceContourCapture(): VoiceAtlasRawFrame[] {
@@ -260,13 +303,14 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
    * logic on it, or a denied mic / concurrent start would kick off timer
    * chains on an exercise that is still idle.
    */
-  function start(): Promise<boolean> {
+  function start(options: BaseExerciseStartOptions = {}): Promise<boolean> {
     const voiceConfig = resolveConfig()
-    return startWithConfig(voiceConfig)
+    return startWithConfig(voiceConfig, options)
   }
 
   async function startWithConfig(
     voiceConfig: ExerciseConfig,
+    options: BaseExerciseStartOptions,
   ): Promise<boolean> {
     // Guard against concurrent starts — reset() fires the autoStart effect
     // which races with explicit handleStart() calls from click handlers.
@@ -311,6 +355,13 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     // below would otherwise run forever with nothing left to stop it, and we
     // would leave the mic on that reset() just released.
     if (state().status !== 'count-in') {
+      if (!micWasActive) practiceEngine.stopMic()
+      startDepth--
+      return false
+    }
+
+    const leadInCompleted = await waitForLeadIn(options)
+    if (!leadInCompleted || state().status !== 'count-in') {
       if (!micWasActive) practiceEngine.stopMic()
       startDepth--
       return false
@@ -432,6 +483,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       return
     }
     resetDepth++
+    cancelLeadInWait?.()
     running = false
     cancelAnimationFrame(animId)
 
@@ -475,6 +527,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   }
 
   onCleanup(() => {
+    cancelLeadInWait?.()
     running = false
     cancelAnimationFrame(animId)
     // Dispose controller timers (setInterval, rAF loops) to prevent leaks

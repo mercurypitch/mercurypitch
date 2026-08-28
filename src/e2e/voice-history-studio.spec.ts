@@ -542,19 +542,95 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     page.getByRole('button', { name: 'Add reflection', exact: true }),
   ).toBeFocused()
 
+  const mobileThreadHeading = page.getByRole('heading', {
+    name: 'Room and waveform check',
+    exact: true,
+  })
+  const mobileThreadActions = page.getByRole('button', {
+    name: 'Thread actions',
+  })
+  const [mobileHeadingBounds, mobileActionBounds] = await Promise.all([
+    mobileThreadHeading.boundingBox(),
+    mobileThreadActions.boundingBox(),
+  ])
+  expect(mobileHeadingBounds).not.toBeNull()
+  expect(mobileActionBounds).not.toBeNull()
+  expect(mobileActionBounds!.y).toBeLessThan(
+    mobileHeadingBounds!.y + mobileHeadingBounds!.height,
+  )
+  expect(mobileActionBounds!.y + mobileActionBounds!.height).toBeGreaterThan(
+    mobileHeadingBounds!.y,
+  )
+  await mobileThreadActions.click()
+  const mobileThreadMenu = page.getByRole('menu', { name: 'Thread actions' })
+  await expect(mobileThreadMenu).toBeVisible()
+  await expect(
+    page.getByRole('menuitem', { name: 'Delete this thread' }),
+  ).toBeVisible()
+  const mobileMenuBounds = await mobileThreadMenu.boundingBox()
+  expect(mobileMenuBounds).not.toBeNull()
+  expect(mobileMenuBounds!.x).toBeGreaterThanOrEqual(0)
+  expect(mobileMenuBounds!.x + mobileMenuBounds!.width).toBeLessThanOrEqual(390)
+  await page.keyboard.press('Escape')
+  await expect(mobileThreadMenu).not.toBeVisible()
+
   await page.setViewportSize({ width: 1500, height: 1000 })
 
   await page.getByRole('button', { name: 'All takes', exact: false }).click()
   const latestTakeActions = page
     .getByRole('button', { name: 'Actions for Room and waveform check' })
     .last()
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: () => false,
+    })
+  })
   await latestTakeActions.click()
   const downloadPromise = page.waitForEvent('download')
-  await page.getByRole('menuitem', { name: 'Export' }).click()
+  await page.getByRole('menuitem', { name: 'Download audio' }).click()
   const exportedTake = await downloadPromise
-  expect(exportedTake.suggestedFilename()).toMatch(
+  const exportedFilename = exportedTake.suggestedFilename()
+  expect(exportedFilename).toMatch(
     /^MercuryPitch_Room_and_waveform_check_Take_1\.(?:m4a|wav)$/,
   )
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: (data?: ShareData) => (data?.files?.length ?? 0) > 0,
+    })
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: (data?: ShareData) => {
+        const file = data?.files?.[0]
+        ;(
+          window as typeof window & {
+            __sharedVoiceTake?: { name: string; type: string }
+          }
+        ).__sharedVoiceTake =
+          file === undefined ? undefined : { name: file.name, type: file.type }
+        return Promise.resolve()
+      },
+    })
+  })
+  await latestTakeActions.click()
+  await page.getByRole('menuitem', { name: 'Save or share audio' }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window as typeof window & {
+              __sharedVoiceTake?: { name: string; type: string }
+            }
+          ).__sharedVoiceTake,
+      ),
+    )
+    .toEqual({
+      name: exportedFilename,
+      type: exportedFilename.endsWith('.wav') ? 'audio/wav' : 'audio/mp4',
+    })
 
   await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()

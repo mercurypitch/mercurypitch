@@ -3,7 +3,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { downloadPreparedVoiceTake, prepareVoiceTakeExport, voiceTakeExportFilename, voiceTakeExtensionForMime, } from './voice-take-export'
+import { canSharePreparedVoiceTake, deliverPreparedVoiceTake, downloadPreparedVoiceTake, prepareVoiceTakeExport, voiceTakeExportFilename, voiceTakeExtensionForMime, } from './voice-take-export'
 
 const identity = {
   threadTitle: 'Heaven Can Wait',
@@ -167,5 +167,108 @@ describe('downloadPreparedVoiceTake', () => {
     expect(revokeObjectURL).not.toHaveBeenCalled()
     vi.advanceTimersByTime(1000)
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:voice-export')
+  })
+})
+
+describe('prepared voice take delivery', () => {
+  const file = new File(['voice'], 'MercuryPitch_Pitch_Hold_C4_Take_1.m4a', {
+    type: 'audio/mp4',
+  })
+
+  it('checks file-share capability with the exact prepared File', () => {
+    const canShare = vi.fn(() => true)
+    const share = vi.fn(async () => undefined)
+
+    expect(canSharePreparedVoiceTake(file, { canShare, share })).toBe(true)
+    expect(canShare).toHaveBeenCalledWith({ files: [file] })
+  })
+
+  it('treats missing, rejected, or throwing capability checks as unsupported', () => {
+    expect(canSharePreparedVoiceTake(file, null)).toBe(false)
+    expect(
+      canSharePreparedVoiceTake(file, {
+        canShare: () => false,
+        share: async () => undefined,
+      }),
+    ).toBe(false)
+    expect(
+      canSharePreparedVoiceTake(file, {
+        canShare: () => {
+          throw new Error('blocked')
+        },
+        share: async () => undefined,
+      }),
+    ).toBe(false)
+  })
+
+  it('invokes native file share synchronously with the branded audio File', async () => {
+    let resolveShare: (() => void) | undefined
+    const sharePromise = new Promise<void>((resolve) => {
+      resolveShare = resolve
+    })
+    const share = vi.fn<(data?: ShareData) => Promise<void>>(() => sharePromise)
+    const download = vi.fn()
+
+    const delivery = deliverPreparedVoiceTake(file, {
+      shareTarget: { canShare: () => true, share },
+      download,
+    })
+
+    expect(share).toHaveBeenCalledTimes(1)
+    expect(share).toHaveBeenCalledWith({ files: [file] })
+    expect(share.mock.calls[0]?.[0]?.files?.[0]?.name).toBe(
+      'MercuryPitch_Pitch_Hold_C4_Take_1.m4a',
+    )
+    expect(share.mock.calls[0]?.[0]?.files?.[0]?.type).toBe('audio/mp4')
+    expect(download).not.toHaveBeenCalled()
+
+    resolveShare!()
+    await expect(delivery).resolves.toBe('shared')
+    expect(download).not.toHaveBeenCalled()
+  })
+
+  it('treats closing the native share sheet as dismissal without downloading', async () => {
+    const download = vi.fn()
+    const delivery = deliverPreparedVoiceTake(file, {
+      shareTarget: {
+        canShare: () => true,
+        share: () =>
+          Promise.reject(new DOMException('User cancelled', 'AbortError')),
+      },
+      download,
+    })
+
+    await expect(delivery).resolves.toBe('dismissed')
+    expect(download).not.toHaveBeenCalled()
+  })
+
+  it('retains the existing download for browsers without file sharing', async () => {
+    const share = vi.fn(async () => undefined)
+    const download = vi.fn()
+
+    const delivery = deliverPreparedVoiceTake(file, {
+      shareTarget: { canShare: () => false, share },
+      download,
+    })
+
+    expect(download).toHaveBeenCalledTimes(1)
+    expect(download).toHaveBeenCalledWith(file)
+    expect(share).not.toHaveBeenCalled()
+    await expect(delivery).resolves.toBe('downloaded')
+  })
+
+  it('falls back to download when native sharing fails unexpectedly', async () => {
+    const download = vi.fn()
+    const delivery = deliverPreparedVoiceTake(file, {
+      shareTarget: {
+        canShare: () => true,
+        share: () =>
+          Promise.reject(new DOMException('Blocked', 'NotAllowedError')),
+      },
+      download,
+    })
+
+    await expect(delivery).resolves.toBe('downloaded')
+    expect(download).toHaveBeenCalledWith(file)
   })
 })

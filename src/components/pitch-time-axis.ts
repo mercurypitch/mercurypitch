@@ -42,6 +42,61 @@ export interface TimeTick {
   label: string
 }
 
+export interface PitchTimelineGeometry {
+  /** X coordinate where the newest sample and the "now" tick land. */
+  rightEdge: number
+  /** Usable width between the left plot margin and `rightEdge`. */
+  axisWidth: number
+}
+
+/**
+ * Horizontal plot geometry for the live pitch timeline.
+ *
+ * Sequence drills reserve the right side for their upcoming-note ladder.
+ * A single-target drill has nothing to preview, so its newest sample belongs
+ * at the normal right plot margin instead of stopping halfway across.
+ */
+export function pitchTimelineGeometry(
+  canvasWidth: number,
+  reservesPreviewLane: boolean,
+  marginPx = 32,
+  previewPlayheadFraction = 0.45,
+): PitchTimelineGeometry {
+  const rightEdge = reservesPreviewLane
+    ? canvasWidth * previewPlayheadFraction
+    : canvasWidth - marginPx
+  return {
+    rightEdge,
+    axisWidth: Math.max(0, rightEdge - marginPx),
+  }
+}
+
+/** Map one sample onto the scrolling timeline's horizontal run window. */
+export function pitchTimelineSampleX(
+  sampleTime: number,
+  nowTime: number,
+  canvasWidth: number,
+  windowSeconds: number,
+  reservesPreviewLane: boolean,
+  marginPx = 32,
+  previewPlayheadFraction = 0.45,
+): number {
+  const geometry = pitchTimelineGeometry(
+    canvasWidth,
+    reservesPreviewLane,
+    marginPx,
+    previewPlayheadFraction,
+  )
+  if (windowSeconds <= 0) return marginPx
+  const windowStart = nowTime - windowSeconds
+  const pct = Math.max(
+    0,
+    Math.min(1, (sampleTime - windowStart) / windowSeconds),
+  )
+  const x = marginPx + pct * geometry.axisWidth
+  return Number.isFinite(x) ? x : marginPx
+}
+
 /** Format a relative time-axis label — short and bounded ("now", "2s", "10s")
  *  instead of an ever-growing absolute clock that needs three digits and jams
  *  on a phone. */

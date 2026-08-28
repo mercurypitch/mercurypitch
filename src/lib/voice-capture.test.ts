@@ -256,12 +256,13 @@ describe('inspectVoiceTake', () => {
       new Float32Array([0.1, -0.2]),
       new Float32Array([0.4, -0.998]),
     ]
+    const decodedBuffer = {
+      duration: 1,
+      numberOfChannels: channels.length,
+      getChannelData: (channel: number) => channels[channel]!,
+    } as unknown as AudioBuffer
     const audioContext = {
-      decodeAudioData: vi.fn(async () => ({
-        duration: 1,
-        numberOfChannels: channels.length,
-        getChannelData: (channel: number) => channels[channel]!,
-      })),
+      decodeAudioData: vi.fn(async () => decodedBuffer),
     } as unknown as AudioContext
     const blob = {
       arrayBuffer: vi.fn(async () => new ArrayBuffer(8)),
@@ -271,5 +272,6 @@ describe('inspectVoiceTake', () => {
 
     expect(inspection.durationMs).toBe(1000)
     expect(inspection.peakAmplitude).toBeCloseTo(0.998)
+    expect(inspection.decodedBuffer).toBe(decodedBuffer)
   })
 })

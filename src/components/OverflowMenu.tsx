@@ -16,7 +16,7 @@
 // go: it either runs off the edge or covers the thing it belongs to.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, Index, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { isNarrow } from '@/lib/use-viewport'
 import styles from './OverflowMenu.module.css'
@@ -45,6 +45,8 @@ export interface OverflowMenuProps {
   label: string
   items: OverflowMenuItem[]
   disabled?: boolean
+  /** Starts any work the rows need before the singer chooses one. */
+  onOpen?: () => void
   /** Extra class on the trigger, so a host can size it to its own row. */
   triggerClass?: string
   testId?: string
@@ -116,6 +118,12 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
   const close = (restoreFocus = true): void => {
     setOpen(false)
     if (restoreFocus) trigger?.focus()
+  }
+
+  const openMenu = (): void => {
+    if (open()) return
+    props.onOpen?.()
+    setOpen(true)
   }
 
   createEffect(() => {
@@ -195,12 +203,13 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
         disabled={props.disabled}
         onClick={(e) => {
           e.stopPropagation()
-          setOpen((v) => !v)
+          if (open()) close(false)
+          else openMenu()
         }}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown') {
             e.preventDefault()
-            setOpen(true)
+            openMenu()
           }
         }}
       >
@@ -240,12 +249,12 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
                 : { left: `${pos().x}px`, top: `${pos().y}px` }
             }
           >
-            <For each={rows()}>
+            <Index each={rows()}>
               {(item, index) => (
                 <>
                   <Show
                     when={
-                      firstDestructive() > 0 && index() === firstDestructive()
+                      firstDestructive() > 0 && index === firstDestructive()
                     }
                   >
                     <div class={styles.divider} role="separator" />
@@ -253,25 +262,27 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
                   <button
                     type="button"
                     role="menuitem"
-                    data-testid={`overflow-${item.key}`}
+                    data-testid={`overflow-${item().key}`}
                     class={styles.row}
-                    classList={{ [styles.rowDestructive!]: item.destructive }}
-                    disabled={item.disabled}
-                    onClick={() => pick(item)}
+                    classList={{
+                      [styles.rowDestructive!]: item().destructive,
+                    }}
+                    disabled={item().disabled}
+                    onClick={() => pick(item())}
                   >
-                    <Show when={item.icon}>
+                    <Show when={item().icon}>
                       {(icon) => <span class={styles.rowIcon}>{icon()()}</span>}
                     </Show>
                     <span class={styles.rowText}>
-                      {item.label}
-                      <Show when={item.note}>
+                      {item().label}
+                      <Show when={item().note}>
                         {(note) => <span class={styles.rowNote}>{note()}</span>}
                       </Show>
                     </span>
                   </button>
                 </>
               )}
-            </For>
+            </Index>
           </div>
         </Portal>
       </Show>

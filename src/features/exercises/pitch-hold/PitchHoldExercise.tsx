@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconLock } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
@@ -16,6 +16,8 @@ import type { GuidedPracticeLaunchConfig } from '../types'
 import { EXERCISE_PITCH_HOLD } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchHoldController } from './use-pitch-hold-controller'
+
+const PITCH_HOLD_LEAD_IN_MS = 3_000
 
 interface PitchHoldExerciseProps {
   audioEngine: AudioEngine
@@ -73,6 +75,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
         ? requestedTarget
         : getDefaultNote(vocalRangePreset())),
   )
+  const [leadInRemainingMs, setLeadInRemainingMs] = createSignal<number | null>(
+    null,
+  )
   const audioEngine = untrack(() => props.audioEngine)
 
   const practiceEngine = untrack(() => props.practiceEngine)
@@ -92,8 +97,18 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   })
 
   const handleStart = async () => {
+    setLeadInRemainingMs(null)
     controller.setTarget(noteToMidi(untrack(() => targetNote())))
-    if (!(await base.start())) return
+    if (
+      !(await base.start({
+        leadInMs: PITCH_HOLD_LEAD_IN_MS,
+        onLeadInProgress: setLeadInRemainingMs,
+      }))
+    ) {
+      setLeadInRemainingMs(null)
+      return
+    }
+    setLeadInRemainingMs(null)
     controller.startLoop()
   }
 
@@ -186,6 +201,37 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => noteToMidi(targetNote()),
       }}
+      countInContent={
+        <div
+          class="pitch-hold-count-in"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span class="pitch-hold-count-in-kicker">Before the hold</span>
+          <Show
+            when={leadInRemainingMs() !== null}
+            fallback={
+              <>
+                <strong>Preparing microphone</strong>
+                <small>The count begins when your microphone is ready.</small>
+              </>
+            }
+          >
+            <span class="pitch-hold-count-in-number">
+              {Math.max(1, Math.ceil((leadInRemainingMs() ?? 0) / 1000))}
+            </span>
+            <strong>
+              {(leadInRemainingMs() ?? 0) > 2_000
+                ? 'Take a calm breath'
+                : (leadInRemainingMs() ?? 0) > 1_000
+                  ? `Find ${targetNote()}`
+                  : 'Ready to hold'}
+            </strong>
+            <small>Recording starts after the count.</small>
+          </Show>
+        </div>
+      }
       activeContent={
         <>
           <div class="pitch-hold-header">

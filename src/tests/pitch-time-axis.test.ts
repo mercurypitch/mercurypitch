@@ -1,11 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { chooseLabelStep, formatSecondsAgo, noteAxisSemitoneStep, timeAxisTicks, } from '@/components/pitch-time-axis'
+import { chooseLabelStep, formatSecondsAgo, noteAxisSemitoneStep, pitchTimelineGeometry, pitchTimelineSampleX, timeAxisTicks, } from '@/components/pitch-time-axis'
 
-// The pitch tracker squeezes its timeline into ~45% of the canvas width and
-// insets both axes by a 32px MARGIN, so the usable time axis is roughly
-// `canvasWidth * 0.45 - 32` px. Model that so the cases below reflect how the
-// labels actually land on real devices.
+// Sequence drills squeeze their timeline into ~45% of the canvas width to
+// leave a preview lane. Model that case here; held-note drills use the full
+// plot width and are covered separately below.
 const timeAxisWidth = (canvasW: number) => canvasW * 0.45 - 32
+
+describe('pitch timeline geometry', () => {
+  it('uses the full plot width when there is no future target', () => {
+    const geometry = pitchTimelineGeometry(400, false)
+
+    expect(geometry).toEqual({ rightEdge: 368, axisWidth: 336 })
+    expect(pitchTimelineSampleX(5, 5, 400, 10, false)).toBe(368)
+  })
+
+  it('reserves the preview lane for sequence-capable drills', () => {
+    const geometry = pitchTimelineGeometry(400, true)
+
+    expect(geometry).toEqual({ rightEdge: 180, axisWidth: 148 })
+    expect(pitchTimelineSampleX(5, 5, 400, 10, true)).toBe(180)
+  })
+})
 
 describe('chooseLabelStep', () => {
   it('keeps the finest step when there is room', () => {

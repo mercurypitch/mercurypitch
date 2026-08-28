@@ -5,6 +5,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPitchCentrePilotProtocol } from '@/lib/guided-voice'
+import { playReferenceTone } from '@/lib/reference-tone'
 import type { GuidedCloseRequester } from './GuidedVoiceCheck'
 import { GuidedVoiceCheck } from './GuidedVoiceCheck'
 import type { DryVoiceCaptureController, DryVoiceCaptureResult, DryVoiceCaptureState, } from './useDryVoiceCapture'
@@ -155,6 +156,165 @@ describe('GuidedVoiceCheck', () => {
     await waitFor(() => expect(guidance).toHaveFocus())
   })
 
+  it('keeps the rehearsal recording paused through the breathe count-in', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'AudioContext',
+      class FakeAudioContext {
+        readonly state: AudioContextState = 'running'
+        readonly resume = vi.fn(async () => undefined)
+        readonly close = vi.fn(async () => undefined)
+      },
+    )
+
+    const controller = captureController()
+    controller.start = vi.fn(async () => true)
+    controller.resumeSegment = vi.fn(async () => true)
+    controller.pauseSegment = vi.fn(async () => ({
+      index: 0,
+      audioOffsetMs: 0,
+      durationMs: 1_800,
+      frames: [],
+    }))
+    useDryVoiceCaptureMock.mockReturnValue(controller)
+    render(() => <GuidedVoiceCheck onClose={vi.fn()} onKept={vi.fn()} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Check comfort and begin' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, continue' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try one landing' }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Breathe — your turn in 2 seconds',
+    )
+    expect(controller.resumeSegment).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Breathe — your turn in 1 second',
+    )
+    expect(controller.resumeSegment).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(999)
+    expect(controller.resumeSegment).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(controller.resumeSegment).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Recording now')).toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(1_800)
+    expect(controller.pauseSegment).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/Rehearsal complete\./)).toBeInTheDocument()
+  })
+
+  it('cancels the pending breathe count-in when rehearsal is closed', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'AudioContext',
+      class FakeAudioContext {
+        readonly state: AudioContextState = 'running'
+        readonly resume = vi.fn(async () => undefined)
+        readonly close = vi.fn(async () => undefined)
+      },
+    )
+
+    const controller = captureController()
+    controller.start = vi.fn(async () => true)
+    controller.resumeSegment = vi.fn(async () => true)
+    useDryVoiceCaptureMock.mockReturnValue(controller)
+    const onClose = vi.fn()
+    render(() => <GuidedVoiceCheck onClose={onClose} onKept={vi.fn()} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Check comfort and begin' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, continue' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try one landing' }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Breathe — your turn in 2 seconds',
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Close guided voice check' }),
+    )
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    expect(controller.resumeSegment).not.toHaveBeenCalled()
+    expect(controller.discard).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the next measured landing behind the full rest and breathe cadence', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'AudioContext',
+      class FakeAudioContext {
+        readonly state: AudioContextState = 'running'
+        readonly resume = vi.fn(async () => undefined)
+        readonly close = vi.fn(async () => undefined)
+      },
+    )
+
+    const controller = captureController()
+    controller.start = vi.fn(async () => true)
+    controller.resumeSegment = vi.fn(async () => true)
+    controller.pauseSegment = vi.fn(async () => ({
+      index: 0,
+      audioOffsetMs: 0,
+      durationMs: 1_900,
+      frames: [],
+    }))
+    useDryVoiceCaptureMock.mockReturnValue(controller)
+    render(() => <GuidedVoiceCheck onClose={vi.fn()} onKept={vi.fn()} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Check comfort and begin' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, continue' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try one landing' }))
+    await vi.advanceTimersByTimeAsync(3_800)
+
+    vi.mocked(playReferenceTone).mockClear()
+    vi.mocked(controller.resumeSegment).mockClear()
+    vi.mocked(controller.pauseSegment).mockClear()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Start three landings' }),
+    )
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(controller.resumeSegment).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(1_900)
+    expect(controller.pauseSegment).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Rest — next note in 2 seconds',
+    )
+
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Rest — next note in 1 second',
+    )
+
+    await vi.advanceTimersByTimeAsync(999)
+    expect(playReferenceTone).toHaveBeenCalledTimes(1)
+    expect(controller.resumeSegment).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(playReferenceTone).toHaveBeenCalledTimes(2)
+    expect(controller.resumeSegment).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Breathe — your turn in 2 seconds',
+    )
+
+    await vi.advanceTimersByTimeAsync(1_999)
+    expect(controller.resumeSegment).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(controller.resumeSegment).toHaveBeenCalledTimes(2)
+  })
+
   it('locks the complete task when returning for a matched retake', () => {
     const initialProtocol = createPitchCentrePilotProtocol({
       comfortableRangeMidiCents: [5_700, 7_300],
@@ -177,7 +337,7 @@ describe('GuidedVoiceCheck', () => {
     expect(screen.getByText('Matched route locked')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'The notes and timing stay identical so this take remains a fair comparison.',
+        'The same notes and recorded 1.8-second windows keep this take a fair comparison.',
       ),
     ).toBeInTheDocument()
     expect(

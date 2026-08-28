@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import { noteAxisSemitoneStep, timeAxisTicks, } from '@/components/pitch-time-axis'
+import { noteAxisSemitoneStep, pitchTimelineGeometry, pitchTimelineSampleX, timeAxisTicks, } from '@/components/pitch-time-axis'
 import { renderScale } from '@/lib/device-tier'
 import type { ScaleDegree } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
@@ -179,17 +179,17 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     sampleTime: number,
     nowTime: number,
     w: number,
+    reservesPreviewLane: boolean,
   ): number => {
-    const window = visibleWindow()
-    const windowStart = nowTime - window
-    // Pin the latest sample at PLAYHEAD_FRACTION of canvas width so the
-    // timeline slides naturally — the dot never reaches the right-side labels,
-    // and what is left over is where the upcoming-target ladder lives.
-    const targetRight = w * PLAYHEAD_FRACTION
-    const effectiveWidth = targetRight - MARGIN
-    const pct = Math.max(0, Math.min(1, (sampleTime - windowStart) / window))
-    const x = MARGIN + pct * effectiveWidth
-    return Number.isFinite(x) ? x : MARGIN
+    return pitchTimelineSampleX(
+      sampleTime,
+      nowTime,
+      w,
+      visibleWindow(),
+      reservesPreviewLane,
+      MARGIN,
+      PLAYHEAD_FRACTION,
+    )
   }
 
   /** The upcoming ladder as frequencies, capped and sanitised. */
@@ -214,6 +214,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       // Compute dynamic log range for zoom / auto-zoom
       const samples = props.samples()
       const upcoming = upcomingFreqs()
+      // Presence of the accessor identifies a sequence-capable drill. Keep
+      // its preview lane stable even after the final upcoming item is
+      // consumed; otherwise the live trace jumps from 45% to full width on
+      // the last note. Single-target drills omit the accessor entirely.
+      const reservesPreviewLane = props.upcomingTargets !== undefined
       let effLogMin = LOG_MIN
       let effLogMax = LOG_MAX
 
@@ -286,11 +291,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       drawYAxisLabels(w, h, effLogMin, effLogRange)
       drawScaleGridLines(w, h, effLogMin, effLogRange)
-      drawTargetLine(w, h, effLogMin, effLogRange, upcoming.length > 0)
+      drawTargetLine(w, h, effLogMin, effLogRange, reservesPreviewLane)
       drawUpcomingTargets(w, h, effLogMin, effLogRange, upcoming)
-      drawMovingTarget(w, h, effLogMin, effLogRange)
-      drawTimeLabels(w, h)
-      drawSamples(w, h, effLogMin, effLogRange)
+      drawMovingTarget(w, h, effLogMin, effLogRange, reservesPreviewLane)
+      drawTimeLabels(w, h, reservesPreviewLane)
+      drawSamples(w, h, effLogMin, effLogRange, reservesPreviewLane)
 
       animFrameId = requestAnimationFrame(draw)
     }
@@ -560,6 +565,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     h: number,
     logMin: number,
     logRange: number,
+    reservesPreviewLane: boolean,
   ) => {
     if (!ctx) return
     const freq = props.movingTarget?.()
@@ -592,7 +598,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     ctx.beginPath()
     let started = false
     for (const g of guideTrail) {
-      const gx = sampleToX(g.time, nowTime, w)
+      const gx = sampleToX(g.time, nowTime, w, reservesPreviewLane)
       const gy = freqToY(g.freq, h, logMin, logRange)
       if (!started) {
         ctx.moveTo(gx, gy)
@@ -605,7 +611,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     // Glowing guide dot at the head.
     const y = freqToY(freq, h, logMin, logRange)
-    const x = sampleToX(nowTime, nowTime, w)
+    const x = sampleToX(nowTime, nowTime, w, reservesPreviewLane)
     if (y < 4 || y > h - 4 || x < MARGIN || x > w - MARGIN) return
     const grad = ctx.createRadialGradient(x, y, 0, x, y, GLOW_RADIUS)
     grad.addColorStop(0, 'rgba(219,109,40,0.85)')
@@ -620,7 +626,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     ctx.fill()
   }
 
-  const drawTimeLabels = (w: number, h: number) => {
+  const drawTimeLabels = (
+    w: number,
+    h: number,
+    reservesPreviewLane: boolean,
+  ) => {
     if (!ctx) return
 
     const samples = props.samples()
@@ -628,8 +638,8 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     const window = visibleWindow()
     // Match the sample-to-x mapping so ticks align with the dots.
-    const targetRight = w * PLAYHEAD_FRACTION
-    const effectiveWidth = targetRight - MARGIN
+    const { rightEdge: targetRight, axisWidth: effectiveWidth } =
+      pitchTimelineGeometry(w, reservesPreviewLane, MARGIN, PLAYHEAD_FRACTION)
     if (effectiveWidth <= 0) return
     const pxPerSec = effectiveWidth / window
 
@@ -663,6 +673,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     h: number,
     logMin: number,
     logRange: number,
+    reservesPreviewLane: boolean,
   ) => {
     if (!ctx) return
 
@@ -676,7 +687,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     for (let i = 0; i < samples.length; i++) {
       const s = samples[i]!
-      const x = sampleToX(s.time, nowTime, w)
+      const x = sampleToX(s.time, nowTime, w, reservesPreviewLane)
 
       // Skip dots outside visible area
       if (x < -10 || x > w + 10) continue
