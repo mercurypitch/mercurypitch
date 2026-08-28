@@ -16,6 +16,7 @@ import { STACK_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import { STACK_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
+import { playToneFor } from './ear-sound'
 import { GearTrain } from './GearTrain'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { IdentificationTrial } from './use-identification-controller'
@@ -31,29 +32,20 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
     const rootFreq = midiToFreq(root)
     const intervals = [...item.payload]
 
+    // Waited out, so the pads arm once the chord has rung and the
+    // broken replay sounds one note at a time instead of all at once.
     const playBlock = (ms: number) =>
-      audioEngine.playTone(
-        rootFreq,
-        ms,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        intervals,
-      )
+      playToneFor(audioEngine, rootFreq, ms, intervals)
 
     return {
       expectedId: item.itemId,
       play: () => playBlock(STACK_TIMING.chordMs),
       replayOnWrong: async () => {
         // Broken, then re-stacked.
-        await audioEngine.playTone(rootFreq, STACK_TIMING.brokenNoteMs)
+        await playToneFor(audioEngine, rootFreq, STACK_TIMING.brokenNoteMs)
         for (const semis of intervals) {
-          await audioEngine.playTone(
+          await playToneFor(
+            audioEngine,
             midiToFreq(root + semis),
             STACK_TIMING.brokenNoteMs,
           )
