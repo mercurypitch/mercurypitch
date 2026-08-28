@@ -33,6 +33,35 @@ the original scaffold and docs.
   are `RECORD_AUDIO` (Android) and `NSMicrophoneUsageDescription` (iOS); the
   mic is acquired only while a game is open and released on leave.
 
+## Art pipeline
+
+- `public/games/journey/`: three parallax layers (far starfield, screen-blended
+  nebula and crystal-dust), two material tiles (crystal, cosmic basalt), and
+  four Merc pose sprites. Painterly-cosmos direction, brand palette (navy
+  `#05060b`/`#0d1117`, signal blue `#58a6ff`, violet `#bc8cff`, teal
+  `#2dd4bf`).
+- Backdrops/tiles are generated with the `ask-antigravity` Gemini image skill
+  (no Higgsfield credits); prompts live beside the masters in
+  `~/agent-out/beside-cue-games/<date>/*.prompt.txt`.
+- Merc poses are cropped from the canonical **merc-lumen** sheets in
+  `disjoint-colliders/packages/showcase-gallery/assets/characters/merc-lumen/`
+  (idle, listening, celebrate, singing). Fly/fall are not drawn: velocity-based
+  squash-and-stretch, lean, fall wobble and shed mercury beads animate the
+  droplet in code (`art` section of `journey-config.ts`). The listening "o"
+  face doubles as the falling face.
+- Character system direction: more playable characters (the Beside Cue cue
+  creatures among them) later — a character is a sprite set plus accent
+  palette, chosen by the player.
+
+## Synthetic-voice E2E harness
+
+For automated playtests without a microphone, override `getUserMedia` in the
+page with an oscillator routed to a `MediaStreamDestination` — mint a FRESH
+destination per call (a released stream's tracks are stopped by the mic
+manager). Driving `osc.frequency` through the level's semitone offsets plays
+the whole slice; used via Playwright to verify climb, gate burst, bridge,
+wall, glass-crumble fall and both orientations.
+
 ## Design contract
 
 - Games gate nothing and are gated by nothing; BeSideCue Pro stays

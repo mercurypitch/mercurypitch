@@ -84,6 +84,39 @@ export const JOURNEY_CONFIG = {
     /** Pause before the game-over card, ms. */
     cardDelayMs: 700,
   },
+
+  /** Visual dressing — parallax, materials, Merc sprite feel. */
+  art: {
+    /** Horizontal scroll factor per layer (0 = pinned, 1 = world speed). */
+    parallaxFar: 0.1,
+    parallaxMid: 0.28,
+    parallaxNear: 0.55,
+    /** Screen-blend opacity of the nebula / dust layers. */
+    nebulaAlpha: 0.34,
+    dustAlpha: 0.5,
+    /** Platform slab thickness, world units (clamped in px below). */
+    platformUnits: 0.13,
+    platformMinPx: 10,
+    platformMaxPx: 20,
+    /** Texture pattern scale (image pixels → screen pixels). */
+    texScale: 0.35,
+    /** Merc sprite height, world units (clamped in px below). */
+    mercUnits: 0.48,
+    mercMinPx: 38,
+    mercMaxPx: 72,
+    /** Squash & stretch: scale = 1 + min(squashMax, |vy| * squashVelScale). */
+    squashMax: 0.22,
+    squashVelScale: 2.4,
+    /** Lean into horizontal motion, radians cap + velocity scale. */
+    tiltMax: 0.3,
+    tiltVelScale: 5,
+    /** Wobble while falling, radians. */
+    fallWobble: 0.4,
+    /** Mercury beads shed while falling (count alive at once). */
+    fallBeads: 10,
+    /** World units visible across the width in portrait (narrow) view. */
+    viewUnitsPortrait: 7,
+  },
 } as const
 
 export type JourneyConfig = typeof JOURNEY_CONFIG

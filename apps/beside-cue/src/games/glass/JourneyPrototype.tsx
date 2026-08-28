@@ -88,8 +88,33 @@ export const JourneyPrototype: Component = () => {
   let restIdx: number | null = null
   let groundSamples: { t: number; midi: number }[] = []
 
-  const merc = new Image()
-  merc.src = 'games/merc.webp'
+  const img = (src: string): HTMLImageElement => {
+    const el = new Image()
+    el.src = src
+    return el
+  }
+  // Painterly world: parallax layers, material tiles, Merc pose sprites
+  // (merc-lumen sheet). Poses stretch/lean in code — liquid droplet physics.
+  const art = {
+    sky: img('games/journey/sky-far.webp'),
+    nebula: img('games/journey/nebula-mid.webp'),
+    dust: img('games/journey/dust-near.webp'),
+    crystal: img('games/journey/crystal-tex.webp'),
+    stone: img('games/journey/stone-tex.webp'),
+    mercIdle: img('games/journey/merc-idle.webp'),
+    mercListening: img('games/journey/merc-listening.webp'),
+    mercCelebrate: img('games/journey/merc-celebrate.webp'),
+    mercSinging: img('games/journey/merc-singing.webp'),
+  }
+  const patterns: {
+    crystal: CanvasPattern | null
+    stone: CanvasPattern | null
+  } = { crystal: null, stone: null }
+  let prevMercY = 0.8
+  let prevMercWX = 1.6
+  let mercVy = 0 // canvas fractions / s (smoothed)
+  let mercVx = 0 // world units / s (smoothed)
+  let beads: { x: number; y: number; vx: number; vy: number; r: number }[] = []
 
   const voicedMidi = (): number | null => {
     const fr = f0?.latestSmoothed()
@@ -455,6 +480,34 @@ export const JourneyPrototype: Component = () => {
       camX += (target - camX) * C.view.cameraLerp
     }
 
+    // motion feel: smoothed velocities drive squash/stretch and lean
+    const rawVy = ((mercY - prevMercY) * 1000) / dt
+    const rawVx = ((mercWX - prevMercWX) * 1000) / dt
+    mercVy += (rawVy - mercVy) * 0.25
+    mercVx += (rawVx - mercVx) * 0.25
+    prevMercY = mercY
+    prevMercWX = mercWX
+
+    // mercury beads shed while falling (quicksilver juice)
+    if (falling && beads.length < C.art.fallBeads) {
+      beads.push({
+        x: mercWX + (Math.random() - 0.5) * 0.2,
+        y: mercY,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -0.25 - Math.random() * 0.3,
+        r: 1.5 + Math.random() * 2.5,
+      })
+    }
+    if (beads.length > 0) {
+      for (const b of beads) {
+        b.x += (b.vx * dt) / 1000
+        b.y += (b.vy * dt) / 1000
+        b.vy += (1.1 * dt) / 1000
+      }
+      beads = beads.filter((b) => b.y < 1.4)
+      if (!falling && phase() !== 'fallen') beads = []
+    }
+
     draw()
   }
 
@@ -463,7 +516,10 @@ export const JourneyPrototype: Component = () => {
     if (!ctx) return
     const w = canvas.clientWidth
     const h = canvas.clientHeight
-    if (canvas.width !== w * window.devicePixelRatio) {
+    if (
+      canvas.width !== w * window.devicePixelRatio ||
+      canvas.height !== h * window.devicePixelRatio
+    ) {
       canvas.width = w * window.devicePixelRatio
       canvas.height = h * window.devicePixelRatio
     }
@@ -476,9 +532,41 @@ export const JourneyPrototype: Component = () => {
       0,
     )
     ctx.clearRect(0, 0, w, h)
+
+    // portrait sees fewer world units so platforms keep a playable size
+    const viewUnits = w / h < 0.8 ? C.art.viewUnitsPortrait : C.view.viewUnits
+    const unitPx = w / viewUnits
+    const camPx = camX * unitPx
+    drawBackdrop(ctx, w, h, camPx)
     if (phase() === 'intro' || phase() === 'ground') return
 
-    const X = (wx: number): number => ((wx - camX) / C.view.viewUnits) * w
+    const X = (wx: number): number => (wx - camX) * unitPx
+
+    // world-anchored material patterns (re-anchored to the camera each frame
+    // so the texture rides with the platforms instead of swimming)
+    if (
+      patterns.crystal === null &&
+      art.crystal.complete &&
+      art.crystal.naturalWidth > 0
+    ) {
+      patterns.crystal = ctx.createPattern(art.crystal, 'repeat')
+    }
+    if (
+      patterns.stone === null &&
+      art.stone.complete &&
+      art.stone.naturalWidth > 0
+    ) {
+      patterns.stone = ctx.createPattern(art.stone, 'repeat')
+    }
+    const anchorPattern = (p: CanvasPattern | null): void => {
+      p?.setTransform(
+        new DOMMatrix()
+          .translate(-camPx % (512 * C.art.texScale), 0)
+          .scale(C.art.texScale),
+      )
+    }
+    anchorPattern(patterns.crystal)
+    anchorPattern(patterns.stone)
 
     // void shimmer under the bridge span
     ctx.strokeStyle = 'rgba(248,81,73,0.18)'
@@ -489,64 +577,100 @@ export const JourneyPrototype: Component = () => {
     ctx.stroke()
     ctx.setLineDash([])
 
-    for (const [i, pl] of platforms.entries()) {
+    const slabH = Math.max(
+      C.art.platformMinPx,
+      Math.min(C.art.platformMaxPx, C.art.platformUnits * unitPx),
+    )
+    for (const pl of platforms) {
       const y = yFor(pl.midi) * h
       const x0 = X(pl.x0)
       const x1 = X(pl.x1)
       if (x1 < -40 || x0 > w + 40) continue
-      ctx.lineWidth = 6
-      ctx.lineCap = 'round'
       const isActive =
         activeIdx < nodes.length &&
         nodes[activeIdx].t === 'land' &&
         (nodes[activeIdx] as Extract<Node, { t: 'land' }>).p === pl
-      const glassTint = pl.kind === 'glass' ? '#7ee7ff' : '#2dd4bf'
+      const accent = pl.kind === 'glass' ? '#7ee7ff' : '#2dd4bf'
+
       if (pl.broken) {
-        ctx.strokeStyle = 'rgba(126,231,255,0.10)'
+        // ghost outline while the glass regrows
+        ctx.strokeStyle = 'rgba(126,231,255,0.14)'
+        ctx.lineWidth = 1.5
         ctx.setLineDash([6, 10])
-      } else {
-        ctx.strokeStyle = pl.lit
-          ? glassTint
-          : isActive
-            ? 'rgba(88,166,255,0.9)'
-            : pl.kind === 'glass'
-              ? 'rgba(126,231,255,0.35)'
-              : 'rgba(88,166,255,0.28)'
+        ctx.beginPath()
+        ctx.roundRect(x0, y - 3, x1 - x0, slabH, 5)
+        ctx.stroke()
+        ctx.setLineDash([])
+        continue
       }
-      if (pl.lit && !pl.broken) {
-        ctx.shadowColor = glassTint
-        ctx.shadowBlur = 14
-      } else ctx.shadowBlur = 0
+
+      // slab body: dark base (carries the lit glow), material texture on top
       ctx.beginPath()
-      ctx.moveTo(x0, y)
-      ctx.lineTo(x1, y)
-      ctx.stroke()
-      ctx.setLineDash([])
+      ctx.roundRect(x0, y - 3, x1 - x0, slabH, 5)
+      if (pl.lit) {
+        ctx.shadowColor = accent
+        ctx.shadowBlur = 16
+      }
+      ctx.fillStyle =
+        pl.kind === 'glass' ? 'rgba(16,34,52,0.92)' : 'rgba(27,32,48,0.97)'
+      ctx.fill()
       ctx.shadowBlur = 0
+      const pat = pl.kind === 'glass' ? patterns.crystal : patterns.stone
+      if (pat !== null) {
+        ctx.globalAlpha = pl.kind === 'glass' ? 0.6 : 0.9
+        ctx.fillStyle = pat
+        ctx.fill()
+        ctx.globalAlpha = 1
+      }
+      // faint underside line so slabs read against the nebula
+      ctx.strokeStyle =
+        pl.kind === 'glass' ? 'rgba(126,231,255,0.22)' : 'rgba(45,212,191,0.2)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      // top edge light — the note surface Merc lands on
+      ctx.lineCap = 'round'
+      ctx.lineWidth = 2
+      ctx.strokeStyle = pl.lit
+        ? accent
+        : isActive
+          ? 'rgba(88,166,255,0.95)'
+          : pl.kind === 'glass'
+            ? 'rgba(126,231,255,0.5)'
+            : 'rgba(88,166,255,0.35)'
+      ctx.beginPath()
+      ctx.moveTo(x0 + 3, y - 3)
+      ctx.lineTo(x1 - 3, y - 3)
+      ctx.stroke()
+
       if (isActive && pl.dwell > 0 && !pl.lit) {
         ctx.strokeStyle = '#7ee787'
+        ctx.lineWidth = 3
         ctx.beginPath()
-        ctx.moveTo(x0, y)
-        ctx.lineTo(x0 + (x1 - x0) * Math.min(1, pl.dwell / C.land.dwellMs), y)
+        ctx.moveTo(x0 + 3, y - 3)
+        ctx.lineTo(
+          x0 + 3 + (x1 - x0 - 6) * Math.min(1, pl.dwell / C.land.dwellMs),
+          y - 3,
+        )
         ctx.stroke()
       }
-      if (pl.kind === 'glass' && !pl.broken && pl.integrity < 1) {
+
+      if (pl.kind === 'glass' && pl.integrity < 1) {
         const n = Math.ceil((1 - pl.integrity) * 6)
         ctx.strokeStyle = 'rgba(230,237,243,0.65)'
         ctx.lineWidth = 1
         for (let c = 0; c < n; c++) {
           const cx = x0 + ((c + 0.7) / 6.4) * (x1 - x0)
           ctx.beginPath()
-          ctx.moveTo(cx, y - 3)
-          ctx.lineTo(cx + (c % 2 === 0 ? 4 : -4), y + 6 + c * 1.5)
+          ctx.moveTo(cx, y - 2)
+          ctx.lineTo(cx + (c % 2 === 0 ? 4 : -4), y + slabH - 2 + c * 1.5)
           ctx.stroke()
         }
-        ctx.lineWidth = 6
       }
-      ctx.fillStyle = 'rgba(230,237,243,0.75)'
-      ctx.font = '12px JetBrains Mono, monospace'
+
+      ctx.fillStyle = 'rgba(230,237,243,0.78)'
+      ctx.font = "600 11px 'Saira Condensed', monospace"
       ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
-      void i
     }
 
     for (const pane of panes) {
@@ -556,12 +680,22 @@ export const JourneyPrototype: Component = () => {
       const tall = pane.kind === 'wall' ? 150 : 108
       const wide = pane.kind === 'wall' ? 34 : 28
       if (pane.burstT < 0.02) {
-        ctx.fillStyle = `rgba(188,140,255,${0.25 + pane.res * 0.5})`
-        ctx.strokeStyle = '#bc8cff'
-        ctx.lineWidth = 2
         ctx.beginPath()
         ctx.roundRect(gx - wide / 2, gy - tall / 2, wide, tall, 8)
+        if (patterns.crystal !== null) {
+          ctx.globalAlpha = 0.5
+          ctx.fillStyle = patterns.crystal
+          ctx.fill()
+          ctx.globalAlpha = 1
+        }
+        // violet charge tint + glow grow with resonance
+        ctx.fillStyle = `rgba(188,140,255,${0.2 + pane.res * 0.5})`
+        ctx.shadowColor = '#bc8cff'
+        ctx.shadowBlur = 6 + pane.res * 22
         ctx.fill()
+        ctx.shadowBlur = 0
+        ctx.strokeStyle = '#bc8cff'
+        ctx.lineWidth = 2
         ctx.stroke()
         ctx.fillStyle = 'rgba(230,237,243,0.8)'
         ctx.font = '12px JetBrains Mono, monospace'
@@ -599,20 +733,106 @@ export const JourneyPrototype: Component = () => {
       ctx.stroke()
     }
 
+    // mercury beads shed during the fall
+    if (beads.length > 0) {
+      ctx.fillStyle = '#9be8ff'
+      ctx.globalAlpha = 0.8
+      for (const b of beads) {
+        ctx.beginPath()
+        ctx.arc(X(b.x), b.y * h, b.r, 0, 6.283)
+        ctx.fill()
+      }
+      ctx.globalAlpha = 1
+    }
+
     const mx = X(mercWX)
     const bob =
       shownMidi === null && restIdx !== null && !falling
         ? Math.sin(last / 300) * 1.5
         : 0
     const my = mercY * h + bob
-    if (merc.complete && merc.naturalWidth > 0) {
-      ctx.drawImage(merc, mx - 22, my - 22, 44, 44)
+    // pose by state; motion carries the rest (droplet squash/stretch + lean)
+    const sprite =
+      phase() === 'done'
+        ? art.mercCelebrate
+        : falling
+          ? art.mercListening
+          : shownMidi !== null
+            ? art.mercSinging
+            : restIdx !== null
+              ? art.mercIdle
+              : art.mercListening
+    if (sprite.complete && sprite.naturalWidth > 0) {
+      const sh = Math.max(
+        C.art.mercMinPx,
+        Math.min(C.art.mercMaxPx, C.art.mercUnits * unitPx),
+      )
+      const sw = sh * (sprite.naturalWidth / sprite.naturalHeight)
+      const stretch = Math.min(
+        C.art.squashMax,
+        Math.abs(mercVy) * C.art.squashVelScale,
+      )
+      const sy = 1 + stretch
+      const sx = 1 / sy
+      let tilt = Math.max(
+        -C.art.tiltMax,
+        Math.min(C.art.tiltMax, mercVx * C.art.tiltVelScale * 0.1),
+      )
+      if (falling) tilt += Math.sin(last / 90) * C.art.fallWobble
+      ctx.save()
+      ctx.translate(mx, my)
+      ctx.rotate(tilt)
+      ctx.scale(sx, sy)
+      ctx.drawImage(sprite, -sw / 2, -sh / 2, sw, sh)
+      ctx.restore()
     } else {
       ctx.fillStyle = '#2dd4bf'
       ctx.beginPath()
       ctx.arc(mx, my, 14, 0, 6.283)
       ctx.fill()
     }
+  }
+
+  // --- painterly backdrop: three parallax layers over the navy base ---
+  const coverWrap = (
+    ctx: CanvasRenderingContext2D,
+    im: HTMLImageElement,
+    w: number,
+    h: number,
+    scroll: number,
+  ): void => {
+    if (!im.complete || im.naturalWidth === 0) return
+    const s = Math.max(w / im.naturalWidth, h / im.naturalHeight)
+    const dw = im.naturalWidth * s
+    const dh = im.naturalHeight * s
+    const dy = (h - dh) / 2
+    let x = -(scroll % dw)
+    if (x > 0) x -= dw
+    for (; x < w + 1; x += dw) ctx.drawImage(im, x, dy, dw, dh)
+  }
+
+  const drawBackdrop = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    camPx: number,
+  ): void => {
+    ctx.fillStyle = '#05060b'
+    ctx.fillRect(0, 0, w, h)
+    coverWrap(ctx, art.sky, w, h, camPx * C.art.parallaxFar)
+    ctx.globalCompositeOperation = 'screen'
+    ctx.globalAlpha = C.art.nebulaAlpha
+    coverWrap(ctx, art.nebula, w, h, camPx * C.art.parallaxMid)
+    ctx.globalAlpha = C.art.dustAlpha
+    coverWrap(ctx, art.dust, w, h, camPx * C.art.parallaxNear)
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
+    // seat the play space: quiet, darker ground for HUD and low platforms
+    const g = ctx.createLinearGradient(0, h * 0.72, 0, h)
+    g.addColorStop(0, 'rgba(5,6,11,0)')
+    g.addColorStop(1, 'rgba(5,6,11,0.82)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, h * 0.72, w, h * 0.28)
   }
 
   onMount(() => {
@@ -661,7 +881,13 @@ export const JourneyPrototype: Component = () => {
             Slice complete — climb, gate, bridge, wall. This becomes chapter
             one.
           </p>
-          <button class="jp-start" onClick={() => buildWorld()}>
+          <button
+            class="jp-start"
+            onClick={() => {
+              buildWorld()
+              setPhase('play')
+            }}
+          >
             Run it again
           </button>
         </Show>
