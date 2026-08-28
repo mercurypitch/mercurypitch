@@ -10,7 +10,9 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
+import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
+import { DriftDrill } from '@/features/ear-lab/DriftDrill'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
 import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
@@ -76,6 +78,12 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'span'}>
           <SpanDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'beat-hunt'}>
+          <BeatHuntDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'drift'}>
+          <DriftDrill onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />

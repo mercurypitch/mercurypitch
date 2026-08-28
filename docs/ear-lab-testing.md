@@ -404,6 +404,39 @@ note. Nothing says right or wrong until the whole phrase is in.
 - Stop mid-cadence or mid-phrase silences the engine and lands on the
   plate.
 
+## 2o. Beat Hunt and Drift — follow-up item 4
+
+Two threshold drills on the staircase. Bench strip → _Beat Hunt_
+(Resolution · beats) and _Drift_ (Time · tempo); both offer Practice run and
+Calibration like Hairline and The Grid.
+
+- **Beat Hunt:** two pairs of tones, 1.4 s each. One pair is in tune with
+  itself; in the other one tone is pulled off by the staircase's detune in
+  cents, and the pair beats. _Which pair was beating — the first, or the
+  second?_ The pairs go through their own synth (`dyad-synth.ts`): each tone
+  has its own gain and the second starts at a random phase inside ±90°, so
+  the in-tune pair is not simply the louder one. The base is roved A2–E4.
+  - **What to check on hardware:** at 40 ¢ the beating is plain (about
+    3–7 beats a second depending on the base); as the detune shrinks the
+    swell slows to a fraction of a cycle across the pair. The pendulums
+    swing together for both pairs while they sound — no hint — and only the
+    reveal hangs the detuned pair's second bob out of phase, garnet, with
+    the beat rate on the nameplate (_5.1 beats a second_ / _a beat every
+    4 s_). The status names the pair and the detune.
+- **Drift:** eleven clicks in the room's voice, 520 ms apart. The first five
+  hold; the last six gain the level in percent of tempo, lose it, or hold —
+  a third each. _Steady / Faster / Slower_ (keys 1–3).
+  - **What to check on hardware:** the lamps under the metronome chase the
+    clicks at even spacing (never at the drifted timing), the arm stays
+    upright until the reveal, then leans forward for _Faster by 10%_, back
+    for _Slower_, holds for _Steady_. A steady train answered right reads
+    _Right — it held steady._ — the level does not move on catch trials'
+    wording but the staircase still counts them.
+- **The readings:** Beat Hunt in cents detune on the Resolution dial's
+  second tile; Drift in % tempo on Time. No percent-correct anywhere; the
+  plate shows the threshold and its unit.
+- Stop mid-pair or mid-train cancels the tones already on the audio clock.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
