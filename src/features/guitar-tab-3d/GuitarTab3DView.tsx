@@ -9,14 +9,14 @@
 // TabRenderer interface.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { presentationFps, renderScale } from '@/lib/device-tier'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
 import type { CameraState } from './renderer/camera'
-import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
+import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, sameCamera, } from './renderer/camera'
 import type { TabPresentation, TabRenderer, TabScene, TabSceneLoopSpan, } from './renderer/TabRenderer'
 import { createTabRenderer, DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
@@ -196,11 +196,30 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     })
   }
 
+  // Re-frame only when the framing actually changed. `on` compares by
+  // reference, and a host is free to resolve its preset into a fresh object
+  // every time -- Guitar Night's does, from a memo that also tracks the next
+  // authored note, so the object was rebuilt on every note of playback and on
+  // every scrub. Each rebuild looked like a new instruction and animated the
+  // camera back to the preset, undoing whatever the player had just dragged.
+  // The suspend flag did not save it: that only applies while auto-follow is
+  // on, which is one preset out of four.
+  // Seeded from the framing the camera signal already opened on: the effect
+  // is deferred, so without this the very first rebuild counts as new.
+  let appliedCameraPreset: CameraState | null = untrack(
+    () => props.cameraPreset?.() ?? null,
+  )
   createEffect(
     on(
       () => props.cameraPreset?.(),
       (preset) => {
         if (preset === undefined) return
+        if (
+          appliedCameraPreset !== null &&
+          sameCamera(appliedCameraPreset, preset)
+        ) {
+          return
+        }
         if (props.cameraAutoFollow?.() === true && followSuspended()) return
         if (!props.isActive()) {
           pendingCameraPreset = preset
@@ -208,6 +227,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
           return
         }
         pendingCameraPreset = null
+        appliedCameraPreset = preset
         applyCameraPreset(preset)
       },
       { defer: true },
@@ -224,7 +244,10 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         }
         const pending = pendingCameraPreset
         pendingCameraPreset = null
-        if (pending !== null) applyCameraPreset(pending)
+        if (pending !== null) {
+          appliedCameraPreset = pending
+          applyCameraPreset(pending)
+        }
         requestPaint()
       },
       { defer: true },

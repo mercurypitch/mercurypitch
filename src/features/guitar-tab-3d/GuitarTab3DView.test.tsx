@@ -538,4 +538,57 @@ describe('GuitarTab3DView paint budget', () => {
     queued.shift()?.(1)
     expect(renderer.render).toHaveBeenCalledTimes(2)
   })
+  it('keeps a dragged camera when the host re-emits an equal preset', () => {
+    // Guitar Night resolves its preset from a memo that also tracks the next
+    // authored note, so the object was rebuilt on every note of playback and
+    // every scrub. Rebuilt, not changed: identical framing, new reference.
+    const framing: CameraState = {
+      yaw: 0.12,
+      pitch: 0.38,
+      radius: 16.5,
+      target: [0, -0.4, -7],
+    }
+    const [preset, setPreset] = createSignal<CameraState>({ ...framing })
+    render(() => (
+      <GuitarTab3DView
+        fallingNotes={() => []}
+        playheadBeat={() => 0}
+        visibleBeatWindow={() => 8}
+        showNoteLabels={() => false}
+        showFretboard={() => true}
+        isActive={() => true}
+        showGizmo={() => false}
+        cameraPreset={preset}
+        reducedMotion={() => true}
+      />
+    ))
+
+    const canvas = screen.getByRole('img')
+    const pointer = (type: string, clientX: number, clientY: number) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        button: 0,
+        cancelable: true,
+        clientX,
+        clientY,
+      })
+      Object.defineProperty(event, 'pointerId', { value: 1 })
+      return event
+    }
+    canvas.dispatchEvent(pointer('pointerdown', 120, 90))
+    canvas.dispatchEvent(pointer('pointermove', 190, 120))
+    canvas.dispatchEvent(pointer('pointerup', 190, 120))
+
+    const draggedYaw = canvas.getAttribute('data-camera-yaw')
+    expect(draggedYaw).not.toBe(framing.yaw.toFixed(4))
+
+    // Playback advances: same framing, fresh object, several times over.
+    setPreset({ ...framing })
+    setPreset({ ...framing, target: [...framing.target] })
+    expect(canvas).toHaveAttribute('data-camera-yaw', draggedYaw ?? '')
+
+    // A framing the host actually changed still moves the camera.
+    setPreset({ ...framing, yaw: 0.9 })
+    expect(canvas).toHaveAttribute('data-camera-yaw', (0.9).toFixed(4))
+  })
 })

@@ -7,6 +7,7 @@ import { X } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
+import { sameCamera } from '@/features/guitar-tab-3d/renderer/camera'
 import type { TabCameraPresetId } from '@/features/guitar-tab-3d/renderer/camera-presets'
 import { TAB_CAMERA_PRESET_CHOICES, tabCameraPreset, } from '@/features/guitar-tab-3d/renderer/camera-presets'
 import { tabFretX, tabStringLaneX, } from '@/features/guitar-tab-3d/renderer/canvas2d/highway-geometry'
@@ -927,11 +928,18 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         : tabFretX(middle.fret, maxAuthoredFret(), handedness() === 'left')
     return worldX * 0.42
   })
-  const cameraPreset = createMemo(() =>
-    tabCameraPreset(cameraPresetId(), {
-      narrow: narrowViewport(),
-      phraseFocusX: phraseFocusX(),
-    }),
+  // `phraseFocusX` retracks on every note, and `tabCameraPreset` resolves a
+  // fresh object each call, so without an equality check this memo notified
+  // continuously through playback and scrubbing while returning the same
+  // framing. Only 'phrase-focus' actually consumes the focus offset.
+  const cameraPreset = createMemo(
+    () =>
+      tabCameraPreset(cameraPresetId(), {
+        narrow: narrowViewport(),
+        phraseFocusX: phraseFocusX(),
+      }),
+    undefined,
+    { equals: sameCamera },
   )
   const cameraLabel = createMemo(
     () =>
