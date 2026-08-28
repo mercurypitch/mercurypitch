@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildMidiFile } from './midi-generator'
 import { parseMidiSongViaProject } from './midi-song-from-project'
+
 describe('buildMidiFile round trip', () => {
   it('writes a track this app can read back', () => {
     // The writer and the importer are both ours, and they disagreed: the End of
@@ -24,6 +25,8 @@ describe('buildMidiFile round trip', () => {
 
   it('terminates the track with a delta byte before the meta event', () => {
     const bytes = buildMidiFile([{ midi: 60, tickOn: 0, tickOff: 480 }], 120)
-    expect([...(bytes as Uint8Array).slice(-4)]).toEqual([0x00, 0xff, 0x2f, 0x00])
+    expect([...(bytes as Uint8Array).slice(-4)]).toEqual([
+      0x00, 0xff, 0x2f, 0x00,
+    ])
   })
 })
