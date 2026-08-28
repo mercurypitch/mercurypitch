@@ -1101,6 +1101,64 @@ async function auditStage(page, name) {
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
+  // Subdivide: the lattice chases the kit with no bar line or accent
+  // until the reveal; four metre pads are drawn with the answer among them.
+  await openFromStrip('Subdivide')
+  results.subdivideIdle = await checkStage(
+    'subdivide idle',
+    'stage-subdivide-idle',
+  )
+  await page.getByText('Begin').click()
+  const metrePads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const metreArmed = await metrePads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!metreArmed) fail(`${name} subdivide`, 'the pads never armed')
+  else {
+    const padCount = await metrePads.count()
+    if (padCount !== 4)
+      fail(`${name} subdivide`, `${padCount} pads drawn, expected 4`)
+    const groupedEarly = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="metre"] [data-accent="true"], svg[data-instrument="metre"] [data-part="bar-line"]',
+        ).length,
+    )
+    if (groupedEarly > 0)
+      fail(
+        `${name} subdivide`,
+        'the lattice shows the grouping before the reveal',
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-subdivide-answer.png` })
+    await metrePads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} subdivide`, 'the answer was never judged')
+    const accents = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="metre"] [data-accent="true"]',
+        ).length,
+    )
+    await page.screenshot({ path: `${OUT}/${name}-stage-subdivide-reveal.png` })
+    if (accents !== 1)
+      fail(`${name} subdivide`, `${accents} accent lamps at the reveal`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
   await openFromStrip('Stack')

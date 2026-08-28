@@ -27,6 +27,7 @@ export type InstrumentView =
   | 'cadence'
   | 'bassline'
   | 'pulse'
+  | 'subdivide'
   | 'calibration'
 
 export interface Instrument {
@@ -172,6 +173,14 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'A bar of onsets — tap it back on the beat',
   },
   {
+    view: 'subdivide',
+    drillId: 'subdivide',
+    name: 'Subdivide',
+    faculty: 'time',
+    measures: 'Time · metre',
+    answer: 'Two bars on the kit — name the metre',
+  },
+  {
     view: 'calibration',
     drillId: null,
     name: 'Calibration',
@@ -233,6 +242,7 @@ export function instrumentReading(
     case 'the-pull':
     case 'cadence':
     case 'bassline':
+    case 'subdivide':
       return ratingReading(instrument.drillId ?? '')
     case 'pulse': {
       const rating = ratingReading('pulse')

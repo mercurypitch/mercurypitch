@@ -30,6 +30,7 @@ import { PullDrill } from '@/features/ear-lab/PullDrill'
 import { PulseDrill } from '@/features/ear-lab/PulseDrill'
 import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
+import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
 
 export function EarLabPage(): JSX.Element {
@@ -100,6 +101,9 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'bassline'}>
           <BasslineDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'subdivide'}>
+          <SubdivideDrill onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />
