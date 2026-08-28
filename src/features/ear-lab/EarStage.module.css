@@ -551,6 +551,14 @@
 }
 
 /* The phrase strip: what has been tapped so far, in solfège. */
+/* The ladder's one footnote: the top rung. */
+.ladderHint {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--stage-muted);
+}
+
 .phraseStrip {
   display: flex;
   flex-wrap: wrap;

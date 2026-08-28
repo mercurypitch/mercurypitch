@@ -27,6 +27,7 @@ import { latestThresholdReading } from '@/stores/ear-lab-store'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
+import { soundRung } from './ladder-voice'
 import { PhraseConsole, SungStrip } from './PhraseConsole'
 import { ThresholdDrillView } from './ThresholdDrillView'
 import { useSingCapture } from './use-sing-capture'
@@ -113,6 +114,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
 
   const tap = (degree: number) => {
     if (run.phase() !== 'answer' || sungRun()) return
+    soundRung(audioEngine, rootMidi, degree)
     const next = [...answered(), degree]
     setAnswered(next)
     if (next.length < phrase().length) return
@@ -275,7 +277,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
               expectedLength={phrase().length}
               answered={answered()}
               armed={run.phase() === 'answer'}
-              label="Tap the phrase back"
+              label={`Tap the ${phrase().length} notes back`}
               onTap={tap}
               onUndo={undo}
             />

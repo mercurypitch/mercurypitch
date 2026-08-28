@@ -3,7 +3,7 @@
 // flow, confusion bookkeeping and the Mercury Index snapshots.
 // ============================================================
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
@@ -275,5 +275,32 @@ describe('the instrument card', () => {
     setEarInfoOpen('hairline', true)
     resetEarLabStore()
     expect(earInfoOpen('hairline')).toBe(false)
+  })
+})
+
+describe('the silent-ladder re-seed', () => {
+  const items = (
+    record: Record<string, { rating: number; attempts: number }>,
+  ) => localStorage.setItem('mercurypitch_ear_items', JSON.stringify(record))
+
+  it("drops the ladder drills' tap items once, on load, and keeps the rest", async () => {
+    items({
+      'e-steps-up': { rating: 1300, attempts: 4 },
+      'bassline:1451': { rating: 1250, attempts: 2 },
+      'leap:m2': { rating: 1100, attempts: 9 },
+    })
+    localStorage.removeItem('mercurypitch_ear_items_reseed')
+    vi.resetModules()
+    const fresh = await import('@/stores/ear-lab-store')
+    expect(Object.keys(fresh.earItemStates())).toEqual(['leap:m2'])
+    expect(localStorage.getItem('mercurypitch_ear_items_reseed')).toBe(
+      'ladder-sounds',
+    )
+    expect(fresh.reseedSilentLadderItems()).toBe(false)
+    // Stamped: a later load keeps what the sounding ladder has rated.
+    items({ 'e-steps-up': { rating: 1300, attempts: 4 } })
+    vi.resetModules()
+    const later = await import('@/stores/ear-lab-store')
+    expect(Object.keys(later.earItemStates())).toEqual(['e-steps-up'])
   })
 })

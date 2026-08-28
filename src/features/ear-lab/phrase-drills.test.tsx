@@ -14,7 +14,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type * as Banks from '@/lib/ear/banks'
 import type { EarBankItem } from '@/lib/ear/banks'
-import { ECHO_TIMING, REVEAL_HOLD, SPAN_TIMING } from '@/lib/ear/timing'
+import { ECHO_TIMING, LADDER_TIMING, REVEAL_HOLD, SPAN_TIMING, } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -118,6 +118,16 @@ describe('EchoDrill', () => {
     expect(strip()).toContain('0 of 3')
   })
 
+  it('sounds a tapped rung, says how many notes it wants, and explains the top rung', async () => {
+    await beginAndListen()
+    expect(screen.getByLabelText('Tap the 3 notes back')).toBeTruthy()
+    expect(screen.getByText(/1′ is home again/)).toBeTruthy()
+    fireEvent.click(ladder()[4])
+    expect(engine.playTone).toHaveBeenCalledTimes(16)
+    const [, tapMs] = engine.playTone.mock.calls[15] ?? []
+    expect(tapMs).toBe(LADDER_TIMING.tapMs)
+  })
+
   it('judges the phrase only once the last note is in', async () => {
     await beginAndListen()
     fireEvent.click(ladder()[0])
@@ -151,9 +161,10 @@ describe('EchoDrill', () => {
     expect(status()).toBe('That was Do Re Mi — listen again.')
     expect(parts('right')).toBe(2)
     expect(parts('wrong')).toBe(1)
-    // The replay: three notes, slower, no cadence.
+    // Three rungs sounded under the taps; then the replay: three
+    // notes, slower, no cadence.
     await vi.advanceTimersByTimeAsync(0)
-    expect(engine.playTone).toHaveBeenCalledTimes(16)
+    expect(engine.playTone).toHaveBeenCalledTimes(19)
     // The next round waits for the slow replay to finish, then the hold.
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 4000)
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(

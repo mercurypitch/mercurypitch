@@ -244,6 +244,7 @@ describe('BasslineDrill', () => {
     for (const rung of [0, 3, 3, 0]) fireEvent.click(pads()[rung])
     expect(status()).toBe('That was I–IV–V–I — listen again.')
     await vi.advanceTimersByTimeAsync(0)
-    expect(struck).toHaveLength(16)
+    // Four tapped rungs strummed their roots, then the slow replay.
+    expect(struck).toHaveLength(20)
   })
 })
