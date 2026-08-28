@@ -98,6 +98,15 @@ async function beginAndListen(): Promise<void> {
   expect(
     beam()?.querySelector('[data-side="1"] [data-lit="true"]'),
   ).not.toBeNull()
+  // The pad says so too: "The first" carries the lamp while it sounds.
+  expect(
+    screen.getByRole('button', { name: /The first/ }).getAttribute('data-lamp'),
+  ).toBe('on')
+  expect(
+    screen
+      .getByRole('button', { name: /The second/ })
+      .getAttribute('data-lamp'),
+  ).toBe('off')
   await vi.advanceTimersByTimeAsync(PROBES)
   expect(engine.playTone).toHaveBeenCalledTimes(14)
   expect(status()).toBe('Which note leans harder — the first, or the second?')
