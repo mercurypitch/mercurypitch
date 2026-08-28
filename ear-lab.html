@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Ear Lab — Ear Training Measured in Real Units | MercuryPitch</title>
+    <meta
+      name="description"
+      content="An ear-training bench that reads in cents, milliseconds and notes — never percent. Calibrate, then practise at the instrument that is neediest: pitch resolution, harmony, melody, timbre and time, in your browser."
+    />
+    <meta
+      name="keywords"
+      content="ear training online, ear training app, relative pitch practice, interval ear training, pitch discrimination test, rhythm ear training, ear training in browser"
+    />
+    <meta name="author" content="MercuryPitch" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mercurypitch.com/ear-lab" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Ear Lab — an ear you can measure" />
+    <meta
+      property="og:description"
+      content="Thresholds in cents and milliseconds, chords named — one number that moves only when your ear does. Calibrate, then practise where the reading says."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mercurypitch.com/ear-lab" />
+    <meta
+      property="og:image"
+      content="https://mercurypitch.com/ear-lab-og.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="MercuryPitch Ear Lab — a chronometer workshop at night, the Mercury Column standing at 618, and three readings: Hairline 6.4 cents, the Grid 18 ms, Mercury Index 618."
+    />
+    <meta property="og:site_name" content="MercuryPitch" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ear Lab — an ear you can measure" />
+    <meta
+      name="twitter:description"
+      content="Thresholds in cents and milliseconds, chords named — one number that moves only when your ear does."
+    />
+    <meta
+      name="twitter:image"
+      content="https://mercurypitch.com/ear-lab-og.png"
+    />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0a0b0d" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      Ear Lab needs JavaScript — the instruments, the readings and the audio all
+      run right here in your browser.
+    </noscript>
+    <!-- Like Jam, the Ear Lab is a tab of the studio rather than a mini-app of
+         its own. This page exists so the bench has a real URL a crawler can
+         fetch and a share can unfurl — "#/ear-lab" alone carries no card,
+         because a fragment never reaches the server. It boots the same studio
+         entry and lands on the Ear Lab tab. -->
+    <script>
+      if (!window.location.hash) window.location.hash = '#/ear-lab'
+    </script>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

@@ -53,6 +53,9 @@ const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
 const PIANO_NIGHT_PATHS = new Set(['/piano-night'])
 const DRUM_NIGHT_PATHS = new Set(['/drum-night'])
+// The Ear Lab is a tab of the studio, like Jam: /ear-lab boots the studio on
+// the Ear Lab tab so the bench has a real URL with a card — see ear-lab.html.
+const EAR_LAB_PATHS = new Set(['/ear-lab'])
 // Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
 // exists so the feature has a real URL a crawler can fetch — see jam.html.
 const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
@@ -100,6 +103,7 @@ function standaloneEntryRewritePlugin() {
         else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
         else if (PIANO_NIGHT_PATHS.has(path)) req.url = '/piano-night.html'
         else if (DRUM_NIGHT_PATHS.has(path)) req.url = '/drum-night.html'
+        else if (EAR_LAB_PATHS.has(path)) req.url = '/ear-lab.html'
         else if (JAM_PATHS.has(path)) req.url = '/jam.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
@@ -334,6 +338,7 @@ export default defineConfig(({ command, mode }) => {
           guitarNight: resolve(__dirname, 'guitar-night.html'),
           pianoNight: resolve(__dirname, 'piano-night.html'),
           drumNight: resolve(__dirname, 'drum-night.html'),
+          earLab: resolve(__dirname, 'ear-lab.html'),
           glass: resolve(__dirname, 'glass.html'),
         },
         output: {

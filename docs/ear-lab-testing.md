@@ -641,6 +641,22 @@ Calibration; a seal lights the seal's orb and the faculty it carried; the
 Next button is a full touch target on the phone; the tour's step finds the
 plate.
 
+### 2w. The entry page and the tab icon — follow-up item 12
+
+- `/ear-lab` is a real page (`ear-lab.html`, built as its own Vite entry and
+  served by Cloudflare's html handling the way `/jam` is): its own title,
+  description, canonical and share card (`public/ear-lab-og.png`,
+  regenerated with `node scripts/generate-ear-lab-og.mjs`). It boots the
+  studio and sets `#/ear-lab`, so the bench opens rather than Home. Listed
+  in the sitemap and the README's row of surfaces.
+- The tab's icon is the Regulator's pendulum jar — a mercury bob on its
+  rod — in place of the thermometer.
+
+Checks: `src/tests/entry-page-og.test.ts` (every entry page unfurls with a
+card, the image and the generator exist, `/ear-lab` maps to the page in dev,
+the hash lands on the tab, the sitemap lists it); once deployed, pasting
+`https://mercurypitch.com/ear-lab` into a chat unfurls the card.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
