@@ -50,6 +50,7 @@ interface EarStageProps {
   onStop?: () => void
   stopLabel?: string
   onBack: () => void
+  backLabel?: string
   keys?: () => StageKey[]
   /** Flip to true to move focus onto the first live pad (the answer
    *  phase opening), so a keyboard user is already on the console. */
@@ -72,6 +73,8 @@ interface StageBarProps {
   mode?: string
   progress: string
   onBack: () => void
+  /** Where back goes when not the bench: "Back to the page". */
+  backLabel?: string
   /** The right-hand control: Stop while a run can be stopped, the
    *  report's range control. */
   aside?: JSX.Element
@@ -86,7 +89,7 @@ export function StageBar(props: StageBarProps): JSX.Element {
         type="button"
         class={styles.back}
         onClick={() => props.onBack()}
-        aria-label="Back to the bench"
+        aria-label={props.backLabel ?? 'Back to the bench'}
       >
         <IconBack size={18} />
       </button>
@@ -156,6 +159,7 @@ export function EarStage(props: EarStageProps): JSX.Element {
         mode={props.mode}
         progress={props.progress}
         onBack={props.onBack}
+        backLabel={props.backLabel}
         aside={
           <Show when={props.onStop}>
             <button
@@ -470,6 +474,7 @@ interface EndPlateProps {
   onAgain?: () => void
   againLabel?: string
   onBack: () => void
+  backLabel?: string
 }
 
 export function EndPlate(props: EndPlateProps): JSX.Element {
@@ -513,7 +518,7 @@ export function EndPlate(props: EndPlateProps): JSX.Element {
             if (!props.onAgain) first = el
           }}
         >
-          Back to the bench
+          {props.backLabel ?? 'Back to the bench'}
         </button>
       </div>
     </div>

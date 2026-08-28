@@ -15,12 +15,14 @@ import type { FacultyId } from '@/lib/ear/drills'
 import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
 import { IconArc, IconBalance, IconBassLine, IconBeats, IconChain, IconFork, IconGears, IconLattice, IconLoupe, IconMetre, IconMetronome, IconNumerals, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
 import styles from './EarLabDashboard.module.css'
+import { FieldBookCard } from './FieldBookCard'
 import type { FacultyDial } from './IndexDials'
 import { IndexDials } from './IndexDials'
 import type { Instrument, InstrumentView } from './instruments'
-import { dateLabel, facultyReadout, instrumentReading, INSTRUMENTS, } from './instruments'
+import { dateLabel, facultyReadout, instrumentReading, INSTRUMENTS, wildFacultyScore, } from './instruments'
 import { Regulator } from './Regulator'
 import { SprintCard } from './SprintCard'
+import { setFieldBookSessionId } from './wild-store'
 
 export type EarLabView =
   | 'dashboard'
@@ -41,6 +43,7 @@ export type EarLabView =
   | 'cadence'
   | 'bassline'
   | 'subdivide'
+  | 'field-book'
   | 'report'
 
 interface EarLabDashboardProps {
@@ -159,6 +162,16 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
     const sealedParts = calibrated()?.parts ?? {}
     const estimateParts = estimate().parts
     return FACULTY_ORDER.map((faculty) => {
+      // In The Wild reads the Field Book's own rating: never sealed,
+      // never an estimate of the Column.
+      if (faculty === 'wild') {
+        return {
+          faculty,
+          score: wildFacultyScore(),
+          reading: facultyReadout('wild'),
+          estimated: false,
+        }
+      }
       const sealedScore = sealedParts[faculty]
       const estimated = estimateParts[faculty]
       return {
@@ -264,6 +277,15 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             )
           }}
         </For>
+      </div>
+
+      <div class={styles.fieldBook}>
+        <FieldBookCard
+          onOpen={(sessionId) => {
+            setFieldBookSessionId(sessionId)
+            props.onNavigate('field-book')
+          }}
+        />
       </div>
     </div>
   )

@@ -19,13 +19,17 @@ import type { FacultyId, ReadingScale } from './drills'
 /** Full scale of the index. The column is marked in tenths. */
 export const INDEX_MAX = 1000
 
+/** The faculties the Column is made of. In The Wild is a faculty on
+ *  the bench — the sixth dial reads the Field Book's own rating — but
+ *  it never enters the composite: its items are the user's own songs,
+ *  not a calibrated bank, so it neither marks the Column nor counts as
+ *  missing from it. */
+export type ColumnFaculty = Exclude<FacultyId, 'wild'>
+
 /** How much each faculty is worth in the composite. Function leads
- *  because in-key hearing is the skill that transfers to playing;
- *  In The Wild is weighted next because doing it on real audio is
- *  the proof the rest of it took. */
-export const FACULTY_WEIGHTS: Record<FacultyId, number> = {
+ *  because in-key hearing is the skill that transfers to playing. */
+export const FACULTY_WEIGHTS: Record<ColumnFaculty, number> = {
   function: 1.3,
-  wild: 1.2,
   resolution: 1,
   shape: 1,
   colour: 1,
@@ -83,10 +87,12 @@ export function scoreReading(reading: number, scale: ReadingScale): number {
  *  drill must not mask an untouched weakness, nor vice versa. */
 export function mercuryIndex(
   readings: readonly FacultyReading[],
-  weights: Record<FacultyId, number> = FACULTY_WEIGHTS,
+  weights: Partial<Record<FacultyId, number>> = FACULTY_WEIGHTS,
 ): MercuryIndex {
   const sums: Partial<Record<FacultyId, { total: number; n: number }>> = {}
   for (const reading of readings) {
+    // A faculty outside the Column (In The Wild) never enters the sum.
+    if (weights[reading.faculty] === undefined) continue
     const score = scoreReading(reading.value, reading.scale)
     const bucket = sums[reading.faculty] ?? { total: 0, n: 0 }
     bucket.total += score

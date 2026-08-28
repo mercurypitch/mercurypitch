@@ -76,6 +76,8 @@ interface ThresholdDrillViewProps {
   /** Hide Calibration: a sung run is practice only. */
   practiceOnly?: () => boolean
   onBack: () => void
+  /** The back control's label when back is not the bench. */
+  backLabel?: string
 }
 
 export function ThresholdDrillView(
@@ -161,6 +163,7 @@ export function ThresholdDrillView(
       keys={keys}
       focusConsole={() => phase() === 'answer'}
       onBack={props.onBack}
+      backLabel={props.backLabel}
       onStop={running() ? () => props.run.stop() : undefined}
       stopLabel={calibrating() ? 'Abandon' : 'Stop'}
       done={() => phase() === 'done'}
@@ -266,6 +269,7 @@ export function ThresholdDrillView(
               onAgain={() => start(again())}
               againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
               onBack={props.onBack}
+              backLabel={props.backLabel}
             />
           }
         >
@@ -303,6 +307,7 @@ export function ThresholdDrillView(
                 onAgain={() => start(again())}
                 againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
                 onBack={props.onBack}
+                backLabel={props.backLabel}
               >
                 <Show when={marked() !== undefined}>
                   <div class={styles.plateFigure}>

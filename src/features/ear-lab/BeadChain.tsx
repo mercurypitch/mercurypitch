@@ -22,6 +22,8 @@ export interface ChainReveal {
 }
 
 interface BeadChainProps {
+  /** Caption words per degree; solfège in a major key by default. */
+  words?: (degree: number) => string
   /** Notes in the phrase. */
   count: number
   /** 1-based index of the note sounding now; 0 for none. */
@@ -46,6 +48,7 @@ function degreeY(degree: number): number {
 }
 
 export function BeadChain(props: BeadChainProps): JSX.Element {
+  const word = (degree: number) => (props.words ?? degreeSolfege)(degree)
   const count = () => Math.max(1, props.reveal?.expected.length ?? props.count)
   const radius = () => Math.min(9, Math.max(5, 120 / count()))
   const label = () => {
@@ -151,7 +154,7 @@ export function BeadChain(props: BeadChainProps): JSX.Element {
                     class={styles.caption}
                     text-anchor="middle"
                   >
-                    {degreeSolfege(degree)}
+                    {word(degree)}
                   </text>
                 </>
               )}

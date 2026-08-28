@@ -55,6 +55,8 @@ interface IdentificationDrillViewProps {
   /** The stage's mode word while running; "rating run" by default. */
   runMode?: () => string
   onBack: () => void
+  /** The back control's label when back is not the bench. */
+  backLabel?: string
 }
 
 export function IdentificationDrillView(
@@ -147,6 +149,7 @@ export function IdentificationDrillView(
       keys={keys}
       focusConsole={() => phase() === 'answer'}
       onBack={props.onBack}
+      backLabel={props.backLabel}
       onStop={running() ? () => props.controller.stop() : undefined}
       done={() => phase() === 'done'}
       instrument={props.instrument}
@@ -211,6 +214,7 @@ export function IdentificationDrillView(
               }
               onAgain={() => start()}
               onBack={props.onBack}
+              backLabel={props.backLabel}
             >
               <Show when={isProvisional(result().rating)}>
                 <PlateBadge>
