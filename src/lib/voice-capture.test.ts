@@ -2,8 +2,8 @@
 // Voice Capture tests — MediaRecorder transport behavior
 // ============================================================
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createTakeRecorder, inspectVoiceTake } from './voice-capture'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTakeRecorder, inspectVoiceTake, pickRecorderMime, } from './voice-capture'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 class MockMediaRecorder extends EventTarget {
-  static isTypeSupported = vi.fn(() => true)
+  static isTypeSupported = vi.fn((_mimeType: string) => true)
   state: RecordingState = 'inactive'
   ondataavailable: ((event: BlobEvent) => void) | null = null
   onstop: (() => void) | null = null
@@ -44,7 +44,34 @@ class MockMediaRecorder extends EventTarget {
   }
 }
 
+beforeEach(() => {
+  MockMediaRecorder.isTypeSupported.mockReset()
+  MockMediaRecorder.isTypeSupported.mockReturnValue(true)
+})
+
 describe('createTakeRecorder', () => {
+  it('prefers MP4 when the browser can record it', () => {
+    vi.stubGlobal('MediaRecorder', MockMediaRecorder)
+
+    expect(pickRecorderMime()).toBe('audio/mp4')
+    expect(MockMediaRecorder.isTypeSupported.mock.calls).toEqual([
+      ['audio/mp4'],
+    ])
+  })
+
+  it('falls back to Opus/WebM when MP4 recording is unavailable', () => {
+    MockMediaRecorder.isTypeSupported.mockImplementation(
+      (mimeType) => mimeType !== 'audio/mp4',
+    )
+    vi.stubGlobal('MediaRecorder', MockMediaRecorder)
+
+    expect(pickRecorderMime()).toBe('audio/webm;codecs=opus')
+    expect(MockMediaRecorder.isTypeSupported.mock.calls).toEqual([
+      ['audio/mp4'],
+      ['audio/webm;codecs=opus'],
+    ])
+  })
+
   it('pauses and resumes one encoded take with the owning transport', async () => {
     vi.stubGlobal('MediaRecorder', MockMediaRecorder)
 
@@ -56,7 +83,7 @@ describe('createTakeRecorder', () => {
 
     const blob = await recorder!.stop()
     expect(blob?.size).toBeGreaterThan(0)
-    expect(blob?.type).toBe('audio/webm;codecs=opus')
+    expect(blob?.type).toBe('audio/mp4')
   })
 
   it('does not report a pause ready before MediaRecorder emits pause', async () => {

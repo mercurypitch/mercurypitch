@@ -86,6 +86,30 @@ class TestAudioStream extends EventTarget {
   }
 }
 
+class TestPreviewAudio extends EventTarget {
+  static instances: TestPreviewAudio[] = []
+
+  currentTime = 0
+  duration = 4.2
+  paused = true
+  ended = false
+  play = vi.fn(async () => {
+    this.paused = false
+    this.dispatchEvent(new Event('play'))
+  })
+  pause = vi.fn(() => {
+    this.paused = true
+    this.dispatchEvent(new Event('pause'))
+  })
+
+  constructor(_src?: string) {
+    super()
+    TestPreviewAudio.instances.push(this)
+  }
+
+  setAttribute(): void {}
+}
+
 function testAudioStream(): MediaStream {
   return new TestAudioStream() as unknown as MediaStream
 }
@@ -249,6 +273,45 @@ describe('FreeformVoiceRecorder', () => {
       screen.queryByRole('button', { name: 'Play replay' }),
     ).not.toBeInTheDocument()
     expect(keepMock).not.toHaveBeenCalled()
+  })
+
+  it('offers a native temporary scrubber without starting playback', async () => {
+    TestPreviewAudio.instances = []
+    vi.stubGlobal('Audio', TestPreviewAudio as unknown as typeof Audio)
+    renderRecorder()
+    fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
+      target: { value: 'First chorus after warm-up' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }))
+    await waitFor(() => expect(startMock).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Stop recording' }))
+
+    const scrubber = await screen.findByRole('slider', {
+      name: 'Seek temporary take',
+    })
+    expect(scrubber).toHaveAttribute('type', 'range')
+    expect(scrubber).toHaveAttribute('max', '4.2')
+
+    fireEvent.input(scrubber, {
+      target: { value: '3.15' },
+    })
+
+    expect(scrubber).toHaveValue('3.15')
+    expect(
+      screen.getByRole('button', { name: 'Play replay' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Pause replay' }),
+    ).not.toBeInTheDocument()
+    expect(TestPreviewAudio.instances[0]?.play).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(scrubber, { key: 'Home' })
+    expect(scrubber).toHaveValue('0')
+    fireEvent.keyDown(scrubber, { key: 'ArrowRight' })
+    expect(scrubber).toHaveValue('1')
+    fireEvent.keyDown(scrubber, { key: 'End' })
+    expect(scrubber).toHaveValue('4.2')
+    expect(TestPreviewAudio.instances[0]?.play).not.toHaveBeenCalled()
   })
 
   it('lets external navigation close a title-only draft without a dialog', () => {

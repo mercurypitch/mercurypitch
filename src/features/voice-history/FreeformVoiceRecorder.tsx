@@ -76,6 +76,8 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   const elapsedMs = voiceCapture.elapsedMs
   const previewPlaying = voiceCapture.previewPlaying
   const previewProgress = voiceCapture.previewProgress
+  const previewCurrentTimeMs = voiceCapture.previewCurrentTimeMs
+  const previewDurationMs = voiceCapture.previewDurationMs
   const message = (): string | null =>
     persistenceMessage() ?? voiceCapture.message()
 
@@ -90,6 +92,13 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
 
   const persistenceLocked = (): boolean =>
     state() === 'saving' || state() === 'saved'
+
+  const replayDurationMs = (): number => {
+    const reported = previewDurationMs()
+    if (Number.isFinite(reported) && reported > 0) return reported
+    const captured = capture()?.durationMs ?? 0
+    return Number.isFinite(captured) && captured > 0 ? captured : 0
+  }
 
   function resetTemporary(): void {
     voiceCapture.discard()
@@ -527,16 +536,48 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
                 {formatElapsed(elapsedMs())}
               </span>
             </div>
-            <div
-              class={styles.waveform}
-              role="img"
-              aria-label="Waveform for the temporary take"
-            >
+            <div class={styles.waveform}>
               <VoiceTakeWaveform
                 class={styles.waveformCanvas}
                 peaks={take().peaks}
                 progress={previewProgress()}
                 playing={previewPlaying()}
+                showPlayhead
+              />
+              <input
+                class={styles.waveformScrubber}
+                type="range"
+                min="0"
+                max={replayDurationMs() / 1000}
+                step="0.01"
+                value={previewCurrentTimeMs() / 1000}
+                aria-label="Seek temporary take"
+                aria-valuetext={`${formatElapsed(previewCurrentTimeMs())} of ${formatElapsed(replayDurationMs())}`}
+                data-testid="freeform-preview-scrubber"
+                disabled={persistenceLocked()}
+                onInput={(event) => {
+                  voiceCapture.seekPreview(Number(event.currentTarget.value))
+                }}
+                onKeyDown={(event) => {
+                  const durationSeconds = replayDurationMs() / 1000
+                  const currentSeconds = Number(event.currentTarget.value)
+                  const nextSeconds =
+                    event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? durationSeconds
+                        : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
+                          ? currentSeconds - 1
+                          : event.key === 'ArrowRight' ||
+                              event.key === 'ArrowUp'
+                            ? currentSeconds + 1
+                            : null
+                  if (nextSeconds === null) return
+                  event.preventDefault()
+                  voiceCapture.seekPreview(
+                    Math.max(0, Math.min(durationSeconds, nextSeconds)),
+                  )
+                }}
               />
             </div>
             <div class={styles.reviewActions}>
