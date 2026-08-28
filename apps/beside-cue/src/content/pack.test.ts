@@ -1,13 +1,89 @@
 import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { assetUrls } from './assets'
+import type { AudioAssetManifest, AudioSourceVariant } from './audio-manifest'
+import { DEFAULT_AUDIO_ASSET_MANIFEST } from './audio-manifest'
 import { MOMENTS } from './moments'
 import { CHARACTER_STATES, DEFAULT_CONTENT_PACK, findCharacter, findCueEntity, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, validateContentPack, } from './pack'
 import { pullOptions } from './pulls'
+import { CANONICAL_VOICE_LINES } from './voice-lines'
+
+const RECORDED_LINE = CANONICAL_VOICE_LINES[0]
+const VALID_SOURCE: AudioSourceVariant = {
+  src: `/audio/voice/en/corky/${RECORDED_LINE.fileStem}.m4a`,
+  mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+  sha256: 'a'.repeat(64),
+  byteLength: 12_345,
+  durationMs: 1_800,
+  sampleRateHz: 48_000,
+  channels: 1,
+}
+
+function manifestWithRecording(
+  source: AudioSourceVariant = VALID_SOURCE,
+  captionSha256: string = RECORDED_LINE.captionSha256,
+): AudioAssetManifest {
+  return {
+    schemaVersion: 1,
+    revision: 'beside-cue-audio-pack-test-v1',
+    locale: 'en',
+    assets: [
+      {
+        id: `dialogue.${RECORDED_LINE.id}`,
+        lane: 'dialogue',
+        playback: { kind: 'one-shot' },
+        dialogue: {
+          lineId: RECORDED_LINE.id,
+          captionSha256,
+        },
+        sources: [source],
+      },
+    ],
+  }
+}
 
 describe('content pack', () => {
-  it('is valid', () => {
+  it('ships the exact canonical V2 registry with a valid empty media layer', () => {
+    expect(DEFAULT_CONTENT_PACK.version).toBe('0.4.0')
+    expect(DEFAULT_CONTENT_PACK.lines).toBe(CANONICAL_VOICE_LINES)
+    expect(DEFAULT_CONTENT_PACK.lines).toHaveLength(43)
+    expect(DEFAULT_CONTENT_PACK.audio).toBe(DEFAULT_AUDIO_ASSET_MANIFEST)
+    expect(DEFAULT_CONTENT_PACK.audio.assets).toEqual([])
     expect(validateContentPack(DEFAULT_CONTENT_PACK)).toEqual([])
+  })
+
+  it('accepts a future descriptor bound to one exact canonical caption', () => {
+    const pack = {
+      ...DEFAULT_CONTENT_PACK,
+      audio: manifestWithRecording(),
+    }
+
+    expect(validateContentPack(pack)).toEqual([])
+  })
+
+  it('rejects a structurally valid recording with a stale caption binding', () => {
+    const problems = validateContentPack({
+      ...DEFAULT_CONTENT_PACK,
+      audio: manifestWithRecording(VALID_SOURCE, 'b'.repeat(64)),
+    })
+
+    expect(problems.join('\n')).toMatch(/not bound to a line/iu)
+  })
+
+  it('surfaces delivery-byte faults from an otherwise bound descriptor', () => {
+    const problems = validateContentPack({
+      ...DEFAULT_CONTENT_PACK,
+      audio: manifestWithRecording({
+        ...VALID_SOURCE,
+        src: 'https://provider.test/corky.m4a',
+        sha256: 'not-a-hash',
+        durationMs: 0,
+      }),
+    }).join('\n')
+
+    expect(problems).toMatch(/non-packaged source URL/iu)
+    expect(problems).toMatch(/lowercase SHA-256/iu)
+    expect(problems).toMatch(/duration must be a finite positive number/iu)
   })
 
   it('gives the lead character every state the app can ask for', () => {
@@ -82,7 +158,7 @@ describe('content pack', () => {
       cueEntities: invalidPullCharacters,
       lines: [
         ...DEFAULT_CONTENT_PACK.lines,
-        { id: 'core.two-sides', text: 'Duplicate.' },
+        { id: 'corky.onboarding.greeting', text: 'Duplicate.' },
       ],
     })
 

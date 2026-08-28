@@ -3,16 +3,20 @@
 // ============================================================
 //
 // One place that a designer, a voice actor and a translator can all be pointed
-// at. Art arrives as slots (see `assets.ts`), spoken copy arrives as lines with
-// an optional audio file, and neither needs a code change to land: an asset
-// pass fills in `frames` or `video`, a recording pass fills in `audio`.
+// at. Art arrives as slots (see `assets.ts`) and spoken copy arrives as exact,
+// durable captions. Optional recordings live in the pack audio manifest and
+// bind to a line through its caption hash.
 //
 // Pull-character names and roles are stable product language. The cue is the
 // context that brings a Pull into focus; the character personifies that Pull
 // and must never be described as the cue itself.
 
 import type { AssetSlot } from './assets'
+import type { AudioAssetManifest } from './audio-manifest'
+import { DEFAULT_AUDIO_ASSET_MANIFEST, validateAudioAssetManifest, validateAudioDialogueLineBindings, } from './audio-manifest'
 import { canonicalPullId, pullOptions } from './pulls'
+import type { VoiceLineKind, VoiceSpeakerId } from './voice-lines'
+import { CANONICAL_VOICE_LINES } from './voice-lines'
 
 export type CharacterStateId = 'rest' | 'notice' | 'turn' | 'quiet'
 
@@ -27,10 +31,13 @@ export interface Line {
   readonly id: string
   readonly text: string
   /**
-   * Undefined until a voice actor has delivered this line. The interface shows
-   * the caption either way, so an unrecorded line is quieter, never missing.
+   * Precomputed from exact NFC UTF-8 text. Optional for injected legacy packs;
+   * required before a manifest recording can bind to this caption.
    */
-  readonly audio?: string
+  readonly captionSha256?: string
+  readonly speakerId?: VoiceSpeakerId
+  readonly fileStem?: string
+  readonly kind?: VoiceLineKind
 }
 
 export interface Character {
@@ -65,6 +72,8 @@ export interface ContentPack {
   /** @deprecated Use `pullCharacters`; retained for V1 content callers. */
   readonly cueEntities: readonly PullCharacter[]
   readonly lines: readonly Line[]
+  /** Optional media delivery; the empty manifest is a complete silent state. */
+  readonly audio: AudioAssetManifest
 }
 
 const ART = `${import.meta.env.BASE_URL}art`
@@ -212,201 +221,15 @@ export type CueEntity = PullCharacter
 /** @deprecated Use `GENERIC_PULL_CHARACTER`. */
 export const GENERIC_CUE_ENTITY = GENERIC_PULL_CHARACTER
 
-// Corky's own lines. Selected from the mantra set; the audio field stays
-// undefined until the recording pass lands.
-const lines: readonly Line[] = [
-  // V2 Pull-character recording contract. Captions are complete without audio;
-  // selected `.m4a` files can be added to these records after the voice session.
-  {
-    id: 'pull.scrolling.meet',
-    text: 'I’m The Scroll. I always have one more thing to show you, and then one more after that.',
-  },
-  {
-    id: 'pull.scrolling.present',
-    text: 'I can keep going for you. That’s what I do.',
-  },
-  {
-    id: 'pull.scrolling.recede',
-    text: 'All right. I’ll keep the next thing for later.',
-  },
-  {
-    id: 'pull.snacking.meet',
-    text: 'Hi. I’m Sugarlump—the little reach that happens before you notice the reaching.',
-  },
-  {
-    id: 'pull.snacking.present',
-    text: 'Something easy and sweet? I can make that sound like the whole plan.',
-  },
-  {
-    id: 'pull.snacking.recede',
-    text: 'Okay. The sparkle keeps. You can choose again later.',
-  },
-  {
-    id: 'pull.familiar-ritual.meet',
-    text: 'I’m The Usual. I know the time, the place, and the shape of the routine.',
-  },
-  {
-    id: 'pull.familiar-ritual.present',
-    text: 'Same place, same order, no new decision. Familiar can feel very comfortable.',
-  },
-  {
-    id: 'pull.familiar-ritual.recede',
-    text: 'The place will still be here. You can make a different ritual in it.',
-  },
-  {
-    id: 'pull.two-minute-pause.meet',
-    text: 'I’m Ember. I turn a busy moment into one small pause you already know.',
-  },
-  {
-    id: 'pull.two-minute-pause.present',
-    text: 'Step away with me for a minute. The rest can wait.',
-  },
-  {
-    id: 'pull.two-minute-pause.recede',
-    text: 'Take the pause without me. The quiet part was yours anyway.',
-  },
-  {
-    id: 'pull.one-tap-convenience.meet',
-    text: 'Ding. I’m Dinger. I make the fastest answer feel chosen before you choose it.',
-  },
-  {
-    id: 'pull.one-tap-convenience.present',
-    text: 'One tap, no planning, done. Easy has a very good sound.',
-  },
-  {
-    id: 'pull.one-tap-convenience.recede',
-    text: 'Ding—unrung. The button can wait.',
-  },
-  {
-    id: 'pull.avoidance.meet',
-    text: 'I’m The Fog. I’m not stopping anything. I’m just making the first step hard to see.',
-  },
-  {
-    id: 'pull.avoidance.present',
-    text: 'It can wait until later. Later always sounds a little easier.',
-  },
-  {
-    id: 'pull.avoidance.recede',
-    text: 'Start with one small thing, then. I tend to thin out once you begin.',
-  },
-
-  {
-    id: 'core.two-sides',
-    text: 'Every record has two sides. So does this moment.',
-  },
-  {
-    id: 'core.beside-it',
-    text: "I'm not here to grade the spin. I'm here beside it.",
-  },
-  {
-    id: 'core.needle-drop',
-    text: 'A cue is just the needle dropping. You choose the track.',
-  },
-  {
-    id: 'core.b-side-meaning',
-    text: "Side B doesn't mean second best. It means the one you chose.",
-  },
-  { id: 'core.one-turn', text: 'One turn at a time.' },
-  { id: 'core.same-record', text: 'Same record. Better side.' },
-  {
-    id: 'core.flip-it',
-    text: "You can't unplay a groove. You can flip the record.",
-  },
-  { id: 'core.loud-quiet', text: 'Loud cue. Quiet turn.' },
-  {
-    id: 'core.a-side-talking',
-    text: "The pull is the A-side talking. It's allowed to talk.",
-  },
-  { id: 'core.still-spinning', text: "Still spinning. That's the whole job." },
-
-  { id: 'bside.clean-groove', text: "That's a clean groove." },
-  { id: 'bside.pressed', text: 'Pressed. Nothing flashy. It counts.' },
-  {
-    id: 'bside.the-craft',
-    text: "Heard the cue, chose the track. That's the craft.",
-  },
-  {
-    id: 'bside.run-out',
-    text: 'One more turn in the run-out. See you at the next spin.',
-  },
-  { id: 'bside.good-side', text: 'Good side, this one.' },
-
-  { id: 'aside.records-do-that', text: 'The A-side played. Records do that.' },
-  { id: 'aside.noted', text: 'Noted, not graded.' },
-  {
-    id: 'aside.flip-when-ready',
-    text: "Still the same record. Flip it when you're ready.",
-  },
-  {
-    id: 'aside.beside-you',
-    text: "Some spins go that way. I'm still beside you.",
-  },
-  {
-    id: 'aside.tomorrow',
-    text: 'The needle drops again tomorrow. Same time, same us.',
-  },
-
-  {
-    id: 'return.kept-your-place',
-    text: 'There you are. The turntable kept your place.',
-  },
-  {
-    id: 'return.surface-noise',
-    text: "Surface noise. The music's still under it.",
-  },
-  {
-    id: 'return.no-groove-wore-out',
-    text: 'No groove wore out while you were gone.',
-  },
-  {
-    id: 'return.records-wait',
-    text: "Records wait. It's one of their best features.",
-  },
-  { id: 'return.left-the-sleeve', text: 'Right where we left the sleeve.' },
-
-  {
-    id: 'pressing.hold-to-light',
-    text: "That's a pressing. Hold it up to the light.",
-  },
-  {
-    id: 'pressing.every-groove',
-    text: 'Every groove in this one is a turn you made.',
-  },
-  { id: 'pressing.run-of-one', text: 'Limited edition. Run of one.' },
-  {
-    id: 'pressing.needed-yours',
-    text: "This didn't need to be perfect. It needed to be yours.",
-  },
-  {
-    id: 'pressing.listen-back',
-    text: 'Worth a listen back, this side of you.',
-  },
-
-  { id: 'cue.hovering', text: "Needle's hovering. No rush." },
-  {
-    id: 'cue.on-the-label',
-    text: "It's that time on the label. What are we playing?",
-  },
-  { id: 'cue.hold-the-sleeve', text: "Cue's here. I'll hold the sleeve." },
-  { id: 'cue.quick-spin', text: 'Quick spin with me?' },
-  { id: 'cue.your-move', text: "The record's on the platter. Your move, DJ." },
-
-  { id: 'reminder.at-seven', text: "I'll drop the needle at seven, then." },
-  { id: 'reminder.same-time', text: 'Same time on the label as always.' },
-  {
-    id: 'reminder.slot-is-safe',
-    text: 'Your slot on the turntable is safe with me.',
-  },
-]
-
 export const DEFAULT_CONTENT_PACK: ContentPack = {
   id: 'beside-cue-default',
-  version: '0.3.0',
+  version: '0.4.0',
   leadCharacterId: corky.id,
   characters: [corky],
   pullCharacters: PULL_CHARACTERS,
   cueEntities: PULL_CHARACTERS,
-  lines,
+  lines: CANONICAL_VOICE_LINES,
+  audio: DEFAULT_AUDIO_ASSET_MANIFEST,
 }
 
 export function findCharacter(
@@ -448,6 +271,8 @@ export function findLine(pack: ContentPack, id: string): Line | undefined {
  */
 export function validateContentPack(pack: ContentPack): readonly string[] {
   const problems: string[] = []
+
+  problems.push(...validateAudioAssetManifest(pack.audio))
 
   if (findCharacter(pack, pack.leadCharacterId) === undefined) {
     problems.push(
@@ -504,6 +329,22 @@ export function validateContentPack(pack: ContentPack): readonly string[] {
       )
     }
   }
+
+  problems.push(
+    ...validateAudioDialogueLineBindings(
+      pack.audio,
+      pack.lines.flatMap((line) =>
+        line.captionSha256 === undefined
+          ? []
+          : [
+              {
+                lineId: line.id,
+                captionSha256: line.captionSha256,
+              },
+            ],
+      ),
+    ),
+  )
 
   return problems
 }

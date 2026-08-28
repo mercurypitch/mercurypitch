@@ -209,6 +209,21 @@
   line-height: 1.38;
 }
 
+.voiceControls {
+  display: grid;
+  justify-items: end;
+  gap: 0.42rem;
+  min-width: min(11.5rem, 42%);
+}
+
+.voiceStatus {
+  max-width: 22ch;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.3;
+  text-align: right;
+}
+
 .hearButton {
   min-width: max-content;
   min-height: 3rem;
@@ -235,6 +250,18 @@
   outline-offset: 3px;
 }
 
+.hearButton:disabled {
+  border-color: rgb(36 25 19 / 36%);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  cursor: wait;
+}
+
+.hearButton:disabled:hover {
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+}
+
 @media (min-width: 42rem) {
   .pullGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -255,6 +282,16 @@
   .selectionPreview {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .voiceControls {
+    justify-items: stretch;
+    min-width: 0;
+  }
+
+  .voiceStatus {
+    max-width: none;
+    text-align: left;
   }
 
   .hearButton {

@@ -8,6 +8,8 @@ import { App } from './App'
 import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
+import type { AudioSourceVariant, ContentPack, DialogueAudioAsset, VoiceAudioFinish, VoiceAudioPort, } from './content'
+import { DEFAULT_CONTENT_PACK, findLine } from './content'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
 import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARDING_MEDIA_V0_9, } from './onboarding'
 import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
@@ -268,6 +270,7 @@ function createTestServices(
     readonly platform?: BesideCueAppServices['platform']
     readonly purchases?: BesideCueAppServices['purchases']
     readonly onboardingPreferences?: BesideCueAppServices['onboardingPreferences']
+    readonly voiceAudio?: VoiceAudioPort
   } = {},
 ): BesideCueAppServices {
   let nextId = 0
@@ -289,8 +292,127 @@ function createTestServices(
         setItem: (key, value) => preferenceValues.set(key, value),
         removeItem: (key) => preferenceValues.delete(key),
       }),
+    ...(options.voiceAudio === undefined
+      ? {}
+      : { voiceAudio: options.voiceAudio }),
     now: () => new Date('2026-08-06T10:00:00'),
     createId: () => `test-${String((nextId += 1))}`,
+  }
+}
+
+interface ValueDeferred<T> {
+  readonly promise: Promise<T>
+  resolve(value: T): void
+}
+
+function valueDeferred<T>(): ValueDeferred<T> {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve
+  })
+  return { promise, resolve }
+}
+
+interface RecordedVoicePlayback {
+  readonly source: AudioSourceVariant
+  readonly finished: ValueDeferred<VoiceAudioFinish>
+  stopCalls: number
+}
+
+interface VoiceAudioProbe {
+  readonly port: VoiceAudioPort
+  readonly playbacks: readonly RecordedVoicePlayback[]
+  finish(index: number, result?: VoiceAudioFinish): void
+}
+
+function createVoiceAudioProbe(): VoiceAudioProbe {
+  const playbacks: RecordedVoicePlayback[] = []
+
+  const port: VoiceAudioPort = {
+    supportsMimeType: () => true,
+    play(source) {
+      const finished = valueDeferred<VoiceAudioFinish>()
+      const playback: RecordedVoicePlayback = {
+        source,
+        finished,
+        stopCalls: 0,
+      }
+      playbacks.push(playback)
+
+      return {
+        started: Promise.resolve(),
+        finished: finished.promise,
+        stop: () => {
+          playback.stopCalls += 1
+          finished.resolve('stopped')
+        },
+      }
+    },
+    dispose: () => undefined,
+  }
+
+  return {
+    port,
+    playbacks,
+    finish(index, result = 'ended') {
+      const playback = playbacks[index]
+      if (playback === undefined) {
+        throw new Error(`Expected voice playback ${String(index)}.`)
+      }
+      playback.finished.resolve(result)
+    },
+  }
+}
+
+function packWithRecordedLines(...lineIds: readonly string[]): ContentPack {
+  const assets = lineIds.map((lineId, index): DialogueAudioAsset => {
+    const line = findLine(DEFAULT_CONTENT_PACK, lineId)
+    if (
+      line?.captionSha256 === undefined ||
+      line.fileStem === undefined ||
+      line.speakerId === undefined
+    ) {
+      throw new Error(`Expected a recordable canonical line for ${lineId}.`)
+    }
+
+    return {
+      id: `dialogue.${lineId}`,
+      lane: 'dialogue',
+      playback: { kind: 'one-shot' },
+      dialogue: {
+        lineId,
+        captionSha256: line.captionSha256,
+      },
+      sources: [
+        {
+          src: `/audio/voice/en/${line.speakerId}/${line.fileStem}.m4a`,
+          mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+          sha256: `${'a'.repeat(63)}${String(index % 10)}`,
+          byteLength: 4_096 + index,
+          durationMs: 2_000 + index,
+          sampleRateHz: 48_000,
+          channels: 1,
+        },
+      ],
+    }
+  })
+
+  return {
+    ...DEFAULT_CONTENT_PACK,
+    audio: {
+      schemaVersion: 1,
+      revision: 'app-test-recorded-lines-v1',
+      locale: 'en',
+      assets,
+    },
+  }
+}
+
+function stateWithVoiceEnabled(voiceEnabled: boolean): BesideCueStateV1 {
+  const state = createInitialState()
+  return {
+    ...state,
+    settings: { ...state.settings, voiceEnabled },
   }
 }
 
@@ -322,6 +444,331 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+})
+
+describe('Beside Cue character voice integration', () => {
+  it('attempts a delivered Pull introduction once and leaves replay explicit', async () => {
+    const repository = createMemoryRepository()
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('pull.scrolling.meet')}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+    expect(voice.playbacks[0]?.source.src).toContain('en__the-scroll__meet.m4a')
+    await screen.findByText('Voice playing.')
+
+    voice.finish(0)
+    await screen.findByRole('button', {
+      name: /replay voice/iu,
+    })
+    fireEvent.click(screen.getByRole('radio', { name: /automatic snacking/iu }))
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    expect(voice.playbacks).toHaveLength(1)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /replay voice/iu,
+      }),
+    )
+    await waitFor(() => expect(voice.playbacks).toHaveLength(2))
+    expect(voice.playbacks[1]?.source.src).toContain('en__the-scroll__meet.m4a')
+    expect(repository.saveCalls()).toBe(0)
+    expect(repository.snapshot()).toBeNull()
+  })
+
+  it('keeps the delivered caption truthful and silent when voice is muted', async () => {
+    const repository = createMemoryRepository(stateWithVoiceEnabled(false))
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('pull.scrolling.meet')}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+
+    expect(
+      await screen.findByText(
+        'Voice is muted in Settings. The full caption is shown.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'I’m The Scroll. I always have one more thing to show you, and then one more after that.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: /hear voice|replay voice|voice playing/iu,
+      }),
+    ).not.toBeInTheDocument()
+    expect(voice.playbacks).toHaveLength(0)
+  })
+
+  it('plays a manual Cue gesture but keeps a foreground scheduled Cue caption-only', async () => {
+    const repository = createMemoryRepository(
+      withDailyRule(
+        stateWithActiveCue({
+          bSideSuggestionId: 'bside.phone-away',
+          bSideText: 'Put the phone in another room.',
+        }),
+      ),
+    )
+    const runtime = createMobileRuntimeProbe({ permission: 'granted' })
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, {
+          platform: 'android',
+          runtime: runtime.runtime,
+          voiceAudio: voice.port,
+        })}
+        contentPack={packWithRecordedLines(
+          'corky.cue-open.01',
+          'corky.cue-open.02',
+        )}
+      />
+    ))
+
+    await waitFor(() => expect(runtime.calls.scheduled.at(-1)).toHaveLength(1))
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+    expect(voice.playbacks[0]?.source.src).toContain(
+      'en__corky__cue-open-01.m4a',
+    )
+    fireEvent.click(screen.getByRole('button', { name: /close cue/iu }))
+    await screen.findByRole('heading', {
+      name: /a better choice, kept close/iu,
+    })
+
+    const scheduled = runtime.calls.scheduled.at(-1)?.[0]
+    if (scheduled === undefined) throw new Error('Expected a notification.')
+    await runtime.emitNotificationAction({
+      notificationId: scheduled.id,
+      actionId: 'open',
+      extra: scheduled.extra,
+    })
+
+    expect(
+      await screen.findByText('Your plan is here when you want it.'),
+    ).toBeInTheDocument()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { source: 'manual', state: 'cancelled' },
+      { source: 'scheduled', state: 'presented' },
+    ])
+    expect(voice.playbacks).toHaveLength(1)
+  })
+
+  it.each([
+    [
+      'Side B',
+      /choose side b/iu,
+      'corky.side-b.01',
+      'Side B is yours',
+      'en__corky__side-b-01.m4a',
+    ],
+    [
+      'Not now',
+      /not now/iu,
+      'corky.not-now.01',
+      'Not now is okay',
+      'en__corky__not-now-01.m4a',
+    ],
+  ] as const)(
+    'starts the %s acknowledgement only after its atomic save succeeds',
+    async (_label, buttonName, lineId, quietLabel, sourceName) => {
+      const repository = createMemoryRepository(
+        stateWithActiveCue({
+          bSideSuggestionId: 'bside.phone-away',
+          bSideText: 'Put the phone in another room.',
+        }),
+      )
+      const voice = createVoiceAudioProbe()
+      render(() => (
+        <App
+          config={WELCOME_ONLY_TEST_CONFIG}
+          services={createTestServices(repository, {
+            voiceAudio: voice.port,
+          })}
+          contentPack={packWithRecordedLines(lineId)}
+        />
+      ))
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: /cue me now/iu }),
+      )
+      await waitFor(() =>
+        expect(repository.snapshot()?.occurrences).toMatchObject([
+          { state: 'presented' },
+        ]),
+      )
+      const saveGate = repository.deferNextSave()
+      const savesBeforeChoice = repository.saveCalls()
+
+      fireEvent.click(screen.getByRole('button', { name: buttonName }))
+
+      expect(repository.saveCalls()).toBe(savesBeforeChoice + 1)
+      expect(repository.snapshot()?.occurrences).toMatchObject([
+        { state: 'presented' },
+      ])
+      expect(voice.playbacks).toHaveLength(0)
+
+      saveGate.resolve()
+      expect(await screen.findByText(quietLabel)).toBeInTheDocument()
+      await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+      expect(voice.playbacks[0]?.source.src).toContain(sourceName)
+      const savedState = structuredClone(repository.snapshot())
+      const savesAfterChoice = repository.saveCalls()
+
+      voice.finish(0)
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(repository.saveCalls()).toBe(savesAfterChoice)
+      expect(repository.snapshot()).toEqual(savedState)
+    },
+  )
+
+  it('keeps an acknowledgement silent when the app hides during its atomic save', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.phone-away',
+        bSideText: 'Put the phone in another room.',
+      }),
+    )
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('corky.side-b.01')}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    await waitFor(() =>
+      expect(repository.snapshot()?.occurrences).toMatchObject([
+        { state: 'presented' },
+      ]),
+    )
+    const saveGate = repository.deferNextSave()
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    saveGate.resolve()
+
+    expect(await screen.findByText('Side B is yours')).toBeInTheDocument()
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved', outcome: 'b_side' },
+    ])
+    expect(voice.playbacks).toHaveLength(0)
+  })
+
+  it('keeps a failed choice silent and starts one acknowledgement after retry', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.phone-away',
+        bSideText: 'Put the phone in another room.',
+      }),
+    )
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('corky.side-b.01')}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    await waitFor(() =>
+      expect(repository.snapshot()?.occurrences).toMatchObject([
+        { state: 'presented' },
+      ]),
+    )
+    repository.failNextSave()
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your choice could not be saved on this device. Please try again.',
+    )
+    expect(voice.playbacks).toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /choose side b/iu }))
+    expect(await screen.findByText('Side B is yours')).toBeInTheDocument()
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+    expect(voice.playbacks[0]?.source.src).toContain('en__corky__side-b-01.m4a')
+    expect(repository.snapshot()?.occurrences).toMatchObject([
+      { state: 'resolved', outcome: 'b_side' },
+    ])
+    expect(repository.snapshot()?.occurrences).toHaveLength(1)
+  })
+
+  it('stops the current Pull voice when its route exits', async () => {
+    const repository = createMemoryRepository()
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('pull.scrolling.meet')}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+
+    fireEvent.click(screen.getByRole('button', { name: /go back/iu }))
+
+    await waitFor(() => expect(voice.playbacks[0]?.stopCalls).toBe(1))
+    expect(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    ).toBeInTheDocument()
+  })
+
+  it('stops the current character voice when the document becomes hidden', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.phone-away',
+        bSideText: 'Put the phone in another room.',
+      }),
+    )
+    const voice = createVoiceAudioProbe()
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('corky.cue-open.01')}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: /cue me now/iu }))
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await waitFor(() => expect(voice.playbacks[0]?.stopCalls).toBe(1))
+  })
 })
 
 describe('Beside Cue app', () => {
