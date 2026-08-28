@@ -71,6 +71,11 @@ wall, glass-crumble fall and both orientations.
   approach spot sits over a platform, and for `pane.rescueMs` after a pane
   bursts, silence glides Merc to the nearest perch instead of dropping him.
   The perch stays unlit — its note still has to be sung to land and advance.
+  A stopping voice's downward collapse is filtered out (release-glide
+  median), silence over a void sinks slowly before the real fall, and a
+  voiced note catches Merc mid-fall while `fall.catchable` — see the
+  melody-levels spec ([melody-levels.md](melody-levels.md)) for the full
+  feel model and the level system it belongs to.
 - Planned input modes beyond voice (tap rhythm, hear-and-select) are specced
   in [input-modes.md](input-modes.md); the mechanics library and the Merc's
   Journey spec live in [game-design.md](game-design.md).

@@ -118,6 +118,8 @@ export const JourneyPrototype: Component = () => {
   let falling = false
   let fallenMs = 0
   let rescueMs = 0
+  let sinkMs = 0
+  let pitchHist: { t: number; midi: number }[] = []
   let trail: { wx: number; y: number }[] = []
   let puff: { x: number; y: number; vx: number; vy: number; r: number }[] = []
   let puffT = -1
@@ -359,6 +361,8 @@ export const JourneyPrototype: Component = () => {
     falling = false
     fallenMs = 0
     rescueMs = 0
+    sinkMs = 0
+    pitchHist = []
     restIdx = null
   }
 
@@ -410,6 +414,8 @@ export const JourneyPrototype: Component = () => {
       falling = false
       fallenMs = 0
       rescueMs = 0
+      sinkMs = 0
+      pitchHist = []
       restIdx = null
       shownMidi = null
       advanceTo(lastCheckpointIdx + 1)
@@ -451,11 +457,36 @@ export const JourneyPrototype: Component = () => {
           const maxStep = C.voice.slewSemisPerFrame * (dt / 16.7)
           shownMidi += Math.max(-maxStep, Math.min(maxStep, raw - shownMidi))
         }
+        pitchHist.push({ t: now, midi: raw })
+        const keep = now - C.voice.releaseTailMs - C.voice.releaseSpanMs - 200
+        while (pitchHist.length > 0 && pitchHist[0].t < keep) pitchHist.shift()
       }
     } else {
       voicedStreak = 0
       unvoicedMs += dt
-      if (unvoicedMs > C.voice.restGraceMs) shownMidi = null
+      if (unvoicedMs > C.voice.restGraceMs && shownMidi !== null) {
+        // release-glide filter: the stopping voice collapsed in pitch and
+        // dragged Merc down — restore the height he meant, the median of
+        // the pitch window just BEFORE the release tail
+        if (p === 'play') {
+          const cut = now - unvoicedMs
+          const upto = cut - C.voice.releaseTailMs
+          const from = upto - C.voice.releaseSpanMs
+          const win = pitchHist
+            .filter((s) => s.t >= from && s.t <= upto)
+            .map((s) => s.midi)
+            .sort((a, b) => a - b)
+          if (win.length > 0) {
+            const iy = Math.min(
+              1.05,
+              Math.max(-0.05, yFor(win[Math.floor(win.length / 2)])),
+            )
+            if (iy < mercY) mercY = iy // only lift back, never push down
+          }
+        }
+        shownMidi = null
+        pitchHist = []
+      }
     }
     const midi = shownMidi
 
@@ -645,13 +676,27 @@ export const JourneyPrototype: Component = () => {
     if (p === 'play' || p === 'fallen') {
       rescueMs = Math.max(0, rescueMs - dt)
       if (falling) {
-        mercY += (C.fall.speed * dt) / 1000
-        if (mercY > C.fall.yGone) {
-          fallenMs += dt
-          if (fallenMs > C.fall.cardDelayMs && p === 'play') setPhase('fallen')
+        if (
+          C.fall.catchable &&
+          midi !== null &&
+          mercY < C.fall.yGone &&
+          p === 'play'
+        ) {
+          // a voiced note catches Merc while he is still on screen
+          falling = false
+          fallenMs = 0
+          sinkMs = 0
+        } else {
+          mercY += (C.fall.speed * dt) / 1000
+          if (mercY > C.fall.yGone) {
+            fallenMs += dt
+            if (fallenMs > C.fall.cardDelayMs && p === 'play')
+              setPhase('fallen')
+          }
         }
       } else if (midi !== null) {
         restIdx = null
+        sinkMs = 0
         const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
         mercY += (ty - mercY) * C.view.flyLerp
       } else if (platforms.length > 0) {
@@ -662,7 +707,9 @@ export const JourneyPrototype: Component = () => {
             if (pl.broken) continue
             if (mercWX < pl.x0 - 0.15 || mercWX > pl.x1 + 0.15) continue
             const d = yFor(pl.midi) - mercY
-            if (d > -0.06 && d < bestD) {
+            // restSnapUpUnits: a slab slightly ABOVE still catches — the
+            // release glide dragged Merc under it, silence pops him back
+            if (d > -C.land.restSnapUpUnits && d < bestD) {
               bestD = d
               best = i
             }
@@ -687,15 +734,21 @@ export const JourneyPrototype: Component = () => {
                 const tx = Math.min(Math.max(mercWX, t.x0 + 0.2), t.x1 - 0.2)
                 mercWX += (tx - mercWX) * C.pane.rescueLerp
                 mercY += (yFor(t.midi) - 0.035 - mercY) * C.view.restLerp
+                sinkMs = 0
               } else {
                 falling = true
               }
             } else {
-              falling = true // nothing below: the void
+              // the void — but first a slow, recoverable sink: any voiced
+              // note lifts Merc out before the real fall starts
+              sinkMs += dt
+              if (sinkMs > C.fall.sinkGraceMs) falling = true
+              else mercY += (C.fall.sinkSpeed * dt) / 1000
             }
           }
         }
         if (restIdx !== null) {
+          sinkMs = 0
           const pl = platforms[restIdx]
           const sitY = yFor(pl.midi) - 0.035
           mercY += (sitY - mercY) * C.view.restLerp
@@ -1225,6 +1278,50 @@ export const JourneyPrototype: Component = () => {
       ctx.beginPath()
       ctx.arc(mx, my, 14, 0, 6.283)
       ctx.fill()
+    }
+
+    // direction chevrons: point the way when the objective note is far,
+    // and always while sinking/falling (any in-window note recovers).
+    // Never for the hidden door (no spoilers) or the whisper passage.
+    if (phase() === 'play') {
+      let dir = 0 // -1 = sing higher (screen up), 1 = sing lower
+      if (falling || sinkMs > 0) dir = -1
+      else if (activeIdx < nodes.length) {
+        const n = nodes[activeIdx]
+        const target =
+          n.t === 'land'
+            ? n.p.midi
+            : n.t === 'pane' && n.pane.kind !== 'hidden'
+              ? n.pane.midi
+              : n.t === 'boss'
+                ? (n.boss.crystals.find((c) => !c.broken)?.midi ?? null)
+                : null
+        const cur =
+          shownMidi ?? (restIdx !== null ? platforms[restIdx].midi : null)
+        if (
+          target !== null &&
+          cur !== null &&
+          Math.abs(target - cur) > C.hud.arrowSemis
+        ) {
+          dir = target > cur ? -1 : 1
+        }
+      }
+      if (dir !== 0) {
+        const pulse = 0.5 + Math.sin(last / 220) * 0.3
+        ctx.strokeStyle = `rgba(88,166,255,${pulse})`
+        ctx.lineWidth = 3
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        const ay = my + dir * 40
+        for (const o of [0, 9]) {
+          const yy = ay + dir * o
+          ctx.beginPath()
+          ctx.moveTo(mx - 8, yy - dir * 5)
+          ctx.lineTo(mx, yy + dir * 3)
+          ctx.lineTo(mx + 8, yy - dir * 5)
+          ctx.stroke()
+        }
+      }
     }
   }
 

@@ -14,6 +14,12 @@ export const JOURNEY_CONFIG = {
     slewSemisPerFrame: 0.45,
     /** Silence longer than this = intentional stop → Merc rests. */
     restGraceMs: 280,
+    /** Release-glide filter: a stopping voice collapses in pitch for its
+     * last ~150 ms and drags Merc down. When silence lands, his height is
+     * restored to the median pitch over the releaseSpanMs window that
+     * ENDED releaseTailMs before the cut — the intent, not the tail. */
+    releaseTailMs: 140,
+    releaseSpanMs: 320,
   },
 
   /** Vertical pitch window and motion feel. */
@@ -41,6 +47,10 @@ export const JOURNEY_CONFIG = {
     dwellMs: 700,
     /** Out-of-band dwell decay multiplier (dwell -= dt * decay). */
     decay: 2,
+    /** Rest may snap UP onto a platform at most this far above Merc,
+     * world-y fractions — silence pops him back onto the slab a release
+     * glide dragged him under. */
+    restSnapUpUnits: 0.25,
   },
 
   /** Glass (icy) platforms crack under a resting Merc. */
@@ -142,12 +152,26 @@ export const JOURNEY_CONFIG = {
 
   /** Falling + game over. */
   fall: {
+    /** Silence over a void first SINKS slowly (recoverable) — any voiced
+     * note lifts Merc out. Only after the grace does the real fall start. */
+    sinkSpeed: 0.14,
+    sinkGraceMs: 1500,
+    /** While true, a voiced note catches Merc mid-fall (on screen only).
+     * Hard tiers can turn this off. */
+    catchable: true,
     /** Downward speed while falling, canvas fractions per second. */
     speed: 0.9,
     /** Below this canvas-y fraction, the run is lost. */
     yGone: 1.2,
     /** Pause before the game-over card, ms. */
     cardDelayMs: 700,
+  },
+
+  /** In-world HUD helpers. */
+  hud: {
+    /** Show up/down chevrons at Merc when the objective note is more than
+     * this many semitones away (never for the hidden door or whisper). */
+    arrowSemis: 1.5,
   },
 
   /** Visual dressing — parallax, materials, Merc sprite feel. */
