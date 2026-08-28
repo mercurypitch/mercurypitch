@@ -271,3 +271,38 @@ describe('compileTabNotes', () => {
     expect(indexedReads).toBeLessThan(100)
   })
 })
+
+describe('chord labels on events without an authored name', () => {
+  it('names a power chord a MIDI tab could not label for itself', () => {
+    // MIDI carries no chord names, so a tab imported from one showed two bare
+    // notes and left the player to read "0 2" as E5 mid-passage.
+    const compiled = compileTabNotes([
+      note({ id: 'root', midi: 40, stringIndex: 5, fret: 0 }),
+      note({ id: 'fifth', midi: 47, stringIndex: 4, fret: 2 }),
+    ])
+
+    expect(compiled.events[0]?.chordLabel).toBe('E5')
+  })
+
+  it('keeps the name the file supplied over the one it could infer', () => {
+    // A writer's own voicing beats a derived guess.
+    const compiled = compileTabNotes([
+      note({
+        id: 'root',
+        midi: 40,
+        stringIndex: 5,
+        fret: 0,
+        notation: { chordLabel: 'E5 (drop D)' } as GuitarNoteNotation,
+      }),
+      note({ id: 'fifth', midi: 47, stringIndex: 4, fret: 2 }),
+    ])
+
+    expect(compiled.events[0]?.chordLabel).toBe('E5 (drop D)')
+  })
+
+  it('leaves a single note unlabelled', () => {
+    const compiled = compileTabNotes([note({ id: 'solo', midi: 67 })])
+
+    expect(compiled.events[0]?.chordLabel).toBeUndefined()
+  })
+})

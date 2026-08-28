@@ -893,7 +893,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
         ctx.lineCap = 'round'
         ctx.stroke()
       }
-      if (event.chordLabel !== undefined) {
+      if (
+        event.chordLabel !== undefined &&
+        scene.display.chordLabels !== false
+      ) {
         const anchor = pts[0]
         if (anchor === undefined) continue
         const label = event.chordLabel.slice(0, 18)
