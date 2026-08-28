@@ -8,6 +8,7 @@
 // from anyone who does not use one.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OverflowMenuItem } from '../OverflowMenu'
 import { OverflowMenu } from '../OverflowMenu'
@@ -42,6 +43,53 @@ describe('OverflowMenu', () => {
       screen.getByRole('button', { name: 'More actions' }),
     ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Send to device')).toBeInTheDocument()
+  })
+
+  it('announces each closed-to-open transition before a row is chosen', () => {
+    const onOpen = vi.fn()
+    render(() => (
+      <OverflowMenu
+        label="More actions"
+        items={[{ key: 'send', label: 'Send to device', onSelect: noop }]}
+        onOpen={onOpen}
+      />
+    ))
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+
+    fireEvent.click(trigger)
+    fireEvent.click(trigger)
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+
+    expect(onOpen).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps keyboard focus when a reactive row changes state', async () => {
+    const [ready, setReady] = createSignal(false)
+    render(() => (
+      <OverflowMenu
+        label="Take actions"
+        items={[
+          {
+            key: 'export',
+            label: ready() ? 'Save or share audio' : 'Preparing audio…',
+            disabled: !ready(),
+            onSelect: noop,
+          },
+          { key: 'delete', label: 'Delete', onSelect: noop },
+        ]}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Take actions' }))
+    const deleteRow = screen.getByRole('menuitem', { name: 'Delete' })
+    deleteRow.focus()
+
+    setReady(true)
+    await Promise.resolve()
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Save or share audio' }),
+    ).toBeEnabled()
+    expect(document.activeElement).toBe(deleteRow)
   })
 
   it('runs the row and closes', () => {

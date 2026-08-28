@@ -43,7 +43,10 @@ function createMockPracticeEngine(
 }
 
 describe('useBaseExercise', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
 
   it('reset() stops the microphone', () => {
     createRoot((dispose) => {
@@ -217,6 +220,70 @@ describe('useBaseExercise', () => {
 
       // A concurrent second start (already active) must report failure too.
       await expect(base.start()).resolves.toBe(false)
+
+      dispose()
+    })
+  })
+
+  it('keeps an authored lead-in outside the capture and run clock', async () => {
+    vi.useFakeTimers()
+    const audioEngine = createMockAudioEngine()
+    const practiceEngine = createMockPracticeEngine()
+    const progress = vi.fn()
+
+    await createRoot(async (dispose) => {
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'pitch-hold', targetNote: 'A3' },
+      })
+
+      const startPromise = base.start({
+        leadInMs: 3_000,
+        onLeadInProgress: progress,
+      })
+      await Promise.resolve()
+
+      expect(base.state().status).toBe('count-in')
+      expect(base.state().elapsedMs).toBe(0)
+      expect(base.voiceCapture.state()).toBe('idle')
+      expect(progress).toHaveBeenCalledWith(3_000)
+
+      await vi.advanceTimersByTimeAsync(2_999)
+      expect(base.state().status).toBe('count-in')
+      expect(base.state().elapsedMs).toBe(0)
+
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(startPromise).resolves.toBe(true)
+      expect(base.state().status).toBe('active')
+      expect(base.state().elapsedMs).toBe(0)
+      expect(progress).toHaveBeenLastCalledWith(0)
+
+      dispose()
+    })
+  })
+
+  it('cancels an authored lead-in when the exercise resets', async () => {
+    vi.useFakeTimers()
+    const audioEngine = createMockAudioEngine()
+    const practiceEngine = createMockPracticeEngine()
+
+    await createRoot(async (dispose) => {
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: { type: 'pitch-hold', targetNote: 'A3' },
+      })
+
+      const startPromise = base.start({ leadInMs: 3_000 })
+      await Promise.resolve()
+      expect(base.state().status).toBe('count-in')
+
+      base.reset()
+
+      await expect(startPromise).resolves.toBe(false)
+      expect(base.state().status).toBe('idle')
+      expect(practiceEngine.stopMic).toHaveBeenCalled()
 
       dispose()
     })

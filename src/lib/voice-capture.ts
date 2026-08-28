@@ -210,12 +210,15 @@ export async function inspectVoiceTake(
   durationMs: number
   peaks: Float32Array
   peakAmplitude?: number | null
+  /** Reuse the already-decoded PCM for pop-free local preview when possible. */
+  decodedBuffer?: AudioBuffer | null
 }> {
   if (audioContext === null) {
     return {
       durationMs: fallbackDurationMs,
       peaks: new Float32Array(),
       peakAmplitude: null,
+      decodedBuffer: null,
     }
   }
   try {
@@ -239,12 +242,14 @@ export async function inspectVoiceTake(
           : fallbackDurationMs,
       peaks: computeVoicePeaks(buffer),
       peakAmplitude,
+      decodedBuffer: buffer,
     }
   } catch {
     return {
       durationMs: fallbackDurationMs,
       peaks: new Float32Array(),
       peakAmplitude: null,
+      decodedBuffer: null,
     }
   }
 }

@@ -263,10 +263,20 @@
 }
 
 .threadIdentity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.threadTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
 .threadIdentity h2 {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-wrap: anywhere;
   margin: 4px 0 5px;
   font-size: clamp(1.5rem, 2.4vw, 2.2rem);
@@ -300,12 +310,8 @@
   background: rgb(141 184 255 / 7%);
 }
 
-.actionMenuRoot,
-.takeActionMenu {
-  position: relative;
-}
-
 .moreButton {
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   width: 44px;
@@ -323,50 +329,6 @@
   color: #f1f6fe;
   border-color: rgb(141 184 255 / 28%);
   background: rgb(141 184 255 / 8%);
-}
-
-.actionMenu {
-  position: absolute;
-  z-index: 30;
-  top: calc(100% + 7px);
-  right: 0;
-  display: grid;
-  width: min(250px, 76vw);
-  padding: 5px;
-  border: 1px solid rgb(141 184 255 / 18%);
-  border-radius: 12px;
-  background: #121925;
-  box-shadow: 0 18px 44px rgb(0 0 0 / 45%);
-}
-
-.actionMenu button {
-  min-height: 42px;
-  padding: 9px 10px;
-  font: inherit;
-  font-size: 0.77rem;
-  font-weight: 650;
-  text-align: left;
-  color: #dce5f2;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.actionMenu button:hover,
-.actionMenu button:focus-visible {
-  color: #fff;
-  background: rgb(141 184 255 / 10%);
-  outline: 0;
-}
-
-.actionMenu .destructiveMenuItem {
-  color: #ffb2b5;
-}
-
-.actionMenu .destructiveMenuItem:hover,
-.actionMenu .destructiveMenuItem:focus-visible {
-  background: rgb(255 103 111 / 10%);
 }
 
 .savedFocus {
@@ -856,12 +818,6 @@
   justify-self: end;
 }
 
-.takeMenu {
-  top: 50%;
-  right: calc(100% + 7px);
-  transform: translateY(-50%);
-}
-
 .primaryAction {
   display: inline-flex;
   align-items: center;
@@ -1226,12 +1182,6 @@
     align-items: start;
     flex-direction: column;
     gap: 7px;
-  }
-
-  .takeMenu {
-    right: 0;
-    top: calc(100% + 7px);
-    transform: none;
   }
 }
 

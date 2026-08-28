@@ -67,6 +67,68 @@ class PreviewAudio extends EventTarget {
   }
 }
 
+class BufferPreviewAudioParam {
+  value = 0
+  readonly cancelScheduledValues = vi.fn()
+  readonly setValueAtTime = vi.fn((value: number) => {
+    this.value = value
+  })
+  readonly exponentialRampToValueAtTime = vi.fn((value: number) => {
+    this.value = value
+  })
+  readonly linearRampToValueAtTime = vi.fn((value: number) => {
+    this.value = value
+  })
+  readonly setTargetAtTime = vi.fn((value: number) => {
+    this.value = value
+  })
+}
+
+class BufferPreviewGainNode {
+  readonly gain = new BufferPreviewAudioParam()
+  readonly connect = vi.fn()
+  readonly disconnect = vi.fn()
+}
+
+class BufferPreviewSourceNode {
+  buffer: AudioBuffer | null = null
+  onended: (() => void) | null = null
+  readonly connect = vi.fn()
+  readonly start = vi.fn()
+  readonly stop = vi.fn()
+  readonly disconnect = vi.fn()
+}
+
+class BufferPreviewAudioContext {
+  static instances: BufferPreviewAudioContext[] = []
+  state: AudioContextState = 'running'
+  currentTime = 0
+  sampleRate = 48_000
+  readonly destination = {} as AudioDestinationNode
+  readonly gain = new BufferPreviewGainNode()
+  readonly sources: BufferPreviewSourceNode[] = []
+  readonly resume = vi.fn(async () => {
+    this.state = 'running'
+  })
+  readonly close = vi.fn(async () => {
+    this.state = 'closed'
+  })
+
+  constructor() {
+    BufferPreviewAudioContext.instances.push(this)
+  }
+
+  createGain(): GainNode {
+    return this.gain as unknown as GainNode
+  }
+
+  createBufferSource(): AudioBufferSourceNode {
+    const source = new BufferPreviewSourceNode()
+    this.sources.push(source)
+    return source as unknown as AudioBufferSourceNode
+  }
+}
+
 class CaptureTrack extends EventTarget {
   readyState: MediaStreamTrackState = 'live'
   muted = false
@@ -102,6 +164,7 @@ describe('useDryVoiceCapture', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-12T10:00:00.000Z'))
     PreviewAudio.instances = []
+    BufferPreviewAudioContext.instances = []
     globalThis.Audio = PreviewAudio as unknown as typeof Audio
     vi.stubGlobal(
       'requestAnimationFrame',
@@ -304,6 +367,61 @@ describe('useDryVoiceCapture', () => {
     expect(controller.previewProgress()).toBeCloseTo(1.25 / 3)
   })
 
+  it('reuses decoded PCM for enveloped replay, pause, and live seek', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      BufferPreviewAudioContext as unknown as typeof AudioContext,
+    )
+    inspectMock.mockResolvedValueOnce({
+      durationMs: 3000,
+      peaks: new Float32Array([0.2, 0.8]),
+      decodedBuffer: { duration: 3 } as AudioBuffer,
+    })
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    await controller.start()
+    vi.advanceTimersByTime(3000)
+    await controller.stop()
+    const context = BufferPreviewAudioContext.instances[0]!
+
+    controller.togglePreview()
+    expect(controller.previewPlaying()).toBe(true)
+    expect(PreviewAudio.instances).toHaveLength(0)
+    expect(context.sources[0]?.start).toHaveBeenCalledWith(0, 0)
+    expect(context.gain.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(
+      1,
+      0.09,
+    )
+
+    expect(controller.seekPreview(1.5)).toBe(true)
+    expect(controller.previewCurrentTimeMs()).toBe(1500)
+    vi.advanceTimersByTime(20)
+    expect(context.sources[0]?.stop).toHaveBeenCalledOnce()
+    expect(context.sources[1]?.start).toHaveBeenCalledWith(0, 1.5)
+    expect(context.gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      0.015,
+    )
+    expect(context.gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1,
+      0.015,
+    )
+
+    controller.togglePreview()
+    expect(controller.previewPlaying()).toBe(false)
+    expect(context.gain.gain.setTargetAtTime).toHaveBeenCalledWith(0, 0, 0.036)
+    vi.advanceTimersByTime(240)
+    expect(context.sources[1]?.stop).toHaveBeenCalledOnce()
+    expect(context.close).not.toHaveBeenCalled()
+
+    controller.discard()
+    expect(context.close).toHaveBeenCalledOnce()
+  })
+
   it('falls back to the active capture clock when decoded duration is invalid', async () => {
     inspectMock.mockResolvedValueOnce({
       durationMs: Number.POSITIVE_INFINITY,
@@ -347,5 +465,132 @@ describe('useDryVoiceCapture', () => {
     expect(createRecorderMock).not.toHaveBeenCalled()
     expect(controller.state()).toBe('idle')
     expect(releaseMock).toHaveBeenCalledWith('guided-test')
+  })
+
+  it('resumes analysis again after a delayed iOS permission prompt', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      BufferPreviewAudioContext as unknown as typeof AudioContext,
+    )
+    let resolveAcquire!: (stream: MediaStream) => void
+    acquireMock.mockReturnValue(
+      new Promise<MediaStream>((resolve) => {
+        resolveAcquire = resolve
+      }),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    const starting = controller.start()
+    await Promise.resolve()
+    const context = BufferPreviewAudioContext.instances[0]!
+    context.state = 'suspended'
+    resolveAcquire(new CaptureStream(captureTrack) as unknown as MediaStream)
+
+    await expect(starting).resolves.toBe(true)
+    expect(context.resume).toHaveBeenCalledOnce()
+    expect(createF0StreamMock).toHaveBeenCalledWith(
+      context,
+      expect.any(CaptureStream),
+    )
+    expect(controller.state()).toBe('recording')
+  })
+
+  it('resumes an interrupted iOS analysis context after permission', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      BufferPreviewAudioContext as unknown as typeof AudioContext,
+    )
+    let resolveAcquire!: (stream: MediaStream) => void
+    acquireMock.mockReturnValue(
+      new Promise<MediaStream>((resolve) => {
+        resolveAcquire = resolve
+      }),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    const starting = controller.start()
+    await Promise.resolve()
+    const context = BufferPreviewAudioContext.instances[0]!
+    ;(context as unknown as AudioContext & { state: string }).state =
+      'interrupted'
+    resolveAcquire(new CaptureStream(captureTrack) as unknown as MediaStream)
+
+    await expect(starting).resolves.toBe(true)
+    expect(context.resume).toHaveBeenCalledOnce()
+    expect(createF0StreamMock).toHaveBeenCalledWith(
+      context,
+      expect.any(CaptureStream),
+    )
+    expect(controller.state()).toBe('recording')
+  })
+
+  it('starts recording while an iOS analysis resume remains pending', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      BufferPreviewAudioContext as unknown as typeof AudioContext,
+    )
+    let resolveAcquire!: (stream: MediaStream) => void
+    acquireMock.mockReturnValue(
+      new Promise<MediaStream>((resolve) => {
+        resolveAcquire = resolve
+      }),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    const starting = controller.start()
+    await Promise.resolve()
+    const context = BufferPreviewAudioContext.instances[0]!
+    context.state = 'suspended'
+    context.resume.mockReturnValueOnce(new Promise<void>(() => {}))
+    resolveAcquire(new CaptureStream(captureTrack) as unknown as MediaStream)
+
+    await expect(starting).resolves.toBe(true)
+    expect(recorderStartMock).toHaveBeenCalledOnce()
+    expect(createF0StreamMock).toHaveBeenCalledWith(
+      context,
+      expect.any(CaptureStream),
+    )
+    expect(controller.state()).toBe('recording')
+  })
+
+  it('keeps recording when the post-permission analysis resume is rejected', async () => {
+    vi.stubGlobal(
+      'AudioContext',
+      BufferPreviewAudioContext as unknown as typeof AudioContext,
+    )
+    let resolveAcquire!: (stream: MediaStream) => void
+    acquireMock.mockReturnValue(
+      new Promise<MediaStream>((resolve) => {
+        resolveAcquire = resolve
+      }),
+    )
+    let controller!: ReturnType<typeof useDryVoiceCapture>
+    createRoot((rootDispose) => {
+      dispose = rootDispose
+      controller = useDryVoiceCapture({ consumerId: 'guided-test' })
+    })
+
+    const starting = controller.start()
+    await Promise.resolve()
+    const context = BufferPreviewAudioContext.instances[0]!
+    context.state = 'suspended'
+    context.resume.mockRejectedValueOnce(new Error('gesture expired'))
+    resolveAcquire(new CaptureStream(captureTrack) as unknown as MediaStream)
+
+    await expect(starting).resolves.toBe(true)
+    expect(recorderStartMock).toHaveBeenCalledOnce()
+    expect(controller.state()).toBe('recording')
   })
 })

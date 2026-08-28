@@ -44,7 +44,7 @@ type GuidedStage =
   | 'safety-stop'
   | 'error'
 
-type CapturePhase = 'listen' | 'sing' | 'rest' | 'checking'
+type CapturePhase = 'listen' | 'prepare' | 'sing' | 'rest' | 'checking'
 
 interface GuidedVoiceCheckProps {
   initialProtocol?: Readonly<GuidedRetakeProtocol> | null
@@ -66,12 +66,14 @@ const LANDING_CAPTURE_MS =
 // quality gate; analysis still uses only the prescribed landing window below.
 const LANDING_CAPTURE_GUARD_MS = 100
 const REFERENCE_DURATION_SECONDS = 0.85
-const BETWEEN_LANDINGS_MS = 520
+/**
+ * Unrecorded preparation space after the reference tone. This is UI pacing,
+ * not part of the versioned landing window or comparison fingerprint.
+ */
+const BEFORE_LANDING_MS = 2_000
+/** Unrecorded reset between notes, outside every measured landing window. */
+const BETWEEN_LANDINGS_MS = 2_000
 let guidedCheckInstance = 0
-
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
-}
 
 function createToneContext(): AudioContext | null {
   const WindowAudioContext =
@@ -100,6 +102,11 @@ function blocksSpaceShortcut(target: EventTarget | null): boolean {
 
 function formatSeconds(seconds: number): string {
   return `${Math.max(0, seconds).toFixed(1)}s`
+}
+
+function formatCountdown(milliseconds: number): string {
+  const seconds = Math.max(1, Math.ceil(milliseconds / 1000))
+  return `${seconds} ${seconds === 1 ? 'second' : 'seconds'}`
 }
 
 function fractionFromResult(result: PitchCentrePilotAssessmentResult | null): {
@@ -170,6 +177,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   const [stage, setStage] = createSignal<GuidedStage>('briefing')
   const [capturePhase, setCapturePhase] = createSignal<CapturePhase>('listen')
   const [landingIndex, setLandingIndex] = createSignal(0)
+  const [phaseRemainingMs, setPhaseRemainingMs] = createSignal(0)
   const [rehearsalDone, setRehearsalDone] = createSignal(false)
   const [referenceBusy, setReferenceBusy] = createSignal(false)
   const [drawerOpen, setDrawerOpen] = createSignal(false)
@@ -203,6 +211,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   let mainCanvas: HTMLDivElement | undefined
   let inspectorPanel: HTMLDivElement | undefined
   let stageFocusTimer: number | null = null
+  let phaseWaitCancel: (() => void) | null = null
 
   const targets = createMemo(() =>
     protocol().task.targetMidiCents.map((value) => value / 100),
@@ -272,11 +281,20 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   const phaseLabel = createMemo(() => {
     if (stage() === 'capture') {
       if (capturePhase() === 'listen') return 'Listen'
+      if (capturePhase() === 'prepare') {
+        return `Breathe — your turn in ${formatCountdown(phaseRemainingMs())}`
+      }
       if (capturePhase() === 'sing') return 'Your turn — land and hold'
-      if (capturePhase() === 'rest') return 'Rest'
+      if (capturePhase() === 'rest') {
+        return `Rest — next note in ${formatCountdown(phaseRemainingMs())}`
+      }
       return 'Checking this recording on your device'
     }
-    if (stage() === 'rehearsal') return 'Unscored rehearsal'
+    if (stage() === 'rehearsal') {
+      return capturePhase() === 'prepare'
+        ? `Breathe — your turn in ${formatCountdown(phaseRemainingMs())}`
+        : 'Unscored rehearsal'
+    }
     if (stage() === 'effort') return 'Recording complete'
     if (stage() === 'result') return 'Your Focus reading'
     if (props.returningFromPractice === true && stage() === 'briefing') {
@@ -284,6 +302,48 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     }
     return 'Hear, land, and hold'
   })
+
+  /**
+   * A visible, cancellable cadence clock. The recorder stays paused through
+   * prepare/rest, so a singer's breath never consumes the measured landing.
+   */
+  function waitForPhase(
+    milliseconds: number,
+    generation: number,
+  ): Promise<boolean> {
+    phaseWaitCancel?.()
+    return new Promise((resolve) => {
+      const end = performance.now() + milliseconds
+      let timer: number | null = null
+      let settled = false
+      const finish = (completed: boolean): void => {
+        if (settled) return
+        settled = true
+        if (timer !== null) window.clearInterval(timer)
+        if (phaseWaitCancel === cancel) phaseWaitCancel = null
+        setPhaseRemainingMs(0)
+        resolve(completed)
+      }
+      const cancel = (): void => finish(false)
+      const tick = (): void => {
+        if (generation !== flowGeneration) {
+          finish(false)
+          return
+        }
+        const remaining = Math.max(0, end - performance.now())
+        setPhaseRemainingMs(remaining)
+        if (remaining <= 0) finish(true)
+      }
+      phaseWaitCancel = cancel
+      tick()
+      if (!settled) timer = window.setInterval(tick, 100)
+    })
+  }
+
+  function cancelPhaseWait(): void {
+    phaseWaitCancel?.()
+    phaseWaitCancel = null
+  }
 
   function ensureToneContext(): AudioContext | null {
     if (toneContext === null || toneContext.state === 'closed') {
@@ -323,6 +383,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   }
 
   async function rehearse(): Promise<void> {
+    cancelPhaseWait()
     const generation = ++flowGeneration
     ensureToneContext()
     setErrorMessage(null)
@@ -347,8 +408,8 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
       setStage('setup')
       return
     }
-    await wait(220)
-    if (generation !== flowGeneration) return
+    setCapturePhase('prepare')
+    if (!(await waitForPhase(BEFORE_LANDING_MS, generation))) return
     const rehearsalResumed = await voiceCapture.resumeSegment()
     if (generation !== flowGeneration) return
     if (!rehearsalResumed) {
@@ -359,8 +420,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
       return
     }
     setCapturePhase('sing')
-    await wait(LANDING_CAPTURE_MS)
-    if (generation !== flowGeneration) return
+    if (!(await waitForPhase(LANDING_CAPTURE_MS, generation))) return
     const rehearsalSegment = await voiceCapture.pauseSegment()
     if (generation !== flowGeneration) return
     if (rehearsalSegment === null) {
@@ -377,6 +437,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   }
 
   async function runCapture(): Promise<void> {
+    cancelPhaseWait()
     const generation = ++flowGeneration
     ensureToneContext()
     voiceCapture.discard()
@@ -413,8 +474,8 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
         setStage('error')
         return
       }
-      await wait(220)
-      if (generation !== flowGeneration) return
+      setCapturePhase('prepare')
+      if (!(await waitForPhase(BEFORE_LANDING_MS, generation))) return
       const captureResumed = await voiceCapture.resumeSegment()
       if (generation !== flowGeneration) return
       if (!captureResumed) {
@@ -426,8 +487,14 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
         return
       }
       setCapturePhase('sing')
-      await wait(LANDING_CAPTURE_MS + LANDING_CAPTURE_GUARD_MS)
-      if (generation !== flowGeneration) return
+      if (
+        !(await waitForPhase(
+          LANDING_CAPTURE_MS + LANDING_CAPTURE_GUARD_MS,
+          generation,
+        ))
+      ) {
+        return
+      }
       const capturedSegment = await voiceCapture.pauseSegment()
       if (generation !== flowGeneration) return
       if (capturedSegment === null) {
@@ -438,7 +505,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
       }
       if (index < targets().length - 1) {
         setCapturePhase('rest')
-        await wait(BETWEEN_LANDINGS_MS)
+        if (!(await waitForPhase(BETWEEN_LANDINGS_MS, generation))) return
       }
     }
 
@@ -471,6 +538,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   async function stopCaptureEarly(): Promise<void> {
     if (stage() !== 'capture') return
     const generation = ++flowGeneration
+    cancelPhaseWait()
     setCaptureEndedEarly(true)
     setCapturePhase('checking')
     const result = await voiceCapture.stop()
@@ -708,6 +776,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   function resetForRetake(): void {
     if (saving()) return
     flowGeneration += 1
+    cancelPhaseWait()
     voiceCapture.discard()
     setCaptureResult(null)
     setAssessment(null)
@@ -724,6 +793,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   function discardAndClose(): void {
     if (saving()) return
     flowGeneration += 1
+    cancelPhaseWait()
     closePreparationPending = false
     closeAfterProcessing = false
     voiceCapture.discard()
@@ -739,6 +809,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     closePreparationPending = true
     closeAfterProcessing = false
     const generation = ++flowGeneration
+    cancelPhaseWait()
     setCaptureEndedEarly(true)
     setCapturePhase('checking')
     const result = await voiceCapture.stop()
@@ -1092,8 +1163,8 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
               <span>Matched route locked</span>
               <strong>{targets().map(midiToNoteName).join(' · ')}</strong>
               <p>
-                The notes and timing stay identical so this take remains a fair
-                comparison.
+                The same notes and recorded 1.8-second windows keep this take a
+                fair comparison.
               </p>
             </div>
           </Show>
@@ -1273,6 +1344,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
 
   onCleanup(() => {
     flowGeneration += 1
+    cancelPhaseWait()
     const resolve = closeResolution
     closeResolution = null
     resolve?.(false)
@@ -1328,6 +1400,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
                 : undefined
             }
             frame={voiceCapture.latestSmoothedFrame}
+            liveWindowMs={LANDING_CAPTURE_MS + LANDING_CAPTURE_GUARD_MS}
             phaseLabel={phaseLabel()}
             segments={captureResult() === null ? [] : capturedSegments()}
             durationMs={analysisDurationMs()}
@@ -1353,14 +1426,22 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
                       ? 'Recording now'
                       : capturePhase() === 'listen'
                         ? 'Reference only — not recording'
-                        : capturePhase() === 'checking'
-                          ? 'Checking locally'
-                          : 'Recording paused'}
+                        : capturePhase() === 'prepare'
+                          ? `Take a breath · ${Math.max(1, Math.ceil(phaseRemainingMs() / 1000))}s`
+                          : capturePhase() === 'checking'
+                            ? 'Checking locally'
+                            : `Rest · ${Math.max(1, Math.ceil(phaseRemainingMs() / 1000))}s`}
                   </strong>
                   <span>
                     {stage() === 'rehearsal'
-                      ? 'Unscored rehearsal'
-                      : `Landing ${Math.min(landingIndex() + 1, targets().length)} of ${targets().length}`}
+                      ? capturePhase() === 'prepare'
+                        ? `Your ${formatSeconds(LANDING_CAPTURE_MS / 1000)} rehearsal starts after the count-in`
+                        : 'Unscored rehearsal'
+                      : capturePhase() === 'prepare'
+                        ? `Landing ${Math.min(landingIndex() + 1, targets().length)} of ${targets().length} starts after the count-in`
+                        : capturePhase() === 'sing'
+                          ? `Landing ${Math.min(landingIndex() + 1, targets().length)} of ${targets().length} · ${formatSeconds(LANDING_CAPTURE_MS / 1000)} sample`
+                          : `Landing ${Math.min(landingIndex() + 1, targets().length)} of ${targets().length}`}
                   </span>
                 </div>
               </div>

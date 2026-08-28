@@ -28,6 +28,22 @@ export interface PreparedVoiceTakeExport {
 
 export type VoiceTakeAudioDecoder = (blob: Blob) => Promise<AudioBuffer>
 
+export type VoiceTakeExportDeliveryOutcome =
+  | 'shared'
+  | 'downloaded'
+  | 'dismissed'
+
+export interface VoiceTakeShareTarget {
+  canShare?: (data?: ShareData) => boolean
+  share?: (data?: ShareData) => Promise<void>
+}
+
+export interface VoiceTakeExportDeliveryOptions {
+  /** `undefined` uses the browser navigator; `null` explicitly disables share. */
+  shareTarget?: VoiceTakeShareTarget | null
+  download?: (file: File) => void
+}
+
 function normalizedMimeType(mimeType: string): string {
   return mimeType.split(';', 1)[0]?.trim().toLowerCase() ?? ''
 }
@@ -193,4 +209,71 @@ export function downloadPreparedVoiceTake(file: File): void {
     anchor.remove()
     setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_URL_LIFETIME_MS)
   }
+}
+
+function browserShareTarget(): VoiceTakeShareTarget | null {
+  return typeof navigator === 'undefined' ? null : navigator
+}
+
+/** Whether this browser can hand the exact named audio File to its share UI. */
+export function canSharePreparedVoiceTake(
+  file: File,
+  shareTarget: VoiceTakeShareTarget | null = browserShareTarget(),
+): boolean {
+  if (
+    shareTarget === null ||
+    typeof shareTarget.canShare !== 'function' ||
+    typeof shareTarget.share !== 'function'
+  ) {
+    return false
+  }
+  try {
+    return shareTarget.canShare({ files: [file] })
+  } catch {
+    return false
+  }
+}
+
+function isShareDismissal(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
+/**
+ * Deliver an already-prepared take. `share()` is invoked before this function
+ * returns, with no intervening await, so a caller's tap remains the native
+ * share gesture. iOS receives the File rather than a UUID-shaped Blob URL and
+ * can therefore preserve its branded audio filename and MIME type.
+ */
+export function deliverPreparedVoiceTake(
+  file: File,
+  options: VoiceTakeExportDeliveryOptions = {},
+): Promise<VoiceTakeExportDeliveryOutcome> {
+  const shareTarget =
+    options.shareTarget === undefined
+      ? browserShareTarget()
+      : options.shareTarget
+  const download = options.download ?? downloadPreparedVoiceTake
+
+  if (!canSharePreparedVoiceTake(file, shareTarget)) {
+    download(file)
+    return Promise.resolve('downloaded')
+  }
+
+  let sharePromise: Promise<void>
+  try {
+    sharePromise = shareTarget!.share!({ files: [file] })
+  } catch (error) {
+    if (isShareDismissal(error)) return Promise.resolve('dismissed')
+    download(file)
+    return Promise.resolve('downloaded')
+  }
+
+  return Promise.resolve(sharePromise).then(
+    () => 'shared',
+    (error: unknown) => {
+      if (isShareDismissal(error)) return 'dismissed'
+      download(file)
+      return 'downloaded'
+    },
+  )
 }

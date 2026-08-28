@@ -120,6 +120,9 @@ export interface ExerciseShellProps {
    *  nothing (Ear Training's listening-only rounds). */
   tracker?: ExerciseTrackerConfig
 
+  /** Preparation shown while an exercise deliberately waits before capture. */
+  countInContent?: JSX.Element
+
   /**
    * The one-line instruction for the current phase — "Listen", "Breathe",
    * "Glide C3 → C4, follow the dot".
@@ -800,6 +803,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         class="exercise-canvas-area"
         classList={{ 'is-idle': isIdleLike(), 'is-active': isActive() }}
       >
+        <Show when={status() === 'count-in'}>{props.countInContent}</Show>
         <Show when={isIdleLike()}>
           <Show when={props.guidedPractice === undefined}>
             <ExerciseScoreHistory type={props.type} />

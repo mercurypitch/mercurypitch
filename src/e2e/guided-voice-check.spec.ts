@@ -59,12 +59,18 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
   })
   await expect(startCheck).toBeDisabled()
   await page.getByRole('button', { name: 'Try one landing' }).click()
+  await expect(page.getByText(/^Take a breath · [12]s$/)).toBeVisible({
+    timeout: 12000,
+  })
   await expect(page.getByText('Rehearsal complete.')).toBeVisible({
     timeout: 12000,
   })
   await expect(startCheck).toBeEnabled()
 
   await startCheck.click()
+  await expect(page.getByText(/^Take a breath · [12]s$/)).toBeVisible({
+    timeout: 12000,
+  })
   await expect(page.getByText('Recording now')).toBeVisible({
     timeout: 12000,
   })
@@ -139,9 +145,19 @@ test('guides a safe check and keeps pointer seeking silent @smoke', async ({
   await expect(page.getByRole('heading', { name: 'Pitch Hold' })).toBeVisible()
   await expect(page.getByText('1 set · 3 holds · 5s each')).toBeVisible()
   await expect(page.getByText('0 of 3 holds complete')).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: 'Begin first hold' }),
-  ).toBeVisible()
+  const beginFirstHold = page.getByRole('button', {
+    name: 'Begin first hold',
+  })
+  await expect(beginFirstHold).toBeVisible()
+  await beginFirstHold.click()
+  const pitchHoldLeadIn = page
+    .getByRole('status')
+    .filter({ hasText: 'Before the hold' })
+  await expect(pitchHoldLeadIn).toBeVisible()
+  await expect(pitchHoldLeadIn).toContainText('Take a calm breath')
+  await expect(pitchHoldLeadIn).toContainText(
+    'Recording starts after the count.',
+  )
   await page.getByRole('button', { name: /Back/u }).click()
   await expect(page.getByTestId('saved-guided-focus')).toBeVisible()
   await expect(checkAgain).toBeVisible()

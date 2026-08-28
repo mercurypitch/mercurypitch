@@ -264,7 +264,7 @@ describe('decoded voice playback', () => {
     expect(onEnded).toHaveBeenCalledOnce()
   })
 
-  it('routes WebM buffers through the room rack and updates it live', async () => {
+  it('routes app-owned recording containers through decoded room playback', async () => {
     const harness = createHarness()
 
     await harness.controller.play()
@@ -272,7 +272,11 @@ describe('decoded voice playback', () => {
 
     expect(shouldDecodeVoicePlayback('audio/webm;codecs=opus')).toBe(true)
     expect(shouldDecodeVoicePlayback('video/webm')).toBe(true)
-    expect(shouldDecodeVoicePlayback('audio/mp4')).toBe(false)
+    expect(shouldDecodeVoicePlayback('audio/mp4')).toBe(true)
+    expect(shouldDecodeVoicePlayback('video/mp4;codecs=mp4a.40.2')).toBe(true)
+    expect(shouldDecodeVoicePlayback('audio/m4a')).toBe(true)
+    expect(shouldDecodeVoicePlayback('audio/x-m4a')).toBe(true)
+    expect(shouldDecodeVoicePlayback('audio/mpeg')).toBe(false)
     expect(harness.context.sources[0].connectedTo).toEqual([
       harness.context.gain,
     ])
@@ -287,6 +291,41 @@ describe('decoded voice playback', () => {
       reverb: 20,
       hall: 65,
     })
+  })
+
+  it('attempts decoded playback for an iOS MP4 take', async () => {
+    const harness = createAttemptHarness()
+
+    const result = await harness.attempt({
+      autoplay: false,
+      blob: {
+        type: 'audio/mp4',
+        arrayBuffer: vi.fn(async () => new ArrayBuffer(4)),
+      } as unknown as Blob,
+      persistedMimeType: 'video/mp4',
+    })
+
+    expect(result.status).toBe('handled')
+    expect(harness.context.decodeAudioData).toHaveBeenCalledOnce()
+    if (result.status === 'handled') result.playback.dispose()
+  })
+
+  it('keeps native playback available when MP4 decoding fails', async () => {
+    const harness = createAttemptHarness()
+    harness.context.decodeAudioData.mockRejectedValueOnce(
+      new DOMException('Unsupported codec', 'EncodingError'),
+    )
+
+    const result = await harness.attempt({
+      blob: {
+        type: 'audio/mp4',
+        arrayBuffer: vi.fn(async () => new ArrayBuffer(4)),
+      } as unknown as Blob,
+      persistedMimeType: 'audio/mp4',
+    })
+
+    expect(result).toEqual({ status: 'native-fallback' })
+    expect(harness.onPrepared).not.toHaveBeenCalled()
   })
 
   it('restores stopped state when a decoded source cannot start', async () => {

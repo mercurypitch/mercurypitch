@@ -1640,6 +1640,53 @@
 
 /* ── Pitch Hold Exercise ───────────────────────────────────── */
 
+.pitch-hold-count-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 220px;
+  padding: 24px;
+  text-align: center;
+}
+
+.pitch-hold-count-in-kicker {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.pitch-hold-count-in-number {
+  display: grid;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  margin: 4px 0;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+  font-size: 2.2rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pitch-hold-count-in strong {
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.pitch-hold-count-in small {
+  max-width: 34ch;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
 .pitch-hold-header {
   display: flex;
   align-items: center;

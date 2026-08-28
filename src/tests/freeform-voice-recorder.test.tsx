@@ -195,6 +195,35 @@ describe('FreeformVoiceRecorder', () => {
     expect(keepMock).not.toHaveBeenCalled()
   })
 
+  it('reveals a fresh live canvas after a delayed permission decision', async () => {
+    let resolveAcquire: ((stream: MediaStream) => void) | undefined
+    acquireMock.mockReturnValueOnce(
+      new Promise<MediaStream>((resolve) => {
+        resolveAcquire = resolve
+      }),
+    )
+    renderRecorder()
+    fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
+      target: { value: 'First chorus after warm-up' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }))
+
+    expect(
+      await screen.findByRole('button', { name: /opening microphone/i }),
+    ).toBeDisabled()
+    expect(screen.queryByTestId('live-voice-capture')).not.toBeInTheDocument()
+    expect(startMock).not.toHaveBeenCalled()
+
+    resolveAcquire?.(testAudioStream())
+
+    expect(await screen.findByTestId('live-voice-capture')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Stop recording' })).toBeEnabled()
+    expect(screen.getByTestId('live-voice-status')).toHaveTextContent(
+      'Recording: listening for voice input.',
+    )
+  })
+
   it('reveals the live canvas and moves focus to Stop when recording begins', async () => {
     const scheduledFrames: FrameRequestCallback[] = []
     const scrollIntoView = vi.fn()
