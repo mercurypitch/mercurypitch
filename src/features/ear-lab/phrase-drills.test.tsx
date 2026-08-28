@@ -217,6 +217,17 @@ describe('SpanDrill', () => {
     expect(ladder()[0].hasAttribute('disabled')).toBe(false)
   }
 
+  it('says on the bench how long the first phrase will be', () => {
+    render(() => (
+      <Stage>
+        <SpanDrill onBack={vi.fn()} />
+      </Stage>
+    ))
+    expect(status()).toBe(
+      'A phrase of 3 notes to start — give it all back, and it grows while you keep up.',
+    )
+  })
+
   it('starts at three notes and grows when the phrase is held', async () => {
     await practiceAndListen()
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(

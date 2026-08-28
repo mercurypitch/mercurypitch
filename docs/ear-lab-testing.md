@@ -821,6 +821,12 @@ overlaps. Contour — both tones the same length.
    dark once the pads arm, and through the reveal.
 2. The other drills' pads carry no lamp.
 
+### 2aj. Retest fixes — Span says its start
+
+1. Span on the bench reads "A phrase of 3 notes to start — give it all
+   back, and it grows while you keep up." — the staircase's start, from
+   the catalogue.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

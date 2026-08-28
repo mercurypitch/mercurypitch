@@ -238,7 +238,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
           </Show>
         </ConsoleStack>
       }
-      prompt="A phrase as long as the staircase says — give it all back."
+      prompt={`A phrase of ${run.level()} notes to start — give it all back, and it grows while you keep up.`}
       listenHint="Listen to the phrase…"
       answerHint={
         sungRun()
