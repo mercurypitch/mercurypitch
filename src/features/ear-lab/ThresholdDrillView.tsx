@@ -17,6 +17,7 @@
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { calibrationDueAt } from '@/lib/ear/calibration'
+import { useArmingCue } from './arming-cue'
 import { IconPlay, IconSeal } from './ear-icons'
 import type { StageKey } from './EarStage'
 import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
@@ -163,6 +164,8 @@ export function ThresholdDrillView(
     return `${track}${props.levelCaption} ${props.formatValue(props.run.level())}${unit} → ${props.formatValue(next)}${unit}`
   }
 
+  useArmingCue(() => phase() === 'answer')
+
   const lastCall = useLastCall(phase, () => ({
     correct: props.run.lastCorrect() === true,
     line: props.revealLine(),
@@ -199,6 +202,7 @@ export function ThresholdDrillView(
       backLabel={props.backLabel}
       onStop={running() ? () => props.run.stop() : undefined}
       lastCall={lastCall}
+      armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={() => (
         <>

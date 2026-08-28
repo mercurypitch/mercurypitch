@@ -24,6 +24,7 @@ import { micManager } from '@/lib/mic-manager'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ear-lab-store'
+import { useArmingCue } from './arming-cue'
 import { IconMic, IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, EarStage, EndPlate, ModeToggle, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
@@ -234,6 +235,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     }
   })
 
+  useArmingCue(() => phase() === 'answer')
+
   const lastCall = useLastCall(phase, () => {
     const answered = controller.answeredDegree()
     const degree = target()
@@ -275,6 +278,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       onBack={props.onBack}
       onStop={running() ? () => controller.stop() : undefined}
       lastCall={lastCall}
+      armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={() => (
         <TuningFork

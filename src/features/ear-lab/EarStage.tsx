@@ -74,6 +74,8 @@ interface EarStageProps {
   onStop?: () => void
   /** The last verdict, kept under the pads until the next one. */
   lastCall?: () => LastCall | null
+  /** The pads are armed: the Last call plate's rail ticks brass. */
+  armed?: () => boolean
   onBack: () => void
   backLabel?: string
   keys?: () => StageKey[]
@@ -292,9 +294,11 @@ export function EarStage(props: EarStageProps): JSX.Element {
                     classList={{
                       [styles.lastCallRight]: call().correct,
                       [styles.lastCallWrong]: !call().correct,
+                      [styles.lastCallArmed]: props.armed?.() === true,
                     }}
                     data-testid="ear-stage-last-call"
                     data-verdict={call().correct ? 'right' : 'wrong'}
+                    data-armed={props.armed?.() === true ? 'true' : 'false'}
                   >
                     <span class={styles.lastCallMark} aria-hidden="true">
                       <Show

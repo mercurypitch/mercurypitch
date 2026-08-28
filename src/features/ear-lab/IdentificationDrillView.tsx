@@ -11,6 +11,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, For, Show, untrack } from 'solid-js'
 import { isProvisional } from '@/lib/ear/elo'
+import { useArmingCue } from './arming-cue'
 import { IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
 import { EarStage, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
@@ -149,6 +150,8 @@ export function IdentificationDrillView(
     }
   })
 
+  useArmingCue(() => phase() === 'answer')
+
   const lastCall = useLastCall(phase, () => {
     const expected = props.controller.expectedId()
     const answered = props.controller.answeredId()
@@ -187,6 +190,7 @@ export function IdentificationDrillView(
       backLabel={props.backLabel}
       onStop={running() ? () => props.controller.stop() : undefined}
       lastCall={lastCall}
+      armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={props.instrument}
       console={() => (
