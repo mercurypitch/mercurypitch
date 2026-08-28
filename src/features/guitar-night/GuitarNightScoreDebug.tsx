@@ -504,7 +504,10 @@ export function GuitarNightScoreDebug(props: GuitarNightScoreDebugProps) {
                   cost().frameBudgetShare > 0.5 ? styles.chipAlert : ''
                 }`}
                 title={
-                  'Median cost of one pitch detection, and how many completed per second. ' +
+                  'Median cost of one pitch detection that ran, and how many ' +
+                  'completed per second. Frames under the amplitude gate return ' +
+                  'before the correlation and are excluded from the median but ' +
+                  'counted in the rate; "gated" is their share. ' +
                   'MPM is quadratic in the window size, so this is the number that decides ' +
                   'whether a larger analyser is affordable. Above half a 60 Hz frame the ' +
                   'detector is competing with the renderer.'
@@ -513,7 +516,8 @@ export function GuitarNightScoreDebug(props: GuitarNightScoreDebugProps) {
                 <span class={styles.chipLabel}>Detect cost</span>
                 <span class={styles.chipValue}>
                   {cost().medianDetectMs} ms · {cost().detectionsPerSecond}/s ·{' '}
-                  {Math.round(cost().frameBudgetShare * 100)}% frame
+                  {Math.round(cost().frameBudgetShare * 100)}% frame ·{' '}
+                  {Math.round(cost().gatedShare * 100)}% gated
                 </span>
               </span>
             )}

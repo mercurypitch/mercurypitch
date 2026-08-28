@@ -215,7 +215,12 @@ export function buildMidiFile(
       trackData.push(e.type, e.note!, e.velocity!)
     }
   }
-  trackData.push(0xff, 0x2f, 0x00)
+  // End of track. The leading zero is its delta time: every event in a track
+  // chunk carries one, meta events included. Without it a reader consumes the
+  // 0xff as a variable-length delta and then runs off the end of the chunk
+  // looking for the note bytes it thinks follow — which is exactly what this
+  // app's own MIDI importer did with files this function produced.
+  trackData.push(0x00, 0xff, 0x2f, 0x00)
 
   // Header
   const header = [

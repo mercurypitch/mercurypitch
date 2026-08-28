@@ -308,10 +308,27 @@ export function buildGuitarScoreDebugModel(
   )
   const consumedEventIds = new Set<string>()
   const targetByEventId = new Map<string, string>()
+  const eventById = new Map(events.map((event) => [event.id, event]))
+  // Offsets the ENGINE committed to: inside its own window, one event to one
+  // target. The wide re-search below cannot be used for this — it ranges four
+  // times as far and reuses one event across every target it fits, so its
+  // spread describes the search, not the route. Measured on a real take, the
+  // re-search reported -317 ms +/-390 and refused to answer, while the engine's
+  // own hits on the same take gave +137 ms with a 47 ms IQR.
+  //
+  // Worklet attacks only. A pitch change is stamped on the animation frame that
+  // noticed it, so its time carries the frame loop's jitter on top of the route
+  // delay this is trying to isolate.
+  const committedOffsetSamples: number[] = []
   for (const judgment of snapshot.judgments) {
     if (judgment.outcome === 'hit') {
       consumedEventIds.add(judgment.eventId)
       targetByEventId.set(judgment.eventId, judgment.targetId)
+      if (eventById.get(judgment.eventId)?.clock.kind === 'audio-worklet') {
+        committedOffsetSamples.push(
+          Math.round((judgment.timingOffsetMs / 1000) * sampleRate),
+        )
+      }
     }
   }
 
@@ -437,13 +454,20 @@ export function buildGuitarScoreDebugModel(
   const clarities = attacks
     .map((event) => event.pitch?.clarity)
     .filter((clarity): clarity is number => clarity !== undefined)
-  const centre = median(offsetSamples)
+  // Prefer what the engine actually matched; fall back to the re-search only
+  // when too little was matched to say anything, which is the case a fresh or
+  // badly misaligned run is in.
+  const estimateSamples =
+    committedOffsetSamples.length >= GUITAR_SCORE_DEBUG_MIN_OFFSET_SAMPLES
+      ? committedOffsetSamples
+      : offsetSamples
+  const centre = median(estimateSamples)
   const spread =
     centre === null
       ? null
-      : median(offsetSamples.map((offset) => Math.abs(offset - centre)))
+      : median(estimateSamples.map((offset) => Math.abs(offset - centre)))
   const enoughSamples =
-    offsetSamples.length >= GUITAR_SCORE_DEBUG_MIN_OFFSET_SAMPLES
+    estimateSamples.length >= GUITAR_SCORE_DEBUG_MIN_OFFSET_SAMPLES
   const spreadMs = spread === null ? null : round((spread / sampleRate) * 1000)
   const centreMs = centre === null ? null : round((centre / sampleRate) * 1000)
   // A route delay is a constant. If the spread is as large as the median, the
@@ -508,7 +532,7 @@ export function buildGuitarScoreDebugModel(
       skipReasons,
       diagnoses,
       suggestedLatencyOffsetMs: enoughSamples ? centreMs : null,
-      suggestedLatencySamples: offsetSamples.length,
+      suggestedLatencySamples: estimateSamples.length,
       offsetSpreadMs: enoughSamples ? spreadMs : null,
       latencyEstimateReliable: reliable,
     },
