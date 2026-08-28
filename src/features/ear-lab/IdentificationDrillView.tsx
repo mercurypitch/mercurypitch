@@ -42,6 +42,11 @@ interface IdentificationDrillViewProps {
   revealName: (choiceId: string) => string
   /** The drill's instrument, reactive to the controller. */
   instrument: () => JSX.Element
+  /** A console of the drill's own in place of the choice pads — Echo's
+   *  ladder, which answers through the controller itself. */
+  answerConsole?: () => JSX.Element
+  /** The keys for that console; replaces the digit keys. */
+  answerKeys?: () => StageKey[]
   onBack: () => void
 }
 
@@ -108,6 +113,7 @@ export function IdentificationDrillView(
     if (phase() === 'idle') {
       return [{ key: 'Space', action: () => props.controller.start() }]
     }
+    if (props.answerKeys) return props.answerKeys()
     if (phase() !== 'answer' || props.choices.length > 9) return []
     return props.choices.map((choice, i) => ({
       key: String(i + 1),
@@ -150,24 +156,31 @@ export function IdentificationDrillView(
             label={phase() === 'answer' ? 'Your call' : 'Listening'}
             sub={props.measures}
           />
-          <Pads
-            columns={props.columns}
-            compact={props.compact}
-            label={props.answerHint}
+          <Show
+            when={props.answerConsole}
+            fallback={
+              <Pads
+                columns={props.columns}
+                compact={props.compact}
+                label={props.answerHint}
+              >
+                <For each={props.choices}>
+                  {(choice, i) => (
+                    <StagePad
+                      keycap={keycap(i())}
+                      label={choice.label}
+                      sub={choice.sub}
+                      state={padState(choice.id)}
+                      disabled={phase() !== 'answer'}
+                      onClick={() => props.controller.answer(choice.id)}
+                    />
+                  )}
+                </For>
+              </Pads>
+            }
           >
-            <For each={props.choices}>
-              {(choice, i) => (
-                <StagePad
-                  keycap={keycap(i())}
-                  label={choice.label}
-                  sub={choice.sub}
-                  state={padState(choice.id)}
-                  disabled={phase() !== 'answer'}
-                  onClick={() => props.controller.answer(choice.id)}
-                />
-              )}
-            </For>
-          </Pads>
+            {(answerConsole) => answerConsole()()}
+          </Show>
         </Show>
       )}
       plate={() => (

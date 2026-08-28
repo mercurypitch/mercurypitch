@@ -16,11 +16,13 @@ import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
 import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
 import { EarReport } from '@/features/ear-lab/EarReport'
 import { EarRoomShell } from '@/features/ear-lab/EarRoomShell'
+import { EchoDrill } from '@/features/ear-lab/EchoDrill'
 import { GridDrill } from '@/features/ear-lab/GridDrill'
 import { HairlineDrill } from '@/features/ear-lab/HairlineDrill'
 import { HomeDrill } from '@/features/ear-lab/HomeDrill'
 import { LeapDrill } from '@/features/ear-lab/LeapDrill'
 import { PulseDrill } from '@/features/ear-lab/PulseDrill'
+import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
 
@@ -68,6 +70,12 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'pulse'}>
           <PulseDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'echo'}>
+          <EchoDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'span'}>
+          <SpanDrill onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />

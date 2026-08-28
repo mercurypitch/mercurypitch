@@ -356,6 +356,33 @@
   min-width: 0;
 }
 
+/* The phrase strip: what has been tapped so far, in solfège. */
+.phraseStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 0;
+}
+
+.phraseChip {
+  padding: 4px 9px;
+  border: 1px solid var(--stage-brass-bright);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--stage-parchment);
+  background: color-mix(in srgb, var(--stage-brass-bright) 14%, transparent);
+}
+
+.phraseCount {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--stage-parchment) 65%, transparent);
+}
+
 .pads {
   display: grid;
   grid-template-columns: repeat(var(--pad-columns, 2), minmax(0, 1fr));

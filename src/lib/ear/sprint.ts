@@ -77,6 +77,8 @@ export const SPRINT_DRILL_IDS: readonly string[] = [
   'stack',
   'contour',
   'pulse',
+  'echo',
+  'span',
 ]
 
 /**

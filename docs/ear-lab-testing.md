@@ -372,6 +372,38 @@ eighths 80, triplets 65, sixteenths 50), nothing extra.
 - Stop mid-call silences the clicks already on the audio clock and lands
   on the plate; the tap pad is disabled outside your bar.
 
+## 2n. Echo and Span — melodic dictation — follow-up item 3
+
+The Shape dial's two dictation drills. Bench strip → _Echo_ (Shape ·
+dictation) and _Span_ (Shape · span). Both plant the key with a short
+I–IV–V–I cadence, sound a phrase, and open the **ladder** — eight rungs,
+1 to 1′, keys 1–8 — only after the last note. Each note must match in
+order; the strip under the ladder shows the phrase forming in solfège
+(_Do Re Mi_ · _2 of 3_) and **Take one back** (Backspace) removes the last
+note. Nothing says right or wrong until the whole phrase is in.
+
+- **Echo** (rating run, 12 rounds): phrases of three to six notes from a
+  bank of fourteen, steps and triads first, leaps and octave falls at the
+  top. A slip replays the phrase slower before the next round.
+- **Span** (practice or calibration, the staircase): starts at three
+  notes; hold the whole phrase and it grows by one, slip and it shortens.
+  The reading is _notes held_. The phrase is drawn fresh every trial — a
+  diatonic walk, leaps within a fifth, starting on a chord tone.
+- **What to check on hardware:** the cadence sounds as chords, the beads
+  on the chain sit on one level line while the phrase plays and light in
+  turn (no heights shown — that would draw the contour for the eye); the
+  ladder is disabled until the phrase ends and Space does nothing there;
+  the reveal strings the phrase at its true heights in brass, a signal
+  ring on every matched bead, a garnet ring at the height you tapped
+  instead (dashed when the note was never tapped), solfège under each
+  bead; the status names the phrase (_Yes — Do Re Mi._ / _That was Do Re
+  Mi — listen again._ / _Slipped at note 2 of 3 — it was Do Sol Do. The
+  phrase shortens._).
+- **The reading:** Echo's rating joins Leap and Contour in the Shape
+  readout; Span shows on its own tile in notes. No percent anywhere.
+- Stop mid-cadence or mid-phrase silences the engine and lands on the
+  plate.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

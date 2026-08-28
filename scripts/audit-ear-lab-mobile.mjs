@@ -657,6 +657,109 @@ async function auditStage(page, name) {
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
+  // Echo: the ladder arms only after the cadence and the phrase, every
+  // rung a thumb can hit; the phrase is judged when the last rung lands
+  // and the chain shows a bead and a mark per note at the reveal.
+  await openFromStrip('Echo')
+  results.echoIdle = await checkStage('echo idle', 'stage-echo-idle')
+  await page.getByText('Begin').click()
+  const echoRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const echoArmed = await echoRungs
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!echoArmed) fail(`${name} echo`, 'the ladder never armed')
+  else {
+    const rungCount = await echoRungs.count()
+    if (rungCount !== 8)
+      fail(`${name} echo`, `${rungCount} rungs armed, expected 8`)
+    const rungBox = await echoRungs.first().boundingBox()
+    if (!rungBox || rungBox.height < 44)
+      fail(
+        `${name} echo`,
+        `a rung is ${Math.round(rungBox?.height ?? 0)}px tall`,
+      )
+    await page.screenshot({ path: `${OUT}/${name}-stage-echo-answer.png` })
+    const judgedStatus = page.locator('[data-testid="ear-stage-status"]', {
+      hasText: /Yes —|That was/,
+    })
+    // The phrase is three to six notes: tap the first rung until judged.
+    let judged = false
+    for (let i = 0; i < 6 && !judged; i++) {
+      await echoRungs.first().click()
+      await page.waitForTimeout(150)
+      judged = (await judgedStatus.count()) > 0
+    }
+    if (!judged) fail(`${name} echo`, 'the phrase was never judged')
+    const chain = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="chain"]')
+      return svg
+        ? {
+            beads: svg.querySelectorAll('[data-part="expected"]').length,
+            marks: svg.querySelectorAll(
+              '[data-part="right"], [data-part="wrong"]',
+            ).length,
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-echo-reveal.png` })
+    if (!chain || chain.beads < 3 || chain.marks !== chain.beads)
+      fail(
+        `${name} echo`,
+        `reveal shows ${chain?.beads ?? 0} beads and ${chain?.marks ?? 0} marks on the chain`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Span: a practice run opens at three notes; the ladder arms after the
+  // phrase, three rungs judge it, and the reveal names the length.
+  await openFromStrip('Span')
+  results.spanIdle = await checkStage('span idle', 'stage-span-idle')
+  await page.getByText('Practice run').click()
+  const spanRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const spanArmed = await spanRungs
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!spanArmed) fail(`${name} span`, 'the ladder never armed')
+  else {
+    await page.screenshot({ path: `${OUT}/${name}-stage-span-answer.png` })
+    for (let i = 0; i < 3; i++) {
+      await spanRungs.first().click()
+      await page.waitForTimeout(150)
+    }
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Held —|Slipped at/,
+      })
+      .waitFor({ timeout: 8000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} span`, 'the phrase was never judged')
+    const chain = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="chain"]')
+      return svg ? svg.querySelectorAll('[data-part="expected"]').length : 0
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-span-reveal.png` })
+    if (chain !== 3)
+      fail(`${name} span`, `reveal shows ${chain} beads, expected 3`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
   await openFromStrip('Stack')

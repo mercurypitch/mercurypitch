@@ -9,10 +9,14 @@ describe('drill views', () => {
     }
   })
 
-  it('opens Pulse now that it is built, and keeps Echo off every door until it is', () => {
-    expect(VIEW_FOR_DRILL).toHaveProperty('pulse', 'pulse')
-    expect(SPRINT_DRILL_IDS).toContain('pulse')
-    expect(VIEW_FOR_DRILL).not.toHaveProperty('echo')
-    expect(SPRINT_DRILL_IDS).not.toContain('echo')
+  it('opens the built drills, and keeps the unbuilt off every door', () => {
+    for (const id of ['pulse', 'echo', 'span']) {
+      expect(VIEW_FOR_DRILL).toHaveProperty(id, id)
+      expect(SPRINT_DRILL_IDS).toContain(id)
+    }
+    for (const id of ['beat-hunt', 'drift', 'gravity', 'the-pull']) {
+      expect(VIEW_FOR_DRILL).not.toHaveProperty(id)
+      expect(SPRINT_DRILL_IDS).not.toContain(id)
+    }
   })
 })
