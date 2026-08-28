@@ -75,6 +75,7 @@ function circularSemitones(rel: number, target: number): number {
 export function detectSungDegree(
   frames: readonly SungFrame[],
   rootMidi: number,
+  degrees: readonly HomeDegree[] = HOME_DEGREES,
 ): SungDegree | null {
   const voiced = frames.filter((f) => f.f0 > 0 && f.conf >= MIN_CONF)
   if (voiced.length < MIN_VOICED_FRAMES) return null
@@ -95,7 +96,7 @@ export function detectSungDegree(
   // signed distance is the voice's intonation error.
   let best: SungDegree | null = null
   let bestAbs = Number.POSITIVE_INFINITY
-  for (const degree of HOME_DEGREES) {
+  for (const degree of degrees) {
     const signed = rels.map((rel) => circularSemitones(rel, degree.semitone))
     const med = median(signed)
     const abs = Math.abs(med)

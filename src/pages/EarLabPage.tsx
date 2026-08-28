@@ -19,10 +19,12 @@ import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
 import { EarReport } from '@/features/ear-lab/EarReport'
 import { EarRoomShell } from '@/features/ear-lab/EarRoomShell'
 import { EchoDrill } from '@/features/ear-lab/EchoDrill'
+import { GravityDrill } from '@/features/ear-lab/GravityDrill'
 import { GridDrill } from '@/features/ear-lab/GridDrill'
 import { HairlineDrill } from '@/features/ear-lab/HairlineDrill'
 import { HomeDrill } from '@/features/ear-lab/HomeDrill'
 import { LeapDrill } from '@/features/ear-lab/LeapDrill'
+import { PullDrill } from '@/features/ear-lab/PullDrill'
 import { PulseDrill } from '@/features/ear-lab/PulseDrill'
 import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
@@ -84,6 +86,12 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'drift'}>
           <DriftDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'gravity'}>
+          <GravityDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'the-pull'}>
+          <PullDrill onBack={back} />
         </Show>
         <Show when={view() === 'report'}>
           <EarReport onBack={back} />

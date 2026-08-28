@@ -22,6 +22,8 @@ export type InstrumentView =
   | 'span'
   | 'beat-hunt'
   | 'drift'
+  | 'gravity'
+  | 'the-pull'
   | 'pulse'
   | 'calibration'
 
@@ -70,6 +72,22 @@ export const INSTRUMENTS: readonly Instrument[] = [
     faculty: 'function',
     measures: 'Function · degree',
     answer: 'A cadence, one note — name the degree, tap or sing',
+  },
+  {
+    view: 'gravity',
+    drillId: 'gravity',
+    name: 'Gravity',
+    faculty: 'function',
+    measures: 'Function · chromatic',
+    answer: 'One note of the twelve over a planted key — name it',
+  },
+  {
+    view: 'the-pull',
+    drillId: 'the-pull',
+    name: 'The Pull',
+    faculty: 'function',
+    measures: 'Function · tendency',
+    answer: 'Two degrees — which one leans harder',
   },
   {
     view: 'grid',
@@ -181,10 +199,11 @@ export function instrumentReading(
     case 'beat-hunt':
     case 'drift':
       return thresholdReading(instrument.drillId ?? '')
-    case 'home': {
-      const ear = ratingReading('home')
+    case 'home':
+    case 'gravity': {
+      const ear = ratingReading(instrument.view)
       if (ear === null) return null
-      const voice = earPlayerRating('home-sing')
+      const voice = earPlayerRating(`${instrument.view}-sing`)
       return voice.attempts > 0
         ? { ...ear, unit: `· voice ${Math.round(voice.rating)}` }
         : ear
@@ -193,6 +212,7 @@ export function instrumentReading(
     case 'stack':
     case 'contour':
     case 'echo':
+    case 'the-pull':
       return ratingReading(instrument.drillId ?? '')
     case 'pulse': {
       const rating = ratingReading('pulse')
@@ -215,8 +235,10 @@ export function facultyReadout(faculty: FacultyId): InstrumentReading | null {
       return thresholdReading('hairline')
     case 'time':
       return thresholdReading('the-grid')
-    case 'function':
-      return instrumentReading(INSTRUMENTS[1])
+    case 'function': {
+      const home = INSTRUMENTS.find((i) => i.view === 'home')
+      return home ? instrumentReading(home) : null
+    }
     case 'colour':
       return ratingReading('stack')
     case 'shape': {
