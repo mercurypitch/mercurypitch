@@ -43,15 +43,52 @@ interface Platform {
 interface Pane {
   wx: number
   midi: number
-  kind: 'gate' | 'wall'
+  kind: 'gate' | 'wall' | 'hidden'
   res: number
   burstT: number // -1 until burst
+  /** hidden panes: hot–cold proximity of the current voice, 0..1 */
+  reveal: number
   shards: { x: number; y: number; vx: number; vy: number; r: number }[]
+}
+
+interface WhisperZone {
+  x0: number
+  x1: number
+  /** guardian world position */
+  gx: number
+  gyMidi: number
+  stir: number // 0..1, loud singing raises it
+  woken: boolean
+  wokenMs: number
+}
+
+interface BossCrystal {
+  midi: number
+  wx: number
+  res: number
+  broken: boolean
+  brokenMs: number // time since broken (re-anneal clock)
+}
+
+interface Boss {
+  cx: number
+  crystals: BossCrystal[]
+  cleared: boolean
+  shards: {
+    x: number
+    y: number
+    vx: number
+    vy: number
+    r: number
+    t: number
+  }[]
 }
 
 type Node =
   | { t: 'land'; p: Platform; hint: string; checkpoint?: boolean }
   | { t: 'pane'; pane: Pane; hint: string }
+  | { t: 'whisper'; z: WhisperZone; hint: string }
+  | { t: 'boss'; boss: Boss; hint: string }
 
 export const JourneyPrototype: Component = () => {
   const [phase, setPhase] = createSignal<Phase>('intro')
@@ -69,9 +106,12 @@ export const JourneyPrototype: Component = () => {
   let panes: Pane[] = []
   let nodes: Node[] = []
   let activeIdx = 0
-  let checkpointReached = false
+  /** node index of the last checkpoint landed (-1 = none) */
+  let lastCheckpointIdx = -1
+  let zones: WhisperZone[] = []
+  let boss: Boss | null = null
   let camX = 0
-  const WORLD_MAX = 19
+  const WORLD_MAX = 42
 
   let mercWX = 1.6
   let mercY = 0.8
@@ -159,25 +199,78 @@ export const JourneyPrototype: Component = () => {
     const step2 = P(g + s2, 12.7, 14.2, 'glass', { hum: true })
     const step3 = P(g + s3, 14.4, 15.9, 'glass', { hum: true })
     const goal = P(g + 3, 16.1, 17.3, 'stone')
-    platforms = [ground, p1, p2, ledge, step1, step2, step3, goal]
 
-    const gate: Pane = {
-      wx: 9.2,
-      midi: g + 6,
-      kind: 'gate',
+    // Act C — the melodic stairway: a literal scale, climbed in order
+    const stairs = C.stairway.stepOffsets.map((off, i) =>
+      P(g + off, 19.6 + i * 1.5, 20.8 + i * 1.5, i === 2 ? 'glass' : 'stone', {
+        hum: C.stairway.hum,
+      }),
+    )
+    const stairTop = P(g + 7, 27.3, 28.8, 'stone')
+
+    // Act D — the whisper passage floor (stone: resting is safe, noise isn't)
+    const hushA = P(g + 5, 29.2, 31.2, 'stone')
+    const hushB = P(g + 4, 31.4, 33.4, 'stone')
+    const hushExit = P(g + 5, 33.8, 35.2, 'stone')
+
+    // Act F — the chandelier arena floor
+    const arena = P(g + 3, 37, 41.2, 'stone')
+
+    platforms = [
+      ground,
+      p1,
+      p2,
+      ledge,
+      step1,
+      step2,
+      step3,
+      goal,
+      ...stairs,
+      stairTop,
+      hushA,
+      hushB,
+      hushExit,
+      arena,
+    ]
+
+    const mkPane = (wx: number, midi: number, kind: Pane['kind']): Pane => ({
+      wx,
+      midi,
+      kind,
       res: 0,
       burstT: -1,
+      reveal: 0,
       shards: [],
+    })
+    const gate = mkPane(9.2, g + 6, 'gate')
+    const wall = mkPane(17.8, g + 6, 'wall')
+    // Act E — the hidden door: its note is a secret; sweep for it
+    const door = mkPane(36.2, g + 8, 'hidden')
+    panes = [gate, wall, door]
+
+    const hush: WhisperZone = {
+      x0: 29,
+      x1: 33.6,
+      gx: 31.3,
+      gyMidi: g + 8,
+      stir: 0,
+      woken: false,
+      wokenMs: 0,
     }
-    const wall: Pane = {
-      wx: 17.8,
-      midi: g + 6,
-      kind: 'wall',
-      res: 0,
-      burstT: -1,
+    zones = [hush]
+
+    boss = {
+      cx: 39.1,
+      cleared: false,
       shards: [],
+      crystals: C.boss.crystalOffsets.map((off, i) => ({
+        midi: g + off,
+        wx: 38 + i * 1.1,
+        res: 0,
+        broken: false,
+        brokenMs: 0,
+      })),
     }
-    panes = [gate, wall]
 
     nodes = [
       {
@@ -214,8 +307,45 @@ export const JourneyPrototype: Component = () => {
         pane: wall,
         hint: `The wall. ${note(6)}, held until it gives.`,
       },
+      ...stairs.map(
+        (s, i): Node => ({
+          t: 'land',
+          p: s,
+          hint:
+            i === 0
+              ? `A stairway of notes. Start at ${note(C.stairway.stepOffsets[0])} and climb the scale.`
+              : `Next stair: ${midiToNoteNameOctave(s.midi)}.`,
+        }),
+      ),
+      {
+        t: 'land',
+        p: stairTop,
+        hint: 'The top of the scale — a safe place to breathe.',
+        checkpoint: true,
+      },
+      {
+        t: 'whisper',
+        z: hush,
+        hint: 'Something sleeps here. Cross singing SOFTLY — loud voices wake it.',
+      },
+      {
+        t: 'land',
+        p: hushExit,
+        hint: 'Past the sleeper. Rest a moment.',
+        checkpoint: true,
+      },
+      {
+        t: 'pane',
+        pane: door,
+        hint: 'A silent door. Sweep your voice slowly — it glows when you are close.',
+      },
+      {
+        t: 'boss',
+        boss,
+        hint: 'The Chandelier: break every crystal before the first re-anneals.',
+      },
     ]
-    checkpointReached = false
+    lastCheckpointIdx = -1
     activeIdx = -1
     advanceTo(0)
     mercWX = 1.6
@@ -241,29 +371,42 @@ export const JourneyPrototype: Component = () => {
   }
 
   const retry = (): void => {
-    if (checkpointReached) {
-      // reset everything after the checkpoint ledge (node index 3)
-      for (let i = 4; i < nodes.length; i++) {
+    if (lastCheckpointIdx >= 0) {
+      // reset every stateful thing the nodes after the checkpoint touch
+      for (let i = lastCheckpointIdx + 1; i < nodes.length; i++) {
         const n = nodes[i]
         if (n.t === 'land') {
           n.p.lit = false
           n.p.dwell = 0
           n.p.integrity = 1
           n.p.broken = false
-        } else {
+        } else if (n.t === 'pane') {
           n.pane.res = 0
           n.pane.burstT = -1
+          n.pane.reveal = 0
           n.pane.shards = []
+        } else if (n.t === 'whisper') {
+          n.z.stir = 0
+          n.z.woken = false
+          n.z.wokenMs = 0
+        } else {
+          for (const c of n.boss.crystals) {
+            c.res = 0
+            c.broken = false
+            c.brokenMs = 0
+          }
+          n.boss.cleared = false
+          n.boss.shards = []
         }
       }
-      const ledge = nodes[3] as Extract<Node, { t: 'land' }>
-      mercWX = (ledge.p.x0 + ledge.p.x1) / 2
-      mercY = yFor(ledge.p.midi) - 0.035
+      const cp = nodes[lastCheckpointIdx] as Extract<Node, { t: 'land' }>
+      mercWX = (cp.p.x0 + cp.p.x1) / 2
+      mercY = yFor(cp.p.midi) - 0.035
       falling = false
       fallenMs = 0
       restIdx = null
       shownMidi = null
-      advanceTo(4)
+      advanceTo(lastCheckpointIdx + 1)
     } else {
       buildWorld()
     }
@@ -336,15 +479,111 @@ export const JourneyPrototype: Component = () => {
           pl.dwell += dt
           if (pl.dwell >= C.land.dwellMs) {
             pl.lit = true
-            if (n.checkpoint === true) checkpointReached = true
+            if (n.checkpoint === true) lastCheckpointIdx = activeIdx
             advanceTo(activeIdx + 1)
           }
         } else {
           pl.dwell = Math.max(0, pl.dwell - dt * C.land.decay)
         }
+      } else if (n.t === 'whisper') {
+        const z = n.z
+        const fr = f0?.latestSmoothed()
+        const loud = (fr?.rms ?? 0) > C.whisper.rmsLoud
+        if (!z.woken) {
+          if (
+            loud &&
+            mercWX > z.x0 - C.whisper.approachMargin &&
+            mercWX < z.x1 + 0.3
+          ) {
+            z.stir = Math.min(1, z.stir + dt / C.whisper.wakeMs)
+          } else {
+            z.stir = Math.max(
+              0,
+              z.stir - (dt / C.whisper.wakeMs) * C.whisper.decay,
+            )
+          }
+          if (z.stir >= 1) {
+            z.woken = true
+            z.wokenMs = 0
+            setHint('It woke. The pulse throws you into the void—')
+          } else if (mercWX > z.x1) {
+            advanceTo(activeIdx + 1)
+          }
+        } else {
+          z.wokenMs += dt
+          if (z.wokenMs > C.whisper.crumbleDelayMs && !falling) {
+            falling = true
+            restIdx = null
+          }
+        }
+      } else if (n.t === 'boss') {
+        const b = n.boss
+        for (const c of b.crystals) {
+          if (c.broken) continue
+          if (midi !== null && Math.abs(midi - c.midi) <= C.boss.tolSemis) {
+            c.res = Math.min(1, c.res + dt / C.boss.riseMs)
+          } else {
+            c.res = Math.max(0, c.res - dt / C.boss.fallMs)
+          }
+          if (c.res >= 1) {
+            c.broken = true
+            c.brokenMs = 0
+            const cy = yFor(c.midi)
+            for (let i = 0; i < 12; i++) {
+              b.shards.push({
+                x: c.wx,
+                y: cy,
+                vx: (Math.cos((i / 12) * 6.283) * (0.4 + (i % 3) * 0.12)) / 2.2,
+                vy:
+                  (Math.sin((i / 12) * 6.283) * (0.4 + (i % 3) * 0.15)) / 2.2 -
+                  0.2,
+                r: 2 + (i % 3) * 2,
+                t: 0,
+              })
+            }
+            const left = b.crystals.filter((x) => !x.broken).length
+            setHint(
+              left === 0
+                ? 'Silence. The chandelier is dark.'
+                : left === 1
+                  ? 'One crystal still rings — before the others re-anneal!'
+                  : `${left} crystals still ring. Keep going!`,
+            )
+          }
+        }
+        for (const c of b.crystals) {
+          if (!c.broken) continue
+          c.brokenMs += dt
+          if (
+            c.brokenMs > C.boss.reannealMs &&
+            b.crystals.some((x) => !x.broken)
+          ) {
+            c.broken = false
+            c.res = 0
+            setHint('A crystal re-annealed. Break them all before that!')
+          }
+        }
+        if (!b.cleared && b.crystals.every((c) => c.broken)) {
+          b.cleared = true
+          advanceTo(activeIdx + 1)
+        }
       } else {
         const pane = n.pane
-        const cfg = pane.kind === 'gate' ? C.gate : C.wall
+        const cfg =
+          pane.kind === 'gate'
+            ? C.gate
+            : pane.kind === 'wall'
+              ? C.wall
+              : C.hidden
+        if (pane.kind === 'hidden') {
+          pane.reveal =
+            midi === null
+              ? Math.max(0, pane.reveal - dt / 600)
+              : Math.max(
+                  0,
+                  1 - Math.abs(midi - pane.midi) / C.hidden.revealSemis,
+                )
+        }
         if (pane.burstT < 0) {
           if (midi !== null && Math.abs(midi - pane.midi) <= cfg.tolSemis) {
             pane.res = Math.min(1, pane.res + dt / cfg.riseMs)
@@ -382,6 +621,17 @@ export const JourneyPrototype: Component = () => {
           if (n.pane === pane) advanceTo(activeIdx + 1)
         }
       }
+    }
+
+    // boss shard sparks
+    if (boss !== null && boss.shards.length > 0) {
+      for (const s of boss.shards) {
+        s.t += dt / 1000
+        s.x += (s.vx * dt) / 1000 / 0.55
+        s.y += (s.vy * dt) / 1000
+        s.vy += (1.6 * dt) / 1000
+      }
+      boss.shards = boss.shards.filter((s) => s.t < 1)
     }
 
     // --- merc: fly with the voice, rest on what's below, or fall ---
@@ -459,12 +709,29 @@ export const JourneyPrototype: Component = () => {
         let wantWX = mercWX
         if (midi !== null && activeIdx < nodes.length) {
           const n = nodes[activeIdx]
-          wantWX = n.t === 'land' ? (n.p.x0 + n.p.x1) / 2 : n.pane.wx - 0.7
+          const quiet = (f0?.latestSmoothed()?.rms ?? 0) <= C.whisper.rmsLoud
+          wantWX =
+            n.t === 'land'
+              ? (n.p.x0 + n.p.x1) / 2
+              : n.t === 'pane'
+                ? n.pane.wx - 0.7
+                : n.t === 'whisper'
+                  ? quiet
+                    ? n.z.x1 + 0.6
+                    : mercWX // a loud voice stands still before the sleeper
+                  : n.boss.cx
         } else if (restIdx !== null) {
           const pl = platforms[restIdx]
           wantWX = Math.min(Math.max(mercWX, pl.x0 + 0.2), pl.x1 - 0.2)
         }
-        mercWX += (wantWX - mercWX) * C.view.xLerp
+        // the hush slows every step inside it — no dashing past the sleeper
+        const inHush = zones.some(
+          (z) => !z.woken && mercWX > z.x0 - 0.3 && mercWX < z.x1,
+        )
+        const xLerp = inHush
+          ? C.view.xLerp * C.whisper.dragXLerpScale
+          : C.view.xLerp
+        mercWX += (wantWX - mercWX) * xLerp
       }
 
       if (midi !== null) {
@@ -680,27 +947,38 @@ export const JourneyPrototype: Component = () => {
       const tall = pane.kind === 'wall' ? 150 : 108
       const wide = pane.kind === 'wall' ? 34 : 28
       if (pane.burstT < 0.02) {
+        const hiddenGlow = pane.kind === 'hidden' ? pane.reveal : 0
         ctx.beginPath()
         ctx.roundRect(gx - wide / 2, gy - tall / 2, wide, tall, 8)
         if (patterns.crystal !== null) {
-          ctx.globalAlpha = 0.5
+          ctx.globalAlpha =
+            pane.kind === 'hidden' ? 0.3 + hiddenGlow * 0.3 : 0.5
           ctx.fillStyle = patterns.crystal
           ctx.fill()
           ctx.globalAlpha = 1
         }
-        // violet charge tint + glow grow with resonance
-        ctx.fillStyle = `rgba(188,140,255,${0.2 + pane.res * 0.5})`
-        ctx.shadowColor = '#bc8cff'
-        ctx.shadowBlur = 6 + pane.res * 22
+        // charge tint + glow grow with resonance (hidden: with proximity too)
+        ctx.fillStyle =
+          pane.kind === 'hidden'
+            ? `rgba(126,231,255,${0.08 + hiddenGlow * 0.3 + pane.res * 0.4})`
+            : `rgba(188,140,255,${0.2 + pane.res * 0.5})`
+        ctx.shadowColor = pane.kind === 'hidden' ? '#7ee7ff' : '#bc8cff'
+        ctx.shadowBlur =
+          pane.kind === 'hidden'
+            ? hiddenGlow * 20 + pane.res * 18
+            : 6 + pane.res * 22
         ctx.fill()
         ctx.shadowBlur = 0
-        ctx.strokeStyle = '#bc8cff'
+        ctx.strokeStyle =
+          pane.kind === 'hidden'
+            ? `rgba(126,231,255,${0.35 + hiddenGlow * 0.65})`
+            : '#bc8cff'
         ctx.lineWidth = 2
         ctx.stroke()
         ctx.fillStyle = 'rgba(230,237,243,0.8)'
-        ctx.font = '12px JetBrains Mono, monospace'
+        ctx.font = "600 11px 'Saira Condensed', monospace"
         ctx.fillText(
-          midiToNoteNameOctave(pane.midi),
+          pane.kind === 'hidden' ? '?' : midiToNoteNameOctave(pane.midi),
           gx - wide / 2,
           gy - tall / 2 - 8,
         )
@@ -712,6 +990,130 @@ export const JourneyPrototype: Component = () => {
           ctx.fillRect(X(s.x), s.y * h, s.r, s.r)
         }
         ctx.globalAlpha = 1
+      }
+    }
+
+    // whisper zones: an indigo hush veil + the sleeping guardian
+    for (const z of zones) {
+      const zx0 = X(z.x0)
+      const zx1 = X(z.x1)
+      if (zx1 < -60 || zx0 > w + 60) continue
+      const veil = ctx.createLinearGradient(zx0, 0, zx1, 0)
+      veil.addColorStop(0, 'rgba(40,30,80,0)')
+      veil.addColorStop(0.18, 'rgba(40,30,80,0.22)')
+      veil.addColorStop(0.82, 'rgba(40,30,80,0.22)')
+      veil.addColorStop(1, 'rgba(40,30,80,0)')
+      ctx.fillStyle = veil
+      ctx.fillRect(zx0, 0, zx1 - zx0, h)
+
+      const gx = X(z.gx)
+      const gy = yFor(z.gyMidi) * h
+      const breath = Math.sin(last / 700) * 2
+      const shake =
+        z.stir > 0.6 && !z.woken ? Math.sin(last / 40) * z.stir * 3 : 0
+      const r = 20 + breath + (z.woken ? 6 : 0)
+      const grad = ctx.createRadialGradient(
+        gx + shake,
+        gy,
+        2,
+        gx + shake,
+        gy,
+        r,
+      )
+      const heat = z.woken ? 1 : z.stir
+      grad.addColorStop(
+        0,
+        `rgba(${140 + heat * 110}, ${100 - heat * 40}, 255, 0.9)`,
+      )
+      grad.addColorStop(1, 'rgba(40,30,80,0)')
+      ctx.fillStyle = grad
+      ctx.beginPath()
+      ctx.arc(gx + shake, gy, r, 0, 6.283)
+      ctx.fill()
+      // closed eyes while asleep; wide while woken
+      ctx.strokeStyle = 'rgba(230,237,243,0.85)'
+      ctx.lineWidth = 1.5
+      for (const dx of [-5, 5]) {
+        ctx.beginPath()
+        if (z.woken) {
+          ctx.arc(gx + shake + dx, gy - 2, 2.6, 0, 6.283)
+        } else {
+          ctx.arc(gx + shake + dx, gy - 2, 3, 0.15 * Math.PI, 0.85 * Math.PI)
+        }
+        ctx.stroke()
+      }
+      // stir meter: a thin arc over the guardian
+      if (z.stir > 0.02 && !z.woken) {
+        ctx.strokeStyle = `rgba(255,160,120,${0.3 + z.stir * 0.6})`
+        ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.arc(gx, gy, r + 7, -Math.PI / 2, -Math.PI / 2 + z.stir * 6.283)
+        ctx.stroke()
+      }
+    }
+
+    // chandelier boss: hanging crystals that ring, break, and re-anneal
+    if (boss !== null) {
+      const anyVisible = boss.crystals.some((c) => {
+        const cx = X(c.wx)
+        return cx > -60 && cx < w + 60
+      })
+      if (anyVisible) {
+        for (const c of boss.crystals) {
+          const cx = X(c.wx)
+          const cy = yFor(c.midi) * h
+          // hanging thread from the top
+          ctx.strokeStyle = 'rgba(188,140,255,0.25)'
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(cx, 0)
+          ctx.lineTo(cx, cy - 12)
+          ctx.stroke()
+          const s = 11
+          ctx.save()
+          ctx.translate(cx, cy)
+          ctx.rotate(Math.PI / 4)
+          if (c.broken) {
+            ctx.strokeStyle = 'rgba(188,140,255,0.3)'
+            ctx.setLineDash([3, 5])
+            ctx.strokeRect(-s / 2, -s / 2, s, s)
+            ctx.setLineDash([])
+            ctx.restore()
+            // re-anneal ring fills as it comes back
+            ctx.strokeStyle = 'rgba(188,140,255,0.5)'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.arc(
+              cx,
+              cy,
+              s,
+              -Math.PI / 2,
+              -Math.PI / 2 + (c.brokenMs / C.boss.reannealMs) * 6.283,
+            )
+            ctx.stroke()
+          } else {
+            ctx.fillStyle = `rgba(188,140,255,${0.45 + c.res * 0.5})`
+            ctx.shadowColor = '#bc8cff'
+            ctx.shadowBlur = 4 + c.res * 20
+            ctx.fillRect(-s / 2, -s / 2, s, s)
+            ctx.shadowBlur = 0
+            ctx.strokeStyle = '#e6d5ff'
+            ctx.lineWidth = 1.5
+            ctx.strokeRect(-s / 2, -s / 2, s, s)
+            ctx.restore()
+            ctx.fillStyle = 'rgba(230,237,243,0.85)'
+            ctx.font = "600 11px 'Saira Condensed', monospace"
+            ctx.fillText(midiToNoteNameOctave(c.midi), cx - 10, cy - 16)
+          }
+        }
+        if (boss.shards.length > 0) {
+          ctx.fillStyle = '#bc8cff'
+          for (const s of boss.shards) {
+            ctx.globalAlpha = Math.max(0, 1 - s.t)
+            ctx.fillRect(X(s.x), s.y * h, s.r, s.r)
+          }
+          ctx.globalAlpha = 1
+        }
       }
     }
 
@@ -872,14 +1274,14 @@ export const JourneyPrototype: Component = () => {
           <h2 class="jp-title">The glass gave way.</h2>
           <p class="jp-text">The void keeps what it catches.</p>
           <button class="jp-start" onClick={retry}>
-            {checkpointReached ? 'Retry from the ledge' : 'Retry'}
+            {lastCheckpointIdx >= 0 ? 'Retry from the checkpoint' : 'Retry'}
           </button>
         </Show>
         <Show when={phase() === 'done'}>
-          <h2 class="jp-title">The wall shattered.</h2>
+          <h2 class="jp-title">The chandelier fell silent.</h2>
           <p class="jp-text">
-            Slice complete — climb, gate, bridge, wall. This becomes chapter
-            one.
+            Chapter one complete — climb, gate, bridge, wall, stairway, sleeper,
+            hidden door, chandelier. Your voice did all of it.
           </p>
           <button
             class="jp-start"

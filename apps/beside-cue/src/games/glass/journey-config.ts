@@ -75,6 +75,57 @@ export const JOURNEY_CONFIG = {
     humSeconds: 1.4,
   },
 
+  /** Act C — the melodic stairway (a literal scale climbed step by step). */
+  stairway: {
+    /** Scale degrees above the ground note, climbed in order. */
+    stepOffsets: [0, 2, 4, 5, 7],
+    /** Hum each stair's note as it becomes the objective. */
+    hum: true,
+  },
+
+  /** Act D — the whisper passage (a sleeping guardian; sing QUIETLY). */
+  whisper: {
+    /** RMS above this counts as loud inside the zone. */
+    rmsLoud: 0.12,
+    /** Continuous loud time to fully wake the guardian, ms. */
+    wakeMs: 900,
+    /** Stir decay multiplier while quiet (stir -= dt/wakeMs * decay). */
+    decay: 0.6,
+    /** Woken: the platform under Merc shatters after this beat, ms. */
+    crumbleDelayMs: 350,
+    /** Drift drag inside the zone (xLerp multiplier) — a loud dash cannot
+     * outrun the wake; a soft voice just takes a patient moment. */
+    dragXLerpScale: 0.28,
+    /** How far before the zone loudness starts to matter, world units.
+     * Keep smaller than the gap to the checkpoint so resting there is safe. */
+    approachMargin: 0.1,
+  },
+
+  /** Act E — the hidden door (find the frequency; no label, sweep for it). */
+  hidden: {
+    /** Charge tolerance once found, semitones. */
+    tolSemis: 0.5,
+    /** Proximity range for the hot–cold glow, semitones. */
+    revealSemis: 2.5,
+    /** Full resonance build time in-band, ms. */
+    riseMs: 1800,
+    fallMs: 800,
+  },
+
+  /** Act F — the chandelier mini-boss (break all crystals before they
+   * re-anneal). */
+  boss: {
+    /** Crystal notes, semitones above ground. */
+    crystalOffsets: [4, 7, 8],
+    /** Charge tolerance, semitones. */
+    tolSemis: 0.6,
+    /** Per-crystal charge time in-band, ms. */
+    riseMs: 1000,
+    fallMs: 700,
+    /** A broken crystal re-anneals after this, unless all are broken. */
+    reannealMs: 6500,
+  },
+
   /** Falling + game over. */
   fall: {
     /** Downward speed while falling, canvas fractions per second. */
