@@ -41,6 +41,27 @@ export function solfegeOf(degrees: readonly number[]): string {
   return degrees.map(degreeSolfege).join(' ')
 }
 
+/** The degree (1..8) nearest to a pitch `semitones` above the tonic,
+ *  octave-folded: what a sung note is heard as. A note right at the
+ *  octave is Do′ (8); anything nearer the tonic below is Do (1). */
+export function nearestDegree(semitones: number): number {
+  let rel = semitones % 12
+  if (rel < 0) rel += 12
+  let best = 1
+  let bestDistance = Number.POSITIVE_INFINITY
+  DEGREE_SEMITONES.forEach((target, i) => {
+    const distance = Math.min(
+      Math.abs(rel - target),
+      Math.abs(rel - target + 12),
+    )
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = i + 1
+    }
+  })
+  return best === 8 && rel < 6 ? 1 : best
+}
+
 export function largestLeap(degrees: readonly number[]): number {
   let leap = 0
   for (let i = 1; i < degrees.length; i++) {

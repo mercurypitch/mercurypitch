@@ -104,8 +104,15 @@ export function useThresholdRun(
     return tracks[activeTrackIndex]?.state ?? null
   }
 
-  function start(runMode: ThresholdRunMode): void {
+  /** Where a practice run's reading is recorded: the drill's own id,
+   *  or the track start() was given — Span's sung runs read under
+   *  'span-sing'. Calibration always reads under the drill. */
+  let runTrackId = drill.id
+
+  function start(runMode: ThresholdRunMode, track?: { drillId: string }): void {
     cancelled = false
+    runTrackId =
+      runMode === 'practice' ? (track?.drillId ?? drill.id) : drill.id
     startedAt = performance.now()
     batch(() => {
       setMode(runMode)
@@ -197,7 +204,7 @@ export function useThresholdRun(
       const estimate = single ? thresholdOf(single) : null
       if (estimate) {
         recordThresholdReading({
-          drillId: drill.id,
+          drillId: runTrackId,
           value: estimate.value,
           spread: estimate.spread,
           tracks: 1,
@@ -280,6 +287,7 @@ export function useThresholdRun(
 
   return {
     phase,
+    trackId: () => runTrackId,
     mode,
     trials,
     reversalsDone,

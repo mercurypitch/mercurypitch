@@ -662,6 +662,13 @@ async function auditStage(page, name) {
   // and the chain shows a bead and a mark per note at the reveal.
   await openFromStrip('Echo')
   results.echoIdle = await checkStage('echo idle', 'stage-echo-idle')
+  // Sing mode: the idle console carries the Answer-by toggle — two radios.
+  const echoModes = await page
+    .locator('[data-testid="ear-stage-console"] [role="radio"]')
+    .count()
+  if (echoModes !== 2) {
+    fail(`${name} echo`, `${echoModes} answer-mode radios at idle, expected 2`)
+  }
   await page.getByText('Begin').click()
   const echoRungs = page.locator(
     '[data-testid="ear-stage-pads"] button:not([disabled])',
@@ -722,6 +729,13 @@ async function auditStage(page, name) {
   // phrase, three rungs judge it, and the reveal names the length.
   await openFromStrip('Span')
   results.spanIdle = await checkStage('span idle', 'stage-span-idle')
+  // Sing mode: the idle console carries the Answer-by toggle — two radios.
+  const spanModes = await page
+    .locator('[data-testid="ear-stage-console"] [role="radio"]')
+    .count()
+  if (spanModes !== 2) {
+    fail(`${name} span`, `${spanModes} answer-mode radios at idle, expected 2`)
+  }
   await page.getByText('Practice run').click()
   const spanRungs = page.locator(
     '[data-testid="ear-stage-pads"] button:not([disabled])',

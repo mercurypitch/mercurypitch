@@ -227,7 +227,8 @@ export function instrumentReading(
     case 'drift':
       return thresholdReading(instrument.drillId ?? '')
     case 'home':
-    case 'gravity': {
+    case 'gravity':
+    case 'echo': {
       const ear = ratingReading(instrument.view)
       if (ear === null) return null
       const voice = earPlayerRating(`${instrument.view}-sing`)
@@ -238,7 +239,6 @@ export function instrumentReading(
     case 'leap':
     case 'stack':
     case 'contour':
-    case 'echo':
     case 'the-pull':
     case 'cadence':
     case 'bassline':

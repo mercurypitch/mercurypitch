@@ -70,6 +70,11 @@ interface ThresholdDrillViewProps {
   keys: () => StageKey[]
   /** The reveal sentence: what was true, and which way the level moves. */
   revealLine: () => string
+  /** Starts a run; the run's start unless the drill has to acquire
+   *  something (a microphone) first. */
+  onStart?: (mode: ThresholdRunMode) => void
+  /** Hide Calibration: a sung run is practice only. */
+  practiceOnly?: () => boolean
   onBack: () => void
 }
 
@@ -77,6 +82,10 @@ export function ThresholdDrillView(
   props: ThresholdDrillViewProps,
 ): JSX.Element {
   const phase = () => props.run.phase()
+  const start = (runMode: ThresholdRunMode) => {
+    if (props.onStart) props.onStart(runMode)
+    else props.run.start(runMode)
+  }
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const calibrating = () => props.run.mode() === 'calibration'
   const ritual = () => props.ritual === true
@@ -132,7 +141,7 @@ export function ThresholdDrillView(
   const keys = (): StageKey[] => {
     if (phase() === 'idle') {
       const mode: ThresholdRunMode = ritual() ? 'calibration' : 'practice'
-      return [{ key: 'Space', action: () => props.run.start(mode) }]
+      return [{ key: 'Space', action: () => start(mode) }]
     }
     if (phase() === 'answer') return props.keys()
     return []
@@ -198,15 +207,17 @@ export function ThresholdDrillView(
                       sub="about a minute"
                       keycap="Space"
                       icon={<IconPlay size={20} />}
-                      onClick={() => props.run.start('practice')}
+                      onClick={() => start('practice')}
                     />
-                    <PlayPad
-                      amber
-                      label="Calibration"
-                      sub="3 tracks · about 3 min"
-                      icon={<IconSeal size={20} />}
-                      onClick={() => props.run.start('calibration')}
-                    />
+                    <Show when={props.practiceOnly?.() !== true}>
+                      <PlayPad
+                        amber
+                        label="Calibration"
+                        sub="3 tracks · about 3 min"
+                        icon={<IconSeal size={20} />}
+                        onClick={() => start('calibration')}
+                      />
+                    </Show>
                   </ConsoleLead>
                   <ConsoleNote>{props.description}</ConsoleNote>
                   {props.idleAside}
@@ -220,7 +231,7 @@ export function ThresholdDrillView(
                   sub="3 tracks · about 3 min"
                   keycap="Space"
                   icon={<IconSeal size={20} />}
-                  onClick={() => props.run.start('calibration')}
+                  onClick={() => start('calibration')}
                 />
               </ConsoleLead>
               <ConsoleNote>
@@ -252,7 +263,7 @@ export function ThresholdDrillView(
                   ? 'Stopped before the tracks could finish — a calibration only counts when all three run to the end, so nothing was marked.'
                   : 'Stopped before the staircase turned — nothing to read yet, and nothing marked.'
               }
-              onAgain={() => props.run.start(again())}
+              onAgain={() => start(again())}
               againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
               onBack={props.onBack}
             />
@@ -289,7 +300,7 @@ export function ThresholdDrillView(
                     {dateLabel(calibrationDueAt(Date.now()))}.
                   </Show>
                 }
-                onAgain={() => props.run.start(again())}
+                onAgain={() => start(again())}
                 againLabel={calibrating() ? 'Calibrate again' : 'Run again'}
                 onBack={props.onBack}
               >
