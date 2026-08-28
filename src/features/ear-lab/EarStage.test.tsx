@@ -301,3 +301,45 @@ describe('keys by code', () => {
     expect(pad('The first').getAttribute('data-state')).not.toBeNull()
   })
 })
+
+describe('a key the browser took', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+
+  afterEach(() => cleanup())
+
+  async function armed() {
+    const Engine = withEngine(fakeEngine())
+    render(() => (
+      <Engine>
+        <HairlineDrill onBack={() => undefined} />
+      </Engine>
+    ))
+    fireEvent.click(pad('Practice run'))
+    await waitFor(() => expect(pad('The first').disabled).toBe(false), {
+      timeout: 3000,
+    })
+  }
+
+  it('says so once when a registered key comes up without going down', async () => {
+    await armed()
+    // A key pressed before the pads armed is not a swallowed one.
+    fireEvent.keyDown(document, { key: 'a', code: 'KeyA' })
+    fireEvent.keyUp(document, { key: 'a', code: 'KeyA' })
+    expect(screen.queryByTestId('ear-stage-swallowed')).toBeNull()
+    fireEvent.keyUp(document, { key: '1', code: 'Digit1' })
+    expect(screen.getByTestId('ear-stage-swallowed').textContent).toContain(
+      'Vimium',
+    )
+    // The pads still wait: nothing answered.
+    expect(pad('The first').disabled).toBe(false)
+    // A digit that arrives whole clears the note and answers.
+    fireEvent.keyDown(document, { key: '2', code: 'Digit2' })
+    fireEvent.keyUp(document, { key: '2', code: 'Digit2' })
+    expect(screen.queryByTestId('ear-stage-swallowed')).toBeNull()
+    expect(pad('The second').disabled).toBe(true)
+  })
+})

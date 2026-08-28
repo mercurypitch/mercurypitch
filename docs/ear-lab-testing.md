@@ -803,6 +803,16 @@ overlaps. Contour — both tones the same length.
    a shifted digit answers; a layout that moves the top row answers by
    the physical key. Space still starts and steps.
 
+### 2ah. Retest fixes — a key the browser took
+
+1. With Vimium (or any extension binding the digits) active and the site
+   not excluded: Hairline, pads armed, press 1. Nothing answers, and a
+   dashed note appears under the headline — "The browser took that key —
+   an extension such as Vimium binds the digits. Exclude mercurypitch.com
+   in it, or tap the pads." It stays until a digit arrives whole.
+2. Without an extension no note ever shows: a key pressed during the
+   stimulus and released once the pads armed is not a swallowed one.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

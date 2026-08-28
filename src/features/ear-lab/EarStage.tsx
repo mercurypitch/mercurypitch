@@ -180,6 +180,37 @@ export function AutoAdvanceSwitch(props: AutoAdvanceSwitchProps): JSX.Element {
 export function EarStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
 
+  // Every keydown, registered or not, so a keyup can tell a key the
+  // browser took from one pressed before the pads armed. A keyup with
+  // no keydown behind it is a key something upstream swallowed — an
+  // extension binding the digits — and the console says so, once.
+  const pressed = new Set<string>()
+  const [swallowed, setSwallowed] = createSignal(false)
+  const registered = (event: KeyboardEvent): boolean =>
+    (props.keys?.() ?? []).some((entry) =>
+      entry.key === 'Space'
+        ? event.code === 'Space'
+        : keyMatches(entry.key, event),
+    )
+  onMount(() => {
+    const down = (event: KeyboardEvent) => {
+      pressed.add(event.code)
+      if (swallowed() && registered(event)) setSwallowed(false)
+    }
+    const up = (event: KeyboardEvent) => {
+      if (pressed.delete(event.code)) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTypingTarget(event.target) || !registered(event)) return
+      setSwallowed(true)
+    }
+    document.addEventListener('keydown', down, true)
+    document.addEventListener('keyup', up)
+    onCleanup(() => {
+      document.removeEventListener('keydown', down, true)
+      document.removeEventListener('keyup', up)
+    })
+  })
+
   createEffect(() => {
     const keys = props.keys?.()
     if (!keys || keys.length === 0) return
@@ -286,6 +317,16 @@ export function EarStage(props: EarStageProps): JSX.Element {
                   )}
                 </Show>
               </div>
+              <Show when={swallowed()}>
+                <p
+                  class={styles.swallowed}
+                  role="status"
+                  data-testid="ear-stage-swallowed"
+                >
+                  The browser took that key — an extension such as Vimium binds
+                  the digits. Exclude mercurypitch.com in it, or tap the pads.
+                </p>
+              </Show>
               {props.console()}
               <Show when={props.lastCall?.()}>
                 {(call) => (
