@@ -10,9 +10,10 @@
 import { createRoot } from 'solid-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useThresholdRun } from '@/features/ear-lab/use-threshold-run'
+import { CALIBRATION_STAIRCASE } from '@/lib/ear/calibration'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { REVEAL_HOLD } from '@/lib/ear/timing'
-import { latestThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
+import { latestThresholdReading, recordThresholdReading, resetEarLabStore, } from '@/stores/ear-lab-store'
 
 const drill = findThresholdDrill('hairline')
 if (!drill) throw new Error('hairline drill missing from catalogue')
@@ -185,5 +186,58 @@ describe('a run that finishes normally', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('a calibration you can see the end of', () => {
+  it('warm-starts every track from the latest reading and counts the whole run', async () => {
+    recordThresholdReading({
+      drillId: 'hairline',
+      value: 12,
+      spread: 2,
+      tracks: 1,
+      source: 'practice',
+    })
+    await createRoot(async (dispose) => {
+      const stim = pendingStimulus()
+      const run = useThresholdRun(drill, stim.play)
+      run.start('calibration')
+      expect(run.level()).toBeCloseTo(18)
+      expect(run.trackTarget()).toBe(CALIBRATION_STAIRCASE.reversalsToStop)
+      expect(run.reversalTarget()).toBe(
+        CALIBRATION_STAIRCASE.reversalsToStop * 3,
+      )
+      // Before the run shows its pace: the prior, two and a half a turn.
+      expect(run.questionsLeft()).toBe(45)
+      dispose()
+    })
+  })
+
+  it('opens at the catalogue start with no reading, and ends inside the cap', async () => {
+    vi.useFakeTimers()
+    await createRoot(async (dispose) => {
+      const stim = pendingStimulus()
+      const run = useThresholdRun(drill, stim.play)
+      run.start('calibration')
+      expect(run.level()).toBe(drill.staircase.start)
+      let trials = 0
+      for (let i = 0; i < 2000 && run.phase() !== 'done'; i++) {
+        if (run.phase() === 'stimulus') {
+          stim.release()
+          await vi.advanceTimersByTimeAsync(1)
+        } else if (run.phase() === 'answer') {
+          run.answerCorrect(i % 2 === 0)
+          trials++
+          await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)
+        } else {
+          await vi.advanceTimersByTimeAsync(5)
+        }
+      }
+      expect(run.phase()).toBe('done')
+      expect(trials).toBeLessThanOrEqual(CALIBRATION_STAIRCASE.maxTrials * 3)
+      expect(run.questionsLeft()).toBe(0)
+      dispose()
+    })
+    vi.useRealTimers()
   })
 })

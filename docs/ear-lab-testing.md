@@ -710,6 +710,24 @@ overlaps. Contour — both tones the same length.
 3. Echo in the Wild's sung runs rate under `wild-echo-sing`; the Field Book's
    phrase rating stays the tapped one.
 
+### 2aa. Retest fixes — a calibration you can see the end of
+
+1. The bench's amber control and the Hairline ritual's Begin pad say
+   "about 50 questions"; the idle line reads "Three short staircases,
+   shuffled and pooled · about 50 questions". Begin: the bar shows the
+   whole run — "Turns 0 of 18 · Track A · 18.0¢ · about 45 questions left"
+   — with a three-bar strip under it that fills as each track turns (the
+   brass bar is the track sounding); on a desk the pendulums still swing
+   below the loupe.
+2. Each track opens one and a half times easier than your latest Hairline
+   reading, practice or sealed (12¢ → 18¢), not at 50¢; with no reading it
+   opens at the catalogue's start. Six turns a track, forty trials at most.
+   A run takes 45–60 questions, about two and a half minutes; the plate's
+   pooled reading still carries its ± spread and the three pendulums.
+3. Practice runs say "turns n of 8" rather than "reversal", and count
+   questions left the same way.
+4. The stop control is the square alone, in practice and in calibration.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

@@ -205,6 +205,7 @@ describe('useDryVoiceCapture', () => {
     createF0StreamMock.mockReturnValue({
       startTask: vi.fn(),
       takeFrames: frameWindows,
+      peekFrames: vi.fn(() => []),
       latest: vi.fn(() => null),
       latestSmoothed: vi.fn(() => null),
       latestLevel: vi.fn(() => 0),

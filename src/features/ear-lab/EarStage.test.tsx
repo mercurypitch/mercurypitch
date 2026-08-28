@@ -122,7 +122,7 @@ describe('EarStage with Hairline', () => {
     // The sealed protocol opens at rest: the pendulums, the protocol
     // line, an amber Begin instead of Practice.
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
-      'Three tracks',
+      'Three short staircases',
     )
     expect(
       document.querySelector('[data-instrument="pendulums"]'),

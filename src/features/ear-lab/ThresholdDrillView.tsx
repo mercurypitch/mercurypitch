@@ -19,7 +19,7 @@ import { Show } from 'solid-js'
 import { calibrationDueAt } from '@/lib/ear/calibration'
 import { IconPlay, IconSeal } from './ear-icons'
 import type { StageKey } from './EarStage'
-import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, } from './EarStage'
+import { ConsoleLead, ConsoleNote, EarStage, EndPlate, PlateBadge, PlateLine, PlayPad, TurnsStrip, } from './EarStage'
 import styles from './EarStage.module.css'
 import { dateLabel } from './instruments'
 import { useLastCall } from './reveal-pacing'
@@ -106,21 +106,20 @@ export function ThresholdDrillView(
   const progress = () => {
     if (!running()) {
       if (ritual() && phase() === 'idle') {
-        return 'Three tracks, interleaved · about three minutes'
+        return 'Three short staircases, shuffled and pooled · about 50 questions'
       }
       const latest = props.latestValue()
       return latest === null
         ? 'Unmeasured'
         : `Latest reading ${props.formatValue(latest)}${props.unitShort}`
     }
+    const left = `about ${props.run.questionsLeft()} questions left`
     if (calibrating()) {
-      // Per track, so the line still reads on a phone, where the
-      // pendulums step aside for the loupe during the trials.
-      const track = props.run.activeTrack()
-      const turns = props.run.trackReversals()[track] ?? 0
-      return `Track ${TRACK_NAMES[track] ?? ''} · ${props.levelCaption} ${props.levelLabel()} · reversal ${turns} of ${props.run.trackTarget()}`
+      // The whole run, not the active track: the end is in sight.
+      const track = TRACK_NAMES[props.run.activeTrack()] ?? ''
+      return `Turns ${props.run.reversalsDone()} of ${props.run.reversalTarget()} · Track ${track} · ${props.levelLabel()} · ${left}`
     }
-    return `${props.levelCaption} ${props.levelLabel()} · reversal ${props.run.reversalsDone()} of ${props.run.reversalTarget()}`
+    return `${props.levelCaption} ${props.levelLabel()} · turns ${props.run.reversalsDone()} of ${props.run.reversalTarget()} · ${left}`
   }
 
   const status = () => {
@@ -180,6 +179,15 @@ export function ThresholdDrillView(
       name={name()}
       mode={mode()}
       progress={progress()}
+      progressAside={
+        <Show when={running() && calibrating()}>
+          <TurnsStrip
+            counts={props.run.trackReversals()}
+            target={props.run.trackTarget()}
+            active={props.run.activeTrack()}
+          />
+        </Show>
+      }
       status={status()}
       tone={tone()}
       keys={keys}
@@ -238,7 +246,7 @@ export function ThresholdDrillView(
                       <PlayPad
                         amber
                         label="Calibration"
-                        sub="3 tracks · about 3 min"
+                        sub="about 50 questions"
                         icon={<IconSeal size={20} />}
                         onClick={() => start('calibration')}
                       />
@@ -253,7 +261,7 @@ export function ThresholdDrillView(
                 <PlayPad
                   amber
                   label="Begin"
-                  sub="3 tracks · about 3 min"
+                  sub="about 50 questions · marks the glass"
                   keycap="Space"
                   icon={<IconSeal size={20} />}
                   onClick={() => start('calibration')}

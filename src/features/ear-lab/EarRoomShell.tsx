@@ -297,7 +297,7 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
                   <span class={styles.primaryLong}>Run Calibration</span>
                   <span class={styles.primaryShort}>Calibrate</span>
                 </b>
-                <small>about 3 min · marks the glass</small>
+                <small>about 50 questions · marks the glass</small>
               </span>
             </button>
 
