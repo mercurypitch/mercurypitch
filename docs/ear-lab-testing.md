@@ -585,6 +585,39 @@ audit walks this); no percent on screen while reading; the page shows counts
 and the key, never an answer; the three drills' stages pass the same walk as
 their catalogue cousins.
 
+### 2u. The mixing desk — follow-up item 10
+
+**The desk** is a tile on the instrument strip (Colour · the mixing desk). Its
+page renders one source once: the newest finished separation in the karaoke
+library (vocal and instrumental summed over twelve seconds from a third of
+the way in) or, with no song, the house loop — four bars of I–V–vi–IV on the
+guitar and bass voices with a straight kit, at 100. The status names the
+source; three play pads open the drills, each rendering a 3.2 s slice of the
+source offline through the fault under test.
+
+- **Colour** (`1`, threshold, practice only): one octave band boosted —
+  125 Hz, 250, 500, 1 kHz, 2 kHz, 4 kHz — at the staircase's level in dB
+  (start 12, floor 0.5); six pads. The reveal names the band; the reading is
+  the smallest boost still placed.
+- **Weight** (`2`, threshold, practice only): the same slice twice, one with
+  a low shelf under 120 Hz at the level in dB (start 6, floor 0.25), the pair
+  matched for loudness so the heavier is never the louder; two pads.
+- **Critique** (`3`, Elo): one of six faults at a frozen strength — mud
+  (250 Hz), box (500), harsh (3 kHz), sibilance (8 kHz), pumping (a
+  compressor at 12:1 breathing), narrow (the stereo folded) — six pads.
+- The desk's instrument is a row of channel strips with every fader at the
+  same height; the lamp of the answer lights at the reveal, the master lamp
+  while a render plays, and Weight brackets the strip that is sounding.
+- Readings live under `desk-colour` / `desk-weight` / `desk-critique`; the
+  strip tile reads Colour's dB. The catalogue's `colour` drill keeps its
+  settings but never records — the Column's estimate reads every catalogue
+  drill, so the desk records beside it. No Calibration on the desk.
+
+Checks: the desk page renders within a minute (the audit waits on it), the
+Colour practice run arms six pads from an offline render, the three idle
+stages pass the standard walk, no percent on screen, and nothing on the desk
+answers before the reveal.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

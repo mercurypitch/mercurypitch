@@ -184,6 +184,30 @@ export function defaultDeps(ctx: BaseAudioContext): WildAnalysisDeps {
   }
 }
 
+/** The song's stems decoded: vocal and instrumental, and the bass part
+ *  when it has one. Null when either of the first two is missing. The
+ *  desk uses this on its own; the Field Book reads on from it. */
+export async function loadWildStems(
+  session: UvrSession,
+  deps: WildAnalysisDeps,
+  onProgress?: (pct: number) => void,
+): Promise<WildStems | null> {
+  const loadStem = async (stem: UvrStemType): Promise<AudioBuffer | null> => {
+    const url = await deps.stemUrl(session, stem)
+    if (url === null) return null
+    const bytes = await deps.fetchBytes(url)
+    return deps.decode(bytes)
+  }
+  const vocal = await loadStem('vocal')
+  onProgress?.(8)
+  const instrumental = await loadStem('instrumental')
+  onProgress?.(16)
+  if (!vocal || !instrumental) return null
+  const bass = await loadStem('bass')
+  onProgress?.(20)
+  return { vocal, instrumental, bass }
+}
+
 const yieldToPaint = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -197,21 +221,13 @@ export async function readWildSession(
     onProgress?.({ phase, pct: Math.round(pct) })
 
   report('stems', 0)
-  const loadStem = async (stem: UvrStemType): Promise<AudioBuffer | null> => {
-    const url = await deps.stemUrl(session, stem)
-    if (url === null) return null
-    const bytes = await deps.fetchBytes(url)
-    return deps.decode(bytes)
-  }
-  const vocal = await loadStem('vocal')
-  report('stems', 8)
-  const instrumental = await loadStem('instrumental')
-  report('stems', 16)
-  if (!vocal || !instrumental) {
+  const stems = await loadWildStems(session, deps, (pct) =>
+    report('stems', pct),
+  )
+  if (!stems) {
     throw new Error('This song has no vocal and instrumental stems yet.')
   }
-  const bass = await loadStem('bass')
-  report('stems', 20)
+  const { vocal, bass, instrumental } = stems
   await yieldToPaint()
 
   const vocalMono = monoOf(vocal)
