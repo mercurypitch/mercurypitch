@@ -6,7 +6,7 @@
 // staircase on length (start 3, min 2, max 16). Every trial draws a
 // fresh diatonic walk at the current length over a freshly planted
 // key; the player gives it back in order — on the ladder, or sung
-// through the same windowed scorer Echo uses — and the staircase
+// in free time through the same scorer Echo uses — and the staircase
 // moves on whether the whole phrase came back. The reading is notes
 // held — the longest phrase the ear carries — and it sits on the
 // Shape dial beside Contour and Leap. A sung run is practice only
@@ -14,22 +14,23 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createEffect, createSignal, on, onCleanup, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { cadenceChordMidis, roveRootMidi } from '@/lib/ear/item-bank'
 import type { PhraseVerdict } from '@/lib/ear/phrase'
-import { judgePhrase, nearestDegree, phraseMidis, randomPhrase, solfegeOf, } from '@/lib/ear/phrase'
-import { noteWindows, scorePhrase } from '@/lib/ear/phrase-score'
+import { judgePhrase, phraseMidis, randomPhrase, solfegeOf, } from '@/lib/ear/phrase'
+import { scorePhraseFree, sungDegrees } from '@/lib/ear/sung-notes'
 import { SPAN_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import { BeadChain } from './BeadChain'
 import { IconMic } from './ear-icons'
 import { ConsoleNote, ConsoleStack, ConsoleWarning, ModeToggle, PlayPad, } from './EarStage'
-import { PhraseConsole } from './PhraseConsole'
+import { PhraseConsole, SungStrip } from './PhraseConsole'
 import { ThresholdDrillView } from './ThresholdDrillView'
 import { useSingCapture } from './use-sing-capture'
+import { useSungAnswer } from './use-sung-answer'
 import type { StimulusApi, ThresholdRunMode } from './use-threshold-run'
 import { useThresholdRun } from './use-threshold-run'
 
@@ -46,12 +47,10 @@ const MODES: { id: AnswerMode; label: string }[] = [
 
 export const SPAN_SING_ID = 'span-sing'
 
-export function spanListeningMs(count: number): number {
-  return (
-    SPAN_TIMING.singLeadMs +
-    count * (SPAN_TIMING.noteMs + SPAN_TIMING.gapMs) +
-    SPAN_TIMING.singTailMs
-  )
+/** The phrase's own length; the sung window's ceiling is twice it
+ *  plus three seconds (use-sung-answer). */
+export function spanPhraseMs(count: number): number {
+  return count * (SPAN_TIMING.noteMs + SPAN_TIMING.gapMs)
 }
 
 export function SpanDrill(props: SpanDrillProps): JSX.Element {
@@ -66,14 +65,12 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
   const [micError, setMicError] = createSignal('')
   const capture = useSingCapture(audioEngine, 'ear-span-drill')
   let rootMidi = 48
-  let singTimer: ReturnType<typeof setTimeout> | undefined
 
   function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   function cancelStimulus(): void {
-    clearTimeout(singTimer)
     audioEngine.stopTone(60)
   }
 
@@ -129,43 +126,25 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     setAnswered((list) => list.slice(0, -1))
   }
 
-  function judgeNow(): void {
-    clearTimeout(singTimer)
-    if (run.phase() !== 'answer' || !sungRun()) return
-    const expected = phrase()
-    const score = scorePhrase(
-      capture.takeFrames(),
-      rootMidi,
-      expected,
-      noteWindows(
-        expected.length,
-        SPAN_TIMING.noteMs,
-        SPAN_TIMING.gapMs,
-        SPAN_TIMING.singLeadMs,
-      ),
-    )
-    setAnswered(
-      score.notes.map((note) =>
-        note.sungMidi === null ? 0 : nearestDegree(note.sungMidi - rootMidi),
-      ),
-    )
-    setVerdict({
-      correct: score.correct,
-      perNote: score.notes.map((note) => note.met),
-      firstMiss: score.firstMiss,
-    })
-    run.answerCorrect(score.correct)
-  }
-
-  createEffect(
-    on(run.phase, (current) => {
-      clearTimeout(singTimer)
-      if (current !== 'answer' || !sungRun()) return
-      capture.startWindow()
-      singTimer = setTimeout(judgeNow, spanListeningMs(phrase().length))
-    }),
-  )
-  onCleanup(() => clearTimeout(singTimer))
+  /** The sung window: the strip fills as the mic hears notes, and it
+   *  closes itself on silence, at the ceiling, or on Done. */
+  const sung = useSungAnswer({
+    capture,
+    open: () => run.phase() === 'answer' && sungRun(),
+    rootMidi: () => rootMidi,
+    phraseMs: () => spanPhraseMs(phrase().length),
+    onJudge: (notes) => {
+      if (run.phase() !== 'answer' || !sungRun()) return
+      const score = scorePhraseFree(notes, phrase(), rootMidi)
+      setAnswered(sungDegrees(notes, rootMidi))
+      setVerdict({
+        correct: score.correct,
+        perNote: score.notes.map((note) => note.met),
+        firstMiss: score.firstMiss,
+      })
+      run.answerCorrect(score.correct)
+    },
+  })
 
   /** Calibration always taps; a sung practice run needs the mic first
    *  and falls back to tapping when there is none. */
@@ -202,8 +181,8 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     const current = run.phase()
     if (current === 'answer') {
       return {
-        label: 'Listening',
-        sub: 'press when you are done',
+        label: 'Done',
+        sub: 'or wait — silence closes it',
         state: undefined,
       }
     }
@@ -216,7 +195,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
     }
     return {
       label: 'Sing or play it back',
-      sub: 'when the console says now',
+      sub: 'the mic opens after the phrase',
       state: 'sounding',
     }
   }
@@ -245,9 +224,11 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
           />
           <Show when={answerMode() === 'mic'}>
             <ConsoleNote>
-              Sing or play the phrase back at the pace it sounded, starting when
-              the console says now. A sung run is practice only and reads on its
-              own voice track; Calibration always taps.
+              Sing or play the phrase back at your own pace once it has sounded:
+              the strip shows each note the mic hears, and the answer closes
+              itself after a moment's silence, or on Done. A sung run is
+              practice only and reads on its own voice track; Calibration always
+              taps.
             </ConsoleNote>
           </Show>
           <Show when={micError() !== ''}>
@@ -259,7 +240,7 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
       listenHint="Listen to the phrase…"
       answerHint={
         sungRun()
-          ? 'Sing or play it back — now, at the pace it sounded.'
+          ? 'Sing or play it back — at your own pace, then a breath.'
           : 'Tap it back on the ladder, note by note.'
       }
       levelCaption="Length"
@@ -300,20 +281,28 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
             />
           }
         >
-          <PlayPad
-            label={listeningPad().label}
-            sub={listeningPad().sub}
-            keycap="Space"
-            state={listeningPad().state}
-            icon={<IconMic size={20} />}
-            onClick={judgeNow}
-          />
+          <ConsoleStack>
+            <SungStrip
+              degrees={sung.degrees()}
+              expectedLength={phrase().length}
+              level={sung.level()}
+              listening={run.phase() === 'answer'}
+            />
+            <PlayPad
+              label={listeningPad().label}
+              sub={listeningPad().sub}
+              keycap="Space"
+              state={listeningPad().state}
+              icon={<IconMic size={20} />}
+              onClick={sung.judgeNow}
+            />
+          </ConsoleStack>
         </Show>
       )}
       keys={() =>
         sungRun()
           ? run.phase() === 'answer'
-            ? [{ key: 'Space', action: judgeNow }]
+            ? [{ key: 'Space', action: sung.judgeNow }]
             : []
           : ladderKeys()
       }

@@ -12,21 +12,24 @@ import type * as Banks from '@/lib/ear/banks'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import type * as ItemBank from '@/lib/ear/item-bank'
 import type * as Phrase from '@/lib/ear/phrase'
-import { ECHO_TIMING, REVEAL_HOLD, SPAN_TIMING } from '@/lib/ear/timing'
+import { REVEAL_HOLD } from '@/lib/ear/timing'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToFreq } from '@/lib/scale-data'
 import { earItemStates, earPlayerRating, resetEarLabStore, } from '@/stores/ear-lab-store'
-import { EchoDrill, echoListeningMs } from './EchoDrill'
-import { SpanDrill, spanListeningMs } from './SpanDrill'
+import { EchoDrill, echoPhraseMs } from './EchoDrill'
+import { SpanDrill } from './SpanDrill'
+import { SUNG_ANSWER, sungAnswerCeilingMs } from './use-sung-answer'
 import { useThresholdRun } from './use-threshold-run'
 
 const mic = vi.hoisted(() => ({
   frames: [] as PitchFrame[],
   acquire: vi.fn<(id: string) => Promise<MediaStream>>(),
   release: vi.fn(),
-  startTask: vi.fn(),
+  startTask: vi.fn(() => {
+    mic.frames = []
+  }),
   dispose: vi.fn(),
 }))
 
@@ -44,7 +47,9 @@ vi.mock('@/lib/pitch-f0-stream', () => ({
   createF0Stream: () => ({
     startTask: mic.startTask,
     takeFrames: () => mic.frames,
+    peekFrames: () => mic.frames,
     latest: () => null,
+    latestLevel: () => 0.1,
     dispose: mic.dispose,
   }),
 }))
@@ -78,27 +83,31 @@ function fakeEngine(): AudioEngine {
   } as unknown as AudioEngine
 }
 
-/** Eight confident frames inside each note's window, after the 30% the
- *  scorer drops; midi 0 leaves a window silent. */
+/** Notes sung in free time: 350 ms each with a 150 ms breath between,
+ *  at the stream's hop. Unless the window is still `open`, 1.4 s of
+ *  silence follows — enough for it to close itself. */
 function sungFrames(
   midis: number[],
-  noteMs: number,
-  gapMs: number,
-  leadMs: number,
+  options?: { open?: boolean },
 ): PitchFrame[] {
   const frames: PitchFrame[] = []
-  midis.forEach((midi, i) => {
-    if (midi === 0) return
-    const start = (leadMs + i * (noteMs + gapMs)) / 1000
-    for (let k = 0; k < 8; k++) {
-      frames.push({
-        t: start + ((0.4 + k * 0.07) * noteMs) / 1000,
-        f0: midiToFreq(midi),
-        conf: 0.9,
-        rms: 0.2,
-      } as PitchFrame)
-    }
-  })
+  const push = (t: number, midi: number) =>
+    frames.push({
+      t: Math.round(t * 1000) / 1000,
+      f0: midi > 0 ? midiToFreq(midi) : 0,
+      conf: midi > 0 ? 0.9 : 0,
+      rms: midi > 0 ? 0.2 : 0.01,
+    } as PitchFrame)
+  let t = 0.2
+  for (const midi of midis) {
+    for (let k = 0; k < 22; k++) push(t + k * 0.016, midi)
+    t += 0.35
+    for (let k = 0; k < 9; k++) push(t + k * 0.016, 0)
+    t += 0.15
+  }
+  if (options?.open !== true) {
+    for (let k = 0; k < 90; k++) push(t + k * 0.016, 0)
+  }
   return frames
 }
 
@@ -143,7 +152,7 @@ describe('sing mode', () => {
     vi.useRealTimers()
   })
 
-  it('Echo rates a sung phrase under echo-sing and leaves the item alone', async () => {
+  it('Echo shows the notes as the mic hears them, then judges on silence', async () => {
     mount(() => <EchoDrill onBack={() => undefined} />)
     fireEvent.click(screen.getByRole('radio', { name: 'Sing or play' }))
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
@@ -152,32 +161,33 @@ describe('sing mode', () => {
 
     await reach('Sing or play it back')
     expect(mic.startTask).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: /Listening/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Done/ })).toBeTruthy()
+    const strip = () => screen.getByTestId('ear-phrase-strip').textContent ?? ''
+    expect(strip()).toContain('0 of 3')
 
-    // Do Re Mi at the root the trial roved to.
-    mic.frames = sungFrames(
-      [60, 62, 64],
-      ECHO_TIMING.noteMs,
-      ECHO_TIMING.gapMs,
-      ECHO_TIMING.singLeadMs,
-    )
-    await vi.advanceTimersByTimeAsync(echoListeningMs(3))
+    // Do Re at the root the trial roved to, the mic still on Re: the
+    // strip fills, nothing is judged yet.
+    mic.frames = sungFrames([60, 62], { open: true })
+    await vi.advanceTimersByTimeAsync(SUNG_ANSWER.pollMs)
+    expect(strip()).toContain('Do')
+    expect(strip()).toContain('Re')
+    expect(strip()).toContain('2 of 3')
+    expect(status()).toContain('Sing or play it back')
+
+    // Mi, then a breath of silence: judged by itself.
+    mic.frames = sungFrames([60, 62, 64])
+    await vi.advanceTimersByTimeAsync(SUNG_ANSWER.pollMs)
     expect(status()).toContain('Yes — Do Re Mi.')
     expect(earPlayerRating('echo-sing').attempts).toBe(1)
     expect(earPlayerRating('echo').attempts).toBe(0)
     expect(earItemStates()['e-steps-up']).toBeUndefined()
 
-    // Round two: the second note sung a fourth up — wrong, and the chain
-    // marks that bead.
+    // Round two: the second note a fourth up — Done judges it now, and
+    // the chain marks that bead.
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
     await reach('Sing or play it back')
-    mic.frames = sungFrames(
-      [60, 65, 64],
-      ECHO_TIMING.noteMs,
-      ECHO_TIMING.gapMs,
-      ECHO_TIMING.singLeadMs,
-    )
-    fireEvent.click(screen.getByRole('button', { name: /Listening/ }))
+    mic.frames = sungFrames([60, 65, 64], { open: true })
+    fireEvent.click(screen.getByRole('button', { name: /Done/ }))
     await vi.advanceTimersByTimeAsync(0)
     expect(status()).toContain('That was Do Re Mi — listen again.')
     expect(
@@ -187,6 +197,18 @@ describe('sing mode', () => {
     expect(earPlayerRating('echo-sing').attempts).toBe(2)
     expect(earPlayerRating('echo').attempts).toBe(0)
     expect(earItemStates()['e-steps-up']).toBeUndefined()
+  })
+
+  it('Echo closes an empty window at the ceiling and counts it a miss', async () => {
+    mount(() => <EchoDrill onBack={() => undefined} />)
+    fireEvent.click(screen.getByRole('radio', { name: 'Sing or play' }))
+    fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
+    await reach('Sing or play it back')
+    await vi.advanceTimersByTimeAsync(
+      sungAnswerCeilingMs(echoPhraseMs(3)) + SUNG_ANSWER.pollMs,
+    )
+    expect(status()).toContain('That was Do Re Mi — listen again.')
+    expect(earPlayerRating('echo-sing').attempts).toBe(1)
   })
 
   it('Echo falls back to the ladder when the mic cannot be opened', async () => {
@@ -219,28 +241,18 @@ describe('sing mode', () => {
     expect(mic.acquire).toHaveBeenCalledWith('ear-span-drill')
 
     await reach('Sing or play it back')
-    mic.frames = sungFrames(
-      [60, 67, 60],
-      SPAN_TIMING.noteMs,
-      SPAN_TIMING.gapMs,
-      SPAN_TIMING.singLeadMs,
-    )
-    await vi.advanceTimersByTimeAsync(spanListeningMs(3))
+    mic.frames = sungFrames([60, 67, 60])
+    await vi.advanceTimersByTimeAsync(SUNG_ANSWER.pollMs)
     expect(status()).toContain(
       'Held — all 3 notes, Do Sol Do. The phrase grows.',
     )
 
-    // Next trial: the middle note missing — slipped at note 2.
+    // Next trial: two notes, then silence — slipped at note 3.
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs)
     await reach('Sing or play it back')
-    mic.frames = sungFrames(
-      [60, 0, 60],
-      SPAN_TIMING.noteMs,
-      SPAN_TIMING.gapMs,
-      SPAN_TIMING.singLeadMs,
-    )
-    await vi.advanceTimersByTimeAsync(spanListeningMs(3))
-    expect(status()).toContain('Slipped at note 2 of 3')
+    mic.frames = sungFrames([60, 67])
+    await vi.advanceTimersByTimeAsync(SUNG_ANSWER.pollMs)
+    expect(status()).toContain('Slipped at note 3 of 3')
   })
 
   it('a threshold run reads under the given track for practice only', () => {

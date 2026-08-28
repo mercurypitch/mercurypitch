@@ -30,8 +30,12 @@ export interface SingCaptureHandle {
   held: () => boolean
   /** Clear the frame window. */
   startWindow: () => void
-  /** Frames since startWindow(), timed from it. */
+  /** Frames since startWindow(), timed from it; closes the window. */
   takeFrames: () => PitchFrame[]
+  /** The frames so far, the window still open. */
+  peekFrames: () => PitchFrame[]
+  /** Input level 0..1 (RMS) of the latest buffer; 0 with no mic. */
+  level: () => number
 }
 
 export function useSingCapture(
@@ -61,5 +65,7 @@ export function useSingCapture(
     held: () => f0 !== null,
     startWindow: () => f0?.startTask(),
     takeFrames: () => f0?.takeFrames() ?? [],
+    peekFrames: () => f0?.peekFrames() ?? [],
+    level: () => f0?.latestLevel() ?? 0,
   }
 }

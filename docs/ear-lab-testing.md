@@ -525,15 +525,15 @@ drill opens the microphone through the mic manager (`ear-echo-drill` /
 starts anyway on the ladder and a warning under the toggle says so.
 
 - The phrase sounds as before. When the ladder would open, the console shows
-  a **Listening** pad instead and the status reads "Sing or play it back —
-  now, at the pace it sounded." Sing (or play an instrument at the mic) the
-  phrase at the pace it sounded, starting straight away. Each note has its own
-  window on that grid — a 250 ms breath, then note + gap per note, 450 ms
-  grace at the end (`singLeadMs` / `singTailMs` in `timing.ts`); the median
-  pitch of the confident frames in a window (its first 30% dropped) names the
-  note, and it counts within 60 cents (`src/lib/ear/phrase-score.ts`). Press
-  the Listening pad or Space when you are done, or wait for the window to
-  close.
+  the strip with a mic lamp and a **Done** pad, and the status reads "Sing or
+  play it back — at your own pace, then a breath." Sing (or play an
+  instrument at the mic) the phrase at any pace: the lamp glows with the
+  input, and each note the mic hears appears in the strip as it is sung
+  (`src/lib/ear/sung-notes.ts` cuts voiced runs of 120 ms or more, split on
+  a step over 70 cents; the median pitch names the note; it counts within 60
+  cents, in order, any octave). The window closes itself after 1.2 s of
+  silence once a note is in, at a ceiling of twice the phrase plus three
+  seconds, or on Done (Space). Extra or missing notes are misses.
 - The reveal is the same chain: right beads ringed, wrong beads marked, a
   bead the mic did not catch dashed. A miss replays the phrase slowly (Echo).
 - Ratings: Echo's sung run rates under `echo-sing` with no guess floor and the
@@ -695,6 +695,20 @@ overlaps. Contour — both tones the same length.
    replay; Home from the end of the resolution.
 4. Stop while parked lands on the plate as before; nothing is marked by a
    stopped calibration. Both preferences survive a reload.
+
+### 2z. Retest fixes — sing mode in free time
+
+1. Echo, Span and Echo in the Wild, **Sing or play**: after the phrase the
+   strip shows the mic lamp (lit, glowing with the input) and "0 of N"; sing
+   at any pace — each note appears as solfège while you sing, and "n of N"
+   counts up. Stop singing: about a second later the answer is judged by
+   itself. Press Done (or Space) to judge at once. Say nothing: the window
+   closes at twice the phrase's length plus three seconds and counts a miss.
+2. A sung repeated note needs a breath between (a held pitch is one note);
+   a slide of more than 70 cents starts a new note; consonants inside a note
+   do not split it.
+3. Echo in the Wild's sung runs rate under `wild-echo-sing`; the Field Book's
+   phrase rating stays the tapped one.
 
 ## 3. Phase 1 regression (quick pass)
 

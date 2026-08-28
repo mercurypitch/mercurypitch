@@ -529,6 +529,31 @@
   color: color-mix(in srgb, var(--stage-parchment) 65%, transparent);
 }
 
+/* The mic lamp on a sung answer: lit while the window is open, its
+   glow the input level (--mic-level, 0..1 on a dB scale). */
+.micLamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--stage-line);
+  border-radius: 50%;
+  color: var(--stage-muted);
+  background: rgb(20 23 28 / 70%);
+  transition:
+    box-shadow 90ms linear,
+    background 90ms linear;
+}
+
+.micLampOn {
+  color: var(--stage-brass-bright);
+  border-color: var(--stage-brass-line);
+  background: rgb(201 164 94 / calc(6% + 28% * var(--mic-level, 0)));
+  box-shadow: 0 0 calc(2px + 18px * var(--mic-level, 0))
+    rgb(231 198 125 / calc(0.2 + 0.6 * var(--mic-level, 0)));
+}
+
 .pads {
   display: grid;
   grid-template-columns: repeat(var(--pad-columns, 2), minmax(0, 1fr));
