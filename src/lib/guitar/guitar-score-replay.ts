@@ -61,6 +61,29 @@ export interface GuitarScoreReplayResult {
 }
 
 /**
+ * The beat at which the exported run's transport clock read zero.
+ *
+ * The engine pins a target at `(beatToSeconds(beat) - rangeStartSeconds) * rate`
+ * and takes `rangeStartSeconds` from the range's own start beat, so a replay
+ * that anchors the range anywhere else shifts every target. Sections do not
+ * start at beat zero — a take of the middle of a song opened at beat 106 while
+ * its first target sat 2.045 s into the transport — so the anchor is recovered
+ * by inverting the beat map rather than assumed.
+ */
+function transportZeroBeat(
+  rows: GuitarScoreExport['model']['rows'],
+  toSeconds: (beat: number) => number,
+): number {
+  const beats = rows.map((row) => row.startBeat)
+  const low = Math.min(...beats)
+  const high = Math.max(...beats)
+  if (!(high > low)) return low
+  const slope = (toSeconds(high) - toSeconds(low)) / (high - low)
+  if (!(Math.abs(slope) > 1e-9)) return low
+  return low - toSeconds(low) / slope
+}
+
+/**
  * Beat to seconds, recovered from the export.
  *
  * The authored beat grid is not in the file, but every target carries both its
@@ -188,17 +211,19 @@ export function replayGuitarScoreExport(
 ): GuitarScoreReplayResult {
   const { model } = exported
   const beats = model.rows.map((row) => row.startBeat)
+  const toSeconds = beatMapper(model.rows)
+  const zeroBeat = transportZeroBeat(model.rows, toSeconds)
   const engine = createGuitarLiveScoreEngine({
     source: {
       referenceId: 'replay',
       trackId: 'replay',
       range: {
-        startBeat: Math.min(...beats, 0),
+        startBeat: zeroBeat,
         endBeat: Math.max(...beats, 1) + 1,
       },
     },
     sampleRate: model.sampleRate,
-    beatToSeconds: beatMapper(model.rows),
+    beatToSeconds: toSeconds,
     targets: model.rows.map((row) => ({
       id: row.targetId,
       midi: row.midi,

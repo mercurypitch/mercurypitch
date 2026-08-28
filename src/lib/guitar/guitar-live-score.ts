@@ -370,6 +370,31 @@ function createTargets(
       left.onsetFrame - right.onsetFrame || left.id.localeCompare(right.id),
   )
 
+  // How many authored voices share an onset is a fact about the music, not a
+  // scoring preference, so it is computed whatever the exclusion settings say.
+  // A mono detector returns one pitch per onset either way, and judging the
+  // other voices independently guarantees a miss for each of them.
+  {
+    let index = 0
+    while (index < targets.length) {
+      let end = index
+      const first = targets[index]
+      if (first === undefined) break
+      while (
+        end + 1 < targets.length &&
+        targets[end + 1]?.onsetFrame === first.onsetFrame
+      ) {
+        end += 1
+      }
+      const size = end - index + 1
+      for (let member = index; member <= end; member += 1) {
+        const target = targets[member]
+        if (target !== undefined) target.onsetGroupSize = size
+      }
+      index = end + 1
+    }
+  }
+
   const denseTargetSpacingMs =
     options.denseTargetSpacingMs ?? PITCH_ATTACH_WINDOW_MS * 2
   // Zero disables exclusion outright, so a development run can see what the
@@ -397,10 +422,7 @@ function createTargets(
         (next !== undefined && next - onsetFrame < minimumSpacingFrames)
       const skipReason =
         group.length > 1 ? 'polyphonic-onset' : tooClose ? 'fast-passage' : null
-      for (const target of group) {
-        target.skipReason = skipReason
-        target.onsetGroupSize = group.length
-      }
+      for (const target of group) target.skipReason = skipReason
     }
   }
   return targets
@@ -681,10 +703,17 @@ export function createGuitarLiveScoreEngine(
       // once, through whichever voice was actually heard, and the remaining
       // voices are named unprovable rather than wrong.
       //
-      // Gated on the pinned reason rather than on group size, so setting
-      // denseTargetSpacingMs to 0 still judges every voice independently and
-      // can measure the ceiling.
-      if (evidenceFirst && target.skipReason === 'polyphonic-onset') {
+      // Gated on group size, not on the pinned exclusion reason. Turning
+      // dense-passage exclusion off says "judge the hard passages"; it does not
+      // say "pretend one detector can hear two strings at once". Measured on a
+      // real take of fast power chords with that toggle on: ten chords resolved
+      // as one hit and one miss, the miss being a voice nothing could have
+      // proven.
+      if (
+        evidenceFirst &&
+        options.inputKind !== 'midi' &&
+        target.onsetGroupSize > 1
+      ) {
         const group: TargetFrame[] = []
         for (
           let index = firstUnresolvedTargetIndex;
@@ -755,7 +784,7 @@ export function createGuitarLiveScoreEngine(
               eventId: null,
               timingOffsetMs: null,
               skipReason: null,
-              reclaimedFrom: 'polyphonic-onset',
+              reclaimedFrom: target.skipReason,
             })
             continue
           }
@@ -771,7 +800,7 @@ export function createGuitarLiveScoreEngine(
             timingOffsetMs:
               Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
             skipReason: null,
-            reclaimedFrom: 'polyphonic-onset',
+            reclaimedFrom: target.skipReason,
           })
         }
         firstUnresolvedTargetIndex += group.length

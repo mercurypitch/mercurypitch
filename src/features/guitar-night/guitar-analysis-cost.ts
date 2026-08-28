@@ -17,12 +17,24 @@ const WINDOW = 120
 const PUBLISH_INTERVAL_MS = 500
 
 export interface GuitarAnalysisCost {
-  /** Median milliseconds inside one pitch detection. */
+  /**
+   * Median milliseconds inside one pitch detection that actually ran.
+   *
+   * `PitchDetector.detect` computes RMS first and returns before the
+   * correlation when the frame is under `minAmplitude`, so on sparse playing
+   * most calls cost nothing and a median over all of them reports ~0 while the
+   * real work is several milliseconds. Measured on two takes: 0.00 ms across
+   * isolated notes against 5.53 ms across continuous playing, from the same
+   * detector at the same window size. Gated frames are excluded here so the
+   * number means what it says.
+   */
   medianDetectMs: number
   /** Worst detection in the sampled window. */
   worstDetectMs: number
-  /** Detections actually completed per second. */
+  /** Detections actually completed per second, gated ones included. */
   detectionsPerSecond: number
+  /** Share of frames that returned early under the amplitude gate. */
+  gatedShare: number
   /** Share of a 60 Hz frame budget one detection consumes. */
   frameBudgetShare: number
   samples: number
@@ -32,9 +44,14 @@ const [cost, setCost] = createSignal<GuitarAnalysisCost | null>(null)
 
 export const guitarAnalysisCost = cost
 
+// Below this a call cannot have run the correlation — it is the amplitude
+// gate returning, and averaging it in hides the cost of the work that did run.
+const GATED_MS = 0.05
+
 const durations: number[] = []
 let windowStartedAt = 0
 let completed = 0
+let gated = 0
 let lastPublishedAt = 0
 
 /** Record one completed detection. Cheap enough to sit in the frame loop. */
@@ -43,9 +60,13 @@ export function recordGuitarDetectCost(
   nowMs: number,
 ): void {
   if (!import.meta.env.DEV) return
-  durations.push(durationMs)
-  if (durations.length > WINDOW) durations.shift()
   completed += 1
+  if (durationMs < GATED_MS) {
+    gated += 1
+  } else {
+    durations.push(durationMs)
+    if (durations.length > WINDOW) durations.shift()
+  }
   if (windowStartedAt === 0) {
     windowStartedAt = nowMs
     lastPublishedAt = nowMs
@@ -66,12 +87,15 @@ export function recordGuitarDetectCost(
     medianDetectMs: Math.round(median * 100) / 100,
     worstDetectMs: Math.round((sorted[sorted.length - 1] ?? 0) * 100) / 100,
     detectionsPerSecond: Math.round((completed / elapsedSeconds) * 10) / 10,
+    gatedShare:
+      completed === 0 ? 0 : Math.round((gated / completed) * 100) / 100,
     frameBudgetShare: Math.round((median / 16.67) * 100) / 100,
     samples: sorted.length,
   })
   lastPublishedAt = nowMs
   windowStartedAt = nowMs
   completed = 0
+  gated = 0
 }
 
 export function resetGuitarAnalysisCost(): void {
@@ -79,5 +103,6 @@ export function resetGuitarAnalysisCost(): void {
   windowStartedAt = 0
   lastPublishedAt = 0
   completed = 0
+  gated = 0
   setCost(null)
 }

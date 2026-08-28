@@ -526,6 +526,39 @@ describe('createGuitarLiveScoreEngine', () => {
     ).toMatchObject({ outcome: 'skipped', skipReason: 'unheard-voice' })
   })
 
+  it('judges a chord as one voice even when dense exclusion is switched off', () => {
+    const targets = [
+      { id: 'chord-low', midi: 60, startBeat: 0 },
+      { id: 'chord-high', midi: 67, startBeat: 0 },
+    ]
+    // denseTargetSpacingMs 0 turns dense-passage EXCLUSION off. It must not
+    // also turn off chord-unit judging: one detector still hears one pitch, so
+    // judging the voices independently would score the unheard one as a miss.
+    // Measured on a real take of fast power chords with this setting live, ten
+    // chords came back as one hit and one miss apiece.
+    const score = engine(targets, 'microphone', undefined, {
+      scorePolicy: 'evidence-first',
+      denseTargetSpacingMs: 0,
+    })
+    const result = score.sample(
+      take([event('chord-event', 0, 67, 'microphone')], {
+        kind: 'microphone',
+      }),
+      1_181,
+      'good',
+    )
+
+    expect(result.totals).toMatchObject({
+      judgedTargets: 1,
+      hitTargets: 1,
+      missedTargets: 0,
+      skippedTargets: 1,
+    })
+    expect(
+      result.recentJudgments.find((j) => j.targetId === 'chord-low'),
+    ).toMatchObject({ outcome: 'skipped', skipReason: 'unheard-voice' })
+  })
+
   it('lets a chord miss, so reclaiming cannot only ever raise the score', () => {
     const targets = [
       { id: 'chord-c', midi: 60, startBeat: 0 },
