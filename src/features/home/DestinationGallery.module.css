@@ -123,6 +123,14 @@
   grid-column: 1 / -1;
 }
 
+/* The Lab is a row of its own, after the rooms and Exercises have paired
+   off: a single card cannot join those pairs without leaving a hole
+   somewhere, and a cover with no span at all collapses into one twelfth
+   of the grid. */
+.earLab {
+  grid-column: 1 / -1;
+}
+
 .coverShade {
   position: absolute;
   inset: 0;
