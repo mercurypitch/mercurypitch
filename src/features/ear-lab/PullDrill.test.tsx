@@ -137,7 +137,10 @@ describe('PullDrill', () => {
     )
     // Ti, then Do′: two replay tones.
     expect(engine.playTone).toHaveBeenCalledTimes(16)
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationWrongMs)
+    // The next round waits for the replay's tail, then the hold.
+    await vi.advanceTimersByTimeAsync(
+      REVEAL_TIMING.identificationWrongMs + 2000,
+    )
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )

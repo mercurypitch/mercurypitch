@@ -85,6 +85,8 @@ export function useIdentificationController(
   let runTrack: RunTrack | null = null
   const trackId = () => runTrack?.drillId ?? drill.id
   const [result, setResult] = createSignal<IdentificationResult | null>(null)
+  /** True while a miss's slow replay is sounding. */
+  const [replaying, setReplaying] = createSignal(false)
 
   let currentItem: EarBankItem | null = null
   let trial: IdentificationTrial | null = null
@@ -167,18 +169,30 @@ export function useIdentificationController(
       setPhase('reveal')
     })
 
-    if (!correct && trial?.replayOnWrong) void trial.replayOnWrong()
-
-    timer = setTimeout(
-      () => {
+    // A miss replays the item slowly; the hold — and the next round —
+    // wait for the replay to finish, or the two would sound over each
+    // other. Stop still cuts it: cancelled is checked after the replay.
+    const replay =
+      !correct && trial?.replayOnWrong
+        ? trial.replayOnWrong()
+        : Promise.resolve()
+    setReplaying(!correct && trial?.replayOnWrong !== undefined)
+    void replay
+      .catch(() => undefined)
+      .then(() => {
+        setReplaying(false)
         if (cancelled) return
-        setRound((r) => r + 1)
-        void playRound()
-      },
-      correct
-        ? REVEAL_TIMING.identificationCorrectMs
-        : REVEAL_TIMING.identificationWrongMs,
-    )
+        timer = setTimeout(
+          () => {
+            if (cancelled) return
+            setRound((r) => r + 1)
+            void playRound()
+          },
+          correct
+            ? REVEAL_TIMING.identificationCorrectMs
+            : REVEAL_TIMING.identificationWrongMs,
+        )
+      })
   }
 
   function finish(): void {
@@ -220,6 +234,7 @@ export function useIdentificationController(
     answeredId,
     rating,
     result,
+    replaying,
     track: () => runTrack,
     start,
     answer,

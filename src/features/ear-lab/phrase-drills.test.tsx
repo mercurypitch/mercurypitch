@@ -154,7 +154,10 @@ describe('EchoDrill', () => {
     // The replay: three notes, slower, no cadence.
     await vi.advanceTimersByTimeAsync(0)
     expect(engine.playTone).toHaveBeenCalledTimes(16)
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationWrongMs + 5)
+    // The next round waits for the slow replay to finish, then the hold.
+    await vi.advanceTimersByTimeAsync(
+      REVEAL_TIMING.identificationWrongMs + 4000,
+    )
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )

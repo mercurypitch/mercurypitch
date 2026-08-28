@@ -145,7 +145,10 @@ describe('SubdivideDrill', () => {
     expect(hits).toHaveLength(16)
     const slowBar = hits[12].at - hits[8].at
     expect(slowBar).toBeGreaterThan(BAR / 1000)
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationWrongMs + 5)
+    // The next round waits for the slow bars to finish, then the hold.
+    await vi.advanceTimersByTimeAsync(
+      REVEAL_TIMING.identificationWrongMs + 12000,
+    )
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )
