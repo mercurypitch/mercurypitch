@@ -7,7 +7,7 @@
 // persisting navigation state or weakening the protocol comparison contract.
 
 import { createSignal } from 'solid-js'
-import type { GuidedPracticeLaunchConfig } from '@/features/exercises/types'
+import type { GuidedPracticeLaunchConfig } from '@/lib/domain/exercise-contracts'
 import type { GuidedPracticeRecommendation, GuidedRetakeProtocol, } from '@/lib/guided-voice'
 import { isPitchCentrePilotProtocol, PITCH_CENTRE_PILOT_RECOMMENDATION_RULES_V1, PITCH_CENTRE_PILOT_THRESHOLDS_V1, } from '@/lib/guided-voice'
 

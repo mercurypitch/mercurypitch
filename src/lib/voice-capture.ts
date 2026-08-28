@@ -83,40 +83,45 @@ export function createTakeRecorder(stream: MediaStream): TakeRecorder | null {
   const mime = pickRecorderMime()
   if (mime === null) return null
 
-  let recorder: MediaRecorder | null = null
-  let chunks: BlobPart[] = []
+  type RecorderSession = {
+    recorder: MediaRecorder
+    chunks: BlobPart[]
+  }
+
+  let session: RecorderSession | null = null
 
   const stopCurrent = (): void => {
-    if (recorder !== null && recorder.state !== 'inactive') {
+    const current = session
+    session = null
+    if (current !== null && current.recorder.state !== 'inactive') {
       try {
-        recorder.stop()
+        current.recorder.stop()
       } catch {
         // Already stopping/stopped — fine.
       }
     }
-    recorder = null
   }
 
   return {
     start: () => {
       stopCurrent()
-      chunks = []
       try {
         const next = new MediaRecorder(stream, { mimeType: mime })
+        const nextSession: RecorderSession = { recorder: next, chunks: [] }
         next.ondataavailable = (event) => {
-          if (event.data.size > 0) chunks.push(event.data)
+          if (event.data.size > 0) nextSession.chunks.push(event.data)
         }
         next.start()
-        recorder = next
+        session = nextSession
         return true
       } catch {
-        recorder = null
+        session = null
         return false
       }
     },
 
     pause: async () => {
-      const current = recorder
+      const current = session?.recorder ?? null
       if (current === null || current.state !== 'recording') return false
       return awaitRecorderTransition(current, 'pause', 'paused', () =>
         current.pause(),
@@ -124,7 +129,7 @@ export function createTakeRecorder(stream: MediaStream): TakeRecorder | null {
     },
 
     resume: async () => {
-      const current = recorder
+      const current = session?.recorder ?? null
       if (current === null || current.state !== 'paused') return false
       return awaitRecorderTransition(current, 'resume', 'recording', () =>
         current.resume(),
@@ -132,19 +137,23 @@ export function createTakeRecorder(stream: MediaStream): TakeRecorder | null {
     },
 
     stop: () => {
-      const current = recorder
-      recorder = null
-      if (current === null || current.state === 'inactive') {
+      const current = session
+      session = null
+      if (current === null || current.recorder.state === 'inactive') {
         return Promise.resolve(null)
       }
       return new Promise<Blob | null>((resolve) => {
         const timeout = setTimeout(() => resolve(null), 2000)
-        current.onstop = () => {
+        current.recorder.onstop = () => {
           clearTimeout(timeout)
-          resolve(chunks.length > 0 ? new Blob(chunks, { type: mime }) : null)
+          resolve(
+            current.chunks.length > 0
+              ? new Blob(current.chunks, { type: mime })
+              : null,
+          )
         }
         try {
-          current.stop()
+          current.recorder.stop()
         } catch {
           clearTimeout(timeout)
           resolve(null)
@@ -154,12 +163,10 @@ export function createTakeRecorder(stream: MediaStream): TakeRecorder | null {
 
     discard: () => {
       stopCurrent()
-      chunks = []
     },
 
     dispose: () => {
       stopCurrent()
-      chunks = []
     },
   }
 }

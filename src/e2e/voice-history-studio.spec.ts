@@ -2,11 +2,22 @@
 // Hear Yourself studio — capture, Twin Trails, reflections, and safe deletion
 // ============================================================
 
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { dismissOverlays, openNavTab } from './helpers/ui'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 const TONE_WAV = writeToneWav()
+
+async function waitForRecordedSecond(page: Page): Promise<void> {
+  const elapsed = page.locator('time[aria-label$=" elapsed"]').last()
+  await expect
+    .poll(async () => {
+      const duration = await elapsed.getAttribute('datetime')
+      const match = /^PT(\d+)S$/.exec(duration ?? '')
+      return Number(match?.[1] ?? 0)
+    })
+    .toBeGreaterThanOrEqual(1)
+}
 
 test.use({
   launchOptions: { args: fakeMicArgs(TONE_WAV) },
@@ -52,7 +63,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
       )
     })
     .toBe(true)
-  await page.waitForTimeout(900)
+  await waitForRecordedSecond(page)
 
   await page.getByRole('button', { name: 'Stop recording' }).click()
   await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
@@ -101,21 +112,30 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByText('Room and waveform check').first()).toBeVisible()
   await expect(page.getByText('Take Topography', { exact: true })).toBeVisible()
   await expect(page.getByText('1 mapped', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('voice-atlas')).toHaveAttribute(
+    'aria-busy',
+    'false',
+  )
   await expect(
     page.getByRole('heading', { name: 'The shape behind the trail.' }),
   ).toBeVisible()
-  await page.getByRole('button', { name: 'About Take Topography' }).click()
-  await expect(page.getByText('What it shows')).toBeVisible()
-  await expect(
-    page.getByText('Both takes share real time and pitch scales', {
-      exact: false,
-    }),
-  ).toBeVisible()
+  const topographyInfo = page.getByRole('button', {
+    name: 'About Take Topography',
+  })
+  await topographyInfo.click()
+  await expect(topographyInfo).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('tooltip')).toContainText('What it shows')
+  await expect(page.getByRole('tooltip')).toContainText(
+    'Both takes share real time and pitch scales',
+  )
   await page.keyboard.press('Escape')
+  await expect(topographyInfo).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByText('Held-tone pulse', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'About Held-tone pulse' }).click()
-  await expect(page.getByText('How it is estimated')).toBeVisible()
-  await expect(page.getByText('3–10 Hz', { exact: false })).toBeVisible()
+  const pulseInfo = page.getByRole('button', { name: 'About Held-tone pulse' })
+  await pulseInfo.click()
+  await expect(pulseInfo).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('tooltip')).toContainText('How it is estimated')
+  await expect(page.getByRole('tooltip')).toContainText('3–10 Hz')
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'Map spectrum snapshot' }).click()
   await expect(
@@ -205,7 +225,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()
   await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
-  await page.waitForTimeout(900)
+  await waitForRecordedSecond(page)
   await page.getByRole('button', { name: 'Stop recording' }).click()
   await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
     timeout: 15000,
@@ -312,7 +332,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()
   await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
-  await page.waitForTimeout(900)
+  await waitForRecordedSecond(page)
   await page.getByRole('button', { name: 'Stop recording' }).click()
   await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
     timeout: 15000,
@@ -487,11 +507,52 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
 
   await page.setViewportSize({ width: 1500, height: 1000 })
 
-  await page.getByRole('button', { name: 'New practice thread' }).click()
-  await page.getByLabel(/what do you want to repeat/i).fill('Temporary thread')
+  await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()
   await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
-  await page.waitForTimeout(500)
+  await waitForRecordedSecond(page)
+  await page.getByRole('button', { name: 'Stop recording' }).click()
+  await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
+    timeout: 15000,
+  })
+  await page.goBack()
+  await expect(page.getByRole('alertdialog')).toContainText(
+    'Discard this temporary take?',
+  )
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL(/#\/voice-history$/)
+  await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled()
+  await page.locator('#tab-home').click()
+  await expect(page.getByRole('alertdialog')).toContainText(
+    'Discard this temporary take?',
+  )
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByTestId('voice-history-page')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled()
+  await page.locator('#tab-home').click()
+  await page.getByRole('button', { name: 'Discard take' }).click()
+  await expect(page.locator('#tab-home')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await openNavTab(page, 'tab-voice-history')
+  await expect(page.getByTestId('voice-history-page')).toBeVisible()
+
+  await page.getByRole('button', { name: 'New practice thread' }).click()
+  await page.getByLabel(/what do you want to repeat/i).fill('Across tabs draft')
+  await page.locator('#tab-home').click()
+  await expect(page.locator('#tab-home')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await openNavTab(page, 'tab-voice-history')
+  await page.getByRole('button', { name: 'New practice thread' }).click()
+  const restoredDraft = page.getByLabel(/what do you want to repeat/i)
+  await expect(restoredDraft).toHaveValue('Across tabs draft')
+  await restoredDraft.fill('Temporary thread')
+  await page.getByRole('button', { name: 'Start recording' }).click()
+  await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
+  await waitForRecordedSecond(page)
   await page.getByRole('button', { name: 'Stop recording' }).click()
   await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
     timeout: 15000,

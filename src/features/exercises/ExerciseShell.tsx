@@ -25,6 +25,7 @@ import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import { segmentRunsExercise, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { trackEvent } from '@/lib/analytics'
 import { haptics } from '@/lib/haptics'
+import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -183,6 +184,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   let voiceKeepGeneration = 0
   let guidedResultCard: HTMLDivElement | undefined
   let guidedResultFocusTimer: ReturnType<typeof setTimeout> | undefined
+  const voiceSaveInFlight = (): boolean => voiceKeepState() === 'saving'
+  useLocalSaveNavigationLock(voiceSaveInFlight, 'exercise voice-take keep')
 
   // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
   const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
@@ -321,6 +324,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   }
 
   function keepVoiceTake(): void {
+    if (voiceSaveInFlight()) return
     const take = props.voiceCapture?.take()
     const exerciseTitle = props.title
     if (take === null || take === undefined) return
@@ -332,8 +336,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       try {
         const result = await keepExerciseVoiceTake({ exerciseTitle, take })
         if (result.ok) {
-          if (generation === voiceKeepGeneration) setVoiceKeepState('saved')
           trackEvent('voice_keep_success')
+          if (generation !== voiceKeepGeneration) return
+          setVoiceKeepState('saved')
           showNotification(
             'Exercise take kept in Hear Yourself on this device.',
             'success',
@@ -342,8 +347,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           return
         }
 
-        if (generation === voiceKeepGeneration) setVoiceKeepState('error')
         trackEvent('voice_keep_failure')
+        if (generation !== voiceKeepGeneration) return
+        setVoiceKeepState('error')
         if (result.quotaExceeded || !result.roomAvailable) {
           trackEvent('voice_storage_warning')
           showNotification(
@@ -359,8 +365,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           )
         }
       } catch {
-        if (generation === voiceKeepGeneration) setVoiceKeepState('error')
         trackEvent('voice_keep_failure')
+        if (generation !== voiceKeepGeneration) return
+        setVoiceKeepState('error')
         showNotification(
           'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
           'error',
@@ -371,12 +378,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   }
 
   function tryAgain(): void {
+    if (voiceSaveInFlight()) return
     voiceKeepGeneration += 1
     setVoiceKeepState('idle')
     props.onTryAgain()
   }
 
   function activateIdlePrimary(): void {
+    if (voiceSaveInFlight()) return
     if (!isComplete()) {
       props.onStart()
       return
@@ -416,7 +425,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   }
 
   function reportGuidedDiscomfort(): void {
-    if (props.guidedPractice === undefined) return
+    if (props.guidedPractice === undefined || voiceSaveInFlight()) return
     voiceKeepGeneration += 1
     props.voiceCapture?.discard()
     setVoiceKeepState('idle')
@@ -425,14 +434,20 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   }
 
   function reportGuidedPause(): void {
-    if (props.guidedPractice === undefined) return
+    if (props.guidedPractice === undefined || voiceSaveInFlight()) return
     setGuidedStopReason('paused')
     queueMicrotask(() => guidedResultCard?.focus())
   }
 
   function discardVoiceTake(): void {
+    if (voiceSaveInFlight()) return
     props.voiceCapture?.discard()
     setVoiceKeepState('idle')
+  }
+
+  function leaveExercise(): void {
+    if (voiceSaveInFlight()) return
+    props.onBack()
   }
 
   // ── Mic toggle (header) ──
@@ -540,20 +555,24 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // opt out: after clicking Start (or any control) focus rests on that
   // button, and users expect Space to keep toggling the exercise — the
   // preventDefault below suppresses the native button re-activation, so
-  // there's no double-trigger.
+  // there's no double-trigger. Result voice actions opt back into native
+  // button behavior: Space on Keep or Discard must activate that decision,
+  // not silently start the next exercise run.
   onMount(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== ' ' && e.code !== 'Space') return
       // Ignore auto-repeat: holding Space would otherwise cycle
       // stop → try-again → stop… and log several spurious completed runs.
       if (e.repeat) return
-      const el = e.target as HTMLElement | null
+      const el = e.target instanceof HTMLElement ? e.target : null
       const tag = el?.tagName
       if (
         tag === 'INPUT' ||
         tag === 'TEXTAREA' ||
         tag === 'SELECT' ||
-        el?.isContentEditable === true
+        el?.isContentEditable === true ||
+        (el !== null &&
+          el.closest('[data-exercise-native-space="true"]') !== null)
       ) {
         return
       }
@@ -694,7 +713,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     <div class="exercise-runner">
       <div class="exercise-runner-header">
         <div class="exercise-header-left">
-          <button class="back-btn" onClick={() => props.onBack()}>
+          <button
+            class="back-btn"
+            disabled={voiceSaveInFlight()}
+            onClick={leaveExercise}
+          >
             ← Back
           </button>
           <button
@@ -753,7 +776,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         type={props.type}
         isRunning={() => status() === 'active' || status() === 'count-in'}
         isComplete={isComplete}
-        onRunAgain={() => props.onTryAgain()}
+        onRunAgain={tryAgain}
+        transitionBlocked={voiceSaveInFlight}
       />
 
       <Show when={props.guidedPractice !== undefined}>
@@ -923,6 +947,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                         <button
                           type="button"
                           class="exercise-btn exercise-keep-voice"
+                          data-exercise-native-space="true"
                           disabled={
                             voiceKeepState() === 'saving' ||
                             voiceKeepState() === 'saved'
@@ -941,6 +966,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                           <button
                             type="button"
                             class="exercise-btn exercise-discard-voice"
+                            data-exercise-native-space="true"
+                            disabled={voiceSaveInFlight()}
                             onClick={discardVoiceTake}
                           >
                             Discard
@@ -1027,6 +1054,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     <button
                       type="button"
                       class="exercise-btn exercise-guided-pause"
+                      disabled={voiceSaveInFlight()}
                       onClick={reportGuidedPause}
                     >
                       It felt fine; I just paused
@@ -1034,6 +1062,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     <button
                       type="button"
                       class="exercise-btn exercise-guided-discomfort"
+                      disabled={voiceSaveInFlight()}
                       onClick={reportGuidedDiscomfort}
                     >
                       It felt uncomfortable
@@ -1053,6 +1082,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 >
                   <button
                     class="exercise-btn exercise-btn-primary exercise-idle-start"
+                    disabled={voiceSaveInFlight()}
                     onClick={activateIdlePrimary}
                   >
                     {idlePrimaryLabel()}

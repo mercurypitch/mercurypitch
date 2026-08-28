@@ -13,7 +13,7 @@ import { IconMic } from '@/components/exercise-icons'
 import { Info, Pause, Play, Sparkles, X } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
-import { EXERCISE_PITCH_HOLD } from '@/features/exercises/types'
+import { EXERCISE_PITCH_HOLD } from '@/lib/domain/exercise-contracts'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { GuidedRetakeProtocol, GuidedSingerEffort, PitchCentrePilotAssessmentResult, } from '@/lib/guided-voice'
 import { assessPitchCentrePilot, createPitchCentrePilotProtocol, PITCH_CENTRE_PILOT_THRESHOLDS_V1, } from '@/lib/guided-voice'
@@ -198,6 +198,8 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   let flowGeneration = 0
   let previousStage: GuidedStage | null = null
   let closeResolution: ((closed: boolean) => void) | null = null
+  let closePreparationPending = false
+  let closeAfterProcessing = false
   let mainCanvas: HTMLDivElement | undefined
   let inspectorPanel: HTMLDivElement | undefined
   let stageFocusTimer: number | null = null
@@ -445,6 +447,11 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     const result = await voiceCapture.stop()
     if (generation !== flowGeneration) return
     if (result === null) {
+      if (closeAfterProcessing) {
+        closeAfterProcessing = false
+        discardAndClose()
+        return
+      }
       setErrorMessage(
         voiceCapture.message() ??
           'No usable audio was captured. Try once more.',
@@ -455,6 +462,10 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     setCaptureResult(result)
     setStage('effort')
     setDrawerOpen(isNarrow())
+    if (closeAfterProcessing) {
+      closeAfterProcessing = false
+      setDiscardPromptOpen(true)
+    }
   }
 
   async function stopCaptureEarly(): Promise<void> {
@@ -465,6 +476,11 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     const result = await voiceCapture.stop()
     if (generation !== flowGeneration) return
     if (result === null) {
+      if (closeAfterProcessing) {
+        closeAfterProcessing = false
+        discardAndClose()
+        return
+      }
       voiceCapture.discard()
       setCaptureResult(null)
       setStage('setup')
@@ -474,6 +490,10 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
     setCaptureResult(result)
     setStage('effort')
     setDrawerOpen(isNarrow())
+    if (closeAfterProcessing) {
+      closeAfterProcessing = false
+      setDiscardPromptOpen(true)
+    }
   }
 
   function analyseCapture(effort: GuidedSingerEffort): void {
@@ -704,12 +724,34 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   function discardAndClose(): void {
     if (saving()) return
     flowGeneration += 1
+    closePreparationPending = false
+    closeAfterProcessing = false
     voiceCapture.discard()
     setDiscardPromptOpen(false)
     const resolve = closeResolution
     closeResolution = null
     resolve?.(true)
     props.onClose()
+  }
+
+  async function prepareActiveCaptureForClose(): Promise<void> {
+    if (closePreparationPending) return
+    closePreparationPending = true
+    closeAfterProcessing = false
+    const generation = ++flowGeneration
+    setCaptureEndedEarly(true)
+    setCapturePhase('checking')
+    const result = await voiceCapture.stop()
+    closePreparationPending = false
+    if (generation !== flowGeneration) return
+    if (result === null) {
+      discardAndClose()
+      return
+    }
+    setCaptureResult(result)
+    setStage('effort')
+    setDrawerOpen(isNarrow())
+    setDiscardPromptOpen(true)
   }
 
   function requestClose(onResolved?: (closed: boolean) => void): void {
@@ -721,19 +763,23 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
       resolve?.(false)
       return
     }
-    const captureIsActive =
-      voiceCapture.state() === 'starting' ||
-      voiceCapture.state() === 'recording' ||
-      voiceCapture.state() === 'paused' ||
-      voiceCapture.state() === 'processing'
-    if (captureIsActive) {
-      flowGeneration += 1
-      voiceCapture.discard()
-      setCapturePhase('listen')
-      setLandingIndex(0)
-      setStage('setup')
-      setDrawerOpen(isNarrow())
-      setDiscardPromptOpen(true)
+    const captureState = voiceCapture.state()
+    if (captureState === 'starting' || stage() === 'rehearsal') {
+      // No reviewable take exists yet. Abort the pending/rehearsal capture and
+      // release its mic lease rather than showing a misleading discard choice.
+      discardAndClose()
+      return
+    }
+    if (captureState === 'recording' || captureState === 'paused') {
+      // Stop into a reviewable partial take. Cancel then returns to the effort
+      // step; only the dialog's destructive action discards the audio.
+      void prepareActiveCaptureForClose()
+      return
+    }
+    if (captureState === 'processing') {
+      // The in-flight stop owns the only Blob promise. Let its normal
+      // continuation publish the result, then ask whether to discard it.
+      closeAfterProcessing = true
       return
     }
     if (hasUnsavedCapture()) {
@@ -744,6 +790,7 @@ export const GuidedVoiceCheck: Component<GuidedVoiceCheckProps> = (props) => {
   }
 
   function cancelDiscardRequest(): void {
+    closeAfterProcessing = false
     setDiscardPromptOpen(false)
     const resolve = closeResolution
     closeResolution = null

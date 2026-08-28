@@ -65,6 +65,16 @@
   color: var(--text-primary);
 }
 
+.link:disabled,
+.next:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.link:disabled:hover {
+  color: var(--text-muted);
+}
+
 /* The four segments as a rail. Scrolls rather than wraps: a wrapped rail
    reflows the canvas below it every time a segment ticks off. */
 .steps {
@@ -163,6 +173,11 @@
 .next:hover {
   background: var(--accent);
   color: var(--bg-primary);
+}
+
+.next:disabled:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 /* The seconds left, as a counter on the button itself rather than a separate

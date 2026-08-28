@@ -43,6 +43,13 @@ export interface GlassTake {
   saveState: 'idle' | 'saving' | 'saved' | 'error'
 }
 
+/** A pending Keep owns the only durable-write attempt for its session copy. */
+export function hasSavingGlassTake(
+  takes: readonly Pick<GlassTake, 'saveState'>[],
+): boolean {
+  return takes.some((take) => take.saveState === 'saving')
+}
+
 export const computePeaks = computeVoicePeaks
 
 const IconPlay: Component = () => (
@@ -106,6 +113,7 @@ export const TakeStrip: Component<{
               class="glass-take-card"
               classList={{ playing: playing(), shattered: take.shattered }}
               role="listitem"
+              aria-busy={take.saveState === 'saving'}
             >
               <button
                 class="glass-take-main"
@@ -167,6 +175,7 @@ export const TakeStrip: Component<{
               </button>
               <button
                 class="glass-take-remove"
+                disabled={props.disabled || take.saveState === 'saving'}
                 onClick={() => props.onRemove(take.id)}
                 aria-label={`Remove take ${take.rep}`}
                 title="Remove this take (your numbers stay)"

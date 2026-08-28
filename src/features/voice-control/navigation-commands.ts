@@ -25,6 +25,11 @@ export interface NavigationVoiceDeps {
   suspended?: Accessor<boolean>
   /** Opens the "what can I say" overlay. */
   openVoiceHelp?: () => void
+  /** Uses the shell's guarded tab navigation when a surface has unsaved work. */
+  navigateToTab?: (
+    tab: ActiveTab,
+    onResolved?: (accepted: boolean) => void,
+  ) => void
 }
 
 const TAB_SPOKEN_NAMES: Array<{
@@ -90,6 +95,17 @@ export function createNavigationVoiceCommands(
   deps: NavigationVoiceDeps = {},
 ): VoiceCommand[] {
   const notSuspended = () => deps.suspended?.() !== true
+  const navigateToTab = (
+    tab: ActiveTab,
+    onResolved?: (accepted: boolean) => void,
+  ): void => {
+    if (deps.navigateToTab !== undefined) {
+      deps.navigateToTab(tab, onResolved)
+      return
+    }
+    setActiveTab(tab)
+    onResolved?.(true)
+  }
 
   const commands: VoiceCommand[] = TAB_SPOKEN_NAMES.map(
     ({ tab, names, extra }) => ({
@@ -107,7 +123,7 @@ export function createNavigationVoiceCommands(
       available: () =>
         notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
       run: () => {
-        setActiveTab(tab)
+        navigateToTab(tab)
         return `Go to ${tabLabel(tab)}`
       },
     }),
@@ -156,11 +172,13 @@ export function createNavigationVoiceCommands(
         )
         if (songs.length > 0) {
           const pick = songs[Math.floor(Math.random() * songs.length)]
-          setActiveTab(TAB_KARAOKE)
-          requestKaraokeAutoplay()
-          navigateTo({
-            type: 'uvr-session-mixer',
-            sessionId: pick.sessionId,
+          navigateToTab(TAB_KARAOKE, (accepted) => {
+            if (!accepted) return
+            requestKaraokeAutoplay()
+            navigateTo({
+              type: 'uvr-session-mixer',
+              sessionId: pick.sessionId,
+            })
           })
           const name = pick.originalFile?.name.replace(/\.[a-z0-9]+$/i, '')
           return name !== undefined && name !== ''
@@ -173,13 +191,16 @@ export function createNavigationVoiceCommands(
           return voiceFailure('No songs in your library yet')
         }
         const pick = playlists[Math.floor(Math.random() * playlists.length)]
-        startPlaylist(pick.id)
-        const entries = queue()
-        if (entries.length === 0) {
+        if (pick.items.length === 0) {
           return voiceFailure('That playlist is empty')
         }
-        jumpTo(Math.floor(Math.random() * entries.length))
-        setActiveTab(TAB_KARAOKE)
+        navigateToTab(TAB_KARAOKE, (accepted) => {
+          if (!accepted) return
+          startPlaylist(pick.id)
+          const entries = queue()
+          if (entries.length === 0) return
+          jumpTo(Math.floor(Math.random() * entries.length))
+        })
         return 'Random song — starting karaoke'
       },
     },

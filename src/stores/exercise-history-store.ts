@@ -18,9 +18,9 @@ import { exerciseComparabilityKey, exerciseScoringVersion, } from '@/features/ex
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
-import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
 import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
+import type { ExerciseVoiceCaptureOutcome } from '@/lib/domain/exercise-voice-capture'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordCompletion } from './usage-store'
 

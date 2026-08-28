@@ -2,9 +2,9 @@
 // Weekly Legend Stage Voice Take — dry replay -> exercise handoff
 // ============================================================
 
-import type { ExerciseResult } from '@/features/exercises/types'
-import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureOutcome, } from '@/features/exercises/use-base-exercise'
-import type { DryVoiceCaptureController, DryVoiceCaptureResult, } from '@/features/voice-history/useDryVoiceCapture'
+import type { ExerciseResult } from '@/lib/domain/exercise-contracts'
+import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureOutcome, } from '@/lib/domain/exercise-voice-capture'
+import type { DryVoiceCaptureController, DryVoiceCaptureResult, } from '@/lib/use-dry-voice-capture'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 

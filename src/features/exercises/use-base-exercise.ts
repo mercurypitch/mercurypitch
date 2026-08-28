@@ -1,9 +1,10 @@
 import { batch, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
+import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureOutcome, ExerciseVoiceCaptureState, } from '@/lib/domain/exercise-voice-capture'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
-import type { VoiceAtlasContourPayloadV1, VoiceAtlasRawFrame, } from '@/lib/voice-contour'
+import type { VoiceAtlasRawFrame } from '@/lib/voice-contour'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import type { TracePoint } from './last-run-trace'
 import { downsampleTrace, publishRunTrace } from './last-run-trace'
@@ -12,38 +13,12 @@ import type { ExerciseConfig, ExerciseResult, ExerciseState } from './types'
 const MAX_PITCH_HISTORY = 2000
 const MAX_EXERCISE_CAPTURE_MS = 5 * 60 * 1000
 
-export type ExerciseVoiceCaptureState =
-  | 'idle'
-  | 'recording'
-  | 'processing'
-  | 'ready'
-  | 'unsupported'
-  | 'error'
-
-export interface ExerciseSessionVoiceTake {
-  blob: Blob
-  durationMs: number
-  peaks: Float32Array
-  capturedAt: string
-  contour: VoiceAtlasContourPayloadV1
-  config: ExerciseConfig
-  result: ExerciseResult
-}
-
-export type ExerciseVoiceCaptureOutcome =
-  | { state: 'ready'; take: ExerciseSessionVoiceTake }
-  | {
-      state: 'unsupported' | 'error' | 'discarded'
-      take: null
-    }
-
-export interface ExerciseVoiceCaptureController {
-  state: () => ExerciseVoiceCaptureState
-  take: () => ExerciseSessionVoiceTake | null
-  /** Resolve the current run's processed take without polling reactive state. */
-  awaitOutcome: () => Promise<ExerciseVoiceCaptureOutcome>
-  discard: () => void
-}
+export type {
+  ExerciseSessionVoiceTake,
+  ExerciseVoiceCaptureController,
+  ExerciseVoiceCaptureOutcome,
+  ExerciseVoiceCaptureState,
+} from '@/lib/domain/exercise-voice-capture'
 
 interface BaseExerciseDeps {
   audioEngine: AudioEngine

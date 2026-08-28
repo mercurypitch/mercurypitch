@@ -10,8 +10,13 @@ ships.
 
 **Product source:**
 `<user-dotfiles>/mercurypitch/plans/guided-voice-check-plan.md`
-**Foundation source:** `src/lib/guided-voice/`
-**Foundation tests:** colocated `src/lib/guided-voice/*.test.ts`
+**Implementation sources:** `src/lib/guided-voice/`,
+`src/features/voice-history/GuidedVoiceCheck.tsx`,
+`src/features/voice-history/guided-voice-take.ts`, and
+`src/features/voice-history/guided-practice-handoff.ts`
+**Tests:** colocated guided-voice tests,
+`src/features/voice-history/GuidedVoiceCheck.test.tsx`, and
+`src/e2e/guided-voice-check.spec.ts`
 
 ---
 

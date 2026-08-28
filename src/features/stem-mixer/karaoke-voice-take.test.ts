@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { karaokeComparisonKey, karaokeThreadTitle, keepKaraokeVoiceTake, } from '@/lib/domain/karaoke-voice-take'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
-import { karaokeComparisonKey, karaokeThreadTitle, keepKaraokeVoiceTake, } from './karaoke-voice-take'
 
 const { saveVoiceTakeMock } = vi.hoisted(() => ({
   saveVoiceTakeMock: vi.fn(),

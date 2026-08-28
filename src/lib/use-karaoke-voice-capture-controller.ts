@@ -8,13 +8,13 @@
 
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
+import type { KaraokeVoiceTakeCapture } from '@/lib/domain/karaoke-voice-take'
+import { keepKaraokeVoiceTake } from '@/lib/domain/karaoke-voice-take'
 import type { MicScore } from '@/lib/mic-scoring'
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
 import type { VoiceAtlasRawFrame } from '@/lib/voice-contour'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
-import type { KaraokeVoiceTakeCapture } from './karaoke-voice-take'
-import { keepKaraokeVoiceTake } from './karaoke-voice-take'
 
 export type KaraokeVoiceCaptureState =
   | 'idle'
@@ -278,11 +278,21 @@ export function useKaraokeVoiceCaptureController(
     if (take === null || state() !== 'ready') return false
     setState('saving')
     setMessage('Keeping this take in Hear Yourself on this device.')
-    const result = await saveTake({
-      sessionId: deps.sessionId,
-      songTitle: deps.songTitle,
-      take,
-    })
+    let result: Awaited<ReturnType<typeof saveTake>>
+    try {
+      result = await saveTake({
+        sessionId: deps.sessionId,
+        songTitle: deps.songTitle,
+        take,
+      })
+    } catch {
+      if (disposed) return false
+      setState('ready')
+      setMessage(
+        'The take could not be kept. Your temporary replay is still ready.',
+      )
+      return false
+    }
     if (disposed) return false
     if (result.ok) {
       setState('saved')
@@ -299,6 +309,10 @@ export function useKaraokeVoiceCaptureController(
   }
 
   const dismiss = (): void => {
+    // Keep owns the only durable copy while its write is in flight. A score
+    // close, Escape, or transport callback must not invalidate that promise
+    // and drop the temporary replay before a failed write can offer Retry.
+    if (state() === 'saving') return
     generation += 1
     playbackRequested = false
     invalidateTransportTransition()

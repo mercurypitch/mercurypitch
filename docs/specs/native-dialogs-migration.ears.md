@@ -16,5 +16,5 @@ Requirements for migrating remaining native `alert` and `confirm` dialogs to the
 
 ## REQ-UI-003 — Voice History Delete Confirm
 
-**WHEN** the user requests deletion of one kept voice take or all local voice history
+**WHEN** the user requests deletion of one kept voice take, one complete voice-history thread, or all local voice history
 **THE** system shall identify the local deletion scope and require confirmation using the styled `ConfirmDialog` instead of a native browser `confirm`, `alert`, or `prompt`.

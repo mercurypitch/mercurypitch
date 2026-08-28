@@ -1,8 +1,8 @@
 import { createRoot } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
+import type { KaraokeVoiceCaptureState } from '@/lib/use-karaoke-voice-capture-controller'
+import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
 import type { TakeRecorder } from '@/lib/voice-capture'
-import type { KaraokeVoiceCaptureState } from './useKaraokeVoiceCaptureController'
-import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from './useKaraokeVoiceCaptureController'
 
 const SCORE = {
   totalNotes: 100,
@@ -206,5 +206,111 @@ describe('karaoke voice capture controller', () => {
       expect(recorder.discard).toHaveBeenCalledOnce()
       dispose()
     })
+  })
+
+  it('keeps the temporary replay while saving and restores Retry after a failed write', async () => {
+    let resolveSave!: (result: {
+      ok: boolean
+      quotaExceeded: boolean
+      roomAvailable: boolean
+      value: object | null
+    }) => void
+    const saveTake = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSave = resolve
+          }),
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        quotaExceeded: false,
+        roomAvailable: true,
+        value: {},
+      })
+    const recorder: TakeRecorder = {
+      start: () => true,
+      pause: async () => true,
+      resume: async () => true,
+      stop: vi.fn(async () => new Blob(['voice'], { type: 'audio/webm' })),
+      discard: vi.fn(),
+      dispose: vi.fn(),
+    }
+    const rooted = createRoot((dispose) => ({
+      dispose,
+      capture: useKaraokeVoiceCaptureController({
+        sessionId: 'song-session-42',
+        songTitle: 'Heaven Can Wait',
+        getStream: () => ({}) as MediaStream,
+        getAudioContext: () => null,
+        createRecorder: () => recorder,
+        inspectTake: async () => ({
+          durationMs: 2_000,
+          peaks: new Float32Array([0.2, 0.8]),
+        }),
+        saveTake,
+      }),
+    }))
+
+    rooted.capture.startPlayback()
+    rooted.capture.finishScoredPlayback(SCORE)
+    await vi.waitFor(() => expect(rooted.capture.state()).toBe('ready'))
+
+    const firstKeep = rooted.capture.keep()
+    expect(rooted.capture.state()).toBe('saving')
+    rooted.capture.dismiss()
+    expect(rooted.capture.state()).toBe('saving')
+
+    resolveSave({
+      ok: false,
+      quotaExceeded: false,
+      roomAvailable: true,
+      value: null,
+    })
+    await expect(firstKeep).resolves.toBe(false)
+    expect(rooted.capture.state()).toBe('ready')
+    expect(rooted.capture.message()).toMatch(/temporary replay is still ready/i)
+
+    await expect(rooted.capture.keep()).resolves.toBe(true)
+    expect(rooted.capture.state()).toBe('saved')
+    expect(saveTake).toHaveBeenCalledTimes(2)
+    rooted.dispose()
+  })
+
+  it('restores Retry when the keep adapter rejects unexpectedly', async () => {
+    const recorder: TakeRecorder = {
+      start: () => true,
+      pause: async () => true,
+      resume: async () => true,
+      stop: vi.fn(async () => new Blob(['voice'], { type: 'audio/webm' })),
+      discard: vi.fn(),
+      dispose: vi.fn(),
+    }
+    const rooted = createRoot((dispose) => ({
+      dispose,
+      capture: useKaraokeVoiceCaptureController({
+        sessionId: 'song-session-42',
+        songTitle: 'Heaven Can Wait',
+        getStream: () => ({}) as MediaStream,
+        getAudioContext: () => null,
+        createRecorder: () => recorder,
+        inspectTake: async () => ({
+          durationMs: 2_000,
+          peaks: new Float32Array([0.2, 0.8]),
+        }),
+        saveTake: vi.fn().mockRejectedValue(new Error('IndexedDB unavailable')),
+      }),
+    }))
+
+    rooted.capture.startPlayback()
+    rooted.capture.finishScoredPlayback(SCORE)
+    await vi.waitFor(() => expect(rooted.capture.state()).toBe('ready'))
+
+    await expect(rooted.capture.keep()).resolves.toBe(false)
+    expect(rooted.capture.state()).toBe('ready')
+    expect(rooted.capture.message()).toMatch(/temporary replay is still ready/i)
+    expect(recorder.discard).not.toHaveBeenCalled()
+    rooted.dispose()
   })
 })

@@ -4,8 +4,8 @@ Requirements for preparing a scored karaoke microphone replay and explicitly
 keeping it in Hear Yourself. Source songs and separated stems are never part of
 the saved voice take.
 
-**Source:** `src/features/stem-mixer/useKaraokeVoiceCaptureController.ts`,
-`src/features/stem-mixer/karaoke-voice-take.ts`,
+**Source:** `src/lib/use-karaoke-voice-capture-controller.ts`,
+`src/lib/domain/karaoke-voice-take.ts`,
 `src/components/StemMixerScoreModal.tsx`
 
 **Tests:** `src/features/stem-mixer/karaoke-voice-take.test.ts`,

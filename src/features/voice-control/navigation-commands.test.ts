@@ -14,8 +14,25 @@ const uvrMock = vi.hoisted(() => ({
     originalFile?: { name: string; size: number; mimeType: string }
   }>,
 }))
+
+const playlistMock = vi.hoisted(() => ({
+  active: false,
+  entries: [] as Array<{ sessionId: string }>,
+  jumpTo: vi.fn(),
+  playlists: [] as Array<{ id: string; items: unknown[] }>,
+  startPlaylist: vi.fn(),
+}))
+
 vi.mock('@/stores/uvr-store', () => ({
   getAllUvrSessionsReactive: () => uvrMock.sessions,
+}))
+
+vi.mock('@/stores/karaoke-playlist-store', () => ({
+  getPlaylistsReactive: () => playlistMock.playlists,
+  isPlaylistActive: () => playlistMock.active,
+  jumpTo: playlistMock.jumpTo,
+  queue: () => playlistMock.entries,
+  startPlaylist: playlistMock.startPlaylist,
 }))
 
 function fire(
@@ -35,6 +52,11 @@ beforeEach(() => {
   setActiveTab(TAB_HOME)
   hideLibrary()
   uvrMock.sessions = []
+  playlistMock.active = false
+  playlistMock.entries = []
+  playlistMock.playlists = []
+  playlistMock.jumpTo.mockReset()
+  playlistMock.startPlaylist.mockReset()
   window.location.hash = ''
 })
 
@@ -56,6 +78,17 @@ describe('navigation voice commands', () => {
     expect(matchVoiceCommand('go to karaoke', commands)).toBeNull()
   })
 
+  it('honors a shell navigation veto', () => {
+    const navigateToTab = vi.fn(
+      (_tab: string, onResolved?: (accepted: boolean) => void) =>
+        onResolved?.(false),
+    )
+
+    expect(fire('go to karaoke', { navigateToTab })).toBe('Go to Karaoke')
+    expect(navigateToTab).toHaveBeenCalledWith(TAB_KARAOKE, undefined)
+    expect(activeTab()).toBe(TAB_HOME)
+  })
+
   it('plays a random song straight from the song library, no playlist needed', () => {
     uvrMock.sessions = [
       {
@@ -73,6 +106,26 @@ describe('navigation voice commands', () => {
 
   it('reports an empty song library', () => {
     expect(fire('play random song')).toBe('No songs in your library yet')
+  })
+
+  it('does not start a random playlist when shell navigation is vetoed', () => {
+    playlistMock.playlists = [{ id: 'playlist-1', items: [{}] }]
+    playlistMock.entries = [{ sessionId: 'song-1' }]
+    const navigateToTab = vi.fn(
+      (_tab: string, onResolved?: (accepted: boolean) => void) =>
+        onResolved?.(false),
+    )
+
+    expect(fire('play random song', { navigateToTab })).toBe(
+      'Random song — starting karaoke',
+    )
+    expect(navigateToTab).toHaveBeenCalledWith(
+      TAB_KARAOKE,
+      expect.any(Function),
+    )
+    expect(playlistMock.startPlaylist).not.toHaveBeenCalled()
+    expect(playlistMock.jumpTo).not.toHaveBeenCalled()
+    expect(activeTab()).toBe(TAB_HOME)
   })
 
   it('opens and closes the library, reporting a library that is not open', () => {

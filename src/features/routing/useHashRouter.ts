@@ -15,9 +15,10 @@ import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, pushHash, replaceHash } from '@/lib/hash-router'
+import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { setSyncCodeToJoin } from '@/stores/sync-store'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 import { setDeviceLinkCode } from '@/stores/ui-store'
@@ -27,6 +28,15 @@ export interface UseHashRouterDeps {
   // Plain-value setter: the store wraps the raw signal setter with the
   // tab-transition cleanup hook, so it is no longer a Solid Setter.
   setActiveTab: (tab: ActiveTab) => void
+  /**
+   * Lets the mounted tab veto a hash-driven departure before route-specific
+   * state is mutated. The callback may resolve asynchronously through an
+   * in-app confirmation dialog.
+   */
+  requestActiveTabChange?: (
+    tab: ActiveTab,
+    onResolved: (accepted: boolean) => void,
+  ) => void
   setInitialUvrView: Setter<UvrView | null>
   setInitialUvrSessionId: Setter<string | null>
   setActiveUvrSessionId: Setter<string | null>
@@ -89,13 +99,35 @@ export interface UseHashRouterDeps {
 
 export function useHashRouter(deps: UseHashRouterDeps): void {
   let hashSyncing = false
+  let lastAcceptedHash = ''
   // The state→hash sync effects must not run until the initial route has been
   // restored from the URL on mount — otherwise the default tab (singing) would
   // overwrite the preserved hash (e.g. #/piano) before it's read, sending every
   // reload back to Singing.
   const [initialized, setInitialized] = createSignal(false)
 
-  const dispatchRoute = (route: HashRoute) => {
+  const routeDestinationTab = (route: HashRoute): ActiveTab | null => {
+    if (route.type === 'tab') return route.tab
+    if (route.type === 'share-load') {
+      return route.shareType === 'melody' ? TAB_COMPOSE : TAB_EXERCISES
+    }
+    if (
+      route.type === 'uvr-upload' ||
+      route.type === 'uvr-sing' ||
+      route.type === 'uvr-session' ||
+      route.type === 'uvr-session-mixer' ||
+      route.type === 'sync-room'
+    ) {
+      return TAB_KARAOKE
+    }
+    if (route.type === 'jam-room') return TAB_JAM
+    if (route.type === 'settings-section' || route.type === 'billing-return') {
+      return TAB_SETTINGS
+    }
+    return null
+  }
+
+  const applyRoute = (route: HashRoute) => {
     hashSyncing = true
     if (
       route.type !== 'admin' &&
@@ -212,11 +244,50 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     hashSyncing = false
   }
 
+  const acceptRoute = (route: HashRoute): void => {
+    applyRoute(route)
+    lastAcceptedHash = window.location.hash
+  }
+
+  const restoreAcceptedHash = (): void => {
+    if (lastAcceptedHash !== '') {
+      window.history.replaceState(window.history.state, '', lastAcceptedHash)
+      return
+    }
+    replaceHash({ type: 'tab', tab: deps.activeTab() })
+  }
+
+  const dispatchRoute = (route: HashRoute) => {
+    const routeDestination = routeDestinationTab(route)
+    const destination = routeDestination ?? deps.activeTab()
+    if (
+      route.type !== 'unknown' &&
+      deps.requestActiveTabChange !== undefined &&
+      (isLocalSaveNavigationLocked() ||
+        (routeDestination !== null && routeDestination !== deps.activeTab()))
+    ) {
+      // Hold state-to-hash syncing while an in-app leave confirmation is open.
+      // Nothing route-specific is mutated until the mounted surface accepts.
+      hashSyncing = true
+      deps.requestActiveTabChange(destination, (accepted) => {
+        if (!accepted) {
+          restoreAcceptedHash()
+          hashSyncing = false
+          return
+        }
+        acceptRoute(route)
+      })
+      return
+    }
+    acceptRoute(route)
+  }
+
   const onHashChange = () => {
     dispatchRoute(parseHash(window.location.hash))
   }
 
   onMount(() => {
+    lastAcceptedHash = window.location.hash
     dispatchRoute(parseHash(window.location.hash))
     setInitialized(true)
     window.addEventListener('hashchange', onHashChange)
@@ -247,6 +318,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
         replaceHash(route)
       }
     }
+    lastAcceptedHash = window.location.hash
     lastSyncedTab = tab
   }
 

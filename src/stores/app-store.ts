@@ -1281,7 +1281,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Sing along, get scored',
     description:
-      'Enable the mic to compare your voice against the vocal line — and monitor yourself over the track with the headphones toggle.',
+      'Enable the mic to compare your voice against the vocal line and monitor yourself over the track. After a scored run, replay the dry take and explicitly keep it in Hear Yourself; nothing is saved automatically.',
     targetSelector: '.sm-mic-toggle-btn',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
@@ -1436,7 +1436,7 @@ const EXERCISES_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Start an exercise',
     description:
-      'Each card shows the drill, its difficulty badge and tags — plus your grade, best score and play count once you have tried it. Hit Start for guided practice with live pitch feedback.',
+      'Each card shows the drill, its difficulty, and your past results. Start for live pitch feedback; after a completed run, replay the temporary recording and explicitly keep it in Hear Yourself.',
     targetSelector: '.exercise-card',
     placement: 'bottom',
     requiredTab: TAB_EXERCISES,
