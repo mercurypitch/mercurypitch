@@ -256,6 +256,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
     <EarStage
       drillId={copy.drillId}
       name={copy.name}
+      measures={copy.measures}
+      description={copy.description}
       mode={
         phase() === 'idle'
           ? 'on the bench'
@@ -322,16 +324,13 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   options={MODES}
                   onChange={setHomeAnswerMode}
                 />
-                <ConsoleNote>
-                  <Show
-                    when={homeAnswerMode() === 'mic'}
-                    fallback={copy.description}
-                  >
+                <Show when={homeAnswerMode() === 'mic'}>
+                  <ConsoleNote>
                     Mic mode answers by ear alone — no buttons to luck into —
                     and reads your intonation on every note. Octave does not
                     matter; sing or play the degree anywhere comfortable.
-                  </Show>
-                </ConsoleNote>
+                  </ConsoleNote>
+                </Show>
                 <Show when={micError() !== ''}>
                   <ConsoleWarning>{micError()}</ConsoleWarning>
                 </Show>

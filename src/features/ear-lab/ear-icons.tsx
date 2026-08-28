@@ -374,3 +374,11 @@ export function IconEar(p: IconProps): JSX.Element {
     </svg>
   )
 }
+
+export function IconChevron(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}

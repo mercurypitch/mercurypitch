@@ -40,6 +40,9 @@ import { useIdentificationController } from './use-identification-controller'
 
 const MISS = 'miss'
 
+const PULSE_DESCRIPTION =
+  'Four clicks count you in, a bar of onsets sounds, and the next bar is yours: tap the call back on the same beat. Every onset must be met in order, nothing extra. The reading is the finest subdivision you clear — quarters, eighths, triplets, sixteenths.'
+
 export function PulseDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
   const room = useEarRoom()
@@ -254,6 +257,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     <EarStage
       drillId="pulse"
       name="Pulse"
+      measures="Time · rhythm"
+      description={PULSE_DESCRIPTION}
       mode={phase() === 'idle' ? 'on the bench' : 'rating run'}
       progress={progress()}
       status={status()}
@@ -289,12 +294,6 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
                 icon={<IconPlay size={20} />}
                 onClick={() => controller.start()}
               />
-              <ConsoleNote>
-                Four clicks count you in, a bar of onsets sounds, and the next
-                bar is yours: tap the call back on the same beat. Every onset
-                must be met in order, nothing extra. The reading is the finest
-                subdivision you clear — quarters, eighths, triplets, sixteenths.
-              </ConsoleNote>
               <Show
                 when={raw()}
                 fallback={

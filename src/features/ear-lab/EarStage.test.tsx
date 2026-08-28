@@ -10,7 +10,7 @@ import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { resetEarLabStore } from '@/stores/ear-lab-store'
+import { earInfoOpen, resetEarLabStore } from '@/stores/ear-lab-store'
 import { HairlineDrill } from './HairlineDrill'
 import { HomeDrill } from './HomeDrill'
 
@@ -168,5 +168,77 @@ describe('EarStage with Home', () => {
       .querySelectorAll('button')
     expect(rungs).toHaveLength(7)
     expect(screen.getByText('Sol')).toBeTruthy()
+  })
+})
+
+describe('the instrument card', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  /** The stage reads its breakpoint as a media query. */
+  function stubCompact(matches: boolean) {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    )
+  }
+
+  const mount = () => {
+    const Engine = withEngine(fakeEngine())
+    return render(() => (
+      <Engine>
+        <HairlineDrill onBack={() => undefined} />
+      </Engine>
+    ))
+  }
+
+  it('hangs the caption and the paragraph on the stage, not under the pads', () => {
+    mount()
+    const card = screen.getByTestId('ear-instrument-card')
+    expect(card.getAttribute('aria-label')).toBe('About Hairline')
+    expect(card.textContent).toContain('Resolution · cents')
+    expect(card.textContent).toContain('Two tones; pick the higher one.')
+    expect(card.dataset.open).toBe('false')
+    expect(screen.getByTestId('ear-stage-console').textContent).not.toContain(
+      'Two tones; pick the higher one.',
+    )
+  })
+
+  it('More unfolds the text, and the drill remembers it', () => {
+    const first = mount()
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect(screen.getByTestId('ear-instrument-card').dataset.open).toBe('true')
+    expect(screen.getByRole('button', { name: 'Less' })).toBeTruthy()
+    expect(earInfoOpen('hairline')).toBe(true)
+    expect(earInfoOpen('leap')).toBe(false)
+    first.unmount()
+    mount()
+    expect(screen.getByTestId('ear-instrument-card').dataset.open).toBe('true')
+  })
+
+  it('folds to one row on a phone and unfolds over the instrument', () => {
+    stubCompact(true)
+    mount()
+    const head = screen.getByRole('button', { name: 'About Hairline' })
+    expect(head.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByText(/Two tones; pick the higher one/)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+    fireEvent.click(head)
+    expect(head.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByText(/Two tones; pick the higher one/)).toBeTruthy()
+    expect(screen.getByText('Resolution · cents')).toBeTruthy()
+    expect(earInfoOpen('hairline')).toBe(true)
   })
 })

@@ -1,0 +1,145 @@
+/* The instrument card: an engraved plate hung at the stage's top left,
+   over the body's corner; the bar keeps its place above it. */
+
+.card {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  z-index: 1;
+  width: min(300px, 32%);
+  padding: 10px 12px 8px;
+  border: 1px solid var(--stage-brass-line);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgb(24 27 32 / 94%), rgb(12 13 16 / 92%));
+  box-shadow:
+    inset 0 1px 0 rgb(239 230 214 / 6%),
+    0 10px 28px rgb(0 0 0 / 38%);
+  color: var(--stage-parchment);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.glyph {
+  display: inline-flex;
+  flex: none;
+  color: var(--stage-brass);
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--stage-serif);
+  font-weight: 500;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.measures,
+.kicker {
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stage-brass);
+}
+
+.kicker {
+  display: block;
+  margin-top: 8px;
+}
+
+.chevron {
+  display: none;
+  flex: none;
+  margin-left: auto;
+  color: var(--stage-brass);
+  transition: transform 160ms ease;
+}
+
+.cardOpen .chevron {
+  transform: rotate(180deg);
+}
+
+.text {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--stage-muted);
+}
+
+.textClamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.more {
+  margin: 2px 0 0;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--stage-brass-bright);
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.more:hover,
+.more:focus-visible {
+  color: var(--stage-parchment);
+}
+
+.head:focus-visible,
+.more:focus-visible {
+  outline: 2px solid var(--stage-brass);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* A phone: one row, "About Hairline" and a chevron; the text unfolds
+   over the instrument. */
+.cardCompact {
+  top: 8px;
+  right: 10px;
+  left: 10px;
+  width: auto;
+  padding: 6px 10px;
+}
+
+.cardCompact .chevron {
+  display: inline-flex;
+}
+
+.cardCompact .name {
+  font-size: 0.9rem;
+}
+
+.cardCompact .text {
+  margin-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}

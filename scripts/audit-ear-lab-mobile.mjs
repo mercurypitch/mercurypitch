@@ -650,6 +650,44 @@ async function auditStage(page, name) {
   const autoSwitch = page.getByRole('switch', { name: 'Auto-advance' })
   if (!(await autoSwitch.isVisible().catch(() => false)))
     fail(`${name} hairline bar`, 'no auto-advance switch in the stage bar')
+  // The instrument card hangs on the stage: the caption and the drill's
+  // paragraph, one folded row on a phone, three lines and More on a desk.
+  const card = page.locator('[data-testid="ear-instrument-card"]')
+  if (!(await card.isVisible().catch(() => false))) {
+    fail(`${name} hairline card`, 'no instrument card on the stage')
+  } else {
+    const cardText = (await card.textContent()) ?? ''
+    if (!cardText.includes('Hairline'))
+      fail(`${name} hairline card`, `the card reads "${cardText.slice(0, 60)}"`)
+    const consoleText =
+      (await page.locator('[data-testid="ear-stage-console"]').textContent()) ??
+      ''
+    if (consoleText.includes('Two tones; pick the higher one'))
+      fail(`${name} hairline card`, 'the paragraph is still under the pads')
+    const head = card.getByRole('button', { name: 'About Hairline' })
+    if (await head.isVisible().catch(() => false)) {
+      if ((await head.getAttribute('aria-expanded')) !== 'false')
+        fail(`${name} hairline card`, 'the phone card opens unfolded')
+      await head.click()
+      await page.waitForTimeout(150)
+      await page.screenshot({ path: `${OUT}/${name}-stage-hairline-card.png` })
+      if (
+        !(await card
+          .getByText(/Two tones/)
+          .isVisible()
+          .catch(() => false))
+      )
+        fail(`${name} hairline card`, 'the phone card did not unfold')
+      await head.click()
+    } else if (
+      !(await card
+        .getByRole('button', { name: 'More' })
+        .isVisible()
+        .catch(() => false))
+    ) {
+      fail(`${name} hairline card`, 'no More on the desk card')
+    }
+  }
   if (armed) {
     await page.getByRole('button', { name: 'The first' }).click()
     await page.waitForTimeout(150)
