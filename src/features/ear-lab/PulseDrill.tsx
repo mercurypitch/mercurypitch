@@ -27,6 +27,7 @@ import { clearedSubdivision, judgeTake, toleranceFor, } from '@/lib/ear/rhythm-t
 import { createTapLedger } from '@/lib/ear/tap-input'
 import { PULSE_TIMING } from '@/lib/ear/timing'
 import { micLatencyMs } from '@/stores/mic-latency-store'
+import { useArmingCue } from './arming-cue'
 import type { ScheduledClick } from './click-synth'
 import { scheduleClick } from './click-synth'
 import { IconPlay } from './ear-icons'
@@ -244,6 +245,8 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
     }
   })
 
+  useArmingCue(() => phase() === 'answer')
+
   const lastCall = useLastCall(phase, () => ({
     correct: take()?.correct === true,
     line: status(),
@@ -274,6 +277,7 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
       onBack={props.onBack}
       onStop={running() ? () => controller.stop() : undefined}
       lastCall={lastCall}
+      armed={() => phase() === 'answer'}
       done={() => phase() === 'done'}
       instrument={() => (
         <RhythmDrum

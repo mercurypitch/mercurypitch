@@ -716,6 +716,13 @@ async function auditStage(page, name) {
       fail(`${name} hairline last call`, 'the next trial never sounded')
     if (!(await lastCall.isVisible().catch(() => false)))
       fail(`${name} hairline last call`, 'the plate left with the next trial')
+    // The pads arm: the plate's rail ticks brass.
+    const armedNow = await page
+      .locator('[data-testid="ear-stage-last-call"][data-armed="true"]')
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!armedNow) fail(`${name} hairline last call`, 'the rail never ticked')
     await page.waitForTimeout(150)
     await page.screenshot({
       path: `${OUT}/${name}-stage-hairline-lastcall.png`,

@@ -775,6 +775,16 @@ overlaps. Contour — both tones the same length.
    (`mercurypitch_ear_items_reseed` = `ladder-sounds`); ratings, readings
    and the Column keep their values.
 
+### 2ae. Retest fixes — the arming cue
+
+1. Hairline, practice run, a first answer. When the next pair has sounded
+   and the pads arm, a soft click sounds on the room's click voice (the
+   rack's Sound panel picks it; the bench volume governs it) and the Last
+   call plate's rail ticks brass for as long as the pads stay armed.
+2. Every stage does the same — the identification drills, Home, Pulse; a
+   sung answer's window opens with the same click.
+3. Stop mid-run: no click follows.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

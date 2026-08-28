@@ -384,6 +384,7 @@
 /* ── Last call: the verdict kept under the pads ──────────────── */
 
 .lastCall {
+  position: relative;
   grid-column: 1 / -1;
   display: grid;
   grid-template-areas:
@@ -399,6 +400,22 @@
   border-left: 3px solid var(--stage-brass-line);
   border-radius: 4px;
   background: rgb(239 230 214 / 4%);
+}
+
+/* The pads armed: a brass tick on the rail, with the click. */
+.lastCallArmed {
+  border-left-color: var(--stage-brass);
+}
+
+.lastCallArmed::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: -3px;
+  width: 3px;
+  height: 14px;
+  background: var(--stage-brass-bright);
+  box-shadow: 0 0 8px var(--stage-brass);
 }
 
 .lastCallRight {
