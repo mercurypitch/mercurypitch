@@ -189,6 +189,28 @@ export function IconBalance(p: IconProps): JSX.Element {
   )
 }
 
+export function IconNumerals(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M4 7v10M9 7l3 10 3-10M19 7v10" />
+      <path d="M3 20h18" />
+    </svg>
+  )
+}
+
+export function IconBassLine(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 17h4l3-8 3 5 3-3 5 6" />
+      <circle cx="3" cy="17" r="1.6" />
+      <circle cx="10" cy="9" r="1.6" />
+      <circle cx="13" cy="14" r="1.6" />
+      <circle cx="16" cy="11" r="1.6" />
+      <circle cx="21" cy="17" r="1.6" />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

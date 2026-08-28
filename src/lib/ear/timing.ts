@@ -150,3 +150,24 @@ export const PULL_TIMING = {
   /** The wrong-answer replay: the lean, then its resolution. */
   replayMs: 900,
 } as const
+
+/** Cadence — a progression strummed on the guitar voices. */
+export const CADENCE_TIMING = {
+  leadInS: 0.15,
+  chordMs: 900,
+  gapMs: 80,
+  tailMs: 250,
+  /** The wrong-answer replay, slower. */
+  replayChordMs: 1150,
+} as const
+
+/** Bassline — four roots under a held tonic. */
+export const BASSLINE_TIMING = {
+  leadInS: 0.15,
+  /** The tonic rings alone this long before the roots start. */
+  restMs: 500,
+  rootMs: 650,
+  rootGapMs: 100,
+  tailMs: 250,
+  replayRootMs: 850,
+} as const

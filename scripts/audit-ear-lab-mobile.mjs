@@ -999,6 +999,108 @@ async function auditStage(page, name) {
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
+  // Cadence: the train turns while the progression strums, four pads are
+  // drawn with the answer among them, the reveal engraves the wheels.
+  await openFromStrip('Cadence')
+  results.cadenceIdle = await checkStage('cadence idle', 'stage-cadence-idle')
+  await page.getByText('Begin').click()
+  const cadencePads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const cadenceArmed = await cadencePads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!cadenceArmed) fail(`${name} cadence`, 'the pads never armed')
+  else {
+    const padCount = await cadencePads.count()
+    if (padCount !== 4)
+      fail(`${name} cadence`, `${padCount} pads drawn, expected 4`)
+    const numeralsEarly = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="train"] [data-part="numeral"]',
+        ).length,
+    )
+    if (numeralsEarly > 0)
+      fail(`${name} cadence`, 'the wheels are engraved before the reveal')
+    await page.screenshot({ path: `${OUT}/${name}-stage-cadence-answer.png` })
+    await cadencePads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} cadence`, 'the answer was never judged')
+    const numerals = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="train"] [data-part="numeral"]',
+        ).length,
+    )
+    await page.screenshot({ path: `${OUT}/${name}-stage-cadence-reveal.png` })
+    if (numerals < 3)
+      fail(`${name} cadence`, `${numerals} wheels engraved at the reveal`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Bassline: seven rungs in numerals arm after the line; four taps judge
+  // it and the chain shows the roots at the reveal.
+  await openFromStrip('Bassline')
+  results.basslineIdle = await checkStage(
+    'bassline idle',
+    'stage-bassline-idle',
+  )
+  await page.getByText('Begin').click()
+  const bassRungs = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const bassArmed = await bassRungs
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!bassArmed) fail(`${name} bassline`, 'the ladder never armed')
+  else {
+    const rungCount = await bassRungs.count()
+    if (rungCount !== 7)
+      fail(`${name} bassline`, `${rungCount} rungs armed, expected 7`)
+    await page.screenshot({ path: `${OUT}/${name}-stage-bassline-answer.png` })
+    for (let i = 0; i < 4; i++) {
+      await bassRungs.first().click()
+      await page.waitForTimeout(120)
+    }
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /Yes —|That was/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} bassline`, 'the line was never judged')
+    const beads = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="chain"] [data-part="expected"]',
+        ).length,
+    )
+    await page.screenshot({ path: `${OUT}/${name}-stage-bassline-reveal.png` })
+    if (beads !== 4)
+      fail(`${name} bassline`, `${beads} roots on the chain, expected 4`)
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
   await openFromStrip('Stack')

@@ -468,6 +468,35 @@ chromatic) and _The Pull_ (Function · tendency).
     resolve (Ti then Do′, Fa then Mi). The plate's dots name each pair.
 - No percent anywhere; both tiles show ratings.
 
+## 2q. Cadence and Bassline — the guitar's harmony — follow-up item 6
+
+Two Function drills on the guitar room's voices (`guitar-synth.ts`, struck on
+the audio clock through one master gain at the stage's level). Bench strip →
+_Cadence_ (Function · progression) and _Bassline_ (Function · root motion).
+
+- **Cadence:** one of the guitar room's eight progressions (I–IV–V, I–V–vi–IV,
+  ii–V–I, I–vi–IV–V, I–vi–ii–V, I–IV–vi–V, vi–IV–I–V, I–iii–vi–IV), strummed
+  in a roved key, the root doubled below on the bass voice. Four pads: the
+  answer and three others drawn fresh each round (keys 1–4). A miss strums it
+  again, slower.
+  - **What to check on hardware:** the strums sound like a guitar, not a
+    click; the going train turns one wheel per chord and every wheel is the
+    same until the reveal engraves the numerals and the plate names the
+    progression; the pads' labels are numerals with en dashes; no pad is
+    pre-lit.
+- **Bassline:** the tonic chord rings on the guitar while four roots walk
+  under it on the bass voice — the first always I. The ladder is seven rungs
+  in numerals (keys 1–7, Backspace takes one back); the whole line is judged
+  at once, like Echo. A miss plays the line again, slower.
+  - **What to check on hardware:** the bass sits clearly under the chord; the
+    beads stay level while the line plays and light in turn; the reveal
+    strings the roots at their heights with signal / garnet rings and the
+    status says _Yes — I–IV–V–I._ or _That was I–IV–V–I — listen again._
+- **The readings:** both are ratings on the Function dial's row; the Function
+  readout itself still reads Home.
+- Stop mid-strum pulls the master gain to silence and disposes the voices —
+  nothing keeps ringing after the stage closes.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

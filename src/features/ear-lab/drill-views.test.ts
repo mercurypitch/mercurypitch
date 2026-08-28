@@ -18,11 +18,13 @@ describe('drill views', () => {
       'drift',
       'gravity',
       'the-pull',
+      'cadence',
+      'bassline',
     ]) {
       expect(VIEW_FOR_DRILL).toHaveProperty(id, id)
       expect(SPRINT_DRILL_IDS).toContain(id)
     }
-    for (const id of ['cadence', 'bassline', 'subdivide', 'colour']) {
+    for (const id of ['subdivide', 'colour', 'weight', 'critique']) {
       expect(VIEW_FOR_DRILL).not.toHaveProperty(id)
       expect(SPRINT_DRILL_IDS).not.toContain(id)
     }
