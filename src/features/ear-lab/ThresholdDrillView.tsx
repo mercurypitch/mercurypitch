@@ -288,19 +288,11 @@ export function ThresholdDrillView(
                       ? 'Next'
                       : 'Listening'
                 }
-                sub={
-                  phase() === 'answer'
-                    ? props.measures
-                    : phase() === 'reveal'
-                      ? 'follows in a moment'
-                      : `${props.levelLabel()}`
-                }
               />
             }
           >
             <PlayPad
               label="Next"
-              sub="the next trial"
               keycap="Space"
               icon={<IconPlay size={20} />}
               onClick={() => props.run.next()}

@@ -23,6 +23,7 @@ import { earAutoAdvance, setEarAutoAdvance } from '@/stores/ear-lab-store'
 import { IconBack, IconCheck, IconClose, IconStop, IconTap } from './ear-icons'
 import styles from './EarStage.module.css'
 import { InstrumentCard } from './InstrumentCard'
+import { formatKeyHint } from './key-hint'
 
 export type StageTone = 'neutral' | 'right' | 'wrong'
 
@@ -254,26 +255,35 @@ export function EarStage(props: EarStageProps): JSX.Element {
                   />
                 )}
               </Show>
-              <figure class={styles.figure}>
-                {props.instrument()}
-                <figcaption
-                  class={styles.status}
-                  classList={{
-                    [styles.statusRight]: props.tone === 'right',
-                    [styles.statusWrong]: props.tone === 'wrong',
-                  }}
-                  aria-live="polite"
-                  data-testid="ear-stage-status"
-                >
-                  {props.status}
-                </figcaption>
-              </figure>
+              <figure class={styles.figure}>{props.instrument()}</figure>
             </div>
             <div
               class={styles.console}
               ref={consoleEl}
               data-testid="ear-stage-console"
             >
+              <div
+                class={styles.headline}
+                classList={{
+                  [styles.headlineRight]: props.tone === 'right',
+                  [styles.headlineWrong]: props.tone === 'wrong',
+                }}
+              >
+                <p
+                  class={styles.question}
+                  aria-live="polite"
+                  data-testid="ear-stage-status"
+                >
+                  {props.status}
+                </p>
+                <Show when={formatKeyHint(props.keys?.() ?? [])}>
+                  {(hint) => (
+                    <p class={styles.keyHint} data-testid="ear-stage-keys">
+                      {hint()}
+                    </p>
+                  )}
+                </Show>
+              </div>
               {props.console()}
               <Show when={props.lastCall?.()}>
                 {(call) => (

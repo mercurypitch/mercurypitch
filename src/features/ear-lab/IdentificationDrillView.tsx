@@ -217,19 +217,11 @@ export function IdentificationDrillView(
                       ? 'Next'
                       : 'Listening'
                 }
-                sub={
-                  phase() === 'reveal'
-                    ? props.controller.replaying()
-                      ? 'the slow replay'
-                      : 'follows in a moment'
-                    : props.measures
-                }
               />
             }
           >
             <PlayPad
               label="Next"
-              sub="the next round"
               keycap="Space"
               icon={<IconPlay size={20} />}
               onClick={() => props.controller.next()}

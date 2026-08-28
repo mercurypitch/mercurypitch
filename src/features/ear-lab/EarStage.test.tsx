@@ -3,7 +3,7 @@
 // a reveal in words as well as colour, and lands on a plate.
 // ============================================================
 
-import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineContext } from '@/contexts/EngineContext'
@@ -240,5 +240,38 @@ describe('the instrument card', () => {
     expect(screen.getByText(/Two tones; pick the higher one/)).toBeTruthy()
     expect(screen.getByText('Resolution · cents')).toBeTruthy()
     expect(earInfoOpen('hairline')).toBe(true)
+  })
+})
+
+describe('the question as the headline', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    localStorage.clear()
+    resetEarLabStore()
+  })
+
+  afterEach(() => cleanup())
+
+  it('heads the console with the status and names the answer keys under it', async () => {
+    const Engine = withEngine(fakeEngine())
+    render(() => (
+      <Engine>
+        <HairlineDrill onBack={() => undefined} />
+      </Engine>
+    ))
+    const console = screen.getByTestId('ear-stage-console')
+    expect(within(console).getByTestId('ear-stage-status')).toBeTruthy()
+    expect(document.querySelector('figcaption')).toBeNull()
+    // Space alone stays with the pad that shows it.
+    expect(screen.queryByTestId('ear-stage-keys')).toBeNull()
+    fireEvent.click(pad('Practice run'))
+    await waitFor(() => expect(pad('The first').disabled).toBe(false), {
+      timeout: 3000,
+    })
+    expect(screen.getByTestId('ear-stage-keys').textContent).toBe(
+      '1 · 2 on the keyboard',
+    )
+    // The lead pad says the phase word only.
+    expect(pad('Your call').textContent).toBe('Your call')
   })
 })

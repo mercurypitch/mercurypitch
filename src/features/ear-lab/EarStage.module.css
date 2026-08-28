@@ -243,23 +243,40 @@
   filter: drop-shadow(0 18px 32px rgb(0 0 0 / 50%));
 }
 
-.status {
-  max-width: 56ch;
-  min-height: 1.5em;
+/* ── The headline: the question, above the pads ──────────────── */
+
+.headline {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 4px 8px;
+  border-bottom: 1px solid var(--stage-line);
+}
+
+.question {
+  min-height: 1.3em;
   margin: 0;
-  text-align: center;
   font-family: var(--stage-serif);
-  font-size: 1.08rem;
-  line-height: 1.4;
+  font-size: 1.35rem;
+  line-height: 1.3;
   color: var(--stage-parchment);
 }
 
-.statusRight {
+.headlineRight .question {
   color: var(--stage-signal);
 }
 
-.statusWrong {
+.headlineWrong .question {
   color: var(--stage-garnet);
+}
+
+.keyHint {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
 }
 
 /* ── The answer console ──────────────────────────────────────── */
@@ -954,14 +971,23 @@
     gap: 10px;
   }
 
-  /* Budget: bar, status, console and the pill band, so the stage need
-     not scroll on a phone. */
+  /* Budget: bar, the console with its headline and the pill band, so
+     the stage need not scroll on a phone. */
   .figure > svg {
-    max-height: clamp(140px, calc(100cqh - 360px), 300px);
+    max-height: clamp(140px, calc(100cqh - 380px), 300px);
   }
 
-  .status {
-    font-size: 0.96rem;
+  .headline {
+    padding: 0 2px 6px;
+  }
+
+  .question {
+    font-size: 1.2rem;
+  }
+
+  /* Touch answers on a phone; the keycaps are hidden with it. */
+  .keyHint {
+    display: none;
   }
 
   /* Sticky over scrolling content, so both stay near-opaque: nothing

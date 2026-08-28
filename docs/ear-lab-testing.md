@@ -747,6 +747,19 @@ overlaps. Contour — both tones the same length.
    chain for Echo in the Wild); Pulse and Home carry theirs; the desk's
    drills the desk's.
 
+### 2ac. Retest fixes — the question as the headline
+
+1. Open Hairline and begin a practice run. The line that sat under the
+   loupe ("Which tone was higher?") is the console's headline now, in the
+   stage serif above the pads, with "1 · 2 on the keyboard" under it
+   while the pads are armed; on a phone the headline is a size smaller
+   and the key line is absent. The reveal colours the headline — signal
+   for a hit, garnet for a miss — as the caption did.
+2. The lead pad says the phase word only — Listening, Your call, Next —
+   and the bar keeps the mode and the running level.
+3. Home with seven degrees reads "1–7 on the keyboard"; Gravity "1–=";
+   the Begin and Next pads still show their Space keycap.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
