@@ -48,6 +48,7 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   useFocusTrap(() => dialogRef, {
     isOpen,
     onClose: requestClose,
+    isolateKeyboard: true,
   })
 
   createEffect(() => {

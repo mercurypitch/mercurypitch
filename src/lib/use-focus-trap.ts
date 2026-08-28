@@ -15,6 +15,12 @@ interface FocusTrapOptions {
   isOpen: () => boolean
   onClose?: () => void
   /**
+   * Stop every key at the modal root so document/window shortcuts cannot act
+   * on the obscured screen. Use only when the dialog has no Solid-delegated
+   * keyboard handlers of its own; native controls still behave normally.
+   */
+  isolateKeyboard?: boolean
+  /**
    * Element to focus when the dialog opens, instead of the first focusable
    * descendant. Use for dialogs whose leading control has an activation
    * side-effect — e.g. a bottom sheet whose first row is a native `<select>`,
@@ -89,10 +95,7 @@ export function useFocusTrap(
           : null
       if (eventModal !== null && eventModal !== root) return
 
-      // A modal is the active keyboard surface. Keep app-level shortcuts from
-      // mutating obscured controls while preserving native behavior inside
-      // the dialog and allowing this trap to handle Tab and Escape below.
-      e.stopPropagation()
+      if (opts.isolateKeyboard === true) e.stopPropagation()
 
       if (e.key === 'Escape') {
         e.preventDefault()
