@@ -61,7 +61,7 @@ export const ChallengeResultCard: Component = () => {
   const voiceSaveInFlight = (): boolean => voiceKeepState() === 'saving'
   useLocalSaveNavigationLock(
     voiceSaveInFlight,
-    'weekly challenge voice-take keep',
+    'legend attempt voice-take keep',
   )
 
   createEffect(() => {
