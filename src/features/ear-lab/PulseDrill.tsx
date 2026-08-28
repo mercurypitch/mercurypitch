@@ -341,7 +341,6 @@ export function PulseDrill(props: { onBack: () => void }): JSX.Element {
           >
             <PlayPad
               label="Next"
-              sub="the next call"
               keycap="Space"
               icon={<IconPlay size={20} />}
               onClick={() => controller.next()}

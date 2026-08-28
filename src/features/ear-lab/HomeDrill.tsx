@@ -354,13 +354,6 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                         ? 'Next'
                         : 'The note'
                 }
-                sub={
-                  phase() === 'reveal'
-                    ? 'follows in a moment'
-                    : controller.mode() === 'mic'
-                      ? 'sing or play it'
-                      : copy.measures
-                }
                 icon={
                   controller.mode() === 'mic' && phase() === 'answer' ? (
                     <IconMic size={20} />
@@ -371,7 +364,6 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           >
             <PlayPad
               label="Next"
-              sub="the next round"
               keycap="Space"
               icon={<IconPlay size={20} />}
               onClick={() => controller.next()}
