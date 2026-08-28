@@ -680,7 +680,16 @@ export function createGuitarLiveScoreEngine(
         firstUnresolvedTargetIndex += 1
         continue
       }
-      if (badHealthReason !== null) {
+      // Input health is the last exclusion that used to fire before any event
+      // was read, and it was the most expensive one: it is a whole-take verdict
+      // applied to every target still unresolved, so one bad stretch condemned
+      // notes recorded either side of it. Measured on a take where 20% of the
+      // level readings clipped: all 54 targets were skipped while their nearest
+      // events sat at the exact authored pitch with clarity 0.999 to 1.000.
+      // Clipping can corrupt pitch detection; whether it did is a question the
+      // evidence answers, so under 'evidence-first' the reason is carried on
+      // the judgment instead of standing in for it.
+      if (!evidenceFirst && badHealthReason !== null) {
         appendJudgment({
           targetId: target.id,
           midi: target.midi,
@@ -695,6 +704,10 @@ export function createGuitarLiveScoreEngine(
         firstUnresolvedTargetIndex += 1
         continue
       }
+
+      // What this target was excluded for before the evidence was read, so a
+      // reclaimed judgment can still say which guard it walked past.
+      const excludedFrom = target.skipReason ?? badHealthReason
 
       // A chord is one thing the player either played or did not, and a mono
       // detector returns one pitch per onset. Judging each voice separately
@@ -784,7 +797,7 @@ export function createGuitarLiveScoreEngine(
               eventId: null,
               timingOffsetMs: null,
               skipReason: null,
-              reclaimedFrom: target.skipReason,
+              reclaimedFrom: excludedFrom,
             })
             continue
           }
@@ -800,7 +813,7 @@ export function createGuitarLiveScoreEngine(
             timingOffsetMs:
               Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
             skipReason: null,
-            reclaimedFrom: target.skipReason,
+            reclaimedFrom: excludedFrom,
           })
         }
         firstUnresolvedTargetIndex += group.length
@@ -824,7 +837,7 @@ export function createGuitarLiveScoreEngine(
           timingOffsetMs:
             Math.round((offsetFrames / options.sampleRate) * 10_000) / 10,
           skipReason: null,
-          reclaimedFrom: target.skipReason,
+          reclaimedFrom: excludedFrom,
         })
         firstUnresolvedTargetIndex += 1
         continue
@@ -839,7 +852,7 @@ export function createGuitarLiveScoreEngine(
         eventId: null,
         timingOffsetMs: null,
         skipReason: null,
-        reclaimedFrom: target.skipReason,
+        reclaimedFrom: excludedFrom,
       })
       firstUnresolvedTargetIndex += 1
     }
