@@ -19,6 +19,8 @@
   ·
   <a href="https://mercurypitch.com/guitar-night">Guitar Night</a>
   ·
+  <a href="https://mercurypitch.com/ear-lab">Ear Lab</a>
+  ·
   <a href="https://mercurypitch.com/mirror">Voice Mirror</a>
   ·
   <a href="https://mercurypitch.com/glass">Glass</a>

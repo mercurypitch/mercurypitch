@@ -44,6 +44,14 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <!-- The Ear Lab: a tab of the studio with a page of its own, so the bench
+       has a URL that unfurls with its card. -->
+  <url>
+    <loc>https://mercurypitch.com/ear-lab</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <!-- Glass aliases (/break-glass-with-your-voice, /high-note-test, /shatter)
        serve the same page with canonical /glass, so only the canonical URL
        is listed. -->
