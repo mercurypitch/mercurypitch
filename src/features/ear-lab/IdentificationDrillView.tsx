@@ -42,6 +42,10 @@ interface IdentificationDrillViewProps {
   controller: ReturnType<typeof useIdentificationController>
   /** Reveal copy for a choice, e.g. "Minor 6th". */
   revealName: (choiceId: string) => string
+  /** "named" unless the answer was tapped or sung back. */
+  answerVerb?: string
+  /** After a miss, where it went wrong: "first slip at note 2". */
+  slipNote?: () => string | undefined
   /** The drill's instrument, reactive to the controller. */
   instrument: () => JSX.Element
   /** A console of the drill's own in place of the choice pads — Echo's
@@ -160,12 +164,13 @@ export function IdentificationDrillView(
     )}`
     const named =
       !correct() && answered !== null && answered !== expected
-        ? `You named ${props.revealName(answered)} · `
+        ? `You ${props.answerVerb ?? 'named'} ${props.revealName(answered)} · `
         : ''
+    const slip = correct() ? undefined : props.slipNote?.()
     return {
       correct: correct(),
       line: status(),
-      consequence: `${named}${move}`,
+      consequence: `${named}${slip === undefined ? '' : `${slip} · `}${move}`,
       label: `Round ${props.controller.round() + 1}`,
     }
   })

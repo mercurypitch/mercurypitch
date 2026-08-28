@@ -161,6 +161,9 @@ describe('EchoDrill', () => {
     expect(status()).toBe('That was Do Re Mi — listen again.')
     expect(parts('right')).toBe(2)
     expect(parts('wrong')).toBe(1)
+    expect(screen.getByTestId('ear-stage-last-call').textContent).toContain(
+      'You tapped Do Re Sol · first slip at note 3',
+    )
     // Three rungs sounded under the taps; then the replay: three
     // notes, slower, no cadence.
     await vi.advanceTimersByTimeAsync(0)
@@ -232,7 +235,7 @@ describe('SpanDrill', () => {
     fireEvent.click(ladder()[1])
     fireEvent.click(ladder()[0])
     expect(status()).toBe(
-      'Slipped at note 2 of 3 — it was Do Sol Do. The phrase shortens.',
+      'Slipped at note 2 of 3 — it was Do Sol Do, you tapped Do Re Do. The phrase shortens.',
     )
     expect(parts('wrong')).toBe(1)
     await vi.advanceTimersByTimeAsync(REVEAL_HOLD.defaultMs + 5)

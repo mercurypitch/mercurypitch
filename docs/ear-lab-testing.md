@@ -785,6 +785,18 @@ overlaps. Contour — both tones the same length.
    sung answer's window opens with the same click.
 3. Stop mid-run: no click follows.
 
+### 2af. Retest fixes — the reveal says both ways
+
+1. Echo, a slip: the headline says what it was ("That was Do Re Mi —
+   listen again."), and the Last call plate says what came back and where
+   it went wrong — "You tapped Do Re Sol · first slip at note 3 · Rating
+   1200 → 1188". A sung slip says "You sang".
+2. Span's slip line carries both phrases: "Slipped at note 2 of 3 — it was
+   Do Sol Do, you tapped Do Re Do. The phrase shortens."
+3. Bassline: "You tapped I–V–IV–I · first slip at root 2"; Cadence names
+   the progression both ways as before; the desk's Colour and Weight say
+   the band and the dB; the threshold drills say where the level goes.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
