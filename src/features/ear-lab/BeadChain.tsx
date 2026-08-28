@@ -127,12 +127,11 @@ export function BeadChain(props: BeadChainProps): JSX.Element {
                   <Show when={!reveal().perNote[i()]}>
                     <circle
                       cx={beadX(i(), reveal().expected.length)}
-                      cy={degreeY(reveal().answered[i()] ?? 1)}
+                      cy={degreeY(Math.max(1, reveal().answered[i()] ?? 1))}
                       r={radius() + 3}
                       class={styles.beadWrong}
                       classList={{
-                        [styles.beadMissing]:
-                          reveal().answered[i()] === undefined,
+                        [styles.beadMissing]: (reveal().answered[i()] ?? 0) < 1,
                       }}
                       data-part="wrong"
                     />

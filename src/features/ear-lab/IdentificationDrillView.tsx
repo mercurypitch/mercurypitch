@@ -47,6 +47,13 @@ interface IdentificationDrillViewProps {
   answerConsole?: () => JSX.Element
   /** The keys for that console; replaces the digit keys. */
   answerKeys?: () => StageKey[]
+  /** Under the description at idle: a mode toggle, a mic warning. */
+  idleAside?: JSX.Element
+  /** Starts a run; the controller's start unless the drill has to
+   *  acquire something (a microphone) first. */
+  onStart?: () => void
+  /** The stage's mode word while running; "rating run" by default. */
+  runMode?: () => string
   onBack: () => void
 }
 
@@ -56,6 +63,10 @@ export function IdentificationDrillView(
   // No cleanup here: the controller registers its own onCleanup, so
   // disposing from the view too would just double up.
   const phase = () => props.controller.phase()
+  const start = () => {
+    if (props.onStart) props.onStart()
+    else props.controller.start()
+  }
   const running = () => phase() !== 'idle' && phase() !== 'done'
   const correct = () =>
     props.controller.answeredId() === props.controller.expectedId()
@@ -111,7 +122,7 @@ export function IdentificationDrillView(
 
   const keys = (): StageKey[] => {
     if (phase() === 'idle') {
-      return [{ key: 'Space', action: () => props.controller.start() }]
+      return [{ key: 'Space', action: () => start() }]
     }
     if (props.answerKeys) return props.answerKeys()
     if (phase() !== 'answer' || props.choices.length > 9) return []
@@ -125,7 +136,11 @@ export function IdentificationDrillView(
     <EarStage
       drillId={props.drillId}
       name={props.title}
-      mode={phase() === 'idle' ? 'on the bench' : 'rating run'}
+      mode={
+        phase() === 'idle'
+          ? 'on the bench'
+          : (props.runMode?.() ?? 'rating run')
+      }
       progress={progress()}
       status={status()}
       tone={tone()}
@@ -145,9 +160,10 @@ export function IdentificationDrillView(
                 sub={`${props.controller.totalRounds} rounds`}
                 keycap="Space"
                 icon={<IconPlay size={20} />}
-                onClick={() => props.controller.start()}
+                onClick={() => start()}
               />
               <ConsoleNote>{props.description}</ConsoleNote>
+              {props.idleAside}
             </>
           }
         >
@@ -193,7 +209,7 @@ export function IdentificationDrillView(
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }
-              onAgain={() => props.controller.start()}
+              onAgain={() => start()}
               onBack={props.onBack}
             >
               <Show when={isProvisional(result().rating)}>

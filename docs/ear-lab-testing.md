@@ -516,6 +516,38 @@ slower.
   naming the metre is the drill, and the tap ledger stays with Pulse.
 - Stop pulls the master gain to silence and clears the lamps.
 
+### 2s. Sing mode for Echo and Span — follow-up item 8
+
+Both drills carry an **Answer by** toggle on the idle console: Tap, or Sing
+or play. Choose the second and press Begin (Echo) or Practice run (Span): the
+drill opens the microphone through the mic manager (`ear-echo-drill` /
+`ear-span-drill`) before the run starts; if the mic is refused, the run
+starts anyway on the ladder and a warning under the toggle says so.
+
+- The phrase sounds as before. When the ladder would open, the console shows
+  a **Listening** pad instead and the status reads "Sing or play it back —
+  now, at the pace it sounded." Sing (or play an instrument at the mic) the
+  phrase at the pace it sounded, starting straight away. Each note has its own
+  window on that grid — a 250 ms breath, then note + gap per note, 450 ms
+  grace at the end (`singLeadMs` / `singTailMs` in `timing.ts`); the median
+  pitch of the confident frames in a window (its first 30% dropped) names the
+  note, and it counts within 60 cents (`src/lib/ear/phrase-score.ts`). Press
+  the Listening pad or Space when you are done, or wait for the window to
+  close.
+- The reveal is the same chain: right beads ringed, wrong beads marked, a
+  bead the mic did not catch dashed. A miss replays the phrase slowly (Echo).
+- Ratings: Echo's sung run rates under `echo-sing` with no guess floor and the
+  phrases' difficulties untouched — the bench's Echo row shows `· voice N`
+  once there is one. Span's sung run is practice only (no Calibration pad
+  while Sing or play is chosen) and reads under `span-sing`; the Shape dial
+  keeps the tapped reading.
+- Stop hands the mic back; so does starting a tapped run, or leaving the
+  drill.
+
+Checks: the toggle is a radiogroup with two radios on both idle consoles; the
+Listening pad is at least 44 px tall; no percent anywhere; the chain shows
+nothing before the reveal.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

@@ -107,6 +107,10 @@ export const ECHO_TIMING = {
   replayGapMs: 180,
   /** After the last note, before the ladder opens. */
   tailMs: 200,
+  /** Sung answers: a breath before the first window, and grace after
+   *  the phrase's own length. */
+  singLeadMs: 250,
+  singTailMs: 450,
 } as const
 
 /** Span — the phrase at the staircase's length. */
@@ -117,6 +121,10 @@ export const SPAN_TIMING = {
   noteMs: 340,
   gapMs: 110,
   tailMs: 200,
+  /** Sung answers: a breath before the first window, and grace after
+   *  the phrase's own length. */
+  singLeadMs: 250,
+  singTailMs: 450,
 } as const
 
 /** Beat Hunt — two pairs of tones, one detuned. */

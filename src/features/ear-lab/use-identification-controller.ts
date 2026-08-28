@@ -52,11 +52,23 @@ export interface IdentificationResult {
 
 export const IDENTIFICATION_ROUNDS = 12
 
+/** Where a run's answers are rated when not under the drill's own
+ *  id — Echo's sung answers go to 'echo-sing' with no guess floor
+ *  and leave the items' difficulties untouched. */
+export interface RunTrack {
+  drillId: string
+  guessRate: number
+  updateItem: boolean
+}
+
 export interface IdentificationOptions {
   /** Silence anything already sounding. Called on stop and unmount,
    *  before the phase flips — a prompt committed to the audio clock
    *  outlives its setTimeout. */
   cancelAudio?: () => void
+  /** Read at start(): the track this run rates under, or null for
+   *  the drill's own. */
+  track?: () => RunTrack | null
 }
 
 export function useIdentificationController(
@@ -70,6 +82,8 @@ export function useIdentificationController(
   const [expectedId, setExpectedId] = createSignal<string | null>(null)
   const [answeredId, setAnsweredId] = createSignal<string | null>(null)
   const [rating, setRating] = createSignal<Rating>(earPlayerRating(drill.id))
+  let runTrack: RunTrack | null = null
+  const trackId = () => runTrack?.drillId ?? drill.id
   const [result, setResult] = createSignal<IdentificationResult | null>(null)
 
   let currentItem: EarBankItem | null = null
@@ -85,11 +99,12 @@ export function useIdentificationController(
     cancelled = false
     startedAt = performance.now()
     outcomes = []
-    ratingAtStart = earPlayerRating(drill.id).rating
+    runTrack = options?.track?.() ?? null
+    ratingAtStart = earPlayerRating(trackId()).rating
     batch(() => {
       setRound(0)
       setResult(null)
-      setRating(earPlayerRating(drill.id))
+      setRating(earPlayerRating(trackId()))
     })
     void playRound()
   }
@@ -129,13 +144,14 @@ export function useIdentificationController(
 
     const correct = choiceId === expected
     const nextRating = recordIdentificationAnswer({
-      drillId: drill.id,
+      drillId: trackId(),
       itemId: item.itemId,
       itemDifficulty: bankItemState(earItemStates(), item),
       correct,
-      guessRate: guessRate(drill),
+      guessRate: runTrack?.guessRate ?? guessRate(drill),
       expected,
       answered: choiceId,
+      ...(runTrack ? { updateItem: runTrack.updateItem } : {}),
     })
     outcomes.push({ expectedId: expected, answeredId: choiceId, correct })
 
@@ -204,6 +220,7 @@ export function useIdentificationController(
     answeredId,
     rating,
     result,
+    track: () => runTrack,
     start,
     answer,
     stop,
