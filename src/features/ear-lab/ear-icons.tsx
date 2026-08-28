@@ -220,6 +220,51 @@ export function IconMetre(p: IconProps): JSX.Element {
   )
 }
 
+export function IconDesk(p: IconProps): JSX.Element {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={p.size ?? 20}
+      height={p.size ?? 20}
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      class={p.class}
+      aria-hidden="true"
+    >
+      <path d="M6 4v16M12 4v16M18 4v16" />
+      <rect
+        x="4"
+        y="9"
+        width="4"
+        height="3"
+        rx="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="10"
+        y="13"
+        width="4"
+        height="3"
+        rx="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+      <rect
+        x="16"
+        y="7"
+        width="4"
+        height="3"
+        rx="0.8"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>

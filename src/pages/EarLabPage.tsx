@@ -14,6 +14,7 @@ import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
 import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
+import { DeskView } from '@/features/ear-lab/DeskView'
 import { DriftDrill } from '@/features/ear-lab/DriftDrill'
 import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
@@ -105,6 +106,9 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'subdivide'}>
           <SubdivideDrill onBack={back} />
+        </Show>
+        <Show when={view() === 'desk'}>
+          <DeskView onBack={back} />
         </Show>
         <Show when={view() === 'field-book'}>
           <FieldBookView onBack={back} />

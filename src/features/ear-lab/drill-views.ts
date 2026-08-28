@@ -28,6 +28,11 @@ export const VIEW_FOR_DRILL: Readonly<Record<string, EarLabView>> = {
   cadence: 'cadence',
   bassline: 'bassline',
   subdivide: 'subdivide',
+  // The desk's three drills, and the catalogue's Colour, open the desk.
+  colour: 'desk',
+  'desk-colour': 'desk',
+  'desk-weight': 'desk',
+  'desk-critique': 'desk',
 }
 
 export function viewForDrill(drillId: string): EarLabView | undefined {

@@ -200,3 +200,14 @@ export const WILD_TIMING = {
   replayTailS: 1.6,
   tailMs: 220,
 } as const
+
+/** The mixing desk — slices of the rendered source. */
+export const DESK_TIMING = {
+  /** One slice of the source per render. */
+  sliceS: 3.2,
+  /** Between Weight's two renders. */
+  gapMs: 350,
+  tailMs: 250,
+  /** How much of the user's song the desk renders as its source. */
+  songExcerptS: 12,
+} as const

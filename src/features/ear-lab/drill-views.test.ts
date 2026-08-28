@@ -25,8 +25,15 @@ describe('drill views', () => {
       expect(VIEW_FOR_DRILL).toHaveProperty(id, id)
       expect(SPRINT_DRILL_IDS).toContain(id)
     }
-    for (const id of ['colour', 'weight', 'critique']) {
-      expect(VIEW_FOR_DRILL).not.toHaveProperty(id)
+    // The desk's drills open the desk and stay out of the sprint: they
+    // read on their own plate, never the Column.
+    for (const id of [
+      'colour',
+      'desk-colour',
+      'desk-weight',
+      'desk-critique',
+    ]) {
+      expect(VIEW_FOR_DRILL).toHaveProperty(id, 'desk')
       expect(SPRINT_DRILL_IDS).not.toContain(id)
     }
   })

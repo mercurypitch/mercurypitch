@@ -30,7 +30,10 @@ export interface Strummer {
 const STAGGER_S = 0.018
 const RELEASE_S = 0.09
 
-export function createStrummer(ctx: AudioContext, gainLevel: number): Strummer {
+export function createStrummer(
+  ctx: BaseAudioContext,
+  gainLevel: number,
+): Strummer {
   const master = ctx.createGain()
   master.gain.setValueAtTime(
     Math.max(0, Math.min(1, gainLevel)),

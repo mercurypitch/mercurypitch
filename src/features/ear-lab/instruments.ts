@@ -19,6 +19,7 @@ export type InstrumentView =
   | 'grid'
   | 'leap'
   | 'stack'
+  | 'desk'
   | 'contour'
   | 'echo'
   | 'span'
@@ -143,6 +144,14 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'One chord, roved root — name its quality',
   },
   {
+    view: 'desk',
+    drillId: 'desk-colour',
+    name: 'The desk',
+    faculty: 'colour',
+    measures: 'Colour · the mixing desk',
+    answer: 'A boosted band, the heavier render, a named fault',
+  },
+  {
     view: 'contour',
     drillId: 'contour',
     name: 'Contour',
@@ -225,6 +234,8 @@ export function instrumentReading(
     case 'hairline':
     case 'grid':
     case 'span':
+    case 'desk':
+      return thresholdReading('desk-colour')
     case 'beat-hunt':
     case 'drift':
       return thresholdReading(instrument.drillId ?? '')

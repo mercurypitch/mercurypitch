@@ -1240,6 +1240,66 @@ async function auditStage(page, name) {
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
+  // The desk: one page, three drills. Colour's practice run renders a
+  // slice of the house loop offline and arms six pads — an end-to-end
+  // check of the offline render in this browser.
+  await openFromStrip('The desk')
+  {
+    const statusText = page.getByTestId('ear-stage-status')
+    const deadline = Date.now() + 60_000
+    let text = ''
+    while (Date.now() < deadline) {
+      text = (await statusText.textContent()) ?? ''
+      if (/On |could not/i.test(text)) break
+      await page.waitForTimeout(500)
+    }
+    if (!/On /.test(text))
+      fail(`${name} desk`, `the desk never rendered: "${text}"`)
+  }
+  results.deskIdle = await checkStage('desk idle', 'stage-desk-idle')
+  await page.getByRole('button', { name: /^Colour/ }).click()
+  await page.waitForTimeout(400)
+  results.colourIdle = await checkStage('colour idle', 'stage-colour-idle')
+  await page.getByRole('button', { name: /Practice run/ }).click()
+  const colourPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const colourArmed = await colourPads
+    .first()
+    .waitFor({ timeout: 20000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!colourArmed) fail(`${name} colour`, 'the band pads never armed')
+  else {
+    if ((await colourPads.count()) !== 6) {
+      fail(
+        `${name} colour`,
+        `${await colourPads.count()} pads armed, expected 6`,
+      )
+    }
+    await page.screenshot({ path: `${OUT}/${name}-stage-colour-answer.png` })
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: 'Back to the desk' }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /^Weight/ }).click()
+  await page.waitForTimeout(400)
+  results.weightIdle = await checkStage('weight idle', 'stage-weight-idle')
+  await page.getByRole('button', { name: 'Back to the desk' }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /^Critique/ }).click()
+  await page.waitForTimeout(400)
+  results.critiqueIdle = await checkStage(
+    'critique idle',
+    'stage-critique-idle',
+  )
+  await page.getByRole('button', { name: 'Back to the desk' }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: 'Back to the bench' }).first().click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
   await openFromStrip('Stack')
