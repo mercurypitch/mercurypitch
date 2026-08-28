@@ -39,6 +39,16 @@ const PLAYED_UNPITCHED_COLOR = '#a78bfa'
 const DIFF_COLOR = 'rgba(248, 113, 113, 0.55)'
 const HIT_DIFF_COLOR = 'rgba(52, 211, 153, 0.5)'
 
+// Below what share of identified attacks the input is called unusable, and how
+// many strikes must be in hand before saying so. The tempting signal here is
+// the detector's gated-frame share, but that is near 1 for any real take: most
+// frames in a piece fall between notes, and silence is meant to be gated. What
+// separates a dead input from a sparse one is whether the strikes that DID
+// land came back with a pitch — take two returned 0 of 25, a healthy take 30
+// of 61.
+const MIN_IDENTIFIED_ATTACK_SHARE = 0.25
+const MIN_ATTACKS_FOR_SIGNAL_WARNING = 8
+
 const SKIP_REASON_ORDER: readonly GuitarLiveScoreSkipReason[] = [
   'input-clipping',
   'input-noisy',
@@ -315,6 +325,21 @@ export function GuitarNightScoreDebug(props: GuitarNightScoreDebugProps) {
     return midi === null || midi === undefined
       ? null
       : 440 * 2 ** ((midi - 69) / 12)
+  })
+
+  // Attacks arriving that the pitch path could not identify. The two read the
+  // signal at different points — the worklet on raw samples with its own
+  // floor, the detector on the analyser under an RMS gate — so a quiet input
+  // silently produces strikes that can never be identified, and every target
+  // becomes a miss for a reason nothing on screen was saying out loud.
+  const inputBelowPitchGate = createMemo(() => {
+    const summary = props.model()?.summary
+    if (summary === undefined) return false
+    if (summary.attackCount < MIN_ATTACKS_FOR_SIGNAL_WARNING) return false
+    return (
+      summary.attacksWithPitch / summary.attackCount <
+      MIN_IDENTIFIED_ATTACK_SHARE
+    )
   })
 
   const analyserTooShort = createMemo(() => {
@@ -862,6 +887,17 @@ export function GuitarNightScoreDebug(props: GuitarNightScoreDebugProps) {
           The analyser bottoms out at {analyserFloorHz().toFixed(0)} Hz but this
           score reaches {lowestTargetHz()?.toFixed(1)} Hz. Notes under the floor
           are reported an octave high with high confidence. Raise the analyser.
+        </p>
+      </Show>
+      <Show when={inputBelowPitchGate()}>
+        <p class={`${styles.exportNote} ${styles.analyserWarn}`}>
+          Strikes are being heard but hardly any of them can be identified: only{' '}
+          {props.model()?.summary.attacksWithPitch ?? 0} of{' '}
+          {props.model()?.summary.attackCount ?? 0} attacks carry a pitch. The
+          attack detector reads raw samples in the worklet and has its own
+          floor, so a quiet input still registers strikes while pitch detection
+          stays under its amplitude gate, and every note scores as a miss. Turn
+          the input gain up.
         </p>
       </Show>
       <Show when={summary()} keyed>
