@@ -657,6 +657,24 @@ card, the image and the generator exist, `/ear-lab` maps to the page in dev,
 the hash lands on the tab, the sitemap lists it); once deployed, pasting
 `https://mercurypitch.com/ear-lab` into a chat unfurls the card.
 
+### 2x. Retest fixes — the stimulus is whole, a miss's replay finishes
+
+- **Every tone sounds whole** (`playToneFor` in `ear-sound.ts`): the engine's
+  `playTone` resolves when a note is scheduled and a new note replaces the
+  one before it, so Hairline, Contour and Leap used to cut their first tone
+  at the gap and arm the pads before the second had begun; Stack's broken
+  replay scheduled every note at once. Now each tone is waited out and the
+  pads arm only after the last one (Hairline 500 + 220 + 500 ms).
+- **A miss's slow replay finishes before anything else starts**: the
+  identification controller awaits `replayOnWrong`, exposes `replaying()`,
+  and counts the hold from the replay's end; Stop during the replay still
+  ends the run.
+
+Checks: Hairline — pressing `1` while the second tone is still sounding does
+nothing; the pads arm the moment it ends. Echo — a wrong phrase: the slow
+replay plays through, then the hold, then the next cadence; nothing
+overlaps. Contour — both tones the same length.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

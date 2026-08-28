@@ -190,7 +190,10 @@ describe('CadenceDrill', () => {
     expect(status()).toBe('That was I–IV–V — listen again.')
     await vi.advanceTimersByTimeAsync(0)
     expect(struck).toHaveLength(24)
-    await vi.advanceTimersByTimeAsync(REVEAL_TIMING.identificationWrongMs + 5)
+    // The next round waits for the slow strum to finish, then the hold.
+    await vi.advanceTimersByTimeAsync(
+      REVEAL_TIMING.identificationWrongMs + 6000,
+    )
     expect(screen.getByTestId('ear-stage-progress').textContent).toContain(
       'Round 2 of 12',
     )
