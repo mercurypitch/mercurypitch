@@ -572,8 +572,81 @@
   stroke-dasharray: 3 3;
 }
 
+/* ── Beat pendulums (Beat Hunt) ──────────────────────────── */
+
+.beam {
+  stroke: var(--inst-brass);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+
+.rod {
+  stroke: var(--inst-line);
+  stroke-width: 1.2;
+  transition: x2 140ms ease;
+}
+
+.rodSwinging {
+  stroke: var(--inst-brass);
+}
+
+.bob {
+  fill: var(--inst-muted);
+  opacity: 0.7;
+  transition:
+    cx 140ms ease,
+    fill 120ms ease;
+}
+
+.bobLit {
+  fill: var(--inst-brass-bright);
+  opacity: 1;
+}
+
+.bobBeating {
+  fill: var(--inst-garnet);
+  opacity: 1;
+}
+
+/* ── Metronome column (Drift) ─────────────────────────────── */
+
+.metronomeBody {
+  fill: var(--inst-parchment);
+  fill-opacity: 0.08;
+  stroke: var(--inst-brass);
+  stroke-width: 1.4;
+}
+
+.metronomeArm {
+  stroke: var(--inst-brass-bright);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transition:
+    x2 260ms ease,
+    y2 260ms ease;
+}
+
+.metronomeWeight {
+  fill: var(--inst-brass);
+  transition:
+    cx 260ms ease,
+    cy 260ms ease;
+}
+
+.pivot {
+  fill: var(--inst-brass-bright);
+}
+
+.lampDrift {
+  stroke: rgb(239 230 214 / 34%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bead,
+  .rod,
+  .bob,
+  .metronomeArm,
+  .metronomeWeight,
   .hair,
   .loupe,
   .pallet,

@@ -760,6 +760,134 @@ async function auditStage(page, name) {
   await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
   await page.waitForTimeout(400)
 
+  // Beat Hunt: two pairs on the clock, the pads arm after the second;
+  // nothing on the pendulums says which pair beat until the reveal.
+  await openFromStrip('Beat Hunt')
+  results.beatHuntIdle = await checkStage(
+    'beat-hunt idle',
+    'stage-beat-hunt-idle',
+  )
+  await page.getByText('Practice run').click()
+  const beatPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const beatArmed = await beatPads
+    .first()
+    .waitFor({ timeout: 12000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!beatArmed) fail(`${name} beat-hunt`, 'the pads never armed')
+  else {
+    const beatingEarly = await page.evaluate(
+      () =>
+        document.querySelectorAll(
+          'svg[data-instrument="beat-pendulums"] [data-beating="true"]',
+        ).length,
+    )
+    if (beatingEarly > 0)
+      fail(`${name} beat-hunt`, 'a pair is marked beating before the reveal')
+    await page.screenshot({
+      path: `${OUT}/${name}-stage-beat-hunt-answer.png`,
+    })
+    await beatPads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /pair was beating/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} beat-hunt`, 'the reveal never named the pair')
+    const marks = await page.evaluate(() => {
+      const svg = document.querySelector(
+        'svg[data-instrument="beat-pendulums"]',
+      )
+      return svg
+        ? {
+            beating: svg.querySelectorAll('[data-beating="true"]').length,
+            plate:
+              svg.querySelector('[data-part="nameplate"]')?.textContent ?? '',
+          }
+        : null
+    })
+    await page.screenshot({
+      path: `${OUT}/${name}-stage-beat-hunt-reveal.png`,
+    })
+    if (!marks || marks.beating !== 1 || !/beat/.test(marks.plate))
+      fail(
+        `${name} beat-hunt`,
+        `reveal marks ${marks?.beating ?? 0} pairs beating, plate "${marks?.plate ?? ''}"`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
+  // Drift: eleven clicks, the arm upright until the reveal, then leaning
+  // the way the nameplate says.
+  await openFromStrip('Drift')
+  results.driftIdle = await checkStage('drift idle', 'stage-drift-idle')
+  await page.getByText('Practice run').click()
+  const driftPads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  const driftArmed = await driftPads
+    .first()
+    .waitFor({ timeout: 15000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!driftArmed) fail(`${name} drift`, 'the pads never armed')
+  else {
+    const leanEarly = await page.evaluate(
+      () =>
+        document
+          .querySelector('svg[data-instrument="metronome"] [data-part="arm"]')
+          ?.getAttribute('data-lean') ?? null,
+    )
+    if (leanEarly !== '0')
+      fail(`${name} drift`, `the arm leans ${leanEarly} before the reveal`)
+    await page.screenshot({ path: `${OUT}/${name}-stage-drift-answer.png` })
+    await driftPads.first().click()
+    const revealed = await page
+      .locator('[data-testid="ear-stage-status"]', {
+        hasText: /held steady|gained|lost/,
+      })
+      .waitFor({ timeout: 6000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!revealed) fail(`${name} drift`, 'the reveal never said which way')
+    const arm = await page.evaluate(() => {
+      const svg = document.querySelector('svg[data-instrument="metronome"]')
+      return svg
+        ? {
+            lean: svg
+              .querySelector('[data-part="arm"]')
+              ?.getAttribute('data-lean'),
+            plate:
+              svg.querySelector('[data-part="nameplate"]')?.textContent ?? '',
+          }
+        : null
+    })
+    await page.screenshot({ path: `${OUT}/${name}-stage-drift-reveal.png` })
+    const expectedLean = /Faster/.test(arm?.plate ?? '')
+      ? '22'
+      : /Slower/.test(arm?.plate ?? '')
+        ? '-22'
+        : '0'
+    if (!arm || arm.lean !== expectedLean)
+      fail(
+        `${name} drift`,
+        `arm leans ${arm?.lean ?? 'nowhere'} under the plate "${arm?.plate ?? ''}"`,
+      )
+  }
+  await page.getByLabel('Stop').click()
+  await page.waitForTimeout(300)
+  await page.getByText('Back to the bench').click()
+  await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+  await page.waitForTimeout(400)
+
   // Stack: the reveal's wheels mesh side by side; none may overlap,
   // and the nameplate keeps clear of the root wheel.
   await openFromStrip('Stack')

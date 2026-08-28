@@ -20,6 +20,8 @@ export type InstrumentView =
   | 'contour'
   | 'echo'
   | 'span'
+  | 'beat-hunt'
+  | 'drift'
   | 'pulse'
   | 'calibration'
 
@@ -54,6 +56,14 @@ export const INSTRUMENTS: readonly Instrument[] = [
     answer: 'Two tones — which was higher',
   },
   {
+    view: 'beat-hunt',
+    drillId: 'beat-hunt',
+    name: 'Beat Hunt',
+    faculty: 'resolution',
+    measures: 'Resolution · beats',
+    answer: 'Two pairs of tones — which pair was beating',
+  },
+  {
     view: 'home',
     drillId: 'home',
     name: 'Home',
@@ -68,6 +78,14 @@ export const INSTRUMENTS: readonly Instrument[] = [
     faculty: 'time',
     measures: 'Time · milliseconds',
     answer: 'Six clicks — which one left the lattice',
+  },
+  {
+    view: 'drift',
+    drillId: 'drift',
+    name: 'Drift',
+    faculty: 'time',
+    measures: 'Time · tempo',
+    answer: 'A click train — did the tempo hold, gain or lose',
   },
   {
     view: 'leap',
@@ -160,6 +178,8 @@ export function instrumentReading(
     case 'hairline':
     case 'grid':
     case 'span':
+    case 'beat-hunt':
+    case 'drift':
       return thresholdReading(instrument.drillId ?? '')
     case 'home': {
       const ear = ratingReading('home')

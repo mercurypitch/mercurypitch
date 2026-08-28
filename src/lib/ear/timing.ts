@@ -118,3 +118,23 @@ export const SPAN_TIMING = {
   gapMs: 110,
   tailMs: 200,
 } as const
+
+/** Beat Hunt — two pairs of tones, one detuned. */
+export const BEAT_TIMING = {
+  leadInS: 0.2,
+  /** Each pair sounds this long: slow beats need room to swell. */
+  dyadMs: 1400,
+  gapMs: 300,
+  tailMs: 250,
+} as const
+
+/** Drift — a click train that holds, gains or loses tempo. */
+export const DRIFT_TIMING = {
+  leadInS: 0.2,
+  periodMs: 520,
+  /** Clicks at the first tempo. */
+  steadyClicks: 5,
+  /** Clicks at the second. */
+  driftClicks: 6,
+  tailMs: 250,
+} as const

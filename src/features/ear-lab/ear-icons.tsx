@@ -147,6 +147,27 @@ export function IconSpan(p: IconProps): JSX.Element {
   )
 }
 
+export function IconBeats(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M3 4h18" />
+      <path d="M8 4v11M16 4l2 11" />
+      <circle cx="8" cy="17.5" r="2.5" />
+      <circle cx="18.3" cy="17.5" r="2.5" />
+    </svg>
+  )
+}
+
+export function IconMetronome(p: IconProps): JSX.Element {
+  return (
+    <svg {...frame(p.size)} class={p.class}>
+      <path d="M8 21 10 4h4l2 17Z" />
+      <path d="M12 16 17 6" />
+      <circle cx="16.2" cy="7.6" r="1.4" />
+    </svg>
+  )
+}
+
 export function IconReport(p: IconProps): JSX.Element {
   return (
     <svg {...frame(p.size)} class={p.class}>
