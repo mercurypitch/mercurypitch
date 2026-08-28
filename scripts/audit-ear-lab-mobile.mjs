@@ -595,6 +595,43 @@ async function auditStage(page, name) {
     }
   }
 
+  // The Ear Path: eleven orbs on one rail, none locked. On a fresh
+  // store the first dark orb is the first reading, so Next opens
+  // Hairline and the bar brings us back.
+  {
+    const path = page.locator('[data-tour="ear.path"]')
+    if ((await path.count()) === 0) {
+      fail(`${name} ear path`, 'the Ear Path is missing from the bench')
+    } else {
+      const orbs = await path.locator('ol li').count()
+      if (orbs !== 11) fail(`${name} ear path`, `${orbs} orbs, expected 11`)
+      const lit = await path.locator('ol li[data-lit]').count()
+      console.log(`  ${name} ear path: ${lit} of ${orbs} lit`)
+      const go = path.getByTestId('ear-path-go')
+      const box = await go.boundingBox()
+      if (!box || box.height < 44) {
+        fail(
+          `${name} ear path`,
+          `the Next button is ${box ? Math.round(box.height) : 'not'} px tall`,
+        )
+      }
+      await path.scrollIntoViewIfNeeded()
+      await page.screenshot({ path: `${OUT}/${name}-bench-path.png` })
+      await go.click()
+      const back = page.getByRole('button', { name: 'Back to the bench' })
+      const opened = await back
+        .first()
+        .waitFor({ timeout: 8000 })
+        .then(() => true)
+        .catch(() => false)
+      if (!opened) fail(`${name} ear path`, 'Next did not open an instrument')
+      else {
+        await back.first().click()
+        await page.locator('#ear-lab-panel').waitFor({ timeout: 8000 })
+      }
+    }
+  }
+
   await openFromStrip('Hairline')
   results.hairlineIdle = await checkStage(
     'hairline idle',

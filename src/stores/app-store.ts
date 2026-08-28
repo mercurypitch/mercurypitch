@@ -1760,6 +1760,14 @@ const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_EAR_LAB,
   },
   {
+    title: 'The Ear Path',
+    description:
+      'A going train of milestones: the first reading, the first seal, each faculty sealed, the first rhythm take, the Field Book, the desk, thirty days of regulation. The next dark orb points at its instrument — nothing here is locked.',
+    targetSelector: '[data-tour="ear.path"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
     title: 'The Field Book',
     description:
       'Your own separated songs, read once for the degrees the voice lands on, the phrases it sings and the roots that move under it. Drills on real music, rated on their own tracks — the Column never moves for them.',

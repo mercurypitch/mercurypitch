@@ -15,6 +15,7 @@ import type { FacultyId } from '@/lib/ear/drills'
 import { calibrationHistory, latestCalibration, practiceIndexEstimate, thresholdHistory, } from '@/stores/ear-lab-store'
 import { IconArc, IconBalance, IconBassLine, IconBeats, IconChain, IconDesk, IconFork, IconGears, IconLattice, IconLoupe, IconMetre, IconMetronome, IconNumerals, IconSeal, IconSpan, IconStylus, IconTap, IconTwelve, } from './ear-icons'
 import styles from './EarLabDashboard.module.css'
+import { EarPath } from './EarPath'
 import { FieldBookCard } from './FieldBookCard'
 import type { FacultyDial } from './IndexDials'
 import { IndexDials } from './IndexDials'
@@ -279,6 +280,10 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             )
           }}
         </For>
+      </div>
+
+      <div class={styles.path}>
+        <EarPath onNavigate={props.onNavigate} />
       </div>
 
       <div class={styles.fieldBook}>

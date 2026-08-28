@@ -222,6 +222,10 @@
 }
 
 /* The Field Book sits under the strip, a plate of its own. */
+.path {
+  margin-top: 24px;
+}
+
 .fieldBook {
   margin-top: 24px;
 }

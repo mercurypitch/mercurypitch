@@ -618,6 +618,29 @@ Colour practice run arms six pads from an offline render, the three idle
 stages pass the standard walk, no percent on screen, and nothing on the desk
 answers before the reveal.
 
+### 2v. The Ear Path — follow-up item 11
+
+**The Ear Path** is a plate on the bench under the instrument strip: a going
+train of eleven orbs on one brass rail — the first reading, the first seal,
+each of the Column's five faculties sealed (a Calibration run whose seal
+carried that faculty's part), the first rhythm take (Pulse, Subdivide, Drift
+or the Grid), the first page of the Field Book, the first desk reading,
+thirty days of regulation. Orbs light from what the store already holds; the
+next dark orb is ringed, and the plate's Next line names it and opens its
+instrument (the month's orb opens whatever is still open in today's
+regulation).
+
+- Nothing is locked: every orb is a button that opens its instrument, lit or
+  dark, and a later orb lights while an earlier one stays dark.
+- The count reads "n of 11 lit" — no percent.
+- `lib/ear/path.ts` holds the milestones; the plate only reads the store.
+
+Checks: eleven orbs on a fresh store, none lit; Next reads "Open Hairline"
+and opens it; a practice reading lights the first orb and moves Next to
+Calibration; a seal lights the seal's orb and the faculty it carried; the
+Next button is a full touch target on the phone; the tour's step finds the
+plate.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
