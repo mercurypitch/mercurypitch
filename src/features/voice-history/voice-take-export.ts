@@ -96,10 +96,10 @@ function safeThreadTitle(value: string, maxBytes: number): string {
       : character
   }).join('')
   const normalized = sanitized
-    .replace(/\s+/g, ' ')
-    .replace(/^[. ]+|[. ]+$/g, '')
-  const bounded = truncateUtf8(normalized, maxBytes).replace(/[. ]+$/g, '')
-  return bounded || 'Voice Take'
+    .replace(/[\s_]+/g, '_')
+    .replace(/^[._]+|[._]+$/g, '')
+  const bounded = truncateUtf8(normalized, maxBytes).replace(/[._]+$/g, '')
+  return bounded || 'Untitled'
 }
 
 /** Build a readable filename without discarding non-ASCII song names. */
@@ -111,8 +111,8 @@ export function voiceTakeExportFilename(
     ? Math.min(999_999, Math.max(1, Math.floor(identity.ordinal)))
     : 1
   const extension = voiceTakeExtensionForMime(mimeType)
-  const prefix = 'MercuryPitch - '
-  const suffix = ` - Take ${ordinal}.${extension}`
+  const prefix = 'MercuryPitch_'
+  const suffix = `_Take_${ordinal}.${extension}`
   const reservedBytes = new TextEncoder().encode(prefix + suffix).byteLength
   const title = safeThreadTitle(
     identity.threadTitle,

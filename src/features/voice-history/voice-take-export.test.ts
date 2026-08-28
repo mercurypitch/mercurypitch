@@ -44,7 +44,7 @@ describe('voice take export names', () => {
         ordinal: 3,
         mimeType: 'audio/mp4;codecs=mp4a.40.2',
       }),
-    ).toBe('MercuryPitch - Čekaj još glas - Take 3.m4a')
+    ).toBe('MercuryPitch_Čekaj_još_glas_Take_3.m4a')
   })
 
   it('uses safe fallbacks for an empty title and invalid ordinal', () => {
@@ -54,7 +54,7 @@ describe('voice take export names', () => {
         ordinal: Number.NaN,
         mimeType: 'audio/webm',
       }),
-    ).toBe('MercuryPitch - Voice Take - Take 1.webm')
+    ).toBe('MercuryPitch_Untitled_Take_1.webm')
   })
 
   it('keeps the complete filename below a safe UTF-8 byte limit', () => {
@@ -67,7 +67,7 @@ describe('voice take export names', () => {
     expect(new TextEncoder().encode(filename).byteLength).toBeLessThanOrEqual(
       240,
     )
-    expect(filename).toMatch(/^MercuryPitch - 声+ - Take 999999\.m4a$/)
+    expect(filename).toMatch(/^MercuryPitch_声+_Take_999999\.m4a$/)
   })
 
   it.each([
@@ -94,9 +94,7 @@ describe('prepareVoiceTakeExport', () => {
     expect(decodeAudio).toHaveBeenCalledWith(source)
     expect(prepared.convertedToWav).toBe(true)
     expect(prepared.usedOriginalWebmFallback).toBe(false)
-    expect(prepared.file.name).toBe(
-      'MercuryPitch - Heaven Can Wait - Take 2.wav',
-    )
+    expect(prepared.file.name).toBe('MercuryPitch_Heaven_Can_Wait_Take_2.wav')
     expect(prepared.file.type).toBe('audio/wav')
     expect(new TextDecoder().decode(bytes.slice(0, 4))).toBe('RIFF')
     expect(new TextDecoder().decode(bytes.slice(8, 12))).toBe('WAVE')
@@ -113,9 +111,7 @@ describe('prepareVoiceTakeExport', () => {
 
     expect(prepared.convertedToWav).toBe(false)
     expect(prepared.usedOriginalWebmFallback).toBe(true)
-    expect(prepared.file.name).toBe(
-      'MercuryPitch - Heaven Can Wait - Take 2.webm',
-    )
+    expect(prepared.file.name).toBe('MercuryPitch_Heaven_Can_Wait_Take_2.webm')
     expect(prepared.file.type).toBe('audio/webm')
     expect(Array.from(await readBytes(prepared.file))).toEqual(
       Array.from(sourceBytes),
@@ -135,9 +131,7 @@ describe('prepareVoiceTakeExport', () => {
     expect(decodeAudio).not.toHaveBeenCalled()
     expect(prepared.convertedToWav).toBe(false)
     expect(prepared.usedOriginalWebmFallback).toBe(false)
-    expect(prepared.file.name).toBe(
-      'MercuryPitch - Heaven Can Wait - Take 2.m4a',
-    )
+    expect(prepared.file.name).toBe('MercuryPitch_Heaven_Can_Wait_Take_2.m4a')
     expect(prepared.file.type).toBe('audio/mp4')
   })
 })
@@ -159,7 +153,7 @@ describe('downloadPreparedVoiceTake', () => {
         clickedDownload = this.download
         attachedAtClick = document.body.contains(this)
       })
-    const file = new File(['voice'], 'MercuryPitch - Song - Take 1.m4a', {
+    const file = new File(['voice'], 'MercuryPitch_Song_Take_1.m4a', {
       type: 'audio/mp4',
     })
 
