@@ -1,6 +1,8 @@
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createSignal } from 'solid-js'
+import type { VoiceAudioPort } from './content/voice'
+import { createElementAudioPort } from './content/voice'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
 import { createIndexedDbBesideCueRepository } from './infrastructure/indexed-db-repository'
 import type { BesideCuePlatform } from './infrastructure/mobile-runtime'
@@ -18,6 +20,11 @@ export interface BesideCueAppServices {
   readonly platform: BesideCuePlatform
   readonly purchases: PurchasesSetup
   readonly onboardingPreferences: CinematicOnboardingPreferenceStore
+  /**
+   * App-owned character voice output. It is deliberately separate from the
+   * cinematic onboarding mix and may be absent in caption-only environments.
+   */
+  readonly voiceAudio?: VoiceAudioPort
   /**
    * Set only by a development build running the fake store. The app renders the
    * mock overlay from it; a shipped build leaves it undefined.
@@ -88,6 +95,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
         config: { apiKey: 'mock-store', logLevel: 'debug' },
       },
       onboardingPreferences: createCinematicOnboardingPreferenceStore(),
+      voiceAudio: createElementAudioPort(),
       mockPurchaseRequest,
       now: () => new Date(),
       createId: createLocalId,
@@ -100,6 +108,7 @@ export function createDefaultAppServices(): BesideCueAppServices {
     platform,
     purchases,
     onboardingPreferences: createCinematicOnboardingPreferenceStore(),
+    voiceAudio: createElementAudioPort(),
     now: () => new Date(),
     createId: createLocalId,
   }

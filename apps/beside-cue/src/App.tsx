@@ -1,7 +1,7 @@
 import type { BesideCueStateV1, Cue, CueOccurrenceOutcome, LocalDate, TargetTimeScheduleRule, } from '@irchiinnuss/beside-cue-core'
 import { activateCue, aggregateSevenDayBSides, cancelCueOccurrence, createCue, createInitialState, createManualOccurrence, createScheduledOccurrence, isDailyTargetTimeRule, normalizeCueText, pauseCue, presentCueOccurrence, recordOccurrenceOutcome, removeDailyTargetTimeRule, replaceCue, resumeCue, setDailyTargetTimeRule, updateDailyTargetTimeRule, } from '@irchiinnuss/beside-cue-core'
 import type { LocalNotificationListenerHandle, MobileRuntime, } from '@irchiinnuss/mobile-runtime'
-import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { LocalActionStarter } from './action-starters/action-starter'
 import { resolveLocalActionStarter } from './action-starters/action-starter'
 import type { BesideCueAppConfig } from './app-config'
@@ -12,8 +12,8 @@ import type { MainView } from './components/BottomNav'
 import { BrandMark } from './components/BrandMark'
 import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
 import { ProSection } from './components/ProSection'
-import type { ActionDefinition, PullOption } from './content'
-import { createElementAudioPort, createVoicePlayer, CUSTOM_PULL_ACTIONS, DEFAULT_CONTENT_PACK, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, resolveActionDefinition, } from './content'
+import type { ActionDefinition, ContentPack, PullOption, VoicePlaybackStatus, } from './content'
+import { createVoicePlayer, CUSTOM_PULL_ACTIONS, DEFAULT_CONTENT_PACK, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, resolveActionDefinition, resolveMoment, } from './content'
 import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
@@ -27,7 +27,7 @@ import { decodeDailyCueNotificationPayload } from './scheduling/daily-cue-plan'
 import { ChooseBSideScreen } from './screens/ChooseBSideScreen'
 import type { CueContextSelection } from './screens/ChooseCueContextScreen'
 import { ChooseCueContextScreen } from './screens/ChooseCueContextScreen'
-import type { PullChoicePresentation } from './screens/ChoosePullScreen'
+import type { PullChoicePresentation, PullPreviewVoiceState, } from './screens/ChoosePullScreen'
 import { ChoosePullScreen } from './screens/ChoosePullScreen'
 import { CueMomentScreen } from './screens/CueMomentScreen'
 import { HomeScreen } from './screens/HomeScreen'
@@ -56,6 +56,8 @@ type SetupMode = 'create' | 'replace'
 export interface AppProps {
   readonly config?: BesideCueAppConfig
   readonly services?: BesideCueAppServices
+  /** A localized or recorded pack can be injected without changing app flow. */
+  readonly contentPack?: ContentPack
 }
 
 interface BSideChoice {
@@ -130,14 +132,6 @@ function displayReminderTime(localTime: string): string {
   return `${String(Number(hours))}:${minutes ?? '00'}`
 }
 
-function itemAt<T>(items: readonly T[], index: number): T {
-  const item = items[index % items.length]
-  if (item === undefined) {
-    throw new Error('Beside Cue content must include at least one phrase.')
-  }
-  return item
-}
-
 function messageForValidation(error: unknown, subject: string): string {
   if (error instanceof RangeError) {
     return `${subject} needs between 1 and 120 characters.`
@@ -164,6 +158,9 @@ function firstRunScreen(
 
 export function App(props: AppProps) {
   const config = createMemo(() => props.config ?? DEFAULT_BESIDE_CUE_CONFIG)
+  const contentPack = createMemo(
+    () => props.contentPack ?? DEFAULT_CONTENT_PACK,
+  )
   const cinematicConfig = createMemo(() => {
     const onboarding = config().onboarding
     return onboarding.delivery === 'cinematic-first-run' &&
@@ -183,7 +180,12 @@ export function App(props: AppProps) {
   const [cinematicRehearsal, setCinematicRehearsal] = createSignal(false)
   const [setupMode, setSetupMode] = createSignal<SetupMode>('create')
   const [selectedPullId, setSelectedPullId] = createSignal<string>()
-  const [playedPullPreviewId, setPlayedPullPreviewId] = createSignal<string>()
+  const [voiceStatus, setVoiceStatus] = createSignal<VoicePlaybackStatus>({
+    phase: 'idle',
+  })
+  const [playedPullPreviewIds, setPlayedPullPreviewIds] = createSignal<
+    readonly string[]
+  >([])
   const [customPullText, setCustomPullText] = createSignal('')
   const [cueContextSelection, setCueContextSelection] =
     createSignal<CueContextSelection>()
@@ -219,18 +221,23 @@ export function App(props: AppProps) {
   let disposed = false
   let midnightTimer: ReturnType<typeof setTimeout> | undefined
   let visibilityListener: (() => void) | undefined
+  let pageHideListener: (() => void) | undefined
   let pendingDailyCue: DailyCueNotificationPayload | undefined
   let notificationListener: LocalNotificationListenerHandle | undefined
   let pullPreviewRequest = 0
+  let characterVoiceForeground =
+    typeof document === 'undefined' || document.visibilityState === 'visible'
+  const attemptedPullPreviews = new Set<string>()
   let cueResolutionInFlight = false
   let timerCompletionHapticPlayed = false
   let onboardingPlanSavePromise:
     | Promise<CinematicOnboardingSaveResult>
     | undefined
-  const pullVoicePlayer = createVoicePlayer({
-    pack: DEFAULT_CONTENT_PACK,
-    audio: createElementAudioPort(),
+  const characterVoicePlayer = createVoicePlayer({
+    pack: untrack(contentPack),
+    audio: untrack(services).voiceAudio,
     muted: () => !latestState.settings.voiceEnabled,
+    onStatusChange: setVoiceStatus,
   })
 
   const cue = createMemo(() => currentCue(appState()))
@@ -246,18 +253,19 @@ export function App(props: AppProps) {
   const pullChoicePresentations = createMemo<readonly PullChoicePresentation[]>(
     () => [
       ...config().pullOptions.flatMap((option) => {
-        const character = findPullCharacter(DEFAULT_CONTENT_PACK, option.id)
+        const character = findPullCharacter(contentPack(), option.id)
         if (character === undefined) return []
         const line =
           option.previewLineId === undefined
             ? undefined
-            : findLine(DEFAULT_CONTENT_PACK, option.previewLineId)
+            : findLine(contentPack(), option.previewLineId)
         return [
           {
             pullId: option.id,
             art: character.token,
             previewCaption: line?.text ?? option.moment,
-            ...(line?.audio === undefined ? {} : { previewAudio: line.audio }),
+            recordingAvailable:
+              line !== undefined && characterVoicePlayer.hasRecording(line.id),
           },
         ]
       }),
@@ -266,8 +274,39 @@ export function App(props: AppProps) {
         art: GENERIC_PULL_CHARACTER.token,
         previewCaption:
           'Use your own words for the familiar moment you want to notice sooner.',
+        recordingAvailable: false,
       },
     ],
+  )
+  const selectedPullPreviewVoiceState = createMemo<PullPreviewVoiceState>(
+    () => {
+      const selectedId = selectedPullId()
+      if (selectedId === undefined) return 'unavailable'
+      const presentation = pullChoicePresentations().find(
+        (candidate) => candidate.pullId === selectedId,
+      )
+      if (presentation?.recordingAvailable !== true) return 'unavailable'
+      const previewLineId = config().pullOptions.find(
+        (option) => option.id === selectedId,
+      )?.previewLineId
+      if (
+        previewLineId === undefined ||
+        !characterVoicePlayer.canPlayLine(previewLineId)
+      ) {
+        return 'unavailable'
+      }
+      if (!appState().settings.voiceEnabled) return 'muted'
+
+      const status = voiceStatus()
+      if (
+        status.phase !== 'idle' &&
+        previewLineId !== undefined &&
+        status.lineId === previewLineId
+      ) {
+        return status.phase
+      }
+      return playedPullPreviewIds().includes(selectedId) ? 'played' : 'idle'
+    },
   )
   const selectedPullLabel = createMemo(() =>
     selectedPullId() === 'custom'
@@ -475,7 +514,6 @@ export function App(props: AppProps) {
   function presentDailyCue(
     payload: DailyCueNotificationPayload,
     appServices: BesideCueAppServices,
-    appConfig: BesideCueAppConfig,
   ): void {
     if (!stateLoaded) {
       pendingDailyCue = payload
@@ -532,11 +570,16 @@ export function App(props: AppProps) {
       }
 
       const phraseIndex = nextState.occurrences.length - 1
+      const presentation = resolveMoment(contentPack(), 'cue.open', {
+        pullId: selectedCue.pullCategoryId,
+        rotation: phraseIndex,
+      })
       prepareCueMomentEntry()
+      stopCharacterVoice('route-exit')
       persistWithRepository(nextState, appServices.repository)
       setToday(localDate(openedAt))
       setActiveOccurrenceId(presentedId)
-      setCuePhrase(itemAt(appConfig.cuePhrases, phraseIndex))
+      setCuePhrase(presentation.line.text)
       playHapticWithRuntime(
         state.settings.hapticsEnabled,
         'cue',
@@ -549,16 +592,13 @@ export function App(props: AppProps) {
     }
   }
 
-  function listenForDailyCues(
-    appServices: BesideCueAppServices,
-    appConfig: BesideCueAppConfig,
-  ): void {
+  function listenForDailyCues(appServices: BesideCueAppServices): void {
     void appServices.runtime
       .then((runtime) =>
         runtime.localNotifications.addActionListener((action) => {
           const payload = decodeDailyCueNotificationPayload(action.extra)
           if (payload !== undefined) {
-            presentDailyCue(payload, appServices, appConfig)
+            untrack(() => presentDailyCue(payload, appServices))
           }
         }),
       )
@@ -575,7 +615,9 @@ export function App(props: AppProps) {
   function resetSetup(nextMode: SetupMode): void {
     setSetupMode(nextMode)
     setSelectedPullId(undefined)
-    stopPullPreview()
+    stopCharacterVoice('route-exit')
+    attemptedPullPreviews.clear()
+    setPlayedPullPreviewIds([])
     setCustomPullText('')
     setCueContextSelection(undefined)
     setCustomCueContextText('')
@@ -707,7 +749,8 @@ export function App(props: AppProps) {
   }
 
   function choosePull(pullId: string): void {
-    if (selectedPullId() !== pullId) {
+    const selectionChanged = selectedPullId() !== pullId
+    if (selectionChanged) {
       setCueContextSelection(undefined)
       setCustomCueContextText('')
       setSelectedBSideKey(undefined)
@@ -717,13 +760,18 @@ export function App(props: AppProps) {
     }
     setSelectedPullId(pullId)
     setSetupError(undefined)
-    playPullPreview(pullId)
+    if (selectionChanged) stopCharacterVoice('replaced')
+    if (selectionChanged && !attemptedPullPreviews.has(pullId)) {
+      attemptedPullPreviews.add(pullId)
+      playPullPreview(pullId)
+    }
   }
 
-  function stopPullPreview(): void {
+  function stopCharacterVoice(
+    reason: Parameters<typeof characterVoicePlayer.stop>[0] = 'user',
+  ): void {
     pullPreviewRequest += 1
-    pullVoicePlayer.stop()
-    setPlayedPullPreviewId(undefined)
+    characterVoicePlayer.stop(reason)
   }
 
   function playPullPreview(pullId: string): void {
@@ -731,30 +779,27 @@ export function App(props: AppProps) {
     const previewLineId = config().pullOptions.find(
       (option) => option.id === pullId,
     )?.previewLineId
-    if (previewLineId === undefined) {
-      stopPullPreview()
+    if (
+      previewLineId === undefined ||
+      !characterVoicePlayer.canPlayLine(previewLineId)
+    ) {
+      stopCharacterVoice('replaced')
       return
     }
-    setPlayedPullPreviewId(undefined)
-    void pullVoicePlayer
-      .playLine(previewLineId)
-      .then((cue) => {
-        if (cue.spoken && pullPreviewRequest === request) {
-          setPlayedPullPreviewId(pullId)
-        }
-      })
-      .catch(() => {
-        if (pullPreviewRequest === request) {
-          setPlayedPullPreviewId(undefined)
-        }
-      })
+    const cue = characterVoicePlayer.playLine(previewLineId)
+    void cue.started.then((result) => {
+      if (result.kind !== 'started' || pullPreviewRequest !== request) return
+      setPlayedPullPreviewIds((current) =>
+        current.includes(pullId) ? current : [...current, pullId],
+      )
+    })
   }
 
   function continueFromPull(): void {
     try {
       normalizeCueText(selectedPullLabel())
       setSetupError(undefined)
-      stopPullPreview()
+      stopCharacterVoice('route-exit')
       setScreen('choose-cue-context')
     } catch (error) {
       setSetupError(messageForValidation(error, 'Side A'))
@@ -1101,12 +1146,17 @@ export function App(props: AppProps) {
       at,
     })
     const phraseIndex = result.state.occurrences.length - 1
+    const presentation = resolveMoment(contentPack(), 'cue.open', {
+      pullId: activeCue.pullCategoryId,
+      rotation: phraseIndex,
+    })
 
     prepareCueMomentEntry()
     persist(result.state)
     setToday(localDate(appServices.now()))
     setActiveOccurrenceId(result.occurrence.id)
-    setCuePhrase(itemAt(config().cuePhrases, phraseIndex))
+    setCuePhrase(presentation.line.text)
+    characterVoicePlayer.playLine(presentation.line.id)
     playHaptic(currentState.settings.hapticsEnabled, 'cue')
     setScreen('cue-moment')
   }
@@ -1135,9 +1185,11 @@ export function App(props: AppProps) {
       })
       const acknowledgementIndex = result.state.occurrences.length - 1
       const choseBSide = outcome === 'b_side'
-      const acknowledgements = choseBSide
-        ? config().bSideAcknowledgements
-        : config().notNowAcknowledgements
+      const acknowledgement = resolveMoment(
+        contentPack(),
+        choseBSide ? 'turn.b-side' : 'turn.a-side',
+        { rotation: acknowledgementIndex },
+      )
       const occurrenceCue = result.state.cues.find(
         (candidate) => candidate.id === result.occurrence.cueId,
       )
@@ -1155,8 +1207,11 @@ export function App(props: AppProps) {
       setToday(localDate(now))
       setActiveOccurrenceId(undefined)
       setQuietChoseBSide(choseBSide)
-      setQuietMessage(itemAt(acknowledgements, acknowledgementIndex))
+      setQuietMessage(acknowledgement.line.text)
       setQuietStarter(starter)
+      if (characterVoiceForeground) {
+        characterVoicePlayer.playLine(acknowledgement.line.id)
+      }
       playHaptic(
         currentState.settings.hapticsEnabled,
         choseBSide ? 'success' : 'quiet',
@@ -1177,6 +1232,7 @@ export function App(props: AppProps) {
   function cancelCueMoment(): void {
     if (cueResolutionInFlight) return
 
+    stopCharacterVoice('route-exit')
     const occurrenceId = activeOccurrenceId()
     if (occurrenceId === undefined) {
       setScreen('home')
@@ -1196,6 +1252,7 @@ export function App(props: AppProps) {
   }
 
   function finishQuietScreen(): void {
+    stopCharacterVoice('route-exit')
     setQuietStarter(undefined)
     setScreen('home')
   }
@@ -1239,11 +1296,13 @@ export function App(props: AppProps) {
   }
 
   function changeMainView(view: MainView): void {
+    stopCharacterVoice('route-exit')
     setActiveView(view)
     setScreen(view === 'cue' ? 'home' : 'reflection')
   }
 
   function openSettings(): void {
+    stopCharacterVoice('route-exit')
     setSettingsReturnView(activeView())
     setResetArmed(false)
     setScheduleMessage(undefined)
@@ -1255,7 +1314,7 @@ export function App(props: AppProps) {
     const currentState = latestState
     const voiceEnabled = !currentState.settings.voiceEnabled
     if (!voiceEnabled) {
-      stopPullPreview()
+      stopCharacterVoice('muted')
     }
     persist({
       ...currentState,
@@ -1271,6 +1330,7 @@ export function App(props: AppProps) {
     }
 
     setResetArmed(false)
+    stopCharacterVoice('route-exit')
     setScheduleMessage(undefined)
     setScheduleError(undefined)
     setCinematicRehearsal(true)
@@ -1325,27 +1385,29 @@ export function App(props: AppProps) {
     const appConfig = config()
     void appServices.repository
       .loadState()
-      .then((storedState) => {
-        const nextState = storedState ?? createInitialState()
-        onboardingPlanSavePromise = undefined
-        setCinematicRehearsal(false)
-        latestState = nextState
-        stateLoaded = true
-        setAppState(nextState)
-        setScreen(
-          firstRunScreen(
-            nextState,
-            appConfig.onboarding,
-            appServices.onboardingPreferences,
-          ),
-        )
-        restoreDailyCue(nextState, appConfig)
-        if (pendingDailyCue !== undefined) {
-          const pending = pendingDailyCue
-          pendingDailyCue = undefined
-          presentDailyCue(pending, appServices, appConfig)
-        }
-      })
+      .then((storedState) =>
+        untrack(() => {
+          const nextState = storedState ?? createInitialState()
+          onboardingPlanSavePromise = undefined
+          setCinematicRehearsal(false)
+          latestState = nextState
+          stateLoaded = true
+          setAppState(nextState)
+          setScreen(
+            firstRunScreen(
+              nextState,
+              appConfig.onboarding,
+              appServices.onboardingPreferences,
+            ),
+          )
+          restoreDailyCue(nextState, appConfig)
+          if (pendingDailyCue !== undefined) {
+            const pending = pendingDailyCue
+            pendingDailyCue = undefined
+            presentDailyCue(pending, appServices)
+          }
+        }),
+      )
       .catch(() => setScreen('load-error'))
   }
 
@@ -1399,23 +1461,36 @@ export function App(props: AppProps) {
       appServices.platform,
     )
     void proAccess().start()
-    listenForDailyCues(appServices, appConfig)
+    listenForDailyCues(appServices)
     refreshLocalDay(appServices)
     visibilityListener = () => {
-      if (document.visibilityState !== 'visible') return
+      if (document.visibilityState !== 'visible') {
+        characterVoiceForeground = false
+        stopCharacterVoice('hidden')
+        return
+      }
+      characterVoiceForeground = true
       refreshLocalDay(appServices)
       restoreDailyCue(latestState, appConfig)
     }
+    pageHideListener = () => {
+      characterVoiceForeground = false
+      stopCharacterVoice('hidden')
+    }
     document.addEventListener('visibilitychange', visibilityListener)
+    window.addEventListener('pagehide', pageHideListener)
     load()
   })
 
   onCleanup(() => {
     disposed = true
-    pullVoicePlayer.stop()
+    characterVoicePlayer.dispose()
     if (midnightTimer !== undefined) clearTimeout(midnightTimer)
     if (visibilityListener !== undefined) {
       document.removeEventListener('visibilitychange', visibilityListener)
+    }
+    if (pageHideListener !== undefined) {
+      window.removeEventListener('pagehide', pageHideListener)
     }
     if (notificationListener !== undefined) {
       void notificationListener.remove()
@@ -1494,7 +1569,7 @@ export function App(props: AppProps) {
           options={config().pullOptions}
           presentations={pullChoicePresentations()}
           selectedId={selectedPullId()}
-          playedPreviewId={playedPullPreviewId()}
+          previewVoiceState={selectedPullPreviewVoiceState()}
           customText={customPullText()}
           error={setupError()}
           onSelect={choosePull}
@@ -1504,7 +1579,7 @@ export function App(props: AppProps) {
             setSetupError(undefined)
           }}
           onBack={() => {
-            stopPullPreview()
+            stopCharacterVoice('route-exit')
             setScreen(setupMode() === 'replace' ? 'settings' : 'welcome')
           }}
           onContinue={continueFromPull}

@@ -10,9 +10,18 @@ export interface PullChoicePresentation {
   readonly art: AssetSlot
   /** Always visible when this Pull is selected, whether or not audio exists. */
   readonly previewCaption: string
-  /** Optional until this caption has a delivered voice recording. */
-  readonly previewAudio?: string
+  /** True only when the active manifest has a validated packaged recording. */
+  readonly recordingAvailable: boolean
 }
+
+export type PullPreviewVoiceState =
+  | 'unavailable'
+  | 'muted'
+  | 'idle'
+  | 'starting'
+  | 'playing'
+  | 'played'
+  | 'failed'
 
 interface ChoosePullScreenProps {
   headerLabel: string
@@ -21,8 +30,7 @@ interface ChoosePullScreenProps {
   selectedId?: string
   customText: string
   error?: string
-  /** Set only after this Pull's optional recording played successfully. */
-  playedPreviewId?: string
+  previewVoiceState: PullPreviewVoiceState
   onSelect: (id: string) => void
   onCustomInput: (value: string) => void
   onHearPreview?: (pullId: string) => void
@@ -118,8 +126,31 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
     selectedOption()?.moment ??
     'Use your own words for the moment you want to notice sooner.'
   const canHearSelected = (): boolean =>
-    (selectedPresentation()?.previewAudio?.trim().length ?? 0) > 0 &&
+    selectedPresentation()?.recordingAvailable === true &&
+    props.previewVoiceState !== 'unavailable' &&
+    props.previewVoiceState !== 'muted' &&
     props.onHearPreview !== undefined
+  const voiceBusy = (): boolean =>
+    props.previewVoiceState === 'starting' ||
+    props.previewVoiceState === 'playing'
+  const voiceButtonLabel = (): string => {
+    if (props.previewVoiceState === 'starting') return 'Starting voice…'
+    if (props.previewVoiceState === 'playing') return 'Voice playing'
+    if (props.previewVoiceState === 'played') return 'Replay voice'
+    return 'Hear voice'
+  }
+  const voiceStatus = (): string | undefined => {
+    if (props.previewVoiceState === 'muted') {
+      return 'Voice is muted in Settings. The full caption is shown.'
+    }
+    if (props.previewVoiceState === 'starting') return 'Voice loading.'
+    if (props.previewVoiceState === 'playing') return 'Voice playing.'
+    if (props.previewVoiceState === 'played') return 'Voice stopped.'
+    if (props.previewVoiceState === 'failed') {
+      return 'Voice could not play. The full caption is shown.'
+    }
+    return undefined
+  }
 
   const hearSelected = (): void => {
     const selectedId = props.selectedId
@@ -213,25 +244,38 @@ export function ChoosePullScreen(props: ChoosePullScreenProps) {
           }}
           class={styles.selectionPreview}
           aria-label="Selected Pull preview"
-          aria-live="polite"
-          aria-atomic="true"
           tabIndex={-1}
         >
-          <div class={styles.previewCopy}>
+          <div class={styles.previewCopy} aria-live="polite" aria-atomic="true">
             <p>Selected Pull</p>
             <h2>{selectedLabel()}</h2>
             <p>{selectedCaption()}</p>
           </div>
-          <Show when={canHearSelected()}>
-            <button
-              class={styles.hearButton}
-              type="button"
-              onClick={hearSelected}
-            >
-              {props.playedPreviewId === props.selectedId
-                ? 'Replay voice'
-                : 'Hear voice'}
-            </button>
+          <Show
+            when={
+              selectedPresentation()?.recordingAvailable === true &&
+              (canHearSelected() || voiceStatus() !== undefined)
+            }
+          >
+            <div class={styles.voiceControls}>
+              <Show when={voiceStatus()}>
+                {(status) => (
+                  <p class={styles.voiceStatus} role="status">
+                    {status()}
+                  </p>
+                )}
+              </Show>
+              <Show when={canHearSelected()}>
+                <button
+                  class={styles.hearButton}
+                  type="button"
+                  disabled={voiceBusy()}
+                  onClick={hearSelected}
+                >
+                  {voiceButtonLabel()}
+                </button>
+              </Show>
+            </div>
           </Show>
         </section>
       </Show>

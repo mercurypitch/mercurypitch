@@ -3,7 +3,9 @@
 
 export * from './assets'
 export * from './actions'
+export * from './audio-manifest'
 export * from './moments'
 export * from './pack'
 export * from './pulls'
 export * from './voice'
+export * from './voice-lines'

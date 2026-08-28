@@ -132,6 +132,35 @@ build reaches for Play and finds nothing.
 platform 36, and `JAVA_HOME` pointing at a JDK 21. A newer JDK fails in
 `JdkImageTransform`, and passing `gradlew --version` does not rule that out.
 
+## Caption-first character voice
+
+Character speech is complete before any recording ships. The exact visible
+English captions, stable line ids, speaker ids and delivery stems live in
+`src/content/voice-lines.ts`; `src/content/audio-manifest.ts` owns optional
+packaged media. Its empty default manifest is a valid, fully usable build.
+
+To attach an approved recording later:
+
+1. export the selected encode under
+   `public/audio/voice/en/<speaker>/<file-stem>.m4a`;
+2. add one `dialogue` asset to the default audio manifest, binding its `lineId`
+   and exact `captionSha256` and declaring its byte length, SHA-256, duration,
+   sample rate, channels and MIME type; and
+3. run the content, voice and app tests. They reject caption drift, malformed
+   metadata and declared packaged files whose bytes do not match.
+
+Multiple source rows may provide codec fallbacks only when they contain the
+same authored take. A missing, muted, unsupported or failed recording always
+falls back to the full caption; there is no remote fetch, TTS or custom-text
+interpolation. One character voice owns the app session at a time and is
+cancelled on replacement, route exit, mute, backgrounding and teardown.
+
+The manifest already reserves `score`, `hold-bed`, `foley` and `ui` lanes so
+the V2 audiovisual reauthor can add them without changing content identity.
+The current cinematic onboarding remains one separate continuous mix until
+that reauthor; it is deliberately not routed through the character-voice
+player.
+
 ## Release builds
 
 `.github/workflows/beside-cue-mobile.yml` owns both native builds. Beside Cue

@@ -10,7 +10,7 @@ const options = pullOptions
 
 function presentation(
   pullId: string,
-  previewAudio?: string,
+  recordingAvailable = false,
 ): PullChoicePresentation {
   return {
     pullId,
@@ -19,7 +19,7 @@ function presentation(
       alt: `${pullId} character`,
     },
     previewCaption: `A caption for ${pullId}.`,
-    ...(previewAudio === undefined ? {} : { previewAudio }),
+    recordingAvailable,
   }
 }
 
@@ -35,6 +35,7 @@ const base = {
   options,
   presentations: silentPresentations,
   customText: '',
+  previewVoiceState: 'unavailable' as const,
   onSelect: noop,
   onCustomInput: noop,
   onBack: noop,
@@ -144,8 +145,11 @@ describe('choose Pull screen', () => {
         name: /selected Pull preview/iu,
       })
       expect(preview).toHaveAttribute('tabindex', '-1')
-      expect(preview).toHaveAttribute('aria-live', 'polite')
-      expect(preview).toHaveAttribute('aria-atomic', 'true')
+      expect(preview).not.toHaveAttribute('aria-live')
+      expect(preview).not.toHaveAttribute('aria-atomic')
+      const liveCopy = within(preview).getByText('Selected Pull').parentElement
+      expect(liveCopy).toHaveAttribute('aria-live', 'polite')
+      expect(liveCopy).toHaveAttribute('aria-atomic', 'true')
       expect(within(preview).getByText('Automatic snacking')).toBeVisible()
     } finally {
       if (originalScrollIntoView === undefined) {
@@ -160,38 +164,181 @@ describe('choose Pull screen', () => {
     }
   })
 
-  it('offers Hear and Replay only for a delivered recording', () => {
+  it('offers Hear for an idle delivered recording', () => {
     const onHearPreview = vi.fn()
     const presentations = silentPresentations.map((item) =>
-      item.pullId === 'scrolling'
-        ? presentation('scrolling', '/voice/scrolling.m4a')
-        : item,
+      item.pullId === 'scrolling' ? presentation('scrolling', true) : item,
     )
-    const { unmount } = render(() => (
+    render(() => (
       <ChoosePullScreen
         {...base}
         presentations={presentations}
         selectedId="scrolling"
+        previewVoiceState="idle"
         onHearPreview={onHearPreview}
       />
     ))
 
     fireEvent.click(screen.getByRole('button', { name: 'Hear voice' }))
     expect(onHearPreview).toHaveBeenCalledWith('scrolling')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
 
-    unmount()
+  it('shows truthful muted copy without an inert audio button', () => {
+    const onHearPreview = vi.fn()
     render(() => (
       <ChoosePullScreen
         {...base}
-        presentations={presentations}
+        presentations={[
+          ...silentPresentations.filter((item) => item.pullId !== 'scrolling'),
+          presentation('scrolling', true),
+        ]}
         selectedId="scrolling"
-        playedPreviewId="scrolling"
+        previewVoiceState="muted"
         onHearPreview={onHearPreview}
       />
     ))
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Voice is muted in Settings. The full caption is shown.',
+    )
     expect(
-      screen.getByRole('button', { name: 'Replay voice' }),
+      screen.queryByRole('button', { name: /hear|replay|voice/iu }),
+    ).not.toBeInTheDocument()
+    expect(onHearPreview).not.toHaveBeenCalled()
+  })
+
+  it('does not expose a delivered recording when this runtime cannot play it', () => {
+    render(() => (
+      <ChoosePullScreen
+        {...base}
+        presentations={[
+          ...silentPresentations.filter((item) => item.pullId !== 'scrolling'),
+          presentation('scrolling', true),
+        ]}
+        selectedId="scrolling"
+        previewVoiceState="unavailable"
+        onHearPreview={noop}
+      />
+    ))
+
+    expect(screen.getByText('A caption for scrolling.')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: /hear|replay|voice/iu }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    {
+      state: 'starting' as const,
+      button: 'Starting voice…',
+      status: 'Voice loading.',
+    },
+    {
+      state: 'playing' as const,
+      button: 'Voice playing',
+      status: 'Voice playing.',
+    },
+  ])('disables the voice action while $state', ({ state, button, status }) => {
+    const onHearPreview = vi.fn()
+    render(() => (
+      <ChoosePullScreen
+        {...base}
+        presentations={[
+          ...silentPresentations.filter((item) => item.pullId !== 'scrolling'),
+          presentation('scrolling', true),
+        ]}
+        selectedId="scrolling"
+        previewVoiceState={state}
+        onHearPreview={onHearPreview}
+      />
+    ))
+
+    expect(screen.getByRole('button', { name: button })).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent(status)
+    fireEvent.click(screen.getByRole('button', { name: button }))
+    expect(onHearPreview).not.toHaveBeenCalled()
+  })
+
+  it('offers Replay after a delivered recording has stopped', () => {
+    const onHearPreview = vi.fn()
+    render(() => (
+      <ChoosePullScreen
+        {...base}
+        presentations={[
+          ...silentPresentations.filter((item) => item.pullId !== 'scrolling'),
+          presentation('scrolling', true),
+        ]}
+        selectedId="scrolling"
+        previewVoiceState="played"
+        onHearPreview={onHearPreview}
+      />
+    ))
+
+    const replay = screen.getByRole('button', { name: 'Replay voice' })
+    expect(replay).toBeEnabled()
+    expect(screen.getByRole('status')).toHaveTextContent('Voice stopped.')
+    fireEvent.click(replay)
+    expect(onHearPreview).toHaveBeenCalledWith('scrolling')
+  })
+
+  it('keeps the caption and offers a retry when voice playback fails', () => {
+    const onHearPreview = vi.fn()
+    render(() => (
+      <ChoosePullScreen
+        {...base}
+        presentations={[
+          ...silentPresentations.filter((item) => item.pullId !== 'scrolling'),
+          presentation('scrolling', true),
+        ]}
+        selectedId="scrolling"
+        previewVoiceState="failed"
+        onHearPreview={onHearPreview}
+      />
+    ))
+
+    expect(screen.getByText('A caption for scrolling.')).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Voice could not play. The full caption is shown.',
+    )
+    const retry = screen.getByRole('button', { name: 'Hear voice' })
+    expect(retry).toBeEnabled()
+    fireEvent.click(retry)
+    expect(onHearPreview).toHaveBeenCalledWith('scrolling')
+  })
+
+  it('keeps playback status outside the caption live region', () => {
+    render(() => (
+      <ChoosePullScreen
+        {...base}
+        presentations={[
+          ...silentPresentations.filter((item) => item.pullId !== 'scrolling'),
+          presentation('scrolling', true),
+        ]}
+        selectedId="scrolling"
+        previewVoiceState="playing"
+        onHearPreview={noop}
+      />
+    ))
+
+    const preview = screen.getByRole('region', {
+      name: /selected Pull preview/iu,
+    })
+    const liveCopy = within(preview).getByText('Selected Pull').parentElement
+    const status = screen.getByRole('status')
+
+    expect(liveCopy).not.toBeNull()
+    expect(liveCopy).toHaveAttribute('aria-live', 'polite')
+    expect(liveCopy).toHaveAttribute('aria-atomic', 'true')
+    expect(
+      within(liveCopy as HTMLElement).getByText('Endless scrolling'),
     ).toBeInTheDocument()
+    expect(
+      within(liveCopy as HTMLElement).getByText('A caption for scrolling.'),
+    ).toBeInTheDocument()
+    expect(liveCopy).not.toContainElement(status)
+    expect(status).toHaveTextContent('Voice playing.')
   })
 
   it('selects without confirming until the separate action is pressed', () => {
