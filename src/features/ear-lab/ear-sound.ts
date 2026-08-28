@@ -44,3 +44,45 @@ export const [earClickVoice, setEarClickVoice] =
   createPersistedSignal<ClickVoice>('pitchperfect_ear_click_voice', 'wood', {
     validator: isClickVoice,
   })
+
+/** The engine's playTone resolves when the note is *scheduled*, not when
+ *  it ends, and a new note replaces the one before it (an 80 ms
+ *  release). A drill that wants two whole tones in a row therefore has
+ *  to wait each one out itself — this sounds one and returns when it
+ *  has finished. `chordIntervals` colours the note into a block chord
+ *  the way Stack voices its stacks. */
+export async function playToneFor(
+  engine: {
+    playTone: (
+      frequency: number,
+      duration?: number,
+      effectType?: undefined,
+      targetFreq?: undefined,
+      vibratoAmplitude?: undefined,
+      tremoloRate?: undefined,
+      tremoloDepth?: undefined,
+      trillInterval?: undefined,
+      trillRate?: undefined,
+      staccatoRatio?: undefined,
+      chordIntervals?: number[],
+    ) => Promise<void>
+  },
+  frequency: number,
+  durationMs: number,
+  chordIntervals?: number[],
+): Promise<void> {
+  await engine.playTone(
+    frequency,
+    durationMs,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    chordIntervals,
+  )
+  await new Promise<void>((resolve) => setTimeout(resolve, durationMs))
+}

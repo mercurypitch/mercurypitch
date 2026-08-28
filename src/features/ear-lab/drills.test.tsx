@@ -11,7 +11,7 @@ import type { JSX } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EngineContext } from '@/contexts/EngineContext'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { CONTOUR_TIMING, LEAP_TIMING } from '@/lib/ear/timing'
+import { CONTOUR_TIMING, LEAP_TIMING, STACK_TIMING } from '@/lib/ear/timing'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { resetEarLabStore } from '@/stores/ear-lab-store'
@@ -111,8 +111,15 @@ describe('Contour', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
     expect(status()).toBe('Listen…')
-    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.gapMs + 20)
+    // The second tone is scheduled only once the first has sounded in
+    // full, and the pads arm only once the second has too.
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.toneMs - 20)
+    expect(engine.playTone).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.gapMs + 40)
     expect(engine.playTone).toHaveBeenCalledTimes(2)
+    expect(status()).toBe('Listen…')
+    expect(armedPads()).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(CONTOUR_TIMING.toneMs)
     expect(status()).toBe('Which way did it move?')
     expect(armedPads().map((pad) => pad.textContent)).toEqual([
       '1Up',
@@ -142,8 +149,12 @@ describe('Leap', () => {
       </Stage>
     ))
     fireEvent.click(screen.getByRole('button', { name: /Begin/ }))
-    await vi.advanceTimersByTimeAsync(LEAP_TIMING.gapMs + 20)
+    await vi.advanceTimersByTimeAsync(
+      LEAP_TIMING.toneMs + LEAP_TIMING.gapMs + 20,
+    )
     expect(engine.playTone).toHaveBeenCalledTimes(2)
+    expect(armedPads()).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(LEAP_TIMING.toneMs)
     expect(armedPads()).toHaveLength(12)
     expect(pads().some((pad) => /^\d/.test(pad.textContent ?? ''))).toBe(false)
 
@@ -172,6 +183,9 @@ describe('Stack', () => {
     const intervals = engine.playTone.mock.calls[0][10]
     expect(Array.isArray(intervals)).toBe(true)
     expect((intervals as number[]).length).toBeGreaterThan(0)
+    // The chord rings for its whole length before the pads arm.
+    expect(status()).toBe('Listen to the stack…')
+    await vi.advanceTimersByTimeAsync(STACK_TIMING.chordMs + 20)
     expect(status()).toBe('Which quality was that?')
     expect(armedPads().length).toBeGreaterThan(2)
 
