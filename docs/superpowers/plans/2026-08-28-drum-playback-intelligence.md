@@ -109,8 +109,10 @@ Wiring:
   - [x] `drum-session-scheduler.ts` `humanize` option + ornament triggers + `HUMANIZED_DRUM_SESSION_LOOKAHEAD_MS = 120` default when the hook is present; occurrence records played values; throwing/null hooks fall back to authored values.
   - [x] `src/features/drum-night/session/drum-session-humanize.ts` bridge (GM fold, timeline-beat -> bar/step, 16-bar noise cycle) + 4 tests.
   - [x] `scripts/extract-groove-profiles.py` (offline GMD extraction; run needs the downloaded dataset — not yet executed; output JSON will override the flat per-position defaults).
-  - [ ] UI wiring: style/intensity/swing + locked controls in DrumNightApp/DrumGrooveEditor, feed `createDrumSessionHumanizer` into the session scheduler construction (find it in `useDrumNightRuntime.ts` / DrumNightApp), persist settings, default humanize OFF for imported MIDI.
-  - [ ] Run the GMD extraction, commit `groove-profiles.generated.json`, and load its tables as per-position overrides in `groove-humanize.ts`.
+  - [x] UI wiring: Feel console module + panel in the groove workspace (enable, style, intensity, locked, apply-to-imported), lazy humanizer cache keyed by style/intensity/locked/tempo fed into `createDrumSessionScheduler`, `drum-feel-preference.ts` localStorage persistence, humanize skipped for imported documents unless opted in. 6 app tests + 5 preference tests.
+  - [x] Ran the GMD extraction (1137 files, 4 styles, 684 cells; 40 KB raw / 6.2 KB gzipped) and committed `groove-profiles.generated.json`; `groove-humanize.ts` applies measured means, sd shape, accent shape, ghost and flam rates, falling back to the literature tables per cell.
+  - [x] Extraction correctness: quantize against a swing-aware grid. A straight grid mis-assigns swung notes at slow jazz tempi (the shift exceeds a sixteenth), which produced -175 ms residuals and 50-70 ms snare spreads in the first run.
+  - [ ] Remaining: electronic style has no measured tables by design (hand-authored); consider extending coverage with the user's own MIDI collection (see dotfiles TASKS.md).
 - **PR C — Deep kits**: SFZ ingestion + `power`/`velcurve`/`formats` catalog fields, Opus+MP3 dual-encode + runtime probe, FLAC supporter tier, Naked Drums flagship, Virtuosity/MuldjordKit default upgrades.
 - **PR D — Electronic flavor**: circuit-modeled voices per verified recipes; parameter-level humanize; no Roland marks.
 - **PR E — Pattern library**: GMD-seeded + hand-authored JSON patterns feeding the PR B style tables.

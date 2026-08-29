@@ -14,6 +14,7 @@ import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
 import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNightClickSnapshot, } from './drum-night-click'
 import { DrumNightApp } from './DrumNightApp'
+import { DEFAULT_DRUM_FEEL_SETTINGS, DRUM_FEEL_STORAGE_KEY, readDrumFeelSettings, writeDrumFeelSettings, } from './groove'
 import type { DrumTakeFinishState } from './persistence/drum-persistence-ui'
 import type { DrumProject, HydratedDrumProject, } from './persistence/drum-project'
 import { hydrateDrumProject, serializeDrumProject, } from './persistence/drum-project'
@@ -4129,5 +4130,83 @@ describe('DrumNightApp', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Drummer Seat view' }))
     expect(screen.getByTestId('drummer-seat-backdrop')).toBeInTheDocument()
     expect(within(touchKit).getAllByRole('button')).toHaveLength(6)
+  })
+})
+
+describe('Drum Night feel controls', () => {
+  beforeEach(() => {
+    localStorage.removeItem(DRUM_FEEL_STORAGE_KEY)
+  })
+
+  it('starts off so the grid plays exactly as written', () => {
+    renderRoom()
+    const toggle = screen.getByRole('button', { name: 'Feel: off' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(within(toggle).getByText('Off')).toBeInTheDocument()
+    expect(localStorage.getItem(DRUM_FEEL_STORAGE_KEY)).toBeNull()
+  })
+
+  it('toggles from the console and remembers the choice', () => {
+    renderRoom()
+    fireEvent.click(screen.getByRole('button', { name: 'Feel: off' }))
+
+    const enabled = screen.getByRole('button', { name: 'Feel: on' })
+    expect(enabled).toHaveAttribute('aria-pressed', 'true')
+    expect(within(enabled).getByText('Rock')).toBeInTheDocument()
+    expect(readDrumFeelSettings(localStorage)).toMatchObject({
+      enabled: true,
+      style: 'rock',
+      intensity: 0.6,
+      applyToImported: false,
+    })
+  })
+
+  it('restores a stored preference on the next visit', () => {
+    writeDrumFeelSettings(localStorage, {
+      ...DEFAULT_DRUM_FEEL_SETTINGS,
+      enabled: true,
+      style: 'jazz',
+      intensity: 0.8,
+    })
+    renderRoom()
+    const toggle = screen.getByRole('button', { name: 'Feel: on' })
+    expect(within(toggle).getByText('Jazz')).toBeInTheDocument()
+  })
+
+  it('picks a style and an intensity from the groove workspace', async () => {
+    renderRoom()
+    fireEvent.click(screen.getByRole('button', { name: 'Feel: off' }))
+    const drawer = await openGrooveDrawer()
+
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Funk' }))
+    expect(
+      within(drawer).getByRole('button', { name: 'Funk' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    const slider = within(drawer).getByRole('slider', { name: /Intensity/ })
+    fireEvent.input(slider, { target: { value: '25' } })
+    expect(readDrumFeelSettings(localStorage)).toMatchObject({
+      style: 'funk',
+      intensity: 0.25,
+    })
+    expect(within(drawer).getByText('Barely there')).toBeInTheDocument()
+  })
+
+  it('keeps the style controls inert until feel is switched on', async () => {
+    renderRoom()
+    const drawer = await openGrooveDrawer()
+    expect(within(drawer).getByRole('button', { name: 'Jazz' })).toBeDisabled()
+    expect(
+      within(drawer).getByRole('slider', { name: /Intensity/ }),
+    ).toBeDisabled()
+    expect(
+      within(drawer).getByText('Off. The grid plays exactly as written.'),
+    ).toBeInTheDocument()
+  })
+
+  it('leaves imported parts untouched unless explicitly asked', () => {
+    renderRoom()
+    fireEvent.click(screen.getByRole('button', { name: 'Feel: off' }))
+    expect(readDrumFeelSettings(localStorage).applyToImported).toBe(false)
   })
 })
