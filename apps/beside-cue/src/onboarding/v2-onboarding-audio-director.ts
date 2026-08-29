@@ -23,7 +23,7 @@ export interface V2OnboardingAudioHoldToken {
 
 export interface V2OnboardingAudioDirector {
   /** Enters authored, finite material and retires any decision bed safely. */
-  enterBeat(beat: V2OnboardingAudioBeat): void
+  enterBeat(beat: V2OnboardingAudioBeat): AudioSessionCue | undefined
   /** Enters an indefinite decision hold and returns its correlated exit token. */
   enterHold(hold: V2OnboardingAudioHold): V2OnboardingAudioHoldToken
   /** A matching hold can leave once. Rapid or stale exits are ignored. */
@@ -74,10 +74,17 @@ export function createV2OnboardingAudioDirector(
   let activeHold: ActiveHold | undefined
   let disposed = false
 
-  function playBeatAccents(beat: V2OnboardingAudioBeat): void {
-    playOptional(scope, beat.dialogueAssetId)
+  function retireDialogue(): void {
+    scope.stopLane('dialogue', 'lane-stopped')
+  }
+
+  function playBeatAccents(
+    beat: V2OnboardingAudioBeat,
+  ): AudioSessionCue | undefined {
+    const dialogue = playOptional(scope, beat.dialogueAssetId)
     playOptional(scope, beat.foleyAssetId)
     playOptional(scope, beat.uiAssetId)
+    return dialogue
   }
 
   function retireHoldAfter(
@@ -95,13 +102,14 @@ export function createV2OnboardingAudioDirector(
 
   return {
     enterBeat(beat) {
-      if (disposed) return
+      if (disposed) return undefined
       generation += 1
       activeHold = undefined
       const expectedGeneration = generation
+      retireDialogue()
       const score = playOptional(scope, beat.scoreAssetId)
       retireHoldAfter(score, expectedGeneration)
-      playBeatAccents(beat)
+      return playBeatAccents(beat)
     },
 
     enterHold(hold) {
@@ -110,6 +118,7 @@ export function createV2OnboardingAudioDirector(
       if (disposed) return token
 
       activeHold = { token, exited: false }
+      retireDialogue()
       const bed = playOptional(scope, hold.holdBedAssetId)
       afterStart(bed, (result) => {
         if (
@@ -144,6 +153,7 @@ export function createV2OnboardingAudioDirector(
       activeHold = undefined
       generation += 1
       const expectedGeneration = generation
+      retireDialogue()
       const score = playOptional(scope, nextBeat.scoreAssetId)
       retireHoldAfter(score, expectedGeneration)
       playBeatAccents(nextBeat)
