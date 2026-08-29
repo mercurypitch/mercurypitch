@@ -2199,7 +2199,7 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                                       <OverflowMenu
                                         label="Thread actions"
                                         items={threadActionItems(thread)}
-                                        triggerClass={styles.moreButton}
+                                        triggerClass={`${styles.moreButton} ${styles.mobileThreadMenu}`}
                                       />
                                     </div>
                                     <p>
@@ -2273,19 +2273,25 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
                               </Show>
 
                               <Show when={renamingKey() !== thread.key}>
-                                <Show when={thread.source === 'freeform'}>
-                                  <div class={styles.workspaceActions}>
+                                <div class={styles.workspaceActions}>
+                                  <Show when={thread.source === 'freeform'}>
                                     <button
                                       type="button"
                                       class={styles.recordAnother}
+                                      aria-label="Record another take"
                                       onClick={() => openThreadRecorder(thread)}
                                       disabled={recorderTarget() !== null}
                                     >
                                       <IconMic size={16} />
-                                      Record another take
+                                      Record another
                                     </button>
-                                  </div>
-                                </Show>
+                                  </Show>
+                                  <OverflowMenu
+                                    label="Thread actions"
+                                    items={threadActionItems(thread)}
+                                    triggerClass={`${styles.moreButton} ${styles.desktopThreadMenu}`}
+                                  />
+                                </div>
                               </Show>
                             </div>
 

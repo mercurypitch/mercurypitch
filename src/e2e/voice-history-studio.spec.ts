@@ -576,6 +576,27 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
 
   await page.setViewportSize({ width: 1500, height: 1000 })
 
+  const desktopRecordAnother = page.getByRole('button', {
+    name: 'Record another take',
+  })
+  const desktopThreadActions = page.getByRole('button', {
+    name: 'Thread actions',
+  })
+  const [desktopRecordBounds, desktopActionBounds] = await Promise.all([
+    desktopRecordAnother.boundingBox(),
+    desktopThreadActions.boundingBox(),
+  ])
+  expect(desktopRecordBounds).not.toBeNull()
+  expect(desktopActionBounds).not.toBeNull()
+  expect(desktopRecordBounds!.x).toBeLessThan(desktopActionBounds!.x)
+  expect(
+    Math.abs(
+      desktopRecordBounds!.y +
+        desktopRecordBounds!.height / 2 -
+        (desktopActionBounds!.y + desktopActionBounds!.height / 2),
+    ),
+  ).toBeLessThanOrEqual(1)
+
   await page.getByRole('button', { name: 'All takes', exact: false }).click()
   const latestTakeActions = page
     .getByRole('button', { name: 'Actions for Room and waveform check' })
