@@ -40,3 +40,28 @@ export type {
   DrumGrooveMovePreview,
   DrumGroovePageSize,
 } from './drum-groove-draft-controller'
+export {
+  browserDrumFeelStorage,
+  DEFAULT_DRUM_FEEL_SETTINGS,
+  DRUM_FEEL_STORAGE_KEY,
+  isHumanizeStyle,
+  readDrumFeelSettings,
+  writeDrumFeelSettings,
+} from './drum-feel-preference'
+export type { DrumFeelSettings } from './drum-feel-preference'
+export {
+  HUMANIZE_STYLE_PROFILES,
+  humanizeDrumEvents,
+  measuredProfileCell,
+  suggestGhostSteps,
+  swingRatioForTempo,
+  swingShiftMs,
+} from './groove-humanize'
+export type {
+  GhostSuggestion,
+  HumanizedEvent,
+  HumanizeInputEvent,
+  HumanizeOptions,
+  HumanizeOrnament,
+  HumanizeStyle,
+} from './groove-humanize'

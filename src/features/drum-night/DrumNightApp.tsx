@@ -32,7 +32,9 @@ import type { DrumNightClickController, DrumNightClickControllerOptions, DrumNig
 import { createDrumNightClickController } from './drum-night-click'
 import styles from './DrumNightApp.module.css'
 import { DrumNightTimeline } from './DrumNightTimeline'
+import type { DrumFeelSettings, HumanizeStyle } from './groove'
 import { createDrumGrooveDraftController, materializeDrumGrooveDocument, } from './groove'
+import { browserDrumFeelStorage, readDrumFeelSettings, writeDrumFeelSettings, } from './groove'
 import type { HydratedDrumProject } from './persistence/drum-project'
 import type { DrumProjectCapture, DrumProjectController, DrumProjectControllerOptions, } from './persistence/drum-project-controller'
 import type { DrumTakeHistoryController, DrumTakeHistoryControllerOptions, } from './persistence/drum-take-history-controller'
@@ -44,7 +46,7 @@ import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-a
 import type { DrumKitAuthoredFamily, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
-import { createDrumScoreIndex, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
+import { createDrumScoreIndex, createDrumSessionHumanizer, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
 
 const PremiumBackgroundPicker = lazy(() =>
   import('@/features/backgrounds/PremiumBackgroundPicker').then((module) => ({
@@ -217,6 +219,20 @@ function formatSessionTime(seconds: number): string {
   const minutes = Math.floor(bounded / 60)
   return `${minutes}:${String(bounded % 60).padStart(2, '0')}`
 }
+
+/** Fixed so a groove replays with the same feel across reloads and takes. */
+const DRUM_FEEL_SEED = 0x50c4e7
+
+const FEEL_STYLE_CHOICES: readonly {
+  readonly id: HumanizeStyle
+  readonly label: string
+}[] = Object.freeze([
+  { id: 'rock', label: 'Rock' },
+  { id: 'funk', label: 'Funk' },
+  { id: 'jazz', label: 'Jazz' },
+  { id: 'latin', label: 'Latin' },
+  { id: 'electronic', label: 'Electronic' },
+])
 
 function formatTempoBpm(tempoBpm: number): string {
   const bounded = Number.isFinite(tempoBpm) ? tempoBpm : 0
@@ -509,11 +525,58 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     ...(props.runtimeOptions ?? {}),
     player,
   })
+  const feelStorage = browserDrumFeelStorage()
+  const [feelSettings, setFeelSettings] = createSignal<DrumFeelSettings>(
+    readDrumFeelSettings(feelStorage),
+  )
+  const updateFeel = (patch: Partial<DrumFeelSettings>): void => {
+    const next = { ...feelSettings(), ...patch }
+    setFeelSettings(next)
+    writeDrumFeelSettings(feelStorage, next)
+  }
+  // Built lazily on first hit and rebuilt only when the settings or tempo
+  // actually change: the scheduler holds one stable hook, and the transport
+  // this reads is declared further down the route.
+  let humanizerCache: {
+    key: string
+    humanize: ReturnType<typeof createDrumSessionHumanizer>
+  } | null = null
+  const activeHumanizer = (): ReturnType<
+    typeof createDrumSessionHumanizer
+  > | null => {
+    const settings = feelSettings()
+    if (!settings.enabled) return null
+    const tempoBpm = runtime.transportState().tempoBpm
+    const key = `${settings.style}:${settings.intensity}:${settings.locked ? 1 : 0}:${tempoBpm}`
+    if (humanizerCache?.key !== key) {
+      humanizerCache = {
+        key,
+        humanize: createDrumSessionHumanizer({
+          style: settings.style,
+          intensity: settings.intensity,
+          seed: DRUM_FEEL_SEED,
+          tempoBpm,
+          locked: settings.locked,
+        }),
+      }
+    }
+    return humanizerCache.humanize
+  }
   const sessionScheduler = createDrumSessionScheduler({
     transport: runtime.transportPort,
     player,
     performanceTimestampToContextTime:
       audioSession.performanceTimestampToContextTime,
+    humanize: (hit) => {
+      const humanizer = activeHumanizer()
+      if (humanizer === null) return null
+      // Imported files carry authored velocity and microtiming as evidence;
+      // reshaping them is opt-in, never the default.
+      if (!feelSettings().applyToImported && usingImportedDocument()) {
+        return null
+      }
+      return humanizer(hit)
+    },
   })
   const arrangementBackingPlayer = createDrumArrangementBackingPlayer({
     getAudioContext: audioSession.activeContext,
@@ -735,6 +798,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (snapshot.status === 'playing') return 'Following the take clock'
     if (snapshot.status === 'error') return 'Audio unavailable'
     return 'Ready on the shared clock'
+  })
+  const feelStyleLabel = createMemo(
+    () =>
+      FEEL_STYLE_CHOICES.find((choice) => choice.id === feelSettings().style)
+        ?.label ?? 'Rock',
+  )
+  const feelIntensityCopy = createMemo(() => {
+    const settings = feelSettings()
+    if (!settings.enabled) return 'Off. The grid plays exactly as written.'
+    if (settings.intensity === 0)
+      return 'Swing only, everything else on the grid'
+    if (settings.intensity < 0.4) return 'Barely there'
+    if (settings.intensity < 0.75) return 'Like a steady player'
+    return 'Loose, the way a room performance moves'
   })
   const selectedKit = createMemo(() =>
     drumKitManifest(kitSnapshot().selectedKitId),
@@ -3599,6 +3676,91 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                         />
                       </Match>
                     </Switch>
+                    <section class={styles.feelPanel}>
+                      <header>
+                        <h3>Feel</h3>
+                        <p>
+                          Shapes swing, accents and micro-timing from measured
+                          drummer performances. The grid stays exactly as you
+                          wrote it.
+                        </p>
+                      </header>
+                      <label class={styles.feelToggle}>
+                        <input
+                          type="checkbox"
+                          checked={feelSettings().enabled}
+                          onChange={(event) =>
+                            updateFeel({ enabled: event.currentTarget.checked })
+                          }
+                        />
+                        <span>Play with feel</span>
+                      </label>
+                      <div
+                        class={styles.feelStyles}
+                        role="group"
+                        aria-label="Feel style"
+                      >
+                        <For each={FEEL_STYLE_CHOICES}>
+                          {(choice) => (
+                            <button
+                              type="button"
+                              disabled={!feelSettings().enabled}
+                              aria-pressed={feelSettings().style === choice.id}
+                              onClick={() => updateFeel({ style: choice.id })}
+                            >
+                              {choice.label}
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                      <label class={styles.feelSlider}>
+                        <span>
+                          Intensity
+                          <strong>
+                            {Math.round(feelSettings().intensity * 100)}%
+                          </strong>
+                        </span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="5"
+                          disabled={!feelSettings().enabled}
+                          value={Math.round(feelSettings().intensity * 100)}
+                          onInput={(event) =>
+                            updateFeel({
+                              intensity:
+                                Number(event.currentTarget.value) / 100,
+                            })
+                          }
+                        />
+                        <small>{feelIntensityCopy()}</small>
+                      </label>
+                      <label class={styles.feelToggle}>
+                        <input
+                          type="checkbox"
+                          disabled={!feelSettings().enabled}
+                          checked={feelSettings().locked}
+                          onChange={(event) =>
+                            updateFeel({ locked: event.currentTarget.checked })
+                          }
+                        />
+                        <span>Repeat the same feel every loop</span>
+                      </label>
+                      <label class={styles.feelToggle}>
+                        <input
+                          type="checkbox"
+                          disabled={!feelSettings().enabled}
+                          checked={feelSettings().applyToImported}
+                          onChange={(event) =>
+                            updateFeel({
+                              applyToImported: event.currentTarget.checked,
+                            })
+                          }
+                        />
+                        <span>Also reshape imported MIDI and Guitar Pro</span>
+                      </label>
+                    </section>
                   </Show>
                 </div>
               </Match>
@@ -4100,6 +4262,22 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               <span>
                 <small>Play click</small>
                 <strong>{clickSnapshot().enabled ? 'On' : 'Off'}</strong>
+              </span>
+            </button>
+            <button
+              class={styles.consoleModule}
+              type="button"
+              disabled={usingStemBacking()}
+              aria-pressed={feelSettings().enabled}
+              aria-label={`Feel: ${feelSettings().enabled ? 'on' : 'off'}`}
+              onClick={() => updateFeel({ enabled: !feelSettings().enabled })}
+            >
+              <AudioWave />
+              <span>
+                <small>Feel</small>
+                <strong>
+                  {feelSettings().enabled ? feelStyleLabel() : 'Off'}
+                </strong>
               </span>
             </button>
             <div

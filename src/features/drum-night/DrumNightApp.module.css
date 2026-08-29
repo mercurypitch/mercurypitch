@@ -3542,3 +3542,128 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Feel panel — humanizer controls under the groove editor. */
+.feelPanel {
+  display: grid;
+  width: min(620px, 100%);
+  justify-self: center;
+  gap: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #11151a;
+}
+
+.feelPanel > header {
+  display: grid;
+  gap: 4px;
+}
+
+.feelPanel > header > h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 520;
+  letter-spacing: -0.02em;
+}
+
+.feelPanel > header > p {
+  margin: 0;
+  color: var(--vellum-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feelToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.feelToggle > input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--amber);
+  cursor: pointer;
+}
+
+.feelToggle:has(> input:disabled) {
+  color: var(--vellum-muted);
+  cursor: not-allowed;
+}
+
+.feelToggle:has(> input:disabled) > input {
+  cursor: not-allowed;
+}
+
+.feelStyles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feelStyles > button {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--slate-raised);
+  color: var(--vellum);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.feelStyles > button:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.feelStyles > button[aria-pressed='true'] {
+  border-color: var(--amber);
+  background: rgb(231 173 82 / 14%);
+  color: var(--amber);
+}
+
+.feelStyles > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.feelSlider {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.feelSlider > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feelSlider > span > strong {
+  color: var(--amber);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.feelSlider > input {
+  width: 100%;
+  accent-color: var(--amber);
+  cursor: pointer;
+}
+
+.feelSlider > input:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.feelSlider > small {
+  color: var(--vellum-muted);
+  font-size: 11px;
+}
