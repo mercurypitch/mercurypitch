@@ -5,6 +5,7 @@
 import { createHash, webcrypto } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumKitPlayerPort } from '../runtime/drum-runtime-types'
+import { velocityGain } from './drum-hit-dynamics'
 import { DRUM_KIT_CATALOG, drumKitResourcesForHit } from './drum-kit-manifest'
 import { createDrumKitPlayer, fetchDrumKitSampleArrayBuffer, verifyDrumKitSampleResource, } from './drum-kit-player'
 
@@ -61,13 +62,16 @@ class FakeGainNode extends FakeAudioNode {
 class FakeBufferSourceNode extends FakeAudioNode {
   buffer: AudioBuffer | null = null
   throwOnStart = false
+  readonly playbackRate = new FakeAudioParam()
   readonly starts: number[] = []
+  readonly startOffsets: number[] = []
   readonly stops: number[] = []
   onended: (() => void) | null = null
 
-  start(at = 0): void {
+  start(at = 0, offset = 0): void {
     if (this.throwOnStart) throw new Error('source start failed')
     this.starts.push(at)
+    this.startOffsets.push(offset)
   }
 
   stop(at = 0): void {
@@ -102,7 +106,20 @@ function decodedBuffer(length: number): AudioBuffer {
     length,
     numberOfChannels: 2,
     sampleRate: 48_000,
+    getChannelData: () => new Float32Array(length),
   } as unknown as AudioBuffer
+}
+
+/** Walk the per-voice chain: source -> optional brightness filter -> gain. */
+function voiceChain(source: FakeBufferSourceNode): {
+  filter: FakeBiquadFilterNode | null
+  gain: FakeGainNode
+} {
+  const first = source.connections[0]
+  if (first instanceof FakeBiquadFilterNode) {
+    return { filter: first, gain: first.connections[0] as FakeGainNode }
+  }
+  return { filter: null, gain: first as FakeGainNode }
 }
 
 class FakeAudioContext {
@@ -362,8 +379,8 @@ describe('createDrumKitPlayer', () => {
     const liveLane = context.gains[1]
     const authoredLane = context.gains[2]
     const authoredKick = context.gains[3]
-    const liveVoice = context.sources[0].connections[0] as FakeGainNode
-    const authoredVoice = context.sources[1].connections[0] as FakeGainNode
+    const liveVoice = voiceChain(context.sources[0]).gain
+    const authoredVoice = voiceChain(context.sources[1]).gain
     expect(liveVoice.connections).toEqual([liveLane])
     expect(authoredVoice.connections).toEqual([authoredKick])
     expect(authoredKick.connections).toEqual([authoredLane])
@@ -492,7 +509,7 @@ describe('createDrumKitPlayer', () => {
     expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
     expect(context.sources).toHaveLength(1)
     expect(context.sources[0].starts).toEqual([10])
-    const voiceGain = context.sources[0].connections[0] as FakeGainNode
+    const voiceGain = voiceChain(context.sources[0]).gain
     expect(voiceGain.gain.events[0]).toEqual({
       kind: 'set',
       value: 0.0001,
@@ -503,9 +520,10 @@ describe('createDrumKitPlayer', () => {
       at: 10.004,
     })
     const resource = drumKitResourcesForHit('classic-gm', 36, 112)[0]
-    const expectedGain =
-      resource.playbackGain * (0.12 + 0.88 * (112 / 127) ** 1.25)
-    expect(voiceGain.gain.events[1].value).toBeCloseTo(expectedGain, 8)
+    const nominalGain = resource.playbackGain * velocityGain('kick', 112)
+    const rampGain = voiceGain.gain.events[1].value as number
+    expect(rampGain).toBeGreaterThanOrEqual(nominalGain * 10 ** (-0.75 / 20))
+    expect(rampGain).toBeLessThanOrEqual(nominalGain * 10 ** (0.75 / 20))
   })
 
   it('cleans a failed sample source before falling back to synth', async () => {
@@ -517,7 +535,7 @@ describe('createDrumKitPlayer', () => {
     expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('synth-fallback')
     expect(context.sources[0].disconnect).toHaveBeenCalledOnce()
     expect(
-      (context.sources[0].connections[0] as FakeGainNode).disconnect,
+      voiceChain(context.sources[0]).gain.disconnect,
     ).toHaveBeenCalledOnce()
     expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
   })
@@ -531,7 +549,7 @@ describe('createDrumKitPlayer', () => {
     expect(player.trigger({ gmKey: 42, velocity: 112 })).toBe('sampled')
 
     const openHat = context.sources[0]
-    const openHatGain = openHat.connections[0] as FakeGainNode
+    const openHatGain = voiceChain(openHat).gain
     expect(openHatGain.gain.events).toContainEqual({
       kind: 'target',
       value: 0,
@@ -541,7 +559,7 @@ describe('createDrumKitPlayer', () => {
 
     player.panic()
     const closedHat = context.sources[1]
-    const closedHatGain = closedHat.connections[0] as FakeGainNode
+    const closedHatGain = voiceChain(closedHat).gain
     expect(closedHatGain.gain.events).toContainEqual({
       kind: 'target',
       value: 0,
@@ -866,5 +884,81 @@ describe('default Drum Night sample transport', () => {
     await expect(
       verifyDrumKitSampleResource(new ArrayBuffer(1), '0'.repeat(64)),
     ).resolves.toBe(false)
+  })
+})
+
+describe('playback intelligence', () => {
+  it('darkens soft hits with a per-voice lowpass and bypasses it when loud', async () => {
+    const { context, player } = harness()
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(player.trigger({ gmKey: 38, velocity: 40 })).toBe('sampled')
+    const soft = voiceChain(context.sources[0])
+    expect(soft.filter).not.toBeNull()
+    expect(soft.filter?.type).toBe('lowpass')
+    expect(soft.filter?.frequency.value).toBeGreaterThan(2000)
+    expect(soft.filter?.frequency.value).toBeLessThan(3500)
+    expect(soft.filter?.Q.value).toBeCloseTo(0.5)
+
+    expect(player.trigger({ gmKey: 38, velocity: 127 })).toBe('sampled')
+    expect(voiceChain(context.sources[1]).filter).toBeNull()
+  })
+
+  it('starts playback at the measured decoded onset plus bounded jitter', async () => {
+    const { context, player } = harness()
+    const samples = new Float32Array(48_000)
+    const onsetIndex = Math.round(0.03 * 48_000)
+    for (let index = onsetIndex; index < samples.length; index += 1) {
+      samples[index] = 0.5
+    }
+    context.decodeAudioData.mockResolvedValue({
+      duration: 1,
+      length: 48_000,
+      numberOfChannels: 2,
+      sampleRate: 48_000,
+      getChannelData: () => samples,
+    } as unknown as AudioBuffer)
+    await player.activate()
+    await player.selectKit('classic-gm')
+
+    expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+    const offset = context.sources[0].startOffsets[0]
+    expect(offset).toBeGreaterThanOrEqual(0.029)
+    expect(offset).toBeLessThanOrEqual(0.029 + 0.0004 + 1e-9)
+  })
+
+  it('varies playback rate within articulation bounds, deterministically per seed', async () => {
+    const first = harness()
+    const second = harness()
+    for (const { player } of [first, second]) {
+      await player.activate()
+      await player.selectKit('classic-gm')
+      for (let index = 0; index < 6; index += 1) {
+        expect(player.trigger({ gmKey: 36, velocity: 112 })).toBe('sampled')
+      }
+    }
+    const rates = (sources: FakeBufferSourceNode[]) =>
+      sources.map((source) => source.playbackRate.value)
+    const firstRates = rates(first.context.sources)
+    expect(firstRates).toEqual(rates(second.context.sources))
+    for (const rate of firstRates) {
+      expect(rate).toBeGreaterThanOrEqual(2 ** (-10 / 1200))
+      expect(rate).toBeLessThanOrEqual(2 ** (10 / 1200))
+    }
+    expect(new Set(firstRates).size).toBeGreaterThan(1)
+  })
+
+  it('spreads repeated equal hits across the cached sample pool', async () => {
+    const { context, player } = harness()
+    await player.activate()
+    await player.selectKit('live')
+
+    const buffers = new Set<AudioBuffer | null>()
+    for (let index = 0; index < 8; index += 1) {
+      expect(player.trigger({ gmKey: 42, velocity: 104 })).toBe('sampled')
+      buffers.add(context.sources[context.sources.length - 1].buffer)
+    }
+    expect(buffers.size).toBeGreaterThan(1)
   })
 })
