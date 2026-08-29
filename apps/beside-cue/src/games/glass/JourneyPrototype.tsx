@@ -13,12 +13,13 @@
 // here hard-codes game feel.
 // ============================================================
 
-import type { F0Stream } from '@irchiinnuss/pitch-engine'
-import { centsToMidi, CONF_MIN, createF0Stream, hzToCents, micManager, midiToNoteNameOctave, playTargetHum, } from '@irchiinnuss/pitch-engine'
+import { midiToNoteNameOctave, playTargetHum } from '@irchiinnuss/pitch-engine'
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import './pitch-assets'
 import './journey.css'
+import { createSingDriver } from './drivers/sing'
+import type { InteractionDriver } from './drivers/types'
 import { JOURNEY_CONFIG as C } from './journey-config'
 import { compileLevel } from './levels/compile'
 import type { LevelDef } from './levels/types'
@@ -54,8 +55,9 @@ export const JourneyPrototype: Component<{
 
   let canvas!: HTMLCanvasElement
   let raf = 0
-  let audioContext: AudioContext | null = null
-  let f0: F0Stream | null = null
+  /** The controller: today always the sing driver (voice pitch). Tap and
+   * listen drivers slot in behind the same interface. */
+  let driver: InteractionDriver | null = null
 
   // --- world state ---
   let groundMidi = 0
@@ -127,9 +129,7 @@ export const JourneyPrototype: Component<{
   let beads: { x: number; y: number; vx: number; vy: number; r: number }[] = []
 
   const voicedMidi = (): number | null => {
-    const fr = f0?.latestSmoothed()
-    if (!fr || fr.f0 <= 0 || fr.conf < CONF_MIN) return null
-    return centsToMidi(hzToCents(fr.f0))
+    return driver?.latestPitch()?.midi ?? null
   }
 
   // pitch window (semitone offsets rel. ground) — per-stage: melody
@@ -513,8 +513,9 @@ export const JourneyPrototype: Component<{
   }
 
   const hum = (midi: number, secs: number): void => {
-    if (audioContext !== null && untrack(() => soundOn() && humOn())) {
-      playTargetHum(audioContext, midiToHz(midi), secs)
+    const ctx = driver?.ctx() ?? null
+    if (ctx !== null && untrack(() => soundOn() && humOn())) {
+      playTargetHum(ctx, midiToHz(midi), secs)
     }
   }
 
@@ -620,11 +621,8 @@ export const JourneyPrototype: Component<{
   const start = async (): Promise<void> => {
     setMicError(null)
     try {
-      const stream = await micManager.acquire(MIC_ID)
-      audioContext = new AudioContext()
-      await audioContext.resume()
-      f0 = createF0Stream(audioContext, stream)
-      f0.startTask()
+      driver = createSingDriver(MIC_ID)
+      await driver.start()
       setPhase('ground')
     } catch {
       setMicError('Microphone unavailable — check permissions and retry.')
@@ -798,8 +796,7 @@ export const JourneyPrototype: Component<{
         }
       } else if (n.t === 'whisper') {
         const z = n.z
-        const fr = f0?.latestSmoothed()
-        const loud = (fr?.rms ?? 0) > C.whisper.rmsLoud
+        const loud = (driver?.latestLevel() ?? 0) > C.whisper.rmsLoud
         if (!z.woken) {
           if (
             loud &&
@@ -1170,7 +1167,7 @@ export const JourneyPrototype: Component<{
         let wantWX = mercWX
         if (midi !== null && activeIdx < nodes.length) {
           const n = nodes[activeIdx]
-          const quiet = (f0?.latestSmoothed()?.rms ?? 0) <= C.whisper.rmsLoud
+          const quiet = (driver?.latestLevel() ?? 0) <= C.whisper.rmsLoud
           wantWX =
             n.t === 'land'
               ? (n.p.x0 + n.p.x1) / 2
@@ -1920,9 +1917,8 @@ export const JourneyPrototype: Component<{
     window.removeEventListener('keydown', keyDown)
     window.removeEventListener('keyup', keyUp)
     arpeggioTimers.forEach((t) => window.clearTimeout(t))
-    f0?.dispose()
-    micManager.release(MIC_ID)
-    void audioContext?.close()
+    driver?.stop()
+    driver = null
   })
 
   return (

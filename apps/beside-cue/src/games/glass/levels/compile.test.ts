@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { JOURNEY_CONFIG } from '../journey-config'
 import { compileLevel } from './compile'
+import { SONGBOOK } from './index'
 import { ODE_TO_JOY } from './ode-to-joy'
 import type { LevelDef } from './types'
 
@@ -124,4 +125,41 @@ describe('compileLevel', () => {
     const gap = cs.platforms[2].x0 - cs.platforms[1].x1
     expect(gap).toBeCloseTo(2 * M.restUnit.flow + M.phraseGap.flow, 5)
   })
+})
+
+describe('songbook invariants — every level, every mode', () => {
+  const MODES = ['flow', 'platformer'] as const
+  for (const level of SONGBOOK) {
+    for (const m of MODES) {
+      it(`${level.id} compiles safely in ${m}`, () => {
+        const cs = compileLevel(level, { mode: m, groundMidi: G })
+        expect(cs.platforms[0].lit).toBe(true)
+        for (let i = 1; i < cs.platforms.length; i++) {
+          expect(cs.platforms[i].x0).toBeGreaterThan(
+            cs.platforms[i - 1].x1 - 1e-9,
+          )
+        }
+        // every note sits inside the derived pitch window
+        for (const pl of cs.platforms) {
+          expect(pl.midi - G).toBeGreaterThanOrEqual(cs.windowLo)
+          expect(pl.midi - G).toBeLessThanOrEqual(cs.windowHi)
+        }
+        // every pane is winnable: an approach spot in flow, charge range
+        // in the platformer
+        for (const pn of cs.panes) {
+          const prev = cs.platforms.filter((pl) => pl.x1 <= pn.wx).at(-1)!
+          if (m === 'flow') {
+            const approach = pn.wx - JOURNEY_CONFIG.pane.approachBack
+            expect(approach).toBeGreaterThanOrEqual(prev.x0)
+            expect(approach).toBeLessThanOrEqual(prev.x1)
+          } else {
+            expect(pn.wx - prev.x1).toBeLessThanOrEqual(
+              JOURNEY_CONFIG.control.paneChargeUnits,
+            )
+          }
+        }
+        expect(cs.worldMax).toBeGreaterThan(cs.platforms.at(-1)!.x1)
+      })
+    }
+  }
 })

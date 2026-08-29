@@ -40,6 +40,8 @@ export type Segment =
 export interface LevelDef {
   id: string
   title: string
+  /** One-line card copy on the games list. */
+  blurb?: string
   /** Intro-card body; a default is used when omitted. */
   intro?: string
   /** Done-card body; a default is used when omitted. */

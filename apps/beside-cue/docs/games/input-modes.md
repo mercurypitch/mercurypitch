@@ -59,17 +59,26 @@ Merc plays sounds; the player answers by tapping or gesturing.
 
 ## Engine seam (how this stays one game)
 
-Stages stay single-source (platform/pane/bridge layout). Each mode is an
-`InteractionDriver` that consumes stage data + raw input and emits the same
-world events the sing driver emits today:
+Stages stay single-source (platform/pane/bridge layout). Each input mode
+is an `InteractionDriver` — the shape that SHIPPED (2026-08-30,
+`src/games/glass/drivers/types.ts`, sing implementation in
+`drivers/sing.ts`, stage engine consumes only the interface) is
+input-normalizing rather than world-event-emitting — the runtime keeps
+the game rules, the driver owns the hardware:
 
 ```ts
 interface InteractionDriver {
-  mode: 'sing' | 'tap' | 'listen'
-  attach(stage: StageData, world: WorldEvents): void // land(node), charge(pane, amt), stumble(node), answer(q, ok)
-  dispose(): void
+  start(): Promise<void> // acquire hardware (throws when unavailable)
+  stop(): void
+  latestPitch(): PitchSample | null // continuous channel, polled per tick
+  latestLevel(): number // input level (whisper mechanic)
+  drainIntents(): DiscreteIntent[] // queued taps/answers, AUDIO-clock stamped
+  ctx(): AudioContext | null // shared clock + game sound output
 }
 ```
+
+Discrete intents carry `AudioContext.currentTime` timestamps (the
+conductor rule) so the tap judge never depends on frame time.
 
 World state, camera, Merc rendering, glass integrity, void/fall, retry,
 scoring — all shared. Stars unify as accuracy% per mode.
@@ -77,7 +86,9 @@ scoring — all shared. Stars unify as accuracy% per mode.
 ## Phasing
 
 - **A. Driver seam:** refactor JourneyPrototype's sing logic into
-  `drivers/sing.ts` behind the interface (no behavior change).
+  `drivers/sing.ts` behind the interface (no behavior change). DONE
+  (2026-08-30) — mic/F0 lifecycle, voiced gating, and level reads all
+  live in the driver; the engine holds one `driver` handle.
 - **B. Tap driver:** beat clock + tap windows + pulse rendering + haptics +
   latency calibration screen.
 - **C. Listen driver:** question engine + gesture recognizer + answer UI.

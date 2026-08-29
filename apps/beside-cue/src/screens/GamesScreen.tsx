@@ -1,8 +1,8 @@
-import { createSignal, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import './games.css'
 import { AppHeader } from '@/components/AppHeader'
 import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
-import { ODE_TO_JOY } from '@/games/glass/levels/ode-to-joy'
+import { SONGBOOK } from '@/games/glass/levels'
 import type { LevelDef } from '@/games/glass/levels/types'
 
 interface GamesScreenProps {
@@ -115,45 +115,45 @@ export function GamesScreen(props: GamesScreenProps) {
           </svg>
         </button>
 
-        <div class="game-card game-card--song">
-          <img
-            class="game-card__art"
-            src="games/merc.webp"
-            alt=""
-            width="64"
-            height="64"
-          />
-          <span class="game-card__body">
-            <span class="game-card__name">
-              Ode to Joy
-              <span class="game-card__chip">Songbook</span>
-            </span>
-            <span class="game-card__blurb">
-              The melody is the level — every slab is the next note. One song,
-              two ways to play it.
-            </span>
-            <span class="game-card__modes">
-              <button
-                class="game-card__mode"
-                type="button"
-                onClick={() =>
-                  setPlaying({ level: ODE_TO_JOY, control: 'flow' })
-                }
-              >
-                Sing the line
-              </button>
-              <button
-                class="game-card__mode"
-                type="button"
-                onClick={() =>
-                  setPlaying({ level: ODE_TO_JOY, control: 'platformer' })
-                }
-              >
-                Jump the line
-              </button>
-            </span>
-          </span>
-        </div>
+        <For each={SONGBOOK}>
+          {(level) => (
+            <div class="game-card game-card--song">
+              <img
+                class="game-card__art"
+                src="games/merc.webp"
+                alt=""
+                width="64"
+                height="64"
+              />
+              <span class="game-card__body">
+                <span class="game-card__name">
+                  {level.title}
+                  <span class="game-card__chip">Songbook</span>
+                </span>
+                <span class="game-card__blurb">
+                  {level.blurb ??
+                    'The melody is the level — every slab is the next note.'}
+                </span>
+                <span class="game-card__modes">
+                  <button
+                    class="game-card__mode"
+                    type="button"
+                    onClick={() => setPlaying({ level, control: 'flow' })}
+                  >
+                    Sing the line
+                  </button>
+                  <button
+                    class="game-card__mode"
+                    type="button"
+                    onClick={() => setPlaying({ level, control: 'platformer' })}
+                  >
+                    Jump the line
+                  </button>
+                </span>
+              </span>
+            </div>
+          )}
+        </For>
 
         <p class="games-screen__note">
           Uses the microphone while a game is open, and only then. More B-side

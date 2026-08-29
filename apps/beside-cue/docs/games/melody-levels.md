@@ -198,8 +198,12 @@ calibration) drops in after V1 core.
    syllables, playable from the games list in both modes ("Sing the
    line" / "Jump the line"); E2E-cleared end to end in flow and
    smoke-tested in platformer.
-2. **Twinkle Twinkle** — the sixth leap + repeat-notes.
-3. **Frère Jacques** — faster contour, round structure.
+2. **Twinkle Twinkle** — the big do→sol leap + repeat-notes. SHIPPED
+   (`levels/twinkle-twinkle.ts`): verse–middle–verse with the English
+   lyric as syllables.
+3. **Frère Jacques** — faster contour, round structure. SHIPPED
+   (`levels/frere-jacques.ts`): matines eighth-note run, and the first
+   window that dips below the ground note (ding DANG dong at −5).
 
 Next candidates: Für Elise (semitone-neighbor control), In the Hall of
 the Mountain King (accelerating chase/boss), Habanera (chromatic
