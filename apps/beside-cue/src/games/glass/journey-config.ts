@@ -20,6 +20,12 @@ export const JOURNEY_CONFIG = {
      * ENDED releaseTailMs before the cut — the intent, not the tail. */
     releaseTailMs: 140,
     releaseSpanMs: 320,
+    /** Jitter calm: pitch wobble smaller than jitterSemis moves Merc at a
+     * reduced rate (jitterCalm fraction at zero, ramping to full slew at
+     * jitterSemis) — a wavey half-note flutter stops bouncing him while
+     * real note changes stay snappy. */
+    jitterSemis: 0.5,
+    jitterCalm: 0.18,
   },
 
   /** Vertical pitch window and motion feel. */
@@ -148,6 +154,25 @@ export const JOURNEY_CONFIG = {
     fallMs: 700,
     /** A broken crystal re-anneals after this, unless all are broken. */
     reannealMs: 6500,
+    /** Merc drifts under the crystal his voice is charging (else nearest
+     * unbroken to the sung note) instead of hovering at arena center. */
+    trackCharging: true,
+    /** Glowing voice beam from Merc to the crystal currently in band. */
+    beam: true,
+  },
+
+  /** Game-emitted audio (all of it gated by the corner toggles too). */
+  sound: {
+    /** Hum every new objective's note as it activates (hidden door and
+     * whisper excepted). Tier overlays can turn this off. */
+    humOnObjective: true,
+    /** Seconds each objective hum lasts. */
+    humSeconds: 1.2,
+    /** The chandelier introduces itself: its crystals hum as an arpeggio
+     * during the boss thought-bubble pause. */
+    bossArpeggio: true,
+    arpeggioNoteSec: 0.55,
+    arpeggioGapMs: 640,
   },
 
   /** Falling + game over. */
@@ -172,6 +197,14 @@ export const JOURNEY_CONFIG = {
     /** Show up/down chevrons at Merc when the objective note is more than
      * this many semitones away (never for the hidden door or whisper). */
     arrowSemis: 1.5,
+    /** Horizontal guide line at the objective note's height — where the
+     * voice must sit. Hidden door and whisper stay exempt. */
+    guideLine: true,
+    /** Labels of platforms/panes that are NOT the objective dim to this. */
+    inactiveLabelAlpha: 0.35,
+    /** Faint ghost trail of the RAW detected pitch (before smoothing) —
+     * shows what the voice really did vs where Merc went. */
+    pitchGhost: true,
   },
 
   /** Visual dressing — parallax, materials, Merc sprite feel. */
@@ -205,6 +238,9 @@ export const JOURNEY_CONFIG = {
     fallBeads: 10,
     /** World units visible across the width in portrait (narrow) view. */
     viewUnitsPortrait: 7,
+    /** Merc's alpha while his flight path passes through a slab (he is
+     * incorporeal while flying; only rest makes him solid). */
+    phaseAlpha: 0.55,
   },
 } as const
 

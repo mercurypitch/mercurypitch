@@ -16,7 +16,7 @@
 import type { F0Stream } from '@irchiinnuss/pitch-engine'
 import { centsToMidi, CONF_MIN, createF0Stream, hzToCents, micManager, midiToNoteNameOctave, playTargetHum, } from '@irchiinnuss/pitch-engine'
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import './pitch-assets'
 import './journey.css'
 import { JOURNEY_CONFIG as C } from './journey-config'
@@ -24,7 +24,7 @@ import { JOURNEY_CONFIG as C } from './journey-config'
 const MIC_ID = 'journey-proto'
 const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
 
-type Phase = 'intro' | 'ground' | 'play' | 'fallen' | 'done'
+type Phase = 'intro' | 'ground' | 'play' | 'cue' | 'fallen' | 'done'
 
 interface Platform {
   midi: number
@@ -94,6 +94,9 @@ export const JourneyPrototype: Component = () => {
   const [phase, setPhase] = createSignal<Phase>('intro')
   const [micError, setMicError] = createSignal<string | null>(null)
   const [hint, setHint] = createSignal('')
+  const [cueText, setCueText] = createSignal('')
+  const [soundOn, setSoundOn] = createSignal(true)
+  const [humOn, setHumOn] = createSignal(true)
 
   let canvas!: HTMLCanvasElement
   let raf = 0
@@ -120,6 +123,9 @@ export const JourneyPrototype: Component = () => {
   let rescueMs = 0
   let sinkMs = 0
   let pitchHist: { t: number; midi: number }[] = []
+  let rawMidiNow: number | null = null
+  let ghost: { wx: number; y: number }[] = []
+  let arpeggioTimers: number[] = []
   let trail: { wx: number; y: number }[] = []
   let puff: { x: number; y: number; vx: number; vy: number; r: number }[] = []
   let puffT = -1
@@ -172,6 +178,46 @@ export const JourneyPrototype: Component = () => {
   }
 
   const note = (off: number): string => midiToNoteNameOctave(groundMidi + off)
+
+  // the note the player should sing right now — null when there is no
+  // pitch target (hidden door stays secret, whisper is about loudness)
+  const objectiveMidi = (): number | null => {
+    if (activeIdx >= nodes.length) return null
+    const n = nodes[activeIdx]
+    if (n.t === 'land') return n.p.midi
+    if (n.t === 'pane') return n.pane.kind === 'hidden' ? null : n.pane.midi
+    if (n.t === 'boss') {
+      const alive = n.boss.crystals.filter((c) => !c.broken)
+      if (alive.length === 0) return null
+      const charging = alive.reduce((a, c) => (c.res > a.res ? c : a))
+      if (charging.res > 0.04) return charging.midi
+      const sm = shownMidi
+      if (sm !== null) {
+        return alive.reduce((a, c) =>
+          Math.abs(c.midi - sm) < Math.abs(a.midi - sm) ? c : a,
+        ).midi
+      }
+      return alive[0].midi
+    }
+    return null
+  }
+
+  // where Merc should hover during the boss: under the crystal his voice
+  // is charging (else the one nearest his sung note), not arena center
+  const bossTargetWX = (b: Boss): number => {
+    if (!C.boss.trackCharging) return b.cx
+    const alive = b.crystals.filter((c) => !c.broken)
+    if (alive.length === 0) return b.cx
+    const charging = alive.reduce((a, c) => (c.res > a.res ? c : a))
+    if (charging.res > 0.04) return charging.wx
+    const sm = shownMidi
+    if (sm !== null) {
+      return alive.reduce((a, c) =>
+        Math.abs(c.midi - sm) < Math.abs(a.midi - sm) ? c : a,
+      ).wx
+    }
+    return b.cx
+  }
 
   const buildWorld = (): void => {
     const P = (
@@ -358,12 +404,19 @@ export const JourneyPrototype: Component = () => {
     mercY = yFor(g) - 0.035
     camX = 0
     trail = []
+    ghost = []
     falling = false
     fallenMs = 0
     rescueMs = 0
     sinkMs = 0
     pitchHist = []
     restIdx = null
+  }
+
+  const hum = (midi: number, secs: number): void => {
+    if (audioContext !== null && untrack(() => soundOn() && humOn())) {
+      playTargetHum(audioContext, midiToHz(midi), secs)
+    }
   }
 
   const advanceTo = (idx: number): void => {
@@ -374,9 +427,37 @@ export const JourneyPrototype: Component = () => {
     }
     const n = nodes[idx]
     setHint(n.hint)
-    if (n.t === 'land' && n.p.hum === true && audioContext !== null) {
-      playTargetHum(audioContext, midiToHz(n.p.midi), C.bridge.humSeconds)
+    if (n.t === 'boss' && C.sound.bossArpeggio && phase() === 'play') {
+      // the chandelier introduces itself: freeze the world in a thought
+      // bubble while its crystals hum their notes as an arpeggio
+      setCueText(
+        'The chandelier rings three notes — listen. Break every crystal before the first re-anneals!',
+      )
+      setPhase('cue')
+      arpeggioTimers.forEach((t) => window.clearTimeout(t))
+      arpeggioTimers = n.boss.crystals.map((c, i) =>
+        window.setTimeout(
+          () => hum(c.midi, C.sound.arpeggioNoteSec),
+          400 + i * C.sound.arpeggioGapMs,
+        ),
+      )
+      return
     }
+    if (n.t === 'land' && (n.p.hum === true || C.sound.humOnObjective)) {
+      hum(n.p.midi, C.sound.humSeconds)
+    } else if (
+      n.t === 'pane' &&
+      n.pane.kind !== 'hidden' &&
+      C.sound.humOnObjective
+    ) {
+      hum(n.pane.midi, C.sound.humSeconds)
+    }
+  }
+
+  const resumeFromCue = (): void => {
+    arpeggioTimers.forEach((t) => window.clearTimeout(t))
+    arpeggioTimers = []
+    setPhase('play')
   }
 
   const retry = (): void => {
@@ -448,6 +529,7 @@ export const JourneyPrototype: Component = () => {
 
     // --- debounced, slew-clamped pitch (silence = rest, never fall) ---
     const raw = voicedMidi()
+    rawMidiNow = raw
     if (raw !== null) {
       voicedStreak += 1
       unvoicedMs = 0
@@ -455,7 +537,16 @@ export const JourneyPrototype: Component = () => {
         if (shownMidi === null) shownMidi = raw
         else {
           const maxStep = C.voice.slewSemisPerFrame * (dt / 16.7)
-          shownMidi += Math.max(-maxStep, Math.min(maxStep, raw - shownMidi))
+          let step = Math.max(-maxStep, Math.min(maxStep, raw - shownMidi))
+          // jitter calm: sub-jitterSemis wobble moves Merc at a fraction
+          // of full speed — flutter stops bouncing him, real jumps stay
+          const mag = Math.abs(raw - shownMidi)
+          if (mag < C.voice.jitterSemis) {
+            step *=
+              C.voice.jitterCalm +
+              (1 - C.voice.jitterCalm) * (mag / C.voice.jitterSemis)
+          }
+          shownMidi += step
         }
         pitchHist.push({ t: now, midi: raw })
         const keep = now - C.voice.releaseTailMs - C.voice.releaseSpanMs - 200
@@ -805,7 +896,7 @@ export const JourneyPrototype: Component = () => {
                   ? quiet
                     ? n.z.x1 + 0.6
                     : mercWX // a loud voice stands still before the sleeper
-                  : n.boss.cx
+                  : bossTargetWX(n.boss)
         } else if (restIdx !== null) {
           const pl = platforms[restIdx]
           wantWX = Math.min(Math.max(mercWX, pl.x0 + 0.2), pl.x1 - 0.2)
@@ -823,6 +914,13 @@ export const JourneyPrototype: Component = () => {
       if (midi !== null) {
         trail.push({ wx: mercWX, y: mercY })
         if (trail.length > 70) trail.shift()
+        if (C.hud.pitchGhost && rawMidiNow !== null) {
+          ghost.push({
+            wx: mercWX,
+            y: Math.min(1.05, Math.max(-0.05, yFor(rawMidiNow))),
+          })
+          if (ghost.length > 70) ghost.shift()
+        }
       }
 
       // camera follows
@@ -930,6 +1028,25 @@ export const JourneyPrototype: Component = () => {
     ctx.stroke()
     ctx.setLineDash([])
 
+    // guide line: the objective note's height — where the voice must sit
+    const guideMidi =
+      C.hud.guideLine && phase() === 'play' ? objectiveMidi() : null
+    if (guideMidi !== null) {
+      const gy = yFor(guideMidi) * h
+      const pulse = 0.2 + (Math.sin(last / 300) + 1) * 0.09
+      ctx.strokeStyle = `rgba(88,166,255,${pulse})`
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([10, 9])
+      ctx.beginPath()
+      ctx.moveTo(0, gy)
+      ctx.lineTo(w, gy)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.fillStyle = `rgba(148,197,255,${0.7 + (Math.sin(last / 300) + 1) * 0.15})`
+      ctx.font = "700 15px 'Saira Condensed', monospace"
+      ctx.fillText(midiToNoteNameOctave(guideMidi), 12, gy - 8)
+    }
+
     const slabH = Math.max(
       C.art.platformMinPx,
       Math.min(C.art.platformMaxPx, C.art.platformUnits * unitPx),
@@ -1021,8 +1138,15 @@ export const JourneyPrototype: Component = () => {
         }
       }
 
-      ctx.fillStyle = 'rgba(230,237,243,0.78)'
-      ctx.font = "600 11px 'Saira Condensed', monospace"
+      const labelA = isActive
+        ? 0.75 + (Math.sin(last / 300) + 1) * 0.125
+        : pl.lit
+          ? 0.55
+          : C.hud.inactiveLabelAlpha
+      ctx.fillStyle = `rgba(230,237,243,${labelA})`
+      ctx.font = isActive
+        ? "700 13px 'Saira Condensed', monospace"
+        : "600 11px 'Saira Condensed', monospace"
       ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
     }
 
@@ -1061,8 +1185,17 @@ export const JourneyPrototype: Component = () => {
             : '#bc8cff'
         ctx.lineWidth = 2
         ctx.stroke()
-        ctx.fillStyle = 'rgba(230,237,243,0.8)'
-        ctx.font = "600 11px 'Saira Condensed', monospace"
+        const isActivePane =
+          activeIdx < nodes.length &&
+          nodes[activeIdx].t === 'pane' &&
+          (nodes[activeIdx] as Extract<Node, { t: 'pane' }>).pane === pane
+        const paneLabelA = isActivePane
+          ? 0.75 + (Math.sin(last / 300) + 1) * 0.125
+          : C.hud.inactiveLabelAlpha
+        ctx.fillStyle = `rgba(230,237,243,${paneLabelA})`
+        ctx.font = isActivePane
+          ? "700 13px 'Saira Condensed', monospace"
+          : "600 11px 'Saira Condensed', monospace"
         ctx.fillText(
           pane.kind === 'hidden' ? '?' : midiToNoteNameOctave(pane.midi),
           gx - wide / 2,
@@ -1212,6 +1345,15 @@ export const JourneyPrototype: Component = () => {
       ctx.globalAlpha = 1
     }
 
+    if (C.hud.pitchGhost && ghost.length > 1) {
+      // the raw voice, un-smoothed — what the singer actually did
+      ctx.strokeStyle = 'rgba(230,237,243,0.16)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(X(ghost[0].wx), ghost[0].y * h)
+      for (const g of ghost) ctx.lineTo(X(g.wx), g.y * h)
+      ctx.stroke()
+    }
     if (trail.length > 1) {
       ctx.strokeStyle = 'rgba(45,212,191,0.5)'
       ctx.lineWidth = 2
@@ -1267,7 +1409,20 @@ export const JourneyPrototype: Component = () => {
         Math.min(C.art.tiltMax, mercVx * C.art.tiltVelScale * 0.1),
       )
       if (falling) tilt += Math.sin(last / 90) * C.art.fallWobble
+      // flying through a slab: go translucent — Merc is incorporeal in
+      // flight, only rest makes him solid on a surface
+      const phasing =
+        shownMidi !== null &&
+        restIdx === null &&
+        platforms.some(
+          (pl) =>
+            !pl.broken &&
+            mercWX >= pl.x0 &&
+            mercWX <= pl.x1 &&
+            Math.abs(mercY - yFor(pl.midi)) < 0.045,
+        )
       ctx.save()
+      if (phasing) ctx.globalAlpha = C.art.phaseAlpha
       ctx.translate(mx, my)
       ctx.rotate(tilt)
       ctx.scale(sx, sy)
@@ -1280,6 +1435,36 @@ export const JourneyPrototype: Component = () => {
       ctx.fill()
     }
 
+    // voice beam: Merc's note ringing a crystal — cause meets effect
+    if (
+      C.boss.beam &&
+      phase() === 'play' &&
+      boss !== null &&
+      activeIdx < nodes.length &&
+      nodes[activeIdx].t === 'boss' &&
+      shownMidi !== null
+    ) {
+      const sm = shownMidi
+      const hit = boss.crystals.find(
+        (c) => !c.broken && Math.abs(sm - c.midi) <= C.boss.tolSemis,
+      )
+      if (hit !== undefined) {
+        const bx = X(hit.wx)
+        const by = yFor(hit.midi) * h
+        const a = 0.25 + hit.res * 0.55
+        const grad = ctx.createLinearGradient(mx, my, bx, by)
+        grad.addColorStop(0, `rgba(45,212,191,${a})`)
+        grad.addColorStop(1, `rgba(188,140,255,${a})`)
+        ctx.strokeStyle = grad
+        ctx.lineWidth = 2 + hit.res * 3
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(mx, my - 6)
+        ctx.lineTo(bx, by)
+        ctx.stroke()
+      }
+    }
+
     // direction chevrons: point the way when the objective note is far,
     // and always while sinking/falling (any in-window note recovers).
     // Never for the hidden door (no spoilers) or the whisper passage.
@@ -1287,15 +1472,7 @@ export const JourneyPrototype: Component = () => {
       let dir = 0 // -1 = sing higher (screen up), 1 = sing lower
       if (falling || sinkMs > 0) dir = -1
       else if (activeIdx < nodes.length) {
-        const n = nodes[activeIdx]
-        const target =
-          n.t === 'land'
-            ? n.p.midi
-            : n.t === 'pane' && n.pane.kind !== 'hidden'
-              ? n.pane.midi
-              : n.t === 'boss'
-                ? (n.boss.crystals.find((c) => !c.broken)?.midi ?? null)
-                : null
+        const target = objectiveMidi()
         const cur =
           shownMidi ?? (restIdx !== null ? platforms[restIdx].midi : null)
         if (
@@ -1372,6 +1549,7 @@ export const JourneyPrototype: Component = () => {
   })
   onCleanup(() => {
     cancelAnimationFrame(raf)
+    arpeggioTimers.forEach((t) => window.clearTimeout(t))
     f0?.dispose()
     micManager.release(MIC_ID)
     void audioContext?.close()
@@ -1380,6 +1558,61 @@ export const JourneyPrototype: Component = () => {
   return (
     <div class="jp-root">
       <canvas class="jp-canvas" ref={canvas} />
+      <Show when={phase() !== 'intro'}>
+        <div class="jp-audio">
+          <button
+            type="button"
+            aria-pressed={soundOn()}
+            aria-label={soundOn() ? 'Mute game sound' : 'Unmute game sound'}
+            onClick={() => setSoundOn(!soundOn())}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4Z" />
+              <Show
+                when={soundOn()}
+                fallback={<path d="M15 8.5 21 15.5M21 8.5 15 15.5" />}
+              >
+                <path d="M15 9.2a4 4 0 0 1 0 5.6M17.4 7a7.2 7.2 0 0 1 0 10" />
+              </Show>
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-pressed={humOn()}
+            aria-label={humOn() ? 'Turn note hints off' : 'Turn note hints on'}
+            onClick={() => setHumOn(!humOn())}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.5 17.5V6.5l8-2v10.5" />
+              <circle cx="7.2" cy="17.5" r="2.3" />
+              <circle cx="15.2" cy="15" r="2.3" />
+              <Show when={!humOn()}>
+                <path d="M4.5 4.5 20 20" />
+              </Show>
+            </svg>
+          </button>
+        </div>
+      </Show>
+      <Show when={phase() === 'cue'}>
+        <div class="jp-bubble" role="dialog" aria-label="Merc says">
+          <svg
+            class="jp-bubble-cloud"
+            viewBox="0 0 460 200"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d="M62 148 C24 150 10 116 34 98 C12 78 32 44 66 50 C74 18 122 8 144 30 C166 4 220 2 240 26 C264 4 316 8 330 34 C368 20 412 40 404 74 C434 86 434 124 404 136 C414 164 372 184 342 170 C320 192 268 194 248 174 C222 194 172 192 154 170 C122 188 78 178 74 152 C70 151 66 150 62 148 Z" />
+          </svg>
+          <div class="jp-bubble-inner">
+            <p>{cueText()}</p>
+            <button class="jp-start jp-start--small" onClick={resumeFromCue}>
+              I heard it
+            </button>
+          </div>
+          <span class="jp-bubble-dot jp-bubble-dot--big" aria-hidden="true" />
+          <span class="jp-bubble-dot" aria-hidden="true" />
+        </div>
+      </Show>
       <div class="jp-hud">
         <Show when={phase() === 'intro'}>
           <h2 class="jp-title">Merc's Journey</h2>
