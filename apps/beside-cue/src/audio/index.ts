@@ -1,0 +1,6 @@
+// ============================================================
+// Audio runtime exports — app-scoped session and Web Audio output
+// ============================================================
+
+export * from './audio-session'
+export * from './web-audio-output'
