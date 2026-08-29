@@ -3,16 +3,19 @@ import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
+import { createEffect, untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import type { BesideCueAppConfig } from './app-config'
-import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
+import { DEFAULT_BESIDE_CUE_CONFIG, V2_BESIDE_CUE_PREVIEW_CONFIG, } from './app-config'
 import type { BesideCueAppServices } from './app-services'
+import type { AudioSession, AudioSessionOutput } from './audio'
 import type { AudioSourceVariant, ContentPack, DialogueAudioAsset, VoiceAudioFinish, VoiceAudioPort, } from './content'
 import { DEFAULT_CONTENT_PACK, findLine } from './content'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
 import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARDING_MEDIA_V0_9, } from './onboarding'
 import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
+import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
 
 interface DirectorHarnessProps {
   readonly bSideOptions: readonly {
@@ -77,6 +80,95 @@ vi.mock('./onboarding/CinematicOnboardingDirector', () => ({
         </button>
         <button type="button" onClick={() => props.onComplete('finished')}>
           Finish introduction
+        </button>
+      </main>
+    )
+  },
+}))
+
+interface V2DirectorHarnessProps {
+  readonly sessionKind: V2OnboardingSessionKind
+  readonly audioSession: AudioSession
+  readonly foreground: boolean
+  readonly muted: boolean
+  readonly onMutedChange: (muted: boolean) => void
+  readonly onSavePlan: (
+    plan: V2OnboardingPlanDraft,
+  ) => Promise<{ readonly ok: boolean; readonly message?: string }>
+  readonly onSetReminder: (
+    localTime: string,
+  ) => Promise<{ readonly ok: boolean; readonly message?: string }>
+  readonly onComplete: () => void
+}
+
+vi.mock('./onboarding/V2OnboardingDirector', () => ({
+  V2OnboardingDirector: (props: V2DirectorHarnessProps) => {
+    let audioScope: ReturnType<AudioSession['createScope']> | undefined
+    let previousForeground = untrack(() => props.foreground)
+
+    createEffect(() => {
+      const foreground = props.foreground
+      if (foreground && !previousForeground) {
+        audioScope ??= props.audioSession.createScope('v2-app-test-harness')
+        audioScope.play('test.v2.score')
+      }
+      previousForeground = foreground
+    })
+
+    return (
+      <main
+        aria-label="V2 onboarding test harness"
+        data-session-kind={props.sessionKind}
+        data-foreground={props.foreground ? 'true' : 'false'}
+        data-muted={props.muted ? 'true' : 'false'}
+      >
+        <h1>V2 introduction</h1>
+        <button
+          type="button"
+          onClick={() =>
+            void props.onSavePlan({
+              pullId: 'scrolling',
+              pullLabel: 'Endless scrolling',
+              sideAText: 'Keep scrolling',
+              cueContextSuggestionId: 'anchor.scrolling.in-bed',
+              cueContextText: 'When I get into bed with my phone.',
+              bSideSuggestionId: 'bside.phone-away',
+              bSideText: 'Put the phone in another room',
+            })
+          }
+        >
+          Save suggested V2 plan
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            void props.onSavePlan({
+              pullId: 'custom',
+              pullLabel: 'Late-night tabs',
+              sideAText: 'Open another late-night tab',
+              bSideText: 'Close the screen and stretch',
+            })
+          }
+        >
+          Save custom V2 plan
+        </button>
+        <button type="button" onClick={() => void props.onSetReminder('09:00')}>
+          Set V2 reminder
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            audioScope ??= props.audioSession.createScope('v2-app-test-harness')
+            audioScope.play('test.v2.score')
+          }}
+        >
+          Start V2 audio
+        </button>
+        <button type="button" onClick={() => props.onMutedChange(!props.muted)}>
+          Toggle V2 mute
+        </button>
+        <button type="button" onClick={() => props.onComplete()}>
+          Finish V2 introduction
         </button>
       </main>
     )
@@ -270,6 +362,7 @@ function createTestServices(
     readonly platform?: BesideCueAppServices['platform']
     readonly purchases?: BesideCueAppServices['purchases']
     readonly onboardingPreferences?: BesideCueAppServices['onboardingPreferences']
+    readonly audioOutput?: AudioSessionOutput
     readonly voiceAudio?: VoiceAudioPort
   } = {},
 ): BesideCueAppServices {
@@ -292,6 +385,9 @@ function createTestServices(
         setItem: (key, value) => preferenceValues.set(key, value),
         removeItem: (key) => preferenceValues.delete(key),
       }),
+    ...(options.audioOutput === undefined
+      ? {}
+      : { audioOutput: options.audioOutput }),
     ...(options.voiceAudio === undefined
       ? {}
       : { voiceAudio: options.voiceAudio }),
@@ -360,6 +456,80 @@ function createVoiceAudioProbe(): VoiceAudioProbe {
         throw new Error(`Expected voice playback ${String(index)}.`)
       }
       playback.finished.resolve(result)
+    },
+  }
+}
+
+interface RecordedAudioOutputPlayback {
+  stopCalls: number
+}
+
+interface AudioOutputProbe {
+  readonly output: AudioSessionOutput
+  readonly playbacks: readonly RecordedAudioOutputPlayback[]
+  readonly calls: {
+    unlock: number
+    dispose: number
+  }
+}
+
+function createAudioOutputProbe(): AudioOutputProbe {
+  const playbacks: RecordedAudioOutputPlayback[] = []
+  const calls = { unlock: 0, dispose: 0 }
+
+  const output: AudioSessionOutput = {
+    supportsMimeType: () => true,
+    async unlock() {
+      calls.unlock += 1
+      return true
+    },
+    play() {
+      const finished = valueDeferred<'ended' | 'failed' | 'stopped'>()
+      const recorded: RecordedAudioOutputPlayback = { stopCalls: 0 }
+      playbacks.push(recorded)
+      return {
+        started: Promise.resolve('started'),
+        finished: finished.promise,
+        setGain: () => undefined,
+        stop: () => {
+          recorded.stopCalls += 1
+          finished.resolve('stopped')
+        },
+      }
+    },
+    dispose() {
+      calls.dispose += 1
+    },
+  }
+
+  return { output, playbacks, calls }
+}
+
+function packWithV2Score(): ContentPack {
+  return {
+    ...DEFAULT_CONTENT_PACK,
+    audio: {
+      schemaVersion: 1,
+      revision: 'app-test-v2-score-v1',
+      locale: 'en',
+      assets: [
+        {
+          id: 'test.v2.score',
+          lane: 'score',
+          playback: { kind: 'one-shot' },
+          sources: [
+            {
+              src: 'audio/test/v2-score.m4a',
+              mimeType: 'audio/mp4; codecs="mp4a.40.2"',
+              sha256: 'b'.repeat(64),
+              byteLength: 4_096,
+              durationMs: 2_000,
+              sampleRateHz: 48_000,
+              channels: 2,
+            },
+          ],
+        },
+      ],
     },
   }
 }
@@ -768,6 +938,297 @@ describe('Beside Cue character voice integration', () => {
     document.dispatchEvent(new Event('visibilitychange'))
 
     await waitFor(() => expect(voice.playbacks[0]?.stopCalls).toBe(1))
+  })
+})
+
+describe('Beside Cue V2 onboarding integration', () => {
+  it('makes an environment-enabled V2 review session write-free at the App boundary', async () => {
+    const repository = createMemoryRepository()
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        onboardingReview
+        services={createTestServices(repository, {
+          platform: 'android',
+          runtime: probe.runtime,
+        })}
+      />
+    ))
+
+    const harness = await screen.findByLabelText('V2 onboarding test harness')
+    expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
+    expect(harness).toHaveAttribute('data-muted', 'false')
+    fireEvent.click(screen.getByRole('button', { name: /toggle v2 mute/iu }))
+    expect(harness).toHaveAttribute('data-muted', 'true')
+    expect(repository.saveCalls()).toBe(0)
+    fireEvent.click(
+      screen.getByRole('button', { name: /save suggested v2 plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /set v2 reminder/iu }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /finish v2 introduction/iu }),
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /keep your better choice beside the moment/iu,
+      }),
+    ).toBeInTheDocument()
+    expect(repository.saveCalls()).toBe(0)
+    expect(repository.snapshot()).toBeNull()
+    expect(probe.calls.scheduled).toHaveLength(0)
+  })
+
+  it('writes the V2 first-run preference only after the exact plan is durable', async () => {
+    const repository = createMemoryRepository()
+    const saveGate = repository.deferNextSave()
+    const preferenceValues = new Map<string, string>()
+    const onboardingPreferences = createCinematicOnboardingPreferenceStore({
+      getItem: (key) => preferenceValues.get(key) ?? null,
+      setItem: (key, value) => preferenceValues.set(key, value),
+      removeItem: (key) => preferenceValues.delete(key),
+    })
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository, { onboardingPreferences })}
+      />
+    ))
+
+    const harness = await screen.findByLabelText('V2 onboarding test harness')
+    expect(harness).toHaveAttribute('data-session-kind', 'first-run')
+    fireEvent.click(
+      screen.getByRole('button', { name: /save suggested v2 plan/iu }),
+    )
+    await waitFor(() => expect(repository.saveCalls()).toBe(1))
+    expect(
+      onboardingPreferences.read('beside-cue-v2-preview-v1'),
+    ).toBeUndefined()
+
+    saveGate.resolve()
+
+    await waitFor(() =>
+      expect(repository.snapshot()?.cues).toMatchObject([
+        {
+          status: 'active',
+          pullCategoryId: 'scrolling',
+          pullText: 'Keep scrolling',
+          cueContextSuggestionId: 'anchor.scrolling.in-bed',
+          cueContextText: 'When I get into bed with my phone.',
+          bSideSuggestionId: 'bside.phone-away',
+          bSideText: 'Put the phone in another room',
+        },
+      ]),
+    )
+    expect(
+      onboardingPreferences.read('beside-cue-v2-preview-v1'),
+    ).toMatchObject({ outcome: 'finished' })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /finish v2 introduction/iu }),
+    )
+    expect(
+      await screen.findByRole('heading', {
+        name: /a better choice, kept close/iu,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('omits category and cue-context fields for a custom V2 Pull', async () => {
+    const repository = createMemoryRepository()
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository)}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /save custom v2 plan/iu }),
+    )
+
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    const savedCue = repository.snapshot()?.cues[0]
+    expect(savedCue).toMatchObject({
+      pullText: 'Open another late-night tab',
+      bSideText: 'Close the screen and stretch',
+    })
+    expect(savedCue).not.toHaveProperty('pullCategoryId')
+    expect(savedCue).not.toHaveProperty('cueContextSuggestionId')
+    expect(savedCue).not.toHaveProperty('cueContextText')
+    expect(savedCue).not.toHaveProperty('bSideSuggestionId')
+  })
+
+  it('reuses the real reminder path after the V2 plan is saved', async () => {
+    const repository = createMemoryRepository()
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository, {
+          platform: 'android',
+          runtime: probe.runtime,
+        })}
+      />
+    ))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /save suggested v2 plan/iu }),
+    )
+    await waitFor(() => expect(repository.snapshot()?.cues).toHaveLength(1))
+    fireEvent.click(screen.getByRole('button', { name: /set v2 reminder/iu }))
+
+    await waitFor(() =>
+      expect(repository.snapshot()?.scheduleRules).toMatchObject([
+        { kind: 'target_time', localTime: '09:00', enabled: true },
+      ]),
+    )
+    expect(probe.calls.scheduled.at(-1)).toHaveLength(1)
+  })
+
+  it('keeps replay callbacks write-free and returns to Settings', async () => {
+    const repository = createMemoryRepository(
+      stateWithActiveCue({
+        bSideSuggestionId: 'bside.phone-away',
+        bSideText: 'Put the phone in another room.',
+      }),
+    )
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
+    const output = createAudioOutputProbe()
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository, {
+          audioOutput: output.output,
+          platform: 'android',
+          runtime: probe.runtime,
+        })}
+        contentPack={packWithV2Score()}
+      />
+    ))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    fireEvent.click(screen.getByRole('switch', { name: /voice is on/iu }))
+    await waitFor(() =>
+      expect(repository.snapshot()?.settings.voiceEnabled).toBe(false),
+    )
+    const beforeReplay = structuredClone(repository.snapshot())
+    const savesBeforeReplay = repository.saveCalls()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /watch corky’s introduction again/iu,
+      }),
+    )
+    const harness = await screen.findByLabelText('V2 onboarding test harness')
+    expect(harness).toHaveAttribute('data-session-kind', 'replay')
+    expect(harness).toHaveAttribute('data-muted', 'true')
+    fireEvent.click(screen.getByRole('button', { name: /toggle v2 mute/iu }))
+    expect(harness).toHaveAttribute('data-muted', 'false')
+    expect(repository.snapshot()).toEqual(beforeReplay)
+    expect(repository.saveCalls()).toBe(savesBeforeReplay)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /save custom v2 plan/iu }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /set v2 reminder/iu }))
+    fireEvent.click(screen.getByRole('button', { name: /start v2 audio/iu }))
+    await waitFor(() => expect(output.playbacks).toHaveLength(1))
+    fireEvent.click(
+      screen.getByRole('button', { name: /finish v2 introduction/iu }),
+    )
+
+    expect(await screen.findByText('Current plan')).toBeInTheDocument()
+    expect(repository.snapshot()).toEqual(beforeReplay)
+    expect(repository.saveCalls()).toBe(savesBeforeReplay)
+    expect(probe.calls.scheduled).toHaveLength(0)
+    expect(output.playbacks).toHaveLength(1)
+    expect(
+      screen.getByRole('switch', { name: /voice is muted/iu }),
+    ).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /watch corky’s introduction again/iu,
+      }),
+    )
+    const restoredHarness = await screen.findByLabelText(
+      'V2 onboarding test harness',
+    )
+    expect(restoredHarness).toHaveAttribute('data-muted', 'true')
+    fireEvent.click(screen.getByRole('button', { name: /start v2 audio/iu }))
+    expect(output.playbacks).toHaveLength(1)
+  })
+
+  it('keeps the V2 sound control aligned with the persisted voice setting', async () => {
+    const repository = createMemoryRepository()
+    const output = createAudioOutputProbe()
+    render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository, {
+          audioOutput: output.output,
+        })}
+        contentPack={packWithV2Score()}
+      />
+    ))
+
+    const harness = await screen.findByLabelText('V2 onboarding test harness')
+    expect(harness).toHaveAttribute('data-muted', 'false')
+    fireEvent.click(screen.getByRole('button', { name: /toggle v2 mute/iu }))
+
+    await waitFor(() => {
+      expect(repository.snapshot()?.settings.voiceEnabled).toBe(false)
+      expect(harness).toHaveAttribute('data-muted', 'true')
+    })
+    fireEvent.click(screen.getByRole('button', { name: /start v2 audio/iu }))
+    expect(output.playbacks).toHaveLength(0)
+  })
+
+  it('keeps V2 foreground truth aligned across page and visibility events', async () => {
+    const repository = createMemoryRepository()
+    const output = createAudioOutputProbe()
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    const view = render(() => (
+      <App
+        config={V2_BESIDE_CUE_PREVIEW_CONFIG}
+        services={createTestServices(repository, {
+          audioOutput: output.output,
+        })}
+        contentPack={packWithV2Score()}
+      />
+    ))
+
+    const startAudio = await screen.findByRole('button', {
+      name: /start v2 audio/iu,
+    })
+    const harness = screen.getByLabelText('V2 onboarding test harness')
+    expect(harness).toHaveAttribute('data-foreground', 'true')
+    fireEvent.click(startAudio)
+    await waitFor(() => expect(output.playbacks).toHaveLength(1))
+
+    window.dispatchEvent(new Event('pagehide'))
+    await waitFor(() => {
+      expect(output.playbacks[0]?.stopCalls).toBe(1)
+      expect(harness).toHaveAttribute('data-foreground', 'false')
+    })
+
+    window.dispatchEvent(new Event('pageshow'))
+    await waitFor(() => {
+      expect(harness).toHaveAttribute('data-foreground', 'true')
+      expect(output.playbacks).toHaveLength(2)
+    })
+
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await waitFor(() => {
+      expect(output.playbacks[1]?.stopCalls).toBe(1)
+      expect(harness).toHaveAttribute('data-foreground', 'false')
+    })
+    view.unmount()
+    expect(output.calls.dispose).toBe(1)
   })
 })
 

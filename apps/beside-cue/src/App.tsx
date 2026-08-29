@@ -8,6 +8,7 @@ import type { BesideCueAppConfig } from './app-config'
 import { DEFAULT_BESIDE_CUE_CONFIG } from './app-config'
 import type { BesideCueAppServices } from './app-services'
 import { createDefaultAppServices } from './app-services'
+import { createAudioSession } from './audio/audio-session'
 import type { MainView } from './components/BottomNav'
 import { BrandMark } from './components/BrandMark'
 import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
@@ -18,6 +19,9 @@ import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
 import { CinematicOnboardingDirector } from './onboarding/CinematicOnboardingDirector'
+import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
+import type { V2OnboardingMutationResult, V2OnboardingReminderPreset, } from './onboarding/V2OnboardingDirector'
+import { V2OnboardingDirector } from './onboarding/V2OnboardingDirector'
 import { createProAccess } from './purchases/pro-access'
 import { PRO_DISPLAY_NAME } from './purchases/revenuecat-config'
 import type { DailyCueCoordinator, DailyCueReconcileResult, } from './scheduling/daily-cue-coordinator'
@@ -41,6 +45,7 @@ type AppScreen =
   | 'loading'
   | 'load-error'
   | 'cinematic'
+  | 'v2-onboarding'
   | 'welcome'
   | 'choose-pull'
   | 'choose-cue-context'
@@ -56,6 +61,8 @@ type SetupMode = 'create' | 'replace'
 export interface AppProps {
   readonly config?: BesideCueAppConfig
   readonly services?: BesideCueAppServices
+  /** Enables write-free V2 review navigation; flow activation stays in config. */
+  readonly onboardingReview?: boolean
   /** A localized or recorded pack can be injected without changing app flow. */
   readonly contentPack?: ContentPack
 }
@@ -146,6 +153,14 @@ function firstRunScreen(
 ): AppScreen {
   if (currentCue(state) !== undefined) return 'home'
   if (
+    onboarding.delivery === 'v2-first-run' &&
+    onboarding.contractVersion === '1.0' &&
+    onboarding.activation === 'developer-preview' &&
+    preferences.read(onboarding.revision) === undefined
+  ) {
+    return 'v2-onboarding'
+  }
+  if (
     onboarding.delivery === 'cinematic-first-run' &&
     onboarding.contractVersion === '0.5.0' &&
     validateCinematicOnboardingMediaManifest(onboarding.media).length === 0 &&
@@ -168,9 +183,22 @@ export function App(props: AppProps) {
       ? onboarding
       : undefined
   })
+  const v2OnboardingConfig = createMemo(() => {
+    const onboarding = config().onboarding
+    return onboarding.delivery === 'v2-first-run' &&
+      onboarding.contractVersion === '1.0' &&
+      onboarding.activation === 'developer-preview'
+      ? onboarding
+      : undefined
+  })
   const services = createMemo(
     () => props.services ?? createDefaultAppServices(),
   )
+  const v2EntrySessionKind: V2OnboardingSessionKind = untrack(
+    () => v2OnboardingConfig() !== undefined && props.onboardingReview === true,
+  )
+    ? 'developer-review'
+    : 'first-run'
   const initialState = createInitialState()
   const [appState, setAppState] = createSignal<BesideCueStateV1>(initialState)
   const [screen, setScreen] = createSignal<AppScreen>('loading')
@@ -178,6 +206,11 @@ export function App(props: AppProps) {
   const [settingsReturnView, setSettingsReturnView] =
     createSignal<MainView>('cue')
   const [cinematicRehearsal, setCinematicRehearsal] = createSignal(false)
+  const [v2OnboardingSessionKind, setV2OnboardingSessionKind] =
+    createSignal<V2OnboardingSessionKind>(v2EntrySessionKind)
+  const [v2Muted, setV2Muted] = createSignal(
+    !initialState.settings.voiceEnabled,
+  )
   const [setupMode, setSetupMode] = createSignal<SetupMode>('create')
   const [selectedPullId, setSelectedPullId] = createSignal<string>()
   const [voiceStatus, setVoiceStatus] = createSignal<VoicePlaybackStatus>({
@@ -222,17 +255,30 @@ export function App(props: AppProps) {
   let midnightTimer: ReturnType<typeof setTimeout> | undefined
   let visibilityListener: (() => void) | undefined
   let pageHideListener: (() => void) | undefined
+  let pageShowListener: (() => void) | undefined
   let pendingDailyCue: DailyCueNotificationPayload | undefined
   let notificationListener: LocalNotificationListenerHandle | undefined
   let pullPreviewRequest = 0
   let characterVoiceForeground =
     typeof document === 'undefined' || document.visibilityState === 'visible'
+  const [v2OnboardingForeground, setV2OnboardingForeground] = createSignal(
+    characterVoiceForeground,
+  )
   const attemptedPullPreviews = new Set<string>()
   let cueResolutionInFlight = false
   let timerCompletionHapticPlayed = false
   let onboardingPlanSavePromise:
     | Promise<CinematicOnboardingSaveResult>
     | undefined
+  let v2OnboardingPlanSavePromise:
+    | Promise<V2OnboardingMutationResult>
+    | undefined
+  const onboardingAudioSession = createAudioSession({
+    manifest: untrack(contentPack).audio,
+    output: untrack(services).audioOutput,
+    muted: !initialState.settings.voiceEnabled,
+    foreground: characterVoiceForeground,
+  })
   const characterVoicePlayer = createVoicePlayer({
     pack: untrack(contentPack),
     audio: untrack(services).voiceAudio,
@@ -362,6 +408,14 @@ export function App(props: AppProps) {
       text: action.label.replace(/[.]$/, ''),
     }))
   })
+  const v2ReminderPresets = createMemo<readonly V2OnboardingReminderPreset[]>(
+    () =>
+      config().dailyCue.presets.map((preset) => ({
+        id: preset.id,
+        label: preset.label,
+        localTime: preset.localTime,
+      })),
+  )
   const progress = createMemo(() =>
     aggregateSevenDayBSides(appState(), today()),
   )
@@ -748,6 +802,131 @@ export function App(props: AppProps) {
     return savePromise
   }
 
+  function completeV2Onboarding(): void {
+    if (v2OnboardingSessionKind() !== 'first-run') {
+      const persistedMuted = !latestState.settings.voiceEnabled
+      setV2Muted(persistedMuted)
+      onboardingAudioSession.setMuted(persistedMuted)
+      setScreen(currentCue(latestState) === undefined ? 'welcome' : 'settings')
+      return
+    }
+
+    if (currentCue(latestState) === undefined) {
+      setScreen('welcome')
+      return
+    }
+
+    setActiveView('cue')
+    setScreen('home')
+  }
+
+  function saveV2OnboardingPlan(
+    plan: V2OnboardingPlanDraft,
+  ): Promise<V2OnboardingMutationResult> {
+    if (
+      v2OnboardingSessionKind() !== 'first-run' ||
+      screen() !== 'v2-onboarding'
+    ) {
+      return Promise.resolve({ ok: true })
+    }
+    if (v2OnboardingPlanSavePromise !== undefined) {
+      return v2OnboardingPlanSavePromise
+    }
+
+    const savePromise = (async (): Promise<V2OnboardingMutationResult> => {
+      const appServices = services()
+      const appConfig = config()
+      const onboarding = appConfig.onboarding
+      if (
+        onboarding.delivery !== 'v2-first-run' ||
+        onboarding.contractVersion !== '1.0' ||
+        onboarding.activation !== 'developer-preview'
+      ) {
+        return {
+          ok: false,
+          message: 'This V2 introduction is not available in this build.',
+        }
+      }
+
+      try {
+        const currentState = latestState
+        const existingCue = currentCue(currentState)
+        const at = appServices.now().toISOString()
+        const cueInput = {
+          id: appServices.createId(),
+          ...(plan.pullId === 'custom' ? {} : { pullCategoryId: plan.pullId }),
+          pullText: normalizeCueText(plan.sideAText),
+          ...(plan.bSideSuggestionId === undefined
+            ? {}
+            : { bSideSuggestionId: plan.bSideSuggestionId }),
+          bSideText: normalizeCueText(plan.bSideText),
+          ...(plan.cueContextSuggestionId === undefined
+            ? {}
+            : { cueContextSuggestionId: plan.cueContextSuggestionId }),
+          ...(plan.cueContextText === undefined
+            ? {}
+            : { cueContextText: normalizeCueText(plan.cueContextText) }),
+          mascotSetId: appConfig.mascotSetId,
+          at,
+        }
+        const previousRule =
+          existingCue === undefined
+            ? undefined
+            : enabledDailyRule(currentState, existingCue.id)
+        const setupState =
+          previousRule === undefined
+            ? currentState
+            : removeDailyTargetTimeRule(currentState, {
+                ruleId: previousRule.id,
+                at,
+              }).state
+        const nextState =
+          existingCue === undefined
+            ? activateCue(
+                createCue(setupState, cueInput).state,
+                cueInput.id,
+                at,
+              ).state
+            : replaceCue(setupState, {
+                ...cueInput,
+                replacedCueId: existingCue.id,
+              }).state
+
+        await persistAtomicallyWithRepository(nextState, appServices.repository)
+        appServices.onboardingPreferences.write(
+          onboarding.revision,
+          'finished',
+          appServices.now,
+        )
+        if (previousRule !== undefined) {
+          void reconcileDailyCue(nextState, appConfig, true).catch(
+            () => undefined,
+          )
+        }
+        setScheduleMessage(undefined)
+        setScheduleError(undefined)
+        setActiveView('cue')
+        return { ok: true }
+      } catch (error) {
+        return {
+          ok: false,
+          message:
+            error instanceof RangeError
+              ? 'Choose one clear Side A and Side B, then try again.'
+              : 'Your plan could not be saved on this device. Try again.',
+        }
+      }
+    })()
+
+    v2OnboardingPlanSavePromise = savePromise
+    void savePromise.then((result) => {
+      if (!result.ok && v2OnboardingPlanSavePromise === savePromise) {
+        v2OnboardingPlanSavePromise = undefined
+      }
+    })
+    return savePromise
+  }
+
   function choosePull(pullId: string): void {
     const selectionChanged = selectedPullId() !== pullId
     if (selectionChanged) {
@@ -1092,6 +1271,20 @@ export function App(props: AppProps) {
     return setDailyReminder(localTime)
   }
 
+  async function setV2OnboardingReminder(
+    localTime: string,
+  ): Promise<V2OnboardingMutationResult> {
+    if (
+      v2OnboardingSessionKind() !== 'first-run' ||
+      screen() !== 'v2-onboarding'
+    ) {
+      return { ok: true }
+    }
+
+    const result = await setDailyReminder(localTime)
+    return result.ok ? { ok: true } : { ok: false, message: result.message }
+  }
+
   function disableDailyCue(): void {
     if (schedulePending()) return
 
@@ -1310,12 +1503,39 @@ export function App(props: AppProps) {
     setScreen('settings')
   }
 
-  function toggleCharacterVoice(): void {
+  function setCharacterVoiceEnabled(voiceEnabled: boolean): void {
     const currentState = latestState
-    const voiceEnabled = !currentState.settings.voiceEnabled
+    if (currentState.settings.voiceEnabled === voiceEnabled) return
     if (!voiceEnabled) {
       stopCharacterVoice('muted')
     }
+    setV2Muted(!voiceEnabled)
+    onboardingAudioSession.setMuted(!voiceEnabled)
+    persist({
+      ...currentState,
+      settings: { ...currentState.settings, voiceEnabled },
+    })
+  }
+
+  function toggleCharacterVoice(): void {
+    setCharacterVoiceEnabled(!latestState.settings.voiceEnabled)
+  }
+
+  function setV2OnboardingMuted(muted: boolean): void {
+    setV2Muted(muted)
+    onboardingAudioSession.setMuted(muted)
+    if (muted) stopCharacterVoice('muted')
+
+    if (
+      v2OnboardingSessionKind() !== 'first-run' ||
+      screen() !== 'v2-onboarding'
+    ) {
+      return
+    }
+
+    const voiceEnabled = !muted
+    const currentState = latestState
+    if (currentState.settings.voiceEnabled === voiceEnabled) return
     persist({
       ...currentState,
       settings: { ...currentState.settings, voiceEnabled },
@@ -1324,6 +1544,20 @@ export function App(props: AppProps) {
 
   function replayIntroduction(): void {
     if (schedulePending()) return
+    if (v2OnboardingConfig() !== undefined) {
+      const persistedMuted = !latestState.settings.voiceEnabled
+      setResetArmed(false)
+      stopCharacterVoice('route-exit')
+      setV2Muted(persistedMuted)
+      onboardingAudioSession.setMuted(persistedMuted)
+      setScheduleMessage(undefined)
+      setScheduleError(undefined)
+      setV2OnboardingSessionKind(
+        props.onboardingReview === true ? 'developer-review' : 'replay',
+      )
+      setScreen('v2-onboarding')
+      return
+    }
     if (cinematicConfig() === undefined) {
       setStorageError('Corky’s introduction is not available in this build.')
       return
@@ -1355,8 +1589,12 @@ export function App(props: AppProps) {
         const nextState = createInitialState()
         latestState = nextState
         setAppState(nextState)
+        setV2Muted(!nextState.settings.voiceEnabled)
+        onboardingAudioSession.setMuted(!nextState.settings.voiceEnabled)
         onboardingPlanSavePromise = undefined
+        v2OnboardingPlanSavePromise = undefined
         setCinematicRehearsal(false)
+        setV2OnboardingSessionKind(v2EntrySessionKind)
         resetSetup('create')
         setScheduleMessage(undefined)
         setScheduleError(undefined)
@@ -1389,10 +1627,14 @@ export function App(props: AppProps) {
         untrack(() => {
           const nextState = storedState ?? createInitialState()
           onboardingPlanSavePromise = undefined
+          v2OnboardingPlanSavePromise = undefined
           setCinematicRehearsal(false)
+          setV2OnboardingSessionKind(v2EntrySessionKind)
           latestState = nextState
           stateLoaded = true
           setAppState(nextState)
+          setV2Muted(!nextState.settings.voiceEnabled)
+          onboardingAudioSession.setMuted(!nextState.settings.voiceEnabled)
           setScreen(
             firstRunScreen(
               nextState,
@@ -1422,8 +1664,12 @@ export function App(props: AppProps) {
         latestState = nextState
         stateLoaded = true
         setAppState(nextState)
+        setV2Muted(!nextState.settings.voiceEnabled)
+        onboardingAudioSession.setMuted(!nextState.settings.voiceEnabled)
         onboardingPlanSavePromise = undefined
+        v2OnboardingPlanSavePromise = undefined
         setCinematicRehearsal(false)
+        setV2OnboardingSessionKind(v2EntrySessionKind)
         appServices.onboardingPreferences.clear()
         setScreen(
           firstRunScreen(
@@ -1466,31 +1712,43 @@ export function App(props: AppProps) {
     visibilityListener = () => {
       if (document.visibilityState !== 'visible') {
         characterVoiceForeground = false
+        setV2OnboardingForeground(false)
         stopCharacterVoice('hidden')
+        onboardingAudioSession.setForeground(false)
         return
       }
       characterVoiceForeground = true
+      onboardingAudioSession.setForeground(true)
+      setV2OnboardingForeground(true)
       refreshLocalDay(appServices)
       restoreDailyCue(latestState, appConfig)
     }
     pageHideListener = () => {
       characterVoiceForeground = false
+      setV2OnboardingForeground(false)
       stopCharacterVoice('hidden')
+      onboardingAudioSession.setForeground(false)
     }
+    pageShowListener = () => visibilityListener?.()
     document.addEventListener('visibilitychange', visibilityListener)
     window.addEventListener('pagehide', pageHideListener)
+    window.addEventListener('pageshow', pageShowListener)
     load()
   })
 
   onCleanup(() => {
     disposed = true
     characterVoicePlayer.dispose()
+    onboardingAudioSession.dispose()
     if (midnightTimer !== undefined) clearTimeout(midnightTimer)
     if (visibilityListener !== undefined) {
       document.removeEventListener('visibilitychange', visibilityListener)
     }
     if (pageHideListener !== undefined) {
       window.removeEventListener('pagehide', pageHideListener)
+    }
+    if (pageShowListener !== undefined) {
+      window.removeEventListener('pageshow', pageShowListener)
     }
     if (notificationListener !== undefined) {
       void notificationListener.remove()
@@ -1559,6 +1817,24 @@ export function App(props: AppProps) {
             rehearsal={cinematicRehearsal()}
           />
         )}
+      </Show>
+
+      <Show
+        when={screen() === 'v2-onboarding' ? v2OnboardingConfig() : undefined}
+      >
+        <V2OnboardingDirector
+          sessionKind={v2OnboardingSessionKind()}
+          pullOptions={config().pullOptions}
+          contentPack={contentPack()}
+          audioSession={onboardingAudioSession}
+          foreground={v2OnboardingForeground()}
+          muted={v2Muted()}
+          reminderPresets={v2ReminderPresets()}
+          onMutedChange={setV2OnboardingMuted}
+          onSavePlan={saveV2OnboardingPlan}
+          onSetReminder={setV2OnboardingReminder}
+          onComplete={completeV2Onboarding}
+        />
       </Show>
 
       {screen() === 'choose-pull' ? (
