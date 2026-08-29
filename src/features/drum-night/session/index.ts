@@ -115,3 +115,9 @@ export { DrummerSeatView } from './DrummerSeatView'
 export type { DrummerSeatViewProps, DrumSeatLiveHit } from './DrummerSeatView'
 export { DrumSessionCoach } from './DrumSessionCoach'
 export type { DrumSessionCoachProps } from './DrumSessionCoach'
+export { createDrumSessionHumanizer } from './drum-session-humanize'
+export type {
+  DrumSessionHumanize,
+  DrumSessionHumanizeDecision,
+  DrumSessionHumanizeHit,
+} from './drum-session-scheduler'
