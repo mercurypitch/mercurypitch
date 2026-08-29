@@ -12,8 +12,10 @@ import { triggerDrumVoice } from '@/lib/drum-voices'
 import { normalizeGeneralMidiPercussionKey } from '@/lib/percussion'
 import type { DrumKitAuthoredFamily } from '../runtime/drum-pad-layout'
 import { DRUM_KIT_AUTHORED_FAMILIES, drumKitAuthoredFamily, } from '../runtime/drum-pad-layout'
+import { brightnessCutoffHz, measureOnsetSeconds, microVariation, velocityGain, } from './drum-hit-dynamics'
 import type { DrumKitId, DrumKitManifest, DrumKitSampleResource, } from './drum-kit-manifest'
 import { drumKitManifest, drumKitResourcesForHit, resolveDrumKitAssetUrl, } from './drum-kit-manifest'
+import { createDrumSampleSelector, fnv1a32, mulberry32, } from './drum-sample-select'
 
 export type DrumKitLoadStatus = 'error' | 'idle' | 'loading' | 'ready'
 export type DrumKitTriggerResult =
@@ -88,6 +90,8 @@ export interface DrumKitPlayerOptions {
   readonly maxEncodedSampleBytes?: number
   readonly maxVoices?: number
   readonly loadConcurrency?: number
+  /** Seeds pool selection and per-hit micro-variation; fixed default keeps sessions reproducible. */
+  readonly selectionSeed?: number
 }
 
 interface PlayerGraph {
@@ -102,11 +106,14 @@ interface CachedSample {
   buffer: AudioBuffer
   bytes: number
   kitId: DrumKitId
+  /** Measured on the decoded buffer so codec padding never delays the hit. */
+  onsetSec: number
 }
 
 interface SampleVoice {
   sequence: number
   source: AudioBufferSourceNode
+  filter: BiquadFilterNode | null
   gain: GainNode
   resourceId: string
   chokeGroup: string | null
@@ -372,7 +379,9 @@ export function createDrumKitPlayer(
   const retainedSampleCounts = new Map<string, number>()
   const inFlight = new Map<string, Promise<AudioBuffer>>()
   const voices = new Map<number, SampleVoice>()
-  const roundRobinCounters = new Map<string, number>()
+  const selectionSeed = options.selectionSeed ?? 0xd1a7
+  const sampleSelector = createDrumSampleSelector(selectionSeed)
+  const hitRandom = mulberry32(fnv1a32(selectionSeed, 0x9e3779b9))
   const listeners = new Set<() => void>()
 
   let selectedKitId: DrumKitId = options.initialKitId ?? 'mercury-synth'
@@ -506,7 +515,12 @@ export function createDrumKitPlayer(
     }
     if (previous !== undefined) decodedBytes -= previous.bytes
     cache.delete(resource.id)
-    cache.set(resource.id, { buffer, bytes, kitId: resource.kitId })
+    cache.set(resource.id, {
+      buffer,
+      bytes,
+      kitId: resource.kitId,
+      onsetSec: measureOnsetSeconds(buffer),
+    })
     decodedBytes += bytes
     refreshPreparedSamples()
     if (
@@ -527,6 +541,7 @@ export function createDrumKitPlayer(
     if (voices.get(voice.sequence) === voice) voices.delete(voice.sequence)
     releaseSample(voice.resourceId)
     safeDisconnect(voice.source)
+    if (voice.filter !== null) safeDisconnect(voice.filter)
     safeDisconnect(voice.gain)
   }
 
@@ -893,14 +908,17 @@ export function createDrumKitPlayer(
     gmKey: number,
     velocity: number,
   ): DrumKitSampleResource | null => {
-    const resources = drumKitResourcesForHit(selectedKitId, gmKey, velocity)
-    if (resources.length === 0) return null
-    const counterKey = `${selectedKitId}:${gmKey}:${resources[0].velocityMin}`
-    const counter = roundRobinCounters.get(counterKey) ?? 0
-    roundRobinCounters.set(counterKey, counter + 1)
-    const preferred = resources[counter % resources.length]
+    if (selectedKitId === 'mercury-synth') return null
+    // The full articulation pool, regardless of authored velocity bands: the
+    // selector targets the band center itself, so a hit may deliberately
+    // borrow a neighboring layer for variation.
+    const pool = drumKitManifest(selectedKitId).resources.filter((resource) =>
+      resource.gmKeys.includes(gmKey),
+    )
+    const preferred = sampleSelector.pick(pool, velocity)
+    if (preferred === null) return null
     if (cache.has(preferred.id)) return preferred
-    return resources.find((resource) => cache.has(resource.id)) ?? preferred
+    return pool.find((resource) => cache.has(resource.id)) ?? preferred
   }
 
   const chokeInternal = (
@@ -947,24 +965,40 @@ export function createDrumKitPlayer(
     }
     let voice: SampleVoice | null = null
     try {
+      const boundedVelocity = clamp(velocity, 1, 127)
+      const variation = microVariation(hitRandom, resource.articulation)
       const source = activeGraph.context.createBufferSource()
       const gain = activeGraph.context.createGain()
       const strikeGain = Math.max(
         MINIMUM_GAIN,
         resource.playbackGain *
-          (0.12 + 0.88 * Math.pow(clamp(velocity, 1, 127) / 127, 1.25)),
+          velocityGain(resource.articulation, boundedVelocity) *
+          variation.gainScale,
       )
       source.buffer = cached.buffer
+      source.playbackRate.value = variation.rateRatio
       gain.gain.setValueAtTime(MINIMUM_GAIN, at)
       gain.gain.exponentialRampToValueAtTime(
         strikeGain,
         at + SAMPLE_ATTACK_SECONDS,
       )
-      source.connect(gain)
+      const cutoffHz = brightnessCutoffHz(boundedVelocity)
+      let filter: BiquadFilterNode | null = null
+      if (cutoffHz !== null) {
+        filter = activeGraph.context.createBiquadFilter()
+        filter.type = 'lowpass'
+        filter.frequency.value = cutoffHz * variation.cutoffScale
+        filter.Q.value = 0.5
+        source.connect(filter)
+        filter.connect(gain)
+      } else {
+        source.connect(gain)
+      }
       gain.connect(triggerDestination(activeGraph, lane, gmKey))
       const startedVoice: SampleVoice = {
         sequence: ++voiceSequence,
         source,
+        filter,
         gain,
         resourceId: resource.id,
         chokeGroup: resource.chokeGroup,
@@ -978,7 +1012,13 @@ export function createDrumKitPlayer(
       source.onended = () => cleanVoice(startedVoice)
       openLane(activeGraph, lane, at)
       openMaster(activeGraph, at)
-      source.start(at)
+      source.start(
+        at,
+        Math.min(
+          cached.onsetSec + variation.startOffsetSec,
+          Math.max(0, cached.buffer.duration - 0.001),
+        ),
+      )
       return true
     } catch {
       if (voice !== null) {
@@ -1107,7 +1147,7 @@ export function createDrumKitPlayer(
       selectionGeneration += 1
       loadGeneration += 1
       selectedKitId = kitId
-      roundRobinCounters.clear()
+      sampleSelector.reset()
       preparedResourceIds = new Set()
       plannedSamples = 0
       preparedSamples = 0
