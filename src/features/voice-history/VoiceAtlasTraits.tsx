@@ -305,6 +305,7 @@ function TakeTraitColumn(props: {
         [styles.earlier]: props.selected.label === 'Earlier',
         [styles.later]: props.selected.label === 'Later',
       }}
+      data-testid={`voice-atlas-traits-${props.selected.label.toLowerCase()}`}
     >
       <div class={styles.takeHeading}>
         <span>{props.selected.label}</span>
