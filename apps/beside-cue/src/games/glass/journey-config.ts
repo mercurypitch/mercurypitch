@@ -191,6 +191,16 @@ export const JOURNEY_CONFIG = {
     /** Panes charge by proximity in this mode — singing an intact pane's
      * note within this many units makes it resonate, node order aside. */
     paneChargeUnits: 1.3,
+    /** Vertical camera. Standing, the view re-centers so Merc keeps this
+     * screen-y (0.5 = equal air above and below). Airborne, the camera
+     * only follows once Merc enters the top/bottom camAirBand of the
+     * screen — a single jump never yanks the view. The pan itself is a
+     * lerp; it never scrolls below the baseline framing, and never above
+     * centering the highest platform. Flow mode keeps its fixed window
+     * (there the pitch ruler IS the frame). */
+    camCenterY: 0.5,
+    camAirBand: 0.24,
+    camYLerp: 0.055,
   },
 
   /** Game-emitted audio (all of it gated by the corner toggles too). */

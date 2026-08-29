@@ -124,8 +124,14 @@ Levels declare a control scheme; both run in the same stage engine:
   on (walking off the edge is the only way down), landing catches any
   downward crossing of a top within `control.footUnits` of overhang,
   and the release-glide filter applies here too so a stopping voice
-  cannot drag him past the settle range. Tryout level: **Jump Trials**
-  on the games list; tunables in `JOURNEY_CONFIG.control`.
+  cannot drag him past the settle range. The camera pans vertically
+  (`control.camCenterY` / `camAirBand` / `camYLerp`): standing re-centers
+  Merc with equal air above and below, airborne the view follows only
+  near the screen edges — no per-jump yank — and the pan clamps between
+  the baseline framing and centering the highest platform. Flow mode
+  keeps its fixed window (the pitch ruler is the frame). Tryout level:
+  **Jump Trials** on the games list; tunables in
+  `JOURNEY_CONFIG.control`.
 
 ## 3. Educated playability
 

@@ -119,6 +119,9 @@ export const JourneyPrototype: Component<{
   let zones: WhisperZone[] = []
   let boss: Boss | null = null
   let camX = 0
+  /** Vertical pan (Jump Trials): world-y fraction subtracted at draw time.
+   * 0 = baseline framing; negative pans the view up with Merc. */
+  let camY = 0
   let worldMax = 42
 
   let mercWX = 1.6
@@ -413,6 +416,7 @@ export const JourneyPrototype: Component<{
     mercWX = 1.6
     mercY = yFor(g) - 0.035
     camX = 0
+    camY = 0
     trail = []
     ghost = []
     falling = false
@@ -505,6 +509,7 @@ export const JourneyPrototype: Component<{
     mercY = yFor(g) - 0.035
     restIdx = 0
     camX = 0
+    camY = 0
     trail = []
     ghost = []
     falling = false
@@ -1222,6 +1227,31 @@ export const JourneyPrototype: Component<{
         worldMax - C.view.viewUnits,
       )
       camX += (target - camX) * C.view.cameraLerp
+
+      // vertical camera (trials only): standing re-centers Merc on screen;
+      // airborne, the view follows only inside the edge bands so a single
+      // jump never yanks it. Clamped between the baseline framing and
+      // centering the highest platform.
+      if (isTrials()) {
+        let wantY = camY
+        const rel = mercY - camY
+        if (restIdx !== null) {
+          wantY = mercY - C.control.camCenterY
+        } else if (rel < C.control.camAirBand) {
+          wantY = mercY - C.control.camAirBand
+        } else if (rel > 1 - C.control.camAirBand) {
+          wantY = mercY - (1 - C.control.camAirBand)
+        }
+        let camMin = 0
+        for (const pl of platforms) {
+          camMin = Math.min(
+            camMin,
+            yFor(pl.midi) - 0.035 - C.control.camCenterY,
+          )
+        }
+        camY +=
+          (Math.min(0, Math.max(camMin, wantY)) - camY) * C.control.camYLerp
+      }
     }
 
     // motion feel: smoothed velocities drive squash/stretch and lean
@@ -1283,6 +1313,10 @@ export const JourneyPrototype: Component<{
     const camPx = camX * unitPx
     drawBackdrop(ctx, w, h, camPx)
     if (phase() === 'intro' || phase() === 'ground') return
+
+    // vertical pan: every world element shifts as one; the backdrop above
+    // stays pinned (it is sky, not world)
+    ctx.translate(0, -camY * h)
 
     const X = (wx: number): number => (wx - camX) * unitPx
 
@@ -1864,6 +1898,7 @@ export const JourneyPrototype: Component<{
         falling,
         phase: phase(),
         activeIdx,
+        camY: Math.round(camY * 1000) / 1000,
       })
     }
     window.addEventListener('keydown', keyDown)
