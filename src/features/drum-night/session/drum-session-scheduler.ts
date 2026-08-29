@@ -11,6 +11,10 @@ import type { DrumAuthoredSchedulingWindow, DrumTransport, } from '../runtime/dr
 import type { DrumSessionDocument } from './drum-session'
 
 export const DEFAULT_DRUM_SESSION_LOOKAHEAD_MS = 100
+/** Humanized playback needs early-shift headroom inside the lookahead. */
+export const HUMANIZED_DRUM_SESSION_LOOKAHEAD_MS = 120
+/** A hit carries at most one flam plus one drag grace. */
+export const MAX_DRUM_SESSION_ORNAMENTS_PER_HIT = 2
 /** Matches the player's default voice ceiling for one authored attack. */
 export const MAX_DRUM_SESSION_OCCURRENCES_PER_TIMESTAMP = 48
 /** One synchronous pass cannot enqueue an unbounded authored range. */
@@ -81,6 +85,30 @@ export interface DrumSessionSchedulerSnapshot {
   readonly lastOccurrence: DrumScheduledSessionOccurrence | null
 }
 
+export interface DrumSessionHumanizeHit {
+  readonly gmKey: number
+  readonly velocity: number
+  readonly startBeat: number
+  readonly timelineBeat: number
+  readonly loopIteration: number
+}
+
+export interface DrumSessionHumanizeDecision {
+  /** Milliseconds relative to the grid time; positive plays late. */
+  readonly timeOffsetMs: number
+  readonly velocity: number
+  /** Grace notes before the main hit; bounded, same GM key. */
+  readonly ornaments: readonly {
+    readonly leadMs: number
+    readonly velocity: number
+  }[]
+}
+
+/** Null keeps the authored values; a throwing hook is treated the same. */
+export type DrumSessionHumanize = (
+  hit: DrumSessionHumanizeHit,
+) => DrumSessionHumanizeDecision | null
+
 export interface DrumSessionSchedulerOptions {
   readonly transport: DrumTransport
   readonly player: DrumKitPlayerPort
@@ -92,6 +120,7 @@ export interface DrumSessionSchedulerOptions {
     timestampMs: number,
   ) => number | null
   readonly lookaheadMs?: number
+  readonly humanize?: DrumSessionHumanize
 }
 
 export interface DrumSessionScheduler {
@@ -237,7 +266,12 @@ export function createDrumSessionScheduler(
 ): DrumSessionScheduler {
   const listeners = new Set<() => void>()
   const occurrenceKeys = new Map<string, number>()
-  const defaultLookaheadMs = boundedLookahead(options.lookaheadMs)
+  const defaultLookaheadMs = boundedLookahead(
+    options.lookaheadMs ??
+      (options.humanize === undefined
+        ? undefined
+        : HUMANIZED_DRUM_SESSION_LOOKAHEAD_MS),
+  )
   let document: DrumSessionDocument | null = null
   let playableHits: readonly IndexedSessionHit[] = Object.freeze([])
   let indexedHitCount = 0
@@ -582,14 +616,76 @@ export function createDrumSessionScheduler(
           }
 
           occurrenceKeys.set(occurrenceKey, hitTimelineBeat)
+          let playedVelocity = hit.velocity
+          let playedContextTime = atContextTime
+          let ornaments: DrumSessionHumanizeDecision['ornaments'] = []
+          if (options.humanize !== undefined) {
+            try {
+              const decision = options.humanize({
+                gmKey: hit.gmKey,
+                velocity: hit.velocity,
+                startBeat: hit.startBeat,
+                timelineBeat: hitTimelineBeat,
+                loopIteration: window.loopIteration,
+              })
+              if (decision !== null) {
+                if (Number.isFinite(decision.timeOffsetMs)) {
+                  playedContextTime = Math.max(
+                    0,
+                    atContextTime + decision.timeOffsetMs / 1_000,
+                  )
+                }
+                if (Number.isFinite(decision.velocity)) {
+                  playedVelocity = Math.min(
+                    127,
+                    Math.max(1, Math.round(decision.velocity)),
+                  )
+                }
+                ornaments = decision.ornaments.slice(
+                  0,
+                  MAX_DRUM_SESSION_ORNAMENTS_PER_HIT,
+                )
+              }
+            } catch {
+              playedVelocity = hit.velocity
+              playedContextTime = atContextTime
+              ornaments = []
+            }
+          }
+          const hitSourceId = `authored:${hit.trackId}:${hit.sourceHitId ?? hit.sequence}`
+          for (const ornament of ornaments) {
+            if (
+              !Number.isFinite(ornament.leadMs) ||
+              !Number.isFinite(ornament.velocity)
+            ) {
+              continue
+            }
+            try {
+              options.player.trigger({
+                gmKey: hit.gmKey,
+                velocity: Math.min(
+                  127,
+                  Math.max(1, Math.round(ornament.velocity)),
+                ),
+                atContextTime: Math.max(
+                  0,
+                  playedContextTime - ornament.leadMs / 1_000,
+                ),
+                sourceId: `${hitSourceId}:ornament`,
+                lane: 'authored',
+              })
+            } catch {
+              // Ornaments are decoration; a failed grace never blocks the hit.
+            }
+          }
           let truth: DrumSessionTriggerTruth = 'dropped'
           try {
             truth = truthFromPlayerResult(
               options.player.trigger({
                 gmKey: hit.gmKey,
-                velocity: hit.velocity,
-                atContextTime,
-                sourceId: `authored:${hit.trackId}:${hit.sourceHitId ?? hit.sequence}`,
+                velocity: playedVelocity,
+                atContextTime: playedContextTime,
+                sourceId: hitSourceId,
                 lane: 'authored',
               }),
             )
@@ -604,12 +700,12 @@ export function createDrumSessionScheduler(
             trackId: hit.trackId,
             sourceHitId: hit.sourceHitId,
             gmKey: hit.gmKey,
-            velocity: hit.velocity,
+            velocity: playedVelocity,
             authoredBeat: hit.startBeat,
             timelineBeat: hitTimelineBeat,
             loopIteration: window.loopIteration,
             performanceTimestampMs,
-            atContextTime,
+            atContextTime: playedContextTime,
             triggerTruth: truth,
           })
           scheduledThisPass += 1

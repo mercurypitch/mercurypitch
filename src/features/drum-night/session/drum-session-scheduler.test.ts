@@ -711,3 +711,84 @@ describe('Drum Night session scheduler', () => {
     expect(scheduler.snapshot().status).toBe('playing')
   })
 })
+
+describe('humanize hook', () => {
+  function humanizedHarness(
+    humanize: Parameters<typeof createDrumSessionScheduler>[0]['humanize'],
+  ) {
+    const clock = new FakeClock()
+    const transport = createDrumTransport({ clock, countInBeats: 0 })
+    const player = playerFixture('sampled')
+    const scheduler = createDrumSessionScheduler({
+      transport,
+      player,
+      lookaheadMs: 600,
+      performanceTimestampToContextTime: (timestampMs) =>
+        10 + (timestampMs - clock.nowMs()) / 1_000,
+      ...(humanize === undefined ? {} : { humanize }),
+    })
+    const song = drumSongFixture({
+      percussionTracks: [
+        percussionTrackFixture({
+          hits: [{ id: 'kick', gmKey: 36, startBeat: 0, velocity: 111 }],
+        }),
+      ],
+    })
+    scheduler.setSession(readyDocumentFixture({ song }))
+    transport.start()
+    return { player, scheduler }
+  }
+
+  it('shifts timing, replaces velocity, and schedules ornaments', () => {
+    const humanize = vi.fn(() => ({
+      timeOffsetMs: 12,
+      velocity: 99,
+      ornaments: [{ leadMs: 25, velocity: 54 }],
+    }))
+    const { player, scheduler } = humanizedHarness(humanize)
+
+    expect(humanize).toHaveBeenCalledWith({
+      gmKey: 36,
+      velocity: 111,
+      startBeat: 0,
+      timelineBeat: 0,
+      loopIteration: 0,
+    })
+    expect(player.trigger).toHaveBeenCalledTimes(2)
+    const calls = player.trigger.mock.calls.map(([hit]) => hit)
+    const ornament = calls.find((hit) =>
+      (hit.sourceId ?? '').endsWith(':ornament'),
+    )
+    const main = calls.find((hit) => hit.sourceId === 'authored:drums:kick')
+    expect(main).toMatchObject({ gmKey: 36, velocity: 99 })
+    expect(main?.atContextTime).toBeCloseTo(10.012, 6)
+    expect(ornament).toMatchObject({ gmKey: 36, velocity: 54 })
+    expect(ornament?.atContextTime).toBeCloseTo(10.012 - 0.025, 6)
+    expect(scheduler.snapshot().lastOccurrence).toMatchObject({
+      velocity: 99,
+    })
+    expect(scheduler.snapshot().lastOccurrence?.atContextTime).toBeCloseTo(
+      10.012,
+      6,
+    )
+  })
+
+  it('keeps authored values when the hook throws or returns null', () => {
+    for (const humanize of [
+      vi.fn(() => {
+        throw new Error('bad hook')
+      }),
+      vi.fn(() => null),
+    ]) {
+      const { player } = humanizedHarness(humanize)
+      expect(player.trigger).toHaveBeenCalledTimes(1)
+      expect(player.trigger).toHaveBeenCalledWith({
+        gmKey: 36,
+        velocity: 111,
+        atContextTime: 10,
+        sourceId: 'authored:drums:kick',
+        lane: 'authored',
+      })
+    }
+  })
+})
