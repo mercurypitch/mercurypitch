@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { HumanizeInputEvent, HumanizeOptions } from './groove-humanize'
-import { HUMANIZE_STYLE_PROFILES, humanizeDrumEvents, suggestGhostSteps, swingRatioForTempo, swingShiftMs, } from './groove-humanize'
+import { HUMANIZE_STYLE_PROFILES, humanizeDrumEvents, measuredProfileCell, suggestGhostSteps, swingRatioForTempo, swingShiftMs, } from './groove-humanize'
 
 function options(overrides: Partial<HumanizeOptions> = {}): HumanizeOptions {
   return {
@@ -242,5 +242,85 @@ describe('suggestGhostSteps', () => {
       ).length
     }
     expect(total).toBeGreaterThan(30)
+  })
+})
+
+describe('measured Groove MIDI profiles', () => {
+  it('exposes cells for sampled articulations and nothing for unmeasured ones', () => {
+    const rockHat = measuredProfileCell('rock', 'hh-closed', 1)
+    expect(rockHat).not.toBeNull()
+    expect(rockHat?.offSdScale).toBeGreaterThan(0)
+    expect(rockHat?.velScale).toBeGreaterThan(0)
+    // The dataset has no clap, and electronic is hand-authored on purpose.
+    expect(measuredProfileCell('rock', 'clap', 0)).toBeNull()
+    expect(measuredProfileCell('electronic', 'hh-closed', 0)).toBeNull()
+  })
+
+  it('keeps every measured mean inside the bound', () => {
+    const styles = ['rock', 'funk', 'jazz', 'latin'] as const
+    const articulations = ['kick', 'snare', 'hh-closed', 'ride'] as const
+    for (const style of styles) {
+      for (const articulation of articulations) {
+        for (let step = 0; step < 16; step += 1) {
+          const cell = measuredProfileCell(style, articulation, step)
+          if (cell === null) continue
+          expect(Math.abs(cell.offMeanMs)).toBeLessThanOrEqual(12)
+          expect(cell.offSdScale).toBeGreaterThanOrEqual(0.4)
+          expect(cell.offSdScale).toBeLessThanOrEqual(2)
+        }
+      }
+    }
+  })
+
+  it('pushes positions the dataset plays late later than ones it plays early', () => {
+    const late = measuredProfileCell('rock', 'hh-closed', 1)
+    const early = measuredProfileCell('rock', 'hh-closed', 3)
+    expect(late).not.toBeNull()
+    expect(early).not.toBeNull()
+    expect((late as { offMeanMs: number }).offMeanMs).toBeGreaterThan(
+      (early as { offMeanMs: number }).offMeanMs,
+    )
+
+    const meanOffsetAtStep = (step: number): number => {
+      let total = 0
+      const seeds = 200
+      for (let seed = 1; seed <= seeds; seed += 1) {
+        const [event] = humanizeDrumEvents(
+          [{ articulation: 'hh-closed', bar: 0, step, velocity: 84 }],
+          options({ intensity: 1, seed }),
+        )
+        total += event.timeOffsetMs
+      }
+      return total / seeds
+    }
+    expect(meanOffsetAtStep(1)).toBeGreaterThan(meanOffsetAtStep(3))
+  })
+
+  it('nudges authored velocity toward the measured accent without taking over', () => {
+    const authored = 100
+    for (let seed = 1; seed <= 40; seed += 1) {
+      const [event] = humanizeDrumEvents(
+        [{ articulation: 'snare', bar: 0, step: 1, velocity: authored }],
+        options({ style: 'rock', intensity: 1, seed }),
+      )
+      // 25 accent nudge + velocity noise; intent survives either way.
+      expect(Math.abs(event.velocity - authored)).toBeLessThanOrEqual(60)
+    }
+  })
+
+  it('takes ghost and flam rates from the dataset when it measured them', () => {
+    const occupied = new Set([0, 4, 8, 12])
+    let ghosts = 0
+    for (let bar = 0; bar < 200; bar += 1) {
+      ghosts += suggestGhostSteps(
+        occupied,
+        bar,
+        options({ style: 'rock', intensity: 1 }),
+      ).length
+    }
+    // Measured rock ghost rate is ~0.10 per eligible sixteenth.
+    const perBar = ghosts / 200
+    expect(perBar).toBeGreaterThan(0.4)
+    expect(perBar).toBeLessThan(2.5)
   })
 })

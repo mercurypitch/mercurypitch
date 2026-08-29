@@ -14,6 +14,7 @@
 
 import type { DrumVoiceId } from '@/lib/drum-voices'
 import { fnv1a32, mulberry32 } from '../audio/drum-sample-select'
+import generatedProfiles from './groove-profiles.generated.json'
 
 export type HumanizeStyle = 'electronic' | 'funk' | 'jazz' | 'latin' | 'rock'
 
@@ -168,8 +169,149 @@ const DRIFT_LEAK = 0.985
 /** Stationary sd multiplier for the leaky walk fed by uniform(-1, 1). */
 const DRIFT_STATIONARY = PINK_ROW_SD / Math.sqrt(1 - DRIFT_LEAK * DRIFT_LEAK)
 const FLAM_VELOCITY_RATIO = 0.55
+/** Perceived flam range: below is a doubled hit, above is two separate notes. */
+const MIN_FLAM_LEAD_MS = 15
+const MAX_FLAM_LEAD_MS = 35
 const GHOST_VELOCITY_MEAN = 28
 const GHOST_VELOCITY_SD = 6
+
+interface GeneratedPositionRows {
+  readonly offMeanMs: readonly (number | null)[]
+  readonly offSdMs: readonly (number | null)[]
+  readonly velMean: readonly (number | null)[]
+  readonly velSd: readonly (number | null)[]
+}
+
+interface GeneratedStyle {
+  readonly positions: Readonly<Record<string, GeneratedPositionRows>>
+  readonly ghostProb: number
+  readonly ghostVel: readonly number[] | null
+  readonly flamProb: number
+  readonly flamLeadMs: readonly number[] | null
+}
+
+interface GeneratedProfiles {
+  readonly schemaVersion: number
+  readonly styles: Readonly<Record<string, GeneratedStyle>>
+}
+
+/**
+ * One measured cell, already reshaped for runtime use.
+ *
+ * The dataset's raw spread runs 10-25 ms, which lands in the range listeners
+ * rate as sloppy, so magnitudes are NOT taken literally: the tables supply the
+ * *shape* of real playing — which positions sit late, which are looser, where
+ * the accents fall — and that shape is renormalized onto the literature-
+ * anchored per-style magnitudes. Means are the exception: they are small and
+ * meaningful, so they pass through under a bound.
+ */
+interface ProfileCell {
+  /** Measured residual mean for this position, bounded (ms). */
+  readonly offMeanMs: number
+  /** Timing looseness relative to this articulation's own average. */
+  readonly offSdScale: number
+  /** Accent shape relative to this articulation's own average velocity. */
+  readonly velScale: number
+  /** Velocity spread relative to this articulation's own average. */
+  readonly velSdScale: number
+}
+
+const PROFILES = generatedProfiles as unknown as GeneratedProfiles
+/** Measured means beyond this are treated as dataset artifacts, not feel. */
+const MAX_TABLE_MEAN_MS = 12
+/** Shape multipliers stay near 1 so no position collapses or explodes. */
+const MIN_SHAPE_SCALE = 0.4
+const MAX_SHAPE_SCALE = 2
+/** The accent shape nudges authored velocity; it never replaces intent. */
+const ACCENT_TABLE_WEIGHT = 0.35
+const MAX_ACCENT_TABLE_DELTA = 25
+
+function clampRange(value: number, low: number, high: number): number {
+  return Math.min(high, Math.max(low, value))
+}
+
+function rowMean(row: readonly (number | null)[]): number {
+  let sum = 0
+  let count = 0
+  for (const value of row) {
+    if (value !== null && Number.isFinite(value)) {
+      sum += value
+      count += 1
+    }
+  }
+  return count === 0 ? 0 : sum / count
+}
+
+function buildStyleCells(
+  style: GeneratedStyle,
+): Map<string, readonly (ProfileCell | null)[]> {
+  const byArticulation = new Map<string, readonly (ProfileCell | null)[]>()
+  for (const [articulation, rows] of Object.entries(style.positions)) {
+    const meanOffSd = rowMean(rows.offSdMs)
+    const meanVel = rowMean(rows.velMean)
+    const meanVelSd = rowMean(rows.velSd)
+    const cells: (ProfileCell | null)[] = []
+    for (let step = 0; step < 16; step += 1) {
+      const offMean = rows.offMeanMs[step]
+      const offSd = rows.offSdMs[step]
+      const vel = rows.velMean[step]
+      const velSd = rows.velSd[step]
+      if (
+        offMean === null ||
+        offSd === null ||
+        vel === null ||
+        velSd === null ||
+        meanOffSd <= 0 ||
+        meanVel <= 0 ||
+        meanVelSd <= 0
+      ) {
+        cells.push(null)
+        continue
+      }
+      cells.push({
+        offMeanMs: clampRange(offMean, -MAX_TABLE_MEAN_MS, MAX_TABLE_MEAN_MS),
+        offSdScale: clampRange(
+          offSd / meanOffSd,
+          MIN_SHAPE_SCALE,
+          MAX_SHAPE_SCALE,
+        ),
+        velScale: clampRange(vel / meanVel, MIN_SHAPE_SCALE, MAX_SHAPE_SCALE),
+        velSdScale: clampRange(
+          velSd / meanVelSd,
+          MIN_SHAPE_SCALE,
+          MAX_SHAPE_SCALE,
+        ),
+      })
+    }
+    byArticulation.set(articulation, cells)
+  }
+  return byArticulation
+}
+
+const PROFILE_CELLS: ReadonlyMap<
+  string,
+  ReadonlyMap<string, readonly (ProfileCell | null)[]>
+> = new Map(
+  Object.entries(PROFILES.styles).map(([style, data]) => [
+    style,
+    buildStyleCells(data),
+  ]),
+)
+
+/** Measured cell for one position, or null when the dataset had no evidence. */
+export function measuredProfileCell(
+  style: HumanizeStyle,
+  articulation: DrumVoiceId,
+  step: number,
+): ProfileCell | null {
+  const cells = PROFILE_CELLS.get(style)?.get(articulation)
+  if (cells === undefined) return null
+  return cells[((step % 16) + 16) % 16] ?? null
+}
+
+function measuredStyle(style: HumanizeStyle): GeneratedStyle | null {
+  return PROFILES.styles[style] ?? null
+}
 
 function instrumentClass(articulation: DrumVoiceId): InstrumentClass {
   if (articulation === 'kick') return 'kick'
@@ -288,10 +430,17 @@ export function humanizeDrumEvents(
     const index = noiseIndex(event)
     const swing = swingShiftMs(options.style, event.step, options.tempoBpm)
 
-    const bias = profile.feelBiasMs[instrument] * biasWeight
+    const measured = measuredProfileCell(
+      options.style,
+      event.articulation,
+      event.step,
+    )
+    const bias =
+      (profile.feelBiasMs[instrument] + (measured?.offMeanMs ?? 0)) * biasWeight
     const pink =
       pinkNoiseAt(options.seed, instrument, index) *
       profile.timingSdMs[instrument] *
+      (measured?.offSdScale ?? 1) *
       intensity
     const wobble = bias + drift[index] * intensity + pink
     const clamped = Math.min(
@@ -299,11 +448,25 @@ export function humanizeDrumEvents(
       Math.max(-profile.earlyCapMs, wobble),
     )
 
+    // Measured accents nudge the authored velocity toward how drummers
+    // actually shade this position; hand tables cover what was never measured.
     const accentDelta =
-      (accentMultiplier(profile, event.step) - 1) * event.velocity * biasWeight
+      measured === null
+        ? (accentMultiplier(profile, event.step) - 1) *
+          event.velocity *
+          biasWeight
+        : clampRange(
+            (measured.velScale - 1) *
+              event.velocity *
+              biasWeight *
+              ACCENT_TABLE_WEIGHT,
+            -MAX_ACCENT_TABLE_DELTA,
+            MAX_ACCENT_TABLE_DELTA,
+          )
     const velocityNoise =
       gaussianAt(options.seed, STREAM_VELOCITY, instrument.length, index) *
       profile.velocitySd *
+      (measured?.velSdScale ?? 1) *
       intensity
     const velocity = Math.min(
       127,
@@ -311,20 +474,30 @@ export function humanizeDrumEvents(
     )
 
     const ornaments: HumanizeOrnament[] = []
+    const measuredStyleData = measuredStyle(options.style)
+    const flamProb =
+      profile.flamProb > 0 && measuredStyleData !== null
+        ? measuredStyleData.flamProb
+        : profile.flamProb
     if (
       event.accent === true &&
       event.articulation === 'snare' &&
-      profile.flamProb > 0 &&
+      flamProb > 0 &&
       uniform(options.seed, STREAM_FLAM, event.bar, event.step) <
-        profile.flamProb * intensity
+        flamProb * intensity
     ) {
+      const measuredLead = measuredStyleData?.flamLeadMs?.[0]
+      const leadCenter =
+        measuredLead !== undefined && Number.isFinite(measuredLead)
+          ? clampRange(measuredLead, MIN_FLAM_LEAD_MS, MAX_FLAM_LEAD_MS)
+          : 25
       const lead =
-        25 +
+        leadCenter +
         (uniform(options.seed, STREAM_FLAM, event.bar, event.step, 7) * 2 - 1) *
           10
       ornaments.push({
         kind: 'flam',
-        leadMs: lead,
+        leadMs: clampRange(lead, MIN_FLAM_LEAD_MS, MAX_FLAM_LEAD_MS),
         velocity: Math.max(1, Math.round(velocity * FLAM_VELOCITY_RATIO)),
       })
     }
@@ -348,8 +521,18 @@ export function suggestGhostSteps(
 ): GhostSuggestion[] {
   const profile = HUMANIZE_STYLE_PROFILES[options.style]
   const intensity = Math.min(1, Math.max(0, options.intensity))
-  const probability = profile.ghostProb * intensity
+  const measuredStyleData = measuredStyle(options.style)
+  const baseProb =
+    profile.ghostProb > 0 && measuredStyleData !== null
+      ? measuredStyleData.ghostProb
+      : profile.ghostProb
+  const probability = baseProb * intensity
   if (probability <= 0) return []
+  const measuredGhostVel = measuredStyleData?.ghostVel?.[0]
+  const ghostCenter =
+    measuredGhostVel !== undefined && Number.isFinite(measuredGhostVel)
+      ? clampRange(measuredGhostVel, 15, 40)
+      : GHOST_VELOCITY_MEAN
   const ghosts: GhostSuggestion[] = []
   for (let step = 0; step < 16; step += 1) {
     if (occupiedSteps.has(step)) continue
@@ -359,7 +542,7 @@ export function suggestGhostSteps(
       Math.max(
         15,
         Math.round(
-          GHOST_VELOCITY_MEAN +
+          ghostCenter +
             gaussianAt(options.seed, STREAM_GHOST, bar, step, 3) *
               GHOST_VELOCITY_SD,
         ),
