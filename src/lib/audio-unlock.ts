@@ -32,6 +32,15 @@ interface AudioActivationTarget {
   resume: () => Promise<void>
 }
 
+export interface AudioUnlockInstallOptions {
+  /**
+   * Rebuild a consumer-owned graph after an app switch instead of attempting
+   * to revive the same context. WebKit can report that context as running
+   * while its output clock remains permanently silent.
+   */
+  onBackgroundReturn?: () => void
+}
+
 /** Object URL for ~0.1s of silence as a 8kHz mono 16-bit WAV — built in
  *  code so there's no risk of a corrupt hand-typed data URI. */
 function silentWavUrl(): string {
@@ -123,6 +132,7 @@ async function recoverAfterBackground(ctx: AudioContext): Promise<void> {
  */
 export function installAudioUnlock(
   getCtx: () => AudioContext | null,
+  options: AudioUnlockInstallOptions = {},
 ): () => void {
   let wasBackgrounded = document.visibilityState !== 'visible'
 
@@ -141,14 +151,19 @@ export function installAudioUnlock(
       return
     }
 
-    const ctx = getCtx()
-    if (!ctx) {
+    const returnedFromBackground = wasBackgrounded
+    if (returnedFromBackground) {
       wasBackgrounded = false
-      return
+      if (options.onBackgroundReturn !== undefined) {
+        options.onBackgroundReturn()
+        return
+      }
     }
 
-    if (wasBackgrounded) {
-      wasBackgrounded = false
+    const ctx = getCtx()
+    if (!ctx) return
+
+    if (returnedFromBackground) {
       void recoverAfterBackground(ctx)
     } else if (ctx.state !== 'running' && ctx.state !== 'closed') {
       void ctx.resume().catch(() => {

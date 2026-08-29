@@ -701,6 +701,23 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
     setProgress(0)
   }
 
+  function rebuildListeningPlaybackAfterBackground(): void {
+    if (
+      listeningContext === null &&
+      decodedPlayback === null &&
+      audio === null
+    ) {
+      return
+    }
+    // WebKit can return from another app with a context that still says
+    // `running` while its output clock is silent. Local takes are cheap to
+    // decode again, so discard the stale graph and let the next Play tap build
+    // a fresh context instead of leaving the singer with a dead transport.
+    disposeAudio()
+    disposeListeningContext()
+    setPlayerError(null)
+  }
+
   function changeActiveView(nextView: ListeningDeskView): void {
     if (activeView() === nextView) return
     disposeAudio()
@@ -826,7 +843,9 @@ export function VoiceHistoryPage(props: VoiceHistoryPageProps): JSX.Element {
 
   onMount(() => {
     trackEvent('voice_history_open')
-    uninstallAudioUnlock = installAudioUnlock(() => listeningContext)
+    uninstallAudioUnlock = installAudioUnlock(() => listeningContext, {
+      onBackgroundReturn: rebuildListeningPlaybackAfterBackground,
+    })
     window.addEventListener('keydown', togglePlaybackWithSpace, true)
     const guidedReturn = consumeGuidedPracticeReturn()
     if (guidedReturn === null) {

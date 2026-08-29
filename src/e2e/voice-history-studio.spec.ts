@@ -252,6 +252,28 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.getByRole('button', { name: 'Play Room and waveform check' }),
   ).toBeVisible()
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await page
+    .getByRole('button', { name: 'Play Room and waveform check' })
+    .click()
+  await expect(
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
   await page.getByTestId('reflection-beacon-remove').click()
   const remainingMarker = page.locator('[data-testid^="voice-atlas-marker-"]')
   await expect(remainingMarker).toHaveCount(1)
