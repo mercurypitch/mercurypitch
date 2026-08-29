@@ -388,6 +388,26 @@
   }
 }
 
+@container (max-width: 500px) {
+  .takeHeading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .takeHeading strong,
+  .takeCoverage {
+    grid-column: 1;
+  }
+
+  .takeCoverage {
+    grid-row: auto;
+    flex-wrap: wrap;
+    justify-self: start;
+    min-width: 0;
+    margin-top: 4px;
+  }
+}
+
 @media (max-width: 680px) {
   .traits {
     margin-inline: -10px;
@@ -410,6 +430,24 @@
 }
 
 @media (max-width: 410px) {
+  .takeHeading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .takeHeading strong,
+  .takeCoverage {
+    grid-column: 1;
+  }
+
+  .takeCoverage {
+    grid-row: auto;
+    flex-wrap: wrap;
+    justify-self: start;
+    min-width: 0;
+    margin-top: 4px;
+  }
+
   .traitRow {
     grid-template-columns: minmax(0, 1fr);
     gap: 9px;

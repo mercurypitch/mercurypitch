@@ -295,6 +295,33 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     timeout: 10000,
   })
 
+  await page.setViewportSize({ width: 390, height: 844 })
+  const compactEarlierTraits = page.getByTestId('voice-atlas-traits-earlier')
+  const compactEarlierTitle = compactEarlierTraits
+    .getByText('Room and waveform check', { exact: true })
+    .first()
+  const compactEarlierCoverage =
+    compactEarlierTraits.getByText(/Trait-ready pitch/)
+  await compactEarlierTraits.scrollIntoViewIfNeeded()
+  const [compactCardBounds, compactTitleBounds, compactCoverageBounds] =
+    await Promise.all([
+      compactEarlierTraits.boundingBox(),
+      compactEarlierTitle.boundingBox(),
+      compactEarlierCoverage.boundingBox(),
+    ])
+  expect(compactCardBounds).not.toBeNull()
+  expect(compactTitleBounds).not.toBeNull()
+  expect(compactCoverageBounds).not.toBeNull()
+  expect(compactTitleBounds!.width).toBeGreaterThan(100)
+  expect(compactCoverageBounds!.y).toBeGreaterThanOrEqual(
+    compactTitleBounds!.y + compactTitleBounds!.height,
+  )
+  expect(compactCoverageBounds!.x).toBeGreaterThanOrEqual(compactCardBounds!.x)
+  expect(
+    compactCoverageBounds!.x + compactCoverageBounds!.width,
+  ).toBeLessThanOrEqual(compactCardBounds!.x + compactCardBounds!.width)
+  await page.setViewportSize({ width: 1280, height: 900 })
+
   const laterCard = page.getByTestId('voice-atlas-card-later')
   await laterCard.click({ position: { x: 8, y: 8 } })
   await expect(laterCard).toHaveAttribute('data-selected', 'true')
