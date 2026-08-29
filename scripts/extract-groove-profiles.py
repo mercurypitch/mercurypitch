@@ -90,6 +90,32 @@ def robust_stats(values: list[float]) -> tuple[float, float]:
     return median, 1.4826 * mad
 
 
+SWING_LEVELS = {"jazz": "eighth", "funk": "sixteenth", "latin": "sixteenth"}
+SIXTEENTH_SWING_RATIO = {"funk": 1.20, "latin": 1.08}
+
+
+def swing_shift_ms(group: str, step: int, bpm: float) -> float:
+    """Analytic swing the runtime re-applies; subtracted so tables hold residual.
+
+    Mirrors swingShiftMs() in groove-humanize.ts. Without this the measured
+    off-beat means would carry swing that the runtime adds again on top.
+    """
+    beat_ms = 60_000.0 / bpm
+    level = SWING_LEVELS.get(group)
+    if level == "eighth":
+        if step % 4 != 2:
+            return 0.0
+        short_ms = max(100.0, beat_ms / 4.5)
+        ratio = min(3.5, max(1.0, (beat_ms - short_ms) / short_ms))
+        return beat_ms * (ratio / (1.0 + ratio) - 0.5)
+    if level == "sixteenth":
+        if step % 2 != 1:
+            return 0.0
+        ratio = SIXTEENTH_SWING_RATIO[group]
+        return (beat_ms / 2.0) * (ratio / (1.0 + ratio) - 0.5)
+    return 0.0
+
+
 def position_class(step: int) -> str:
     if step % 4 == 0:
         return "down"
@@ -140,6 +166,17 @@ def main() -> None:
         if bpm <= 0:
             continue
         grid_s = 60.0 / bpm / 4.0  # one sixteenth
+        # Expected onset of each step INCLUDING the analytic swing the runtime
+        # re-applies. Matching against this grid (rather than a straight one)
+        # both assigns swung notes to the right step and leaves a residual with
+        # the swing already removed. A straight grid cannot do this: at slow
+        # jazz tempi the swing shift exceeds a sixteenth, so the swung eighth
+        # quantizes into the following slot.
+        expected_s = [
+            step * grid_s + swing_shift_ms(group, step, bpm) / 1000.0
+            for step in range(STEPS_PER_BAR)
+        ]
+        bar_s = STEPS_PER_BAR * grid_s
         notes = [
             (note.start, note.pitch, note.velocity)
             for instrument in midi.instruments
@@ -156,12 +193,22 @@ def main() -> None:
         bar_offsets: dict[int, list[float]] = defaultdict(list)
         placed: list[tuple[int, int, str, float, float]] = []
         for start, pitch, velocity in notes:
-            slot = round(start / grid_s)
-            offset_s = start - slot * grid_s
+            # Nearest swung slot: test the straight-grid guess and its
+            # neighbours, including the wrap into the adjacent bar.
+            guess = round(start / grid_s)
+            best: tuple[float, int, int] | None = None
+            for candidate in (guess - 1, guess, guess + 1):
+                bar_candidate = candidate // STEPS_PER_BAR
+                step_candidate = candidate % STEPS_PER_BAR
+                delta = start - (
+                    bar_candidate * bar_s + expected_s[step_candidate]
+                )
+                if best is None or abs(delta) < abs(best[0]):
+                    best = (delta, bar_candidate, step_candidate)
+            assert best is not None
+            offset_s, bar, step = best
             if abs(offset_s) > 0.45 * grid_s:
                 continue
-            bar = slot // STEPS_PER_BAR
-            step = slot % STEPS_PER_BAR
             articulation = TD11_TO_ARTICULATION[pitch]
             bar_offsets[bar].append(offset_s)
             placed.append((bar, step, articulation, offset_s, float(velocity)))
@@ -227,12 +274,17 @@ def main() -> None:
 
     styles: dict[str, dict] = {}
     for group in STYLE_GROUPS:
-        table: dict[str, list[dict | None]] = {}
+        table: dict[str, dict[str, list[float | None]]] = {}
         articulations = sorted(
             {articulation for g, articulation, _ in cells if g == group}
         )
         for articulation in articulations:
-            positions: list[dict | None] = []
+            # Parallel per-step arrays rather than a dict per cell: same data,
+            # a third of the bytes in the shipped bundle. null = no evidence.
+            off_mean_row: list[float | None] = []
+            off_sd_row: list[float | None] = []
+            vel_mean_row: list[float | None] = []
+            vel_sd_row: list[float | None] = []
             for step in range(STEPS_PER_BAR):
                 cell = cells.get((group, articulation, step))
                 source = cell
@@ -241,20 +293,23 @@ def main() -> None:
                         (group, articulation, position_class(step))
                     )
                 if source is None or len(source["off"]) < MIN_CELL_COUNT:
-                    positions.append(None)
+                    off_mean_row.append(None)
+                    off_sd_row.append(None)
+                    vel_mean_row.append(None)
+                    vel_sd_row.append(None)
                     continue
                 off_mean, off_sd = robust_stats(source["off"])
                 vel_mean, vel_sd = robust_stats(source["vel"])
-                positions.append(
-                    {
-                        "offMeanMs": round(off_mean, 2),
-                        "offSdMs": round(off_sd, 2),
-                        "velMean": round(vel_mean, 1),
-                        "velSd": round(vel_sd, 1),
-                        "count": len(source["off"]),
-                    }
-                )
-            table[articulation] = positions
+                off_mean_row.append(round(off_mean, 1))
+                off_sd_row.append(round(off_sd, 1))
+                vel_mean_row.append(round(vel_mean))
+                vel_sd_row.append(round(vel_sd, 1))
+            table[articulation] = {
+                "offMeanMs": off_mean_row,
+                "offSdMs": off_sd_row,
+                "velMean": vel_mean_row,
+                "velSd": vel_sd_row,
+            }
         ghost_probability = (
             ghost_hits[group] / ghost_slots[group] if ghost_slots[group] else 0.0
         )
@@ -301,9 +356,9 @@ def main() -> None:
     total_cells = sum(
         1
         for style in styles.values()
-        for positions in style["positions"].values()
-        for cell in positions
-        if cell is not None
+        for rows in style["positions"].values()
+        for value in rows["offMeanMs"]
+        if value is not None
     )
     print(
         f"Wrote {args.out} — {files_used} files, "
