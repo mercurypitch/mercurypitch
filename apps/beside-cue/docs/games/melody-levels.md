@@ -83,6 +83,9 @@ interface LevelDef {
   title: string
   /** Deep-partial overlay of JOURNEY_CONFIG — the difficulty profile. */
   feel?: unknown
+  /** Play mode: 'flow' (voice is position) or 'platformer' (keys walk,
+   * the voice is the jump — apex = the sung note's height). */
+  control?: 'flow' | 'platformer'
   segments: Segment[]
 }
 ```
@@ -97,6 +100,20 @@ interface LevelDef {
 - Bundled in `src/games/glass/levels/`; JSON-serializable so a remote
   (Cloudflare) songbook later is a fetch, not a refactor. This data
   format IS the level editor for V1.
+
+### Play modes (2026-08-29, maff's direction)
+
+Levels declare a control scheme; both run in the same stage engine:
+
+- **Flow** — the original: the voice IS Merc's height, silence rests.
+- **Platformer** — arrow keys / touch pads walk; the voice is the jump.
+  The jump's apex is the sung note's height, so a higher note is a
+  higher, longer leap, and the note that exactly reaches the next
+  platform is that platform's own note — intervals become distances,
+  melodies stay the path. Standing on a platform lights it (the sung
+  jump was the skill); a big leap that lands AHEAD advances through the
+  skipped land nodes, but panes still gate. Tryout level: **Jump
+  Trials** on the games list; tunables in `JOURNEY_CONFIG.control`.
 
 ## 3. Educated playability
 

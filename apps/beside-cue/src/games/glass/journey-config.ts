@@ -161,6 +161,24 @@ export const JOURNEY_CONFIG = {
     beam: true,
   },
 
+  /** Platformer play mode (Jump Trials): keys walk, the voice is the jump —
+   * the jump's apex is the sung note's height, so a higher note is a
+   * higher, longer leap. The flow mode (voice = position) is untouched. */
+  control: {
+    /** Walk speed, world units per second. */
+    walkSpeed: 2.3,
+    /** Air steering as a fraction of walk speed. */
+    airControlScale: 0.6,
+    /** Gravity while unvoiced and airborne, canvas fractions/s^2. */
+    gravity: 1.7,
+    /** Terminal fall speed, canvas fractions/s. */
+    maxFall: 1.4,
+    /** Lift lerp toward the sung note's height (the jump itself). */
+    liftLerp: 0.16,
+    /** After walking off an edge, the ground counts for this long, ms. */
+    coyoteMs: 130,
+  },
+
   /** Game-emitted audio (all of it gated by the corner toggles too). */
   sound: {
     /** Hum every new objective's note as it activates (hidden door and

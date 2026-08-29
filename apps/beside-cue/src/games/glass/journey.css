@@ -143,6 +143,50 @@
   stroke-linejoin: round;
 }
 
+/* Jump Trials: left/right walk pads (touch; keyboard works too) */
+.jp-pads {
+  position: absolute;
+  inset: auto 14px max(96px, calc(env(safe-area-inset-bottom) + 84px)) 14px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.jp-pads button {
+  width: 62px;
+  height: 62px;
+  padding: 14px;
+  border: 1.5px solid rgb(230 237 243 / 22%);
+  border-radius: 50%;
+  background: rgb(13 17 23 / 45%);
+  color: rgb(230 237 243 / 75%);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.jp-pads button:active {
+  background: rgb(13 17 23 / 72%);
+  color: rgb(230 237 243 / 95%);
+}
+
+.jp-pads button:focus-visible {
+  outline: 2px solid var(--paper-light);
+  outline-offset: 2px;
+}
+
+.jp-pads svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Merc's thought bubble: the in-game pause voice (tutorials, boss intro) */
 .jp-bubble {
   position: absolute;

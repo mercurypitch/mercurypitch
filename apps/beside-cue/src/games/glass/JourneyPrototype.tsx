@@ -90,7 +90,12 @@ type Node =
   | { t: 'whisper'; z: WhisperZone; hint: string }
   | { t: 'boss'; boss: Boss; hint: string }
 
-export const JourneyPrototype: Component = () => {
+export const JourneyPrototype: Component<{
+  /** Play mode: 'journey' = flow (voice is position), 'trials' = platformer
+   * (keys walk, the voice is the jump). Additive — flow stays untouched. */
+  variant?: 'journey' | 'trials'
+}> = (props) => {
+  const isTrials = (): boolean => (props.variant ?? 'journey') === 'trials'
   const [phase, setPhase] = createSignal<Phase>('intro')
   const [micError, setMicError] = createSignal<string | null>(null)
   const [hint, setHint] = createSignal('')
@@ -114,7 +119,7 @@ export const JourneyPrototype: Component = () => {
   let zones: WhisperZone[] = []
   let boss: Boss | null = null
   let camX = 0
-  const WORLD_MAX = 42
+  let worldMax = 42
 
   let mercWX = 1.6
   let mercY = 0.8
@@ -126,6 +131,10 @@ export const JourneyPrototype: Component = () => {
   let rawMidiNow: number | null = null
   let ghost: { wx: number; y: number }[] = []
   let arpeggioTimers: number[] = []
+  // platformer (Jump Trials) state
+  const keys = { left: false, right: false }
+  let jumpVy = 0
+  let coyoteLeftMs = 0
   let trail: { wx: number; y: number }[] = []
   let puff: { x: number; y: number; vx: number; vy: number; r: number }[] = []
   let puffT = -1
@@ -220,6 +229,7 @@ export const JourneyPrototype: Component = () => {
   }
 
   const buildWorld = (): void => {
+    worldMax = 42
     const P = (
       midi: number,
       x0: number,
@@ -413,6 +423,104 @@ export const JourneyPrototype: Component = () => {
     restIdx = null
   }
 
+  // Jump Trials: a short platformer tryout — keys walk, the voice leaps.
+  // Gap widths grow with the interval to the next note.
+  const buildTrialsWorld = (): void => {
+    worldMax = 23.5
+    const P = (
+      midi: number,
+      x0: number,
+      x1: number,
+      kind: 'stone' | 'glass',
+      extra?: Partial<Platform>,
+    ): Platform => ({
+      midi,
+      x0,
+      x1,
+      kind,
+      lit: false,
+      dwell: 0,
+      integrity: 1,
+      broken: false,
+      respawnMs: 0,
+      ...extra,
+    })
+    const g = groundMidi
+    const ground = P(g, 0.5, 4, 'stone', { lit: true, dwell: 9999 })
+    const t1 = P(g + 2, 5.2, 6.7, 'stone')
+    const t2 = P(g + 4, 8, 9.5, 'stone')
+    const t3 = P(g + 3, 10.8, 12.3, 'stone')
+    const t4 = P(g + 5, 13.7, 15.2, 'stone')
+    const t5 = P(g + 7, 16.8, 18.3, 'stone')
+    const goal = P(g + 4, 20.3, 22.3, 'stone')
+    platforms = [ground, t1, t2, t3, t4, t5, goal]
+
+    const gate: Pane = {
+      wx: 19.5,
+      midi: g + 6,
+      kind: 'gate',
+      res: 0,
+      burstT: -1,
+      reveal: 0,
+      shards: [],
+    }
+    panes = [gate]
+    zones = []
+    boss = null
+
+    nodes = [
+      {
+        t: 'land',
+        p: t1,
+        hint: `Walk to the edge, then sing ${note(2)} to leap across.`,
+      },
+      {
+        t: 'land',
+        p: t2,
+        hint: `Higher ledge, higher note — ${note(4)}.`,
+      },
+      {
+        t: 'land',
+        p: t3,
+        hint: `Down a step: ${note(3)}. A lower note is a smaller leap.`,
+        checkpoint: true,
+      },
+      { t: 'land', p: t4, hint: `Up again — ${note(5)}.` },
+      {
+        t: 'land',
+        p: t5,
+        hint: `The big one: ${note(7)}. Hold it to glide the gap.`,
+      },
+      {
+        t: 'pane',
+        pane: gate,
+        hint: `The gate rings at ${note(6)}. Stand and hold its note.`,
+      },
+      { t: 'land', p: goal, hint: 'Last leap. Land it and breathe.' },
+    ]
+    lastCheckpointIdx = -1
+    activeIdx = -1
+    advanceTo(0)
+    mercWX = 1.4
+    mercY = yFor(g) - 0.035
+    restIdx = 0
+    camX = 0
+    trail = []
+    ghost = []
+    falling = false
+    fallenMs = 0
+    rescueMs = 0
+    sinkMs = 0
+    jumpVy = 0
+    coyoteLeftMs = C.control.coyoteMs
+    pitchHist = []
+  }
+
+  const buildStage = (): void => {
+    if (isTrials()) buildTrialsWorld()
+    else buildWorld()
+  }
+
   const hum = (midi: number, secs: number): void => {
     if (audioContext !== null && untrack(() => soundOn() && humOn())) {
       playTargetHum(audioContext, midiToHz(midi), secs)
@@ -501,7 +609,7 @@ export const JourneyPrototype: Component = () => {
       shownMidi = null
       advanceTo(lastCheckpointIdx + 1)
     } else {
-      buildWorld()
+      buildStage()
     }
     setPhase('play')
   }
@@ -558,8 +666,9 @@ export const JourneyPrototype: Component = () => {
       if (unvoicedMs > C.voice.restGraceMs && shownMidi !== null) {
         // release-glide filter: the stopping voice collapsed in pitch and
         // dragged Merc down — restore the height he meant, the median of
-        // the pitch window just BEFORE the release tail
-        if (p === 'play') {
+        // the pitch window just BEFORE the release tail (flow mode only;
+        // the platformer settles by physics instead)
+        if (p === 'play' && !isTrials()) {
           const cut = now - unvoicedMs
           const upto = cut - C.voice.releaseTailMs
           const from = upto - C.voice.releaseSpanMs
@@ -589,7 +698,7 @@ export const JourneyPrototype: Component = () => {
         const ms = groundSamples.map((s) => s.midi).sort((a, b) => a - b)
         if (ms[ms.length - 1] - ms[0] < 1.6) {
           groundMidi = Math.round(ms[Math.floor(ms.length / 2)])
-          buildWorld()
+          buildStage()
           setPhase('play')
         }
       }
@@ -599,7 +708,28 @@ export const JourneyPrototype: Component = () => {
       const n = nodes[activeIdx]
       if (n.t === 'land') {
         const pl = n.p
-        if (
+        if (isTrials()) {
+          // platformer: standing on a platform IS the landing — the sung
+          // jump was the skill. A big leap may land AHEAD; advance through
+          // every consecutive land node up to where Merc stands (panes
+          // still gate — locks cannot be skipped, only traversal).
+          if (restIdx !== null) {
+            const stand = platforms[restIdx]
+            for (let k = activeIdx; k < nodes.length; k++) {
+              const nk = nodes[k]
+              if (nk.t !== 'land') break
+              if (nk.p === stand) {
+                for (let j = activeIdx; j <= k; j++) {
+                  const nj = nodes[j] as Extract<Node, { t: 'land' }>
+                  nj.p.lit = true
+                  if (nj.checkpoint === true) lastCheckpointIdx = j
+                }
+                advanceTo(k + 1)
+                break
+              }
+            }
+          }
+        } else if (
           !pl.broken &&
           midi !== null &&
           Math.abs(midi - pl.midi) <= C.land.bandSemis
@@ -765,99 +895,178 @@ export const JourneyPrototype: Component = () => {
 
     // --- merc: fly with the voice, rest on what's below, or fall ---
     if (p === 'play' || p === 'fallen') {
-      rescueMs = Math.max(0, rescueMs - dt)
-      if (falling) {
-        if (
-          C.fall.catchable &&
-          midi !== null &&
-          mercY < C.fall.yGone &&
-          p === 'play'
-        ) {
-          // a voiced note catches Merc while he is still on screen
-          falling = false
-          fallenMs = 0
-          sinkMs = 0
-        } else {
-          mercY += (C.fall.speed * dt) / 1000
-          if (mercY > C.fall.yGone) {
-            fallenMs += dt
-            if (fallenMs > C.fall.cardDelayMs && p === 'play')
-              setPhase('fallen')
-          }
+      if (isTrials()) {
+        // === platformer: keys walk, the voice is the jump ===
+        const dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0)
+        if (p === 'play' && dir !== 0) {
+          const sp =
+            C.control.walkSpeed *
+            (restIdx !== null ? 1 : C.control.airControlScale)
+          mercWX = Math.min(
+            worldMax - 0.3,
+            Math.max(0.3, mercWX + (dir * sp * dt) / 1000),
+          )
         }
-      } else if (midi !== null) {
-        restIdx = null
-        sinkMs = 0
-        const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
-        mercY += (ty - mercY) * C.view.flyLerp
-      } else if (platforms.length > 0) {
-        if (restIdx === null || platforms[restIdx].broken) {
-          let best: number | null = null
-          let bestD = Infinity
+        const prevY = mercY
+        if (p === 'play' && midi !== null) {
+          // the jump: lift toward the sung note's height — a higher note
+          // is a higher, longer leap; holding it is holding the button
+          const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
+          mercY += (ty - mercY) * C.control.liftLerp
+          jumpVy = 0
+          falling = false
+          if (restIdx !== null) {
+            const sit = yFor(platforms[restIdx].midi) - 0.035
+            if (mercY < sit - 0.012) restIdx = null // lifted off
+          }
+        } else if (restIdx === null) {
+          // silent in the air: settle onto a top we hover at, else gravity
           for (const [i, pl] of platforms.entries()) {
             if (pl.broken) continue
-            if (mercWX < pl.x0 - 0.15 || mercWX > pl.x1 + 0.15) continue
-            const d = yFor(pl.midi) - mercY
-            // restSnapUpUnits: a slab slightly ABOVE still catches — the
-            // release glide dragged Merc under it, silence pops him back
-            if (d > -C.land.restSnapUpUnits && d < bestD) {
-              bestD = d
-              best = i
+            if (mercWX < pl.x0 - 0.05 || mercWX > pl.x1 + 0.05) continue
+            if (Math.abs(mercY - (yFor(pl.midi) - 0.035)) < 0.1) {
+              restIdx = i
+              break
             }
           }
-          restIdx = best
           if (restIdx === null) {
-            if (rescueMs > 0) {
-              // Post-burst grace: the success breath must never kill.
-              // Glide to the nearest intact perch; it stays unlit until
-              // its note is actually sung.
-              let t: Platform | null = null
-              let td = Infinity
-              for (const pl of platforms) {
-                if (pl.broken) continue
-                const d = Math.abs((pl.x0 + pl.x1) / 2 - mercWX)
-                if (d < td) {
-                  td = d
-                  t = pl
-                }
-              }
-              if (t !== null) {
-                const tx = Math.min(Math.max(mercWX, t.x0 + 0.2), t.x1 - 0.2)
-                mercWX += (tx - mercWX) * C.pane.rescueLerp
-                mercY += (yFor(t.midi) - 0.035 - mercY) * C.view.restLerp
-                sinkMs = 0
-              } else {
-                falling = true
-              }
-            } else {
-              // the void — but first a slow, recoverable sink: any voiced
-              // note lifts Merc out before the real fall starts
-              sinkMs += dt
-              if (sinkMs > C.fall.sinkGraceMs) falling = true
-              else mercY += (C.fall.sinkSpeed * dt) / 1000
-            }
+            jumpVy = Math.min(
+              C.control.maxFall,
+              jumpVy + (C.control.gravity * dt) / 1000,
+            )
+            mercY += (jumpVy * dt) / 1000
           }
         }
         if (restIdx !== null) {
-          sinkMs = 0
           const pl = platforms[restIdx]
-          const sitY = yFor(pl.midi) - 0.035
-          mercY += (sitY - mercY) * C.view.restLerp
-          if (pl.kind === 'glass' && Math.abs(mercY - sitY) < 0.02) {
-            pl.integrity = Math.max(0, pl.integrity - dt / C.glass.crackMs)
-            if (pl.integrity === 0 && !pl.broken) {
-              pl.broken = true
-              pl.respawnMs = C.glass.respawnMs
-              const py = yFor(pl.midi)
-              puff = Array.from({ length: 14 }, (_, i) => ({
-                x: pl.x0 + ((i + 0.5) / 14) * (pl.x1 - pl.x0),
-                y: py,
-                vx: (i / 14 - 0.5) * 0.5,
-                vy: 0.05 + (i % 3) * 0.08,
-                r: 2 + (i % 3) * 2,
-              }))
-              puffT = 0
-              restIdx = null
+          if (mercWX < pl.x0 - 0.05 || mercWX > pl.x1 + 0.05) {
+            coyoteLeftMs -= dt
+            if (coyoteLeftMs <= 0) restIdx = null // walked off the edge
+          } else {
+            coyoteLeftMs = C.control.coyoteMs
+            if (midi === null) {
+              mercY = yFor(pl.midi) - 0.035
+              jumpVy = 0
+            }
+          }
+        }
+        // landing sweep: crossed a platform top on the way down
+        if (restIdx === null && mercY >= prevY) {
+          for (const [i, pl] of platforms.entries()) {
+            if (pl.broken) continue
+            if (mercWX < pl.x0 - 0.05 || mercWX > pl.x1 + 0.05) continue
+            const sit = yFor(pl.midi) - 0.035
+            if (prevY <= sit + 0.002 && mercY >= sit - 0.002) {
+              restIdx = i
+              mercY = sit
+              jumpVy = 0
+              coyoteLeftMs = C.control.coyoteMs
+              break
+            }
+          }
+        }
+        falling = restIdx === null && jumpVy > 0.35
+        if (mercY > C.fall.yGone) {
+          fallenMs += dt
+          if (fallenMs > C.fall.cardDelayMs && p === 'play') setPhase('fallen')
+        } else if (p === 'play') {
+          fallenMs = 0
+        }
+      } else {
+        rescueMs = Math.max(0, rescueMs - dt)
+        if (falling) {
+          if (
+            C.fall.catchable &&
+            midi !== null &&
+            mercY < C.fall.yGone &&
+            p === 'play'
+          ) {
+            // a voiced note catches Merc while he is still on screen
+            falling = false
+            fallenMs = 0
+            sinkMs = 0
+          } else {
+            mercY += (C.fall.speed * dt) / 1000
+            if (mercY > C.fall.yGone) {
+              fallenMs += dt
+              if (fallenMs > C.fall.cardDelayMs && p === 'play')
+                setPhase('fallen')
+            }
+          }
+        } else if (midi !== null) {
+          restIdx = null
+          sinkMs = 0
+          const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
+          mercY += (ty - mercY) * C.view.flyLerp
+        } else if (platforms.length > 0) {
+          if (restIdx === null || platforms[restIdx].broken) {
+            let best: number | null = null
+            let bestD = Infinity
+            for (const [i, pl] of platforms.entries()) {
+              if (pl.broken) continue
+              if (mercWX < pl.x0 - 0.15 || mercWX > pl.x1 + 0.15) continue
+              const d = yFor(pl.midi) - mercY
+              // restSnapUpUnits: a slab slightly ABOVE still catches — the
+              // release glide dragged Merc under it, silence pops him back
+              if (d > -C.land.restSnapUpUnits && d < bestD) {
+                bestD = d
+                best = i
+              }
+            }
+            restIdx = best
+            if (restIdx === null) {
+              if (rescueMs > 0) {
+                // Post-burst grace: the success breath must never kill.
+                // Glide to the nearest intact perch; it stays unlit until
+                // its note is actually sung.
+                let t: Platform | null = null
+                let td = Infinity
+                for (const pl of platforms) {
+                  if (pl.broken) continue
+                  const d = Math.abs((pl.x0 + pl.x1) / 2 - mercWX)
+                  if (d < td) {
+                    td = d
+                    t = pl
+                  }
+                }
+                if (t !== null) {
+                  const tx = Math.min(Math.max(mercWX, t.x0 + 0.2), t.x1 - 0.2)
+                  mercWX += (tx - mercWX) * C.pane.rescueLerp
+                  mercY += (yFor(t.midi) - 0.035 - mercY) * C.view.restLerp
+                  sinkMs = 0
+                } else {
+                  falling = true
+                }
+              } else {
+                // the void — but first a slow, recoverable sink: any voiced
+                // note lifts Merc out before the real fall starts
+                sinkMs += dt
+                if (sinkMs > C.fall.sinkGraceMs) falling = true
+                else mercY += (C.fall.sinkSpeed * dt) / 1000
+              }
+            }
+          }
+          if (restIdx !== null) {
+            sinkMs = 0
+            const pl = platforms[restIdx]
+            const sitY = yFor(pl.midi) - 0.035
+            mercY += (sitY - mercY) * C.view.restLerp
+            if (pl.kind === 'glass' && Math.abs(mercY - sitY) < 0.02) {
+              pl.integrity = Math.max(0, pl.integrity - dt / C.glass.crackMs)
+              if (pl.integrity === 0 && !pl.broken) {
+                pl.broken = true
+                pl.respawnMs = C.glass.respawnMs
+                const py = yFor(pl.midi)
+                puff = Array.from({ length: 14 }, (_, i) => ({
+                  x: pl.x0 + ((i + 0.5) / 14) * (pl.x1 - pl.x0),
+                  y: py,
+                  vx: (i / 14 - 0.5) * 0.5,
+                  vy: 0.05 + (i % 3) * 0.08,
+                  r: 2 + (i % 3) * 2,
+                }))
+                puffT = 0
+                restIdx = null
+              }
             }
           }
         }
@@ -881,8 +1090,9 @@ export const JourneyPrototype: Component = () => {
         if (puffT > 1) puffT = -1
       }
 
-      // forward drift toward the objective (or stay on the rest platform)
-      if (!falling) {
+      // forward drift toward the objective (or stay on the rest platform) —
+      // flow mode only; in the platformer the keys own the x axis
+      if (!isTrials() && !falling) {
         let wantWX = mercWX
         if (midi !== null && activeIdx < nodes.length) {
           const n = nodes[activeIdx]
@@ -926,7 +1136,7 @@ export const JourneyPrototype: Component = () => {
       // camera follows
       const target = Math.min(
         Math.max(mercWX - 3, 0),
-        WORLD_MAX - C.view.viewUnits,
+        worldMax - C.view.viewUnits,
       )
       camX += (target - camX) * C.view.cameraLerp
     }
@@ -1544,11 +1754,29 @@ export const JourneyPrototype: Component = () => {
     ctx.fillRect(0, h * 0.72, w, h * 0.28)
   }
 
+  const setKey = (down: boolean) => (e: KeyboardEvent) => {
+    if (!isTrials()) return
+    const k = e.key
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') {
+      keys.left = down
+      e.preventDefault()
+    } else if (k === 'ArrowRight' || k === 'd' || k === 'D') {
+      keys.right = down
+      e.preventDefault()
+    }
+  }
+  const keyDown = setKey(true)
+  const keyUp = setKey(false)
+
   onMount(() => {
+    window.addEventListener('keydown', keyDown)
+    window.addEventListener('keyup', keyUp)
     raf = requestAnimationFrame(tick)
   })
   onCleanup(() => {
     cancelAnimationFrame(raf)
+    window.removeEventListener('keydown', keyDown)
+    window.removeEventListener('keyup', keyUp)
     arpeggioTimers.forEach((t) => window.clearTimeout(t))
     f0?.dispose()
     micManager.release(MIC_ID)
@@ -1593,6 +1821,40 @@ export const JourneyPrototype: Component = () => {
           </button>
         </div>
       </Show>
+      <Show when={isTrials() && (phase() === 'play' || phase() === 'ground')}>
+        <div class="jp-pads">
+          <button
+            type="button"
+            aria-label="Walk left"
+            onPointerDown={(e) => {
+              e.preventDefault()
+              keys.left = true
+            }}
+            onPointerUp={() => (keys.left = false)}
+            onPointerLeave={() => (keys.left = false)}
+            onPointerCancel={() => (keys.left = false)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m14 6-6 6 6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Walk right"
+            onPointerDown={(e) => {
+              e.preventDefault()
+              keys.right = true
+            }}
+            onPointerUp={() => (keys.right = false)}
+            onPointerLeave={() => (keys.right = false)}
+            onPointerCancel={() => (keys.right = false)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m10 6 6 6-6 6" />
+            </svg>
+          </button>
+        </div>
+      </Show>
       <Show when={phase() === 'cue'}>
         <div class="jp-bubble" role="dialog" aria-label="Merc says">
           <svg
@@ -1615,10 +1877,13 @@ export const JourneyPrototype: Component = () => {
       </Show>
       <div class="jp-hud">
         <Show when={phase() === 'intro'}>
-          <h2 class="jp-title">Merc's Journey</h2>
+          <h2 class="jp-title">
+            {isTrials() ? 'Jump Trials' : "Merc's Journey"}
+          </h2>
           <p class="jp-text">
-            Your voice is the controller: sing higher to rise, lower to sink.
-            Climb, shatter the gate, cross the bridge, break the wall.
+            {isTrials()
+              ? 'Walk with the arrow keys or the side pads. Your voice is the jump: sing the labeled note and Merc leaps to its height — higher note, higher leap. Hold it to glide.'
+              : 'Your voice is the controller: sing higher to rise, lower to sink. Climb, shatter the gate, cross the bridge, break the wall.'}
           </p>
           <button class="jp-start" onClick={() => void start()}>
             Start — allow the mic
@@ -1641,15 +1906,20 @@ export const JourneyPrototype: Component = () => {
           </button>
         </Show>
         <Show when={phase() === 'done'}>
-          <h2 class="jp-title">The chandelier fell silent.</h2>
+          <h2 class="jp-title">
+            {isTrials()
+              ? 'The trail rang true.'
+              : 'The chandelier fell silent.'}
+          </h2>
           <p class="jp-text">
-            Chapter one complete — climb, gate, bridge, wall, stairway, sleeper,
-            hidden door, chandelier. Your voice did all of it.
+            {isTrials()
+              ? 'Jump Trials cleared — your feet walked, your voice leapt. Every gap was an interval; you just sang your way across.'
+              : 'Chapter one complete — climb, gate, bridge, wall, stairway, sleeper, hidden door, chandelier. Your voice did all of it.'}
           </p>
           <button
             class="jp-start"
             onClick={() => {
-              buildWorld()
+              buildStage()
               setPhase('play')
             }}
           >

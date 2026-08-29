@@ -10,18 +10,18 @@ interface GamesScreenProps {
 /** B-side games: small sung games, unscored and ungated. The list stays in
  * the paper world; entering a game flips the record to its own stage. */
 export function GamesScreen(props: GamesScreenProps) {
-  const [playing, setPlaying] = createSignal(false)
+  const [playing, setPlaying] = createSignal<'journey' | 'trials' | null>(null)
 
   return (
     <Show
-      when={!playing()}
+      when={playing() === null}
       fallback={
         <div class="games-stage">
-          <JourneyPrototype />
+          <JourneyPrototype variant={playing() ?? 'journey'} />
           <button
             class="games-leave"
             type="button"
-            onClick={() => setPlaying(false)}
+            onClick={() => setPlaying(null)}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m15 5-7 7 7 7" />
@@ -45,7 +45,7 @@ export function GamesScreen(props: GamesScreenProps) {
         <button
           class="game-card"
           type="button"
-          onClick={() => setPlaying(true)}
+          onClick={() => setPlaying('journey')}
         >
           <img
             class="game-card__art"
@@ -62,6 +62,33 @@ export function GamesScreen(props: GamesScreenProps) {
             <span class="game-card__blurb">
               Hum to climb the platforms, shatter the gate, cross the melody
               bridge.
+            </span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('trials')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              Jump Trials
+              <span class="game-card__chip">Tryout</span>
+            </span>
+            <span class="game-card__blurb">
+              Walk with the arrow keys — your voice is the jump. The higher the
+              note, the higher the leap.
             </span>
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">

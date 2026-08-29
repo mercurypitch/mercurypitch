@@ -20,7 +20,11 @@ the original scaffold and docs.
   note math, and the target-hum synth. Extracted verbatim from the root app's
   `src/lib`; the root app migrates onto it incrementally.
 - `src/games/glass/` — game code. `JourneyPrototype.tsx` is the playable
-  slice; every tunable lives in `journey-config.ts` (`JOURNEY_CONFIG`).
+  stage engine; every tunable lives in `journey-config.ts`
+  (`JOURNEY_CONFIG`). It hosts two play modes behind a `variant` prop:
+  Merc's Journey (flow — the voice is Merc's position) and Jump Trials
+  (platformer — keys/touch pads walk, the voice is the jump, apex = the
+  sung note's height). See melody-levels.md for the mode contract.
 - `src/games/glass/pitch-assets.ts` points the engine at this app's bundled
   runtime: `public/models/swiftf0.onnx` (committed, 389 KB) and `public/ort/`
   (the onnxruntime-web wasm pair, gitignored; `scripts/sync-ort-assets.mjs`
