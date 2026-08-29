@@ -26,6 +26,43 @@ primitives from [game-design.md](game-design.md) stay the toolbox.
 - **V1 = sing mechanics + playability behind the InteractionDriver seam;
   tap driver lands right after.** V2 = art pass. V3 = 3D/effects if time.
 
+## Architecture — three layers and a runtime (2026-08-30, implemented)
+
+What the player must sing is kept apart from how it is played, and from
+where the input comes from:
+
+1. **Level (content)** — `src/games/glass/levels/types.ts`. Degrees,
+   durations, syllables, encounters. Pure JSON data; knows nothing about
+   pixels, physics, or input. The data format is the editor; a remote
+   songbook is a fetch, not a refactor.
+2. **Mode (mechanics)** — how content becomes play: flow (voice is
+   position), platformer (voice is the jump), later rhythm (beat-timed)
+   and listen (ear-training questions, no stage).
+   `compileLevel(level, { mode, groundMidi })`
+   (`levels/compile.ts`, pure, unit-tested) is the bridge: one level
+   compiles for any mode, only pacing geometry changes
+   (`JOURNEY_CONFIG.melody`), and the pitch window derives from the
+   melody's range.
+3. **Driver (controller)** — where input comes from: voice pitch, taps,
+   answer picks. Seam specced in [input-modes.md](input-modes.md);
+   drivers emit normalized intents (continuous signals are polled,
+   discrete events are queued with AUDIO-clock timestamps so the later
+   beat judge never depends on frame time).
+4. **Runtime** — the stage engine (`JourneyPrototype.tsx`) consumes
+   compiled stage + mode rules + driver input and does the Merc math.
+   Listen mode gets its own small runtime behind the same seams.
+
+Named prior art, deliberately followed: osu!lazer's ruleset system (one
+beatmap, many rulesets, an `IBeatmapConverter` per ruleset — our
+`compileLevel`) and StepMania's one-song-many-charts model; from the
+game-patterns canon: data-driven content, Command (driver intents),
+State (the phase machine), Update Method (the tick), and the rhythm
+conductor (audio clock as time authority). Deliberately NOT adopted:
+ECS (a handful of entity kinds does not warrant it) and a Strategy
+object for mode rules while only two stage modes exist — the paying
+seams are data→stage and input→events; the tick keeps its two branches
+until a third stage mode earns the abstraction.
+
 ## 1. Feel and physics fixes (ship first, independent)
 
 The playtest killers, all tunable in `journey-config.ts`:
@@ -157,7 +194,10 @@ calibration) drops in after V1 core.
 ## 5. V1 songbook
 
 1. **Ode to Joy** — five-note range; gate pane on the dominant between
-   phrases.
+   phrases. SHIPPED (`levels/ode-to-joy.ts`): both phrases with solfege
+   syllables, playable from the games list in both modes ("Sing the
+   line" / "Jump the line"); E2E-cleared end to end in flow and
+   smoke-tested in platformer.
 2. **Twinkle Twinkle** — the sixth leap + repeat-notes.
 3. **Frère Jacques** — faster contour, round structure.
 

@@ -20,82 +20,31 @@ import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import './pitch-assets'
 import './journey.css'
 import { JOURNEY_CONFIG as C } from './journey-config'
+import { compileLevel } from './levels/compile'
+import type { LevelDef } from './levels/types'
+import type { Boss, Node, Pane, Platform, WhisperZone } from './world-types'
 
 const MIC_ID = 'journey-proto'
 const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
 
 type Phase = 'intro' | 'ground' | 'play' | 'cue' | 'fallen' | 'done'
 
-interface Platform {
-  midi: number
-  x0: number // world units
-  x1: number
-  kind: 'stone' | 'glass'
-  lit: boolean
-  dwell: number
-  integrity: number
-  broken: boolean
-  respawnMs: number
-  /** Hum this platform's note when it becomes the active objective. */
-  hum?: boolean
-}
-
-interface Pane {
-  wx: number
-  midi: number
-  kind: 'gate' | 'wall' | 'hidden'
-  res: number
-  burstT: number // -1 until burst
-  /** hidden panes: hot–cold proximity of the current voice, 0..1 */
-  reveal: number
-  shards: { x: number; y: number; vx: number; vy: number; r: number }[]
-}
-
-interface WhisperZone {
-  x0: number
-  x1: number
-  /** guardian world position */
-  gx: number
-  gyMidi: number
-  stir: number // 0..1, loud singing raises it
-  woken: boolean
-  wokenMs: number
-}
-
-interface BossCrystal {
-  midi: number
-  wx: number
-  res: number
-  broken: boolean
-  brokenMs: number // time since broken (re-anneal clock)
-}
-
-interface Boss {
-  cx: number
-  crystals: BossCrystal[]
-  cleared: boolean
-  shards: {
-    x: number
-    y: number
-    vx: number
-    vy: number
-    r: number
-    t: number
-  }[]
-}
-
-type Node =
-  | { t: 'land'; p: Platform; hint: string; checkpoint?: boolean }
-  | { t: 'pane'; pane: Pane; hint: string }
-  | { t: 'whisper'; z: WhisperZone; hint: string }
-  | { t: 'boss'; boss: Boss; hint: string }
-
 export const JourneyPrototype: Component<{
-  /** Play mode: 'journey' = flow (voice is position), 'trials' = platformer
-   * (keys walk, the voice is the jump). Additive — flow stays untouched. */
+  /** Hardcoded stages: 'journey' = chapter 1 (flow), 'trials' = the Jump
+   * Trials tryout (platformer). Ignored when `level` is set. */
   variant?: 'journey' | 'trials'
+  /** A melody level compiled at runtime (songs are levels). */
+  level?: LevelDef
+  /** Play mode for `level` — overrides the level's own default. */
+  control?: 'flow' | 'platformer'
 }> = (props) => {
-  const isTrials = (): boolean => (props.variant ?? 'journey') === 'trials'
+  const mode = (): 'flow' | 'platformer' =>
+    props.level !== undefined
+      ? (props.control ?? props.level.control ?? 'flow')
+      : (props.variant ?? 'journey') === 'trials'
+        ? 'platformer'
+        : 'flow'
+  const isTrials = (): boolean => mode() === 'platformer'
   const [phase, setPhase] = createSignal<Phase>('intro')
   const [micError, setMicError] = createSignal<string | null>(null)
   const [hint, setHint] = createSignal('')
@@ -183,9 +132,14 @@ export const JourneyPrototype: Component<{
     return centsToMidi(hzToCents(fr.f0))
   }
 
+  // pitch window (semitone offsets rel. ground) — per-stage: melody
+  // levels derive it from the melody's range at compile time
+  let winLo: number = C.view.windowLoOffset
+  let winHi: number = C.view.windowHiOffset
+
   const yFor = (midi: number): number => {
-    const lo = groundMidi + C.view.windowLoOffset
-    const hi = groundMidi + C.view.windowHiOffset
+    const lo = groundMidi + winLo
+    const hi = groundMidi + winHi
     return 1 - (midi - lo) / (hi - lo)
   }
 
@@ -521,8 +475,40 @@ export const JourneyPrototype: Component<{
     pitchHist = []
   }
 
+  const buildLevelStage = (level: LevelDef): void => {
+    const cs = compileLevel(level, { mode: mode(), groundMidi })
+    platforms = cs.platforms
+    panes = cs.panes
+    nodes = cs.nodes
+    worldMax = cs.worldMax
+    winLo = cs.windowLo
+    winHi = cs.windowHi
+    zones = []
+    boss = null
+    lastCheckpointIdx = -1
+    activeIdx = -1
+    advanceTo(0)
+    mercWX = cs.startX
+    mercY = yFor(groundMidi) - 0.035
+    restIdx = 0
+    camX = 0
+    camY = 0
+    trail = []
+    ghost = []
+    falling = false
+    fallenMs = 0
+    rescueMs = 0
+    sinkMs = 0
+    jumpVy = 0
+    coyoteLeftMs = C.control.coyoteMs
+    pitchHist = []
+  }
+
   const buildStage = (): void => {
-    if (isTrials()) buildTrialsWorld()
+    winLo = C.view.windowLoOffset
+    winHi = C.view.windowHiOffset
+    if (props.level !== undefined) buildLevelStage(props.level)
+    else if (isTrials()) buildTrialsWorld()
     else buildWorld()
   }
 
@@ -1475,6 +1461,15 @@ export const JourneyPrototype: Component<{
         ? "700 13px 'Saira Condensed', monospace"
         : "600 11px 'Saira Condensed', monospace"
       ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
+
+      // karaoke syllable under the slab (melody levels)
+      if (pl.syllable !== undefined) {
+        ctx.fillStyle = `rgba(45,212,191,${Math.max(labelA, 0.45)})`
+        ctx.font = isActive
+          ? "700 13px 'Saira Condensed', monospace"
+          : "600 12px 'Saira Condensed', monospace"
+        ctx.fillText(pl.syllable, x0 + 2, y + slabH + 13)
+      }
     }
 
     for (const pane of panes) {
@@ -1900,6 +1895,21 @@ export const JourneyPrototype: Component<{
         activeIdx,
         camY: Math.round(camY * 1000) / 1000,
       })
+      ;(
+        window as unknown as { __world?: () => Record<string, unknown> }
+      ).__world = () => ({
+        platforms: platforms.map((pl) => ({
+          x0: pl.x0,
+          x1: pl.x1,
+          midi: pl.midi,
+          lit: pl.lit,
+        })),
+        panes: panes.map((pn) => ({ wx: pn.wx, midi: pn.midi })),
+        groundMidi,
+        winLo,
+        winHi,
+        worldMax,
+      })
     }
     window.addEventListener('keydown', keyDown)
     window.addEventListener('keyup', keyUp)
@@ -2010,13 +2020,22 @@ export const JourneyPrototype: Component<{
       <div class="jp-hud">
         <Show when={phase() === 'intro'}>
           <h2 class="jp-title">
-            {isTrials() ? 'Jump Trials' : "Merc's Journey"}
+            {props.level?.title ??
+              (isTrials() ? 'Jump Trials' : "Merc's Journey")}
           </h2>
           <p class="jp-text">
-            {isTrials()
-              ? 'Walk with the arrow keys or the side pads. Your voice is the jump: sing the labeled note and Merc leaps to its height — higher note, higher leap. Hold it to glide.'
-              : 'Your voice is the controller: sing higher to rise, lower to sink. Climb, shatter the gate, cross the bridge, break the wall.'}
+            {props.level?.intro ??
+              (isTrials()
+                ? 'Walk with the arrow keys or the side pads. Your voice is the jump: sing the labeled note and Merc leaps to its height — higher note, higher leap. Hold it to glide.'
+                : 'Your voice is the controller: sing higher to rise, lower to sink. Climb, shatter the gate, cross the bridge, break the wall.')}
           </p>
+          <Show when={props.level !== undefined}>
+            <p class="jp-text jp-text--mode">
+              {isTrials()
+                ? 'Playing it as a platformer: walk with keys or pads, sing each note to leap its interval.'
+                : 'Playing it as a song line: your voice is the height — trace the melody.'}
+            </p>
+          </Show>
           <button class="jp-start" onClick={() => void start()}>
             Start — allow the mic
           </button>
@@ -2039,14 +2058,17 @@ export const JourneyPrototype: Component<{
         </Show>
         <Show when={phase() === 'done'}>
           <h2 class="jp-title">
-            {isTrials()
-              ? 'The trail rang true.'
-              : 'The chandelier fell silent.'}
+            {props.level !== undefined
+              ? 'The song is yours.'
+              : isTrials()
+                ? 'The trail rang true.'
+                : 'The chandelier fell silent.'}
           </h2>
           <p class="jp-text">
-            {isTrials()
-              ? 'Jump Trials cleared — your feet walked, your voice leapt. Every gap was an interval; you just sang your way across.'
-              : 'Chapter one complete — climb, gate, bridge, wall, stairway, sleeper, hidden door, chandelier. Your voice did all of it.'}
+            {props.level?.done ??
+              (isTrials()
+                ? 'Jump Trials cleared — your feet walked, your voice leapt. Every gap was an interval; you just sang your way across.'
+                : 'Chapter one complete — climb, gate, bridge, wall, stairway, sleeper, hidden door, chandelier. Your voice did all of it.')}
           </p>
           <button
             class="jp-start"

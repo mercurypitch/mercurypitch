@@ -54,6 +54,12 @@
   text-shadow: 0 1px 8px rgb(0 0 0 / 55%);
 }
 
+/* the "how you chose to play it" line under a melody level's intro */
+.jp-text--mode {
+  font-size: 14px;
+  opacity: 0.75;
+}
+
 @media (min-width: 900px) {
   .jp-text {
     font-size: 20px;

@@ -203,6 +203,35 @@ export const JOURNEY_CONFIG = {
     camYLerp: 0.055,
   },
 
+  /** Melody-level compiler pacing (compileLevel): how level DATA becomes
+   * stage GEOMETRY, per play mode. Flow reads as a contour to trace;
+   * platformer needs real, jumpable gaps. World units per beat etc. */
+  melody: {
+    /** Starting slab width (lit; the calibrated ground note). */
+    groundWidth: 3.5,
+    /** Minimum platform width, world units (short notes stay landable). */
+    minWidth: 1.1,
+    /** Platform width per beat of note duration. */
+    unitsPerBeat: { flow: 1.4, platformer: 1.5 },
+    /** Gap before each next note platform. */
+    noteGap: { flow: 0.45, platformer: 1.25 },
+    /** Wider gap opening a new phrase/segment — a written-in breath. */
+    phraseGap: { flow: 1.1, platformer: 1.8 },
+    /** Road consumed per beat of musical rest. */
+    restUnit: { flow: 1, platformer: 1.4 },
+    /** Pane distance past the previous platform edge. Flow: approach spot
+     * (wx − pane.approachBack) must sit over that platform. Platformer:
+     * must stay within control.paneChargeUnits of its edge. */
+    paneGap: { flow: 0.6, platformer: 1.2 },
+    /** Road resuming after a pane. */
+    paneAfter: 0.8,
+    /** Pitch window padding around the melody's range, semitones. */
+    windowLoPad: 3,
+    windowHiPad: 2,
+    /** Road after the final note. */
+    endPad: 1.5,
+  },
+
   /** Game-emitted audio (all of it gated by the corner toggles too). */
   sound: {
     /** Hum every new objective's note as it activates (hidden door and

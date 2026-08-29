@@ -82,6 +82,41 @@
   line-height: 1.35;
 }
 
+/* songbook card: not itself a button — the mode buttons inside are */
+.game-card--song {
+  cursor: default;
+}
+
+.game-card__modes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.game-card__mode {
+  padding: 0.35rem 0.8rem;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card__mode:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(36 25 19 / 55%);
+}
+
+.game-card__mode:focus-visible {
+  outline: 3px solid var(--turquoise);
+  outline-offset: 2px;
+}
+
 .game-card__go {
   flex: none;
   width: 22px;
