@@ -331,6 +331,10 @@
   background: rgb(141 184 255 / 8%);
 }
 
+.mobileThreadMenu {
+  display: none;
+}
+
 .savedFocus {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(270px, 0.75fr);
@@ -1084,6 +1088,14 @@
 
   .workspaceActions {
     justify-content: space-between;
+  }
+
+  .mobileThreadMenu {
+    display: grid;
+  }
+
+  .desktopThreadMenu {
+    display: none;
   }
 
   .recordAnother {
