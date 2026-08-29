@@ -28,8 +28,25 @@
     {
       "name": "jam-lan",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "run-p", "dev:jam", "dev:host"],
+      "runtimeArgs": [
+        "exec",
+        "run-p",
+        "dev:jam",
+        "dev:host"
+      ],
       "port": 3000
+    },
+    {
+      "name": "drum-night",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "cross-env",
+        "VITE_OVERRIDE_ONNX_MODEL=",
+        "vite"
+      ],
+      "port": 3000,
+      "url": "https://localhost:3000"
     }
   ]
 }
