@@ -32,13 +32,11 @@
 }
 
 html {
-  min-width: 320px;
   min-height: 100%;
   background: var(--spruce-deep);
 }
 
 body {
-  min-width: 320px;
   min-height: 100%;
   margin: 0;
   background: var(--spruce-deep);

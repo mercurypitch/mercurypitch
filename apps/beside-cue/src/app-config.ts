@@ -1,3 +1,7 @@
+// ============================================================
+// Beside Cue app config — immutable product and onboarding variants
+// ============================================================
+
 import type { PullOption } from './content'
 import { bSideAcknowledgements, cuePhrases, notNowAcknowledgements, pullOptions, } from './content'
 import type { CinematicOnboardingMediaManifest, LegacyCinematicOnboardingMediaManifestV03, LegacyCinematicOnboardingMediaManifestV04, } from './onboarding'
@@ -50,6 +54,13 @@ export type CinematicOnboardingConfig =
       readonly revision: string
       readonly contractVersion: '0.5.0'
       readonly media: CinematicOnboardingMediaManifest
+    }
+  | {
+      /** Caption-first V2 is explicit preview-only until product promotion. */
+      readonly delivery: 'v2-first-run'
+      readonly revision: string
+      readonly contractVersion: '1.0'
+      readonly activation: 'developer-preview'
     }
 
 export interface BesideCueAppConfig {
@@ -109,5 +120,19 @@ export const DEFAULT_BESIDE_CUE_CONFIG: BesideCueAppConfig = Object.freeze({
       title: 'A small cue is ready',
       body: 'Open Beside Cue when you choose.',
     }),
+  }),
+})
+
+/**
+ * Opt-in caption-first V2 configuration. The environment flag selects this
+ * object at the entry point; importing it never changes the shipped V1 default.
+ */
+export const V2_BESIDE_CUE_PREVIEW_CONFIG: BesideCueAppConfig = Object.freeze({
+  ...DEFAULT_BESIDE_CUE_CONFIG,
+  onboarding: Object.freeze({
+    delivery: 'v2-first-run',
+    revision: 'beside-cue-v2-preview-v1',
+    contractVersion: '1.0',
+    activation: 'developer-preview',
   }),
 })
