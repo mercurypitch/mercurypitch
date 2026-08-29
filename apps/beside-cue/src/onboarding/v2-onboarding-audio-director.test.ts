@@ -22,6 +22,7 @@ function deferred<T>(): TestDeferred<T> {
 interface PlayedCue {
   readonly assetId: string
   readonly started: TestDeferred<AudioSessionStartResult>
+  readonly cue: AudioSessionCue
 }
 
 function createScopeProbe() {
@@ -36,14 +37,15 @@ function createScopeProbe() {
       play(assetId: string): AudioSessionCue {
         const started = deferred<AudioSessionStartResult>()
         const finished = deferred<AudioSessionFinishResult>()
-        played.push({ assetId, started })
-        return {
+        const cue: AudioSessionCue = {
           requestId: (nextRequestId += 1),
           assetId,
           started: started.promise,
           finished: finished.promise,
           stop: () => false,
         }
+        played.push({ assetId, started, cue })
+        return cue
       },
       stopLane(lane: string, reason?: AudioSessionStopReason) {
         stoppedLanes.push([lane, reason])
@@ -63,6 +65,23 @@ function createScopeProbe() {
 }
 
 describe('V2 onboarding audio director', () => {
+  it('returns the exact dialogue cue for a finite beat', () => {
+    const probe = createScopeProbe()
+    const director = createV2OnboardingAudioDirector(probe.scope)
+
+    const dialogue = director.enterBeat({
+      dialogueAssetId: 'dialogue.greeting',
+      foleyAssetId: 'foley.greeting',
+    })
+
+    expect(dialogue).toBe(probe.played[0]?.cue)
+    expect(director.enterBeat({ foleyAssetId: 'foley.only' })).toBeUndefined()
+    director.dispose()
+    expect(
+      director.enterBeat({ dialogueAssetId: 'dialogue.after-dispose' }),
+    ).toBeUndefined()
+  })
+
   it('crosses from score into a hold only after the bed start settles', async () => {
     const probe = createScopeProbe()
     const director = createV2OnboardingAudioDirector(probe.scope)
@@ -78,11 +97,14 @@ describe('V2 onboarding audio director', () => {
       'hold.pull-choice',
       'dialogue.pull-choice',
     ])
-    expect(probe.stoppedLanes).toEqual([])
+    expect(probe.stoppedLanes).toEqual([['dialogue', 'lane-stopped']])
 
     probe.played[0]?.started.resolve({ kind: 'started' })
     await Promise.resolve()
-    expect(probe.stoppedLanes).toEqual([['score', 'lane-stopped']])
+    expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
+      ['score', 'lane-stopped'],
+    ])
   })
 
   it('leaves a hold exactly once and retires its bed after the next score settles', async () => {
@@ -108,11 +130,14 @@ describe('V2 onboarding audio director', () => {
       'score.after-side-b',
       'foley.choice-confirmed',
     ])
-    expect(probe.stoppedLanes).toEqual([])
+    expect(probe.stoppedLanes).toEqual([['dialogue', 'lane-stopped']])
 
     probe.played[1]?.started.resolve({ kind: 'started' })
     await Promise.resolve()
-    expect(probe.stoppedLanes).toEqual([['hold-bed', 'lane-stopped']])
+    expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
+      ['hold-bed', 'lane-stopped'],
+    ])
   })
 
   it('ignores stale exits and callbacks from holds that no longer own audio', async () => {
@@ -129,12 +154,18 @@ describe('V2 onboarding audio director', () => {
 
     probe.played[0]?.started.resolve({ kind: 'started' })
     await Promise.resolve()
-    expect(probe.stoppedLanes).toEqual([])
+    expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
+      ['dialogue', 'lane-stopped'],
+    ])
     expect(director.exitHold(first, { scoreAssetId: 'score.stale' })).toBe(
       false,
     )
     expect(director.exitHold(second, {})).toBe(true)
     expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
+      ['dialogue', 'lane-stopped'],
+      ['dialogue', 'lane-stopped'],
       ['score', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
     ])
@@ -147,13 +178,16 @@ describe('V2 onboarding audio director', () => {
 
     expect(probe.played).toEqual([])
     expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
       ['score', 'lane-stopped'],
     ])
     expect(director.exitHold(token, {})).toBe(true)
     expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
       ['score', 'lane-stopped'],
+      ['dialogue', 'lane-stopped'],
       ['score', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
     ])
@@ -170,6 +204,7 @@ describe('V2 onboarding audio director', () => {
     })
     await Promise.resolve()
     expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
       ['score', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
     ])
@@ -185,9 +220,48 @@ describe('V2 onboarding audio director', () => {
     })
     await Promise.resolve()
     expect(probe.stoppedLanes).toEqual([
+      ['dialogue', 'lane-stopped'],
       ['hold-bed', 'lane-stopped'],
       ['score', 'lane-stopped'],
     ])
+  })
+
+  it('retires prior dialogue on every new generation, including silent successors', async () => {
+    const probe = createScopeProbe()
+    const director = createV2OnboardingAudioDirector(probe.scope)
+    const dialogueStops = () =>
+      probe.stoppedLanes.filter(([lane]) => lane === 'dialogue')
+
+    director.enterBeat({ dialogueAssetId: 'dialogue.first' })
+    probe.stoppedLanes.length = 0
+
+    director.enterBeat({})
+    expect(dialogueStops()).toEqual([['dialogue', 'lane-stopped']])
+
+    probe.played[0]?.started.resolve({
+      kind: 'silent',
+      reason: 'asset-missing',
+    })
+    await Promise.resolve()
+    expect(dialogueStops()).toEqual([['dialogue', 'lane-stopped']])
+
+    probe.stoppedLanes.length = 0
+    const token = director.enterHold({
+      holdId: 'missing-dialogue',
+      dialogueAssetId: 'dialogue.not-in-manifest',
+    })
+    expect(dialogueStops()).toEqual([['dialogue', 'lane-stopped']])
+
+    probe.played[1]?.started.resolve({
+      kind: 'silent',
+      reason: 'asset-missing',
+    })
+    await Promise.resolve()
+    expect(dialogueStops()).toEqual([['dialogue', 'lane-stopped']])
+
+    probe.stoppedLanes.length = 0
+    expect(director.exitHold(token, {})).toBe(true)
+    expect(dialogueStops()).toEqual([['dialogue', 'lane-stopped']])
   })
 
   it('cancels pending transitions on stop and disposes its scope once', async () => {
@@ -201,7 +275,7 @@ describe('V2 onboarding audio director', () => {
     probe.played[0]?.started.resolve({ kind: 'started' })
     await Promise.resolve()
 
-    expect(probe.stoppedLanes).toEqual([])
+    expect(probe.stoppedLanes).toEqual([['dialogue', 'lane-stopped']])
     expect(probe.stopAllReasons).toEqual(['scope-stopped'])
 
     director.dispose()
