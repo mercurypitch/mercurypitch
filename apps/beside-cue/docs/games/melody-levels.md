@@ -112,8 +112,13 @@ Levels declare a control scheme; both run in the same stage engine:
   platform is that platform's own note — intervals become distances,
   melodies stay the path. Standing on a platform lights it (the sung
   jump was the skill); a big leap that lands AHEAD advances through the
-  skipped land nodes, but panes still gate. Tryout level: **Jump
-  Trials** on the games list; tunables in `JOURNEY_CONFIG.control`.
+  skipped land nodes, but panes still gate. Platforms are one-way
+  FLOORS: a lower note can never sing Merc through the slab he stands
+  on (walking off the edge is the only way down), landing catches any
+  downward crossing of a top within `control.footUnits` of overhang,
+  and the release-glide filter applies here too so a stopping voice
+  cannot drag him past the settle range. Tryout level: **Jump Trials**
+  on the games list; tunables in `JOURNEY_CONFIG.control`.
 
 ## 3. Educated playability
 

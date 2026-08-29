@@ -177,6 +177,10 @@ export const JOURNEY_CONFIG = {
     liftLerp: 0.16,
     /** After walking off an edge, the ground counts for this long, ms. */
     coyoteMs: 130,
+    /** Merc's feet: x overhang tolerance for standing and landing, units. */
+    footUnits: 0.12,
+    /** Going silent settles Merc onto a top within this vertical range. */
+    settleUnits: 0.1,
   },
 
   /** Game-emitted audio (all of it gated by the corner toggles too). */

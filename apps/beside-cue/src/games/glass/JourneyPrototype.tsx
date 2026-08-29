@@ -666,9 +666,10 @@ export const JourneyPrototype: Component<{
       if (unvoicedMs > C.voice.restGraceMs && shownMidi !== null) {
         // release-glide filter: the stopping voice collapsed in pitch and
         // dragged Merc down — restore the height he meant, the median of
-        // the pitch window just BEFORE the release tail (flow mode only;
-        // the platformer settles by physics instead)
-        if (p === 'play' && !isTrials()) {
+        // the pitch window just BEFORE the release tail. Both modes need
+        // it: in the platformer the tail would drag Merc past the settle
+        // range and through the platform he meant to land on.
+        if (p === 'play') {
           const cut = now - unvoicedMs
           const upto = cut - C.voice.releaseTailMs
           const from = upto - C.voice.releaseSpanMs
@@ -917,14 +918,23 @@ export const JourneyPrototype: Component<{
           falling = false
           if (restIdx !== null) {
             const sit = yFor(platforms[restIdx].midi) - 0.035
-            if (mercY < sit - 0.012) restIdx = null // lifted off
+            if (mercY > sit) {
+              // the platform is a FLOOR: a lower note cannot sing Merc
+              // through it — walking off the edge is the only way down
+              mercY = sit
+            } else if (mercY < sit - 0.012) {
+              restIdx = null // lifted off
+            }
           }
         } else if (restIdx === null) {
           // silent in the air: settle onto a top we hover at, else gravity
+          const foot = C.control.footUnits
           for (const [i, pl] of platforms.entries()) {
             if (pl.broken) continue
-            if (mercWX < pl.x0 - 0.05 || mercWX > pl.x1 + 0.05) continue
-            if (Math.abs(mercY - (yFor(pl.midi) - 0.035)) < 0.1) {
+            if (mercWX < pl.x0 - foot || mercWX > pl.x1 + foot) continue
+            if (
+              Math.abs(mercY - (yFor(pl.midi) - 0.035)) < C.control.settleUnits
+            ) {
               restIdx = i
               break
             }
@@ -939,7 +949,10 @@ export const JourneyPrototype: Component<{
         }
         if (restIdx !== null) {
           const pl = platforms[restIdx]
-          if (mercWX < pl.x0 - 0.05 || mercWX > pl.x1 + 0.05) {
+          if (
+            mercWX < pl.x0 - C.control.footUnits ||
+            mercWX > pl.x1 + C.control.footUnits
+          ) {
             coyoteLeftMs -= dt
             if (coyoteLeftMs <= 0) restIdx = null // walked off the edge
           } else {
@@ -954,7 +967,11 @@ export const JourneyPrototype: Component<{
         if (restIdx === null && mercY >= prevY) {
           for (const [i, pl] of platforms.entries()) {
             if (pl.broken) continue
-            if (mercWX < pl.x0 - 0.05 || mercWX > pl.x1 + 0.05) continue
+            if (
+              mercWX < pl.x0 - C.control.footUnits ||
+              mercWX > pl.x1 + C.control.footUnits
+            )
+              continue
             const sit = yFor(pl.midi) - 0.035
             if (prevY <= sit + 0.002 && mercY >= sit - 0.002) {
               restIdx = i
