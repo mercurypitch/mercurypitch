@@ -112,7 +112,14 @@ Levels declare a control scheme; both run in the same stage engine:
   platform is that platform's own note — intervals become distances,
   melodies stay the path. Standing on a platform lights it (the sung
   jump was the skill); a big leap that lands AHEAD advances through the
-  skipped land nodes, but panes still gate. Platforms are one-way
+  skipped land nodes, but panes still gate — and an intact pane is a
+  physical glass wall (`control.paneBlockUnits`): no jumping past a
+  lock, walking or airborne, until it is sung open. Panes charge by
+  PROXIMITY here (`control.paneChargeUnits`), not by node order — press
+  near the glass and sing its note; once burst, an open wall no longer
+  blocks progression or completion. Voice-driven vertical speed is
+  capped (`control.liftMaxPerSec`) so a really high note is a big leap,
+  not an instant one. Platforms are one-way
   FLOORS: a lower note can never sing Merc through the slab he stands
   on (walking off the edge is the only way down), landing catches any
   downward crossing of a top within `control.footUnits` of overhang,

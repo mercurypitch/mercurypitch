@@ -175,12 +175,22 @@ export const JOURNEY_CONFIG = {
     maxFall: 1.4,
     /** Lift lerp toward the sung note's height (the jump itself). */
     liftLerp: 0.16,
+    /** Max voice-driven vertical speed, canvas fractions per second — a
+     * really high note is a BIG leap, not an instant one: the energy
+     * averages out over the arc instead of teleporting Merc. */
+    liftMaxPerSec: 0.8,
     /** After walking off an edge, the ground counts for this long, ms. */
     coyoteMs: 130,
     /** Merc's feet: x overhang tolerance for standing and landing, units. */
     footUnits: 0.12,
     /** Going silent settles Merc onto a top within this vertical range. */
     settleUnits: 0.1,
+    /** An intact pane is a physical glass wall: Merc stops this far from
+     * it, walking or airborne, until it is sung open. */
+    paneBlockUnits: 0.22,
+    /** Panes charge by proximity in this mode — singing an intact pane's
+     * note within this many units makes it resonate, node order aside. */
+    paneChargeUnits: 1.3,
   },
 
   /** Game-emitted audio (all of it gated by the corner toggles too). */

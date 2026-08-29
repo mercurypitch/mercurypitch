@@ -562,6 +562,18 @@ export const JourneyPrototype: Component<{
     }
   }
 
+  const burstPane = (pane: Pane): void => {
+    pane.burstT = 0
+    const gy = yFor(pane.midi)
+    pane.shards = Array.from({ length: 26 }, (_, i) => ({
+      x: pane.wx,
+      y: gy,
+      vx: (Math.cos((i / 26) * 6.283) * (0.5 + (i % 5) * 0.13)) / 2.2,
+      vy: (Math.sin((i / 26) * 6.283) * (0.5 + (i % 3) * 0.2)) / 2.2 - 0.25,
+      r: 2 + (i % 4) * 2,
+    }))
+  }
+
   const resumeFromCue = (): void => {
     arpeggioTimers.forEach((t) => window.clearTimeout(t))
     arpeggioTimers = []
@@ -705,32 +717,81 @@ export const JourneyPrototype: Component<{
       }
     }
 
-    if (p === 'play' && !falling && activeIdx < nodes.length) {
+    if (p === 'play' && !falling && isTrials()) {
+      // === platformer objectives: physical, order-light ===
+      // landing lights the platform under Merc's feet — and standing on
+      // a LATER land node's platform completes the ones a big leap
+      // skipped (panes break the run: locks are never completed by air)
+      if (restIdx !== null && !platforms[restIdx].broken) {
+        const stand = platforms[restIdx]
+        stand.lit = true
+        for (let k = activeIdx; k < nodes.length; k++) {
+          const nk = nodes[k]
+          if (nk.t === 'pane') {
+            // an OPEN wall doesn't block completion; an intact one does
+            if (nk.pane.burstT >= 0) continue
+            break
+          }
+          if (nk.t !== 'land') break
+          if (nk.p === stand) {
+            for (let j = activeIdx; j <= k; j++) {
+              const nj = nodes[j]
+              if (nj.t === 'land') nj.p.lit = true
+            }
+            break
+          }
+        }
+      }
+      // every satisfied node (lit land, burst pane) fast-forwards
+      let guard = 0
+      while (activeIdx < nodes.length && guard < 60) {
+        guard += 1
+        const n0 = nodes[activeIdx]
+        if (n0.t === 'land' && n0.p.lit) {
+          if (n0.checkpoint === true) lastCheckpointIdx = activeIdx
+          advanceTo(activeIdx + 1)
+        } else if (n0.t === 'pane' && n0.pane.burstT >= 0) {
+          advanceTo(activeIdx + 1)
+        } else {
+          break
+        }
+      }
+      // glass walls charge by PROXIMITY, not node order: press near an
+      // intact pane and sing its note — it bursts, the wall opens
+      for (const pane of panes) {
+        if (pane.burstT >= 0) continue
+        const cfg =
+          pane.kind === 'gate'
+            ? C.gate
+            : pane.kind === 'wall'
+              ? C.wall
+              : C.hidden
+        const near = Math.abs(mercWX - pane.wx) <= C.control.paneChargeUnits
+        if (
+          near &&
+          midi !== null &&
+          Math.abs(midi - pane.midi) <= cfg.tolSemis
+        ) {
+          pane.res = Math.min(1, pane.res + dt / cfg.riseMs)
+          if (pane.res >= 1) burstPane(pane)
+        } else {
+          pane.res = Math.max(0, pane.res - dt / cfg.fallMs)
+        }
+        if (pane.kind === 'hidden') {
+          pane.reveal =
+            midi === null || !near
+              ? Math.max(0, pane.reveal - dt / 600)
+              : Math.max(
+                  0,
+                  1 - Math.abs(midi - pane.midi) / C.hidden.revealSemis,
+                )
+        }
+      }
+    } else if (p === 'play' && !falling && activeIdx < nodes.length) {
       const n = nodes[activeIdx]
       if (n.t === 'land') {
         const pl = n.p
-        if (isTrials()) {
-          // platformer: standing on a platform IS the landing — the sung
-          // jump was the skill. A big leap may land AHEAD; advance through
-          // every consecutive land node up to where Merc stands (panes
-          // still gate — locks cannot be skipped, only traversal).
-          if (restIdx !== null) {
-            const stand = platforms[restIdx]
-            for (let k = activeIdx; k < nodes.length; k++) {
-              const nk = nodes[k]
-              if (nk.t !== 'land') break
-              if (nk.p === stand) {
-                for (let j = activeIdx; j <= k; j++) {
-                  const nj = nodes[j] as Extract<Node, { t: 'land' }>
-                  nj.p.lit = true
-                  if (nj.checkpoint === true) lastCheckpointIdx = j
-                }
-                advanceTo(k + 1)
-                break
-              }
-            }
-          }
-        } else if (
+        if (
           !pl.broken &&
           midi !== null &&
           Math.abs(midi - pl.midi) <= C.land.bandSemis
@@ -850,18 +911,8 @@ export const JourneyPrototype: Component<{
             pane.res = Math.max(0, pane.res - dt / cfg.fallMs)
           }
           if (pane.res >= 1) {
-            pane.burstT = 0
+            burstPane(pane)
             rescueMs = C.pane.rescueMs
-            const gy = yFor(pane.midi)
-            pane.shards = Array.from({ length: 26 }, (_, i) => ({
-              x: pane.wx,
-              y: gy,
-              vx: (Math.cos((i / 26) * 6.283) * (0.5 + (i % 5) * 0.13)) / 2.2,
-              vy:
-                (Math.sin((i / 26) * 6.283) * (0.5 + (i % 3) * 0.2)) / 2.2 -
-                0.25,
-              r: 2 + (i % 4) * 2,
-            }))
           }
         }
       }
@@ -899,6 +950,7 @@ export const JourneyPrototype: Component<{
       if (isTrials()) {
         // === platformer: keys walk, the voice is the jump ===
         const dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0)
+        const prevX = mercWX
         if (p === 'play' && dir !== 0) {
           const sp =
             C.control.walkSpeed *
@@ -908,12 +960,26 @@ export const JourneyPrototype: Component<{
             Math.max(0.3, mercWX + (dir * sp * dt) / 1000),
           )
         }
+        // intact panes are physical glass walls — no jumping past a lock
+        for (const pane of panes) {
+          if (pane.burstT >= 0) continue
+          const m = C.control.paneBlockUnits
+          if (prevX <= pane.wx - m && mercWX > pane.wx - m) {
+            mercWX = pane.wx - m
+          } else if (prevX >= pane.wx + m && mercWX < pane.wx + m) {
+            mercWX = pane.wx + m
+          }
+        }
         const prevY = mercY
         if (p === 'play' && midi !== null) {
           // the jump: lift toward the sung note's height — a higher note
           // is a higher, longer leap; holding it is holding the button
           const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
-          mercY += (ty - mercY) * C.control.liftLerp
+          // rate-capped approach: big intervals climb at a weighted,
+          // constant pace and ease out near the apex
+          const step = (ty - mercY) * C.control.liftLerp
+          const cap = (C.control.liftMaxPerSec * dt) / 1000
+          mercY += Math.max(-cap, Math.min(cap, step))
           jumpVy = 0
           falling = false
           if (restIdx !== null) {
@@ -1786,6 +1852,20 @@ export const JourneyPrototype: Component<{
   const keyUp = setKey(false)
 
   onMount(() => {
+    if (import.meta.env.DEV) {
+      // dev-only probe for the synthetic E2E harness
+      ;(
+        window as unknown as { __merc?: () => Record<string, unknown> }
+      ).__merc = () => ({
+        x: Math.round(mercWX * 100) / 100,
+        y: Math.round(mercY * 1000) / 1000,
+        rest: restIdx,
+        vy: Math.round(jumpVy * 100) / 100,
+        falling,
+        phase: phase(),
+        activeIdx,
+      })
+    }
     window.addEventListener('keydown', keyDown)
     window.addEventListener('keyup', keyUp)
     raf = requestAnimationFrame(tick)
