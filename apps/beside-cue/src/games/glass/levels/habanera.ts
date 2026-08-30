@@ -45,6 +45,7 @@ export const HABANERA: LevelDef = {
     land: { bandSemis: 0.45, dwellMs: 650 },
     fall: { sinkGraceMs: 1300 },
     tap: { windowMs: 180 },
+    listen: { fanSize: 3, gapSemis: 3 },
   },
   segments: [
     { type: 'melody', melody: P1 },

@@ -284,8 +284,14 @@ export const JOURNEY_CONFIG = {
   /** Listen play mode (ear training, no mic): the game hums the next
    * note; two candidate slabs light up; tap the one you heard. */
   listen: {
-    /** Decoy slab: nearest other note within this many semitones. */
-    decoyMaxSemis: 5,
+    /** Candidates per question: the true note plus fanSize−1 phantom
+     * slabs, a ladder stacked at the same road position — the true
+     * note lands on a random rung. */
+    fanSize: 2,
+    /** Semitones between neighboring rungs — the ear-gap. Songs
+     * tighten it per level via feel (octave → fifth → third →
+     * semitone, the classic staircase). */
+    gapSemis: 7,
     /** The prompt hum's length, seconds. */
     promptSeconds: 0.9,
     /** A tap outside both candidates replays the prompt — but no more

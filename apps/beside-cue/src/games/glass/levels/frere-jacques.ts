@@ -71,6 +71,7 @@ export const FRERE_JACQUES: LevelDef = {
     fall: { sinkGraceMs: 1100 },
     control: { airReliftMax: 1 },
     tap: { windowMs: 170, maxMisses: 8 },
+    listen: { gapSemis: 5 },
   },
   segments: [
     { type: 'melody', melody: P1 },

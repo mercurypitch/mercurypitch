@@ -113,10 +113,15 @@ export const JourneyPrototype: Component<{
   let rhythmSpeed = 2 // world units / s
   let rhythmBpm = C.tap.bpmDefault
   let rhythmMisses = 0
-  // listen (ear training) state: current perch, the decoy slab, timers
+  // listen (ear training) state: current perch, the candidate fan
+  // (phantom pitches stacked AT the next slab — geometry offers the
+  // choice, only the ear can pick the answer), timers
   let listenHome = 0
-  let listenDecoy = -1
+  let listenFan: number[] = [] // phantom midis; the true slab is implicit
+  let listenFanAt = -1 // node index the fan was built for
   let listenWrongT = -1
+  let listenWrongMidi = -1 // the phantom that shakes, then dissolves
+  let listenWrongs = 0 // wrong picks on the current question
   let listenAdvanceAt = 0
   let listenPromptAt = 0
   /** Input-latency compensation, ms: the tap tuner's stored per-device
@@ -528,8 +533,10 @@ export const JourneyPrototype: Component<{
     wasVoicedTr = false
     rhythmMisses = 0
     listenHome = 0
-    listenDecoy = -1
+    listenFan = []
+    listenFanAt = -1
     listenWrongT = -1
+    listenWrongs = 0
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -578,8 +585,10 @@ export const JourneyPrototype: Component<{
     wasVoicedTr = false
     rhythmMisses = 0
     listenHome = 0
-    listenDecoy = -1
+    listenFan = []
+    listenFanAt = -1
     listenWrongT = -1
+    listenWrongs = 0
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -594,24 +603,30 @@ export const JourneyPrototype: Component<{
     else buildWorld()
   }
 
-  /** The decoy for a listen question: the nearest OTHER slab whose note
-   * sits within decoyMaxSemis (and at least a semitone off) — usually
-   * the melody's own neighbor, which is exactly the confusable one. */
-  const pickDecoy = (target: Platform): number => {
-    const tc = (target.x0 + target.x1) / 2
-    let best = -1
-    let bestDist = Infinity
-    for (const [i, pl] of platforms.entries()) {
-      if (pl === target || pl.broken) continue
-      const diff = Math.abs(pl.midi - target.midi)
-      if (diff < 1 || diff > C.listen.decoyMaxSemis) continue
-      const dist = Math.abs((pl.x0 + pl.x1) / 2 - tc)
-      if (dist < bestDist) {
-        bestDist = dist
-        best = i
-      }
+  /** The candidate fan for a listen question: a ladder of fanSize
+   * rungs, gapSemis apart, stacked at the SAME road position as the
+   * true slab — the true note lands on a random rung, so position can
+   * never leak the answer; only the ear separates the candidates
+   * (find-the-frequency among decoys, game-design mechanic #2, drawn
+   * as the Kodaly pitch-is-height ladder). Returns the PHANTOM midis;
+   * rungs that would poke out of the pitch window slide back in, and
+   * any still outside are dropped (fewer candidates, never a broken
+   * question). */
+  const buildFan = (target: Platform): number[] => {
+    const lo = groundMidi + winLo + 1
+    const hi = groundMidi + winHi - 1
+    const gap = C.listen.gapSemis
+    const n = C.listen.fanSize
+    let rung = Math.floor(Math.random() * n)
+    while (rung < n - 1 && target.midi + (n - 1 - rung) * gap > hi) rung++
+    while (rung > 0 && target.midi - rung * gap < lo) rung--
+    const fan: number[] = []
+    for (let i = 0; i < n; i++) {
+      if (i === rung) continue
+      const midi = target.midi + (i - rung) * gap
+      if (midi <= hi && midi >= lo) fan.push(midi)
     }
-    return best
+    return fan
   }
 
   /** The listen prompt: the note the player must find, played through
@@ -655,8 +670,11 @@ export const JourneyPrototype: Component<{
       return
     }
     if (isListen()) {
-      // the objective hum IS the question — always played, decoy reset
-      listenDecoy = -1
+      // the objective hum IS the question — always played, fan rebuilt
+      listenFan = []
+      listenFanAt = -1
+      listenWrongT = -1
+      listenWrongs = 0
       if (n.t === 'land') promptListen(n.p.midi)
       return
     }
@@ -1178,13 +1196,18 @@ export const JourneyPrototype: Component<{
         if (p === 'play' && listenAdvanceAt === 0 && activeIdx < nodes.length) {
           const n = nodes[activeIdx]
           if (n.t === 'land') {
-            if (listenDecoy < 0) listenDecoy = pickDecoy(n.p)
-            // a shaken wrong pick replays the prompt once the shake ends
+            if (listenFanAt !== activeIdx) {
+              listenFan = buildFan(n.p)
+              listenFanAt = activeIdx
+            }
+            // a shaken wrong pick dissolves, then the prompt replays —
+            // process of elimination keeps every question winnable
             if (
               listenWrongT >= 0 &&
               last - listenWrongT > C.listen.wrongShakeMs + 150
             ) {
               listenWrongT = -1
+              listenFan = listenFan.filter((m) => m !== listenWrongMidi)
               promptListen(n.p.midi)
             }
             const rect = canvas.getBoundingClientRect()
@@ -1192,19 +1215,25 @@ export const JourneyPrototype: Component<{
             const vh = rect.height
             const vu = vw < vh ? C.art.viewUnitsPortrait : C.view.viewUnits
             const upx = vw / vu
-            const hitOf = (pl: Platform, cx: number, cy: number): boolean => {
-              const sy = (yFor(pl.midi) - camY) * vh
-              return (
-                cx >= (pl.x0 - camX) * upx - 8 &&
-                cx <= (pl.x1 - camX) * upx + 8 &&
-                Math.abs(cy - sy) < 46
-              )
-            }
             for (const a of answers) {
               const cx = (a.x ?? 0) - rect.left
               const cy = (a.y ?? 0) - rect.top
-              const decoyP = listenDecoy >= 0 ? platforms[listenDecoy] : null
-              if (hitOf(n.p, cx, cy)) {
+              const inX =
+                cx >= (n.p.x0 - camX) * upx - 8 &&
+                cx <= (n.p.x1 - camX) * upx + 8
+              // the nearest rung at the question's road position wins
+              let pickMidi = -1
+              let pickDy = 46
+              if (inX) {
+                for (const m of [n.p.midi, ...listenFan]) {
+                  const dy = Math.abs(cy - (yFor(m) - camY) * vh)
+                  if (dy < pickDy) {
+                    pickDy = dy
+                    pickMidi = m
+                  }
+                }
+              }
+              if (pickMidi === n.p.midi) {
                 n.p.lit = true
                 n.p.dwell = 9999
                 promptListen(n.p.midi) // the answer rings back as reward
@@ -1218,8 +1247,10 @@ export const JourneyPrototype: Component<{
                 listenWrongT = -1
                 listenAdvanceAt = last + C.listen.hopDelayMs
                 break
-              } else if (decoyP !== null && hitOf(decoyP, cx, cy)) {
-                listenWrongT = last // the decoy shakes its head
+              } else if (pickMidi >= 0) {
+                listenWrongT = last // the phantom shakes its head
+                listenWrongMidi = pickMidi
+                listenWrongs += 1
               } else if (last - listenPromptAt > C.listen.replayGapMs) {
                 promptListen(n.p.midi) // tap elsewhere = hear it again
               }
@@ -1717,7 +1748,29 @@ export const JourneyPrototype: Component<{
       C.art.platformMinPx,
       Math.min(C.art.platformMaxPx, C.art.platformUnits * unitPx),
     )
-    for (const [pi, pl] of platforms.entries()) {
+    // the dashed candidate coat listen questions dress ALL rungs in —
+    // one function so the true slab and its phantoms cannot drift apart
+    const drawListenBox = (
+      bx0: number,
+      bx1: number,
+      by: number,
+      wob: number,
+      fade: number,
+    ): void => {
+      ctx.globalAlpha = (0.55 + (Math.sin(last / 260) + 1) * 0.2) * fade
+      ctx.strokeStyle = P.activeEdge
+      ctx.lineWidth = 2.5
+      ctx.setLineDash([7, 6])
+      ctx.beginPath()
+      ctx.roundRect(bx0 - 5 + wob, by - 9, bx1 - bx0 + 10, slabH + 12, 8)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.fillStyle = `rgba(${P.labelRgb},0.85)`
+      ctx.font = "700 15px 'Saira Condensed', monospace"
+      ctx.fillText('?', (bx0 + bx1) / 2 - 3 + wob, by - 14)
+      ctx.globalAlpha = 1
+    }
+    for (const pl of platforms) {
       const y = yFor(pl.midi) * h
       const x0 = X(pl.x0)
       const x1 = X(pl.x1)
@@ -1821,31 +1874,17 @@ export const JourneyPrototype: Component<{
         ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
       }
 
-      // listen candidates: the true slab and the decoy, dressed the same
-      if (isListen() && !pl.lit && (isActive || pi === listenDecoy)) {
-        const wob =
-          listenWrongT >= 0 && pi === listenDecoy
-            ? Math.sin((last - listenWrongT) / 26) *
-              5 *
-              Math.max(0, 1 - (last - listenWrongT) / C.listen.wrongShakeMs)
-            : 0
-        ctx.globalAlpha = 0.55 + (Math.sin(last / 260) + 1) * 0.2
-        ctx.strokeStyle = P.activeEdge
-        ctx.lineWidth = 2.5
-        ctx.setLineDash([7, 6])
-        ctx.beginPath()
-        ctx.roundRect(x0 - 5 + wob, y - 9, x1 - x0 + 10, slabH + 12, 8)
-        ctx.stroke()
-        ctx.setLineDash([])
-        ctx.globalAlpha = 1
-        ctx.fillStyle = `rgba(${P.labelRgb},0.85)`
-        ctx.font = "700 15px 'Saira Condensed', monospace"
-        ctx.fillText('?', (x0 + x1) / 2 - 3 + wob, y - 14)
+      // listen: the true slab wears the same dashed coat as its
+      // phantom rungs (drawn after this loop)
+      if (isListen() && !pl.lit && isActive) {
+        drawListenBox(x0, x1, y, 0, 1)
       }
 
       // karaoke syllable under the slab (melody levels); the active one
-      // carries an underline — the bouncing-ball of this karaoke
-      if (pl.syllable !== undefined) {
+      // carries an underline — the bouncing-ball of this karaoke. In
+      // listen a syllable would tag the true slab among its phantoms,
+      // so unlit slabs keep quiet there.
+      if (pl.syllable !== undefined && (!isListen() || pl.lit)) {
         ctx.fillStyle = `rgba(${P.syllableRgb},${Math.max(labelA, 0.45)})`
         ctx.font = showActive
           ? "700 13px 'Saira Condensed', monospace"
@@ -1859,6 +1898,53 @@ export const JourneyPrototype: Component<{
           ctx.moveTo(x0 + 2, y + slabH + 16.5)
           ctx.lineTo(x0 + 2 + tw, y + slabH + 16.5)
           ctx.stroke()
+        }
+      }
+    }
+
+    // listen phantoms: fake rungs at the true slab's road position in
+    // full slab dress — nothing but pitch separates the candidates
+    if (isListen() && activeIdx < nodes.length) {
+      const n = nodes[activeIdx]
+      if (n.t === 'land' && !n.p.lit) {
+        const kind = n.p.kind
+        const pat = kind === 'glass' ? patterns.crystal : patterns.stone
+        const x0 = X(n.p.x0)
+        const x1 = X(n.p.x1)
+        for (const m of listenFan) {
+          const wrong = listenWrongT >= 0 && m === listenWrongMidi
+          const ft = wrong
+            ? Math.max(0, 1 - (last - listenWrongT) / C.listen.wrongShakeMs)
+            : 1
+          const wob = wrong ? Math.sin((last - listenWrongT) / 26) * 5 * ft : 0
+          const y = yFor(m) * h
+          ctx.globalAlpha = ft
+          ctx.beginPath()
+          ctx.roundRect(x0 + wob, y - 3, x1 - x0, slabH, 5)
+          ctx.fillStyle = kind === 'glass' ? P.slabGlass : P.slabStone
+          ctx.fill()
+          if (pat !== null) {
+            ctx.globalAlpha = (kind === 'glass' ? 0.6 : 0.9) * ft
+            ctx.fillStyle = pat
+            ctx.fill()
+          }
+          ctx.globalAlpha = ft
+          ctx.strokeStyle =
+            kind === 'glass' ? P.undersideGlass : P.undersideStone
+          ctx.lineWidth = 1
+          ctx.stroke()
+          ctx.lineCap = 'round'
+          ctx.lineWidth = 2
+          ctx.strokeStyle =
+            kind === 'glass'
+              ? `rgba(${P.edgeGlassRgb},0.5)`
+              : `rgba(${P.edgeStoneRgb},0.35)`
+          ctx.beginPath()
+          ctx.moveTo(x0 + 3 + wob, y - 3)
+          ctx.lineTo(x1 - 3 + wob, y - 3)
+          ctx.stroke()
+          ctx.globalAlpha = 1
+          drawListenBox(x0, x1, y, wob, ft)
         }
       }
     }
@@ -2326,12 +2412,22 @@ export const JourneyPrototype: Component<{
           midi: pl.midi,
         })
         const n = nodes[activeIdx] as Node | undefined
+        const tp = n !== undefined && n.t === 'land' ? n.p : null
+        const rungAt = (midi: number): Record<string, number> | null =>
+          tp === null
+            ? null
+            : {
+                cx: rect.left + ((tp.x0 + tp.x1) / 2 - camX) * upx,
+                cy: rect.top + (yFor(midi) - camY) * rect.height,
+                midi,
+              }
         return {
           activeIdx,
-          target: n !== undefined && n.t === 'land' ? at(n.p) : null,
-          decoy: listenDecoy >= 0 ? at(platforms[listenDecoy]) : null,
+          target: tp !== null ? at(tp) : null,
+          fan: listenFan.map(rungAt),
           home: listenHome,
           wrong: listenWrongT >= 0,
+          wrongs: listenWrongs,
         }
       }
       ;(

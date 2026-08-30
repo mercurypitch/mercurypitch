@@ -51,6 +51,8 @@ export const FUR_ELISE: LevelDef = {
   // Semitone neighbors ask for a fine band; everything else stays kind.
   feel: {
     land: { bandSemis: 0.5, dwellMs: 650 },
+    // the song IS semitone control — the ear-gap follows it down
+    listen: { gapSemis: 2 },
   },
   segments: [
     { type: 'melody', melody: P1 },

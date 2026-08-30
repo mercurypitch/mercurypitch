@@ -65,6 +65,7 @@ export const MOUNTAIN_KING: LevelDef = {
     fall: { sinkGraceMs: 1200 },
     control: { airReliftMax: 1 },
     tap: { windowMs: 180, maxMisses: 10 },
+    listen: { fanSize: 3, gapSemis: 4 },
   },
   segments: [
     { type: 'melody', melody: pass(1, 1) },

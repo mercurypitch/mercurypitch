@@ -202,9 +202,13 @@ export const compileLevel = (
   }
 
   // the window covers the shifted song (the start slab is inside it by
-  // construction — its pitch is the song's first note)
-  const winLo = range.lo + shift - M.windowLoPad
-  const winHi = range.hi + shift + M.windowHiPad
+  // construction — its pitch is the song's first note). Listen adds the
+  // candidate fan's reach: phantom rungs sit gapSemis*(fanSize−1) beyond
+  // any melody note, and the window must hold every rung.
+  const L = (opts.feel ?? JOURNEY_CONFIG).listen
+  const fanPad = mode === 'listen' ? L.gapSemis * (L.fanSize - 1) : 0
+  const winLo = range.lo + shift - M.windowLoPad - fanPad
+  const winHi = range.hi + shift + M.windowHiPad + fanPad
 
   return {
     platforms,
