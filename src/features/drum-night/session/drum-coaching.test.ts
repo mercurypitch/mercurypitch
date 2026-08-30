@@ -655,4 +655,134 @@ describe('coachDrumSession', () => {
       'Play the phrase once to collect timing evidence.',
     )
   })
+
+  describe('loop-pass scoping', () => {
+    // Fixture targets: kick 0, snare 1, hat 1.5, snare 2 at 120 BPM
+    // (500 ms per beat), so a 0.16-beat offset is 80 ms.
+    const twoPassCaptures = (): DrumCapturedHit[] => [
+      {
+        id: 'p0-kick',
+        source: 'midi',
+        gmKey: 36,
+        beat: 0,
+        velocity: 96,
+        pass: 0,
+      },
+      {
+        id: 'p0-snare-1',
+        source: 'midi',
+        gmKey: 38,
+        beat: 1,
+        velocity: 108,
+        pass: 0,
+      },
+      {
+        id: 'p0-hat',
+        source: 'midi',
+        gmKey: 42,
+        beat: 1.5,
+        velocity: 72,
+        pass: 0,
+      },
+      {
+        id: 'p0-snare-2',
+        source: 'midi',
+        gmKey: 38,
+        beat: 2,
+        velocity: 104,
+        pass: 0,
+      },
+      {
+        id: 'p1-kick',
+        source: 'midi',
+        gmKey: 36,
+        beat: 0.16,
+        velocity: 96,
+        pass: 1,
+      },
+      {
+        id: 'p1-snare-1',
+        source: 'midi',
+        gmKey: 38,
+        beat: 1.16,
+        velocity: 108,
+        pass: 1,
+      },
+      {
+        id: 'p1-hat',
+        source: 'midi',
+        gmKey: 42,
+        beat: 1.66,
+        velocity: 72,
+        pass: 1,
+      },
+      {
+        id: 'p1-snare-2',
+        source: 'midi',
+        gmKey: 38,
+        beat: 2.16,
+        velocity: 104,
+        pass: 1,
+      },
+    ]
+
+    it('reports the scoped pass instead of the best capture from any pass', () => {
+      const document = readyDocumentFixture()
+
+      const latePass = coachDrumSession(document, twoPassCaptures(), {
+        scopeToPass: 1,
+      })
+      expect(latePass.status).toBe('ready')
+      expect(latePass.matchedHitCount).toBe(4)
+      expect(latePass.meanTimingOffsetMs).toBe(80)
+      expect(latePass.lateCount).toBe(4)
+      expect(latePass.centredCount).toBe(0)
+
+      const cleanPass = coachDrumSession(document, twoPassCaptures(), {
+        scopeToPass: 0,
+      })
+      expect(cleanPass.matchedHitCount).toBe(4)
+      expect(cleanPass.meanTimingOffsetMs).toBe(0)
+      expect(cleanPass.centredCount).toBe(4)
+    })
+
+    it('pools every pass when unscoped, keeping the whole-take summary view', () => {
+      const pooled = coachDrumSession(readyDocumentFixture(), twoPassCaptures())
+
+      expect(pooled.matchedHitCount).toBe(4)
+      expect(pooled.meanTimingOffsetMs).toBe(0)
+      expect(pooled.unmatchedCaptureCount).toBe(4)
+    })
+
+    it('treats a pass with no evidence yet as an empty take', () => {
+      const fresh = coachDrumSession(
+        readyDocumentFixture(),
+        twoPassCaptures(),
+        {
+          scopeToPass: 2,
+        },
+      )
+
+      expect(fresh.status).toBe('no-captures')
+    })
+
+    it('scores hits without pass provenance as pass zero', () => {
+      const result = coachDrumSession(
+        readyDocumentFixture(),
+        [
+          {
+            id: 'legacy-snare',
+            source: 'midi',
+            gmKey: 38,
+            beat: 1.05,
+            velocity: 108,
+          },
+        ],
+        { scopeToPass: 0, minimumMatchedHits: 1 },
+      )
+
+      expect(result.matchedHitCount).toBe(1)
+      expect(result.meanTimingOffsetMs).toBe(25)
+    })
+  })
 })

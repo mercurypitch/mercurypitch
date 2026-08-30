@@ -128,6 +128,7 @@ export function DrumProjectLibraryHost(
   return (
     <DrumProjectLibrary
       view={view()}
+      onBack={props.onBack}
       onLoad={props.onLoad}
       onRetry={props.onRetry}
       onSaveCurrent={props.onSaveCurrent}

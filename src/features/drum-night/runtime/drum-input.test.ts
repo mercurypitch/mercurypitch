@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DrumMidiAccessPort, DrumMidiInputPort, DrumMidiMappingStore, } from './drum-input'
-import { createDrumMidiInput, drumKeyboardHitFromEvent, normalizeDrumInputTimestampMs, } from './drum-input'
+import { createDrumMidiInput, createLocalDrumMidiMappingStore, drumKeyboardHitFromEvent, normalizeDrumInputTimestampMs, } from './drum-input'
 import { GENERAL_MIDI_DRUM_ARTICULATIONS } from './drum-pad-layout'
 import type { DrumLiveHit } from './drum-runtime-types'
 
@@ -506,5 +506,181 @@ describe('Drum Night input timestamps', () => {
     expect(normalizeDrumInputTimestampMs(Number.NaN, 10_000, origin)).toBe(
       10_000,
     )
+  })
+})
+
+describe('Drum Night MIDI message hygiene', () => {
+  async function connectedInput() {
+    const harness = midiHarness()
+    harness.setInputs([harness.input])
+    const hits: DrumLiveHit[] = []
+    const input = createDrumMidiInput({
+      environment: {
+        requestAccess: async () => harness.access,
+        nowMs: () => 1_000,
+      },
+      onHit: (hit) => hits.push(hit),
+    })
+    await input.connect()
+    return { harness, hits, input }
+  }
+
+  it('treats a velocity-zero note-on as the note-off it is', async () => {
+    const { harness, hits } = await connectedInput()
+    harness.send([0x99, 38, 0])
+    expect(hits).toHaveLength(0)
+    harness.send([0x99, 38, 96])
+    expect(hits).toHaveLength(1)
+  })
+
+  it('drops short, realtime, and empty messages without crashing', async () => {
+    const { harness, hits, input } = await connectedInput()
+    harness.send([0xf8])
+    harness.send([0xc0, 5])
+    harness.input.onmidimessage?.({ data: null, timeStamp: 1_000 })
+    expect(hits).toHaveLength(0)
+    expect(input.state().errorMessage).toBeNull()
+    harness.send([0x90, 36, 64])
+    expect(hits).toHaveLength(1)
+  })
+
+  it('clamps an out-of-range velocity to the MIDI ceiling', async () => {
+    const { harness, hits } = await connectedInput()
+    harness.send([0x90, 36, 255])
+    expect(hits.at(-1)?.velocity).toBe(127)
+  })
+})
+
+describe('createLocalDrumMidiMappingStore', () => {
+  const STORAGE_KEY = 'mp.drumNight.midiMapping.v2'
+
+  function memoryStorage(): Storage {
+    const bag = new Map<string, string>()
+    return {
+      get length() {
+        return bag.size
+      },
+      clear: () => bag.clear(),
+      getItem: (key: string) => bag.get(key) ?? null,
+      key: () => null,
+      removeItem: (key: string) => void bag.delete(key),
+      setItem: (key: string, value: string) => void bag.set(key, value),
+    }
+  }
+
+  it('round-trips per-input profiles and preserves other devices on save', () => {
+    const storage = memoryStorage()
+    const store = createLocalDrumMidiMappingStore(storage)
+    store.save('kit-a', new Map([[22, 42]]))
+    store.save('kit-b', new Map([[30, 36]]))
+    expect(store.load('kit-a').get(22)).toBe(42)
+    expect(store.load('kit-b').get(30)).toBe(36)
+
+    store.save('kit-a', new Map([[24, 38]]))
+    expect(store.load('kit-a').get(24)).toBe(38)
+    expect(store.load('kit-a').has(22)).toBe(false)
+    expect(store.load('kit-b').get(30)).toBe(36)
+  })
+
+  it('loads nothing from corrupted, foreign-version, or invalid payloads', () => {
+    const storage = memoryStorage()
+    const store = createLocalDrumMidiMappingStore(storage)
+    storage.setItem(STORAGE_KEY, 'not json {')
+    expect(store.load('kit-a').size).toBe(0)
+
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 1, profiles: { 'kit-a': { 22: 42 } } }),
+    )
+    expect(store.load('kit-a').size).toBe(0)
+
+    // Valid envelope, invalid entries: non-GM target and non-numeric key.
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 2,
+        profiles: { 'kit-a': { 22: 99, nope: 38, 23: 46 } },
+      }),
+    )
+    const mapping = store.load('kit-a')
+    expect([...mapping.entries()]).toEqual([[23, 46]])
+  })
+
+  it('swallows a throwing storage so the live mapping keeps playing', () => {
+    const storage = memoryStorage()
+    storage.setItem = () => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    }
+    const store = createLocalDrumMidiMappingStore(storage)
+    expect(() => store.save('kit-a', new Map([[22, 42]]))).not.toThrow()
+    expect(store.load('kit-a').size).toBe(0)
+  })
+})
+
+describe('Drum Night MIDI learn overwrite and recovery', () => {
+  it('lets a learned strike shadow a native pad and per-key clear restore it', async () => {
+    const harness = midiHarness()
+    harness.setInputs([harness.input])
+    const saved: Array<ReadonlyMap<number, number>> = []
+    const store: DrumMidiMappingStore = {
+      load: () => new Map(),
+      save: (_inputId, mapping) => saved.push(new Map(mapping)),
+    }
+    const hits: DrumLiveHit[] = []
+    const input = createDrumMidiInput({
+      environment: {
+        requestAccess: async () => harness.access,
+        nowMs: () => 1_000,
+      },
+      mappingStore: store,
+      onHit: (hit) => hits.push(hit),
+    })
+    await input.connect()
+
+    // Native GM kick passes through untouched.
+    harness.send([0x90, 36, 90])
+    expect(hits.at(-1)?.gmKey).toBe(36)
+
+    // A mis-strike while learning snare captures the kick pad...
+    expect(input.beginLearn(38)).toBe(true)
+    harness.send([0x90, 36, 90])
+    expect(hits.at(-1)).toMatchObject({ gmKey: 38, rawMidiKey: 36 })
+    expect(saved.at(-1)?.get(36)).toBe(38)
+    harness.send([0x90, 36, 90])
+    expect(hits.at(-1)?.gmKey).toBe(38)
+
+    // ...and the per-key clear brings the native voice back, persisted.
+    input.clearMapping(36)
+    expect(saved.at(-1)?.has(36)).toBe(false)
+    harness.send([0x90, 36, 90])
+    expect(hits.at(-1)?.gmKey).toBe(36)
+  })
+
+  it('cancelLearn leaves the map untouched and rejects non-GM learn targets', async () => {
+    const harness = midiHarness()
+    harness.setInputs([harness.input])
+    const saved: Array<ReadonlyMap<number, number>> = []
+    const store: DrumMidiMappingStore = {
+      load: () => new Map(),
+      save: (_inputId, mapping) => saved.push(new Map(mapping)),
+    }
+    const input = createDrumMidiInput({
+      environment: {
+        requestAccess: async () => harness.access,
+        nowMs: () => 1_000,
+      },
+      mappingStore: store,
+      onHit: () => undefined,
+    })
+    await input.connect()
+
+    expect(input.beginLearn(34)).toBe(false)
+    expect(input.beginLearn(45)).toBe(true)
+    input.cancelLearn()
+    expect(input.state().learningTargetGmKey).toBeNull()
+    harness.send([0x90, 20, 70])
+    expect(input.mapping().size).toBe(0)
+    expect(saved).toHaveLength(0)
+    expect(input.state().lastRawUnmappedNote?.rawMidiKey).toBe(20)
   })
 })

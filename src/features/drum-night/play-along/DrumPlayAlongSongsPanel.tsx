@@ -15,7 +15,7 @@ import styles from './DrumPlayAlongSongsPanel.module.css'
 
 const FILE_DROP_COPY = {
   chooseFile: 'Choose MIDI or Guitar Pro',
-  dropAlternative: 'or drop it here',
+  dropAlternative: '',
   formats: 'MIDI · GP · GP3 · GP4 · GP5 · GPX',
   activeDrop: 'Drop one authored arrangement',
   oneFile: 'One file at a time',

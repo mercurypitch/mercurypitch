@@ -1410,7 +1410,7 @@ describe('DrumNightApp', () => {
     )
     await waitFor(() =>
       expect(
-        screen.getByText(/Built-in groove · 32 mapped hits/),
+        screen.getByText(/Built-in groove · 29 mapped hits/),
       ).toBeVisible(),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Close rack drawer' }))
@@ -2739,6 +2739,55 @@ describe('DrumNightApp', () => {
     expect(backing.load).not.toHaveBeenCalled()
   })
 
+  it('opens the in-room sign-in modal for a blocked separation instead of navigating', async () => {
+    const backing = preparedBackingHarness({
+      sessionId: 'two-stem-blocked-song',
+      title: 'Prepared Session A',
+      kind: 'two-stem',
+    })
+    const catalog = songPortHarness([backing])
+    const blocker: CloudSplitBlocker = {
+      reason: 'signed-out',
+      message: 'Sign in before separating the band.',
+      cta: { label: 'Sign in', section: 'account' },
+    }
+    const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>()
+    const loadBandPreparationPort = vi.fn(async () => ({ prepareBand }))
+    renderRoom({
+      checkBandPreflight: () => blocker,
+      loadBandPreparationPort,
+      loadSongPort: catalog.loadSongPort,
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+    const drawer = screen.getByRole('region', { name: 'Bring a song' })
+    fireEvent.click(
+      await within(drawer).findByRole('button', {
+        name: /Prepared Session A.*Two stems.*Load backing/i,
+      }),
+    )
+    await within(drawer).findByText('Backing with drums inside')
+    fireEvent.click(
+      within(drawer).getByRole('button', { name: 'Separate drums' }),
+    )
+
+    await within(drawer).findByText('Sign in before separating the band.')
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Sign in' }))
+
+    // The shared AuthModal opens over the room in its drum flavor; the page
+    // never navigates to settings and no billable job starts.
+    const overlay = await screen.findByRole('dialog')
+    expect(overlay.closest('[data-tone]')).toHaveAttribute(
+      'data-tone',
+      'drum-night',
+    )
+    expect(screen.getByTestId('drum-night-shell')).toBeInTheDocument()
+    expect(prepareBand).not.toHaveBeenCalled()
+
+    fireEvent.click(within(overlay).getByRole('button', { name: /close/i }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
   it('keeps a newer authored file when an older separation finishes late', async () => {
     const backing = preparedBackingHarness({
       sessionId: 'session-a',
@@ -3122,7 +3171,7 @@ describe('DrumNightApp', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Built-in groove · 32 mapped hits/),
+        screen.getByText(/Built-in groove · 29 mapped hits/),
       ).toBeVisible(),
     )
     expect(editor).toHaveAttribute('data-dirty', 'true')
@@ -3139,9 +3188,12 @@ describe('DrumNightApp', () => {
       within(drawer).getByRole('button', { name: 'Close rack drawer' }),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Score view' }))
-    expect(
-      screen.getByLabelText('Windowed percussion score').querySelector('desc'),
-    ).toHaveTextContent('32 indexed authored percussion hits')
+    const scoreViewport = await screen.findByLabelText(
+      'Windowed percussion score',
+    )
+    expect(scoreViewport.querySelector('desc')).toHaveTextContent(
+      '29 indexed authored percussion hits',
+    )
   })
 
   it('reactivates audio before retrying an initial graph failure', async () => {
@@ -3271,11 +3323,7 @@ describe('DrumNightApp', () => {
     room.player.setAuthoredFamilyVolume.mockClear()
     fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
     drawer = screen.getByRole('region', { name: 'Bring a song' })
-    fireEvent.click(
-      within(drawer).getByRole('button', {
-        name: 'Clear authored arrangement',
-      }),
-    )
+    fireEvent.click(within(drawer).getByRole('button', { name: /^Unload / }))
 
     await waitFor(() =>
       expect(room.player.setAuthoredFamilyVolume).toHaveBeenCalledWith(

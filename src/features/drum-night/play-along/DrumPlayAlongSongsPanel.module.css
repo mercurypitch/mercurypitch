@@ -205,12 +205,71 @@
   font-size: 12px;
 }
 
-.filePrompt {
+/* Accessory root: loaded-song identity on the left, unload on the right. */
+.localArrangement > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px 12px;
-  margin-top: auto;
+  gap: 2px 12px;
+}
+
+.localArrangement > div > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.localArrangement strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.localArrangement small {
+  color: rgb(238 231 219 / 62%);
+  font-size: 10px;
+}
+
+/* Slot-injected actions (Unload, Open mixer): icon + short label. */
+.localArrangement button,
+.sessionAccessory button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px;
+  white-space: nowrap;
+}
+
+.localArrangement button svg,
+.sessionAccessory button svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* The prompt IS the drop zone: a dashed field filling the channel, with the
+   brass picker centered inside and the accepted formats as a pill below. */
+.filePrompt {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 148px;
+  margin-top: 12px;
+  padding: 26px 16px;
+  border: 1.5px dashed rgb(238 231 219 / 24%);
+  border-radius: 12px;
+  background: rgb(238 231 219 / 2%);
+  transition:
+    border-color 150ms ease-out,
+    background 150ms ease-out;
+}
+
+.fileDrop:hover .filePrompt {
+  border-color: rgb(231 173 82 / 34%);
+  background: rgb(231 173 82 / 3%);
 }
 
 .fileChoose,
@@ -218,6 +277,8 @@
 .routeLoading button,
 .inlineActions button,
 .separateOffer button,
+.localArrangement button,
+.sessionAccessory button,
 .preparation > button {
   border: 1px solid var(--pa-line-strong);
   border-radius: 10px;
@@ -237,6 +298,8 @@
 .routeLoading button:hover:not(:disabled),
 .inlineActions button:hover:not(:disabled),
 .separateOffer button:hover:not(:disabled),
+.localArrangement button:hover:not(:disabled),
+.sessionAccessory button:hover:not(:disabled),
 .preparation > button:hover:not(:disabled) {
   border-color: rgb(102 213 205 / 48%);
   background: rgb(102 213 205 / 9%);
@@ -247,6 +310,8 @@
 .routeLoading button:active:not(:disabled),
 .inlineActions button:active:not(:disabled),
 .separateOffer button:active:not(:disabled),
+.localArrangement button:active:not(:disabled),
+.sessionAccessory button:active:not(:disabled),
 .preparation > button:active:not(:disabled) {
   transform: translateY(1px);
 }
@@ -286,11 +351,14 @@
 }
 
 .fileFormats {
-  grid-column: 1 / -1;
-  color: rgb(238 231 219 / 44%);
+  padding: 5px 12px;
+  border: 1px solid var(--pa-line);
+  border-radius: 999px;
+  color: rgb(238 231 219 / 52%);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  text-align: center;
 }
 
 .fileInput {
@@ -888,19 +956,12 @@
   }
 
   .filePrompt {
-    grid-template-columns: minmax(0, 1fr);
+    min-height: 120px;
+    padding: 20px 12px;
   }
 
   .fileChoose {
     width: 100%;
-  }
-
-  .dropAlternative {
-    display: none;
-  }
-
-  .fileFormats {
-    grid-column: auto;
   }
 
   .libraryState {

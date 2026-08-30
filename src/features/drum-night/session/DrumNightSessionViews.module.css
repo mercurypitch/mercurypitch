@@ -970,3 +970,27 @@
     animation: none;
   }
 }
+
+/* Look-ahead score row: the next page rendered dimmed under the live one,
+   so the last bar of a page always has readable continuation. */
+.scorePreview {
+  position: relative;
+  width: 100%;
+  margin-top: 6px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border-top: 1px solid rgb(238 231 219 / 8%);
+  opacity: 0.58;
+  scrollbar-color: rgb(170 179 184 / 35%) transparent;
+}
+
+.scorePreviewLabel {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: rgb(238 231 219 / 52%);
+  font-size: 9px;
+  font-weight: 740;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}

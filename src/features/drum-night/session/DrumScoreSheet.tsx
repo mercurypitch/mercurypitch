@@ -20,6 +20,8 @@ import { DrumSessionStateView } from './DrumSessionStateView'
 const MIN_BAR_WIDTH = 176
 const SCORE_LEFT = 64
 const SCORE_HEIGHT = 244
+/** The look-ahead row stops above the meter strip: staff and numbers only. */
+const SCORE_PREVIEW_HEIGHT = 200
 const LOOP_OVERLAY_TOP = 42
 const LOOP_OVERLAY_BOTTOM = 194
 const LOOP_LABEL_WIDTH = 24
@@ -366,6 +368,19 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
           barCount: visibleBarCount(),
         })
   })
+  // The page after the one being played, so the last bar of a page is never
+  // a cliff: while page N plays, page N+1 is already readable below it, and
+  // the automatic page flip rolls both rows forward together.
+  const nextWindow = createMemo((): DrumScoreWindow | null => {
+    const currentIndex = index()
+    const currentWin = window()
+    if (currentIndex === null || currentWin === null) return null
+    const nextBar = currentIndex.score.bars[currentWin.endBarIndex + 1]
+    if (nextBar === undefined) return null
+    return drumScoreWindow(currentIndex, nextBar.startBeat, {
+      barCount: visibleBarCount(),
+    })
+  })
   const renderedBarCount = createMemo(() =>
     Math.max(1, window()?.bars.length ?? 1),
   )
@@ -696,6 +711,70 @@ export function DrumScoreSheet(props: DrumScoreSheetProps): JSX.Element {
                         />
                       </svg>
                     </div>
+                    <Show when={nextWindow()} keyed>
+                      {(preview) => (
+                        <div
+                          class={styles.scorePreview}
+                          aria-hidden="true"
+                          data-testid="drum-score-next-window"
+                        >
+                          <span class={styles.scorePreviewLabel}>
+                            Up next · bars {preview.startBarIndex + 1}–
+                            {preview.endBarIndex + 1}
+                          </span>
+                          <svg
+                            class={styles.scoreSvg}
+                            width={canvasWidth()}
+                            height={SCORE_PREVIEW_HEIGHT}
+                            viewBox={`0 0 ${canvasWidth()} ${SCORE_PREVIEW_HEIGHT}`}
+                            preserveAspectRatio="none"
+                          >
+                            <For each={preview.bars}>
+                              {(bar, localIndex) => {
+                                const x = () =>
+                                  SCORE_LEFT + localIndex() * barWidth()
+                                return (
+                                  <g class={styles.scoreBar}>
+                                    <For each={[94, 114, 134, 154, 174]}>
+                                      {(y) => (
+                                        <path
+                                          d={`M${x()} ${y}H${x() + barWidth()}`}
+                                        />
+                                      )}
+                                    </For>
+                                    <path
+                                      class={styles.barLine}
+                                      d={`M${x()} 86V182`}
+                                    />
+                                    <text x={x() + 10} y="76">
+                                      {bar.index + 1}
+                                    </text>
+                                  </g>
+                                )
+                              }}
+                            </For>
+                            <path
+                              class={styles.barLine}
+                              d={`M${SCORE_LEFT + preview.bars.length * barWidth()} 86V182`}
+                            />
+                            <For each={preview.events}>
+                              {(event) => (
+                                <ScoreNotehead
+                                  event={event}
+                                  x={drumScoreWindowBeatX(
+                                    preview,
+                                    event.hit.startBeat,
+                                    barWidth(),
+                                    SCORE_LEFT,
+                                  )}
+                                  active={false}
+                                />
+                              )}
+                            </For>
+                          </svg>
+                        </div>
+                      )}
+                    </Show>
                     <Show when={projectedLoopContext()} keyed>
                       {(context) => (
                         <p

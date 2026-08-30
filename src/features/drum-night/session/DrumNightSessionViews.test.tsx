@@ -203,6 +203,43 @@ describe('DrumScoreSheet', () => {
     expect(liveRegions[0]).toHaveTextContent('Bar 1')
   })
 
+  it('renders the next page as a dimmed look-ahead row and hides it on the last page', () => {
+    // 24 quarter-note beats of snares = 6 bars in 4/4: two 4-bar pages.
+    const hits = Array.from({ length: 24 }, (_, beat) => ({
+      id: `snare-${beat}`,
+      gmKey: 38,
+      startBeat: beat,
+      velocity: 100,
+    }))
+    const session = readySessionFixture({
+      song: drumSongFixture({
+        percussionTracks: [percussionTrackFixture({ hits })],
+      }),
+    })
+
+    const firstPage = render(() => (
+      <DrumScoreSheet
+        session={() => session}
+        playheadBeat={() => 0}
+        visibleBarCount={() => 4}
+      />
+    ))
+    const preview = screen.getByTestId('drum-score-next-window')
+    expect(preview).toHaveAttribute('aria-hidden', 'true')
+    expect(preview).toHaveTextContent('Up next · bars 5–6')
+    expect(preview.querySelectorAll('[data-gm-key]').length).toBeGreaterThan(0)
+    firstPage.unmount()
+
+    render(() => (
+      <DrumScoreSheet
+        session={() => session}
+        playheadBeat={() => 17}
+        visibleBarCount={() => 4}
+      />
+    ))
+    expect(screen.queryByTestId('drum-score-next-window')).toBeNull()
+  })
+
   it('projects a pending A mark with one-based, read-only score context', () => {
     const session = readySessionFixture()
     const view = render(() => (

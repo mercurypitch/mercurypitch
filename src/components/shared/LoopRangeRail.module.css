@@ -99,6 +99,10 @@
   transform: translateX(-50%);
 }
 
+/* The chip cannot use `background: currentColor` next to its own dark
+   `color:` — currentColor resolves against the element's OWN color, so the
+   chip painted #100c08 on #100c08 and the letter vanished. Bind the fill to
+   the marker hue vars instead. */
 .marker > span {
   position: absolute;
   z-index: 1;
@@ -108,7 +112,7 @@
   padding: 0.08rem 0.22rem;
   border-radius: 0.22rem;
   color: #100c08;
-  background: currentColor;
+  background: var(--loop-range-a);
   font-size: 0.55rem;
   font-weight: 800;
   line-height: 1;
@@ -117,8 +121,16 @@
   pointer-events: none;
 }
 
+.markerA {
+  color: var(--loop-range-a);
+}
+
 .markerB {
   color: var(--loop-range-b);
+}
+
+.markerB > span {
+  background: var(--loop-range-b);
 }
 
 .markerDragging::after,

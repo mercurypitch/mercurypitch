@@ -39,7 +39,7 @@ const TITLES: Record<Pane, string> = {
 
 export interface AuthModalProps {
   /** The host surface may tint the shared dialog without owning auth logic. */
-  tone?: 'default' | 'guitar-night'
+  tone?: 'default' | 'guitar-night' | 'drum-night'
   /** Reconcile account-aware standalone UI before this dialog closes. */
   onAuthenticated?: () => void
   /** Prepare a host-owned return intent, with rollback if Google cannot start. */

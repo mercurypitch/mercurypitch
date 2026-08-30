@@ -102,8 +102,9 @@ describe('prepared Drum Night grooves', () => {
     const driving = createFirstPocketGroove('loose')
     const halfTime = createFirstPocketGroove('half-time')
 
+    // Authored data stays on the grid; the Feel toggle owns micro-timing.
     expect(funk.pocket.offGridHitCount).toBe(0)
-    expect(classic.pocket.offGridHitCount).toBeGreaterThan(0)
+    expect(classic.pocket.offGridHitCount).toBe(0)
     expect(driving.pocket.offGridHitCount).toBeGreaterThan(0)
 
     const voiceKeys = (groove: ReturnType<typeof createFirstPocketGroove>) =>

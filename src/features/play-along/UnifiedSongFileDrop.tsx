@@ -169,9 +169,11 @@ export function UnifiedSongFileDrop(props: UnifiedSongFileDropProps) {
         >
           {props.copy.chooseFile}
         </button>
-        <span class={props.classes.dropAlternative}>
-          {props.copy.dropAlternative}
-        </span>
+        <Show when={props.copy.dropAlternative !== ''}>
+          <span class={props.classes.dropAlternative}>
+            {props.copy.dropAlternative}
+          </span>
+        </Show>
         <span id={hintId} class={props.classes.formats}>
           {props.copy.formats}
         </span>

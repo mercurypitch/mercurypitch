@@ -74,4 +74,22 @@ describe('UnifiedSongFileDrop', () => {
     expect(onChoose).toHaveBeenCalledOnce()
     expect(screen.queryByTestId('delegated-drop-input')).not.toBeInTheDocument()
   })
+
+  it('renders the drop alternative only when the host provides copy for it', () => {
+    render(() => (
+      <UnifiedSongFileDrop
+        accept=".mid"
+        copy={{ ...copy, dropAlternative: '' }}
+        classes={classes}
+        testId="zone-drop"
+        onFile={() => {}}
+        onRejected={() => {}}
+      >
+        <span>Arrangement</span>
+      </UnifiedSongFileDrop>
+    ))
+
+    expect(screen.queryByText('or place it here')).not.toBeInTheDocument()
+    expect(screen.getByTestId('zone-drop').querySelector('.host-or')).toBeNull()
+  })
 })

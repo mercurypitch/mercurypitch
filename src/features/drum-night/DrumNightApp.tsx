@@ -9,8 +9,8 @@
 // browser activation gesture.
 
 import type { JSX } from 'solid-js'
-import { batch, createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { AudioWave, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
+import { batch, createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
+import { AudioWave, ChevronDown, Drum, History, Metronome, MidiDin, Minus, MusicLibrary, MusicNote, Pause, Play, Plus, Repeat, SlidersHorizontal, Square, WaveformBars, X, } from '@/components/icons'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { DRUM_PLAY_ALONG_POLICY } from '@/features/play-along/song-port'
@@ -47,7 +47,7 @@ import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-alon
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
 import type { DrumKitAuthoredFamily, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
-import type { DrumCapturedHit, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
+import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
 import { createDrumScoreIndex, createDrumSessionHumanizer, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrummerSeatView, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
 
 const PremiumBackgroundPicker = lazy(() =>
@@ -90,6 +90,14 @@ const DrumScoreSheet = lazy(() =>
     default: module.DrumScoreSheet,
   })),
 )
+const AuthModal = lazy(async () => {
+  const module = await import('@/components/account/AuthModal')
+  return { default: module.AuthModal }
+})
+const DrumNightAccount = lazy(async () => {
+  const module = await import('./DrumNightAccount')
+  return { default: module.DrumNightAccount }
+})
 const DrumProjectLibraryHost = lazy(() =>
   import('./persistence/DrumProjectLibraryHost').then((module) => ({
     default: module.DrumProjectLibraryHost,
@@ -936,8 +944,21 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       gmKey: hit.gmKey,
       velocity: hit.velocity,
       beat: hit.transportBeat,
+      pass: hit.loopIteration,
     })),
   )
+  // The live coach reads the pass being played, scoped to the looped bars;
+  // pooling every pass would let evidence only ever improve across repeats.
+  const liveCoachOptions = createMemo<DrumCoachingOptions>(() => {
+    const current = transport()
+    return current.loop === null
+      ? { scopeToPass: current.loopIteration }
+      : {
+          scopeToPass: current.loopIteration,
+          startBeat: current.loop.startBeat,
+          endBeat: current.loop.endBeat,
+        }
+  })
   const retainedTakeHitCount = createMemo(() => transport().recordedHitCount)
   const omittedTakeHitCount = createMemo(
     () => transport().recordedHitOmissionCount,
@@ -1384,6 +1405,46 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const cancelBandSeparation = (): void => {
     invalidateSourceIntent()
     bandPreparation.cancel()
+  }
+
+  // Sign-in never navigates away from the room: the shared AuthModal opens
+  // over the stage, and a blocked separation resumes once the account holds.
+  // The ui-store that drives the modal is loaded on intent — a static import
+  // would pull the main app's store graph into the room's first paint.
+  const [authIntent, setAuthIntent] = createSignal<
+    { kind: 'topbar' } | { kind: 'band-preparation'; sessionId: string } | null
+  >(null)
+  const [authRequested, setAuthRequested] = createSignal(false)
+
+  const requestSignIn = (): void => {
+    setAuthRequested(true)
+    void import('@/stores/ui-store').then((ui) => ui.openAuthModal('login'))
+  }
+
+  const openTopbarSignIn = (): void => {
+    setAuthIntent({ kind: 'topbar' })
+    requestSignIn()
+  }
+
+  const openBandPreparationSignIn = (sessionId: string): void => {
+    setAuthIntent({ kind: 'band-preparation', sessionId })
+    requestSignIn()
+  }
+
+  const refreshStandaloneAccount = async (): Promise<void> => {
+    const accountModule = await import('@/lib/standalone-account')
+    await accountModule.refreshAccount()
+  }
+
+  const handleAuthenticated = (): void => {
+    const pending = authIntent()
+    setAuthIntent(null)
+    void refreshStandaloneAccount()
+    if (pending?.kind !== 'band-preparation') return
+    // The billable job restarts only for the exact song the drummer was
+    // blocked on; anything staged since then keeps its own consent step.
+    if (songController.routeSessionId() !== pending.sessionId) return
+    startBandSeparation(pending.sessionId)
   }
 
   const syncStateFromUrl = (): void => {
@@ -2020,12 +2081,13 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           )
           return
         }
-        const [{ buildDrumTakeSummary }, historyController] = await Promise.all(
-          [
-            import('./persistence/drum-take-summary-builder'),
-            ensureTakeHistoryController(),
-          ],
-        )
+        const [
+          { buildDrumTakeSummary, DrumTakeEvidenceRangeError },
+          historyController,
+        ] = await Promise.all([
+          import('./persistence/drum-take-summary-builder'),
+          ensureTakeHistoryController(),
+        ])
         const currentProject = projects.currentProject()
         if (
           boundaryGeneration !== sourceIntentGeneration ||
@@ -2034,17 +2096,28 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
         ) {
           return
         }
-        const summary = buildDrumTakeSummary({
-          id: createDrumPersistenceId('drum-take'),
-          completedAt: new Date().toISOString(),
-          project: durableProject,
-          document,
-          capturedHits,
-          omittedCaptureHitCount,
-          tempoBpm,
-          speedScale,
-          ...(scoreIndex === undefined ? {} : { scoreIndex }),
-        })
+        let summary
+        try {
+          summary = buildDrumTakeSummary({
+            id: createDrumPersistenceId('drum-take'),
+            completedAt: new Date().toISOString(),
+            project: durableProject,
+            document,
+            capturedHits,
+            omittedCaptureHitCount,
+            tempoBpm,
+            speedScale,
+            ...(scoreIndex === undefined ? {} : { scoreIndex }),
+          })
+        } catch (error) {
+          if (error instanceof DrumTakeEvidenceRangeError) {
+            showToast(
+              'No captured hits landed inside the practiced loop range, so there is nothing to save yet.',
+            )
+            return
+          }
+          throw error
+        }
         takeFinishEvidence = evidence
         const saved = await historyController.finish(summary)
         if (
@@ -2230,13 +2303,20 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     const backingCount = document.pitchedTrackCount
     return (
       <div>
-        <strong>{document.title}</strong>
-        <span>
-          {document.hitCount} authored drum hits · {backingCount}{' '}
-          {backingCount === 1 ? 'backing track' : 'backing tracks'}
-        </span>
-        <button type="button" onClick={clearImportedSession}>
-          Clear authored arrangement
+        <div>
+          <strong>{document.title}</strong>
+          <small>
+            {document.hitCount} authored drum hits · {backingCount}{' '}
+            {backingCount === 1 ? 'backing track' : 'backing tracks'}
+          </small>
+        </div>
+        <button
+          type="button"
+          aria-label={`Unload ${document.title}`}
+          onClick={clearImportedSession}
+        >
+          <X aria-hidden="true" />
+          <span>Unload</span>
         </button>
       </div>
     )
@@ -2259,6 +2339,65 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       `Recovery loop set to bar ${loop.barNumber} at 70% of the authored tempo.`,
     )
   }
+
+  const stemAudioLoading = createMemo(
+    () => playRequestPending() || stemPlayAlongSnapshot().status === 'loading',
+  )
+  const stemLoadPercent = createMemo((): number | null => {
+    if (!stemAudioLoading()) return null
+    const fraction = stemPlayAlongSnapshot().loadFraction
+    if (fraction === null || fraction <= 0) return null
+    return Math.min(99, Math.round(fraction * 100))
+  })
+  // The console Loop module wraps the whole source without touching A or B:
+  // it sets (or clears) a full-span practice loop over the authored duration.
+  const fullLoopSpan = createMemo(
+    (): { startBeat: number; endBeat: number } | null => {
+      const duration =
+        transport().authoredDurationBeats ?? activeDocument().durationBeats
+      return Number.isFinite(duration) && duration > 0
+        ? { startBeat: 0, endBeat: duration }
+        : null
+    },
+  )
+  const fullLoopEngaged = createMemo(() => {
+    const span = loopRange.span()
+    const full = fullLoopSpan()
+    return (
+      span !== null &&
+      full !== null &&
+      Math.abs(span.startBeat - full.startBeat) < 1e-6 &&
+      Math.abs(span.endBeat - full.endBeat) < 1e-6
+    )
+  })
+  const toggleFullLoop = (): void => {
+    if (fullLoopEngaged()) {
+      loopRange.clear()
+      showToast('Loop off. Playback runs to the end and stops.')
+      return
+    }
+    const full = fullLoopSpan()
+    if (full === null || !loopRange.setSpan(full)) {
+      showToast('The loop could not be set for this source.')
+      return
+    }
+    showToast(
+      `Looping the whole ${usingStemBacking() ? 'song' : 'groove'} until you stop.`,
+    )
+  }
+
+  // The play button only becomes a meter for song loads that actually take
+  // time. Groove takes resolve in milliseconds and would flash the dark disc;
+  // the 250 ms grace also keeps cached song starts from blinking.
+  const [playLoadingShown, setPlayLoadingShown] = createSignal(false)
+  createEffect(() => {
+    if (!(stemAudioLoading() && usingStemBacking())) {
+      setPlayLoadingShown(false)
+      return
+    }
+    const timer = window.setTimeout(() => setPlayLoadingShown(true), 250)
+    onCleanup(() => window.clearTimeout(timer))
+  })
 
   const togglePlaying = (): void => {
     const phase = transport().phase
@@ -3257,6 +3396,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </span>
               <ChevronDown />
             </button>
+            <Suspense>
+              <DrumNightAccount onSignIn={openTopbarSignIn} />
+            </Suspense>
           </div>
         </header>
 
@@ -3381,6 +3523,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     session={activeSessionState}
                     playheadBeat={() => transport().positionBeats}
                     capturedHits={capturedSessionHits}
+                    options={liveCoachOptions}
                     scoreIndex={sessionScoreIndex}
                     onRequestRecoveryLoop={applyRecoveryLoop}
                   />
@@ -3477,12 +3620,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                   positionSeconds={runtime.positionSeconds()}
                   durationSeconds={stemPlayAlongSnapshot().durationSeconds}
                   isPlaying={isPlaying()}
-                  isLoading={
-                    playRequestPending() ||
-                    stemPlayAlongSnapshot().status === 'loading'
-                  }
+                  isLoading={stemAudioLoading()}
                   recentPadId={activeHit()}
                   reducedFidelity={stemPlayAlongSnapshot().reducedFidelity}
+                  windowedPlayback={
+                    stemPlayAlongSnapshot().playbackMode === 'windowed'
+                  }
                   strikeDisabled={drawerInteractionLocked()}
                   onStrike={triggerPad}
                   onOpenAuthoredScore={() => openWorkspace('songs')}
@@ -3660,10 +3803,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                           projectControls={
                             <div class={styles.grooveProjectControls}>
                               <button
+                                class={styles.projectsOpenAction}
                                 type="button"
                                 onClick={() => openWorkspace('projects')}
                               >
-                                Projects
+                                <MusicLibrary aria-hidden="true" />
+                                <span>Projects</span>
                               </button>
                               <Show
                                 when={activeProject()}
@@ -3803,6 +3948,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 <div class={cx('workspaceView', 'projectWorkspace')}>
                   <Show when={drawerOpen() && projectIntentGranted()}>
                     <DrumProjectLibraryHost
+                      onBack={() => openWorkspace('groove')}
                       controller={projectController()}
                       selectedVariantId={variation()}
                       unsavedDirty={unsavedProjectDirty()}
@@ -3980,6 +4126,22 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                               >
                                 {learning() ? 'Strike now · cancel' : 'Learn'}
                               </button>
+                              <Show when={sources().length > 0}>
+                                <button
+                                  type="button"
+                                  aria-label={`Reset learned sources for ${pad.label}`}
+                                  disabled={
+                                    runtime.midiState().status !== 'connected'
+                                  }
+                                  onClick={() => {
+                                    for (const sourceKey of sources()) {
+                                      runtime.clearMidiMapping(sourceKey)
+                                    }
+                                  }}
+                                >
+                                  Reset
+                                </button>
+                              </Show>
                             </div>
                           )
                         }}
@@ -4107,12 +4269,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     selectedSessionAccessory={
                       <button
                         type="button"
+                        aria-label="Open the play-along mixer"
                         onClick={() => {
                           setWorkspace('mix')
                           updateUrl(view(), 'mix')
                         }}
                       >
-                        Open the play-along mixer
+                        <SlidersHorizontal aria-hidden="true" />
+                        <span>Open mixer</span>
                       </button>
                     }
                     openingFileName={openingSessionFileName()}
@@ -4137,6 +4301,17 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     onDismissSeparation={cancelBandSeparation}
                     onResolveBlocker={(blocker) => {
                       if (blocker.cta === null) return
+                      // Sign-in opens the in-room modal; buying credits is
+                      // genuinely a settings task, so only that navigates.
+                      if (blocker.cta.section === 'account') {
+                        const sessionId = songController.routeSessionId()
+                        if (sessionId !== null) {
+                          openBandPreparationSignIn(sessionId)
+                        } else {
+                          openTopbarSignIn()
+                        }
+                        return
+                      }
                       window.location.assign(
                         `/#/settings/${blocker.cta.section}`,
                       )
@@ -4160,6 +4335,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                       session={activeSessionState}
                       playheadBeat={() => transport().positionBeats}
                       capturedHits={capturedSessionHits}
+                      options={liveCoachOptions}
                       scoreIndex={sessionScoreIndex}
                       onRequestRecoveryLoop={applyRecoveryLoop}
                     />
@@ -4300,7 +4476,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               </span>
             </button>
             <button
-              class={styles.consoleModule}
+              class={cx('consoleModule', 'compactModule')}
               type="button"
               disabled={usingStemBacking()}
               aria-pressed={feelSettings().enabled}
@@ -4313,6 +4489,19 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                 <strong>
                   {feelSettings().enabled ? feelStyleLabel() : 'Off'}
                 </strong>
+              </span>
+            </button>
+            <button
+              class={cx('consoleModule', 'compactModule')}
+              type="button"
+              aria-pressed={fullLoopEngaged()}
+              aria-label={`Loop the whole ${usingStemBacking() ? 'song' : 'groove'}: ${fullLoopEngaged() ? 'on' : 'off'}`}
+              onClick={toggleFullLoop}
+            >
+              <Repeat />
+              <span>
+                <small>Loop</small>
+                <strong>{fullLoopEngaged() ? 'On' : 'Off'}</strong>
               </span>
             </button>
             <div
@@ -4359,12 +4548,43 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             </button>
             <button
               class={styles.playButton}
+              classList={{ [styles.playButtonLoading]: playLoadingShown() }}
               type="button"
               onClick={togglePlaying}
-              aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`}
+              aria-label={
+                playLoadingShown()
+                  ? `Loading ${sessionTitle()} audio`
+                  : `${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`
+              }
             >
-              {isPlaying() ? <Pause /> : <Play />}
-              <span>{isPlaying() ? 'Pause' : 'Play'}</span>
+              <Show
+                when={playLoadingShown()}
+                fallback={
+                  <>
+                    {isPlaying() ? <Pause /> : <Play />}
+                    <span class={styles.playSrLabel}>
+                      {isPlaying() ? 'Pause' : 'Play'}
+                    </span>
+                  </>
+                }
+              >
+                {/* The button is the progress meter while the song loads. */}
+                <span
+                  aria-hidden="true"
+                  class={styles.playLoadRing}
+                  classList={{
+                    [styles.playLoadRingSpinning]: stemLoadPercent() === null,
+                  }}
+                  style={{
+                    '--load-fraction': String(
+                      stemPlayAlongSnapshot().loadFraction ?? 0,
+                    ),
+                  }}
+                />
+                <span aria-hidden="true" class={styles.playLoadPercent}>
+                  {stemLoadPercent() === null ? '' : `${stemLoadPercent()}%`}
+                </span>
+              </Show>
             </button>
           </div>
           <div class={cx('consoleSide', 'consoleTrail')}>
@@ -4419,7 +4639,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
             aria-label={`${isPlaying() ? 'Pause' : 'Play'} ${sessionTitle()} ${transportClockLabel()}`}
           >
             {isPlaying() ? <Pause /> : <Play />}
-            <span>{isPlaying() ? 'Pause' : 'Play'}</span>
+            <span class={styles.playSrLabel}>
+              {isPlaying() ? 'Pause' : 'Play'}
+            </span>
           </button>
           <button
             type="button"
@@ -4620,6 +4842,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           {liveMessage()}
         </div>
       </main>
+
+      <Show when={authRequested()}>
+        <Suspense>
+          <AuthModal tone="drum-night" onAuthenticated={handleAuthenticated} />
+        </Suspense>
+      </Show>
     </div>
   )
 }

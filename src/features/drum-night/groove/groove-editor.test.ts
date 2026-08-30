@@ -179,8 +179,10 @@ describe('applyDrumGrooveCommand', () => {
   })
 
   it('retains authored truth when a source hit moves and reset is undoable', () => {
+    // Driving is the variant that still authors off-grid feel offsets; the
+    // default Classic groove is fully on-grid.
     const initial = createEditableDrumGroove(
-      createFirstPocketGroove('source').document,
+      createFirstPocketGroove('loose').document,
     )
     const offGrid = initial.hits.find((hit) => hit.offsetBeats !== 0)!
     const moved = commandState(initial, {

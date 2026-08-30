@@ -458,3 +458,45 @@
     gap: 3px;
   }
 }
+
+/* Drum Night's flavor of the same shared dialog: the pocket console's slate
+   room, vellum ink, and its amber/cyan faceplate pair. */
+.overlay[data-tone='drum-night'] {
+  --bg-primary: #0b0d10;
+  --bg-secondary: #12161b;
+  --bg-tertiary: rgba(238, 231, 219, 0.055);
+  --text-primary: #eee7db;
+  --text-secondary: #b8b2a8;
+  --text-muted: rgba(238, 231, 219, 0.56);
+  --border: rgba(238, 231, 219, 0.2);
+  --accent: #e7ad52;
+  --green: #66d5cd;
+  --red: #e0918f;
+
+  background: rgba(6, 7, 9, 0.78);
+  -webkit-backdrop-filter: blur(7px) saturate(0.92);
+  backdrop-filter: blur(7px) saturate(0.92);
+}
+
+.overlay[data-tone='drum-night'] .dialog {
+  border-color: rgba(231, 173, 82, 0.26);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%),
+    rgba(15, 18, 22, 0.985);
+  box-shadow:
+    0 1.8rem 5rem rgba(0, 0, 0, 0.58),
+    inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.overlay[data-tone='drum-night'] .dialog::before {
+  background: linear-gradient(90deg, #e7ad52, #f0bb65 58%, #66d5cd);
+  opacity: 0.78;
+}
+
+.overlay[data-tone='drum-night'] .title {
+  font-family:
+    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}

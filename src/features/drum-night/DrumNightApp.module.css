@@ -1513,9 +1513,12 @@
   cursor: pointer;
 }
 
+/* auto-fit so a squeezed middle column drops to one card per row instead of
+   letting the name spill over the voice badge (two 120px tracks kept fitting
+   into widths the card content never could). */
 .kitCatalog {
   display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
 }
 
@@ -1547,6 +1550,7 @@
 .kitCatalog > button > span {
   display: grid;
   min-width: 0;
+  flex: 1;
   gap: 5px;
 }
 
@@ -1657,7 +1661,9 @@
 
 .mappingPanel .mappingList > div {
   min-height: 58px;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  /* Fourth column carries the optional per-pad Reset; an absent button
+     collapses `auto` to zero so unlearned rows keep the old layout. */
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
   padding: 8px;
   column-gap: 8px;
 }
@@ -1679,6 +1685,10 @@
 .mappingPanel .mappingList > div > button {
   grid-column: 3;
   grid-row: 1 / 3;
+}
+
+.mappingPanel .mappingList > div > button + button {
+  grid-column: 4;
 }
 
 .mappingPanel .mappingList > div > button.isLearning {
@@ -1880,6 +1890,17 @@
 .grooveProjectControls .saveProjectAction {
   border-color: rgb(231 173 82 / 54%);
   background: rgb(231 173 82 / 15%);
+}
+
+.grooveProjectControls .projectsOpenAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grooveProjectControls .projectsOpenAction svg {
+  width: 13px;
+  height: 13px;
 }
 
 .grooveReadOnly {
@@ -2164,9 +2185,12 @@
 }
 
 .consoleLead {
+  /* Five modules: count-in, play click, feel, loop, tempo. Every module
+     needs its own column — a missing one wraps the tempo card onto a
+     clipped second row and pushes the whole rail out of alignment. */
   grid-template-columns:
-    minmax(120px, 0.9fr) minmax(110px, 0.8fr)
-    minmax(142px, 1fr);
+    minmax(100px, 0.8fr) minmax(88px, 0.62fr) minmax(88px, 0.62fr)
+    minmax(84px, 0.6fr) minmax(140px, 1fr);
 }
 
 .consoleTrail {
@@ -2342,12 +2366,80 @@
 .playButton:active {
   transform: translateY(1px) scale(0.98);
 }
+
+/* While stem audio loads the button IS the progress meter, same as Guitar
+   Night: an amber arc around a dimmed disc, percent in the middle once the
+   engine knows how much there is. */
+.playButtonLoading {
+  background: #1d232b;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  color: var(--vellum);
+  cursor: progress;
+}
+
+.playButtonLoading:hover {
+  background: #232a33;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+.playLoadRing {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--amber) calc(var(--load-fraction, 0) * 360deg),
+    rgb(238 231 219 / 18%) 0
+  );
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 4px),
+    #000 calc(100% - 3px)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 4px),
+    #000 calc(100% - 3px)
+  );
+}
+
+/* No declared size yet (or a windowed load): a turning arc says "working"
+   without inventing a number. */
+.playLoadRingSpinning {
+  background: conic-gradient(
+    from -90deg,
+    rgb(238 231 219 / 16%) 0 72%,
+    var(--amber) 0 100%
+  );
+  animation: drumPlayLoadSpin 1.05s linear infinite;
+}
+
+@keyframes drumPlayLoadSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playLoadRingSpinning {
+    animation: none;
+  }
+}
+
+.playLoadPercent {
+  position: relative;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .playButton svg {
   width: 26px;
   height: 26px;
 }
-.playButton span,
-.mobilePlay span {
+/* Only the textual label is screen-reader-only. A bare `.playButton span`
+   selector also clipped the load ring and percent spans to 1x1, which is why
+   the loading state showed a dark disc with nothing in it. */
+.playSrLabel {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2689,6 +2781,11 @@
 @media (max-width: 1280px) {
   .roomChip {
     display: none;
+  }
+  .consoleLead {
+    grid-template-columns:
+      minmax(88px, 0.75fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr)
+      minmax(76px, 0.58fr) minmax(120px, 1fr);
   }
   .barMap {
     min-width: 180px;
@@ -3666,4 +3763,98 @@
 .feelSlider > small {
   color: var(--vellum-muted);
   font-size: 11px;
+}
+
+/* Account chip + menu in the session bar's top-right corner. */
+.accountChip {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: rgb(238 231 219 / 78%);
+  background: rgb(8 9 11 / 50%);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.accountChip:hover {
+  border-color: rgb(231 173 82 / 44%);
+  color: #f6efe3;
+}
+
+.accountChip svg {
+  width: 15px;
+  height: 15px;
+}
+
+.accountChipWrap {
+  position: relative;
+}
+
+.accountName {
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountChip small {
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #f6efe3;
+  background: rgb(231 173 82 / 20%);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.accountMenu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 176px;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: rgb(13 16 20 / 96%);
+  box-shadow: 0 16px 38px rgb(0 0 0 / 55%);
+}
+
+.accountMenu > span {
+  padding: 5px 8px;
+  overflow: hidden;
+  color: rgb(238 231 219 / 50%);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMenu a,
+.accountMenu button {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: rgb(238 231 219 / 82%);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.accountMenu a:hover,
+.accountMenu button:hover {
+  color: #f6efe3;
+  background: rgb(231 173 82 / 14%);
 }
