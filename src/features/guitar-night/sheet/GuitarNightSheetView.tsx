@@ -8,6 +8,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import type { DragGestureEndReason, DragGestureOptions, } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import type { MidiTimeSignature } from '@/lib/midi-bars'
+import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightSheetView.module.css'
 import type { SheetLane, SheetLoopFragment, SheetLoopMarker, SheetPlacement, SheetSystem, } from './sheet-model'
 import { barsPerSystemForWidth, buildSheetPlacement, locateBeat, sheetLoopFragments, sheetLoopMarkers, } from './sheet-model'
@@ -17,6 +18,27 @@ import { tabSheetRenderer } from './sheet-tab-renderer'
 
 /** Backing store beyond two device pixels buys nothing a reader can see. */
 const MAX_CANVAS_SCALE = 2
+
+/** Magnification survives leaving the sheet: it is a reading preference. */
+const SHEET_ZOOM_KEY = 'guitar-night-sheet-zoom-v1'
+const MIN_SHEET_ZOOM = 0.6
+const MAX_SHEET_ZOOM = 3
+/** Wheel delta to magnification. Exponential, so each notch feels equal. */
+const WHEEL_ZOOM_RATE = 0.0015
+
+const clampSheetZoom = (value: number): number =>
+  Math.min(MAX_SHEET_ZOOM, Math.max(MIN_SHEET_ZOOM, value))
+
+/** Distance between the first two touches, for a pinch. */
+const touchSpread = (touches: TouchList): number => {
+  const first = touches[0]
+  const second = touches[1]
+  if (first === undefined || second === undefined) return 0
+  return Math.hypot(
+    second.clientX - first.clientX,
+    second.clientY - first.clientY,
+  )
+}
 
 export interface GuitarNightSheetViewProps {
   lanes: Accessor<readonly SheetLane[]>
@@ -48,25 +70,49 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
 ) => {
   let host: HTMLDivElement | undefined
   let scroller: HTMLDivElement | undefined
-  let page: HTMLDivElement | undefined
+  // Measures the viewport, not the score. The page grows past the scroller
+  // once magnified, so it can no longer report how wide the reader's view is.
+  let gauge: HTMLDivElement | undefined
 
   const [width, setWidth] = createSignal(0)
   const [scrollTop, setScrollTop] = createSignal(0)
   const [viewportHeight, setViewportHeight] = createSignal(0)
   const [theme, setTheme] = createSignal<SheetTheme>(readSheetTheme(null))
+  const [zoom, setZoom] = createPersistedSignal<number>(SHEET_ZOOM_KEY, 1, {
+    validator: (value): value is number =>
+      typeof value === 'number' &&
+      Number.isFinite(value) &&
+      value >= MIN_SHEET_ZOOM &&
+      value <= MAX_SHEET_ZOOM,
+  })
 
   const renderer = createMemo(() => props.renderer?.() ?? tabSheetRenderer)
-  const metrics = createMemo<SheetMetrics>(() => ({
-    ...DEFAULT_SHEET_METRICS,
-    width: Math.max(1, width()),
-  }))
+  // Magnification scales the measure set rather than transforming the result.
+  // Every painter derives its fonts and stave gaps from these numbers, so the
+  // canvas is drawn at the size it is displayed and stays sharp at any zoom --
+  // a CSS scale on a finished canvas would just enlarge its pixels.
+  const metrics = createMemo<SheetMetrics>(() => {
+    const scale = zoom()
+    return {
+      rowHeight: DEFAULT_SHEET_METRICS.rowHeight * scale,
+      labelHeight: DEFAULT_SHEET_METRICS.labelHeight * scale,
+      laneGap: DEFAULT_SHEET_METRICS.laneGap * scale,
+      systemPaddingTop: DEFAULT_SHEET_METRICS.systemPaddingTop * scale,
+      systemPaddingBottom: DEFAULT_SHEET_METRICS.systemPaddingBottom * scale,
+      gutterWidth: DEFAULT_SHEET_METRICS.gutterWidth * scale,
+      width: Math.max(1, width() * scale),
+    }
+  })
   const placement = createMemo(() =>
     buildSheetPlacement({
       lanes: props.lanes(),
       ...(props.timeSignatures?.() === undefined
         ? {}
         : { timeSignatures: props.timeSignatures() }),
-      barsPerSystem: barsPerSystemForWidth(metrics().width),
+      // Bars per row follow the reader's viewport, never the magnification.
+      // Zooming in has to make the same music bigger; re-breaking the lines
+      // under the reader would move every bar they were looking at.
+      barsPerSystem: barsPerSystemForWidth(width()),
     }),
   )
   const layout = createMemo<SheetSystemLayout>(() =>
@@ -155,12 +201,44 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
   const measure = (): void => {
     const element = scroller
     if (element === undefined) return
-    // The scroller owns horizontal padding while the score page owns the
-    // actual paintable width. Measuring the padded box projected a row-end B
+    // The scroller owns horizontal padding while the gauge spans the width
+    // actually paintable. Measuring the padded box projected a row-end B
     // marker beyond the page and created a hidden horizontal scroll range.
-    setWidth(page?.clientWidth ?? element.clientWidth)
+    setWidth(gauge?.clientWidth ?? element.clientWidth)
     setViewportHeight(element.clientHeight)
     setScrollTop(element.scrollTop)
+  }
+
+  /**
+   * Change magnification about a fixed point.
+   *
+   * The note under the pointer -- or the middle of the view, when the slider
+   * drove it -- has to still be under it afterwards. Scaling without this
+   * anchor throws the reader to the top of the page on every step.
+   */
+  const zoomAbout = (
+    next: number,
+    clientX?: number,
+    clientY?: number,
+  ): void => {
+    const element = scroller
+    const from = zoom()
+    const to = clampSheetZoom(next)
+    if (element === undefined || to === from) return
+    const rect = element.getBoundingClientRect()
+    const anchorX = (clientX ?? rect.left + rect.width / 2) - rect.left
+    const anchorY = (clientY ?? rect.top + rect.height / 2) - rect.top
+    const ratio = to / from
+    const left = (element.scrollLeft + anchorX) * ratio - anchorX
+    const top = (element.scrollTop + anchorY) * ratio - anchorY
+    setZoom(to)
+    // The page only grows once the new metrics have reached the DOM, and a
+    // scroll offset past the current extent is silently clamped to it.
+    queueMicrotask(() => {
+      element.scrollLeft = Math.max(0, left)
+      element.scrollTop = Math.max(0, top)
+      measure()
+    })
   }
 
   onMount(() => {
@@ -170,6 +248,61 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
       measure()
     })
     if (scroller !== undefined) observer.observe(scroller)
+    if (gauge !== undefined) observer.observe(gauge)
+
+    const element = scroller
+    if (element !== undefined) {
+      // Both of these must be able to preventDefault -- the wheel to stop the
+      // browser zooming the whole app, the pinch to stop it panning the page
+      // out from under us -- so neither can be a passive listener.
+      const onWheel = (event: WheelEvent): void => {
+        if (!event.ctrlKey && !event.metaKey) return
+        event.preventDefault()
+        zoomAbout(
+          zoom() * Math.exp(-event.deltaY * WHEEL_ZOOM_RATE),
+          event.clientX,
+          event.clientY,
+        )
+      }
+      // One finger keeps native scrolling; two are ours.
+      let pinchSpread = 0
+      let pinchFrom = 1
+      const onTouchStart = (event: TouchEvent): void => {
+        if (event.touches.length !== 2) return
+        pinchSpread = touchSpread(event.touches)
+        pinchFrom = zoom()
+      }
+      const onTouchMove = (event: TouchEvent): void => {
+        if (event.touches.length !== 2 || pinchSpread <= 0) return
+        const spread = touchSpread(event.touches)
+        if (spread <= 0) return
+        event.preventDefault()
+        const first = event.touches[0]
+        const second = event.touches[1]
+        if (first === undefined || second === undefined) return
+        zoomAbout(
+          pinchFrom * (spread / pinchSpread),
+          (first.clientX + second.clientX) / 2,
+          (first.clientY + second.clientY) / 2,
+        )
+      }
+      const endPinch = (event: TouchEvent): void => {
+        if (event.touches.length < 2) pinchSpread = 0
+      }
+      element.addEventListener('wheel', onWheel, { passive: false })
+      element.addEventListener('touchstart', onTouchStart, { passive: true })
+      element.addEventListener('touchmove', onTouchMove, { passive: false })
+      element.addEventListener('touchend', endPinch, { passive: true })
+      element.addEventListener('touchcancel', endPinch, { passive: true })
+      onCleanup(() => {
+        element.removeEventListener('wheel', onWheel)
+        element.removeEventListener('touchstart', onTouchStart)
+        element.removeEventListener('touchmove', onTouchMove)
+        element.removeEventListener('touchend', endPinch)
+        element.removeEventListener('touchcancel', endPinch)
+      })
+    }
+
     onCleanup(() => {
       observer.disconnect()
     })
@@ -200,6 +333,8 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
     <div
       class={styles.sheet}
       ref={host}
+      // Lane names are DOM, not paint, so they scale from here.
+      style={{ '--sheet-zoom': String(zoom()) }}
       role="group"
       aria-label={
         loopDescription() === ''
@@ -212,10 +347,12 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
         class={styles.scroll}
         ref={scroller}
         data-testid="guitar-night-sheet-scroll"
+        data-zoomed={zoom() > 1 ? 'true' : undefined}
         onScroll={() => {
           measure()
         }}
       >
+        <div class={styles.gauge} ref={gauge} aria-hidden="true" />
         <Show
           when={props.lanes().length > 0}
           fallback={
@@ -226,11 +363,11 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
         >
           <div
             class={styles.page}
-            ref={(element) => {
-              page = element
-              measure()
+            data-testid="guitar-night-sheet-page"
+            style={{
+              width: `${metrics().width}px`,
+              height: `${systemHeight() * systemCount()}px`,
             }}
-            style={{ height: `${systemHeight() * systemCount()}px` }}
           >
             <For each={visibleSystems()}>
               {(system) => (
@@ -287,6 +424,35 @@ export const GuitarNightSheetView: Component<GuitarNightSheetViewProps> = (
           </div>
         </Show>
       </div>
+      <Show when={props.lanes().length > 0}>
+        <div class={styles.zoomBar}>
+          <input
+            class={styles.zoomSlider}
+            type="range"
+            min={MIN_SHEET_ZOOM}
+            max={MAX_SHEET_ZOOM}
+            step={0.05}
+            value={zoom()}
+            data-testid="guitar-night-sheet-zoom"
+            aria-label="Sheet zoom"
+            aria-valuetext={`${Math.round(zoom() * 100)} percent`}
+            onInput={(event) => {
+              zoomAbout(Number(event.currentTarget.value))
+            }}
+          />
+          <button
+            class={styles.zoomReset}
+            type="button"
+            data-testid="guitar-night-sheet-zoom-reset"
+            aria-label="Reset sheet zoom to 100 percent"
+            onClick={() => {
+              zoomAbout(1)
+            }}
+          >
+            {Math.round(zoom() * 100)}%
+          </button>
+        </div>
+      </Show>
     </div>
   )
 }

@@ -156,3 +156,114 @@
     border-color: Highlight;
   }
 }
+
+/* The dock anchors the picker to the faceplate without taking layout space of
+   its own: the rail around it must lay out exactly as it did before. */
+.dock {
+  position: relative;
+  display: inline-grid;
+}
+
+/* Swallows the next press anywhere else, so an accidental long-press costs one
+   tap to undo rather than changing the route. */
+.pickerBackdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+}
+
+/* Opens upward: this control lives on the bottom rail, so there is no room
+   below it and a downward menu would sit off-screen on a phone. */
+.picker {
+  position: absolute;
+  z-index: 41;
+  bottom: calc(100% + 0.55rem);
+  left: 50%;
+  display: flex;
+  gap: 0.3rem;
+  align-items: flex-end;
+  padding: 0.45rem 0.5rem 0.6rem;
+  border: 1px solid rgba(224, 164, 93, 0.28);
+  border-radius: 0.9rem;
+  background: rgba(24, 18, 13, 0.94);
+  box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+  animation: pickerRise 140ms ease-out;
+}
+
+@keyframes pickerRise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.35rem);
+  }
+}
+
+/* The fan. --chip-slot is -1, 0, 1 across the row: the outer two lean away
+   from the middle and sit a little lower, so the group reads as one gesture
+   rather than three separate buttons. */
+.pickerChip {
+  display: grid;
+  justify-items: center;
+  gap: 0.22rem;
+  width: 4.1rem;
+  min-height: max(44px, var(--touch-target, 44px));
+  padding: 0.4rem 0.25rem 0.3rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.7rem;
+  color: rgba(244, 234, 219, 0.76);
+  background: rgba(244, 234, 219, 0.04);
+  font: inherit;
+  cursor: pointer;
+  transform: translateY(calc(abs(var(--chip-slot)) * 0.22rem))
+    rotate(calc(var(--chip-slot) * 7deg));
+  transform-origin: bottom center;
+}
+
+.pickerChip:hover,
+.pickerChip:focus-visible {
+  border-color: rgba(224, 164, 93, 0.5);
+  color: var(--ivory, #f4eadb);
+  background: rgba(224, 164, 93, 0.12);
+}
+
+.pickerChip:focus-visible {
+  outline: 2px solid var(--amber-bright, #f0bd78);
+  outline-offset: 2px;
+}
+
+.pickerChip[data-current='true'] {
+  border-color: rgba(224, 164, 93, 0.62);
+  color: var(--ivory, #f4eadb);
+  background: rgba(224, 164, 93, 0.2);
+}
+
+.pickerIcon {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.pickerName {
+  font-size: 0.58rem;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* `abs()` is recent; without it every chip would land at translateY(NaN) and
+   the fan would collapse to a flat row. Flat is a fine fallback. */
+@supports not (width: abs(1px)) {
+  .pickerChip {
+    transform: rotate(calc(var(--chip-slot) * 7deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picker {
+    animation: none;
+  }
+
+  .pickerChip {
+    transform: none;
+  }
+}

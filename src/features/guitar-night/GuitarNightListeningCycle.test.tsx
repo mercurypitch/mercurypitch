@@ -40,7 +40,7 @@ describe('GuitarNightListeningCycle', () => {
     expect(button).toHaveAttribute('data-state', 'off')
     expect(button).toHaveAttribute(
       'title',
-      'Listening is off. Switch to Room mic',
+      'Listening is off. Switch to Room mic. Hold or right-click to pick a route.',
     )
 
     fireEvent.click(button)
@@ -227,5 +227,131 @@ describe('GuitarNightListeningCycle', () => {
     expect(nextGuitarNightListeningSelection('microphone')).toBe('interface')
     expect(nextGuitarNightListeningSelection('interface')).toBe('midi')
     expect(nextGuitarNightListeningSelection('midi')).toBeNull()
+  })
+  describe('route picker', () => {
+    function mountPicker() {
+      const [status, setStatus] = createSignal<GuitarListeningStatus>('off')
+      const [profile, setProfile] =
+        createSignal<GuitarInputProfileKind>('microphone')
+      const selections: Array<GuitarInputProfileKind | null> = []
+      render(() => (
+        <GuitarNightListeningCycle
+          status={status}
+          profile={profile}
+          onSelect={(next) => {
+            selections.push(next)
+            if (next === null) {
+              setStatus('off')
+              return
+            }
+            setProfile(next)
+            setStatus('listening')
+          }}
+        />
+      ))
+      return { selections, status, profile }
+    }
+
+    const openViaRightClick = (): void => {
+      fireEvent.contextMenu(screen.getByTestId('guitar-night-listening-cycle'))
+    }
+
+    /** jsdom drops pointerType from a PointerEvent init, so set it directly. */
+    const touch = (type: string, clientX: number, clientY: number): Event => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'pointerType', { value: 'touch' })
+      Object.defineProperty(event, 'clientX', { value: clientX })
+      Object.defineProperty(event, 'clientY', { value: clientY })
+      return event
+    }
+
+    it('reaches direct input without ever opening the microphone', () => {
+      // The whole point: cycling can only get here through Room mic, which
+      // costs a browser consent prompt a plugged-in player never wanted.
+      const { selections } = mountPicker()
+      openViaRightClick()
+
+      fireEvent.click(
+        screen.getByRole('menuitemradio', { name: 'Listen with Direct input' }),
+      )
+      expect(selections).toEqual(['interface'])
+      expect(screen.queryByTestId('guitar-night-listening-picker')).toBeNull()
+    })
+
+    it('turns Listening off when the open route is chosen again', () => {
+      const { selections } = mountPicker()
+      fireEvent.click(screen.getByTestId('guitar-night-listening-cycle'))
+      expect(selections).toEqual(['microphone'])
+
+      openViaRightClick()
+      fireEvent.click(
+        screen.getByRole('menuitemradio', {
+          name: 'Turn Listening off (Room mic is on)',
+        }),
+      )
+      expect(selections).toEqual(['microphone', null])
+    })
+
+    it('opens on a long press and swallows the click that ends it', () => {
+      vi.useFakeTimers()
+      try {
+        const { selections } = mountPicker()
+        const button = screen.getByTestId('guitar-night-listening-cycle')
+        button.dispatchEvent(touch('pointerdown', 10, 10))
+        vi.advanceTimersByTime(500)
+        expect(screen.getByTestId('guitar-night-listening-picker')).toBeTruthy()
+
+        // The finger lifting must not also advance the cycle.
+        button.dispatchEvent(touch('pointerup', 10, 10))
+        fireEvent.click(button)
+        expect(selections).toEqual([])
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('treats a press that travels as a scroll, not a hold', () => {
+      vi.useFakeTimers()
+      try {
+        mountPicker()
+        const button = screen.getByTestId('guitar-night-listening-cycle')
+        button.dispatchEvent(touch('pointerdown', 10, 10))
+        button.dispatchEvent(touch('pointermove', 10, 44))
+        vi.advanceTimersByTime(500)
+        expect(screen.queryByTestId('guitar-night-listening-picker')).toBeNull()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('closes on Escape and on a press outside', () => {
+      mountPicker()
+      openViaRightClick()
+      fireEvent.keyDown(screen.getByTestId('guitar-night-listening-picker'), {
+        key: 'Escape',
+      })
+      expect(screen.queryByTestId('guitar-night-listening-picker')).toBeNull()
+
+      openViaRightClick()
+      fireEvent.pointerDown(
+        screen.getByTestId('guitar-night-listening-picker-backdrop'),
+      )
+      expect(screen.queryByTestId('guitar-night-listening-picker')).toBeNull()
+    })
+
+    it('stays shut while input changes are unavailable', () => {
+      const [status] = createSignal<GuitarListeningStatus>('off')
+      const [profile] = createSignal<GuitarInputProfileKind>('microphone')
+      render(() => (
+        <GuitarNightListeningCycle
+          status={status}
+          profile={profile}
+          disabled={() => true}
+          onSelect={() => undefined}
+        />
+      ))
+      fireEvent.contextMenu(screen.getByTestId('guitar-night-listening-cycle'))
+      expect(screen.queryByTestId('guitar-night-listening-picker')).toBeNull()
+    })
   })
 })
