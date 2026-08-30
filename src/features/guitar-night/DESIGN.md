@@ -22,16 +22,17 @@ the player asks for them. The first screen is an invitation, not a dashboard.
   one thin contrast layer behind stage copy. Catalog-authored light rooms keep
   a stronger faceplate pigment floor rather than asking the browser to guess
   image luminance.
-- **Hierarchy:** one primary musical action, one secondary import action, and
-  one quiet expert escape. These must not read as three equal feature cards.
+- **Hierarchy:** one primary musical action and one secondary import action.
+  These must not read as equal feature cards.
 
 ## First-viewport contract
 
 The approved room remains visibly present. A single entry surface offers
-`Start`, `Load a song`, and `I know my way around`. No microphone, MIDI, audio,
-analysis, or timer starts on entry. A quiet `Tune guitar` utility sits outside
-those three primary paths and likewise opens without capture or sound. The room
-status states that it is quiet.
+`Start` and `Load a song`, under a heading that asks `Ready to practice?`. No
+microphone, MIDI, audio, analysis, or timer starts on entry. A quiet
+`Tune guitar` utility sits outside those two primary paths and likewise opens
+without capture or sound. A chevron beside the heading returns to the Guitar
+workspace.
 
 ## Interaction contract
 
@@ -51,8 +52,10 @@ status states that it is quiet.
   selects one new local audio file. A distinct durable guitar stem may be
   staged muted; a two-stem instrumental must say that guitar remains in its
   mix. Neither path starts playback.
-- `I know my way around` preserves continuity by opening the current Guitar
-  workspace during the incremental migration.
+- The return chevron in the entry heading preserves continuity by opening the
+  current Guitar workspace during the incremental migration. It was a third
+  entry button reading `I know my way around` until that wording turned a way
+  back into a claim about the reader's skill.
 - Inside the room, Space always toggles the backing transport — a focused
   mute chip, slider or panel button never steals the key; typing surfaces and
   modifier chords do (shared rule: `src/lib/space-playback.ts`).

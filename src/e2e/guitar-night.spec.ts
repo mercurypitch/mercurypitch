@@ -454,7 +454,8 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
   expect(focusStyle.outline).not.toBe('none')
   expect(focusStyle.width).not.toBe('0px')
   await page.keyboard.press('Tab')
-  await expect(buttons.nth(2)).toBeFocused()
+  // Tune guitar sits outside the pair, so the third stop leaves the group.
+  await expect(page.getByRole('button', { name: /Tune guitar/ })).toBeFocused()
 
   const accountTrigger = page.getByRole('button', {
     name: 'Sign in to MercuryPitch',
@@ -1205,8 +1206,8 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
     const buttons = page
       .getByTestId('guitar-night-entry-actions')
       .getByRole('button')
-    await expect(buttons).toHaveCount(3)
-    for (let index = 0; index < 3; index += 1) {
+    await expect(buttons).toHaveCount(2)
+    for (let index = 0; index < 2; index += 1) {
       const box = await buttons.nth(index).boundingBox()
       expect(box).not.toBeNull()
       expect(box?.width).toBeGreaterThanOrEqual(44)
@@ -1515,9 +1516,7 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
   await expect(
     page.getByRole('heading', { name: 'Bring a song into the room.' }),
   ).toBeVisible()
-  await expect(
-    page.getByText('Nothing starts playing on its own.'),
-  ).toBeVisible()
+  await expect(page.getByText('Choose your next song.')).toBeVisible()
 
   const fileChooserPromise = page.waitForEvent('filechooser')
   await page
@@ -2922,7 +2921,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   expect(Number(await songPosition.inputValue())).toBeCloseTo(pausedPosition, 1)
 
   await room.getByRole('button', { name: 'Back to Songs', exact: true }).click()
-  const resumeSong = page.getByRole('button', { name: /midnight-drums\.wav/ })
+  const resumeSong = page.getByRole('button', { name: /^midnight-drums\.wav/ })
   await expect(resumeSong).toContainText('Resume')
   await resumeSong.click()
   await expect(

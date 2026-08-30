@@ -77,7 +77,7 @@ test('offers to hang an attached tab on the staged recording @smoke', async ({
 
   // The room used to say only that this tab could not follow the recording.
   const offer = page.getByRole('button', {
-    name: 'Place it on this recording by hand',
+    name: 'Align to recording',
   })
   await expect(offer).toBeVisible()
   await offer.click()
@@ -88,9 +88,7 @@ test('offers to hang an attached tab on the staged recording @smoke', async ({
 
 test('marks the part against the recording and nudges it', async ({ page }) => {
   await stageTabOverDemo(page, `hand-mark-${Date.now()}`)
-  await page
-    .getByRole('button', { name: 'Place it on this recording by hand' })
-    .click()
+  await page.getByRole('button', { name: 'Align to recording' }).click()
   // "Play along" is the room door when a tab is already attached.
   await page.getByRole('button', { name: 'Play along', exact: true }).click()
 
