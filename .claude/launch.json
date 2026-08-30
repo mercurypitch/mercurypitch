@@ -38,6 +38,13 @@
       "port": 5199
     },
     {
+      "name": "beside-cue-https",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@irchiinnuss/beside-cue-app", "dev", "--port", "5199", "--strictPort", "--host", "--mode", "https"],
+      "port": 5199,
+      "url": "https://localhost:5199"
+    },
+    {
       "name": "jam-lan",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["exec", "run-p", "dev:jam", "dev:host"],

@@ -38,6 +38,7 @@
     "@solidjs/testing-library": "^0.8.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@types/node": "^22.0.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "eslint": "9.39.1",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.1",
