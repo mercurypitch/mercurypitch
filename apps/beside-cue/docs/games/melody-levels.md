@@ -280,20 +280,37 @@ Next: maff's original melodies as data.
   painterly atmospheric are the three winning families; the final
   default gets picked after device playtests.
 
-## 8. Score and learning path (planned, maff 2026-08-30)
+## 8. Score and learning path (maff 2026-08-30; score V1 SHIPPED)
 
 Passing a level should not mean "barely reached the end". Each run gets
-a perfection score per mode — pitch accuracy and dwell steadiness in
-sung modes, timing offset spread in rhythm, first-try answers in listen
-— and clearing a level means landing in roughly the 70–80% band for
-that mode, tempo included. Stars per song-per-mode fall out of the same
-number. That threshold is what turns the songbook into a learning path:
-the next song unlocks by demonstrated control, not by crossing the
-finish line once. All thresholds live in `journey-config.ts` when
-built; nothing is scored or gated until this ships.
+a perfection score per mode, and clearing means landing in roughly the
+70–80% band — that threshold is what turns the songbook into a
+learning path later: the next song unlocks by demonstrated control,
+not by crossing the finish line once.
+
+Score V1 SHIPPED (`score.ts` pure + tested; engine collects a
+`RunTally`): per-note quality 0..1 —
+
+- **sung**: time-weighted mean cents-off while the note is held in
+  band, mapped `centsPerfect`(10¢)=1 → `centsZero`(70¢)=0; falls cost
+  `fallPenaltyPct` each;
+- **rhythm**: `1 − |offset|/windowMs` per tap, misses score 0;
+- **listen**: `1 − wrongPicks × listenWrongPenalty` per question.
+
+Run score = mean × 100; pass band `passPct` 75, polished `greatPct`
+90 (all in `journey-config.score`, feel-overridable). Folded from the
+ear-training research: the card LEADS with a real unit ("about 14¢
+off target", "median 21 ms off the beat", "9 of 11 first-try") — real
+units stay comparable across months, and once difficulty adapts, a
+percent alone stops meaning anything (the research's "never show a
+number your own adaptation pins in place"). Per-song-per-mode bests
+persist on device and show on the mode buttons. NOT YET: gating (the
+learning path itself), stars, tempo credit for sung modes, and the
+Elo/threshold rulers for when levels stop being static.
 
 ## Out of scope for this pass
 
 3D (V3), backing tracks (pending device test), listen pane questions
-and gestures (traversal V1 shipped — input-modes.md), editor UI,
-remote songbook fetch, VO wiring, the score/learning path above.
+and gestures (fan traversal shipped — input-modes.md), editor UI,
+remote songbook fetch, VO wiring, score-based gating (§8's second
+half).

@@ -82,7 +82,9 @@ Discrete intents carry `AudioContext.currentTime` timestamps (the
 conductor rule) so the tap judge never depends on frame time.
 
 World state, camera, Merc rendering, glass integrity, void/fall, retry,
-scoring — all shared. Stars unify as accuracy% per mode.
+scoring — all shared. Run scoring SHIPPED (2026-08-30): one `RunTally`
+per run, mode-specific per-note quality, real-unit detail line, pass
+band — melody-levels.md §8.
 
 ## Phasing
 
@@ -109,19 +111,25 @@ scoring — all shared. Stars unify as accuracy% per mode.
   SHIPPED too: `tap.maxMisses` per level ends the run ("The beat ran
   ahead."), and a rhythm retry rebuilds the road with a fresh count-in.
 - **C. Listen driver:** question engine + gesture recognizer + answer UI.
-  Traversal V1 SHIPPED (2026-08-30): "Hear the line" on every songbook
-  card compiles the level in mode `'listen'` (encounters become rests)
-  and reuses the tap driver — no mic, taps carry client coords. The
-  game hums the next note (`listen.promptSeconds`, plays even with
-  sounds off — it IS the question); the active slab and one decoy (the
-  nearest other slab within `listen.decoyMaxSemis`, min one semitone
-  apart) render identically as dashed outlines with a question mark —
-  no visual giveaway, and unlit note-name labels stay hidden. Tap the
-  heard slab: Merc hops, the note lights and rings. Tap the decoy: a
-  shake, then the prompt replays. Tap elsewhere: throttled replay
-  (`listen.replayGapMs`). Merc walks himself to the last lit slab, so
-  the road keeps its geography. Still open from C: pane questions
-  charging gates, contour gestures, the 3-note bridge memory.
+  Traversal SHIPPED (2026-08-30, fan redesign same day): "Hear the
+  line" on every songbook card compiles the level in mode `'listen'`
+  (encounters become rests) and reuses the tap driver — no mic, taps
+  carry client coords. The game hums the next note
+  (`listen.promptSeconds`, plays even with sounds off — it IS the
+  question). maff's playtest killed the first decoy design (the decoy
+  sat elsewhere on the road, so position leaked the answer); the
+  question is now a LADDER: `listen.fanSize` rungs `listen.gapSemis`
+  apart stacked at the SAME road position, the true note on a random
+  rung, phantoms in full slab dress plus the same dashed coat —
+  syllables and note names hidden, nothing but pitch separates the
+  candidates (the Kodaly pitch-is-height ladder as platforms;
+  compileLevel widens the listen window by the fan's reach). Wrong
+  rung: shake, dissolve, prompt replays — elimination keeps questions
+  winnable. Tap elsewhere: throttled replay. Difficulty is the
+  research staircase per level via feel (fifth default → Habanera 3 ×
+  3-fan → Fur Elise gap 2). Still open from C: pane questions charging
+  gates, contour gestures, the 3-note bridge memory, adaptive gaps
+  (staircase per player, not per level).
 - **D. Mode select on level entry** + per-mode bests; Merc VO lines per
   mode (extend the voiceover manifest with tap/listen guide lines).
 

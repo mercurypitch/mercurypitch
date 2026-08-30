@@ -240,6 +240,15 @@
   box-shadow: 0 3px 0 rgb(36 25 19 / 55%);
 }
 
+.game-card__best {
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.7rem;
+}
+
 .game-card__mode:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 rgb(36 25 19 / 55%);

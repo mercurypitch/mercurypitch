@@ -6,6 +6,7 @@ import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
 import type { LevelDef } from '@/games/glass/levels/types'
 import type { RangeFit } from '@/games/glass/range-finder'
+import { readBest } from '@/games/glass/score'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
 import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
 import { RangeFinder } from './RangeFinder'
@@ -89,6 +90,13 @@ export function GamesScreen(props: GamesScreenProps) {
     }
     setTuning(false)
   }
+  /** Per-song-per-mode best run score. Reading playing() makes the
+   * chips refresh when a game hands the screen back. */
+  const best = (level: LevelDef, m: LevelControl): number | null => {
+    playing()
+    return readBest(level.id, m)
+  }
+
   const levelPick = (): {
     level: LevelDef
     control: LevelControl
@@ -297,6 +305,11 @@ export function GamesScreen(props: GamesScreenProps) {
                     onClick={() => setPlaying({ level, control: 'flow' })}
                   >
                     Sing the line
+                    <Show when={best(level, 'flow') !== null}>
+                      <span class="game-card__best">
+                        {best(level, 'flow')}%
+                      </span>
+                    </Show>
                   </button>
                   <button
                     class="game-card__mode"
@@ -304,6 +317,11 @@ export function GamesScreen(props: GamesScreenProps) {
                     onClick={() => setPlaying({ level, control: 'platformer' })}
                   >
                     Jump the line
+                    <Show when={best(level, 'platformer') !== null}>
+                      <span class="game-card__best">
+                        {best(level, 'platformer')}%
+                      </span>
+                    </Show>
                   </button>
                   <button
                     class="game-card__mode"
@@ -311,6 +329,11 @@ export function GamesScreen(props: GamesScreenProps) {
                     onClick={() => setPlaying({ level, control: 'rhythm' })}
                   >
                     Tap the line
+                    <Show when={best(level, 'rhythm') !== null}>
+                      <span class="game-card__best">
+                        {best(level, 'rhythm')}%
+                      </span>
+                    </Show>
                   </button>
                   <button
                     class="game-card__mode"
@@ -318,6 +341,11 @@ export function GamesScreen(props: GamesScreenProps) {
                     onClick={() => setPlaying({ level, control: 'listen' })}
                   >
                     Hear the line
+                    <Show when={best(level, 'listen') !== null}>
+                      <span class="game-card__best">
+                        {best(level, 'listen')}%
+                      </span>
+                    </Show>
                   </button>
                 </span>
               </span>
@@ -327,8 +355,8 @@ export function GamesScreen(props: GamesScreenProps) {
 
         <p class="games-screen__note">
           Sung modes use the microphone while a game is open, and only then —
-          Tap the line and Hear the line need no microphone at all. More B-side
-          games are on the way; nothing here is scored or gated.
+          Tap the line and Hear the line need no microphone at all. Runs get a
+          score so you can watch yourself improve; nothing is gated by it.
         </p>
       </main>
     </Show>

@@ -306,6 +306,23 @@ export const JOURNEY_CONFIG = {
   /** The guided range-finder on the games list: hum a comfortable note,
    * then your lowest, then your highest — the range setting is computed
    * from the measured range instead of picked as a preference. */
+  /** Run scoring (score.ts): real units first, pass band not finish
+   * line — melody-levels.md §8. Feel-overridable per level. */
+  score: {
+    /** The pass band floor — maff's "70–80%" call. */
+    passPct: 75,
+    /** The polished-run line. */
+    greatPct: 90,
+    /** Sung note quality: mean cents-off at/below this scores 1.0… */
+    centsPerfect: 10,
+    /** …and at this it scores 0 (linear between). */
+    centsZero: 70,
+    /** Each fall costs this many points off the run. */
+    fallPenaltyPct: 4,
+    /** Listen: each wrong pick costs this fraction of its question. */
+    listenWrongPenalty: 0.5,
+  },
+
   rangeFinder: {
     /** A note must hold this long inside tolSemis to lock. */
     holdMs: 700,

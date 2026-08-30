@@ -60,6 +60,23 @@
   opacity: 0.75;
 }
 
+/* the run-score line on the done card (score.ts) */
+.jp-score {
+  margin: 0;
+  max-width: 44ch;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--paper-deep);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 55%);
+}
+
+.jp-score__detail {
+  display: block;
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
 @media (min-width: 900px) {
   .jp-text {
     font-size: 20px;
@@ -277,6 +294,7 @@
   color: var(--ink);
 }
 
+.jp-root--light .jp-score,
 .jp-root--light .jp-text {
   color: #3a4152;
 }

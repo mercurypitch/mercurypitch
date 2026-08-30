@@ -26,6 +26,8 @@ import { compileLevel } from './levels/compile'
 import type { GameFeel } from './levels/feel'
 import { applyFeel } from './levels/feel'
 import type { LevelDef } from './levels/types'
+import type { RunScore } from './score'
+import { computeRunScore, emptyTally, qualityFromCents, qualityFromOffset, writeBest, } from './score'
 import { readStoredTapLatency } from './tap-latency'
 import { resolveTheme } from './themes'
 import type { Boss, Node, Pane, Platform, WhisperZone } from './world-types'
@@ -124,6 +126,15 @@ export const JourneyPrototype: Component<{
   let listenWrongs = 0 // wrong picks on the current question
   let listenAdvanceAt = 0
   let listenPromptAt = 0
+
+  // run scoring (score.ts): the engine only collects; per-note cents
+  // accumulate time-weighted while the active note is held in band
+  let tally = emptyTally()
+  let nodeCentsSum = 0
+  let nodeCentsT = 0
+  let nodeCentsAt = -1
+  const [finalScore, setFinalScore] = createSignal<RunScore | null>(null)
+  const [bestPct, setBestPct] = createSignal<number | null>(null)
   /** Input-latency compensation, ms: the tap tuner's stored per-device
    * measurement when present, else the config default. */
   let tapLatencyMs = 0
@@ -537,6 +548,9 @@ export const JourneyPrototype: Component<{
     listenFanAt = -1
     listenWrongT = -1
     listenWrongs = 0
+    tally = emptyTally()
+    nodeCentsAt = -1
+    setFinalScore(null)
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -589,6 +603,9 @@ export const JourneyPrototype: Component<{
     listenFanAt = -1
     listenWrongT = -1
     listenWrongs = 0
+    tally = emptyTally()
+    nodeCentsAt = -1
+    setFinalScore(null)
     listenAdvanceAt = 0
     listenPromptAt = 0
     pitchHist = []
@@ -648,6 +665,12 @@ export const JourneyPrototype: Component<{
   const advanceTo = (idx: number): void => {
     activeIdx = idx
     if (idx >= nodes.length) {
+      const lvl = props.level
+      if (lvl !== undefined) {
+        const sc = computeRunScore(mode(), tally, C.score)
+        setFinalScore(sc)
+        if (sc !== null) setBestPct(writeBest(lvl.id, mode(), sc.pct))
+      }
       setPhase('done')
       return
     }
@@ -973,8 +996,18 @@ export const JourneyPrototype: Component<{
           midi !== null &&
           Math.abs(midi - pl.midi) <= C.land.bandSemis
         ) {
+          if (nodeCentsAt !== activeIdx) {
+            nodeCentsAt = activeIdx
+            nodeCentsSum = 0
+            nodeCentsT = 0
+          }
+          nodeCentsSum += Math.abs(midi - pl.midi) * 100 * dt
+          nodeCentsT += dt
           pl.dwell += dt
           if (pl.dwell >= C.land.dwellMs) {
+            const meanCents = nodeCentsT > 0 ? nodeCentsSum / nodeCentsT : 0
+            tally.quality.set(activeIdx, qualityFromCents(meanCents, C.score))
+            tally.centsMeans.push(meanCents)
             pl.lit = true
             if (n.checkpoint === true) lastCheckpointIdx = activeIdx
             advanceTo(activeIdx + 1)
@@ -1159,6 +1192,7 @@ export const JourneyPrototype: Component<{
               n.p.lit = true
               n.p.dwell = 9999
               rhythmMisses += 1
+              tally.quality.set(activeIdx, 0)
               if (C.tap.maxMisses > 0 && rhythmMisses >= C.tap.maxMisses) {
                 setPhase('fallen')
               } else {
@@ -1166,6 +1200,12 @@ export const JourneyPrototype: Component<{
               }
             }
             if (hitP !== null) {
+              const offMs = ((mercWX - latency - center) / rhythmSpeed) * 1000
+              tally.quality.set(
+                activeIdx,
+                qualityFromOffset(offMs, C.tap.windowMs),
+              )
+              tally.offsetsMs.push(offMs)
               hitP.lit = true
               hitP.dwell = 9999
               hum(hitP.midi, C.sound.humSeconds)
@@ -1234,6 +1274,10 @@ export const JourneyPrototype: Component<{
                 }
               }
               if (pickMidi === n.p.midi) {
+                tally.quality.set(
+                  activeIdx,
+                  Math.max(0, 1 - listenWrongs * C.score.listenWrongPenalty),
+                )
                 n.p.lit = true
                 n.p.dwell = 9999
                 promptListen(n.p.midi) // the answer rings back as reward
@@ -1385,7 +1429,10 @@ export const JourneyPrototype: Component<{
         falling = restIdx === null && jumpVy > 0.35
         if (mercY > C.fall.yGone) {
           fallenMs += dt
-          if (fallenMs > C.fall.cardDelayMs && p === 'play') setPhase('fallen')
+          if (fallenMs > C.fall.cardDelayMs && p === 'play') {
+            tally.falls += 1
+            setPhase('fallen')
+          }
         } else if (p === 'play') {
           fallenMs = 0
         }
@@ -1406,8 +1453,10 @@ export const JourneyPrototype: Component<{
             mercY += (C.fall.speed * dt) / 1000
             if (mercY > C.fall.yGone) {
               fallenMs += dt
-              if (fallenMs > C.fall.cardDelayMs && p === 'play')
+              if (fallenMs > C.fall.cardDelayMs && p === 'play') {
+                tally.falls += 1
                 setPhase('fallen')
+              }
             }
           }
         } else if (midi !== null) {
@@ -2622,6 +2671,20 @@ export const JourneyPrototype: Component<{
                 ? 'Jump Trials cleared — your feet walked, your voice leapt. Every gap was an interval; you just sang your way across.'
                 : 'Chapter one complete — climb, gate, bridge, wall, stairway, sleeper, hidden door, chandelier. Your voice did all of it.')}
           </p>
+          <Show when={finalScore() !== null}>
+            <p class="jp-score">
+              Run score {finalScore()?.pct}% —{' '}
+              {finalScore()?.great === true
+                ? 'a polished run.'
+                : finalScore()?.passed === true
+                  ? 'inside the pass band.'
+                  : 'under the pass band — yours to polish.'}
+              <span class="jp-score__detail">
+                {finalScore()?.detail}
+                {bestPct() !== null ? ` — best ${bestPct()}%` : ''}
+              </span>
+            </p>
+          </Show>
           <button
             class="jp-start"
             onClick={() => {
