@@ -2,6 +2,7 @@
 // ============================================================
 
 import { clampRate } from '@/features/guitar-practice/practice-rate'
+import { decodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
@@ -128,7 +129,6 @@ interface GuitarBackingTransportOptions {
   closeContextOnDispose?: boolean
 }
 
-const MIB = 1024 * 1024
 const DEFAULT_SAMPLE_RATE = 48_000
 const DEFAULT_CHANNEL_COUNT = 2
 const UNKNOWN_ENCODING_EXPANSION = 64
@@ -146,10 +146,7 @@ function clamp(value: number, minimum: number, maximum: number): number {
 }
 
 function defaultMemoryBudget(): number {
-  if (typeof window === 'undefined') return 512 * MIB
-  return window.matchMedia?.('(max-width: 720px)').matches
-    ? 192 * MIB
-    : 512 * MIB
+  return decodedAudioBudgetBytes()
 }
 
 function decodedAudioBufferBytes(buffer: AudioBuffer): number {
@@ -681,7 +678,10 @@ export function createGuitarBackingTransport(
         ) {
           break
         }
-        const buffer = await currentContext.decodeAudioData(encoded.slice(0))
+        // decodeAudioData detaches `encoded`; nothing reads it after this
+        // line, so decoding in place frees the fetched copy immediately
+        // instead of holding stem-sized buffer twice per track.
+        const buffer = await currentContext.decodeAudioData(encoded)
         if (
           abort.signal.aborted ||
           disposed ||

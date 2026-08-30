@@ -26,6 +26,33 @@ function dispatchPointerDown(
 }
 
 describe('DrumPlayAlongStage', () => {
+  it('says so when the decode budget forced a lower fidelity', () => {
+    render(() => (
+      <DrumPlayAlongStage
+        title="Night Drive"
+        mixKind="separated"
+        view="pocket"
+        reducedFidelity={{ sampleRate: 32_000, mono: true }}
+      />
+    ))
+
+    expect(
+      screen.getByText('Decoded at 32 kHz in mono to fit this device.'),
+    ).toBeVisible()
+  })
+
+  it('stays silent about fidelity when the mix decoded natively', () => {
+    render(() => (
+      <DrumPlayAlongStage
+        title="Night Drive"
+        mixKind="separated"
+        view="pocket"
+      />
+    ))
+
+    expect(screen.queryByText(/to fit this device/)).toBeNull()
+  })
+
   it('keeps six semantic strike surfaces in separated-audio Pocket view', () => {
     const onStrike = vi.fn()
     render(() => (

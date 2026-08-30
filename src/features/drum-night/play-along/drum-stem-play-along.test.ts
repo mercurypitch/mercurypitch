@@ -72,6 +72,7 @@ function fakeEngine() {
     getDurationSeconds: () => duration,
     getTrackStates: () => [],
     getBusStates: () => [],
+    getReducedFidelity: () => null,
     subscribe(nextListener) {
       listener = nextListener
       return () => {

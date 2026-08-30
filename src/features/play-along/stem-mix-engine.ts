@@ -1,6 +1,8 @@
 // ============================================================
 // Play-along stem mix engine — externally clocked, bounded Web Audio playback
 // ============================================================
+
+import { encodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
 //
 // The host route owns the AudioContext, output graph, and transport clock. This
 // engine only turns an explicitly loaded stem lease into sample-aligned buffer
@@ -84,6 +86,19 @@ export interface PlayAlongStemLoadProgress {
   readonly fraction: number
 }
 
+/**
+ * How a loaded mix was actually decoded. Float32 PCM costs
+ * `duration x sampleRate x channels x 4` bytes regardless of the source codec,
+ * so a long multi-stem separation can blow a device budget even though the
+ * downloaded files are small. Rather than refuse, the engine steps down the
+ * decode rate (and, last, the channel count) until the mix fits, and reports
+ * what it settled on so the room can say so out loud.
+ */
+export interface PlayAlongStemFidelity {
+  readonly sampleRate: number
+  readonly mono: boolean
+}
+
 export interface PlayAlongStemMixError {
   readonly code: PlayAlongStemMixErrorCode
   readonly message: string
@@ -117,6 +132,17 @@ export interface PlayAlongStemMixEngineOptions {
   getOutput(context: AudioContext): AudioNode | null
   /** Explicit device policy. There is deliberately no implicit fallback. */
   decodedMemoryBudgetBytes: number
+  /**
+   * Ordered fallbacks tried, best first, when the native-rate estimate exceeds
+   * `decodedMemoryBudgetBytes`. An empty list restores refuse-on-overflow.
+   */
+  reducedFidelityTiers?: readonly PlayAlongStemFidelity[]
+  /**
+   * Builds the decoder used for a reduced tier. `decodeAudioData` resamples to
+   * the decoding context's rate, so a lower-rate context is what makes the mix
+   * smaller. Returning null keeps the native rate.
+   */
+  createDecodeContext?: (sampleRate: number) => BaseAudioContext | null
   /** Bounds total encoded bytes accepted during one load. */
   encodedLoadBudgetBytes?: number
   fetchArrayBuffer?: PlayAlongStemFetchArrayBuffer
@@ -149,6 +175,8 @@ export interface PlayAlongStemMixEngine {
   getDurationSeconds(): number
   getTrackStates(): readonly PlayAlongStemTrackState[]
   getBusStates(): readonly PlayAlongStemBusState[]
+  /** Non-null only when the mix had to be decoded below its native fidelity. */
+  getReducedFidelity(): PlayAlongStemFidelity | null
   subscribe(listener: () => void): () => void
   dispose(): void
 }
@@ -203,10 +231,21 @@ interface OwnedLease {
 }
 
 const MIB = 1024 * 1024
-const DEFAULT_ENCODED_LOAD_BUDGET_BYTES = 256 * MIB
+/** Device-aware; the room may still pass an explicit ceiling of its own. */
+const defaultEncodedLoadBudgetBytes = (): number => encodedAudioBudgetBytes()
 const DEFAULT_SAMPLE_RATE = 48_000
 const DEFAULT_CHANNEL_COUNT = 2
 const UNKNOWN_ENCODING_EXPANSION = 64
+/**
+ * Rate first, channels last: halving the rate costs the top octave, which a
+ * backing track survives, while collapsing to mono costs the whole stereo
+ * image. 32 kHz keeps a 16 kHz ceiling; 24 kHz is the audible floor we accept.
+ */
+const DEFAULT_REDUCED_FIDELITY_TIERS: readonly PlayAlongStemFidelity[] = [
+  { sampleRate: 32_000, mono: false },
+  { sampleRate: 32_000, mono: true },
+  { sampleRate: 24_000, mono: true },
+]
 const SILENCE_FLOOR = 0.0001
 const MINIMUM_RATE = 0.25
 const MAXIMUM_RATE = 2
@@ -256,18 +295,30 @@ export function estimatePlayAlongStemPcmBytes(
     'channelCount' | 'durationSeconds' | 'sizeBytes'
   >[],
   sampleRate = DEFAULT_SAMPLE_RATE,
+  /** Forces every stem to this channel count, for mono-downmix estimates. */
+  channelOverride?: number,
 ): number {
   const boundedSampleRate =
     Number.isFinite(sampleRate) && sampleRate > 0
       ? sampleRate
       : DEFAULT_SAMPLE_RATE
+  const forcedChannels =
+    channelOverride !== undefined &&
+    Number.isFinite(channelOverride) &&
+    channelOverride > 0
+      ? Math.floor(channelOverride)
+      : null
   return stems.reduce((total, stem) => {
-    const channels =
+    const declaredChannels =
       stem.channelCount !== undefined &&
       Number.isFinite(stem.channelCount) &&
       stem.channelCount > 0
         ? stem.channelCount
         : DEFAULT_CHANNEL_COUNT
+    const channels =
+      forcedChannels === null
+        ? declaredChannels
+        : Math.min(forcedChannels, declaredChannels)
     const duration = stem.durationSeconds
     if (duration !== undefined && Number.isFinite(duration) && duration > 0) {
       return total + Math.ceil(duration * boundedSampleRate) * channels * 4
@@ -278,13 +329,51 @@ export function estimatePlayAlongStemPcmBytes(
   }, 0)
 }
 
+function defaultDecodeContextFactory(
+  sampleRate: number,
+): BaseAudioContext | null {
+  if (typeof OfflineAudioContext !== 'function') return null
+  try {
+    // Length and channel count are irrelevant here: decodeAudioData allocates
+    // its own buffer and only borrows this context's sample rate.
+    return new OfflineAudioContext(1, 1, sampleRate)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Averages every channel into one. Callers drop the multi-channel source right
+ * after, so the doubled footprint lasts a single stem, not the whole mix.
+ */
+function downmixToMono(
+  context: BaseAudioContext,
+  buffer: AudioBuffer,
+): AudioBuffer {
+  if (buffer.numberOfChannels <= 1) return buffer
+  const mono = context.createBuffer(1, buffer.length, buffer.sampleRate)
+  const target = mono.getChannelData(0)
+  for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+    const source = buffer.getChannelData(channel)
+    for (let frame = 0; frame < target.length; frame += 1) {
+      target[frame] += source[frame] / buffer.numberOfChannels
+    }
+  }
+  return mono
+}
+
 function memoryBudgetMessage(
   requiredBytes: number,
   budgetBytes: number,
+  reducedBytes?: number,
 ): string {
   const requiredMib = Math.ceil(requiredBytes / MIB)
   const budgetMib = Math.max(0, Math.floor(budgetBytes / MIB))
-  return `This stem mix needs about ${requiredMib} MB decoded, above this device's ${budgetMib} MB limit.`
+  const head = `This stem mix needs about ${requiredMib} MB decoded, above this device's ${budgetMib} MB limit.`
+  if (reducedBytes === undefined) return head
+  return `${head} Even at reduced quality it still needs about ${Math.ceil(
+    reducedBytes / MIB,
+  )} MB.`
 }
 
 function safeDisconnect(node: AudioNode): void {
@@ -444,7 +533,7 @@ export function createPlayAlongStemMixEngine(
     0,
     Math.floor(
       finiteNonNegative(
-        options.encodedLoadBudgetBytes ?? DEFAULT_ENCODED_LOAD_BUDGET_BYTES,
+        options.encodedLoadBudgetBytes ?? defaultEncodedLoadBudgetBytes(),
       ),
     ),
   )
@@ -467,6 +556,11 @@ export function createPlayAlongStemMixEngine(
     0.001,
     finiteNonNegative(options.mixSmoothingSeconds ?? 0.012),
   )
+  const reducedFidelityTiers = (
+    options.reducedFidelityTiers ?? DEFAULT_REDUCED_FIDELITY_TIERS
+  ).filter((tier) => Number.isFinite(tier.sampleRate) && tier.sampleRate > 0)
+  const createDecodeContext =
+    options.createDecodeContext ?? defaultDecodeContextFactory
 
   const listeners = new Set<() => void>()
   const releasedLeaseObjects = new WeakSet<PlayAlongStemLease>()
@@ -480,6 +574,8 @@ export function createPlayAlongStemMixEngine(
     backing: { bus: 'backing', muted: false, level: 1 },
   }
   let durationSeconds = 0
+  let reducedFidelity: PlayAlongStemFidelity | null = null
+  let decodeContext: BaseAudioContext | null = null
   let graph: StemGraph | null = null
   let currentGroup: VoiceGroup | null = null
   let generation = 0
@@ -593,6 +689,30 @@ export function createPlayAlongStemMixEngine(
     if (target.groups.size === 0) disconnectGraph(target)
   }
 
+  /**
+   * Decodes one stem at the tier chosen by the pre-flight. When no reduced-rate
+   * decoder is available the native context still decodes: the post-decode
+   * budget check below stays the honest backstop.
+   */
+  // The encoded buffer is handed to exactly one decodeAudioData call, which
+  // DETACHES it — that is the point. A defensive `slice(0)` here would keep a
+  // second full copy of every stem alive through the decode; the caller never
+  // touches `encoded` again, so detaching frees it at the earliest moment.
+  const decodeStem = async (
+    context: AudioContext,
+    encoded: ArrayBuffer,
+  ): Promise<AudioBuffer> => {
+    const tier = reducedFidelity
+    if (tier === null) return context.decodeAudioData(encoded)
+    if (decodeContext === null) {
+      decodeContext = createDecodeContext(tier.sampleRate)
+    }
+    const decoder = decodeContext
+    if (decoder === null) return context.decodeAudioData(encoded)
+    const decoded = await decoder.decodeAudioData(encoded)
+    return tier.mono ? downmixToMono(decoder, decoded) : decoded
+  }
+
   const clearConfiguration = (): void => {
     generation += 1
     loadAbort?.abort()
@@ -606,6 +726,8 @@ export function createPlayAlongStemMixEngine(
     durationSeconds = 0
     progress = null
     error = null
+    reducedFidelity = null
+    decodeContext = null
   }
 
   const updateProgress = (
@@ -701,16 +823,43 @@ export function createPlayAlongStemMixEngine(
       return setError('invalid-configuration', INVALID_CONFIGURATION_MESSAGE)
     }
 
+    // Fidelity ladder. The native estimate is tried first; each fallback is
+    // only reached because the one above it did not fit. Estimating against
+    // DEFAULT_SAMPLE_RATE rather than the live context keeps this decision
+    // ahead of any audio or network work, which is the contract of this gate.
     const estimatedBytes = estimatePlayAlongStemPcmBytes(lease.stems)
+    reducedFidelity = null
     if (estimatedBytes > decodedMemoryBudgetBytes) {
-      return setError(
-        'memory-budget',
-        memoryBudgetMessage(estimatedBytes, decodedMemoryBudgetBytes),
-        {
-          requiredBytes: estimatedBytes,
-          budgetBytes: decodedMemoryBudgetBytes,
-        },
-      )
+      let smallestBytes: number | undefined
+      for (const tier of reducedFidelityTiers) {
+        const tierBytes = estimatePlayAlongStemPcmBytes(
+          lease.stems,
+          tier.sampleRate,
+          tier.mono ? 1 : undefined,
+        )
+        smallestBytes =
+          smallestBytes === undefined
+            ? tierBytes
+            : Math.min(smallestBytes, tierBytes)
+        if (tierBytes <= decodedMemoryBudgetBytes) {
+          reducedFidelity = { ...tier }
+          break
+        }
+      }
+      if (reducedFidelity === null) {
+        return setError(
+          'memory-budget',
+          memoryBudgetMessage(
+            estimatedBytes,
+            decodedMemoryBudgetBytes,
+            smallestBytes,
+          ),
+          {
+            requiredBytes: estimatedBytes,
+            budgetBytes: decodedMemoryBudgetBytes,
+          },
+        )
+      }
     }
 
     const declaredBytes = lease.stems.reduce(
@@ -886,7 +1035,7 @@ export function createPlayAlongStemMixEngine(
 
         let buffer: AudioBuffer
         try {
-          buffer = await context.decodeAudioData(encoded.slice(0))
+          buffer = await decodeStem(context, encoded)
         } catch {
           if (
             abort.signal.aborted ||
@@ -1234,6 +1383,8 @@ export function createPlayAlongStemMixEngine(
     getDurationSeconds: () => durationSeconds,
     getTrackStates: () => trackStates.map((state) => ({ ...state })),
     getBusStates: () => [{ ...busStates.drums }, { ...busStates.backing }],
+    getReducedFidelity: () =>
+      reducedFidelity === null ? null : { ...reducedFidelity },
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)

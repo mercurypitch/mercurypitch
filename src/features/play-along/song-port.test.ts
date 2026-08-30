@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { DRUM_PLAY_ALONG_POLICY, GUITAR_PLAY_ALONG_POLICY, planPlayAlongBacking, resolvePlayAlongDefaultMix, } from './song-port'
+import { DRUM_PLAY_ALONG_POLICY, GUITAR_PLAY_ALONG_POLICY, planPlayAlongBacking, playAlongEncodedBudgetCopy, resolvePlayAlongDefaultMix, } from './song-port'
 
 describe('play-along target policy', () => {
   it('proves every full-band part, then compacts Drum playback to three aligned stems', () => {
@@ -98,5 +98,26 @@ describe('play-along target policy', () => {
       audible: ['vocal', 'drums', 'bass'],
       muted: ['guitar'],
     })
+  })
+})
+
+describe('playAlongEncodedBudgetCopy', () => {
+  it('names the size against the ceiling and never claims audio is missing', () => {
+    const copy = playAlongEncodedBudgetCopy(
+      322 * 1024 * 1024,
+      256 * 1024 * 1024,
+    )
+
+    expect(copy).toContain('322 MB')
+    expect(copy).toContain('256 MB')
+    expect(copy).toContain('too large to open in this room')
+    expect(copy).not.toMatch(/missing/i)
+  })
+
+  it('still reads correctly when the byte counts are unknown', () => {
+    const copy = playAlongEncodedBudgetCopy()
+
+    expect(copy).toContain('too large to open in this room')
+    expect(copy).not.toContain('MB against')
   })
 })

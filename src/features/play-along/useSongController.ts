@@ -20,7 +20,11 @@ export type PlayAlongSelectionState<
         | 'not-found'
         | 'not-completed'
         | 'missing-local-audio'
+        | 'encoded-budget'
         | 'library-error'
+      /** Present only for `encoded-budget`, so a room can name the size. */
+      requiredBytes?: number
+      budgetBytes?: number
     }
 
 export type PlayAlongSessionHistoryMode = 'push' | 'replace' | 'none'
@@ -220,6 +224,12 @@ export function usePlayAlongSongController<
       kind: 'unavailable',
       sessionId: normalizedSessionId,
       reason: result.code,
+      ...(result.code === 'encoded-budget'
+        ? {
+            requiredBytes: result.requiredBytes,
+            budgetBytes: result.budgetBytes,
+          }
+        : {}),
     })
   }
 

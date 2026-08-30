@@ -23,7 +23,7 @@ vi.mock('@/lib/uvr-stem-lease', () => ({
   openUvrStemLease: adapterReads.openUvrStemLease,
 }))
 
-import { DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES, DRUM_PLAY_ALONG_POLICY, } from './song-port'
+import { defaultPlayAlongEncodedByteBudget, DRUM_PLAY_ALONG_POLICY, } from './song-port'
 import { createUvrPlayAlongSongPort } from './uvr-song-port'
 
 function sessionRecord(sessionId: string): UvrSessionRecord {
@@ -219,7 +219,7 @@ describe('Drum UVR play-along source', () => {
       'raced',
       completeKinds,
       expect.objectContaining({
-        budgetBytes: DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES,
+        budgetBytes: defaultPlayAlongEncodedByteBudget(),
       }),
     )
     expect(
@@ -229,7 +229,7 @@ describe('Drum UVR play-along source', () => {
       'raced',
       fallbackKinds,
       expect.objectContaining({
-        budgetBytes: DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES,
+        budgetBytes: defaultPlayAlongEncodedByteBudget(),
       }),
     )
     expect(loaded).toMatchObject({

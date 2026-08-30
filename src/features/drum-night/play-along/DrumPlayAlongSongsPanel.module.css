@@ -251,7 +251,10 @@
   transform: translateY(1px);
 }
 
-.fileChoose {
+/* Brass fills carry their own dark ink. They are scoped under `.panel` because
+   `.panel button` sets `color: inherit` at (0,1,1) — a bare `.fileChoose` at
+   (0,1,0) loses to it and renders vellum text on the amber fill. */
+.panel .fileChoose {
   min-width: 190px;
   padding: 0 16px;
   border-color: rgb(231 173 82 / 42%);
@@ -259,7 +262,7 @@
   background: var(--pa-brass);
 }
 
-.fileChoose:hover:not(:disabled) {
+.panel .fileChoose:hover:not(:disabled) {
   border-color: #f2c677;
   color: #100d09;
   background: #f0bb65;
@@ -708,8 +711,8 @@
   line-height: 1.45;
 }
 
-.separateOffer button,
-.primaryAction {
+.panel .separateOffer button,
+.panel .primaryAction {
   padding: 0 15px;
   border-color: rgb(231 173 82 / 48%);
   color: #17110a;
@@ -717,8 +720,8 @@
   white-space: nowrap;
 }
 
-.separateOffer button:hover:not(:disabled),
-.inlineActions .primaryAction:hover:not(:disabled) {
+.panel .separateOffer button:hover:not(:disabled),
+.panel .primaryAction:hover:not(:disabled) {
   border-color: #f2c677;
   color: #100d09;
   background: #f0bb65;

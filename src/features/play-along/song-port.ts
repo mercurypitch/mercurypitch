@@ -1,6 +1,8 @@
 // Play-along song ports describe target-aware prepared backing without owning playback.
 // ============================================================
 
+import { encodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
+
 export type PlayAlongStemKind =
   | 'vocal'
   | 'instrumental'
@@ -111,7 +113,38 @@ export interface PlayAlongBackingSource<
   ): Promise<PlayAlongBackingLoadResult<TTarget>>
 }
 
-export const DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES = 256 * 1024 * 1024
+/**
+ * Device-aware, so a workstation is not held to a phone's ceiling. A function
+ * rather than a constant because the answer depends on the device the room
+ * opened on. See `@/lib/audio-memory-budget` for what the browser will admit.
+ */
+export function defaultPlayAlongEncodedByteBudget(): number {
+  return encodedAudioBudgetBytes()
+}
+
+/**
+ * One sentence both rooms share for the encoded-byte ceiling. It names the
+ * ceiling as a size limit, never as missing audio: the files are present, and
+ * the same song still opens in the stem mixer, which has no such ceiling.
+ * Uncompressed WAV parts reach it far sooner than MP3 or Opus of the same song.
+ */
+export function playAlongEncodedBudgetCopy(
+  requiredBytes?: number,
+  budgetBytes?: number,
+): string {
+  const mib = (value: number): number =>
+    Math.max(0, Math.round(value / (1024 * 1024)))
+  const sizes =
+    requiredBytes !== undefined &&
+    Number.isFinite(requiredBytes) &&
+    budgetBytes !== undefined &&
+    Number.isFinite(budgetBytes)
+      ? ` Its parts total about ${mib(requiredBytes)} MB against a ${mib(
+          budgetBytes,
+        )} MB ceiling.`
+      : ''
+  return `This song's audio is here, but it is too large to open in this room.${sizes} Re-prepare it from a compressed source, or shorten it.`
+}
 
 export interface PlayAlongBackingLoadOptions {
   signal: AbortSignal
@@ -144,6 +177,18 @@ export type PlayAlongOpenResult<TBacking extends PlayAlongReleasableBacking> =
   | {
       ok: false
       code: 'not-found' | 'not-completed' | 'missing-local-audio' | 'aborted'
+    }
+  /**
+   * A room that opens its lease eagerly hits the encoded-byte ceiling here
+   * rather than at load(). It must stay a distinct code: folding it into
+   * `missing-local-audio` tells the player their audio is gone when it is
+   * present and simply larger than the ceiling.
+   */
+  | {
+      ok: false
+      code: 'encoded-budget'
+      requiredBytes: number
+      budgetBytes: number
     }
 
 export interface PlayAlongSongCatalogPort<
