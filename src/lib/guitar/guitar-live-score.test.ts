@@ -843,4 +843,40 @@ describe('createGuitarLiveScoreEngine', () => {
       ]),
     ).toThrow('Duplicate live-score target id')
   })
+
+  it("waits for a late strike's pitch instead of judging it unpitched", () => {
+    // A strike's pitch is attached up to PITCH_ATTACH_WINDOW_MS after the
+    // attack, so an attack landing later than `lateTolerance - pitchGrace`
+    // into the window used to run out of grace before its target expired and
+    // was judged while still unpitched. Measured on a real take: a B4 struck
+    // 228.6 ms into a 320 ms window, exact pitch at clarity 0.97, missed live
+    // and hit when the same events were replayed through the same engine.
+    const score = engine(
+      [{ id: 'late', midi: 60, startBeat: 0 }],
+      'microphone',
+      undefined,
+      {
+        matchToleranceMs: 180,
+        lateToleranceMs: 320,
+      },
+    )
+    const unpitched = event('strike', 228, null, 'microphone')
+    const pitched = event('strike', 228, 60, 'microphone')
+
+    // Past the late window, before the pitch has been attached.
+    score.sample(take([unpitched], { kind: 'microphone' }), 330, 'good')
+    expect(score.debugSnapshot()?.judgments ?? []).toHaveLength(0)
+
+    // The recorder fills the pitch in on the same event, same frame, same id.
+    const display = score.sample(
+      take([pitched], { kind: 'microphone' }),
+      420,
+      'good',
+    )
+    expect(display.recentJudgments[0]).toMatchObject({
+      outcome: 'hit',
+      eventId: 'strike',
+      score: 100,
+    })
+  })
 })

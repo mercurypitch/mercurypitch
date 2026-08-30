@@ -529,6 +529,22 @@ export function createGuitarLiveScoreEngine(
   let rollingJudgments: readonly GuitarLiveScoreJudgment[] = []
   const consumedEventIds = new Set<string>()
   const activeEvents = new Map<string, GuitarTakeEvent>()
+  /**
+   * The frame this engine first SAW each still-unpitched strike at.
+   *
+   * A pitch is stapled to its attack within PITCH_ATTACH_WINDOW_MS of the
+   * strike's own timestamp, but that timestamp is backdated: the reading comes
+   * off an analysis window tens of milliseconds wide and reaches the main
+   * thread later still. Counting the grace from the strike therefore spends it
+   * on lag that already happened, and a strike landing late in a target's
+   * window can be judged unpitched while its pitch is still in flight.
+   * Measured on a real take: a B4 struck 228.6 ms into a 320 ms window, exact
+   * pitch at clarity 0.97 -- its grace lapsed 69 frames (1.4 ms) before the
+   * target expired. It scored a miss live and a hit when the very same events
+   * were replayed through this engine. Counted from first sight instead, the
+   * wait is 90 ms of evidence rather than 90 ms shared with the delivery.
+   */
+  const provisionalFirstSeen = new Map<string, number>()
   const eventIdentities = new Map<string, EventIdentity>()
   const gapIntervals: GapInterval[] = []
 
@@ -618,10 +634,9 @@ export function createGuitarLiveScoreEngine(
         event.pitch === null ||
         (options.inputKind !== 'midi' &&
           event.pitch.clarity < minimumPitchClarity)
-      if (
-        pitchIsProvisional &&
-        throughFrame <= event.compensatedTransportFrame + pitchGraceFrames
-      ) {
+      const graceFrom =
+        provisionalFirstSeen.get(event.id) ?? event.compensatedTransportFrame
+      if (pitchIsProvisional && throughFrame <= graceFrom + pitchGraceFrames) {
         return true
       }
     }
@@ -870,6 +885,7 @@ export function createGuitarLiveScoreEngine(
         event.compensatedTransportFrame < oldestUsefulFrame
       ) {
         activeEvents.delete(eventId)
+        provisionalFirstSeen.delete(eventId)
       }
     }
     while (
@@ -993,7 +1009,12 @@ export function createGuitarLiveScoreEngine(
         // Consumed events are deliberately dropped by `prune`. Re-adding them
         // here would undo that every snapshot and grow the retained page back
         // to the full recorder page on each sample.
-        if (!consumedEventIds.has(event.id)) activeEvents.set(event.id, event)
+        if (!consumedEventIds.has(event.id)) {
+          activeEvents.set(event.id, event)
+          if (event.pitch === null && !provisionalFirstSeen.has(event.id)) {
+            provisionalFirstSeen.set(event.id, throughFrame)
+          }
+        }
       }
       while (eventIdentities.size > RECENT_EVENT_IDENTITIES) {
         const oldestId = eventIdentities.keys().next().value as
