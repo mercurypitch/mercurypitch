@@ -18,13 +18,21 @@ export function createUvrGuitarNightSongPort(): GuitarNightSongPort {
         const loaded = await selected.lease.load({ signal })
         if (!loaded.ok) {
           selected.lease.release()
-          return {
-            ok: false,
-            code:
-              loaded.code === 'aborted'
-                ? ('aborted' as const)
-                : ('missing-local-audio' as const),
-          }
+          // Report why. Collapsing every failure into `missing-local-audio`
+          // told the player their audio was gone whenever a long song merely
+          // crossed the encoded-byte ceiling, which is what it looked like
+          // for songs the stem mixer plays back without complaint.
+          return loaded.code === 'encoded-budget'
+            ? {
+                ok: false as const,
+                code: 'encoded-budget' as const,
+                requiredBytes: loaded.requiredBytes,
+                budgetBytes: loaded.budgetBytes,
+              }
+            : {
+                ok: false as const,
+                code: loaded.code,
+              }
         }
         return {
           ok: true,

@@ -265,20 +265,26 @@
   font-size: 10px;
 }
 
+/* A caption card, not a footer band. Spanning the full stage width with a
+   border-top made this read as a horizontal rule cutting the page in half, so
+   it is inset and self-sized: it now sits inside the room instead of dividing
+   it. The 58px bottom reserve on `.kitField` / `.scoreTruth` keeps the kit
+   clear of it. */
 .sourceTruth {
   position: absolute;
   z-index: 5;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  bottom: 12px;
+  left: 18px;
   display: grid;
-  min-height: 58px;
+  max-width: min(430px, calc(100% - 36px));
   grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: 8px 18px;
-  border-top: 1px solid var(--pa-line);
+  padding: 9px 13px;
+  border: 1px solid var(--pa-line-strong);
+  border-radius: 11px;
   background: rgb(7 8 10 / 88%);
+  box-shadow: 0 10px 26px rgb(0 0 0 / 32%);
 }
 
 .sourceTruth > span:nth-child(2) {
@@ -293,12 +299,18 @@
 }
 
 .sourceTruth small {
-  overflow: hidden;
   color: var(--pa-muted);
   font-size: 10px;
   line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: pretty;
+}
+
+.reducedFidelity {
+  color: var(--pa-amber);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .sourceTruth b {
@@ -497,11 +509,9 @@
   }
 
   .sourceTruth {
-    padding: 7px 13px;
-  }
-
-  .sourceTruth small {
-    white-space: normal;
+    left: 14px;
+    max-width: calc(100% - 28px);
+    padding: 7px 11px;
   }
 
   .sourceTruth b {
@@ -565,7 +575,9 @@
   }
 
   .sourceTruth {
-    min-height: 52px;
+    bottom: 8px;
+    max-width: min(360px, calc(100% - 36px));
+    padding: 6px 11px;
   }
 
   .scoreTruth {

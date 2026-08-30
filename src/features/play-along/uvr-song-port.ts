@@ -5,7 +5,7 @@ import type { UvrSessionRecord } from '@/db/entities'
 import { readUvrSessionRecords, readUvrStemManifest, readUvrStemSelectionWithinBudget, } from '@/db/services/uvr-read-service'
 import { openUvrStemLease } from '@/lib/uvr-stem-lease'
 import type { PlayAlongBackingLease, PlayAlongBackingLoadOptions, PlayAlongBackingLoadResult, PlayAlongBackingSource, PlayAlongDefaultMix, PlayAlongSongSourcePort, PlayAlongStemAsset, PlayAlongStemKind, PlayAlongTargetPolicy, PlayAlongTargetStemKind, } from './song-port'
-import { DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES, hasUsablePlayAlongParts, isPlayAlongStemKind, planPlayAlongBacking, resolvePlayAlongDefaultMix, } from './song-port'
+import { defaultPlayAlongEncodedByteBudget, hasUsablePlayAlongParts, isPlayAlongStemKind, planPlayAlongBacking, resolvePlayAlongDefaultMix, } from './song-port'
 
 interface PersistedStemMetadata {
   durationSeconds?: number
@@ -78,7 +78,7 @@ function plannedDurationSeconds(
 
 function encodedBudget(value: number | undefined): number {
   if (value === undefined || !Number.isFinite(value)) {
-    return DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES
+    return defaultPlayAlongEncodedByteBudget()
   }
   return Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value)))
 }
@@ -246,6 +246,11 @@ function createBackingSource<TTarget extends PlayAlongTargetStemKind>(
       if (stemLease === null || stemLease.assets.length === 0) {
         return { ok: false, code: 'missing-local-audio' }
       }
+      // The lease minted its Blob URLs from these rows; dropping the snapshot
+      // now releases the IndexedDB-read ArrayBuffers (one full stem each)
+      // instead of keeping them pinned alongside the Blob copies for as long
+      // as any closure from this scope survives.
+      snapshot = []
 
       const stems = stemLease.assets.flatMap<PlayAlongStemAsset>((asset) => {
         if (!isPlayAlongStemKind(asset.kind)) return []

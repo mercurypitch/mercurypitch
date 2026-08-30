@@ -642,6 +642,84 @@ describe('createPlayAlongStemMixEngine', () => {
     )
   })
 
+  it('decodes the fetched buffer in place instead of copying it first', async () => {
+    // decodeAudioData detaches its input; passing the exact fetched buffer
+    // (no slice) means each stem exists once, not twice, during decode.
+    const fetched: ArrayBuffer[] = []
+    const room = harness({
+      fetchArrayBuffer: vi.fn(async (asset: PlayAlongStemAsset) => {
+        const buffer = new ArrayBuffer(asset.sizeBytes)
+        fetched.push(buffer)
+        return buffer
+      }),
+    })
+    room.engine.configure(lease('in-place', [stem('drums')]))
+
+    await expect(room.engine.load()).resolves.toBe(true)
+
+    expect(room.context.decodeAudioData).toHaveBeenCalledOnce()
+    expect(room.context.decodeAudioData.mock.calls[0]?.[0]).toBe(fetched[0])
+  })
+
+  it('decodes at a reduced rate rather than refusing a mix that just overflows', async () => {
+    // 240 s stereo at 48 kHz is 87.9 MiB; the same stem at 32 kHz is 58.6 MiB.
+    const budget = 70 * 1024 * 1024
+    const decodeContexts: number[] = []
+    const room = harness({
+      decodedMemoryBudgetBytes: budget,
+      createDecodeContext: (sampleRate: number) => {
+        decodeContexts.push(sampleRate)
+        return {
+          decodeAudioData: async () => decodedBuffer(240, 2, sampleRate),
+        } as unknown as BaseAudioContext
+      },
+    })
+    room.engine.configure(
+      lease('reduced', [
+        stem('drums', { durationSeconds: 240, channelCount: 2 }),
+      ]),
+    )
+
+    await expect(room.engine.load()).resolves.toBe(true)
+
+    expect(decodeContexts).toEqual([32_000])
+    expect(room.context.decodeAudioData).not.toHaveBeenCalled()
+    expect(room.engine.getReducedFidelity()).toEqual({
+      sampleRate: 32_000,
+      mono: false,
+    })
+    expect(room.engine.getStatus()).toBe('ready')
+  })
+
+  it('keeps native fidelity when the mix already fits', async () => {
+    const createDecodeContext = vi.fn(() => null)
+    const room = harness({ createDecodeContext })
+    room.engine.configure(lease('native'))
+
+    await expect(room.engine.load()).resolves.toBe(true)
+
+    expect(createDecodeContext).not.toHaveBeenCalled()
+    expect(room.context.decodeAudioData).toHaveBeenCalledTimes(2)
+    expect(room.engine.getReducedFidelity()).toBeNull()
+  })
+
+  it('names the reduced requirement when even the lowest tier overflows', async () => {
+    const room = harness({ decodedMemoryBudgetBytes: 1024 * 1024 })
+    room.engine.configure(
+      lease('hopeless', [
+        stem('drums', { durationSeconds: 300, channelCount: 2 }),
+      ]),
+    )
+
+    await expect(room.engine.load()).resolves.toBe(false)
+
+    // 300 s mono at 24 kHz is still 27.5 MiB against a 1 MiB budget.
+    expect(room.engine.getError()?.message).toContain(
+      'Even at reduced quality it still needs about 28 MB',
+    )
+    expect(room.engine.getReducedFidelity()).toBeNull()
+  })
+
   it('refuses an unexpectedly large decode instead of falling back to media elements', async () => {
     const room = harness({ decodedMemoryBudgetBytes: 1024 })
     room.context.decodeImpl = async () => decodedBuffer(1, 2, 1000)

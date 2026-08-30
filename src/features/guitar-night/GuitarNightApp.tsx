@@ -18,6 +18,7 @@ import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-b
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
 import { createVoiceHelpCommands } from '@/features/voice-control/navigation-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
@@ -190,6 +191,9 @@ function unavailableSongCopy(
   }
   if (state.reason === 'missing-local-audio') {
     return 'The song record is here, but its local audio is missing.'
+  }
+  if (state.reason === 'encoded-budget') {
+    return playAlongEncodedBudgetCopy(state.requiredBytes, state.budgetBytes)
   }
   return 'Your prepared-song library could not be opened. Try again.'
 }
