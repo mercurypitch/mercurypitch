@@ -12,7 +12,7 @@
 // It renders raw numbers the production surfaces deliberately withhold.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import type { GuitarLiveScoreSkipReason } from '@/lib/guitar/guitar-live-score'
 import type { GuitarScoreDebugDiagnosis, GuitarScoreDebugModel, GuitarScoreDebugRow, } from '@/lib/guitar/guitar-score-debug'
@@ -986,7 +986,22 @@ interface DockPlacement {
   /** Free position in px, set by dragging. Null means snapped to the corner. */
   offset: { left: number; top: number } | null
   open: boolean
+  /**
+   * How opaque the panel sits over the stage. The panel covers the tab it is
+   * reporting on, and the two are worth reading together -- a strike that
+   * scored badly means more next to the note it was aimed at. Hovering the
+   * dock restores full opacity so it stays readable when actually used.
+   */
+  alpha: number
+  /** Custom size in px, set by the resize grip. Null means content-sized. */
+  size: { width: number; height: number } | null
 }
+
+const MIN_DOCK_SIZE = 180
+const MIN_DOCK_ALPHA = 0.15
+const MAX_DOCK_ALPHA = 1
+const clampDockAlpha = (value: number): number =>
+  Math.min(MAX_DOCK_ALPHA, Math.max(MIN_DOCK_ALPHA, value))
 
 const DOCK_STORAGE_KEY = 'guitar-night-score-debug-dock'
 const DOCK_MARGIN = 12
@@ -1009,12 +1024,31 @@ function readDockPlacement(): DockPlacement {
     corner: 'bottom-left',
     offset: null,
     open: false,
+    alpha: MAX_DOCK_ALPHA,
+    size: null,
   }
   try {
     const raw = globalThis.localStorage?.getItem(DOCK_STORAGE_KEY)
     if (raw === null || raw === undefined) return fallback
     const parsed = JSON.parse(raw) as Partial<DockPlacement>
-    return { ...fallback, open: parsed.open === true }
+    return {
+      ...fallback,
+      open: parsed.open === true,
+      alpha:
+        typeof parsed.alpha === 'number' && Number.isFinite(parsed.alpha)
+          ? clampDockAlpha(parsed.alpha)
+          : fallback.alpha,
+      size:
+        typeof parsed.size?.width === 'number' &&
+        typeof parsed.size.height === 'number' &&
+        Number.isFinite(parsed.size.width) &&
+        Number.isFinite(parsed.size.height)
+          ? {
+              width: Math.max(MIN_DOCK_SIZE, parsed.size.width),
+              height: Math.max(MIN_DOCK_SIZE, parsed.size.height),
+            }
+          : fallback.size,
+    }
   } catch {
     return fallback
   }
@@ -1058,7 +1092,11 @@ export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
     try {
       globalThis.localStorage?.setItem(
         DOCK_STORAGE_KEY,
-        JSON.stringify({ open: next.open }),
+        JSON.stringify({
+          open: next.open,
+          alpha: next.alpha,
+          size: next.size,
+        }),
       )
     } catch {
       // A blocked storage should not cost the user their drag.
@@ -1081,6 +1119,7 @@ export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
       right: 'auto',
       bottom: 'auto',
     }
+    // falls through to the corner assignment below
     style[current.corner.endsWith('right') ? 'right' : 'left'] =
       `${DOCK_MARGIN}px`
     style[current.corner.startsWith('bottom') ? 'bottom' : 'top'] =
@@ -1088,11 +1127,45 @@ export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
     return style
   })
 
+  // The panel is resized with the CSS grip, which writes its own inline size.
+  // Reading it back keeps the placement the single source of truth, so a
+  // reload and any later style update reproduce the size the user chose.
+  onMount(() => {
+    const element = dock
+    if (element === undefined || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => {
+      if (!placement().open) return
+      const width = Math.round(element.offsetWidth)
+      const height = Math.round(element.offsetHeight)
+      if (width < MIN_DOCK_SIZE || height < MIN_DOCK_SIZE) return
+      const current = placement().size
+      // Only a real change, or the observer answers its own write forever.
+      if (
+        current !== null &&
+        Math.abs(current.width - width) < 1 &&
+        Math.abs(current.height - height) < 1
+      ) {
+        return
+      }
+      commit({ size: { width, height } })
+    })
+    observer.observe(element)
+    onCleanup(() => observer.disconnect())
+  })
+
   const beginDrag = (event: PointerEvent): void => {
     const element = dock
     if (element === undefined || event.button !== 0) return
-    // Let the buttons in the bar do their own job.
-    if ((event.target as HTMLElement).closest('button') !== null) return
+    // Let the bar's own controls do their job. Scoped to the controls rather
+    // than to `button` alone: the opacity slider is an input inside a label,
+    // so a button-only guard turned every attempt to set it into a drag.
+    if (
+      (event.target as HTMLElement).closest(
+        'button, input, label, select, textarea',
+      ) !== null
+    ) {
+      return
+    }
     const bounds = element.getBoundingClientRect()
     const grabX = event.clientX - bounds.left
     const grabY = event.clientY - bounds.top
@@ -1132,7 +1205,16 @@ export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
         ref={dock}
         class={styles.dock}
         classList={{ [styles.dockOpen]: placement().open }}
-        style={dockStyle()}
+        style={{
+          ...dockStyle(),
+          '--debug-dock-alpha': String(placement().alpha),
+          ...(placement().open && placement().size !== null
+            ? {
+                width: `${placement().size?.width}px`,
+                height: `${placement().size?.height}px`,
+              }
+            : {}),
+        }}
         data-testid="guitar-score-debug-dock"
       >
         <div class={styles.dockBar} onPointerDown={beginDrag}>
@@ -1147,6 +1229,24 @@ export function GuitarNightScoreDebugDock(props: GuitarNightScoreDebugProps) {
           <span class={styles.dockGrip} aria-hidden="true">
             Drag
           </span>
+          <label class={styles.dockAlphaField} title="Panel opacity">
+            <span class={styles.dockAlphaLabel}>Fade</span>
+            <input
+              class={styles.dockAlpha}
+              type="range"
+              min={MIN_DOCK_ALPHA}
+              max={MAX_DOCK_ALPHA}
+              step="0.05"
+              value={placement().alpha}
+              data-testid="guitar-score-debug-alpha"
+              aria-label="Panel opacity"
+              onInput={(event) =>
+                commit({
+                  alpha: clampDockAlpha(event.currentTarget.valueAsNumber),
+                })
+              }
+            />
+          </label>
           <span class={styles.dockCorners}>
             <For each={DOCK_CORNERS}>
               {(corner) => (

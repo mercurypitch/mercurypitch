@@ -198,8 +198,12 @@
 
 .dockOpen {
   width: min(920px, calc(100vw - 24px));
-  max-height: 78vh;
+  /* Wider than the collapsed cap allows: once open the panel is a workspace,
+     and the grip below has to be able to reach past 920px. */
+  max-width: calc(100vw - 24px);
+  max-height: 90vh;
   overflow: auto;
+  resize: both;
 }
 
 .dockBar {
@@ -237,6 +241,53 @@
   color: #475569;
   text-align: center;
   user-select: none;
+}
+
+/* The panel sits over the tab it is reporting on, and the two read better
+   together. Hover and keyboard focus restore full opacity so a faded panel is
+   still usable -- except while the slider itself is being dragged, or you
+   could never see what you were setting. */
+.dock {
+  opacity: var(--debug-dock-alpha, 1);
+  transition: opacity 120ms ease;
+}
+
+.dock:hover,
+.dock:focus-within {
+  opacity: 1;
+}
+
+.dock:has(.dockAlpha:active) {
+  opacity: var(--debug-dock-alpha, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock {
+    transition: none;
+  }
+}
+
+.dockAlphaField {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.dockAlphaLabel {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #475569;
+  user-select: none;
+}
+
+.dockAlpha {
+  width: 64px;
+  height: 12px;
+  margin: 0;
+  accent-color: #38bdf8;
+  cursor: pointer;
 }
 
 .dockCorners {
