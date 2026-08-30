@@ -259,7 +259,11 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: {
-      port: Number(process.env.VITE_DEV_PORT) || 3000,
+      // VITE_DEV_PORT is the explicit override. PORT is what a supervisor
+      // assigns when 3000 is already taken -- several worktrees of this repo
+      // can have a dev server up at once, and only one of them can hold 3000.
+      port:
+        Number(process.env.VITE_DEV_PORT) || Number(process.env.PORT) || 3000,
       headers: {
         // Cross-origin isolation for multi-threaded WASM (ONNX Runtime)
         'Cross-Origin-Opener-Policy': 'same-origin',

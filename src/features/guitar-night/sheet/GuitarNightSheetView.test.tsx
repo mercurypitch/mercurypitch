@@ -517,4 +517,122 @@ describe('GuitarNightSheetView', () => {
       restore()
     }
   })
+  describe('magnification', () => {
+    beforeEach(() => {
+      localStorage.removeItem('guitar-night-sheet-zoom-v1')
+    })
+
+    const systemStarts = (): string[] =>
+      [...document.querySelectorAll('[data-system]')].map(
+        (row) => row.getAttribute('data-start-beat') ?? '',
+      )
+
+    it('draws the same music larger, without re-breaking the lines', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView
+            lanes={() => [
+              lane({ notes: [note(0), note(4), note(8), note(12)] }),
+            ]}
+            playheadBeat={() => 0}
+          />
+        ))
+        const page = screen.getByTestId('guitar-night-sheet-page')
+        const beforeWidth = page.style.width
+        const beforeHeight = page.style.height
+        const beforeStarts = systemStarts()
+
+        const slider = screen.getByTestId('guitar-night-sheet-zoom')
+        fireEvent.input(slider, { target: { value: '2' } })
+
+        // Bigger in both axes: the metrics scale, so the staves grow too.
+        expect(parseFloat(page.style.width)).toBeCloseTo(
+          parseFloat(beforeWidth) * 2,
+          0,
+        )
+        expect(parseFloat(page.style.height)).toBeGreaterThan(
+          parseFloat(beforeHeight),
+        )
+        // Same bars in the same rows: zoom must not move what a reader is on.
+        expect(systemStarts()).toEqual(beforeStarts)
+      } finally {
+        restore()
+      }
+    })
+
+    it('zooms on ctrl+wheel and leaves a plain wheel to scroll', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const sheet = screen.getByTestId('guitar-night-sheet')
+        const scroll = screen.getByTestId('guitar-night-sheet-scroll')
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1')
+
+        scroll.dispatchEvent(
+          new WheelEvent('wheel', { deltaY: -240, bubbles: true }),
+        )
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1')
+
+        scroll.dispatchEvent(
+          new WheelEvent('wheel', {
+            deltaY: -240,
+            ctrlKey: true,
+            bubbles: true,
+          }),
+        )
+        expect(
+          Number(sheet.style.getPropertyValue('--sheet-zoom')),
+        ).toBeGreaterThan(1)
+      } finally {
+        restore()
+      }
+    })
+
+    it('offers panning only once the score outgrows the view', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const scroll = screen.getByTestId('guitar-night-sheet-scroll')
+        expect(scroll).not.toHaveAttribute('data-zoomed')
+
+        fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
+          target: { value: '1.5' },
+        })
+        expect(scroll).toHaveAttribute('data-zoomed', 'true')
+
+        fireEvent.click(screen.getByTestId('guitar-night-sheet-zoom-reset'))
+        expect(scroll).not.toHaveAttribute('data-zoomed')
+      } finally {
+        restore()
+      }
+    })
+
+    it('clamps to the readable range', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const sheet = screen.getByTestId('guitar-night-sheet')
+        const scroll = screen.getByTestId('guitar-night-sheet-scroll')
+        for (let step = 0; step < 40; step += 1) {
+          scroll.dispatchEvent(
+            new WheelEvent('wheel', {
+              deltaY: -240,
+              ctrlKey: true,
+              bubbles: true,
+            }),
+          )
+        }
+        expect(Number(sheet.style.getPropertyValue('--sheet-zoom'))).toBe(3)
+      } finally {
+        restore()
+      }
+    })
+  })
 })
