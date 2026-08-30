@@ -190,3 +190,39 @@ describe('songbook invariants — every level, every mode', () => {
     }
   }
 })
+
+describe('glass notes (MelodyDef.glassAt)', () => {
+  const FRERE = SONGBOOK.find((l) => l.id === 'frere-jacques')
+  if (FRERE === undefined) throw new Error('frere-jacques missing')
+
+  const matinesSlabs = (mode: 'flow' | 'platformer' | 'rhythm') => {
+    const cs = compileLevel(FRERE, { mode, groundMidi: G })
+    // platforms: ground + P1(8) + P2(6), then P3's 12
+    return cs.platforms.slice(1 + 8 + 6, 1 + 8 + 6 + 12)
+  }
+
+  it('marks the declared notes glass in sung modes', () => {
+    for (const mode of ['flow', 'platformer'] as const) {
+      const run = matinesSlabs(mode)
+      expect(run.map((p) => p.kind)).toEqual([
+        'glass',
+        'glass',
+        'glass',
+        'glass',
+        'stone',
+        'stone',
+        'glass',
+        'glass',
+        'glass',
+        'glass',
+        'stone',
+        'stone',
+      ])
+    }
+  })
+
+  it('compiles everything stone in rhythm mode', () => {
+    const cs = compileLevel(FRERE, { mode: 'rhythm', groundMidi: G })
+    expect(cs.platforms.every((p) => p.kind === 'stone')).toBe(true)
+  })
+})

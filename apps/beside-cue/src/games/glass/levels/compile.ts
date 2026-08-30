@@ -166,6 +166,7 @@ export const compileLevel = (
     // melody segment: one platform per note, width from duration
     const m: MelodyDef = seg.melody
     melodiesSeen += 1
+    const glass = new Set(mode === 'rhythm' ? [] : (m.glassAt ?? []))
     for (let i = 0; i < m.degrees.length; i++) {
       const deg = m.degrees[i]
       const gap = i === 0 && afterBoundary ? M.phraseGap[mode] : M.noteGap[mode]
@@ -173,6 +174,7 @@ export const compileLevel = (
       const width = Math.max(M.minWidth, m.durations[i] * M.unitsPerBeat[mode])
       const p = platform(midiFor(deg), x0, x0 + width, {
         syllable: m.syllables?.[i],
+        kind: glass.has(i) ? 'glass' : 'stone',
       })
       platforms.push(p)
       const syl = m.syllables?.[i]

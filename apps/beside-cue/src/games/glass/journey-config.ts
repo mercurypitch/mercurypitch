@@ -191,6 +191,11 @@ export const JOURNEY_CONFIG = {
     /** Panes charge by proximity in this mode — singing an intact pane's
      * note within this many units makes it resonate, node order aside. */
     paneChargeUnits: 1.3,
+    /** Voiced ONSETS allowed while airborne (re-lifts) before the voice
+     * stops lifting until Merc lands. The default is effectively
+     * unlimited flutter; hard tiers set 0-1 so a jump must be sung as
+     * ONE note — its apex is the commitment. */
+    airReliftMax: 99,
     /** Vertical camera. Standing, the view re-centers so Merc keeps this
      * screen-y (0.5 = equal air above and below). Airborne, the camera
      * only follows once Merc enters the top/bottom camAirBand of the
@@ -267,6 +272,9 @@ export const JOURNEY_CONFIG = {
     calClampMs: 400,
     /** Metronome count-in beats before the road starts moving. */
     countInBeats: 4,
+    /** 0 = forgiving: missed slabs just light late. Above 0, that many
+     * misses end the run — the rhythm tier's fail state. */
+    maxMisses: 0,
     /** Merc's glide toward each note's height, lerp per frame. */
     yLerp: 0.12,
     /** Haptic tick on a judged hit, ms (mobile). */

@@ -30,6 +30,10 @@ export interface MelodyDef {
   durations: number[]
   /** Karaoke syllable per note (optional; same length as `degrees`). */
   syllables?: string[]
+  /** Note indices (into `degrees`) compiled as GLASS slabs — icy, they
+   * crack under a standing Merc, so these notes must keep moving.
+   * Ignored in rhythm mode (the road never lets anyone camp). */
+  glassAt?: number[]
   bpm?: number
 }
 

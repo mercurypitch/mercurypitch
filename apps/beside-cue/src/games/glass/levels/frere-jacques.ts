@@ -26,6 +26,9 @@ const P3: MelodyDef = {
   name: 'Frère Jacques — sonnez les matines',
   degrees: [7, 9, 7, 5, 4, 0, 7, 9, 7, 5, 4, 0],
   durations: [0.5, 0.5, 0.5, 0.5, 1, 1, 0.5, 0.5, 0.5, 0.5, 1, 1],
+  // the eighth-note run is GLASS: the bells ring only in motion — camp
+  // on one and it cracks. The quarter notes stay stone rest islands.
+  glassAt: [0, 1, 2, 3, 6, 7, 8, 9],
   syllables: [
     'son',
     'nez',
@@ -60,12 +63,14 @@ export const FRERE_JACQUES: LevelDef = {
   done: 'Frère Jacques rung through — quick run, low bell and all.',
   control: 'flow',
   // The quick round asks for quicker, truer notes: a tighter band and a
-  // shorter dwell keep the matines run moving; less sink grace, and a
-  // narrower tap window in rhythm play.
+  // shorter dwell keep the matines run moving; less sink grace; one
+  // mid-air correction only in platformer; and in rhythm play a
+  // narrower window with a real fail state.
   feel: {
     land: { bandSemis: 0.5, dwellMs: 550 },
     fall: { sinkGraceMs: 1100 },
-    tap: { windowMs: 170 },
+    control: { airReliftMax: 1 },
+    tap: { windowMs: 170, maxMisses: 8 },
   },
   segments: [
     { type: 'melody', melody: P1 },

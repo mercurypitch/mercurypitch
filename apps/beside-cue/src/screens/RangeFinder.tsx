@@ -11,10 +11,7 @@ import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import type { RangeFit } from '@/games/glass/range-finder'
-import {
-  computeRangeFit,
-  createSteadyDetector,
-} from '@/games/glass/range-finder'
+import { computeRangeFit, createSteadyDetector, } from '@/games/glass/range-finder'
 
 const RF = JOURNEY_CONFIG.rangeFinder
 const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12)
@@ -82,7 +79,9 @@ export function RangeFinder(props: {
     // let the confirmation hum ring out before the mic context closes
     window.setTimeout(stopDriver, RF.humSeconds * 1000 + 150)
     fitVal = computeRangeFit(comfy, lo, hi, RF.clampSemis)
-    setResultTitle(`Your range: ${name(fitVal.loMidi)} – ${name(fitVal.hiMidi)}`)
+    setResultTitle(
+      `Your range: ${name(fitVal.loMidi)} – ${name(fitVal.hiMidi)}`,
+    )
     setResultSub(biasSentence(fitVal.biasSemis))
     setStep('result')
   }
@@ -190,8 +189,8 @@ export function RangeFinder(props: {
       <Show when={step() === 'error'}>
         <p class="range-finder__title">The microphone is not available</p>
         <p class="range-finder__sub">
-          Allow mic access to sing your range — the presets above work
-          without it.
+          Allow mic access to sing your range — the presets above work without
+          it.
         </p>
         <div class="range-finder__row">
           <button

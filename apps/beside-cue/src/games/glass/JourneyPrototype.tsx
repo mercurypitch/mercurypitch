@@ -99,10 +99,16 @@ export const JourneyPrototype: Component<{
   const keys = { left: false, right: false }
   let jumpVy = 0
   let coyoteLeftMs = 0
+  /** Air re-lift gate: voiced onsets while airborne, and whether the
+   * current voiced run is past control.airReliftMax (lift ignored). */
+  let airRelifts = 0
+  let liftBlocked = false
+  let wasVoicedTr = false
   // rhythm (tap) state: the road scrolls at tempo after the count-in
   let rhythmStartAt = 0
   let rhythmSpeed = 2 // world units / s
   let rhythmBpm = C.tap.bpmDefault
+  let rhythmMisses = 0
   /** Input-latency compensation, ms: the tap tuner's stored per-device
    * measurement when present, else the config default. */
   let tapLatencyMs = 0
@@ -501,6 +507,10 @@ export const JourneyPrototype: Component<{
     sinkMs = 0
     jumpVy = 0
     coyoteLeftMs = C.control.coyoteMs
+    airRelifts = 0
+    liftBlocked = false
+    wasVoicedTr = false
+    rhythmMisses = 0
     pitchHist = []
   }
 
@@ -516,7 +526,8 @@ export const JourneyPrototype: Component<{
       (firstMelody?.type === 'melody' ? firstMelody.melody.bpm : undefined) ??
       C.tap.bpmDefault
     rhythmSpeed = C.melody.unitsPerBeat.rhythm * (rhythmBpm / 60)
-    tapLatencyMs = readStoredTapLatency(C.tap.calClampMs) ?? C.tap.inputLatencyMs
+    tapLatencyMs =
+      readStoredTapLatency(C.tap.calClampMs) ?? C.tap.inputLatencyMs
     platforms = cs.platforms
     panes = cs.panes
     nodes = cs.nodes
@@ -541,6 +552,10 @@ export const JourneyPrototype: Component<{
     sinkMs = 0
     jumpVy = 0
     coyoteLeftMs = C.control.coyoteMs
+    airRelifts = 0
+    liftBlocked = false
+    wasVoicedTr = false
+    rhythmMisses = 0
     pitchHist = []
   }
 
@@ -596,6 +611,20 @@ export const JourneyPrototype: Component<{
     }
   }
 
+  const shatterPlatform = (pl: Platform): void => {
+    pl.broken = true
+    pl.respawnMs = C.glass.respawnMs
+    const py = yFor(pl.midi)
+    puff = Array.from({ length: 14 }, (_, i) => ({
+      x: pl.x0 + ((i + 0.5) / 14) * (pl.x1 - pl.x0),
+      y: py,
+      vx: (i / 14 - 0.5) * 0.5,
+      vy: 0.05 + (i % 3) * 0.08,
+      r: 2 + (i % 3) * 2,
+    }))
+    puffT = 0
+  }
+
   const burstPane = (pane: Pane): void => {
     pane.burstT = 0
     const gy = yFor(pane.midi)
@@ -615,6 +644,14 @@ export const JourneyPrototype: Component<{
   }
 
   const retry = (): void => {
+    if (isRhythm()) {
+      // the road IS the clock in rhythm play — a run restarts whole,
+      // count-in and all, never from a mid-road checkpoint
+      buildStage()
+      beginCountIn()
+      setPhase('play')
+      return
+    }
     if (lastCheckpointIdx >= 0) {
       // reset every stateful thing the nodes after the checkpoint touch
       for (let i = lastCheckpointIdx + 1; i < nodes.length; i++) {
@@ -1036,11 +1073,17 @@ export const JourneyPrototype: Component<{
             if (taps.length > 0 && Math.abs(mercWX - latency - center) <= win) {
               hitP = n.p
             } else if (mercWX > n.p.x1 + 0.15) {
-              // forgiving V1: a passed slab lights late — the song keeps
-              // going, the miss just is not celebrated
+              // a passed slab lights late — the song keeps going, the
+              // miss just is not celebrated. Hard tiers (tap.maxMisses)
+              // end the run once too many slip by.
               n.p.lit = true
               n.p.dwell = 9999
-              advanceTo(activeIdx + 1)
+              rhythmMisses += 1
+              if (C.tap.maxMisses > 0 && rhythmMisses >= C.tap.maxMisses) {
+                setPhase('fallen')
+              } else {
+                advanceTo(activeIdx + 1)
+              }
             }
             if (hitP !== null) {
               hitP.lit = true
@@ -1082,7 +1125,20 @@ export const JourneyPrototype: Component<{
           }
         }
         const prevY = mercY
-        if (p === 'play' && midi !== null) {
+        // air re-lift gate: a voiced ONSET while airborne is a re-lift;
+        // past control.airReliftMax of them the voice stops lifting
+        // until Merc lands — a hard-tier jump is sung as ONE note
+        const voicedNow = midi !== null
+        if (voicedNow && !wasVoicedTr && restIdx === null) {
+          airRelifts += 1
+          liftBlocked = airRelifts > C.control.airReliftMax
+        }
+        if (restIdx !== null) {
+          airRelifts = 0
+          liftBlocked = false
+        }
+        wasVoicedTr = voicedNow
+        if (p === 'play' && midi !== null && !liftBlocked) {
           // the jump: lift toward the sung note's height — a higher note
           // is a higher, longer leap; holding it is holding the button
           const ty = Math.min(1.05, Math.max(-0.05, yFor(midi)))
@@ -1137,6 +1193,15 @@ export const JourneyPrototype: Component<{
             if (midi === null) {
               mercY = yFor(pl.midi) - 0.035
               jumpVy = 0
+            }
+            // standing cracks glass here too — an icy slab in a sung
+            // level is a step, not a camp
+            if (pl.kind === 'glass') {
+              pl.integrity = Math.max(0, pl.integrity - dt / C.glass.crackMs)
+              if (pl.integrity === 0 && !pl.broken) {
+                shatterPlatform(pl)
+                restIdx = null
+              }
             }
           }
         }
@@ -1248,17 +1313,7 @@ export const JourneyPrototype: Component<{
             if (pl.kind === 'glass' && Math.abs(mercY - sitY) < 0.02) {
               pl.integrity = Math.max(0, pl.integrity - dt / C.glass.crackMs)
               if (pl.integrity === 0 && !pl.broken) {
-                pl.broken = true
-                pl.respawnMs = C.glass.respawnMs
-                const py = yFor(pl.midi)
-                puff = Array.from({ length: 14 }, (_, i) => ({
-                  x: pl.x0 + ((i + 0.5) / 14) * (pl.x1 - pl.x0),
-                  y: py,
-                  vx: (i / 14 - 0.5) * 0.5,
-                  vy: 0.05 + (i % 3) * 0.08,
-                  r: 2 + (i % 3) * 2,
-                }))
-                puffT = 0
+                shatterPlatform(pl)
                 restIdx = null
               }
             }
@@ -2049,6 +2104,7 @@ export const JourneyPrototype: Component<{
           x1: pl.x1,
           midi: pl.midi,
           lit: pl.lit,
+          kind: pl.kind,
         })),
         panes: panes.map((pn) => ({ wx: pn.wx, midi: pn.midi })),
         groundMidi,
@@ -2198,10 +2254,18 @@ export const JourneyPrototype: Component<{
           <p class="jp-text">{hint()}</p>
         </Show>
         <Show when={phase() === 'fallen'}>
-          <h2 class="jp-title">The glass gave way.</h2>
-          <p class="jp-text">The void keeps what it catches.</p>
+          <h2 class="jp-title">
+            {isRhythm() ? 'The beat ran ahead.' : 'The glass gave way.'}
+          </h2>
+          <p class="jp-text">
+            {isRhythm()
+              ? 'Too many slabs slipped by unlit. Catch them as Merc crosses — the rings meeting is the moment.'
+              : 'The void keeps what it catches.'}
+          </p>
           <button class="jp-start" onClick={retry}>
-            {lastCheckpointIdx >= 0 ? 'Retry from the checkpoint' : 'Retry'}
+            {!isRhythm() && lastCheckpointIdx >= 0
+              ? 'Retry from the checkpoint'
+              : 'Retry'}
           </button>
         </Show>
         <Show when={phase() === 'done'}>
