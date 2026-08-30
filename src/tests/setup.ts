@@ -236,3 +236,19 @@ vi.mock('worker_threads', () => {
     Worker: MockWorker,
   }
 })
+
+// jsdom provides no fetch, so an unstubbed call falls through to Node's undici
+// and makes a real outbound request. That is how `blob:` fixtures in the Stem
+// Mixer suite came to log `TypeError: fetch failed` on CI and nowhere else:
+// the rejection landed after the test had already ended, so it read as
+// unattributed noise on a green run rather than as a bug in the test.
+//
+// A test that wants network behaviour stubs it (`vi.stubGlobal('fetch', ...)`,
+// which overrides this). Anything else is an omission, and should say so at
+// the call site.
+global.fetch = ((input: RequestInfo | URL) => {
+  const url = typeof input === 'string' ? input : String(input)
+  return Promise.reject(
+    new Error(`Unexpected network request: ${url}. Stub fetch in this test.`),
+  )
+}) as unknown as typeof fetch
