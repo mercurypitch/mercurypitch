@@ -9,6 +9,7 @@
 import type { Accessor } from 'solid-js'
 import { createComputed, createRoot, createSignal } from 'solid-js'
 import { authVersion } from '@/db/services/user-service'
+import { localAllAccessGranted } from '@/lib/local-all-access'
 import type { BackgroundPerkId } from './background-catalog'
 import type { PremiumBackgroundAsset, PremiumBackgroundCatalogResponse, } from './background-runtime'
 import { BackgroundRequestError, fetchPremiumBackgroundCatalog, } from './background-runtime'
@@ -186,11 +187,16 @@ export function createPremiumBackgroundCatalogStore(
           })
         } else {
           const previous = state()
+          const allAccess = localAllAccessGranted()
           setState({
             assets: result.assets,
-            unlockedIds: result.access.backgroundIds,
+            // Local dev bypass: treat every catalog asset as unlocked. The
+            // server's access list is untouched everywhere the guard is off.
+            unlockedIds: allAccess
+              ? result.assets.map((asset) => asset.id)
+              : result.access.backgroundIds,
             authenticated: result.access.authenticated,
-            activeSupporter: result.access.activeSupporter,
+            activeSupporter: result.access.activeSupporter || allAccess,
             accessExpiresAt: parseExpiry(result.access.expiresAt),
             loading: false,
             ready: true,

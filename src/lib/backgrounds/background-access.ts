@@ -9,6 +9,7 @@ import type { BillingMe } from '@/db/services/billing-service'
 import { fetchBillingMe, supporterEntitlement, } from '@/db/services/billing-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { localAllAccessGranted } from '@/lib/local-all-access'
 import type { SupporterFeaturePerkId } from '../supporter-feature-catalog'
 import { isSupporterFeaturePerkId } from '../supporter-feature-catalog'
 import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, } from './background-catalog'
@@ -96,6 +97,7 @@ export function hasSupporterFeatureAccess(
   perks: PerksMe | null,
   featureId: SupporterFeaturePerkId,
 ): boolean {
+  if (localAllAccessGranted()) return true
   return perks?.features.includes(featureId) ?? false
 }
 
@@ -135,6 +137,7 @@ export function hasBackgroundEntitlement(
   access: BackgroundAccessState,
 ): boolean {
   if (background.access.kind === 'free') return true
+  if (localAllAccessGranted()) return true
   return (
     access.supporter ||
     access.explicitPerks.includes(background.access.explicitPerkId)
