@@ -34,12 +34,21 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Build with the cloud API disabled so e2e exercises the local IndexedDB
-    // (DexieAdapter) path it asserts against. e2e runs offline, and .env.production
-    // now sets VITE_API_BASE_URL (HybridAdapter), whose stores aren't seeded locally.
-    // Also empty the Ads/GA4 ids so the headless-browser e2e build stays inert —
-    // otherwise every CI run fires real GA4 hits (hostName=localhost) into prod.
-    command: `cross-env VITE_API_BASE_URL= VITE_E2E_LAB_ACCESS=1 VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= VITE_JAM_MOCK_SIGNALING=1 pnpm run build && pnpm dlx serve dist -l ${e2ePort}`,
+    // Serve only — the build is `pnpm run build:e2e`, which carries the env this
+    // suite needs (cloud API disabled so e2e exercises the local IndexedDB path;
+    // Ads/GA4 ids emptied so headless runs do not fire real GA4 hits into prod)
+    // and then audits the emitted bundle.
+    //
+    // Building here as well overwrote that audited bundle with a second,
+    // differently-configured one before a single test ran, so
+    // `assert-piano-night-bundle.mjs` was describing a build nobody served.
+    // CI now builds once and shares `dist` across every shard; locally,
+    // `pnpm run build:e2e` is the prerequisite.
+    //
+    // No `--single`: the app ships eight HTML entry points (karaoke, jam,
+    // guitar-night, piano-night, glass, mirror, vocal-range-test, index) and
+    // SPA-rewriting them all to index.html would break every one but the first.
+    command: `pnpm exec serve dist -l ${e2ePort}`,
     url: `http://localhost:${e2ePort}`,
     reuseExistingServer: true,
     timeout: numericEnv(process.env.VITE_E2E_WEBSERVER_TIMEOUT, 120000),
