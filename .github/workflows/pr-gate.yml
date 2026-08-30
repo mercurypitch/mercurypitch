@@ -14,7 +14,13 @@ permissions:
 
 concurrency:
   group: pr-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Superseding a PR push is free: the newer commit is the one that matters.
+  # A push to main is not. Every main run covers a distinct commit, and main
+  # is where the full browser suite runs, so cancelling one loses that
+  # commit's coverage permanently. Five main pushes landed inside thirty
+  # minutes on 2026-08-30 — long enough for a 14-minute suite to be killed
+  # by the next merge every time.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   gate:
