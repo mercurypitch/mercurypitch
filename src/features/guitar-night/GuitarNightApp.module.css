@@ -2263,6 +2263,116 @@
   }
 }
 
+/* The song view is a chooser on the left and what you chose on the right.
+   Everything else in this panel is a single narrow column, so the width is
+   widened only here rather than for every view. */
+.entryPanelSong {
+  width: min(64rem, 100%);
+}
+
+.songLayout {
+  display: grid;
+  gap: clamp(1rem, 2.4vw, 2rem);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .songLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
+  }
+
+  /* Sticks beside the galleries so the actions stay reachable however far the
+     reader scrolls through them. */
+  .songAside {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.songMain {
+  min-width: 0;
+}
+
+.songAside {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  padding: clamp(0.9rem, 1.6vw, 1.15rem);
+  border: 1px solid rgba(224, 164, 93, 0.18);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.songAsideTitle {
+  margin: 0;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.songAsideEmpty {
+  display: grid;
+  justify-items: start;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.songAsideEmpty svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  opacity: 0.55;
+}
+
+.songAsideEmpty strong {
+  color: var(--ivory);
+  font-size: 0.98rem;
+}
+
+.songAsideCard {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.songAsideCard strong {
+  overflow: hidden;
+  color: var(--ivory);
+  font-size: 1.02rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.songAsideMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.songAsideMeta li + li::before {
+  margin-inline-end: 0.55rem;
+  content: '·';
+}
+
+/* Inside the aside the actions are a stack, not the space-between row they
+   are elsewhere in the panel. */
+.songAside .detailActions {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 0.25rem;
+}
+
+.songAside .detailActions > :first-child {
+  margin-inline-end: 0;
+}
+
 .detailActions {
   display: flex;
   flex-wrap: wrap;
