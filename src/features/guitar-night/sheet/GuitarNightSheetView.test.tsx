@@ -84,7 +84,10 @@ function stubCanvas(): { calls: string[] } {
           calls.push(`${property}:${args.join(',')}`)
         }
       },
-      set: () => true,
+      set: (_target, property: string, value: unknown) => {
+        calls.push(`${property}=${String(value)}`)
+        return true
+      },
     },
   )
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
@@ -522,12 +525,7 @@ describe('GuitarNightSheetView', () => {
       localStorage.removeItem('guitar-night-sheet-zoom-v1')
     })
 
-    const systemStarts = (): string[] =>
-      [...document.querySelectorAll('[data-system]')].map(
-        (row) => row.getAttribute('data-start-beat') ?? '',
-      )
-
-    it('draws the same music larger, without re-breaking the lines', () => {
+    it('spends the row on fewer bars instead of widening the page', () => {
       const restore = sizeThePage(900, 600)
       try {
         render(() => (
@@ -539,23 +537,56 @@ describe('GuitarNightSheetView', () => {
           />
         ))
         const page = screen.getByTestId('guitar-night-sheet-page')
-        const beforeWidth = page.style.width
-        const beforeHeight = page.style.height
-        const beforeStarts = systemStarts()
+        // The suite stubs ResizeObserver with a no-op, so nothing re-measures
+        // after jsdom lays the page out. A scroll is the cheapest honest
+        // nudge; a real browser gets this from the observer.
+        fireEvent.scroll(screen.getByTestId('guitar-night-sheet-scroll'))
+        // Rows are virtualized, so count them from the page rather than from
+        // what happens to be mounted.
+        const rowCount = (): number => {
+          const row = document.querySelector('[data-system]') as HTMLElement
+          return Math.round(
+            parseFloat(page.style.height) / parseFloat(row.style.height),
+          )
+        }
+        const beforeRows = rowCount()
+        const beforeHeight = parseFloat(page.style.height)
 
-        const slider = screen.getByTestId('guitar-night-sheet-zoom')
-        fireEvent.input(slider, { target: { value: '2' } })
+        fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
+          target: { value: '2' },
+        })
 
-        // Bigger in both axes: the metrics scale, so the staves grow too.
-        expect(parseFloat(page.style.width)).toBeCloseTo(
-          parseFloat(beforeWidth) * 2,
-          0,
-        )
-        expect(parseFloat(page.style.height)).toBeGreaterThan(
-          parseFloat(beforeHeight),
-        )
-        // Same bars in the same rows: zoom must not move what a reader is on.
-        expect(systemStarts()).toEqual(beforeStarts)
+        // The page never grows sideways -- that would be a side-scroll, not a
+        // magnification -- so it carries no width of its own at all.
+        expect(page.style.width).toBe('')
+        // The rows re-broke: fewer bars fit each one, so the same music needs
+        // more of them, and each is taller than it was.
+        expect(rowCount()).toBeGreaterThan(beforeRows)
+        expect(parseFloat(page.style.height)).toBeGreaterThan(beforeHeight)
+      } finally {
+        restore()
+      }
+    })
+
+    it('paints the notation itself larger, not just the layout', () => {
+      const restore = sizeThePage(900, 600)
+      try {
+        render(() => (
+          <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
+        ))
+        const fontOf = (calls: string[]): number => {
+          const set = calls.filter((call) => call.startsWith('font=')).at(-1)
+          return set === undefined ? 0 : parseFloat(set.slice('font='.length))
+        }
+        const before = fontOf(painted.calls)
+        expect(before).toBeGreaterThan(0)
+
+        painted.calls.length = 0
+        fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
+          target: { value: '2' },
+        })
+        // The fret numbers are what the reader came for.
+        expect(fontOf(painted.calls)).toBeGreaterThan(before)
       } finally {
         restore()
       }
@@ -591,22 +622,20 @@ describe('GuitarNightSheetView', () => {
       }
     })
 
-    it('offers panning only once the score outgrows the view', () => {
+    it('returns to 100% from the readout', () => {
       const restore = sizeThePage(900, 600)
       try {
         render(() => (
           <GuitarNightSheetView lanes={() => [lane()]} playheadBeat={() => 0} />
         ))
-        const scroll = screen.getByTestId('guitar-night-sheet-scroll')
-        expect(scroll).not.toHaveAttribute('data-zoomed')
-
+        const sheet = screen.getByTestId('guitar-night-sheet')
         fireEvent.input(screen.getByTestId('guitar-night-sheet-zoom'), {
           target: { value: '1.5' },
         })
-        expect(scroll).toHaveAttribute('data-zoomed', 'true')
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1.5')
 
         fireEvent.click(screen.getByTestId('guitar-night-sheet-zoom-reset'))
-        expect(scroll).not.toHaveAttribute('data-zoomed')
+        expect(sheet.style.getPropertyValue('--sheet-zoom')).toBe('1')
       } finally {
         restore()
       }

@@ -35,17 +35,6 @@
   touch-action: pan-x pan-y;
 }
 
-/* Panning only exists once the score is wider than the view. Leaving the axis
-   scrollable at 1x would let a stray overhanging pixel offer a scrollbar for
-   nothing, which is exactly what the gauge below was introduced to avoid. */
-.scroll[data-zoomed='true'] {
-  overflow-x: auto;
-}
-
-.scroll[data-zoomed='true']::-webkit-scrollbar {
-  height: 5px;
-}
-
 /* Spans the readable width and nothing else, so magnifying the page cannot
    change the number the layout measures itself against. */
 .gauge {
