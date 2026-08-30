@@ -7,6 +7,7 @@ import { SONGBOOK } from '@/games/glass/levels'
 import type { LevelDef } from '@/games/glass/levels/types'
 import type { RangeFit } from '@/games/glass/range-finder'
 import { readStoredTapLatency, TAP_LATENCY_KEY, } from '@/games/glass/tap-latency'
+import { readStoredTheme, STAGE_THEMES, THEME_KEY } from '@/games/glass/themes'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
 
@@ -65,6 +66,16 @@ export function GamesScreen(props: GamesScreenProps) {
   const fitted = (): boolean =>
     rangeBias() !== 0 && Math.abs(rangeBias()) !== BIAS_STEP
 
+  const [stageTheme, setStageTheme] = createSignal(readStoredTheme())
+  const pickTheme = (id: string): void => {
+    setStageTheme(id)
+    try {
+      window.localStorage.setItem(THEME_KEY, id)
+    } catch {
+      // the look just lives for the session when storage is denied
+    }
+  }
+
   const [tuning, setTuning] = createSignal(false)
   const [tapLatency, setTapLatency] = createSignal<number | null>(
     readStoredTapLatency(JOURNEY_CONFIG.tap.calClampMs),
@@ -96,6 +107,7 @@ export function GamesScreen(props: GamesScreenProps) {
             level={levelPick()?.level}
             control={levelPick()?.control}
             rangeBias={rangeBias()}
+            theme={stageTheme()}
           />
           <button
             class="games-leave"
@@ -242,6 +254,22 @@ export function GamesScreen(props: GamesScreenProps) {
         <Show when={tuning()}>
           <TapTuner onSaved={saveTapLatency} onClose={() => setTuning(false)} />
         </Show>
+
+        <div class="games-range" role="group" aria-label="Stage look">
+          <span class="games-range__label">Stage look</span>
+          <For each={STAGE_THEMES}>
+            {(t) => (
+              <button
+                class="games-range__pick"
+                type="button"
+                aria-pressed={stageTheme() === t.id}
+                onClick={() => pickTheme(t.id)}
+              >
+                {t.name}
+              </button>
+            )}
+          </For>
+        </div>
 
         <For each={SONGBOOK}>
           {(level) => (

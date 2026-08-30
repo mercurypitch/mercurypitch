@@ -379,6 +379,17 @@ export const JOURNEY_CONFIG = {
     /** Merc's alpha while his flight path passes through a slab (he is
      * incorporeal while flying; only rest makes him solid). */
     phaseAlpha: 0.55,
+    /** Melody ribbon: the upcoming contour drawn as one flowing curve
+     * through the next platforms — the tune's shape, visible before it
+     * is sung. Sung modes only (rhythm has the approach rings). */
+    ribbon: true,
+    ribbonAlpha: 0.16,
+    /** Land nodes ahead of the objective the ribbon flows through. */
+    ribbonAhead: 6,
+    /** Rhythm: slab top edges breathe with the beat once the road
+     * rolls — the whole world keeps the pulse, not just the rings. */
+    beatPulse: true,
+    beatPulseAmt: 0.3,
   },
 } as const
 

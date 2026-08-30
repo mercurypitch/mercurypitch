@@ -247,7 +247,30 @@ descent), plus maff's original melodies as data.
   regression (sing, release with a downward tail → snap-up rest, not a
   fall); sink-recovery; mid-fall catch.
 
+## 7. Art pass (2026-08-30, V2 started)
+
+- **Melody ribbon** (`art.ribbon*`): the upcoming contour drawn as one
+  flowing curve through the next platforms — the tune's shape visible
+  before it is sung. Sung modes only; rhythm has the approach rings.
+- **Beat pulse** (`art.beatPulse*`): in rhythm play every slab's top
+  edge breathes with the beat once the road rolls.
+- **Karaoke underline**: the active syllable carries an accent
+  underline — the bouncing ball of this karaoke.
+- **Stage themes** (`themes.ts` + `public/games/journey/themes/`):
+  four looks over one game — Cosmos (painterly default), Neon (retro
+  synthwave arcade), Daylight (clean light minimal), Inkwash (elegant
+  sumi-e). Each theme is an asset directory (sky/nebula/dust parallax
+  layers + stone/crystal tiles, generated: Gemini image gen for
+  Daylight and Inkwash, GPT-5.6-sol imagegen for Neon; sources under
+  `~/agent-out/beside-cue-games/2026-08-30/themes/`) plus a full draw
+  palette (`StagePalette` — every meaningful stage color). Merc's own
+  sprites never change; he is the brand. Picker: "Stage look" on the
+  games list, persisted per device. Direction from 2026 mobile
+  rhythm-game practice: clean-minimal readability, neon retro, and
+  painterly atmospheric are the three winning families; the final
+  default gets picked after device playtests.
+
 ## Out of scope for this pass
 
-Art pass (V2), 3D (V3), backing tracks (pending device test), listen
-mode, editor UI, remote songbook fetch, VO wiring.
+3D (V3), backing tracks (pending device test), listen mode, editor UI,
+remote songbook fetch, VO wiring.

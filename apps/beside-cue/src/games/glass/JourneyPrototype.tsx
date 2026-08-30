@@ -27,6 +27,7 @@ import type { GameFeel } from './levels/feel'
 import { applyFeel } from './levels/feel'
 import type { LevelDef } from './levels/types'
 import { readStoredTapLatency } from './tap-latency'
+import { resolveTheme } from './themes'
 import type { Boss, Node, Pane, Platform, WhisperZone } from './world-types'
 
 const MIC_ID = 'journey-proto'
@@ -44,6 +45,8 @@ export const JourneyPrototype: Component<{
   control?: 'flow' | 'platformer' | 'rhythm'
   /** Range setting: semitones to sit the song lower/higher (levels only). */
   rangeBias?: number
+  /** Stage theme id (themes.ts) — the skin; defaults to Cosmos. */
+  theme?: string
 }> = (props) => {
   const mode = (): 'flow' | 'platformer' | 'rhythm' =>
     props.level !== undefined
@@ -140,14 +143,20 @@ export const JourneyPrototype: Component<{
     el.src = src
     return el
   }
+  // The stage theme: asset directory + palette (themes.ts). Merc's own
+  // sprites stay shared — he is the brand; the world dresses around him.
+  // eslint-disable-next-line solid/reactivity -- the stage remounts per
+  // game entry; the theme is fixed for the life of one stage
+  const theme = resolveTheme(props.theme)
+  const P = theme.palette
   // Painterly world: parallax layers, material tiles, Merc pose sprites
   // (merc-lumen sheet). Poses stretch/lean in code — liquid droplet physics.
   const art = {
-    sky: img('games/journey/sky-far.webp'),
-    nebula: img('games/journey/nebula-mid.webp'),
-    dust: img('games/journey/dust-near.webp'),
-    crystal: img('games/journey/crystal-tex.webp'),
-    stone: img('games/journey/stone-tex.webp'),
+    sky: img(`${theme.dir}/sky-far.webp`),
+    nebula: img(`${theme.dir}/nebula-mid.webp`),
+    dust: img(`${theme.dir}/dust-near.webp`),
+    crystal: img(`${theme.dir}/crystal-tex.webp`),
+    stone: img(`${theme.dir}/stone-tex.webp`),
     mercIdle: img('games/journey/merc-idle.webp'),
     mercListening: img('games/journey/merc-listening.webp'),
     mercCelebrate: img('games/journey/merc-celebrate.webp'),
@@ -1523,7 +1532,7 @@ export const JourneyPrototype: Component<{
     if (guideMidi !== null) {
       const gy = yFor(guideMidi) * h
       const pulse = 0.2 + (Math.sin(last / 300) + 1) * 0.09
-      ctx.strokeStyle = `rgba(88,166,255,${pulse})`
+      ctx.strokeStyle = `rgba(${P.guideRgb},${pulse})`
       ctx.lineWidth = 1.5
       ctx.setLineDash([10, 9])
       ctx.beginPath()
@@ -1531,9 +1540,57 @@ export const JourneyPrototype: Component<{
       ctx.lineTo(w, gy)
       ctx.stroke()
       ctx.setLineDash([])
-      ctx.fillStyle = `rgba(148,197,255,${0.7 + (Math.sin(last / 300) + 1) * 0.15})`
+      ctx.fillStyle = `rgba(${P.guideTextRgb},${0.7 + (Math.sin(last / 300) + 1) * 0.15})`
       ctx.font = "700 15px 'Saira Condensed', monospace"
       ctx.fillText(midiToNoteNameOctave(guideMidi), 12, gy - 8)
+    }
+
+    // the melody ribbon: the contour ahead drawn as one flowing line —
+    // platforms sit ON the tune; the curve says where it bends next
+    if (C.art.ribbon && !isRhythm()) {
+      const pts: { x: number; y: number }[] = []
+      let seen = 0
+      for (
+        let i = Math.max(0, activeIdx - 1);
+        i < nodes.length && seen < C.art.ribbonAhead;
+        i++
+      ) {
+        const n = nodes[i]
+        if (n.t !== 'land') continue
+        pts.push({ x: X((n.p.x0 + n.p.x1) / 2), y: yFor(n.p.midi) * h - 3 })
+        seen += 1
+      }
+      if (pts.length > 1) {
+        ctx.strokeStyle = `rgba(${P.syllableRgb},${C.art.ribbonAlpha})`
+        ctx.lineWidth = 2
+        ctx.lineJoin = 'round'
+        ctx.beginPath()
+        ctx.moveTo(pts[0].x, pts[0].y)
+        for (let i = 1; i < pts.length - 1; i++) {
+          ctx.quadraticCurveTo(
+            pts[i].x,
+            pts[i].y,
+            (pts[i].x + pts[i + 1].x) / 2,
+            (pts[i].y + pts[i + 1].y) / 2,
+          )
+        }
+        const tail = pts[pts.length - 1]
+        ctx.lineTo(tail.x, tail.y)
+        ctx.stroke()
+      }
+    }
+
+    // rhythm: every slab breathes with the beat once the road rolls
+    let beatGlow = 0
+    if (
+      C.art.beatPulse &&
+      isRhythm() &&
+      phase() === 'play' &&
+      last >= rhythmStartAt
+    ) {
+      const beatMs = 60000 / rhythmBpm
+      const beatPh = ((last - rhythmStartAt) % beatMs) / beatMs
+      beatGlow = Math.pow(1 - beatPh, 3) * C.art.beatPulseAmt
     }
 
     const slabH = Math.max(
@@ -1549,11 +1606,11 @@ export const JourneyPrototype: Component<{
         activeIdx < nodes.length &&
         nodes[activeIdx].t === 'land' &&
         (nodes[activeIdx] as Extract<Node, { t: 'land' }>).p === pl
-      const accent = pl.kind === 'glass' ? '#7ee7ff' : '#2dd4bf'
+      const accent = pl.kind === 'glass' ? P.accentGlass : P.accentStone
 
       if (pl.broken) {
         // ghost outline while the glass regrows
-        ctx.strokeStyle = 'rgba(126,231,255,0.14)'
+        ctx.strokeStyle = `rgba(${P.edgeGlassRgb},0.14)`
         ctx.lineWidth = 1.5
         ctx.setLineDash([6, 10])
         ctx.beginPath()
@@ -1570,8 +1627,7 @@ export const JourneyPrototype: Component<{
         ctx.shadowColor = accent
         ctx.shadowBlur = 16
       }
-      ctx.fillStyle =
-        pl.kind === 'glass' ? 'rgba(16,34,52,0.92)' : 'rgba(27,32,48,0.97)'
+      ctx.fillStyle = pl.kind === 'glass' ? P.slabGlass : P.slabStone
       ctx.fill()
       ctx.shadowBlur = 0
       const pat = pl.kind === 'glass' ? patterns.crystal : patterns.stone
@@ -1583,7 +1639,7 @@ export const JourneyPrototype: Component<{
       }
       // faint underside line so slabs read against the nebula
       ctx.strokeStyle =
-        pl.kind === 'glass' ? 'rgba(126,231,255,0.22)' : 'rgba(45,212,191,0.2)'
+        pl.kind === 'glass' ? P.undersideGlass : P.undersideStone
       ctx.lineWidth = 1
       ctx.stroke()
 
@@ -1593,10 +1649,10 @@ export const JourneyPrototype: Component<{
       ctx.strokeStyle = pl.lit
         ? accent
         : isActive
-          ? 'rgba(88,166,255,0.95)'
+          ? P.activeEdge
           : pl.kind === 'glass'
-            ? 'rgba(126,231,255,0.5)'
-            : 'rgba(88,166,255,0.35)'
+            ? `rgba(${P.edgeGlassRgb},${0.5 + beatGlow})`
+            : `rgba(${P.edgeStoneRgb},${0.35 + beatGlow})`
       ctx.beginPath()
       ctx.moveTo(x0 + 3, y - 3)
       ctx.lineTo(x1 - 3, y - 3)
@@ -1632,19 +1688,29 @@ export const JourneyPrototype: Component<{
         : pl.lit
           ? 0.55
           : C.hud.inactiveLabelAlpha
-      ctx.fillStyle = `rgba(230,237,243,${labelA})`
+      ctx.fillStyle = `rgba(${P.labelRgb},${labelA})`
       ctx.font = isActive
         ? "700 13px 'Saira Condensed', monospace"
         : "600 11px 'Saira Condensed', monospace"
       ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
 
-      // karaoke syllable under the slab (melody levels)
+      // karaoke syllable under the slab (melody levels); the active one
+      // carries an underline — the bouncing-ball of this karaoke
       if (pl.syllable !== undefined) {
-        ctx.fillStyle = `rgba(45,212,191,${Math.max(labelA, 0.45)})`
+        ctx.fillStyle = `rgba(${P.syllableRgb},${Math.max(labelA, 0.45)})`
         ctx.font = isActive
           ? "700 13px 'Saira Condensed', monospace"
           : "600 12px 'Saira Condensed', monospace"
         ctx.fillText(pl.syllable, x0 + 2, y + slabH + 13)
+        if (isActive) {
+          const tw = ctx.measureText(pl.syllable).width
+          ctx.strokeStyle = `rgba(${P.syllableRgb},0.9)`
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo(x0 + 2, y + slabH + 16.5)
+          ctx.lineTo(x0 + 2 + tw, y + slabH + 16.5)
+          ctx.stroke()
+        }
       }
     }
 
@@ -1659,12 +1725,12 @@ export const JourneyPrototype: Component<{
         const dist = cwx - mercWX
         if (dist > -1.2 && dist < 4.5) {
           const closeness = Math.max(0, Math.min(1, 1 - dist / 4.5))
-          ctx.strokeStyle = `rgba(255,209,102,${0.2 + closeness * 0.6})`
+          ctx.strokeStyle = `rgba(${P.ringRgb},${0.2 + closeness * 0.6})`
           ctx.lineWidth = 2
           ctx.beginPath()
           ctx.arc(cx, cy, 9 + (1 - closeness) * 36, 0, 6.283)
           ctx.stroke()
-          ctx.strokeStyle = 'rgba(255,209,102,0.85)'
+          ctx.strokeStyle = `rgba(${P.ringRgb},0.85)`
           ctx.lineWidth = 1.5
           ctx.beginPath()
           ctx.arc(cx, cy, 9, 0, 6.283)
@@ -1715,7 +1781,7 @@ export const JourneyPrototype: Component<{
         const paneLabelA = isActivePane
           ? 0.75 + (Math.sin(last / 300) + 1) * 0.125
           : C.hud.inactiveLabelAlpha
-        ctx.fillStyle = `rgba(230,237,243,${paneLabelA})`
+        ctx.fillStyle = `rgba(${P.labelRgb},${paneLabelA})`
         ctx.font = isActivePane
           ? "700 13px 'Saira Condensed', monospace"
           : "600 11px 'Saira Condensed', monospace"
@@ -1860,7 +1926,7 @@ export const JourneyPrototype: Component<{
     }
 
     if (puffT >= 0) {
-      ctx.fillStyle = '#7ee7ff'
+      ctx.fillStyle = P.accentGlass
       for (const s of puff) {
         ctx.globalAlpha = Math.max(0, 1 - puffT)
         ctx.fillRect(X(s.x), s.y * h, s.r, s.r)
@@ -1878,7 +1944,7 @@ export const JourneyPrototype: Component<{
       ctx.stroke()
     }
     if (trail.length > 1) {
-      ctx.strokeStyle = 'rgba(45,212,191,0.5)'
+      ctx.strokeStyle = `rgba(${P.syllableRgb},0.5)`
       ctx.lineWidth = 2
       ctx.beginPath()
       ctx.moveTo(X(trail[0].wx), trail[0].y * h)
@@ -1952,7 +2018,7 @@ export const JourneyPrototype: Component<{
       ctx.drawImage(sprite, -sw / 2, -sh / 2, sw, sh)
       ctx.restore()
     } else {
-      ctx.fillStyle = '#2dd4bf'
+      ctx.fillStyle = P.accentStone
       ctx.beginPath()
       ctx.arc(mx, my, 14, 0, 6.283)
       ctx.fill()
@@ -1976,7 +2042,7 @@ export const JourneyPrototype: Component<{
         const by = yFor(hit.midi) * h
         const a = 0.25 + hit.res * 0.55
         const grad = ctx.createLinearGradient(mx, my, bx, by)
-        grad.addColorStop(0, `rgba(45,212,191,${a})`)
+        grad.addColorStop(0, `rgba(${P.syllableRgb},${a})`)
         grad.addColorStop(1, `rgba(188,140,255,${a})`)
         ctx.strokeStyle = grad
         ctx.lineWidth = 2 + hit.res * 3
@@ -2008,7 +2074,7 @@ export const JourneyPrototype: Component<{
       }
       if (dir !== 0) {
         const pulse = 0.5 + Math.sin(last / 220) * 0.3
-        ctx.strokeStyle = `rgba(88,166,255,${pulse})`
+        ctx.strokeStyle = `rgba(${P.guideRgb},${pulse})`
         ctx.lineWidth = 3
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
@@ -2049,20 +2115,20 @@ export const JourneyPrototype: Component<{
     h: number,
     camPx: number,
   ): void => {
-    ctx.fillStyle = '#05060b'
+    ctx.fillStyle = P.base
     ctx.fillRect(0, 0, w, h)
     coverWrap(ctx, art.sky, w, h, camPx * C.art.parallaxFar)
     ctx.globalCompositeOperation = 'screen'
-    ctx.globalAlpha = C.art.nebulaAlpha
+    ctx.globalAlpha = theme.art?.nebulaAlpha ?? C.art.nebulaAlpha
     coverWrap(ctx, art.nebula, w, h, camPx * C.art.parallaxMid)
-    ctx.globalAlpha = C.art.dustAlpha
+    ctx.globalAlpha = theme.art?.dustAlpha ?? C.art.dustAlpha
     coverWrap(ctx, art.dust, w, h, camPx * C.art.parallaxNear)
     ctx.globalCompositeOperation = 'source-over'
     ctx.globalAlpha = 1
     // seat the play space: quiet, darker ground for HUD and low platforms
     const g = ctx.createLinearGradient(0, h * 0.72, 0, h)
-    g.addColorStop(0, 'rgba(5,6,11,0)')
-    g.addColorStop(1, 'rgba(5,6,11,0.82)')
+    g.addColorStop(0, `rgba(${P.seatRgb},0)`)
+    g.addColorStop(1, `rgba(${P.seatRgb},0.82)`)
     ctx.fillStyle = g
     ctx.fillRect(0, h * 0.72, w, h * 0.28)
   }
