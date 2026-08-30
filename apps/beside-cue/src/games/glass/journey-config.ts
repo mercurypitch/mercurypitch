@@ -218,19 +218,19 @@ export const JOURNEY_CONFIG = {
     minWidth: 1.1,
     /** Platform width per beat of note duration. In rhythm mode geometry
      * IS time: near-adjacent slabs make x a straight beat axis. */
-    unitsPerBeat: { flow: 1.4, platformer: 1.5, rhythm: 1.5 },
+    unitsPerBeat: { flow: 1.4, platformer: 1.5, rhythm: 1.5, listen: 1.4 },
     /** Gap before each next note platform. */
-    noteGap: { flow: 0.45, platformer: 1.25, rhythm: 0.12 },
+    noteGap: { flow: 0.45, platformer: 1.25, rhythm: 0.12, listen: 0.45 },
     /** Wider gap opening a new phrase/segment — a written-in breath
      * (in rhythm: about a beat of musical rest). */
-    phraseGap: { flow: 1.1, platformer: 1.8, rhythm: 1.5 },
+    phraseGap: { flow: 1.1, platformer: 1.8, rhythm: 1.5, listen: 1.1 },
     /** Road consumed per beat of musical rest. */
-    restUnit: { flow: 1, platformer: 1.4, rhythm: 1.5 },
+    restUnit: { flow: 1, platformer: 1.4, rhythm: 1.5, listen: 1 },
     /** Pane distance past the previous platform edge. Flow: approach spot
      * (wx − pane.approachBack) must sit over that platform. Platformer:
      * must stay within control.paneChargeUnits of its edge. Rhythm
      * compiles encounters as rests, so its value is never used. */
-    paneGap: { flow: 0.6, platformer: 1.2, rhythm: 0.6 },
+    paneGap: { flow: 0.6, platformer: 1.2, rhythm: 0.6, listen: 0.6 },
     /** Road resuming after a pane. */
     paneAfter: 0.8,
     /** Center each song's range on the calibrated ground note (the
@@ -279,6 +279,22 @@ export const JOURNEY_CONFIG = {
     yLerp: 0.12,
     /** Haptic tick on a judged hit, ms (mobile). */
     vibrateMs: 15,
+  },
+
+  /** Listen play mode (ear training, no mic): the game hums the next
+   * note; two candidate slabs light up; tap the one you heard. */
+  listen: {
+    /** Decoy slab: nearest other note within this many semitones. */
+    decoyMaxSemis: 5,
+    /** The prompt hum's length, seconds. */
+    promptSeconds: 0.9,
+    /** A tap outside both candidates replays the prompt — but no more
+     * often than this. */
+    replayGapMs: 700,
+    /** Wrong pick: the decoy shakes this long, then the prompt replays. */
+    wrongShakeMs: 380,
+    /** Pause between a right answer's hop and the next question. */
+    hopDelayMs: 650,
   },
 
   /** The guided range-finder on the games list: hum a comfortable note,

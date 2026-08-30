@@ -14,7 +14,12 @@ export const createTapDriver = (): InteractionDriver => {
 
   const onPointer = (e: PointerEvent): void => {
     if (isUiTarget(e)) return // buttons stay buttons, not beats
-    queue.push({ type: 'tap', tAudio: audioContext?.currentTime ?? 0 })
+    queue.push({
+      type: 'tap',
+      tAudio: audioContext?.currentTime ?? 0,
+      x: e.clientX,
+      y: e.clientY,
+    })
   }
   const onKey = (e: KeyboardEvent): void => {
     if (e.key !== ' ' && e.key !== 'Enter') return

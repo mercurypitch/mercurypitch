@@ -56,7 +56,7 @@ export interface LevelDef {
   /** Done-card body; a default is used when omitted. */
   done?: string
   /** Default play mode; the player can still pick another one. */
-  control?: 'flow' | 'platformer' | 'rhythm'
+  control?: 'flow' | 'platformer' | 'rhythm' | 'listen'
   /** Deep-partial JOURNEY_CONFIG overlay — the difficulty profile,
    * merged over the defaults when the stage builds (applyFeel). */
   feel?: FeelOverlay

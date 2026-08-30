@@ -15,7 +15,7 @@ interface GamesScreenProps {
   onBack: () => void
 }
 
-type LevelControl = 'flow' | 'platformer' | 'rhythm'
+type LevelControl = 'flow' | 'platformer' | 'rhythm' | 'listen'
 
 type PlayPick =
   | 'journey'
@@ -312,6 +312,13 @@ export function GamesScreen(props: GamesScreenProps) {
                   >
                     Tap the line
                   </button>
+                  <button
+                    class="game-card__mode"
+                    type="button"
+                    onClick={() => setPlaying({ level, control: 'listen' })}
+                  >
+                    Hear the line
+                  </button>
                 </span>
               </span>
             </div>
@@ -320,8 +327,8 @@ export function GamesScreen(props: GamesScreenProps) {
 
         <p class="games-screen__note">
           Sung modes use the microphone while a game is open, and only then —
-          Tap the line needs no microphone at all. More B-side games are on the
-          way; nothing here is scored or gated.
+          Tap the line and Hear the line need no microphone at all. More B-side
+          games are on the way; nothing here is scored or gated.
         </p>
       </main>
     </Show>

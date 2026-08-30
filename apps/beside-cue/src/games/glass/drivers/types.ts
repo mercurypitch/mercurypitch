@@ -25,6 +25,10 @@ export interface PitchSample {
 
 /** A discrete input event (tap driver and listen driver, later). */
 export interface DiscreteIntent {
+  /** Pointer position in client coordinates (absent for key taps) —
+   * listen mode hit-tests answers with it. */
+  x?: number
+  y?: number
   type: 'tap' | 'answer'
   /** AudioContext.currentTime at the moment of input. */
   tAudio: number

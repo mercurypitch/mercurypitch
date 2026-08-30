@@ -42,13 +42,13 @@ export const JourneyPrototype: Component<{
   /** A melody level compiled at runtime (songs are levels). */
   level?: LevelDef
   /** Play mode for `level` — overrides the level's own default. */
-  control?: 'flow' | 'platformer' | 'rhythm'
+  control?: 'flow' | 'platformer' | 'rhythm' | 'listen'
   /** Range setting: semitones to sit the song lower/higher (levels only). */
   rangeBias?: number
   /** Stage theme id (themes.ts) — the skin; defaults to Cosmos. */
   theme?: string
 }> = (props) => {
-  const mode = (): 'flow' | 'platformer' | 'rhythm' =>
+  const mode = (): 'flow' | 'platformer' | 'rhythm' | 'listen' =>
     props.level !== undefined
       ? (props.control ?? props.level.control ?? 'flow')
       : (props.variant ?? 'journey') === 'trials'
@@ -56,6 +56,7 @@ export const JourneyPrototype: Component<{
         : 'flow'
   const isTrials = (): boolean => mode() === 'platformer'
   const isRhythm = (): boolean => mode() === 'rhythm'
+  const isListen = (): boolean => mode() === 'listen'
   const [phase, setPhase] = createSignal<Phase>('intro')
   const [micError, setMicError] = createSignal<string | null>(null)
   const [hint, setHint] = createSignal('')
@@ -112,6 +113,12 @@ export const JourneyPrototype: Component<{
   let rhythmSpeed = 2 // world units / s
   let rhythmBpm = C.tap.bpmDefault
   let rhythmMisses = 0
+  // listen (ear training) state: current perch, the decoy slab, timers
+  let listenHome = 0
+  let listenDecoy = -1
+  let listenWrongT = -1
+  let listenAdvanceAt = 0
+  let listenPromptAt = 0
   /** Input-latency compensation, ms: the tap tuner's stored per-device
    * measurement when present, else the config default. */
   let tapLatencyMs = 0
@@ -145,8 +152,8 @@ export const JourneyPrototype: Component<{
   }
   // The stage theme: asset directory + palette (themes.ts). Merc's own
   // sprites stay shared — he is the brand; the world dresses around him.
-  // eslint-disable-next-line solid/reactivity -- the stage remounts per
-  // game entry; the theme is fixed for the life of one stage
+  // (the stage remounts per game entry; the theme is fixed for its life)
+  // eslint-disable-next-line solid/reactivity
   const theme = resolveTheme(props.theme)
   const P = theme.palette
   // Painterly world: parallax layers, material tiles, Merc pose sprites
@@ -520,6 +527,11 @@ export const JourneyPrototype: Component<{
     liftBlocked = false
     wasVoicedTr = false
     rhythmMisses = 0
+    listenHome = 0
+    listenDecoy = -1
+    listenWrongT = -1
+    listenAdvanceAt = 0
+    listenPromptAt = 0
     pitchHist = []
   }
 
@@ -565,6 +577,11 @@ export const JourneyPrototype: Component<{
     liftBlocked = false
     wasVoicedTr = false
     rhythmMisses = 0
+    listenHome = 0
+    listenDecoy = -1
+    listenWrongT = -1
+    listenAdvanceAt = 0
+    listenPromptAt = 0
     pitchHist = []
   }
 
@@ -575,6 +592,35 @@ export const JourneyPrototype: Component<{
     if (props.level !== undefined) buildLevelStage(props.level)
     else if (isTrials()) buildTrialsWorld()
     else buildWorld()
+  }
+
+  /** The decoy for a listen question: the nearest OTHER slab whose note
+   * sits within decoyMaxSemis (and at least a semitone off) — usually
+   * the melody's own neighbor, which is exactly the confusable one. */
+  const pickDecoy = (target: Platform): number => {
+    const tc = (target.x0 + target.x1) / 2
+    let best = -1
+    let bestDist = Infinity
+    for (const [i, pl] of platforms.entries()) {
+      if (pl === target || pl.broken) continue
+      const diff = Math.abs(pl.midi - target.midi)
+      if (diff < 1 || diff > C.listen.decoyMaxSemis) continue
+      const dist = Math.abs((pl.x0 + pl.x1) / 2 - tc)
+      if (dist < bestDist) {
+        bestDist = dist
+        best = i
+      }
+    }
+    return best
+  }
+
+  /** The listen prompt: the note the player must find, played through
+   * the driver clock REGARDLESS of the corner sound toggles — hearing
+   * it IS the game. */
+  const promptListen = (midi: number): void => {
+    const ctx = driver?.ctx() ?? null
+    if (ctx !== null) playTargetHum(ctx, midiToHz(midi), C.listen.promptSeconds)
+    listenPromptAt = performance.now()
   }
 
   const hum = (midi: number, secs: number): void => {
@@ -606,6 +652,12 @@ export const JourneyPrototype: Component<{
           400 + i * C.sound.arpeggioGapMs,
         ),
       )
+      return
+    }
+    if (isListen()) {
+      // the objective hum IS the question — always played, decoy reset
+      listenDecoy = -1
+      if (n.t === 'land') promptListen(n.p.midi)
       return
     }
     if (isRhythm()) return // rhythm hums the note on the tap itself
@@ -708,13 +760,14 @@ export const JourneyPrototype: Component<{
 
   const start = async (): Promise<void> => {
     setMicError(null)
-    if (isRhythm()) {
-      // tap play needs no microphone: the clock is the instrument
+    if (isRhythm() || isListen()) {
+      // tap and listen play need no microphone: the clock (and the
+      // player's ears) are the instrument
       driver = createTapDriver()
       await driver.start()
       groundMidi = readStoredGround()
       buildStage()
-      beginCountIn()
+      if (isRhythm()) beginCountIn()
       setPhase('play')
       return
     }
@@ -1110,6 +1163,71 @@ export const JourneyPrototype: Component<{
             advanceTo(activeIdx + 1) // rhythm compiles land nodes only
           }
         }
+      } else if (isListen()) {
+        // === listen: hear the note, tap the slab that matches ===
+        const home = platforms[listenHome]
+        mercWX += ((home.x0 + home.x1) / 2 - mercWX) * 0.08
+        mercY += (yFor(home.midi) - 0.035 - mercY) * C.tap.yLerp
+        if (listenAdvanceAt > 0 && last >= listenAdvanceAt) {
+          listenAdvanceAt = 0
+          advanceTo(activeIdx + 1)
+        }
+        const answers = (driver?.drainIntents() ?? []).filter(
+          (t) => t.type === 'tap' && t.x !== undefined,
+        )
+        if (p === 'play' && listenAdvanceAt === 0 && activeIdx < nodes.length) {
+          const n = nodes[activeIdx]
+          if (n.t === 'land') {
+            if (listenDecoy < 0) listenDecoy = pickDecoy(n.p)
+            // a shaken wrong pick replays the prompt once the shake ends
+            if (
+              listenWrongT >= 0 &&
+              last - listenWrongT > C.listen.wrongShakeMs + 150
+            ) {
+              listenWrongT = -1
+              promptListen(n.p.midi)
+            }
+            const rect = canvas.getBoundingClientRect()
+            const vw = rect.width
+            const vh = rect.height
+            const vu = vw < vh ? C.art.viewUnitsPortrait : C.view.viewUnits
+            const upx = vw / vu
+            const hitOf = (pl: Platform, cx: number, cy: number): boolean => {
+              const sy = (yFor(pl.midi) - camY) * vh
+              return (
+                cx >= (pl.x0 - camX) * upx - 8 &&
+                cx <= (pl.x1 - camX) * upx + 8 &&
+                Math.abs(cy - sy) < 46
+              )
+            }
+            for (const a of answers) {
+              const cx = (a.x ?? 0) - rect.left
+              const cy = (a.y ?? 0) - rect.top
+              const decoyP = listenDecoy >= 0 ? platforms[listenDecoy] : null
+              if (hitOf(n.p, cx, cy)) {
+                n.p.lit = true
+                n.p.dwell = 9999
+                promptListen(n.p.midi) // the answer rings back as reward
+                try {
+                  navigator.vibrate?.(C.tap.vibrateMs)
+                } catch {
+                  // no haptics on this device
+                }
+                mercY -= 0.03
+                listenHome = platforms.indexOf(n.p)
+                listenWrongT = -1
+                listenAdvanceAt = last + C.listen.hopDelayMs
+                break
+              } else if (decoyP !== null && hitOf(decoyP, cx, cy)) {
+                listenWrongT = last // the decoy shakes its head
+              } else if (last - listenPromptAt > C.listen.replayGapMs) {
+                promptListen(n.p.midi) // tap elsewhere = hear it again
+              }
+            }
+          } else {
+            advanceTo(activeIdx + 1) // listen compiles land nodes only
+          }
+        }
       } else if (isTrials()) {
         // === platformer: keys walk, the voice is the jump ===
         const dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0)
@@ -1403,10 +1521,10 @@ export const JourneyPrototype: Component<{
       // airborne, the view follows only inside the edge bands so a single
       // jump never yanks it. Clamped between the baseline framing and
       // centering the highest platform.
-      if (isTrials() || isRhythm()) {
+      if (isTrials() || isRhythm() || isListen()) {
         let wantY = camY
         const rel = mercY - camY
-        if (restIdx !== null || isRhythm()) {
+        if (restIdx !== null || isRhythm() || isListen()) {
           wantY = mercY - C.control.camCenterY
         } else if (rel < C.control.camAirBand) {
           wantY = mercY - C.control.camAirBand
@@ -1528,7 +1646,7 @@ export const JourneyPrototype: Component<{
 
     // guide line: the objective note's height — where the voice must sit
     const guideMidi =
-      C.hud.guideLine && !isRhythm() && phase() === 'play'
+      C.hud.guideLine && !isRhythm() && !isListen() && phase() === 'play'
         ? objectiveMidi()
         : null
     if (guideMidi !== null) {
@@ -1549,7 +1667,7 @@ export const JourneyPrototype: Component<{
 
     // the melody ribbon: the contour ahead drawn as one flowing line —
     // platforms sit ON the tune; the curve says where it bends next
-    if (C.art.ribbon && !isRhythm()) {
+    if (C.art.ribbon && !isRhythm() && !isListen()) {
       const pts: { x: number; y: number }[] = []
       let seen = 0
       for (
@@ -1599,7 +1717,7 @@ export const JourneyPrototype: Component<{
       C.art.platformMinPx,
       Math.min(C.art.platformMaxPx, C.art.platformUnits * unitPx),
     )
-    for (const pl of platforms) {
+    for (const [pi, pl] of platforms.entries()) {
       const y = yFor(pl.midi) * h
       const x0 = X(pl.x0)
       const x1 = X(pl.x1)
@@ -1608,6 +1726,9 @@ export const JourneyPrototype: Component<{
         activeIdx < nodes.length &&
         nodes[activeIdx].t === 'land' &&
         (nodes[activeIdx] as Extract<Node, { t: 'land' }>).p === pl
+      // in listen the answer must not LOOK like the answer: the active
+      // styling is suppressed; both candidates share one treatment
+      const showActive = isActive && !isListen()
       const accent = pl.kind === 'glass' ? P.accentGlass : P.accentStone
 
       if (pl.broken) {
@@ -1650,7 +1771,7 @@ export const JourneyPrototype: Component<{
       ctx.lineWidth = 2
       ctx.strokeStyle = pl.lit
         ? accent
-        : isActive
+        : showActive
           ? P.activeEdge
           : pl.kind === 'glass'
             ? `rgba(${P.edgeGlassRgb},${0.5 + beatGlow})`
@@ -1660,7 +1781,7 @@ export const JourneyPrototype: Component<{
       ctx.lineTo(x1 - 3, y - 3)
       ctx.stroke()
 
-      if (isActive && pl.dwell > 0 && !pl.lit) {
+      if (showActive && pl.dwell > 0 && !pl.lit) {
         ctx.strokeStyle = '#7ee787'
         ctx.lineWidth = 3
         ctx.beginPath()
@@ -1685,26 +1806,52 @@ export const JourneyPrototype: Component<{
         }
       }
 
-      const labelA = isActive
+      const labelA = showActive
         ? 0.75 + (Math.sin(last / 300) + 1) * 0.125
         : pl.lit
           ? 0.55
           : C.hud.inactiveLabelAlpha
       ctx.fillStyle = `rgba(${P.labelRgb},${labelA})`
-      ctx.font = isActive
+      ctx.font = showActive
         ? "700 13px 'Saira Condensed', monospace"
         : "600 11px 'Saira Condensed', monospace"
-      ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
+      // in listen, unlit note names would spell out the answer — the
+      // ear is supposed to do the reading
+      if (!isListen() || pl.lit) {
+        ctx.fillText(midiToNoteNameOctave(pl.midi), x0, y - 10)
+      }
+
+      // listen candidates: the true slab and the decoy, dressed the same
+      if (isListen() && !pl.lit && (isActive || pi === listenDecoy)) {
+        const wob =
+          listenWrongT >= 0 && pi === listenDecoy
+            ? Math.sin((last - listenWrongT) / 26) *
+              5 *
+              Math.max(0, 1 - (last - listenWrongT) / C.listen.wrongShakeMs)
+            : 0
+        ctx.globalAlpha = 0.55 + (Math.sin(last / 260) + 1) * 0.2
+        ctx.strokeStyle = P.activeEdge
+        ctx.lineWidth = 2.5
+        ctx.setLineDash([7, 6])
+        ctx.beginPath()
+        ctx.roundRect(x0 - 5 + wob, y - 9, x1 - x0 + 10, slabH + 12, 8)
+        ctx.stroke()
+        ctx.setLineDash([])
+        ctx.globalAlpha = 1
+        ctx.fillStyle = `rgba(${P.labelRgb},0.85)`
+        ctx.font = "700 15px 'Saira Condensed', monospace"
+        ctx.fillText('?', (x0 + x1) / 2 - 3 + wob, y - 14)
+      }
 
       // karaoke syllable under the slab (melody levels); the active one
       // carries an underline — the bouncing-ball of this karaoke
       if (pl.syllable !== undefined) {
         ctx.fillStyle = `rgba(${P.syllableRgb},${Math.max(labelA, 0.45)})`
-        ctx.font = isActive
+        ctx.font = showActive
           ? "700 13px 'Saira Condensed', monospace"
           : "600 12px 'Saira Condensed', monospace"
         ctx.fillText(pl.syllable, x0 + 2, y + slabH + 13)
-        if (isActive) {
+        if (showActive) {
           const tw = ctx.measureText(pl.syllable).width
           ctx.strokeStyle = `rgba(${P.syllableRgb},0.9)`
           ctx.lineWidth = 2
@@ -2061,7 +2208,7 @@ export const JourneyPrototype: Component<{
     // Never for the hidden door (no spoilers), the whisper passage, or
     // rhythm play — they say where the VOICE must go, and tap has no
     // voice (Merc glides to each note himself).
-    if (phase() === 'play' && !isRhythm()) {
+    if (phase() === 'play' && !isRhythm() && !isListen()) {
       let dir = 0 // -1 = sing higher (screen up), 1 = sing lower
       if (falling || sinkMs > 0) dir = -1
       else if (activeIdx < nodes.length) {
@@ -2166,6 +2313,27 @@ export const JourneyPrototype: Component<{
         activeIdx,
         camY: Math.round(camY * 1000) / 1000,
       })
+      ;(
+        window as unknown as { __listen?: () => Record<string, unknown> }
+      ).__listen = () => {
+        const rect = canvas.getBoundingClientRect()
+        const vu =
+          rect.width < rect.height ? C.art.viewUnitsPortrait : C.view.viewUnits
+        const upx = rect.width / vu
+        const at = (pl: Platform): Record<string, number> => ({
+          cx: rect.left + ((pl.x0 + pl.x1) / 2 - camX) * upx,
+          cy: rect.top + (yFor(pl.midi) - camY) * rect.height,
+          midi: pl.midi,
+        })
+        const n = nodes[activeIdx] as Node | undefined
+        return {
+          activeIdx,
+          target: n !== undefined && n.t === 'land' ? at(n.p) : null,
+          decoy: listenDecoy >= 0 ? at(platforms[listenDecoy]) : null,
+          home: listenHome,
+          wrong: listenWrongT >= 0,
+        }
+      }
       ;(
         window as unknown as { __world?: () => Record<string, unknown> }
       ).__world = () => ({
@@ -2303,15 +2471,21 @@ export const JourneyPrototype: Component<{
           </p>
           <Show when={props.level !== undefined}>
             <p class="jp-text jp-text--mode">
-              {isRhythm()
-                ? 'Playing it by rhythm: the road moves at tempo — tap anywhere as Merc crosses each slab, and the taps perform the song. No microphone.'
-                : isTrials()
-                  ? 'Playing it as a platformer: walk with keys or pads, sing each note to leap its interval.'
-                  : 'Playing it as a song line: your voice is the height — trace the melody.'}
+              {isListen()
+                ? 'Playing it by ear: Merc hums the next note — two slabs light up; tap the one whose height matches what you heard. No microphone.'
+                : isRhythm()
+                  ? 'Playing it by rhythm: the road moves at tempo — tap anywhere as Merc crosses each slab, and the taps perform the song. No microphone.'
+                  : isTrials()
+                    ? 'Playing it as a platformer: walk with keys or pads, sing each note to leap its interval.'
+                    : 'Playing it as a song line: your voice is the height — trace the melody.'}
             </p>
           </Show>
           <button class="jp-start" onClick={() => void start()}>
-            {isRhythm() ? 'Start — no mic needed' : 'Start — allow the mic'}
+            {isRhythm()
+              ? 'Start — no mic needed'
+              : isListen()
+                ? 'Start — ears only, no mic'
+                : 'Start — allow the mic'}
           </button>
           <Show when={micError()}>
             <p class="jp-error">{micError()}</p>

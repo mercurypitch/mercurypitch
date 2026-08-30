@@ -45,6 +45,7 @@ Merc plays sounds; the player answers by tapping or gesturing.
 - **Traversal:** the next platform's note plays against a decoy —
   "which platform matches what you heard?" Tap the right one to hop.
   Difficulty scales the interval down: octave → fifth → third → semitone.
+  V1 SHIPPED (2026-08-30) — see Phasing C.
 - **Contour gestures:** a phrase plays and the player answers with a
   gesture: swipe **up** (slide rose), swipe **down** (slide fell),
   **zigzag** (vibrato), **long-press** (steady note). Recognizer is
@@ -104,9 +105,23 @@ scoring — all shared. Stars unify as accuracy% per mode.
   the card are stamped with `AudioContext.currentTime`, and the median
   signed tap-vs-nearest-tick offset (wild taps dropped, minimum-count
   guard, clamped — `tap-latency.ts`, pure + tested) persists per device
-  and overrides `tap.inputLatencyMs` in the rhythm judge. Still open
-  from B: fail states for harder tiers.
+  and overrides `tap.inputLatencyMs` in the rhythm judge. Fail state
+  SHIPPED too: `tap.maxMisses` per level ends the run ("The beat ran
+  ahead."), and a rhythm retry rebuilds the road with a fresh count-in.
 - **C. Listen driver:** question engine + gesture recognizer + answer UI.
+  Traversal V1 SHIPPED (2026-08-30): "Hear the line" on every songbook
+  card compiles the level in mode `'listen'` (encounters become rests)
+  and reuses the tap driver — no mic, taps carry client coords. The
+  game hums the next note (`listen.promptSeconds`, plays even with
+  sounds off — it IS the question); the active slab and one decoy (the
+  nearest other slab within `listen.decoyMaxSemis`, min one semitone
+  apart) render identically as dashed outlines with a question mark —
+  no visual giveaway, and unlit note-name labels stay hidden. Tap the
+  heard slab: Merc hops, the note lights and rings. Tap the decoy: a
+  shake, then the prompt replays. Tap elsewhere: throttled replay
+  (`listen.replayGapMs`). Merc walks himself to the last lit slab, so
+  the road keeps its geography. Still open from C: pane questions
+  charging gates, contour gestures, the 3-note bridge memory.
 - **D. Mode select on level entry** + per-mode bests; Merc VO lines per
   mode (extend the voiceover manifest with tap/listen guide lines).
 

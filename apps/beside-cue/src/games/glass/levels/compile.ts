@@ -24,7 +24,7 @@ import type { Node, Pane, Platform } from '../world-types'
 import type { GameFeel } from './feel'
 import type { LevelDef, MelodyDef } from './types'
 
-export type PlayMode = 'flow' | 'platformer' | 'rhythm'
+export type PlayMode = 'flow' | 'platformer' | 'rhythm' | 'listen'
 
 export interface CompileOpts {
   mode: PlayMode
@@ -132,9 +132,10 @@ export const compileLevel = (
     }
 
     if (seg.type === 'encounter') {
-      if (mode === 'rhythm') {
-        // no held notes in tap play: an encounter is a two-beat rest
-        cursor += 2 * M.restUnit.rhythm
+      if (mode === 'rhythm' || mode === 'listen') {
+        // no held notes in tap play, no pane questions yet in listen:
+        // an encounter is a two-beat rest
+        cursor += 2 * M.restUnit[mode]
         afterBoundary = true
         continue
       }
@@ -182,13 +183,15 @@ export const compileLevel = (
         t: 'land',
         p,
         hint:
-          mode === 'rhythm'
-            ? syl !== undefined
-              ? `Tap "${syl}".`
-              : 'Tap the slab.'
-            : syl !== undefined
-              ? `Sing "${syl}" — ${name(deg)}.`
-              : `Sing ${name(deg)}.`,
+          mode === 'listen'
+            ? 'Listen — then tap the slab you heard.'
+            : mode === 'rhythm'
+              ? syl !== undefined
+                ? `Tap "${syl}".`
+                : 'Tap the slab.'
+              : syl !== undefined
+                ? `Sing "${syl}" — ${name(deg)}.`
+                : `Sing ${name(deg)}.`,
         // each later phrase starts a checkpoint; the ground is the first
         checkpoint: i === 0 && melodiesSeen > 1 ? true : undefined,
       })
