@@ -30,12 +30,7 @@
     {
       "name": "jam-lan",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "exec",
-        "run-p",
-        "dev:jam",
-        "dev:host"
-      ],
+      "runtimeArgs": ["exec", "run-p", "dev:jam", "dev:host"],
       "port": 3000,
       "autoPort": true
     }
