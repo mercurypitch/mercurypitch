@@ -34,6 +34,18 @@
   justify-items: center;
 }
 
+.mediaStage {
+  width: min(100%, 22rem);
+  overflow: hidden;
+  border: 2px solid rgb(36 25 19 / 52%);
+  border-radius: 20px;
+  background: var(--paper-deep);
+  box-shadow:
+    0.4rem 0.52rem 0 var(--ink),
+    0 1.25rem 2rem rgb(36 25 19 / 16%);
+  aspect-ratio: 4 / 5;
+}
+
 .copy {
   display: grid;
   width: min(100%, 39rem);
@@ -740,6 +752,10 @@
 
   .corkySolo {
     width: min(10rem, 36vw);
+  }
+
+  .mediaStage {
+    width: min(11rem, 48vw);
   }
 }
 

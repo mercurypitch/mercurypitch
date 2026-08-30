@@ -13,9 +13,13 @@ import { BrandMark } from '@/components/BrandMark'
 import type { ContentPack, PullAnchorSuggestion, PullOption } from '@/content'
 import { CUSTOM_PULL_ACTIONS, findCharacter, findDialogueAudioAssetForLine, findLine, findPullCharacter, GENERIC_PULL_CHARACTER, } from '@/content'
 import { createV2OnboardingAudioDirector } from './v2-onboarding-audio-director'
+import type { V2OnboardingMediaPack, V2OnboardingPullMediaMoment, } from './v2-onboarding-media-pack'
+import { resolveV2OnboardingMediaRequest } from './v2-onboarding-media-pack'
 import type { V2OnboardingCueContextChoice, V2OnboardingPersistenceEffect, V2OnboardingPhase, V2OnboardingPlanDraft, V2OnboardingPullChoice, V2OnboardingRuntimeEvent, V2OnboardingRuntimeState, V2OnboardingSessionKind, V2OnboardingSideBChoice, } from './v2-onboarding-runtime'
 import { createV2OnboardingRuntimeState, reduceV2OnboardingRuntime, V2_ONBOARDING_PHASE_METADATA, V2_ONBOARDING_PHASES, } from './v2-onboarding-runtime'
 import styles from './V2OnboardingDirector.module.css'
+import type { V2OnboardingMediaCorrelation, V2OnboardingMediaSettledEvent, } from './V2OnboardingMediaStage'
+import { V2OnboardingMediaStage } from './V2OnboardingMediaStage'
 
 export type V2OnboardingMutationResult =
   | { readonly ok: true }
@@ -31,6 +35,7 @@ export interface V2OnboardingDirectorProps {
   readonly sessionKind: V2OnboardingSessionKind
   readonly pullOptions: readonly PullOption[]
   readonly contentPack: ContentPack
+  readonly mediaPack?: V2OnboardingMediaPack
   readonly audioSession: AudioSession
   readonly foreground: boolean
   readonly muted: boolean
@@ -60,6 +65,7 @@ const AUTOMATIC_DURATION_MS: Readonly<
 
 const REDUCED_AUTOMATIC_DURATION_MS = 650
 const DIALOGUE_SAFETY_TIMEOUT_MS = 15_000
+const MEDIA_SAFETY_TIMEOUT_MS = 15_000
 
 const DECISION_PHASES = new Set<V2OnboardingPhase>([
   'B03_PULL_CHOICE_HOLD',
@@ -153,6 +159,24 @@ function lineIdForState(state: V2OnboardingRuntimeState): string | undefined {
   return (
     phasePullLineId(state) ?? V2_ONBOARDING_PHASE_METADATA[state.phase].lineId
   )
+}
+
+function mediaMomentForPhase(
+  phase: V2OnboardingPhase,
+): V2OnboardingPullMediaMoment | undefined {
+  switch (phase) {
+    case 'B03_PULL_PRESENTATION':
+      return 'present'
+    case 'B04_CUE_CONTEXT_HOLD':
+    case 'B05_SIDE_B_CHOICE_HOLD':
+      return 'hold'
+    case 'B05_PULL_RECEDES':
+      return 'recede'
+    case 'B06_CORKY_STARTS_RECORD':
+      return 'end'
+    default:
+      return undefined
+  }
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -266,8 +290,17 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
   let headingElement: HTMLHeadingElement | undefined
   let presentationDwellClock: PausableDelay | undefined
   let presentationSafetyClock: PausableDelay | undefined
+  let presentationMediaSafetyClock: PausableDelay | undefined
   let spinReadinessClock: PausableDelay | undefined
   let completeVisiblePresentation: (() => void) | undefined
+  let activeMediaGate:
+    | {
+        readonly targetId: string
+        readonly markReady: () => void
+        readonly endedTokens: Set<string>
+        settledVideoToken?: string
+      }
+    | undefined
   const audioScope = untrack(() =>
     props.audioSession.createScope('v2-onboarding'),
   )
@@ -321,6 +354,37 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       label: suggestion.label,
       suggestionId: suggestion.id,
     }))
+  })
+  const mediaTargetKey = createMemo(() => {
+    const pullId = state().confirmedPull?.pullId
+    const moment = mediaMomentForPhase(state().phase)
+    if (
+      props.mediaPack === undefined ||
+      pullId === undefined ||
+      pullId === 'custom' ||
+      moment === undefined
+    ) {
+      return undefined
+    }
+    return `${String(state().generation)}|${pullId}|${moment}`
+  })
+  const mediaRequest = createMemo(() => {
+    const targetKey = mediaTargetKey()
+    const mediaPack = props.mediaPack
+    if (targetKey === undefined || mediaPack === undefined) return undefined
+    const [generation, pullId, moment] = targetKey.split('|')
+    if (
+      generation === undefined ||
+      pullId === undefined ||
+      moment === undefined
+    ) {
+      return undefined
+    }
+    return resolveV2OnboardingMediaRequest(mediaPack, {
+      targetId: `v2-media:${generation}:${pullId}:${moment}`,
+      pullId,
+      moment: moment as V2OnboardingPullMediaMoment,
+    })
   })
 
   const pullChoiceValid = createMemo(() => {
@@ -552,6 +616,27 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
     }
   }
 
+  function settleMediaPresentation(event: V2OnboardingMediaSettledEvent): void {
+    const gate = activeMediaGate
+    if (gate === undefined || gate.targetId !== event.targetId) return
+    if (event.recoveryStage === 'primary' || event.recoveryStage === 'retry') {
+      gate.settledVideoToken = event.token
+      if (gate.endedTokens.has(event.token)) gate.markReady()
+      return
+    }
+    gate.markReady()
+  }
+
+  function finishMediaVideo(event: V2OnboardingMediaCorrelation): void {
+    const gate = activeMediaGate
+    if (gate === undefined || gate.targetId !== event.targetId) return
+    if (gate.settledVideoToken === event.token) {
+      gate.markReady()
+      return
+    }
+    gate.endedTokens.add(event.token)
+  }
+
   createEffect(
     on(phaseGeneration, () => {
       const snapshot = state()
@@ -567,6 +652,12 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       const presentation = snapshot.presentation
       if (presentation === undefined) return
 
+      const requestedMedia = untrack(() => mediaRequest())
+      const waitsForMedia =
+        snapshot.motionMode === 'normal' &&
+        requestedMedia?.targetKind === 'automatic' &&
+        requestedMedia.primary.kind === 'video'
+
       const normalDuration = AUTOMATIC_DURATION_MS[snapshot.phase] ?? 650
       const duration =
         snapshot.motionMode === 'reduced'
@@ -576,7 +667,9 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       let completed = false
       let dwellReady = false
       let dialogueReady = dialogueCue === undefined
+      let mediaReady = !waitsForMedia
       let safetyClock: PausableDelay | undefined
+      let mediaSafetyClock: PausableDelay | undefined
 
       const completeWhenReady = (): void => {
         if (
@@ -584,7 +677,8 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
           completed ||
           !props.foreground ||
           !dwellReady ||
-          !dialogueReady
+          !dialogueReady ||
+          !mediaReady
         ) {
           return
         }
@@ -606,6 +700,18 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
             presentationSafetyClock = undefined
           }
           safetyClock = undefined
+        }
+        completeWhenReady()
+      }
+      const markMediaReady = (): void => {
+        if (cancelled || mediaReady) return
+        mediaReady = true
+        if (mediaSafetyClock !== undefined) {
+          mediaSafetyClock.cancel()
+          if (presentationMediaSafetyClock === mediaSafetyClock) {
+            presentationMediaSafetyClock = undefined
+          }
+          mediaSafetyClock = undefined
         }
         completeWhenReady()
       }
@@ -632,15 +738,36 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
         void dialogueCue.finished.then(markDialogueReady, markDialogueReady)
       }
 
+      if (waitsForMedia && requestedMedia !== undefined) {
+        mediaSafetyClock = createPausableDelay(
+          MEDIA_SAFETY_TIMEOUT_MS,
+          markMediaReady,
+          initiallyRunning,
+        )
+        presentationMediaSafetyClock = mediaSafetyClock
+        activeMediaGate = {
+          targetId: requestedMedia.targetId,
+          markReady: markMediaReady,
+          endedTokens: new Set<string>(),
+        }
+      }
+
       onCleanup(() => {
         cancelled = true
         dwellClock.cancel()
         safetyClock?.cancel()
+        mediaSafetyClock?.cancel()
         if (presentationDwellClock === dwellClock) {
           presentationDwellClock = undefined
         }
         if (presentationSafetyClock === safetyClock) {
           presentationSafetyClock = undefined
+        }
+        if (presentationMediaSafetyClock === mediaSafetyClock) {
+          presentationMediaSafetyClock = undefined
+        }
+        if (activeMediaGate?.markReady === markMediaReady) {
+          activeMediaGate = undefined
         }
         if (completeVisiblePresentation === completeWhenReady) {
           completeVisiblePresentation = undefined
@@ -685,6 +812,7 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
         for (const clock of [
           presentationDwellClock,
           presentationSafetyClock,
+          presentationMediaSafetyClock,
           spinReadinessClock,
         ]) {
           if (foreground) clock?.resume()
@@ -711,8 +839,6 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
 
   const isRecordPhase = createMemo(() =>
     [
-      'B05_PULL_RECEDES',
-      'B06_CORKY_STARTS_RECORD',
       'B06_RIGID_SPIN',
       'B06_STOP_SAVE_HOLD',
       'B06_SAVE_COMMIT',
@@ -802,6 +928,17 @@ export function V2OnboardingDirector(props: V2OnboardingDirectorProps) {
       >
         <div class={styles.visual} aria-hidden="true">
           <Switch>
+            <Match when={mediaRequest() !== undefined}>
+              <V2OnboardingMediaStage
+                request={mediaRequest()}
+                mode={state().motionMode}
+                foreground={props.foreground}
+                class={styles.mediaStage}
+                onPresentationSettled={settleMediaPresentation}
+                onVideoEnded={finishMediaVideo}
+              />
+            </Match>
+
             <Match
               when={
                 state().phase === 'B00_BRAND_REVEAL' ||
