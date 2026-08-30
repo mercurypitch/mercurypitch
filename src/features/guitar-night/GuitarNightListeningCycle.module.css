@@ -187,14 +187,14 @@
   border-radius: 0.9rem;
   background: rgba(24, 18, 13, 0.94);
   box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.45);
-  transform: translateX(-50%);
+  transform: translateX(calc(-50% + var(--picker-shift, 0px)));
   animation: pickerRise 140ms ease-out;
 }
 
 @keyframes pickerRise {
   from {
     opacity: 0;
-    transform: translate(-50%, 0.35rem);
+    transform: translate(calc(-50% + var(--picker-shift, 0px)), 0.35rem);
   }
 }
 

@@ -1539,6 +1539,39 @@
   pointer-events: none;
 }
 
+.firstWinBack {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  min-height: max(44px, var(--touch-target, 44px));
+  margin: -0.35rem 0 0.35rem -0.35rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.35rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: rgba(244, 234, 219, 0.72);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.firstWinBack:hover,
+.firstWinBack:focus-visible {
+  color: var(--ivory, #f4eadb);
+  background: rgba(244, 234, 219, 0.08);
+}
+
+.firstWinBack:focus-visible {
+  outline: 2px solid var(--amber-bright, #f0bd78);
+  outline-offset: 2px;
+}
+
+.firstWinBack span {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
 .firstWinBrief .eyebrow {
   margin-bottom: 0.48rem;
   font-size: 0.58rem;
@@ -7770,6 +7803,9 @@
   align-items: center;
   width: min(8.45rem, 135px);
   min-width: 0;
+  /* Off the very edge of the rail: the control opens a route picker upward,
+     and hard against the corner that menu has nowhere to sit. */
+  margin-inline-start: 0.5rem;
 }
 
 .scoreListeningSupport {

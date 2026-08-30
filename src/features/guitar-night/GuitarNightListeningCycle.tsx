@@ -159,6 +159,10 @@ export function GuitarNightListeningCycle(
   // give. The picker is the way past that, on the secondary gesture so the
   // one-tap toggle keeps its meaning.
   const [pickerOpen, setPickerOpen] = createSignal(false)
+  // How far the fan has to slide to stay on screen. The control sits at the
+  // left end of the bottom rail, so a menu centred on it hangs its first chip
+  // off the edge of a narrow window.
+  const [pickerShift, setPickerShift] = createSignal(0)
   let button: HTMLButtonElement | undefined
   let pickerRoot: HTMLDivElement | undefined
   let longPressTimer = 0
@@ -172,6 +176,20 @@ export function GuitarNightListeningCycle(
     longPressOrigin = null
   }
   onCleanup(cancelLongPress)
+
+  /** Slide the fan back inside the window, measured after it has laid out. */
+  const keepPickerOnScreen = (element: HTMLDivElement): void => {
+    setPickerShift(0)
+    requestAnimationFrame(() => {
+      const rect = element.getBoundingClientRect()
+      if (rect.width === 0) return
+      const margin = 8
+      const overflowLeft = margin - rect.left
+      const overflowRight = rect.right - (window.innerWidth - margin)
+      if (overflowLeft > 0) setPickerShift(overflowLeft)
+      else if (overflowRight > 0) setPickerShift(-overflowRight)
+    })
+  }
 
   const openPicker = (): void => {
     // Read once, deliberately untracked: a long press resolves inside a timer,
@@ -309,7 +327,11 @@ export function GuitarNightListeningCycle(
         />
         <div
           class={styles.picker}
-          ref={pickerRoot}
+          ref={(element) => {
+            pickerRoot = element
+            keepPickerOnScreen(element)
+          }}
+          style={{ '--picker-shift': `${pickerShift()}px` }}
           role="menu"
           data-testid="guitar-night-listening-picker"
           aria-label="Listening route"
