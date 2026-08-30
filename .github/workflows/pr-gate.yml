@@ -83,6 +83,16 @@ jobs:
                     db=true
                     jam=true
                     ;;
+                  scripts/*beside-cue*)
+                    # A Beside Cue media/prep script cannot affect the
+                    # MercuryPitch build: the app resolves `@` to its own
+                    # src (apps/beside-cue/vitest.config.ts) and shares no
+                    # artifacts with the root. Without this arm the catch-all
+                    # below sets root=true, and PR #653 — 26 of its 27 files
+                    # under apps/beside-cue — paid for the full MercuryPitch
+                    # typecheck, 921 unit files and 120 e2e tests, ~11 min.
+                    beside=true
+                    ;;
                   apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
                     beside=true
                     ;;
