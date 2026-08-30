@@ -90,7 +90,17 @@ scoring — all shared. Stars unify as accuracy% per mode.
   (2026-08-30) — mic/F0 lifecycle, voiced gating, and level reads all
   live in the driver; the engine holds one `driver` handle.
 - **B. Tap driver:** beat clock + tap windows + pulse rendering + haptics +
-  latency calibration screen.
+  latency calibration screen. V1 SHIPPED (2026-08-30):
+  `drivers/tap.ts` (no mic; pointer/space taps queued on the audio
+  clock), `compileLevel` mode `'rhythm'` (near-adjacent slabs — geometry
+  IS the beat axis; encounters become rests), runtime rhythm branch
+  (road scrolls at `MelodyDef.bpm` or `tap.bpmDefault`, count-in ticks,
+  x-window judgment, hit hums the note + haptic tick, missed slabs light
+  late so the song never stalls), approach-ring pulse rendering, "Tap
+  the line" on every songbook card. The ground note comes from the last
+  sing calibration (persisted). Still open from B: the guided tap-along
+  latency screen (config `tap.inputLatencyMs` holds the offset), and
+  fail states for harder tiers.
 - **C. Listen driver:** question engine + gesture recognizer + answer UI.
 - **D. Mode select on level entry** + per-mode bests; Merc VO lines per
   mode (extend the voiceover manifest with tap/listen guide lines).

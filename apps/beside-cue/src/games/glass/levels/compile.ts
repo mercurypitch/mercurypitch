@@ -23,7 +23,7 @@ import { JOURNEY_CONFIG } from '../journey-config'
 import type { Node, Pane, Platform } from '../world-types'
 import type { LevelDef, MelodyDef } from './types'
 
-export type PlayMode = 'flow' | 'platformer'
+export type PlayMode = 'flow' | 'platformer' | 'rhythm'
 
 export interface CompileOpts {
   mode: PlayMode
@@ -129,6 +129,12 @@ export const compileLevel = (
     }
 
     if (seg.type === 'encounter') {
+      if (mode === 'rhythm') {
+        // no held notes in tap play: an encounter is a two-beat rest
+        cursor += 2 * M.restUnit.rhythm
+        afterBoundary = true
+        continue
+      }
       const wx = cursor + M.paneGap[mode]
       const pane: Pane = {
         wx,
@@ -171,9 +177,13 @@ export const compileLevel = (
         t: 'land',
         p,
         hint:
-          syl !== undefined
-            ? `Sing "${syl}" — ${name(deg)}.`
-            : `Sing ${name(deg)}.`,
+          mode === 'rhythm'
+            ? syl !== undefined
+              ? `Tap "${syl}".`
+              : 'Tap the slab.'
+            : syl !== undefined
+              ? `Sing "${syl}" — ${name(deg)}.`
+              : `Sing ${name(deg)}.`,
         // each later phrase starts a checkpoint; the ground is the first
         checkpoint: i === 0 && melodiesSeen > 1 ? true : undefined,
       })

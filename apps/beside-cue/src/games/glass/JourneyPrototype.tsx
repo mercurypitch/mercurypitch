@@ -19,6 +19,7 @@ import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import './pitch-assets'
 import './journey.css'
 import { createSingDriver } from './drivers/sing'
+import { createTapDriver } from './drivers/tap'
 import type { InteractionDriver } from './drivers/types'
 import { JOURNEY_CONFIG as C } from './journey-config'
 import { compileLevel } from './levels/compile'
@@ -37,17 +38,18 @@ export const JourneyPrototype: Component<{
   /** A melody level compiled at runtime (songs are levels). */
   level?: LevelDef
   /** Play mode for `level` — overrides the level's own default. */
-  control?: 'flow' | 'platformer'
+  control?: 'flow' | 'platformer' | 'rhythm'
   /** Range setting: semitones to sit the song lower/higher (levels only). */
   rangeBias?: number
 }> = (props) => {
-  const mode = (): 'flow' | 'platformer' =>
+  const mode = (): 'flow' | 'platformer' | 'rhythm' =>
     props.level !== undefined
       ? (props.control ?? props.level.control ?? 'flow')
       : (props.variant ?? 'journey') === 'trials'
         ? 'platformer'
         : 'flow'
   const isTrials = (): boolean => mode() === 'platformer'
+  const isRhythm = (): boolean => mode() === 'rhythm'
   const [phase, setPhase] = createSignal<Phase>('intro')
   const [micError, setMicError] = createSignal<string | null>(null)
   const [hint, setHint] = createSignal('')
@@ -91,6 +93,22 @@ export const JourneyPrototype: Component<{
   const keys = { left: false, right: false }
   let jumpVy = 0
   let coyoteLeftMs = 0
+  // rhythm (tap) state: the road scrolls at tempo after the count-in
+  let rhythmStartAt = 0
+  let rhythmSpeed = 2 // world units / s
+  let rhythmBpm = C.tap.bpmDefault as number
+
+  /** Ground note persistence: sing calibration writes it; tap play (no
+   * mic) reads it back so songs sit where this voice last sang. */
+  const GROUND_KEY = 'beside-cue:games:last-ground'
+  const readStoredGround = (): number => {
+    try {
+      const v = Number(window.localStorage.getItem(GROUND_KEY))
+      return Number.isFinite(v) && v > 24 && v < 96 ? v : 57
+    } catch {
+      return 57
+    }
+  }
   let trail: { wx: number; y: number }[] = []
   let puff: { x: number; y: number; vx: number; vy: number; r: number }[] = []
   let puffT = -1
@@ -483,6 +501,11 @@ export const JourneyPrototype: Component<{
       groundMidi,
       rangeBias: props.rangeBias ?? 0,
     })
+    const firstMelody = level.segments.find((s) => s.type === 'melody')
+    rhythmBpm =
+      (firstMelody?.type === 'melody' ? firstMelody.melody.bpm : undefined) ??
+      C.tap.bpmDefault
+    rhythmSpeed = C.melody.unitsPerBeat.rhythm * (rhythmBpm / 60)
     platforms = cs.platforms
     panes = cs.panes
     nodes = cs.nodes
@@ -549,6 +572,7 @@ export const JourneyPrototype: Component<{
       )
       return
     }
+    if (isRhythm()) return // rhythm hums the note on the tap itself
     if (n.t === 'land' && (n.p.hum === true || C.sound.humOnObjective)) {
       hum(n.p.midi, C.sound.humSeconds)
     } else if (
@@ -626,6 +650,16 @@ export const JourneyPrototype: Component<{
 
   const start = async (): Promise<void> => {
     setMicError(null)
+    if (isRhythm()) {
+      // tap play needs no microphone: the clock is the instrument
+      driver = createTapDriver()
+      await driver.start()
+      groundMidi = readStoredGround()
+      buildStage()
+      beginCountIn()
+      setPhase('play')
+      return
+    }
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
@@ -633,6 +667,20 @@ export const JourneyPrototype: Component<{
     } catch {
       setMicError('Microphone unavailable — check permissions and retry.')
     }
+  }
+
+  /** Rhythm count-in: the first note ticks countInBeats times, then the
+   * road starts moving. */
+  const beginCountIn = (): void => {
+    const beatMs = 60000 / rhythmBpm
+    rhythmStartAt = performance.now() + C.tap.countInBeats * beatMs
+    const first = nodes[0]
+    const tickMidi = first?.t === 'land' ? first.p.midi : groundMidi
+    arpeggioTimers.forEach((t) => window.clearTimeout(t))
+    arpeggioTimers = Array.from({ length: C.tap.countInBeats }, (_, i) =>
+      window.setTimeout(() => hum(tickMidi, 0.18), i * beatMs),
+    )
+    setHint('Count-in… then tap anywhere as Merc crosses each slab.')
   }
 
   let last = 0
@@ -706,6 +754,11 @@ export const JourneyPrototype: Component<{
         const ms = groundSamples.map((s) => s.midi).sort((a, b) => a - b)
         if (ms[ms.length - 1] - ms[0] < 1.6) {
           groundMidi = Math.round(ms[Math.floor(ms.length / 2)])
+          try {
+            window.localStorage.setItem(GROUND_KEY, String(groundMidi))
+          } catch {
+            // tap mode just falls back to its default ground
+          }
           buildStage()
           setPhase('play')
         }
@@ -941,7 +994,59 @@ export const JourneyPrototype: Component<{
 
     // --- merc: fly with the voice, rest on what's below, or fall ---
     if (p === 'play' || p === 'fallen') {
-      if (isTrials()) {
+      if (isRhythm()) {
+        // === rhythm: the road scrolls at tempo, taps land the notes ===
+        if (p === 'play' && now >= rhythmStartAt) {
+          mercWX = Math.min(worldMax - 0.3, mercWX + (rhythmSpeed * dt) / 1000)
+        }
+        // glide along the melody contour — y follows the active note
+        const tgtP =
+          activeIdx < nodes.length && nodes[activeIdx].t === 'land'
+            ? (nodes[activeIdx] as Extract<Node, { t: 'land' }>).p
+            : platforms[platforms.length - 1]
+        mercY += (yFor(tgtP.midi) - 0.035 - mercY) * C.tap.yLerp
+        // judge queued taps against the active slab. V1 judges by frame
+        // position; the intents carry audio-clock stamps for the finer
+        // beat judge later.
+        const taps = (driver?.drainIntents() ?? []).filter(
+          (t) => t.type === 'tap',
+        )
+        if (p === 'play' && activeIdx < nodes.length) {
+          const n = nodes[activeIdx]
+          if (n.t === 'land') {
+            const center = (n.p.x0 + n.p.x1) / 2
+            const latency = (C.tap.inputLatencyMs / 1000) * rhythmSpeed
+            const win = Math.max(
+              (C.tap.windowMs / 1000) * rhythmSpeed,
+              (n.p.x1 - n.p.x0) / 2,
+            )
+            let hitP: Platform | null = null
+            if (taps.length > 0 && Math.abs(mercWX - latency - center) <= win) {
+              hitP = n.p
+            } else if (mercWX > n.p.x1 + 0.15) {
+              // forgiving V1: a passed slab lights late — the song keeps
+              // going, the miss just is not celebrated
+              n.p.lit = true
+              n.p.dwell = 9999
+              advanceTo(activeIdx + 1)
+            }
+            if (hitP !== null) {
+              hitP.lit = true
+              hitP.dwell = 9999
+              hum(hitP.midi, C.sound.humSeconds)
+              try {
+                navigator.vibrate?.(C.tap.vibrateMs)
+              } catch {
+                // no haptics on this device
+              }
+              mercY -= 0.03 // a little hop; the glide settles him back
+              advanceTo(activeIdx + 1)
+            }
+          } else {
+            advanceTo(activeIdx + 1) // rhythm compiles land nodes only
+          }
+        }
+      } else if (isTrials()) {
         // === platformer: keys walk, the voice is the jump ===
         const dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0)
         const prevX = mercWX
@@ -1168,8 +1273,9 @@ export const JourneyPrototype: Component<{
       }
 
       // forward drift toward the objective (or stay on the rest platform) —
-      // flow mode only; in the platformer the keys own the x axis
-      if (!isTrials() && !falling) {
+      // flow mode only; the platformer's keys and the rhythm's tempo own
+      // their own x axis
+      if (mode() === 'flow' && !falling) {
         let wantWX = mercWX
         if (midi !== null && activeIdx < nodes.length) {
           const n = nodes[activeIdx]
@@ -1221,10 +1327,10 @@ export const JourneyPrototype: Component<{
       // airborne, the view follows only inside the edge bands so a single
       // jump never yanks it. Clamped between the baseline framing and
       // centering the highest platform.
-      if (isTrials()) {
+      if (isTrials() || isRhythm()) {
         let wantY = camY
         const rel = mercY - camY
-        if (restIdx !== null) {
+        if (restIdx !== null || isRhythm()) {
           wantY = mercY - C.control.camCenterY
         } else if (rel < C.control.camAirBand) {
           wantY = mercY - C.control.camAirBand
@@ -1472,6 +1578,31 @@ export const JourneyPrototype: Component<{
           ? "700 13px 'Saira Condensed', monospace"
           : "600 12px 'Saira Condensed', monospace"
         ctx.fillText(pl.syllable, x0 + 2, y + slabH + 13)
+      }
+    }
+
+    // rhythm: the approach ring contracts onto the target ring — the two
+    // meeting IS the beat; tap anywhere at that moment
+    if (isRhythm() && phase() === 'play' && activeIdx < nodes.length) {
+      const n = nodes[activeIdx]
+      if (n.t === 'land') {
+        const cwx = (n.p.x0 + n.p.x1) / 2
+        const cx = X(cwx)
+        const cy = yFor(n.p.midi) * h - 22
+        const dist = cwx - mercWX
+        if (dist > -1.2 && dist < 4.5) {
+          const closeness = Math.max(0, Math.min(1, 1 - dist / 4.5))
+          ctx.strokeStyle = `rgba(255,209,102,${0.2 + closeness * 0.6})`
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.arc(cx, cy, 9 + (1 - closeness) * 36, 0, 6.283)
+          ctx.stroke()
+          ctx.strokeStyle = 'rgba(255,209,102,0.85)'
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.arc(cx, cy, 9, 0, 6.283)
+          ctx.stroke()
+        }
       }
     }
 
@@ -2033,13 +2164,15 @@ export const JourneyPrototype: Component<{
           </p>
           <Show when={props.level !== undefined}>
             <p class="jp-text jp-text--mode">
-              {isTrials()
-                ? 'Playing it as a platformer: walk with keys or pads, sing each note to leap its interval.'
-                : 'Playing it as a song line: your voice is the height — trace the melody.'}
+              {isRhythm()
+                ? 'Playing it by rhythm: the road moves at tempo — tap anywhere as Merc crosses each slab, and the taps perform the song. No microphone.'
+                : isTrials()
+                  ? 'Playing it as a platformer: walk with keys or pads, sing each note to leap its interval.'
+                  : 'Playing it as a song line: your voice is the height — trace the melody.'}
             </p>
           </Show>
           <button class="jp-start" onClick={() => void start()}>
-            Start — allow the mic
+            {isRhythm() ? 'Start — no mic needed' : 'Start — allow the mic'}
           </button>
           <Show when={micError()}>
             <p class="jp-error">{micError()}</p>
@@ -2076,6 +2209,7 @@ export const JourneyPrototype: Component<{
             class="jp-start"
             onClick={() => {
               buildStage()
+              if (isRhythm()) beginCountIn()
               setPhase('play')
             }}
           >

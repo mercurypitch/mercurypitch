@@ -154,6 +154,10 @@ interface LevelDef {
 Levels declare a control scheme; both run in the same stage engine:
 
 - **Flow** — the original: the voice IS Merc's height, silence rests.
+- **Rhythm** (shipped 2026-08-30) — the tap driver's mode, no mic: the
+  road scrolls at tempo, a tap as Merc crosses each slab lands the note
+  and hums it — the taps perform the song. Encounters compile to rests;
+  misses light late (V1 forgiving). Tunables in `JOURNEY_CONFIG.tap`.
 - **Platformer** — arrow keys / touch pads walk; the voice is the jump.
   The jump's apex is the sung note's height, so a higher note is a
   higher, longer leap, and the note that exactly reaches the next

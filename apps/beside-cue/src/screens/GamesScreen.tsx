@@ -10,10 +10,12 @@ interface GamesScreenProps {
   onBack: () => void
 }
 
+type LevelControl = 'flow' | 'platformer' | 'rhythm'
+
 type PlayPick =
   | 'journey'
   | 'trials'
-  | { level: LevelDef; control: 'flow' | 'platformer' }
+  | { level: LevelDef; control: LevelControl }
   | null
 
 /** The range setting: songs sit lower / centered / higher around the
@@ -45,7 +47,7 @@ export function GamesScreen(props: GamesScreenProps) {
   }
   const levelPick = (): {
     level: LevelDef
-    control: 'flow' | 'platformer'
+    control: LevelControl
   } | null => {
     const p = playing()
     return typeof p === 'object' && p !== null ? p : null
@@ -202,6 +204,13 @@ export function GamesScreen(props: GamesScreenProps) {
                   >
                     Jump the line
                   </button>
+                  <button
+                    class="game-card__mode"
+                    type="button"
+                    onClick={() => setPlaying({ level, control: 'rhythm' })}
+                  >
+                    Tap the line
+                  </button>
                 </span>
               </span>
             </div>
@@ -209,8 +218,9 @@ export function GamesScreen(props: GamesScreenProps) {
         </For>
 
         <p class="games-screen__note">
-          Uses the microphone while a game is open, and only then. More B-side
-          games are on the way; nothing here is scored or gated.
+          Sung modes use the microphone while a game is open, and only then —
+          Tap the line needs no microphone at all. More B-side games are on the
+          way; nothing here is scored or gated.
         </p>
       </main>
     </Show>

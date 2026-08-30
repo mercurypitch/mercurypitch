@@ -211,18 +211,21 @@ export const JOURNEY_CONFIG = {
     groundWidth: 3.5,
     /** Minimum platform width, world units (short notes stay landable). */
     minWidth: 1.1,
-    /** Platform width per beat of note duration. */
-    unitsPerBeat: { flow: 1.4, platformer: 1.5 },
+    /** Platform width per beat of note duration. In rhythm mode geometry
+     * IS time: near-adjacent slabs make x a straight beat axis. */
+    unitsPerBeat: { flow: 1.4, platformer: 1.5, rhythm: 1.5 },
     /** Gap before each next note platform. */
-    noteGap: { flow: 0.45, platformer: 1.25 },
-    /** Wider gap opening a new phrase/segment — a written-in breath. */
-    phraseGap: { flow: 1.1, platformer: 1.8 },
+    noteGap: { flow: 0.45, platformer: 1.25, rhythm: 0.12 },
+    /** Wider gap opening a new phrase/segment — a written-in breath
+     * (in rhythm: about a beat of musical rest). */
+    phraseGap: { flow: 1.1, platformer: 1.8, rhythm: 1.5 },
     /** Road consumed per beat of musical rest. */
-    restUnit: { flow: 1, platformer: 1.4 },
+    restUnit: { flow: 1, platformer: 1.4, rhythm: 1.5 },
     /** Pane distance past the previous platform edge. Flow: approach spot
      * (wx − pane.approachBack) must sit over that platform. Platformer:
-     * must stay within control.paneChargeUnits of its edge. */
-    paneGap: { flow: 0.6, platformer: 1.2 },
+     * must stay within control.paneChargeUnits of its edge. Rhythm
+     * compiles encounters as rests, so its value is never used. */
+    paneGap: { flow: 0.6, platformer: 1.2, rhythm: 0.6 },
     /** Road resuming after a pane. */
     paneAfter: 0.8,
     /** Center each song's range on the calibrated ground note (the
@@ -237,6 +240,26 @@ export const JOURNEY_CONFIG = {
     windowHiPad: 2,
     /** Road after the final note. */
     endPad: 1.5,
+  },
+
+  /** Rhythm play mode (tap driver): the road scrolls at tempo, a tap as
+   * Merc crosses each slab lands the note — the taps perform the song,
+   * no microphone involved. */
+  tap: {
+    /** Tempo when the melody data does not declare one. */
+    bpmDefault: 80,
+    /** Hit window around a slab, ms of travel (also never smaller than
+     * the slab itself — tapping anywhere over it counts). */
+    windowMs: 200,
+    /** Fixed input-latency compensation, ms (a guided tap-along
+     * calibration screen sets this later). */
+    inputLatencyMs: 0,
+    /** Metronome count-in beats before the road starts moving. */
+    countInBeats: 4,
+    /** Merc's glide toward each note's height, lerp per frame. */
+    yLerp: 0.12,
+    /** Haptic tick on a judged hit, ms (mobile). */
+    vibrateMs: 15,
   },
 
   /** Game-emitted audio (all of it gated by the corner toggles too). */

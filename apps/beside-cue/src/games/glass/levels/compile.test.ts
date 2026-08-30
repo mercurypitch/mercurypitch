@@ -124,6 +124,14 @@ describe('compileLevel', () => {
     expect(flow(revived)).toEqual(flow(ODE_TO_JOY))
   })
 
+  it('compiles rhythm as a beat road — adjacent slabs, no held panes', () => {
+    const cs = compileLevel(ODE_TO_JOY, { mode: 'rhythm', groundMidi: G })
+    expect(cs.panes).toHaveLength(0) // the gate became a two-beat rest
+    expect(cs.nodes).toHaveLength(30) // land nodes only
+    const gap = cs.platforms[2].x0 - cs.platforms[1].x1
+    expect(gap).toBeCloseTo(M.noteGap.rhythm, 5)
+  })
+
   it('honors rest segments as empty road', () => {
     const withRest: LevelDef = {
       id: 't',
@@ -147,7 +155,7 @@ describe('compileLevel', () => {
 })
 
 describe('songbook invariants — every level, every mode', () => {
-  const MODES = ['flow', 'platformer'] as const
+  const MODES = ['flow', 'platformer', 'rhythm'] as const
   for (const level of SONGBOOK) {
     for (const m of MODES) {
       it(`${level.id} compiles safely in ${m}`, () => {
