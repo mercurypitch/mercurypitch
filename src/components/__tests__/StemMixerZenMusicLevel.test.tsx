@@ -63,10 +63,24 @@ beforeEach(() => {
   localStorage.clear()
   Element.prototype.scrollTo = vi.fn()
   Element.prototype.scrollIntoView = vi.fn()
+  // The mixer loads its stems on mount. The URLs below are fixtures, not real
+  // object URLs, so the loader has to be handed a Response rather than left to
+  // reach the network: `blob:vocal` was never minted by `createObjectURL`, and
+  // undici rejects it with `invalid method` — after this test has already
+  // ended, which is why it read as unattributed CI noise on green runs.
+  // `body: null` takes fetch-progress's atomic-read path.
+  vi.stubGlobal('fetch', async () => ({
+    ok: true,
+    status: 200,
+    body: null,
+    headers: new Headers(),
+    arrayBuffer: async () => new ArrayBuffer(64),
+  }))
 })
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllGlobals()
 })
 
 function mountPhone(): void {
