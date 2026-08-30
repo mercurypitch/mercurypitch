@@ -102,9 +102,18 @@ export const compileLevel = (
   const panes: Pane[] = []
   const nodes: Node[] = []
 
-  const ground = platform(groundMidi, 0.5, 0.5 + M.groundWidth, {
+  // The starting slab sits at the SONG'S FIRST NOTE, not the hummed note
+  // (the hummed note only anchors the transposition). It is already lit —
+  // calibration was its singing — and captioned so that reads as given.
+  // Merc starts standing on the melody's opening pitch; the first
+  // objective is one step ahead at the same height.
+  const firstMelody = level.segments.find((s) => s.type === 'melody')
+  const firstDeg =
+    firstMelody?.type === 'melody' ? firstMelody.melody.degrees[0] : 0
+  const ground = platform(midiFor(firstDeg), 0.5, 0.5 + M.groundWidth, {
     lit: true,
     dwell: 9999,
+    syllable: 'start',
   })
   platforms.push(ground)
   let cursor = ground.x1
@@ -174,9 +183,10 @@ export const compileLevel = (
     afterBoundary = true
   }
 
-  // the window covers the shifted song AND the ground note (offset 0)
-  const winLo = Math.min(range.lo + shift, 0) - M.windowLoPad
-  const winHi = Math.max(range.hi + shift, 0) + M.windowHiPad
+  // the window covers the shifted song (the start slab is inside it by
+  // construction — its pitch is the song's first note)
+  const winLo = range.lo + shift - M.windowLoPad
+  const winHi = range.hi + shift + M.windowHiPad
 
   return {
     platforms,

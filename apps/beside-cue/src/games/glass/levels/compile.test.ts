@@ -17,7 +17,7 @@ describe('compileLevel', () => {
   it('lays platforms left to right without overlap, ground first and lit', () => {
     for (const cs of [flow(ODE_TO_JOY), plat(ODE_TO_JOY)]) {
       expect(cs.platforms[0].lit).toBe(true)
-      expect(cs.platforms[0].midi).toBe(G)
+      expect(cs.platforms[0].syllable).toBe('start')
       for (let i = 1; i < cs.platforms.length; i++) {
         expect(cs.platforms[i].x0).toBeGreaterThan(
           cs.platforms[i - 1].x1 - 1e-9,
@@ -34,7 +34,8 @@ describe('compileLevel', () => {
     expect(cs.shift).toBe(-4)
     expect(cs.platforms[1].midi).toBe(G + 4 + cs.shift) // first mi
     expect(cs.platforms.at(-1)!.midi).toBe(G + 0 + cs.shift) // last do
-    expect(cs.platforms[0].midi).toBe(G) // the ground stays the hummed note
+    // the start slab sits at the song's first note, ready-lit
+    expect(cs.platforms[0].midi).toBe(cs.platforms[1].midi)
   })
 
   it('applies the range bias on top of centering', () => {
@@ -45,13 +46,12 @@ describe('compileLevel', () => {
       rangeBias: 3,
     })
     expect(hi.shift).toBe(base.shift + 3)
-    for (let i = 1; i < base.platforms.length; i++) {
+    for (let i = 0; i < base.platforms.length; i++) {
       expect(hi.platforms[i].midi).toBe(base.platforms[i].midi + 3)
     }
-    expect(hi.platforms[0].midi).toBe(G)
-    // the window always still contains the ground note
-    expect(hi.windowLo).toBeLessThanOrEqual(0)
-    expect(hi.windowHi).toBeGreaterThanOrEqual(0)
+    // the start slab always sits inside the window
+    expect(hi.platforms[0].midi - G).toBeGreaterThanOrEqual(hi.windowLo)
+    expect(hi.platforms[0].midi - G).toBeLessThanOrEqual(hi.windowHi)
   })
 
   it('sizes platform width from note duration', () => {

@@ -141,6 +141,10 @@ interface LevelDef {
   a guided range-finder — sing your lowest and highest comfortable note
   at calibration — which computes the bias from the measured range
   instead of a preference (same `rangeBias` seam in `compileLevel`).
+  The STARTING slab sits at the song's first note (not the hummed note),
+  ready-lit and captioned "start" — Merc begins standing on the melody's
+  opening pitch and steps forward into it; the hummed note anchors only
+  the transposition.
 - Bundled in `src/games/glass/levels/`; JSON-serializable so a remote
   (Cloudflare) songbook later is a fetch, not a refactor. This data
   format IS the level editor for V1.

@@ -495,7 +495,7 @@ export const JourneyPrototype: Component<{
     activeIdx = -1
     advanceTo(0)
     mercWX = cs.startX
-    mercY = yFor(groundMidi) - 0.035
+    mercY = yFor(cs.platforms[0].midi) - 0.035
     restIdx = 0
     camX = 0
     camY = 0
