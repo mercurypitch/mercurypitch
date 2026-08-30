@@ -297,11 +297,37 @@ export function buildGuitarScoreDebugModel(
   // Candidates are whatever this run allowed to score. Diagnosing a miss
   // against evidence the engine was never going to look at reads as a bug in
   // the matcher when it is really a bug in what counts as evidence.
-  const attacks = events.filter(
-    (event) =>
-      event.kind === 'attack' ||
-      (snapshot.matchPitchChanges && event.kind === 'pitch-change'),
-  )
+  // Sorted, because the window bounds below are found by bisection. Arrival
+  // order is very nearly frame order already, but attacks come off the worklet
+  // and pitch changes off the frame loop, so the two can interleave by a few
+  // frames and a bisection over an almost-sorted list is quietly wrong.
+  const attacks = events
+    .filter(
+      (event) =>
+        event.kind === 'attack' ||
+        (snapshot.matchPitchChanges && event.kind === 'pitch-change'),
+    )
+    .slice()
+    .sort(
+      (left, right) =>
+        left.compensatedTransportFrame - right.compensatedTransportFrame,
+    )
+
+  /** First attack at or after `frame`. */
+  const firstAttackFrom = (frame: number): number => {
+    let low = 0
+    let high = attacks.length
+    while (low < high) {
+      const mid = (low + high) >> 1
+      const event = attacks[mid]
+      if (event !== undefined && event.compensatedTransportFrame < frame) {
+        low = mid + 1
+      } else {
+        high = mid
+      }
+    }
+    return low
+  }
 
   const judgmentByTarget = new Map(
     snapshot.judgments.map((judgment) => [judgment.targetId, judgment]),
@@ -351,10 +377,21 @@ export function buildGuitarScoreDebugModel(
     let bestRank = Number.POSITIVE_INFINITY
     let bestDistance = Number.POSITIVE_INFINITY
     let bestOffset = 0
-    for (const event of attacks) {
+    // Only the strikes inside this target's search window, found by bisecting
+    // the sorted list. Scanning every strike for every target made this
+    // O(targets x attacks): on a 292-note score with 223 strikes that is 65k
+    // ranked comparisons, and the development overlay that calls this rebuilds
+    // on every animation frame.
+    for (
+      let index = firstAttackFrom(target.onsetFrame - searchFrames);
+      index < attacks.length;
+      index += 1
+    ) {
+      const event = attacks[index]
+      if (event === undefined) break
       const offset = event.compensatedTransportFrame - target.onsetFrame
+      if (offset > searchFrames) break
       const distance = Math.abs(offset)
-      if (distance > searchFrames) continue
       const rank = candidateRank(
         event,
         target.midi,

@@ -179,11 +179,32 @@ export function useGuitarNightLiveScoreController(
     return Math.floor(transportFrame() / quantum) * quantum
   })
 
+  /**
+   * Least time between overlay rebuilds while a take is running.
+   *
+   * The rebuild copies the judgment log, re-sorts every event seen so far and
+   * rebuilds a row per target. Driving that from the sample effect ran it on
+   * every animation frame -- work nobody can read at 60 Hz, and enough of it
+   * on a dense score to miss frames, which is what demotes the device tier for
+   * the rest of the session. The settled result is never throttled.
+   */
+  const DEBUG_MODEL_MIN_INTERVAL_MS = 100
+  let lastDebugModelAtMs = 0
+
   const refreshDebugModel = (
     currentEngine: GuitarLiveScoreEngine,
     currentTake: GuitarTakeSnapshot,
+    immediate = false,
   ): void => {
     if (!import.meta.env.DEV) return
+    const nowMs = performance.now()
+    if (
+      !immediate &&
+      nowMs - lastDebugModelAtMs < DEBUG_MODEL_MIN_INTERVAL_MS
+    ) {
+      return
+    }
+    lastDebugModelAtMs = nowMs
     const snapshot = currentEngine.debugSnapshot()
     if (snapshot === null) {
       setDebugModel(null)
@@ -199,7 +220,13 @@ export function useGuitarNightLiveScoreController(
     setDebugModel(buildGuitarScoreDebugModel(snapshot, currentTake, observed))
   }
 
-  const sampleCurrentTake = (): void => {
+  /**
+   * `immediate` bypasses the overlay's rebuild throttle. The throttle exists
+   * for the per-frame effect; every deliberate settling point -- pause, stop,
+   * completion -- must publish the state it actually ended on rather than one
+   * up to a rebuild interval old.
+   */
+  const sampleCurrentTake = (immediate = false): void => {
     const currentEngine = engine
     const currentTake = options.take()
     const run = boundary()
@@ -223,7 +250,7 @@ export function useGuitarNightLiveScoreController(
         retainedHealth(currentTake, options.health()),
       ),
     )
-    refreshDebugModel(currentEngine, currentTake)
+    refreshDebugModel(currentEngine, currentTake, immediate)
   }
 
   createEffect(() => {
@@ -260,7 +287,7 @@ export function useGuitarNightLiveScoreController(
         retainedHealth(take, options.health()),
       ),
     )
-    refreshDebugModel(currentEngine, take)
+    refreshDebugModel(currentEngine, take, true)
     finishingTakeId = null
     setHoldReason(null)
     setFinishing(false)
@@ -435,6 +462,7 @@ export function useGuitarNightLiveScoreController(
     setStartedAt(null)
     setScoringInputKind(null)
     observedDebugEvents.clear()
+    lastDebugModelAtMs = 0
     setDebugModel(null)
     finishingTakeId = null
     setFinishing(false)
@@ -490,6 +518,13 @@ export function useGuitarNightLiveScoreController(
       engine = nextEngine
       takeId = armedTake.id
       lastSampledFrame = 0
+      // The overlay's event page belongs to the take that produced it. Event
+      // ids carry the take id, so nothing here is ever overwritten by a later
+      // run -- without this the map grows by a take's worth of events on every
+      // Play, and each rebuild re-sorts and re-searches all of them. Four runs
+      // of a 290-event take had the overlay scanning 1,160 strikes per target.
+      observedDebugEvents.clear()
+      lastDebugModelAtMs = 0
       setBoundary(run)
       setDisplay(nextEngine.snapshot())
       setPresentedGrade(null)
@@ -507,7 +542,7 @@ export function useGuitarNightLiveScoreController(
   /** Preserve the last earned result; a later Play begins a fresh take. */
   const hold = (): void => {
     if (engine === null) return
-    sampleCurrentTake()
+    sampleCurrentTake(true)
     generation += 1
     setHoldReason('paused')
     setStarting(false)
@@ -527,7 +562,7 @@ export function useGuitarNightLiveScoreController(
     }
     if (finishing()) return true
 
-    sampleCurrentTake()
+    sampleCurrentTake(true)
     generation += 1
     setStarting(false)
     if (currentTake.lifecycle === 'completed') {

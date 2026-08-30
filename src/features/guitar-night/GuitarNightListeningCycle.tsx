@@ -178,9 +178,18 @@ export function GuitarNightListeningCycle(
   onCleanup(cancelLongPress)
 
   /** Slide the fan back inside the window, measured after it has laid out. */
+  let measureFrame = 0
+  const cancelMeasure = (): void => {
+    if (measureFrame !== 0) cancelAnimationFrame(measureFrame)
+    measureFrame = 0
+  }
+  onCleanup(cancelMeasure)
+
   const keepPickerOnScreen = (element: HTMLDivElement): void => {
     setPickerShift(0)
-    requestAnimationFrame(() => {
+    cancelMeasure()
+    measureFrame = requestAnimationFrame(() => {
+      measureFrame = 0
       const rect = element.getBoundingClientRect()
       if (rect.width === 0) return
       const margin = 8

@@ -131,6 +131,87 @@ function take(
 afterEach(() => vi.useRealTimers())
 
 describe('useGuitarNightLiveScoreController', () => {
+  it("does not carry one take's strikes into the next take's overlay", async () => {
+    // Regression: the development overlay keeps every event it has seen so a
+    // dense passage shows more than the recorder's bounded page. Event ids
+    // carry the take id, so nothing in that map is ever overwritten by a later
+    // run -- it grew by a take's worth of strikes on every Play, and each
+    // rebuild re-sorted and re-searched all of them. Four runs of a 290-event
+    // take had the overlay scanning 1,160 strikes for every one of 292 targets.
+    await createRoot(async (dispose) => {
+      const [listeningStatus] = createSignal<GuitarListeningStatus>('listening')
+      const [playheadBeat, setPlayheadBeat] = createSignal<number | null>(0)
+      const [currentTake, setCurrentTake] =
+        createSignal<GuitarTakeSnapshot | null>(null)
+      let armedTakeId = 'take-1'
+      const takeAs = (
+        id: string,
+        events: readonly GuitarTakeEvent[],
+      ): GuitarTakeSnapshot => ({ ...take(events), id })
+      const controller = useGuitarNightLiveScoreController({
+        listeningStatus,
+        inputKind: () => 'microphone',
+        take: currentTake,
+        health: () => ({ state: 'good', hint: 'Good' }),
+        roomStatus: () => 'playing',
+        countInRemaining: () => 0,
+        playheadBeat,
+        startRoom: async () => ({
+          id: 'live-clip',
+          reference: REFERENCE,
+          range: { start: 0, end: 4 },
+          tempoBpm: 60,
+          scoreTempoBpm: 60,
+          countInBeats: 0,
+          sampleRate: SAMPLE_RATE,
+          startedAtSeconds: 10,
+          completedAtSeconds: 14,
+          beatToSeconds: (beat: number) => beat,
+        }),
+        stopRoom: vi.fn(),
+        pauseRoom: vi.fn(),
+        stopInput: vi.fn(),
+        armTakeAt: () => {
+          setCurrentTake(takeAs(armedTakeId, []))
+          return true
+        },
+        completeTakeAt: () => true,
+        completeTakeNow: () => false,
+      })
+
+      expect(await controller.start({ start: 0, end: 4 })).toBe(true)
+      setCurrentTake(
+        takeAs('take-1', [attack(0), attack(1), attack(2), attack(3)]),
+      )
+      setPlayheadBeat(3.4)
+      await Promise.resolve()
+      // Pause forces a rebuild past the overlay's throttle.
+      controller.hold()
+      expect(controller.debugModel()?.summary.observedEventCount).toBe(4)
+
+      // A second Play. Its strikes carry the new take's ids, so a map that is
+      // never cleared would report both runs at once.
+      armedTakeId = 'take-2'
+      setPlayheadBeat(0)
+      expect(await controller.start({ start: 0, end: 4 })).toBe(true)
+      setCurrentTake(
+        takeAs(
+          'take-2',
+          [attack(0), attack(1)].map((event, index) => ({
+            ...event,
+            id: `take-2-event-${index}`,
+          })),
+        ),
+      )
+      setPlayheadBeat(3.4)
+      await Promise.resolve()
+      controller.hold()
+
+      expect(controller.debugModel()?.summary.observedEventCount).toBe(2)
+      dispose()
+    })
+  })
+
   it('keeps scoring after one clipped level reading in an otherwise clean take', async () => {
     // Regression: the health counters accumulate for the whole take, so a
     // `clipping > 0` test made one transient peak skip every remaining target
