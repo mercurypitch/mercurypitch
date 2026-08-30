@@ -24,16 +24,19 @@
 ### Task 1: Pure selection module
 
 **Files:**
+
 - Create: `src/features/drum-night/audio/drum-sample-select.ts`
 - Test: `src/features/drum-night/audio/drum-sample-select.test.ts`
 
 **Interfaces:**
+
 - Produces: `fnv1a32(...values: number[]): number`; `mulberry32(seed: number): () => number`;
   `createDrumSampleSelector(seed: number): DrumSampleSelector` where
   `DrumSampleSelector = { pick(pool: readonly DrumKitSampleResource[], velocity: number): DrumKitSampleResource | null; reset(): void }`.
 - Consumes: `DrumKitSampleResource` from `./drum-kit-manifest` (fields: `id`, `velocityMin`, `velocityMax`, `roundRobin`).
 
 Selection algorithm (from DrumGizmo's power-pool technique, adapted to velocity-range centers):
+
 - Sort pool by `(velocityMin, roundRobin)`. Target `t = (clamp(v,1,127) - 1) / 126`.
 - Center per entry `c_i = ((velocityMin + velocityMax) / 2 - 1) / 126`.
 - Jitter sigma = `0.5 * meanGapBetweenDistinctCenters` (0 when single center).
@@ -50,10 +53,12 @@ Selection algorithm (from DrumGizmo's power-pool technique, adapted to velocity-
 ### Task 2: Pure dynamics module
 
 **Files:**
+
 - Create: `src/features/drum-night/audio/drum-hit-dynamics.ts`
 - Test: `src/features/drum-night/audio/drum-hit-dynamics.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `velocityGain(articulation: DrumVoiceId, velocity: number): number` — dB-domain curve `(v/127)^e`, exponent 2.0 for drums, 1.6 for metals (`hh-*`, `crash`, `ride`), floor 0.02 at v=1 (~-34 dB, ghost notes survive).
   - `brightnessCutoffHz(velocity: number): number | null` — `1200 * 2^(4 * v/127)`; returns `null` (bypass, no filter node) when >= 16000.
@@ -70,14 +75,17 @@ Selection algorithm (from DrumGizmo's power-pool technique, adapted to velocity-
 ### Task 3: Wire into the player
 
 **Files:**
+
 - Modify: `src/features/drum-night/audio/drum-kit-player.ts` (`CachedSample`, decode path, `chooseResource`, `playSample`, options)
 - Test: `src/features/drum-night/audio/drum-kit-player.test.ts` (extend harness: `FakeBufferSourceNode.start(at, offset)` capture + `playbackRate` param; buffers with `getChannelData`)
 
 **Interfaces:**
+
 - Consumes: Task 1 selector, Task 2 dynamics.
 - Produces: `CreateDrumKitPlayerOptions.selectionSeed?: number` (default `0xd1a7`), unchanged `DrumKitPlayerPort`.
 
 Wiring:
+
 - `CachedSample` gains `onsetSec: number`, set right after `decodeAudioData` via `measureOnsetSeconds`.
 - `chooseResource(gmKey, velocity)`: pool = `drumKitResourcesForHit(selectedKitId, gmKey, velocity)` REPLACED by the full articulation pool: `drumKitResourcesForKey(selectedKitId, gmKey)` = all resources whose `gmKeys` include the key regardless of velocity band (add tiny helper in player, not manifest); selector `pick(pool, velocity)`; keep cache preference (`cache.has`) with fallback to any cached pool member, and `warmMiss` for the preferred pick. One selector per player instance, `reset()` on `selectKit`.
 - `playSample`: draws `microVariation`; `strikeGain = max(MINIMUM_GAIN, resource.playbackGain * velocityGain(articulation, velocity) * mv.gainScale)`; `source.playbackRate.value = mv.rateRatio`; cutoff = `brightnessCutoffHz(velocity)`, when non-null scaled by `mv.cutoffScale`, lowpass Q 0.5, chain `source -> filter -> gain`, else `source -> gain`; `source.start(at, min(cached.onsetSec + mv.startOffsetSec, max(0, buffer.duration - 0.001)))`.
