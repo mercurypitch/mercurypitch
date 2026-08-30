@@ -3,6 +3,10 @@
 // ============================================================
 
 import { encodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
+import type { WavBlobFormat } from '@/lib/wav-blob-window'
+import { parseWavBlobFormat } from '@/lib/wav-blob-window'
+import type { WindowedStemVoice } from './windowed-stem-voice'
+import { createWindowedStemVoice } from './windowed-stem-voice'
 //
 // The host route owns the AudioContext, output graph, and transport clock. This
 // engine only turns an explicitly loaded stem lease into sample-aligned buffer
@@ -36,6 +40,14 @@ export interface PlayAlongStemAsset {
   readonly label: string
   readonly bus: PlayAlongStemBus
   readonly url: string
+  /**
+   * The stored audio itself, when the source room has it (device songs; demo
+   * streams do not). Required for windowed playback: when the decoded mix
+   * cannot fit in memory at any fidelity tier, a WAV blob is played in
+   * scheduled windows straight off storage instead of being refused.
+   */
+  readonly blob?: Blob
+  readonly mimeType?: string
   readonly sizeBytes: number
   readonly durationSeconds?: number
   readonly channelCount?: number
@@ -98,6 +110,8 @@ export interface PlayAlongStemFidelity {
   readonly sampleRate: number
   readonly mono: boolean
 }
+
+export type PlayAlongStemPlaybackMode = 'buffered' | 'windowed'
 
 export interface PlayAlongStemMixError {
   readonly code: PlayAlongStemMixErrorCode
@@ -177,6 +191,11 @@ export interface PlayAlongStemMixEngine {
   getBusStates(): readonly PlayAlongStemBusState[]
   /** Non-null only when the mix had to be decoded below its native fidelity. */
   getReducedFidelity(): PlayAlongStemFidelity | null
+  /**
+   * 'buffered' after a full decode, 'windowed' when stems stream off their
+   * stored WAV blobs in scheduled windows, null before a successful load.
+   */
+  getPlaybackMode(): PlayAlongStemPlaybackMode | null
   subscribe(listener: () => void): () => void
   dispose(): void
 }
@@ -196,19 +215,31 @@ interface MutableBusState {
   level: number
 }
 
+type StemAudioSource =
+  | { kind: 'buffered'; buffer: AudioBuffer }
+  | { kind: 'windowed'; blob: Blob; format: WavBlobFormat }
+
 interface DecodedStem {
   asset: PlayAlongStemAsset
-  buffer: AudioBuffer
+  source: StemAudioSource
   trackGain: GainNode
-  subtractionBuffer: AudioBuffer | null
+  subtractionSource: StemAudioSource | null
   subtractionGain: GainNode | null
 }
 
-interface ActiveStemVoice {
-  source: AudioBufferSourceNode
-  envelope: GainNode
-  ended: boolean
-}
+type ActiveStemVoice =
+  | {
+      kind: 'buffered'
+      source: AudioBufferSourceNode
+      envelope: GainNode
+      ended: boolean
+    }
+  | {
+      kind: 'windowed'
+      handle: WindowedStemVoice
+      envelope: GainNode
+      ended: boolean
+    }
 
 interface VoiceGroup {
   voices: ActiveStemVoice[]
@@ -411,8 +442,17 @@ function smoothGain(
   parameter.setTargetAtTime(target, at, smoothingSeconds)
 }
 
-function sourceDurationSeconds(buffer: AudioBuffer, offset: number): number {
-  return Math.max(0, buffer.duration - offset)
+function stemSourceSeconds(source: StemAudioSource): number {
+  return source.kind === 'buffered'
+    ? source.buffer.duration
+    : source.format.durationSeconds
+}
+
+function stemSourceDurationFrom(
+  source: StemAudioSource,
+  offset: number,
+): number {
+  return Math.max(0, stemSourceSeconds(source) - offset)
 }
 
 function leaseIsValid(lease: PlayAlongStemLease): boolean {
@@ -575,6 +615,7 @@ export function createPlayAlongStemMixEngine(
   }
   let durationSeconds = 0
   let reducedFidelity: PlayAlongStemFidelity | null = null
+  let playbackMode: PlayAlongStemPlaybackMode | null = null
   let decodeContext: BaseAudioContext | null = null
   let graph: StemGraph | null = null
   let currentGroup: VoiceGroup | null = null
@@ -628,9 +669,13 @@ export function createPlayAlongStemMixEngine(
   ): void => {
     if (voice.ended) return
     voice.ended = true
-    voice.source.onended = null
-    safeDisconnect(voice.source)
-    safeDisconnect(voice.envelope)
+    if (voice.kind === 'buffered') {
+      voice.source.onended = null
+      safeDisconnect(voice.source)
+      safeDisconnect(voice.envelope)
+    } else {
+      voice.handle.dispose()
+    }
     if (group.voices.some((candidate) => !candidate.ended)) return
     targetGraph.groups.delete(group)
     if (currentGroup === group) {
@@ -661,13 +706,17 @@ export function createPlayAlongStemMixEngine(
     for (const voice of group.voices) {
       if (voice.ended) continue
       holdParameter(voice.envelope.gain, at)
+      const stopAt =
+        shape === 'seek'
+          ? at + seekFadeSeconds + releaseSlackSeconds
+          : at + releaseSeconds + releaseSlackSeconds
       if (shape === 'seek') {
         voice.envelope.gain.linearRampToValueAtTime(0, at + seekFadeSeconds)
-        safeStop(voice.source, at + seekFadeSeconds + releaseSlackSeconds)
       } else {
         voice.envelope.gain.setTargetAtTime(0, at, releaseSeconds / 5)
-        safeStop(voice.source, at + releaseSeconds + releaseSlackSeconds)
       }
+      if (voice.kind === 'buffered') safeStop(voice.source, stopAt)
+      else voice.handle.stop(stopAt)
     }
     if (currentGroup === group) currentGroup = null
   }
@@ -727,6 +776,7 @@ export function createPlayAlongStemMixEngine(
     progress = null
     error = null
     reducedFidelity = null
+    playbackMode = null
     decodeContext = null
   }
 
@@ -755,7 +805,7 @@ export function createPlayAlongStemMixEngine(
   const buildGraph = (
     context: AudioContext,
     output: AudioNode,
-    loaded: readonly { asset: PlayAlongStemAsset; buffer: AudioBuffer }[],
+    loaded: readonly { asset: PlayAlongStemAsset; source: StemAudioSource }[],
   ): StemGraph => {
     const createdNodes: AudioNode[] = []
     try {
@@ -770,9 +820,9 @@ export function createPlayAlongStemMixEngine(
         buses[bus].connect(output)
       }
       const loadedById = new Map(
-        loaded.map(({ asset, buffer }) => [asset.id, buffer] as const),
+        loaded.map(({ asset, source }) => [asset.id, source] as const),
       )
-      const stems = loaded.map(({ asset, buffer }) => {
+      const stems = loaded.map(({ asset, source }) => {
         const state = trackStates.find(
           (candidate) => candidate.id === asset.id,
         )!
@@ -780,12 +830,12 @@ export function createPlayAlongStemMixEngine(
         createdNodes.push(trackGain)
         trackGain.gain.value = state.muted ? 0 : state.level
         trackGain.connect(buses[asset.bus])
-        const subtractionBuffer =
+        const subtractionSource =
           asset.subtractAssetId === undefined
             ? null
             : (loadedById.get(asset.subtractAssetId) ?? null)
         const subtractionGain =
-          subtractionBuffer === null ? null : context.createGain()
+          subtractionSource === null ? null : context.createGain()
         if (subtractionGain !== null) {
           createdNodes.push(subtractionGain)
           subtractionGain.gain.value = -1
@@ -793,9 +843,9 @@ export function createPlayAlongStemMixEngine(
         }
         return {
           asset,
-          buffer,
+          source,
           trackGain,
-          subtractionBuffer,
+          subtractionSource,
           subtractionGain,
         }
       })
@@ -811,6 +861,41 @@ export function createPlayAlongStemMixEngine(
       for (const node of createdNodes) safeDisconnect(node)
       throw cause
     }
+  }
+
+  /**
+   * Windowed pre-flight: every stem must carry its stored blob and parse as
+   * a WAV this device can window. Any miss returns null and the caller falls
+   * back to the budget refusal it was about to issue.
+   */
+  const prepareWindowedSources = async (
+    lease: PlayAlongStemLease,
+  ): Promise<
+    readonly { asset: PlayAlongStemAsset; source: StemAudioSource }[] | null
+  > => {
+    const prepared: { asset: PlayAlongStemAsset; source: StemAudioSource }[] =
+      []
+    for (const asset of lease.stems) {
+      const blob = asset.blob
+      if (blob === undefined) return null
+      const declaredMime = asset.mimeType ?? blob.type
+      if (
+        declaredMime !== '' &&
+        declaredMime !== 'audio/wav' &&
+        declaredMime !== 'audio/x-wav'
+      ) {
+        return null
+      }
+      let format: WavBlobFormat | null
+      try {
+        format = await parseWavBlobFormat(blob)
+      } catch {
+        format = null
+      }
+      if (format === null) return null
+      prepared.push({ asset, source: { kind: 'windowed', blob, format } })
+    }
+    return prepared
   }
 
   const runLoad = async (loadGeneration: number): Promise<boolean> => {
@@ -829,6 +914,8 @@ export function createPlayAlongStemMixEngine(
     // ahead of any audio or network work, which is the contract of this gate.
     const estimatedBytes = estimatePlayAlongStemPcmBytes(lease.stems)
     reducedFidelity = null
+    playbackMode = null
+    let memoryShortfall: { smallestBytes?: number } | null = null
     if (estimatedBytes > decodedMemoryBudgetBytes) {
       let smallestBytes: number | undefined
       for (const tier of reducedFidelityTiers) {
@@ -847,18 +934,9 @@ export function createPlayAlongStemMixEngine(
         }
       }
       if (reducedFidelity === null) {
-        return setError(
-          'memory-budget',
-          memoryBudgetMessage(
-            estimatedBytes,
-            decodedMemoryBudgetBytes,
-            smallestBytes,
-          ),
-          {
-            requiredBytes: estimatedBytes,
-            budgetBytes: decodedMemoryBudgetBytes,
-          },
-        )
+        memoryShortfall = {
+          ...(smallestBytes === undefined ? {} : { smallestBytes }),
+        }
       }
     }
 
@@ -866,7 +944,69 @@ export function createPlayAlongStemMixEngine(
       (sum, stem) => sum + finiteNonNegative(stem.sizeBytes),
       0,
     )
-    if (declaredBytes > encodedLoadBudgetBytes) {
+    const encodedShortfall = declaredBytes > encodedLoadBudgetBytes
+
+    if (memoryShortfall !== null || encodedShortfall) {
+      // Neither ceiling fits a full download-and-decode. Before refusing,
+      // try the windowed path: stored WAV blobs play in scheduled windows
+      // with neither the encoded payload nor the decoded PCM ever resident
+      // in full, at native fidelity.
+      const windowedSources = await prepareWindowedSources(lease)
+      if (disposed || loadGeneration !== generation) return false
+      if (windowedSources !== null) {
+        let windowedContext: AudioContext | null
+        let windowedOutput: AudioNode | null
+        try {
+          windowedContext = options.getAudioContext()
+          windowedOutput =
+            windowedContext === null ? null : options.getOutput(windowedContext)
+        } catch {
+          windowedContext = null
+          windowedOutput = null
+        }
+        if (windowedContext === null || windowedOutput === null) {
+          return setError('audio-unavailable', AUDIO_UNAVAILABLE_MESSAGE)
+        }
+        reducedFidelity = null
+        try {
+          graph = buildGraph(windowedContext, windowedOutput, windowedSources)
+        } catch {
+          return setError('audio-unavailable', AUDIO_UNAVAILABLE_MESSAGE)
+        }
+        durationSeconds = windowedSources.reduce(
+          (longest, stem) => Math.max(longest, stemSourceSeconds(stem.source)),
+          0,
+        )
+        for (const state of trackStates) state.available = true
+        playbackMode = 'windowed'
+        updateProgress(
+          'complete',
+          lease.stems.length,
+          lease.stems.length,
+          0,
+          declaredBytes,
+          0,
+          1,
+        )
+        status = 'ready'
+        error = null
+        notify()
+        return true
+      }
+      if (memoryShortfall !== null) {
+        return setError(
+          'memory-budget',
+          memoryBudgetMessage(
+            estimatedBytes,
+            decodedMemoryBudgetBytes,
+            memoryShortfall.smallestBytes,
+          ),
+          {
+            requiredBytes: estimatedBytes,
+            budgetBytes: decodedMemoryBudgetBytes,
+          },
+        )
+      }
       return setError('encoded-budget', ENCODED_BUDGET_MESSAGE, {
         requiredBytes: declaredBytes,
         budgetBytes: encodedLoadBudgetBytes,
@@ -1083,7 +1223,14 @@ export function createPlayAlongStemMixEngine(
         return false
       }
       try {
-        graph = buildGraph(context, output, loaded)
+        graph = buildGraph(
+          context,
+          output,
+          loaded.map(({ asset, buffer }) => ({
+            asset,
+            source: { kind: 'buffered' as const, buffer },
+          })),
+        )
       } catch {
         return setError('audio-unavailable', AUDIO_UNAVAILABLE_MESSAGE)
       }
@@ -1091,6 +1238,7 @@ export function createPlayAlongStemMixEngine(
         (longest, stem) => Math.max(longest, stem.buffer.duration),
         0,
       )
+      playbackMode = 'buffered'
       status = 'ready'
       error = null
       notify()
@@ -1120,21 +1268,7 @@ export function createPlayAlongStemMixEngine(
     const rate = clamp(schedule.playbackRate, MINIMUM_RATE, MAXIMUM_RATE)
     const group: VoiceGroup = { voices: [], current: true, closeAt: null }
 
-    const scheduleVoice = (
-      buffer: AudioBuffer,
-      destination: AudioNode,
-      maximumSourceDuration?: number,
-    ): void => {
-      const availableSourceDuration = sourceDurationSeconds(buffer, offset)
-      const sourceDuration =
-        maximumSourceDuration === undefined
-          ? availableSourceDuration
-          : Math.min(availableSourceDuration, maximumSourceDuration)
-      if (sourceDuration <= 0) return
-      const source = activeGraph.context.createBufferSource()
-      const envelope = activeGraph.context.createGain()
-      source.buffer = buffer
-      source.playbackRate.setValueAtTime(rate, at)
+    const openEnvelope = (envelope: GainNode): void => {
       envelope.gain.value = SILENCE_FLOOR
       envelope.gain.cancelScheduledValues(at)
       envelope.gain.setValueAtTime(SILENCE_FLOOR, at)
@@ -1143,9 +1277,60 @@ export function createPlayAlongStemMixEngine(
       } else {
         envelope.gain.exponentialRampToValueAtTime(1, at + attackSeconds)
       }
+    }
+
+    const scheduleVoice = (
+      stemSource: StemAudioSource,
+      destination: AudioNode,
+      maximumSourceDuration?: number,
+    ): void => {
+      const availableSourceDuration = stemSourceDurationFrom(stemSource, offset)
+      const sourceDuration =
+        maximumSourceDuration === undefined
+          ? availableSourceDuration
+          : Math.min(availableSourceDuration, maximumSourceDuration)
+      if (sourceDuration <= 0) return
+
+      if (stemSource.kind === 'windowed') {
+        // The chain schedules and frees its own window sources; the group
+        // only sees one envelope-bearing voice per stem.
+        const voice: ActiveStemVoice & { kind: 'windowed' } = {
+          kind: 'windowed',
+          handle: createWindowedStemVoice({
+            context: activeGraph.context,
+            destination,
+            blob: stemSource.blob,
+            format: stemSource.format,
+            atContextTime: at,
+            sourceOffsetSeconds: offset,
+            playbackRate: rate,
+            ...(maximumSourceDuration === undefined
+              ? {}
+              : { maxDurationSeconds: sourceDuration }),
+            onEnded: () => finishVoice(activeGraph, group, voice),
+          }),
+          envelope: null as unknown as GainNode,
+          ended: false,
+        }
+        voice.envelope = voice.handle.envelope
+        openEnvelope(voice.envelope)
+        group.voices.push(voice)
+        return
+      }
+
+      const source = activeGraph.context.createBufferSource()
+      const envelope = activeGraph.context.createGain()
+      source.buffer = stemSource.buffer
+      source.playbackRate.setValueAtTime(rate, at)
+      openEnvelope(envelope)
       source.connect(envelope)
       envelope.connect(destination)
-      const voice: ActiveStemVoice = { source, envelope, ended: false }
+      const voice: ActiveStemVoice = {
+        kind: 'buffered',
+        source,
+        envelope,
+        ended: false,
+      }
       source.onended = () => finishVoice(activeGraph, group, voice)
       group.voices.push(voice)
       if (maximumSourceDuration === undefined) source.start(at, offset)
@@ -1153,12 +1338,12 @@ export function createPlayAlongStemMixEngine(
     }
 
     for (const stem of activeGraph.stems) {
-      scheduleVoice(stem.buffer, stem.trackGain)
-      if (stem.subtractionBuffer !== null && stem.subtractionGain !== null) {
+      scheduleVoice(stem.source, stem.trackGain)
+      if (stem.subtractionSource !== null && stem.subtractionGain !== null) {
         scheduleVoice(
-          stem.subtractionBuffer,
+          stem.subtractionSource,
           stem.subtractionGain,
-          sourceDurationSeconds(stem.buffer, offset),
+          stemSourceDurationFrom(stem.source, offset),
         )
       }
     }
@@ -1186,7 +1371,7 @@ export function createPlayAlongStemMixEngine(
     }
     const offset = Math.max(0, schedule.sourceOffsetSeconds)
     return activeGraph.stems.some(
-      (stem) => sourceDurationSeconds(stem.buffer, offset) > 0,
+      (stem) => stemSourceDurationFrom(stem.source, offset) > 0,
     )
   }
 
@@ -1385,6 +1570,7 @@ export function createPlayAlongStemMixEngine(
     getBusStates: () => [{ ...busStates.drums }, { ...busStates.backing }],
     getReducedFidelity: () =>
       reducedFidelity === null ? null : { ...reducedFidelity },
+    getPlaybackMode: () => playbackMode,
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)

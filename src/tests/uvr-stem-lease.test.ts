@@ -74,6 +74,8 @@ describe('openUvrStemLease', () => {
       {
         kind: 'guitar',
         url: 'blob:guitar',
+        blob: expect.any(Blob),
+        mimeType: 'audio/wav',
         sizeBytes: 2048,
         durationSeconds: undefined,
       },

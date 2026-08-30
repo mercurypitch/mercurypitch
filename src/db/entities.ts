@@ -694,7 +694,11 @@ export interface UvrStemBlob extends DbEntity {
   /** Server registry model that produced it (e.g. 'demucs-6s'). */
   producedBy?: string
   mimeType: string // 'audio/wav' | 'audio/mpeg'
-  data: ArrayBuffer // binary audio data
+  /** Binary audio. Rows written before the Blob migration hold an
+   *  ArrayBuffer; newer rows hold a Blob (lazy handle — read through
+   *  src/db/stem-blob-data.ts, never assume one shape). Not indexed, so the
+   *  two shapes coexist without a schema version bump. */
+  data: ArrayBuffer | Blob
   size: number // byte size
   fileName: string
 }

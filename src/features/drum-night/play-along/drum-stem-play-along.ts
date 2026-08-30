@@ -9,7 +9,7 @@
 
 import type { PlayAlongBackingLease, PlayAlongBackingLoadResult, PlayAlongBackingSource, PlayAlongStemKind, } from '@/features/play-along/song-port'
 import { defaultPlayAlongEncodedByteBudget } from '@/features/play-along/song-port'
-import type { PlayAlongStemBus, PlayAlongStemFidelity, PlayAlongStemMixEngine, PlayAlongStemMixError, PlayAlongStemMixStatus, PlayAlongStemTrackState, } from '@/features/play-along/stem-mix-engine'
+import type { PlayAlongStemBus, PlayAlongStemFidelity, PlayAlongStemMixEngine, PlayAlongStemMixError, PlayAlongStemMixStatus, PlayAlongStemPlaybackMode, PlayAlongStemTrackState, } from '@/features/play-along/stem-mix-engine'
 import { decodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
 import type { DrumAuthoredSchedulingWindow, DrumTransport, } from '../runtime/drum-transport'
 
@@ -55,11 +55,15 @@ export interface DrumStemPlayAlongSnapshot {
   >
   readonly tracks: readonly PlayAlongStemTrackState[]
   readonly engineStatus: PlayAlongStemMixStatus | null
+  /** Load progress 0-1 while the engine fetches and decodes, else null. */
+  readonly loadFraction: number | null
   /**
    * Set when the mix only fitted this device's decode budget at a lower rate or
    * in mono. The room says so rather than pretending nothing changed.
    */
   readonly reducedFidelity: PlayAlongStemFidelity | null
+  /** 'windowed' when stems stream off storage instead of a full decode. */
+  readonly playbackMode: PlayAlongStemPlaybackMode | null
   readonly error: PlayAlongStemMixError | null
 }
 
@@ -267,7 +271,12 @@ export function createDrumStemPlayAlongController(
       }),
       tracks: trackSnapshot(),
       engineStatus: activeEngineStatus,
+      loadFraction:
+        activeEngineStatus === 'loading'
+          ? (engine?.getProgress()?.fraction ?? null)
+          : null,
       reducedFidelity: engine?.getReducedFidelity() ?? null,
+      playbackMode: engine?.getPlaybackMode() ?? null,
       error: engine?.getError() ?? localError,
     })
   }
@@ -318,6 +327,8 @@ export function createDrumStemPlayAlongController(
           label: track?.label ?? stemLabel(stem.kind, separated),
           bus,
           url: stem.url,
+          ...(stem.blob === undefined ? {} : { blob: stem.blob }),
+          ...(stem.mimeType === undefined ? {} : { mimeType: stem.mimeType }),
           sizeBytes: stem.sizeBytes,
           durationSeconds: stem.durationSeconds,
           muted: track?.muted ?? false,

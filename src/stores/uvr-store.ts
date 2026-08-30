@@ -1456,11 +1456,24 @@ export function deleteAllUvrSessions(): void {
   bumpGroups()
   // Fire-and-forget: wipe all session-scoped data from IndexedDB.
   // deleteAllUvrSessionsFromDb also empties each group's sessionIds in the DB.
-  void (async () => {
+  lastSessionWipe = (async () => {
     await deleteAllUvrSessionsFromDb()
     await deleteAllLyricsFromDb()
     await deleteAllTranscriptionsFromDb()
   })()
+  void lastSessionWipe
+}
+
+let lastSessionWipe: Promise<void> = Promise.resolve()
+
+/**
+ * Settles when the most recent deleteAllUvrSessions background wipe is done.
+ * Anything that writes session-scoped rows right after a wipe (tests seeding
+ * a fresh song, an import following a reset) must await this, or the
+ * fire-and-forget delete can land after the new write and eat it.
+ */
+export function uvrSessionsWipeSettled(): Promise<void> {
+  return lastSessionWipe
 }
 
 /** Delete every session group itself (cache + DB). Used by the karaoke reset. */

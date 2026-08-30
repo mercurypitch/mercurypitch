@@ -73,6 +73,7 @@ function fakeEngine() {
     getTrackStates: () => [],
     getBusStates: () => [],
     getReducedFidelity: () => null,
+    getPlaybackMode: () => null,
     subscribe(nextListener) {
       listener = nextListener
       return () => {

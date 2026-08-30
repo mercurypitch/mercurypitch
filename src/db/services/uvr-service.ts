@@ -7,6 +7,8 @@ import type { DurableWriteResult } from '@/db/durable-write'
 import { durableWrite } from '@/db/durable-write'
 import type { OfflinePitchAnalysisRecord, SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, UvrStemType, WhisperTranscriptionRecord, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import { queueStemRowBlobMigration } from '@/db/services/uvr-stem-migration'
+import { stemDataBlob, stemDataFile, stemHeaderBytes, } from '@/db/stem-blob-data'
 import type { DatabaseAdapter } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
 import { wavDurationSeconds } from '@/lib/wav-meta'
@@ -53,13 +55,14 @@ async function writeStemBlob(
 ): Promise<string> {
   const db = await getDb()
   const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-  const data = await blob.arrayBuffer()
+  // Store the Blob itself: IndexedDB keeps the bytes in blob storage and
+  // later reads hand back a lazy handle instead of a payload-sized copy.
   const created = await repo.create({
     sessionId,
     stemType,
     mimeType:
       blob.type || (fileName.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'),
-    data,
+    data: blob,
     size: blob.size,
     fileName,
     ...meta,
@@ -230,8 +233,8 @@ export async function getStemBlobUrl(
     })
     if (results.length === 0) return null
     const entry = results[0]
-    const blob = new Blob([entry.data], { type: entry.mimeType })
-    return URL.createObjectURL(blob)
+    queueStemRowBlobMigration(entry)
+    return URL.createObjectURL(stemDataBlob(entry.data, entry.mimeType))
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] getStemBlobUrl failed:', err)
     return null
@@ -262,11 +265,14 @@ export async function getStemBlobEntry(
     })
     if (results.length === 0) return null
     const entry = results[0]
-    const blob = new Blob([entry.data], { type: entry.mimeType })
+    queueStemRowBlobMigration(entry)
     return {
-      url: URL.createObjectURL(blob),
+      url: URL.createObjectURL(stemDataBlob(entry.data, entry.mimeType)),
       size: entry.size,
-      duration: wavDurationSeconds(entry.data.slice(0, 4096), entry.size),
+      duration: wavDurationSeconds(
+        await stemHeaderBytes(entry.data, 4096),
+        entry.size,
+      ),
     }
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] getStemBlobEntry failed:', err)
@@ -305,7 +311,8 @@ export async function getStemBlobStrict(
   })
   if (results.length === 0) return null
   const entry = results[0]
-  return new Blob([entry.data], { type: entry.mimeType })
+  queueStemRowBlobMigration(entry)
+  return stemDataBlob(entry.data, entry.mimeType)
 }
 
 export async function getStemBlob(
@@ -336,7 +343,8 @@ export async function getOriginalFileBlobStrict(
   })
   if (results.length === 0) return null
   const entry = results[0]
-  return new File([entry.data], entry.fileName, { type: entry.mimeType })
+  queueStemRowBlobMigration(entry)
+  return stemDataFile(entry.data, entry.fileName, entry.mimeType)
 }
 
 export async function getOriginalFileBlob(

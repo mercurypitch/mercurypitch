@@ -540,8 +540,16 @@ export default defineConfig(({ command, mode }) => {
             // app dies at first paint on "Cannot access 'ge' before
             // initialization", with no clue which module 'ge' was. Whatever
             // pitch-core reaches has to be in pitch-core.
+            // The stem Blob seam (stem-blob-data, uvr-stem-migration,
+            // durable-write) rides with its reader. All three are leaves,
+            // but `uvr-read-service` imports the first two statically — left
+            // organic they land in 'library', which gave this chunk a
+            // library edge and closed the library → pitch-core →
+            // local-song-library → library cycle: Guitar Night died at
+            // first paint on "Cannot access 'At' before initialization"
+            // (2026-08-31, melody-store reading scale-data's KEY_OFFSETS).
             if (
-              /src\/db\/(local-database|adapters\/dexie-adapter|services\/uvr-read-service)/.test(
+              /src\/db\/(local-database|adapters\/dexie-adapter|services\/uvr-read-service|services\/uvr-stem-migration|stem-blob-data|durable-write)/.test(
                 id,
               ) ||
               /src\/lib\/wav-meta/.test(id)

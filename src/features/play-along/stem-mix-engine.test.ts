@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
+import { buildBenchWav } from '@/features/lab/stem-storage-bench'
 import type { PlayAlongStemAsset, PlayAlongStemLease, PlayAlongStemMixEngineOptions, } from './stem-mix-engine'
 import { createPlayAlongStemMixEngine, estimatePlayAlongStemPcmBytes, } from './stem-mix-engine'
 
@@ -104,6 +105,20 @@ class FakeAudioContext {
     const source = new FakeBufferSourceNode()
     this.sources.push(source)
     return source as unknown as AudioBufferSourceNode
+  }
+
+  createBuffer(
+    channels: number,
+    frames: number,
+    sampleRate: number,
+  ): AudioBuffer {
+    return {
+      numberOfChannels: channels,
+      length: frames,
+      sampleRate,
+      duration: frames / sampleRate,
+      copyToChannel: vi.fn(),
+    } as unknown as AudioBuffer
   }
 }
 
@@ -742,5 +757,129 @@ describe('createPlayAlongStemMixEngine', () => {
       budgetBytes: 1024,
     })
     expect(room.context.sources).toHaveLength(0)
+  })
+})
+
+describe('windowed playback', () => {
+  const WAV = buildBenchWav(32 * 1024, 5)
+  const wavBlob = () => new Blob([WAV.slice(0)], { type: 'audio/wav' })
+
+  function wavStem(id: string): PlayAlongStemAsset {
+    return stem(id, {
+      blob: wavBlob(),
+      mimeType: 'audio/wav',
+      sizeBytes: WAV.byteLength,
+    })
+  }
+
+  it('streams WAV blobs when no decode tier fits, at native fidelity', async () => {
+    const room = harness({ decodedMemoryBudgetBytes: 0 })
+    room.engine.configure(lease('too-big', [wavStem('drums'), wavStem('band')]))
+
+    await expect(room.engine.load()).resolves.toBe(true)
+
+    expect(room.engine.getStatus()).toBe('ready')
+    expect(room.engine.getPlaybackMode()).toBe('windowed')
+    expect(room.engine.getReducedFidelity()).toBeNull()
+    expect(room.engine.getError()).toBeNull()
+    // Nothing was downloaded or decoded — that is the point.
+    expect(room.fetchArrayBuffer).not.toHaveBeenCalled()
+    expect(room.context.decodeAudioData).not.toHaveBeenCalled()
+    expect(room.engine.getTrackStates().every((track) => track.available)).toBe(
+      true,
+    )
+    expect(room.engine.getDurationSeconds()).toBeGreaterThan(0)
+  })
+
+  it('rescues an encoded-budget refusal the same way', async () => {
+    const room = harness({ encodedLoadBudgetBytes: 16 })
+    room.engine.configure(lease('big-download', [wavStem('drums')]))
+
+    await expect(room.engine.load()).resolves.toBe(true)
+    expect(room.engine.getPlaybackMode()).toBe('windowed')
+  })
+
+  it('still refuses when a stem has no stored blob', async () => {
+    const room = harness({ decodedMemoryBudgetBytes: 0 })
+    room.engine.configure(lease('demo-song', [wavStem('drums'), stem('band')]))
+
+    await expect(room.engine.load()).resolves.toBe(false)
+    expect(room.engine.getError()?.code).toBe('memory-budget')
+    expect(room.engine.getPlaybackMode()).toBeNull()
+  })
+
+  it('still refuses when the stored blob is not a WAV', async () => {
+    const room = harness({ decodedMemoryBudgetBytes: 0 })
+    room.engine.configure(
+      lease('mp3-era', [
+        stem('drums', {
+          blob: new Blob(['not a wav'], { type: 'audio/mpeg' }),
+          mimeType: 'audio/mpeg',
+        }),
+      ]),
+    )
+
+    await expect(room.engine.load()).resolves.toBe(false)
+    expect(room.engine.getError()?.code).toBe('memory-budget')
+  })
+
+  it('keeps full decode for mixes that fit — windowed is the last resort', async () => {
+    const room = harness()
+    room.engine.configure(lease('fits-fine', [wavStem('drums')]))
+
+    await expect(room.engine.load()).resolves.toBe(true)
+    expect(room.engine.getPlaybackMode()).toBe('buffered')
+    expect(room.fetchArrayBuffer).toHaveBeenCalledOnce()
+  })
+
+  it('starts, pauses, and seeks a windowed mix on the shared clock', async () => {
+    const room = harness({ decodedMemoryBudgetBytes: 0 })
+    room.engine.configure(lease('long-song', [wavStem('drums')]))
+    await room.engine.load()
+
+    expect(
+      room.engine.start({
+        atContextTime: 10.5,
+        sourceOffsetSeconds: 0,
+        playbackRate: 1,
+      }),
+    ).toBe(true)
+    expect(room.engine.getStatus()).toBe('playing')
+    // Window reads resolve through FileReader (a macrotask in jsdom).
+    await vi.waitFor(() =>
+      expect(room.context.sources.length).toBeGreaterThan(0),
+    )
+    expect(room.context.sources[0].start).toHaveBeenCalled()
+
+    room.engine.pause(11)
+    expect(room.engine.getStatus()).toBe('paused')
+    for (const source of room.context.sources) {
+      expect(source.stop).toHaveBeenCalled()
+    }
+
+    expect(
+      room.engine.seek({
+        atContextTime: 12,
+        sourceOffsetSeconds: 0.05,
+        playbackRate: 1,
+      }),
+    ).toBe(false)
+  })
+
+  it('stop() ends a playing windowed mix', async () => {
+    const room = harness({ decodedMemoryBudgetBytes: 0 })
+    room.engine.configure(lease('stoppable', [wavStem('drums')]))
+    await room.engine.load()
+    room.engine.start({
+      atContextTime: 10.5,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+    })
+    await vi.waitFor(() =>
+      expect(room.context.sources.length).toBeGreaterThan(0),
+    )
+
+    room.engine.stop(11)
+    expect(room.engine.getStatus()).toBe('stopped')
   })
 })

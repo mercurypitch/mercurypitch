@@ -37,6 +37,8 @@ export interface DrumPlayAlongStageProps {
   recentPadId?: DrumPlayAlongPadId | null
   /** Set when this device's decode budget forced a lower rate or a mono mix. */
   reducedFidelity?: DrumPlayAlongReducedFidelity | null
+  /** Set when stems stream off storage in windows instead of a full decode. */
+  windowedPlayback?: boolean
   strikeDisabled?: boolean
   onStrike?: (padId: DrumPlayAlongPadId, velocity: number) => void
   onOpenAuthoredScore?: () => void
@@ -250,6 +252,12 @@ export function DrumPlayAlongStage(
                 {reducedFidelityCopy(fidelity())}
               </em>
             )}
+          </Show>
+          <Show when={props.windowedPlayback}>
+            <em class={styles.reducedFidelity}>
+              Streaming from storage in short windows, so even the longest songs
+              fit this device at full quality.
+            </em>
           </Show>
         </span>
         <Show when={props.isLoading}>

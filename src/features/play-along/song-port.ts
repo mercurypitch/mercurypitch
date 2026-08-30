@@ -57,6 +57,10 @@ export interface PlayAlongSongSummary {
 export interface PlayAlongStemAsset {
   kind: PlayAlongStemKind
   url: string
+  /** Stored audio handle when the song lives on this device (absent for
+   *  streamed demo songs). Enables windowed playback of oversized mixes. */
+  blob?: Blob
+  mimeType?: string
   sizeBytes: number
   durationSeconds?: number
 }
