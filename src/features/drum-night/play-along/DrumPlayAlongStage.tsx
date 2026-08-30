@@ -21,6 +21,11 @@ export type DrumPlayAlongPadId =
   | 'ride'
   | 'kick'
 
+export interface DrumPlayAlongReducedFidelity {
+  readonly sampleRate: number
+  readonly mono: boolean
+}
+
 export interface DrumPlayAlongStageProps {
   title: string
   mixKind: DrumPlayAlongPreparedMixKind
@@ -30,6 +35,8 @@ export interface DrumPlayAlongStageProps {
   isPlaying?: boolean
   isLoading?: boolean
   recentPadId?: DrumPlayAlongPadId | null
+  /** Set when this device's decode budget forced a lower rate or a mono mix. */
+  reducedFidelity?: DrumPlayAlongReducedFidelity | null
   strikeDisabled?: boolean
   onStrike?: (padId: DrumPlayAlongPadId, velocity: number) => void
   onOpenAuthoredScore?: () => void
@@ -102,6 +109,13 @@ function formatClock(seconds: number): string {
 
 function sourceStatusLabel(kind: DrumPlayAlongPreparedMixKind): string {
   return kind === 'separated' ? 'Drums separated' : 'Drums in backing'
+}
+
+function reducedFidelityCopy(fidelity: DrumPlayAlongReducedFidelity): string {
+  const kilohertz = Math.round(fidelity.sampleRate / 100) / 10
+  return fidelity.mono
+    ? `Decoded at ${kilohertz} kHz in mono to fit this device.`
+    : `Decoded at ${kilohertz} kHz to fit this device.`
 }
 
 function sourceStatusCopy(kind: DrumPlayAlongPreparedMixKind): string {
@@ -230,6 +244,13 @@ export function DrumPlayAlongStage(
         <span>
           <strong>{sourceStatusLabel(props.mixKind)}</strong>
           <small>{sourceStatusCopy(props.mixKind)}</small>
+          <Show when={props.reducedFidelity}>
+            {(fidelity) => (
+              <em class={styles.reducedFidelity}>
+                {reducedFidelityCopy(fidelity())}
+              </em>
+            )}
+          </Show>
         </span>
         <Show when={props.isLoading}>
           <b>Loading audio</b>

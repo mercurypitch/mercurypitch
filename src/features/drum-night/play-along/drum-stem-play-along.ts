@@ -8,11 +8,15 @@
 // It never creates a transport, frame loop, AudioContext, or media element.
 
 import type { PlayAlongBackingLease, PlayAlongBackingLoadResult, PlayAlongBackingSource, PlayAlongStemKind, } from '@/features/play-along/song-port'
-import { DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES } from '@/features/play-along/song-port'
-import type { PlayAlongStemBus, PlayAlongStemMixEngine, PlayAlongStemMixError, PlayAlongStemMixStatus, PlayAlongStemTrackState, } from '@/features/play-along/stem-mix-engine'
+import { defaultPlayAlongEncodedByteBudget } from '@/features/play-along/song-port'
+import type { PlayAlongStemBus, PlayAlongStemFidelity, PlayAlongStemMixEngine, PlayAlongStemMixError, PlayAlongStemMixStatus, PlayAlongStemTrackState, } from '@/features/play-along/stem-mix-engine'
+import { decodedAudioBudgetBytes } from '@/lib/audio-memory-budget'
 import type { DrumAuthoredSchedulingWindow, DrumTransport, } from '../runtime/drum-transport'
 
-export const DEFAULT_DRUM_STEM_MEMORY_BUDGET_BYTES = 256 * 1024 * 1024
+/** Device-aware decoded-PCM ceiling; see `@/lib/audio-memory-budget`. */
+export function defaultDrumStemMemoryBudgetBytes(): number {
+  return decodedAudioBudgetBytes()
+}
 export const DEFAULT_DRUM_STEM_LOOKAHEAD_MS = 2_000
 export const MAX_DRUM_STEM_LOOP_LEDGER = 256
 
@@ -51,6 +55,11 @@ export interface DrumStemPlayAlongSnapshot {
   >
   readonly tracks: readonly PlayAlongStemTrackState[]
   readonly engineStatus: PlayAlongStemMixStatus | null
+  /**
+   * Set when the mix only fitted this device's decode budget at a lower rate or
+   * in mono. The room says so rather than pretending nothing changed.
+   */
+  readonly reducedFidelity: PlayAlongStemFidelity | null
   readonly error: PlayAlongStemMixError | null
 }
 
@@ -258,6 +267,7 @@ export function createDrumStemPlayAlongController(
       }),
       tracks: trackSnapshot(),
       engineStatus: activeEngineStatus,
+      reducedFidelity: engine?.getReducedFidelity() ?? null,
       error: engine?.getError() ?? localError,
     })
   }
@@ -351,7 +361,7 @@ export function createDrumStemPlayAlongController(
               getOutput: () => options.activeOutput(),
               decodedMemoryBudgetBytes:
                 options.decodedMemoryBudgetBytes ??
-                DEFAULT_DRUM_STEM_MEMORY_BUDGET_BYTES,
+                defaultDrumStemMemoryBudgetBytes(),
             }),
         )
       ).catch(() => {
@@ -565,7 +575,7 @@ export function createDrumStemPlayAlongController(
           signal: currentLoadAbort.signal,
           encodedByteBudget:
             options.encodedByteBudgetBytes ??
-            DEFAULT_PLAY_ALONG_ENCODED_BYTE_BUDGET_BYTES,
+            defaultPlayAlongEncodedByteBudget(),
         })
       } catch {
         if (

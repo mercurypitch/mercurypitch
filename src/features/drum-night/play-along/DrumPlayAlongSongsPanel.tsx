@@ -6,6 +6,7 @@ import { createMemo, createUniqueId, For, Match, Show, Switch } from 'solid-js'
 import { AlertTriangle, Cloud, Drum, FileText, Loader2, MusicLibrary, X, } from '@/components/icons'
 import { isGuitarProSongFile, isMidiSongFile, SONG_REFERENCE_FILE_ACCEPT, } from '@/features/play-along/song-import'
 import type { PlayAlongBackingSource, PlayAlongSongSummary, } from '@/features/play-along/song-port'
+import { playAlongEncodedBudgetCopy } from '@/features/play-along/song-port'
 import { UnifiedSongFileDrop } from '@/features/play-along/UnifiedSongFileDrop'
 import type { PlayAlongBandPreparationState } from '@/features/play-along/useBandPreparationController'
 import type { PlayAlongLibraryState, PlayAlongSelectionState, } from '@/features/play-along/useSongController'
@@ -95,6 +96,9 @@ function unavailableSelectionCopy(state: UnavailableSelection): string {
   }
   if (state.reason === 'missing-local-audio') {
     return 'The session exists, but its audio is not stored on this device.'
+  }
+  if (state.reason === 'encoded-budget') {
+    return playAlongEncodedBudgetCopy(state.requiredBytes, state.budgetBytes)
   }
   return 'The prepared-song library could not be opened.'
 }
