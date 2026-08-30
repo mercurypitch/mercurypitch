@@ -15,6 +15,7 @@ import { DEFAULT_CONTENT_PACK, findLine } from './content'
 import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-repository'
 import { CORKY_ONBOARDING_MEDIA_V0_7, CORKY_ONBOARDING_MEDIA_V0_8, CORKY_ONBOARDING_MEDIA_V0_9, } from './onboarding'
 import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
+import type { V2OnboardingMediaPack } from './onboarding/v2-onboarding-media-pack'
 import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
 
 interface DirectorHarnessProps {
@@ -88,6 +89,7 @@ vi.mock('./onboarding/CinematicOnboardingDirector', () => ({
 
 interface V2DirectorHarnessProps {
   readonly sessionKind: V2OnboardingSessionKind
+  readonly mediaPack?: V2OnboardingMediaPack
   readonly audioSession: AudioSession
   readonly foreground: boolean
   readonly muted: boolean
@@ -121,6 +123,17 @@ vi.mock('./onboarding/V2OnboardingDirector', () => ({
         data-session-kind={props.sessionKind}
         data-foreground={props.foreground ? 'true' : 'false'}
         data-muted={props.muted ? 'true' : 'false'}
+        data-media-revision={props.mediaPack?.revision}
+        data-scroll-present={
+          props.mediaPack?.pulls.scrolling?.present?.kind === 'video'
+            ? props.mediaPack.pulls.scrolling.present.src
+            : undefined
+        }
+        data-scroll-recede={
+          props.mediaPack?.pulls.scrolling?.recede?.kind === 'video'
+            ? props.mediaPack.pulls.scrolling.recede.src
+            : undefined
+        }
       >
         <h1>V2 introduction</h1>
         <button
@@ -958,6 +971,18 @@ describe('Beside Cue V2 onboarding integration', () => {
 
     const harness = await screen.findByLabelText('V2 onboarding test harness')
     expect(harness).toHaveAttribute('data-session-kind', 'developer-review')
+    expect(harness).toHaveAttribute(
+      'data-media-revision',
+      'corky-v2-preview-v0.2',
+    )
+    expect(harness).toHaveAttribute(
+      'data-scroll-present',
+      '/onboarding/corky-v2-preview/scrolling/b03-scrolling-present-v0_1.mp4',
+    )
+    expect(harness).toHaveAttribute(
+      'data-scroll-recede',
+      '/onboarding/corky-v2-preview/scrolling/b05-scrolling-recede-v0_1.mp4',
+    )
     expect(harness).toHaveAttribute('data-muted', 'false')
     fireEvent.click(screen.getByRole('button', { name: /toggle v2 mute/iu }))
     expect(harness).toHaveAttribute('data-muted', 'true')

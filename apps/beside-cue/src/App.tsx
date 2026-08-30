@@ -19,6 +19,7 @@ import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
 import type { CinematicOnboardingBSideOption, CinematicOnboardingPlanSelection, CinematicOnboardingReminderResult, CinematicOnboardingSaveResult, } from './onboarding/CinematicOnboardingDirector'
 import { CinematicOnboardingDirector } from './onboarding/CinematicOnboardingDirector'
+import { V2_ONBOARDING_PREVIEW_MEDIA_PACK } from './onboarding/v2-onboarding-media-pack'
 import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
 import type { V2OnboardingMutationResult, V2OnboardingReminderPreset, } from './onboarding/V2OnboardingDirector'
 import { V2OnboardingDirector } from './onboarding/V2OnboardingDirector'
@@ -1826,6 +1827,7 @@ export function App(props: AppProps) {
           sessionKind={v2OnboardingSessionKind()}
           pullOptions={config().pullOptions}
           contentPack={contentPack()}
+          mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
           audioSession={onboardingAudioSession}
           foreground={v2OnboardingForeground()}
           muted={v2Muted()}

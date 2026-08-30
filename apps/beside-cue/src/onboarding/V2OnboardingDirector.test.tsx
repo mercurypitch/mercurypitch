@@ -3,14 +3,45 @@
 // ============================================================
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
-import { createSignal } from 'solid-js'
+import { createEffect, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioSession, AudioSessionCue, AudioSessionFinishResult, AudioSessionScope, } from '@/audio'
 import type { ContentPack, PullOption } from '@/content'
 import { DEFAULT_CONTENT_PACK, pullOptions } from '@/content'
+import { V2_ONBOARDING_PREVIEW_MEDIA_PACK } from './v2-onboarding-media-pack'
 import type { V2OnboardingDirectorProps, V2OnboardingMutationResult, } from './V2OnboardingDirector'
 import { V2OnboardingDirector } from './V2OnboardingDirector'
 import styles from './V2OnboardingDirector.module.css'
+import type { V2OnboardingMediaStageProps } from './V2OnboardingMediaStage'
+
+const mediaStageHarness = vi.hoisted(() => ({
+  props: undefined as
+    | Pick<
+        V2OnboardingMediaStageProps,
+        'request' | 'mode' | 'onPresentationSettled' | 'onVideoEnded'
+      >
+    | undefined,
+}))
+
+vi.mock('./V2OnboardingMediaStage', () => ({
+  V2OnboardingMediaStage: (props: V2OnboardingMediaStageProps) => {
+    createEffect(() => {
+      mediaStageHarness.props = {
+        request: props.request,
+        mode: props.mode,
+        onPresentationSettled: props.onPresentationSettled,
+        onVideoEnded: props.onVideoEnded,
+      }
+    })
+    return (
+      <div
+        data-testid="v2-media-stage"
+        data-v2-media-target={props.request?.targetId}
+        aria-hidden="true"
+      />
+    )
+  },
+}))
 
 function settledCue(assetId: string): AudioSessionCue {
   const result = { kind: 'silent', reason: 'asset-missing' } as const
@@ -207,6 +238,31 @@ async function advance(milliseconds: number): Promise<void> {
   await Promise.resolve()
 }
 
+function currentMediaStage(): {
+  readonly props: NonNullable<(typeof mediaStageHarness)['props']>
+  readonly targetId: string
+} {
+  const props = mediaStageHarness.props
+  const targetId = props?.request?.targetId
+  if (props === undefined || targetId === undefined) {
+    throw new Error('Expected an active V2 onboarding media stage.')
+  }
+  return { props, targetId }
+}
+
+function settleCurrentMedia(
+  token: string,
+  recoveryStage: 'primary' | 'reduced-still' = 'primary',
+): void {
+  const { props, targetId } = currentMediaStage()
+  props.onPresentationSettled?.({ targetId, token, recoveryStage })
+}
+
+function endCurrentMedia(token: string): void {
+  const { props, targetId } = currentMediaStage()
+  props.onVideoEnded?.({ targetId, token })
+}
+
 async function reachPullChoice(): Promise<void> {
   await advance(1_300)
   fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
@@ -244,6 +300,7 @@ async function reachStopHold(): Promise<void> {
 describe('V2OnboardingDirector', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    mediaStageHarness.props = undefined
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn(() => ({
@@ -318,6 +375,146 @@ describe('V2OnboardingDirector', () => {
     await Promise.resolve()
     expect(
       screen.getByRole('heading', { name: 'Let’s make one plan.' }),
+    ).toBeVisible()
+  })
+
+  it('waits for the current Scroll picture, dialogue and dwell across Present and Recede', async () => {
+    const lineId = 'pull.scrolling.present'
+    const assetId = `dialogue.${lineId}`
+    const controlled = controlledCue(assetId)
+    const probe = createDirectorProbe()
+    probe.audio.play.mockImplementation((playedAssetId: string) =>
+      playedAssetId === assetId ? controlled.cue : settledCue(playedAssetId),
+    )
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        contentPack={contentPackWithDialogue(lineId, assetId)}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+      />
+    ))
+
+    await reachPullChoice()
+    fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    const presentStage = currentMediaStage()
+    expect(presentStage.props.request?.primary).toMatchObject({
+      kind: 'video',
+      src: expect.stringContaining('b03-scrolling-present-v0_1.mp4'),
+    })
+    expect(presentStage.targetId).toContain(':present')
+    expect(screen.getByTestId('v2-media-stage')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    )
+    expect(
+      screen.getByText('I can keep going for you. That’s what I do.'),
+    ).toHaveAttribute('aria-live', 'polite')
+
+    await advance(1_450)
+    settleCurrentMedia('present-token')
+    controlled.finished.resolve({ kind: 'ended' })
+    await Promise.resolve()
+    expect(
+      screen.getByRole('heading', { name: 'Endless scrolling' }),
+    ).toBeVisible()
+
+    endCurrentMedia('present-token')
+    expect(
+      screen.getByRole('heading', {
+        name: 'When does Endless scrolling usually show up?',
+      }),
+    ).toBeVisible()
+
+    fireEvent.click(screen.getByRole('radio', { name: /Not sure yet/u }))
+    fireEvent.click(screen.getByRole('button', { name: 'Choose Side B' }))
+    fireEvent.click(
+      screen.getByRole('radio', { name: 'Play one guitar riff.' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Start the record' }))
+
+    const recedeStage = currentMediaStage()
+    expect(recedeStage.props.request?.primary).toMatchObject({
+      kind: 'video',
+      src: expect.stringContaining('b05-scrolling-recede-v0_1.mp4'),
+    })
+    expect(recedeStage.targetId).toContain(':recede')
+    await advance(1_150)
+
+    recedeStage.props.onVideoEnded?.({
+      targetId: presentStage.targetId,
+      token: 'present-token',
+    })
+    expect(
+      screen.getByRole('heading', { name: 'A second side comes into view.' }),
+    ).toBeVisible()
+
+    settleCurrentMedia('recede-token')
+    endCurrentMedia('recede-token')
+    expect(
+      screen.getByRole('heading', { name: 'Corky starts the record.' }),
+    ).toBeVisible()
+  })
+
+  it('releases an authored movie gate through its still recovery', async () => {
+    const probe = createDirectorProbe()
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+      />
+    ))
+
+    await reachPullChoice()
+    fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    settleCurrentMedia('fallback-token', 'reduced-still')
+
+    await advance(1_449)
+    expect(
+      screen.getByRole('heading', { name: 'Endless scrolling' }),
+    ).toBeVisible()
+    await advance(1)
+    expect(
+      screen.getByRole('heading', {
+        name: 'When does Endless scrolling usually show up?',
+      }),
+    ).toBeVisible()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('counts the media fail-open timeout only while foregrounded', async () => {
+    const probe = createDirectorProbe()
+    const [foreground, setForeground] = createSignal(true)
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+        foreground={foreground()}
+      />
+    ))
+
+    await reachPullChoice()
+    fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    await advance(500)
+    setForeground(false)
+    await advance(20_000)
+    expect(
+      screen.getByRole('heading', { name: 'Endless scrolling' }),
+    ).toBeVisible()
+
+    setForeground(true)
+    await advance(14_499)
+    expect(
+      screen.getByRole('heading', { name: 'Endless scrolling' }),
+    ).toBeVisible()
+    await advance(1)
+    expect(
+      screen.getByRole('heading', {
+        name: 'When does Endless scrolling usually show up?',
+      }),
     ).toBeVisible()
   })
 
@@ -670,7 +867,12 @@ describe('V2OnboardingDirector', () => {
 
   it('keeps a custom Pull free of the first built-in mapping', async () => {
     const probe = createDirectorProbe()
-    render(() => <V2OnboardingDirector {...probe.props} />)
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+      />
+    ))
 
     await reachPullChoice()
     fireEvent.click(screen.getByRole('radio', { name: 'Something else' }))
@@ -678,6 +880,7 @@ describe('V2OnboardingDirector', () => {
       target: { value: 'Opening another shopping tab' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(mediaStageHarness.props).toBeUndefined()
     await advance(1_450)
 
     expect(
@@ -853,13 +1056,19 @@ describe('V2OnboardingDirector', () => {
       removeEventListener: vi.fn(),
     } as unknown as MediaQueryList)
     const probe = createDirectorProbe()
-    render(() => <V2OnboardingDirector {...probe.props} />)
+    render(() => (
+      <V2OnboardingDirector
+        {...probe.props}
+        mediaPack={V2_ONBOARDING_PREVIEW_MEDIA_PACK}
+      />
+    ))
 
     await advance(650)
     fireEvent.click(screen.getByRole('button', { name: 'Tap to begin' }))
     await advance(1_300)
     fireEvent.click(screen.getByRole('radio', { name: 'Endless scrolling' }))
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(currentMediaStage().props.mode).toBe('reduced')
     await advance(650)
     fireEvent.click(screen.getByRole('radio', { name: /Not sure yet/u }))
     fireEvent.click(screen.getByRole('button', { name: 'Choose Side B' }))
