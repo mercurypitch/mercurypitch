@@ -49,6 +49,9 @@ export interface StageTheme {
   dir: string
   /** Optional per-theme blend strengths (default JOURNEY_CONFIG.art). */
   art?: { nebulaAlpha?: number; dustAlpha?: number }
+  /** Light backdrop: the HTML overlay (intro, hints, toggles) flips to
+   * ink-dark text via the jp-root--light class. */
+  light?: boolean
   palette: StagePalette
 }
 
@@ -105,6 +108,7 @@ const DAYLIGHT: StageTheme = {
   id: 'daylight',
   name: 'Daylight',
   dir: 'games/journey/themes/daylight',
+  light: true,
   art: { nebulaAlpha: 0.3, dustAlpha: 0.35 },
   palette: {
     base: '#f6f1e7',

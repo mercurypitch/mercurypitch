@@ -1528,7 +1528,9 @@ export const JourneyPrototype: Component<{
 
     // guide line: the objective note's height — where the voice must sit
     const guideMidi =
-      C.hud.guideLine && phase() === 'play' ? objectiveMidi() : null
+      C.hud.guideLine && !isRhythm() && phase() === 'play'
+        ? objectiveMidi()
+        : null
     if (guideMidi !== null) {
       const gy = yFor(guideMidi) * h
       const pulse = 0.2 + (Math.sin(last / 300) + 1) * 0.09
@@ -1672,7 +1674,7 @@ export const JourneyPrototype: Component<{
 
       if (pl.kind === 'glass' && pl.integrity < 1) {
         const n = Math.ceil((1 - pl.integrity) * 6)
-        ctx.strokeStyle = 'rgba(230,237,243,0.65)'
+        ctx.strokeStyle = `rgba(${P.labelRgb},0.65)`
         ctx.lineWidth = 1
         for (let c = 0; c < n; c++) {
           const cx = x0 + ((c + 0.7) / 6.4) * (x1 - x0)
@@ -1839,7 +1841,7 @@ export const JourneyPrototype: Component<{
       ctx.arc(gx + shake, gy, r, 0, 6.283)
       ctx.fill()
       // closed eyes while asleep; wide while woken
-      ctx.strokeStyle = 'rgba(230,237,243,0.85)'
+      ctx.strokeStyle = `rgba(${P.labelRgb},0.85)`
       ctx.lineWidth = 1.5
       for (const dx of [-5, 5]) {
         ctx.beginPath()
@@ -1909,7 +1911,7 @@ export const JourneyPrototype: Component<{
             ctx.lineWidth = 1.5
             ctx.strokeRect(-s / 2, -s / 2, s, s)
             ctx.restore()
-            ctx.fillStyle = 'rgba(230,237,243,0.85)'
+            ctx.fillStyle = `rgba(${P.labelRgb},0.85)`
             ctx.font = "600 11px 'Saira Condensed', monospace"
             ctx.fillText(midiToNoteNameOctave(c.midi), cx - 10, cy - 16)
           }
@@ -1936,7 +1938,7 @@ export const JourneyPrototype: Component<{
 
     if (C.hud.pitchGhost && ghost.length > 1) {
       // the raw voice, un-smoothed — what the singer actually did
-      ctx.strokeStyle = 'rgba(230,237,243,0.16)'
+      ctx.strokeStyle = `rgba(${P.labelRgb},0.16)`
       ctx.lineWidth = 1
       ctx.beginPath()
       ctx.moveTo(X(ghost[0].wx), ghost[0].y * h)
@@ -2056,8 +2058,10 @@ export const JourneyPrototype: Component<{
 
     // direction chevrons: point the way when the objective note is far,
     // and always while sinking/falling (any in-window note recovers).
-    // Never for the hidden door (no spoilers) or the whisper passage.
-    if (phase() === 'play') {
+    // Never for the hidden door (no spoilers), the whisper passage, or
+    // rhythm play — they say where the VOICE must go, and tap has no
+    // voice (Merc glides to each note himself).
+    if (phase() === 'play' && !isRhythm()) {
       let dir = 0 // -1 = sing higher (screen up), 1 = sing lower
       if (falling || sinkMs > 0) dir = -1
       else if (activeIdx < nodes.length) {
@@ -2194,7 +2198,7 @@ export const JourneyPrototype: Component<{
   })
 
   return (
-    <div class="jp-root">
+    <div class="jp-root" classList={{ 'jp-root--light': theme.light === true }}>
       <canvas class="jp-canvas" ref={canvas} />
       <Show when={phase() !== 'intro'}>
         <div class="jp-audio">

@@ -270,3 +270,36 @@
     transform: none;
   }
 }
+
+/* Light stage themes (Daylight): the overlay flips to ink-dark text so
+ * intro cards, hints and corner toggles keep contrast on a pale sky. */
+.jp-root--light .jp-title {
+  color: var(--ink);
+}
+
+.jp-root--light .jp-text {
+  color: #3a4152;
+}
+
+.jp-root--light .jp-error {
+  color: #b3402a;
+}
+
+.jp-root--light .jp-audio button {
+  background: rgb(246 241 231 / 78%);
+  color: rgb(31 41 55 / 85%);
+}
+
+.jp-root--light .jp-audio button[aria-pressed='false'] {
+  color: rgb(31 41 55 / 40%);
+}
+
+.jp-root--light .jp-pads button {
+  background: rgb(31 41 55 / 12%);
+  color: rgb(31 41 55 / 75%);
+}
+
+.jp-root--light .jp-pads button:active {
+  background: rgb(31 41 55 / 24%);
+  color: rgb(31 41 55 / 95%);
+}
