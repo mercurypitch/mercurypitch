@@ -2731,7 +2731,7 @@
   margin-inline-start: auto;
   padding: 0;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 999px;
   color: rgba(244, 234, 219, 0.5);
   background: transparent;
   cursor: pointer;
@@ -2741,10 +2741,6 @@
 .songChoiceUnstage:focus-visible {
   color: var(--ivory);
   background: rgba(255, 255, 255, 0.06);
-}
-
-.songChoiceUnstage {
-  border-radius: 999px;
 }
 
 .songChoiceUnstage svg {
@@ -2818,7 +2814,12 @@
   scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
 }
 
-.songList button {
+/* The ROW button only. This used to be `.songList button`, which at (0,1,1)
+   quietly outranked the single-class pills inside the same row and handed
+   them the row's full width, slab padding and 0.48rem corners -- the pill
+   styles were written and had no effect. Every list here is <li><button>, so
+   the direct-child path says what the rule always meant. */
+.songList > li > button {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2834,36 +2835,36 @@
   text-align: left;
 }
 
-.songList button:hover:not(:disabled),
+.songList > li > button:hover:not(:disabled),
 .songList .songChoiceActive {
   border-color: rgba(106, 202, 189, 0.45);
   background: rgba(106, 202, 189, 0.08);
 }
 
-.songList button:disabled {
+.songList > li > button:disabled {
   cursor: wait;
   opacity: 0.62;
 }
 
-.songList button > span {
+.songList > li > button > span {
   display: grid;
   min-width: 0;
 }
 
-.songList strong {
+.songList > li > button strong {
   overflow: hidden;
   font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.songList small {
+.songList > li > button small {
   margin-top: 0.14rem;
   color: rgba(244, 234, 219, 0.5);
   font-size: 0.68rem;
 }
 
-.songList i {
+.songList > li > button i {
   flex: none;
   color: var(--teal);
   font-size: 0.68rem;
