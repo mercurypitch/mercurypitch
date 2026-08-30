@@ -4,7 +4,7 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, Match, on, onMount, Show, Switch, } from 'solid-js'
-import { AlertTriangle, CheckSmall, Loader2, MusicLibrary, Pencil, Trash2, } from '@/components/icons'
+import { AlertTriangle, CheckSmall, ChevronLeft, Loader2, MusicLibrary, Pencil, Trash2, } from '@/components/icons'
 import type { DrumProjectLibraryProps, DrumProjectLibraryRow, } from './drum-persistence-ui'
 import { drumProjectOperationLabel as operationLabel, formatPersistenceCount as count, formatPersistenceDate as localDate, } from './drum-persistence-ui'
 import styles from './DrumProjectLibrary.module.css'
@@ -169,6 +169,18 @@ export function DrumProjectLibrary(
     >
       <header class={styles.intro}>
         <div>
+          <Show when={props.onBack}>
+            {(onBack) => (
+              <button
+                class={styles.backAction}
+                type="button"
+                onClick={() => onBack()()}
+              >
+                <ChevronLeft aria-hidden="true" />
+                <span>Groove editor</span>
+              </button>
+            )}
+          </Show>
           <span class={styles.kicker}>ON THIS DEVICE</span>
           <h2 id={headingId}>Your grooves</h2>
           <p>Saved pockets open silently and keep their place in the rack.</p>
@@ -349,7 +361,24 @@ export function DrumProjectLibrary(
                     class={styles.projectShell}
                     data-on-stage={project.onStage}
                   >
-                    <article class={styles.projectRow}>
+                    <article
+                      class={styles.projectRow}
+                      data-clickable={!project.onStage || undefined}
+                      onClick={(event) => {
+                        if (project.onStage || operationBusy()) return
+                        // The row is one big Open target; inner controls
+                        // (rename, delete, the Open button itself) keep
+                        // their own behavior.
+                        if (
+                          event.target instanceof Element &&
+                          event.target.closest('button, a, input, form') !==
+                            null
+                        ) {
+                          return
+                        }
+                        beginOpen(project)
+                      }}
+                    >
                       <div class={styles.projectIdentity}>
                         <span>{project.variationLabel}</span>
                         <h3>{project.name}</h3>

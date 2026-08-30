@@ -17,6 +17,8 @@ export type DrumDirectEvidenceSource = 'midi' | 'touch' | 'keyboard'
 interface DrumCapturedHitBase {
   readonly id: string
   readonly beat: number
+  /** Loop pass the hit was captured on; absent evidence is pass zero. */
+  readonly pass?: number
   /** Explicit source reliability, from zero to one. */
   readonly confidence?: number
   readonly timingUncertaintyMs?: number
@@ -97,6 +99,12 @@ export interface DrumCoachingResult {
 export interface DrumCoachingOptions {
   readonly startBeat?: number
   readonly endBeat?: number
+  /**
+   * Score only captures from this loop pass. Without it, evidence pools every
+   * pass and the best capture per target wins, so repeats can only improve the
+   * result — right for a whole-take summary, wrong for a live pass readout.
+   */
+  readonly scopeToPass?: number
   readonly matchWindowMs?: number
   readonly centredWindowMs?: number
   readonly minimumConfidence?: number
@@ -542,7 +550,11 @@ export function coachDrumSession(
     inclusiveEnd: true,
   })
   const targets = targetQuery.events
-  const capturesInRange = capturedHits
+  const scopedHits =
+    options.scopeToPass === undefined
+      ? capturedHits
+      : capturedHits.filter((hit) => (hit.pass ?? 0) === options.scopeToPass)
+  const capturesInRange = scopedHits
     .filter(
       (hit) =>
         isValidCapture(hit) &&

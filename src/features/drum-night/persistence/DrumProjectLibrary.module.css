@@ -34,6 +34,24 @@
   border-bottom: 1px solid var(--project-line-strong);
 }
 
+/* flex (not inline-flex) so the ON THIS DEVICE kicker starts its own line
+   below the button instead of flowing beside it. */
+.backAction {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px -8px;
+  padding: 0 12px 0 8px;
+  font-size: 10px;
+  font-weight: 730;
+}
+
+.backAction svg {
+  width: 14px;
+  height: 14px;
+}
+
 .kicker,
 .currentProject > span,
 .formCopy > span,
@@ -401,7 +419,17 @@
   grid-template-columns: minmax(190px, 1.15fr) minmax(250px, 0.9fr) auto;
   align-items: center;
   gap: 16px;
-  padding: 13px 2px;
+  padding: 13px 8px;
+  border-radius: 10px;
+  transition: background 140ms ease-out;
+}
+
+.projectRow[data-clickable] {
+  cursor: pointer;
+}
+
+.projectRow[data-clickable]:hover {
+  background: rgb(231 173 82 / 5%);
 }
 
 .projectIdentity {

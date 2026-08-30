@@ -29,6 +29,14 @@ function countedBeat(beat: number): number {
   return Math.round((bounded + 1) * 100) / 100
 }
 
+/** A stored range ends exclusively; musicians count the last covered beat. */
+export function countedRangeLabel(startBeat: number, endBeat: number): string {
+  const first = countedBeat(startBeat)
+  const bounded = Math.max(0, Number.isFinite(endBeat) ? endBeat : 0)
+  const last = Math.max(first, Math.round(bounded * 100) / 100)
+  return `Beats ${first}–${last}`
+}
+
 function variantLabel(variationId: DrumTakeSummary['variationId']): string {
   return (
     FIRST_POCKET_VARIANTS.find((variant) => variant.id === variationId)
@@ -71,7 +79,10 @@ export function DrumTakeHistoryHost(
                 finishedAt: Date.parse(summary.completedAt),
                 sourceLabel: 'First Pocket',
                 variationLabel: variantLabel(summary.variationId),
-                rangeLabel: `Beats ${countedBeat(summary.startBeat)}–${countedBeat(summary.endBeat)}`,
+                rangeLabel: countedRangeLabel(
+                  summary.startBeat,
+                  summary.endBeat,
+                ),
                 matchedHitCount: summary.matchedHitCount,
                 targetHitCount: summary.targetHitCount,
                 meanTimingOffsetMs: summary.meanTimingOffsetMs,

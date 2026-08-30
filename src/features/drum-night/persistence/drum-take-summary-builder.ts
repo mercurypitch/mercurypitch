@@ -21,6 +21,9 @@ export const DRUM_TAKE_EVIDENCE_POLICY = Object.freeze({
   minimumMatchedHits: 2,
 }) satisfies DrumTakeEvidencePolicy
 
+/** The take holds hits, but none inside the practiced range; show as-is. */
+export class DrumTakeEvidenceRangeError extends Error {}
+
 export interface BuildDrumTakeSummaryInput {
   readonly id: string
   readonly completedAt: string
@@ -84,7 +87,9 @@ export function buildDrumTakeSummary(
   const omittedCaptureHitCount =
     input.omittedCaptureHitCount + coaching.unprocessedCaptureHitCount
   if (coaching.capturedHitCount + omittedCaptureHitCount < 1) {
-    throw new Error('No captured take evidence exists in the practiced range.')
+    throw new DrumTakeEvidenceRangeError(
+      'No captured take evidence exists in the practiced range.',
+    )
   }
 
   return normalizeDrumTakeSummary({

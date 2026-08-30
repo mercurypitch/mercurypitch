@@ -7,7 +7,7 @@ import { DRUM_KIT_AUTHORED_FAMILIES } from '@/features/drum-night/runtime'
 import { createFirstPocketGroove, FIRST_POCKET_VARIANTS, } from '@/features/drum-night/session'
 import type { DrumProjectFamilyMix } from './drum-project'
 import { serializeDrumProject } from './drum-project'
-import { buildDrumTakeSummary } from './drum-take-summary-builder'
+import { buildDrumTakeSummary, DrumTakeEvidenceRangeError, } from './drum-take-summary-builder'
 
 function familyMix(): DrumProjectFamilyMix {
   return Object.freeze(
@@ -179,6 +179,33 @@ describe('buildDrumTakeSummary', () => {
       meanTimingOffsetMs: null,
       meanVelocityOffset: null,
     })
+  })
+
+  it('names the empty practiced range as a distinct recoverable error', () => {
+    const document = createFirstPocketGroove('source').document
+    const last = document.percussionTracks
+      .flatMap((track) => track.percussionHits)
+      .at(-1)!
+    expect(() =>
+      buildDrumTakeSummary({
+        id: 'take-out-of-range',
+        completedAt: '2026-08-26T10:12:00.000Z',
+        project: project({ startBeat: 0, endBeat: 0.25 }),
+        document,
+        capturedHits: [
+          {
+            id: 'outside-range',
+            source: 'touch',
+            beat: last.startBeat,
+            gmKey: last.gmKey,
+            velocity: last.velocity,
+          },
+        ],
+        omittedCaptureHitCount: 0,
+        tempoBpm: 84,
+        speedScale: 1,
+      }),
+    ).toThrow(DrumTakeEvidenceRangeError)
   })
 
   it('refuses imported-session evidence at the persistence boundary', () => {

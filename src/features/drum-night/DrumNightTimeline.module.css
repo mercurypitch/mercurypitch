@@ -49,16 +49,19 @@
 .timelineRail {
   position: relative;
   min-width: 0;
-  padding-bottom: 10px;
 }
 
+/* The beat readout hugs the end of the progress bar: right-aligned with
+   where the track stops and a few pixels under the track line, inside the
+   rail's own 44px height. */
 .timelinePosition {
   position: absolute;
-  right: 44px;
-  bottom: 0;
+  top: calc(50% + 6px);
+  right: 3px;
   color: rgba(238, 231, 219, 0.46);
   font-size: 8px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .loopControls {
@@ -113,6 +116,17 @@
 
 .loopMarks .isSet:first-child {
   background: #6acabd;
+}
+
+/* `.loopMarks button:hover` above is (0,2,1); without these (0,3,0/(0,3,1))
+   overrides a set mark's fill vanished to the translucent hover wash. */
+.loopMarks .isSet:hover {
+  color: #111318;
+  background: #f0bb65;
+}
+
+.loopMarks .isSet:first-child:hover {
+  background: #83d6ca;
 }
 
 .loopMarks .isSet:focus-visible {

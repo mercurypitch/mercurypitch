@@ -135,37 +135,33 @@ function eighthHats(
   )
 }
 
+/**
+ * The default groove is authored ON the grid: a two-bar rock backbeat that
+ * loops cleanly and leaves room to jam over. Feel comes from velocities and
+ * the Feel (humanize) toggle at playback time — earlier revisions baked
+ * 20-40 ms offsets into the authored beats, which read as sloppy timing and
+ * put permanent off-grid hits in the Pocket editor.
+ */
 function classicHits(): MidiSongPercussionHit[] {
-  const hats = eighthHats({
-    openIndexes: [7, 15],
-    offsets: [
-      0, 0.035, 0, 0.03, -0.012, 0.04, 0, 0.025, -0.01, 0.038, 0, 0.032, -0.014,
-      0.042, 0, 0,
-    ],
-  })
-  const kicks = [0, 1.5, 2.75, 3.5, 4, 5.25, 6.5, 7.25].map((beat, index) =>
+  const hats = eighthHats({ openIndexes: [15] })
+  const kicks = [0, 2.5, 4, 5.5, 6.5].map((beat, index) =>
     hit(
       numberedId('kick', index),
       36,
-      [112, 86, 101, 79, 115, 92, 106, 84][index] ?? 84,
-      beat + [0, -0.018, 0.012, -0.015, 0, -0.02, 0.014, -0.016][index]!,
+      [116, 98, 112, 88, 104][index] ?? 100,
+      beat,
     ),
   )
   const snares = [1, 3, 5, 7].map((beat, index) =>
     hit(
       numberedId('snare', index),
       38,
-      [112, 118, 110, 121][index] ?? 110,
-      beat + [0.028, 0.034, 0.026, 0.036][index]!,
+      [112, 118, 112, 121][index] ?? 112,
+      beat,
     ),
   )
-  const ghosts = [2.5, 6.25].map((beat, index) =>
-    hit(
-      numberedId('ghost', index),
-      38,
-      [44, 48][index] ?? 44,
-      beat + [0.055, 0.045][index]!,
-    ),
+  const ghosts = [2.75, 6.75].map((beat, index) =>
+    hit(numberedId('ghost', index), 38, [44, 48][index] ?? 44, beat),
   )
   return orderedHits([
     hit('crash-01', 49, 120, 0, 1),

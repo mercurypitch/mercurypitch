@@ -65,6 +65,8 @@ export interface DrumProjectLibraryView {
 
 export interface DrumProjectLibraryProps {
   readonly view: DrumProjectLibraryView
+  /** Return to the groove editor; renders the header back control when set. */
+  readonly onBack?: () => void
   readonly onLoad: () => void
   readonly onRetry: () => void
   readonly onSaveCurrent: (name: string) => void
