@@ -107,12 +107,17 @@ const LETTER_SEMITONES: Record<string, number> = {
  * multi-digit / negative octaves. Returns NaN for anything unparseable.
  */
 export function noteToMidi(note: string): number {
-  const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(note.trim())
+  // U+266F/U+266D are accepted alongside ASCII #/b: "B♭4" is what copying out
+  // of a score, a docs table or a chat message gives you, and callers that
+  // drop NaN would lose the note without saying so.
+  const match = /^([A-Ga-g])([#♯b♭]?)(-?\d+)$/.exec(note.trim())
   if (!match) return NaN
   const [, letter, accidental, octaveStr] = match
   const base = LETTER_SEMITONES[letter.toUpperCase()]
   if (base === undefined) return NaN
-  const offset = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0
+  const sharp = accidental === '#' || accidental === '♯'
+  const flat = accidental === 'b' || accidental === '♭'
+  const offset = sharp ? 1 : flat ? -1 : 0
   const octave = parseInt(octaveStr, 10)
   return base + offset + (octave + 1) * 12
 }

@@ -8,7 +8,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { clearChallengeResult, lastChallengeResult, } from '@/features/challenges/challenge-result-store'
 import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { activeWeeklyAttempt, beginWeeklyAttempt, clearWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
-import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
+import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, parseTargetNotes, } from '@/features/challenges/weekly-service'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { activeTab, challengeStageLaunch, closeChallengeStage, setActiveTab, } from '@/stores/ui-store'
@@ -309,5 +309,35 @@ describe('a Legend attempt that could not be saved', () => {
     // Telling somebody to sign in when they already are is worse than vague.
     expect(message).not.toContain('Sign in')
     expect(showActionNotification).not.toHaveBeenCalled()
+  })
+})
+
+describe('parseTargetNotes', () => {
+  it('names the tokens it could not read instead of dropping them', () => {
+    // The silent drop is the bug: six notes in, five saved, no warning.
+    const { items, rejected } = parseTargetNotes('Bb4 H4 D5')
+
+    expect(items.map((i) => i.note.midi)).toEqual([70, 74])
+    expect(rejected).toEqual(['H4'])
+  })
+
+  it('keeps every note when the list is written with unicode flats', () => {
+    const { items, rejected } = parseTargetNotes('B♭4 A4 B♭4 D5 C5 B♭4')
+
+    expect(rejected).toEqual([])
+    expect(items.map((i) => i.note.midi)).toEqual([70, 69, 70, 74, 72, 70])
+  })
+
+  it('rejects nothing for a list it reads in full', () => {
+    expect(parseTargetNotes('G4 A4 B4').rejected).toEqual([])
+  })
+
+  it('numbers the surviving notes consecutively when one is rejected', () => {
+    // ids/startBeats come from the loop index — skipping a token used to
+    // leave a hole, and the stage reads startBeat as the playback position.
+    const { items } = parseTargetNotes('G4 H4 B4')
+
+    expect(items.map((i) => i.id)).toEqual([1, 2])
+    expect(items.map((i) => i.startBeat)).toEqual([0, 1])
   })
 })

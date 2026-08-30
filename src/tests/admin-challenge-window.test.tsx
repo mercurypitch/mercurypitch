@@ -30,7 +30,7 @@ vi.mock('@/features/challenges/weekly-service', () => ({
     return Promise.resolve(true)
   },
   melodyItemsToNotes: () => '[]',
-  notesToMelodyItems: () => [],
+  parseTargetNotes: () => ({ items: [], rejected: [] }),
   plusOneWeekIso: (iso: string) =>
     new Date(Date.parse(iso) + 7 * 86_400_000).toISOString(),
   thisMondayUtcIso: () => '2026-08-17T00:00:00.000Z',

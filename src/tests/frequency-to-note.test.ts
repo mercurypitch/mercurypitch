@@ -90,6 +90,13 @@ describe('noteToMidi', () => {
     expect(noteToMidi('A#3')).toBe(58)
   })
 
+  it('handles unicode accidentals pasted out of a score', () => {
+    // "B♭4" (U+266D) is what you get copying a score, a chat message or a
+    // Wikipedia table. It used to return NaN, and every caller drops NaN.
+    expect(noteToMidi('B♭4')).toBe(70)
+    expect(noteToMidi('F♯4')).toBe(66)
+  })
+
   it('handles all natural notes in octave 4', () => {
     const expected: Record<string, number> = {
       C4: 60,
