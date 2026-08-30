@@ -235,9 +235,19 @@ calibration) drops in after V1 core.
    (`levels/frere-jacques.ts`): matines eighth-note run, and the first
    window that dips below the ground note (ding DANG dong at −5).
 
-Next candidates: Für Elise (semitone-neighbor control), In the Hall of
-the Mountain King (accelerating chase/boss), Habanera (chromatic
-descent), plus maff's original melodies as data.
+4. **Für Elise** — semitone-neighbor control. SHIPPED
+   (`levels/fur-elise.ts`): the E–D# oscillation as mi–ri trills, the
+   low arpeggio answer, tightened landing band via `feel`.
+5. **In the Hall of the Mountain King** — the accelerating chase.
+   SHIPPED (`levels/mountain-king.ts`): the theme three times with the
+   note durations scaled 1 → 0.85 → 0.7 (geometry is time — the road
+   itself accelerates), one air-relift, generous tap misses; per-level
+   `melody.minWidth` keeps sub-beat slabs honest in rhythm play.
+6. **Habanera** — the chromatic descent. SHIPPED
+   (`levels/habanera.ts`): l'amour's half-step slide down, a gate on
+   the dominant BELOW the ground note, the "prends garde" reprise.
+
+Next: maff's original melodies as data.
 
 ## 6. Testing
 
@@ -270,7 +280,20 @@ descent), plus maff's original melodies as data.
   painterly atmospheric are the three winning families; the final
   default gets picked after device playtests.
 
+## 8. Score and learning path (planned, maff 2026-08-30)
+
+Passing a level should not mean "barely reached the end". Each run gets
+a perfection score per mode — pitch accuracy and dwell steadiness in
+sung modes, timing offset spread in rhythm, first-try answers in listen
+— and clearing a level means landing in roughly the 70–80% band for
+that mode, tempo included. Stars per song-per-mode fall out of the same
+number. That threshold is what turns the songbook into a learning path:
+the next song unlocks by demonstrated control, not by crossing the
+finish line once. All thresholds live in `journey-config.ts` when
+built; nothing is scored or gated until this ships.
+
 ## Out of scope for this pass
 
-3D (V3), backing tracks (pending device test), listen mode, editor UI,
-remote songbook fetch, VO wiring.
+3D (V3), backing tracks (pending device test), listen pane questions
+and gestures (traversal V1 shipped — input-modes.md), editor UI,
+remote songbook fetch, VO wiring, the score/learning path above.
