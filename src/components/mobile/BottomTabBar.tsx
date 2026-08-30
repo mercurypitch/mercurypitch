@@ -29,7 +29,7 @@ import { EllipsisIcon } from '@/components/mobile/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { BusyLink } from '@/components/shared/BusyLink'
 import { DRUM_NIGHT_PATH } from '@/features/drum-night/route'
-import { mobileBarTabs, TAB_KARAOKE, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { mobileBarTabs, TAB_EXERCISES, TAB_KARAOKE, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -59,8 +59,42 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
 
   const moreIsActive = (): boolean => moreTabs().includes(props.activeTab())
 
-  const lastVisiblePlayTab = createMemo(() =>
-    moreTabs().findLast((tab) => tabGroupOf(tab)?.id === 'play'),
+  // The Drum Night door lives with Practice (it is instrument practice),
+  // between the instruments and the Exercises drills. When Exercises is in
+  // the sheet the door renders just above it; otherwise it anchors after the
+  // last practice row, and when the current scope fits every practice tab
+  // into the bar itself, it falls back to the end of Play rather than
+  // dropping the door entirely.
+  const drumNightBeforeTab = createMemo(() =>
+    moreTabs().includes(TAB_EXERCISES) ? TAB_EXERCISES : null,
+  )
+  const drumNightAnchorTab = createMemo(() =>
+    drumNightBeforeTab() !== null
+      ? null
+      : (moreTabs().findLast((tab) => tabGroupOf(tab)?.id === 'practice') ??
+        moreTabs().findLast((tab) => tabGroupOf(tab)?.id === 'play')),
+  )
+
+  const drumNightDoor = () => (
+    <li>
+      <BusyLink
+        id="nav-drum-night"
+        href={DRUM_NIGHT_PATH}
+        class={styles.moreRoomLink}
+        data-testid="nav-drum-night"
+        aria-label="Drum Night — open standalone room"
+        busyLabel="Opening Drum Night…"
+        onClick={() => setMoreOpen(false)}
+      >
+        <span class={styles.moreIcon} aria-hidden="true">
+          <Drum />
+        </span>
+        <span class={styles.moreRoomCopy}>
+          <strong>Drum Night</strong>
+          <small>Open the standalone room</small>
+        </span>
+      </BusyLink>
+    </li>
   )
 
   const pick = (tab: ActiveTab): void => {
@@ -130,6 +164,9 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
           <For each={moreTabs()}>
             {(tab) => (
               <>
+                <Show when={tab === drumNightBeforeTab()}>
+                  {drumNightDoor()}
+                </Show>
                 <li>
                   {/* Same `#tab-*` id the bar buttons carry. A tab is either in
                     the bar or in this sheet, never both, so the ids stay
@@ -155,26 +192,8 @@ export const BottomTabBar: Component<BottomTabBarProps> = (props) => {
                     {props.tabLabel(tab)}
                   </button>
                 </li>
-                <Show when={tab === lastVisiblePlayTab()}>
-                  <li>
-                    <BusyLink
-                      id="nav-drum-night"
-                      href={DRUM_NIGHT_PATH}
-                      class={styles.moreRoomLink}
-                      data-testid="nav-drum-night"
-                      aria-label="Drum Night — open standalone room"
-                      busyLabel="Opening Drum Night…"
-                      onClick={() => setMoreOpen(false)}
-                    >
-                      <span class={styles.moreIcon} aria-hidden="true">
-                        <Drum />
-                      </span>
-                      <span class={styles.moreRoomCopy}>
-                        <strong>Drum Night</strong>
-                        <small>Open the standalone room</small>
-                      </span>
-                    </BusyLink>
-                  </li>
+                <Show when={tab === drumNightAnchorTab()}>
+                  {drumNightDoor()}
                 </Show>
               </>
             )}

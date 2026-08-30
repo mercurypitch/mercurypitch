@@ -780,7 +780,28 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
               <Show when={collapsible()}>
                 {groupLabel(group.id, group.label)}
               </Show>
-              <For each={split(group).inline}>{(tab) => renderTab(tab)}</For>
+              {/* The Drum Night door sits with the instruments: after Guitar,
+                  before the Exercises drills wherever they land. */}
+              <For each={split(group).inline}>
+                {(tab) => (
+                  <>
+                    <Show
+                      when={group.id === 'practice' && tab === TAB_EXERCISES}
+                    >
+                      {drumNightRoomLink()}
+                    </Show>
+                    {renderTab(tab)}
+                  </>
+                )}
+              </For>
+              <Show
+                when={
+                  group.id === 'practice' &&
+                  !split(group).inline.includes(TAB_EXERCISES)
+                }
+              >
+                {drumNightRoomLink()}
+              </Show>
               <Show when={split(group).overflow.length > 0}>
                 <AppNavOverflowMenu
                   groupLabel={group.label}
@@ -791,7 +812,6 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
                   onPick={(tab) => void props.handleTabChange(tab)}
                 />
               </Show>
-              <Show when={group.id === 'play'}>{drumNightRoomLink()}</Show>
             </div>
           </Show>
         )}

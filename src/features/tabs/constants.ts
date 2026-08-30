@@ -98,7 +98,7 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     // to Play — it is a performance, not a practice surface.
     id: 'practice',
     label: 'Practice',
-    tabs: [TAB_SINGING, TAB_GUITAR, TAB_PIANO, TAB_EXERCISES, TAB_EAR_LAB],
+    tabs: [TAB_SINGING, TAB_PIANO, TAB_GUITAR, TAB_EXERCISES, TAB_EAR_LAB],
   },
   {
     // Singing at something or with someone.
