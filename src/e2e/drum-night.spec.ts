@@ -1198,9 +1198,11 @@ test('plays a real prepared groove and changes its authored variation @smoke', a
     .first()
     .click()
   const grooveDrawer = page.getByRole('region', { name: 'Shape the groove' })
-  await grooveDrawer.getByRole('button', { name: 'Funk' }).click()
+  // The pattern library has its own style rail, so this scopes to Feel's group.
+  const feelStyles = grooveDrawer.getByRole('group', { name: 'Feel style' })
+  await feelStyles.getByRole('button', { name: 'Funk' }).click()
   await expect(
-    grooveDrawer.getByRole('button', { name: 'Funk' }),
+    feelStyles.getByRole('button', { name: 'Funk' }),
   ).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByTestId('drum-night-shell')).toHaveAttribute(
     'data-click-enabled',

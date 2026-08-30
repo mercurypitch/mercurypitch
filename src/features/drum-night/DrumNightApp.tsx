@@ -35,6 +35,8 @@ import { DrumNightTimeline } from './DrumNightTimeline'
 import type { DrumFeelSettings, HumanizeStyle } from './groove'
 import { createDrumGrooveDraftController, materializeDrumGrooveDocument, } from './groove'
 import { browserDrumFeelStorage, readDrumFeelSettings, writeDrumFeelSettings, } from './groove'
+import type { DrumPattern } from './patterns'
+import { drumPatternGridHits } from './patterns'
 import type { HydratedDrumProject } from './persistence/drum-project'
 import type { DrumProjectCapture, DrumProjectController, DrumProjectControllerOptions, } from './persistence/drum-project-controller'
 import type { DrumTakeHistoryController, DrumTakeHistoryControllerOptions, } from './persistence/drum-take-history-controller'
@@ -66,6 +68,11 @@ const DrumFamilyBalance = lazy(() =>
 const DrumGrooveEditor = lazy(() =>
   import('./groove/DrumGrooveEditor').then((module) => ({
     default: module.DrumGrooveEditor,
+  })),
+)
+const DrumPatternPicker = lazy(() =>
+  import('./patterns/DrumPatternPicker').then((module) => ({
+    default: module.DrumPatternPicker,
   })),
 )
 const DrumPlayAlongSongsPanel = lazy(() =>
@@ -446,6 +453,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
   const grooveDrafts = createDrumGrooveDraftController({
     initialVariantId: FIRST_POCKET_DEFAULT_VARIANT,
   })
+  // Per-variation, session-local: a saved project stores the resulting hits,
+  // not the pattern that produced them, so this is a UI memory only.
+  const [loadedPatternIds, setLoadedPatternIds] = createSignal<
+    Partial<Record<FirstPocketVariantId, string>>
+  >({})
   const variation = grooveDrafts.variantId
   const setVariation = grooveDrafts.selectVariant
   const [kitVolume, setKitVolume] = createSignal(INITIAL_KIT_VOLUME)
@@ -1432,6 +1444,22 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     setLiveMessage(message)
     setToastVisible(true)
     toastTimer = window.setTimeout(() => setToastVisible(false), 2600)
+  }
+
+  const loadGroovePattern = (pattern: DrumPattern): void => {
+    const variantId = grooveDrafts.variantId()
+    const outcome = grooveDrafts.dispatch({
+      type: 'load-pattern',
+      hits: drumPatternGridHits(pattern, grooveDrafts.state().stepCount).map(
+        (hit) => ({ ...hit }),
+      ),
+    })
+    if (!outcome.changed) {
+      showToast('That pattern does not fit this grid.')
+      return
+    }
+    setLoadedPatternIds((current) => ({ ...current, [variantId]: pattern.id }))
+    showToast(`${pattern.name} loaded. Undo restores your groove.`)
   }
 
   const announceOnly = (message: string): void => {
@@ -3454,6 +3482,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                     stemPlayAlongSnapshot().status === 'loading'
                   }
                   recentPadId={activeHit()}
+                  reducedFidelity={stemPlayAlongSnapshot().reducedFidelity}
                   strikeDisabled={drawerInteractionLocked()}
                   onStrike={triggerPad}
                   onOpenAuthoredScore={() => openWorkspace('songs')}
@@ -3673,6 +3702,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
                               </Show>
                             </div>
                           }
+                        />
+                        <DrumPatternPicker
+                          loadedPatternId={
+                            loadedPatternIds()[grooveDrafts.variantId()] ?? null
+                          }
+                          onLoad={loadGroovePattern}
                         />
                       </Match>
                     </Switch>

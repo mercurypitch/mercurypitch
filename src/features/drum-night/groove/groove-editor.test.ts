@@ -318,3 +318,68 @@ describe('non-destructive groove transforms', () => {
     )
   })
 })
+
+describe('load-pattern', () => {
+  const patternHits = [
+    { gmKey: 36, stepIndex: 0, velocity: 114, writtenDuration: 0.25 },
+    { gmKey: 38, stepIndex: 4, velocity: 88, writtenDuration: 0.25 },
+    { gmKey: 49, stepIndex: 0, velocity: 114, writtenDuration: 0.5 },
+  ]
+
+  it('replaces every hit with editor-origin events in one undo step', () => {
+    const initial = createEditableDrumGroove(
+      createFirstPocketGroove('source').document,
+    )
+    const loaded = commandState(initial, {
+      type: 'load-pattern',
+      hits: patternHits,
+    })
+
+    expect(loaded.hits).toHaveLength(3)
+    expect(loaded.hits.every((hit) => hit.origin.kind === 'editor')).toBe(true)
+    expect(loaded.hits.map((hit) => hit.stepIndex)).toEqual([0, 0, 4])
+    expect(loaded.hits.find((hit) => hit.gmKey === 49)?.writtenDuration).toBe(
+      0.5,
+    )
+    expect(loaded.undoDepth).toBe(1)
+
+    const undone = commandState(loaded, { type: 'undo' })
+    expect(undone.hits).toEqual(initial.hits)
+  })
+
+  it('leaves the draft untouched when any entry is unusable', () => {
+    const initial = createEditableDrumGroove(
+      createFirstPocketGroove('source').document,
+    )
+
+    for (const bad of [
+      [],
+      [
+        { gmKey: 36, stepIndex: 0, velocity: 114 },
+        { gmKey: 36, stepIndex: 0, velocity: 90 },
+      ],
+      [{ gmKey: 36, stepIndex: 999, velocity: 114 }],
+      [{ gmKey: 3, stepIndex: 0, velocity: 114 }],
+      [{ gmKey: 36, stepIndex: 0, velocity: 0 }],
+      [{ gmKey: 36, stepIndex: 0, velocity: 114, writtenDuration: 0 }],
+    ]) {
+      const outcome = applyDrumGrooveCommand(initial, {
+        type: 'load-pattern',
+        hits: bad,
+      })
+      expect(outcome.changed).toBe(false)
+      expect(outcome.state).toBe(initial)
+    }
+  })
+
+  it('materializes the loaded pattern into the canonical document', () => {
+    const loaded = commandState(
+      createEditableDrumGroove(createFirstPocketGroove('source').document),
+      { type: 'load-pattern', hits: patternHits },
+    )
+    const document = materializeDrumGrooveDocument(loaded)
+
+    expect(hits(document)).toHaveLength(3)
+    expect(hits(document).map((hit) => hit.startBeat)).toEqual([0, 0, 1])
+  })
+})
