@@ -502,6 +502,26 @@ export const ScoreDocument: Component<{ size?: number }> = (props) => (
   </svg>
 )
 
+// Guitar tab — six strings with fret numbers on them, the notation this room
+// reads. Distinct from ScoreDocument, which is a page of staff notation.
+export const GuitarTab: Component<{ size?: number }> = (props) => (
+  <svg
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    data-icon="guitar-tab"
+  >
+    <path d="M3.25 6h17.5M3.25 9.5h17.5M3.25 13h17.5M3.25 16.5h17.5M3.25 20h17.5" />
+    <path d="M6.4 6h2.6M13.2 9.5h2.4M9.1 16.5h2.6" stroke-width="3.4" />
+  </svg>
+)
+
 // Music library — the device-local collection used to choose a staged piece.
 export const MusicLibrary: Component<{ size?: number }> = (props) => (
   <svg

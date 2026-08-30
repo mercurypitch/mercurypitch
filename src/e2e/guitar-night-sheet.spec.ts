@@ -73,7 +73,7 @@ async function openTheRoom(
   })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
   await expect(page.getByTestId('guitar-night-score-room')).toBeVisible()
 }
@@ -383,7 +383,7 @@ test('puts the bar lines where the score says, not every four beats', async ({
   })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page
-    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .getByRole('button', { name: 'Practice with tab', exact: true })
     .click()
   await expect(page.getByTestId('guitar-night-score-room')).toBeVisible()
 

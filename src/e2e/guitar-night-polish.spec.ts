@@ -164,7 +164,7 @@ test('the room owns up to the tab it was given @smoke', async ({ page }) => {
   await expect(note).not.toContainText('Attach a tab or turn on Listening')
   await expect(note).toContainText('Velvet pointer study')
   await expect(
-    note.getByRole('button', { name: 'Rehearse the tab', exact: true }),
+    note.getByRole('button', { name: 'Practice with tab', exact: true }),
   ).toBeVisible()
 })
 

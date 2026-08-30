@@ -577,7 +577,7 @@ describe('GuitarNightRoom', () => {
       />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rehearse the tab' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Practice with tab' }))
     expect(onRehearseTab).toHaveBeenCalledTimes(1)
   })
 
@@ -595,7 +595,7 @@ describe('GuitarNightRoom', () => {
     const note = screen.getByTestId('guitar-night-free-play-note')
     expect(note.textContent).toContain('Attach a tab or turn on Listening')
     expect(
-      screen.queryByRole('button', { name: 'Rehearse the tab' }),
+      screen.queryByRole('button', { name: 'Practice with tab' }),
     ).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Attach a tab' }))

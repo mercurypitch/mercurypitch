@@ -651,7 +651,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     type="button"
                     onClick={() => rehearse()()}
                   >
-                    Rehearse the tab
+                    Practice with tab
                   </button>
                 )}
               </Show>

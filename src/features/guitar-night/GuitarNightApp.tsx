@@ -9,7 +9,7 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
-import { ScoreDocument, X } from '@/components/icons'
+import { ChevronLeft, GuitarTab, Info, LinkChain, ScoreDocument, Split, X, } from '@/components/icons'
 import { Notifications } from '@/components/Notifications'
 import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
@@ -584,7 +584,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
    * What is staged right now, for the panel beside the library.
    *
    * The actions used to sit under the drop zone AND both galleries, so on a
-   * short window "Rehearse the tab" was below the fold and the reader had to
+   * short window "Practice with tab" was below the fold and the reader had to
    * scroll past everything they had just chosen from to reach it. It reads
    * better beside them: the left column stays a chooser, the right column
    * says what was chosen and what can be done with it.
@@ -944,7 +944,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   /**
-   * Rehearse the tab alone. The recording is left paused rather than played
+   * Practice with tab alone. The recording is left paused rather than played
    * underneath it: nothing has aligned the two timelines, and a backing
    * running against an unrelated tempo is worse than silence.
    */
@@ -1212,6 +1212,38 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               : 'Open'}
           </i>
         </button>
+        {/* Both of these belong to the row they act on, not to the panel
+            beside it: separating the guitar is something you do TO this
+            recording, and unstaging it is how you get a loaded tab back on
+            its own after the two were connected by a click. */}
+        <Show when={isActive()}>
+          <div class={styles.songChoiceActions}>
+            <Show
+              when={activeBacking()?.defaultMix.kind === 'mixed-instrumental'}
+            >
+              <button
+                type="button"
+                class={styles.songChoiceAction}
+                title={SEPARATE_GUITAR_HINT}
+                onClick={prepareGuitarFreeBand}
+              >
+                <span aria-hidden="true">
+                  <Split />
+                </span>
+                Separate guitar
+              </button>
+            </Show>
+            <button
+              type="button"
+              class={styles.songChoiceUnstage}
+              aria-label={`Unstage ${song.title}`}
+              title="Unstage this recording"
+              onClick={() => songController.clearSession()}
+            >
+              <X />
+            </button>
+          </div>
+        </Show>
       </li>
     )
   }
@@ -1411,7 +1443,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             [styles.entryPanelRoom]: isRoomView(),
             [styles.entryPanelLesson]:
               view() === 'first-win' || isLearnActivityView(view()),
-            [styles.entryPanelSong]: view() === 'song',
           }}
         >
           <Show when={!isStageView()}>
@@ -1420,7 +1451,23 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
           <Switch>
             <Match when={view() === 'choices'}>
-              <p class={styles.eyebrow}>The room is quiet</p>
+              {/* The way back to the Guitar workspace used to be a third
+                  entry button reading "I know my way around" -- a claim about
+                  the reader rather than a destination, and it sat at the same
+                  weight as the two things this screen is actually for. It is
+                  a return control on the eyebrow now. */}
+              <p class={styles.eyebrow}>
+                <button
+                  type="button"
+                  class={styles.eyebrowReturn}
+                  aria-label="Open the Guitar workspace"
+                  title="Open the Guitar workspace"
+                  onClick={skipFirstWin}
+                >
+                  <ChevronLeft />
+                </button>
+                Ready to practice?
+              </p>
               <h1>Guitar Night</h1>
               <p class={styles.lede}>
                 Your room is ready. Begin with one string, bring a song, or step
@@ -1456,18 +1503,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     Open a prepared song or choose local audio
                   </span>
                 </button>
-                <button
-                  class={styles.expertAction}
-                  type="button"
-                  aria-label="I know my way around"
-                  aria-describedby="guitar-night-expert-description"
-                  onClick={skipFirstWin}
-                >
-                  <strong>I know my way around</strong>
-                  <span id="guitar-night-expert-description">
-                    Open the current Guitar workspace
-                  </span>
-                </button>
               </div>
               <button
                 class={styles.tunerEntryAction}
@@ -1499,785 +1534,555 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             </Match>
 
             <Match when={view() === 'song'}>
-              <p class={styles.eyebrow}>Songs · this device</p>
-              <h1 ref={detailHeading} tabindex="-1">
+              <h1 ref={detailHeading} class={styles.songHeading} tabindex="-1">
                 Bring a song into the room.
               </h1>
-              <p class={styles.detailCopy}>
-                Open something already prepared here, or choose audio, MIDI, or
-                Guitar Pro from this device. Nothing starts playing on its own.
-              </p>
+              {/* One line. The drop zone below names the formats and says
+                  nothing plays on its own, so the long version spent three
+                  rows restating what is already on screen -- in the one view
+                  where rows were the problem. */}
+              <p class={styles.detailCopy}>Choose your next song.</p>
 
-              <div class={styles.songLayout}>
-                <div class={styles.songMain}>
-                  <GuitarNightFileDrop
-                    class={styles.songWell}
-                    busy={
-                      preparingSong() !== null || bandPreparation() !== null
-                    }
-                    openingFileName={referenceController.importPendingFileName()}
-                    message={fileImportError()}
-                    onChoose={openImportPicker}
-                    onFile={handleImportFile}
-                    onRejected={() =>
-                      setFileImportError(GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR)
-                    }
+              <GuitarNightFileDrop
+                class={styles.songWell}
+                busy={preparingSong() !== null || bandPreparation() !== null}
+                openingFileName={referenceController.importPendingFileName()}
+                message={fileImportError()}
+                onChoose={openImportPicker}
+                onFile={handleImportFile}
+                onRejected={() =>
+                  setFileImportError(GUITAR_NIGHT_IMPORT_MULTIPLE_ERROR)
+                }
+              >
+                <Switch>
+                  <Match when={bandPreparation()}>
+                    {(preparation) => (
+                      <div class={styles.songState}>
+                        <strong>Building the guitar-free band</strong>
+                        <span role="status" aria-atomic="true">
+                          {guitarNightBandPreparationMessage(preparation())}
+                        </span>
+                        <Show
+                          when={preparation().progress !== null}
+                          fallback={
+                            <progress
+                              class={styles.songProgress}
+                              max="100"
+                              aria-label="Preparing full-band parts"
+                            />
+                          }
+                        >
+                          <progress
+                            class={styles.songProgress}
+                            max="100"
+                            value={preparation().progress ?? 0}
+                            aria-label="Preparing full-band parts"
+                          />
+                        </Show>
+                        <small>
+                          The current mix stays safe on this device while its
+                          drums, bass, and guitar parts are separated.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={bandPreparationBlocked()}>
+                    {(blocked) => (
+                      <div class={styles.songState}>
+                        <strong>
+                          {cloudSplitBlockerHeading(blocked().blocker)}
+                        </strong>
+                        <span>{blocked().blocker.message}</span>
+                        <small>
+                          Your existing vocals and accompaniment are unchanged,
+                          and nothing was charged.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={bandPreparationError()}>
+                    {(error) => (
+                      <div class={styles.songState} role="alert">
+                        <strong>Couldn’t build the full band</strong>
+                        <span>{error().message}</span>
+                        <small>
+                          Your existing vocals and accompaniment are unchanged.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={preparingSong()}>
+                    {(preparation) => (
+                      <div class={styles.songState}>
+                        <strong title={preparation().file.name}>
+                          {preparation().file.name}
+                        </strong>
+                        <span role="status" aria-atomic="true">
+                          {guitarNightPreparationMessage(preparation())}
+                        </span>
+                        <Show
+                          when={preparation().progress !== null}
+                          fallback={
+                            <progress
+                              class={styles.songProgress}
+                              max="100"
+                              aria-label={`Preparing ${preparation().file.name}`}
+                            />
+                          }
+                        >
+                          <progress
+                            class={styles.songProgress}
+                            max="100"
+                            value={preparation().progress ?? 0}
+                            aria-label={`Preparing ${preparation().file.name}`}
+                          />
+                        </Show>
+                        <small>
+                          {preparation().warning ??
+                            'Your audio stays on this device. Nothing will play automatically.'}
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={preparationError()}>
+                    {(error) => (
+                      <div class={styles.songState} role="alert">
+                        <strong>{error().title}</strong>
+                        <span title={error().file.name}>
+                          {error().file.name}
+                        </span>
+                        <small>{error().message}</small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={cancelledPreparation()}>
+                    {(cancelled) => (
+                      <div class={styles.songState}>
+                        <strong>Preparation cancelled</strong>
+                        <span title={cancelled().file.name}>
+                          {cancelled().file.name}
+                        </span>
+                        <small>
+                          This song was not staged. The file is ready if you
+                          want to try again.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={activeBacking()}>
+                    {(backing) => (
+                      <>
+                        <strong>{backing().title}</strong>
+                        <span>
+                          {backing().stems.length} local{' '}
+                          {backing().stems.length === 1 ? 'stem' : 'stems'}{' '}
+                          ready
+                        </span>
+                        <small>
+                          {backing().defaultMix.kind === 'parts'
+                            ? backing().defaultMix.muted.length > 0
+                              ? 'The guitar part is staged separately and defaults muted.'
+                              : 'The available band parts are staged without a separate guitar track.'
+                            : 'Guitar is still inside this instrumental mix, so no guitar-mute control is shown.'}
+                        </small>
+                      </>
+                    )}
+                  </Match>
+                  <Match
+                    when={songController.selectionState().kind === 'loading'}
                   >
-                    <Switch>
-                      <Match when={bandPreparation()}>
-                        {(preparation) => (
-                          <div class={styles.songState}>
-                            <strong>Building the guitar-free band</strong>
-                            <span role="status" aria-atomic="true">
-                              {guitarNightBandPreparationMessage(preparation())}
-                            </span>
-                            <Show
-                              when={preparation().progress !== null}
-                              fallback={
-                                <progress
-                                  class={styles.songProgress}
-                                  max="100"
-                                  aria-label="Preparing full-band parts"
-                                />
-                              }
-                            >
-                              <progress
-                                class={styles.songProgress}
-                                max="100"
-                                value={preparation().progress ?? 0}
-                                aria-label="Preparing full-band parts"
-                              />
-                            </Show>
-                            <small>
-                              The current mix stays safe on this device while
-                              its drums, bass, and guitar parts are separated.
-                            </small>
-                          </div>
-                        )}
-                      </Match>
-                      <Match when={bandPreparationBlocked()}>
-                        {(blocked) => (
-                          <div class={styles.songState}>
-                            <strong>
-                              {cloudSplitBlockerHeading(blocked().blocker)}
-                            </strong>
-                            <span>{blocked().blocker.message}</span>
-                            <small>
-                              Your existing vocals and accompaniment are
-                              unchanged, and nothing was charged.
-                            </small>
-                          </div>
-                        )}
-                      </Match>
-                      <Match when={bandPreparationError()}>
-                        {(error) => (
-                          <div class={styles.songState} role="alert">
-                            <strong>Couldn’t build the full band</strong>
-                            <span>{error().message}</span>
-                            <small>
-                              Your existing vocals and accompaniment are
-                              unchanged.
-                            </small>
-                          </div>
-                        )}
-                      </Match>
-                      <Match when={preparingSong()}>
-                        {(preparation) => (
-                          <div class={styles.songState}>
-                            <strong title={preparation().file.name}>
-                              {preparation().file.name}
-                            </strong>
-                            <span role="status" aria-atomic="true">
-                              {guitarNightPreparationMessage(preparation())}
-                            </span>
-                            <Show
-                              when={preparation().progress !== null}
-                              fallback={
-                                <progress
-                                  class={styles.songProgress}
-                                  max="100"
-                                  aria-label={`Preparing ${preparation().file.name}`}
-                                />
-                              }
-                            >
-                              <progress
-                                class={styles.songProgress}
-                                max="100"
-                                value={preparation().progress ?? 0}
-                                aria-label={`Preparing ${preparation().file.name}`}
-                              />
-                            </Show>
-                            <small>
-                              {preparation().warning ??
-                                'Your audio stays on this device. Nothing will play automatically.'}
-                            </small>
-                          </div>
-                        )}
-                      </Match>
-                      <Match when={preparationError()}>
-                        {(error) => (
-                          <div class={styles.songState} role="alert">
-                            <strong>{error().title}</strong>
-                            <span title={error().file.name}>
-                              {error().file.name}
-                            </span>
-                            <small>{error().message}</small>
-                          </div>
-                        )}
-                      </Match>
-                      <Match when={cancelledPreparation()}>
-                        {(cancelled) => (
-                          <div class={styles.songState}>
-                            <strong>Preparation cancelled</strong>
-                            <span title={cancelled().file.name}>
-                              {cancelled().file.name}
-                            </span>
-                            <small>
-                              This song was not staged. The file is ready if you
-                              want to try again.
-                            </small>
-                          </div>
-                        )}
-                      </Match>
-                      <Match when={activeBacking()}>
-                        {(backing) => (
-                          <>
-                            <strong>{backing().title}</strong>
-                            <span>
-                              {backing().stems.length} local{' '}
-                              {backing().stems.length === 1 ? 'stem' : 'stems'}{' '}
-                              ready
-                            </span>
-                            <small>
-                              {backing().defaultMix.kind === 'parts'
-                                ? backing().defaultMix.muted.length > 0
-                                  ? 'The guitar part is staged separately and defaults muted.'
-                                  : 'The available band parts are staged without a separate guitar track.'
-                                : 'Guitar is still inside this instrumental mix, so no guitar-mute control is shown.'}
-                            </small>
-                          </>
-                        )}
-                      </Match>
-                      <Match
-                        when={
-                          songController.selectionState().kind === 'loading'
-                        }
-                      >
-                        <strong>Opening the prepared song</strong>
-                        <span>Reading its local stems from this device…</span>
-                        <small>No playback or listening has started.</small>
-                      </Match>
-                      <Match when={unavailableSelection()}>
-                        {(selection) => (
-                          <>
-                            <strong>Song unavailable here</strong>
-                            <span>{unavailableSongCopy(selection())}</span>
-                            <small>
-                              Choose another prepared song or select the audio
-                              file again.
-                            </small>
-                          </>
-                        )}
-                      </Match>
-                      <Match when={true}>
-                        <strong>No song or score selected</strong>
-                        <span>Audio, MIDI, or Guitar Pro</span>
-                      </Match>
-                    </Switch>
-                  </GuitarNightFileDrop>
+                    <strong>Opening the prepared song</strong>
+                    <span>Reading its local stems from this device…</span>
+                    <small>No playback or listening has started.</small>
+                  </Match>
+                  <Match when={unavailableSelection()}>
+                    {(selection) => (
+                      <>
+                        <strong>Song unavailable here</strong>
+                        <span>{unavailableSongCopy(selection())}</span>
+                        <small>
+                          Choose another prepared song or select the audio file
+                          again.
+                        </small>
+                      </>
+                    )}
+                  </Match>
+                  <Match when={true}>
+                    <strong>No song or score selected</strong>
+                    <span>Audio, MIDI, or Guitar Pro</span>
+                  </Match>
+                </Switch>
+              </GuitarNightFileDrop>
 
-                  <section
-                    class={styles.songLibrary}
-                    aria-labelledby="guitar-night-library-title"
-                    aria-busy={
+              <section
+                class={styles.songLibrary}
+                aria-labelledby="guitar-night-library-title"
+                aria-busy={
+                  songController.libraryState() === 'idle' ||
+                  songController.libraryState() === 'loading'
+                    ? 'true'
+                    : 'false'
+                }
+              >
+                <div class={styles.songLibraryHeader}>
+                  <h2 id="guitar-night-library-title">Prepared songs</h2>
+                  <Show when={songController.libraryState() === 'ready'}>
+                    <span>
+                      {hiddenSongCount() > 0
+                        ? `${visibleSongs().length} of ${deviceSongs().length} on this device`
+                        : `${deviceSongs().length} on this device`}
+                    </span>
+                  </Show>
+                </div>
+
+                <Switch>
+                  <Match
+                    when={
                       songController.libraryState() === 'idle' ||
                       songController.libraryState() === 'loading'
-                        ? 'true'
-                        : 'false'
                     }
                   >
-                    <div class={styles.songLibraryHeader}>
-                      <h2 id="guitar-night-library-title">Prepared songs</h2>
-                      <Show when={songController.libraryState() === 'ready'}>
-                        <span>
-                          {hiddenSongCount() > 0
-                            ? `${visibleSongs().length} of ${deviceSongs().length} on this device`
-                            : `${deviceSongs().length} on this device`}
-                        </span>
+                    <p
+                      class={styles.songMessage}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Opening your local library…
+                      <Show when={libraryOpenIsSlow()}>
+                        <small>
+                          The first open after an update re-checks the audio
+                          already saved on this device. A large library can take
+                          a minute, and nothing is lost while it works.
+                        </small>
                       </Show>
+                    </p>
+                  </Match>
+                  <Match when={songController.libraryState() === 'error'}>
+                    <div class={styles.songMessageRow} role="alert">
+                      <p>Your local library could not be opened.</p>
+                      <button type="button" onClick={songController.retry}>
+                        Try again
+                      </button>
                     </div>
-
-                    <Switch>
-                      <Match
-                        when={
-                          songController.libraryState() === 'idle' ||
-                          songController.libraryState() === 'loading'
+                  </Match>
+                  <Match
+                    when={
+                      songController.libraryState() === 'ready' &&
+                      deviceSongs().length === 0
+                    }
+                  >
+                    <p class={styles.songMessage}>
+                      No prepared songs on this device yet.
+                    </p>
+                  </Match>
+                  <Match when={deviceSongs().length > 0}>
+                    <ul class={styles.songList}>
+                      <For each={visibleSongs()}>{songChoice}</For>
+                    </ul>
+                    <Show when={hiddenSongCount() > 0}>
+                      <button
+                        type="button"
+                        class={styles.songListMore}
+                        onClick={() =>
+                          setVisibleSongLimit(
+                            (limit) => limit + LIBRARY_PAGE_STEP,
+                          )
                         }
                       >
-                        <p
-                          class={styles.songMessage}
-                          role="status"
-                          aria-live="polite"
-                        >
-                          Opening your local library…
-                          <Show when={libraryOpenIsSlow()}>
-                            <small>
-                              The first open after an update re-checks the audio
-                              already saved on this device. A large library can
-                              take a minute, and nothing is lost while it works.
-                            </small>
-                          </Show>
-                        </p>
-                      </Match>
-                      <Match when={songController.libraryState() === 'error'}>
-                        <div class={styles.songMessageRow} role="alert">
-                          <p>Your local library could not be opened.</p>
-                          <button type="button" onClick={songController.retry}>
-                            Try again
-                          </button>
-                        </div>
-                      </Match>
-                      <Match
-                        when={
-                          songController.libraryState() === 'ready' &&
-                          deviceSongs().length === 0
-                        }
-                      >
-                        <p class={styles.songMessage}>
-                          No prepared songs on this device yet.
-                        </p>
-                      </Match>
-                      <Match when={deviceSongs().length > 0}>
-                        <ul class={styles.songList}>
-                          <For each={visibleSongs()}>{songChoice}</For>
-                        </ul>
-                        <Show when={hiddenSongCount() > 0}>
-                          <button
-                            type="button"
-                            class={styles.songListMore}
-                            onClick={() =>
-                              setVisibleSongLimit(
-                                (limit) => limit + LIBRARY_PAGE_STEP,
-                              )
-                            }
-                          >
-                            Show {nextRevealCount()} more
-                          </button>
-                        </Show>
-                      </Match>
-                    </Switch>
+                        Show {nextRevealCount()} more
+                      </button>
+                    </Show>
+                  </Match>
+                </Switch>
 
-                    {/* The demo sits outside the Switch on purpose: the room
+                {/* The demo sits outside the Switch on purpose: the room
                     it is for is the one with an empty library, and inside
                     the Switch that is the branch it would never render
                     in. It is never paginated away either — one row. */}
-                    <Show when={demoSongs().length > 0}>
-                      <p
-                        class={styles.songDemoKicker}
-                        data-testid="guitar-night-demo-kicker"
-                      >
-                        {deviceSongs().length === 0
-                          ? 'Nothing separated yet? Play along with the demo.'
-                          : 'Or play along with the demo.'}
-                      </p>
-                      <ul class={styles.songList}>
-                        <For each={demoSongs()}>{songChoice}</For>
-                      </ul>
-                    </Show>
-                  </section>
+                <Show when={demoSongs().length > 0}>
+                  <p
+                    class={styles.songDemoKicker}
+                    data-testid="guitar-night-demo-kicker"
+                  >
+                    {deviceSongs().length === 0
+                      ? 'Nothing separated yet? Play along with the demo.'
+                      : 'Or play along with the demo.'}
+                  </p>
+                  <ul class={styles.songList}>
+                    <For each={demoSongs()}>{songChoice}</For>
+                  </ul>
+                </Show>
+              </section>
 
-                  <section
-                    class={styles.songLibrary}
-                    aria-labelledby="guitar-night-reference-title"
-                    aria-busy={
+              <section
+                class={styles.songLibrary}
+                aria-labelledby="guitar-night-reference-title"
+                aria-busy={
+                  referenceController.libraryState() === 'idle' ||
+                  referenceController.libraryState() === 'loading'
+                }
+              >
+                <div class={styles.songLibraryHeader}>
+                  <h2 id="guitar-night-reference-title">Score to follow</h2>
+                  <Show when={attachedReference() !== null}>
+                    <button
+                      type="button"
+                      class={styles.referenceDetach}
+                      onClick={() => referenceController.detach()}
+                    >
+                      Remove
+                    </button>
+                  </Show>
+                </div>
+
+                <Switch>
+                  <Match when={attachedReference()}>
+                    {(attached) => (
+                      <div class={styles.referenceAttached}>
+                        <strong>{attached().title}</strong>
+                        {/* Count, tempo, instrument and tuning are all in the
+                            staged panel now. Repeating them here cost four
+                            rows of the one column that has to fit. */}
+                        <small>
+                          {attached().kind === 'measured'
+                            ? `Heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
+                            : `${attached().notes.length} notes · ${attached().tuning.stringCount}-string`}
+                        </small>
+                        <Show when={attached().liftedOctaves === true}>
+                          <small>
+                            Raised by whole octaves to reach this instrument’s
+                            range.
+                          </small>
+                        </Show>
+                        <Show
+                          when={
+                            attached().kind === 'authored' &&
+                            activeBacking() !== null
+                          }
+                        >
+                          {/* The explanation was three rows of prose above a
+                              sentence-long button. Same explanation, in a
+                              tooltip the reader opens only if the short label
+                              is not enough. */}
+                          <div class={styles.referencePlaceRow}>
+                            <button
+                              type="button"
+                              class={styles.referenceOnRecordingButton}
+                              onClick={() =>
+                                void referenceController.placeScoreByHand(
+                                  attached().songId,
+                                  attached().trackId,
+                                )
+                              }
+                            >
+                              <span aria-hidden="true">
+                                <LinkChain />
+                              </span>
+                              Align to recording
+                            </button>
+                            <button
+                              type="button"
+                              class={styles.referencePlaceHelp}
+                              aria-label="What aligning does"
+                              title={`This tab keeps its own ${attached().tempoBpm} BPM, so it rehearses in the tab room rather than over the backing. Aligning hangs it on this recording so the two play together.`}
+                            >
+                              <Info />
+                            </button>
+                          </div>
+                        </Show>
+                        <GuitarNightOnRecording
+                          scores={referenceController.alignableScores()}
+                          reading={referenceController.readingOnRecording()}
+                          offer={attached().kind === 'measured'}
+                          status={referenceController.alignStatus()}
+                          fallback={referenceController.handFallback()}
+                          placingByHand={
+                            referenceController.handPlacement() !== null &&
+                            referenceController.readingOnRecording() === null
+                          }
+                          onPlaceByHand={(songId) =>
+                            void referenceController.placeScoreByHand(songId)
+                          }
+                          onRead={(songId) =>
+                            void referenceController.readScoreOnRecording(
+                              songId,
+                            )
+                          }
+                          onStop={() =>
+                            referenceController.stopReadingOnRecording()
+                          }
+                        />
+                        <Show when={attached().outOfRangeNotes > 0}>
+                          <small>
+                            {attached().outOfRangeNotes}{' '}
+                            {attached().outOfRangeNotes === 1
+                              ? 'note sits'
+                              : 'notes sit'}{' '}
+                            off this neck, so{' '}
+                            {attached().outOfRangeNotes === 1
+                              ? 'it is'
+                              : 'they are'}{' '}
+                            not shown. Another instrument or string count may
+                            reach them.
+                          </small>
+                        </Show>
+                        <Show when={attached().tracks.length > 1}>
+                          <div
+                            class={styles.referenceTracks}
+                            role="group"
+                            aria-label="Visible part"
+                          >
+                            <For each={attached().tracks}>
+                              {(track) => (
+                                <button
+                                  type="button"
+                                  classList={{
+                                    [styles.referenceTrackActive]:
+                                      track.id === attached().trackId,
+                                  }}
+                                  aria-pressed={track.id === attached().trackId}
+                                  onClick={() =>
+                                    void referenceController.selectTrack(
+                                      track.id,
+                                    )
+                                  }
+                                >
+                                  {track.name}
+                                </button>
+                              )}
+                            </For>
+                          </div>
+                        </Show>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={unavailableReference()}>
+                    {(unavailable) => (
+                      <p class={styles.songMessage}>
+                        {unavailableReferenceCopy(unavailable())}
+                      </p>
+                    )}
+                  </Match>
+                  <Match
+                    when={
                       referenceController.libraryState() === 'idle' ||
                       referenceController.libraryState() === 'loading'
                     }
                   >
-                    <div class={styles.songLibraryHeader}>
-                      <h2 id="guitar-night-reference-title">Score to follow</h2>
-                      <Show when={attachedReference() !== null}>
-                        <button
-                          type="button"
-                          class={styles.referenceDetach}
-                          onClick={() => referenceController.detach()}
-                        >
-                          Remove
-                        </button>
-                      </Show>
-                    </div>
-
-                    <Switch>
-                      <Match when={attachedReference()}>
-                        {(attached) => (
-                          <div class={styles.referenceAttached}>
-                            <strong>{attached().title}</strong>
-                            <small>
-                              {attached().kind === 'measured'
-                                ? `${attached().notes.length} notes heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
-                                : `${attached().notes.length} authored notes at ${attached().tempoBpm} BPM`}
-                            </small>
-                            <small>
-                              On a {attached().tuning.stringCount}-string{' '}
-                              {attached().tuning.instrument} ·{' '}
-                              {attached().tuning.labels.join(' ')}
-                            </small>
-                            <Show when={attached().liftedOctaves === true}>
-                              <small>
-                                Raised by whole octaves to reach this
-                                instrument’s range.
-                              </small>
-                            </Show>
-                            <Show
-                              when={
-                                attached().kind === 'authored' &&
-                                activeBacking() !== null
+                    <p
+                      class={styles.songMessage}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Opening your score library…
+                    </p>
+                  </Match>
+                  <Match when={referenceController.references().length > 0}>
+                    <ul class={styles.songList}>
+                      <For each={referenceController.references()}>
+                        {(summary) => (
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void referenceController.attach(summary.songId)
                               }
                             >
-                              <small>
-                                This tab keeps its own {attached().tempoBpm}{' '}
-                                BPM, so it rehearses in the tab room rather than
-                                over the backing — until it is hung on this
-                                recording.
-                              </small>
-                              <button
-                                type="button"
-                                class={styles.referenceOnRecordingButton}
-                                onClick={() =>
-                                  void referenceController.placeScoreByHand(
-                                    attached().songId,
-                                    attached().trackId,
-                                  )
-                                }
-                              >
-                                Place it on this recording by hand
-                              </button>
-                            </Show>
-                            <GuitarNightOnRecording
-                              scores={referenceController.alignableScores()}
-                              reading={referenceController.readingOnRecording()}
-                              offer={attached().kind === 'measured'}
-                              status={referenceController.alignStatus()}
-                              fallback={referenceController.handFallback()}
-                              placingByHand={
-                                referenceController.handPlacement() !== null &&
-                                referenceController.readingOnRecording() ===
-                                  null
-                              }
-                              onPlaceByHand={(songId) =>
-                                void referenceController.placeScoreByHand(
-                                  songId,
-                                )
-                              }
-                              onRead={(songId) =>
-                                void referenceController.readScoreOnRecording(
-                                  songId,
-                                )
-                              }
-                              onStop={() =>
-                                referenceController.stopReadingOnRecording()
-                              }
-                            />
-                            <Show when={attached().outOfRangeNotes > 0}>
-                              <small>
-                                {attached().outOfRangeNotes}{' '}
-                                {attached().outOfRangeNotes === 1
-                                  ? 'note sits'
-                                  : 'notes sit'}{' '}
-                                off this neck, so{' '}
-                                {attached().outOfRangeNotes === 1
-                                  ? 'it is'
-                                  : 'they are'}{' '}
-                                not shown. Another instrument or string count
-                                may reach them.
-                              </small>
-                            </Show>
-                            <Show when={attached().tracks.length > 1}>
-                              <div
-                                class={styles.referenceTracks}
-                                role="group"
-                                aria-label="Visible part"
-                              >
-                                <For each={attached().tracks}>
-                                  {(track) => (
-                                    <button
-                                      type="button"
-                                      classList={{
-                                        [styles.referenceTrackActive]:
-                                          track.id === attached().trackId,
-                                      }}
-                                      aria-pressed={
-                                        track.id === attached().trackId
-                                      }
-                                      onClick={() =>
-                                        void referenceController.selectTrack(
-                                          track.id,
-                                        )
-                                      }
-                                    >
-                                      {track.name}
-                                    </button>
-                                  )}
-                                </For>
-                              </div>
-                            </Show>
-                          </div>
+                              <span>
+                                <strong>{summary.title}</strong>
+                                <small>
+                                  {summary.trackCount}{' '}
+                                  {summary.trackCount === 1 ? 'part' : 'parts'}{' '}
+                                  · {formatPreparedDate(summary.importedAt)}
+                                </small>
+                              </span>
+                              <i aria-hidden="true">Attach</i>
+                            </button>
+                          </li>
                         )}
-                      </Match>
-                      <Match when={unavailableReference()}>
-                        {(unavailable) => (
-                          <p class={styles.songMessage}>
-                            {unavailableReferenceCopy(unavailable())}
-                          </p>
-                        )}
-                      </Match>
-                      <Match
-                        when={
-                          referenceController.libraryState() === 'idle' ||
-                          referenceController.libraryState() === 'loading'
-                        }
-                      >
-                        <p
-                          class={styles.songMessage}
-                          role="status"
-                          aria-live="polite"
-                        >
-                          Opening your score library…
-                        </p>
-                      </Match>
-                      <Match when={referenceController.references().length > 0}>
-                        <ul class={styles.songList}>
-                          <For each={referenceController.references()}>
-                            {(summary) => (
-                              <li>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    void referenceController.attach(
-                                      summary.songId,
-                                    )
-                                  }
-                                >
-                                  <span>
-                                    <strong>{summary.title}</strong>
-                                    <small>
-                                      {summary.trackCount}{' '}
-                                      {summary.trackCount === 1
-                                        ? 'part'
-                                        : 'parts'}{' '}
-                                      · {formatPreparedDate(summary.importedAt)}
-                                    </small>
-                                  </span>
-                                  <i aria-hidden="true">Attach</i>
-                                </button>
-                              </li>
-                            )}
-                          </For>
-                        </ul>
-                      </Match>
-                      <Match when={true}>
-                        <p class={styles.songMessage}>
-                          No scores on this device yet. Use Choose a file above
-                          to open Guitar Pro or MIDI — without one the stage
-                          stays in honest free play.
-                        </p>
-                      </Match>
-                    </Switch>
+                      </For>
+                    </ul>
+                  </Match>
+                  <Match when={true}>
+                    <p class={styles.songMessage}>
+                      No scores on this device yet. Use Choose a file above to
+                      open Guitar Pro or MIDI — without one the stage stays in
+                      honest free play.
+                    </p>
+                  </Match>
+                </Switch>
 
-                    <Show when={referenceController.importStatus()}>
-                      {(status) => (
-                        <p class={styles.referenceError} role="alert">
-                          {status()}
-                        </p>
-                      )}
-                    </Show>
+                <Show when={referenceController.importStatus()}>
+                  {(status) => (
+                    <p class={styles.referenceError} role="alert">
+                      {status()}
+                    </p>
+                  )}
+                </Show>
 
-                    <Show when={transcribableStems().length > 0}>
-                      <div class={styles.referenceActions}>
-                        <For each={transcribableStems()}>
-                          {(stem) => (
-                            <Switch>
-                              <Match
-                                when={
-                                  referenceController.transcribingStem()
-                                    ?.stemKind === stem.kind
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  class={styles.songListMore}
-                                  onClick={referenceController.cancelFollowStem}
-                                >
-                                  Reading the {stem.label.toLowerCase()} notes…{' '}
-                                  {Math.round(
-                                    (referenceController.transcribeProgress() ??
-                                      0) * 100,
-                                  )}
-                                  % · Stop
-                                </button>
-                              </Match>
-                              <Match
-                                when={
-                                  referenceController.transcribeProgress() !==
-                                  null
-                                }
-                              >
-                                {/* One reader, one stem at a time — `followStem`
+                <Show when={transcribableStems().length > 0}>
+                  <div class={styles.referenceActions}>
+                    <For each={transcribableStems()}>
+                      {(stem) => (
+                        <Switch>
+                          <Match
+                            when={
+                              referenceController.transcribingStem()
+                                ?.stemKind === stem.kind
+                            }
+                          >
+                            <button
+                              type="button"
+                              class={styles.songListMore}
+                              onClick={referenceController.cancelFollowStem}
+                            >
+                              Reading the {stem.label.toLowerCase()} notes…{' '}
+                              {Math.round(
+                                (referenceController.transcribeProgress() ??
+                                  0) * 100,
+                              )}
+                              % · Stop
+                            </button>
+                          </Match>
+                          <Match
+                            when={
+                              referenceController.transcribeProgress() !== null
+                            }
+                          >
+                            {/* One reader, one stem at a time — `followStem`
                                 returns early on a second call, and a button
                                 that silently does nothing is worse than one
                                 that says it cannot. */}
-                                <button
-                                  type="button"
-                                  class={styles.songListMore}
-                                  disabled
-                                >
-                                  Transcribe the {stem.label.toLowerCase()} line
-                                </button>
-                              </Match>
-                              <Match when={true}>
-                                <button
-                                  type="button"
-                                  class={styles.songListMore}
-                                  onClick={() =>
-                                    void referenceController.followStem({
-                                      sessionId: stem.sessionId,
-                                      stemKind: stem.kind,
-                                      stemLabel: stem.label,
-                                      stemUrl: stem.url,
-                                    })
-                                  }
-                                >
-                                  Transcribe the {stem.label.toLowerCase()} line
-                                </button>
-                              </Match>
-                            </Switch>
-                          )}
-                        </For>
-                      </div>
-                    </Show>
-                  </section>
-                </div>
-
-                <aside
-                  class={styles.songAside}
-                  aria-labelledby="guitar-night-staged-title"
-                >
-                  <h2
-                    id="guitar-night-staged-title"
-                    class={styles.songAsideTitle}
-                  >
-                    Staged
-                  </h2>
-                  <Show
-                    when={loadedSummary()}
-                    fallback={
-                      <div class={styles.songAsideEmpty}>
-                        <span aria-hidden="true">
-                          <ScoreDocument />
-                        </span>
-                        <strong>Nothing loaded yet</strong>
-                        <span>
-                          Drop a file or pick a prepared song to see it here.
-                        </span>
-                      </div>
-                    }
-                  >
-                    {(summary) => (
-                      <div class={styles.songAsideCard}>
-                        <strong title={summary().title}>
-                          {summary().title}
-                        </strong>
-                        <ul class={styles.songAsideMeta}>
-                          <For each={summary().lines}>
-                            {(line) => <li>{line}</li>}
-                          </For>
-                        </ul>
-                      </div>
-                    )}
-                  </Show>
-                  <div class={styles.detailActions}>
-                    <button type="button" onClick={returnToChoices}>
-                      Back
-                    </button>
-                    <Switch>
-                      <Match when={bandPreparation() !== null}>
-                        <button
-                          class={styles.completionAction}
-                          type="button"
-                          onClick={bandPreparationController.cancel}
-                        >
-                          Keep current mix
-                        </button>
-                      </Match>
-                      <Match when={bandPreparationBlocked()}>
-                        {(blocked) => (
-                          <Switch
-                            fallback={
-                              <button
-                                class={styles.completionAction}
-                                type="button"
-                                onClick={bandPreparationController.clear}
-                              >
-                                Keep current mix
-                              </button>
-                            }
-                          >
-                            <Match
-                              when={blocked().blocker.reason === 'signed-out'}
-                            >
-                              <button
-                                class={styles.completionAction}
-                                type="button"
-                                onClick={() =>
-                                  openBandPreparationSignIn(blocked().sessionId)
-                                }
-                              >
-                                Sign in
-                              </button>
-                            </Match>
-                            <Match
-                              when={
-                                blocked().blocker.reason ===
-                                'insufficient-credits'
-                              }
-                            >
-                              <a
-                                class={styles.completionAction}
-                                href="/#/settings/credits"
-                              >
-                                Get credits
-                              </a>
-                            </Match>
-                          </Switch>
-                        )}
-                      </Match>
-                      <Match when={bandPreparationError()}>
-                        {(error) => (
-                          <button
-                            class={styles.completionAction}
-                            type="button"
-                            onClick={() =>
-                              bandPreparationController.start(error().sessionId)
-                            }
-                          >
-                            Try full band again
-                          </button>
-                        )}
-                      </Match>
-                      <Match when={preparingSong() !== null}>
-                        <button
-                          class={styles.completionAction}
-                          type="button"
-                          onClick={preparationController.cancel}
-                        >
-                          Cancel preparation
-                        </button>
-                      </Match>
-                      {/* A stopped separation is a dead end unless it can be put
-                      down. Both of these branches used to offer retrying and
-                      nothing else — and because they sit above the branches
-                      that offer a room, a reader who cancelled a separation
-                      and then attached a tab could not reach the tab at all.
-                      Reported as: "I cannot remove that added item... all I
-                      have from options is try again... but cannot rehearse and
-                      close that loaded song for separation". */}
-                      <Match when={preparationError()}>
-                        {(error) => (
-                          <>
-                            <Show when={error().retryable}>
-                              <button
-                                class={styles.completionAction}
-                                type="button"
-                                onClick={preparationController.retry}
-                              >
-                                Try again
-                              </button>
-                            </Show>
-                            <StoppedPreparationActions
-                              onDiscard={preparationController.clear}
-                              onRehearseTab={
-                                authoredReference() === null
-                                  ? undefined
-                                  : enterScoreRoom
-                              }
-                            />
-                          </>
-                        )}
-                      </Match>
-                      <Match when={cancelledPreparation() !== null}>
-                        <button
-                          class={styles.completionAction}
-                          type="button"
-                          onClick={preparationController.retry}
-                        >
-                          Try again
-                        </button>
-                        <StoppedPreparationActions
-                          onDiscard={preparationController.clear}
-                          onRehearseTab={
-                            authoredReference() === null
-                              ? undefined
-                              : enterScoreRoom
-                          }
-                        />
-                      </Match>
-                      <Match when={activeBacking()}>
-                        {(backing) => (
-                          <>
                             <button
-                              class={styles.completionAction}
                               type="button"
-                              onClick={enterRoom}
+                              class={styles.songListMore}
+                              disabled
                             >
-                              {authoredReference() === null
-                                ? 'Enter room'
-                                : 'Play along'}
+                              Transcribe the {stem.label.toLowerCase()} line
                             </button>
-                            {/* Two rooms, one at a time: the tab has its own
-                            tempo and the recording has its own, and nothing
-                            aligns them yet. */}
-                            <Show when={authoredReference()}>
-                              <button
-                                class={styles.bandPreparationAction}
-                                type="button"
-                                onClick={enterScoreRoom}
-                              >
-                                Rehearse the tab
-                              </button>
-                            </Show>
-                            <Show
-                              when={
-                                backing().defaultMix.kind ===
-                                'mixed-instrumental'
+                          </Match>
+                          <Match when={true}>
+                            <button
+                              type="button"
+                              class={styles.songListMore}
+                              onClick={() =>
+                                void referenceController.followStem({
+                                  sessionId: stem.sessionId,
+                                  stemKind: stem.kind,
+                                  stemLabel: stem.label,
+                                  stemUrl: stem.url,
+                                })
                               }
                             >
-                              <button
-                                class={styles.bandPreparationAction}
-                                type="button"
-                                title={SEPARATE_GUITAR_HINT}
-                                onClick={prepareGuitarFreeBand}
-                              >
-                                Separate guitar
-                              </button>
-                            </Show>
-                          </>
-                        )}
-                      </Match>
-                      <Match when={authoredReference() !== null}>
-                        {/* A tab alone is a complete rehearsal — no recording
-                        needed to enter a room. */}
-                        <button
-                          class={styles.completionAction}
-                          type="button"
-                          onClick={enterScoreRoom}
-                        >
-                          Rehearse the tab
-                        </button>
-                      </Match>
-                    </Switch>
+                              Transcribe the {stem.label.toLowerCase()} line
+                            </button>
+                          </Match>
+                        </Switch>
+                      )}
+                    </For>
                   </div>
-                </aside>
-              </div>
+                </Show>
+              </section>
             </Match>
 
             <Match when={view() === 'room' && activeBacking()}>
@@ -2396,6 +2201,220 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             </Match>
           </Switch>
         </div>
+
+        {/* Its own panel beside the chooser, not inside it. The staged song
+            and the things you can do with it are a different subject from
+            the library you picked it out of, and burying the actions under
+            both galleries put them below the fold. */}
+        <Show when={view() === 'song'}>
+          <aside
+            class={styles.songAside}
+            aria-labelledby="guitar-night-staged-title"
+          >
+            {/* The way out is not one of the things you can do with what is
+                staged, so it reads as a heading with a way back rather than
+                as a fourth action sitting under Play along. */}
+            <h2 id="guitar-night-staged-title" class={styles.songAsideTitle}>
+              <button
+                type="button"
+                class={styles.songAsideBack}
+                aria-label="Back to Guitar Night"
+                onClick={returnToChoices}
+              >
+                <ChevronLeft />
+              </button>
+              Staged
+            </h2>
+            <Show
+              when={loadedSummary()}
+              fallback={
+                <div class={styles.songAsideEmpty}>
+                  <span aria-hidden="true">
+                    <ScoreDocument />
+                  </span>
+                  <strong>Nothing loaded yet</strong>
+                  <span>
+                    Drop a file or pick a prepared song to see it here.
+                  </span>
+                </div>
+              }
+            >
+              {(summary) => (
+                <div class={styles.songAsideCard}>
+                  <strong title={summary().title}>{summary().title}</strong>
+                  <ul class={styles.songAsideMeta}>
+                    <For each={summary().lines}>
+                      {(line) => <li>{line}</li>}
+                    </For>
+                  </ul>
+                </div>
+              )}
+            </Show>
+            <div class={styles.detailActions}>
+              <Switch>
+                <Match when={bandPreparation() !== null}>
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={bandPreparationController.cancel}
+                  >
+                    Keep current mix
+                  </button>
+                </Match>
+                <Match when={bandPreparationBlocked()}>
+                  {(blocked) => (
+                    <Switch
+                      fallback={
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={bandPreparationController.clear}
+                        >
+                          Keep current mix
+                        </button>
+                      }
+                    >
+                      <Match when={blocked().blocker.reason === 'signed-out'}>
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={() =>
+                            openBandPreparationSignIn(blocked().sessionId)
+                          }
+                        >
+                          Sign in
+                        </button>
+                      </Match>
+                      <Match
+                        when={
+                          blocked().blocker.reason === 'insufficient-credits'
+                        }
+                      >
+                        <a
+                          class={styles.completionAction}
+                          href="/#/settings/credits"
+                        >
+                          Get credits
+                        </a>
+                      </Match>
+                    </Switch>
+                  )}
+                </Match>
+                <Match when={bandPreparationError()}>
+                  {(error) => (
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={() =>
+                        bandPreparationController.start(error().sessionId)
+                      }
+                    >
+                      Try full band again
+                    </button>
+                  )}
+                </Match>
+                <Match when={preparingSong() !== null}>
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={preparationController.cancel}
+                  >
+                    Cancel preparation
+                  </button>
+                </Match>
+                {/* A stopped separation is a dead end unless it can be put
+                      down. Both of these branches used to offer retrying and
+                      nothing else — and because they sit above the branches
+                      that offer a room, a reader who cancelled a separation
+                      and then attached a tab could not reach the tab at all.
+                      Reported as: "I cannot remove that added item... all I
+                      have from options is try again... but cannot rehearse and
+                      close that loaded song for separation". */}
+                <Match when={preparationError()}>
+                  {(error) => (
+                    <>
+                      <Show when={error().retryable}>
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={preparationController.retry}
+                        >
+                          Try again
+                        </button>
+                      </Show>
+                      <StoppedPreparationActions
+                        onDiscard={preparationController.clear}
+                        onRehearseTab={
+                          authoredReference() === null
+                            ? undefined
+                            : enterScoreRoom
+                        }
+                      />
+                    </>
+                  )}
+                </Match>
+                <Match when={cancelledPreparation() !== null}>
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={preparationController.retry}
+                  >
+                    Try again
+                  </button>
+                  <StoppedPreparationActions
+                    onDiscard={preparationController.clear}
+                    onRehearseTab={
+                      authoredReference() === null ? undefined : enterScoreRoom
+                    }
+                  />
+                </Match>
+                <Match when={activeBacking() !== null}>
+                  {/* Two rooms, one at a time: the tab has its own tempo and
+                      the recording has its own, and nothing aligns them yet.
+                      They are peers, so they sit side by side rather than one
+                      reading as a consolation below the other. */}
+                  <div class={styles.songAsidePrimary}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={enterRoom}
+                    >
+                      {authoredReference() === null
+                        ? 'Enter room'
+                        : 'Play along'}
+                    </button>
+                    <Show when={authoredReference()}>
+                      <button
+                        class={styles.completionAction}
+                        type="button"
+                        onClick={enterScoreRoom}
+                      >
+                        <span aria-hidden="true">
+                          <GuitarTab />
+                        </span>
+                        Practice with tab
+                      </button>
+                    </Show>
+                  </div>
+                </Match>
+                <Match when={authoredReference() !== null}>
+                  {/* A tab alone is a complete rehearsal — no recording
+                        needed to enter a room. */}
+                  <button
+                    class={styles.completionAction}
+                    type="button"
+                    onClick={enterScoreRoom}
+                  >
+                    <span aria-hidden="true">
+                      <GuitarTab />
+                    </span>
+                    Practice with tab
+                  </button>
+                </Match>
+              </Switch>
+            </div>
+          </aside>
+        </Show>
       </main>
 
       <Notifications />

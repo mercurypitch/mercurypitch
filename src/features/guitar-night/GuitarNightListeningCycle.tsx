@@ -111,6 +111,20 @@ export function GuitarNightListeningCycle(
   const controlledSelection = createMemo(() =>
     guitarNightListeningSelection(props.status(), props.profile()),
   )
+  /**
+   * The route the room is CONFIGURED for, whether or not Listening is on.
+   *
+   * `controlledSelection` collapses every non-listening status to null, which
+   * is right for the on/off state and wrong for saying which input is chosen.
+   * The session panel writes the same `inputProfile` signal this reads, so a
+   * route picked there while Listening was off left this control showing
+   * nothing about it -- the two surfaces looked out of sync when they were
+   * reading the same value.
+   */
+  const route = createMemo<GuitarInputProfileKind>(() => {
+    const local = pendingSelection()
+    return local !== undefined && local !== null ? local : props.profile()
+  })
   const externallyPending = createMemo(
     () => props.status() === 'requesting' || props.status() === 'calibrating',
   )
@@ -240,10 +254,14 @@ export function GuitarNightListeningCycle(
     closePicker(true)
     applySelection(controlledSelection() === profile ? null : profile)
   }
-  const chipLabel = (profile: GuitarInputProfileKind): string =>
-    controlledSelection() === profile
-      ? `Turn Listening off (${guitarInputProfileLabel(profile)} is on)`
+  const chipLabel = (profile: GuitarInputProfileKind): string => {
+    if (controlledSelection() === profile) {
+      return `Turn Listening off (${guitarInputProfileLabel(profile)} is on)`
+    }
+    return route() === profile
+      ? `Listen with ${guitarInputProfileLabel(profile)} (selected)`
       : `Listen with ${guitarInputProfileLabel(profile)}`
+  }
 
   const moveChipFocus = (from: number, delta: number): void => {
     const chips = pickerRoot?.querySelectorAll('[data-chip]')
@@ -297,6 +315,7 @@ export function GuitarNightListeningCycle(
         aria-disabled={blocked()}
         aria-haspopup="menu"
         aria-expanded={pickerOpen()}
+        data-route={route()}
         title={`${accessibleLabel()}. Hold or right-click to pick a route.`}
         onClick={() => {
           if (suppressNextClick) {
@@ -318,7 +337,12 @@ export function GuitarNightListeningCycle(
         onPointerLeave={cancelLongPress}
       >
         <span class={styles.icon} aria-hidden="true">
-          {routeIcon(selection(), pending())}
+          {/* The configured route while Listening is off, not a power symbol:
+              switching route in Session tears the open stream down, so every
+              route change from there landed this control on the same generic
+              off glyph and it looked like the two surfaces had stopped
+              agreeing. The word beside it still says Off. */}
+          {routeIcon(selection() ?? route(), pending())}
         </span>
         <span class={styles.copy} aria-hidden="true">
           <span class={styles.eyebrow}>Listening</span>
@@ -371,15 +395,15 @@ export function GuitarNightListeningCycle(
                 type="button"
                 data-chip={profile}
                 class={styles.pickerChip}
-                data-current={controlledSelection() === profile}
+                data-current={route() === profile}
                 // The fan: outer chips sit lower and lean away from the middle.
                 style={{ '--chip-slot': String(index() - 1) }}
                 role="menuitemradio"
-                aria-checked={controlledSelection() === profile}
+                aria-checked={route() === profile}
                 aria-label={chipLabel(profile)}
                 title={chipLabel(profile)}
                 ref={(element) => {
-                  if (controlledSelection() === profile || index() === 0) {
+                  if (route() === profile || index() === 0) {
                     queueMicrotask(() => element.focus())
                   }
                 }}
